@@ -1,0 +1,12 @@
+models shared True
+# upper_alike in-process sync, in-process async
+straße X-A
+  > GET /a
+  straße()
+  < 200 application/json
+  = AGetResponse200XAHeader(root=7)
+strasse X-B
+  > GET /b
+  strasse()
+  < 200 application/json
+  = BGetResponse200XBHeader(root='text')

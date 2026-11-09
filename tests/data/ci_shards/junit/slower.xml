@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+  <testsuite name="pytest" errors="0" failures="0" skipped="0" tests="5" time="5.4">
+    <testcase classname="tests.test_new" name="test_new" time="0.0312" />
+    <testcase classname="tests.test_new" name="test_async" time="0.0606" />
+    <testcase classname="tests.main.test_payload_validation" name="test_generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema/a.json]" time="4.5" />
+    <testcase classname="tests.main.test_payload_validation" name="test_generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema/b.json]" time="0.75" />
+    <testcase classname="tests.main.test_payload_validation" name="test_new" time="0.006" />
+  </testsuite>
+</testsuites>

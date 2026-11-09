@@ -1,0 +1,42 @@
+{
+  "mixed": {
+    "types": [
+      "list",
+      {
+        "kind": "str",
+        "r": "int"
+      }
+    ],
+    "value": [
+      {
+        "kind": "c",
+        "r": 1
+      }
+    ]
+  },
+  "nested": {
+    "types": [
+      "list",
+      {
+        "radius": "int"
+      }
+    ],
+    "value": [
+      {
+        "radius": 2
+      }
+    ]
+  },
+  "tagged": {
+    "types": [
+      "list",
+      "TS"
+    ],
+    "value": [
+      {
+        "kind": "s",
+        "s": 3
+      }
+    ]
+  }
+}

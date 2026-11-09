@@ -1,0 +1,1 @@
+{"definitions": {"Tag": {"type": "object", "properties": {"external": {"type": "string"}}}}}

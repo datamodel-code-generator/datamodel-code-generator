@@ -1,0 +1,230 @@
+{
+  "defaults": {
+    "structMap": {
+      "a": {
+        "name": "x"
+      }
+    },
+    "nestedLists": [
+      [
+        {
+          "name": "y"
+        }
+      ]
+    ],
+    "structOrStringItems": [
+      {
+        "name": "z"
+      },
+      "s"
+    ],
+    "listMap": {
+      "b": [
+        {
+          "name": "w"
+        }
+      ]
+    },
+    "mapList": [
+      {
+        "c": {
+          "name": "v"
+        }
+      }
+    ],
+    "aliasMap": {
+      "d": {
+        "name": "u"
+      }
+    },
+    "emptyAliasMap": {},
+    "pair": [
+      {
+        "name": "t"
+      },
+      1
+    ],
+    "structMapOrString": {
+      "e": {
+        "name": "r"
+      }
+    },
+    "nestedListsOrString": [
+      [
+        {
+          "name": "q"
+        }
+      ]
+    ],
+    "enumOrStructItems": [
+      "red",
+      {
+        "name": "p"
+      }
+    ],
+    "counts": {
+      "f": 1
+    },
+    "numberLists": [
+      [
+        1
+      ]
+    ],
+    "PodSpec": [
+      [
+        {
+          "name": "o"
+        }
+      ]
+    ]
+  },
+  "default_types": {
+    "structMap": {
+      "a": "PodSpec"
+    },
+    "nestedLists": [
+      "list",
+      [
+        "list",
+        "PodSpec"
+      ]
+    ],
+    "structOrStringItems": [
+      "list",
+      "PodSpec",
+      "str"
+    ],
+    "listMap": {
+      "b": [
+        "list",
+        "PodSpec"
+      ]
+    },
+    "mapList": [
+      "list",
+      {
+        "c": "PodSpec"
+      }
+    ],
+    "aliasMap": {
+      "d": "PodSpec"
+    },
+    "emptyAliasMap": {},
+    "pair": [
+      "list",
+      {
+        "name": "str"
+      },
+      "int"
+    ],
+    "structMapOrString": {
+      "e": "PodSpec"
+    },
+    "nestedListsOrString": [
+      "list",
+      [
+        "list",
+        "PodSpec"
+      ]
+    ],
+    "enumOrStructItems": [
+      "list",
+      "Color",
+      "PodSpec"
+    ],
+    "counts": {
+      "f": "int"
+    },
+    "numberLists": [
+      "list",
+      [
+        "list",
+        "int"
+      ]
+    ],
+    "PodSpec": [
+      "list",
+      [
+        "list",
+        "PodSpec"
+      ]
+    ]
+  },
+  "decoded_defaults_equal": false,
+  "valid": {
+    "structMap": {
+      "k": {
+        "name": "o"
+      }
+    },
+    "nestedLists": [
+      [
+        {
+          "name": "y"
+        }
+      ]
+    ],
+    "structOrStringItems": [
+      {
+        "name": "z"
+      },
+      "s"
+    ],
+    "listMap": {
+      "b": [
+        {
+          "name": "w"
+        }
+      ]
+    },
+    "mapList": [
+      {
+        "c": {
+          "name": "v"
+        }
+      }
+    ],
+    "aliasMap": {
+      "d": {
+        "name": "u"
+      }
+    },
+    "emptyAliasMap": {},
+    "pair": [
+      {
+        "name": "n"
+      },
+      2
+    ],
+    "structMapOrString": "m",
+    "nestedListsOrString": [
+      [
+        {
+          "name": "q"
+        }
+      ]
+    ],
+    "enumOrStructItems": [
+      "red",
+      {
+        "name": "p"
+      }
+    ],
+    "counts": {
+      "f": 1
+    },
+    "numberLists": [
+      [
+        1
+      ]
+    ],
+    "PodSpec": [
+      [
+        {
+          "name": "o"
+        }
+      ]
+    ]
+  },
+  "invalid": "rejected: Expected `str`, got `int` - at `$.structMap[...].name`"
+}

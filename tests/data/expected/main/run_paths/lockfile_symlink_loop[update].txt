@@ -1,0 +1,3 @@
+loop1.lock
+loop2.lock -> loop1.lock
+out.py written: True

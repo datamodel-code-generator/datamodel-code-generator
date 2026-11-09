@@ -1,0 +1,196 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "row": {
+      "$ref": "#/$defs/Row",
+      "default": {
+        "a": "x"
+      }
+    },
+    "rowBesideInteger": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Row"
+        },
+        {
+          "type": "integer"
+        }
+      ],
+      "default": {
+        "b-c": 2
+      }
+    },
+    "nullableRow": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Row"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": {
+        "a": "y",
+        "b-c": 3
+      }
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Row"
+      },
+      "default": [
+        {
+          "a": "w"
+        }
+      ]
+    },
+    "rowAlias": {
+      "$ref": "#/$defs/RowAlias",
+      "default": {
+        "a": "v"
+      }
+    },
+    "holder": {
+      "$ref": "#/$defs/Holder",
+      "default": {
+        "row": {
+          "b-c": 4
+        },
+        "name": "h",
+        "tags": [
+          "t"
+        ],
+        "nullableTags": null,
+        "rowsByKey": {
+          "k": {
+            "a": "m"
+          }
+        },
+        "labels": {
+          "x": "y"
+        }
+      }
+    },
+    "rowArray": {
+      "$ref": "#/$defs/Row",
+      "default": [
+        "p",
+        5
+      ]
+    },
+    "labelsThenRow": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        {
+          "$ref": "#/$defs/Row"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2,
+      "default": [
+        {
+          "a": "b"
+        },
+        {
+          "a": "z"
+        }
+      ]
+    },
+    "labelsThenRowAlias": {
+      "$ref": "#/$defs/LabelsThenRow",
+      "default": [
+        {
+          "a": "b"
+        },
+        {
+          "a": "z"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "Row": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        },
+        "b-c": {
+          "type": "number"
+        }
+      }
+    },
+    "RowAlias": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Row"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "Holder": {
+      "type": "object",
+      "properties": {
+        "row": {
+          "$ref": "#/$defs/Row"
+        },
+        "name": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "nullableTags": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "rowsByKey": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Row"
+          }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "LabelsThenRow": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        {
+          "$ref": "#/$defs/Row"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    }
+  }
+}

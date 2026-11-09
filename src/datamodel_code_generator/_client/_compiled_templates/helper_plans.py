@@ -11,21 +11,16 @@ from datamodel_code_generator.model._compiled_template_runtime import (
 )
 
 
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
-
-
 def render_with_scope(_scope: _Scope) -> str:
     def _macro_constant(_parent: _Scope, plan: Any) -> str:
         _parts: list[str] = []
-        _value_0 = _stringify(_getattr(plan, "name"))
-        _value_1 = _stringify(_getattr(plan, "annotation"))
-        _value_2 = _stringify(_getattr(plan, "constructor"))
-        _parts.append(f"{_value_0}: {_value_1} = {_value_2}(")
+        _parts.append(
+            f"{_stringify(_getattr(plan, 'name'))}: {_stringify(_getattr(plan, 'annotation'))} = {_stringify(_getattr(plan, 'constructor'))}("
+        )
         for argument in _getattr(plan, "arguments"):
-            _value_3 = _stringify(_getattr(argument, "keyword"))
-            _value_4 = _stringify(_getattr(argument, "value"))
-            _parts.append(f"\n    {_value_3}={_value_4},")
+            _parts.append(
+                f"\n    {_stringify(_getattr(argument, 'keyword'))}={_stringify(_getattr(argument, 'value'))},"
+            )
         _parts.append("\n)")
         return "".join(_parts)
 
@@ -34,46 +29,36 @@ def render_with_scope(_scope: _Scope) -> str:
     _context_imports = _scope.get("imports")
     _context_plans = _scope.get("plans")
     _parts: list[str] = []
-    _value_5 = _stringify(_context_docstring)
-    _value_6 = _stringify(_context_imports)
-    _parts.append(f'"""{_value_5}"""\n\nfrom __future__ import annotations\n\n{_value_6}')
+    _parts.append(
+        f'"""{_stringify(_context_docstring)}"""\n\nfrom __future__ import annotations\n\n{_stringify(_context_imports)}'
+    )
     for accessor in _context_accessors:
-        _value_7 = _stringify(_getattr(accessor, "name"))
-        _value_8 = _stringify(_getattr(accessor, "data"))
-        _value_9 = _stringify(_getattr(accessor, "returns"))
-        _value_10 = _stringify(_getattr(accessor, "docstring"))
-        _parts.append(f'\n\n\ndef {_value_7}(\n    data: {_value_8},\n) -> {_value_9}:\n    """{_value_10}"""')
+        _parts.append(
+            f'\n\n\ndef {_stringify(_getattr(accessor, "name"))}(\n    data: {_stringify(_getattr(accessor, "data"))},\n) -> {_stringify(_getattr(accessor, "returns"))}:\n    """{_stringify(_getattr(accessor, "docstring"))}"""'
+        )
         for check in _getattr(accessor, "checks"):
             if _getattr(check, "unset") and _getattr(check, "none"):
-                _value_11 = _stringify(_getattr(check, "value"))
-                _value_12 = _stringify(_getattr(check, "read"))
-                _value_13 = _stringify(_getattr(check, "value"))
-                _value_14 = _stringify(_getattr(check, "unset"))
-                _parts.append(f"\n    if ({_value_11} := {_value_12}) is None or isinstance({_value_13}, {_value_14}):")
+                _parts.append(
+                    f"\n    if ({_stringify(_getattr(check, 'value'))} := {_stringify(_getattr(check, 'read'))}) is None or isinstance({_stringify(_getattr(check, 'value'))}, {_stringify(_getattr(check, 'unset'))}):"
+                )
             elif _getattr(check, "unset"):
-                _value_15 = _stringify(_getattr(check, "value"))
-                _value_16 = _stringify(_getattr(check, "read"))
-                _value_17 = _stringify(_getattr(check, "unset"))
-                _parts.append(f"\n    if isinstance({_value_15} := {_value_16}, {_value_17}):")
+                _parts.append(
+                    f"\n    if isinstance({_stringify(_getattr(check, 'value'))} := {_stringify(_getattr(check, 'read'))}, {_stringify(_getattr(check, 'unset'))}):"
+                )
             elif _getattr(check, "missing") and _getattr(check, "none"):
-                _value_18 = _stringify(_getattr(check, "value"))
-                _value_19 = _stringify(_getattr(check, "read"))
-                _value_20 = _stringify(_getattr(check, "value"))
-                _value_21 = _stringify(_getattr(check, "missing"))
-                _parts.append(f"\n    if ({_value_18} := {_value_19}) is None or {_value_20} is {_value_21}:")
+                _parts.append(
+                    f"\n    if ({_stringify(_getattr(check, 'value'))} := {_stringify(_getattr(check, 'read'))}) is None or {_stringify(_getattr(check, 'value'))} is {_stringify(_getattr(check, 'missing'))}:"
+                )
             elif _getattr(check, "missing"):
-                _value_22 = _stringify(_getattr(check, "value"))
-                _value_23 = _stringify(_getattr(check, "read"))
-                _value_24 = _stringify(_getattr(check, "missing"))
-                _parts.append(f"\n    if ({_value_22} := {_value_23}) is {_value_24}:")
+                _parts.append(
+                    f"\n    if ({_stringify(_getattr(check, 'value'))} := {_stringify(_getattr(check, 'read'))}) is {_stringify(_getattr(check, 'missing'))}:"
+                )
             else:
-                _value_25 = _stringify(_getattr(check, "value"))
-                _value_26 = _stringify(_getattr(check, "read"))
-                _parts.append(f"\n    if ({_value_25} := {_value_26}) is None:")
+                _parts.append(
+                    f"\n    if ({_stringify(_getattr(check, 'value'))} := {_stringify(_getattr(check, 'read'))}) is None:"
+                )
             _parts.append("\n        return None")
-        _value_27 = _stringify(_getattr(accessor, "result"))
-        _parts.append(f"\n    return {_value_27}")
+        _parts.append(f"\n    return {_stringify(_getattr(accessor, 'result'))}")
     for plan in _context_plans:
-        _value_28 = _stringify(_macro_constant(_scope, plan))
-        _parts.append(f"\n\n\n{_value_28}")
+        _parts.append(f"\n\n\n{_stringify(_macro_constant(_scope, plan))}")
     return "".join(_parts)

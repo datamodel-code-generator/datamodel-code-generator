@@ -13,7 +13,7 @@ paths:
   /located:
     get:
       operationId: getLocated
-      security: [{body_key: []}, {nameless: []}]
+      security: [{body_key: []}, {nameless: []}, {spaced: []}, {crumb: []}]
       responses:
         "204": {description: Done.}
   /shaped:
@@ -40,8 +40,17 @@ paths:
       security: [{api_key: [1]}]
       responses:
         "204": {description: Done.}
+  /tokens:
+    get:
+      operationId: getTokens
+      security: [{oauth: [read write]}]
+      responses:
+        "204": {description: Done.}
 components:
   securitySchemes:
     api_key: {type: apiKey, in: header, name: X-API-Key}
     body_key: {type: apiKey, in: body, name: key}
     nameless: {type: apiKey, in: header}
+    spaced: {type: apiKey, in: header, name: X Key}
+    crumb: {type: apiKey, in: cookie, name: "a;b"}
+    oauth: {type: oauth2, flows: {clientCredentials: {tokenUrl: "https://auth.example.com/token", scopes: {}}}}

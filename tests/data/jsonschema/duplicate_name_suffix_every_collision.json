@@ -1,0 +1,17 @@
+{
+  "$defs": {
+    "Item": {"type": "object", "properties": {"v": {"type": "string"}}},
+    "AnyUrl": {"type": "object", "properties": {"href": {"type": "string"}}},
+    "Status": {"type": "string", "enum": ["open", "closed"]}
+  },
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "item": {"type": "object", "properties": {"w": {"type": "integer"}}},
+    "other": {"$ref": "#/$defs/Item"},
+    "site": {"type": "string", "format": "uri"},
+    "link": {"$ref": "#/$defs/AnyUrl"},
+    "status": {"type": "string", "enum": ["new", "old"]},
+    "state": {"$ref": "#/$defs/Status"}
+  }
+}

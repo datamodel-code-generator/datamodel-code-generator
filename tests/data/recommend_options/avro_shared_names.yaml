@@ -1,0 +1,29 @@
+asyncapi: 2.6.0
+info: {title: Two kinds, version: "1"}
+channels:
+  a:
+    subscribe:
+      message:
+        schemaFormat: application/vnd.apache.avro;version=1.9.0
+        payload:
+          type: record
+          name: First
+          fields:
+            - name: kind
+              type: {type: enum, name: Kind, symbols: [A, B]}
+  b:
+    subscribe:
+      message:
+        schemaFormat: application/vnd.apache.avro;version=1.9.0
+        payload:
+          type: record
+          name: Second
+          fields:
+            - name: kind
+              type: {type: enum, name: Kind, symbols: [X, Y, Z]}
+components:
+  schemas:
+    Kind:
+      type: object
+      properties:
+        v: {type: string}

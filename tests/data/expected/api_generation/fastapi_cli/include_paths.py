@@ -40,7 +40,9 @@ class PetsGetQueryKindParameter(StrEnum):
     dog = 'dog'
 
 
-PetsGetHeaderXRequestIdParameter = TypeAliasType("PetsGetHeaderXRequestIdParameter", UUID)
+PetsGetHeaderXRequestIdParameter = TypeAliasType(
+    "PetsGetHeaderXRequestIdParameter", UUID
+)
 
 
 PetsGetQuerySinceParameter = TypeAliasType("PetsGetQuerySinceParameter", AwareDatetime)

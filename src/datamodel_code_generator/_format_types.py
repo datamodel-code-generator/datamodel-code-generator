@@ -7,9 +7,10 @@ dependencies such as subprocess, shutil, black, or isort.
 
 from __future__ import annotations
 
+import re
 from enum import Enum
 from functools import cached_property
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
     from datamodel_code_generator._requirements import PythonConstruct
@@ -117,6 +118,8 @@ class PythonVersion(Enum):
 
 
 PythonVersionMin = PythonVersion.PY_310
+NEWEST_TARGET: Final = max(PythonVersion, key=lambda version: version.version_key)
+"""The newest target: the default on an interpreter newer than every target; its rules accept every identifier."""
 
 
 class Formatter(Enum):
@@ -136,6 +139,15 @@ EXTERNAL_FORMATTERS = frozenset({
     Formatter.RUFF_CHECK,
     Formatter.RUFF_FORMAT,
 })
+RUFF_FORMATTERS = frozenset({Formatter.RUFF_CHECK, Formatter.RUFF_FORMAT})
+"""The formatters that run Ruff, which formats a written directory once."""
+DEFAULT_LINE_LENGTH = 88
+DEFAULT_KNOWN_FIRST_PARTY = frozenset({"datamodel_code_generator", "tests"})
+MAX_TOP_LEVEL_BLANK_LINES = 2
+MAX_SHORT_DEFAULT_OVERFLOW = 13
+LONG_TARGET_PREFIX_LENGTH = 30
+TYPE_ALIAS_INLINE_ARGUMENT_COUNT = 2
+STRING_PREFIX_PATTERN = re.compile(r"(?i)^([rubf]*)(\"\"\"|'''|\"|')")
 
 # Keep the historical public pickle/repr path after moving these enums out of format.py.
 for _public_type in (DateClassType, DatetimeClassType, Formatter, PythonVersion):
@@ -145,7 +157,15 @@ del _public_type
 
 __all__ = [
     "DEFAULT_FORMATTERS",
+    "DEFAULT_KNOWN_FIRST_PARTY",
+    "DEFAULT_LINE_LENGTH",
     "EXTERNAL_FORMATTERS",
+    "LONG_TARGET_PREFIX_LENGTH",
+    "MAX_SHORT_DEFAULT_OVERFLOW",
+    "MAX_TOP_LEVEL_BLANK_LINES",
+    "NEWEST_TARGET",
+    "STRING_PREFIX_PATTERN",
+    "TYPE_ALIAS_INLINE_ARGUMENT_COUNT",
     "DateClassType",
     "DatetimeClassType",
     "Formatter",

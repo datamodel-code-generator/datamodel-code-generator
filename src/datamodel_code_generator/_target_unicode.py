@@ -14,33 +14,40 @@ rebuild them only for text holding a character some target changes or the target
 
 from __future__ import annotations
 
+import keyword
 import re
 import unicodedata
 from bisect import bisect_left, bisect_right
-from functools import cache, cached_property
+from functools import cache, cached_property, partial
 from itertools import chain
-from typing import TYPE_CHECKING, Final, NamedTuple
+from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, TypeVar
 
-from datamodel_code_generator._format_types import PythonVersion, PythonVersionMin
+from datamodel_code_generator._format_types import NEWEST_TARGET, PythonVersion, PythonVersionMin
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator
+    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 
 __all__ = (
     "NEWEST_TARGET",
     "HostIdentifiers",
+    "NameRule",
     "capitalize",
     "casefold",
     "host_identifiers",
     "host_parsable",
+    "is_dotted_python_name",
     "is_identifier",
+    "is_importable_part",
     "is_nfkc",
     "is_numeric",
+    "is_python_name",
     "is_upper",
+    "lent_text",
     "lower",
     "nfc",
     "nfkc",
     "replace_non_word",
+    "string_repr",
     "target_pattern",
     "title",
     "upper",
@@ -60,6 +67,8 @@ _TITLECASE: Final = 4
 _CASE_IGNORABLE: Final = 8
 _CASED: Final = _LOWERCASE | _UPPERCASE | _TITLECASE
 _ASCII_END: Final = 0x80
+_LATIN_1_END: Final = 0x100
+_BMP_END: Final = 0x10000
 _HANGUL_SYLLABLE: Final = 0xAC00
 _HANGUL_LEADING: Final = 0x1100
 _HANGUL_VOWEL: Final = 0x1161
@@ -71,6 +80,9 @@ _HANGUL_SYLLABLE_COUNT: Final = 11172
 _PLACEHOLDER_RANGES: Final = {2: ((0x0780, 0x07A5), (0x07CA, 0x07EA)), 3: ((0x4E00, 0x9FFC),), 4: ((0x20000, 0x2A6DD),)}
 """Letters lent to the running interpreter for identifier characters it does not know, by UTF-8 length: Thaana and
 N'Ko, CJK ideographs and CJK Extension B, which every target has without case or normalization data."""
+
+
+_R = TypeVar("_R")
 
 
 class _Case(NamedTuple):
@@ -138,7 +150,7 @@ class _TargetUnicode:
     """The Unicode data of one target, each table built on first use."""
 
     def __init__(self, target: PythonVersion) -> None:
-        from datamodel_code_generator import _target_unicode_data as data  # noqa: PLC0415
+        import datamodel_code_generator._target_unicode_data as data  # noqa: PLC0415
 
         self._data = data
         self._index = data.TARGETS.index(target.value)
@@ -188,18 +200,37 @@ class _TargetUnicode:
         return re.compile(f"[^{_class(self.assigned)}]")
 
     @cached_property
-    def case(self) -> dict[str, _Case]:
-        """Return the case data of each character whose case data differs between targets."""
-        cases: dict[str, _Case] = {}
-        for code_point, changes in self._data.CASE_CHANGES.items():
-            character = chr(code_point)
-            case = _Case(character, character, character, character, 0)
-            for index, upper, lower, title, fold, flags in changes:
+    def repr_special(self) -> re.Pattern[str]:
+        """Match a character `repr()` of text may write other than as itself: a backslash, a quote, or unprintable."""
+        return re.compile(f"[\\\\'\"{_class(self._set('UNPRINTABLE'))}]|[^{_class(self.assigned)}]")
+
+    def _latest(
+        self,
+        changes: Mapping[tuple[int, int], Iterable[tuple[Any, ...]]],
+        unchanged: Sequence[Any],
+        record: Callable[..., _R],
+    ) -> dict[str, _R]:
+        """Return each changed character's data as of the target: its last change up to the target, or `unchanged`.
+
+        A row holds texts, each standing for the character itself when empty, and a number last.
+        """
+        table: dict[str, _R] = {}
+        for (first, last), rows in changes.items():
+            latest = unchanged
+            for index, *values in rows:
                 if index > self._index:
                     break
-                case = _Case(upper or character, lower or character, title or character, fold or character, flags)
-            cases[character] = case
-        return cases
+                latest = values
+            *texts, number = latest
+            for code_point in range(first, last + 1):
+                character = chr(code_point)
+                table[character] = record(*[text or character for text in texts], number)
+        return table
+
+    @cached_property
+    def case(self) -> dict[str, _Case]:
+        """Return the case data of each character whose case data differs between targets."""
+        return self._latest(self._data.CASE_CHANGES, ("", "", "", "", 0), _Case)
 
     @cached_property
     def case_special(self) -> re.Pattern[str]:
@@ -209,16 +240,7 @@ class _TargetUnicode:
     @cached_property
     def normalization(self) -> dict[str, _Normalization]:
         """Return the normalization data of each character whose data differs between targets."""
-        items: dict[str, _Normalization] = {}
-        for code_point, changes in self._data.NORMALIZATION_CHANGES.items():
-            character = chr(code_point)
-            item = _Normalization(character, character, 0)
-            for index, canonical, compatibility, combining in changes:
-                if index > self._index:
-                    break
-                item = _Normalization(canonical or character, compatibility or character, combining)
-            items[character] = item
-        return items
+        return self._latest(self._data.NORMALIZATION_CHANGES, ("", "", 0), _Normalization)
 
     @cached_property
     def compositions(self) -> dict[tuple[str, str], str]:
@@ -332,10 +354,6 @@ class _TargetUnicode:
         return "".join(composed)
 
 
-NEWEST_TARGET: Final = max(PythonVersion, key=lambda version: version.version_key)
-"""The newest target: its rules accept every identifier some target accepts."""
-
-
 @cache
 def _unicode(target: PythonVersion | None) -> _TargetUnicode:
     return _TargetUnicode(target or PythonVersionMin)
@@ -344,6 +362,45 @@ def _unicode(target: PythonVersion | None) -> _TargetUnicode:
 def is_identifier(value: str, target: PythonVersion | None) -> bool:
     """Return whether text is an identifier in the target, as `str.isidentifier()` on its interpreter."""
     return value.isidentifier() if value.isascii() else _unicode(target).identifier.fullmatch(value) is not None
+
+
+NameRule: TypeAlias = Literal["target", "ascii"]
+"""Whose identifier characters `is_python_name` reads.
+
+`target` reads the target's (`is_identifier`), and `ascii` only ASCII identifiers (Starlette's path placeholders, the
+field names the Pydantic resolver keeps as given).
+"""
+
+
+def is_python_name(value: str, target: PythonVersion | None = None, *, rule: NameRule = "target") -> bool:
+    """Return whether text is a name Python binds: an identifier by the rule's characters, and no keyword."""
+    identifier = is_identifier(value, target) if rule == "target" else value.isascii() and value.isidentifier()
+    return identifier and not keyword.iskeyword(value)
+
+
+def is_dotted_python_name(value: str, target: PythonVersion | None = None, *, rule: NameRule = "target") -> bool:
+    """Return whether text is Python names joined by dots, each by `is_python_name` with the rule."""
+    return all(is_python_name(part, target, rule=rule) for part in value.split("."))
+
+
+ModulePartRow: TypeAlias = Literal["target", "keyword", "legacy-keyword-directory-kept"]
+"""How `is_importable_part` reads a part of a module path.
+
+`target` reads a name by the target's rule (`is_python_name`), for the parts `--treat-dot-as-module` writes for the dots
+of a directory or file name. `keyword` refuses a keyword alone, for the parts written without it, whose dots are `_`.
+`legacy-keyword-directory-kept` reads an identifier and keeps a keyword, for a directory of the input that keeps its
+name; a module that imports a keyword one is refused.
+"""
+
+
+def is_importable_part(part: str, target: PythonVersion | None, *, row: ModulePartRow = "target") -> bool:
+    """Return whether Python imports a module by the part ``part`` of its path, as the row reads it."""
+    match row:
+        case "keyword":
+            return not keyword.iskeyword(part)
+        case "legacy-keyword-directory-kept":
+            return is_identifier(part, target)
+    return is_python_name(part, target)
 
 
 def replace_non_word(value: str, target: PythonVersion | None) -> str:
@@ -460,6 +517,35 @@ def nfkc(value: str, target: PythonVersion | None) -> str:
     return _normalized(value, target, compatibility=True)
 
 
+_REPR_ESCAPES: Final = {"\\": "\\\\", "\t": "\\t", "\n": "\\n", "\r": "\\r"}
+
+
+def _repr_escape(quote: str, match: re.Match[str]) -> str:
+    """Return how `repr()` writes a character `repr_special` matches inside text quoted with `quote`."""
+    character = match.group()
+    if character in "'\"":
+        return f"\\{character}" if character == quote else character
+    if (escape := _REPR_ESCAPES.get(character)) is not None:
+        return escape
+    code_point = ord(character)
+    if code_point < _LATIN_1_END:
+        return f"\\x{code_point:02x}"
+    return f"\\u{code_point:04x}" if code_point < _BMP_END else f"\\U{code_point:08x}"
+
+
+def string_repr(value: str, target: PythonVersion | None) -> str:
+    """Return `repr()` of text as the target's interpreter writes it, whatever interpreter runs.
+
+    `repr()` writes a character as an escape unless the interpreter prints it, and which characters it prints follows
+    its Unicode version, so a message or a literal that quotes text the same way on every interpreter quotes it for a
+    fixed target.
+    """
+    if value.isascii():
+        return repr(value)
+    quote = '"' if "'" in value and '"' not in value else "'"
+    return f"{quote}{_unicode(target).repr_special.sub(partial(_repr_escape, quote), value)}{quote}"
+
+
 def is_nfkc(value: str, target: PythonVersion | None) -> bool:
     """Return whether text is in NFKC form in the target."""
     return value.isascii() or nfkc(value, target) == value
@@ -544,6 +630,12 @@ def host_identifiers(source: str) -> HostIdentifiers | None:
     if source.isascii() or not (unknown := _unknown(source)):
         return None
     return HostIdentifiers(source, unknown)
+
+
+def lent_text(source: str) -> tuple[str, Callable[[str], str]]:
+    """Return source with identifier letters lent (``host_identifiers``), and the restorer of a text read from it."""
+    lent = host_identifiers(source)
+    return (source, str) if lent is None else (lent.source, lent.restore_text)
 
 
 def _assignment(match: re.Match[str]) -> str:

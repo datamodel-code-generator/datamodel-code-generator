@@ -45,16 +45,27 @@ class NullableMerged(Struct):
 class Parent(Struct):
     nullableChild: NullableChild | None
     nonNullableChild: NonNullableChild
-    requiredDescribedNullableChild: Annotated[NullableChild, Meta(description='A required nullable child with a description.')] | None
-    requiredDescribedInline: Annotated[RequiredDescribedInline, Meta(description='A required nullable inline object with a description.')] | None
+    requiredDescribedNullableChild: (
+        Annotated[
+            NullableChild,
+            Meta(description='A required nullable child with a description.'),
+        ]
+        | None
+    )
+    requiredDescribedInline: (
+        Annotated[
+            RequiredDescribedInline,
+            Meta(description='A required nullable inline object with a description.'),
+        ]
+        | None
+    )
     optionalNullableChild: NullableChild | None | UnsetType = UNSET
     optionalNullableWrapper: NullableWrapper | None | UnsetType = UNSET
     optionalNullableExtended: NullableExtended | None | UnsetType = UNSET
     optionalNullableMerged: NullableMerged | None | UnsetType = UNSET
     describedNullableChild: (
         Annotated[
-            NullableChild,
-            Meta(description='A nullable child with a description.'),
+            NullableChild, Meta(description='A nullable child with a description.')
         ]
         | None
         | UnsetType

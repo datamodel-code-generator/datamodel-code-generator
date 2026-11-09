@@ -64,7 +64,9 @@ class Board(BaseModel):
     fixed: dict[str, int] = None
 
 
-ScoresGetQueryPlayersParameter = TypeAliasType("ScoresGetQueryPlayersParameter", dict[str, Player] | None)
+ScoresGetQueryPlayersParameter = TypeAliasType(
+    "ScoresGetQueryPlayersParameter", dict[str, Player] | None
+)
 
 
 class ScoresPostRequest(RootModel[dict[str, int] | None]):

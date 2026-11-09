@@ -1,0 +1,23 @@
+openapi: 3.1.0
+info:
+  title: an allOf member whose anyOf names a schema of a mapped document
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Plot:
+      properties:
+        area:
+          type: integer
+    Ground:
+      anyOf:
+        - $ref: 'absent.yaml#/components/schemas/Soil'
+        - type: object
+          properties:
+            rock:
+              type: string
+        - type: 'null'
+    Field:
+      allOf:
+        - $ref: '#/components/schemas/Ground'
+        - $ref: '#/components/schemas/Plot'

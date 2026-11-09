@@ -154,7 +154,9 @@ class Model(BaseModel):
     rStringOrPatterns: StringOrPatterns
     pStringOrNames: dict[constr(pattern=r'^a'), int] | None
     rStringOrNames: StringOrNames | None
-    pArrayOrNamesCount: dict[constr(pattern=r'^a'), Any] | None
+    pArrayOrNamesCount: dict[constr(pattern=r'^a'), Any] | None = Field(
+        ..., min_length=1
+    )
     rArrayOrNamesCount: ArrayOrNamesCount | None
     iStringOrPatterns: list[IStringOrPattern] | None = None
     mStringOrPatterns: dict[str, MStringOrPatterns] | None = None

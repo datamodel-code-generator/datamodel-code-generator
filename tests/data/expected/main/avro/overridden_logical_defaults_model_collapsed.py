@@ -3,13 +3,13 @@
 
 from __future__ import annotations
 
-from datetime import timedelta as timedelta_aliased
+from builtins import bytes
 
 from pydantic import BaseModel, Field, RootModel, conbytes
 
 
 class Frame(BaseModel):
-    elapsed: timedelta_aliased = Field(..., title='Elapsed')
+    elapsed: bytes
 
 
 class Raw(RootModel[conbytes(min_length=12, max_length=12)]):
@@ -17,41 +17,36 @@ class Raw(RootModel[conbytes(min_length=12, max_length=12)]):
 
 
 class DurationDefaults(BaseModel):
-    timedelta: timedelta_aliased | None = Field(
-        timedelta_aliased(milliseconds=0), title='Elapsed'
-    )
-    one: timedelta_aliased | None = Field(
-        timedelta_aliased(milliseconds=1), title='Elapsed'
-    )
-    milliseconds: timedelta_aliased | None = Field(
-        timedelta_aliased(milliseconds=1001), title='Elapsed'
-    )
-    endian: timedelta_aliased | None = Field(
-        timedelta_aliased(milliseconds=16909060), title='Elapsed'
-    )
-    maximum: timedelta_aliased | None = Field(
-        timedelta_aliased(milliseconds=4294967295), title='Elapsed'
-    )
-    array: list[timedelta_aliased] | None = [
-        timedelta_aliased(milliseconds=0),
-        timedelta_aliased(milliseconds=1),
-        timedelta_aliased(milliseconds=1001),
+    timedelta: bytes | None = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    one: bytes | None = b'\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00'
+    milliseconds: bytes | None = b'\x00\x00\x00\x00\x00\x00\x00\x00\xe9\x03\x00\x00'
+    endian: bytes | None = b'\x00\x00\x00\x00\x00\x00\x00\x00\x04\x03\x02\x01'
+    maximum: bytes | None = b'\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\xff\xff'
+    array: list[bytes] | None = [
+        b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+        b'\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00',
+        b'\x00\x00\x00\x00\x00\x00\x00\x00\xe9\x03\x00\x00',
     ]
-    map: dict[str, timedelta_aliased] | None = {
-        'z': timedelta_aliased(milliseconds=4294967295),
-        'a': timedelta_aliased(milliseconds=1),
+    map: dict[str, bytes] | None = {
+        'z': b'\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\xff\xff',
+        'a': b'\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00',
     }
-    union: timedelta_aliased | None = timedelta_aliased(milliseconds=1001)
-    string_first: str | timedelta_aliased | None = 'kept'
-    nullable: timedelta_aliased | None = None
+    union: bytes | None = b'\x00\x00\x00\x00\x00\x00\x00\x00\xe9\x03\x00\x00'
+    string_first: str | bytes | None = 'kept'
+    nullable: bytes | None = None
     record: Frame | None = Field(
-        {'elapsed': timedelta_aliased(milliseconds=1001)}, validate_default=True
+        {'elapsed': b'\x00\x00\x00\x00\x00\x00\x00\x00\xe9\x03\x00\x00'},
+        validate_default=True,
     )
     record_array: list[Frame] | None = Field(
-        [{'elapsed': timedelta_aliased(milliseconds=1)}], validate_default=True
+        [{'elapsed': b'\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00'}],
+        validate_default=True,
     )
-    nested: list[dict[str, timedelta_aliased]] | None = [
-        {'z': timedelta_aliased(milliseconds=1001), 'a': timedelta_aliased(milliseconds=1)}
+    nested: list[dict[str, bytes]] | None = [
+        {
+            'z': b'\x00\x00\x00\x00\x00\x00\x00\x00\xe9\x03\x00\x00',
+            'a': b'\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00',
+        }
     ]
     ordinary_fixed: conbytes(min_length=12, max_length=12) | None = Field(
         b'\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00', title='Raw'

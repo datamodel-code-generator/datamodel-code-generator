@@ -2,12 +2,25 @@
 # Each line records the expected output a test compares; to accept changed output add --inline-snapshot=fix (see AGENTS.md).
 [test_main_yaml]
 	main/yaml.py
+[test_main_yaml_bool_text_in_strings_does_not_warn]
+	main/main_yaml/bool_text_in_strings_does_not_warn.py
+[test_main_yaml_bool_word_does_not_warn]
+	main/main_yaml/bool_word_does_not_warn.py
 [test_main_yaml_deprecated_bool]
 	main/main_yaml/deprecated_bool.py
 [test_main_yaml_integer_beyond_int64]
 pyyaml	main/main_yaml/integer_beyond_int64[pyyaml].py
 ryaml	main/main_yaml/integer_beyond_int64[ryaml].py	= main/main_yaml/integer_beyond_int64[pyyaml].py
+[test_main_yaml_plain_equals_is_text]
+libyaml-pyyaml	main/main_yaml/plain_equals_is_text[libyaml-pyyaml].py
+pure-pyyaml	main/main_yaml/plain_equals_is_text[pure-pyyaml].py	= main/main_yaml/plain_equals_is_text[libyaml-pyyaml].py
 [test_main_yaml_root_list]
 	main/yaml/root_list.py
+[test_main_yaml_sample_data_auto_detection]
+block	main/main_yaml/sample_data_auto_detection[block].py
+flow	main/main_yaml/sample_data_auto_detection[flow].py	= main/main_yaml/sample_data_auto_detection[block].py
 [test_main_yaml_scientific_notation]
 	main/yaml/scientific_notation.py
+[test_main_yaml_tabs_read_alike]
+libyaml-pyyaml	main/main_yaml/tabs_read_alike[libyaml-pyyaml].py
+pure-pyyaml	main/main_yaml/tabs_read_alike[pure-pyyaml].py	= main/main_yaml/tabs_read_alike[libyaml-pyyaml].py

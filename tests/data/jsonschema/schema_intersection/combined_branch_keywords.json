@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "$defs": {
+    "Code": {"type": "integer", "minimum": 1},
+    "Small": {"type": "integer"},
+    "SmallOrNull": {"type": ["integer", "null"]},
+    "NoneLeft": {"$ref": "#/$defs/Small", "enum": ["a", "b"]},
+    "NullLeft": {"$ref": "#/$defs/SmallOrNull", "enum": [null, "a"]},
+    "Nested": {
+      "type": "object",
+      "properties": {"a": {"type": "integer", "minimum": 5}},
+      "anyOf": [
+        {"properties": {"a": {"minimum": 1}, "b": {"type": "string"}}, "required": ["b"]},
+        {"required": ["a"]}
+      ]
+    }
+  },
+  "properties": {
+    "bound": {"minimum": 5, "anyOf": [{"type": "integer", "minimum": 1}, {"type": "string"}]},
+    "length": {"maxLength": 3, "oneOf": [{"type": "string", "maxLength": 10}, {"type": "integer"}]},
+    "pattern": {"pattern": "^a", "anyOf": [{"type": "string", "pattern": "b$"}, {"type": "integer"}]},
+    "multiple": {"multipleOf": 2, "anyOf": [{"type": "integer", "multipleOf": 3}, {"type": "string"}]},
+    "typed": {"type": "string", "anyOf": [{"type": ["string", "integer"], "minLength": 1}, {"maxLength": 3}]},
+    "values": {"enum": ["a", "b", 1], "anyOf": [{"type": "string", "enum": ["b", "c"]}, {"type": "integer"}]},
+    "ref_branch": {"anyOf": [{"$ref": "#/$defs/Code", "minimum": 5}, {"type": "string"}]},
+    "ref_enum": {"$ref": "#/$defs/Small", "enum": [1, "a", 2], "x-enum-varnames": ["one", "letter", "two"]},
+    "dead": {"type": "string", "anyOf": [{"type": "integer"}, {"minLength": 1}]}
+  }
+}

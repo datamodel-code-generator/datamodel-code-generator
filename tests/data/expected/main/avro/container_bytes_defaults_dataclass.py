@@ -78,7 +78,15 @@ class ContainerDefaults:
         )
     )
     record_array: list[Entry] | None = field(
-        default_factory=lambda: [{'first': 'ÿ', 'inline': b'\xff', 'reference': b'A', 'array': [b'A', b'\xff'], 'last': 'end'}]
+        default_factory=lambda: [
+            {
+                'first': 'ÿ',
+                'inline': b'\xff',
+                'reference': b'A',
+                'array': [b'A', b'\xff'],
+                'last': 'end',
+            }
+        ]
     )
     empty_record: Empty | None = field(default_factory=lambda: Empty())
     recursive: Node | None = field(

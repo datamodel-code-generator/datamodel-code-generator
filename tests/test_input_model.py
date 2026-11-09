@@ -121,7 +121,7 @@ def run_input_model_and_assert(
     *,
     input_model: str,
     output_path: Path,
-    expected_file: Path,
+    expected_file: Path | None = None,
     extra_args: Sequence[str] | None = None,
 ) -> None:
     """Run main with --input-model and assert results."""
@@ -1017,6 +1017,301 @@ def test_input_model_default_put_dict_import(tmp_path: Path) -> None:
         input_model="tests.data.python.input_model.pydantic_models:ModelWithDefaultPutDict",
         output_path=tmp_path / "output.py",
         expected_file=EXPECTED_INPUT_MODEL_PATH / "default_put_dict_import.py",
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--read-input-model-dataclass-fields-by-alias"],
+    option_description="""Read the fields of a Pydantic dataclass by their aliases with --input-model.
+
+`--input-model` gives each field the Python type of its model, such as `deque[int]`, where JSON Schema cannot spell
+it. A Pydantic dataclass is read by its annotations, keyed by field name, so a field with an alias takes the type its
+JSON Schema spells (`list[int]`) instead. With this option the fields of a Pydantic dataclass are read with their
+aliases, as those of a model, so an aliased field keeps its Python type like one without.""",
+    cli_args=["--input-model", "mymodule:Outer", "--read-input-model-dataclass-fields-by-alias"],
+    input_model="mymodule:Outer",
+    golden_output="input_model/read_dataclass_fields_by_alias[option].txt",
+    comparison_output="input_model/read_dataclass_fields_by_alias[no-option].txt",
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(["--read-input-model-dataclass-fields-by-alias"], id="option"),
+        pytest.param(
+            ["--read-input-model-dataclass-fields-by-alias", "--no-read-input-model-dataclass-fields-by-alias"],
+            id="no-option",
+        ),
+        pytest.param(["--preset", "standard-py310-20261104"], id="preset"),
+    ],
+)
+def test_input_model_read_dataclass_fields_by_alias(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, extra_args: list[str]
+) -> None:
+    """Give an aliased field of a Pydantic dataclass its Python type under the option (#5541).
+
+    Without it ``myItems`` is typed ``list[int]`` and ``other_items`` ``deque[int]``, as in 0.89.0. The input module,
+    a Pydantic dataclass whose deque fields JSON Schema cannot spell, one of them under an alias, is written for the
+    test, as tests/data/python holds no new modules.
+    """
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, "dataclass_field_aliases", raising=False)
+    (tmp_path / "dataclass_field_aliases.py").write_text(
+        "from collections import deque\n\n"
+        "from pydantic import BaseModel, Field\n"
+        "from pydantic.dataclasses import dataclass\n\n\n"
+        "@dataclass\n"
+        "class Inner:\n"
+        "    my_items: deque[int] = Field(default_factory=deque, alias='myItems')\n"
+        "    other_items: deque[int] = Field(default_factory=deque)\n\n\n"
+        "class Outer(BaseModel):\n"
+        "    inner: Inner\n",
+        encoding="utf-8",
+    )
+    run_input_model_and_assert(
+        input_model="dataclass_field_aliases:Outer",
+        output_path=tmp_path / "output.py",
+        extra_args=extra_args,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="released"), pytest.param(["--read-input-model-dataclass-fields-by-alias"], id="option")],
+)
+def test_input_model_dataclass_fields_of_one_alias(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, extra_args: list[str]
+) -> None:
+    """Type the property two fields of a Pydantic dataclass share by the last of them, whose schema Pydantic writes.
+
+    The input is the dataclass itself, whose schema marks no owner of a property, so ``shared`` is ``str`` under
+    ``--read-input-model-dataclass-fields-by-alias`` as without it, not the ``deque[int]`` of the first field.
+    """
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, "dataclass_fields_of_one_alias", raising=False)
+    (tmp_path / "dataclass_fields_of_one_alias.py").write_text(
+        "from collections import deque\n\n"
+        "from pydantic import Field\n"
+        "from pydantic.dataclasses import dataclass\n\n\n"
+        "@dataclass\n"
+        "class Shared:\n"
+        "    first: deque[int] = Field(alias='shared')\n"
+        "    last: str = Field(alias='shared')\n",
+        encoding="utf-8",
+    )
+    run_input_model_and_assert(
+        input_model="dataclass_fields_of_one_alias:Shared",
+        output_path=tmp_path / "output.py",
+        extra_args=extra_args,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(["--use-x-python-type-as-written"], id="option"),
+        pytest.param(["--preset", "standard-py310-20261106"], id="preset"),
+    ],
+)
+def test_input_model_abstract_containers_as_written(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, extra_args: list[str]
+) -> None:
+    """Write the container classes of a Pydantic model's fields as the model types them under the option (#6138).
+
+    Without it ``MutableSequence`` is written as ``Sequence``, ``MutableSet`` as ``set``, ``AbstractSet`` as
+    ``frozenset`` and ``MutableMapping`` as ``Mapping``, as in 0.90.0. With it each keeps its class around the schema's
+    items: ``Pet`` stays the generated model, with no import of the input module, and the nicknames keep their length.
+    The input module is written for the test, as tests/data/python holds no new modules.
+    """
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, "abstract_containers", raising=False)
+    (tmp_path / "abstract_containers.py").write_text(
+        "from collections.abc import MutableMapping, MutableSequence, MutableSet, Sequence\n"
+        "from typing import AbstractSet, Annotated\n\n"
+        "from pydantic import BaseModel, Field\n\n\n"
+        "class Pet(BaseModel):\n"
+        "    name: str\n\n\n"
+        "class Owner(BaseModel):\n"
+        "    pets: MutableSequence[Pet]\n"
+        "    nicknames: MutableSequence[Annotated[str, Field(max_length=3)]]\n"
+        "    ids: MutableSet[int]\n"
+        "    frozen_ids: AbstractSet[int]\n"
+        "    by_name: MutableMapping[str, Pet]\n"
+        "    scores: Sequence[int]\n",
+        encoding="utf-8",
+    )
+    run_input_model_and_assert(
+        input_model="abstract_containers:Owner",
+        output_path=tmp_path / "output.py",
+        extra_args=["--disable-timestamp", "--formatters", "builtin", *extra_args],
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(["--use-x-python-type-as-written"], id="option"),
+    ],
+)
+def test_input_model_variadic_tuple_as_written(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, extra_args: list[str]
+) -> None:
+    """Write a variadic tuple field of a Pydantic model as a tuple under the option (#6458).
+
+    Without it the field is a list, as in 0.90.0; a fixed-length tuple is a tuple either way, as its schema keeps the
+    item types by position.
+    """
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, "variadic_tuples", raising=False)
+    (tmp_path / "variadic_tuples.py").write_text(
+        "from typing import Annotated\n\n"
+        "from pydantic import BaseModel, Field\n\n\n"
+        "class Owner(BaseModel):\n"
+        "    point: tuple[int, ...]\n"
+        "    named: Annotated[tuple[int, ...], Field(min_length=1)]\n"
+        "    pair: tuple[int, str]\n"
+        "    maybe: tuple[str, ...] | None = None\n",
+        encoding="utf-8",
+    )
+    run_input_model_and_assert(
+        input_model="variadic_tuples:Owner",
+        output_path=tmp_path / "output.py",
+        extra_args=["--disable-timestamp", "--formatters", "builtin", *extra_args],
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--reuse-every-reached-input-model-type"],
+    option_description="""Reach the types to reuse through every model kind and write no copy of an imported type.
+
+With `--input-model-ref-strategy reuse-all` or `reuse-foreign` the types an input model reaches are imported from its
+module instead of generated. Reuse follows the fields of Pydantic models only, so a type reached through a dataclass
+field is still generated: `Color`, which only the dataclass `Box` uses, is written although `Box` is imported
+(reuse-all), or written beside the imported `Size` (reuse-foreign). A field whose Python type the output keeps, such as
+`Mapping[str, Item]`, imports `Item`, and a copy of `Item` (`ItemModel`) is written too. With this option reuse follows
+the fields of dataclasses, TypedDicts and msgspec Structs too, and a type that the Python type of a field imports is
+reused instead of copied, so references to it name the import.""",
+    cli_args=[
+        "--input-model",
+        "mymodule:Order",
+        "--input-model-ref-strategy",
+        "reuse-foreign",
+        "--reuse-every-reached-input-model-type",
+    ],
+    input_model="mymodule:Order",
+    golden_output="input_model/reuse_every_reached_input_model_type[order-reuse-foreign-option].txt",
+    comparison_output="input_model/reuse_every_reached_input_model_type[order-reuse-foreign].txt",
+)
+@pytest.mark.parametrize(
+    ("input_models", "extra_args"),
+    [
+        pytest.param(["Order"], ["--input-model-ref-strategy", "reuse-all"], id="order-reuse-all"),
+        pytest.param(
+            ["Order"],
+            ["--input-model-ref-strategy", "reuse-all", "--reuse-every-reached-input-model-type"],
+            id="order-reuse-all-option",
+        ),
+        pytest.param(["Order"], ["--input-model-ref-strategy", "reuse-foreign"], id="order-reuse-foreign"),
+        pytest.param(
+            ["Order"],
+            ["--input-model-ref-strategy", "reuse-foreign", "--reuse-every-reached-input-model-type"],
+            id="order-reuse-foreign-option",
+        ),
+        pytest.param(
+            ["Order"],
+            [
+                "--input-model-ref-strategy",
+                "reuse-foreign",
+                "--reuse-every-reached-input-model-type",
+                "--no-reuse-every-reached-input-model-type",
+            ],
+            id="order-reuse-foreign-no-option",
+        ),
+        pytest.param(
+            ["Order"],
+            ["--input-model-ref-strategy", "reuse-foreign", "--preset", "standard-py310-20261106"],
+            id="order-reuse-foreign-preset",
+        ),
+        pytest.param(
+            ["Outer"],
+            ["--input-model-ref-strategy", "reuse-foreign", "--output-model-type", "typing.TypedDict"],
+            id="outer-reuse-foreign",
+        ),
+        pytest.param(
+            ["Outer"],
+            [
+                "--input-model-ref-strategy",
+                "reuse-foreign",
+                "--output-model-type",
+                "typing.TypedDict",
+                "--reuse-every-reached-input-model-type",
+            ],
+            id="outer-reuse-foreign-option",
+        ),
+        pytest.param(
+            ["Outer", "Plain"],
+            ["--input-model-ref-strategy", "reuse-foreign", "--output-model-type", "typing.TypedDict"],
+            id="outer-plain-reuse-foreign",
+        ),
+        pytest.param(
+            ["Outer", "Plain"],
+            [
+                "--input-model-ref-strategy",
+                "reuse-foreign",
+                "--output-model-type",
+                "typing.TypedDict",
+                "--reuse-every-reached-input-model-type",
+            ],
+            id="outer-plain-reuse-foreign-option",
+        ),
+    ],
+)
+def test_input_model_reuse_every_reached_input_model_type(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, input_models: list[str], extra_args: list[str]
+) -> None:
+    """Reuse the types reached through a dataclass and import a type a field's Python type imports (#5949, #5542).
+
+    Without the option ``Color``, reached only through the dataclass ``Box``, is generated (reuse-all), or generated
+    beside the imported ``Size`` (reuse-foreign), and ``Outer`` writes ``ItemModel``, an unused copy of the ``Item`` its
+    ``Mapping[str, Item]`` and ``Mapping[str, list[Item]]`` fields import, as in 0.89.0. With it ``Color`` is imported
+    or left out, and ``Item`` is imported only, also where ``Plain`` names it by a reference. The input module is
+    written for the test, as tests/data/python holds no new modules.
+    """
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, "reached_types", raising=False)
+    (tmp_path / "reached_types.py").write_text(
+        "from collections.abc import Mapping\n"
+        "from dataclasses import dataclass\n"
+        "from enum import Enum\n\n"
+        "from pydantic import BaseModel\n\n\n"
+        "class Color(Enum):\n"
+        "    RED = 'red'\n"
+        "    BLUE = 'blue'\n\n\n"
+        "class Size(Enum):\n"
+        "    S = 's'\n"
+        "    L = 'l'\n\n\n"
+        "@dataclass\n"
+        "class Box:\n"
+        "    color: Color\n\n\n"
+        "class Order(BaseModel):\n"
+        "    box: Box\n"
+        "    size: Size\n\n\n"
+        "class Item(BaseModel):\n"
+        "    name: str\n\n\n"
+        "class Outer(BaseModel):\n"
+        "    items: Mapping[str, Item] | None = None\n"
+        "    groups: Mapping[str, list[Item]] | None = None\n\n\n"
+        "class Plain(BaseModel):\n"
+        "    item: Item\n",
+        encoding="utf-8",
+    )
+    first, *others = input_models
+    run_input_model_and_assert(
+        input_model=f"reached_types:{first}",
+        output_path=tmp_path / "output.py",
+        extra_args=[*(arg for other in others for arg in ("--input-model", f"reached_types:{other}")), *extra_args],
     )
 
 

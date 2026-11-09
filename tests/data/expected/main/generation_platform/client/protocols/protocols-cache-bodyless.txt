@@ -1,0 +1,3 @@
+# protocols-cache-bodyless
+render pydantic_v2.BaseModel
+  Error: --client-protocols['range'].statuses[1]: The cacheable status 204 of 'range' has a response other than one natively decoded JSON body, which is not supported yet; --client-protocols['fallback'].statuses[1]: The cacheable status 205 of 'fallback' has a response other than one natively decoded JSON body, which is not supported yet

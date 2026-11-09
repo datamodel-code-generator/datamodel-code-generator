@@ -14,14 +14,15 @@ from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.pagination import (
     _label,
     _overlaps,
-    _page_use,
     _Pages,
-    _parameter_key,
     _problem,
+    _relation,
     _target_key,
-    credential_place,
+    _value_types_problem,
 )
 from datamodel_code_generator._client.polling import _Polls, _Source
+from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterator, Mapping
@@ -31,7 +32,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ParameterSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
+    from datamodel_code_generator._target_contract import TypeUseId
 
 __all__ = ("UploadSpec", "plan_uploads")
 
@@ -44,51 +45,35 @@ _STRING: Final = frozenset({"string"})
 class UploadSpec:
     """An upload helper ready to render: its operations, the create parameter the size fills, and its result.
 
-    `create_uses` are the uses of the create operation's success media. A helper completing with an operation returns
-    that operation's response, whose use is `completion_use`; one completing by length returns None.
+    A helper completing with an operation returns that operation's response; one completing by length returns None.
     """
 
     helper: Helper
     operation: OperationSpec
     probe: OperationSpec
     append: OperationSpec
-    create_uses: tuple[TypeUseBinding, ...] = ()
     size: ParameterSpec | None = None
     completion: OperationSpec | None = None
-    completion_use: TypeUseBinding | None = None
-    schemas: tuple[Mapping[str, str], ...] = ()
-
-
-class _Checks(_Polls):
-    """The polling checks of reads, bindings, and targets, leaving required arguments to the upload checks."""
-
-    @staticmethod
-    def required(
-        helper: Helper, spec: OperationSpec, written: list[tuple[str, ...]], at: str, *, complete: bool = True
-    ) -> Iterator[Diagnostic]:
-        """Check nothing here; an upload's required arguments count its offset, length, and size writes too."""
-        del helper, spec, written, at, complete
-        return iter(())
 
 
 def _parameter(spec: OperationSpec, target: Mapping[str, Any]) -> ParameterSpec:
     """Return the parameter of an operation that a parameter target names."""
     key = _target_key(target)
-    return next(item for item in spec.parameters if _parameter_key(item.location, item.wire_name) == key)
+    return next(item for item in spec.parameters if parameter_key(item.location, item.wire_name) == key)
 
 
 class _Uploads:
     """Check and plan every enabled upload helper of a client target."""
 
-    def __init__(self, checks: _Checks) -> None:
+    def __init__(self, checks: _Polls) -> None:
         """Keep the shared polling and pagination checks."""
         self.checks = checks
         self.pages = checks.pages
 
-    def helper(self, helper: Helper) -> tuple[UploadSpec | None, list[Diagnostic]]:
+    def helper(self, helper: Helper, create: OperationSpec) -> tuple[UploadSpec | None, list[Diagnostic]]:
         """Check one enabled helper against its operations, and plan it when every check passes."""
         tree = helper.tree
-        create, probe, append = (self.checks.spec(tree[name]["operation"]) for name in ("create", "probe", "append"))
+        probe, append = (self.pages.spec(tree[name]["operation"]) for name in ("probe", "append"))
         problems = list(self.unsupported(helper, create))
         created = self.created(helper, create, problems)
         sources = {"initial": created, "previous": []}
@@ -99,19 +84,8 @@ class _Uploads:
         completion = self.completion(helper, sources, problems)
         if problems:
             return None, problems
-        completed, use, schema = completion or (None, None, None)
         return UploadSpec(
-            helper=helper,
-            operation=create,
-            probe=probe,
-            append=append,
-            create_uses=tuple(
-                media.use for response in create.responses if response.success for media in response.media if media.use
-            ),
-            size=size,
-            completion=completed,
-            completion_use=use,
-            schemas=() if schema is None else (schema,),
+            helper=helper, operation=create, probe=probe, append=append, size=size, completion=completion
         ), problems
 
     @staticmethod
@@ -123,16 +97,22 @@ class _Uploads:
             (f"{helper.at}.create.session_url", "session_url" in tree["create"], "a session URL"),
         ):
             if present:
-                message = f"The resumable_upload helper {helper.name!r} declares {what}, which is not supported yet"
+                message = (
+                    f"The resumable_upload helper {stable_repr(helper.name)} declares {what}, which is not supported "
+                    "yet"
+                )
                 yield _problem("E_CLIENT_UNSUPPORTED", "target", where, message, create)
+
+    def successes(self, spec: OperationSpec) -> list[_Source]:
+        """Return an operation's success responses, each with the type of its JSON body with a codec."""
+        return [_Source(spec, response, self.checks.model(response)) for response in spec.responses if response.success]
 
     def created(self, helper: Helper, create: OperationSpec, problems: list[Diagnostic]) -> list[_Source]:
         """Return the create operation's success responses, refusing an operation without one."""
-        sources = [
-            _Source(create, response, self.checks.model(response)) for response in create.responses if response.success
-        ]
-        if not sources:
-            message = f"{_label(create)} must declare a success response for the upload helper {helper.name!r}"
+        if not (sources := self.successes(create)):
+            message = (
+                f"{_label(create)} must declare a success response for the upload helper {stable_repr(helper.name)}"
+            )
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{helper.at}.create.operation", message, create))
         return sources
 
@@ -146,18 +126,16 @@ class _Uploads:
         types: frozenset[str] = _INTEGER,
     ) -> Iterator[Diagnostic]:
         """Check that a count or checksum goes to a path, query, or header parameter of its types, never credentials."""
-        name, pages = helper.name, self.pages
-        if (place := credential_place(target, pages.secret_headers, pages.secret_queries, spec)) is not None:
-            message = f"The {what} of {name!r} writes {place}, which carries credentials no helper writes"
-            yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
+        if (problem := self.pages.credential(helper, spec, target, at, what)) is not None:
+            yield problem
         elif target["in"] not in _PARAMETERS:
             message = (
-                f"The {what} of {name!r} writes {target['in']!r}, where only a path, query, or header parameter "
-                "takes it"
+                f"The {what} of {stable_repr(helper.name)} writes {stable_repr(target['in'])}, where only a path, "
+                "query, or header parameter takes it"
             )
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
         else:
-            yield from pages.fits(helper, spec, target, types, at, what, null=False)
+            yield from self.pages.fits(helper, spec, target, types, at, what, null=False)
 
     def size(self, helper: Helper, create: OperationSpec, problems: list[Diagnostic]) -> ParameterSpec | None:
         """Check where the create operation writes the content's size, returning the parameter it fills."""
@@ -175,7 +153,7 @@ class _Uploads:
             return
         spec = sources[0].spec
         if read["from"] == "status":
-            message = f"The {what} of {helper.name!r} reads the status, which gives no {what}"
+            message = f"The {what} of {stable_repr(helper.name)} reads the status, which gives no {what}"
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
             return
         types = self.checks.read(helper, sources, read, at, what)
@@ -184,8 +162,7 @@ class _Uploads:
             return
         allowed = {wanted, *(("string",) if read["from"] == "header" else ())}
         if types is not None and (others := sorted(types - allowed)):
-            message = f"The {what} of {helper.name!r} reads {', '.join(others)} values, where only {wanted} values fit"
-            yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
+            yield _value_types_problem(helper, spec, what, others, f"{wanted} values fit", at, joined=", ".join)
 
     def expiry(self, helper: Helper, created: list[_Source]) -> Iterator[Diagnostic]:
         """Check that a server expiry reads strings from every create response."""
@@ -206,69 +183,34 @@ class _Uploads:
             where = f"{at}[{index}]"
             if item["value"].get("source") == "previous":
                 message = (
-                    f"The {part} binding {index} of {helper.name!r} reads the previous response, which is not "
-                    "supported yet"
+                    f"The {part} binding {index} of {stable_repr(helper.name)} reads the previous response, which is "
+                    "not supported yet"
                 )
                 yield _problem("E_CLIENT_UNSUPPORTED", "target", f"{where}.value.source", message, spec)
             if part == "append" and item["target"]["in"] == "body":
                 refused = True
-                message = f"The append binding {index} of {helper.name!r} writes the request body, which is the chunk"
+                message = (
+                    f"The append binding {index} of {stable_repr(helper.name)} writes the request body, which is the "
+                    "chunk"
+                )
                 yield _problem("E_CONFIG_VALUE", "config", f"{where}.target", message, spec)
         if not refused:
-            yield from self.checks.bindings(helper, spec, bindings, at, sources, f"{part} binding")
+            yield from self.checks.bindings(helper, spec, bindings, at, sources, f"{part} binding", required=False)
 
     @staticmethod
     def required(
         helper: Helper, spec: OperationSpec, part: str, written: list[tuple[str, ...]], *, body: bool = True
     ) -> Iterator[Diagnostic]:
-        """Refuse a required parameter or body of an operation that nothing the helper writes fills.
-
-        A body a binding writes must be JSON with a default media type; an append's body is its chunk instead.
-        """
-        at = f"{helper.at}.{part}.bindings"
-        label = _label(spec)
-        locations = {key[0] for key in written}
-        for parameter in spec.parameters:
-            location = parameter.location
-            unwritten = (
-                location not in locations
-                if location == "querystring"
-                else _parameter_key(location, parameter.wire_name) not in written
-            )
-            if parameter.required and unwritten:
-                message = (
-                    f"{label} requires the {location} parameter {parameter.wire_name!r}, which no binding of "
-                    f"{helper.name!r} writes"
-                )
-                yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
-        if (request := spec.body) is None or not body:
-            return
-        if "body" in locations and any(media.kind != "json" for media in request.media):
-            message = (
-                f"The upload helper {helper.name!r} writes a request body of {label} other than JSON, which is not "
-                "supported yet"
-            )
-            yield _problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec)
-        elif "body" in locations and request.default is None:
-            message = (
-                f"The upload helper {helper.name!r} writes a request body of {label}, which has no default media "
-                "type; set the operation's request_media_type"
-            )
-            yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
-        elif request.required and "body" not in locations:
-            message = f"{label} requires a request body, which no binding of {helper.name!r} writes"
-            yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
+        """Refuse a required parameter or body of one call that nothing the helper writes fills."""
+        return _Polls.required(helper, spec, written, f"{helper.at}.{part}.bindings", body=body)
 
     def probe(self, helper: Helper, probe: OperationSpec, sources: Mapping[str, list[_Source]]) -> Iterator[Diagnostic]:
         """Check the probe: its bindings, what it requires, and a success response giving the remote offset."""
         at = f"{helper.at}.probe"
         yield from self.bindings(helper, probe, "probe", sources)
         yield from self.required(helper, probe, "probe", self.keys(helper.tree["probe"]["bindings"]))
-        offered = [
-            _Source(probe, response, self.checks.model(response)) for response in probe.responses if response.success
-        ]
-        if not offered:
-            message = f"{_label(probe)} must declare a success response for the probe of {helper.name!r}"
+        if not (offered := self.successes(probe)):
+            message = f"{_label(probe)} must declare a success response for the probe of {stable_repr(helper.name)}"
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, probe)
             return
         read = helper.tree["probe"]["remote_offset"]
@@ -286,10 +228,12 @@ class _Uploads:
         tree, at, name = helper.tree["append"], f"{helper.at}.append", helper.name
         body = append.body
         if body is None or len(body.media) != 1 or body.media[0].kind != "binary":
-            message = f"{_label(append)} must take exactly one binary request media for the chunks of {name!r}"
+            message = (
+                f"{_label(append)} must take exactly one binary request media for the chunks of {stable_repr(name)}"
+            )
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, append)
         if not any(response.success for response in append.responses):
-            message = f"{_label(append)} must declare a success response for the appends of {name!r}"
+            message = f"{_label(append)} must declare a success response for the appends of {stable_repr(name)}"
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, append)
         written = self.keys(tree["bindings"])
         owners = [f"its append binding {index}" for index in range(len(written))]
@@ -305,7 +249,9 @@ class _Uploads:
             if (
                 clash := next((index for index, other in enumerate(written) if _overlaps(key, other)), None)
             ) is not None:
-                message = f"The chunk {what} of {name!r} writes the same target as {owners[clash]}"
+                message = (
+                    f"The chunk {what} of {stable_repr(name)} writes {_relation(key, written[clash])} {owners[clash]}"
+                )
                 yield _problem("E_CONFIG_CONFLICT", "config", where, message, append)
                 continue
             written.append(key)
@@ -316,33 +262,25 @@ class _Uploads:
 
     def completion(
         self, helper: Helper, sources: Mapping[str, list[_Source]], problems: list[Diagnostic]
-    ) -> tuple[OperationSpec, TypeUseBinding, Mapping[str, str]] | None:
+    ) -> OperationSpec | None:
         """Check a completion operation: one JSON success response of the result schema, and its bindings."""
-        completion, at, name = helper.tree["completion"], f"{helper.at}.completion", helper.name
+        completion, at, pages = helper.tree["completion"], f"{helper.at}.completion", self.pages
         if completion["kind"] != "operation":
             return None
-        spec = self.checks.spec(completion["operation"])
-        successes = [response for response in spec.responses if response.success]
-        if (use := _page_use(successes)) is None or self.checks.model(successes[0]) is None:
-            message = f"{_label(spec)} must declare exactly one JSON success response for the completion of {name!r}"
-            problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, spec))
+        spec = pages.spec(completion["operation"])
+        if isinstance(
+            single := pages.single(spec, f"{at}.operation", f"completion of {stable_repr(helper.name)}"), Diagnostic
+        ):
+            problems.append(single)
             return None
-        reference = completion["result_schema"]
-        pages = self.pages
-        if (expected := pages.item_type(reference, use.id.direction)) == "missing":
-            message = f"The result schema {reference.pointer!r} of {name!r} does not exist in its document"
-            problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.result_schema", message, spec))
-            return None
-        if not pages.same(use.type, expected):
-            message = (
-                f"The result schema {reference.pointer!r} of {name!r} is not the schema of the {_label(spec)} response"
-            )
-            problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.result_schema", message, spec))
+        use, reference, mismatch = single[1], completion["result_schema"], f"the schema of the {_label(spec)} response"
+        where = f"{at}.result_schema"
+        if found := pages.schema(helper, spec, reference, use.type, use.id.direction, where, "result schema", mismatch):
+            problems.append(found)
             return None
         problems.extend(self.bindings(helper, spec, "completion", sources))
         problems.extend(self.required(helper, spec, "completion", self.keys(completion["bindings"])))
-        schema = {"document": self.checks.protocols.documents[reference], "pointer": reference.pointer}
-        return spec, use, schema
+        return spec
 
 
 def plan_uploads(
@@ -355,14 +293,5 @@ def plan_uploads(
     """Plan every enabled upload helper, returning them and each checked helper's problems."""
     if protocols is None:
         return (), {}
-    operations = {spec.contract.id: spec for spec in plan.operations}
-    uploads = _Uploads(_Checks(_Pages(protocols, plan, facts, codecs, request), operations, protocols))
-    specs: list[UploadSpec] = []
-    problems: dict[str, list[Diagnostic]] = {}
-    for helper in protocols.helpers:
-        if not helper.enabled or helper.kind != "resumable_upload":
-            continue
-        planned, problems[helper.name] = uploads.helper(helper)
-        if planned is not None:
-            specs.append(planned)
-    return tuple(specs), problems
+    uploads = _Uploads(_Polls(_Pages(protocols, plan, facts, codecs, request)))
+    return uploads.pages.each(("resumable_upload",), uploads.helper)

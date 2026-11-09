@@ -1,0 +1,12 @@
+models shared True
+# tag_forms in-process sync, in-process async
+get_oxia
+  > GET /oxia
+  get_oxia()
+  < 200 application/json
+  = OxiaGetResponse(root='oxia')
+get_tonos
+  > GET /tonos
+  get_tonos()
+  < 200 application/json
+  = TonosGetResponse(root='tonos')

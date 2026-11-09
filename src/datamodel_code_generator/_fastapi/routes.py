@@ -2,20 +2,21 @@
 
 from __future__ import annotations
 
-import keyword
 import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 from urllib.parse import unquote
 
-from datamodel_code_generator._target_contract import LiteralScalar, LiteralSequence
+from datamodel_code_generator._free_names import first_free
+from datamodel_code_generator._target_naming import PATH_PLACEHOLDER, path_placeholders
+from datamodel_code_generator._target_operations import group_tag
+from datamodel_code_generator._target_unicode import is_python_name
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from datamodel_code_generator._target_contract import OperationContract
 
-_PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _UNMATCHABLE: Final = re.compile(r"%(?:2[Ff]|7[BbDd])")
 _SLOT_PREFIX: Final = "dcg_p"
 BUILDER_NAMES: Final = frozenset({
@@ -78,11 +79,10 @@ class RouteError(ValueError):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PathSlot:
-    """One placeholder the route path renames: its wire name, internal slot name, and occurrence index."""
+    """One placeholder the route path renames: its wire name, and internal slot name."""
 
     wire_name: str
     slot: str
-    occurrence: int
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -104,11 +104,11 @@ class RoutePath:
 
         Its literal text is decoded, as the route matches it, so `/a b` and `/a%20b` have one shape.
         """
-        return _PLACEHOLDER.sub("{}", self.route_path)
+        return PATH_PLACEHOLDER.sub("{}", self.route_path)
 
     def written(self) -> str:
         """Return the path as the document writes it, with every placeholder erased."""
-        return _PLACEHOLDER.sub("{}", self.path)
+        return PATH_PLACEHOLDER.sub("{}", self.path)
 
 
 def placeholders(path: str) -> tuple[str, ...]:
@@ -117,11 +117,12 @@ def placeholders(path: str) -> tuple[str, ...]:
     Starlette routes by the percent-decoded path, so literal text that encodes `/`, `{`, or `}` is refused too: no
     route of decoded text matches it as a client sends it.
     """
-    names = tuple(_PLACEHOLDER.findall(path))
-    if _PLACEHOLDER.sub("", path).count("{") or _PLACEHOLDER.sub("", path).count("}"):
+    names = tuple(path_placeholders(path))
+    literal = PATH_PLACEHOLDER.sub("", path)
+    if literal.count("{") or literal.count("}"):
         msg = "The path has an unmatched brace"
         raise RouteError(msg)
-    if any(_UNMATCHABLE.search(text) for text in _PLACEHOLDER.split(path)[::2]):
+    if any(_UNMATCHABLE.search(text) for text in PATH_PLACEHOLDER.split(path)[::2]):
         msg = "The path's literal text encodes '/', '{', or '}', which a route cannot match"
         raise RouteError(msg)
     for name in names:
@@ -142,44 +143,28 @@ def route_path(path: str, taken: Iterable[str], *, repeatable: bool) -> RoutePat
         msg = "OpenAPI 3.2 does not allow a placeholder twice in one path"
         raise RouteError(msg)
     reserved = {*names, *taken}
-    counts: dict[str, int] = {}
     slots: list[PathSlot] = []
     index = 0
     parts: list[str] = []
     position = 0
-    for match in _PLACEHOLDER.finditer(path):
+    for match in PATH_PLACEHOLDER.finditer(path):
         name = match.group(1)
-        occurrence = counts.get(name, 0)
-        counts[name] = occurrence + 1
-        if _plain(name) and names.count(name) == 1 and name not in taken:
+        if is_python_name(name, rule="ascii") and names.count(name) == 1 and name not in taken:
             slot = name
         else:
-            while (slot := f"{_SLOT_PREFIX}{index}") in reserved:
-                index += 1
-            index += 1
-            slots.append(PathSlot(wire_name=name, slot=slot, occurrence=occurrence))
+            slot, index = first_free(_SLOT_PREFIX, reserved.__contains__, "joined-from-0", start=index + 1)
+            slots.append(PathSlot(wire_name=name, slot=slot))
         parts.extend((unquote(path[position : match.start()]), f"{{{slot}}}"))
         position = match.end()
     parts.append(unquote(path[position:]))
     return RoutePath(path=path, route_path="".join(parts), placeholders=names, slots=tuple(slots))
 
 
-def _plain(name: str) -> bool:
-    return name.isascii() and name.isidentifier() and not keyword.iskeyword(name)
-
-
-def tags(operation: OperationContract) -> tuple[str, ...]:
-    """Return an operation's tags in declaration order."""
-    if not isinstance(value := dict(operation.facts).get("tags"), LiteralSequence):
-        return ()
-    return tuple(item.value for item in value.items if isinstance(item, LiteralScalar) and isinstance(item.value, str))
-
-
 def group_key(operation: OperationContract, *, single: bool) -> str:
     """Return the group of an operation: its first tag, default without tags, or all for the single layout."""
     if single:
         return "all"
-    return f"tag:{found[0]}" if (found := tags(operation)) else "default"
+    return "default" if (tag := group_tag(operation)) is None else f"tag:{tag}"
 
 
 def group_basis(key: str) -> str:

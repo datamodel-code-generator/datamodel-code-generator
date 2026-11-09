@@ -1,21 +1,26 @@
-"""Helper limits and the helper settings of a client; UNSET takes the merged default."""
+"""Helper limits, the step lock of a helper's handle, and the helper settings of a client; UNSET takes the default."""
 
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass
 from inspect import iscoroutinefunction
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, TypeAlias, cast
+from typing import TYPE_CHECKING, ClassVar, Final, TypeAlias, cast
 
-from typing_extensions import TypeVar
+from typing_extensions import Self, TypeVar
 
 from ..client.errors import ConfigurationError
-from ..client.timing import check_limits
+from ..client.options import RequestOptions
+from ..client.timing import SYSTEM_CLOCK, check_limits
 from ..model_codecs.unset import UNSET
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
+    from types import TracebackType
 
+    from ..client.logical import OperationSession
+    from ..client.timing import Clock
     from .origins import Origin
 
 V = TypeVar("V")
@@ -51,12 +56,113 @@ _CACHE: Final = (("max_ttl", True, False, False),)
 _CACHE_METHODS: Final = ("get", "set", "delete")
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HelperLimits:
+    """The limits every helper call has: its session's total timeout, the call's options, and the client's clock."""
+
+    total_timeout: float | None = None
+    options: RequestOptions | None = None
+    clock: Clock = SYSTEM_CLOCK
+
+
 def layered(layers: tuple[object, ...], name: str, default: V) -> V:
     """Return an option from the first layer that sets it, skipping None and UNSET layers, or its default."""
     for layer in layers:
         if layer is not None and layer is not UNSET and (value := getattr(layer, name)) is not UNSET:
             return cast("V", value)
     return default
+
+
+def checked_options(helper_id: str, name: str, value: object, kind: type, options: object) -> RequestOptions | None:
+    """Refuse a call's helper options, then its request options, of another type; return the request options."""
+    for field, given, expected in ((name, value, kind), ("options", options, RequestOptions)):
+        if given is not None and not isinstance(given, expected):
+            raise ConfigurationError(field_path=(field,), reason="invalid_value", helper_id=helper_id)
+    return options if isinstance(options, RequestOptions) else None
+
+
+def new_session(limits: HelperLimits) -> OperationSession:
+    """Start the session of one helper call."""
+    from ..client.logical import OperationSession  # noqa: PLC0415 - Only a started helper loads the call runtime.
+
+    return OperationSession(total_timeout=limits.total_timeout, clock=limits.clock)
+
+
+class StepLock:
+    """The one step a helper's handle runs at a time, and the refusals of a step its state forbids.
+
+    A step while another one runs is refused with the state `_busy` names, and a step of a closed handle with `closed`.
+    """
+
+    __slots__ = ("_closed", "_helper_id", "_lock")
+
+    _busy: ClassVar[str]
+
+    def __init__(self, helper_id: str) -> None:
+        """Start an open handle that runs no step."""
+        self._helper_id = helper_id
+        self._lock = threading.Lock()
+        self._closed = False
+
+    def _state_error(self, action: str, state: str) -> ConfigurationError:
+        from .errors import state_error  # noqa: PLC0415 - Only a refused step loads the helper errors.
+
+        return state_error(self._helper_id, action, state)
+
+    def _refused(self) -> str | None:
+        """Return the state that refuses every step of the handle, or None."""
+        return "closed" if self._closed else None
+
+    def _enter(self, action: str) -> None:
+        """Take the handle for one step, refusing a concurrent step and a handle whose state refuses steps."""
+        if not self._lock.acquire(blocking=False):
+            raise self._state_error(action, self._busy)
+        if (state := self._refused()) is not None:
+            self._lock.release()
+            raise self._state_error(action, state)
+
+    def _close(self, action: str, *, quiet: bool = False) -> None:
+        """Close the handle, refusing while a step runs, or leaving it open then when `quiet`."""
+        if not self._lock.acquire(blocking=False):
+            if quiet:
+                return
+            raise self._state_error(action, self._busy)
+        self._closed = True
+        self._lock.release()
+
+
+class StepHandle:
+    """A `StepLock` handle mixin: leaving its `with` block closes; while another step runs, the error is not masked."""
+
+    __slots__ = ()
+
+    def __enter__(self) -> Self:
+        """Return this handle, which leaving the block closes."""
+        return self
+
+    def __exit__(
+        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
+    ) -> None:
+        """Close the handle; while another step runs, leave it open rather than mask the block's error."""
+        lock = cast("StepLock", self)
+        lock._close("close", quiet=exc is not None)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+
+
+class AsyncStepHandle:
+    """An asyncio `StepLock` handle mixin: leaving its `async with` block closes, as a `StepHandle` does."""
+
+    __slots__ = ()
+
+    async def __aenter__(self) -> Self:
+        """Return this handle, which leaving the block closes."""
+        return self
+
+    async def __aexit__(
+        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
+    ) -> None:
+        """Close the handle; while another step runs, leave it open rather than mask the block's error."""
+        lock = cast("StepLock", self)
+        lock._close("aclose", quiet=exc is not None)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
 def _instance(value: object, kinds: tuple[type, ...], name: str) -> None:

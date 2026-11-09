@@ -1,0 +1,20 @@
+openapi: "3.0.3"
+info:
+  title: Tabs in text
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Clutter:
+      type: object
+      description: |-
+        	
+        Attenuation of each material.
+      properties:
+        material:
+          type: string
+          description: Trees	0.25,	Timber	1.0
+          default: Trees	0.25
+        code:
+          type: integer
+          description: The material code.	

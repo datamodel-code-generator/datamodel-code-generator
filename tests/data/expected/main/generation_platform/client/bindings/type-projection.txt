@@ -35,110 +35,111 @@ change pydantic_v2.BaseModel default positional-field-default
   -    child: Optional[Child] = None
   +    child: Optional[Child] = Field(None, 'extra')
 render msgspec.Struct default
+  warning UserWarning: a Literal of the output model cannot hold the value True, so it is written as its type, which admits other values; Types.literal is generated without this constraint.
   models.py
   model_bindings.py msgspec_Struct/default
 change msgspec.Struct default builtin
-  @@ -20 +20 @@
+  @@ -21 +21 @@
   -    flag: Union[bool, UnsetType] = UNSET
   +    flag: Union[int, UnsetType] = UNSET
 change msgspec.Struct default reference
-  @@ -30 +30 @@
+  @@ -31 +31 @@
   -    child: Union[Child, UnsetType] = UNSET
   +    child: Union[Types, UnsetType] = UNSET
 change msgspec.Struct default import
-  @@ -35 +35 @@
+  @@ -36 +36 @@
   -    native: Union[UUID, UnsetType] = UNSET
   +    native: Union[str, UnsetType] = UNSET
 change msgspec.Struct default bound
-  @@ -36 +36 @@
+  @@ -37 +37 @@
   -    bound_native: Union[argparse.HelpFormatter._Section, UnsetType] = UNSET
   +    bound_native: Union[argparse.HelpFormatter, UnsetType] = UNSET
 change msgspec.Struct default import-shadow
-  @@ -10,0 +11 @@
+  @@ -11,0 +12 @@
   +argparse = object()
 change msgspec.Struct default qualified-call-shadow
-  @@ -10,0 +11 @@
+  @@ -11,0 +12 @@
   +parser = argparse.ArgumentParser()
 change msgspec.Struct default container
-  @@ -25 +25 @@
+  @@ -26 +26 @@
   -    items: Union[List[int], UnsetType] = UNSET
   +    items: Union[List[str], UnsetType] = UNSET
 change msgspec.Struct default union-order
-  @@ -28 +28 @@
+  @@ -29 +29 @@
   -    choice: Union[str, int, UnsetType] = UNSET
   +    choice: Union[int, str, UnsetType] = UNSET
 change msgspec.Struct default union-missing
-  @@ -28 +28 @@
+  @@ -29 +29 @@
   -    choice: Union[str, int, UnsetType] = UNSET
   +    choice: Union[str, UnsetType] = UNSET
 change msgspec.Struct default container-arity
-  @@ -27 +27 @@
+  @@ -28 +28 @@
   -    dictionary: Union[Dict[str, bool], UnsetType] = UNSET
   +    dictionary: Union[Dict[str, bool, int], UnsetType] = UNSET
 change msgspec.Struct default builtin-forward-multiple
-  @@ -20 +20 @@
+  @@ -21 +21 @@
   -    flag: Union[bool, UnsetType] = UNSET
   +    flag: Union["bool; int", UnsetType] = UNSET
 change msgspec.Struct default builtin-forward-empty
-  @@ -20 +20 @@
+  @@ -21 +21 @@
   -    flag: Union[bool, UnsetType] = UNSET
   +    flag: Union["", UnsetType] = UNSET
 change msgspec.Struct default container-not-subscript
-  @@ -25 +25 @@
+  @@ -26 +26 @@
   -    items: Union[List[int], UnsetType] = UNSET
   +    items: Union[List, UnsetType] = UNSET
 change msgspec.Struct default nested-optional-type
-  @@ -27 +27 @@
+  @@ -28 +28 @@
   -    dictionary: Union[Dict[str, bool], UnsetType] = UNSET
   +    dictionary: Union[Dict[str, Optional[None]], UnsetType] = UNSET
 change msgspec.Struct default duplicate-field
-  @@ -20 +20 @@
+  @@ -21 +21 @@
   -    flag: Union[bool, UnsetType] = UNSET
   +    flag: Union[bool, UnsetType] = UNSET; flag: Union[bool, UnsetType] = UNSET
 change msgspec.Struct default duplicate-class
-  @@ -18,0 +19,2 @@
+  @@ -19,0 +20,2 @@
   +class Types(Struct):
   +    pass
 change msgspec.Struct default empty-annotation
-  @@ -20 +20 @@
+  @@ -21 +21 @@
   -    flag: Union[bool, UnsetType] = UNSET
   +    flag: = UNSET
 change msgspec.Struct default chained-default
-  @@ -20 +20 @@
+  @@ -21 +21 @@
   -    flag: Union[bool, UnsetType] = UNSET
   +    flag: Union[bool, UnsetType] = one = two
 change msgspec.Struct default empty-semicolon-prefix
-  @@ -18,0 +19,2 @@
+  @@ -19,0 +20,2 @@
   +;;
   +from typing import (Any,)
-  @@ -19,0 +22 @@
+  @@ -20,0 +23 @@
   +    flag: int = 1
 change msgspec.Struct default malformed-import-alias
-  @@ -18,0 +19 @@
+  @@ -19,0 +20 @@
   +from typing import Any as 2
-  @@ -19,0 +21 @@
+  @@ -20,0 +22 @@
   +    flag: int = 1
 change msgspec.Struct default parenthesized-noncall
-  @@ -20 +20 @@
+  @@ -21 +21 @@
   -    flag: Union[bool, UnsetType] = UNSET
   +    flag: Union[(bool)(int), UnsetType] = UNSET
 change msgspec.Struct default union-extra-member
-  @@ -20 +20 @@
+  @@ -21 +21 @@
   -    flag: Union[bool, UnsetType] = UNSET
   +    flag: Union[bool, int, UnsetType] = UNSET
 change msgspec.Struct default nullable-reversed
-  @@ -24 +24 @@
+  @@ -25 +25 @@
   -    nullable: Union[str, None, UnsetType] = UNSET
   +    nullable: Union[None, str, UnsetType] = UNSET
 change msgspec.Struct default malformed-import-target
-  @@ -10 +10 @@
+  @@ -11 +11 @@
   -import argparse
   +import 2 as argparse
 change msgspec.Struct default parenthesized-callee
-  @@ -25 +25 @@
+  @@ -26 +26 @@
   -    items: Union[List[int], UnsetType] = UNSET
   +    items: Union[(List)[int], UnsetType] = UNSET
 change msgspec.Struct default nested-optional-member
-  @@ -29 +29 @@
+  @@ -30 +30 @@
   -    position: Union[Annotated[List[Union[str, int]], Meta(max_length=2)], UnsetType] = UNSET
   +    position: Union[Annotated[List[Optional[str]], Meta(max_length=2)], UnsetType] = UNSET

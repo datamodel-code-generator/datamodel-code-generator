@@ -13,5 +13,4 @@ class ListWins(BaseModel):
 
 
 class InheritedWins(ListWins):
-    shared: list[int] = Field(..., title='Shared')
     label: str | None = Field('extra', title='Label')

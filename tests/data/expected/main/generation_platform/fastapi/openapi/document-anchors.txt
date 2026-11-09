@@ -1,0 +1,223 @@
+# document-anchors
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Anchors",
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com"
+    }
+  ],
+  "paths": {
+    "/notes": {
+      "post": {
+        "operationId": "postNote",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/filter"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/request-body"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/response"
+          }
+        },
+        "callbacks": {
+          "onNote": {
+            "{$request.body#/title}": {
+              "$ref": "#/components/pathItems/hook"
+            }
+          }
+        }
+      }
+    },
+    "/tags": {
+      "$ref": "#/components/pathItems/path-item"
+    }
+  },
+  "components": {
+    "parameters": {
+      "filter": {
+        "name": "filter",
+        "in": "query",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "term": {
+              "$anchor": "term",
+              "type": "string",
+              "minLength": 1
+            },
+            "again": {
+              "$ref": "#/components/schemas/term"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "term": {
+        "$anchor": "term",
+        "type": "string",
+        "minLength": 1
+      },
+      "title": {
+        "$anchor": "title",
+        "type": "string",
+        "maxLength": 20
+      },
+      "trace": {
+        "$anchor": "trace",
+        "type": "string",
+        "pattern": "^[a-f0-9]+$"
+      },
+      "count": {
+        "$anchor": "count",
+        "type": "integer"
+      },
+      "at": {
+        "$anchor": "at",
+        "type": "string",
+        "format": "date-time"
+      },
+      "tag": {
+        "$anchor": "tag",
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "requestBodies": {
+      "request-body": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "title"
+              ],
+              "properties": {
+                "title": {
+                  "$anchor": "title",
+                  "type": "string",
+                  "maxLength": 20
+                },
+                "subtitle": {
+                  "$ref": "#/components/schemas/title"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "response": {
+        "description": "The note.",
+        "headers": {
+          "X-Trace": {
+            "$ref": "#/components/headers/header"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "count": {
+                  "$anchor": "count",
+                  "type": "integer"
+                },
+                "total": {
+                  "$ref": "#/components/schemas/count"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "header": {
+        "schema": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/trace"
+          },
+          "$defs": {
+            "trace": {
+              "$anchor": "trace",
+              "type": "string",
+              "pattern": "^[a-f0-9]+$"
+            }
+          }
+        }
+      }
+    },
+    "pathItems": {
+      "hook": {
+        "post": {
+          "operationId": "noteCreated",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "at": {
+                      "$anchor": "at",
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "again": {
+                      "$ref": "#/components/schemas/at"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "204": {
+              "description": "Received."
+            }
+          }
+        }
+      },
+      "path-item": {
+        "get": {
+          "operationId": "listTags",
+          "responses": {
+            "200": {
+              "description": "The tags.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/tag"
+                    },
+                    "$defs": {
+                      "tag": {
+                        "$anchor": "tag",
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                },
+                "text/plain": {
+                  "schema": true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

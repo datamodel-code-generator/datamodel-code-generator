@@ -89,10 +89,14 @@ class CountsGetResponse(RootModel[list[conint(ge=0)]]):
 CodeGetQueryInvalidParameter = TypeAliasType("CodeGetQueryInvalidParameter", bool)
 
 
-LiteralGetQueryModesParameter = TypeAliasType("LiteralGetQueryModesParameter", list[Literal['a']])
+LiteralGetQueryModesParameter = TypeAliasType(
+    "LiteralGetQueryModesParameter", list[Literal['a']]
+)
 
 
-LiteralModelGetQueryModesParameter = TypeAliasType("LiteralModelGetQueryModesParameter", list[Literal['b']])
+LiteralModelGetQueryModesParameter = TypeAliasType(
+    "LiteralModelGetQueryModesParameter", list[Literal['b']]
+)
 
 
 PetsPetIdGetQueryLimitParameter = TypeAliasType(
@@ -100,7 +104,9 @@ PetsPetIdGetQueryLimitParameter = TypeAliasType(
 )
 
 
-PetsPetIdGetQueryCodesParameter = TypeAliasType("PetsPetIdGetQueryCodesParameter", list[Code])
+PetsPetIdGetQueryCodesParameter = TypeAliasType(
+    "PetsPetIdGetQueryCodesParameter", list[Code]
+)
 
 
 PetsPetIdGetQueryStepParameter = TypeAliasType(
@@ -108,7 +114,9 @@ PetsPetIdGetQueryStepParameter = TypeAliasType(
 )
 
 
-PetsPetIdGetQueryRawParameter = TypeAliasType("PetsPetIdGetQueryRawParameter", Base64Str)
+PetsPetIdGetQueryRawParameter = TypeAliasType(
+    "PetsPetIdGetQueryRawParameter", Base64Str
+)
 
 
 PetsPetIdGetQueryDayParameter = TypeAliasType("PetsPetIdGetQueryDayParameter", date)

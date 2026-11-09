@@ -1,0 +1,26 @@
+openapi: 3.1.0
+info:
+  title: A name an $anchor and a $dynamicAnchor declare
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        dynamic:
+          $dynamicRef: '#T'
+        static:
+          $ref: '#T'
+    First:
+      $anchor: T
+      type: object
+      properties:
+        first:
+          type: integer
+    Second:
+      $dynamicAnchor: T
+      type: object
+      properties:
+        second:
+          type: string

@@ -48,7 +48,10 @@ MArrayOrNamesCountAdditionalPropertyObject = TypeAliasType(
 )
 
 
-MArrayOrNamesCountAdditionalProperty = TypeAliasType("MArrayOrNamesCountAdditionalProperty", MArrayOrNamesCountAdditionalPropertyObject | list[Any] | None)
+MArrayOrNamesCountAdditionalProperty = TypeAliasType(
+    "MArrayOrNamesCountAdditionalProperty",
+    MArrayOrNamesCountAdditionalPropertyObject | list[Any] | None,
+)
 
 
 class StringOrPatterns(

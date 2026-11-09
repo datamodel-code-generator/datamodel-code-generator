@@ -21,6 +21,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from functools import cache, cached_property
+from importlib.util import find_spec
 from itertools import islice, starmap
 from pathlib import Path, PurePosixPath
 from types import ModuleType
@@ -75,6 +76,8 @@ if TYPE_CHECKING:
     import warnings
     from collections.abc import Iterable
 
+pytest_plugins = ("tests.checks.plugin",)
+
 CLI_DOC_COLLECTION_OUTPUT = Path(__file__).parent / "cli_doc" / ".cli_doc_collection.json"
 CI_SHARD_WEIGHTS_PATH = Path(__file__).parents[1] / "scripts" / "ci_shard_weights.json"
 CLI_DOC_SCHEMA_VERSION = 1
@@ -83,26 +86,36 @@ CHECK_SCHEMA_LOCATIONS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_LOCATIONS"
 CHECK_MODEL_GRAPH_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH"
 CHECK_SCHEMA_GRAPH_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
 CHECK_MODULE_IMPORTS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS"
-CHECK_GENERATED_CODE_REQUIREMENTS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_GENERATED_CODE_REQUIREMENTS"
 CHECK_RENDER_PLANS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS"
 CHECK_RENDER_MEMOS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_RENDER_MEMOS"
 CHECK_FACT_FINALITY_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY"
+CHECK_NAMING_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_NAMING"
 CHECK_AREA_ENVS = (
     CHECK_SCHEMA_LOCATIONS_ENV,
     CHECK_MODEL_GRAPH_ENV,
     CHECK_SCHEMA_GRAPH_ENV,
     CHECK_MODULE_IMPORTS_ENV,
-    CHECK_GENERATED_CODE_REQUIREMENTS_ENV,
     CHECK_RENDER_PLANS_ENV,
     CHECK_RENDER_MEMOS_ENV,
     CHECK_FACT_FINALITY_ENV,
+    CHECK_NAMING_ENV,
 )
-"""The variable of every debug check area (`CheckArea` in `datamodel_code_generator/_checks.py`) set to `1`."""
+"""The variable of every debug check area (`Area` in `tests/checks/areas.py`) set to `1`."""
 CHECK_FACT_FINALITY_SWEEP_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SWEEP"
+CHECK_PASS_TRIGGERS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS"
 SWEEP_PYTHON = (3, 15)
-"""The Python from which the test suite also sets `CHECK_FACT_FINALITY_SWEEP_ENV` to `1`: one CI lane runs the sweep."""
+"""The Python from which the test suite also sets `CHECK_FACT_FINALITY_SWEEP_ENV` and `CHECK_PASS_TRIGGERS_ENV` to `1`:
+one CI lane runs the sweep and the passes whose trigger is false, the others skip those passes as users do."""
 CHECK_STORE_WRITES_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
 """The debug check area that reports into a file during each test, which `StoreWritesCheck` checks after the test."""
+CHILD_COVERAGE_ENV = {"COVERAGE_CORE": "ctrace"} if find_spec("coverage.tracer") else {}
+"""What a test adds to the environment of a Python it starts under ``coverage run``: ``ctrace``, where installed.
+
+From Python 3.14 the default core, ``sysmon``, works out the branches of each code object the first time it runs, which
+costs a fresh process seconds before its first generation; ``ctrace`` measures the same lines and branches without that.
+A coverage without its C extension, such as the pure Python wheel a Python without a compiled one installs, keeps its
+default.
+"""
 BUILTIN_FORMATTER_VALUE = "builtin"
 TARGET_PYTHON = (3, 11)
 TARGET_TEST_ROOTS = (Path(__file__).parent / "api_generation", Path(__file__).parent / "model_codecs")
@@ -273,13 +286,14 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 def pytest_configure(config: pytest.Config) -> None:
     """Register the cli_doc marker and turn on every debug check area that is not set, except in CodSpeed benchmarks.
 
-    The finality sweep is turned on only from `SWEEP_PYTHON`.
+    The finality sweep and the trigger check are turned on only from `SWEEP_PYTHON`.
     """
     benchmarks = config.getoption("codspeed", default=False)
     for name in () if benchmarks else CHECK_AREA_ENVS:
         os.environ.setdefault(name, "1")
     if not benchmarks and sys.version_info >= SWEEP_PYTHON:
         os.environ.setdefault(CHECK_FACT_FINALITY_SWEEP_ENV, "1")
+        os.environ.setdefault(CHECK_PASS_TRIGGERS_ENV, "1")
     if not benchmarks and CHECK_STORE_WRITES_ENV not in os.environ:
         config.pluginmanager.register(store_writes_check := StoreWritesCheck(), "store-writes-check")
         config.add_cleanup(store_writes_check.report.unlink)
@@ -439,13 +453,23 @@ def _validate_cli_doc_marker(node_id: str, kwargs: CliDocKwargs) -> list[str]:  
     return errors
 
 
-def slow_test_durations() -> dict[str, int]:
-    """Return the longest measured CI duration per slow test node id across shard weight profiles."""
+@cache
+def _longest_shard_weights(kind: str) -> dict[str, int]:
     durations: dict[str, int] = {}
     for profile in json.loads(CI_SHARD_WEIGHTS_PATH.read_text(encoding="utf-8"))["profiles"].values():
-        for nodeid, duration in profile["slow"].items():
-            durations[nodeid] = max(duration, durations.get(nodeid, 0))
+        for key, duration in profile[kind].items():
+            durations[key] = max(duration, durations.get(key, 0))
     return durations
+
+
+def slow_test_durations() -> dict[str, int]:
+    """Return the longest measured CI duration per slow test node id across shard weight profiles."""
+    return dict(_longest_shard_weights("slow"))
+
+
+def fast_test_durations() -> dict[str, int]:
+    """Return the longest measured mean CI duration of the fast tests per shard item across weight profiles."""
+    return dict(_longest_shard_weights("fast"))
 
 
 def worksteal_chunk_sizes(total: int, workers: int) -> list[int]:
@@ -481,11 +505,10 @@ def order_slow_tests_first(items: list[pytest.Item], durations: dict[str, int], 
 
 
 def _shard_nodeids(items: list[pytest.Item], durations: dict[str, int], index: int, total: int) -> set[str]:
-    from scripts.select_ci_test_shard import median_weight, select_shard
+    from scripts.select_ci_test_shard import estimate_test_durations, select_shard
 
-    measured = {item.nodeid: durations[item.nodeid] for item in items if item.nodeid in durations}
-    fallback = median_weight(measured)
-    return set(select_shard({item.nodeid: measured.get(item.nodeid, fallback) for item in items}, index, total))
+    estimates = estimate_test_durations((item.nodeid for item in items), durations, fast_test_durations())
+    return set(select_shard(estimates, index, total))
 
 
 def _keep_selected(config: pytest.Config, items: list[pytest.Item], selected: set[str]) -> list[pytest.Item]:
@@ -498,7 +521,7 @@ def select_test_shard(
 ) -> list[pytest.Item]:
     """Keep one ``INDEX/TOTAL`` shard of the items, split heaviest-first like the CI file shards.
 
-    Tests without a measured duration weigh the median of the measured ones, and the rest are deselected.
+    Tests without a measured slow duration weigh the mean of their item's fast tests, and the rest are deselected.
     """
     index, total = map(int, shard.split("/"))
     return _keep_selected(config, items, _shard_nodeids(items, durations, index, total))

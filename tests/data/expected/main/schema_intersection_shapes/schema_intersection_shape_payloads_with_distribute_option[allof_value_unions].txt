@@ -1,0 +1,888 @@
+pydantic_v2.BaseModel default pair "ab" accepted
+pydantic_v2.BaseModel default pair 5 accepted
+pydantic_v2.BaseModel default pair "a" rejected
+pydantic_v2.BaseModel default pair 1.5 rejected
+pydantic_v2.BaseModel default bounded "abc" accepted
+pydantic_v2.BaseModel default bounded 3 accepted
+pydantic_v2.BaseModel default bounded 0 accepted
+pydantic_v2.BaseModel default bounded "abcdef" rejected
+pydantic_v2.BaseModel default bounded "a" rejected
+pydantic_v2.BaseModel default bounded -1 rejected
+pydantic_v2.BaseModel default nullable null accepted
+pydantic_v2.BaseModel default nullable "ab" accepted
+pydantic_v2.BaseModel default nullable "a" rejected
+pydantic_v2.BaseModel default nullable 1 rejected
+pydantic_v2.BaseModel default common 3 accepted
+pydantic_v2.BaseModel default common "a" rejected
+pydantic_v2.BaseModel default common true accepted
+pydantic_v2.BaseModel default common 1.5 rejected
+pydantic_v2.BaseModel default refs "ab" accepted
+pydantic_v2.BaseModel default refs 3 accepted
+pydantic_v2.BaseModel default refs "a" rejected
+pydantic_v2.BaseModel default refs "abcdef" rejected
+pydantic_v2.BaseModel default refs 1.5 rejected
+pydantic_v2.BaseModel default ranges 3 accepted
+pydantic_v2.BaseModel default ranges 7 accepted
+pydantic_v2.BaseModel default ranges 6 rejected
+pydantic_v2.BaseModel default ranges 0 rejected
+pydantic_v2.BaseModel default ranges "a" rejected
+pydantic_v2.BaseModel default twice 5 accepted
+pydantic_v2.BaseModel default twice 7 accepted
+pydantic_v2.BaseModel default twice 6 rejected
+pydantic_v2.BaseModel default beside "ab" accepted
+pydantic_v2.BaseModel default beside 5 accepted
+pydantic_v2.BaseModel default beside "a" rejected
+pydantic_v2.BaseModel default via_union "ab" accepted
+pydantic_v2.BaseModel default via_union 5 accepted
+pydantic_v2.BaseModel default via_union "a" rejected
+pydantic_v2.BaseModel default via_all_of "ab" accepted
+pydantic_v2.BaseModel default via_all_of 5 accepted
+pydantic_v2.BaseModel default via_all_of "a" rejected
+pydantic_v2.BaseModel default any_branch "a" accepted
+pydantic_v2.BaseModel default any_branch 1 rejected
+pydantic_v2.BaseModel default dead "a" rejected
+pydantic_v2.BaseModel default dead 1 rejected
+pydantic_v2.BaseModel default with_object "ab" accepted
+pydantic_v2.BaseModel default with_object {"a": "x"} accepted
+pydantic_v2.BaseModel default with_object "a" rejected
+pydantic_v2.BaseModel default with_enum "bb" accepted
+pydantic_v2.BaseModel default with_enum 3 accepted
+pydantic_v2.BaseModel default with_enum "a" accepted
+pydantic_v2.BaseModel default untyped "a" accepted
+pydantic_v2.BaseModel default untyped 1 accepted
+pydantic_v2.BaseModel default untyped "" accepted
+pydantic_v2.BaseModel default many 6 rejected
+pydantic_v2.BaseModel default many 0 rejected
+pydantic_v2.BaseModel default many 20 rejected
+pydantic_v2.BaseModel default inline "ab" accepted
+pydantic_v2.BaseModel default inline 5 accepted
+pydantic_v2.BaseModel default inline "a" rejected
+pydantic_v2.BaseModel default inline 1.5 rejected
+pydantic_v2.BaseModel default one_base 3 accepted
+pydantic_v2.BaseModel default one_base 7 accepted
+pydantic_v2.BaseModel default one_base 6 rejected
+pydantic_v2.BaseModel default one_base 0 rejected
+pydantic_v2.BaseModel default two_bases 5 accepted
+pydantic_v2.BaseModel default two_bases 7 accepted
+pydantic_v2.BaseModel default two_bases 6 rejected
+pydantic_v2.BaseModel default two_bases 101 rejected
+pydantic_v2.BaseModel default two_bases_items [5] accepted
+pydantic_v2.BaseModel default two_bases_items [7] accepted
+pydantic_v2.BaseModel default two_bases_items [6] rejected
+pydantic_v2.BaseModel default via_union_field "ab" accepted
+pydantic_v2.BaseModel default via_union_field 5 accepted
+pydantic_v2.BaseModel default via_union_field "a" rejected
+pydantic_v2.dataclass default pair "ab" accepted
+pydantic_v2.dataclass default pair 5 accepted
+pydantic_v2.dataclass default pair "a" rejected
+pydantic_v2.dataclass default pair 1.5 rejected
+pydantic_v2.dataclass default bounded "abc" accepted
+pydantic_v2.dataclass default bounded 3 accepted
+pydantic_v2.dataclass default bounded 0 accepted
+pydantic_v2.dataclass default bounded "abcdef" rejected
+pydantic_v2.dataclass default bounded "a" rejected
+pydantic_v2.dataclass default bounded -1 rejected
+pydantic_v2.dataclass default nullable null accepted
+pydantic_v2.dataclass default nullable "ab" accepted
+pydantic_v2.dataclass default nullable "a" rejected
+pydantic_v2.dataclass default nullable 1 rejected
+pydantic_v2.dataclass default common 3 accepted
+pydantic_v2.dataclass default common "a" rejected
+pydantic_v2.dataclass default common true accepted
+pydantic_v2.dataclass default common 1.5 rejected
+pydantic_v2.dataclass default refs "ab" accepted
+pydantic_v2.dataclass default refs 3 accepted
+pydantic_v2.dataclass default refs "a" rejected
+pydantic_v2.dataclass default refs "abcdef" rejected
+pydantic_v2.dataclass default refs 1.5 rejected
+pydantic_v2.dataclass default ranges 3 accepted
+pydantic_v2.dataclass default ranges 7 accepted
+pydantic_v2.dataclass default ranges 6 rejected
+pydantic_v2.dataclass default ranges 0 rejected
+pydantic_v2.dataclass default ranges "a" rejected
+pydantic_v2.dataclass default twice 5 accepted
+pydantic_v2.dataclass default twice 7 accepted
+pydantic_v2.dataclass default twice 6 rejected
+pydantic_v2.dataclass default beside "ab" accepted
+pydantic_v2.dataclass default beside 5 accepted
+pydantic_v2.dataclass default beside "a" rejected
+pydantic_v2.dataclass default via_union "ab" accepted
+pydantic_v2.dataclass default via_union 5 accepted
+pydantic_v2.dataclass default via_union "a" rejected
+pydantic_v2.dataclass default via_all_of "ab" accepted
+pydantic_v2.dataclass default via_all_of 5 accepted
+pydantic_v2.dataclass default via_all_of "a" rejected
+pydantic_v2.dataclass default any_branch "a" accepted
+pydantic_v2.dataclass default any_branch 1 rejected
+pydantic_v2.dataclass default dead "a" rejected
+pydantic_v2.dataclass default dead 1 rejected
+pydantic_v2.dataclass default with_object "ab" accepted
+pydantic_v2.dataclass default with_object {"a": "x"} accepted
+pydantic_v2.dataclass default with_object "a" rejected
+pydantic_v2.dataclass default with_enum "bb" accepted
+pydantic_v2.dataclass default with_enum 3 accepted
+pydantic_v2.dataclass default with_enum "a" accepted
+pydantic_v2.dataclass default untyped "a" accepted
+pydantic_v2.dataclass default untyped 1 accepted
+pydantic_v2.dataclass default untyped "" accepted
+pydantic_v2.dataclass default many 6 rejected
+pydantic_v2.dataclass default many 0 rejected
+pydantic_v2.dataclass default many 20 rejected
+pydantic_v2.dataclass default inline "ab" accepted
+pydantic_v2.dataclass default inline 5 accepted
+pydantic_v2.dataclass default inline "a" rejected
+pydantic_v2.dataclass default inline 1.5 rejected
+pydantic_v2.dataclass default one_base 3 accepted
+pydantic_v2.dataclass default one_base 7 accepted
+pydantic_v2.dataclass default one_base 6 rejected
+pydantic_v2.dataclass default one_base 0 rejected
+pydantic_v2.dataclass default two_bases 5 accepted
+pydantic_v2.dataclass default two_bases 7 accepted
+pydantic_v2.dataclass default two_bases 6 rejected
+pydantic_v2.dataclass default two_bases 101 rejected
+pydantic_v2.dataclass default two_bases_items [5] accepted
+pydantic_v2.dataclass default two_bases_items [7] accepted
+pydantic_v2.dataclass default two_bases_items [6] rejected
+pydantic_v2.dataclass default via_union_field "ab" accepted
+pydantic_v2.dataclass default via_union_field 5 accepted
+pydantic_v2.dataclass default via_union_field "a" rejected
+msgspec.Struct default pair "ab" accepted
+msgspec.Struct default pair 5 accepted
+msgspec.Struct default pair "a" rejected
+msgspec.Struct default pair 1.5 rejected
+msgspec.Struct default bounded "abc" accepted
+msgspec.Struct default bounded 3 accepted
+msgspec.Struct default bounded 0 accepted
+msgspec.Struct default bounded "abcdef" rejected
+msgspec.Struct default bounded "a" rejected
+msgspec.Struct default bounded -1 rejected
+msgspec.Struct default nullable null accepted
+msgspec.Struct default nullable "ab" accepted
+msgspec.Struct default nullable "a" rejected
+msgspec.Struct default nullable 1 rejected
+msgspec.Struct default common 3 accepted
+msgspec.Struct default common "a" rejected
+msgspec.Struct default common true rejected
+msgspec.Struct default common 1.5 rejected
+msgspec.Struct default refs "ab" accepted
+msgspec.Struct default refs 3 accepted
+msgspec.Struct default refs "a" rejected
+msgspec.Struct default refs "abcdef" rejected
+msgspec.Struct default refs 1.5 rejected
+msgspec.Struct default ranges 3 accepted
+msgspec.Struct default ranges 7 accepted
+msgspec.Struct default ranges 6 accepted
+msgspec.Struct default ranges 0 rejected
+msgspec.Struct default ranges "a" rejected
+msgspec.Struct default twice 5 accepted
+msgspec.Struct default twice 7 accepted
+msgspec.Struct default twice 6 accepted
+msgspec.Struct default beside "ab" accepted
+msgspec.Struct default beside 5 accepted
+msgspec.Struct default beside "a" rejected
+msgspec.Struct default via_union "ab" accepted
+msgspec.Struct default via_union 5 accepted
+msgspec.Struct default via_union "a" rejected
+msgspec.Struct default via_all_of "ab" accepted
+msgspec.Struct default via_all_of 5 accepted
+msgspec.Struct default via_all_of "a" rejected
+msgspec.Struct default any_branch "a" accepted
+msgspec.Struct default any_branch 1 rejected
+msgspec.Struct default dead "a" rejected
+msgspec.Struct default dead 1 rejected
+msgspec.Struct default with_object "ab" accepted
+msgspec.Struct default with_object {"a": "x"} accepted
+msgspec.Struct default with_object "a" rejected
+msgspec.Struct default with_enum "bb" accepted
+msgspec.Struct default with_enum 3 accepted
+msgspec.Struct default with_enum "a" accepted
+msgspec.Struct default untyped "a" accepted
+msgspec.Struct default untyped 1 accepted
+msgspec.Struct default untyped "" accepted
+msgspec.Struct default many 6 rejected
+msgspec.Struct default many 0 rejected
+msgspec.Struct default many 20 rejected
+msgspec.Struct default inline "ab" accepted
+msgspec.Struct default inline 5 accepted
+msgspec.Struct default inline "a" rejected
+msgspec.Struct default inline 1.5 rejected
+msgspec.Struct default one_base 3 accepted
+msgspec.Struct default one_base 7 accepted
+msgspec.Struct default one_base 6 accepted
+msgspec.Struct default one_base 0 rejected
+msgspec.Struct default two_bases 5 accepted
+msgspec.Struct default two_bases 7 accepted
+msgspec.Struct default two_bases 6 accepted
+msgspec.Struct default two_bases 101 rejected
+msgspec.Struct default two_bases_items [5] accepted
+msgspec.Struct default two_bases_items [7] accepted
+msgspec.Struct default two_bases_items [6] accepted
+msgspec.Struct default via_union_field "ab" accepted
+msgspec.Struct default via_union_field 5 accepted
+msgspec.Struct default via_union_field "a" rejected
+pydantic_v2.BaseModel --field-constraints pair "ab" accepted
+pydantic_v2.BaseModel --field-constraints pair 5 accepted
+pydantic_v2.BaseModel --field-constraints pair "a" rejected
+pydantic_v2.BaseModel --field-constraints pair 1.5 rejected
+pydantic_v2.BaseModel --field-constraints bounded "abc" accepted
+pydantic_v2.BaseModel --field-constraints bounded 3 accepted
+pydantic_v2.BaseModel --field-constraints bounded 0 accepted
+pydantic_v2.BaseModel --field-constraints bounded "abcdef" rejected
+pydantic_v2.BaseModel --field-constraints bounded "a" rejected
+pydantic_v2.BaseModel --field-constraints bounded -1 rejected
+pydantic_v2.BaseModel --field-constraints nullable null accepted
+pydantic_v2.BaseModel --field-constraints nullable "ab" accepted
+pydantic_v2.BaseModel --field-constraints nullable "a" rejected
+pydantic_v2.BaseModel --field-constraints nullable 1 rejected
+pydantic_v2.BaseModel --field-constraints common 3 accepted
+pydantic_v2.BaseModel --field-constraints common "a" rejected
+pydantic_v2.BaseModel --field-constraints common true accepted
+pydantic_v2.BaseModel --field-constraints common 1.5 rejected
+pydantic_v2.BaseModel --field-constraints refs "ab" accepted
+pydantic_v2.BaseModel --field-constraints refs 3 accepted
+pydantic_v2.BaseModel --field-constraints refs "a" rejected
+pydantic_v2.BaseModel --field-constraints refs "abcdef" rejected
+pydantic_v2.BaseModel --field-constraints refs 1.5 rejected
+pydantic_v2.BaseModel --field-constraints ranges 3 accepted
+pydantic_v2.BaseModel --field-constraints ranges 7 accepted
+pydantic_v2.BaseModel --field-constraints ranges 6 rejected
+pydantic_v2.BaseModel --field-constraints ranges 0 rejected
+pydantic_v2.BaseModel --field-constraints ranges "a" rejected
+pydantic_v2.BaseModel --field-constraints twice 5 accepted
+pydantic_v2.BaseModel --field-constraints twice 7 accepted
+pydantic_v2.BaseModel --field-constraints twice 6 rejected
+pydantic_v2.BaseModel --field-constraints beside "ab" accepted
+pydantic_v2.BaseModel --field-constraints beside 5 accepted
+pydantic_v2.BaseModel --field-constraints beside "a" rejected
+pydantic_v2.BaseModel --field-constraints via_union "ab" accepted
+pydantic_v2.BaseModel --field-constraints via_union 5 accepted
+pydantic_v2.BaseModel --field-constraints via_union "a" rejected
+pydantic_v2.BaseModel --field-constraints via_all_of "ab" accepted
+pydantic_v2.BaseModel --field-constraints via_all_of 5 accepted
+pydantic_v2.BaseModel --field-constraints via_all_of "a" rejected
+pydantic_v2.BaseModel --field-constraints any_branch "a" accepted
+pydantic_v2.BaseModel --field-constraints any_branch 1 rejected
+pydantic_v2.BaseModel --field-constraints dead "a" rejected
+pydantic_v2.BaseModel --field-constraints dead 1 rejected
+pydantic_v2.BaseModel --field-constraints with_object "ab" accepted
+pydantic_v2.BaseModel --field-constraints with_object {"a": "x"} accepted
+pydantic_v2.BaseModel --field-constraints with_object "a" rejected
+pydantic_v2.BaseModel --field-constraints with_enum "bb" accepted
+pydantic_v2.BaseModel --field-constraints with_enum 3 accepted
+pydantic_v2.BaseModel --field-constraints with_enum "a" accepted
+pydantic_v2.BaseModel --field-constraints untyped "a" accepted
+pydantic_v2.BaseModel --field-constraints untyped 1 accepted
+pydantic_v2.BaseModel --field-constraints untyped "" accepted
+pydantic_v2.BaseModel --field-constraints many 6 rejected
+pydantic_v2.BaseModel --field-constraints many 0 rejected
+pydantic_v2.BaseModel --field-constraints many 20 rejected
+pydantic_v2.BaseModel --field-constraints inline "ab" accepted
+pydantic_v2.BaseModel --field-constraints inline 5 accepted
+pydantic_v2.BaseModel --field-constraints inline "a" rejected
+pydantic_v2.BaseModel --field-constraints inline 1.5 rejected
+pydantic_v2.BaseModel --field-constraints one_base 3 accepted
+pydantic_v2.BaseModel --field-constraints one_base 7 accepted
+pydantic_v2.BaseModel --field-constraints one_base 6 rejected
+pydantic_v2.BaseModel --field-constraints one_base 0 rejected
+pydantic_v2.BaseModel --field-constraints two_bases 5 accepted
+pydantic_v2.BaseModel --field-constraints two_bases 7 accepted
+pydantic_v2.BaseModel --field-constraints two_bases 6 rejected
+pydantic_v2.BaseModel --field-constraints two_bases 101 rejected
+pydantic_v2.BaseModel --field-constraints two_bases_items [5] accepted
+pydantic_v2.BaseModel --field-constraints two_bases_items [7] accepted
+pydantic_v2.BaseModel --field-constraints two_bases_items [6] rejected
+pydantic_v2.BaseModel --field-constraints via_union_field "ab" accepted
+pydantic_v2.BaseModel --field-constraints via_union_field 5 accepted
+pydantic_v2.BaseModel --field-constraints via_union_field "a" rejected
+pydantic_v2.BaseModel --use-annotated pair "ab" accepted
+pydantic_v2.BaseModel --use-annotated pair 5 accepted
+pydantic_v2.BaseModel --use-annotated pair "a" rejected
+pydantic_v2.BaseModel --use-annotated pair 1.5 rejected
+pydantic_v2.BaseModel --use-annotated bounded "abc" accepted
+pydantic_v2.BaseModel --use-annotated bounded 3 accepted
+pydantic_v2.BaseModel --use-annotated bounded 0 accepted
+pydantic_v2.BaseModel --use-annotated bounded "abcdef" rejected
+pydantic_v2.BaseModel --use-annotated bounded "a" rejected
+pydantic_v2.BaseModel --use-annotated bounded -1 rejected
+pydantic_v2.BaseModel --use-annotated nullable null accepted
+pydantic_v2.BaseModel --use-annotated nullable "ab" accepted
+pydantic_v2.BaseModel --use-annotated nullable "a" rejected
+pydantic_v2.BaseModel --use-annotated nullable 1 rejected
+pydantic_v2.BaseModel --use-annotated common 3 accepted
+pydantic_v2.BaseModel --use-annotated common "a" rejected
+pydantic_v2.BaseModel --use-annotated common true accepted
+pydantic_v2.BaseModel --use-annotated common 1.5 rejected
+pydantic_v2.BaseModel --use-annotated refs "ab" accepted
+pydantic_v2.BaseModel --use-annotated refs 3 accepted
+pydantic_v2.BaseModel --use-annotated refs "a" rejected
+pydantic_v2.BaseModel --use-annotated refs "abcdef" rejected
+pydantic_v2.BaseModel --use-annotated refs 1.5 rejected
+pydantic_v2.BaseModel --use-annotated ranges 3 accepted
+pydantic_v2.BaseModel --use-annotated ranges 7 accepted
+pydantic_v2.BaseModel --use-annotated ranges 6 rejected
+pydantic_v2.BaseModel --use-annotated ranges 0 rejected
+pydantic_v2.BaseModel --use-annotated ranges "a" rejected
+pydantic_v2.BaseModel --use-annotated twice 5 accepted
+pydantic_v2.BaseModel --use-annotated twice 7 accepted
+pydantic_v2.BaseModel --use-annotated twice 6 rejected
+pydantic_v2.BaseModel --use-annotated beside "ab" accepted
+pydantic_v2.BaseModel --use-annotated beside 5 accepted
+pydantic_v2.BaseModel --use-annotated beside "a" rejected
+pydantic_v2.BaseModel --use-annotated via_union "ab" accepted
+pydantic_v2.BaseModel --use-annotated via_union 5 accepted
+pydantic_v2.BaseModel --use-annotated via_union "a" rejected
+pydantic_v2.BaseModel --use-annotated via_all_of "ab" accepted
+pydantic_v2.BaseModel --use-annotated via_all_of 5 accepted
+pydantic_v2.BaseModel --use-annotated via_all_of "a" rejected
+pydantic_v2.BaseModel --use-annotated any_branch "a" accepted
+pydantic_v2.BaseModel --use-annotated any_branch 1 rejected
+pydantic_v2.BaseModel --use-annotated dead "a" rejected
+pydantic_v2.BaseModel --use-annotated dead 1 rejected
+pydantic_v2.BaseModel --use-annotated with_object "ab" accepted
+pydantic_v2.BaseModel --use-annotated with_object {"a": "x"} accepted
+pydantic_v2.BaseModel --use-annotated with_object "a" rejected
+pydantic_v2.BaseModel --use-annotated with_enum "bb" accepted
+pydantic_v2.BaseModel --use-annotated with_enum 3 accepted
+pydantic_v2.BaseModel --use-annotated with_enum "a" accepted
+pydantic_v2.BaseModel --use-annotated untyped "a" accepted
+pydantic_v2.BaseModel --use-annotated untyped 1 accepted
+pydantic_v2.BaseModel --use-annotated untyped "" accepted
+pydantic_v2.BaseModel --use-annotated many 6 rejected
+pydantic_v2.BaseModel --use-annotated many 0 rejected
+pydantic_v2.BaseModel --use-annotated many 20 rejected
+pydantic_v2.BaseModel --use-annotated inline "ab" accepted
+pydantic_v2.BaseModel --use-annotated inline 5 accepted
+pydantic_v2.BaseModel --use-annotated inline "a" rejected
+pydantic_v2.BaseModel --use-annotated inline 1.5 rejected
+pydantic_v2.BaseModel --use-annotated one_base 3 accepted
+pydantic_v2.BaseModel --use-annotated one_base 7 accepted
+pydantic_v2.BaseModel --use-annotated one_base 6 rejected
+pydantic_v2.BaseModel --use-annotated one_base 0 rejected
+pydantic_v2.BaseModel --use-annotated two_bases 5 accepted
+pydantic_v2.BaseModel --use-annotated two_bases 7 accepted
+pydantic_v2.BaseModel --use-annotated two_bases 6 rejected
+pydantic_v2.BaseModel --use-annotated two_bases 101 rejected
+pydantic_v2.BaseModel --use-annotated two_bases_items [5] accepted
+pydantic_v2.BaseModel --use-annotated two_bases_items [7] accepted
+pydantic_v2.BaseModel --use-annotated two_bases_items [6] rejected
+pydantic_v2.BaseModel --use-annotated via_union_field "ab" accepted
+pydantic_v2.BaseModel --use-annotated via_union_field 5 accepted
+pydantic_v2.BaseModel --use-annotated via_union_field "a" rejected
+pydantic_v2.BaseModel --collapse-root-models pair "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models pair 5 accepted
+pydantic_v2.BaseModel --collapse-root-models pair "a" rejected
+pydantic_v2.BaseModel --collapse-root-models pair 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models bounded "abc" accepted
+pydantic_v2.BaseModel --collapse-root-models bounded 3 accepted
+pydantic_v2.BaseModel --collapse-root-models bounded 0 accepted
+pydantic_v2.BaseModel --collapse-root-models bounded "abcdef" rejected
+pydantic_v2.BaseModel --collapse-root-models bounded "a" rejected
+pydantic_v2.BaseModel --collapse-root-models bounded -1 rejected
+pydantic_v2.BaseModel --collapse-root-models nullable null accepted
+pydantic_v2.BaseModel --collapse-root-models nullable "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models nullable "a" rejected
+pydantic_v2.BaseModel --collapse-root-models nullable 1 rejected
+pydantic_v2.BaseModel --collapse-root-models common 3 accepted
+pydantic_v2.BaseModel --collapse-root-models common "a" rejected
+pydantic_v2.BaseModel --collapse-root-models common true accepted
+pydantic_v2.BaseModel --collapse-root-models common 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models refs "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models refs 3 accepted
+pydantic_v2.BaseModel --collapse-root-models refs "a" rejected
+pydantic_v2.BaseModel --collapse-root-models refs "abcdef" rejected
+pydantic_v2.BaseModel --collapse-root-models refs 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models ranges 3 accepted
+pydantic_v2.BaseModel --collapse-root-models ranges 7 accepted
+pydantic_v2.BaseModel --collapse-root-models ranges 6 rejected
+pydantic_v2.BaseModel --collapse-root-models ranges 0 rejected
+pydantic_v2.BaseModel --collapse-root-models ranges "a" rejected
+pydantic_v2.BaseModel --collapse-root-models twice 5 accepted
+pydantic_v2.BaseModel --collapse-root-models twice 7 accepted
+pydantic_v2.BaseModel --collapse-root-models twice 6 rejected
+pydantic_v2.BaseModel --collapse-root-models beside "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models beside 5 accepted
+pydantic_v2.BaseModel --collapse-root-models beside "a" rejected
+pydantic_v2.BaseModel --collapse-root-models via_union "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models via_union 5 accepted
+pydantic_v2.BaseModel --collapse-root-models via_union "a" rejected
+pydantic_v2.BaseModel --collapse-root-models via_all_of "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models via_all_of 5 accepted
+pydantic_v2.BaseModel --collapse-root-models via_all_of "a" rejected
+pydantic_v2.BaseModel --collapse-root-models any_branch "a" accepted
+pydantic_v2.BaseModel --collapse-root-models any_branch 1 rejected
+pydantic_v2.BaseModel --collapse-root-models dead "a" rejected
+pydantic_v2.BaseModel --collapse-root-models dead 1 rejected
+pydantic_v2.BaseModel --collapse-root-models with_object "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models with_object {"a": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models with_object "a" rejected
+pydantic_v2.BaseModel --collapse-root-models with_enum "bb" accepted
+pydantic_v2.BaseModel --collapse-root-models with_enum 3 accepted
+pydantic_v2.BaseModel --collapse-root-models with_enum "a" accepted
+pydantic_v2.BaseModel --collapse-root-models untyped "a" accepted
+pydantic_v2.BaseModel --collapse-root-models untyped 1 accepted
+pydantic_v2.BaseModel --collapse-root-models untyped "" accepted
+pydantic_v2.BaseModel --collapse-root-models many 6 rejected
+pydantic_v2.BaseModel --collapse-root-models many 0 rejected
+pydantic_v2.BaseModel --collapse-root-models many 20 rejected
+pydantic_v2.BaseModel --collapse-root-models inline "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models inline 5 accepted
+pydantic_v2.BaseModel --collapse-root-models inline "a" rejected
+pydantic_v2.BaseModel --collapse-root-models inline 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models one_base 3 accepted
+pydantic_v2.BaseModel --collapse-root-models one_base 7 accepted
+pydantic_v2.BaseModel --collapse-root-models one_base 6 rejected
+pydantic_v2.BaseModel --collapse-root-models one_base 0 rejected
+pydantic_v2.BaseModel --collapse-root-models two_bases 5 accepted
+pydantic_v2.BaseModel --collapse-root-models two_bases 7 accepted
+pydantic_v2.BaseModel --collapse-root-models two_bases 6 rejected
+pydantic_v2.BaseModel --collapse-root-models two_bases 101 rejected
+pydantic_v2.BaseModel --collapse-root-models two_bases_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models two_bases_items [7] accepted
+pydantic_v2.BaseModel --collapse-root-models two_bases_items [6] rejected
+pydantic_v2.BaseModel --collapse-root-models via_union_field "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models via_union_field 5 accepted
+pydantic_v2.BaseModel --collapse-root-models via_union_field "a" rejected
+msgspec.Struct --collapse-root-models pair "ab" accepted
+msgspec.Struct --collapse-root-models pair 5 accepted
+msgspec.Struct --collapse-root-models pair "a" rejected
+msgspec.Struct --collapse-root-models pair 1.5 rejected
+msgspec.Struct --collapse-root-models bounded "abc" accepted
+msgspec.Struct --collapse-root-models bounded 3 accepted
+msgspec.Struct --collapse-root-models bounded 0 accepted
+msgspec.Struct --collapse-root-models bounded "abcdef" rejected
+msgspec.Struct --collapse-root-models bounded "a" rejected
+msgspec.Struct --collapse-root-models bounded -1 rejected
+msgspec.Struct --collapse-root-models nullable null accepted
+msgspec.Struct --collapse-root-models nullable "ab" accepted
+msgspec.Struct --collapse-root-models nullable "a" rejected
+msgspec.Struct --collapse-root-models nullable 1 rejected
+msgspec.Struct --collapse-root-models common 3 accepted
+msgspec.Struct --collapse-root-models common "a" rejected
+msgspec.Struct --collapse-root-models common true rejected
+msgspec.Struct --collapse-root-models common 1.5 rejected
+msgspec.Struct --collapse-root-models refs "ab" accepted
+msgspec.Struct --collapse-root-models refs 3 accepted
+msgspec.Struct --collapse-root-models refs "a" rejected
+msgspec.Struct --collapse-root-models refs "abcdef" rejected
+msgspec.Struct --collapse-root-models refs 1.5 rejected
+msgspec.Struct --collapse-root-models ranges 3 accepted
+msgspec.Struct --collapse-root-models ranges 7 accepted
+msgspec.Struct --collapse-root-models ranges 6 accepted
+msgspec.Struct --collapse-root-models ranges 0 rejected
+msgspec.Struct --collapse-root-models ranges "a" rejected
+msgspec.Struct --collapse-root-models twice 5 accepted
+msgspec.Struct --collapse-root-models twice 7 accepted
+msgspec.Struct --collapse-root-models twice 6 accepted
+msgspec.Struct --collapse-root-models beside "ab" accepted
+msgspec.Struct --collapse-root-models beside 5 accepted
+msgspec.Struct --collapse-root-models beside "a" rejected
+msgspec.Struct --collapse-root-models via_union "ab" accepted
+msgspec.Struct --collapse-root-models via_union 5 accepted
+msgspec.Struct --collapse-root-models via_union "a" rejected
+msgspec.Struct --collapse-root-models via_all_of "ab" accepted
+msgspec.Struct --collapse-root-models via_all_of 5 accepted
+msgspec.Struct --collapse-root-models via_all_of "a" rejected
+msgspec.Struct --collapse-root-models any_branch "a" accepted
+msgspec.Struct --collapse-root-models any_branch 1 rejected
+msgspec.Struct --collapse-root-models dead "a" rejected
+msgspec.Struct --collapse-root-models dead 1 rejected
+msgspec.Struct --collapse-root-models with_object "ab" accepted
+msgspec.Struct --collapse-root-models with_object {"a": "x"} accepted
+msgspec.Struct --collapse-root-models with_object "a" rejected
+msgspec.Struct --collapse-root-models with_enum "bb" accepted
+msgspec.Struct --collapse-root-models with_enum 3 accepted
+msgspec.Struct --collapse-root-models with_enum "a" accepted
+msgspec.Struct --collapse-root-models untyped "a" accepted
+msgspec.Struct --collapse-root-models untyped 1 accepted
+msgspec.Struct --collapse-root-models untyped "" accepted
+msgspec.Struct --collapse-root-models many 6 rejected
+msgspec.Struct --collapse-root-models many 0 rejected
+msgspec.Struct --collapse-root-models many 20 rejected
+msgspec.Struct --collapse-root-models inline "ab" accepted
+msgspec.Struct --collapse-root-models inline 5 accepted
+msgspec.Struct --collapse-root-models inline "a" rejected
+msgspec.Struct --collapse-root-models inline 1.5 rejected
+msgspec.Struct --collapse-root-models one_base 3 accepted
+msgspec.Struct --collapse-root-models one_base 7 accepted
+msgspec.Struct --collapse-root-models one_base 6 accepted
+msgspec.Struct --collapse-root-models one_base 0 rejected
+msgspec.Struct --collapse-root-models two_bases 5 accepted
+msgspec.Struct --collapse-root-models two_bases 7 accepted
+msgspec.Struct --collapse-root-models two_bases 6 accepted
+msgspec.Struct --collapse-root-models two_bases 101 rejected
+msgspec.Struct --collapse-root-models two_bases_items [5] accepted
+msgspec.Struct --collapse-root-models two_bases_items [7] accepted
+msgspec.Struct --collapse-root-models two_bases_items [6] accepted
+msgspec.Struct --collapse-root-models via_union_field "ab" accepted
+msgspec.Struct --collapse-root-models via_union_field 5 accepted
+msgspec.Struct --collapse-root-models via_union_field "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pair "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pair 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pair "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pair 1.5 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bounded "abc" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bounded 3 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bounded 0 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bounded "abcdef" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bounded "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bounded -1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs common 3 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs common "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs common true accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs common 1.5 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs refs "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs refs 3 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs refs "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs refs "abcdef" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs refs 1.5 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ranges 3 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ranges 7 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ranges 6 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ranges 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ranges "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs twice 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs twice 7 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs twice 6 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs beside "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs beside 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs beside "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs via_union "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs via_union 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs via_union "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs via_all_of "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs via_all_of 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs via_all_of "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs any_branch "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs any_branch 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs dead "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs dead 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs with_object "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs with_object {"a": "x"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs with_object "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs with_enum "bb" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs with_enum 3 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs with_enum "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped "" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs many 6 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs many 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs many 20 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline 1.5 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs one_base 3 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs one_base 7 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs one_base 6 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs one_base 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_bases 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_bases 7 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_bases 6 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_bases 101 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_bases_items [5] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_bases_items [7] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_bases_items [6] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs via_union_field "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs via_union_field 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs via_union_field "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pair "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pair 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pair "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pair 1.5 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bounded "abc" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bounded 3 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bounded 0 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bounded "abcdef" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bounded "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bounded -1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs common 3 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs common "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs common true accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs common 1.5 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs refs "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs refs 3 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs refs "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs refs "abcdef" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs refs 1.5 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ranges 3 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ranges 7 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ranges 6 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ranges 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ranges "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs twice 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs twice 7 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs twice 6 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs beside "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs beside 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs beside "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs via_union "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs via_union 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs via_union "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs via_all_of "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs via_all_of 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs via_all_of "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs any_branch "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs any_branch 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs dead "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs dead 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs with_object "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs with_object {"a": "x"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs with_object "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs with_enum "bb" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs with_enum 3 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs with_enum "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped "" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs many 6 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs many 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs many 20 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline 1.5 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs one_base 3 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs one_base 7 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs one_base 6 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs one_base 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_bases 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_bases 7 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_bases 6 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_bases 101 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_bases_items [5] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_bases_items [7] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_bases_items [6] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs via_union_field "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs via_union_field 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs via_union_field "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs pair "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs pair 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs pair "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs pair 1.5 rejected
+msgspec.Struct --use-site-models-for-constrained-refs bounded "abc" accepted
+msgspec.Struct --use-site-models-for-constrained-refs bounded 3 accepted
+msgspec.Struct --use-site-models-for-constrained-refs bounded 0 accepted
+msgspec.Struct --use-site-models-for-constrained-refs bounded "abcdef" rejected
+msgspec.Struct --use-site-models-for-constrained-refs bounded "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs bounded -1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs nullable null accepted
+msgspec.Struct --use-site-models-for-constrained-refs nullable "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs nullable "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs nullable 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs common 3 accepted
+msgspec.Struct --use-site-models-for-constrained-refs common "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs common true rejected
+msgspec.Struct --use-site-models-for-constrained-refs common 1.5 rejected
+msgspec.Struct --use-site-models-for-constrained-refs refs "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs refs 3 accepted
+msgspec.Struct --use-site-models-for-constrained-refs refs "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs refs "abcdef" rejected
+msgspec.Struct --use-site-models-for-constrained-refs refs 1.5 rejected
+msgspec.Struct --use-site-models-for-constrained-refs ranges 3 accepted
+msgspec.Struct --use-site-models-for-constrained-refs ranges 7 accepted
+msgspec.Struct --use-site-models-for-constrained-refs ranges 6 accepted
+msgspec.Struct --use-site-models-for-constrained-refs ranges 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs ranges "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs twice 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs twice 7 accepted
+msgspec.Struct --use-site-models-for-constrained-refs twice 6 accepted
+msgspec.Struct --use-site-models-for-constrained-refs beside "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs beside 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs beside "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs via_union "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs via_union 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs via_union "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs via_all_of "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs via_all_of 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs via_all_of "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs any_branch "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs any_branch 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs dead "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs dead 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs with_object "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs with_object {"a": "x"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs with_object "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs with_enum "bb" accepted
+msgspec.Struct --use-site-models-for-constrained-refs with_enum 3 accepted
+msgspec.Struct --use-site-models-for-constrained-refs with_enum "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped "" accepted
+msgspec.Struct --use-site-models-for-constrained-refs many 6 rejected
+msgspec.Struct --use-site-models-for-constrained-refs many 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs many 20 rejected
+msgspec.Struct --use-site-models-for-constrained-refs inline "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs inline 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs inline "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs inline 1.5 rejected
+msgspec.Struct --use-site-models-for-constrained-refs one_base 3 accepted
+msgspec.Struct --use-site-models-for-constrained-refs one_base 7 accepted
+msgspec.Struct --use-site-models-for-constrained-refs one_base 6 accepted
+msgspec.Struct --use-site-models-for-constrained-refs one_base 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs two_bases 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_bases 7 accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_bases 6 accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_bases 101 rejected
+msgspec.Struct --use-site-models-for-constrained-refs two_bases_items [5] accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_bases_items [7] accepted
+msgspec.Struct --use-site-models-for-constrained-refs two_bases_items [6] accepted
+msgspec.Struct --use-site-models-for-constrained-refs via_union_field "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs via_union_field 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs via_union_field "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pair "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pair 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pair "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pair 1.5 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bounded "abc" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bounded 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bounded 0 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bounded "abcdef" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bounded "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bounded -1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs common 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs common "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs common true accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs common 1.5 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs refs "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs refs 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs refs "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs refs "abcdef" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs refs 1.5 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ranges 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ranges 7 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ranges 6 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ranges 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ranges "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs twice 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs twice 7 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs twice 6 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs beside "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs beside 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs beside "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs via_union "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs via_union 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs via_union "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs via_all_of "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs via_all_of 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs via_all_of "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs any_branch "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs any_branch 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs dead "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs dead 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs with_object "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs with_object {"a": "x"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs with_object "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs with_enum "bb" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs with_enum 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs with_enum "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped "" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs many 6 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs many 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs many 20 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline 1.5 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs one_base 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs one_base 7 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs one_base 6 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs one_base 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_bases 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_bases 7 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_bases 6 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_bases 101 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_bases_items [5] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_bases_items [7] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_bases_items [6] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs via_union_field "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs via_union_field 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs via_union_field "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pair "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pair 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pair "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pair 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bounded "abc" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bounded 3 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bounded 0 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bounded "abcdef" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bounded "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bounded -1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs common 3 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs common "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs common true accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs common 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs refs "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs refs 3 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs refs "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs refs "abcdef" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs refs 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ranges 3 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ranges 7 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ranges 6 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ranges 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ranges "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs twice 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs twice 7 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs twice 6 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs beside "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs beside 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs beside "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs via_union "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs via_union 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs via_union "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs via_all_of "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs via_all_of 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs via_all_of "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs any_branch "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs any_branch 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs dead "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs dead 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs with_object "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs with_object {"a": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs with_object "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs with_enum "bb" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs with_enum 3 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs with_enum "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped "" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs many 6 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs many 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs many 20 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs one_base 3 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs one_base 7 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs one_base 6 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs one_base 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_bases 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_bases 7 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_bases 6 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_bases 101 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_bases_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_bases_items [7] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_bases_items [6] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs via_union_field "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs via_union_field 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs via_union_field "a" rejected

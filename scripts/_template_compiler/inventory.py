@@ -85,12 +85,8 @@ _SCOPED_ASSIGNMENT_SITES = frozenset({
     ("pydantic_v2/schema_runtime_validation.jinja2", 2, "Name", "schema_validator_state", "Call"),
     ("pydantic_v2/schema_runtime_validation.jinja2", 12, "Name", "pattern_property", "Getitem"),
     ("pydantic_v2/schema_runtime_validation.jinja2", 23, "NSRef", "schema_validator_state.has_prior", "Const"),
-    ("pydantic_v2/schema_runtime_validation.jinja2", 25, "Name", "one_of_required_groups", "Filter"),
-    ("pydantic_v2/schema_runtime_validation.jinja2", 36, "NSRef", "schema_validator_state.has_prior", "Const"),
-    ("pydantic_v2/schema_runtime_validation.jinja2", 38, "Name", "any_of_required_groups", "Filter"),
-    ("pydantic_v2/schema_runtime_validation.jinja2", 49, "NSRef", "schema_validator_state.has_prior", "Const"),
-    ("pydantic_v2/schema_runtime_validation.jinja2", 51, "Name", "not_required_groups", "Filter"),
-    ("pydantic_v2/schema_runtime_validation.jinja2", 62, "NSRef", "schema_validator_state.has_prior", "Const"),
+    ("pydantic_v2/schema_runtime_validation.jinja2", 26, "Name", "required_groups", "Filter"),
+    ("pydantic_v2/schema_runtime_validation.jinja2", 37, "NSRef", "schema_validator_state.has_prior", "Const"),
 })
 _SCOPED_ASSIGNMENT_CONTAINERS = (nodes.FilterBlock, nodes.For, nodes.If, nodes.Macro)
 _SUPPORTED_GETATTR_ROOT_NAMES = frozenset({

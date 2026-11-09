@@ -10,27 +10,27 @@ from pydantic import BaseModel, Field
 
 
 class Cat(BaseModel):
-    type: Annotated[Literal['cat'], Field(pattern='^dog$')]
+    type: Literal['cat']
 
 
 class Dog(BaseModel):
-    type: Annotated[Literal['dog'], Field(pattern='^dog$')]
+    type: Literal['dog']
 
 
 class Bee(BaseModel):
-    type: Annotated[Literal['bee'], Field(pattern='^b')]
+    type: Literal['bee']
 
 
 class Bird(BaseModel):
-    type: Annotated[Literal['parrot'], Field(pattern='^b')]
+    type: Literal['parrot']
 
 
 class Fish(BaseModel):
-    type: Annotated[Literal['fish', 'shark'], Field(pattern='^f')]
+    type: Literal['fish', 'shark']
 
 
 class Frog(BaseModel):
-    type: Annotated[Literal['frog'], Field(pattern='^f')]
+    type: Literal['frog']
 
 
 class Pets(BaseModel):

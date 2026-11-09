@@ -95,11 +95,11 @@ class LooserMap(RootModel[int]):
 
 
 class PointItem(RootModel[Point]):
-    root: Point = Field(..., ge=5)
+    root: Point
 
 
 class PointMap(RootModel[Point]):
-    root: Point = Field(..., ge=5)
+    root: Point
 
 
 class Model(BaseModel):

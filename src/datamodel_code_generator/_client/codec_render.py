@@ -3,24 +3,32 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import starmap
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._client._compiled_templates import model_bindings as model_bindings_template
 from datamodel_code_generator._client.codec_plan import (
     CODEC_RUNTIMES,
-    EXTRAS,
-    EXTRAS_MODULE,
     Choice,
     Class,
     Fixed,
     Items,
     Values,
 )
-from datamodel_code_generator._client.facade import statement
+from datamodel_code_generator._client.naming import numbered
+from datamodel_code_generator._openapi_codec_plan import EXTRAS, codec_module
+from datamodel_code_generator._python_syntax import (
+    call_text,
+    escape_docstring,
+    from_import,
+    keyword_argument,
+    subscript_text,
+    tuple_display,
+)
 from datamodel_code_generator._target_contract import OperationId
 from datamodel_code_generator._target_module import TargetModule
-from datamodel_code_generator._target_render import call, display
 from datamodel_code_generator._target_templates import templated
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from datamodel_code_generator._client.codec_plan import ClientCodecs, Shape
@@ -37,7 +45,7 @@ _NAMES: Final = (
     "Field",
     "Model",
     "MODELS",
-    EXTRAS,
+    EXTRAS.serializer,
     *(runtime.codec for runtime in CODEC_RUNTIMES.values()),
 )
 
@@ -48,6 +56,10 @@ class UseAccessors:
 
     use: TypeUseId
     codec: str
+
+    def reference(self, module: TargetModule) -> str:
+        """Return the use's codec as another generated module spells it: an attribute of the model bindings module."""
+        return f"{module.local('_generated', 'model_bindings')}.{self.codec}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,32 +91,36 @@ class Codec:
 def _description(use: TypeUseId) -> str:
     owner = use.owner.use_site.pointer if isinstance(use.owner, OperationId) else use.owner.pointer
     selectors = "".join(f" {part}" for part in (use.location, use.name, use.status, use.media) if part)
-    return f"Codec of {owner} {use.role} ({use.direction}{selectors}).".replace("\\", "\\\\").replace('"', '\\"')
+    return escape_docstring(f"Codec of {owner} {use.role} ({use.direction}{selectors}).") or ""
 
 
 class _Renderer:
     def __init__(self, plan: ClientCodecs, types: TypeNames) -> None:
         self.plan = plan
-        self.module = TargetModule(types, (*_NAMES, *(f"codec_{index}" for index in range(len(plan.uses)))), level=1)
+        self.module = TargetModule(
+            types, (*_NAMES, *(numbered("codec", index) for index in range(len(plan.uses)))), level=1
+        )
         self.records: set[str] = set()
 
     def call(self, name: str, *values: str, **keywords: str) -> str:
         self.records.add(name)
-        return call(name, (*values, *(f"{key}={item}" for key, item in keywords.items())))
+        return call_text(name, (*values, *starmap(keyword_argument, keywords.items())))
 
     def shape(self, shape: Shape) -> str:
         if isinstance(shape, Class):
             return self.module.hint(shape.type, static=False)
         if isinstance(shape, Items):
-            return self.call("Items", self.shape(shape.item), *((repr(shape.kind),) if shape.kind != "list" else ()))
+            return self.call(
+                "Items", self.shape(shape.item), *((stable_repr(shape.kind),) if shape.kind != "list" else ())
+            )
         if isinstance(shape, Fixed):
-            return self.call("Fixed", display(self.shape(item) for item in shape.items))
+            return self.call("Fixed", tuple_display(self.shape(item) for item in shape.items))
         if isinstance(shape, Values):
             return self.call("Values", self.shape(shape.value))
         if isinstance(shape, Choice):
-            kinds = display(f"({kind!r}, {self.shape(item)})" for kind, item in shape.kinds)
-            tags = display(f"({tag!r}, {self.module.symbol(symbol)})" for tag, symbol in shape.tags)
-            return self.call("Choice", kinds, *((repr(shape.tag), tags) if shape.tag is not None else ()))
+            kinds = tuple_display(f"({stable_repr(kind)}, {self.shape(item)})" for kind, item in shape.kinds)
+            tags = tuple_display(f"({stable_repr(tag)}, {self.module.symbol(symbol)})" for tag, symbol in shape.tags)
+            return self.call("Choice", kinds, *((stable_repr(shape.tag), tags) if shape.tag is not None else ()))
         return "None"
 
     def render(self) -> RenderedBindings:
@@ -113,18 +129,18 @@ class _Renderer:
         if runtime.mapped and self.plan.uses:
             for model in self.plan.models:
                 name = self.module.symbol(model.symbol)
-                fields = display(
+                fields = tuple_display(
                     self.call(
                         "Field",
-                        repr(field.wire),
-                        repr(field.name),
+                        stable_repr(field.wire),
+                        stable_repr(field.name),
                         *((self.shape(field.shape),) if field.shape is not None else ()),
                         **({"omit_none": "True"} if field.omit_none else {}),
                     )
                     for field in model.fields
                 )
                 models.append(ModelEntry(name, self.call("Model", fields)))
-        annotation = f"{self.module.name('typing', 'Final')}[dict[type, Model]]" if models else ""
+        annotation = subscript_text(self.module.name("typing", "Final"), ("dict[type, Model]",)) if models else ""
         registry = "MODELS" if models else "{}"
         accessors = []
         entries = []
@@ -135,19 +151,25 @@ class _Renderer:
                 (self.shape(use.shape), registry) if runtime.mapped else (self.module.hint(use.type, static=False),)
             )
             if use.extras:
-                arguments = (*arguments, EXTRAS)
+                arguments = (*arguments, EXTRAS.serializer)
             final = self.module.name("typing", "Final")
+            name = numbered("codec", index)
             entries.append(
-                Codec(f"codec_{index}", f"{final}[{codec}[{static}]]", call(codec, arguments), _description(use.use))
+                Codec(
+                    name,
+                    subscript_text(final, (subscript_text(codec, (static,)),)),
+                    call_text(codec, arguments),
+                    _description(use.use),
+                )
             )
-            accessors.append(UseAccessors(use.use, f"codec_{index}"))
+            accessors.append(UseAccessors(use.use, name))
         names = sorted({runtime.codec, *self.records})
-        imports = [statement(f".._runtime.model_codecs.{runtime.module}", names)] if self.plan.uses else []
+        imports = [from_import(f"..{codec_module(runtime.module)}", names)] if self.plan.uses else []
         if self.plan.extras:
-            imports.append(statement(f".._runtime.model_codecs.{EXTRAS_MODULE}", [EXTRAS]))
+            imports.append(from_import(f"..{EXTRAS.module}", [EXTRAS.serializer]))
         source = templated(
             "model_bindings.jinja2",
-            model_bindings_template.render,
+            model_bindings_template.render_with_scope,
             imports=self.module.imports(),
             codec_imports=imports,
             models_annotation=annotation,

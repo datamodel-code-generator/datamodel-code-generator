@@ -7,7 +7,7 @@ from __future__ import annotations
 from re import compile
 from typing import Annotated
 
-from pydantic import Field, StringConstraints
+from pydantic import ConfigDict, Field, StringConstraints
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -15,6 +15,11 @@ from typing_extensions import TypeAliasType
 @dataclass
 class LookDeclared:
     x: Annotated[str | None, Field(pattern='^a')] = None
+
+
+LookUndeclaredPatternProperty = TypeAliasType(
+    "LookUndeclaredPatternProperty", Annotated[str, Field(pattern=compile('^(?!ab)'))]
+)
 
 
 @dataclass
@@ -32,11 +37,15 @@ class LookReference:
     x: str | None = None
 
 
-@dataclass
+@dataclass(config=ConfigDict(regex_engine="python-re"))
 class Model:
     lookDeclared: LookDeclared | None = None
     lookUndeclared: (
-        dict[Annotated[str, StringConstraints(pattern=r'^x')], str] | None
+        dict[
+            Annotated[str, StringConstraints(pattern=r'^x')],
+            LookUndeclaredPatternProperty,
+        ]
+        | None
     ) = None
     crossedLength: CrossedLength | None = None
     crossedRange: CrossedRange | None = None

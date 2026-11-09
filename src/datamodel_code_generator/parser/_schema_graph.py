@@ -6,7 +6,7 @@ location table, which ``JsonSchemaObject`` reads through ``SCHEMA_GRAPH`` while 
 makes each `$ref` and `$dynamicRef` keyword of the document a ``ResolvedRef``, the string as written that also carries
 its ``RefEdge`` (``SchemaGraphBuilder.with_ref_edges`` does it alone for a schema a reference names that the walk read
 as data). ``walk_schema_resources`` finds which absolute URI names which schema of the document (its root, every schema
-with an `$id` or draft-04 `id`, the implicit component resources of OpenAPI, `$anchor` and `$dynamicAnchor`), and
+with an `$id` or draft-04 `id`, the implicit resources of OpenAPI, `$anchor` and `$dynamicAnchor`), and
 ``ResourceRegistry.register`` fills the registry dicts L1 resolves references through from that record.
 ``SchemaGraphBuilder.edge_key`` keeps the ``RefKey`` each edge resolves to in its own document, and
 ``SchemaGraphBuilder.schema`` the object each JSON object of a loaded document validates to, which every reader of that
@@ -22,20 +22,19 @@ from __future__ import annotations
 from contextvars import ContextVar
 from copy import copy
 from dataclasses import dataclass, field
-from enum import Enum
-from functools import cached_property
 from operator import is_not
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, NewType, Protocol, TypeAlias, TypeVar, cast
-from urllib.parse import unquote, urljoin
+from urllib.parse import urljoin
 
 from typing_extensions import ReadOnly, Self, TypedDict, final, override
 
+from datamodel_code_generator._json_pointer import is_pointer_fragment, join_pointer, pointer_opening, pointer_tokens
 from datamodel_code_generator._records import record
 from datamodel_code_generator.reference import SchemaLocation
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
     from pathlib import Path
 
 __all__ = [
@@ -45,7 +44,6 @@ __all__ = [
     "DocumentResources",
     "RefEdge",
     "RefKey",
-    "RefOrigin",
     "RefReading",
     "ReservedTarget",
     "ResolvedRef",
@@ -55,7 +53,8 @@ __all__ = [
     "SchemaNodeId",
     "canonical_ref_spelling",
     "keep_resolved_ref",
-    "same_values",
+    "pointer_ref_spelling",
+    "validate_resolved_ref",
     "walk_schema_resources",
 ]
 
@@ -64,6 +63,8 @@ DocumentId = NewType("DocumentId", str)
 
 SchemaNodeId = NewType("SchemaNodeId", SchemaLocation)
 """A JSON object of a loaded document as a node of the graph: its location, which names one object per parse."""
+_TargetNode: TypeAlias = "SchemaNodeId | str"  # noqa: PYI047, TC008  # A string, as it was in parser/jsonschema.py.
+"""The schema a walk reaches through a reference: its graph node, or its key when the graph does not locate it."""
 
 
 class ReservedTarget(TypedDict):
@@ -99,32 +100,6 @@ class RefReading:
     """How the root is read."""
 
 
-class RefOrigin(Enum):
-    """The code that produced a reference string an L1 site reads."""
-
-    KEYWORD = "keyword"
-    """A `$ref` or `$dynamicRef` keyword of a loaded document, also after the parser rewrote it to name its target."""
-    DISCRIMINATOR_MAPPING = "discriminator mapping"
-    """A value of a discriminator `mapping`, as a reference: a schema name becomes one under `#/components/schemas`."""
-    DISCRIMINATOR_SUBTYPE = "discriminator subtype"
-    """A component schema whose `allOf` names a schema with a discriminator, as a subtype of that schema."""
-    DISCRIMINATOR_SCHEMA = "discriminator schema"
-    """A schema that declares a discriminator, as the reference that names it from its own document, which keys it."""
-    TYPE_DEFINITION = "x-python-type definition"
-    """A name of an `x-python-type` expression, as the `$defs` entry of the current document that may import it."""
-    RECURSIVE_REF = "$recursiveRef with a fixed target"
-    """A `$recursiveRef` of a schema merged from another document, as the `$ref` to the schema it resolves to there,
-    which the parser writes when the document it is merged into declares no `$recursiveAnchor`."""
-    ITEM_SCHEMA = "itemSchema projection"
-    """The items of the array the api scope projects a stream of `itemSchema` values to, as the item schema."""
-    DYNAMIC_SCOPE = "dynamic scope"
-    """A `$recursiveRef`, or a plain-name `$dynamicRef` bound in the dynamic scope of the model being parsed or named
-    by the first `$dynamicAnchor` of its name in the document being parsed: it resolves against that dynamic scope,
-    not its own document, so it has no edge."""
-    UNATTRIBUTED = "unattributed"
-    """A plain string that no producer above names."""
-
-
 @final
 @record
 class RefEdge:
@@ -142,7 +117,6 @@ class RefEdge:
     spelling: str
     """The reference the parser resolves in ``document`` (``canonical_ref_spelling``): the value it reads there, which
     for a schema converted from another format is the path it keeps the schema at, not ``ref``."""
-    origin: RefOrigin = RefOrigin.KEYWORD
     home: str | None = None
     """The document, by reference-path name, that ``spelling`` resolves in when it is not the one holding ``source``:
     the parser keeps a schema converted from another format in a document of its own."""
@@ -173,8 +147,24 @@ class ConvertedRefs:
     schema's value: the parser keeps the schema in a document of its own."""
 
 
+def pointer_ref_spelling(value: str) -> str:
+    """Return a reference whose fragment opens its pointer with ``/``, also where the octet ``%2F`` opens it.
+
+    RFC 6901 reads a fragment after percent-decoding it, so `x#%2Fa` names the pointer `x#/a`. A fragment that opens
+    no pointer is a plain name, which names an anchor.
+    """
+    document, separator, fragment = value.partition("#")
+    if not separator or (opening := pointer_opening(fragment)) in {None, 1}:
+        return value
+    return f"{document}#/{fragment[opening:]}"
+
+
 def canonical_ref_spelling(value: str) -> str:
-    """Return a reference as the parser reads it: an empty pointer after a document (`x#/`) names its root (`x#`)."""
+    """Return a reference as the parser reads it: an empty pointer after a document (`x#/`) names its root (`x#`).
+
+    The fragment opens its pointer with ``/`` (``pointer_ref_spelling``).
+    """
+    value = pointer_ref_spelling(value)
     return value[:-1] if "#" in value and value.endswith("#/") else value
 
 
@@ -204,11 +194,34 @@ class ResolvedRef(str):  # noqa: FURB189 - it must be a str wherever the parser 
         return str, (str(self),)
 
 
+def _keyword_ref(
+    ref: str, source: SchemaLocation, keyword: str, document: DocumentId, converted: ConvertedRefs | None
+) -> ResolvedRef:
+    """Return the reference keyword ``ref`` of ``source`` carrying its edge, read as ``converted`` says if given.
+
+    The keyword holds the reference with its pointer opened by ``/`` (``pointer_ref_spelling``).
+    """
+    ref = pointer_ref_spelling(ref)
+    mounted, home = (converted.mounted(ref), converted.home) if converted is not None else (ref, None)
+    return ResolvedRef(ref, RefEdge(source, keyword, document, mounted, canonical_ref_spelling(ref), home=home))
+
+
 def keep_resolved_ref(value: object, result: str) -> str:
     """Return ``result``, the validated form of the reference keyword ``value``, with the edge of ``value``."""
     if not isinstance(value, ResolvedRef):
         return result
     return value if result == value else ResolvedRef(result, value.edge)
+
+
+def validate_resolved_ref(value: object, handler: Callable[[object], Any]) -> Any:
+    r"""Validate the reference keyword ``value`` with ``handler``, keeping the edge of a ``ResolvedRef``.
+
+    The handler reads the plain string the value holds: pydantic-core reads a ``str`` subclass as UTF-8, which a
+    reference with a lone surrogate (the JSON escape ``\ud800``) is not.
+    """
+    if not isinstance(value, ResolvedRef):
+        return handler(value)
+    return keep_resolved_ref(value, handler(str.__str__(value)))  # noqa: PLC2801 - the plain string it holds
 
 
 class ResourceChildren(Protocol):
@@ -241,28 +254,28 @@ class DocumentResources:
 
     A later declaration of a URI replaces an earlier one.
     """
+    duplicate_names: Mapping[str, tuple[str, ...]]
+    """Each plain-name URI (an `$anchor`, a `$dynamicAnchor` or an identifier that is a fragment) that more than one
+    schema declares, to their locations in document order (``_document_position``); JSON Schema leaves a reference to
+    it undefined."""
     defaults: frozenset[str]
     """The URIs that only the root base names; a document registered earlier keeps such a URI."""
     resources: frozenset[str]
     """The pointer of each resource root: the document root, each schema below it that declares an identifier other
     than a fragment, and each implicit resource."""
+    bases: Mapping[str, str]
+    """The base URI of each resource root, by its pointer, which a plain name in the resource is resolved against."""
     embedded: Mapping[str, Mapping[str, str]]
     """The identifiers, as written, of the resources each resource embeds, to their pointers; the first one wins."""
     dynamic_anchors: Mapping[str, Mapping[str, str]]
     """The `$dynamicAnchor` names of each resource to their locations; the first one wins."""
-    document_dynamic_anchors: Mapping[str, str]
-    """The `$dynamicAnchor` names of the whole document to their locations; the first one in walk order wins."""
-    recursive_anchors: tuple[str, ...]
-    """The location of each schema that declares `$recursiveAnchor: true`, in walk order."""
+    first_dynamic_anchors: Mapping[str, str]
+    """Each `$dynamicAnchor` name of the document to the location of its first declaration in document order
+    (``_document_position``)."""
     implicit_resources: bool
     """Whether the document evaluates schemas as resources without an identifier, as OpenAPI component schemas."""
     embeds_resources: bool
     """Whether a schema below the root, or an implicit resource, declares an identifier other than a fragment."""
-
-
-def _pointer(path: SchemaPath) -> str:
-    """Return the RFC 6901 pointer of a path below a schema."""
-    return "".join(f"/{str(part).replace('~', '~0').replace('/', '~1')}" for part in path)
 
 
 def walk_schema_resources(  # noqa: PLR0913
@@ -280,20 +293,30 @@ def walk_schema_resources(  # noqa: PLR0913
     ``base`` is the URI of the document itself and ``id_field`` the identifier keyword a configured schema version
     fixes (None to read it from `$schema`). The walk descends into the keywords ``children`` yields and then visits
     each ``implicit`` resource with the document's base and ``id_field``. An identifier other than a fragment, below
-    the root, declares a resource whose base URI applies below it.
+    the root, declares a resource whose base URI applies below it. The walk meets the schemas of the root in document
+    order and the implicit resources after them, so the declarations that ``duplicate_names`` and
+    ``first_dynamic_anchors`` order are put in document order by where they are written (``_document_position``).
     """
     names: dict[str, str] = {}
     declared: set[str] = set()
+    declarations: dict[str, dict[str, str]] = {}
     resources: set[str] = set()
+    bases: dict[str, str] = {}
     embedded: dict[str, dict[str, str]] = {}
     dynamic_anchors: dict[str, dict[str, str]] = {}
-    document_dynamic_anchors: dict[str, str] = {}
-    recursive_anchors: list[str] = []
+    dynamic_declarations: dict[str, dict[str, str]] = {}
     root_base = base
 
-    def name(uri: str, location: str) -> None:
+    def name(uri: str, location: str, pointer: str) -> None:
         names[uri] = location
         declared.add(uri)
+        if not is_pointer_fragment(uri.partition("#")[2]):
+            declarations.setdefault(uri, {})[location] = pointer
+
+    def in_document_order(locations: dict[str, str]) -> list[str]:
+        if not implicit or len(locations) == 1:
+            return list(locations)
+        return sorted(locations, key=lambda location: _document_position(raw, locations[location]))
 
     def visit(schema: dict[str, Any], pointer: str, base: str, id_field: str | None, resource: str) -> bool:
         nonlocal root_base
@@ -301,7 +324,7 @@ def walk_schema_resources(  # noqa: PLR0913
         location = f"{document}#{pointer}"
         embeds = False
         if isinstance(identifier_value, str):
-            name(absolute := urljoin(base, identifier_value), location)
+            name(absolute := urljoin(base, identifier_value), location, pointer)
             base = absolute.split("#", 1)[0]
             if embeds := bool(pointer) and not identifier_value.startswith("#"):
                 embedded.setdefault(resource, {}).setdefault(identifier_value, pointer)
@@ -310,35 +333,55 @@ def walk_schema_resources(  # noqa: PLR0913
             names.setdefault(base, location)
         if embeds or not pointer:
             resources.add(resource := pointer)
+            bases[pointer] = base
         for keyword in ("$anchor", "$dynamicAnchor"):
             if isinstance(anchor := schema.get(keyword), str):
-                name(urljoin(base, f"#{anchor}"), location)
+                name(urljoin(base, f"#{anchor}"), location, pointer)
                 if keyword == "$dynamicAnchor":
                     dynamic_anchors.setdefault(resource, {}).setdefault(anchor, location)
-                    document_dynamic_anchors.setdefault(anchor, location)
-        if schema.get("$recursiveAnchor") is True:
-            recursive_anchors.append(location)
+                    dynamic_declarations.setdefault(anchor, {}).setdefault(location, pointer)
         for path, child in children(schema):
-            embeds |= visit(child, pointer + _pointer(path), base, id_field, resource)
+            embeds |= visit(child, pointer + join_pointer(path), base, id_field, resource)
         return embeds
 
     embeds_resources = visit(raw, "", base, id_field, "")
     for path, schema in implicit:
-        resources.add(pointer := _pointer(path))
+        resources.add(pointer := join_pointer(path))
+        bases[pointer] = base
         embeds_resources |= visit(schema, pointer, base, id_field, pointer)
     return DocumentResources(
         document=document,
         root_base=root_base,
         names=MappingProxyType(names),
+        duplicate_names=MappingProxyType({
+            uri: tuple(in_document_order(locations)) for uri, locations in declarations.items() if len(locations) > 1
+        }),
         defaults=frozenset(names.keys() - declared),
         resources=frozenset(resources),
+        bases=MappingProxyType(bases),
         embedded=MappingProxyType({key: MappingProxyType(value) for key, value in embedded.items()}),
         dynamic_anchors=MappingProxyType({key: MappingProxyType(value) for key, value in dynamic_anchors.items()}),
-        document_dynamic_anchors=MappingProxyType(document_dynamic_anchors),
-        recursive_anchors=tuple(recursive_anchors),
+        first_dynamic_anchors=MappingProxyType({
+            anchor: in_document_order(locations)[0] for anchor, locations in dynamic_declarations.items()
+        }),
         implicit_resources=bool(implicit),
         embeds_resources=embeds_resources,
     )
+
+
+def _document_position(raw: Any, pointer: str) -> tuple[int, ...]:
+    """Return where the schema at a pointer of a loaded document is written: the index of each member it lies in.
+
+    Positions compare in document order, the order the members of the document are written in.
+    """
+    position: list[int] = []
+    node = raw
+    for token in pointer_tokens(pointer):
+        keys = node if isinstance(node, dict) else range(len(node))
+        index, key = next((index, key) for index, key in enumerate(keys) if str(key) == token)
+        position.append(index)
+        node = node[key]
+    return tuple(position)
 
 
 @final
@@ -350,10 +393,16 @@ class ResourceRegistry:
     """Absolute URI to the location it names, over every registered document."""
     root_bases: dict[str, str] = field(default_factory=dict)
     resources: dict[str, set[str]] = field(default_factory=dict)
+    bases: dict[tuple[str, str], str] = field(default_factory=dict)
+    """The base URI of each resource root of a document, by the document and the root's pointer."""
     dynamic_anchors: dict[tuple[str, str], dict[str, str]] = field(default_factory=dict)
     embedded: dict[tuple[str, str], dict[str, str]] = field(default_factory=dict)
-    anchor_tables: dict[str, tuple[Mapping[str, str], tuple[str, ...]]] = field(default_factory=dict)
-    """The `$dynamicAnchor` names of each whole document and its `$recursiveAnchor` schemas (``DocumentResources``)."""
+    first_dynamic_anchors: dict[str, Mapping[str, str]] = field(default_factory=dict)
+    """The first declaration of each `$dynamicAnchor` name of a document, by the document
+    (``DocumentResources.first_dynamic_anchors``)."""
+    duplicate_names: dict[str, Mapping[str, tuple[str, ...]]] = field(default_factory=dict)
+    """The plain-name URIs that more than one schema of a document declares, by the document
+    (``DocumentResources.duplicate_names``)."""
     keys: dict[str, set[str]] = field(default_factory=dict)
     """The URIs each document registered, which a later registration of the document drops while they name it."""
 
@@ -363,9 +412,11 @@ class ResourceRegistry:
             if self.locations.get(key, "").split("#", 1)[0] == document:
                 self.locations.pop(key, None)
         for resource in self.resources.pop(document, ()):
+            self.bases.pop((document, resource), None)
             self.dynamic_anchors.pop((document, resource), None)
             self.embedded.pop((document, resource), None)
-        self.anchor_tables.pop(document, None)
+        self.first_dynamic_anchors.pop(document, None)
+        self.duplicate_names.pop(document, None)
 
     def register(self, resources: DocumentResources) -> None:
         """Register the resources of a document, as the walk over the document registered them before the graph."""
@@ -377,19 +428,38 @@ class ResourceRegistry:
                 self.locations[uri] = location
         self.root_bases[document] = resources.root_base
         self.resources[document] = set(resources.resources)
+        for resource, base in resources.bases.items():
+            self.bases[document, resource] = base
+        self.first_dynamic_anchors[document] = resources.first_dynamic_anchors
+        self.duplicate_names[document] = resources.duplicate_names
         for resource, anchors in resources.dynamic_anchors.items():
             self.dynamic_anchors[document, resource] = dict(anchors)
         for resource, identifiers in resources.embedded.items():
             self.embedded[document, resource] = dict(identifiers)
-        self.anchor_tables[document] = resources.document_dynamic_anchors, resources.recursive_anchors
         self.keys[document] = set(resources.names)
+
+    def enclosing_resource(self, document: str, pointer: str) -> str | None:
+        """Return the root pointer of the schema resource enclosing a location in a registered document."""
+        if (resources := self.resources.get(document)) is None:
+            return None
+        while pointer and pointer not in resources:
+            pointer = pointer.rpartition("/")[0]
+        return pointer
+
+    def plain_name_uri(self, document: str, pointer: str, ref: str) -> str:
+        """Return the URI a plain-name fragment at a location in a document names.
+
+        A plain name resolves against the base URI of the schema resource enclosing the location; in a document that
+        is not registered it stays as written.
+        """
+        return urljoin(self.bases.get((document, self.enclosing_resource(document, pointer)), ""), ref)
 
     def location(self, absolute: str) -> str | None:
         """Return the location an absolute reference names in a registered schema resource, if any."""
         if (location := self.locations.get(absolute)) is not None:
             return location
         resource, _, fragment = absolute.partition("#")
-        if (not fragment or fragment.startswith("/")) and (root := self.locations.get(resource)):
+        if is_pointer_fragment(fragment) and (root := self.locations.get(resource)):
             return f"{root}{fragment}" if fragment else root
         return None
 
@@ -414,6 +484,7 @@ class SchemaGraphBuilder:
     """
 
     __slots__ = (
+        "_converted",
         "_directories",
         "_documents",
         "_edge_keys",
@@ -421,7 +492,6 @@ class SchemaGraphBuilder:
         "_mount_containers",
         "_mount_roots",
         "_mounted",
-        "_ref_sites",
         "_schema_reads",
         "_schemas",
         "locations",
@@ -432,6 +502,7 @@ class SchemaGraphBuilder:
         """Start an empty graph."""
         self.locations: dict[int, SchemaLocation] = {}
         self.registry = ResourceRegistry()
+        self._converted: dict[str, set[tuple[str, ...]]] = {}
         self._documents: list[object] = []
         self._false_all_of_documents: set[str] = set()
         self._mounted: set[int] = set()
@@ -439,9 +510,8 @@ class SchemaGraphBuilder:
         self._mount_containers: dict[int, Any] = {}
         self._edge_keys: dict[RefEdge, RefKey] = {}
         self._directories: dict[str, Path] = {}
-        self._ref_sites: dict[tuple[str, RefOrigin], list[int]] = {}
         self._schema_reads: dict[int, Any] = {}
-        self._schemas: dict[tuple[int, type[Any]], tuple[Any, object]] = {}
+        self._schemas: dict[tuple[int, type[Any]], Any] = {}
 
     @property
     def holds_false_all_of(self) -> bool:
@@ -451,22 +521,13 @@ class SchemaGraphBuilder:
         """
         return bool(self._false_all_of_documents)
 
-    def count_ref(self, site: str, ref: str, plain_origin: RefOrigin) -> None:
-        """Count a reference that reached a check ``site``, by its origin, with or without its edge.
+    def note_converted(self, root: SchemaLocation) -> None:
+        """Record that the schema at ``root``, and every schema below it, was converted from another format."""
+        self._converted.setdefault(root.document, set()).add(root.tokens)
 
-        A plain string counts under ``plain_origin``, the producer the parser names for it.
-        """
-        origin = ref.edge.origin if isinstance(ref, ResolvedRef) else plain_origin
-        self._ref_sites.setdefault((site, origin), [0, 0])[isinstance(ref, ResolvedRef)] += 1
-
-    def ref_site_counts(self) -> Mapping[tuple[str, RefOrigin], tuple[int, int]]:
-        """Return, by site and origin, how many references reached it as plain strings and how many with their edge."""
-        return {
-            key: (plain, carried)
-            for key, (plain, carried) in sorted(
-                self._ref_sites.items(), key=lambda item: (item[0][0], item[0][1].value)
-            )
-        }
+    def is_converted(self, location: SchemaLocation) -> bool:
+        """Return whether the schema at a location is part of a schema converted from another format."""
+        return any(location.tokens[: len(root)] == root for root in self._converted.get(location.document, ()))
 
     def edge_key(self, edge: RefEdge, compute: Callable[[RefEdge], RefKey]) -> RefKey:
         """Return the key of an edge, which ``compute`` resolves in the edge's document once, at its first call.
@@ -486,43 +547,22 @@ class SchemaGraphBuilder:
             directory = self._directories[document] = resolve()
         return directory
 
-    def schema(
-        self, raw: object, kind: type[SchemaT], validate: Callable[[], SchemaT], *, fingerprint: bool
-    ) -> SchemaT:
+    def schema(self, raw: object, kind: type[SchemaT], validate: Callable[[], SchemaT]) -> SchemaT:
         """Return the ``kind`` object a JSON object of a loaded document validates to, which ``validate`` makes once.
 
         Every reader shares it, so none writes it. A value the graph does not locate is validated at every read.
-        ``fingerprint`` records what the object holds, which ``changed_schemas`` compares at the end of L1.
         A ``validate`` that raises records nothing, so the next read raises again.
         """
         if not isinstance(raw, dict) or id(raw) not in self.locations:
             return validate()
-        if (cached := self._schemas.get(key := (id(raw), kind))) is None:
-            schema = validate()
-            cached = self._schemas[key] = schema, _fingerprint(schema) if fingerprint else None
-        return cached[0]
+        if (schema := self._schemas.get(key := (id(raw), kind))) is None:
+            schema = self._schemas[key] = validate()
+        return schema
 
     def node(self, raw: object) -> SchemaNodeId | None:
         """Return the node a JSON object of a loaded document is, or None for a value the graph does not locate."""
         location = self.locations.get(id(raw)) if isinstance(raw, dict) else None
         return None if location is None else SchemaNodeId(location)
-
-    def changed_schemas(self) -> Iterator[SchemaLocation]:
-        """Yield the location of each shared object whose fingerprint differs from the one recorded at validation."""
-        for (raw_id, _), (schema, recorded) in self._schemas.items():
-            if recorded is not None and _fingerprint(schema) != recorded:
-                yield self.locations[raw_id]
-
-    def target(self, edge: RefEdge) -> SchemaLocation | None:
-        """Return the registered location an edge names, by registry document name, if its target is registered."""
-        if (base := self.registry.root_bases.get(edge.document)) is None or (
-            location := self.registry.location(urljoin(base, edge.ref))
-        ) is None:
-            return None
-        document, _, pointer = location.partition("#")
-        return SchemaLocation(
-            document, tuple(unquote(token).replace("~1", "/").replace("~0", "~") for token in pointer.split("/")[1:])
-        )
 
     @staticmethod
     def with_ref_edges(
@@ -542,7 +582,6 @@ class SchemaGraphBuilder:
         A copied container keeps its type and attributes, as ``index_document`` copies them.
         """
         active: set[int] = set()
-        mounted, home = (converted.mounted, converted.home) if converted is not None else (str, None)
 
         def visit(value: Any, tokens: tuple[str, ...], entries: str) -> Any:
             if not isinstance(value, (dict, list)) or (value_id := id(value)) in active:
@@ -568,10 +607,7 @@ class SchemaGraphBuilder:
                 source = SchemaLocation(root.document, tokens)
                 for keyword in REF_KEYWORDS:
                     if type(ref := changed.get(keyword, value.get(keyword))) is str:
-                        changed[keyword] = ResolvedRef(
-                            ref,
-                            RefEdge(source, keyword, document, mounted(ref), canonical_ref_spelling(ref), home=home),
-                        )
+                        changed[keyword] = _keyword_ref(ref, source, keyword, document, converted)
             active.discard(value_id)
             if not changed:
                 return value
@@ -622,7 +658,6 @@ class SchemaGraphBuilder:
         locations = self.locations
         false_all_of = self._false_all_of_documents
         ancestors: dict[int, Any] = {}
-        mounted, home = (converted.mounted, converted.home) if converted is not None else (str, None)
         reads_refs = set() if reading is None else {reading.objects, reading.root}
 
         def write(value: dict[Any, Any] | list[Any], value_id: int, key: Any, updated: Any) -> None:
@@ -663,15 +698,8 @@ class SchemaGraphBuilder:
             if entries in reads_refs:
                 for keyword in REF_KEYWORDS:
                     if type(ref := ancestors[value_id].get(keyword)) is str:
-                        edge = RefEdge(
-                            location,
-                            keyword,
-                            cast("DocumentId", document),
-                            mounted(ref),
-                            canonical_ref_spelling(ref),
-                            home=home,
-                        )
-                        write(value, value_id, keyword, ResolvedRef(ref, edge))
+                        resolved = _keyword_ref(ref, location, keyword, cast("DocumentId", document), converted)
+                        write(value, value_id, keyword, resolved)
             node = ancestors.pop(value_id)
             locations[id(node)] = location
             return node
@@ -719,40 +747,3 @@ class SchemaGraphBuilder:
         if (mounts := self._mount_containers.get(id(root))) is None:
             mounts = self._mount_containers[id(root)] = root[container] = copy(root.get(container, {}))
         mounts[key] = converted
-
-
-def same_values(left: object, right: object) -> bool:
-    """Return whether two values of loaded documents hold the same data, their attributes and types included."""
-    return _fingerprint(left) == _fingerprint(right)
-
-
-def _fingerprint(value: object, active: frozenset[int] = frozenset()) -> object:
-    """Return a comparable record of what an object holds, its attributes and those of the objects it holds included.
-
-    The values ``functools.cached_property`` keeps in an object's ``__dict__`` are not part of it. A container that is
-    its own ancestor is recorded by its type.
-    """
-    if (value_id := id(value)) in active:
-        return type(value)
-    active |= {value_id}
-    match value:
-        case dict():
-            return dict, tuple((key, _fingerprint(item, active)) for key, item in value.items())
-        case list() | tuple() | set() | frozenset():
-            items = sorted(value, key=repr) if isinstance(value, (set, frozenset)) else value
-            return type(value), tuple(_fingerprint(item, active) for item in items)
-    if not isinstance(attributes := getattr(value, "__dict__", None), dict):
-        return type(value), value
-    kind = type(value)
-    return (
-        kind,
-        tuple(
-            (name, _fingerprint(item, active))
-            for name, item in attributes.items()
-            if not isinstance(getattr(kind, name, None), cached_property)
-        ),
-        tuple(
-            _fingerprint(getattr(value, name, None), active)
-            for name in ("__pydantic_fields_set__", "__pydantic_extra__", "__pydantic_private__")
-        ),
-    )

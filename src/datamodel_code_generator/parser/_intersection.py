@@ -3,16 +3,24 @@
 A schema object with a ``$ref`` and sibling keywords means the conjunction of the referenced schema (its first part)
 and its own keywords (its last part); a property that overrides an inherited property means the conjunction of the
 inherited property and its own. Each such site has a legacy merge, its presentation row, which writes one schema for
-the parts: ``JsonSchemaParser._deep_merge`` for ``$ref`` siblings (lists concatenated, the own value of any other
-keyword winning, the referenced value filling in) and ``JsonSchemaParser._merge_property_schemas`` for inherited
-overrides (the child's value winning). :func:`intersect_keywords` keeps the row's schema wherever it enforces what the
+the parts: :func:`concatenating_row` for ``$ref`` siblings (lists concatenated, the own value of any other keyword
+winning, the referenced value filling in) and :func:`inherited_override_row` for inherited overrides (the child's
+value winning). The members of an ``allOf`` that the parser merges into one schema have the row
+:func:`all_of_member_row`. :func:`intersect_keywords` keeps the row's schema wherever it enforces what the
 conjunction enforces, so working output keeps its bytes, and writes the intersection of a keyword where the row
 enforces something else.
 
 Pure: the parts and the row are dumped schema dicts, nothing is written to them, and nested schemas that change are
-copied with ``copy.copy``, so a located dump keeps its location. The adapters are ``parser/jsonschema.py``:
-``JsonSchemaParser._intersect_ref_siblings`` (for ``_merge_ref_with_schema`` and
-``_resolve_inherited_parent_property``) and ``JsonSchemaParser._merge_properties_with_parent_constraints``.
+copied with ``copy.copy``, so a located dump keeps its location. The adapters are
+``parser/_schema_refs.py:intersect_ref_siblings`` (for ``merge_ref_with_schema`` and
+``parser/_inherited_schemas.py:resolve_inherited_parent_property``) and
+``parser/_inherited_schemas.py:merge_properties_with_parent_constraints``.
+
+The presentation row of an inherited property override is built here (:func:`inherited_override_row`), by the rows of
+``--allof-merge-mode``: which keywords an override inherits (:func:`inherits_keyword`, also read for the default of an
+inherited field), and how one subschema value or keyword of the inherited property merges with the override's
+(:func:`merge_inherited_value`, :func:`merge_inherited_keyword`, rows of :data:`InheritedRow`), which the type shape
+``--allof-merge-mode none`` writes (``parser/_inherited_schemas.py:merge_inherited_type_shape_dict``) reads too.
 
 ``pattern`` is the conjunction of the parts' patterns (``_regex_syntax.py:conjoin_patterns``) unless the row's pattern
 implies each of them; patterns not every engine runs, and patterns no single expression conjoins, keep the row's pattern
@@ -30,64 +38,235 @@ schema (the caller passes ``ref_siblings_are_parts=False``). The site's own ``en
 depth) is then no part: the row's ``enum`` stays (the referenced values and the sibling values concatenated), and no
 ``enum`` or ``const`` warning counts it. The other sibling keywords are parts in every dialect.
 
-Known gap, left to a later change: an ``enum`` value that the ``type`` of another part rejects (``{"$ref": I, "enum":
-[1, 2.5, "x"]}`` with an ``integer`` target) is kept, and an ``enum`` none of whose values the other part's ``type``
-admits gives no warning.
+A parse keeps the rows of ``LEGACY_ROWS`` whose option is off (``kept_legacy_rows``): without
+``--intersect-allof-keywords`` the output of 0.86.0 where parts meet, and without
+``--intersect-combined-schema-keywords`` (which turns ``--intersect-allof-keywords`` on) the output of 0.88.0 where an
+``enum`` meets a ``type`` that rejects some of its values, and in each branch of an ``anyOf`` or ``oneOf`` beside
+keywords, and without ``--distribute-allof-over-unions`` the output of 0.89.0 where an ``allOf`` meets an ``anyOf`` or
+``oneOf``. With ``admits_value`` (left out under ``legacy-enum-outside-type-kept``) an ``enum`` value that the
+merged ``type`` rejects is removed (``{"$ref": I, "enum": [1, 2.5, "x"]}`` with an ``integer`` target keeps ``1``),
+and an ``enum`` none of whose values it admits is a keyword without a common value; without it they are kept.
 """
 
 from __future__ import annotations
 
 from copy import copy
 from fractions import Fraction
-from itertools import chain, starmap
-from math import gcd, isfinite, isnan, lcm
-from typing import TYPE_CHECKING, Any, Final, final
+from functools import partial
+from itertools import chain, product, starmap
+from math import gcd, isfinite, isnan, lcm, prod
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, final
 from warnings import warn
 
 from typing_extensions import Sentinel
 
+from datamodel_code_generator._json_schema import (
+    MODELED_SCHEMA_MAPS,
+    SEQUENCE_SCHEMA_SHAPES,
+    SINGLE_SCHEMA_SHAPES,
+    admitted_types,
+    declared_types,
+    non_null_types,
+    schema_positions,
+)
 from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import conjoin_patterns, pattern_implies
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping, Sequence
+    from collections.abc import Callable, Collection, Hashable, Iterable, Mapping, Sequence
 
 __all__ = [
+    "BRANCH_COMBINATION_LIMIT",
+    "ENUM_ENTRY_NAMES",
     "ENUM_METADATA_KEYWORDS",
+    "INHERITED_SCHEMA_KEYWORDS",
+    "INTERSECTED_KEYWORDS",
+    "LEGACY_ROWS",
+    "POSITIONAL_SCHEMA_KEYWORDS",
+    "InheritedRow",
     "KeywordIntersection",
+    "all_of_member_row",
     "bounds_admit_no_value",
+    "branch_combinations",
+    "common_types",
+    "concatenating_row",
+    "declared_positional_tail",
+    "declared_types",
     "enum_metadata",
+    "inherited_override_row",
+    "inherited_positional_tail",
+    "inherits_keyword",
     "intersect_constraint",
     "intersect_enum_values",
     "intersect_keywords",
     "intersect_multiple_of",
+    "intersect_types",
     "is_hash_safe_json_scalar",
     "json_values_equal",
+    "kept_enum_entries",
+    "kept_legacy_rows",
+    "merge_inherited_keyword",
+    "merge_inherited_value",
+    "retained_enum_metadata",
     "warn_unsatisfiable",
     "warn_untaken_patterns",
 ]
 
+_T = TypeVar("_T")
+BRANCH_COMBINATION_LIMIT: Final = 128
+"""The most combinations of one branch of each ``anyOf`` and ``oneOf`` that a schema is read as the union of."""
 _LOWER_BOUNDS: Final = ("minimum", "exclusiveMinimum", "minLength", "minItems", "minProperties")
 _UPPER_BOUNDS: Final = ("maximum", "exclusiveMaximum", "maxLength", "maxItems", "maxProperties")
+_BOUNDS: Final = frozenset(_LOWER_BOUNDS + _UPPER_BOUNDS)
 _BOUND_DIMENSIONS: Final = (
     (("minimum", "exclusiveMinimum"), ("maximum", "exclusiveMaximum")),
     (("minLength",), ("maxLength",)),
     (("minItems",), ("maxItems",)),
     (("minProperties",), ("maxProperties",)),
 )
+_UNEVALUATED_KEYWORDS: Final = schema_positions("unevaluated")
 _SCHEMA_KEYWORDS: Final = (
-    "items",
-    "additionalItems",
-    "additionalProperties",
-    "propertyNames",
-    "unevaluatedItems",
-    "unevaluatedProperties",
+    *schema_positions("modeled", "child", shapes=SINGLE_SCHEMA_SHAPES, without=_UNEVALUATED_KEYWORDS),
+    *_UNEVALUATED_KEYWORDS,
 )
-_SCHEMA_MAP_KEYWORDS: Final = ("properties", "patternProperties")
-ENUM_METADATA_KEYWORDS: Final = ("x-enum-varnames", "x-enumNames", "x-enum-descriptions")
+"""The keywords of one nested schema the intersection reads: the core ones, then those of the unevaluated vocabulary."""
+INHERITED_SCHEMA_KEYWORDS: Final = schema_positions("modeled", "child")
+"""The subschema keywords whose values an inherited property and its override merge value by value."""
+POSITIONAL_SCHEMA_KEYWORDS: Final = frozenset(schema_positions("child", shapes=SEQUENCE_SCHEMA_SHAPES))
+"""The keywords that can declare a tuple, whose positions an inherited property and its override merge by index."""
+_NOT_INHERITED: Final = {"constraints": frozenset({"default", "examples", "example"})}
+"""The keywords an override does not inherit, by ``--allof-merge-mode`` value; ``none`` inherits no keyword."""
+ENUM_ENTRY_NAMES: Final = (
+    ("x-enum-varnames", "x_enum_varnames"),
+    ("x-enumNames", "x_enum_names"),
+    ("x-enum-descriptions", "x_enum_descriptions"),
+)
+"""The keywords that list one entry per enum value, each with the name of its schema object field."""
+ENUM_METADATA_KEYWORDS: Final = tuple(keyword for keyword, _ in ENUM_ENTRY_NAMES)
 _HASHABLE_SCALAR_TYPES: Final = frozenset({str, int, float, bool, type(None)})
-_NUMBER_TYPES: Final = frozenset({"integer", "number"})
 _REMOVED: Final = Sentinel("_REMOVED")
+INTERSECTED_KEYWORDS: Final = _BOUNDS.union((
+    "multipleOf",
+    "uniqueItems",
+    "required",
+    "pattern",
+    "type",
+    "enum",
+    "nullable",
+))
+LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {
+    "intersect_allof_keywords": {
+        "legacy-merge-row": "a `$ref` with sibling keywords and an inherited property override are their earlier merge",
+        "legacy-lookahead-patterns": (
+            "the patterns of the parts are joined by lookaheads, unwarned; an allOf member merge keeps the later "
+            "pattern"
+        ),
+        "legacy-all-of-site-form": (
+            "an allOf site of value parts keeps its earlier form, unwarned where they conflict (a model without fields "
+            "only where their intersection admits an object), its root writing the keywords of parts some value "
+            "meets, and a `$ref` member's sibling `enum` or `const` does not narrow its literals"
+        ),
+        "legacy-all-of-null-as-written": (
+            "null is read as written where parts meet: a `type` without null keeps the null members beside it and "
+            "those of an inherited type, an allOf map member's `type` keeps its null, and a `None` merged enum value "
+            "fits"
+        ),
+    },
+    "intersect_combined_schema_keywords": {
+        "legacy-combined-branch-row": (
+            "a branch of an `anyOf` or `oneOf` is its merge with the keywords beside it (`all_of_member_row` without "
+            "bounds), the branch's value of a keyword winning"
+        ),
+        "legacy-enum-outside-type-kept": "an `enum` value that the merged `type` rejects stays where parts meet",
+        "legacy-schema-maps-merged-as-schemas": (
+            "an inherited property override merges a `properties` or `patternProperties` map as a schema: names "
+            "spelled like keywords the merge mode does not inherit, or `nullable`, are dropped"
+        ),
+        "legacy-type-narrowing-override-deferred": (
+            "a partial override without constraints is a copy of the inherited field, which keeps the inherited type "
+            "and drops at most its null, also where the override narrows the type further"
+        ),
+        "legacy-type-shape-length-from-max-items": (
+            "the type shape of `--allof-merge-mode none` keeps the length of a tuple only from an explicit `maxItems`"
+        ),
+        "legacy-all-of-ref-siblings-ignored": (
+            "an allOf member that is a `$ref` with sibling keywords is the `$ref` alone"
+        ),
+        "legacy-all-of-alias-member-base": (
+            "an allOf member naming a schema that is only a `$ref` takes that alias as its base"
+        ),
+        "legacy-all-of-union-null-dropped": (
+            "the union of the variants an allOf member's anyOf or oneOf gives admits no null, even where every part "
+            "does"
+        ),
+        "legacy-all-of-required-names-dropped": (
+            "a field, an item or a branch whose allOf names one model and adds only `required` names to it, through a "
+            "member or beside the allOf, is that model, which does not require them"
+        ),
+    },
+    "distribute_allof_over_unions": {
+        "legacy-ref-branch-without-site-parts": (
+            "a `$ref` branch of an anyOf or oneOf takes the `properties` and `required` beside it, not the allOf "
+            "members nor the value keywords beside it, and the subtypes of a discriminated `$ref` branch take none of "
+            "the allOf members"
+        ),
+        "legacy-operation-all-of-before-union": (
+            "an OpenAPI request or response body with an allOf beside an anyOf or oneOf is parsed by its allOf, the "
+            "union dropped"
+        ),
+        "legacy-union-parts-joined": (
+            "every anyOf and oneOf of an allOf is parsed at the site's path and their branches join one union, each "
+            "with the other parts; a discriminated `$ref` branch of them is left out"
+        ),
+        "legacy-ref-member-union-dropped": (
+            "an allOf member naming an allOf that holds an anyOf or oneOf is a base, which later passes drop as a "
+            "root model"
+        ),
+        "legacy-value-union-members-unread": (
+            "the value branches of an allOf's anyOf and oneOf are read only where every combination admits no object "
+            "and the site writes a model: a field writes Any, a field of one $ref member that type, and an allOf of "
+            "object branches leaves them out"
+        ),
+    },
+}
+"""The rows of the output of an earlier release where parts meet, by the option whose off state they are."""
+
+
+def branch_combinations(
+    parts: Sequence[Sequence[_T]], limit: int, key: Callable[[_T], Hashable] | None = None
+) -> list[tuple[_T, ...]] | None:
+    """Return each combination of one item of every part, the first part varying slowest; None above ``limit``.
+
+    With ``key`` a combination holds the items of one key once (A and A is A), and the combinations whose items have
+    the keys of an earlier one are left out (A and B is B and A).
+    """
+    if prod(map(len, parts)) > limit:
+        return None
+    if key is None:
+        return list(product(*parts))
+    combinations: dict[frozenset[Hashable], tuple[_T, ...]] = {}
+    for combination in product(*parts):
+        items = tuple({key(item): item for item in combination}.values())
+        combinations.setdefault(frozenset(map(key, items)), items)
+    return list(combinations.values())
+
+
+def kept_legacy_rows(enabled: Mapping[str, bool]) -> frozenset[str]:
+    """Return the rows of ``LEGACY_ROWS`` a parse keeps: those of every option that ``enabled`` does not turn on.
+
+    ``enabled`` holds each option with the options it implies already applied.
+    """
+    return frozenset(row for option, rows in LEGACY_ROWS.items() if not enabled.get(option) for row in rows)
+
+
+InheritedRow: TypeAlias = Literal["override", "type-shape"]
+"""How one inherited schema value and the value its override declares merge (:func:`merge_inherited_value`).
+
+* ``override``: the presentation row of ``--allof-merge-mode all`` and ``constraints`` (:func:`inherited_override_row`):
+  an inherited ``true`` beside the override's schema is that schema.
+* ``type-shape``: the type shape ``--allof-merge-mode none`` writes the override's keywords on: an inherited ``true``
+  stays ``true``.
+"""
 
 
 @final
@@ -161,6 +340,11 @@ def _retained_indices(first: Sequence[Any], second: Sequence[Any]) -> list[int]:
     return [
         index for index, value in enumerate(first) if any(json_values_equal(value, candidate) for candidate in second)
     ]
+
+
+def _same_values(first: Sequence[Any], second: Sequence[Any]) -> bool:
+    """Return whether each of two lists lists every value of the other."""
+    return len(_retained_indices(first, second)) == len(first) and len(_retained_indices(second, first)) == len(second)
 
 
 def intersect_enum_values(first: Sequence[Any], second: Sequence[Any]) -> list[Any]:
@@ -255,27 +439,30 @@ def bounds_admit_no_value(schema: Mapping[str, Any]) -> bool:
     return any(_crosses(schema, lower, upper) for lower, upper in _BOUND_DIMENSIONS)
 
 
-def _types(value: object) -> tuple[str, ...]:
-    """Return the JSON types a ``type`` keyword lists."""
-    return (value,) if isinstance(value, str) else tuple(value) if isinstance(value, list) else ()
+def intersect_types(first: Sequence[str], second: Sequence[str]) -> tuple[str, ...]:
+    """Return the types both lists admit (``admitted_types``), in the order of ``first``.
 
-
-def _explicit_null(part: Mapping[str, Any]) -> bool:
-    """Return whether a part's own keywords admit null: ``nullable: true`` or ``null`` in its ``type`` list."""
-    return part.get("nullable") is True or "null" in _types(part.get("type"))
-
-
-def _intersect_types(first: Sequence[str], second: Sequence[str]) -> tuple[str, ...]:
-    """Return the types both lists admit, in the order of ``first``; ``integer`` is the part of ``number`` both admit.
-
-    ``null`` stays only when both lists hold it; whether a site admits null is the null rule's decision.
+    A type of ``first`` stays where ``second`` admits it; a ``number`` of ``first`` gives the ``integer`` that both
+    admit where ``second`` admits only that. ``null`` stays only when both lists hold it; whether a site admits null is
+    the null rule's decision.
     """
+    admitted = admitted_types(second)
     return tuple(
         dict.fromkeys(
-            schema_type if schema_type in second else "integer"
+            schema_type if schema_type in admitted else "integer"
             for schema_type in first
-            if schema_type in second or (schema_type in _NUMBER_TYPES and _NUMBER_TYPES.intersection(second))
+            if admitted_types((schema_type,)) & admitted
         )
+    )
+
+
+def common_types(first: Sequence[str], second: Sequence[str]) -> tuple[str, ...]:
+    """Return ``intersect_types`` without a type that another of them admits: the ``integer`` beside ``number``."""
+    types = intersect_types(first, second)
+    return tuple(
+        schema_type
+        for schema_type in types
+        if schema_type not in admitted_types(other for other in types if other != schema_type)
     )
 
 
@@ -298,15 +485,67 @@ def enum_metadata(enum_parts: Sequence[Mapping[str, Any]], key: str, index: int)
     )
 
 
+def retained_enum_metadata(parts: Sequence[Mapping[str, Any]], indices: Sequence[int]) -> dict[str, list[object]]:
+    """Return the x-enum entries of the values of the first part's enum at ``indices`` (``enum_metadata``).
+
+    Only the keywords some part writes.
+    """
+    return {
+        key: [enum_metadata(parts, key, index) for index in indices]
+        for key in ENUM_METADATA_KEYWORDS
+        if any(part.get(key) for part in parts)
+    }
+
+
+def kept_enum_entries(
+    values: Sequence[object],
+    entries: Sequence[object],
+    keeps: Callable[[int], bool],
+    *,
+    skips_null: bool,
+    keeps_extra: bool,
+) -> list[object]:
+    """Return the x-enum entries whose enum value stays (``keeps``, by the value's position).
+
+    Each entry is matched to its value as the schema's enum class reads them: past the null where the entries leave it
+    out (``skips_null``). ``keeps_extra``: the entries past the last value matched stay.
+    """
+    positions = [position for position, value in enumerate(values) if value is not None or not skips_null]
+    return [
+        entry
+        for index, entry in enumerate(entries)
+        if (keeps(positions[index]) if index < len(positions) else keeps_extra)
+    ]
+
+
 @final
 class _Reconciler:
     """Rewrite the keywords of a row whose value enforces something other than the intersection of the parts."""
 
-    __slots__ = ("extras_key", "own_enum_is_part", "unsatisfiable", "untaken_patterns")
+    __slots__ = (
+        "admits_value",
+        "enum_entries_skip_null",
+        "extras_key",
+        "own_enum_is_part",
+        "parts_admit_null",
+        "unsatisfiable",
+        "untaken_patterns",
+    )
 
-    def __init__(self, extras_key: str, *, own_enum_is_part: bool) -> None:
+    def __init__(
+        self,
+        extras_key: str,
+        parts_admit_null: Callable[[Sequence[Mapping[str, Any]]], bool],
+        *,
+        own_enum_is_part: bool,
+        admits_value: Callable[[frozenset[str], object], bool] | None,
+        enum_entries_skip_null: Callable[[Mapping[str, Any]], bool],
+    ) -> None:
         self.extras_key = extras_key
+        self.parts_admit_null = parts_admit_null
         self.own_enum_is_part = own_enum_is_part
+        self.admits_value = admits_value
+        self.enum_entries_skip_null = enum_entries_skip_null
         self.unsatisfiable: list[str] = []
         self.untaken_patterns: list[str] = []
 
@@ -318,12 +557,12 @@ class _Reconciler:
     def schema(self, parts: Sequence[Mapping[str, Any]], row: dict[str, Any]) -> dict[str, Any] | None:
         """Return a copy of ``row`` with the keywords it gets wrong replaced, or None when it gets none wrong."""
         updates: dict[str, Any] = {}
+        own_conflicts = len(self.unsatisfiable)
         for lower, upper in _BOUND_DIMENSIONS:
             self._bounds(lower, upper, parts, row, updates)
-        if (merged := _intersect_values("multipleOf", parts)) is not None and row.get("multipleOf") != merged:
-            updates["multipleOf"] = merged
-        if (merged := _intersect_values("uniqueItems", parts)) is not None and row.get("uniqueItems") != merged:
-            updates["uniqueItems"] = merged
+        for keyword in ("multipleOf", "uniqueItems"):
+            if (merged := _intersect_values(keyword, parts)) is not None and row.get(keyword) != merged:
+                updates[keyword] = merged
         names = [part["required"] for part in parts if part.get("required")]
         if len(names) > 1 and set(union := list(dict.fromkeys(chain.from_iterable(names)))) != set(
             row.get("required") or ()
@@ -332,12 +571,14 @@ class _Reconciler:
         self._pattern(parts, row, updates)
         self._type(parts, row, updates)
         self._enum(parts, row, updates)
+        if self.admits_value is not None:
+            self._enum_outside_type(parts, row, updates, self.admits_value, self.unsatisfiable[own_conflicts:])
         self._const(parts)
         for keyword in _SCHEMA_KEYWORDS:
             values = [part[keyword] for part in parts if keyword in part]
             if len(values) > 1 and (merged := self._value(values, row.get(keyword))) is not None:
                 updates[keyword] = merged
-        for keyword in _SCHEMA_MAP_KEYWORDS:
+        for keyword in MODELED_SCHEMA_MAPS:
             self._schema_map(keyword, parts, row, updates)
         if not updates:
             return None
@@ -384,27 +625,23 @@ class _Reconciler:
             updates["pattern"] = conjunction.pattern
 
     def _type(self, parts: Sequence[Mapping[str, Any]], row: dict[str, Any], updates: dict[str, Any]) -> None:
-        """Write the types every part admits, and null by the null rule.
-
-        Null is admitted when the site's own keywords (the last part) admit it explicitly, else when every part admits
-        it: explicitly, or by having no ``type``.
-        """
-        if not (typed := [_types(part["type"]) for part in parts if "type" in part]):
+        """Write the types every part admits, and null as the null rule of the parts says (``parts_admit_null``)."""
+        if not (typed := [declared_types(part["type"]) for part in parts if "type" in part]):
             return
-        admits_null = _explicit_null(parts[-1]) or all(_explicit_null(part) or "type" not in part for part in parts)
+        admits_null = self.parts_admit_null(parts)
         if not admits_null and row.get("nullable") is True:
             updates["nullable"] = _REMOVED
         if len(typed) <= 1:
             return
         merged = typed[0]
         for types in typed[1:]:
-            merged = _intersect_types(merged, types)
+            merged = intersect_types(merged, types)
         if not merged:
             self.unsatisfiable.append("type")
             return
-        row_types = _types(row.get("type"))
+        row_types = declared_types(row.get("type"))
         written = [
-            *(schema_type for schema_type in merged if schema_type != "null"),
+            *non_null_types(merged),
             *(["null"] if admits_null and "null" in row_types else []),
         ]
         if written and set(written) != set(row_types):
@@ -419,17 +656,49 @@ class _Reconciler:
             self.unsatisfiable.append("enum")
             return
         retained = [first[index] for index in indices]
-        if (
-            isinstance(row_enum := row.get("enum"), list)
-            and len(_retained_indices(row_enum, retained)) == len(row_enum)
-            and len(_retained_indices(retained, row_enum)) == len(retained)
-        ):
+        if isinstance(row_enum := row.get("enum"), list) and _same_values(row_enum, retained):
             return
         updates["enum"] = retained
+        updates.update(retained_enum_metadata(enum_parts, indices))
+
+    def _enum_outside_type(
+        self,
+        parts: Sequence[Mapping[str, Any]],
+        row: dict[str, Any],
+        updates: dict[str, Any],
+        admits_value: Callable[[frozenset[str], object], bool],
+        conflicts: Collection[str],
+    ) -> None:
+        """Remove the ``enum`` values the written ``type`` rejects, with their ``x-enum-*`` entries.
+
+        A ``null`` value stays, since the null rule owns it; an ``enum`` whose every other value the ``type`` rejects
+        keeps the row's value, recorded as a keyword without a common value, unless the parts admit its null. Nothing
+        is removed where the schema's own ``type`` or ``enum`` has no common value (``conflicts``, those of this schema
+        and not of a nested one). Each entry is matched to its value as the schema's enum class reads them: past the
+        null where the entries leave it out (``enum_entries_skip_null``).
+        """
+        if (
+            {"type", "enum"} & set(conflicts)
+            or (types := updates.get("type", row.get("type"))) is None
+            or not isinstance(values := updates.get("enum", row.get("enum")), list)
+        ):
+            return
+        admitted = admitted_types(declared_types(types))
+        indices = [index for index, value in enumerate(values) if value is None or admits_value(admitted, value)]
+        if len(indices) == len(values):
+            return
+        if all(values[index] is None for index in indices) and not (indices and self.parts_admit_null(parts)):
+            self.unsatisfiable.append("enum")
+            return
+        updates["enum"] = [values[index] for index in indices]
+        skips_null = self.enum_entries_skip_null({
+            key: value for key, value in {**row, **updates}.items() if value is not _REMOVED
+        })
+        kept = set(indices)
         updates.update({
-            key: [enum_metadata(enum_parts, key, index) for index in indices]
+            key: kept_enum_entries(values, metadata, kept.__contains__, skips_null=skips_null, keeps_extra=False)
             for key in ENUM_METADATA_KEYWORDS
-            if any(part.get(key) for part in enum_parts)
+            if isinstance(metadata := updates.get(key, row.get(key)), list)
         })
 
     def _const(self, parts: Sequence[Mapping[str, Any]]) -> None:
@@ -476,21 +745,271 @@ class _Reconciler:
         return self.schema(schemas, row_value) if isinstance(row_value, dict) else None
 
 
-def intersect_keywords(
-    parts: Sequence[Mapping[str, Any]], row: dict[str, Any], *, extras_key: str, ref_siblings_are_parts: bool = True
+def intersect_keywords(  # noqa: PLR0913
+    parts: Sequence[Mapping[str, Any]],
+    row: dict[str, Any],
+    *,
+    extras_key: str,
+    parts_admit_null: Callable[[Sequence[Mapping[str, Any]]], bool],
+    enum_entries_skip_null: Callable[[Mapping[str, Any]], bool],
+    ref_siblings_are_parts: bool = True,
+    legacy_rows: Collection[str] = (),
+    admits_value: Callable[[frozenset[str], object], bool] | None = None,
 ) -> KeywordIntersection:
     """Return the schema of a site whose ``parts`` a legacy merge wrote as ``row``, keyword by keyword.
 
     ``parts`` are dumped schema dicts in order: the referenced or inherited schema first, the site's own keywords
-    last. ``extras_key`` is where a dump keeps keywords such as ``const``. A keyword of the row stays wherever it
+    last. ``extras_key`` is where a dump keeps keywords such as ``const``. ``parts_admit_null`` answers whether the
+    parts of a typed site, or of a nested schema of it, admit null: the null rule of the caller (row ``all-of-parts``
+    of ``parser/_null_facts.py``), and ``enum_entries_skip_null`` whether the ``x-enum-*`` entries of a schema leave
+    out the null of its ``enum`` (``_enum_entries_skip_null``). A keyword of the row stays wherever it
     enforces what the intersection of the parts enforces (a looser bound, a concatenated or wider ``enum``, a wider
     ``type`` or a dropped ``false`` does not), and nested schemas follow the same rule. ``ref_siblings_are_parts`` is
-    False for ``$ref`` siblings in a dialect that does not read them as parts (the legacy sibling enum row).
+    False for ``$ref`` siblings in a dialect that does not read them as parts (the legacy sibling enum row). Under
+    ``legacy-merge-row`` of ``legacy_rows`` the schema is ``row`` itself. ``admits_value`` answers whether the JSON
+    types a ``type`` admits (``admitted_types``) admit a value; with it the ``enum`` values the merged ``type`` rejects
+    are removed, and a site leaves it out under ``legacy-enum-outside-type-kept``.
     """
-    reconciler = _Reconciler(extras_key, own_enum_is_part=ref_siblings_are_parts)
+    if "legacy-merge-row" in legacy_rows:
+        return KeywordIntersection(row, ())
+    reconciler = _Reconciler(
+        extras_key,
+        parts_admit_null,
+        own_enum_is_part=ref_siblings_are_parts,
+        admits_value=admits_value,
+        enum_entries_skip_null=enum_entries_skip_null,
+    )
     keywords = reconciler.schema(parts, row)
     return KeywordIntersection(
         copy(row) if keywords is None else keywords,
         tuple(dict.fromkeys(reconciler.unsatisfiable)),
         tuple(dict.fromkeys(reconciler.untaken_patterns)),
     )
+
+
+def intersects_all_of_constraints(merge_mode: str) -> bool:
+    """Return whether the members of an allOf that merge into one schema intersect their constraints.
+
+    They do unless ``--allof-merge-mode none``.
+    """
+    return merge_mode != "none"
+
+
+def inherits_keyword(merge_mode: str, keyword: str) -> bool:
+    """Return whether a property that overrides an inherited one takes ``keyword`` from it where it declares none.
+
+    ``--allof-merge-mode all`` inherits every keyword, ``constraints`` all but ``default``, ``examples`` and
+    ``example``, and ``none`` none.
+    """
+    return merge_mode != "none" and keyword not in _NOT_INHERITED.get(merge_mode, ())
+
+
+def declared_positional_tail(read: Callable[[str], object], key: str) -> object:
+    """Return the schema a schema declares for the positions beyond the tuple of ``key``, or None when it declares none.
+
+    ``key`` is ``items`` (its tail is ``additionalItems``) or ``prefixItems``, whose tail is ``items``, else
+    ``unevaluatedItems``: a declared ``items`` types every later position, so ``unevaluatedItems`` never applies.
+    ``read`` reads a keyword of the schema: a dump's ``get`` or a schema object's attribute.
+    """
+    if key == "items":
+        return read("additionalItems")
+    if (items := read("items")) is not None and not isinstance(items, list):
+        return items
+    return read("unevaluatedItems")
+
+
+def inherited_positional_tail(read: Callable[[str], object], key: str) -> object:
+    """Return the schema of the positions beyond the tuple that ``key`` (``items`` or ``prefixItems``) declares.
+
+    ``read`` reads a keyword of the inherited schema: a dump's ``get`` or a schema object's attribute.
+    """
+    return True if (tail := declared_positional_tail(read, key)) is None else tail
+
+
+def merge_inherited_value(
+    parent: object, child: object, merge_schemas: Callable[[Any, Any], object], *, row: InheritedRow
+) -> object:
+    """Return the merge of one inherited schema value and the value its override declares.
+
+    ``false`` on either side wins, ``true`` beside a schema is that schema (an inherited ``true`` stays under
+    ``type-shape``), two schemas merge by ``merge_schemas``, and any other value is the override's.
+    """
+    match parent, child:
+        case (False, _) | (_, False):
+            return False
+        case _, True:
+            return parent
+        case True, _:
+            return True if row == "type-shape" else child
+        case dict(), dict():
+            return merge_schemas(parent, child)
+    return child
+
+
+def merge_inherited_keyword(  # noqa: PLR0913
+    key: str,
+    parent: object,
+    child: object,
+    read_parent: Callable[[str], object],
+    merge_value: Callable[[object, object], object],
+    *,
+    maps_by_name: bool,
+) -> object:
+    """Return the merge of the values an inherited schema and its override give one subschema keyword.
+
+    Tuple positions merge by index: :func:`inherited_positional_tail` (``read_parent`` reads the inherited schema)
+    stands for the positions the inherited tuple lacks, and its positions beyond the override's stay. With
+    ``maps_by_name`` a map of named schemas merges name by name. Any other value merges by ``merge_value``.
+    """
+    if key in POSITIONAL_SCHEMA_KEYWORDS and isinstance(parent, list) and isinstance(child, list):
+        tail = inherited_positional_tail(read_parent, key)
+        return [
+            merge_value(parent[index] if index < len(parent) else tail, item) for index, item in enumerate(child)
+        ] + parent[len(child) :]
+    if maps_by_name and key in MODELED_SCHEMA_MAPS and isinstance(parent, dict) and isinstance(child, dict):
+        result = parent.copy()
+        for name, schema in child.items():
+            result[name] = schema if (inherited := parent.get(name)) is None else merge_value(inherited, schema)
+        return result
+    return merge_value(parent, child)
+
+
+def inherited_override_row(
+    parent: Mapping[str, Any],
+    child: dict[str, Any],
+    *,
+    merge_mode: str,
+    drops_null: Callable[[Mapping[str, Any]], bool],
+    maps_by_name: bool = False,
+) -> dict[str, Any]:
+    """Return the presentation row of a property that overrides an inherited one, for :func:`intersect_keywords`.
+
+    The override's value of a keyword wins and the inherited value fills in (:func:`inherits_keyword`): subschema
+    keywords merge by :func:`merge_inherited_keyword` (row ``override``), other schema values recursively, and an
+    override that holds a ``$ref`` replaces the inherited schema; under ``--allof-merge-mode`` ``none`` (``merge_mode``)
+    the override is the row. An override for which ``drops_null`` holds drops the inherited ``nullable``: the caller
+    asks the null rule (``parser/_null_facts.py``). With ``maps_by_name`` a ``properties`` or ``patternProperties``
+    map merges name by name, so no name is read as a keyword; without it (``legacy-schema-maps-merged-as-schemas``)
+    the map merges as a schema. The result is a dict of the kind of ``child``, so a located dump keeps its location.
+    """
+    if merge_mode == "none" or "$ref" in child:
+        return copy(child)
+    result = {key: value for key, value in parent.items() if inherits_keyword(merge_mode, key)}
+    if drops_null(child):
+        result.pop("nullable", None)
+    merge_row = partial(inherited_override_row, merge_mode=merge_mode, drops_null=drops_null, maps_by_name=maps_by_name)
+    merge_value = partial(merge_inherited_value, merge_schemas=merge_row, row="override")
+    for key, value in child.items():
+        if key in result and key in INHERITED_SCHEMA_KEYWORDS:
+            result[key] = merge_inherited_keyword(
+                key, result[key], value, result.get, merge_value, maps_by_name=maps_by_name
+            )
+        elif key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = value if "$ref" in value else merge_row(result[key], value)
+        else:
+            result[key] = value
+    return _like(child, result)
+
+
+def _like(template: dict[str, Any], data: dict[str, Any]) -> dict[str, Any]:
+    """Return ``data`` as a dict of the kind of ``template``: the copy of a located dump keeps its location."""
+    if type(template) is dict:
+        return data
+    result = copy(template)
+    result.clear()
+    result.update(data)
+    return result
+
+
+def concatenating_row(first: Mapping[str, Any], last: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the presentation row of a ``$ref`` with siblings: ``first``'s keywords (the target), then ``last``'s.
+
+    Two lists concatenate, two dicts merge recursively (a dict of the kind of the one ``last`` holds), and any other
+    value of ``last`` wins.
+    """
+    result = dict(first)
+    for key, value in last.items():
+        if key in result:
+            previous = result[key]
+            if isinstance(previous, dict) and isinstance(value, dict):
+                result[key] = _like(value, concatenating_row(previous, value))
+                continue
+            if isinstance(previous, list) and isinstance(value, list):
+                result[key] = previous + value
+                continue
+        result[key] = value
+    return result
+
+
+def all_of_member_row(
+    parent: Mapping[str, Any],
+    child: Mapping[str, Any],
+    *,
+    conjoin_patterns: Callable[[Sequence[str]], str] | None = None,
+    schema_map: bool = False,
+    intersect_bounds: bool = True,
+) -> dict[str, Any]:
+    """Return the row of two ``allOf`` members merged into one schema: the keywords of ``parent``, then ``child``'s.
+
+    Nested schemas merge recursively (a dict of the kind of the one ``child`` holds) and other dicts by
+    :func:`concatenating_row`. In positive schema positions (not the maps ``schema_map`` stands for) the bounds of both
+    take the tighter (``child``'s when equal) with ``intersect_bounds``, and an ``enum`` is the intersection of both,
+    else both concatenated; with ``conjoin_patterns`` and ``intersect_bounds`` two different patterns take their
+    conjunction. Other lists concatenate, and any other value of ``child`` wins.
+    """
+    result = dict(parent)
+    conjoin = conjoin_patterns if intersect_bounds and not schema_map else None
+    for key, value in child.items():
+        if key not in result:
+            result[key] = value
+            continue
+        previous = result[key]
+        if isinstance(previous, dict) and isinstance(value, dict):
+            result[key] = (
+                _like(
+                    value,
+                    all_of_member_row(
+                        previous,
+                        value,
+                        conjoin_patterns=conjoin_patterns,
+                        schema_map=not schema_map and key in MODELED_SCHEMA_MAPS,
+                        intersect_bounds=intersect_bounds,
+                    ),
+                )
+                if schema_map or key in INHERITED_SCHEMA_KEYWORDS
+                else concatenating_row(previous, value)
+            )
+        elif intersect_bounds and not schema_map and key in _BOUNDS and previous is not None and value is not None:
+            result[key] = intersect_constraint(key, value, previous)
+        elif isinstance(previous, list) and isinstance(value, list):
+            result[key] = _all_of_enum(previous, value) if not schema_map and key == "enum" else previous + value
+        elif (
+            conjoin is not None
+            and key == "pattern"
+            and isinstance(previous, str)
+            and isinstance(value, str)
+            and previous != value
+        ):
+            result[key] = conjoin((previous, value))
+        else:
+            result[key] = value
+    if (
+        not schema_map
+        and isinstance(parent_enum := parent.get("enum"), list)
+        and isinstance(child_enum := child.get("enum"), list)
+        and len(result["enum"]) < len(parent_enum) + len(child_enum)
+    ):
+        retained_ids = {id(value) for value in result["enum"]}
+        indices = [index for index, value in enumerate(parent_enum) if id(value) in retained_ids]
+        result.update(retained_enum_metadata((parent, child), indices))
+    return result
+
+
+def _all_of_enum(parent: list[Any], child: list[Any]) -> list[Any]:
+    """Return the ``enum`` of two members: the values both list, in ``parent``'s order, else both concatenated.
+
+    Both concatenated also where each lists the other's values.
+    """
+    if not (intersection := intersect_enum_values(parent, child)) or _same_values(parent, child):
+        return parent + child
+    return intersection

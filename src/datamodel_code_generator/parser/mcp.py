@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from collections import ChainMap
 from collections.abc import Mapping, MutableMapping
 from typing import Any, Literal, TypeAlias
@@ -15,10 +14,11 @@ from datamodel_code_generator._json_schema import (
     SCHEMA_MAP_KEYS,  # noqa: F401
     SCHEMA_VALUE_KEYS,  # noqa: F401
     DefinitionKey,  # noqa: F401
-    _local_definition_ref_name,  # noqa: F401
-    _rewrite_local_definition_ref,  # noqa: F401
     _rewrite_schema_refs,
 )
+from datamodel_code_generator._name_words import pascal_words
+from datamodel_code_generator.parser._convert_common import _unique_name
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.util import BaseModel
 
 JSONSchemaDraft: TypeAlias = Literal["https://json-schema.org/draft/2020-12/schema"]
@@ -63,12 +63,12 @@ def _tool_validation_error(value: JSONSchemaMapping, validation_error: Validatio
     if key == "name" or not isinstance(tool_name, str):
         return "MCP tool name must be a string"
     if key == "inputSchema" and first_error["type"] == "missing":
-        return f"MCP tool {tool_name!r} is missing inputSchema"
+        return f"MCP tool {stable_repr(tool_name)} is missing inputSchema"
     if key in OPTIONAL_MAPPING_TOOL_KEYS or key == "inputSchema":
-        return f"MCP tool {tool_name!r} {key} must be a JSON Schema object"
+        return f"MCP tool {stable_repr(tool_name)} {key} must be a JSON Schema object"
     if key in OPTIONAL_STRING_TOOL_KEYS:
-        return f"MCP tool {tool_name!r} {key} must be a string"
-    return f"Invalid MCP tool {tool_name!r}: {first_error['msg']}"  # pragma: no cover
+        return f"MCP tool {stable_repr(tool_name)} {key} must be a string"
+    return f"Invalid MCP tool {stable_repr(tool_name)}: {first_error['msg']}"  # pragma: no cover
 
 
 def _parse_tool(value: JSONSchemaMapping) -> MCPTool:
@@ -145,24 +145,13 @@ def _extract_tools(data: Any) -> list[MCPTool]:
 
 
 def _unique_definition_name(name: str, used_names: set[str]) -> str:
-    base_name = _to_definition_name(name)
-    if base_name not in used_names:
-        used_names.add(base_name)
-        return base_name
-
-    index = 2
-    while (candidate := f"{base_name}{index}") in used_names:
-        index += 1
+    candidate = _unique_name(_to_definition_name(name), used_names)
     used_names.add(candidate)
     return candidate
 
 
 def _to_definition_name(name: str) -> str:
-    parts = [part for part in re.split(r"[^A-Za-z0-9]+", name) if part]
-    candidate = "".join(f"{part[:1].upper()}{part[1:]}" for part in parts) or "Model"
-    if not candidate[:1].isalpha():
-        return f"Model{candidate}"
-    return candidate
+    return pascal_words(name, digit_prefix="Model") or "Model"
 
 
 def _normalize_schema(

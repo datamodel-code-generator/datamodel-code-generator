@@ -1,0 +1,2 @@
+Pydantic does not take max_length on AwareDatetime; Model.stamp_len is generated without this constraint.
+Pydantic does not take max_length on AwareDatetime; Model.stamp_len_prop is generated without this constraint.

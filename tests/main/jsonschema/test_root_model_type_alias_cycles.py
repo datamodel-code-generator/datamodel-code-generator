@@ -1,4 +1,4 @@
-"""End-to-end coverage for cycles of RootModel aliases that hold constrained root models."""
+"""End-to-end coverage for cycles of RootModel aliases, alone or holding constrained root models."""
 
 from __future__ import annotations
 
@@ -54,6 +54,40 @@ def test_main_jsonschema_root_model_type_alias_constrained_cycle(
         valid_json='{"a":[[]]}',
         invalid_json='{"a":[]}',
         expected_error_type="too_short",
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"root_model_type_alias_constrained_cycle_alias_{target_python_version.replace('.', '_')}",
+        model_name="B",
+        valid_json="[[[[[]]]]]",
+        invalid_json="[[[], [], []]]",
+        expected_error_type="too_long",
+    )
+
+
+def test_main_jsonschema_root_model_type_alias_alias_cycle(output_file: Path) -> None:
+    """Rebuild a RootModel alias whose value names a later alias of its cycle, so its users validate."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "root_model_type_alias_alias_cycle.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--use-root-model-type-alias",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="root_model_type_alias_alias_cycle",
+        model_name="H",
+        valid_json='{"a": [[[]]]}',
+        invalid_json='{"a": [1]}',
+        expected_error_type="list_type",
     )
 
 

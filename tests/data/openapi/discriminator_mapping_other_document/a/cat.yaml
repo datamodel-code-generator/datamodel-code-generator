@@ -1,0 +1,4 @@
+allOf:
+  - $ref: '../b/base.yaml#/components/schemas/Pet'
+  - type: object
+    properties: {a_only: {type: string}}

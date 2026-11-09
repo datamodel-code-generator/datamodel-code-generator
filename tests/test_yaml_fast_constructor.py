@@ -14,7 +14,7 @@ import yaml
 from yaml.constructor import BaseConstructor
 
 from datamodel_code_generator._source import load_yaml
-from datamodel_code_generator.util import _fast_construct_document, get_safe_loader
+from datamodel_code_generator.util import _fast_construct_document, get_pure_safe_loader, get_safe_loader
 from tests.conftest import assert_output
 
 if TYPE_CHECKING:
@@ -424,6 +424,38 @@ def test_fast_constructor_preserves_custom_map_seq_constructors(  # noqa: PLR091
 def test_fast_constructor_matches_schema_fixtures(path: Path) -> None:
     """Keep the optimized C-loader path identical for every OpenAPI and AsyncAPI YAML fixture."""
     _assert_parity(path.read_text(encoding="utf-8"), get_safe_loader())
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        pytest.param("a: x\ty\n", id="plain_words"),
+        pytest.param("\ufeffa: x\ty\n", id="byte_order_mark"),
+        pytest.param("a: x\t\n", id="plain_trailing"),
+        pytest.param("a: x\t# c\n", id="plain_comment"),
+        pytest.param("a: x\n  \ty\n", id="continuation"),
+        pytest.param("a:\n    x\n  \ty\n", id="continuation_left_of_text"),
+        pytest.param("a: x\n \t\n  y\n", id="blank_line"),
+        pytest.param("a: x\u2029  y\n", id="paragraph_separator"),
+        pytest.param("a: x\n...\n", id="document_end"),
+        pytest.param("a: x\n\n---\nb: y\n", id="document_start_after_blank_line"),
+        pytest.param("a:\n  b: c\n  \td: e\n", id="tab_left_of_indentation"),
+        pytest.param("a: [x\ty, z\t]\n", id="flow"),
+        pytest.param("a:\tb\n", id="value_separator"),
+        pytest.param('a: "x"\t\n', id="quoted_trailing"),
+        pytest.param("a: &x\tb\nc: *x\t\n", id="anchor_alias"),
+        pytest.param("? x\ty\n: 1\n", id="explicit_key"),
+        pytest.param("- x\ty\n", id="sequence"),
+    ],
+)
+def test_pure_loader_reads_tabs_as_libyaml(text: str) -> None:
+    """PyYAML's own scanner reads tabs as libyaml does, so an install without libyaml reads the same data (#6592)."""
+    pure = _construct(text, get_pure_safe_loader(), standard=False)
+    data, error, _ = pure
+    assert_output(
+        _parity_report(_construct(text, get_safe_loader(), standard=False), pure)
+        + (f"error={error}\n" if error is not None else f"data={data!r}\n")
+    )
 
 
 def _fuzz_value(random_: random.Random, depth: int = 0) -> Any:

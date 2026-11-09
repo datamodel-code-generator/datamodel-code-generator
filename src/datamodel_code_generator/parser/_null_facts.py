@@ -4,8 +4,9 @@ A schema object admits null through its own keywords: a ``type`` of null or a ``
 ``anyOf`` or ``oneOf`` member typed null, ``nullable`` (OpenAPI 3.0 and many JSON Schema documents), or a null in its
 ``enum``. :class:`NullSources` records them as written, and :func:`resolve_null_facts` returns what one site of
 ``parser/jsonschema.py`` reads from them, with the row of :data:`NullRule` the answer comes from. Every input is an
-immutable fact, so the function reads nothing else; the adapter ``parser/jsonschema.py:_null_sources`` reads the facts
-from the live schema object and ``JsonSchemaParser._null_mode`` the options.
+immutable fact, so the function reads nothing else; the adapters that read the facts and the options from the live
+objects are listed in ``docs/architecture.md``. The converters write null in the forms of
+:data:`NullForm` (:func:`with_null`, :func:`null_schema`), which the sites then read as written.
 
 The sites disagree today on which sources count and whether ``nullable`` needs ``--strict-nullable``. The rows named
 ``legacy-*`` keep that output; the fix of each (G12, G01 decision 3) deletes its row.
@@ -13,18 +14,25 @@ The sites disagree today on which sources count and whether ``nullable`` needs `
 
 from __future__ import annotations
 
-from typing import Literal, TypeAlias, final
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, final
 
 from datamodel_code_generator._records import record
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
 
 __all__ = [
     "NO_NULL_MODE",
     "NullFacts",
+    "NullForm",
     "NullMode",
     "NullRule",
     "NullSite",
     "NullSources",
+    "dump_null_sources",
+    "null_schema",
     "resolve_null_facts",
+    "with_null",
 ]
 
 NullSite: TypeAlias = Literal[
@@ -39,6 +47,8 @@ NullSite: TypeAlias = Literal[
     "object-map",
     "all-of-map",
     "all-of-value",
+    "all-of-parts",
+    "all-of-union",
     "root-type",
     "multiple-types-root",
     "array-field",
@@ -46,6 +56,11 @@ NullSite: TypeAlias = Literal[
     "enum-literal",
     "combined-branch",
     "inherited-child",
+    "inherited-types",
+    "enforced-value",
+    "const-enum",
+    "enum-as-const",
+    "graphql-field",
 ]
 """The parse sites that read where null comes from.
 
@@ -56,23 +71,42 @@ NullSite: TypeAlias = Literal[
 * ``root-model``: the ``nullable`` of a root model (``JsonSchemaParser._create_registered_root_model``).
 * ``ref-target``: the null a referenced schema gives every reference to it (``JsonSchemaParser.get_ref_data_type``).
 * ``ref-nullable-only``: a ``$ref`` beside only ``nullable: true`` (``JsonSchemaParser._parse_ref_nullable_only_item``).
-* ``type-union``: the union of the types of a ``type`` list (``JsonSchemaParser._parse_constrained_type_union``,
+* ``type-union``: the union of the types of a ``type`` list (``JsonSchemaParser._build_constrained_type_union``,
   ``JsonSchemaParser.parse_array_fields``).
-* ``object-map``: the dict of an object map (``JsonSchemaParser._object_map_admits_null``).
+* ``object-map``: the dict of an object map (``parser/_object_maps.py:object_map_admits_null``).
 * ``all-of-map``, ``all-of-value``: the map or the value an ``allOf`` merges its parts into
-  (``JsonSchemaParser._merge_all_of_root_schema``, ``JsonSchemaParser._all_of_root_value_schema``).
+  (``parser/_all_of_values.py``: ``merge_all_of_root_schema``, ``all_of_root_value_schema``).
+* ``all-of-parts``: the intersection of the dumped parts of an ``allOf``, a ``$ref`` with siblings or an inherited
+  override, whose last part is the site's own keywords (``parser/_intersection.py:intersect_keywords``, which
+  ``parser/_schema_reading.py:_dump_parts_admit_null`` answers).
+* ``all-of-union``: one schema object among the parts of an ``allOf`` whose members give a union of variants, by its
+  own keywords; the union admits null when every part does, its ``$ref`` targets, ``anyOf`` or ``oneOf`` branches and
+  nested ``allOf`` members read the same way (``JsonSchemaParser._all_of_part_admits_null``).
 * ``root-type``: the root field of a root model (``JsonSchemaParser._parse_root_type_with_context``).
 * ``multiple-types-root``: the root field of a ``type`` list holding an object with properties
   (``JsonSchemaParser._parse_multiple_types_with_properties``).
-* ``array-field``: the field of an array (``JsonSchemaParser._resolve_array_field_required_nullable``).
+* ``array-field``: the field of an array (``parser/_value_keywords.py:resolve_array_field_required_nullable``).
 * ``enum``: a null in the ``enum`` of an Enum class (``JsonSchemaParser.parse_enum``, ``_enum_entries_skip_null``).
 * ``enum-literal``: a null among the values of an enum written as a ``Literal``
   (``JsonSchemaParser._literal_values_type``).
 * ``combined-branch``: an ``anyOf`` or ``oneOf`` member that is ``nullable``
   (``JsonSchemaParser._add_nullable_combined_schema_branches``).
 * ``inherited-child``: a property that overrides an inherited one, which drops the null of the inherited type unless
-  it admits null itself (``JsonSchemaParser._merge_inherited_type_shape_dict``,
-  ``JsonSchemaParser._mark_partial_inherited_fields``).
+  it admits null itself (``parser/_inherited_schemas.py``: ``merge_inherited_type_shape_dict``,
+  ``mark_partial_inherited_fields``; the presentation row of an override reads it from the dump's own ``type`` and
+  ``nullable``, ``_dump_drops_inherited_null``).
+* ``inherited-types``: the null among the JSON types an inherited schema accepts, beside the types it collects
+  (``parser/_inherited_schemas.py:get_inherited_schema_types``).
+* ``enforced-value``: the null a value schema enforces, beside its types
+  (``JsonSchemaParser._enforced_value_keywords``).
+* ``const-enum``: the enum a ``oneOf`` or ``anyOf`` of consts gives, whose ``parts`` are its branches typed null
+  without a const; the parent's and the branches' ``type`` are read as written, without the mark of
+  ``legacy-nullable-as-type-list`` (``parser/_value_keywords.py:extract_const_enum_from_combined``).
+* ``enum-as-const``: a one-value enum, or the value a const narrows an enum to, read as that const: ``enum_null`` is
+  whether that value is null (``parser/_schema_documents.py:_single_value_enum_as_const``,
+  ``JsonSchemaParser._reads_enum_as_const``).
+* ``graphql-field``: a GraphQL field, whose type's ``nullable`` is false under a non-null wrapper
+  (``parser/graphql.py:GraphQLParser.parse_field``).
 """
 
 NullRule: TypeAlias = Literal[
@@ -95,6 +129,11 @@ NullRule: TypeAlias = Literal[
     "all-of-own-null",
     "all-of-every-part-null",
     "all-of-not-null",
+    "all-of-own-declares-null",
+    "all-of-every-part-declares-null",
+    "all-of-part-excludes-null",
+    "all-of-union-part-admits-null",
+    "all-of-union-part-excludes-null",
     "force-optional",
     "legacy-root-type-nullable-ungated",
     "root-type-not-nullable",
@@ -113,6 +152,13 @@ NullRule: TypeAlias = Literal[
     "inherited-typed-without-null",
     "inherited-declared-not-null",
     "inherited-keeps-null",
+    "nullable-beside-types",
+    "const-enum-null",
+    "nullable-enum-not-const",
+    "enum-as-const",
+    "graphql-defaulted-non-null",
+    "graphql-non-null",
+    "graphql-nullable",
 ]
 """The rows of :func:`resolve_null_facts`.
 
@@ -152,6 +198,15 @@ NullRule: TypeAlias = Literal[
   holding null, also without ``--strict-nullable``, as root types read it (``legacy-root-type-nullable-ungated``).
 * ``all-of-every-part-null``: a merged map also admits null when every typed part lists null (G01 decision 3).
 * ``all-of-not-null``: neither holds.
+* ``all-of-own-declares-null``: the intersection of parts admits null when the last part declares it: ``nullable:
+  true``, a ``type`` of null or a ``type`` list holding null.
+* ``all-of-every-part-declares-null``: also when every typed part declares it so; ``all-of-every-part-null`` of a
+  merged map counts only ``type`` lists.
+* ``all-of-part-excludes-null``: otherwise a typed part excludes null.
+* ``all-of-union-part-admits-null``: a part of an allOf union admits null by its own keywords: a ``type`` that
+  declares null (``nullable: true``, a null ``type`` or list), an ``enum`` listing null and a ``const`` of null, each
+  where set; a part that sets none of them constrains no type.
+* ``all-of-union-part-excludes-null``: otherwise one of them excludes null.
 * ``force-optional``: ``--force-optional`` makes a root field optional and leaves its nullability undecided.
 * ``legacy-root-type-nullable-ungated``: a root field is optional and nullable by its ``nullable``, also without
   ``--strict-nullable``; ``type`` lists do not count.
@@ -178,6 +233,28 @@ NullRule: TypeAlias = Literal[
 * ``inherited-typed-without-null``: a ``type`` without null, unless ``nullable: true``, drops the inherited null.
 * ``inherited-declared-not-null``: so does ``nullable: false`` beside no such ``type``.
 * ``inherited-keeps-null``: otherwise the inherited type keeps its null.
+* ``nullable-beside-types``: a site that collects the types itself, a ``type`` list holding null among them, adds null
+  for ``nullable: true``, also without ``--strict-nullable`` (``inherited-types``, ``enforced-value``).
+* ``const-enum-null``: the enum of consts lists null for a branch typed null without a const, or for the parent's
+  ``type`` list holding null; ``nullable`` does not count, as an Enum's ``nullable`` beside no null value adds none
+  (``enum-without-null``).
+* ``nullable-enum-not-const``: a one-value enum beside ``nullable: true`` and a value other than null stays an enum,
+  since a const does not carry ``nullable``.
+* ``enum-as-const``: otherwise the enum is read as its const, which holds its null value.
+* ``graphql-defaulted-non-null``: a non-null field with a default is optional and not nullable.
+* ``graphql-non-null``: a non-null field without one is required unless ``--force-optional``, with undecided
+  nullability.
+* ``graphql-nullable``: a nullable field is optional, with undecided nullability.
+"""
+
+
+NullForm: TypeAlias = Literal["member", "type-list"]
+"""How a converter writes that a schema admits null (:func:`with_null`).
+
+* ``member``: an ``anyOf`` member typed null after the schema's own ``anyOf`` members, or beside the schema in a new
+  ``anyOf`` (protobuf wrapper types); avro writes the null of its unions so too (:func:`null_schema`).
+* ``type-list``: null appended to the schema's ``type`` when that is one string, else ``member`` (xmlschema
+  ``nillable``).
 """
 
 
@@ -192,8 +269,8 @@ class NullSources:
     object. ``typed``: ``type`` is set; ``type_string``: it is the string string. ``member_null``: a direct ``anyOf``
     or ``oneOf`` member is typed null or has a ``type`` list holding null. ``nullable``: the keyword's value, None
     when unset; ``copied_nullable``: a combined schema copied it into this branch. ``enum_null``: the ``enum`` lists
-    null. The ``type`` facts are those of the ``type`` list OpenAPI reads once ``legacy-nullable-as-type-list``
-    applied.
+    null; ``enum_set``: an ``enum`` is set. ``const_set``: a ``const`` is set; ``const_null``: it is null. The
+    ``type`` facts are those of the ``type`` list OpenAPI reads once ``legacy-nullable-as-type-list`` applied.
     """
 
     type_has_null: bool = False
@@ -207,6 +284,9 @@ class NullSources:
     nullable: bool | None = None
     copied_nullable: bool = False
     enum_null: bool = False
+    enum_set: bool = False
+    const_set: bool = False
+    const_null: bool = False
 
 
 @final
@@ -234,6 +314,37 @@ NO_NULL_MODE: NullMode = NullMode()
 """The mode of sites that no option changes."""
 
 
+def null_schema() -> dict[str, Any]:
+    """Return the schema of null that converters and the null members of parse sites write: a ``type`` of null."""
+    return {"type": "null"}
+
+
+def with_null(schema: dict[str, Any], form: NullForm) -> dict[str, Any]:
+    """Return a converted schema that also admits null, written in ``form``; nested values are shared with it."""
+    if form == "type-list" and isinstance(type_ := schema.get("type"), str):
+        return {**schema, "type": [type_, "null"]}
+    if "anyOf" in schema:
+        return {**schema, "anyOf": [*schema["anyOf"], null_schema()]}
+    return {"anyOf": [schema, null_schema()]}
+
+
+def dump_null_sources(dump: Mapping[str, Any]) -> NullSources:
+    """Return the null sources of a dumped schema's own ``type`` and ``nullable``; members and ``enum`` are not read.
+
+    ``type_has_null`` is the ``schema-type`` answer of its own ``type`` list.
+    """
+    type_ = dump.get("type")
+    lists_null = isinstance(type_, list) and "null" in type_
+    return NullSources(
+        type_has_null=lists_null,
+        type_null=type_ == "null",
+        type_list=isinstance(type_, list),
+        type_lists_null=lists_null,
+        typed=type_ is not None,
+        nullable=dump.get("nullable"),
+    )
+
+
 @final
 @record
 class NullFacts:
@@ -247,20 +358,21 @@ class NullFacts:
     required: bool | None = None
 
 
-def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913
+def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913, PLR0915
     sources: NullSources,
     site: NullSite,
     mode: NullMode = NO_NULL_MODE,
     *,
     required: bool = False,
     has_default: bool = False,
-    parts_null: bool = False,
+    parts: Sequence[NullSources] = (),
 ) -> NullFacts:
     """Return what ``site`` reads from the null ``sources`` of one schema object under ``mode``.
 
     The match returns for every site but ``inherited-child``, whose rows follow it. ``required`` and ``has_default``
-    are the required state and default of the field a site builds (``field``, ``array-field``); ``parts_null`` tells
-    that every typed part of an ``allOf`` lists null (``all-of-map``).
+    are the required state and default of the field a site builds (``field``, ``array-field``, ``has_default`` also
+    ``graphql-field``); ``parts`` are the sources of the typed parts an ``allOf`` merges (``all-of-map``,
+    ``all-of-parts``) or of the null branches of a ``const-enum``.
     """
     type_null = sources.type_has_null
     match site:
@@ -305,9 +417,17 @@ def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913
         case "all-of-map" | "all-of-value":
             if sources.nullable or sources.type_lists_null:
                 return NullFacts("all-of-own-null", admits_null=True)
-            if site == "all-of-map" and parts_null:
+            if site == "all-of-map" and all(part.type_lists_null for part in parts):
                 return NullFacts("all-of-every-part-null", admits_null=True)
             return NullFacts("all-of-not-null", admits_null=False)
+        case "all-of-union":
+            return _all_of_union_part_facts(sources)
+        case "all-of-parts":
+            if _declares_null(sources):
+                return NullFacts("all-of-own-declares-null", admits_null=True)
+            if all(map(_declares_null, parts)):
+                return NullFacts("all-of-every-part-declares-null", admits_null=True)
+            return NullFacts("all-of-part-excludes-null", admits_null=False)
         case "root-type":
             if mode.force_optional:
                 return NullFacts("force-optional", admits_null=None, required=False)
@@ -344,6 +464,22 @@ def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913
             if sources.nullable and not type_null:
                 return NullFacts("nullable-branch-adds-null", admits_null=True)
             return NullFacts("branch-keeps")
+        case "inherited-types" | "enforced-value":
+            return NullFacts("nullable-beside-types", admits_null=sources.nullable is True)
+        case "const-enum":
+            return NullFacts(
+                "const-enum-null", admits_null=sources.type_lists_null or any(part.type_null for part in parts)
+            )
+        case "enum-as-const":
+            if sources.nullable is True and not sources.enum_null:
+                return NullFacts("nullable-enum-not-const", admits_null=True)
+            return NullFacts("enum-as-const", admits_null=sources.enum_null)
+        case "graphql-field":
+            if sources.nullable is not False:
+                return NullFacts("graphql-nullable", required=False)
+            if has_default:
+                return NullFacts("graphql-defaulted-non-null", admits_null=False, required=False)
+            return NullFacts("graphql-non-null", required=not mode.force_optional)
     if sources.typed and not type_null and sources.nullable is not True:
         return NullFacts("inherited-typed-without-null", admits_null=False)
     if sources.nullable is False:
@@ -351,6 +487,20 @@ def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913
     return NullFacts("inherited-keeps-null")
 
 
+def _all_of_union_part_facts(sources: NullSources) -> NullFacts:
+    """Return whether the own keywords of one part of an allOf union admit null (site ``all-of-union``)."""
+    type_excludes = _type_excludes_null(sources)
+    enum_excludes = sources.enum_set and not sources.enum_null
+    if type_excludes or enum_excludes or (sources.const_set and not sources.const_null):
+        return NullFacts("all-of-union-part-excludes-null", admits_null=False)
+    return NullFacts("all-of-union-part-admits-null", admits_null=True)
+
+
+def _declares_null(sources: NullSources) -> bool:
+    """Return whether a schema object's own keywords declare null: ``nullable: true``, a null ``type`` or list."""
+    return sources.nullable is True or sources.type_null or sources.type_lists_null
+
+
 def _type_excludes_null(sources: NullSources) -> bool:
-    """Return whether the schema object's own ``type`` excludes null: set, without null, and not ``nullable: true``."""
-    return sources.typed and not (sources.type_null or sources.type_lists_null) and sources.nullable is not True
+    """Return whether the schema object's own ``type`` excludes null: set, and its own keywords declare no null."""
+    return sources.typed and not _declares_null(sources)

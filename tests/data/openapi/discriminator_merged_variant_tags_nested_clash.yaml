@@ -1,0 +1,239 @@
+openapi: 3.0.3
+info:
+  title: Merged Tags of Shared Variants Read Through Nested Unions
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        outer:
+          $ref: '#/components/schemas/Outer'
+        byKey:
+          $ref: '#/components/schemas/ByKey'
+        inline:
+          oneOf:
+            - $ref: '#/components/schemas/Cat'
+            - oneOf:
+                - $ref: '#/components/schemas/Dog'
+                - $ref: '#/components/schemas/Bird'
+          discriminator:
+            propertyName: kind
+        top:
+          $ref: '#/components/schemas/Top'
+        herd:
+          $ref: '#/components/schemas/Herd'
+        pond:
+          $ref: '#/components/schemas/Pond'
+        coast:
+          $ref: '#/components/schemas/Coast'
+        pinniped:
+          $ref: '#/components/schemas/Pinniped'
+        tank:
+          $ref: '#/components/schemas/Tank'
+        stream:
+          $ref: '#/components/schemas/Stream'
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        meow: {type: string}
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        bark: {type: string}
+    Bird:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        wing: {type: string}
+    DogOrBird:
+      oneOf:
+        - $ref: '#/components/schemas/Dog'
+        - $ref: '#/components/schemas/Bird'
+      discriminator:
+        propertyName: kind
+    ByKey:
+      oneOf:
+        - $ref: '#/components/schemas/Dog'
+        - $ref: '#/components/schemas/Bird'
+      discriminator:
+        propertyName: kind
+        mapping:
+          Cat: '#/components/schemas/Dog'
+          bird: '#/components/schemas/Bird'
+    Outer:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/DogOrBird'
+      discriminator:
+        propertyName: kind
+    Fox:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        den: {type: string}
+    Owl:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        nest: {type: string}
+    Cow:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        moo: {type: string}
+    Hen:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        egg: {type: string}
+    CowOrHen:
+      oneOf:
+        - $ref: '#/components/schemas/Cow'
+        - $ref: '#/components/schemas/Hen'
+      discriminator:
+        propertyName: kind
+    Herd:
+      oneOf:
+        - $ref: '#/components/schemas/Cow'
+        - $ref: '#/components/schemas/Hen'
+      discriminator:
+        propertyName: kind
+        mapping:
+          Fox: '#/components/schemas/Cow'
+          hen: '#/components/schemas/Hen'
+    Middle:
+      oneOf:
+        - $ref: '#/components/schemas/Owl'
+        - $ref: '#/components/schemas/CowOrHen'
+      discriminator:
+        propertyName: kind
+    Top:
+      oneOf:
+        - $ref: '#/components/schemas/Fox'
+        - $ref: '#/components/schemas/Middle'
+      discriminator:
+        propertyName: kind
+    Pig:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        oink: {type: string}
+    Duck:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        quack: {type: string}
+    Goose:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        honk: {type: string}
+    Sty:
+      oneOf:
+        - $ref: '#/components/schemas/Pig'
+        - $ref: '#/components/schemas/Goose'
+      discriminator:
+        propertyName: kind
+    Farm:
+      oneOf:
+        - $ref: '#/components/schemas/Pig'
+        - $ref: '#/components/schemas/Goose'
+      discriminator:
+        propertyName: kind
+        mapping:
+          Duck: '#/components/schemas/Pig'
+          goose: '#/components/schemas/Goose'
+    DuckOrGoose:
+      oneOf:
+        - $ref: '#/components/schemas/Duck'
+        - $ref: '#/components/schemas/Goose'
+      discriminator:
+        propertyName: kind
+    Pond:
+      oneOf:
+        - $ref: '#/components/schemas/Pig'
+        - $ref: '#/components/schemas/DuckOrGoose'
+      discriminator:
+        propertyName: kind
+    Seal:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        flipper: {type: string}
+    Walrus:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        tusk: {type: string}
+    Coast:
+      oneOf:
+        - $ref: '#/components/schemas/Seal'
+        - $ref: '#/components/schemas/DuckOrGoose'
+      discriminator:
+        propertyName: kind
+    Pinniped:
+      oneOf:
+        - $ref: '#/components/schemas/Seal'
+        - $ref: '#/components/schemas/Walrus'
+      discriminator:
+        propertyName: kind
+        mapping:
+          seal: '#/components/schemas/Seal'
+          walrus: '#/components/schemas/Walrus'
+    Trout:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        gill: {type: string}
+    Puppy:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        paw: {type: string}
+    Kitten:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        purr: {type: string}
+    Kennel:
+      oneOf:
+        - $ref: '#/components/schemas/Puppy'
+        - $ref: '#/components/schemas/Kitten'
+      discriminator:
+        propertyName: kind
+        mapping:
+          pup: '#/components/schemas/Puppy'
+          kit: '#/components/schemas/Kitten'
+    Tank:
+      oneOf:
+        - $ref: '#/components/schemas/Trout'
+        - $ref: '#/components/schemas/Kennel'
+      discriminator:
+        propertyName: kind
+        mapping:
+          fin: '#/components/schemas/Trout'
+    Stream:
+      oneOf:
+        - $ref: '#/components/schemas/Trout'
+        - $ref: '#/components/schemas/Kitten'
+      discriminator:
+        propertyName: kind

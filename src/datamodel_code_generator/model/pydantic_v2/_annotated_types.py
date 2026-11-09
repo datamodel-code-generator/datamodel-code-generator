@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from typing_extensions import override
 
-from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType
+from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
+from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType, _RuntimeAnnotatedDataType
 from datamodel_code_generator.python_literal import represent_python_value
 
 if TYPE_CHECKING:
@@ -24,7 +25,7 @@ class AnnotatedStringDataType(PydanticV2DataType):
     @override
     def type_hint(self) -> str:
         """Render string constraints inside an Annotated subscript."""
-        return f"{self.runtime_expression_imports[0].binding_name}[str, {super().type_hint}]"
+        return subscript_text(self.runtime_expression_imports[0].binding_name, ("str", super().type_hint))
 
     @property
     @override
@@ -53,7 +54,7 @@ def annotated_constraint_metadata(base: str, keywords: Mapping[str, Any]) -> tup
     return field_keywords, multiple_of
 
 
-class AnnotatedConstraintDataType(PydanticV2DataType):
+class AnnotatedConstraintDataType(_RuntimeAnnotatedDataType):
     """Render a ``con*`` call as ``Annotated`` constraints, which type checkers accept in type aliases.
 
     The data type keeps the ``con*`` import and keywords, so code that reads constraints sees the call it
@@ -62,20 +63,10 @@ class AnnotatedConstraintDataType(PydanticV2DataType):
 
     constrained_base: str = "str"
 
-    def _binding(self, name: str) -> str:
-        return next(import_.binding_name for import_ in self.runtime_expression_imports if import_.import_ == name)
-
     @property
     def annotated_base_type(self) -> str:
         """Return the constrained scalar through its current binding, as ``Decimal`` may be aliased."""
-        return next(
-            (
-                import_.binding_name
-                for import_ in self.runtime_expression_imports
-                if import_.import_ == self.constrained_base
-            ),
-            self.constrained_base,
-        )
+        return self._binding(self.constrained_base, self.constrained_base)
 
     @property
     @override
@@ -84,17 +75,10 @@ class AnnotatedConstraintDataType(PydanticV2DataType):
         field_keywords, multiple_of = annotated_constraint_metadata(self.constrained_base, self.kwargs or {})
         metadata: list[str] = []
         if field_keywords:
-            keywords = ", ".join(f"{name}={represent_python_value(value)}" for name, value in field_keywords.items())
-            metadata.append(f"{self._binding('Field')}({keywords})")
+            keywords = (keyword_argument(name, represent_python_value(value)) for name, value in field_keywords.items())
+            metadata.append(call_text(self._binding("Field"), keywords))
         if multiple_of is not None:
             metadata.append(f"{self._binding('MultipleOf')}({represent_python_value(multiple_of)})")
         if not metadata:
             return self.annotated_base_type
-        return f"{self._binding('Annotated')}[{self.annotated_base_type}, {', '.join(metadata)}]"
-
-    @property
-    @override
-    def imports(self) -> Iterator[Import]:
-        """Replace the ``con*`` import with the annotation imports."""
-        yield from (import_ for import_ in super().imports if import_ != self.import_)
-        yield from self.runtime_expression_imports
+        return subscript_text(self._binding("Annotated"), (self.annotated_base_type, *metadata))

@@ -47,12 +47,14 @@ text
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 4] b'null'
   send null as a body without a schema = None
+  refuse a null required body whose schema rejects null ! DecodeError: DecodeError(operation_id='putWork', reason='unencodable', location='body') [operation_id='putWork', location=('body',), body_bytes=b'', truncated=False] unencodable
   > POST https://api.example.com/notes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
   async send and decode null = None
   > POST https://api.example.com/drafts
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   async omit a null optional body = None
+  async refuse a null required body whose schema rejects null ! DecodeError: DecodeError(operation_id='putWork', reason='unencodable', location='body') [operation_id='putWork', location=('body',), body_bytes=b'', truncated=False] unencodable
 # nullable-parameters dataclasses.dataclass
   > POST https://api.example.com/notes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
@@ -96,12 +98,14 @@ text
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 4] b'null'
   send null as a body without a schema = None
+  refuse a null required body whose schema rejects null ! DecodeError: DecodeError(operation_id='putWork', reason='unencodable', location='body') [operation_id='putWork', location=('body',), body_bytes=b'', truncated=False] unencodable
   > POST https://api.example.com/notes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
   async send and decode null = None
   > POST https://api.example.com/drafts
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   async omit a null optional body = None
+  async refuse a null required body whose schema rejects null ! DecodeError: DecodeError(operation_id='putWork', reason='unencodable', location='body') [operation_id='putWork', location=('body',), body_bytes=b'', truncated=False] unencodable
 # nullable-parameters typing.TypedDict
   > POST https://api.example.com/notes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
@@ -145,12 +149,14 @@ text
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 4] b'null'
   send null as a body without a schema = None
+  refuse a null required body whose schema rejects null ! DecodeError: DecodeError(operation_id='putWork', reason='unencodable', location='body') [operation_id='putWork', location=('body',), body_bytes=b'', truncated=False] unencodable
   > POST https://api.example.com/notes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
   async send and decode null = None
   > POST https://api.example.com/drafts
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   async omit a null optional body = None
+  async refuse a null required body whose schema rejects null ! DecodeError: DecodeError(operation_id='putWork', reason='unencodable', location='body') [operation_id='putWork', location=('body',), body_bytes=b'', truncated=False] unencodable
 # nullable-parameters msgspec.Struct
   > POST https://api.example.com/notes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
@@ -194,9 +200,11 @@ text
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 4] b'null'
   send null as a body without a schema = None
+  refuse a null required body whose schema rejects null ! DecodeError: DecodeError(operation_id='putWork', reason='unencodable', location='body') [operation_id='putWork', location=('body',), body_bytes=b'', truncated=False] unencodable
   > POST https://api.example.com/notes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
   async send and decode null = None
   > POST https://api.example.com/drafts
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
   async omit a null optional body = None
+  async refuse a null required body whose schema rejects null ! DecodeError: DecodeError(operation_id='putWork', reason='unencodable', location='body') [operation_id='putWork', location=('body',), body_bytes=b'', truncated=False] unencodable

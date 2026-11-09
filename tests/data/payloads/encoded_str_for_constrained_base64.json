@@ -1,0 +1,15 @@
+{
+  "base": {"required": "YWFhYQ=="},
+  "cases": {
+    "pattern": {"text-valid": "YWFh", "text-invalid": "WWFh"},
+    "lengths": {"text-valid": "YWFh", "text-invalid": "YWFhYWFhYQ=="},
+    "required": {"text-valid": "YWFh", "text-invalid": "YWE"},
+    "nullable": {"text-valid": "YWFhYWFh", "text-invalid": "YWFhYWFhYQ=="},
+    "plain": {"text-valid": "YWFhYWFhYQ==", "text-invalid": "!"},
+    "items": {"text-valid": ["YWFhYWFh"], "text-invalid": ["YWFhYWFhYQ=="]},
+    "values": {"text-valid": {"k": "YWFh"}, "text-invalid": {"k": "WWFh"}},
+    "ref": {"text-valid": "YWFhYWFh", "text-invalid": "YWFhYWFhYQ=="},
+    "member": {"text-valid": "YWFhYWFh", "text-invalid": "YWFhYWFhYQ=="},
+    "branch": {"text-valid": "YWFhYWFh", "text-invalid": "YWFhYWFhYQ=="}
+  }
+}

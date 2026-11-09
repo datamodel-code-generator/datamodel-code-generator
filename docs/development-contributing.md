@@ -216,6 +216,15 @@ Tests for the checker use source fixtures and expected reports under
 that a contributor or coding agent can identify the owning layer and the expected
 remediation without reading the checker implementation.
 
+## Decision homes
+
+A decision that several parser passes or output models need has one home in
+`docs/architecture.md` ("One home per decision"): a pure core and its adapters.
+Build the facts in an adapter and call the core; for a decision without a home,
+add the home in the same change instead of writing a second copy. A new `legacy-*`
+row needs a row of the "Legacy rows" table in `docs/architecture.md` with what
+deletes it (`fix`); `tests/test_legacy_rows.py` fails for a row on one side only.
+
 ## Parser generation state
 
 Parser code must keep generated output, naming order, parse order, and
@@ -233,9 +242,8 @@ methods on `GenerationStore` are deprecated:
 - Replace field or nested data types with `replace_field_type(...)`,
   `replace_nested_data_type(...)`, or `set_nested_data_types(...)`.
 - Replace fields or base classes with `set_fields(...)`,
-  `append_field(...)`, `insert_field(...)`, `remove_field(...)`, or
-  `set_base_classes(...)`.
-- Rename generated models with `rename_model(...)`; move them with `move_model(...)` or
+  `append_field(...)`, `insert_field(...)`, or `set_base_classes(...)`.
+- Rename generated models with `rename_model(...)`; move them with
   `update_model_reference(...)`.
 - Report models whose fields, base classes, or data types changed without the
   store, for example through a model method, with `note_changed_models(...)`.
@@ -250,7 +258,7 @@ The local pre-commit hook `generation-store-usage` runs
 `scripts/check_generation_store_usage.py`, which checks `parser/`, the
 parser-facing hooks in `model/` and `types.py`, and caches kept in the
 `__dict__` of data types, fields and models, against the attribute-to-fact
-table in `src/datamodel_code_generator/parser/_facts.py`. The hook runs when a
+table in `scripts/fact_tables.py`. The hook runs when a
 parser file changes; after editing `model/`, `types.py` or the table, run the
 script yourself (the test suite runs it too).
 
@@ -283,9 +291,10 @@ Witness entries are never added for new writes either. When the scan learns to
 find a write that a witness covers, `--write-allowlist` turns the witness into a
 count entry; that move is the only one that may raise the counted total.
 
-If a new mutation helper is needed, add the method to
-`GENERATION_STORE_MUTATION_METHODS`, name it in the `store_ops` of the rows it
-writes, and update the checker tests so contributors get an actionable message.
+If a new mutation helper is needed, add the method to `SITE_EFFECTS` or
+`NO_SITE_EFFECT` (which make up `GENERATION_STORE_MUTATION_METHODS`), name it in
+the `store_ops` of the rows it writes, and update the checker tests so
+contributors get an actionable message.
 
 ## Debug checks
 
@@ -298,22 +307,25 @@ for them. Each area of checks has one environment variable, `DATAMODEL_CODE_GENE
 | `1` | raise at the first violation, with a message that starts with the variable |
 | `report:<path>` | append every violation to `<path>` as one JSON line (`area`, `message` and the area's details) and go on |
 
-Any other value fails the run. `Parser.parse` reads every variable once, at its start (`read_check_flags` in
-`src/datamodel_code_generator/_checks.py`); the code it runs asks `check_mode(area)`, which costs one lookup, and
-reports a violation through the mode it returns.
+Any other value fails the run. A parse reads every variable once, at its start, and its code reports a violation
+through the mode of the area.
+
+The areas (`Area` in `tests/checks/areas.py`) are checks of the test suite and ship nothing in the package: they wrap the internals that `tests/checks/seams.py` lists, read the variables when the pipeline of a parse
+starts and do nothing outside a parse. `tests/checks/plugin.py` installs them in the test process and, through the
+`sitecustomize` of `tests/checks/child` that it puts on the `PYTHONPATH`, in every Python a test starts that imports the
+same package. `python -m tests.checks <datamodel-codegen args>` runs the command line with them outside pytest.
 
 `tests/conftest.py` sets every area to `1` for the test suite with `os.environ.setdefault`, so a value you set first
 wins: `0` runs the tests without that area and `report:<path>` collects the violations of a whole run. Under
 `--codspeed` (the CodSpeed workflow and `tox -e perf`) it sets nothing, so benchmarks measure what production runs;
 measure performance outside pytest with the variables unset as well.
 
-`FACT_FINALITY` raises only for violations that `KNOWN_WRITES` in `src/datamodel_code_generator/parser/_finality.py`
-does not list; the listed ones are today's, each with the roadmap item that removes it and a witness, the
+`FACT_FINALITY` raises only for violations that `KNOWN_WRITES` in `tests/checks/finality.py` does not list; the listed ones are today's, each with the roadmap item that removes it and a witness, the
 `datamodel-codegen` arguments of one run that makes it. `python scripts/check_fact_finality.py --witnesses` (and the
 test suite) run the witnesses and fail for an entry whose witness no longer makes its violation: remove the entry. The
-list only shrinks. A new pass is declared in `parser/_pass_decls.py` and gets an entry in the pipeline tables of
-`Parser`, whose runner runs it inside `fact_pass(DECL)`; the same script checks the declarations,
-`scripts/check_pass_pipeline.py` checks the tables and their order, and a test that fails with "... undeclared: ..."
+list only shrinks. A new pass is declared in `scripts/pass_decls.py` and gets an entry, by name, in the pipeline
+tables of `Parser`; the check runs it inside the scope of that declaration (`tests/checks/parse.py:run_pass`), the same
+script checks the declarations, `scripts/check_pass_pipeline.py` checks the tables and their order, and a test that fails with "... undeclared: ..."
 made a write its pass does not declare.
 
 `STORE_WRITES` is the exception: today's code still writes outside store operations at the places
@@ -323,18 +335,23 @@ and fails the test for a write of the package that the allowlist does not list.
 
 | Area | Checks |
 | --- | --- |
-| `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 ([Metadata Output](architecture.md#metadata-output)) |
-| `MODULE_IMPORTS` | the imports of every module, and those all modules share, equal the replay of their import ledger when the module's import text is written, and each module writes the model names and binds the imports of its import plan ([Model Processing Passes](architecture.md#model-processing-passes)) |
-| `MODEL_GRAPH` | collapsing root models stops before an inlining that would make a data type contain itself, the generation store never meets two Reference objects that share a model key, a copy and its original, and the models the output writes are the store's emitted models ([Model Processing Passes](architecture.md#model-processing-passes), L5 `collapse_root_models`; [Generation Store](architecture.md#generation-store)) |
-| `SCHEMA_GRAPH` | every `$ref` edge of the schema graph gets one key and names the target the parser loads ([Layers](architecture.md#layers), L0) |
+| `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 (`tests/checks/schema_locations.py`, [Metadata Output](architecture.md#metadata-output)) |
+| `MODULE_IMPORTS` | the imports of every module, and those all modules share, equal the replay of their import ledger when the module's import text is written, and each module writes the model names and binds the imports of its import plan (`tests/checks/module_imports.py`, [Model Processing Passes](architecture.md#model-processing-passes)) |
+| `MODEL_GRAPH` | collapsing root models stops before an inlining that would make a data type contain itself, the generation store never meets two Reference objects that share a model key, a copy and its original, every model parsed from a JSON document has an owner or is a root at the end of L1, and the models the output writes are the store's emitted models (`tests/checks/model_graph.py`, [Model Processing Passes](architecture.md#model-processing-passes), L5 `collapse_root_models`; [Generation Store](architecture.md#generation-store)) |
+| `SCHEMA_GRAPH` | no reader writes a schema object the schema graph validated once and shares (`tests/checks/schema_graph.py`, [Layers](architecture.md#layers), L0) |
 | `STORE_WRITES` | after L1, data types, fields and models change their facts only inside store operations ([Generation Store](architecture.md#generation-store)) |
-| `GENERATED_CODE_REQUIREMENTS` | every `ConfigDict` key that Pydantic declares and the generator can write has a row in `_requirements.py`, checked when a parse records the Pydantic release its models need ([Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)) |
-| `FACT_FINALITY` | each pass changes only the facts its declaration in `parser/_pass_decls.py` lists, on the models its scope allows, before they are final ([Fact Finality](architecture.md#fact-finality)) |
+| `RENDER_MEMOS` | every value a per-parse memo returns equals the value computed anew where it is read (`tests/checks/memos.py`, [Generation Store](architecture.md#generation-store)) |
+| `FACT_FINALITY` | each pass changes only the facts its declaration in `scripts/pass_decls.py` lists, on the models its scope allows, before they are final ([Fact Finality](architecture.md#fact-finality)) |
 | `FACT_FINALITY_SWEEP` | with `FACT_FINALITY` on, a global pass that transforms or repairs compares every model, not only those it touched; it reports nothing itself, so `1` and `report:<path>` both turn it on |
+| `PASS_TRIGGERS` | a pass whose trigger is false, which its `PassSpec` skips, runs anyway and changes no fact, memo revision, import, parser attribute, run-state field and warns nothing (`tests/checks/finality.py:ParseChecks.idle_pass`, [Pass Declarations](architecture.md#pass-declarations)) |
 
-A new area adds a member to `CheckArea` in `_checks.py`, its variable to `CHECK_AREA_ENVS` in `tests/conftest.py` and
-a row to this table, and keeps tests that run it on and off. `FACT_FINALITY_SWEEP` is the exception: `tests/conftest.py`
-sets it to `1` only on `SWEEP_PYTHON` (the newest Python of CI), so one lane runs the slower full comparison.
+A new area adds a member to `Area` in `tests/checks/areas.py` and its seams to `tests/checks/seams.py`, its variable
+to `CHECK_AREA_ENVS` in `tests/conftest.py` and a row to this table, and keeps tests that run it on and off.
+`test_check_seams` fails when a seam is not wrapped or a module of the package holds a wrapped function the table does
+not list. That every `ConfigDict` key the generator can write has a row in `_requirements.py` depends only on the
+installed Pydantic, so it is a test (`tests/main/test_pydantic_floor.py`), not an area. `FACT_FINALITY_SWEEP` and `PASS_TRIGGERS` are the exceptions: `tests/conftest.py`
+sets them to `1` only on `SWEEP_PYTHON` (the newest Python of CI), so one lane runs the slower full comparison and the
+passes whose trigger is false, while the others skip those passes as users do.
 
 `DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY=1` shares the prefix but is not an area: the test helpers in
 `tests/main/_builtin_parity.py` read it on every call and then generate each output of the default formatters a
@@ -395,7 +412,7 @@ sha256, as the newest version, and the version pinned before becomes the baselin
 is made by hand in a pull request.
 
 The grid scores only the decisions it lists (`[grid]` in the manifest, keyed by rule `decision`), and a rule is judged
-by its own `when`: `contested_when` and the order of rules within a decision are not modelled.
+by its own `when`: the order of rules within a decision is not modelled.
 
 ## Writing a recommender rule
 
@@ -433,8 +450,6 @@ the report is written by `_report.py`. This rule from the file (evidence shorten
 | `reason` | Yes | Why the option helps this schema. `{name}` placeholders are filled from the schema's signals. |
 | `caveats` | No | Texts printed as `caveat:` after the reason, with placeholders filled. |
 | `evidence` | Yes | Measurements printed as `measured:`, as written (no placeholders). |
-| `contested_when` | No | A condition that argues against the rule on this schema. |
-| `contested_reason` | No | Why, printed as `against:` with placeholders filled. |
 | `optional` | No | `validation` or `policy`: the rule's values are only listed in that section of the report. |
 
 How rules are decided:
@@ -449,9 +464,6 @@ How rules are decided:
   not set the field. Values the preset already gives are listed under "Start from"; a rule that only sets fields to
   `false` and that the preset already follows is listed under "Not recommended". When the user set a field to
   another value, the user's value is kept and the difference is listed under "Your configuration".
-- When `contested_when` also matches, the rule is listed under "Consider" with `contested_reason`. Quick mode keeps
-  it out of the command. Full mode compares the recommendation with it (`recommended + DECISION`), and when that
-  candidate is selected, its values join the command and the configuration.
 - An `optional` rule is listed under "Optional (validation; not in the command)" or "Optional (policy; not in the
   command)". Its values never join the command, the configuration, or the compared candidates.
 - A value no CLI option can express (`false` for a field without a `--no-` option) makes the recommender start from
@@ -475,9 +487,9 @@ datamodel-codegen --input schema.yaml --recommend-options quick --output-format 
 ```
 
 The payload's `signals` are the counts conditions read; `signals` and `facts` (example texts such as
-`inline_title_examples`, or `none` when empty) are the placeholders `reason`, `caveats` and `contested_reason` may
-use. Write a literal brace as `{{` or `}}`. A new signal goes into `SignalName` and is counted in `measure_signals()`;
-it then appears in every JSON report, so record the changed expected reports.
+`inline_title_examples`, or `none` when empty) are the placeholders `reason` and `caveats` may use. Write a literal
+brace as `{{` or `}}`. A new signal goes into `SignalName` and is counted in `measure_signals()`; it then appears in
+every JSON report, so record the changed expected reports.
 
 ### Validation
 
@@ -499,7 +511,7 @@ it then appears in every JSON report, so record the changed expected reports.
    issue or pull request numbers or list known bugs in it.
 2. A test fixture: a small schema under `tests/data/recommend_options/` that fires the rule, added as a
    `pytest.param` to `test_recommend_options_for_schemas`. Run the test to record its expected report under
-   `tests/data/expected/main/recommend_options/`, accept the changed reports of other fixtures with
+   `tests/data/expected/main/main_recommend_options/`, accept the changed reports of other fixtures with
    `--inline-snapshot=fix`, and check that each change is one the rule should make.
 3. A registry entry: list the rule id in `options.<field>.rules` for every field it sets (see
    [Step 4](#step-4-register-the-option-in-the-recommender-required)).
@@ -552,13 +564,15 @@ By default, new options appear in "General Options". To place in a specific cate
 
 ```python
 CLI_OPTION_META: dict[str, CLIOptionMeta] = {
-    ...
-    "--my-new-option": CLIOptionMeta(
-        name="--my-new-option",
-        category=OptionCategory.MODEL,  # or FIELD, TYPING, TEMPLATE, etc.
-    ),
+    # existing rows
+    **_opts(_C.MODEL, "--my-new-option"),  # or _C.FIELD, _C.TYPING, _C.TEMPLATE, etc.
 }
 ```
+
+`_opts(category, *names, group=..., topic=..., **fields)` builds the rows of every option in `names` (space-separated
+names share the category, group and fields), so a new option can also be appended to the row of its category and group.
+`fields` sets the other `CLIOptionMeta` attributes, for example
+`requires=_relations("--other-option", value=True, message="...")`.
 
 ### Step 4: Register the option in the recommender (Required)
 

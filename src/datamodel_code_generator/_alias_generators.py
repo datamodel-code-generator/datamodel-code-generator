@@ -12,8 +12,11 @@ import re
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._target_unicode import lower, title
+from datamodel_code_generator.enums import AliasGenerator
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from datamodel_code_generator._format_types import PythonVersion
 
 _PASCAL_UNDERSCORE: Final = re.compile(r"([0-9A-Za-z])_(?=[0-9A-Z])")
@@ -46,3 +49,20 @@ def to_snake(camel: str, target_python_version: PythonVersion | None = None) -> 
     for step in _SNAKE_STEPS:
         snake = step.sub(lambda match: f"{match.group(1)}_{match.group(2)}", snake)
     return lower(snake.replace("-", "_"), target_python_version)
+
+
+_GENERATORS: Final[dict[str, Callable[[str, PythonVersion | None], str]]] = {
+    AliasGenerator.ToCamel.value: to_camel,
+    AliasGenerator.ToPascal.value: to_pascal,
+    AliasGenerator.ToSnake.value: to_snake,
+}
+
+
+def generate_alias(
+    generator_name: str, field_name: str, target_python_version: PythonVersion | None = None
+) -> str | None:
+    """Return the alias that the named generator gives a field, or None for a generator dcg cannot run."""
+    generate = next((generate for name, generate in _GENERATORS.items() if name == generator_name), None)
+    if generate is None:
+        return None
+    return generate(field_name, target_python_version)

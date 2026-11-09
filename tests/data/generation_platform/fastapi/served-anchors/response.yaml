@@ -1,0 +1,11 @@
+description: The note.
+headers:
+  X-Trace:
+    $ref: header.yaml
+content:
+  application/json:
+    schema:
+      type: object
+      properties:
+        count: {$anchor: count, type: integer}
+        total: {$ref: "#count"}

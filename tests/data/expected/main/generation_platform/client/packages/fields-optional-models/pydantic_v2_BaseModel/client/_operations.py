@@ -42,10 +42,53 @@ OPERATION_0: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
     method='POST',
     path='/pets',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((model_branch('201', 'application/json', 'json', model_bindings.codec_3),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='tag', style='form', explode=True), codec=model_bindings.codec_0),),
-    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_1), BodyMedia(media_type='application/x-www-form-urlencoded', kind='form', codec=model_bindings.codec_2, fields=(FieldPlan('name', 'string'), FieldPlan('tag', 'string')), additional=FieldPlan('', 'string'))), required=True),
-    fields=FieldArguments(method='create_pet', names=('name', 'kind', 'pet_tag', 'birthDate', 'owner', 'secret'), media=(BodyFields(media_type='application/json', fields=((0, 'name', False), (1, 'kind', False), (2, 'tag', False), (3, 'birthDate', False), (4, 'owner', False), (5, 'secret', False))), BodyFields(media_type='application/x-www-form-urlencoded', fields=((0, 'name', False), (2, 'tag', False))))),
+    responses=ResponseDecoder(
+        (model_branch('201', 'application/json', 'json', model_bindings.codec_3),), ()
+    ),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query', name='tag', style='form', explode=True
+            ),
+            codec=model_bindings.codec_0,
+        ),
+    ),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='application/json', kind='json', codec=model_bindings.codec_1
+            ),
+            BodyMedia(
+                media_type='application/x-www-form-urlencoded',
+                kind='form',
+                codec=model_bindings.codec_2,
+                fields=(FieldPlan('name', 'string'), FieldPlan('tag', 'string')),
+                additional=FieldPlan('', 'string'),
+            ),
+        ),
+        required=True,
+    ),
+    fields=FieldArguments(
+        method='create_pet',
+        names=('name', 'kind', 'pet_tag', 'birthDate', 'owner', 'secret'),
+        media=(
+            BodyFields(
+                media_type='application/json',
+                fields=(
+                    (0, 'name', False),
+                    (1, 'kind', False),
+                    (2, 'tag', False),
+                    (3, 'birthDate', False),
+                    (4, 'owner', False),
+                    (5, 'secret', False),
+                ),
+            ),
+            BodyFields(
+                media_type='application/x-www-form-urlencoded',
+                fields=((0, 'name', False), (2, 'tag', False)),
+            ),
+        ),
+    ),
 )
 
 OPERATION_1: Final[OperationPlan[UpdatePetResponse]] = OperationPlan(
@@ -54,9 +97,36 @@ OPERATION_1: Final[OperationPlan[UpdatePetResponse]] = OperationPlan(
     path='/pets/{petId}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='petId', style='simple', required=True, kind='integer'), codec=model_bindings.codec_4),),
-    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_5),), default='application/json'),
-    fields=FieldArguments(method='update_pet', names=('name', 'tag'), media=(BodyFields(media_type='application/json', fields=((0, 'name', False), (1, 'tag', False))),)),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='path',
+                name='petId',
+                style='simple',
+                required=True,
+                kind='integer',
+            ),
+            codec=model_bindings.codec_4,
+        ),
+    ),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='application/json', kind='json', codec=model_bindings.codec_5
+            ),
+        ),
+        default='application/json',
+    ),
+    fields=FieldArguments(
+        method='update_pet',
+        names=('name', 'tag'),
+        media=(
+            BodyFields(
+                media_type='application/json',
+                fields=((0, 'name', False), (1, 'tag', False)),
+            ),
+        ),
+    ),
 )
 
 OPERATION_2: Final[OperationPlan[LogVisitResponse]] = OperationPlan(
@@ -65,9 +135,37 @@ OPERATION_2: Final[OperationPlan[LogVisitResponse]] = OperationPlan(
     path='/pets/{petId}/visits',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='petId', style='simple', required=True, kind='integer'), codec=model_bindings.codec_6),),
-    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_7), BodyMedia(media_type='text/plain', kind='text')), required=True),
-    fields=FieldArguments(method='log_visit', names=('note', 'visit_options'), media=(BodyFields(media_type='application/json', fields=((0, 'note', False), (1, 'options', False))),)),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='path',
+                name='petId',
+                style='simple',
+                required=True,
+                kind='integer',
+            ),
+            codec=model_bindings.codec_6,
+        ),
+    ),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='application/json', kind='json', codec=model_bindings.codec_7
+            ),
+            BodyMedia(media_type='text/plain', kind='text'),
+        ),
+        required=True,
+    ),
+    fields=FieldArguments(
+        method='log_visit',
+        names=('note', 'visit_options'),
+        media=(
+            BodyFields(
+                media_type='application/json',
+                fields=((0, 'note', False), (1, 'options', False)),
+            ),
+        ),
+    ),
 )
 
 OPERATION_3: Final[OperationPlan[SetOwnerResponse]] = OperationPlan(
@@ -76,8 +174,26 @@ OPERATION_3: Final[OperationPlan[SetOwnerResponse]] = OperationPlan(
     path='/pets/{petId}/owner',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='petId', style='simple', required=True, kind='integer'), codec=model_bindings.codec_8),),
-    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_9),), default='application/json'),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='path',
+                name='petId',
+                style='simple',
+                required=True,
+                kind='integer',
+            ),
+            codec=model_bindings.codec_8,
+        ),
+    ),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='application/json', kind='json', codec=model_bindings.codec_9
+            ),
+        ),
+        default='application/json',
+    ),
 )
 
 OPERATION_4: Final[OperationPlan[CreateOwnerResponse]] = OperationPlan(
@@ -86,8 +202,28 @@ OPERATION_4: Final[OperationPlan[CreateOwnerResponse]] = OperationPlan(
     path='/owners',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_10),), default='application/json', required=True),
-    fields=FieldArguments(method='create_owner', names=('email', 'nickName'), media=(BodyFields(media_type='application/json', fields=((0, 'email', False), (1, 'nickName', False))),)),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='application/json',
+                kind='json',
+                null=True,
+                codec=model_bindings.codec_10,
+            ),
+        ),
+        default='application/json',
+        required=True,
+    ),
+    fields=FieldArguments(
+        method='create_owner',
+        names=('email', 'nickName'),
+        media=(
+            BodyFields(
+                media_type='application/json',
+                fields=((0, 'email', False), (1, 'nickName', False)),
+            ),
+        ),
+    ),
 )
 
 OPERATION_5: Final[OperationPlan[PutLabelsResponse]] = OperationPlan(
@@ -96,9 +232,36 @@ OPERATION_5: Final[OperationPlan[PutLabelsResponse]] = OperationPlan(
     path='/pets/{petId}/labels',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='petId', style='simple', required=True, kind='integer'), codec=model_bindings.codec_11),),
-    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_12),), default='application/json', required=True),
-    fields=FieldArguments(method='put_labels', names=('size',), media=(BodyFields(media_type='application/json', fields=((0, 'size', False),)),)),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='path',
+                name='petId',
+                style='simple',
+                required=True,
+                kind='integer',
+            ),
+            codec=model_bindings.codec_11,
+        ),
+    ),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='application/json',
+                kind='json',
+                codec=model_bindings.codec_12,
+            ),
+        ),
+        default='application/json',
+        required=True,
+    ),
+    fields=FieldArguments(
+        method='put_labels',
+        names=('size',),
+        media=(
+            BodyFields(media_type='application/json', fields=((0, 'size', False),)),
+        ),
+    ),
 )
 
 OPERATION_6: Final[OperationPlan[PutPhotoResponse]] = OperationPlan(
@@ -107,8 +270,35 @@ OPERATION_6: Final[OperationPlan[PutPhotoResponse]] = OperationPlan(
     path='/pets/{petId}/photo',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='petId', style='simple', required=True, kind='integer'), codec=model_bindings.codec_13),),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('photo'), PartPlan('caption', codec=model_bindings.codec_16)), additional=PartPlan('', 'json'))),), default='multipart/form-data', required=True),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='path',
+                name='petId',
+                style='simple',
+                required=True,
+                kind='integer',
+            ),
+            codec=model_bindings.codec_13,
+        ),
+    ),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                form=MultipartForm(
+                    parts=(
+                        PartPlan('photo'),
+                        PartPlan('caption', codec=model_bindings.codec_16),
+                    ),
+                    additional=PartPlan('', 'json'),
+                ),
+            ),
+        ),
+        default='multipart/form-data',
+        required=True,
+    ),
 )
 
 OPERATION_7: Final[OperationPlan[ReplacePetResponse]] = OperationPlan(
@@ -117,7 +307,37 @@ OPERATION_7: Final[OperationPlan[ReplacePetResponse]] = OperationPlan(
     path='/pets/{petId}/records',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='petId', style='simple', required=True, kind='integer'), codec=model_bindings.codec_14),),
-    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_15),), default='application/json', required=True),
-    fields=FieldArguments(method='replace_pet', names=('name', 'tag'), media=(BodyFields(media_type='application/json', fields=((0, 'name', False), (1, 'tag', False))),)),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='path',
+                name='petId',
+                style='simple',
+                required=True,
+                kind='integer',
+            ),
+            codec=model_bindings.codec_14,
+        ),
+    ),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='application/json',
+                kind='json',
+                codec=model_bindings.codec_15,
+            ),
+        ),
+        default='application/json',
+        required=True,
+    ),
+    fields=FieldArguments(
+        method='replace_pet',
+        names=('name', 'tag'),
+        media=(
+            BodyFields(
+                media_type='application/json',
+                fields=((0, 'name', False), (1, 'tag', False)),
+            ),
+        ),
+    ),
 )

@@ -1,0 +1,4 @@
+{"detail": {"message": "m"}, "other": {"a": "1.5", "b": {"m": 1}}}: accepted Order(detail=Detail(message='m'), other=Other(a=Decimal('1.5'), b=Decimal1(m=1)))
+{"detail": {"message": 1}}: rejected ValidationError
+{"a": "2.5", "b": {"m": 2}}: accepted Other(a=Decimal('2.5'), b=Decimal1(m=2))
+{"a": "x"}: rejected ValidationError

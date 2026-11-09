@@ -10,7 +10,7 @@ from __future__ import annotations
 import zlib
 from typing import TYPE_CHECKING, Final
 
-from .content import CHUNK, EncodedAttempt, RequestCoding
+from .content import EncodedAttempt, RequestCoding, pieces
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterable, Iterator
@@ -25,13 +25,24 @@ def _compressor() -> zlib._Compress:  # pyright: ignore[reportPrivateUsage]
     return zlib.compressobj(_LEVEL, zlib.DEFLATED, _WBITS)
 
 
+def _fed(
+    compressor: zlib._Compress,  # pyright: ignore[reportPrivateUsage]
+    data: bytes,
+    check: Callable[[], None] | None = None,
+) -> Iterator[bytes]:
+    """Feed bytes to a compressor at most CHUNK bytes at a time and yield what it gives, calling `check` before each."""
+    for piece in pieces(data):
+        if check is not None:
+            check()
+        if output := compressor.compress(piece):
+            yield output
+
+
 def _gzipped(chunks: Iterable[bytes]) -> Iterator[bytes]:
     """Compress chunks incrementally, feeding at most CHUNK bytes at a time."""
     compressor = _compressor()
     for chunk in chunks:
-        for offset in range(0, len(chunk), CHUNK):
-            if output := compressor.compress(chunk[offset : offset + CHUNK]):
-                yield output
+        yield from _fed(compressor, chunk)
     yield compressor.flush()
 
 
@@ -40,13 +51,8 @@ def gzipped_attempt(attempt: EncodedAttempt, check: Callable[[], None]) -> Encod
 
     `check` runs before each step, so a cancelled or expired call stops compressing a large body.
     """
-    content = attempt.content
-    output: list[bytes] = []
     compressor = _compressor()
-    for offset in range(0, len(content), CHUNK):
-        check()
-        output.append(compressor.compress(content[offset : offset + CHUNK]))
-    output.append(compressor.flush())
+    output = [*_fed(compressor, attempt.content, check), compressor.flush()]
     return EncodedAttempt(b"".join(output), attempt.content_type)
 
 
@@ -85,9 +91,8 @@ class _AsyncGzipAttempt:
         """Yield the compressed bytes of the attempt."""
         compressor = _compressor()
         async for chunk in self._attempt.aiter_bytes():
-            for offset in range(0, len(chunk), CHUNK):
-                if output := compressor.compress(chunk[offset : offset + CHUNK]):
-                    yield output
+            for output in _fed(compressor, chunk):
+                yield output
         yield compressor.flush()
 
 

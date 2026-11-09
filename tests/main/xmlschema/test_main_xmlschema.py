@@ -6,6 +6,7 @@ import codecs
 import json
 import warnings
 from contextlib import nullcontext
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 import msgspec
@@ -125,6 +126,7 @@ def test_load_xml_schema_data_from_path_evicts_lru_entries(tmp_path: Path, monke
         "schema_version_mode": None,
         "use_xmlschema_datetime_default": False,
         "source_safe_non_finite": True,
+        "input_files": None,
     }
 
     def load_schema_data(path: Path, encoding: str) -> object:  # noqa: ARG001
@@ -148,6 +150,21 @@ def test_main_xmlschema_purchase_order_from_normalized_external_path(tmp_path: P
             (XML_SCHEMA_DATA_PATH / "common.xsd", tmp_path / "common.xsd"),
         ],
     )
+
+
+def test_main_xmlschema_directory_input_ignores_its_own_output(tmp_path: Path) -> None:
+    """Generate twice from an XML Schema directory that holds the output, which the second run does not read."""
+    input_path = tmp_path / "schemas"
+    input_path.mkdir()
+    for name in ("purchase_order.xsd", "common.xsd"):
+        (input_path / name).write_bytes((XML_SCHEMA_DATA_PATH / name).read_bytes())
+    for _ in range(2):
+        run_main_and_assert(
+            input_path=input_path,
+            output_path=input_path / "generated",
+            input_file_type="xmlschema",
+            extra_args=["--disable-timestamp", "--formatters", "builtin"],
+        )
 
 
 def test_main_xmlschema_infer_input_file_type(output_file: Path) -> None:
@@ -363,6 +380,30 @@ def test_main_xmlschema_temporal_default_import_alias(output_file: Path) -> None
         force_exec_validation=True,
         importable_module_name="generated_xml_temporal_default_import_alias",
         importable_module_attribute="Root",
+    )
+
+
+def test_main_xmlschema_temporal_default_moves_to_parentheses_when_its_head_overflows(output_file: Path) -> None:
+    """Put a temporal default in parentheses when the line up to the bracket of its call is over the line length.
+
+    The call used to be split at its own bracket, which left a head of 95 columns.
+    """
+    run_main_and_assert(
+        input_path=XML_SCHEMA_DATA_PATH / "temporal_default_long_names.xsd",
+        output_path=output_file,
+        input_file_type="xmlschema",
+        extra_args=["--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.11"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="generated_xml_temporal_default_long_names",
+        model_name="Root",
+        valid_json="{}",
+        invalid_json='{"aVeryLongEventTimestampFieldName":"x"}',
+        expected_error_type="datetime_from_date_parsing",
+        expected_attribute_path=("aVeryLongEventTimestampFieldName",),
+        expected_attribute_value=datetime(2026, 6, 4, 12, 34, 56, tzinfo=timezone.utc),
     )
 
 
@@ -1441,3 +1482,61 @@ def test_xmlschema_composed_content(output_file: Path, entrypoint: str, schema_g
                 json.dumps(results, indent=2) + "\n",
                 EXPECTED_XML_SCHEMA_PATH / schema_group / f"{case.get('expected', name)}.txt",
             )
+
+
+def test_main_xmlschema_warn_invalid_duration_defaults(output_file: Path) -> None:
+    """Warn about a duration default that is no lexical value of its type and keep it as written (#5536).
+
+    The type is read through restrictions of named and inline simple types; strings, lists, simple content, an
+    untyped attribute and a restriction of itself are not read as durations.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=XML_SCHEMA_DATA_PATH / "invalid_duration_defaults.xsd",
+            output_path=output_file,
+            input_file_type="xmlschema",
+            extra_args=["--disable-timestamp", "--target-python-version", "3.10"],
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignore-ref-siblings"),
+        pytest.param(
+            ["--ignore-ref-siblings-by-schema-version", "--read-schema-version-per-document"], id="per-document"
+        ),
+    ],
+)
+def test_main_xmlschema_named_type_element_defaults(output_file: Path, extra_args: list[str]) -> None:
+    """Keep the default and documentation of an element of a named type under the option (#6394).
+
+    The converter writes them beside the ``$ref`` to the named type, as parts of the element, so
+    --ignore-ref-siblings-by-schema-version, which ignores the keywords beside a draft 7 ``$ref``, keeps them.
+    """
+    run_main_and_assert(
+        input_path=XML_SCHEMA_DATA_PATH / "named_type_element_defaults.xsd",
+        output_path=output_file,
+        input_file_type="xmlschema",
+        extra_args=[*extra_args, "--target-python-version", "3.10", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="xmlschema_named_type_element_defaults",
+        model_name="Paint",
+        valid_json="{}",
+        invalid_json='{"color": "green"}',
+        expected_error_type="enum",
+        expected_attribute_path=("color",),
+        expected_attribute_value="blue",
+    )

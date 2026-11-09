@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import BinaryIO, TypeAlias
 
+from ..model_codecs.media import json_integer
 from .records import record_instance
 
 __all__ = ("UploadProgress", "UploadSource")
@@ -14,7 +15,7 @@ UploadSource: TypeAlias = bytes | bytearray | memoryview | BinaryIO
 
 
 def _count(value: object, name: str) -> None:
-    if isinstance(value, bool) or not isinstance(value, int):
+    if not json_integer(value):
         msg = f"{name} must be an integer"
         raise TypeError(msg)
     if value < 0:

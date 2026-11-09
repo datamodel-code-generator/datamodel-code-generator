@@ -1,0 +1,6 @@
+openapi: 3.2.0
+info: {title: Parameters of OpenAPI 3.2, version: "1.0"}
+paths: {}
+components:
+  parameters:
+    Session: {name: session, in: cookie, style: cookie, schema: {type: string}}

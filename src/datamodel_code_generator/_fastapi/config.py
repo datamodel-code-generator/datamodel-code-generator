@@ -10,11 +10,14 @@ from typing import TYPE_CHECKING, ClassVar, Final, Literal, TypeAlias
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_types import OperationRef
+from datamodel_code_generator._runtime.model_codecs.media import STATUSES
 from datamodel_code_generator._target_config import (
     TargetConfig,
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
 )
+from datamodel_code_generator._target_contract import parameter_name_key
 from datamodel_code_generator._target_naming import explicit_name
+from datamodel_code_generator.enums import ServerBodyMode, ServerHandlerMode
 
 if TYPE_CHECKING:
     from datamodel_code_generator._api_types import Diagnostic, OperationSelector
@@ -24,11 +27,8 @@ Layout: TypeAlias = Literal["routers", "single"]
 HandlerMode: TypeAlias = Literal["sync", "async"]
 BodyMode: TypeAlias = Literal["typed", "request"]
 
-_PARAMETER_LOCATIONS: Final = frozenset({"path", "query", "querystring", "header", "cookie"})
-_HANDLER_MODES: Final = frozenset({"sync", "async"})
-_BODY_MODES: Final = frozenset({"typed", "request"})
-_MIN_STATUS: Final = 100
-_MAX_STATUS: Final = 599
+_HANDLER_MODES: Final = frozenset(mode.value for mode in ServerHandlerMode)
+_BODY_MODES: Final = frozenset(mode.value for mode in ServerBodyMode)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -77,9 +77,9 @@ class FastAPIConfig(TargetConfig):
             self.operation_names, "operation_names", lambda value: explicit_name(value, target_python_version)
         )
         yield from _selector_problems(
-            self.parameter_names, "parameter_names", lambda value: _parameter_names(value, target_python_version)
+            self.parameter_names, "parameter_names", lambda value: _names(value, target_python_version, _parameter_key)
         )
-        if not _router_names_valid(self.router_names, target_python_version):
+        if not _names(self.router_names, target_python_version):
             yield _diagnostic("E_CONFIG_VALUE", "router_names", "router_names must map group keys to identifiers")
 
 
@@ -91,33 +91,29 @@ def _frozen(value: object) -> object:
     return MappingProxyType(dict(value)) if _is_mapping(value) else value
 
 
-def _router_names_valid(value: object, target_python_version: PythonVersion) -> bool:
+def _names(value: object, target_python_version: PythonVersion, valid_key: Callable[[str], bool] | None = None) -> bool:
+    """Return whether a value maps string keys, which `valid_key` accepts when given, to explicit names."""
     return _is_mapping(value) and all(
-        isinstance(key, str) and explicit_name(name, target_python_version) for key, name in value.items()
+        isinstance(key, str) and (valid_key is None or valid_key(key)) and explicit_name(name, target_python_version)
+        for key, name in value.items()
     )
+
+
+def _parameter_key(key: str) -> bool:
+    return parameter_name_key(key) is not None
 
 
 def _response_choice(value: object) -> bool:
     return (
         isinstance(value, ResponseChoice)
         and type(value.status_code) is int
-        and _MIN_STATUS <= value.status_code <= _MAX_STATUS
+        and value.status_code in STATUSES
         and _optional_text(value.media_type)
     )
 
 
 def _optional_text(value: object) -> bool:
     return value is None or isinstance(value, str)
-
-
-def _parameter_names(value: object, target_python_version: PythonVersion) -> bool:
-    return _is_mapping(value) and all(
-        isinstance(key, str)
-        and key.partition(":")[0] in _PARAMETER_LOCATIONS
-        and key.partition(":")[2]
-        and explicit_name(name, target_python_version)
-        for key, name in value.items()
-    )
 
 
 def _selector_problems(

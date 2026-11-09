@@ -247,7 +247,7 @@ class _Uploads(Harness):
 
 
 def _progress(value: object) -> str:
-    """Describe an upload step's outcome: progress, an upload error with its own fields, or anything else."""
+    """Describe an upload step's outcome: progress, an upload error with its fields and operation, or anything else."""
     if hasattr(value, "confirmed_bytes") and hasattr(value, "total_bytes"):
         progress: Any = value
         return f"progress {progress.confirmed_bytes}/{progress.total_bytes} complete={progress.complete}"
@@ -262,6 +262,7 @@ def _progress(value: object) -> str:
                 "size",
                 "expected_size",
                 "actual_size",
+                "operation",
             )
             if getattr(value, name, None) is not None
         )
@@ -861,6 +862,29 @@ def _limits(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, li
             options=options.RequestOptions(extra_query={"offset": "1"}),
         ),
     )
+    record(
+        lines,
+        "start through a view whose default header patches the written offset",
+        lambda: api.with_options(default_headers={"Upload-Offset": "1"}).protocols.files.upload.start(
+            harness.source(), Tus_Resumable=harness.tus
+        ),
+    )
+    record(
+        lines,
+        "start through a view whose default query patches the written query offset",
+        lambda: api.with_options(default_query={"offset": "1"}).protocols.files.put.start(
+            harness.source(),
+            Upload_Length=harness.argument("createFile", "header", "Upload-Length", 10),
+            Tus_Resumable=harness.tus,
+        ),
+    )
+    patching = harness.client_options(default_headers={"upload-length": "1"})
+    with exchange.client() as native, harness.package.Client(http_client=native, **patching) as patched:
+        record(
+            lines,
+            "start on a client whose default header patches the written size",
+            lambda: patched.protocols.files.upload.start(harness.source(), Tus_Resumable=harness.tus),
+        )
     for label, value in (("zero chunk bytes", {"chunk_bytes": 0}), ("a removed chunk count", {"max_parts": 2})):
         record(lines, f"upload options with {label}", lambda value=value: harness.uploads(**value))
     lines.append("defaults from the client")

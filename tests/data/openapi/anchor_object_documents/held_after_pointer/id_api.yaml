@@ -1,0 +1,16 @@
+openapi: 3.1.0
+info:
+  title: A parameter document with an id that a pointer into it loaded first
+  version: "1.0"
+paths:
+  /notes:
+    get:
+      parameters:
+        - $ref: id_parameter.yaml
+      responses:
+        "200":
+          description: The notes.
+components:
+  schemas:
+    Size:
+      $ref: id_parameter.yaml#/schema/properties/size

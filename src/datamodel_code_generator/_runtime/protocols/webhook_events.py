@@ -6,23 +6,22 @@ use only one of them never loads the other's dependencies. Errors keep no key, s
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, fields, replace
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeGuard
+from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn
 
 from typing_extensions import TypeIs, TypeVar
 
-from ..client.errors import (
-    ConfigurationError,
-    is_sequence,
-)
+from ..client.errors import is_sequence
+from ..client.operations import codec_condition
+from ..client.timing import is_aware
+from ..model_codecs.media import json_value
 from ..model_codecs.unset import UNSET
-from .errors import ProtocolDataError
+from .errors import ProtocolDataError, configuration_error
 from .records import BodySelector
-from .values import MISSING, resolve
-from .webhooks import KeySet, ResolvedWebhookOptions, VerifiedWebhook, WebhookOptions
+from .values import resolve, unfit
+from .webhooks import KeySet, ResolvedWebhookOptions, VerifiedSignature, VerifiedWebhook, WebhookOptions
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -33,9 +32,7 @@ if TYPE_CHECKING:
 __all__ = (
     "EventDecoder",
     "EventPlan",
-    "Facts",
     "MappedEventDecoder",
-    "configuration_error",
     "decode_unsigned",
     "epoch_microseconds",
     "instant",
@@ -67,7 +64,7 @@ class _Failed(Enum):
 def _parsed(raw_body: bytes, helper_id: str) -> JSONValue:
     """Return a body's JSON value, raising ProtocolDataError with no trace of the body when it does not parse."""
     try:
-        wire: JSONValue | _Failed = json.loads(raw_body)
+        wire: JSONValue | _Failed = json_value(raw_body)
     except (ValueError, UnicodeDecodeError, RecursionError):
         wire = _Failed.MALFORMED
     if isinstance(wire, _Failed):
@@ -94,10 +91,9 @@ class EventDecoder(Generic[T_co]):
         try:
             event: T_co | _Failed = codec.decode(raw_body)
         except codec.errors as error:
-            event = _Failed.MALFORMED if codec.malformed(error) else _Failed.VALUE
+            event = _Failed(codec_condition(codec, error))
         if isinstance(event, _Failed):
-            condition: Literal["malformed", "value"] = "malformed" if event is _Failed.MALFORMED else "value"
-            raise ProtocolDataError(reason=condition, helper_id=helper_id)
+            raise ProtocolDataError(reason=event.value, helper_id=helper_id)
         return event
 
 
@@ -120,13 +116,7 @@ class MappedEventDecoder(Generic[T_co]):
         name = resolve(_parsed(raw_body, helper_id), self._location.pointer)
         if isinstance(name, str) and (decoder := self._events.get(name)) is not None:
             return decoder.decode(raw_body, helper_id)
-        condition: Literal["missing", "null", "type", "value"] = "type"
-        if isinstance(name, str):
-            condition = "value"
-        elif name is MISSING:
-            condition = "missing"
-        elif name is None:
-            condition = "null"
+        condition = "value" if isinstance(name, str) else unfit(name)
         raise ProtocolDataError(reason=condition, location=self._location, helper_id=helper_id)
 
 
@@ -136,22 +126,6 @@ class EventPlan(Generic[T]):
 
     helper_id: str
     event: EventDecoder[T] | MappedEventDecoder[T]
-
-
-@dataclass(frozen=True, slots=True)
-class Facts:
-    """The authenticated facts of a delivery."""
-
-    delivery_id: str | None
-    timestamp: datetime | None
-    matched_key_id: str
-
-
-def configuration_error(
-    field_path: tuple[str, ...], condition: Literal["invalid_value", "wrong_capability"], helper_id: str
-) -> ConfigurationError:
-    """Return the error of a wrong argument, by its field path."""
-    return ConfigurationError(field_path=field_path, reason=condition, helper_id=helper_id)
 
 
 def reject(
@@ -185,15 +159,11 @@ def epoch_microseconds(moment: datetime) -> int:
     return (offset.days * 86400 + offset.seconds) * 1_000_000 + offset.microseconds
 
 
-def _aware(moment: object) -> TypeGuard[datetime]:
-    return isinstance(moment, datetime) and moment.utcoffset() is not None
-
-
 def _limits(options: object, helper_id: str) -> ResolvedWebhookOptions:
     if options is None:
         return _DEFAULTS
     if not isinstance(options, WebhookOptions):
-        raise configuration_error(("options",), "invalid_value", helper_id)
+        raise configuration_error(helper_id, ("options",))
     given = {name: value for name in _OPTIONS if (value := getattr(options, name)) is not UNSET}
     return replace(_DEFAULTS, **given)
 
@@ -210,11 +180,11 @@ def local_arguments(  # ruff: ignore[too-many-arguments]
     """Refuse the first wrong argument by its field path; return now in microseconds and the resolved limits."""
     for name, valid in (("raw_body", _instance(raw_body, bytes)), ("headers", _is_pairs(headers))):
         if not valid:
-            raise configuration_error((name,), "invalid_value", helper_id)
+            raise configuration_error(helper_id, (name,))
     if not _instance(keys, KeySet):
-        raise configuration_error(("keys",), "invalid_value", helper_id)
-    if not _aware(now):
-        raise configuration_error(("now",), "invalid_value", helper_id)
+        raise configuration_error(helper_id, ("keys",))
+    if not is_aware(now):
+        raise configuration_error(helper_id, ("now",))
     limits = _limits(options, helper_id)
     return epoch_microseconds(now), limits
 
@@ -240,7 +210,7 @@ def within(now: int, timestamp: int, limits: ResolvedWebhookOptions) -> bool:
     return (now - timestamp) * past_scale <= past * 1_000_000 and (timestamp - now) * future_scale <= future * 1_000_000
 
 
-def received(plan: EventPlan[T], raw_body: bytes, facts: Facts) -> VerifiedWebhook[T]:
+def received(plan: EventPlan[T], raw_body: bytes, facts: VerifiedSignature) -> VerifiedWebhook[T]:
     """Decode an authenticated event and return its facts without retaining delivery state."""
     return VerifiedWebhook(
         data=plan.event.decode(raw_body, plan.helper_id),
@@ -257,5 +227,5 @@ def decode_unsigned(plan: EventPlan[T], raw_body: bytes) -> T:
     """
     helper_id = plan.helper_id
     if not _instance(raw_body, bytes):
-        raise configuration_error(("raw_body",), "invalid_value", helper_id)
+        raise configuration_error(helper_id, ("raw_body",))
     return plan.event.decode(raw_body, helper_id)

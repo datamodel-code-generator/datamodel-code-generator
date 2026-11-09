@@ -1,0 +1,1 @@
+--use-unique-items-as-set writes a uniqueItems array as a set, which would lose the positions of tuple[int, str]; PrefixItemsUniqueItemsSequence.pair is generated without this constraint.

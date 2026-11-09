@@ -118,10 +118,18 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
             "field_validators_multi_fields_config.json",
             "list_only.json",
             "list_only.yaml",
+            "recursive_model_alias_kept.json",
+            "recursive_model_alias_two_users.json",
             "whitespace_only.yaml",
         )):
             continue
         if "ref_to_json_list" in file.parts and file.name == "list.json":
+            continue
+        if "model_name_map_duplicate_suffix" in file.parts and file.name == "ext.json":
+            continue
+        if "schema_version_per_document_dynamic_scope" in file.parts and file.name == "leaf.json":
+            continue
+        if "external_anchor_subdirectory" in file.parts and file.name == "defs.json":
             continue
         assert_infer_input_type(file, InputFileType.JsonSchema)
     for file in (DATA_PATH / "openapi").rglob("*"):
@@ -137,6 +145,8 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
             continue
         if "paths_external_ref" in file.parts and file.name != "openapi.yaml":
             continue
+        if "discriminator_mapping_other_document" in file.parts and file.name != "openapi.yaml":
+            continue
         if "read_only_write_only_external_directory" in file.parts and "ext" in file.parts:
             continue
         if "paths_ref_with_external_schema" in file.parts and file.name != "openapi.yaml":
@@ -148,6 +158,12 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
         if "self_of_json_schema_document" in file.parts and file.name != "openapi.yaml":
             continue
         if "component_embedded_ids" in file.parts and file.suffix == ".json":
+            continue
+        if "anchor_object_documents" in file.parts and file.name != "api.yaml":
+            continue
+        if "dynamic_anchor_held_document" in file.parts and file.name != "api.yaml":
+            continue
+        if "reference_object_siblings" in file.parts and file.name != "api.yaml":
             continue
         if file.name.endswith((
             "aliases.json",
@@ -166,6 +182,8 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
             continue
         assert_infer_input_type(file, InputFileType.OpenAPI)
     for file in (DATA_PATH / "asyncapi").rglob("*"):
+        if "ref_siblings_external_v2" in file.parts and file.name == "notes.yaml":
+            continue
         assert_infer_input_type(file, InputFileType.AsyncAPI)
 
     xmlschema_files = list((DATA_PATH / "xmlschema").rglob("*.xsd"))
@@ -318,22 +336,6 @@ def test_public_detection_helpers_keep_parser_module_surface() -> None:
     assert xmlschema.is_xml_schema_text('<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" />')
     assert xmlschema.XML_SCHEMA_NAMESPACE == "http://www.w3.org/2001/XMLSchema"
     assert xmlschema.XML_SCHEMA_TAG == "{http://www.w3.org/2001/XMLSchema}schema"
-
-
-def test_private_detection_reexports_preserve_identity_and_metadata() -> None:
-    """Legacy lightweight detection modules stay import-compatible."""
-    from datamodel_code_generator import _avro_detection as shared_avro_detection
-    from datamodel_code_generator import _xmlschema_detection as shared_xmlschema_detection
-    from datamodel_code_generator.parser import _avro_detection as legacy_avro_detection
-    from datamodel_code_generator.parser import _xmlschema_detection as legacy_xmlschema_detection
-
-    assert legacy_avro_detection.is_avro_schema_data is shared_avro_detection.is_avro_schema_data
-    assert legacy_xmlschema_detection.is_xml_schema_text is shared_xmlschema_detection.is_xml_schema_text
-    assert legacy_avro_detection.is_avro_schema_data.__module__ == "datamodel_code_generator.parser._avro_detection"
-    assert (
-        legacy_xmlschema_detection.is_xml_schema_text.__module__
-        == "datamodel_code_generator.parser._xmlschema_detection"
-    )
 
 
 def test_probe_infer_input_type_reports_subprocess_timeout(monkeypatch: pytest.MonkeyPatch) -> None:

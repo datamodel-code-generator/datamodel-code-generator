@@ -77,9 +77,7 @@ def _add_post_day(
     )
 
 
-LITERAL_ROUTES: Final = (
-    ('post_day', _add_post_day),
-)
+LITERAL_ROUTES: Final = (('post_day', _add_post_day),)
 TEMPLATED_ROUTES: Final = ()
 
 

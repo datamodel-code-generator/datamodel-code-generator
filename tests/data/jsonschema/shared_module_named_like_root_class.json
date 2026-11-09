@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Common": {"type": "object", "properties": {"x": {"type": "integer"}}},
+    "a.Item": {"type": "object", "properties": {"n": {"type": "integer"}, "c": {"$ref": "#/$defs/Common"}}},
+    "b.Item": {"type": "object", "properties": {"n": {"type": "integer"}, "c": {"$ref": "#/$defs/Common"}}},
+    "c.Order": {"type": "object", "properties": {"a": {"$ref": "#/$defs/a.Item"}, "b": {"$ref": "#/$defs/b.Item"}}}
+  }
+}

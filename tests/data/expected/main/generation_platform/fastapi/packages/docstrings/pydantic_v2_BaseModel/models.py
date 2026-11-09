@@ -5,4 +5,6 @@ from __future__ import annotations
 
 from typing_extensions import TypeAliasType
 
-NotesNoteIdDeletePathNoteIdParameter = TypeAliasType("NotesNoteIdDeletePathNoteIdParameter", int)
+NotesNoteIdDeletePathNoteIdParameter = TypeAliasType(
+    "NotesNoteIdDeletePathNoteIdParameter", int
+)

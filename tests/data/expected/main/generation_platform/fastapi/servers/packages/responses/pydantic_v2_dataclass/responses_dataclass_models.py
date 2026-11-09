@@ -63,3 +63,6 @@ NotesGetResponse = TypeAliasType("NotesGetResponse", str | None)
 
 
 ChosenGetResponse = TypeAliasType("ChosenGetResponse", str)
+
+
+RatiosGetQueryKindParameter = TypeAliasType("RatiosGetQueryKindParameter", str)

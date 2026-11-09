@@ -1,0 +1,18 @@
+{
+  "pkg.other.Thing": [
+    {},
+    {"x": 1},
+    {"x": "a"}
+  ],
+  "pkg.sub.Holder": [
+    {},
+    {"thing": {"x": 1}},
+    {"thing": {"x": "a"}}
+  ],
+  "pkg.sub.api.Order": [
+    {},
+    {"h": {"thing": {"x": 1}}},
+    {"h": {"thing": {"x": "a"}}},
+    {"h": []}
+  ]
+}

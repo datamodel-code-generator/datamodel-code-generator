@@ -1,0 +1,10 @@
+{
+  "valid": [
+    {"label": "a", "tag": "b", "tags": ["x", "y"], "names": ["x", "y"]},
+    {"label": "abc", "tag": "", "tags": ["x", "y", "z"]}
+  ],
+  "invalid": [
+    {"tags": ["x"]},
+    {"names": ["x"]}
+  ]
+}

@@ -5,77 +5,417 @@
 # A table whose base is a release before the gate's base accepts nothing and is no error, as that release contains
 # its changes; replace the whole table when the next accepted change of the new cycle is added.
 # Entry keys: input (glob on the cell's input), backends, aspects, match (regex on the change line), reason,
-# decision, release_note.
-base = "0.87.0"
+# decision, release_note. The aspect `generation` accepts a generation the owner decided to refuse; its change line is
+# `[generation] : now fails: <the error>`.
+# `[[base_skip]]` names an input that releases are known to hang on, so they do not run for it (the cell is
+# `base-skipped` once the candidate generated and imported). Keys: input (glob), bases (releases, `["0.88.0"]`, or a
+# maximum, `["<=0.88.0"]`), reason, issue (public issue references, `#1234`). `--check` fails on a missing key and,
+# in a run of the whole tier, on an entry that covers no cell; an entry that names no release of the gate's base is
+# no error and does nothing. Remove the entry once the input stops mattering for the gate's base.
+base = "0.90.0"
 
 [[accepted]]
-input = "tests/data/jsonschema/schema_intersection/allof_scalar_refs.json"
-aspects = [ "kind", "type", "name-removed", "probe" ]
-match = "\\b(ListItem|LookaheadItems|NullableItem|NumberItem|PatternRefs|RefsItem|TextItem|TwoItem|TwoMap|TwoPatternMap|TwoProp|UntypedTypedItem)\\b"
-reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
-decision = "#5401"
-release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+input = "tests/data/jsonschema/*unique_items_*"
+backends = [ "typing.TypedDict" ]
+aspects = [ "config" ]
+match = "^\\[config\\] \\w+: \\{'extra_items': ([\"'])(.*?)list\\[(.*)\\1\\} -> \\{'extra_items': \\1\\2set\\[\\3\\1\\}$"
+reason = "with --use-unique-items-as-set (the practical presets), the arrays that the additionalProperties of a TypedDict declare unique stayed lists in its extra_items, which keep the duplicates the schema rejects, while a field built from the same schema (the values of a map, Pydantic's __pydantic_extra__) writes sets; extra_items takes the same sets now (owner decision: default under the option, the values of a map as #6163)"
+decision = "#6328"
+release_note = "with --use-unique-items-as-set, every array whose own schema declares uniqueItems is written as a set, also the member of an anyOf or oneOf, the items of an array, the values of a map, a lone allOf member and the extra_items of a TypedDict, where a model merged into its model declares it too"
 
 [[accepted]]
-input = "tests/data/openapi/schema_intersection"
-aspects = [ "kind", "type", "name-removed" ]
-match = "root_site_null_oas30:(Model:\\w+: .*\\b(InlineArray|RefArray)\\b|(InlineArray|RefArray):)"
-reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
-decision = "#5401"
-release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+input = "*object_maps"
+aspects = [ "constraints" ]
+match = "^\\[constraints\\] false_(?:all_of_)?values:Model:[vri]: Union\\[.* -> Union\\[.*Annotated\\[dict\\[str, (?:Any|object)\\], (?:MaxLen|Meta)\\(max_length=0\\)\\].*\\]$"
+reason = "the items of an array and the values of a map that are objects closed by additionalProperties: false (no property) took a plain dict, which accepted every object, while the schema admits only the empty one; the map keeps its maxProperties 0 on a type alias of its own, as a nested array keeps its item counts (#6171) (schema-mismatch fix)"
+decision = "#6321"
+release_note = "the minProperties and maxProperties of a map of no properties that is the items of an array or the value of a map are written on a type alias of the map (Annotated[dict[str, str], Field(max_length=2)]) instead of being dropped, also under --field-constraints"
 
 [[accepted]]
-input = "tests/data/jsonschema/allof_root_model_constraints.json"
-aspects = [ "kind", "type", "name-removed" ]
-match = "\\b(ConstraintWithItems|RefToArrayAllOf)\\b"
-reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
-decision = "#5401"
-release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+input = "*additional_properties_value_constraints_annotated*"
+aspects = [ "constraints" ]
+match = "^\\[constraints\\] Payload:objectValueMap: dict\\[str, dict\\[str, str\\]\\] -> dict\\[str, Annotated\\[dict\\[str, str\\], MinLen\\(min_length=1\\)\\]\\]$"
+reason = "without --use-annotated, the minProperties of a map that is the value of a map was dropped without a warning in the Pydantic outputs, which --use-annotated and msgspec already wrote on a type alias; the value keeps it on a type alias of its own (schema-mismatch fix)"
+decision = "#6321"
+release_note = "the minProperties and maxProperties of a map of no properties that is the items of an array or the value of a map are written on a type alias of the map (Annotated[dict[str, str], Field(max_length=2)]) instead of being dropped, also under --field-constraints"
 
 [[accepted]]
-input = "tests/data/openapi/allof_scalar_roots.yaml"
-aspects = [ "kind", "type", "name-removed", "probe" ]
-match = "\\bTwoPatterns\\b"
-reason = "an allOf whose parts admit no object was an empty object model that rejected every valid scalar in 0.86.0 (crash class); it is written as the value type now"
-decision = "#5401"
-release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+input = "tests/data/jsonschema/x_python_import_pointer_targets*"
+aspects = [ "name-removed" ]
+match = "^\\[name-removed\\] (?:other:)?Options: removed$"
+reason = "a schema with x-python-import outside $defs that only fields name, such as the root of a document a $ref names, was also written as an empty class (no field, no generated base) that nothing used, beside the import that types those fields; that empty class is left out now, while a model with fields or a root type (Labels, Tally, Ledger) and a schema that a base names keep their models as in 0.90.0 (owner decision: only the unusable empty model is deleted by default)"
+decision = "#5533"
+release_note = "a schema with x-python-import that a $ref names outside $defs, such as #/components/Foo or a whole document (common.json), no longer also writes an empty class FooModel (no fields, no root type) that nothing uses; the fields that name it keep the imported class, and a model with fields or a root type is still written"
+
+[[accepted]]
+input = "*items_beside_other_types*"
+aspects = [ "type" ]
+match = "^\\[type\\] (?:items_beside_other_types:)?(?:Model:\\w+|NullableString): .*\\blist\\[(?:int|Any|object)\\].* -> (?!.*\\blist\\[).*$"
+reason = "items or prefixItems beside declared types without array, such as type [string, null] with items, typed the schema as a list, which rejected every value the schema accepts; items apply only to arrays, so the schema is typed by its declared types, and a value that parsed before parses the same (rejects-valid fix)"
+decision = "#6382"
+release_note = "a schema whose declared types leave out array, such as type: [string, \"null\"] with items, is typed by those types (str | None) instead of a list that rejected every valid value; items and prefixItems apply only to arrays"
+
+[[accepted]]
+input = "*object_maps*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] [\\w:]+: .*\\bdict\\[.* -> .*\\bdict\\[.*Annotated\\[[^\\[\\]]*(?:\\[[^\\[\\]]*\\][^\\[\\]]*)*, (?:MinLen|MaxLen|Ge|Gt|Le|Lt|MultipleOf|_PydanticGeneralMetadata)\\(.*$"
+reason = "a patternProperties value was parsed without a field, so its constraints were dropped under --field-constraints and --use-annotated (the presets), and the item counts of an array value in every mode, and the dict accepted values the schema rejects; the value keeps its type and is written as a type alias that holds them, where the dict admits no key that matches none of its patterns, so the valid values parse as before (schema-mismatch fix)"
+decision = "#6248, #5078, #6334, #5179"
+release_note = "the value of a patternProperties map keeps the constraints of its schema that no field holds: under --field-constraints and --use-annotated (as in the presets) its bounds, lengths and pattern, and in every mode the item counts of an array, are written on a type alias of the value (PmPatternProperty = TypeAliasType(\"PmPatternProperty\", Annotated[int, Field(ge=0)])) instead of being dropped; the patternProperties rules of --generate-schema-validators take the same alias, and msgspec maps take it under --use-msgspec-meta-for-map-keys"
+
+[[accepted]]
+input = "*pattern_string_adapters*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] [\\w:]+: .*\\bdict\\[.* -> .*\\bdict\\[.*Annotated\\[[^\\[\\]]*(?:\\[[^\\[\\]]*\\][^\\[\\]]*)*, (?:MinLen|MaxLen|Ge|Gt|Le|Lt|MultipleOf|_PydanticGeneralMetadata)\\(.*$"
+reason = "a patternProperties value was parsed without a field, so its constraints were dropped under --field-constraints and --use-annotated (the presets), and the item counts of an array value in every mode, and the dict accepted values the schema rejects; the value keeps its type and is written as a type alias that holds them, where the dict admits no key that matches none of its patterns, so the valid values parse as before (schema-mismatch fix)"
+decision = "#6248, #5078, #6334, #5179"
+release_note = "the value of a patternProperties map keeps the constraints of its schema that no field holds: under --field-constraints and --use-annotated (as in the presets) its bounds, lengths and pattern, and in every mode the item counts of an array, are written on a type alias of the value (PmPatternProperty = TypeAliasType(\"PmPatternProperty\", Annotated[int, Field(ge=0)])) instead of being dropped; the patternProperties rules of --generate-schema-validators take the same alias, and msgspec maps take it under --use-msgspec-meta-for-map-keys"
+
+[[accepted]]
+input = "tests/data/jsonschema/property_names_*pattern_properties*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] [\\w:]+: .*\\bdict\\[.* -> .*\\bdict\\[.*Annotated\\[[^\\[\\]]*(?:\\[[^\\[\\]]*\\][^\\[\\]]*)*, (?:MinLen|MaxLen|Ge|Gt|Le|Lt|MultipleOf|_PydanticGeneralMetadata)\\(.*$"
+reason = "a patternProperties value was parsed without a field, so its constraints were dropped under --field-constraints and --use-annotated (the presets), and the item counts of an array value in every mode, and the dict accepted values the schema rejects; the value keeps its type and is written as a type alias that holds them, where the dict admits no key that matches none of its patterns, so the valid values parse as before (schema-mismatch fix)"
+decision = "#6248, #5078, #6334, #5179"
+release_note = "the value of a patternProperties map keeps the constraints of its schema that no field holds: under --field-constraints and --use-annotated (as in the presets) its bounds, lengths and pattern, and in every mode the item counts of an array, are written on a type alias of the value (PmPatternProperty = TypeAliasType(\"PmPatternProperty\", Annotated[int, Field(ge=0)])) instead of being dropped; the patternProperties rules of --generate-schema-validators take the same alias, and msgspec maps take it under --use-msgspec-meta-for-map-keys"
+
+[[accepted]]
+input = "*schema_intersection*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] [\\w:]+: .*\\bdict\\[.* -> .*\\bdict\\[.*Annotated\\[[^\\[\\]]*(?:\\[[^\\[\\]]*\\][^\\[\\]]*)*, (?:MinLen|MaxLen|Ge|Gt|Le|Lt|MultipleOf|_PydanticGeneralMetadata)\\(.*$"
+reason = "a patternProperties value was parsed without a field, so its constraints were dropped under --field-constraints and --use-annotated (the presets), and the item counts of an array value in every mode, and the dict accepted values the schema rejects; the value keeps its type and is written as a type alias that holds them, where the dict admits no key that matches none of its patterns, so the valid values parse as before (schema-mismatch fix)"
+decision = "#6248, #5078, #6334, #5179"
+release_note = "the value of a patternProperties map keeps the constraints of its schema that no field holds: under --field-constraints and --use-annotated (as in the presets) its bounds, lengths and pattern, and in every mode the item counts of an array, are written on a type alias of the value (PmPatternProperty = TypeAliasType(\"PmPatternProperty\", Annotated[int, Field(ge=0)])) instead of being dropped; the patternProperties rules of --generate-schema-validators take the same alias, and msgspec maps take it under --use-msgspec-meta-for-map-keys"
+
+[[accepted]]
+input = "*type_alias_annotated*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] [\\w:]+: .*\\bdict\\[.* -> .*\\bdict\\[.*Annotated\\[[^\\[\\]]*(?:\\[[^\\[\\]]*\\][^\\[\\]]*)*, (?:MinLen|MaxLen|Ge|Gt|Le|Lt|MultipleOf|_PydanticGeneralMetadata)\\(.*$"
+reason = "a patternProperties value was parsed without a field, so its constraints were dropped under --field-constraints and --use-annotated (the presets), and the item counts of an array value in every mode, and the dict accepted values the schema rejects; the value keeps its type and is written as a type alias that holds them, where the dict admits no key that matches none of its patterns, so the valid values parse as before (schema-mismatch fix)"
+decision = "#6248, #5078, #6334, #5179"
+release_note = "the value of a patternProperties map keeps the constraints of its schema that no field holds: under --field-constraints and --use-annotated (as in the presets) its bounds, lengths and pattern, and in every mode the item counts of an array, are written on a type alias of the value (PmPatternProperty = TypeAliasType(\"PmPatternProperty\", Annotated[int, Field(ge=0)])) instead of being dropped; the patternProperties rules of --generate-schema-validators take the same alias, and msgspec maps take it under --use-msgspec-meta-for-map-keys"
+
+[[accepted]]
+input = "*allof_ref_siblings*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] [\\w:]+: .*\\bdict\\[.* -> .*\\bdict\\[.*Annotated\\[[^\\[\\]]*(?:\\[[^\\[\\]]*\\][^\\[\\]]*)*, (?:MinLen|MaxLen|Ge|Gt|Le|Lt|MultipleOf|_PydanticGeneralMetadata)\\(.*$"
+reason = "a patternProperties value was parsed without a field, so its constraints were dropped under --field-constraints and --use-annotated (the presets), and the item counts of an array value in every mode, and the dict accepted values the schema rejects; the value keeps its type and is written as a type alias that holds them, where the dict admits no key that matches none of its patterns, so the valid values parse as before (schema-mismatch fix)"
+decision = "#6248, #5078, #6334, #5179"
+release_note = "the value of a patternProperties map keeps the constraints of its schema that no field holds: under --field-constraints and --use-annotated (as in the presets) its bounds, lengths and pattern, and in every mode the item counts of an array, are written on a type alias of the value (PmPatternProperty = TypeAliasType(\"PmPatternProperty\", Annotated[int, Field(ge=0)])) instead of being dropped; the patternProperties rules of --generate-schema-validators take the same alias, and msgspec maps take it under --use-msgspec-meta-for-map-keys"
+
+[[accepted]]
+input = [ "tests/data/jsonschema/schema_intersection*", "tests/data/openapi/allof_member_declarations_rw.yaml", "tests/data/jsonschema/allof_unsatisfiable_inherited_*" ]
+aspects = [ "constraints", "type", "probe" ]
+match = "^\\[(?:constraints|type)\\] (?:allof_member_declarations:)?(?:Model|Members|Child|Parent|Nested|Inherited|KeptDefault|FieldSite):(?:mid|n|code|tag|ratio|x): .+ -> .+$|^\\[probe\\] (?:allof_member_declarations:)?(?:Model|Inherited|Child|Parent): accept -> reject$"
+reason = "a property that two inline members of an allOf beside one $ref declare was written from the first declaration (the model) or the last (its request and response models), so the bounds, multipleOf and pattern of the other were lost and the model accepted values the schema rejects; every declaration takes the check keywords of all of them, so each model keeps the type, default and description it wrote and checks them all; a subclass that overrides the property reads the conjoined declaration (schema-mismatch fix; the probe example breaks the added bound or pattern)"
+decision = "#6276"
+release_note = "a property that several inline allOf members declare beside a $ref, such as {type: string} and {maxLength: 3}, checks the bounds, multipleOf and pattern of every declaration instead of the first one's only"
+
+[[accepted]]
+input = [ "tests/data/jsonschema/schema_intersection", "tests/data/jsonschema/schema_intersection/allof_union_member_declarations.json" ]
+aspects = [ "constraints", "type", "default", "required", "bases" ]
+match = "^\\[(?:constraints|type|default)\\] (?:allof_union_member_declarations:)?(?:Inline\\d+|Own\\d+|Refs(?:\\d+|Cat\\d*|Dog\\d*)|RequiredBranch\\d+|TwoUnions\\d+):(?:x|name): .+ -> .+$|^\\[required\\] (?:allof_union_member_declarations:)?(?:Refs3:name|RefsDog1?:name|RequiredBranch[14]:x): (?:True -> False|False -> True)$|^\\[bases\\] (?:allof_union_member_declarations:)?(?:Refs3|RefsDog1?|RequiredBranch[14]): \\[.+\\] -> \\[\\]$"
+reason = "the class of a union member of an allOf whose branch and other parts declare one property took it from its first base (Python, Pydantic) or its last (msgspec), so the bounds of the others were lost and the model accepted values the schema rejects; the class declares the property itself with the check keywords of every declaration, required where a base requires it, where the declarations differ in nothing else; Pydantic dataclasses write the required field with Field(...), which the signature reads as a default, and a TypedDict whose own key differs from a base's is written without its bases, as for any other key (schema-mismatch fix)"
+decision = "#6284"
+release_note = "a union member of an allOf, such as the class of an anyOf branch with the other members, checks the bounds, multipleOf and pattern that its branch and the other members declare for one property, instead of those of its first base only"
+
+[[accepted]]
+input = [
+  "tests/data/jsonschema/msgspec_union_member_constraints*",
+  "tests/data/jsonschema/msgspec_union_shared_bounds*",
+  "payload:jsonschema/msgspec_union_member_constraints.json",
+  "payload:jsonschema/msgspec_union_shared_bounds.json",
+]
+backends = [ "msgspec.Struct" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] (?:msgspec_union_(?:member_constraints|shared_bounds):)?(?:(?:Upload|Payload):apart: str -> Annotated\\[str, Meta\\(max_length=3\\)\\]|(?:(?:Bounds|Payload):[a-z_]+|Parted): .* -> .*Annotated\\[(?:str|int|float), Meta\\([^)]*\\)\\].*)$"
+reason = "a msgspec union of members of one type that each write other constraints, none of them just the ones they share, was written without any constraint, as msgspec checks every member of a type against the constraints of all of them, so it accepted values every member rejects (\"abcd\" for str 2..3 | str <=3 with pattern ^a, 0 for int 1..5 | int >=7); the union keeps the constraints every member implies (max_length=3, ge=1), and a float member also those that an integer or Decimal member admits, so no value a member accepts is rejected (schema-mismatch fix: class names, field names and the parsed values of valid payloads stay)"
+decision = "#4756, #6267"
+release_note = "a msgspec union of differently constrained members of one type, such as anyOf [{type: string, minLength: 2, maxLength: 3}, {type: string, maxLength: 3, pattern: ^a}] or anyOf [{type: integer, minimum: 1, maximum: 5}, {type: integer, minimum: 7}], keeps the bound every member implies (Annotated[str, Meta(max_length=3)], Annotated[int, Meta(ge=1)]) instead of none, so it rejects values every member rejects; the warning names the bound it keeps"
+
+[[accepted]]
+input = [
+  "*object_maps*",
+  "*pattern_string_adapters*",
+  "tests/data/jsonschema/property_names_*pattern_properties*",
+  "*type_alias_annotated*",
+  "*allof_ref_siblings*",
+]
+backends = [ "msgspec.Struct" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] [\\w:]+: .*\\bdict\\[(Annotated\\[str, Meta\\(.*?\\)\\]), (?!Annotated\\[)\\S.* -> .*\\bdict\\[\\1, (?:Union\\[)?Annotated\\[.+?, Meta\\(.*$"
+reason = "under --use-msgspec-meta-for-map-keys (the 20261104 presets), the value of a msgspec map whose keys patternProperties constrain dropped the bounds, lengths and pattern of its schema, as the Pydantic outputs did, so the map accepted values the schema rejects; the value keeps its type and takes them in Annotated[..., Meta(...)], and valid values parse as before (schema-mismatch fix)"
+decision = "#6248, #5078, #6334, #5179"
+release_note = "the value of a patternProperties map keeps the constraints of its schema that no field holds: under --field-constraints and --use-annotated (as in the presets) its bounds, lengths and pattern, and in every mode the item counts of an array, are written on a type alias of the value (PmPatternProperty = TypeAliasType(\"PmPatternProperty\", Annotated[int, Field(ge=0)])) instead of being dropped; the patternProperties rules of --generate-schema-validators take the same alias, and msgspec maps take it under --use-msgspec-meta-for-map-keys"
 
 [[accepted]]
 input = "tests/data/jsonschema/schema_intersection"
-aspects = [ "kind", "type", "name-removed", "probe" ]
-match = "\\broot_forms:Model: accept -> reject|\\ballof_ref_item_constraints:.*?(?:\\b(TwoItem|TwoMap)\\b)|\\ballof_refs:.*?(?:\\bTwoRefs(Item|Map|Prop)\\b|Model:two_refs_(prop|items):|Model:two_refs_map: .*Pick2)|\\ballof_scalar_refs:.*?(?:\\b(ListItem|LookaheadItems|NullableItem|NumberItem|PatternRefs|RefsItem|TextItem|TwoItem|TwoMap|TwoPatternMap|TwoProp|UntypedTypedItem)\\b)|\\ballof_values:.*?(?:\\bPat\\b)|\\broot_forms:.*?(?:\\b(Arr|ArrRef|Pat|TwoRefs)\\b|Model:(a|b|p|two_refs): .*\\bM2\\b)|\\broot_site_null:.*?(?:\\b(InlineArray|InlineInteger|RefArray|RefIntegers)\\b)|\\broot_value_items_draft07:.*?(?:\\b(ClosingElsewhere|NullableTags|OwnClosing|TupleLater)\\b)|\\broot_value_keywords:.*?(?:\\b(Bounded|ItemsFirst|ItemsLater|RefBounded|RefItems|RefNoParts|UnevaluatedItems)\\b)"
-reason = "the directory input of the same #5401 sites: an allOf whose parts admit no object was an empty object model that rejected every valid scalar (crash class); it is written as the value type now"
-decision = "#5401"
-release_note = "an allOf of scalar schemas (for example two integer $refs with a sibling minimum) is generated as the constrained scalar type instead of an empty model that rejected every value"
+backends = [ "msgspec.Struct" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] allof_value_unions:(?:Ranges|TwoBases|TwoBasesItem|Model:(?:ranges|two_bases|two_bases_items)): .* -> .*Annotated\\[int, Meta\\((?:ge=1|le=100)\\)\\].*$"
+reason = "a msgspec union of integer members that an allOf of a bounded base and an anyOf of bounds gives, such as minimum 1 with anyOf [maximum 5, minimum 7], was written without any constraint, as no member wrote just the bound they share, so it accepted 0; the union keeps the bound every member implies (Annotated[int, Meta(ge=1)]), so no value a member accepts is rejected (schema-mismatch fix: class names, field names and the parsed values of valid payloads stay)"
+decision = "#4756, #6267"
+release_note = "a msgspec union of differently constrained members of one type, such as anyOf [{type: string, minLength: 2, maxLength: 3}, {type: string, maxLength: 3, pattern: ^a}] or anyOf [{type: integer, minimum: 1, maximum: 5}, {type: integer, minimum: 7}], keeps the bound every member implies (Annotated[str, Meta(max_length=3)], Annotated[int, Meta(ge=1)]) instead of none, so it rejects values every member rejects; the warning names the bound it keeps"
 
 [[accepted]]
-input = "tests/data/jsonschema/schema_intersection"
-aspects = [ "required", "default", "constructor-order" ]
-match = "^\\[(required|default)\\] (allof_ref_item_constraints:Model:two_map|allof_refs:Model:two_refs_(map|prop)|allof_scalar_refs:Model:(lookahead_items|pattern_refs|two_map|two_prop)|allof_values:Model:pat|root_forms:Model:(a|b|p|two_refs)|root_site_null:M:(inline_array|inline_integer|ref_array|ref_integers)|root_value_items_draft07:M:(closing_elsewhere|nullable_tags|own_closing|tuple_later)|root_value_keywords:M:(items_first|items_later|ref_bounded|ref_items|ref_no_parts|unevaluated_items)): |^\\[constructor-order\\] (allof_ref_item_constraints|allof_refs|allof_scalar_refs|allof_values|root_forms):Model: "
-reason = "the field of an allOf site #5401 writes as its value type instead of an empty model takes the default rules of that type: --use-default-factory-for-optional-nested-models gives a value type no factory and --strip-default-none keeps None only where the type admits null, as 0.87.0 does for the same property written directly as that value type"
-decision = "#5401"
-release_note = "with --strip-default-none or --use-default-factory-for-optional-nested-models, a property whose allOf of scalar schemas was an empty model gets the default its value type gets: no default factory, and no None default where the type does not admit null"
+input = "tests/data/jsonschema/unique_items_as_set_extra_items.json"
+backends = [ "typing.TypedDict" ]
+aspects = [ "type" ]
+match = "^\\[type\\] Model:plain: Unique -> Plain$"
+reason = "under --use-unique-items-as-set-by-value (the practical 20261104 presets), the TypedDict Plain, whose extra_items array declares no uniqueItems, was merged into Unique, whose extra_items does, as both were written list[int]; now that Unique writes set[int], Plain is kept apart as models whose arrays differ in uniqueItems are, and the field plain keeps its list (the values of a TypedDict parse as before)"
+decision = "#6328"
+release_note = "with --use-unique-items-as-set, every array whose own schema declares uniqueItems is written as a set, also the member of an anyOf or oneOf, the items of an array, the values of a map, a lone allOf member and the extra_items of a TypedDict, where a model merged into its model declares it too"
 
 [[accepted]]
-input = "tests/data/jsonschema/schema_intersection/allof_scalar_refs.json"
-aspects = [ "required", "default", "constructor-order" ]
-match = "^\\[(required|default)\\] Model:(lookahead_items|pattern_refs|two_map|two_prop): |^\\[constructor-order\\] Model: "
-reason = "the field of an allOf site #5401 writes as its value type instead of an empty model takes the default rules of that type: --use-default-factory-for-optional-nested-models gives a value type no factory and --strip-default-none keeps None only where the type admits null, as 0.87.0 does for the same property written directly as that value type"
-decision = "#5401"
-release_note = "with --strip-default-none or --use-default-factory-for-optional-nested-models, a property whose allOf of scalar schemas was an empty model gets the default its value type gets: no default factory, and no None default where the type does not admit null"
+input = "tests/data/jsonschema/pattern_unicode_word_characters.json"
+backends = [ "pydantic_v2.BaseModel" ]
+aspects = [ "constraints" ]
+match = "^\\[constraints\\] \\w+:\\w+: (Literal\\[[^\\]]*\\]) -> Annotated\\[\\1, _PydanticGeneralMetadata\\(pattern='[^']*'\\)\\]$"
+reason = "under --field-constraints or --use-annotated with --enum-field-as-literal (the 20260619 to 20261017 presets), an object property whose enum is written as a Literal left out the pattern beside it, while a root field writes it, so a value of the enum that the pattern rejects was accepted; the property writes it beside the Literal now, and the values of the enum that match it, such as 'é' for ^\\w+$, parse as before (schema-mismatch fix)"
+decision = "#6052"
+release_note = "under --field-constraints or --use-annotated, an object property whose enum is written as a Literal keeps the pattern beside it (Annotated[Literal['aa', 'bb'], Field(pattern='^a')]) instead of dropping it and accepting the values of the enum that the pattern rejects, as a root field does"
 
 [[accepted]]
-input = "tests/data/jsonschema/allof_root_model_constraints.json"
-aspects = [ "required", "default", "constructor-order" ]
-match = "^\\[(required|default)\\] Model:(refarr|withitems): |^\\[constructor-order\\] Model: "
-reason = "the field of an allOf site #5401 writes as its value type instead of an empty model takes the default rules of that type: --use-default-factory-for-optional-nested-models gives a value type no factory and --strip-default-none keeps None only where the type admits null, as 0.87.0 does for the same property written directly as that value type"
-decision = "#5401"
-release_note = "with --strip-default-none or --use-default-factory-for-optional-nested-models, a property whose allOf of scalar schemas was an empty model gets the default its value type gets: no default factory, and no None default where the type does not admit null"
+input = "payload:jsonschema/pydantic_v2_model_default_dict_non_empty.json"
+backends = [ "msgspec.Struct" ]
+aspects = [ "payload-verdict" ]
+match = "^\\[payload-verdict\\] payload v\\d+: reject -> accept$"
+reason = "the object default of a msgspec field typed dict[str, Item] was converted to Item instead of the map, so every valid payload that leaves the field out was rejected; the default is converted to the type the field is written as (rejects-valid fix)"
+decision = "#6303"
+release_note = "a msgspec default of a map of Structs, such as dict[str, PodSpec], is converted to the map instead of to the Struct, which lost the keys or failed every payload that left the field out"
+
+[[accepted]]
+input = "tests/data/jsonschema/unique_items_by_value_python_types.json"
+aspects = [ "type" ]
+match = "^\\[type\\] Root:(?:containers|sequences|queues|anything|measured): .*\\bset\\[.* -> (?!.*\\bset\\[).*\\blist\\[.*$"
+reason = "under --use-unique-items-as-set-by-value (the practical 20261104 presets), a uniqueItems array whose items an x-python-type types by values that do not hash, such as list[int] | dict[str, int], deque[int] or Any, became a set that rejects every non-empty array; it stays a list (owner decision 11-06: fixed in the released option)"
+decision = "#6300"
+release_note = "--use-unique-items-as-set-by-value: a uniqueItems array whose items an x-python-type types by values that do not hash, such as list[int] | dict[str, int], Sequence[int], deque[int] or Any, stays a list instead of becoming a set that rejected every non-empty array"
+
+[[accepted]]
+input = [ "tests/data/jsonschema/schema_intersection", "tests/data/jsonschema/schema_intersection/allof_required_members.json" ]
+aspects = [ "type", "kind" ]
+match = "^\\[(?:type|kind)\\] (?:allof_required_members:)?(?:Branch|Model:(?:member|sibling|items|nullable_member|nullable_sibling|object_site|ref_sibling|object_member)): .+ -> .+$"
+reason = "under --intersect-combined-schema-keywords (the 20261104 presets), a field, an item or a branch whose allOf names one model and adds only required names to it was written as that model, which accepted objects without them; the site is a subclass of that model that requires them and admits the null of that model where neither its own type nor that of an inline member excludes null, the required names beside the $ref of a lone member included (owner decision 11-06: fixed in the released option)"
+decision = "#6280"
+release_note = "--intersect-combined-schema-keywords: a field, an array item or a union branch whose allOf names one model and adds required names to it, such as allOf: [{$ref: A}, {required: [id]}], is written as a subclass of that model that requires them instead of as the model, which accepted objects without them"
+
+[[accepted]]
+input = [ "payload:jsonschema/msgspec_alias_defaults.json", "payload:jsonschema/msgspec_alias_default_controls.json" ]
+backends = [ "msgspec.Struct" ]
+aspects = [ "parsed-value" ]
+match = "^\\[parsed-value\\] payload v\\d+: the parsed value differs$"
+reason = "the default of a msgspec field typed as a nested list or a union list of Structs, such as list[list[Item]] or list[Item | str], stayed the plain dicts of the schema, so a model that left the field out held dicts where Structs are declared and attribute access on them raised AttributeError, while the same JSON decoded to Structs; the default is converted to the declared type as list[Item] already was, so every payload keeps its verdict and decoding the encoded default gives the same value (crash-class fix, as #6196 in 0.90.0)"
+decision = "#6304"
+release_note = "a msgspec default of a nested list or a union list of Structs, such as list[list[PodSpec]] or list[PodSpec | str], is converted to the declared type with convert(...) as list[PodSpec] already was, instead of holding plain dicts"
+
+[[accepted]]
+input = [ "tests/data/jsonschema/allof_unevaluated_closed_member.json", "tests/data/jsonschema/unevaluated_properties.json" ]
+aspects = [ "config", "probe" ]
+match = "^\\[config\\] (?:ClosedFilters|NestedClosedFilters|MergedClosedFilters|Resource): .+ -> .*(?:'forbid'|'closed': 'True').*$|^\\[probe\\] (?:ClosedFilters|NestedClosedFilters|MergedClosedFilters|Resource): accept -> reject$"
+reason = "an inline allOf member with unevaluatedProperties: false, or the object beside its allOf, admits no property but those it evaluates, but the model inherited the open config of its base and accepted extra properties the schema rejects; it closes the model as additionalProperties: false does (Pydantic extra='forbid', TypedDict closed=True), where the schemas it evaluates, its $ref among them, evaluate no property that no properties names (no patternProperties, additionalProperties, anyOf, oneOf or if) (schema-mismatch fix: class names, field names and the parsed values of valid payloads stay)"
+decision = "#4742"
+release_note = "unevaluatedProperties: false in an inline allOf member, such as allOf [{$ref: Base}, {properties: {name: ...}, unevaluatedProperties: false}], closes the model as additionalProperties: false does (extra='forbid', closed=True), so it rejects the extra properties the schema rejects"
+
+[[accepted]]
+input = "tests/data/openapi/discriminator_enum.yaml"
+backends = [ "pydantic_v2.BaseModel" ]
+aspects = [ "type" ]
+match = "^\\[type\\] \\w+:\\w+: Literal\\[<(\\w+)\\.(\\w+): ('[^']*')>\\] -> Literal\\[\\3, <\\1\\.\\2: \\3>\\]$"
+reason = "with --use-enum-values-in-discriminator, the tag Literal[Kind.a] of a plain Enum member made the discriminated union reject every payload, as such a member equals no value a payload carries; the tag now holds the value beside the member, Literal[Kind.a, 'a'], so the union parses payloads and still takes the member a Python caller passes (rejects-all fix)"
+decision = "#6390"
+release_note = "with --use-enum-values-in-discriminator, a variant tagged by a member of a plain Enum (no --use-subclass-enum) is written Literal[PetType.cat, 'cat'] instead of Literal[PetType.cat], so the discriminated union accepts the payloads its schema accepts instead of rejecting every one, and Python callers passing PetType.cat keep working"
 
 [[accepted]]
 input = "tests/data/openapi/schema_intersection"
-aspects = [ "required", "default" ]
-match = "^\\[(required|default)\\] root_site_null_oas30:Model:(inline_array|ref_array): "
-reason = "the field of an allOf site #5401 writes as its value type instead of an empty model takes the default rules of that type: --use-default-factory-for-optional-nested-models gives a value type no factory and --strip-default-none keeps None only where the type admits null, as 0.87.0 does for the same property written directly as that value type"
-decision = "#5401"
-release_note = "with --strip-default-none or --use-default-factory-for-optional-nested-models, a property whose allOf of scalar schemas was an empty model gets the default its value type gets: no default factory, and no None default where the type does not admit null"
+aspects = [
+  "bases",
+  "config",
+  "constraints",
+  "constructor-order",
+  "default",
+  "field-added",
+  "field-removed",
+  "numbered-name-removed",
+  "required",
+  "type",
+]
+match = "^\\[[\\w-]+\\] allof_beside_discriminated_branch:\\w+(?::\\w+)?: .+$"
+reason = "the module allof_beside_discriminated_branch of a run over its whole directory takes the changes its file takes alone: with --distribute-allof-over-unions (the 20261104 presets) each subtype a discriminated $ref branch stands for takes the allOf members beside or around its union as its own class (Owned1(Cat), Owned2(Dog), Owned3(Fish)), and the classes of later branches are renumbered in union order (owner decision: fix inside the option released in 0.90.0; the default output is unchanged)"
+decision = "#6283"
+release_note = "--distribute-allof-over-unions (and the 20261104 presets): each subtype a discriminated $ref branch stands for takes the allOf members beside or around its union as a class of its own (Owned1(Cat), Owned2(Dog)), so it requires the members' properties; the classes of the branches after it are renumbered in union order (Owned1(Fish) becomes Owned3(Fish)), and in an allOf that holds the union the subtypes are no longer dropped"
+
+[[accepted]]
+input = [
+  "tests/data/openapi/schema_intersection/allof_beside_discriminated_branch.yaml",
+  "tests/data/openapi/external_discriminator_base/distributed.json",
+]
+aspects = [
+  "bases",
+  "config",
+  "constraints",
+  "constructor-order",
+  "default",
+  "field-added",
+  "field-removed",
+  "numbered-name-removed",
+  "required",
+  "type",
+]
+reason = "with --distribute-allof-over-unions (the 20261104 presets), a $ref branch whose schema has an OpenAPI discriminator was written as the subtypes it stands for without the allOf members beside its union (Cat | Dog | Owned1(Fish)), so they accepted payloads without the required owner and dropped it, and in an allOf holding the union the branch was left out; each subtype now takes the members as its own class (Owned1(Cat), Owned2(Dog), Owned3(Fish)), as the union listing those subtypes does, and the classes of later branches are renumbered in union order (owner decision: fix inside the option released in 0.90.0; the default output is unchanged)"
+decision = "#6283"
+release_note = "--distribute-allof-over-unions (and the 20261104 presets): each subtype a discriminated $ref branch stands for takes the allOf members beside or around its union as a class of its own (Owned1(Cat), Owned2(Dog)), so it requires the members' properties; the classes of the branches after it are renumbered in union order (Owned1(Fish) becomes Owned3(Fish)), and in an allOf that holds the union the subtypes are no longer dropped"
+
+[[accepted]]
+input = [ "tests/data/openapi/schema_intersection/allof_beside_site_discriminator.yaml", "tests/data/openapi/schema_intersection" ]
+aspects = [ "config", "type" ]
+match = "^\\[(?:type|config)\\] (?:allof_beside_site_discriminator:)?(?:Named|Mapped)[12](?::pet_?[Tt]ype)?: .*'[01]'.* -> .*'(?:Cat|Dog|c|d)'.*$"
+reason = "with --distribute-allof-over-unions (the 20261104 presets), the class of a $ref branch of a oneOf with a discriminator beside an allOf took the position of the branch as its tag ('0', '1') where the discriminator has no mapping, and so did every tagged msgspec Struct, which also lost its mapping key, so the union rejected every payload; the class takes the tag of the schema its branch names ('Cat', or the mapping key 'c'), as that schema takes it without the option (owner decision: fix inside the option released in 0.90.0; the default output is unchanged)"
+decision = "#6408"
+release_note = "--distribute-allof-over-unions (and the 20261104 presets): the class of a $ref branch of a discriminated oneOf beside an allOf is tagged by the schema its branch names (Literal['Cat'], or its mapping key) instead of its position (Literal['0']), so the union accepts the payloads its schema accepts instead of rejecting every one; tagged msgspec Structs take the mapping key too"
+
+[[accepted]]
+input = "tests/data/openapi/schema_intersection"
+aspects = [ "numbered-name-removed", "type" ]
+match = "^\\[numbered-name-removed\\] ref_branches_beside_properties:Owned4: removed$|^\\[type\\] ref_branches_beside_properties:Holder:owned: Union\\[((?:None, )?)Owned, Owned4\\] -> Union\\[\\1Owned, Owned6\\]$"
+reason = "in a run over the whole directory with --distribute-allof-over-unions (the 20261104 presets), the Dog branch class of ref_branches_beside_properties is numbered after the classes the subtypes of allof_beside_discriminated_branch take now (#6283: Owned2, Owned3), so Owned4 is Owned6 there; as that class is tagged 'Dog' instead of '1' now (#6459), its signature no longer pairs it with Owned4, so the renumbering shows; it keeps its base and fields, and Holder.owned names it (owner decisions: renumbering in union order inside the option, tags by the schema name)"
+decision = "#6283, #6459"
+release_note = "--distribute-allof-over-unions (and the 20261104 presets): each subtype a discriminated $ref branch stands for takes the allOf members beside or around its union as a class of its own (Owned1(Cat), Owned2(Dog)), so it requires the members' properties; the classes of the branches after it are renumbered in union order (Owned1(Fish) becomes Owned3(Fish)), and in an allOf that holds the union the subtypes are no longer dropped"
+
+[[accepted]]
+input = [ "tests/data/openapi/schema_intersection/ref_branches_beside_properties.yaml", "tests/data/openapi/schema_intersection" ]
+aspects = [ "config", "type" ]
+match = "^\\[(?:type|config)\\] (?:ref_branches_beside_properties:)?Owned\\d*(?::pet_?[Tt]ype)?: .*'[01]'.* -> .*'(?:Cat|Dog)'.*$"
+reason = "a $ref branch of a oneOf with properties or required beside it and a discriminator without mapping is the class of the branch with those properties, which took the position of the branch as its tag ('0', '1') since 0.85.0, so the union rejected every payload; the class takes the tag of the schema its branch names ('Cat'), as that schema takes it as a variant itself, and keeps its name and fields (rejects-all fix)"
+decision = "#6459"
+release_note = "the class of a $ref branch of a discriminated oneOf with properties beside it and no mapping is tagged by the schema its branch names (Literal['Cat']) instead of its position (Literal['0']), so the union accepts the payloads its schema accepts instead of rejecting every one"
+
+[[accepted]]
+input = "*schema_intersection*"
+backends = [ "msgspec.Struct", "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] (?:(?:allof_4716:)?Measurement:code|(?:allof_4716:)?Measurement:count|(?:allof_4716:)?Measurement:q_allof|(?:allof_4716:)?Measurement:score|(?:allof_4716:)?Measurement:tags|(?:allof_4716:)?Score|(?:allof_array_bounds:)?Model:tags_len|(?:allof_array_bounds:)?Model:tags_len_prop|(?:allof_array_bounds:)?TagsLen|(?:allof_int_frac:)?Frac|(?:allof_int_frac:)?Model:frac|(?:allof_int_frac:)?Model:frac_prop|(?:allof_ref_item_constraints:)?MemberItem|(?:allof_ref_item_constraints:)?Model:member_items|(?:allof_refs:)?AllOfRoot|(?:allof_refs:)?Model:non_negative_prop|(?:allof_refs:)?Model:number5|(?:allof_refs:)?Model:number5_prop|(?:allof_refs:)?Model:q_allof|(?:allof_refs:)?Model:q_allof2_prop|(?:allof_refs:)?Model:q_allof_prop|(?:allof_refs:)?Model:stamp_len_prop|(?:allof_refs:)?Number5|(?:ref_siblings_draft07:)?Model:wd|(?:ref_siblings_draft07:)?Model:wd_prop|(?:ref_siblings_draft07:)?Wd|(?:ref_siblings_oas30:)?Model|(?:ref_siblings_oas30:)?Model:wd|(?:ref_siblings_oas30:)?Model:wd_prop|(?:ref_siblings_oas30:)?Wd|(?:ref_siblings_oas31:)?Model:wd|(?:ref_siblings_oas31:)?Model:wd_prop|(?:ref_siblings_oas31:)?Wd|(?:root_members:)?M:wd|(?:root_members:)?M:wd_prop|(?:root_members:)?Wd|(?:rw:)?Pet:id|(?:rw:)?Pet:s2): .+ -> .*(?:Meta|MinLen|MaxLen|Ge|Gt|Le|Lt|MultipleOf|_PydanticGeneralMetadata)\\(.*$"
+reason = "a field typed by the one $ref of an allOf site (allOf: [$ref] beside maxLength, a second member with minItems or pattern, a $ref beside a bound to an allOf of one $ref) kept only that target and dropped what the site adds, so it accepted values the schema rejects; where the field's type is no class (a type collapse inlined, a type alias of msgspec, Pydantic dataclasses or --use-type-alias) it now writes them, decided by the type it stands for; a Pydantic dataclass field takes them in the Field() call it writes, or in Annotated metadata where it writes none, so it keeps its place in the constructor (schema-mismatch fix)"
+decision = "#6024, #6234"
+release_note = "the keywords an allOf site adds to its one $ref (maxLength beside allOf: [$ref], the minItems or pattern of another member, a bound beside a $ref to an allOf of one $ref) are checked where the field's type is no class: in the default msgspec and Pydantic dataclass output, which write such types as type aliases, and under --use-type-alias and --collapse-root-models; the default Pydantic BaseModel output, whose field names a root model class, is unchanged. A Pydantic dataclass field writes them in the Field() call it already writes, and otherwise in Annotated metadata (id: Annotated[Id, Field(max_length=5)]), so every field keeps its place, its default and its positional use in the constructor. As a $ref beside the same keyword already does, the $ref siblings are read in every dialect, also draft-07 and OpenAPI 3.0; --ignore-ref-siblings-by-schema-version reads them as those specifications do"
+
+[[accepted]]
+input = [ "tests/data/jsonschema/allof_site_constraints.json", "tests/data/jsonschema/allof_site_constraints_reuse.json" ]
+backends = [ "msgspec.Struct", "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] (?:Extended|Model|Model:code|Model:counts|Model:e|Model:labels|Model:name|Model:score|Model:short|Short): .+ -> .*(?:Meta|MinLen|MaxLen|Ge|Gt|Le|Lt|MultipleOf|_PydanticGeneralMetadata)\\(.*$"
+reason = "a field typed by the one $ref of an allOf site (allOf: [$ref] beside maxLength, a second member with minItems or pattern, a $ref beside a bound to an allOf of one $ref) kept only that target and dropped what the site adds, so it accepted values the schema rejects; where the field's type is no class (a type collapse inlined, a type alias of msgspec, Pydantic dataclasses or --use-type-alias) it now writes them, decided by the type it stands for; a Pydantic dataclass field takes them in the Field() call it writes, or in Annotated metadata where it writes none, so it keeps its place in the constructor (schema-mismatch fix)"
+decision = "#6024, #6234"
+release_note = "the keywords an allOf site adds to its one $ref (maxLength beside allOf: [$ref], the minItems or pattern of another member, a bound beside a $ref to an allOf of one $ref) are checked where the field's type is no class: in the default msgspec and Pydantic dataclass output, which write such types as type aliases, and under --use-type-alias and --collapse-root-models; the default Pydantic BaseModel output, whose field names a root model class, is unchanged. A Pydantic dataclass field writes them in the Field() call it already writes, and otherwise in Annotated metadata (id: Annotated[Id, Field(max_length=5)]), so every field keeps its place, its default and its positional use in the constructor. As a $ref beside the same keyword already does, the $ref siblings are read in every dialect, also draft-07 and OpenAPI 3.0; --ignore-ref-siblings-by-schema-version reads them as those specifications do"
+
+[[accepted]]
+input = "tests/data/jsonschema/msgspec_number_limits*"
+backends = [ "msgspec.Struct", "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] (?:(?:float_range_bounds:)?Model:site|(?:int64_constraints:)?Model:site): .+ -> .*(?:Meta|MinLen|MaxLen|Ge|Gt|Le|Lt|MultipleOf|_PydanticGeneralMetadata)\\(.*$"
+reason = "a field typed by the one $ref of an allOf site (allOf: [$ref] beside maxLength, a second member with minItems or pattern, a $ref beside a bound to an allOf of one $ref) kept only that target and dropped what the site adds, so it accepted values the schema rejects; where the field's type is no class (a type collapse inlined, a type alias of msgspec, Pydantic dataclasses or --use-type-alias) it now writes them, decided by the type it stands for; a Pydantic dataclass field takes them in the Field() call it writes, or in Annotated metadata where it writes none, so it keeps its place in the constructor (schema-mismatch fix)"
+decision = "#6024, #6234"
+release_note = "the keywords an allOf site adds to its one $ref (maxLength beside allOf: [$ref], the minItems or pattern of another member, a bound beside a $ref to an allOf of one $ref) are checked where the field's type is no class: in the default msgspec and Pydantic dataclass output, which write such types as type aliases, and under --use-type-alias and --collapse-root-models; the default Pydantic BaseModel output, whose field names a root model class, is unchanged. A Pydantic dataclass field writes them in the Field() call it already writes, and otherwise in Annotated metadata (id: Annotated[Id, Field(max_length=5)]), so every field keeps its place, its default and its positional use in the constructor. As a $ref beside the same keyword already does, the $ref siblings are read in every dialect, also draft-07 and OpenAPI 3.0; --ignore-ref-siblings-by-schema-version reads them as those specifications do"
+
+[[accepted]]
+input = "tests/data/openapi/allof_with_required_inherited_*"
+backends = [ "msgspec.Struct", "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] (?:EdgeCasesCoverage:decimal_multiple_field|EdgeCasesCoverage:field_with_constraints|EdgeCasesCoverage:local_field|EdgeCasesCoverage:multiple_field|EdgeCasesCoverage:ref_and_primitive|Item|Item:code|Item:extra|ProjectedItem:code|RefWithPrimitiveBase:ref_and_primitive): .+ -> .*(?:Meta|MinLen|MaxLen|Ge|Gt|Le|Lt|MultipleOf|_PydanticGeneralMetadata)\\(.*$"
+reason = "a field typed by the one $ref of an allOf site (allOf: [$ref] beside maxLength, a second member with minItems or pattern, a $ref beside a bound to an allOf of one $ref) kept only that target and dropped what the site adds, so it accepted values the schema rejects; where the field's type is no class (a type collapse inlined, a type alias of msgspec, Pydantic dataclasses or --use-type-alias) it now writes them, decided by the type it stands for; a Pydantic dataclass field takes them in the Field() call it writes, or in Annotated metadata where it writes none, so it keeps its place in the constructor (schema-mismatch fix)"
+decision = "#6024, #6234"
+release_note = "the keywords an allOf site adds to its one $ref (maxLength beside allOf: [$ref], the minItems or pattern of another member, a bound beside a $ref to an allOf of one $ref) are checked where the field's type is no class: in the default msgspec and Pydantic dataclass output, which write such types as type aliases, and under --use-type-alias and --collapse-root-models; the default Pydantic BaseModel output, whose field names a root model class, is unchanged. A Pydantic dataclass field writes them in the Field() call it already writes, and otherwise in Annotated metadata (id: Annotated[Id, Field(max_length=5)]), so every field keeps its place, its default and its positional use in the constructor. As a $ref beside the same keyword already does, the $ref siblings are read in every dialect, also draft-07 and OpenAPI 3.0; --ignore-ref-siblings-by-schema-version reads them as those specifications do"
+
+[[accepted]]
+input = "tests/data/openapi/allof_with_required_inherited_*"
+backends = [ "pydantic_v2.dataclass" ]
+aspects = [ "default" ]
+match = "^\\[default\\] (?:EdgeCasesCoverage:decimal_multiple_field|EdgeCasesCoverage:field_with_constraints|EdgeCasesCoverage:local_field|EdgeCasesCoverage:multiple_field|EdgeCasesCoverage:ref_and_primitive|Item|Item:code|Item:extra|ProjectedItem:code|RefWithPrimitiveBase:ref_and_primitive): ['\"]FieldInfo\\(.*\\)['\"] -> ['\"]FieldInfo\\(.*\\)['\"]$"
+reason = "a Pydantic dataclass field that already writes a Field() call, such as a required inherited field the class writes as Field(...), takes the constraints of its allOf site in that call: its dataclass default is the same Field() with the constraints, which Pydantic reads as the same requiredness, and the field keeps its place in the constructor; a field that writes no call takes them in Annotated metadata and keeps having no default"
+decision = "#6024, #6234"
+release_note = "the keywords an allOf site adds to its one $ref (maxLength beside allOf: [$ref], the minItems or pattern of another member, a bound beside a $ref to an allOf of one $ref) are checked where the field's type is no class: in the default msgspec and Pydantic dataclass output, which write such types as type aliases, and under --use-type-alias and --collapse-root-models; the default Pydantic BaseModel output, whose field names a root model class, is unchanged. A Pydantic dataclass field writes them in the Field() call it already writes, and otherwise in Annotated metadata (id: Annotated[Id, Field(max_length=5)]), so every field keeps its place, its default and its positional use in the constructor. As a $ref beside the same keyword already does, the $ref siblings are read in every dialect, also draft-07 and OpenAPI 3.0; --ignore-ref-siblings-by-schema-version reads them as those specifications do"
+
+[[accepted]]
+input = [
+  "tests/data/jsonschema/schema_version_per_document",
+  "tests/data/jsonschema/schema_version_per_document_refs",
+  "tests/data/jsonschema/schema_version_per_document_dynamic_scope",
+  "tests/data/jsonschema/type_overrides_literal_models.json",
+  "tests/data/jsonschema/site_models_for_constrained_refs.json",
+  "tests/data/jsonschema/ref_sibling_member_item_constraints.json",
+  "payload:jsonschema/schema_version_per_document*",
+  "payload:jsonschema/type_overrides_literal_models.json",
+  "payload:jsonschema/site_models_for_constrained_refs.json",
+  "payload:jsonschema/schema_intersection/*",
+  "payload:jsonschema/allof_ref_siblings/string_draft-07.json",
+]
+backends = [ "msgspec.Struct", "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] (?:(?:a_draft07|b_2020_12|leaf|mid|root|legacy_draft07):)?(?:Legacy:level|Level|Current:wd|Wd|Score|Mid:score|Root:legacy|Root:score|TypeOverridesLiteralModels:capped|Order:quantity|NarrowedItem|Model:narrowed_items|Payload(?::(?:level|capped|quantity|frac|frac_prop|wd|wd_prop))?): .+ -> .*(?:Meta|MinLen|MaxLen|Ge|Gt|Le|Lt|MultipleOf|_PydanticGeneralMetadata)\\(.*$"
+reason = "a field typed by the one $ref of an allOf site (allOf: [$ref] beside maxLength, a second member with minItems or pattern, a $ref beside a bound to an allOf of one $ref) kept only that target and dropped what the site adds, so it accepted values the schema rejects; where the field's type is no class (a type collapse inlined, a type alias of msgspec, Pydantic dataclasses or --use-type-alias) it now writes them, decided by the type it stands for; a Pydantic dataclass field takes them in the Field() call it writes, or in Annotated metadata where it writes none, so it keeps its place in the constructor (schema-mismatch fix)"
+decision = "#6024, #6234"
+release_note = "the keywords an allOf site adds to its one $ref (maxLength beside allOf: [$ref], the minItems or pattern of another member, a bound beside a $ref to an allOf of one $ref) are checked where the field's type is no class: in the default msgspec and Pydantic dataclass output, which write such types as type aliases, and under --use-type-alias and --collapse-root-models; the default Pydantic BaseModel output, whose field names a root model class, is unchanged. A Pydantic dataclass field writes them in the Field() call it already writes, and otherwise in Annotated metadata (id: Annotated[Id, Field(max_length=5)]), so every field keeps its place, its default and its positional use in the constructor. As a $ref beside the same keyword already does, the $ref siblings are read in every dialect, also draft-07 and OpenAPI 3.0; --ignore-ref-siblings-by-schema-version reads them as those specifications do"
+
+[[accepted]]
+input = "tests/data/jsonschema/allof_site_constraints.json"
+backends = [ "msgspec.Struct", "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "probe" ]
+match = "^\\[probe\\] Model: accept -> reject$"
+reason = "a field typed by the one $ref of an allOf site (allOf: [$ref] beside maxLength, a second member with minItems or pattern, a $ref beside a bound to an allOf of one $ref) kept only that target and dropped what the site adds, so it accepted values the schema rejects; where the field's type is no class (a type collapse inlined, a type alias of msgspec, Pydantic dataclasses or --use-type-alias) it now writes them, decided by the type it stands for; a Pydantic dataclass field takes them in the Field() call it writes, or in Annotated metadata where it writes none, so it keeps its place in the constructor (schema-mismatch fix)"
+decision = "#6024, #6234"
+release_note = "the keywords an allOf site adds to its one $ref (maxLength beside allOf: [$ref], the minItems or pattern of another member, a bound beside a $ref to an allOf of one $ref) are checked where the field's type is no class: in the default msgspec and Pydantic dataclass output, which write such types as type aliases, and under --use-type-alias and --collapse-root-models; the default Pydantic BaseModel output, whose field names a root model class, is unchanged. A Pydantic dataclass field writes them in the Field() call it already writes, and otherwise in Annotated metadata (id: Annotated[Id, Field(max_length=5)]), so every field keeps its place, its default and its positional use in the constructor. As a $ref beside the same keyword already does, the $ref siblings are read in every dialect, also draft-07 and OpenAPI 3.0; --ignore-ref-siblings-by-schema-version reads them as those specifications do"
+
+[[accepted]]
+input = "tests/data/avro/*"
+aspects = [ "default", "type" ]
+match = "^\\[default\\] [\\w:]+: '(?:None|UNSET)' -> .+$|^\\[type\\] [\\w:]+: (?:Union\\[None, (.+)\\] -> \\1|Union\\[(.+), None\\] -> \\2)$"
+reason = "under --ignore-ref-siblings-by-schema-version (the 20261104 presets) a schema converted from Avro, XML Schema or Protocol Buffers, which declares draft 7, lost the keywords its converter writes beside the $ref to a named type, so a field typed by a named enum, fixed or record lost its default and description and took None; the converted schema keeps them, as without the option, and a field with a default is no longer nullable under the presets' --strict-nullable (fix of the 0.90.0 option, owner decision 11-06)"
+decision = "#6394"
+release_note = "--ignore-ref-siblings-by-schema-version keeps the default and annotations of an Avro field, XML Schema element or Protocol Buffers field typed by a named type (also in an AsyncAPI payload), which 0.90.0 left out because the converted schema declares draft 7"
+
+[[accepted]]
+input = "tests/data/xmlschema/*"
+aspects = [ "default", "type" ]
+match = "^\\[default\\] [\\w:]+: '(?:None|UNSET)' -> .+$|^\\[type\\] [\\w:]+: (?:Union\\[None, (.+)\\] -> \\1|Union\\[(.+), None\\] -> \\2)$"
+reason = "under --ignore-ref-siblings-by-schema-version (the 20261104 presets) a schema converted from Avro, XML Schema or Protocol Buffers, which declares draft 7, lost the keywords its converter writes beside the $ref to a named type, so a field typed by a named enum, fixed or record lost its default and description and took None; the converted schema keeps them, as without the option, and a field with a default is no longer nullable under the presets' --strict-nullable (fix of the 0.90.0 option, owner decision 11-06)"
+decision = "#6394"
+release_note = "--ignore-ref-siblings-by-schema-version keeps the default and annotations of an Avro field, XML Schema element or Protocol Buffers field typed by a named type (also in an AsyncAPI payload), which 0.90.0 left out because the converted schema declares draft 7"
+
+[[accepted]]
+input = "tests/data/protobuf/*"
+aspects = [ "default", "type" ]
+match = "^\\[default\\] [\\w:]+: '(?:None|UNSET)' -> .+$|^\\[type\\] [\\w:]+: (?:Union\\[None, (.+)\\] -> \\1|Union\\[(.+), None\\] -> \\2)$"
+reason = "under --ignore-ref-siblings-by-schema-version (the 20261104 presets) a schema converted from Avro, XML Schema or Protocol Buffers, which declares draft 7, lost the keywords its converter writes beside the $ref to a named type, so a field typed by a named enum, fixed or record lost its default and description and took None; the converted schema keeps them, as without the option, and a field with a default is no longer nullable under the presets' --strict-nullable (fix of the 0.90.0 option, owner decision 11-06)"
+decision = "#6394"
+release_note = "--ignore-ref-siblings-by-schema-version keeps the default and annotations of an Avro field, XML Schema element or Protocol Buffers field typed by a named type (also in an AsyncAPI payload), which 0.90.0 left out because the converted schema declares draft 7"
+
+[[accepted]]
+input = "tests/data/asyncapi/converted_payload_ref_siblings_v2.yaml"
+aspects = [ "default", "type" ]
+match = "^\\[default\\] [\\w:]+: '(?:None|UNSET)' -> .+$|^\\[type\\] [\\w:]+: (?:Union\\[None, (.+)\\] -> \\1|Union\\[(.+), None\\] -> \\2)$"
+reason = "under --ignore-ref-siblings-by-schema-version (the 20261104 presets) a schema converted from Avro, XML Schema or Protocol Buffers, which declares draft 7, lost the keywords its converter writes beside the $ref to a named type, so a field typed by a named enum, fixed or record lost its default and description and took None; the converted schema keeps them, as without the option, and a field with a default is no longer nullable under the presets' --strict-nullable (fix of the 0.90.0 option, owner decision 11-06)"
+decision = "#6394"
+release_note = "--ignore-ref-siblings-by-schema-version keeps the default and annotations of an Avro field, XML Schema element or Protocol Buffers field typed by a named type (also in an AsyncAPI payload), which 0.90.0 left out because the converted schema declares draft 7"
+
+[[accepted]]
+input = "tests/data/avro/container_bytes_defaults.avsc"
+aspects = [ "probe" ]
+match = "^\\[probe\\] (?:[\\w]+:)?ContainerDefaults: accept -> reject$"
+reason = "the probe example of ContainerDefaults reaches the depth cap of the recursive Node one level deeper once its recursive field, which has an Avro default, is Node instead of Node | None under the 20261104 presets, and writes data: null there, which the Avro schema rejects too (bytes is required); the model accepts every payload the schema accepts"
+decision = "#6394"
+release_note = "--ignore-ref-siblings-by-schema-version keeps the default and annotations of an Avro field, XML Schema element or Protocol Buffers field typed by a named type (also in an AsyncAPI payload), which 0.90.0 left out because the converted schema declares draft 7"
+
+[[accepted]]
+input = "tests/data/jsonschema/field_constraint_sites"
+backends = [ "pydantic_v2.BaseModel" ]
+aspects = [ "constraints" ]
+match = "^\\[constraints\\] (?:union_root_kept_keywords:)?Model:text: Annotated\\[Union\\[(Item, None, str|None, Item, str|Item, str, None)\\], MaxLen\\(max_length=3\\)\\] -> Union\\[Annotated\\[str, StringConstraints\\(max_length=3\\)\\], Item, None\\]$"
+reason = "under --collapse-root-models with --field-constraints or --use-annotated (as in the presets), a maxLength beside a union of a model and a string type was written on the whole union (Annotated[Item | str | None, Field(max_length=3)]), so Pydantic applied it to the model member too and raised TypeError for every object value; the keyword is written on the string member (Item | Annotated[str, StringConstraints(max_length=3)] | None), so object values parse and strings are checked as before (crash fix: class names, field names and the parsed values of valid payloads stay)"
+decision = "#6053"
+release_note = "a length keyword beside a union of a model and a string type that --collapse-root-models inlines, under --field-constraints or --use-annotated (as in the presets), is written on the string member (Item | Annotated[str, StringConstraints(max_length=3)]) instead of the whole union, where Pydantic raised TypeError for every object value"

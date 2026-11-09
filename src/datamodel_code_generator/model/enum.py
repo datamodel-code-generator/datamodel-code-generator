@@ -7,14 +7,21 @@ from __future__ import annotations
 
 from functools import lru_cache
 from math import isnan
-from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, TypeAlias
 
-from typing_extensions import Sentinel, assert_never, override
+from typing_extensions import Sentinel, override
 
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._parse_memo import MemoTable, memoized
+from datamodel_code_generator._python_syntax import SINGLE_QUOTED_ESCAPES
 from datamodel_code_generator._records import record
-from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_ENUM, IMPORT_INT_ENUM, IMPORT_STR_ENUM, Import
+from datamodel_code_generator.imports import (
+    IMPORT_ANY,
+    IMPORT_ENUM,
+    IMPORT_INT_ENUM,
+    IMPORT_STR_ENUM,
+    Import,
+)
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model.base import UNDEFINED, BaseClassDataType, field_imports, forget_model_memos
 from datamodel_code_generator.python_literal import _semantic_value_text
@@ -22,9 +29,12 @@ from datamodel_code_generator.types import DataType, Types
 
 if TYPE_CHECKING:
     from collections import defaultdict
+    from collections.abc import Iterable, Iterator, Mapping
     from pathlib import Path
 
-    from datamodel_code_generator.model._decisions.enum_kind import EnumKind
+    from datamodel_code_generator.model._decisions.enum_kind import EnumBase, EnumKind
+    from datamodel_code_generator.model._decisions.hashability import SetItemHash
+    from datamodel_code_generator.model._views import ModelForm
     from datamodel_code_generator.reference import Reference
 
 
@@ -35,16 +45,7 @@ _STR: str = "str"
 _JSON_NUMBER_KEY = Sentinel("_JSON_NUMBER_KEY")
 _JSON_NAN_KEY = Sentinel("_JSON_NAN_KEY")
 
-escape_characters = str.maketrans({
-    "\u0000": r"\x00",  # Null byte
-    "\\": r"\\",
-    "'": r"\'",
-    "\b": r"\b",
-    "\f": r"\f",
-    "\n": r"\n",
-    "\r": r"\r",
-    "\t": r"\t",
-})
+escape_characters = SINGLE_QUOTED_ESCAPES
 
 
 class _StructuredEnumMemberValue:
@@ -134,6 +135,38 @@ SUBCLASS_BASE_CLASSES: dict[Types, str] = {
     Types.byte: _BYTES,
     Types.string: _STR,
 }
+_SUBCLASS_VALUE_BASES: frozenset[str] = frozenset(SUBCLASS_BASE_CLASSES.values())
+"""The builtin bases ``--use-subclass-enum`` gives an enum for the values of its members."""
+
+
+EnumValueBaseRow: TypeAlias = Literal["value-base", "legacy-merged-enum-specialized-only"]
+"""What tells the builtin type of the values of an enum's members (``enum_value_base``).
+
+* ``value-base``: the class of an ``IntEnum`` or a ``StrEnum``, whose members are ``int`` and ``str``, else the first
+  base that is a value type, the ``str``, ``int``, ``float`` or ``bytes`` that ``--use-subclass-enum`` writes before
+  ``Enum`` (``Enum.value_base``).
+* ``legacy-merged-enum-specialized-only``: the class alone, so where the first of the enums that a field-less model
+  inherits is a ``(T, Enum)``, the merged enum keeps the members ``T`` cannot hold, as it does for a plain ``Enum``
+  (``parser/_passes/modules.py:extract_inherited_enum``, row ``legacy-inherited-first-base-class`` of
+  ``decide_enum_kind``; ``parser/_all_of_values.py:merged_enum_fails`` predicts it).
+"""
+
+
+def enum_value_base(
+    enum_class: type[Enum], bases: Iterable[DataType] = (), /, *, row: EnumValueBaseRow = "value-base"
+) -> str | None:
+    """Return the builtin type the members of an enum of ``enum_class`` with ``bases`` are instances of, or None.
+
+    ``EnumValueBaseRow`` names what tells it. A member of an enum with a value base is an instance of that type and
+    equals its value; a member of a plain ``Enum`` equals only itself.
+    """
+    if issubclass(enum_class, IntEnum):
+        return _INT
+    if issubclass(enum_class, StrEnum):
+        return _STR
+    if row == "legacy-merged-enum-specialized-only":
+        return None
+    return next((base.type for base in bases if base.import_ is None and base.type in _SUBCLASS_VALUE_BASES), None)
 
 
 class Enum(DataModel):
@@ -146,6 +179,15 @@ class Enum(DataModel):
     _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = True
     """A member is a field of the output's backend: the template writes ``name = value``, and the member's imports
     (row ``legacy.enum-member-import-bindings``) come from the plan its backend froze for it."""
+
+    @override
+    def _class_hash(self, generic_base_config: Mapping[str, Any] | None) -> SetItemHash:
+        """Return ``value``: an Enum member is its one instance, so its hash agrees with equality.
+
+        Class code, a custom base class or templates may give it a hash of its own, which hashes by identity as far as
+        the set rule knows, as for the other classes.
+        """
+        return self._compared_class_hash(frozen=True)
 
     def __init__(  # noqa: PLR0913
         self,
@@ -200,6 +242,22 @@ class Enum(DataModel):
         """Whether a member of the enum is None."""
         return any(get_raw_enum_member_value(field.default) is None for field in self.fields)
 
+    @property
+    @override
+    def form(self) -> ModelForm:
+        """An enum holds one of its members."""
+        return "enum"
+
+    @property
+    @override
+    def value_base(self) -> str | None:
+        """The builtin type the enum subclasses for the values of its members, or None for a plain ``Enum``.
+
+        It is the base ``--use-subclass-enum`` writes (``str`` of ``class E(str, Enum)``), or the value type of a
+        ``StrEnum`` or an ``IntEnum``.
+        """
+        return enum_value_base(type(self), self.base_classes)
+
     def get_member(self, field: DataModelFieldBase) -> Member:
         """Create a Member instance for the given field."""
         return Member(self, field)
@@ -209,12 +267,15 @@ class Enum(DataModel):
         """Build the exact-value index only when member lookup is used; the parse's memo keeps it."""
         return memoized(MemoTable.ENUM_MEMBER_INDEX, model_key_of(self.reference), self, None, self._index_members)
 
+    def _valued_members(self) -> Iterator[tuple[DataModelFieldBase, Any]]:
+        """Yield each member that has a value, with its raw value."""
+        for field in self.fields:
+            if field.default is not None:
+                yield field, get_raw_enum_member_value(field.default)
+
     def _index_members(self) -> dict[tuple[object, Any], DataModelFieldBase]:
         exact: dict[tuple[object, Any], DataModelFieldBase] = {}
-        for field in self.fields:
-            if field.default is None:
-                continue
-            member_value = get_raw_enum_member_value(field.default)
+        for field, member_value in self._valued_members():
             if (key := _json_value_key(member_value)) is not None:
                 exact.setdefault(key, field)
         return exact
@@ -228,10 +289,7 @@ class Enum(DataModel):
 
     def _index_coerced_members(self) -> dict[str, DataModelFieldBase]:
         coerced: dict[str, DataModelFieldBase] = {}
-        for field in self.fields:
-            if field.default is None:
-                continue
-            member_value = get_raw_enum_member_value(field.default)
+        for field, member_value in self._valued_members():
             coerced.setdefault(
                 member_value if isinstance(member_value, str) else _semantic_value_text(member_value), field
             )
@@ -248,10 +306,7 @@ class Enum(DataModel):
         if (key := _json_value_key(value)) is not None:
             return self.get_member(field) if (field := self._member_index.get(key)) is not None else None
 
-        for field in self.fields:
-            if field.default is None:
-                continue
-            member_value = get_raw_enum_member_value(field.default)
+        for field, member_value in self._valued_members():
             if type(member_value) is type(value) and member_value == value:
                 return self.get_member(field)
         return None
@@ -307,19 +362,12 @@ Kept for import compatibility; nothing reads it; ``model/_decisions/enum_kind.py
 """
 
 
+_ENUM_CLASSES: dict[EnumBase, type[Enum]] = {"Enum": Enum, "IntEnum": IntEnum, "StrEnum": StrEnum}
+
+
 def _enum_class(kind: EnumKind, first_merged: type[Enum] = Enum) -> type[Enum]:
     """Return the class an enum of the kind is written as; the merged rows keep the class of the first merged enum."""
-    match kind.base:
-        case "Enum":
-            return Enum
-        case "IntEnum":
-            return IntEnum
-        case "StrEnum":
-            return StrEnum
-        case None:
-            return first_merged
-        case _:  # pragma: no cover
-            assert_never(kind.base)
+    return first_merged if kind.base is None else _ENUM_CLASSES[kind.base]
 
 
 class Member:

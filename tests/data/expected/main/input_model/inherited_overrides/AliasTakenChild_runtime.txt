@@ -1,0 +1,42 @@
+[
+  {
+    "bases": [
+      "AliasPairParent"
+    ],
+    "fields": [
+      "old",
+      "old_other"
+    ]
+  },
+  {
+    "payload": {},
+    "source": {
+      "old_other": 4
+    },
+    "generated": {
+      "old_other": 4
+    }
+  },
+  {
+    "payload": {
+      "old_other": 8
+    },
+    "source": {
+      "old_other": 8
+    },
+    "generated": {
+      "old_other": 8
+    }
+  },
+  {
+    "payload": {
+      "old": 8
+    },
+    "source": {
+      "old_other": 4
+    },
+    "generated": {
+      "old_other": 4
+    }
+  }
+]

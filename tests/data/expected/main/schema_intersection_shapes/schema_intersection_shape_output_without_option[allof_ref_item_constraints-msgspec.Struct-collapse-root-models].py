@@ -62,7 +62,7 @@ RedundantItem: TypeAlias = Annotated[int, Meta(ge=1)]
 LooserItem: TypeAlias = Annotated[int, Meta(ge=0)]
 
 
-MemberItem: TypeAlias = Annotated[int, Meta(ge=2)]
+MemberItem: TypeAlias = Annotated[int, Meta(ge=2, le=9)]
 
 
 TwoItem: TypeAlias = Annotated[int, Meta(ge=4, le=5)]

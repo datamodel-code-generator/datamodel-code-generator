@@ -236,9 +236,7 @@ post_label refused
   < 422 application/json
   ! UnprocessableEntityError: Error code: 422 - {"detail":[{"type":"string_too_long","loc":["body"],"msg":"<msg>"}]} [operation_id='postLabel', status_code=422, body=b'{"detail":[{"type":"string_too_long","loc":["body"],"msg":"<msg>"}]}', body_bytes=b'{"detail":[{"type":"string_too_long","loc":["body"],"msg":"<msg>"}]}', truncated=False]
 post_account None
-  > POST /accounts [application/json]
-  < 422 application/json
-  ! UnprocessableEntityError: Error code: 422 - {"detail":[{"type":"missing","loc":["body"],"msg":"<msg>"}]} [operation_id='postAccount', status_code=422, body=b'{"detail":[{"type":"missing","loc":["body"],"msg":"<msg>"}]}', body_bytes=b'{"detail":[{"type":"missing","loc":["body"],"msg":"<msg>"}]}', truncated=False]
+  ! DecodeError: DecodeError(operation_id='postAccount', reason='unencodable', location='body') [operation_id='postAccount', location=('body',), body_bytes=b'', truncated=False] unencodable
 post_raw
   > POST /raw [application/json]
   post_raw(body=RawPostRequest())

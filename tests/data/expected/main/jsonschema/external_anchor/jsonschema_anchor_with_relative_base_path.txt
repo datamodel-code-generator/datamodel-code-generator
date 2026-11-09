@@ -1,0 +1,19 @@
+from __future__ import annotations
+
+from typing import Optional
+
+from pydantic import BaseModel, RootModel
+
+
+class Name(RootModel[str]):
+    root: str
+
+
+class LocalName(RootModel[str]):
+    root: str
+
+
+class Model(BaseModel):
+    local_name: Optional[str] = None
+    billing_name: Name
+    display_name: LocalName

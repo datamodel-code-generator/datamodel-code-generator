@@ -3,8 +3,17 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from pydantic import Field, RootModel, constr
+from typing_extensions import TypeAliasType
+
+RootPatternProperty = TypeAliasType(
+    "RootPatternProperty", Annotated[str, Field(max_length=3, min_length=2)]
+)
 
 
-class Root(RootModel[list[dict[constr(pattern=r'^x'), str]]]):
-    root: list[dict[constr(pattern=r'^x'), str]] = Field(..., title='Root')
+class Root(RootModel[list[dict[constr(pattern=r'^x'), RootPatternProperty]]]):
+    root: list[dict[constr(pattern=r'^x'), RootPatternProperty]] = Field(
+        ..., title='Root'
+    )

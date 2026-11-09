@@ -53,7 +53,9 @@ class ListPets:
     """Plans of the list_pets operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=PetsGetResponse)},
+        responses={
+            '200': Declared(media_type='application/json', model=PetsGetResponse)
+        },
     )
 
 
@@ -61,7 +63,9 @@ class ListCounts:
     """Plans of the list_counts operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=CountsGetResponse)},
+        responses={
+            '200': Declared(media_type='application/json', model=CountsGetResponse)
+        },
     )
 
 
@@ -69,7 +73,12 @@ class GetCode:
     """Plans of the get_code operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=Annotated[str, StringConstraints(min_length=2, max_length=5)])},
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                model=Annotated[str, StringConstraints(min_length=2, max_length=5)],
+            )
+        },
     )
 
 
@@ -85,7 +94,41 @@ class LiteralModel1:
         listed: Optional[List_1]
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='modes', plan=ParameterPlan(location='query', name='modes', style='form', shape='array', reserved_names=('listed', 'named')), adapter=TypeAdapter(List[Literal['a']])), ParameterArgument(name='named', plan=ParameterPlan(location='query', name='named', style='form', explode=True, reserved_names=('listed', 'modes')), adapter=TypeAdapter(Annotated_1)), ParameterArgument(name='listed', plan=ParameterPlan(location='query', name='listed', style='form', explode=True, reserved_names=('modes', 'named')), adapter=TypeAdapter(List_1))),
+        arguments=(
+            ParameterArgument(
+                name='modes',
+                plan=ParameterPlan(
+                    location='query',
+                    name='modes',
+                    style='form',
+                    shape='array',
+                    reserved_names=('listed', 'named'),
+                ),
+                adapter=TypeAdapter(List[Literal['a']]),
+            ),
+            ParameterArgument(
+                name='named',
+                plan=ParameterPlan(
+                    location='query',
+                    name='named',
+                    style='form',
+                    explode=True,
+                    reserved_names=('listed', 'modes'),
+                ),
+                adapter=TypeAdapter(Annotated_1),
+            ),
+            ParameterArgument(
+                name='listed',
+                plan=ParameterPlan(
+                    location='query',
+                    name='listed',
+                    style='form',
+                    explode=True,
+                    reserved_names=('modes', 'named'),
+                ),
+                adapter=TypeAdapter(List_1),
+            ),
+        ),
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(
@@ -104,7 +147,15 @@ class LiteralModel:
         modes: Optional[List[Literal['b']]]
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='modes', plan=ParameterPlan(location='query', name='modes', style='form', shape='array'), adapter=TypeAdapter(List[Literal['b']])),),
+        arguments=(
+            ParameterArgument(
+                name='modes',
+                plan=ParameterPlan(
+                    location='query', name='modes', style='form', shape='array'
+                ),
+                adapter=TypeAdapter(List[Literal['b']]),
+            ),
+        ),
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(
@@ -117,7 +168,16 @@ class PostThing:
     """Plans of the post_thing operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0])},
+        responses={
+            '200': Declared(
+                media_type='application/json',
+                model=tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields[
+                    'items'
+                ].annotation.__args__[
+                    0
+                ],
+            )
+        },
     )
 
 
@@ -135,7 +195,106 @@ class GetPet:
         tag: Optional[Tag]
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='day', plan=ParameterPlan(location='query', name='day', style='form', explode=True, reserved_names=('code', 'codes', 'filter', 'label', 'limit', 'pair', 'pet', 'raw', 'step', 'tag')), adapter=TypeAdapter(date)), ParameterArgument(name='filter', plan=ParameterPlan(location='query', name='filter', style='deepObject', explode=True, shape='object', fields=(FieldPlan('term', 'string'),), additional=FieldPlan('', 'string'), reserved_names=('code', 'codes', 'day', 'label', 'limit', 'pair', 'pet', 'raw', 'step', 'tag')), adapter=TypeAdapter(Query)), ParameterArgument(name='pair', plan=ParameterPlan(location='query', name='pair', style='form', shape='array', reserved_names=('code', 'codes', 'day', 'filter', 'label', 'limit', 'pet', 'raw', 'step', 'tag')), adapter=TypeAdapter(Pair)), ParameterArgument(name='pet', plan=ParameterPlan(location='query', name='pet', content_media_type='application/json'), adapter=TypeAdapter(Pet)), ParameterArgument(name='tag', plan=ParameterPlan(location='query', name='tag', style='form', explode=True, reserved_names=('code', 'codes', 'day', 'filter', 'label', 'limit', 'pair', 'pet', 'raw', 'step')), adapter=TypeAdapter(Tag))),
+        arguments=(
+            ParameterArgument(
+                name='day',
+                plan=ParameterPlan(
+                    location='query',
+                    name='day',
+                    style='form',
+                    explode=True,
+                    reserved_names=(
+                        'code',
+                        'codes',
+                        'filter',
+                        'label',
+                        'limit',
+                        'pair',
+                        'pet',
+                        'raw',
+                        'step',
+                        'tag',
+                    ),
+                ),
+                adapter=TypeAdapter(date),
+            ),
+            ParameterArgument(
+                name='filter',
+                plan=ParameterPlan(
+                    location='query',
+                    name='filter',
+                    style='deepObject',
+                    explode=True,
+                    shape='object',
+                    fields=(FieldPlan('term', 'string'),),
+                    additional=FieldPlan('', 'string'),
+                    reserved_names=(
+                        'code',
+                        'codes',
+                        'day',
+                        'label',
+                        'limit',
+                        'pair',
+                        'pet',
+                        'raw',
+                        'step',
+                        'tag',
+                    ),
+                ),
+                adapter=TypeAdapter(Query),
+            ),
+            ParameterArgument(
+                name='pair',
+                plan=ParameterPlan(
+                    location='query',
+                    name='pair',
+                    style='form',
+                    shape='array',
+                    reserved_names=(
+                        'code',
+                        'codes',
+                        'day',
+                        'filter',
+                        'label',
+                        'limit',
+                        'pet',
+                        'raw',
+                        'step',
+                        'tag',
+                    ),
+                ),
+                adapter=TypeAdapter(Pair),
+            ),
+            ParameterArgument(
+                name='pet',
+                plan=ParameterPlan(
+                    location='query', name='pet', content_media_type='application/json'
+                ),
+                adapter=TypeAdapter(Pet),
+            ),
+            ParameterArgument(
+                name='tag',
+                plan=ParameterPlan(
+                    location='query',
+                    name='tag',
+                    style='form',
+                    explode=True,
+                    reserved_names=(
+                        'code',
+                        'codes',
+                        'day',
+                        'filter',
+                        'label',
+                        'limit',
+                        'pair',
+                        'pet',
+                        'raw',
+                        'step',
+                    ),
+                ),
+                adapter=TypeAdapter(Tag),
+            ),
+        ),
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(

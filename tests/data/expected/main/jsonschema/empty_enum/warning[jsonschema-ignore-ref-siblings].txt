@@ -1,0 +1,9 @@
+The schema at empty_enum.json#/definitions/Never admits no value: its enum is empty. It is generated as if it had no enum.
+The schema at empty_enum.json#/properties/holder admits no value: its enum is empty. It is generated as if it had no enum.
+The schema at empty_enum.json#/properties/keys/propertyNames admits no value: its enum is empty. It is generated as if it had no enum.
+The schema at empty_enum.json#/properties/listed/items admits no value: its enum is empty. It is generated as if it had no enum.
+The schema at empty_enum.json#/properties/mapped/additionalProperties admits no value: its enum is empty. It is generated as if it had no enum.
+The schema at empty_enum.json#/properties/member/anyOf/0 admits no value: its enum is empty. It is generated as if it had no enum.
+The schema at empty_enum.json#/properties/merged/allOf/1 admits no value: its enum is empty. It is generated as if it had no enum.
+The schema at empty_enum.json#/properties/nullable admits no value: its enum is empty. It is generated as if it had no enum.
+The schema at empty_enum.json#/properties/untyped admits no value: its enum is empty. It is generated as if it had no enum.

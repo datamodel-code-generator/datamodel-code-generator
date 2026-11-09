@@ -1,0 +1,51 @@
+openapi: 3.0.3
+info:
+  title: Keys of paths that are not path items
+  version: '1'
+paths:
+  parameters:
+    - name: tenant
+      in: query
+      schema:
+        type: string
+  x-tagGroups:
+    - name: Pets
+      tags:
+        - pets
+  x-internal:
+    get:
+      operationId: listInternal
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hidden:
+                    type: string
+  /pets:
+    get:
+      operationId: listPets
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+components:
+  schemas:
+    Pet:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string

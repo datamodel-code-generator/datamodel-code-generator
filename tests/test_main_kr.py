@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import errno
 import json
 import os
+import shlex
 import shutil
 import stat
+import subprocess
 import sys
 from argparse import Namespace
 from pathlib import Path
@@ -22,7 +25,7 @@ if sys.version_info >= (3, 11):
 else:
     import tomli as tomllib
 
-from datamodel_code_generator import MIN_VERSION, Error, chdir, inferred_message
+from datamodel_code_generator import MIN_VERSION, Error, Formatter, InputFileType, chdir, generate, inferred_message
 from datamodel_code_generator import __main__ as main_module
 from datamodel_code_generator import _publication as publication_module
 from datamodel_code_generator.__main__ import (
@@ -54,6 +57,7 @@ from tests.conftest import (
 
 if TYPE_CHECKING:
     import tempfile
+    from collections.abc import Iterator
 from tests.main.conftest import (
     DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
@@ -966,6 +970,25 @@ def test_generate_pyproject_config_float_round_trip(tmp_path: Path, output_file:
     assert_output(config_output_file.read_text(encoding="utf-8"), expected_output_path)
 
 
+def test_pyproject_delimited_list_options_accept_toml_lists(tmp_path: Path, output_file: Path) -> None:
+    """Read the options the command line writes as a comma-separated string from pyproject.toml as TOML lists too."""
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.datamodel-codegen]\n"
+        'additional-imports = ["typing.final", "functools.lru_cache"]\n'
+        'class-decorators = ["lru_cache(maxsize=1, typed=True)", " final "]\n'
+        'custom-formatters = ["tests.data.python.custom_formatters.add_comment"]\n',
+        encoding="utf-8",
+    )
+    with chdir(tmp_path):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "person.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--disable-timestamp"],
+            skip_code_validation=True,
+        )
+
+
 def test_generate_pyproject_config_with_multiple_options(capsys: pytest.CaptureFixture[str]) -> None:
     """Test --generate-pyproject-config with various option types."""
     run_main_with_args(
@@ -1000,6 +1023,26 @@ def test_generate_pyproject_config_excludes_meta_options(capsys: pytest.CaptureF
         capsys=capsys,
         expected_stdout_path=EXPECTED_GENERATE_PYPROJECT_CONFIG_PATH / "excludes_meta_options.txt",
     )
+
+
+@pytest.mark.parametrize(
+    "command_args",
+    [
+        pytest.param(
+            ["--generate-pyproject-config", "--input", "m.json", "--fail-on-multi-module-stdout"], id="config"
+        ),
+        pytest.param(["--generate-cli-command"], id="command"),
+    ],
+)
+def test_generated_config_leaves_out_the_option_only_the_command_line_reads(
+    command_args: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Leave out of generated configuration and commands the stdout option that pyproject.toml does not read."""
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.datamodel-codegen]\ninput = "m.json"\nfail-on-multi-module-stdout = true\n', encoding="utf-8"
+    )
+    with chdir(tmp_path):
+        run_main_with_args(command_args, capsys=capsys, derived_stdout=True)
 
 
 def test_generate_pyproject_config_with_enum_option(capsys: pytest.CaptureFixture[str]) -> None:
@@ -1106,6 +1149,51 @@ strict-types = ["str", "int"]
             capsys=capsys,
             expected_stdout_path=EXPECTED_GENERATE_CLI_COMMAND_PATH / "list_options.txt",
         )
+
+
+def test_generate_cli_command_writes_an_empty_list_as_the_option_off(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Write an empty list as the --no- option of the parser, and leave out one that has no --no- option."""
+    pyproject_toml = """
+[tool.datamodel-codegen]
+input = "schema.yaml"
+deserialize-default-values = []
+strict-types = []
+"""
+    (tmp_path / "pyproject.toml").write_text(pyproject_toml)
+
+    with chdir(tmp_path):
+        run_main_with_args(["--generate-cli-command"], capsys=capsys, derived_stdout=True)
+
+
+def test_generate_cli_command_writes_an_empty_formatters_list_as_no_formatters(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Write ``formatters = []`` as --no-formatters, so that the command alone leaves the output unformatted too."""
+    shutil.copy(JSON_SCHEMA_DATA_PATH / "pet_simple.json", tmp_path / "schema.json")
+    (pyproject_toml := tmp_path / "pyproject.toml").write_text(
+        """[tool.datamodel-codegen]
+input = "schema.json"
+input-file-type = "jsonschema"
+disable-timestamp = true
+formatters = []
+""",
+        encoding="utf-8",
+    )
+
+    with chdir(tmp_path):
+        run_main_with_args(["--generate-cli-command"])
+        assert_output(command := capsys.readouterr().out)
+        pyproject_toml.unlink()
+        run_main_with_args(shlex.split(command)[1:], capsys=capsys, derived_stdout=True)
+
+
+def test_generate_pyproject_config_writes_no_formatters_as_an_empty_formatters_list(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Write --no-formatters as ``formatters = []``, which --generate-cli-command writes back as --no-formatters."""
+    run_main_with_args(["--generate-pyproject-config", "--no-formatters"], capsys=capsys, derived_stdout=True)
 
 
 def test_generate_cli_command_with_multiple_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -1485,6 +1573,93 @@ def test_pyproject_profile_rejects_non_table_profiles(tmp_path: Path, capsys: py
     _assert_file_does_not_exist(output_file)
 
 
+_UNKNOWN_USER_MESSAGE = "Invalid path for {option}: ~nouser_xyz/{name}: the user after '~' has no home directory\n"
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows reads ~user as a sibling of the home directory")
+@pytest.mark.parametrize(
+    ("pyproject", "args", "option"),
+    [
+        pytest.param(
+            '[tool.datamodel-codegen]\ninput = "~nouser_xyz/in.json"\noutput = "o.py"\n'
+            'input-file-type = "jsonschema"\n',
+            [],
+            "--input",
+            id="pyproject-input",
+        ),
+        pytest.param(
+            '[tool.datamodel-codegen]\ninput-file-type = "jsonschema"\nlockfile = "~nouser_xyz/in.json"\n'
+            '[tool.datamodel-codegen.jobs.m]\ninput = "in.json"\noutput = "o.py"\n',
+            ["--all-jobs"],
+            "--lockfile",
+            id="pyproject-base-of-jobs",
+        ),
+        pytest.param(
+            '[tool.datamodel-codegen]\ninput-file-type = "jsonschema"\n'
+            '[tool.datamodel-codegen.jobs.m]\ninput = "~nouser_xyz/in.json"\noutput = "o.py"\n',
+            ["--all-jobs"],
+            "--input",
+            id="pyproject-job-input",
+        ),
+    ],
+)
+def test_pyproject_path_of_an_unknown_user_is_a_configuration_error(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    pyproject: str,
+    args: list[str],
+    option: str,
+) -> None:
+    """A ``~user`` that names no user in a pyproject.toml path ends in an error that names the option and the value."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "pyproject.toml").write_text(pyproject, encoding="utf-8")
+
+    run_main_with_args(
+        args,
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=_UNKNOWN_USER_MESSAGE.format(option=option, name="in.json"),
+    )
+
+    _assert_file_does_not_exist(tmp_path / "o.py")
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows reads ~user as a sibling of the home directory")
+@pytest.mark.parametrize(
+    ("option", "message"),
+    [
+        pytest.param("--output", _UNKNOWN_USER_MESSAGE.format(option="--output", name="x"), id="output"),
+        pytest.param(
+            "--custom-template-dir", _UNKNOWN_USER_MESSAGE.format(option="--custom-template-dir", name="x"), id="path"
+        ),
+        pytest.param("--lockfile", _UNKNOWN_USER_MESSAGE.format(option="--lockfile", name="x"), id="spelled-string"),
+        pytest.param(
+            "--emit-model-metadata",
+            _UNKNOWN_USER_MESSAGE.format(option="--emit-model-metadata", name="x"),
+            id="spelled-path",
+        ),
+        pytest.param(
+            "--aliases", "Unable to load alias mapping: Expecting value: line 1 column 1 (char 0)\n", id="json-file"
+        ),
+    ],
+)
+def test_command_line_path_of_an_unknown_user_is_a_configuration_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, option: str, message: str
+) -> None:
+    """A ``~user`` that names no user in a path option ends in a configuration error, not a RuntimeError."""
+    monkeypatch.chdir(tmp_path)
+
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "person.json",
+        input_file_type="jsonschema",
+        extra_args=[option, "~nouser_xyz/x"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=message,
+    )
+
+
 @freeze_time("2019-07-26")
 def test_profile_overrides_base_config_shallow_merge(output_file: Path, tmp_path: Path) -> None:
     """Test that profile settings shallow-merge (replace) base settings for lists."""
@@ -1615,6 +1790,30 @@ def test_pyproject_jobs_json_is_one_ordered_payload(tmp_path: Path, capsys: pyte
     relative_outputs = [Path(job["result"]["output"]).relative_to(tmp_path).as_posix() for job in payload["jobs"]]
     assert_output("\n".join(relative_outputs) + "\n", EXPECTED_MAIN_KR_PATH / "jobs" / "ordered_outputs.txt")
     assert_output(_batch_json_summary(output), EXPECTED_MAIN_KR_PATH / "jobs" / "json_generation.txt")
+
+
+@pytest.mark.parametrize("separator", ["\u2028", "\u2029", "\u0085"], ids=["u2028", "u2029", "u0085"])
+def test_pyproject_jobs_json_keeps_unicode_line_separators_inside_strings(
+    separator: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Indent the JSON of a job without breaking a string that holds U+2028, U+2029 or U+0085 of the generated file."""
+    schema = {
+        "title": "Pet",
+        "type": "object",
+        "properties": {"name": {"type": "string", "description": f"a{separator}b"}},
+    }
+    (tmp_path / "schema.json").write_text(json.dumps(schema, ensure_ascii=False), encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.datamodel-codegen.jobs.pets]\n"
+        'input = "schema.json"\ninput-file-type = "jsonschema"\noutput = "out/pets.py"\n'
+        'disable-timestamp = true\nuse-field-description = true\nformatters = ["builtin"]\n',
+        encoding="utf-8",
+    )
+    with chdir(tmp_path):
+        run_main_with_args(["--all-jobs", "--output-format", "json"])
+
+    content = json.loads(capsys.readouterr().out)["jobs"][0]["result"]["files"][0]["content"]
+    assert_output(content.replace(separator, f"\\u{ord(separator):04x}"))
 
 
 def test_pyproject_jobs_json_reports_check_results(
@@ -1917,7 +2116,10 @@ output = "{output_path.as_posix()}"
 def test_pyproject_jobs_watch_records_raw_dependencies_after_invalid_plan(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Keep raw profile, JSON, and input paths observable when a batch plan is invalid."""
+    """Keep raw profile, JSON, and input paths observable when a batch plan is invalid.
+
+    An empty profile name, in a job or in `extends`, selects no profile, so the table `profiles.""` is not watched.
+    """
     from datamodel_code_generator.watch_dependencies import WatchDependencies
 
     pyproject_path = tmp_path / "pyproject.toml"
@@ -1937,8 +2139,11 @@ aliases = "base-profile-aliases.json"
 [tool.datamodel-codegen.profiles.root]
 aliases = "root-profile-aliases.json"
 
+[tool.datamodel-codegen.profiles.""]
+aliases = "empty-profile-aliases.json"
+
 [tool.datamodel-codegen.profiles.child]
-extends = ["base", "child", "invalid"]
+extends = ["base", "", "child", "invalid"]
 default-values = "child-defaults.json"
 
 [tool.datamodel-codegen.jobs.models]
@@ -1949,6 +2154,7 @@ aliases = []
 default-values = "job-defaults.json"
 
 [tool.datamodel-codegen.jobs.unprofiled]
+profile = ""
 input = "unprofiled-missing-schema.json"
 output = "unprofiled-output.py"
 aliases = "unprofiled-aliases.json"
@@ -1973,6 +2179,7 @@ aliases = "unprofiled-aliases.json"
         tmp_path / "unprofiled-missing-schema.json",
     ):
         assert dependencies.includes(dependency)
+    assert not dependencies.includes(tmp_path / "empty-profile-aliases.json")
 
     find_project_config = main_module._find_datamodel_codegen_project_config_with_path
 
@@ -3007,6 +3214,191 @@ def test_pyproject_jobs_publish_reports_failed_rollback(tmp_path: Path, monkeypa
     assert target.read_text(encoding="utf-8") == "stale\n"
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="batch publication anchors use directory descriptors on POSIX")
+@pytest.mark.abnormal_path("the open-file limit runs out only when the process holds every descriptor it may open")
+@pytest.mark.allow_direct_assert("checks that the stale target is rolled back after the publication error")
+def test_pyproject_jobs_publish_reports_open_file_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Name the open-file limit, not a changed destination, when the check after a replacement cannot open (#6591)."""
+    staged_file = tmp_path / "generated.py"
+    target = tmp_path / "target.py"
+    staged_file.write_text("generated\n", encoding="utf-8")
+    target.write_text("stale\n", encoding="utf-8")
+
+    def exhausted(_path: Path) -> int:
+        raise OSError(errno.EMFILE, os.strerror(errno.EMFILE))
+
+    monkeypatch.setattr(publication_module, "_open_target_directory", exhausted)
+
+    with pytest.raises(OSError, match=os.strerror(errno.EMFILE)):
+        _publish_staged_files([(staged_file, target)])
+
+    assert target.read_text(encoding="utf-8") == "stale\n"
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the open-file limit is a POSIX resource limit")
+@pytest.mark.allow_direct_assert("checks the exit code and modules of a run with a lowered open-file limit")
+def test_pyproject_jobs_publish_more_files_than_the_open_file_limit(tmp_path: Path) -> None:
+    """Publish more modules than the process may open files, as one descriptor serves each directory (#6591).
+
+    The hard limit is lowered too, so that the command line cannot raise the soft one.
+    """
+    pytest.importorskip("resource")
+    schemas = tmp_path / "schemas"
+    schemas.mkdir()
+    for index in range(160):
+        (schemas / f"item{index}.json").write_text(
+            json.dumps({"title": f"Item{index}", "type": "object", "properties": {"name": {"type": "string"}}}),
+            encoding="utf-8",
+        )
+    (tmp_path / "pyproject.toml").write_text(
+        """
+[tool.datamodel-codegen]
+disable-timestamp = true
+input-file-type = "jsonschema"
+
+[tool.datamodel-codegen.jobs.models]
+input = "schemas"
+output = "models"
+""",
+        encoding="utf-8",
+    )
+
+    launcher = (
+        "import resource, runpy, sys\n"
+        "resource.setrlimit(resource.RLIMIT_NOFILE, (64, 64))\n"
+        "sys.argv = ['datamodel-codegen', '--all-jobs', '--formatters', 'builtin']\n"
+        "runpy.run_module('datamodel_code_generator', run_name='__main__')\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", launcher],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+    )
+
+    assert (result.returncode, len(list((tmp_path / "models").glob("*.py")))) == (0, 161), result.stderr
+
+
+@pytest.fixture
+def lowered_open_file_limit() -> Iterator[int]:
+    """Lower the soft limit on open files of the test process below the hard limit, and put the limits back after."""
+    resource = pytest.importorskip("resource")
+    saved = resource.getrlimit(resource.RLIMIT_NOFILE)
+    hard = saved[1]
+    lowered = 4096 if hard == resource.RLIM_INFINITY else min(hard - 1, 4096)
+    set_limit = resource.setrlimit
+    set_limit(resource.RLIMIT_NOFILE, (lowered, hard))
+    try:
+        yield lowered
+    finally:
+        set_limit(resource.RLIMIT_NOFILE, saved)
+
+
+def _soft_open_file_limit() -> int:
+    import resource
+
+    return resource.getrlimit(resource.RLIMIT_NOFILE)[0]
+
+
+def _run_command_line(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Exit:
+    """Run the command line as a shell does, reading ``sys.argv``, on a one-model schema."""
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "datamodel-codegen",
+            "--input",
+            str(JSON_SCHEMA_DATA_PATH / "person.json"),
+            "--input-file-type",
+            "jsonschema",
+            "--output",
+            str(tmp_path / "model.py"),
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    return main_module.main()
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the open-file limit is a POSIX resource limit")
+@pytest.mark.allow_direct_assert("checks the open-file limits of the process after a command-line run")
+def test_command_line_raises_the_open_file_limit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, lowered_open_file_limit: int
+) -> None:
+    """Raise the soft limit on open files to the hard limit when the command line starts, as Go does (#6591)."""
+    assert _run_command_line(tmp_path, monkeypatch) == Exit.OK
+    assert _soft_open_file_limit() > lowered_open_file_limit
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the open-file limit is a POSIX resource limit")
+@pytest.mark.allow_direct_assert("checks the open-file limits of the process after a generate() call")
+def test_generate_keeps_the_open_file_limit(tmp_path: Path, lowered_open_file_limit: int) -> None:
+    """Leave the open-file limits of a process that calls ``generate()`` as they are (#6591)."""
+    generate(
+        JSON_SCHEMA_DATA_PATH / "person.json",
+        input_file_type=InputFileType.JsonSchema,
+        output=tmp_path / "model.py",
+        formatters=[Formatter.BUILTIN],
+    )
+    assert _soft_open_file_limit() == lowered_open_file_limit
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the open-file limit is a POSIX resource limit")
+@pytest.mark.abnormal_path(
+    "limits and a kernel that refuses the hard limit, as macOS refuses an unlimited one, are not Linux"
+)
+@pytest.mark.allow_direct_assert("checks the limits the command line asks the kernel for")
+@pytest.mark.parametrize(
+    ("limits", "refused", "asked"),
+    [
+        pytest.param((256, 1048576), (), [1048576], id="hard"),
+        pytest.param((256, 1048576), (1048576,), [1048576, 10240], id="open_max_where_the_hard_limit_is_refused"),
+        pytest.param((256, 1048576), (1048576, 10240), [1048576, 10240], id="kept_where_every_limit_is_refused"),
+        pytest.param((256, 4096), (), [4096], id="hard_within_open_max"),
+        pytest.param((256, "unlimited"), ("unlimited",), ["unlimited", 10240], id="unlimited_hard"),
+        pytest.param(("unlimited", "unlimited"), (), [], id="unlimited_soft"),
+        pytest.param((4096, 4096), (), [], id="soft_at_hard"),
+        pytest.param((20000, 1048576), (), [1048576], id="soft_past_open_max"),
+    ],
+)
+def test_command_line_asks_for_the_hard_open_file_limit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    limits: tuple[int | str, int | str],
+    refused: tuple[int | str, ...],
+    asked: list[int | str],
+) -> None:
+    """Ask for the hard limit, then ``OPEN_MAX`` (10240) where the kernel refuses it, each above the soft limit."""
+    import resource
+
+    def spelled(limit: int | str) -> int:
+        return resource.RLIM_INFINITY if limit == "unlimited" else cast("int", limit)
+
+    asked_limits: list[int | str] = []
+
+    def ask(_which: int, new_limits: tuple[int, int]) -> None:
+        soft = "unlimited" if new_limits[0] == resource.RLIM_INFINITY else new_limits[0]
+        asked_limits.append(soft)
+        if soft in refused:
+            msg = "current limit exceeds maximum limit"
+            raise ValueError(msg)
+
+    monkeypatch.setattr(resource, "getrlimit", lambda _which: tuple(map(spelled, limits)))
+    monkeypatch.setattr(resource, "setrlimit", ask)
+    assert _run_command_line(tmp_path, monkeypatch) == Exit.OK
+    assert asked_limits == asked
+
+
+@pytest.mark.abnormal_path("an interpreter without the resource module (Windows) is not the test platform")
+@pytest.mark.allow_direct_assert("checks the exit code of a command-line run without the resource module")
+def test_command_line_runs_without_the_resource_module(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Run the command line where the ``resource`` module is unavailable, leaving the limits alone (#6591)."""
+    monkeypatch.setitem(sys.modules, "resource", None)
+    assert _run_command_line(tmp_path, monkeypatch) == Exit.OK
+
+
 @pytest.mark.skipif(os.name == "nt", reason="POSIX permission modes are unsupported on Windows")
 @pytest.mark.allow_direct_assert
 def test_pyproject_jobs_publish_preserves_existing_file_mode(tmp_path: Path) -> None:
@@ -3094,7 +3486,7 @@ emit-model-metadata = "{metadata_output.as_posix()}"
 """,
         encoding="utf-8",
     )
-    staging_directory_for = main_module._staging_directory_for
+    staging_directory_for = publication_module.staging_directory_for
     calls = 0
 
     def fail_metadata_staging(target: Path) -> tempfile.TemporaryDirectory[str]:
@@ -3105,7 +3497,7 @@ emit-model-metadata = "{metadata_output.as_posix()}"
             raise OSError(msg)
         return staging_directory_for(target)
 
-    monkeypatch.setattr(main_module, "_staging_directory_for", fail_metadata_staging)
+    monkeypatch.setattr(publication_module, "staging_directory_for", fail_metadata_staging)
 
     with chdir(tmp_path):
         run_main_with_args(
@@ -3146,7 +3538,7 @@ emit-model-metadata = "{metadata_output.as_posix()}"
 """,
         encoding="utf-8",
     )
-    staging_directory_for = main_module._staging_directory_for
+    staging_directory_for = publication_module.staging_directory_for
     staging_calls = 0
 
     def fail_metadata_staging(target: Path) -> tempfile.TemporaryDirectory[str]:
@@ -3175,7 +3567,7 @@ emit-model-metadata = "{metadata_output.as_posix()}"
             raise OSError(msg)
         close(descriptor)
 
-    monkeypatch.setattr(main_module, "_staging_directory_for", fail_metadata_staging)
+    monkeypatch.setattr(publication_module, "staging_directory_for", fail_metadata_staging)
     monkeypatch.setattr(publication_module, "publication_anchor", record_anchor)
     monkeypatch.setattr(main_module.os, "close", fail_anchor_cleanup)
 
@@ -3208,7 +3600,7 @@ output = "{output.as_posix()}"
 """,
         encoding="utf-8",
     )
-    staging_directory_for = main_module._staging_directory_for
+    staging_directory_for = publication_module.staging_directory_for
 
     def staging_with_failed_cleanup(target: Path) -> tempfile.TemporaryDirectory[str]:
         context = staging_directory_for(target)
@@ -3222,7 +3614,7 @@ output = "{output.as_posix()}"
         monkeypatch.setattr(context, "cleanup", fail_cleanup)
         return context
 
-    monkeypatch.setattr(main_module, "_staging_directory_for", staging_with_failed_cleanup)
+    monkeypatch.setattr(publication_module, "staging_directory_for", staging_with_failed_cleanup)
 
     with chdir(tmp_path):
         run_main_with_args(["--all-jobs", "--formatters", "builtin"], expected_exit=Exit.ERROR)
@@ -3249,7 +3641,7 @@ output = "{output.as_posix()}"
 """,
         encoding="utf-8",
     )
-    staging_directory_for = main_module._staging_directory_for
+    staging_directory_for = publication_module.staging_directory_for
 
     def staging_with_failed_cleanup(target: Path) -> tempfile.TemporaryDirectory[str]:
         context = staging_directory_for(target)
@@ -3267,7 +3659,7 @@ output = "{output.as_posix()}"
         msg = "simulated runner failure"
         raise RuntimeError(msg)
 
-    monkeypatch.setattr(main_module, "_staging_directory_for", staging_with_failed_cleanup)
+    monkeypatch.setattr(publication_module, "staging_directory_for", staging_with_failed_cleanup)
     monkeypatch.setattr(main_module, "_run_jobs_text", fail_runner)
 
     with chdir(tmp_path), pytest.raises(RuntimeError, match="simulated runner failure"):
@@ -4164,6 +4556,34 @@ def test_formatters_option(output_file: Path) -> None:
 
 
 @pytest.mark.cli_doc(
+    options=["--no-formatters"],
+    option_description="""Select no formatter for the generated output.
+
+The `--no-formatters` flag selects none of the `--formatters` choices: neither the default formatters nor those a
+preset selects run, while `--custom-formatters` still do. It is the command-line form of `formatters = []` in
+pyproject.toml, and `--generate-cli-command` writes that setting as `--no-formatters`.""",
+    input_schema="jsonschema/pet_simple.json",
+    cli_args=["--no-formatters"],
+    golden_output="main_kr/no_formatters_option.py",
+    related_options=["--formatters"],
+)
+@freeze_time("2019-07-26")
+def test_no_formatters_option(output_file: Path) -> None:
+    """Select no formatter for the generated output.
+
+    The `--no-formatters` flag selects none of the `--formatters` choices: neither the default formatters nor those a
+    preset selects run, while `--custom-formatters` still do. It is the command-line form of `formatters = []` in
+    pyproject.toml, and `--generate-cli-command` writes that setting as `--no-formatters`.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "pet_simple.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--no-formatters"],
+    )
+
+
+@pytest.mark.cli_doc(
     options=["--custom-formatters-kwargs"],
     option_description="""Pass custom arguments to custom formatters via inline JSON or a JSON file path.
 
@@ -4331,8 +4751,8 @@ REMOTE_LOCKFILE_OPTION_DESCRIPTION = (
 An existing selected lock is verified automatically; a missing selected lock is ignored unless `--locked` requires it.
 Without `--lockfile`, the CLI uses `datamodel-codegen.lock` beside the discovered `pyproject.toml`, or in the invocation
 working directory when no project is found. Explicit relative `--lockfile` paths resolve from the invocation working
-directory, not the project root or output directory. The public API uses the caller's working directory for both its
-default lock and relative `lockfile` paths.
+directory, not the project root or output directory. The public API reads relative `lockfile` paths from the caller's
+working directory and keeps its default lock there, or beside the `pyproject.toml` that `load_pyproject_config()` read.
 
 """
     + REMOTE_LOCK_EXPERIMENTAL_NOTE
@@ -4757,12 +5177,15 @@ def test_generate_prompt_with_options(capsys: pytest.CaptureFixture[str]) -> Non
 
 
 def test_generate_prompt_with_list_options(capsys: pytest.CaptureFixture[str]) -> None:
-    """Test --generate-prompt with list options (e.g., --strict-types)."""
+    """Test --generate-prompt with list options (e.g., --strict-types), a list turned off, and a JSON mapping."""
     run_main_with_args(
         [
             "--strict-types",
             "str",
             "int",
+            "--no-deserialize-default-values",
+            "--model-name-map",
+            '{"A": "B"}',
             "--generate-prompt",
         ],
         expected_exit=Exit.OK,
@@ -5479,7 +5902,7 @@ extends = "_middle"
 
 
 def test_profile_extends_circular_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Test error when circular extends is detected."""
+    """Test error when circular extends is detected: the chain is named in the order the profiles extend."""
     pyproject_toml = """
 [tool.datamodel-codegen]
 
@@ -5487,6 +5910,9 @@ def test_profile_extends_circular_error(tmp_path: Path, capsys: pytest.CaptureFi
 extends = "b"
 
 [tool.datamodel-codegen.profiles.b]
+extends = "c"
+
+[tool.datamodel-codegen.profiles.c]
 extends = "a"
 """
     (tmp_path / "pyproject.toml").write_text(pyproject_toml)
@@ -5500,7 +5926,7 @@ extends = "a"
             ["--input", str(input_file), "--output", str(output_file), "--profile", "a"],
             expected_exit=Exit.ERROR,
         )
-        assert_error_message(capsys, "Circular extends detected")
+        assert_error_message(capsys, "Circular extends detected: a -> b -> c -> a")
 
 
 def test_profile_extends_not_found_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -5576,3 +6002,52 @@ snake-case-field = false
             expected_file=EXPECTED_PYPROJECT_PROFILE_PATH / "extends_override.py",
             extra_args=["--profile", "api", "--disable-timestamp"],
         )
+
+
+def test_empty_profile_name_selects_no_profile(tmp_path: Path) -> None:
+    """Read the base settings for an empty profile name, never the table `profiles.""`.
+
+    An empty name selects no profile wherever a profile is selected: `--profile`, the profile of a job, and a parent of
+    `extends`, written as a string or in a list.
+    """
+    (tmp_path / "pyproject.toml").write_text(
+        """
+[tool.datamodel-codegen]
+input = "schema.json"
+input-file-type = "jsonschema"
+disable-timestamp = true
+
+[tool.datamodel-codegen.profiles.""]
+class-name = "FromEmptyProfile"
+
+[tool.datamodel-codegen.profiles.string]
+extends = ""
+
+[tool.datamodel-codegen.profiles.list]
+extends = [""]
+
+[tool.datamodel-codegen.jobs.empty]
+input = "schema.json"
+output = "jobs/empty.py"
+profile = ""
+
+[tool.datamodel-codegen.jobs.list]
+input = "schema.json"
+output = "jobs/list.py"
+profile = "list"
+""",
+        encoding="utf-8",
+    )
+    (tmp_path / "schema.json").write_text(
+        '{"type": "object", "properties": {"a": {"type": "string"}}}', encoding="utf-8"
+    )
+
+    with chdir(tmp_path):
+        run_main_with_args(["--all-jobs", "--formatters", "builtin"])
+        for profile in ("", "string", "list"):
+            run_main_with_args(["--profile", profile, "--output", f"profiles/{profile or 'empty'}.py"])
+
+    written = sorted([*(tmp_path / "jobs").iterdir(), *(tmp_path / "profiles").iterdir()])
+    assert_output(
+        "".join(f"# {path.relative_to(tmp_path).as_posix()}\n{path.read_text(encoding='utf-8')}" for path in written)
+    )

@@ -17,6 +17,8 @@ import msgspec
 import pytest
 from pydantic import ValidationError
 
+from datamodel_code_generator import DanglingRefWarning
+from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_output
 from tests.main.conftest import (
     OPEN_API_DATA_PATH,
@@ -289,6 +291,99 @@ def test_external_ref_mapping_all_of_base_in_input_directory(output_dir: Path) -
         output_path=output_dir,
         input_file_type="openapi",
         extra_args=["--external-ref-mapping", "shared.yaml=mapped.models", *COMMON_ARGS],
+    )
+
+
+def test_external_ref_mapping_all_of_union_branch(output_file: Path) -> None:
+    """Read no mapped document for the null of the union that an allOf member's anyOf gives.
+
+    Under --intersect-combined-schema-keywords that union admits null where every part of the allOf does. A branch the
+    mapping types by its import (``Soil``) admits none and its document is not read, as without the option, so
+    ``absent.yaml`` need not exist; the null branch of ``Ground`` and the untyped ``Plot`` give ``Field`` its None.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "external_ref_mapping_all_of_union" / "api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--external-ref-mapping",
+            "absent.yaml=mapped.models",
+            "--intersect-combined-schema-keywords",
+            *COMMON_ARGS,
+        ],
+    )
+
+
+@pytest.mark.parametrize("output_model_type", OUTPUT_MODEL_TYPES)
+def test_external_ref_mapping_all_of_missing_document(output_model_type: str, output_file: Path) -> None:
+    """Inherit the class the mapping imports where the mapped document of an allOf member does not exist (#6277).
+
+    The mapped schema describes the class the mapping imports, so no document is needed: each model is written from
+    its own keywords, a property it requires that the missing schema would declare included (``Grove.twigs``), and
+    the run warns once that the document does not exist. Up to 0.89.0 generation failed with "$ref file not found",
+    while a field that names the schema (``Holder.twig``) never read the document.
+    """
+    with pytest.warns(DanglingRefWarning, match=r"shared\.yaml' that --external-ref-mapping maps does not exist"):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "external_ref_mapping_all_of_missing.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--output-model-type",
+                output_model_type,
+                "--external-ref-mapping",
+                "absent/shared.yaml=mapped.models",
+                *COMMON_ARGS,
+            ],
+        )
+
+
+def test_external_ref_mapping_all_of_missing_document_file_uri(tmp_path: Path, output_file: Path) -> None:
+    """Inherit the mapped class where the mapping and the allOf member name the missing document by a file URI (#6277).
+
+    The mapping keeps a file URI as written, so the missing document is matched by its URI, not by the path it names.
+    """
+    missing_uri = (tmp_path / "absent" / "shared.yaml").as_uri()
+    input_path = tmp_path / "external_ref_mapping_all_of_missing.yaml"
+    input_path.write_text(
+        (OPEN_API_DATA_PATH / "external_ref_mapping_all_of_missing.yaml")
+        .read_text(encoding="utf-8")
+        .replace("absent/shared.yaml", missing_uri),
+        encoding="utf-8",
+    )
+    with pytest.warns(DanglingRefWarning, match=r"shared\.yaml' that --external-ref-mapping maps does not exist"):
+        run_main_and_assert(
+            input_path=input_path,
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=["--external-ref-mapping", f"{missing_uri}=mapped.models", *COMMON_ARGS],
+        )
+
+
+def test_external_ref_mapping_all_of_missing_document_strict_refs(capsys: pytest.CaptureFixture[str]) -> None:
+    """Keep the missing mapped document an error under --strict-refs, as before."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "external_ref_mapping_all_of_missing.yaml",
+        input_file_type="openapi",
+        extra_args=["--external-ref-mapping", "absent/shared.yaml=mapped.models", "--strict-refs", *COMMON_ARGS],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains="$ref file not found:",
+    )
+
+
+def test_python_import_all_of_alias_base(output_file: Path) -> None:
+    """Inherit the class that an alias's x-python-import names where an allOf member names the alias.
+
+    Under --intersect-combined-schema-keywords a member naming a ``$ref`` alias takes the alias's target as its base,
+    but an alias with ``x-python-import`` is typed by the class it imports wherever it is referenced, so ``Branch``
+    inherits that class, not ``Stem``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "python_import_all_of" / "alias.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--intersect-combined-schema-keywords", *COMMON_ARGS],
     )
 
 

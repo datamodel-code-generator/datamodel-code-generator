@@ -1,0 +1,6 @@
+{
+  "title": "Limits",
+  "type": "object",
+  "propertyNames": {"allOf": [{"type": "string", "pattern": "^k"}, {"type": "string", "minLength": 2}]},
+  "additionalProperties": {"type": "integer"}
+}

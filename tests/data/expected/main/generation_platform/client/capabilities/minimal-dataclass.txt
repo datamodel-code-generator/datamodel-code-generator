@@ -25,9 +25,10 @@ copied runtime
   model_codecs/errors.py
   model_codecs/media.py
   model_codecs/parameters.py
+  model_codecs/shared.py
   model_codecs/stdlib_dataclasses.py
   model_codecs/unset.py
-total 23 modules
+total 24 modules
 public files
   publication_client/__init__.py
   publication_client/errors.py

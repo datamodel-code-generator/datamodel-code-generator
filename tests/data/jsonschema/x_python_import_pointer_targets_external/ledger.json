@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ledger",
+  "type": "object",
+  "x-python-import": {"module": "collections", "name": "Counter"},
+  "additionalProperties": {"type": "number"},
+  "$defs": {
+    "Entry": {"type": "object", "properties": {"label": {"type": "string"}, "totals": {"$ref": "#"}}}
+  }
+}

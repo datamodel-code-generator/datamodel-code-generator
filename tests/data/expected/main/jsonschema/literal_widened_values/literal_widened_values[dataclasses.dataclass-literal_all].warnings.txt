@@ -1,0 +1,9 @@
+a Literal of the output model cannot hold the values 0.25 and 0.75, so they are written as their types, which admit other values; Ratio is generated without this constraint.
+a Literal of the output model cannot hold the values 1.5 and 2.5, so they are written as their types, which admit other values; Model.floats is generated without this constraint.
+a Literal of the output model cannot hold the value 1.5, so it is written as its type, which admits other values; Model.mixed is generated without this constraint.
+a Literal of the output model cannot hold the value 2.5, so it is written as its type, which admits other values; Model.single is generated without this constraint.
+a Literal of the output model cannot hold the value 0.5, so it is written as its type, which admits other values; Model.nullable is generated without this constraint.
+a Literal of the output model cannot hold the value 3.5, so it is written as its type, which admits other values; Model.items is generated without this constraint.
+a Literal of the output model cannot hold the values [1, 2] and {'a': 1}, so they are written as their types, which admit other values; Model.objects is generated without this constraint.
+a Literal of the output model cannot hold the value 1.5, so it is written as its type, which admits other values; Model.const_float is generated without this constraint.
+a Literal of the output model cannot hold the value 4.5, so it is written as its type, which admits other values; Model.const_consts is generated without this constraint.

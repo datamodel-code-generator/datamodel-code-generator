@@ -38,7 +38,13 @@ _PLAN: Final[WebhookPlan[models.Invoice | models.Customer, HmacKey]] = WebhookPl
     header='x-signature',
     encoding='hex',
     prefix='',
-    event=MappedEventDecoder('/type', {'invoice.paid': EventDecoder(model_bindings.codec_0), 'customer.created': EventDecoder(model_bindings.codec_1)}),
+    event=MappedEventDecoder(
+        '/type',
+        {
+            'invoice.paid': EventDecoder(model_bindings.codec_0),
+            'customer.created': EventDecoder(model_bindings.codec_1),
+        },
+    ),
 )
 
 

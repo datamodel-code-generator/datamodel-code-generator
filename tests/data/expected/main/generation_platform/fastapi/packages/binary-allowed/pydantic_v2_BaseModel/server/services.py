@@ -34,6 +34,7 @@ class DefaultService(Protocol):
     def upload(
         self,
         *,
+        pageSize: int,
         body: models.UploadsPostRequest,
     ) -> None | HTTPResult[None] | Response:
         """

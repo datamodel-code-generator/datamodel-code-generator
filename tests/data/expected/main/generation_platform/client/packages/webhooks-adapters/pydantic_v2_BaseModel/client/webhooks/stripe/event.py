@@ -38,7 +38,14 @@ _PLAN: Final[AdapterPlan[models.Invoice | models.Customer]] = AdapterPlan(
     helper_id='stripe.event',
     timestamp=True,
     delivery_id=False,
-    event=MappedEventDecoder('/type', {'invoice.paid': EventDecoder(model_bindings.codec_0), 'invoice.updated': EventDecoder(model_bindings.codec_0), 'customer.created': EventDecoder(model_bindings.codec_1)}),
+    event=MappedEventDecoder(
+        '/type',
+        {
+            'invoice.paid': EventDecoder(model_bindings.codec_0),
+            'invoice.updated': EventDecoder(model_bindings.codec_0),
+            'customer.created': EventDecoder(model_bindings.codec_1),
+        },
+    ),
 )
 
 

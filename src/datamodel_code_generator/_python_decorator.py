@@ -7,7 +7,9 @@ import token
 import tokenize
 from functools import lru_cache
 from io import StringIO
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final, cast
+
+from datamodel_code_generator._target_unicode import is_python_name, lent_text
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -15,16 +17,13 @@ if TYPE_CHECKING:
 _OPEN_TO_CLOSE = {"(": ")", "[": "]", "{": "}"}
 _CLOSE_TOKENS = frozenset(_OPEN_TO_CLOSE.values())
 _INVALID_TOKEN_TYPES = frozenset({token.INDENT, token.DEDENT, token.ERRORTOKEN})
-_OPAQUE_STRING_START_TYPES = frozenset(
-    token_type for token_type, name in token.tok_name.items() if name in {"FSTRING_START", "TSTRING_START"}
-)
-_OPAQUE_STRING_END_TYPES = frozenset(
-    token_type for token_type, name in token.tok_name.items() if name in {"FSTRING_END", "TSTRING_END"}
-)
 _COMPONENT_EMPTY = 0
 _COMPONENT_HAS_CONTENT = 1
 _COMPONENT_AFTER_COMMA = 2
 _COMPONENT_AFTER_EQUALS = 3
+_PATH_SKIPPED_TOKEN_TYPES = frozenset({token.COMMENT, token.ENDMARKER})
+_LINE_BREAK_TOKEN_TYPES = frozenset({token.NEWLINE, tokenize.NL})
+_PATH_END_BRACKETS = frozenset("()[]")
 
 
 def _is_parenthesized_name(body: str, name: str) -> bool:
@@ -56,28 +55,37 @@ def _is_parenthesized_name(body: str, name: str) -> bool:
     return not body[index:].strip()
 
 
-def _tokenize_opaque_strings(source: str) -> Iterator[tokenize.TokenInfo]:
-    """Expose only the decorator shape visible outside string expressions.
+def _token_types(*names: str) -> frozenset[int]:
+    """Return the token types of the running tokenizer that ``names`` name; a name it does not have names none."""
+    return frozenset(token_type for token_type, name in token.tok_name.items() if name in names)
 
-    ``tokenize.generate_tokens()`` uses the running Python's tokenizer; it is
-    not a parser for the configured target Python syntax. Formatted and
-    template string interiors must therefore remain opaque so target-newer
-    expressions cannot make decorator matching depend on the runtime version.
+
+_F_STRING_BOUNDS: Final = (_token_types("FSTRING_START"), _token_types("FSTRING_END"))
+_OPAQUE_STRING_BOUNDS: Final = (
+    _token_types("FSTRING_START", "TSTRING_START"),
+    _token_types("FSTRING_END", "TSTRING_END"),
+)
+
+
+def string_token_spans(
+    source: str, *, template_strings: bool = True
+) -> Iterator[tuple[tokenize.TokenInfo, tokenize.TokenInfo]]:
+    """Yield each token of ``source`` as its first and last token: a string expression is one, from START to END.
+
+    Its interior stays unread: the running tokenizer is no parser for the target's syntax.
     """
-    opaque_string_depth = 0
+    starts, ends = _OPAQUE_STRING_BOUNDS if template_strings else _F_STRING_BOUNDS
+    depth = 0
+    first: tokenize.TokenInfo | None = None
     for item in tokenize.generate_tokens(StringIO(source).readline):
-        # START is the expression boundary. Do not expose enclosed tokens to
-        # outer-shape validation: interpreting them would apply runtime token
-        # structure to target-only syntax and reintroduce version dependence.
-        if item.type in _OPAQUE_STRING_START_TYPES:
-            if not opaque_string_depth:
-                yield item
-            opaque_string_depth += 1
-        elif opaque_string_depth:
-            if item.type in _OPAQUE_STRING_END_TYPES:
-                opaque_string_depth -= 1
-        else:
-            yield item
+        if item.type in starts:
+            if not depth:
+                first = item
+            depth += 1
+        elif not depth:
+            yield item, item
+        elif item.type in ends and not (depth := depth - 1):
+            yield cast("tokenize.TokenInfo", first), item
 
 
 def _significant_tokens(source: str) -> tuple[tokenize.TokenInfo, ...] | None:
@@ -87,7 +95,7 @@ def _significant_tokens(source: str) -> tuple[tokenize.TokenInfo, ...] | None:
     logical_line_ended = False
 
     try:
-        token_iterator = _tokenize_opaque_strings(source)
+        token_iterator = (first for first, _ in string_token_spans(source))
         while (item := next(token_iterator)).type != token.ENDMARKER:
             if logical_line_ended or item.type in _INVALID_TOKEN_TYPES:
                 return None
@@ -176,17 +184,65 @@ def _parse_direct_target(
     return None if wrapper_depth else (name, index, has_call)
 
 
+def python_decorator_path(decorator: str) -> str:
+    """Return the path a decorator names: its tokens after ``@`` and opening parentheses, up to its next bracket.
+
+    The tokens after the bracket, such as the arguments of a call, are not read. Comments, line breaks inside the
+    opening parentheses and the whitespace around a dot are no part of the path; other whitespace between two tokens
+    is kept as one space, so ``a.b if c else d`` names no path. A line break outside the parentheses ends the
+    decorator's line; a decorator whose text the tokenizer cannot read before that bracket, or that goes on after that
+    line, names itself as a whole, ``@`` included, so no path reads it. A character UTF-8 cannot encode is read as its
+    backslash escape, as every Python version reads it the same way, and an identifier character of a target that the
+    running interpreter does not know is read as a letter it knows (``host_identifiers``) and given back in the path.
+    """
+    source, restore = lent_text(decorator.removeprefix("@").lstrip(" \t\f").encode(errors="backslashreplace").decode())
+    path: list[str] = []
+    previous: tokenize.TokenInfo | None = None
+    depth = 0
+    line_ended = False
+    try:
+        for item in tokenize.generate_tokens(StringIO(source).readline):
+            if item.type in _LINE_BREAK_TOKEN_TYPES:
+                line_ended = line_ended or not depth
+                continue
+            if item.type in _PATH_SKIPPED_TOKEN_TYPES:
+                continue
+            if line_ended or item.type in _INVALID_TOKEN_TYPES:
+                return decorator
+            if previous is None and item.string == "(":
+                depth += 1
+                continue
+            if item.type == token.OP and item.string in _PATH_END_BRACKETS:
+                break
+            if previous is not None and previous.end != item.start and "." not in {previous.string, item.string}:
+                path.append(" ")
+            path.append(item.string)
+            previous = item
+    except (SyntaxError, tokenize.TokenError):
+        return decorator
+    return restore("".join(path))
+
+
 @lru_cache(maxsize=128)
 def is_named_python_decorator(decorator: str, name: str) -> bool:
-    """Match an exact unqualified target without parsing target expressions."""
-    if decorator[:1] != "@" or not name.isidentifier() or keyword.iskeyword(name):
+    """Match an exact unqualified target without parsing target expressions.
+
+    The names are read by the target's identifier characters, whatever interpreter runs: a character the running
+    interpreter does not know is read as a letter it knows (``host_identifiers``) and given back before it is matched.
+    """
+    if decorator[:1] != "@" or not is_python_name(name):
         return False
 
     body = decorator[1:].strip()
-    if body.isidentifier():
-        return not keyword.iskeyword(body) and body == name
+    source, restore = lent_text(body)
+    if source.isidentifier():
+        return body == name
     if _is_parenthesized_name(body, name):
         return True
-    if not body or (tokens := _significant_tokens(body)) is None:
+    if not body or (tokens := _significant_tokens(source)) is None:
         return False
-    return (parsed := _parse_direct_target(tokens, 0)) is not None and parsed[1] == len(tokens) and parsed[0] == name
+    return (
+        (parsed := _parse_direct_target(tokens, 0)) is not None
+        and parsed[1] == len(tokens)
+        and restore(parsed[0]) == name
+    )

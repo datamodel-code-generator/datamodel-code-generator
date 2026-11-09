@@ -1,0 +1,31 @@
+openapi: 3.1.0
+info: {title: Forms of an allOf cycle, version: "1"}
+servers: [{url: "https://example.com"}]
+paths:
+  /cycles:
+    post:
+      operationId: sendCycle
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: '#/components/schemas/CycleA'}
+          application/x-www-form-urlencoded:
+            schema: {$ref: '#/components/schemas/CycleA'}
+      responses:
+        "204": {description: sent}
+components:
+  schemas:
+    CycleA:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/CycleB'
+      properties:
+        a: {type: string}
+        responseOnly: {type: string, readOnly: true}
+    CycleB:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/CycleA'
+      properties:
+        b: {type: integer}

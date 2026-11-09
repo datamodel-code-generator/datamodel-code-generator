@@ -155,3 +155,6 @@ target-2.12	main/jsonschema/type_alias_patterns/type_alias_lookaround_reuse_scop
 target-unset	main/jsonschema/type_alias_lookaround/tree//*.py
 target-unset	main/jsonschema/type_alias_lookaround/tree_runtime.txt
 target-unset	main/jsonschema/type_alias_patterns/type_alias_lookaround_reuse_scope_tree[target-unset].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+[test_type_alias_pattern_inherited_by_a_dataclass_with_its_own_config]
+lone-surrogate	main/jsonschema/type_alias_patterns/type_alias_pattern_inherited_by_a_dataclass_with_its_own_config[lone-surrogate].py
+lookaround-target-2	main/jsonschema/type_alias_patterns/type_alias_pattern_inherited_by_a_dataclass_with_its_own_config[lookaround-target-2].py

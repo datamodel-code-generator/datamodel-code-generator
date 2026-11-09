@@ -75,9 +75,7 @@ def _add_get_keys(
     )
 
 
-LITERAL_ROUTES: Final = (
-    ('get_keys', _add_get_keys),
-)
+LITERAL_ROUTES: Final = (('get_keys', _add_get_keys),)
 TEMPLATED_ROUTES: Final = ()
 
 

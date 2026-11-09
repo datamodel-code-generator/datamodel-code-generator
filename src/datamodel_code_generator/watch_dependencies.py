@@ -5,40 +5,33 @@ from __future__ import annotations
 import os
 from contextlib import contextmanager, suppress
 from contextvars import ContextVar
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from importlib.util import source_from_cache
 from pathlib import Path
 from stat import S_ISDIR
 from threading import RLock
 from typing import TYPE_CHECKING, Any, Protocol
 
+from datamodel_code_generator._config_fields import (
+    WATCHED_DIRECTORY_FIELDS,
+    WATCHED_FILE_FIELDS,
+    WATCHED_OUTPUT_FIELDS,
+    WATCHED_PATH_FIELDS,
+    names_file,
+)
+from datamodel_code_generator._context_scope import context_values
+from datamodel_code_generator._paths import (
+    concrete,
+    existing_ancestor,
+    lexical,
+    names_directory,
+    resolved,
+    same_file,
+)
+from datamodel_code_generator.util import _find_pyproject_toml as _nearest_pyproject_toml
+
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Mapping
-
-_JSON_CONFIG_FIELDS = frozenset({
-    "aliases",
-    "base_class_map",
-    "client_operations",
-    "client_protocols",
-    "client_resource_names",
-    "custom_formatters_kwargs",
-    "default_values",
-    "duplicate_name_suffix",
-    "enum_field_as_literal_map",
-    "extra_template_data",
-    "import_overrides",
-    "model_name_map",
-    "serialization_aliases",
-    "server_body_modes",
-    "server_handler_modes",
-    "server_operation_names",
-    "server_parameter_names",
-    "server_primary_responses",
-    "server_router_names",
-    "type_overrides",
-    "validators",
-})
-_TARGET_OUTPUT_FIELDS = ("server_output", "client_output")
 
 
 class _Weakrefable:
@@ -97,16 +90,12 @@ _current_collector: ContextVar[_CollectedGeneration | None] = ContextVar("watch_
 _MISSING_PATH_FINGERPRINT = (-1, -1, -1)
 
 
-def _lexical_path(path: Path) -> Path:
-    return Path(os.path.abspath(path.expanduser()))  # noqa: PTH100
-
-
 def _path_variants(path: Path) -> frozenset[Path]:
     """Keep lexical and resolved locations so symlink retargeting remains observable."""
-    lexical_path = _lexical_path(path)
+    lexical_path = lexical(path)
     try:
-        parent_resolved_path = lexical_path.parent.resolve(strict=False) / lexical_path.name
-        resolved_path = lexical_path.resolve(strict=False)
+        parent_resolved_path = concrete(lexical_path)
+        resolved_path = resolved(lexical_path)
     except (OSError, ValueError):
         return frozenset({lexical_path})
     return frozenset({lexical_path, parent_resolved_path, resolved_path})
@@ -115,7 +104,7 @@ def _path_variants(path: Path) -> frozenset[Path]:
 def _symlink_event_paths(path: Path) -> frozenset[Path]:
     """Return symlink ancestors and parents whose events can repoint a lexical path."""
     event_paths: set[Path] = set()
-    current = _lexical_path(path)
+    current = lexical(path)
     while current != current.parent:
         try:
             if current.is_symlink():
@@ -130,7 +119,7 @@ def _symlink_event_paths(path: Path) -> frozenset[Path]:
 
 
 def _resolved_path(path: Path) -> Path:
-    return _lexical_path(path).resolve(strict=False)
+    return resolved(lexical(path))
 
 
 def _path_fingerprint(path: Path) -> tuple[int, int, int]:
@@ -144,7 +133,7 @@ def _path_fingerprint(path: Path) -> tuple[int, int, int]:
 def _configured_path(config_values: Mapping[str, Any], field_name: str, fallback: str | Path | None) -> Path | None:
     value = config_values.get(field_name, fallback)
     if isinstance(value, (str, Path)):
-        return Path(value)
+        return Path(value) if names_file(field_name, value) else None
     return Path(fallback) if isinstance(fallback, str) else fallback
 
 
@@ -152,30 +141,46 @@ def _logical_working_directory() -> Path:
     working_directory = Path.cwd()
     logical_working_directory = Path(os.environ.get("PWD", working_directory)).expanduser()
     try:
-        return logical_working_directory if logical_working_directory.samefile(working_directory) else working_directory
+        return (
+            logical_working_directory if same_file(logical_working_directory, working_directory) else working_directory
+        )
     except OSError:
         return working_directory
 
 
 def _nearest_existing_directory(path: Path) -> Path:
-    while not path.is_dir():
-        if path == path.parent:
-            return path
-        path = path.parent
-    return path
+    return existing_ancestor(path)
+
+
+def _holds_output(directory: Path, outputs: Iterable[Path]) -> bool:
+    """Return whether writing an output can change a dependency directory's own fingerprint."""
+    return any(
+        output.is_relative_to(variant) or variant.is_relative_to(output)
+        for variant in _path_variants(directory)
+        for output in outputs
+    )
 
 
 def _watch_roots(
-    files: frozenset[Path], directories: frozenset[Path], event_paths: frozenset[Path]
+    files: frozenset[Path], directories: frozenset[Path], event_paths: frozenset[Path], *, polling: bool
 ) -> tuple[Path, ...]:
-    """Return minimal existing roots covering every dependency and recovery event."""
-    roots = {_nearest_existing_directory(path.parent) for path in files}
-    # Keep configured directory roots stable when the directory itself is
-    # removed and recreated. Its parent still receives the relevant event.
-    roots.update(_nearest_existing_directory(path.parent) for path in directories)
-    roots.update(_nearest_existing_directory(path) for path in event_paths)
+    """Return minimal existing roots covering every dependency and recovery event.
+
+    A polling watcher rescans each root by its path, so its roots are the existing dependencies themselves: it keeps
+    scanning a root that vanished, and the dependency fingerprints notice a missing one appearing. Native events stop at
+    a vanished root, so they watch the parents, where creation, removal and recreation are reported.
+    """
+    if polling:
+        roots = {resolved(path) for path in files | directories if path.exists()}
+    else:
+        roots = {_nearest_existing_directory(path.parent) for path in files}
+        # Keep configured directory roots stable when the directory itself is
+        # removed and recreated. Its parent still receives the relevant event.
+        roots.update(_nearest_existing_directory(path.parent) for path in directories)
+        roots.update(_nearest_existing_directory(path) for path in event_paths)
+        roots = {path for path in roots if path.is_dir()}
     watch_roots: list[Path] = []
-    for root in sorted((path for path in roots if path.is_dir()), key=lambda path: (len(path.parts), path.as_posix())):
+    for root in sorted(roots, key=lambda path: (len(path.parts), path.as_posix())):
         if not any(root.is_relative_to(ancestor) for ancestor in watch_roots):
             watch_roots.append(root)
     return tuple(watch_roots)
@@ -219,7 +224,7 @@ class WatchDependencies(_Weakrefable):
         event_paths = frozenset(
             files | static_symlink_events | self._generation_symlink_events | failed_generation_symlink_events
         )
-        watch_roots = _watch_roots(files, directories, event_paths)
+        watch_roots = _watch_roots(files, directories, event_paths, polling=self._polling_fingerprints_enabled)
         outputs = self._outputs.copy()
         if candidate is not None:
             outputs.update(candidate.outputs)
@@ -293,42 +298,49 @@ class WatchDependencies(_Weakrefable):
             try:
                 is_directory = S_ISDIR(resolved_path.stat().st_mode)
             except OSError:
-                is_directory = not resolved_path.suffix
+                is_directory = names_directory(resolved_path)
         outputs[resolved_path] = is_directory
 
     def _add_config(
         self,
         candidate: _StaticDependencies,
-        config: _WatchConfig,
-        *,
         config_values: Mapping[str, Any],
-        pyproject_path: Path | None,
+        config: _WatchConfig | None = None,
+        pyproject_path: Path | None = None,
     ) -> None:
-        """Add one validated configuration to a staged static dependency graph."""
+        """Add one configuration to a staged static dependency graph.
 
-        def add_file(path: Path | None) -> None:
+        A validated `config` supplies the paths `config_values` lacks, the outputs and the project file; without one,
+        only the raw values count, before validation can fail.
+        """
+        fallbacks = {} if config is None else {name: getattr(config, name) for name in WATCHED_PATH_FIELDS}
+
+        def add(path: Path | None, paths: set[Path]) -> None:
             if path is not None:
-                self._add_path(path, candidate.files, candidate.symlink_events)
+                self._add_path(path, paths, candidate.symlink_events)
 
-        def add_directory(path: Path | None) -> None:
-            if path is not None:
-                self._add_path(path, candidate.directories, candidate.symlink_events)
+        def read(name: str) -> Path | None:
+            return _configured_path(config_values, name, fallbacks.get(name))
 
-        input_path = _configured_path(config_values, "input", config.input)
-        if input_path is not None:
-            (add_directory if input_path.is_dir() else add_file)(input_path)
-        add_file(pyproject_path or _nearest_pyproject_toml(_logical_working_directory()))
-        add_file(_configured_path(config_values, "custom_file_header_path", config.custom_file_header_path))
-        add_directory(_configured_path(config_values, "custom_template_dir", config.custom_template_dir))
-        add_directory(_configured_path(config_values, "http_local_ref_path", config.http_local_ref_path))
-        for field_name in _JSON_CONFIG_FIELDS:
-            value = config_values.get(field_name)
-            add_file(Path(value) if isinstance(value, (str, Path)) else None)
-        self._add_output(config.output, candidate.outputs)
-        # Metadata is always a single file, including when its name has no suffix.
-        self._add_output(config.emit_model_metadata, candidate.outputs, is_directory=False)
-        for field_name in _TARGET_OUTPUT_FIELDS:
-            self._add_output(getattr(config, field_name, None), candidate.outputs, is_directory=True)
+        input_path = read("input")
+        add(input_path, candidate.directories if input_path is not None and input_path.is_dir() else candidate.files)
+        if config is not None:
+            add(pyproject_path or _nearest_pyproject_toml(_logical_working_directory()), candidate.files)
+        for name in WATCHED_FILE_FIELDS:
+            add(read(name), candidate.files)
+        for name in WATCHED_DIRECTORY_FIELDS:
+            add(read(name), candidate.directories)
+        for name, is_directory in WATCHED_OUTPUT_FIELDS:
+            self._add_output(
+                read(name) if config is None else getattr(config, name, None),
+                candidate.outputs,
+                is_directory=is_directory,
+            )
+
+    def _set_pending(self, candidate: _StaticDependencies) -> None:
+        with self._lock:
+            self._pending_static = candidate
+            self._publish()
 
     def configure(
         self,
@@ -338,25 +350,19 @@ class WatchDependencies(_Weakrefable):
     ) -> None:
         """Stage a static graph without exposing a generation-sized membership gap."""
         candidate = _StaticDependencies()
-        self._add_config(candidate, config, config_values=config_values, pyproject_path=None)
-        with self._lock:
-            self._pending_static = candidate
-            self._publish()
+        self._add_config(candidate, config_values, config)
+        self._set_pending(candidate)
 
     def configure_many(self, configs: Iterable[tuple[_WatchConfig, Mapping[str, Any], Path]]) -> None:
         """Stage the union of all validated batch-job dependency graphs."""
         candidate = _StaticDependencies()
         for config, config_values, pyproject_path in configs:
-            self._add_config(candidate, config, config_values=config_values, pyproject_path=pyproject_path)
-        with self._lock:
-            self._pending_static = candidate
-            self._publish()
+            self._add_config(candidate, config_values, config, pyproject_path)
+        self._set_pending(candidate)
 
     def begin_raw_attempt(self) -> None:
         """Discard an older unvalidated candidate before recording the latest replan."""
-        with self._lock:
-            self._pending_static = _StaticDependencies()
-            self._publish()
+        self._set_pending(_StaticDependencies())
 
     def add_recovery_file(self, path: Path) -> None:
         """Add an unvalidated input to the latest candidate's recovery graph."""
@@ -369,32 +375,16 @@ class WatchDependencies(_Weakrefable):
     def stage_raw_config(self, config_values: Mapping[str, Any]) -> None:
         """Stage lexical raw paths before typed config validation can fail."""
         candidate = _StaticDependencies()
+        self._add_config(candidate, config_values)
+        self._set_pending(candidate)
 
-        def add_file(value: object) -> None:
-            if isinstance(value, (str, Path)):
-                self._add_path(Path(value), candidate.files, candidate.symlink_events)
-
-        def add_directory(value: object) -> None:
-            if isinstance(value, (str, Path)):
-                self._add_path(Path(value), candidate.directories, candidate.symlink_events)
-
-        input_value = config_values.get("input")
-        if isinstance(input_value, (str, Path)):
-            (add_directory if Path(input_value).is_dir() else add_file)(input_value)
-        add_file(config_values.get("custom_file_header_path"))
-        add_directory(config_values.get("custom_template_dir"))
-        add_directory(config_values.get("http_local_ref_path"))
-        for field_name in _JSON_CONFIG_FIELDS:
-            add_file(config_values.get(field_name))
-        if isinstance(output := config_values.get("output"), (str, Path)):
-            self._add_output(Path(output), candidate.outputs)
-        if isinstance(metadata := config_values.get("emit_model_metadata"), (str, Path)):
-            self._add_output(Path(metadata), candidate.outputs, is_directory=False)
-        for field_name in _TARGET_OUTPUT_FIELDS:
-            if isinstance(target_output := config_values.get(field_name), (str, Path)):
-                self._add_output(Path(target_output), candidate.outputs, is_directory=True)
+    def _fail(self, collected: _CollectedGeneration) -> None:
+        """Keep the candidate and the files a failed generation observed for recovery."""
         with self._lock:
-            self._pending_static = candidate
+            self._failed_static = self._pending_static
+            self._pending_static = None
+            self._failed_generation_files = collected.files
+            self._failed_generation_symlink_events = collected.symlink_events
             self._publish()
 
     @contextmanager
@@ -403,41 +393,34 @@ class WatchDependencies(_Weakrefable):
         collected = _CollectedGeneration(self)
         # A completed generation must acknowledge the inputs it observed, not later edits.
         if self._polling_fingerprints_enabled:
-            collected.polling_fingerprints = {path: _path_fingerprint(path) for path in self._snapshot.files}
-        token = _current_collector.set(collected)
-        try:
-            yield collected
-        except BaseException:
-            with self._lock:
-                self._failed_static = self._pending_static
-                self._pending_static = None
-                self._failed_generation_files = collected.files
-                self._failed_generation_symlink_events = collected.symlink_events
-                self._publish()
-            raise
-        else:
-            with self._lock:
-                if collected.failed:
-                    self._failed_static = self._pending_static
-                    self._pending_static = None
-                    self._failed_generation_files = collected.files
-                    self._failed_generation_symlink_events = collected.symlink_events
+            snapshot = self._snapshot
+            observed = snapshot.files | {
+                directory for directory in snapshot.directories if not _holds_output(directory, snapshot.outputs)
+            }
+            collected.polling_fingerprints = {path: _path_fingerprint(path) for path in observed}
+        with context_values({_current_collector: collected}):
+            try:
+                yield collected
+            except BaseException:
+                self._fail(collected)
+                raise
+            else:
+                with self._lock:
+                    if collected.failed:
+                        self._fail(collected)
+                        return
+                    if self._pending_static is not None:
+                        self._static_files = self._pending_static.files
+                        self._static_directories = self._pending_static.directories
+                        self._static_symlink_events = self._pending_static.symlink_events
+                        self._outputs = self._pending_static.outputs
+                        self._pending_static = None
+                    self._generation_files = collected.files
+                    self._generation_symlink_events = collected.symlink_events
+                    self._failed_static = None
+                    self._failed_generation_files.clear()
+                    self._failed_generation_symlink_events.clear()
                     self._publish()
-                    return
-                if self._pending_static is not None:
-                    self._static_files = self._pending_static.files
-                    self._static_directories = self._pending_static.directories
-                    self._static_symlink_events = self._pending_static.symlink_events
-                    self._outputs = self._pending_static.outputs
-                    self._pending_static = None
-                self._generation_files = collected.files
-                self._generation_symlink_events = collected.symlink_events
-                self._failed_static = None
-                self._failed_generation_files.clear()
-                self._failed_generation_symlink_events.clear()
-                self._publish()
-        finally:
-            _current_collector.reset(token)
 
     def _apply_remote_lock_plans(self, plans: Iterable[Any]) -> tuple[tuple[Any, ...], set[Path]]:
         """Return effective lock plans and intent for the current generation attempt."""
@@ -524,6 +507,20 @@ class WatchDependencies(_Weakrefable):
         """Return existing roots cached when the dependency graph was published."""
         return self._snapshot.watch_roots
 
+    def refresh_watch_roots(self) -> None:
+        """Recompute the cached roots after one vanished before a watcher could start on it."""
+        with self._lock:
+            snapshot = self._snapshot
+            self._snapshot = replace(
+                snapshot,
+                watch_roots=_watch_roots(
+                    snapshot.files,
+                    snapshot.directories,
+                    snapshot.event_paths,
+                    polling=self._polling_fingerprints_enabled,
+                ),
+            )
+
     @staticmethod
     def _includes_snapshot(snapshot: _DependencySnapshot, path_variants: frozenset[Path]) -> bool:
         if path_variants & snapshot.event_paths:
@@ -556,7 +553,7 @@ class WatchDependencies(_Weakrefable):
         """Accept recovery candidates before output exclusions and optional directory events."""
         snapshot = self._snapshot
         try:
-            resolved_path = path.resolve(strict=False)
+            resolved_path = resolved(path)
         except (OSError, ValueError):
             resolved_path = path
         path_variants = _path_variants(path)
@@ -617,11 +614,3 @@ def record_module_dependency(module: object) -> Path | None:
             module_path = Path(source_from_cache(str(module_path)))
     record_local_dependency(module_path)
     return module_path
-
-
-def _nearest_pyproject_toml(path: Path) -> Path | None:
-    for parent in (path, *path.parents):
-        candidate = parent / "pyproject.toml"
-        if candidate.is_file():
-            return candidate
-    return None

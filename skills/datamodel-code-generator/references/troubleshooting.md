@@ -7,7 +7,7 @@ Cause: The package is not installed or the user ran the package name as the comm
 Fix:
 
 ```bash
-uvx datamodel-codegen --help
+uvx --from datamodel-code-generator datamodel-codegen --help
 ```
 
 Notes:
@@ -22,7 +22,7 @@ Cause: The wrong `--input-file-type` value was used.
 Fix:
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input schema.yaml \
   --input-file-type jsonschema \
   --output models.py
@@ -31,7 +31,7 @@ uvx datamodel-codegen \
 or:
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input openapi.yaml \
   --input-file-type openapi \
   --output models.py
@@ -63,7 +63,7 @@ Cause: The schema allows multiple alternatives.
 Fix:
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --union-mode smart \
@@ -82,7 +82,7 @@ Cause: `allOf` merge behavior depends on schema shape and merge mode.
 Fix:
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --output models.py \
@@ -100,7 +100,7 @@ Cause: Module exports or circular imports may not match the application's import
 Fix:
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input schemas/ \
   --output models/ \
   --all-exports-scope children
@@ -117,7 +117,7 @@ Cause: Multiple schemas produce the same class name.
 Fix:
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input schemas/ \
   --output models/ \
   --all-exports-scope recursive \
@@ -149,7 +149,7 @@ Cause: Python identifiers cannot use reserved words or invalid characters.
 Fix:
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --output models.py \
@@ -159,7 +159,7 @@ uvx datamodel-codegen \
 For camelCase to snake_case:
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --output models.py \
@@ -177,7 +177,7 @@ Cause: Timestamp headers or environment-dependent formatting.
 Fix:
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --output models.py \
@@ -195,7 +195,7 @@ Cause: Large schemas can create many repeated models.
 Fix:
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input openapi.yaml \
   --input-file-type openapi \
   --output models/ \
@@ -256,7 +256,7 @@ Cause: Some constrained types or field metadata may not be understood by the con
 Fix:
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --output models.py \
@@ -266,7 +266,7 @@ uvx datamodel-codegen \
 or:
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --output models.py \

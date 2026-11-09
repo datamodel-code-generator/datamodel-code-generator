@@ -1,0 +1,23 @@
+{
+  "fast": {
+    "tests/main/test_payload_validation.py::TestNew::test_method": 1,
+    "tests/main/test_payload_validation.py::test_generated_pydantic_v2_model_accepts_schema_derived_payloads": 501,
+    "tests/main/test_payload_validation.py::test_new": 4,
+    "tests/test_new.py": 31
+  },
+  "files": {
+    "tests/test_new.py": 61
+  },
+  "nodes": {
+    "tests/main/test_payload_validation.py::TestNew::test_method": 1,
+    "tests/main/test_payload_validation.py::test_generated_pydantic_v2_model_accepts_schema_derived_payloads": 3510,
+    "tests/main/test_payload_validation.py::test_new": 4
+  },
+  "provenance": {
+    "run_id": "41,42,43",
+    "sha": "abc123"
+  },
+  "slow": {
+    "tests/main/test_payload_validation.py::test_generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema/a.json]": 3009
+  }
+}

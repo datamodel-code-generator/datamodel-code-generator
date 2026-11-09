@@ -82,8 +82,6 @@ def _is_avro_schema_object(schema: JsonSchema) -> bool:
     return False
 
 
-is_avro_schema_data.__module__ = "datamodel_code_generator.parser._avro_detection"
-
 __all__ = [
     "COMPLEX_TYPES",
     "JSON_SCHEMA_MARKER_KEYS",

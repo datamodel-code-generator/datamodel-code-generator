@@ -1,0 +1,11 @@
+Flags valid {"any-value": 1, "other-value": "x"}: Flags(any_value=1, other_value='x')
+Flags valid {}: Flags(any_value=None, other_value=None)
+Child valid {"display-name": "n", "owner-id": 1, "id": "x"}: Child(id='x', display_name='n', owner_id=1)
+Child invalid {"display-name": "n", "id": "x"}: rejected
+Child invalid {"owner-id": 1, "id": "x"}: rejected
+Pet valid {"pet-type": "dog", "bark": "woof"}: Pet(root=Dog(bark='woof', pet_type='dog'))
+Pet valid {"pet-type": "cat"}: Pet(root=Cat(meow=None, pet_type='cat'))
+Pet invalid {"pet-type": "bird"}: rejected
+Pet invalid {}: rejected
+Owner valid {}: Owner(address=None, pet=None)
+Owner valid {"address": {"city": "c"}, "pet": {"pet-type": "cat"}}: Owner(address=Address(city='c'), pet=Pet(root=Cat(meow=None, pet_type='cat')))

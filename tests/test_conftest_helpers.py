@@ -1627,6 +1627,51 @@ def test_ledger_file_inside_shared_tree(ledger: LedgerProject) -> None:
     ledger.run("suite", env=GITHUB).assert_outcomes(passed=2)
 
 
+@pytest.mark.parametrize(
+    ("tree", "glob", "member"),
+    [
+        pytest.param("t", "t", "x.txt", id="glob-in-tree"),
+        pytest.param("t/sub", "t", "sub/x.txt", id="tree-in-glob"),
+    ],
+)
+def test_ledger_fix_rewrites_overlapping_units_that_change_alike(
+    ledger: LedgerProject, tree: str, glob: str, member: str
+) -> None:
+    """Units that overlap stay shared and stored in place when a run gives their common file one new content."""
+    source = f"""
+        from pathlib import Path
+
+        from tests.conftest import assert_generated_modules_output
+
+        EXPECTED = Path(__file__).parent / "data" / "expected"
+        X = "x\\n"
+
+
+        def test_tree():
+            modules = {{("x.txt",): X, ("y.txt",): "y\\n"}}
+            assert_generated_modules_output(modules, EXPECTED / "{tree}", pattern="*")
+        """
+    glob_test = f"""
+
+        def test_glob():
+            modules = {{tuple("{member}".split("/")): X}}
+            assert_generated_modules_output(modules, EXPECTED / "{glob}", pattern="{member}")
+        """
+    ledger.write("test_m.py", source)
+    ledger.run("suite").assert_outcomes(passed=1)
+    ledger.write("test_m.py", source + glob_test)
+    ledger.run("suite").assert_outcomes(passed=2)
+    refs = ledger.refs()
+    files = ledger.files()
+    ledger.write("test_m.py", (source + glob_test).replace('X = "x\\n"', 'X = "x2\\n"'))
+    fixed = ledger.run("suite", "--inline-snapshot=fix")
+    fixed.assert_outcomes(passed=2)
+    assert "split" not in fixed.stdout.str()
+    assert ledger.files() == {**files, f"{tree}/x.txt": "x2\n"}
+    assert ledger.refs() == refs
+    ledger.run("suite", env=GITHUB).assert_outcomes(passed=2)
+
+
 @pytest.mark.parametrize("depth", [90, 150])
 def test_ledger_long_split_names_fit_the_path_limit(ledger: LedgerProject, depth: int) -> None:
     """A split of a file deep inside a stored tree gets a name that keeps its stored path within the path limit.

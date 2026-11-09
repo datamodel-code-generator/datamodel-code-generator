@@ -91,7 +91,7 @@ def _extract_cli_formatters(extra_args: Sequence[str] | None) -> list[str] | Non
 def _uses_default_cli_formatters(extra_args: Sequence[str] | None) -> bool:
     if extra_args is None:
         return True
-    if "--custom-formatters" in extra_args or "--custom-formatters-kwargs" in extra_args:
+    if any(option in extra_args for option in ("--custom-formatters", "--custom-formatters-kwargs", "--no-formatters")):
         return False
     return (formatters := _extract_cli_formatters(extra_args)) is None or set(formatters) == _DEFAULT_CLI_FORMATTERS
 

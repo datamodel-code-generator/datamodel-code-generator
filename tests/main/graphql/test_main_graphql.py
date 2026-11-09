@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import ast
+import json
+import sys
 import warnings
 from typing import TYPE_CHECKING
 
@@ -10,6 +12,7 @@ import black
 import msgspec
 import pytest
 
+from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
@@ -20,6 +23,7 @@ from tests.main.conftest import (
     _generated_model,
     assert_generated_model_json_validation,
     run_main_and_assert,
+    run_main_with_args,
     target_pydantic_args,
 )
 from tests.main.graphql.conftest import assert_file_content
@@ -424,6 +428,18 @@ def test_main_graphql_enums(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize("description_option", ["--use-field-description", "--use-inline-field-description"])
+def test_main_graphql_enum_member_descriptions(output_file: Path, description_option: str) -> None:
+    """Write the description of a GraphQL enum value beside its member, as a JSON Schema enum value gets it."""
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "enums.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        extra_args=[description_option],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "22",
     reason="Installed black doesn't support the old style",
@@ -722,6 +738,32 @@ def test_main_graphql_additional_imports(output_file: Path) -> None:
             "--additional-imports",
             "datetime.datetime,datetime.date,mymodule.myclass.MyCustomPythonClass",
         ],
+    )
+
+
+@pytest.mark.parametrize("target_python_version", ["3.11", "3.12"])
+def test_main_graphql_scalar_type_name_follows_target(output_file: Path, target_python_version: str) -> None:
+    """Write the template-data type of a scalar, a model without fields, as a name only where the target binds it.
+
+    U+1E4D0 is a letter from Unicode 15 on: Python 3.12 binds the name, and Python 3.11 gets it as a string.
+    """
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "additional-imports.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--extra-template-data",
+            json.dumps({"MyCustomClass": {"py_type": "mypkg.\U0001e4d0T"}}),
+            "--additional-imports",
+            "mypkg",
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        skip_code_validation=True,
     )
 
 
@@ -1264,4 +1306,48 @@ def test_main_graphql_strip_default_none_constructor_order(output_model_type: st
             "builtin",
         ],
         force_exec_validation=True,
+    )
+
+
+@pytest.mark.abnormal_path(
+    "graphql-core is installed in every test environment and the parser module is already loaded"
+)
+def test_main_graphql_without_graphql_core_names_a_complete_install_command(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Close the quote and then the backtick of the pip command that installs the graphql extra.
+
+    The error up to 0.87.0 wrote the closing backtick before the closing quote, so the command copied from the code
+    span left its quote open.
+    """
+    monkeypatch.setitem(sys.modules, "graphql", None)
+    monkeypatch.delitem(sys.modules, "datamodel_code_generator.parser.graphql", raising=False)
+    run_main_with_args(
+        ["--input", str(GRAPHQL_DATA_PATH / "simple-star-wars.graphql"), "--input-file-type", "graphql"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=(
+            "Please run `pip install 'datamodel-code-generator[graphql]'` to generate data-model from a GraphQL schema."
+        ),
+    )
+
+
+def test_main_graphql_naming_strategy_definitions_first(output_file: Path) -> None:
+    """Keep the names of the GraphQL types under ``--naming-strategy definitions-first``, which names no type again.
+
+    GraphQL names its types by their affixed names alone (row ``legacy-graphql-affix-only``), so no plan renames one.
+    """
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "simple-star-wars.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--naming-strategy",
+            "definitions-first",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
     )

@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
-from typing import Final, Literal, TypeGuard
+from typing import TYPE_CHECKING, Final, Literal, TypeGuard, TypeVar
 
 from typing_extensions import TypeIs
 
 from .responses import HeadersView, ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
 
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
+T = TypeVar("T")
+
+MAX_ERROR_BODY_BYTES: Final = 64 * 1024
 _SERVER_ERROR: Final = 500
 _MESSAGE_PREFIX: Final = 500
 
@@ -83,6 +89,29 @@ def kept_primary(primary: BaseException, failure: BaseException) -> BaseExceptio
     return primary
 
 
+def called(run: Callable[[], T], failure: Callable[[Exception], SDKError]) -> T:
+    """Return what application code returns: an SDK error it raises propagates as it is, with its own cause and context.
+
+    Any other exception is raised as the calling feature's failure built from it, which keeps it as its cause.
+    """
+    try:
+        return run()
+    except SDKError:
+        raise
+    except Exception as error:  # noqa: BLE001
+        raise failure(error) from None
+
+
+async def acalled(run: Callable[[], Awaitable[T]], failure: Callable[[Exception], SDKError]) -> T:
+    """Return what awaited application code returns, raising its failures as `called` does."""
+    try:
+        return await run()
+    except SDKError:
+        raise
+    except Exception as error:  # noqa: BLE001
+        raise failure(error) from None
+
+
 def is_sequence(value: object) -> TypeIs[tuple[object, ...] | list[object]]:
     """Return whether a value is a tuple or a list."""
     return isinstance(value, (tuple, list))
@@ -145,6 +174,12 @@ def is_transport(error: object) -> TypeGuard[APIConnectionError]:
 def is_client_closed(error: object) -> TypeGuard[ConfigurationError]:
     """Return whether an error refused a call because its client or view is closing or closed."""
     return isinstance(error, ConfigurationError) and error.reason == "client_closed"
+
+
+def bounded_body(body: bytes, cap: int | None = None) -> tuple[bytes, bool]:
+    """Return the bytes an error keeps of a received body, at most 64 KiB or a lower `cap`, and whether it cut them."""
+    limit = MAX_ERROR_BODY_BYTES if cap is None else min(cap, MAX_ERROR_BODY_BYTES)
+    return body[:limit], len(body) > limit
 
 
 def _message(body: bytes, truncated: bool) -> str:  # noqa: FBT001
@@ -282,18 +317,30 @@ class DecodeError(SDKError):
         return (("status_code", info.status_code), *super()._details(), located, ("request_id", info.request_id))
 
 
-def body_failure(reason: str, cause: BaseException | None = None) -> DecodeError:
-    """Return the failure of a binary input that cannot be opened or rewound for sending."""
-    return DecodeError(reason=reason, direction="request", location=("body",), cause=cause)
+def request_failure(
+    location: tuple[str | int, ...],
+    operation_id: str | None = None,
+    cause: BaseException | None = None,
+    *,
+    reason: str = "unencodable",
+) -> DecodeError:
+    """Return the failure of an argument its declared wire form cannot carry; the location never holds the value.
+
+    A binary body that cannot be opened or rewound for sending fails at `("body",)` with its own reason.
+    """
+    return DecodeError(reason=reason, direction="request", location=location, operation_id=operation_id, cause=cause)
 
 
-def response_failure(
+def response_failure(  # noqa: PLR0913
     info: ResponseInfo,
     reason: str,
     body: bytes = b"",
     cause: BaseException | None = None,
     *,
     media_type: str | None = None,
+    operation_id: str | None = None,
 ) -> DecodeError:
     """Return the decode failure of a received response, keeping its metadata and bounded body."""
-    return DecodeError(reason=reason, info=info, body_bytes=body, cause=cause, media_type=media_type)
+    return DecodeError(
+        reason=reason, info=info, body_bytes=body, cause=cause, media_type=media_type, operation_id=operation_id
+    )

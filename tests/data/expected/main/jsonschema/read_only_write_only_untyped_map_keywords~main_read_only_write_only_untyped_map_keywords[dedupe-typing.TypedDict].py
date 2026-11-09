@@ -41,11 +41,11 @@ class PatternedWithProperties(TypedDict):
     a: NotRequired[str]
 
 
-class ExtraWithPropertiesRequest(TypedDict, extra_items='FlaggedRequest'):
+class ExtraWithPropertiesRequest(TypedDict, extra_items=FlaggedRequest):
     a: NotRequired[str]
 
 
-class ExtraWithPropertiesResponse(TypedDict, extra_items='FlaggedResponse'):
+class ExtraWithPropertiesResponse(TypedDict, extra_items=FlaggedResponse):
     a: NotRequired[str]
 
 
@@ -76,11 +76,11 @@ MemberMapRequest: TypeAlias = dict[str, FlaggedRequest]
 MemberMapResponse: TypeAlias = dict[str, FlaggedResponse]
 
 
-class ExtraBesideBaseRequest(TypedDict, extra_items='FlaggedRequest'):
+class ExtraBesideBaseRequest(TypedDict, extra_items=FlaggedRequest):
     b: NotRequired[str]
 
 
-class ExtraBesideBaseResponse(TypedDict, extra_items='FlaggedResponse'):
+class ExtraBesideBaseResponse(TypedDict, extra_items=FlaggedResponse):
     b: NotRequired[str]
 
 

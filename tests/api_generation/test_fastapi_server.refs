@@ -33,6 +33,7 @@ tutorial	docs/tutorial/pytest.txt
 	main/generation_platform/fastapi/servers/entrypoint.txt
 	main/generation_platform/fastapi/servers/packages/entrypoint//*.py
 [test_fastapi_openapi]
+document-anchors	main/generation_platform/fastapi/openapi/document-anchors.txt
 document-bodies	main/generation_platform/fastapi/openapi/document-bodies.txt
 document-callbacks	main/generation_platform/fastapi/openapi/document-callbacks.txt
 document-legacy	main/generation_platform/fastapi/openapi/document-legacy.txt
@@ -115,6 +116,10 @@ nullable-results-alias	main/generation_platform/fastapi/servers/nullable-results
 nullable-results-alias	main/generation_platform/fastapi/servers/packages/nullable-results-alias/
 parameters	main/generation_platform/fastapi/servers/packages/parameters/
 parameters	main/generation_platform/fastapi/servers/parameters.txt
+patterns	main/generation_platform/fastapi/servers/packages/patterns/
+patterns	main/generation_platform/fastapi/servers/patterns.txt
+patterns-annotated	main/generation_platform/fastapi/servers/packages/patterns-annotated/
+patterns-annotated	main/generation_platform/fastapi/servers/patterns-annotated.txt
 pets	main/generation_platform/fastapi/servers/packages/pets/
 pets	main/generation_platform/fastapi/servers/pets.txt
 pets-type-checking	main/generation_platform/fastapi/servers/packages/pets-type-checking/
@@ -160,23 +165,40 @@ variants-reuse	main/generation_platform/fastapi/servers/variants-reuse.txt
 [test_fastapi_upstream]
 	main/generation_platform/fastapi/servers/uploads.txt
 [test_generated_client]
+binary_json	main/generation_platform/cross/binary_json.txt
 bodies	main/generation_platform/cross/bodies.txt
+bound_parts	main/generation_platform/cross/bound_parts.txt
+bound_parts_variants	main/generation_platform/cross/bound_parts_variants.txt
+bound_texts	main/generation_platform/cross/bound_texts.txt
+bound_texts_reuse	main/generation_platform/cross/bound_texts_reuse.txt
+content_media_type	main/generation_platform/cross/content_media_type.txt
+content_media_type_bytes	main/generation_platform/cross/content_media_type_bytes.txt
 extras	main/generation_platform/cross/extras.txt
 forms	main/generation_platform/cross/forms.txt
 forms_30	main/generation_platform/cross/forms_30.txt
+forms_read_only	main/generation_platform/cross/forms_read_only.txt
 headers	main/generation_platform/cross/headers.txt
+merged_nullable	main/generation_platform/cross/merged_nullable.txt
 ndjson	main/generation_platform/cross/ndjson.txt
 nullable	main/generation_platform/cross/nullable.txt
+overridden_containers	main/generation_platform/cross/overridden_containers.txt
 pagination	main/generation_platform/cross/pagination.txt
 parameters	main/generation_platform/cross/parameters.txt
 pets	main/generation_platform/cross/pets.txt
 raw	main/generation_platform/cross/raw.txt
 raw_strict	main/generation_platform/cross/raw_strict.txt
+ref_siblings	main/generation_platform/cross/ref_siblings.txt
+ref_siblings_30	main/generation_platform/cross/ref_siblings_30.txt
+ref_siblings_30_ignored	main/generation_platform/cross/ref_siblings_30_ignored.txt
+required	main/generation_platform/cross/required.txt
 results	main/generation_platform/cross/results.txt
 reused_forms	main/generation_platform/cross/reused_forms.txt
 security	main/generation_platform/cross/security.txt
 streams	main/generation_platform/cross/streams.txt
 styles	main/generation_platform/cross/styles.txt
+tag_forms	main/generation_platform/cross/tag_forms.txt
+union_parts	main/generation_platform/cross/union_parts.txt
+upper_alike	main/generation_platform/cross/upper_alike.txt
 variants	main/generation_platform/cross/variants.txt
 [test_pydantic_codec_startup]
 pets-startup	main/generation_platform/codecs/pydantic/pets-startup.txt

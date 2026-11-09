@@ -7,22 +7,32 @@ to its `on_token_refreshed` callback.
 
 from __future__ import annotations
 
-import base64
 import inspect
 import threading
 import weakref
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
+from functools import partial
 from typing import TYPE_CHECKING, ClassVar, Final, Literal, cast
 from urllib.parse import quote_plus, urlencode
 
 import httpx2
 from typing_extensions import TypeIs
 
-from .auth import OAUTH_ERROR_CODES, AuthError, OAuthErrorCode, SchemeAuth, TokenSource
-from .errors import ConfigurationError, SDKError
+from ..model_codecs.media import JSON_MEDIA_TYPE, SUCCESS_STATUSES
+from .auth import (
+    OAUTH_ERROR_CODES,
+    AuthError,
+    OAuthErrorCode,
+    SchemeAuth,
+    TokenSource,
+    basic_credentials,
+    checked_text,
+    provider_failure,
+)
+from .errors import ConfigurationError, acalled, called
 from .security import SecurityScheme
-from .timing import SYSTEM_CLOCK, Clock, checked_instance
+from .timing import SYSTEM_CLOCK, Clock, checked_instance, is_aware, usable_seconds
 from .urls import URLValidationError, canonical_origin
 
 if TYPE_CHECKING:
@@ -30,13 +40,12 @@ if TYPE_CHECKING:
     from contextlib import AbstractAsyncContextManager
 
     from .auth import Secret
-    from .client import AsyncSend, Send
+    from .positions import AsyncSend, Send
 
 __all__ = ("ClientCredentials", "RefreshToken", "TokenSet")
 
 _LOOPBACK: Final = frozenset({"localhost", "127.0.0.1", "::1"})
 _BEARER: Final = SecurityScheme(name="oauth", kind="bearer", location="header", wire_name="Authorization")
-_SUCCESS: Final = range(200, 300)
 
 
 def refresh_margin(ttl: float) -> float:
@@ -60,21 +69,25 @@ class TokenSet:
 
 
 def _text(value: object, name: str, *, optional: bool = False) -> None:
-    """Refuse a value that is not a nonempty string, or None when it is optional."""
+    """Refuse a value that is not a nonempty string UTF-8 can encode, or None when it is optional."""
     if not ((optional and value is None) or (isinstance(value, str) and value)):
         raise ConfigurationError(field_path=(name,), reason="invalid_value")
+    if isinstance(value, str):
+        checked_text(name, value)
 
 
 def _aware(value: object) -> None:
     """Refuse an expiry that is not None or a timezone-aware datetime."""
-    if value is not None and (not isinstance(value, datetime) or value.utcoffset() is None):
+    if value is not None and not is_aware(value):
         raise ConfigurationError(field_path=("expires_at",), reason="invalid_value")
 
 
 def _settings(client_secret: object, http_client: object, clock: object) -> None:
-    """Refuse a client secret, token client, or clock of another type."""
-    if client_secret is not None and not (isinstance(client_secret, str) or callable(client_secret)):
-        raise ConfigurationError(field_path=("client_secret",), reason="invalid_type")
+    """Refuse a client secret, token client, or clock of another type, and a secret UTF-8 cannot encode."""
+    if client_secret is not None:
+        checked_instance(client_secret, (str,), ("client_secret",), callables=True)
+        if isinstance(client_secret, str):
+            checked_text("client_secret", client_secret)
     checked_instance(http_client, (httpx2.Client, httpx2.AsyncClient, type(None)), ("http_client",))
     checked_instance(clock, (Clock, type(None)), ("clock",))
 
@@ -111,37 +124,30 @@ def _url(value: object) -> str:
     return value
 
 
-def _failed(error: Exception) -> Exception:
-    """Return the error of an application callable that failed: its own SDK error, or a provider failure."""
-    if isinstance(error, SDKError):
-        return error
-    return AuthError(reason="provider_failed", cause=error)
-
-
 def _secret(value: Secret | None) -> str | None:
     """Return the client secret for one token request, calling a callable secret."""
     if not callable(value):
         return value
-    try:
-        secret = value()
-    except Exception as error:  # noqa: BLE001 - The application's callable failed; its cause is kept.
-        raise _failed(error) from None
-    return _string(secret)
+    return _string(called(value, provider_failure))
 
 
 def _string(value: object) -> str:
-    """Return a client secret a callable returned, refusing a value of another type."""
+    """Return a client secret a callable returned, refusing a value of another type or one UTF-8 cannot encode."""
     if not isinstance(value, str):
         raise ConfigurationError(field_path=("client_secret",), reason="invalid_type")
+    checked_text("client_secret", value)
     return value
 
 
 def _expiry(fields: dict[str, object], received: float) -> float | None:
-    """Return the monotonic expiry of a token response's positive expires_in, or None without one."""
+    """Return the monotonic expiry of a token response's positive expires_in, or None without one.
+
+    A number no float holds, an integer past the largest float included, is refused as a nonpositive one is.
+    """
     if "expires_in" not in fields:
         return None
     seconds = fields["expires_in"]
-    if isinstance(seconds, bool) or not isinstance(seconds, (int, float)) or not 0 < seconds < float("inf"):
+    if not usable_seconds(seconds, allow_zero=False, row="legacy-compare-before-float"):
         raise AuthError(reason="invalid_expiry")
     return received + seconds
 
@@ -159,7 +165,13 @@ def _answer(response: httpx2.Response, *, refreshing: bool) -> dict[str, object]
     fields = cast("dict[str, object]", data) if isinstance(data, dict) else {}
     status = response.status_code
     token, kind = fields.get("access_token"), fields.get("token_type")
-    if status in _SUCCESS and isinstance(token, str) and token and isinstance(kind, str) and kind.lower() == "bearer":
+    if (
+        status in SUCCESS_STATUSES
+        and isinstance(token, str)
+        and token
+        and isinstance(kind, str)
+        and kind.lower() == "bearer"
+    ):
         return fields
     code = fields.get("error")
     reason: Literal["oauth_error", "reauthorization_required"] = (
@@ -215,23 +227,19 @@ class _Provider(TokenSource):
         raise NotImplementedError
 
     def _notify(self, tokens: TokenSet) -> object:
-        """Hand a refreshed token set to the callback, wrapping what it raises as the provider's failure."""
+        """Hand a refreshed token set to the callback, raising an SDK error as it is and any other as the provider's."""
         if (callback := self._callback) is None:
             return None
-        try:
-            return callback(tokens)
-        except Exception as error:  # noqa: BLE001 - The application's callback failed; its cause is kept.
-            raise _failed(error) from None
+        return called(partial(callback, tokens), provider_failure)
 
     def _request(self) -> httpx2.Request:
         """Return the next token request, authenticating the client as its method prescribes."""
         form = self._form()
-        headers = {"Accept": "application/json", "Content-Type": "application/x-www-form-urlencoded"}
+        headers = {"Accept": JSON_MEDIA_TYPE, "Content-Type": "application/x-www-form-urlencoded"}
         secret = _secret(self._secret)
         match self._method:
             case "client_secret_basic":
-                pair = f"{quote_plus(self._client_id)}:{quote_plus(secret or '')}"
-                headers["Authorization"] = f"Basic {base64.b64encode(pair.encode()).decode('ascii')}"
+                headers["Authorization"] = basic_credentials(quote_plus(self._client_id), quote_plus(secret or ""))
             case "client_secret_post":
                 form.extend((("client_id", self._client_id), ("client_secret", secret or "")))
             case _:
@@ -275,7 +283,7 @@ class _Provider(TokenSource):
         """
         client = self._http_client
         if isinstance(client, httpx2.Client):
-            send = _token_send(client)
+            send = partial(client.send, auth=None, follow_redirects=False)
         elif client is not None or send is None:
             raise self._missing()
         with self._lock:
@@ -301,7 +309,7 @@ class _Provider(TokenSource):
 
         client = self._http_client
         if isinstance(client, httpx2.AsyncClient):
-            send = _atoken_send(client)
+            send = partial(client.send, auth=None, follow_redirects=False)
         elif client is not None or send is None:
             raise self._missing()
         loop = asyncio.get_running_loop()
@@ -317,10 +325,7 @@ class _Provider(TokenSource):
                     raise
                 return kept
             if inspect.isawaitable(result := self._notify(tokens)):
-                try:
-                    await result
-                except Exception as error:  # noqa: BLE001 - The application's callback failed; its cause is kept.
-                    raise _failed(error) from None
+                await acalled(lambda: result, provider_failure)
             return tokens.access_token
 
     def _auth(self) -> SchemeAuth:
@@ -338,24 +343,6 @@ class _Provider(TokenSource):
 def _byte_stream(request: httpx2.Request) -> bool:
     """Return whether HTTPX2 can send a request of any client again: one whose body is bytes."""
     return isinstance(request.stream, httpx2.ByteStream)
-
-
-def _token_send(client: httpx2.Client) -> Send:
-    """Return a sender of token requests through a client, without its Auth and without following redirects."""
-
-    def send(request: httpx2.Request) -> httpx2.Response:
-        return client.send(request, auth=None, follow_redirects=False)
-
-    return send
-
-
-def _atoken_send(client: httpx2.AsyncClient) -> AsyncSend:
-    """Return an asyncio sender of token requests through a client, as the synchronous sender sends them."""
-
-    async def send(request: httpx2.Request) -> httpx2.Response:
-        return await client.send(request, auth=None, follow_redirects=False)
-
-    return send
 
 
 def _sent(send: Send, request: httpx2.Request) -> httpx2.Response:
@@ -431,8 +418,8 @@ class ClientCredentials(_Provider):
 def _refresh_settings(token_set: object, callback: object) -> None:
     """Refuse a token set of another type and a callback that cannot be called."""
     checked_instance(token_set, (TokenSet,), ("token_set",))
-    if callback is not None and not callable(callback):
-        raise ConfigurationError(field_path=("on_token_refreshed",), reason="invalid_type")
+    if callback is not None:
+        checked_instance(callback, (), ("on_token_refreshed",), callables=True)
 
 
 class RefreshToken(_Provider):

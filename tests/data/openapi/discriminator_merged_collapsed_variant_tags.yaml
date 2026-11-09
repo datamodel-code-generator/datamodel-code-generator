@@ -1,0 +1,50 @@
+openapi: 3.0.3
+info:
+  title: Merged Tags of a Variant Collapsed Reuse Keeps
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        cats:
+          $ref: '#/components/schemas/Cats'
+        kitties:
+          $ref: '#/components/schemas/Kitties'
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        meow: {type: string}
+    Kitty:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        meow: {type: string}
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        bark: {type: string}
+    Cats:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: kind
+        mapping:
+          cat: '#/components/schemas/Cat'
+          dog: '#/components/schemas/Dog'
+    Kitties:
+      oneOf:
+        - $ref: '#/components/schemas/Kitty'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: kind
+        mapping:
+          kitty: '#/components/schemas/Kitty'
+          dog: '#/components/schemas/Dog'

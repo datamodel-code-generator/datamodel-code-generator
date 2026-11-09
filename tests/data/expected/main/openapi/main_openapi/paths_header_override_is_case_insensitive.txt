@@ -1,0 +1,2 @@
+get: [('x-request-id', 'header'), ('trace', 'query'), ('Trace', 'query')]
+delete: [('X-Request-Id', 'header'), ('Trace', 'query')]

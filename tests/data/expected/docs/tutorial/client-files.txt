@@ -30,6 +30,7 @@ app/client/_runtime/model_codecs/media.py
 app/client/_runtime/model_codecs/parameters.py
 app/client/_runtime/model_codecs/pydantic_adapters.py
 app/client/_runtime/model_codecs/pydantic_models.py
+app/client/_runtime/model_codecs/shared.py
 app/client/_runtime/model_codecs/unset.py
 app/client/errors.py
 app/client/options.py

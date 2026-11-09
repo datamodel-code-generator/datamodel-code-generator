@@ -1,0 +1,48 @@
+openapi: 3.1.0
+info:
+  title: Parameters whose content media schema is a $ref
+  version: "1.0"
+paths:
+  /content:
+    get:
+      parameters:
+        - name: page
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+        - name: count
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Count"
+        - name: anything
+          in: query
+          content:
+            application/json:
+              schema: true
+        - name: other
+          in: query
+          schema:
+            $ref: "#/components/schemas/Page"
+      responses:
+        "200":
+          description: OK
+components:
+  schemas:
+    Page:
+      type: object
+      description: A page.
+      properties:
+        cursor:
+          type: string
+          readOnly: true
+        size:
+          type: integer
+    Count:
+      type: integer
+      description: A count.
+      minimum: 1
+      default: 3

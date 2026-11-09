@@ -39,6 +39,9 @@ github-api-issue-states.graphql-extra_args2-github_api_issue_states-IssueState	m
 	main/graphql/different_types_of_fields.py
 [test_main_graphql_empty_list_default]
 	main/graphql/pydantic_v2_empty_list_default.py
+[test_main_graphql_enum_member_descriptions]
+--use-field-description	main/graphql/main_graphql/enum_member_descriptions[--use-field-description].py
+--use-inline-field-description	main/graphql/main_graphql/enum_member_descriptions[--use-inline-field-description].py
 [test_main_graphql_enums]
 	main/graphql/enums.py
 [test_main_graphql_enums_as_literals_all]
@@ -71,10 +74,15 @@ github-api-issue-states.graphql-extra_args2-github_api_issue_states-IssueState	m
 	main/graphql/msgspec_unions_warnings.txt
 [test_main_graphql_multiple_aliases_pydantic_v2]
 	main/graphql/graphql_multiple_aliases_pydantic_v2.py
+[test_main_graphql_naming_strategy_definitions_first]
+	main/graphql/main_graphql/naming_strategy_definitions_first.py	= main/jsonschema/model_metadata/schema_location_metadata[graphql].py
 [test_main_graphql_no_typename]
 	main/graphql/no_typename.py
 [test_main_graphql_root_type_references]
 	main/graphql/root_type_references.py
+[test_main_graphql_scalar_type_name_follows_target]
+3.11	main/graphql/graphql_scalar_type_name_follows_target.py
+3.12	main/graphql/graphql_scalar_type_name_follows_target.py	= main/graphql/graphql_scalar_type_name_follows_target~scalar_type_name_follows_target[3.12].py
 [test_main_graphql_serialization_aliases_pydantic_v2]
 	main/graphql/graphql_serialization_aliases_pydantic_v2.py
 [test_main_graphql_simple_star_wars]

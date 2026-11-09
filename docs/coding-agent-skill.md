@@ -33,6 +33,21 @@ datamodel-codegen --output-format-json-schema structured-output
 
 Use the generated prompt output before recommending a final command when the correct input type, output model type, strictness, aliasing, module layout, or verification flags are not obvious.
 
+## Install from the repository
+
+The repository publishes the skill at `skills/datamodel-code-generator/`, so agents can install it from GitHub without installing the Python package. Run the line for your agent:
+
+| Agent | Command |
+| --- | --- |
+| Claude Code | `claude plugin marketplace add datamodel-code-generator/datamodel-code-generator`, then `claude plugin install datamodel-code-generator@datamodel-code-generator` |
+| Agent Skills CLI (many agents) | `npx skills add datamodel-code-generator/datamodel-code-generator` |
+| GitHub CLI | `gh skill install datamodel-code-generator/datamodel-code-generator` |
+| Gemini CLI | `gemini skills install https://github.com/datamodel-code-generator/datamodel-code-generator.git --path skills/datamodel-code-generator` |
+
+The Claude Code marketplace entry in `.claude-plugin/marketplace.json` points at the same `skills/datamodel-code-generator/` directory, so there is one copy of the skill.
+
+`datamodel-codegen --install-skill codex` writes `.agents/skills/`. GitHub Copilot, Cursor and Gemini CLI also read `.agents/skills/` (and `~/.agents/skills/` for personal skills), so one install serves all of them.
+
 ## Install for Claude Code
 
 Claude Code project skills load from `.claude/skills/` in the starting directory and parent directories up to the repository root. Personal skills can be placed under `~/.claude/skills/`.
@@ -83,11 +98,10 @@ Other skills-compatible agents may support this directory format. Check the clie
 | --- | --- | --- |
 | Repository skill | Copy to `.agents/skills/` or `.claude/skills/` | OSS and internal repositories |
 | Personal skill | Copy to `~/.agents/skills/` or `~/.claude/skills/` | Reuse across a user's projects |
-| Codex local install | Use `$skill-installer` when appropriate | Codex local experiments |
-| Codex plugin | Package separately as a plugin | Reusable Codex distribution |
-| Claude plugin | Package separately as a plugin | Bundle skills with hooks, MCP, or agents |
+| GitHub repository | See [Install from the repository](#install-from-the-repository) | Installing without the Python package |
+| Claude Code marketplace | `.claude-plugin/marketplace.json` in this repository | `claude plugin install` |
 
-Start with the repository skill. Consider Codex or Claude plugin packaging only as a separate distribution task.
+A separate Codex plugin is not provided.
 
 ## Example prompt
 
@@ -114,3 +128,7 @@ Expected agent behavior:
 - [Agent Skills specification](https://agentskills.io/specification)
 - [Codex Agent Skills](https://developers.openai.com/codex/skills)
 - [Claude Code skills](https://docs.anthropic.com/en/docs/claude-code/skills)
+- [Claude Code plugin marketplaces](https://code.claude.com/docs/en/plugins/marketplace-reference)
+- [Gemini CLI skills](https://geminicli.com/docs/cli/skills/)
+- [GitHub Copilot CLI skills](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills)
+- [Cursor skills](https://cursor.com/docs/skills)

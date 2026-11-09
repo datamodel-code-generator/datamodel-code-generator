@@ -9,4 +9,6 @@ import tests.data.python.input_model.generic_reuse
 
 
 class AnnotatedTypedRoot(BaseModel):
-    box: tests.data.python.input_model.generic_reuse.AnnotatedTypedRoot.__annotations__['box']
+    box: tests.data.python.input_model.generic_reuse.AnnotatedTypedRoot.__annotations__[
+        'box'
+    ]

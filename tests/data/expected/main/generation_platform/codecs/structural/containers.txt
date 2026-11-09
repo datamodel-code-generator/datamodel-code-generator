@@ -1,4 +1,11 @@
 msgspec.Struct warning UserWarning: msgspec.Meta does not take max_length, min_length on tuple[Cat, Cat]; Pairs is generated without these constraints.
+msgspec.Struct warning UserWarning: msgspec cannot decode the union Bag.numbers: it holds the array-like members list[int], list[str], while a msgspec union holds only one array-like member.
+msgspec.Struct warning UserWarning: msgspec cannot decode the union Bag.tables: it holds the dict-like members dict[str, int], dict[str, str], while a msgspec union holds only one dict-like member (its Struct types count as one).
+msgspec.Struct warning UserWarning: msgspec cannot decode the union Bag.pets: it holds the array-like members list[Cat], list[Dog], while a msgspec union holds only one array-like member.
+msgspec.Struct warning UserWarning: msgspec cannot decode the union Bag.kennels: it holds the dict-like members dict[str, Cat], dict[str, Dog], while a msgspec union holds only one dict-like member (its Struct types count as one).
+msgspec.Struct warning UserWarning: msgspec cannot decode the union Bag.pairs: it holds the array-like members Pairs, list[Dog], while a msgspec union holds only one array-like member.
+msgspec.Struct warning UserWarning: msgspec cannot decode the union Bag.maybe: it holds the array-like members list[Cat | None], list[Dog], while a msgspec union holds only one array-like member.
+msgspec.Struct warning UserWarning: msgspec cannot decode the union Bag.words: it holds the array-like members list[Cat], list[str], while a msgspec union holds only one array-like member.
 numbers-text [pydantic_v2.BaseModel]: native Bag(numbers=['abc'], tables=None, pets=None, kennels=None, pairs=None, maybe=None, words=None) set=['numbers'] json={"numbers":["abc"]}
 numbers-text [pydantic_v2.dataclass]: native Bag(numbers=['abc'], tables=MISSING, pets=MISSING, kennels=MISSING, pairs=MISSING, maybe=MISSING, words=MISSING) json={"numbers":["abc"]}
 numbers-text [dataclasses.dataclass]: Error: /paths/~1bags/post/requestBody: The union members are both JSON arrays, which the dataclasses.dataclass converter cannot tell apart; /paths/~1bags/post/requestBody: The union members are both JSON objects, which the dataclasses.dataclass converter cannot tell apart

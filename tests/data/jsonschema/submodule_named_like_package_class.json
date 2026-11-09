@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "pkg.Report": {"type": "object", "properties": {"warn": {"$ref": "#/$defs/pkg.Warn"}}},
+    "pkg.Warn": {"type": "object", "properties": {"count": {"type": "integer"}}},
+    "pkg.Warn.Detail": {
+      "type": "object",
+      "properties": {"message": {"type": "string"}, "note": {"$ref": "#/$defs/pkg.Warn.Deep.Note"}}
+    },
+    "pkg.Warn.Deep.Note": {"type": "object", "properties": {"text": {"type": "string"}}},
+    "pkg.Warn_.Other": {"type": "object", "properties": {"flag": {"type": "boolean"}}},
+    "pkg.api.Order": {
+      "type": "object",
+      "properties": {"detail": {"$ref": "#/$defs/pkg.Warn.Detail"}, "other": {"$ref": "#/$defs/pkg.Warn_.Other"}}
+    }
+  }
+}

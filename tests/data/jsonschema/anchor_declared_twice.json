@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "item": {"$ref": "#T"},
+    "dynamic": {"$dynamicRef": "#D"}
+  },
+  "$defs": {
+    "First": {"$anchor": "T", "type": "object", "properties": {"first": {"type": "integer"}}},
+    "Second": {"$anchor": "T", "type": "object", "properties": {"second": {"type": "string"}}},
+    "Third": {"$dynamicAnchor": "D", "type": "object", "properties": {"third": {"type": "boolean"}}},
+    "Fourth": {"$dynamicAnchor": "D", "type": "object", "properties": {"fourth": {"type": "number"}}}
+  }
+}

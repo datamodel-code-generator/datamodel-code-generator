@@ -11,25 +11,18 @@ from datamodel_code_generator.model._compiled_template_runtime import (
 )
 
 
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
-
-
 def render_with_scope(_scope: _Scope) -> str:
     def _macro_build_signature(_parent: _Scope, builder: Any) -> str:
         _parts: list[str] = []
-        _value_0 = _stringify(_getattr(builder, "name"))
-        _parts.append(f"def {_value_0}(\n    *,")
+        _parts.append(f"def {_stringify(_getattr(builder, 'name'))}(\n    *,")
         for parameter in _getattr(builder, "parameters"):
-            _value_1 = _stringify(_getattr(parameter, "name"))
-            _value_2 = _stringify(_getattr(parameter, "annotation"))
-            _parts.append(f"\n    {_value_1}: {_value_2}")
+            _parts.append(
+                f"\n    {_stringify(_getattr(parameter, 'name'))}: {_stringify(_getattr(parameter, 'annotation'))}"
+            )
             if _getattr(parameter, "default"):
-                _value_3 = _stringify(_getattr(parameter, "default"))
-                _parts.append(f" = {_value_3}")
+                _parts.append(f" = {_stringify(_getattr(parameter, 'default'))}")
             _parts.append(",")
-        _value_4 = _stringify(_getattr(builder, "returns"))
-        _parts.append(f"\n) -> {_value_4}:")
+        _parts.append(f"\n) -> {_stringify(_getattr(builder, 'returns'))}:")
         return "".join(_parts)
 
     _context_api_router = _scope.get("api_router")
@@ -45,151 +38,101 @@ def render_with_scope(_scope: _Scope) -> str:
     _context_templated = _scope.get("templated")
     _context_wiring = _scope.get("wiring")
     _parts: list[str] = []
-    _value_5 = _stringify(_context_docstring)
-    _value_6 = _stringify(_context_imports)
-    _parts.append(f'"""{_value_5}"""\n\n{_value_6}')
+    _parts.append(f'"""{_stringify(_context_docstring)}"""\n\n{_stringify(_context_imports)}')
     for route in _context_routes:
-        _value_7 = _stringify(_getattr(route, "adder"))
-        _value_8 = _stringify(_getattr(route, "router"))
-        _value_9 = _stringify(_context_api_router)
-        _value_10 = _stringify(_getattr(route, "wiring"))
-        _value_11 = _stringify(_context_wiring)
-        _value_12 = _stringify(_getattr(route, "service"))
-        _value_13 = _stringify(_getattr(route, "protocol"))
-        _value_14 = _stringify(_getattr(route, "wiring"))
-        _value_15 = _stringify(_getattr(route, "group"))
-        _value_16 = _stringify(_getattr(route, "handler"))
-        _value_17 = _stringify(_getattr(_getattr(route, "lookup"), "function"))
-        _value_18 = _stringify(_getattr(route, "service"))
-        _value_19 = _stringify(_getattr(_getattr(route, "lookup"), "method"))
-        _value_20 = _stringify(_getattr(_getattr(route, "lookup"), "label"))
-        _value_21 = _stringify(_getattr(_getattr(route, "lookup"), "keywords"))
         _parts.append(
-            f"\n\n\ndef {_value_7}(\n    {_value_8}: {_value_9},\n    {_value_10}: {_value_11},\n) -> None:\n    {_value_12}: {_value_13} = {_value_14}.services[{_value_15}]\n    {_value_16} = {_value_17}(\n        {_value_18}.{_value_19},\n        {_value_20},\n        {_value_21},"
+            f"\n\n\ndef {_stringify(_getattr(route, 'adder'))}(\n    {_stringify(_getattr(route, 'router'))}: {_stringify(_context_api_router)},\n    {_stringify(_getattr(route, 'wiring'))}: {_stringify(_context_wiring)},\n) -> None:\n    {_stringify(_getattr(route, 'service'))}: {_stringify(_getattr(route, 'protocol'))} = {_stringify(_getattr(route, 'wiring'))}.services[{_stringify(_getattr(route, 'group'))}]\n    {_stringify(_getattr(route, 'handler'))} = {_stringify(_getattr(_getattr(route, 'lookup'), 'function'))}(\n        {_stringify(_getattr(route, 'service'))}.{_stringify(_getattr(_getattr(route, 'lookup'), 'method'))},\n        {_stringify(_getattr(_getattr(route, 'lookup'), 'label'))},\n        {_stringify(_getattr(_getattr(route, 'lookup'), 'keywords'))},"
         )
         if _getattr(_getattr(route, "lookup"), "asynchronous"):
             _parts.append("\n        asynchronous=True,")
         _parts.append("\n    )")
         if _getattr(route, "principal"):
-            _value_22 = _stringify(_getattr(_getattr(route, "principal"), "authorize"))
-            _value_23 = _stringify(_getattr(route, "wiring"))
-            _value_24 = _stringify(_getattr(_getattr(route, "principal"), "name"))
-            _parts.append(f"\n\n    {_value_22} = {_value_23}.authorizer()\n\n    async def {_value_24}(\n        *,")
-            for parameter in _getattr(_getattr(route, "principal"), "parameters"):
-                _value_25 = _stringify(_getattr(parameter, "name"))
-                _value_26 = _stringify(_getattr(parameter, "annotation"))
-                _parts.append(f"\n        {_value_25}: {_value_26},")
-            _value_27 = _stringify(_getattr(_getattr(route, "principal"), "authenticate"))
-            _value_28 = _stringify(_getattr(_getattr(route, "principal"), "requirements"))
-            _value_29 = _stringify(_getattr(_getattr(route, "principal"), "credentials"))
-            _value_30 = _stringify(_getattr(_getattr(route, "principal"), "authorize"))
-            _value_31 = _stringify(_getattr(_getattr(route, "principal"), "challenge"))
             _parts.append(
-                f"\n    ) -> object:\n        return await {_value_27}(\n            {_value_28},\n            {_value_29},\n            {_value_30},\n            {_value_31},\n        )"
+                f"\n\n    {_stringify(_getattr(_getattr(route, 'principal'), 'authorize'))} = {_stringify(_getattr(route, 'wiring'))}.authorizer()\n\n    async def {_stringify(_getattr(_getattr(route, 'principal'), 'name'))}(\n        *,"
+            )
+            for parameter in _getattr(_getattr(route, "principal"), "parameters"):
+                _parts.append(
+                    f"\n        {_stringify(_getattr(parameter, 'name'))}: {_stringify(_getattr(parameter, 'annotation'))},"
+                )
+            _parts.append(
+                f"\n    ) -> object:\n        return await {_stringify(_getattr(_getattr(route, 'principal'), 'authenticate'))}(\n            {_stringify(_getattr(_getattr(route, 'principal'), 'requirements'))},\n            {_stringify(_getattr(_getattr(route, 'principal'), 'credentials'))},\n            {_stringify(_getattr(_getattr(route, 'principal'), 'authorize'))},\n            {_stringify(_getattr(_getattr(route, 'principal'), 'challenge'))},\n        )"
             )
         if _getattr(_getattr(route, "endpoint"), "parameters"):
             _parts.append("\n\n    ")
             if _getattr(_getattr(route, "endpoint"), "asynchronous"):
                 _parts.append("async ")
-            _value_32 = _stringify(_getattr(_getattr(route, "endpoint"), "name"))
-            _parts.append(f"def {_value_32}(\n        *,")
+            _parts.append(f"def {_stringify(_getattr(_getattr(route, 'endpoint'), 'name'))}(\n        *,")
             for parameter in _getattr(_getattr(route, "endpoint"), "parameters"):
-                _value_33 = _stringify(_getattr(parameter, "name"))
-                _value_34 = _stringify(_getattr(parameter, "annotation"))
-                _parts.append(f"\n        {_value_33}: {_value_34}")
+                _parts.append(
+                    f"\n        {_stringify(_getattr(parameter, 'name'))}: {_stringify(_getattr(parameter, 'annotation'))}"
+                )
                 if _getattr(parameter, "default"):
-                    _value_35 = _stringify(_getattr(parameter, "default"))
-                    _parts.append(f" = {_value_35}")
+                    _parts.append(f" = {_stringify(_getattr(parameter, 'default'))}")
                 _parts.append(",")
             _parts.append("\n    ) -> object:")
         else:
             _parts.append("\n\n    ")
             if _getattr(_getattr(route, "endpoint"), "asynchronous"):
                 _parts.append("async ")
-            _value_36 = _stringify(_getattr(_getattr(route, "endpoint"), "name"))
-            _parts.append(f"def {_value_36}() -> object:")
+            _parts.append(f"def {_stringify(_getattr(_getattr(route, 'endpoint'), 'name'))}() -> object:")
         if _getattr(_getattr(route, "endpoint"), "accepted"):
-            _value_37 = _stringify(_getattr(_getattr(route, "endpoint"), "record"))
-            _value_38 = _stringify(_getattr(_getattr(route, "endpoint"), "accepted"))
-            _value_39 = _stringify(_getattr(_getattr(route, "endpoint"), "record"))
-            _parts.append(f"\n        {_value_37} = {_value_38}({_value_39})")
-        _value_40 = _stringify(_getattr(_getattr(route, "call"), "dispatch"))
-        _parts.append(f"\n        return {_value_40}(")
+            _parts.append(
+                f"\n        {_stringify(_getattr(_getattr(route, 'endpoint'), 'record'))} = {_stringify(_getattr(_getattr(route, 'endpoint'), 'accepted'))}({_stringify(_getattr(_getattr(route, 'endpoint'), 'record'))})"
+            )
+        _parts.append(f"\n        return {_stringify(_getattr(_getattr(route, 'call'), 'dispatch'))}(")
         if _getattr(_getattr(route, "call"), "arguments"):
             _parts.append("\n            ")
             if _getattr(_getattr(route, "endpoint"), "asynchronous"):
                 _parts.append("await ")
-            _value_41 = _stringify(_getattr(route, "handler"))
-            _parts.append(f"{_value_41}(")
+            _parts.append(f"{_stringify(_getattr(route, 'handler'))}(")
             for argument in _getattr(_getattr(route, "call"), "arguments"):
-                _value_42 = _stringify(_getattr(argument, "keyword"))
-                _value_43 = _stringify(_getattr(argument, "value"))
-                _parts.append(f"\n                {_value_42}={_value_43},")
+                _parts.append(
+                    f"\n                {_stringify(_getattr(argument, 'keyword'))}={_stringify(_getattr(argument, 'value'))},"
+                )
             _parts.append("\n            ),")
         else:
             _parts.append("\n            ")
             if _getattr(_getattr(route, "endpoint"), "asynchronous"):
                 _parts.append("await ")
-            _value_44 = _stringify(_getattr(route, "handler"))
-            _parts.append(f"{_value_44}(),")
-        _value_45 = _stringify(_getattr(_getattr(route, "call"), "responses"))
-        _value_46 = _stringify(_getattr(route, "router"))
-        _value_47 = _stringify(_getattr(_getattr(route, "registration"), "path"))
-        _value_48 = _stringify(_getattr(_getattr(route, "endpoint"), "name"))
-        _value_49 = _stringify(_getattr(_getattr(route, "registration"), "methods"))
-        _value_50 = _stringify(_getattr(_getattr(route, "registration"), "status_code"))
+            _parts.append(f"{_stringify(_getattr(route, 'handler'))}(),")
         _parts.append(
-            f"\n            {_value_45},\n        )\n\n    {_value_46}.add_api_route(\n        {_value_47},\n        {_value_48},\n        methods={_value_49},\n        status_code={_value_50},"
+            f"\n            {_stringify(_getattr(_getattr(route, 'call'), 'responses'))},\n        )\n\n    {_stringify(_getattr(route, 'router'))}.add_api_route(\n        {_stringify(_getattr(_getattr(route, 'registration'), 'path'))},\n        {_stringify(_getattr(_getattr(route, 'endpoint'), 'name'))},\n        methods={_stringify(_getattr(_getattr(route, 'registration'), 'methods'))},\n        status_code={_stringify(_getattr(_getattr(route, 'registration'), 'status_code'))},"
         )
         if _getattr(_getattr(route, "registration"), "response_model"):
-            _value_51 = _stringify(_getattr(_getattr(route, "registration"), "response_model"))
             _parts.append(
-                f"\n        response_model={_value_51},\n        response_model_by_alias=True,\n        response_model_exclude_unset=True,"
+                f"\n        response_model={_stringify(_getattr(_getattr(route, 'registration'), 'response_model'))},\n        response_model_by_alias=True,\n        response_model_exclude_unset=True,"
             )
         else:
-            _value_52 = _stringify(_getattr(_getattr(route, "registration"), "response_class"))
-            _parts.append(f"\n        response_model=None,\n        response_class={_value_52},")
+            _parts.append(
+                f"\n        response_model=None,\n        response_class={_stringify(_getattr(_getattr(route, 'registration'), 'response_class'))},"
+            )
         for keyword in _getattr(_getattr(route, "registration"), "keywords"):
-            _value_53 = _stringify(_getattr(keyword, "keyword"))
-            _value_54 = _stringify(_getattr(keyword, "value"))
-            _parts.append(f"\n        {_value_53}={_value_54},")
-        _value_55 = _stringify(_getattr(route, "wiring"))
-        _value_56 = _stringify(_getattr(_getattr(route, "registration"), "name"))
-        _parts.append(f"\n        dependencies={_value_55}.dependencies.get({_value_56}),\n    )")
+            _parts.append(
+                f"\n        {_stringify(_getattr(keyword, 'keyword'))}={_stringify(_getattr(keyword, 'value'))},"
+            )
+        _parts.append(
+            f"\n        dependencies={_stringify(_getattr(route, 'wiring'))}.dependencies.get({_stringify(_getattr(_getattr(route, 'registration'), 'name'))}),\n    )"
+        )
     _parts.append("\n\n\n")
     if _context_literal:
-        _value_57 = _stringify(_context_final)
-        _parts.append(f"LITERAL_ROUTES: {_value_57} = (")
+        _parts.append(f"LITERAL_ROUTES: {_stringify(_context_final)} = (")
         for route in _context_literal:
-            _value_58 = _stringify(_getattr(route, "name"))
-            _value_59 = _stringify(_getattr(route, "adder"))
-            _parts.append(f"\n    ({_value_58}, {_value_59}),")
+            _parts.append(f"\n    ({_stringify(_getattr(route, 'name'))}, {_stringify(_getattr(route, 'adder'))}),")
         _parts.append("\n)")
     else:
-        _value_60 = _stringify(_context_final)
-        _parts.append(f"LITERAL_ROUTES: {_value_60} = ()")
+        _parts.append(f"LITERAL_ROUTES: {_stringify(_context_final)} = ()")
     _parts.append("\n")
     if _context_templated:
-        _value_61 = _stringify(_context_final)
-        _parts.append(f"TEMPLATED_ROUTES: {_value_61} = (")
+        _parts.append(f"TEMPLATED_ROUTES: {_stringify(_context_final)} = (")
         for route in _context_templated:
-            _value_62 = _stringify(_getattr(route, "name"))
-            _value_63 = _stringify(_getattr(route, "adder"))
-            _parts.append(f"\n    ({_value_62}, {_value_63}),")
+            _parts.append(f"\n    ({_stringify(_getattr(route, 'name'))}, {_stringify(_getattr(route, 'adder'))}),")
         _parts.append("\n)")
     else:
-        _value_64 = _stringify(_context_final)
-        _parts.append(f"TEMPLATED_ROUTES: {_value_64} = ()")
-    _value_65 = _stringify(_macro_build_signature(_scope, _scope.get("builder")))
-    _value_66 = _stringify(_context_group)
-    _value_67 = _stringify(_context_build)
-    _value_68 = _stringify(_context_services)
+        _parts.append(f"TEMPLATED_ROUTES: {_stringify(_context_final)} = ()")
     _parts.append(
-        f'\n\n\n{_value_65}\n    """Register {_value_66} on a new router, literal paths first."""\n    return {_value_67}(\n        (*LITERAL_ROUTES, *TEMPLATED_ROUTES),\n        services={_value_68},'
+        f'\n\n\n{_stringify(_macro_build_signature(_scope, _scope.get("builder")))}\n    """Register {_stringify(_context_group)} on a new router, literal paths first."""\n    return {_stringify(_context_build)}(\n        (*LITERAL_ROUTES, *TEMPLATED_ROUTES),\n        services={_stringify(_context_services)},'
     )
     for name in _context_settings:
-        _value_69 = _stringify(name)
-        _value_70 = _stringify(name)
-        _parts.append(f"\n        {_value_69}={_value_70},")
+        _parts.append(f"\n        {_stringify(name)}={_stringify(name)},")
     _parts.append("\n    )")
     return "".join(_parts)

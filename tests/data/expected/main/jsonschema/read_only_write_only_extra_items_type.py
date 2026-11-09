@@ -21,15 +21,15 @@ class Plain(TypedDict):
     v: NotRequired[int]
 
 
-class RefBesideObject(TypedDict, extra_items='Plain'):
+class RefBesideObject(TypedDict, extra_items=Plain):
     name: NotRequired[str]
 
 
-class RefBesideRef(TypedDict, extra_items='Plain'):
+class RefBesideRef(TypedDict, extra_items=Plain):
     name: NotRequired[str]
 
 
-class TypedRefs(TypedDict, extra_items='Plain'):
+class TypedRefs(TypedDict, extra_items=Plain):
     name: NotRequired[str]
 
 
@@ -45,11 +45,11 @@ class Deep(TypedDict, extra_items=list[list[list[list[Any]]]]):
     name: NotRequired[str]
 
 
-class NamedRequest(TypedDict, extra_items='list[ItemRequest]'):
+class NamedRequest(TypedDict, extra_items=list[ItemRequest]):
     name: NotRequired[str]
 
 
-class NamedResponse(TypedDict, extra_items='list[ItemResponse]'):
+class NamedResponse(TypedDict, extra_items=list[ItemResponse]):
     name: NotRequired[str]
 
 

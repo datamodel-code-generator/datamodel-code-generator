@@ -1,0 +1,13 @@
+{"null_dropped": {"a": "x", "c": 1}}: schema accepts, model accepts
+{"null_dropped": {"a": null, "c": 1}}: schema rejects, model rejects
+{"null_dropped": {"a": "x"}}: schema rejects, model rejects
+{"type_narrowed": {"b": {"z": 1}, "c": 1, "d": "x"}}: schema accepts, model accepts
+{"type_narrowed": {"b": {"y": 1}, "c": 1}}: schema rejects, model rejects
+{"required": {"a": null, "c": 1}}: schema accepts, model accepts
+{"required": {"c": 1}}: schema rejects, model rejects
+{"restated": {"c": 1, "e": true}}: schema accepts, model accepts
+{"restated": {"c": "x"}}: schema rejects, model rejects
+{"narrowed_again": {"a": "x", "c": 1}}: schema accepts, model accepts
+{"narrowed_again": {"a": "y", "c": 1}}: schema rejects, model rejects
+{"kept_narrowing": {"a": "x", "c": 1, "f": "y"}}: schema accepts, model accepts
+{"kept_narrowing": {"a": null, "c": 1}}: schema rejects, model rejects

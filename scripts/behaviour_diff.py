@@ -24,14 +24,23 @@ and, for payload cases, payload verdicts; scripts/_behaviour_classify.py puts ea
 that uses an option, value or input type BASE does not have is `opt-in` and is not generated.
 
 Accepted changes are listed in scripts/behaviour_diff_allowlist.toml: `base` and `[[accepted]]` entries with
-`input` (glob), optional `backends`, `aspects` and `match` (regex on the change line), `reason`, `decision` (the
-public PR or issue references of the owner decision, `#1234, #1235`) and `release_note`. With `--check` the run fails
-on a violation, on an entry without such a decision and on a table whose base is neither BASE nor an older
-release (an older table accepts nothing: BASE contains its changes); in the nightly and
+`input` (a glob, or a list of globs), optional `backends`, `aspects` and `match` (regex on the change line), `reason`,
+`decision` (the public PR or issue references of the owner decision, `#1234, #1235`) and `release_note`.
+A `[[base_skip]]` entry (`input` glob, `bases`: releases such as `["0.88.0"]` or a maximum such as `["<=0.88.0"]`,
+`reason`, `issue`) names an input a release is known to hang on: the release does not run for those cells, which are
+`base-skipped` once the candidate generated and imported (a candidate failure is a violation). `--check` also fails
+on a `[[base_skip]]` entry without those keys, and, in a run of the whole tier, on one that covers no cell.
+With `--check` the run fails on a violation, on an entry without such a decision and on a table whose base is
+neither BASE nor an older release (an older table accepts nothing: BASE contains its changes); in the nightly and
 release tiers also on a stale entry: one that accepted no change in a run that has a cell it covers, or, in a run of
 the whole tier, one that covers no cell. The PR tier is a sample, so it never judges staleness.
-Cells the allowlist covers all run in shard 1, so that shard judges staleness exactly; `--select` narrows the
-inputs, so a selection may leave an entry's changes out.
+`--shard I/N` runs the cells of shard I by input hash; the cells an `[[accepted]]` or `[[base_skip]]` entry covers
+all run in one shard with those of each entry that shares a cell with them, the shard of their first input. So the N
+shards report the stale entries the unsharded run reports: each shard the entries whose cells it runs, shard 1 also
+the entries that cover no cell. `--select` narrows the inputs, so a selection may leave an entry's changes out.
+
+`record VERSION --shard I/N` records the cells of shard I (by input hash) and marks the record as that shard;
+`merge-record VERSION PART... --out DIR` merges the records of all N shards into the record an unsharded run writes.
 """
 
 from __future__ import annotations
@@ -56,14 +65,23 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts import compare_release  # ruff: ignore[module-import-not-at-top-of-file]
-from scripts._behaviour_classify import CLASSES, Allowlist, Side, Verdict, classify_cell, diff  # ruff: ignore[module-import-not-at-top-of-file]
+from scripts._behaviour_classify import (  # ruff: ignore[module-import-not-at-top-of-file]
+    CLASSES,
+    SIGNATURE_FAILED,
+    Allowlist,
+    Side,
+    Verdict,
+    classify_base_skipped,
+    classify_cell,
+    diff,
+)
 from scripts._behaviour_report import compare_records, redact, summarize_gate, version_key  # ruff: ignore[module-import-not-at-top-of-file]
 
 SIGNATURE_SCRIPT = Path(__file__).with_name("_behaviour_signature.py")
@@ -184,6 +202,7 @@ class Result:
 
     cell: Cell
     verdict: Verdict
+    base_skip: int | None = None
 
 
 @dataclass
@@ -270,6 +289,7 @@ class Gate:
     payload_dir: Path
     payload_root: Path
     candidate_info: Candidate
+    base_version: str = ""
     signature_python: Path | None = None
     projects: dict[str, Project] = field(default_factory=dict)
     draw_locks: dict[str, threading.Lock] = field(default_factory=dict)
@@ -534,11 +554,53 @@ def payload_cells(gate: Gate, types: list[str]) -> list[Cell]:
     ]
 
 
-def shard_of(cell: Cell, allowlist: Allowlist, total: int) -> int:
-    """Return the 1-based shard of a cell: allowlist cells all run in shard 1, others by input hash."""
-    if any(allowlist.covers(index, cell.label, cell.backend) for index in range(len(allowlist.entries))):
-        return 1
-    return int(_stable(cell.label), 16) % total + 1
+@dataclass(frozen=True)
+class Placement:
+    """Where the cells of a run go, and the allowlist entries that cover a cell of it."""
+
+    anchors: dict[tuple[str, str], str] = field(default_factory=dict)
+    entries: frozenset[int] = frozenset()
+    skips: frozenset[int] = frozenset()
+
+    def shard(self, cell: Cell, total: int) -> int:
+        """Return the 1-based shard of a cell by the hash of its input, or of the first input of its entries."""
+        return int(_stable(self.anchors.get((cell.label, cell.backend), cell.label)), 16) % total + 1
+
+
+def place(pairs: Iterable[tuple[str, str]], allowlist: Allowlist, version: str) -> Placement:
+    """Place the cells of these (input, output model type) pairs, so the cells of an allowlist entry share a shard.
+
+    Entries that cover a common pair form a group (`[[base_skip]]` entries that skip the release `version` too); the
+    pairs of a group are placed by its first input, and every other pair by its own input.
+    """
+    count = len(allowlist.entries)
+    covering: dict[tuple[str, str], list[int]] = {}
+    for label, backend in set(pairs):
+        nodes = [index for index in range(count) if allowlist.covers(index, label, backend)]
+        if (skip := allowlist.skip_for(label, version)) is not None:
+            nodes.append(count + skip)
+        if nodes:
+            covering[label, backend] = nodes
+    parent = list(range(count + len(allowlist.base_skips)))
+
+    def root(node: int) -> int:
+        while parent[node] != node:
+            node = parent[node]
+        return node
+
+    for nodes in covering.values():
+        for node in nodes[1:]:
+            parent[root(node)] = root(nodes[0])
+    first: dict[int, str] = {}
+    for (label, _), nodes in covering.items():
+        group = root(nodes[0])
+        first[group] = min(first.get(group, label), label)
+    used = {node for nodes in covering.values() for node in nodes}
+    return Placement(
+        {pair: first[root(nodes[0])] for pair, nodes in covering.items()},
+        frozenset(node for node in used if node < count),
+        frozenset(node - count for node in used if node >= count),
+    )
 
 
 def _write_tree(tree: dict[str, str], directory: Path) -> Path:
@@ -565,11 +627,11 @@ def signature(gate: Gate, target: Path, backend: str, payloads: Path | None) -> 
             check=False,
         )
     except subprocess.TimeoutExpired:
-        return {"import_error": f"signature timed out after {gate.timeout}s"}
+        return {"import_error": f"signature timed out after {gate.timeout}s", SIGNATURE_FAILED: True}
     try:
         return json.loads(result.stdout)
     except json.JSONDecodeError:
-        return {"import_error": "signature crashed: " + result.stderr.strip()[-200:]}
+        return {"import_error": "signature crashed: " + result.stderr.strip()[-200:], SIGNATURE_FAILED: True}
 
 
 def payloads_for(gate: Gate, cell: Cell) -> Path | None:
@@ -601,8 +663,28 @@ def payloads_for(gate: Gate, cell: Cell) -> Path | None:
     return path if path.exists() else None
 
 
+def run_base_skipped(gate: Gate, cell: Cell, index: int) -> Result:
+    """Generate one cell on the candidate only: the release is known to hang on the input (`[[base_skip]]`)."""
+    entry = gate.allowlist.base_skips[index]
+    note = f"base skipped: {entry.get('reason', '')} ({entry.get('issue', '')})"
+    with tempfile.TemporaryDirectory() as name:
+        tmp = Path(name)
+        candidate = gate.candidate.generate(cell.args(), tmp)
+        sig = (
+            signature(gate, _write_tree(candidate.tree | dict(cell.stubs), tmp / "sig-cand"), cell.backend, None)
+            if candidate.ok
+            else None
+        )
+    return Result(cell, classify_base_skipped(Side(candidate.ok, candidate.error, sig), note=note), index)
+
+
 def run_cell(gate: Gate, cell: Cell) -> Result:
-    """Generate one cell on both sides and classify it."""
+    """Generate one cell on both sides and classify it.
+
+    The release's output is signed where the candidate refuses it too, so a refusal of an output that failed to
+    import is told from one of an output that worked. A release that `[[base_skip]]` names for the input does not
+    run at all.
+    """
     if (project := project_of(gate, cell)) is not None:
         try:
             project.fetch()
@@ -610,6 +692,8 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
             return Result(cell, Verdict("violation", (f"project checkout failed: {exc}",)))
         if not cell.input.exists():
             return Result(cell, Verdict("violation", (f"project input missing in the checkout: {cell.input.name}",)))
+    if (skip := gate.allowlist.skip_for(cell.label, gate.base_version)) is not None:
+        return run_base_skipped(gate, cell, skip)
     args = cell.args()
     with tempfile.TemporaryDirectory() as name:
         tmp = Path(name)
@@ -621,8 +705,8 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
         same = base.ok and candidate.ok and base.tree == candidate.tree
         sides = [Side(base.ok, base.error), Side(candidate.ok, candidate.error)]
         valid: frozenset[str] = frozenset()
-        if base.ok and candidate.ok and not same:
-            payloads = payloads_for(gate, cell)
+        if base.ok and not same:
+            payloads = payloads_for(gate, cell) if candidate.ok else None
             if payloads is not None:
                 entries = json.loads(payloads.read_text(encoding="utf-8"))
                 valid = frozenset(e["id"] for e in entries if e.get("kind") == "valid" and e.get("expect") == "accept")
@@ -633,7 +717,9 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
                         gate, _write_tree(outcome.tree | dict(cell.stubs), tmp / f"sig-{side}"), cell.backend, payloads
                     ),
                 )
-                for side, outcome in (("base", base), ("cand", candidate))
+                if outcome.ok
+                else failed
+                for (side, outcome), failed in zip((("base", base), ("cand", candidate)), sides, strict=True)
             ]
     verdict = classify_cell(
         sides[0],
@@ -686,17 +772,35 @@ def _selected(label: str, patterns: list[str]) -> bool:
     return not patterns or any(fnmatch.fnmatch(label, pattern) for pattern in patterns)
 
 
+def _memory_mb(text: str) -> int:
+    """Read `--memory-mb`: a number of MB, 0 for no cap; a negative cap is refused, as no limit could hold it."""
+    if (value := int(text)) < 0:
+        msg = f"{value}: the cap is 0 (no cap) or more MB"
+        raise argparse.ArgumentTypeError(msg)
+    return value
+
+
 def _environment_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("-j", type=int, default=os.cpu_count() or 1, help="parallel cells (default: CPU count)")
     parser.add_argument("--timeout", type=int, default=300, help="seconds before one generation or signature fails")
+    parser.add_argument(
+        "--memory-mb",
+        type=_memory_mb,
+        default=8192,
+        help="data memory of one generation process before it fails, a safety net far above any real cell (0: no cap)",
+    )
     parser.add_argument("--cache-dir", type=Path, default=compare_release._default_cache_dir())  # ruff: ignore[private-member-access]
+
+
+def _shard_arg(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--shard", default="1/1", help="run shard I of N, e.g. 2/8")
 
 
 def _gate_args(parser: argparse.ArgumentParser) -> None:
     _environment_args(parser)
     parser.add_argument("--tier", choices=("pr", "nightly", "release"), default="pr")
     parser.add_argument("--types", default="", help="comma-separated --output-model-type values (default: per tier)")
-    parser.add_argument("--shard", default="1/1", help="run shard I of N, e.g. 2/8")
+    _shard_arg(parser)
     parser.add_argument(
         "--select",
         action="append",
@@ -732,6 +836,11 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     record.add_argument("--types", default=",".join(compare_release.DEFAULT_TYPES))
     record.add_argument("--select", action="append", default=[], help="only inputs matching this glob")
     record.add_argument("--python", type=Path, help="interpreter that has the release (default: an era environment)")
+    _shard_arg(record)
+    merge = commands.add_parser("merge-record", help="merge the records of `record --shard I/N` into one record")
+    merge.add_argument("version", help="recorded version")
+    merge.add_argument("parts", type=Path, nargs="+", help="record directories of the shards")
+    merge.add_argument("--out", type=Path, default=DEFAULT_RECORDS, help="record directory")
     query = commands.add_parser("query", help="compare two recorded releases without generating anything")
     query.add_argument("base", help="older recorded version, or `all` for every recorded version before VERSION")
     query.add_argument("version", help="newer recorded version")
@@ -750,8 +859,12 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     ns = parser.parse_args(argv)
     if ns.command in {"gate", "guide"}:
         ns.base = ns.base or latest_tag()
+    if ns.command in {"gate", "guide", "record"}:
         index, _, total = ns.shard.partition("/")
-        ns.shard_index, ns.shard_total = int(index), int(total or 1)
+        try:
+            ns.shard_index, ns.shard_total = int(index), int(total or 1)
+        except ValueError:
+            parser.error(f"--shard {ns.shard}: I and N must be integers, e.g. 2/8")
         if not 1 <= ns.shard_index <= ns.shard_total:
             parser.error(f"--shard {ns.shard}: I must be between 1 and N")
     return ns
@@ -772,9 +885,11 @@ def cell_row(result: Result) -> dict[str, Any]:
     }
 
 
-def _report(results: list[Result], gate: Gate, ns: argparse.Namespace) -> int:
+def _report(results: list[Result], gate: Gate, ns: argparse.Namespace, run: Placement | None = None) -> int:
+    """Print the results of a shard and return the exit code; `run` places the cells of every shard (default: these)."""
     counts = dict.fromkeys(CLASSES, 0)
     used: set[int] = set()
+    skipped = Counter(r.base_skip for r in results if r.base_skip is not None)
     for result in results:
         counts[result.verdict.cls] += 1
         used |= result.verdict.accepted_by
@@ -783,15 +898,28 @@ def _report(results: list[Result], gate: Gate, ns: argparse.Namespace) -> int:
             print(f"{result.verdict.cls}: {cell.label} | {cell.backend} | {cell.option_label}")
             for note in result.verdict.notes[:6]:
                 print(f"    {note[:240]}")
+    for index, cells in sorted(skipped.items()):
+        entry = gate.allowlist.base_skips[index]
+        print(f"base-skipped: {entry.get('input')} | {entry.get('reason')} ({entry.get('issue')}) | {cells} cells")
     problems = gate.loaded_allowlist.problems(ns.base)
-    entries = range(len(gate.allowlist.entries))
-    covered = {i for r in results for i in entries if gate.allowlist.covers(i, r.cell.label, r.cell.backend)}
-    whole = ns.shard_total == 1 and not ns.select
+    here = place([(r.cell.label, r.cell.backend) for r in results], gate.allowlist, ns.base)
+    run = here if run is None else run
+    judged = ns.tier != "pr"
+    whole = judged and not ns.select
+    lead = whole and ns.shard_index == 1
+    problems += [
+        f"base_skip entry {index + 1} ({entry.get('input')}) is stale: it covers no cell"
+        for index, entry in enumerate(gate.allowlist.base_skips)
+        if whole
+        and index not in skipped
+        and gate.allowlist.skip_applies(index, ns.base)
+        and (index in here.skips or (lead and index not in run.skips))
+    ]
     problems += [
         f"allowlist entry {index + 1} ({gate.allowlist.entries[index].get('input')}) is stale: "
-        + ("it accepted no change" if index in covered else "it covers no cell")
-        for index in entries
-        if ns.tier != "pr" and index not in used and (index in covered or whole)
+        + ("it accepted no change" if index in here.entries else "it covers no cell")
+        for index in range(len(gate.allowlist.entries))
+        if judged and index not in used and (index in here.entries or (lead and index not in run.entries))
     ]
     for problem in problems:
         print(f"allowlist: {problem}")
@@ -820,19 +948,28 @@ def build_gate(ns: argparse.Namespace) -> tuple[Gate, Path]:
     allowlist = Allowlist.load(ns.allowlist) if ns.allowlist.exists() else Allowlist()
     gate = Gate(
         base=compare_release.Runner(
-            compare_release.Side("base", base_python), base_env, import_check=False, timeout=ns.timeout
+            compare_release.Side("base", base_python),
+            base_env,
+            import_check=False,
+            timeout=ns.timeout,
+            memory_mb=ns.memory_mb,
         ),
         candidate=compare_release.Runner(
-            compare_release.Side("cand", candidate.python), candidate.env, import_check=False, timeout=ns.timeout
+            compare_release.Side("cand", candidate.python),
+            candidate.env,
+            import_check=False,
+            timeout=ns.timeout,
+            memory_mb=ns.memory_mb,
         ),
         cache=compare_release.OutputCache(cache_dir / "outputs" / cache_name),
         candidate_python=candidate.python,
-        allowlist=allowlist if allowlist.base == ns.base else Allowlist(allowlist.base),
+        allowlist=allowlist if allowlist.base == ns.base else Allowlist(allowlist.base, [], allowlist.base_skips),
         loaded_allowlist=allowlist,
         timeout=ns.timeout,
         payload_dir=cache_dir / "payloads",
         payload_root=cache_dir / "payload-inputs" / _stable(str(candidate.root))[:12],
         candidate_info=candidate,
+        base_version=ns.base,
     )
     return gate, base_python
 
@@ -842,11 +979,9 @@ def gate_main(ns: argparse.Namespace) -> int:
     started = time.monotonic()
     gate, base_python = build_gate(ns)
     inventory = option_inventory(base_python)
-    cells = [
-        cell
-        for cell in build_cells(ns, gate, inventory)
-        if shard_of(cell, gate.allowlist, ns.shard_total) == ns.shard_index
-    ]
+    cells = build_cells(ns, gate, inventory)
+    run = place([(cell.label, cell.backend) for cell in cells], gate.allowlist, ns.base)
+    cells = [cell for cell in cells if run.shard(cell, ns.shard_total) == ns.shard_index]
     reasons = {cell: reason for cell in cells if (reason := opt_in_reason(cell.args(), inventory))}
     runnable = [cell for cell in cells if cell not in reasons]
     pool = ThreadPoolExecutor(ns.j)
@@ -861,7 +996,7 @@ def gate_main(ns: argparse.Namespace) -> int:
         gate.base.close()
         gate.candidate.close()
     results += [Result(cell, Verdict("opt-in", (f"the release has no {reason}",))) for cell, reason in reasons.items()]
-    code = _report(results, gate, ns)
+    code = _report(results, gate, ns, run)
     print(f"elapsed: {time.monotonic() - started:.1f}s", file=sys.stderr)
     return code
 
@@ -984,7 +1119,9 @@ def record_main(ns: argparse.Namespace) -> int:
         environment = release_environment(python)
         name = python.parent.parent.name if ns.python is None else f"python-{_stable(environment)[:12]}"
         cache = compare_release.OutputCache(cache_dir / "outputs" / f"record-{ns.version}-{name}")
-    runner = compare_release.Runner(compare_release.Side("rec", python), env, import_check=False, timeout=ns.timeout)
+    runner = compare_release.Runner(
+        compare_release.Side("rec", python), env, import_check=False, timeout=ns.timeout, memory_mb=ns.memory_mb
+    )
     gate = Gate(
         base=runner,
         candidate=runner,
@@ -1003,6 +1140,7 @@ def record_main(ns: argparse.Namespace) -> int:
     cells = [Cell(recorder.root / name, name, file_type, backend) for name, file_type in inputs for backend in types]
     if not ns.select or any(pattern.startswith("payload:") for pattern in ns.select):
         cells += [cell for cell in payload_cells(gate, types) if _selected(cell.label, ns.select)]
+    cells = [cell for cell in cells if Placement().shard(cell, ns.shard_total) == ns.shard_index]
     inventory = option_inventory(python, env)
 
     def run(cell: Cell) -> tuple[str, dict[str, Any]]:
@@ -1017,9 +1155,35 @@ def record_main(ns: argparse.Namespace) -> int:
             entries = dict(pool.map(run, cells))
     finally:
         runner.close()
-    _write_json(out / f"{ns.version}.json", {"version": ns.version, "types": types, "cells": entries})
+    record: dict[str, Any] = {"version": ns.version, "types": types, "cells": entries}
+    if ns.shard_total > 1:
+        record["shard"] = [ns.shard_index, ns.shard_total]
+    _write_json(out / f"{ns.version}.json", record)
     counts = Counter(entry["gen"] for entry in entries.values())
     print(f"recorded {ns.version}: {len(entries)} cells ({dict(counts)}) in {time.monotonic() - started:.0f}s")
+    return 0
+
+
+def merge_record_main(ns: argparse.Namespace) -> int:
+    """Merge the shard records of one release into the record an unsharded `record` writes."""
+    out = ns.out.absolute()
+    records = [json.loads((part / f"{ns.version}.json").read_text(encoding="utf-8")) for part in ns.parts]
+    shards = sorted(tuple(record.pop("shard", (1, 1))) for record in records)
+    total = shards[0][1]
+    if shards != [(index, total) for index in range(1, total + 1)]:
+        msg = f"merge-record {ns.version}: the parts are shards {shards}, not each shard of 1..{total} once"
+        raise SystemExit(msg)
+    if any(record["types"] != records[0]["types"] for record in records):
+        msg = f"merge-record {ns.version}: the parts record different types"
+        raise SystemExit(msg)
+    (out / "signatures").mkdir(parents=True, exist_ok=True)
+    for part in ns.parts:
+        for path in sorted((part / "signatures").glob("*.json")):
+            if not (target := out / "signatures" / path.name).exists():
+                shutil.copyfile(path, target)
+    cells = {key: entry for record in records for key, entry in record["cells"].items()}
+    _write_json(out / f"{ns.version}.json", {"version": ns.version, "types": records[0]["types"], "cells": cells})
+    print(f"merged {ns.version}: {len(cells)} cells from {total} shards")
     return 0
 
 
@@ -1054,6 +1218,9 @@ def query_main(ns: argparse.Namespace) -> int:
         if ns.base == "all"
         else [ns.base]
     )
+    if parts := [v for v in (*olds, ns.version) if "shard" in records[v]]:
+        msg = f"query: {', '.join(parts)} in {ns.records} is a shard part: merge the parts with `merge-record` first"
+        raise SystemExit(msg)
     comparisons = [compare_records(records, old, ns.version, load) for old in olds]
     data: dict[str, Any] = (
         {"schema_version": 1, "to": ns.version, "rows": comparisons} if ns.base == "all" else comparisons[0]
@@ -1370,7 +1537,13 @@ def main(argv: list[str] | None = None) -> int:
             _draw_payloads(Path(argv[1]), argv[2], Path(argv[3]))
         return 0
     ns = _parse_args(argv)
-    commands = {"gate": gate_main, "record": record_main, "query": query_main, "guide": guide_main}
+    commands = {
+        "gate": gate_main,
+        "record": record_main,
+        "merge-record": merge_record_main,
+        "query": query_main,
+        "guide": guide_main,
+    }
     return commands[ns.command](ns)
 
 

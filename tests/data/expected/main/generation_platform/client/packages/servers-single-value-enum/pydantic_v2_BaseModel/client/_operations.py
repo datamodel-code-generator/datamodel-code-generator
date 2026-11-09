@@ -19,7 +19,12 @@ from ._runtime.client.operations import (
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.default import GetRegionalResponse
 
-_SERVERS_0: Final = (ServerPlan(url='https://{zone}.example.com', variables=(ServerVariable(name='zone', default='east', enum=('east',)),)),)
+_SERVERS_0: Final = (
+    ServerPlan(
+        url='https://{zone}.example.com',
+        variables=(ServerVariable(name='zone', default='east', enum=('east',)),),
+    ),
+)
 
 OPERATION_0: Final[OperationPlan[GetRegionalResponse]] = OperationPlan(
     operation_id='getRegional',
@@ -27,6 +32,13 @@ OPERATION_0: Final[OperationPlan[GetRegionalResponse]] = OperationPlan(
     path='/regional',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='order', style='form', explode=True), codec=model_bindings.codec_0),),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query', name='order', style='form', explode=True
+            ),
+            codec=model_bindings.codec_0,
+        ),
+    ),
     security=security.OPERATION_0,
 )

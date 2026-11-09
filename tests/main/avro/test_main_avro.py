@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import operator
+from contextlib import nullcontext
 from decimal import Inexact, Rounded, localcontext
 from pathlib import Path
 from typing import cast
@@ -141,41 +142,49 @@ def test_main_avro_fixed_reference_default(output_file: Path) -> None:
 def test_avro_container_bytes_defaults(
     output_file: Path, output_model_type: DataModelType, backend: str, entrypoint: str
 ) -> None:
-    """Preserve bytes, fixed leaves, strings, order, scope, and isolated defaults through generation."""
+    """Preserve bytes, fixed leaves, strings, order, scope, and isolated defaults through generation.
+
+    msgspec decodes no union of bytes and str, so msgspec output warns about it.
+    """
     input_path = AVRO_DATA_PATH / "container_bytes_defaults.avsc"
     expected_file = f"container_bytes_defaults_{backend}.py"
-    if entrypoint == "cli":
-        run_main_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type="avro",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
-            extra_args=[
-                "--target-python-version",
-                "3.10",
-                "--output-model-type",
-                output_model_type.value,
-                "--disable-timestamp",
-                "--formatters",
-                "builtin",
-            ],
-            force_exec_validation=True,
-        )
-    else:
-        run_generate_file_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type=InputFileType.Avro,
-            assert_func=assert_file_content,
-            expected_file=expected_file,
-            output_model_type=output_model_type,
-            target_python_version=PythonVersion.PY_310,
-            disable_timestamp=True,
-            formatters=[Formatter.BUILTIN],
-            use_annotated=output_model_type == DataModelType.MsgspecStruct,
-            field_constraints=output_model_type == DataModelType.MsgspecStruct,
-        )
+    with (
+        pytest.warns(UserWarning, match=r"it holds the str-like members (bytes, str|str, bytes),")
+        if output_model_type == DataModelType.MsgspecStruct
+        else nullcontext()
+    ):
+        if entrypoint == "cli":
+            run_main_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type="avro",
+                assert_func=assert_file_content,
+                expected_file=expected_file,
+                extra_args=[
+                    "--target-python-version",
+                    "3.10",
+                    "--output-model-type",
+                    output_model_type.value,
+                    "--disable-timestamp",
+                    "--formatters",
+                    "builtin",
+                ],
+                force_exec_validation=True,
+            )
+        else:
+            run_generate_file_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type=InputFileType.Avro,
+                assert_func=assert_file_content,
+                expected_file=expected_file,
+                output_model_type=output_model_type,
+                target_python_version=PythonVersion.PY_310,
+                disable_timestamp=True,
+                formatters=[Formatter.BUILTIN],
+                use_annotated=output_model_type == DataModelType.MsgspecStruct,
+                field_constraints=output_model_type == DataModelType.MsgspecStruct,
+            )
     with _generated_model(
         output_file, f"generated_container_defaults_{backend}_{entrypoint}", "ContainerDefaults"
     ) as model:
@@ -386,6 +395,47 @@ def test_avro_overridden_logical_defaults(output_file: Path, capsys: pytest.Capt
 
 
 @pytest.mark.parametrize(
+    ("fixture", "overrides"),
+    [
+        ("invalid_temporal_default_nanos_precision", {"Invalid.value": "int"}),
+        ("decimal_defaults_simple", {"DecimalDefaults.positive": "bytes"}),
+        ("invalid_temporal_default_nanos_precision", {"Invalid.value": "int | None"}),
+        ("invalid_temporal_default_nanos_precision", {"Invalid.value": "typing.Optional[int]"}),
+        ("decimal_defaults_simple", {"DecimalDefaults.positive": "bytes | None"}),
+        ("decimal_defaults_simple", {"DecimalDefaults.positive": "None | bytes"}),
+        ("decimal_defaults_simple", {"DecimalDefaults.positive": "typing.Optional[bytes]"}),
+        ("decimal_defaults_simple", {"DecimalDefaults.positive": "bytes | Decimal"}),
+    ],
+)
+def test_avro_builtin_name_override_keeps_physical_default(
+    output_file: Path, capsys: pytest.CaptureFixture[str], fixture: str, overrides: dict[str, str]
+) -> None:
+    """Keep the physical default of a field that ``int`` or ``bytes`` replaces, alone or unioned with ``None``.
+
+    A bare name takes it as a ``builtins.*`` path does; a union with another type keeps the logical default.
+    """
+    run_main_and_assert(
+        input_path=AVRO_DATA_PATH / f"{fixture}.avsc",
+        output_path=output_file,
+        input_file_type="avro",
+        extra_args=[
+            "--target-python-version",
+            "3.10",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            DataModelType.PydanticV2BaseModel.value,
+            "--type-overrides",
+            json.dumps(overrides),
+        ],
+        force_exec_validation=True,
+        capsys=capsys,
+        assert_no_stderr=True,
+    )
+
+
+@pytest.mark.parametrize(
     ("mappings", "expected_file", "runtime_file"),
     [
         (
@@ -592,6 +642,28 @@ def test_avro_decimal_defaults_preserve_raw_input(output_file: Path, fixture: st
     )
     rendered = "\n".join(f"{name}: {field['default']!r}" for name, field in converted["properties"].items())
     assert_output(f"{rendered}\n", AVRO_DATA_PATH.parent / f"expected/main/avro/{Path(fixture).stem}_converted.txt")
+
+
+@pytest.mark.parametrize("collapse_args", [[], ["--collapse-root-models"]], ids=["named", "collapsed"])
+def test_main_avro_fixed_type_overrides_keep_physical_defaults(output_file: Path, collapse_args: list[str]) -> None:
+    """Keep the physical defaults of the fixed types that model-level overrides replace, also when roots collapse."""
+    run_main_and_assert(
+        input_path=AVRO_DATA_PATH / "fixed_type_overrides_defaults.avsc",
+        output_path=output_file,
+        input_file_type="avro",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--type-overrides",
+            json.dumps({"Money": "builtins.bytes", "Dur": "builtins.bytes"}),
+            *collapse_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
 
 
 @pytest.mark.parametrize(
@@ -1236,4 +1308,39 @@ def test_main_avro_auto_detection_leaves_json_schema_shapes_as_json_schema(
         output_path=output_file,
         capsys=capsys,
         expected_stderr_contains="The input file type was determined to be:",
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignore-ref-siblings"),
+        pytest.param(
+            ["--ignore-ref-siblings-by-schema-version", "--read-schema-version-per-document"], id="per-document"
+        ),
+    ],
+)
+def test_main_avro_named_type_field_defaults(output_file: Path, extra_args: list[str]) -> None:
+    """Keep the default and doc of a field typed by a named type under --ignore-ref-siblings-by-schema-version (#6394).
+
+    The converter writes them beside the ``$ref`` to the named type, as parts of the Avro field, so the option, which
+    ignores the keywords beside a draft 7 ``$ref``, keeps them.
+    """
+    run_main_and_assert(
+        input_path=AVRO_DATA_PATH / "named_type_field_defaults.avsc",
+        output_path=output_file,
+        input_file_type="avro",
+        extra_args=[*extra_args, "--target-python-version", "3.10", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="avro_named_type_field_defaults",
+        model_name="Hand",
+        valid_json="{}",
+        invalid_json='{"suit": "SPADES"}',
+        expected_error_type="enum",
+        expected_attribute_path=("trump",),
+        expected_attribute_value="CLUBS",
     )

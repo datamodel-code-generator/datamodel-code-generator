@@ -11,9 +11,13 @@ import pytest
 from datamodel_code_generator.deprecations import (
     DEPRECATIONS,
     Deprecation,
+    deprecation_as_dict,
     deprecation_message,
+    iter_deprecations,
     render_deprecations,
+    render_deprecations_json,
     render_deprecations_markdown,
+    render_deprecations_table,
     render_release_note_deprecations,
     warn_deprecated,
 )
@@ -44,6 +48,13 @@ def test_deprecation_json_output_is_machine_readable() -> None:
     assert {entry["id"] for entry in payload} == set(DEPRECATIONS)
     assert all("removal_version" in entry for entry in payload)
     assert any(entry["removal_version"] is None for entry in payload)
+
+
+def test_deprecation_format_functions_write_the_listing() -> None:
+    """The public function of each format writes what the listing in that format prints."""
+    assert render_deprecations_json() + "\n" == render_deprecations("json")
+    assert render_deprecations_table() == render_deprecations("table")
+    assert json.loads(render_deprecations_json()) == [deprecation_as_dict(item) for item in iter_deprecations()]
 
 
 def test_deprecation_markdown_output_includes_details() -> None:

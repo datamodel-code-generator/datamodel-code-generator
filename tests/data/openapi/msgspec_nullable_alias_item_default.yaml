@@ -1,0 +1,22 @@
+openapi: 3.0.3
+info: {title: Nullable alias item default, version: "1"}
+paths: {}
+components:
+  schemas:
+    PodSpec:
+      type: object
+      properties:
+        a: {type: string}
+    MaybePod:
+      oneOf:
+        - $ref: '#/components/schemas/PodSpec'
+      nullable: true
+    Model:
+      type: object
+      properties:
+        pods:
+          anyOf:
+            - type: array
+              items: {$ref: '#/components/schemas/MaybePod'}
+            - type: string
+          default: [null, {a: n}]

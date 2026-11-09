@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from datamodel_code_generator import (
+    Error,
     GenerateConfig,
     OpenAPIScope,
     _CollapseRootModelsRecursionError,
@@ -168,7 +169,7 @@ def run_generation_session(
             batch = session.take_accepted_batch()
             accepted = (batch.attempt, observer.hashes[batch.attempt])
             session.close()
-        except (RuntimeError, OSError) as exc:
+        except (RuntimeError, OSError, Error) as exc:
             error = [type(exc).__name__, str(exc) if not isinstance(exc, OSError) else str(exc.errno)]
         finally:
             sys.setprofile(previous)

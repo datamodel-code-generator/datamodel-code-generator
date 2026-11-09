@@ -1,0 +1,3 @@
+Dog is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Dog' from DogOrBird, so these unions cannot decode it: ByKey ('Cat'), Holder.byKey ('Cat').
+Cow is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Cow' from CowOrHen, so these unions cannot decode it: Herd ('Fox'), Holder.herd ('Fox').
+Pig is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Pig' from Sty, so these unions cannot decode it: Farm ('Duck').

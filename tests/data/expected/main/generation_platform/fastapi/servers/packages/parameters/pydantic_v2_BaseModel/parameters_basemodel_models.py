@@ -49,7 +49,9 @@ SearchGetQueryIdsParameter = TypeAliasType("SearchGetQueryIdsParameter", list[in
 SearchGetHeaderXIdsParameter = TypeAliasType("SearchGetHeaderXIdsParameter", list[int])
 
 
-RatiosGetQueryRatiosParameter = TypeAliasType("RatiosGetQueryRatiosParameter", list[float])
+RatiosGetQueryRatiosParameter = TypeAliasType(
+    "RatiosGetQueryRatiosParameter", list[float]
+)
 
 
 RatiosGetQueryLimitsParameter = TypeAliasType(
@@ -66,13 +68,19 @@ SizesGetQueryOneParameter = TypeAliasType("SizesGetQueryOneParameter", Literal['
 SizesGetQueryCapParameter = TypeAliasType("SizesGetQueryCapParameter", int | None)
 
 
-CodesGetHeaderXCodesParameter = TypeAliasType("CodesGetHeaderXCodesParameter", list[int])
+CodesGetHeaderXCodesParameter = TypeAliasType(
+    "CodesGetHeaderXCodesParameter", list[int]
+)
 
 
-RepeatIdAgainIdGetPathIdParameter = TypeAliasType("RepeatIdAgainIdGetPathIdParameter", int)
+RepeatIdAgainIdGetPathIdParameter = TypeAliasType(
+    "RepeatIdAgainIdGetPathIdParameter", int
+)
 
 
-NotesNoteIdGetPathNoteIdParameter = TypeAliasType("NotesNoteIdGetPathNoteIdParameter", int)
+NotesNoteIdGetPathNoteIdParameter = TypeAliasType(
+    "NotesNoteIdGetPathNoteIdParameter", int
+)
 
 
 FilesFileNameGetPathFileNameParameter = TypeAliasType(
@@ -123,7 +131,9 @@ class ItemsLevelGetQueryRatioParameter(Enum):
     number_2_2 = 2.2
 
 
-ItemsLevelGetHeaderXFlagParameter = TypeAliasType("ItemsLevelGetHeaderXFlagParameter", Literal[True])
+ItemsLevelGetHeaderXFlagParameter = TypeAliasType(
+    "ItemsLevelGetHeaderXFlagParameter", Literal[True]
+)
 
 
 class ItemsLevelGetQueryKindParameter(StrEnum):
@@ -136,7 +146,9 @@ class ItemsLevelGetQueryTierParameter1(IntEnum):
     integer_2 = 2
 
 
-ItemsLevelGetQueryTierParameter = TypeAliasType("ItemsLevelGetQueryTierParameter", ItemsLevelGetQueryTierParameter1 | None)
+ItemsLevelGetQueryTierParameter = TypeAliasType(
+    "ItemsLevelGetQueryTierParameter", ItemsLevelGetQueryTierParameter1 | None
+)
 
 
 class ItemsLevelGetQueryLevelsParameterEnum(IntEnum):
@@ -144,10 +156,14 @@ class ItemsLevelGetQueryLevelsParameterEnum(IntEnum):
     integer_2 = 2
 
 
-ItemsLevelGetQueryLevelsParameter = TypeAliasType("ItemsLevelGetQueryLevelsParameter", list[ItemsLevelGetQueryLevelsParameterEnum])
+ItemsLevelGetQueryLevelsParameter = TypeAliasType(
+    "ItemsLevelGetQueryLevelsParameter", list[ItemsLevelGetQueryLevelsParameterEnum]
+)
 
 
-FoodsFoodIdServingsServingGetPathFoodIdParameter = TypeAliasType("FoodsFoodIdServingsServingGetPathFoodIdParameter", str)
+FoodsFoodIdServingsServingGetPathFoodIdParameter = TypeAliasType(
+    "FoodsFoodIdServingsServingGetPathFoodIdParameter", str
+)
 
 
 FoodsFoodIdServingsServingGetPathServingParameter = TypeAliasType(

@@ -113,11 +113,12 @@ build or validate a field whose `Field()` holds any other, so a keyword they lea
 of `{"type": "integer", "x-python-type": "str", "minimum": 0}` or `multipleOf` on the `time` of format `time`, is named
 with its field in a warning. A `--type-overrides` builtin or standard-library class replaces the `con*` type of a field
 without its arguments, which such a class does not take, and names them in the same warning; another override, such as
-`pydantic.conint` or a factory of your own, keeps them. A field override with brackets is an annotation, such as
-`typing.Literal[1, 2]` or `list[typing.Literal[1, 2]]`: it is written as `x-python-type` writes it, without the
-arguments of any `con*` call, and takes the keywords that annotation takes. A model-level override with brackets
-writes the annotation where each field names the model, and a GraphQL field or scalar override with brackets does the
-same.
+`pydantic.conint` or a factory of your own, keeps them. A field override that is an annotation is one with brackets,
+such as `typing.Literal[1, 2]` or `list[typing.Literal[1, 2]]`, a union, such as `str | None`, or a bare name that a
+builtin or the standard-library registry has, such as `str` or `Decimal`: it is written as `x-python-type` writes it,
+with the imports of its names (none for a builtin), without the arguments of any `con*` call, and takes the keywords
+that annotation takes. A model-level override that is an annotation writes it where each field names the model, and a
+GraphQL field or scalar override does the same.
 
 **The Python type written for the field takes the keyword**, whatever the schema type is: a string format such as
 `duration`, `date-time` or `time`, `x-python-type`, `customTypePath`, `--type-overrides`. A schema without `type` is
@@ -138,7 +139,13 @@ msgspec checks all members of a union that it decodes as one Python type against
 in `anyOf: [{type: string, format: binary}, {type: string, format: binary, maxLength: 3}]` the `maxLength` of one
 branch would reject the bytes the other branch accepts. `msgspec.Struct` writes such members without `Meta(...)`, so
 the field takes the values of every branch (`bytes` here), and names the keywords it leaves out in the same warning;
-members of different types, such as `str` and `int`, keep their constraints. msgspec counts the members of an alias of
+members of different types, such as `str` and `int`, keep their constraints. The constraints that every such branch
+implies stay, written once and named in the warning: in
+`anyOf: [{type: string, minLength: 2, maxLength: 3}, {type: string, maxLength: 3, pattern: '^a'}]` the field is
+`Annotated[str, Meta(max_length=3)]`, which rejects `abcd` as both branches do, and
+`anyOf: [{type: integer, minimum: 1, maximum: 5}, {type: integer, minimum: 7}]` keeps `ge=1`. The bounds a `float`
+member keeps also admit the numbers of an `integer` or `Decimal` branch, which msgspec decodes as that `float` too
+(`-1.0`), so beside a `Decimal` branch the floats stay unbounded. msgspec counts the members of an alias of
 a union, or of a type and `null`, as members of the union that names it, so a branch that references such a schema is
 written as the alias's members there, while the alias keeps its `Meta(...)`. msgspec also decodes every integer as the
 `int` member of a union that has a `float` member, so in
@@ -213,18 +220,42 @@ They follow the same two cases as number keywords: a schema type `string` takes 
 without `type` is written as `Any`, which takes none of them, so `{"minLength": 2}` or `{"type": "integer",
 "pattern": "^1"}` leaves the field unconstrained. For compatibility, a schema type `string` also writes `minItems` and
 `maxItems`, and a schema type `array` also writes `minLength` and `maxLength`, as their length bounds.
+`--read-length-keywords-by-type` (set by the 20261104 presets) reads each keyword for its own kind only, as JSON Schema
+does: such a keyword beside the other kind is left out silently, so `{"type": "array", "maxLength": 2}` leaves the list
+unbounded and `{"type": "string", "maxItems": 2}` leaves the string unbounded, also beside a union branch, in an array
+without `type` and under a type override.
 
 As for number keywords, Pydantic models and dataclasses write a string keyword of a schema type `string` as a
 `Field()` argument only when the Python type written for the field takes it, as the Pydantic column of the table below
 lists, with `minItems` and `maxItems` read as the lengths they are written as. Pydantic cannot validate a field whose
 `Field()` holds any other, so a keyword they leave out, such as `maxLength` on the `AwareDatetime` of format
 `date-time`, `pattern` on the `date` of format `date` or on the `SecretStr` of format `password`, or `minLength` on a
-`UUID`, is named with its field in a warning. A field whose type holds the `AnyUrl` of format `uri` is written without
+`UUID`, is named with its field in a warning. On the `bytes` of format `binary`, `minLength` and `maxLength` count
+octets, as OpenAPI 3.1.1 specifies for unencoded binary data. A field whose type holds the `AnyUrl` of format `uri` is written without
 any of its constraints, also with a warning. The `Literal` of a `const` takes the keywords of its values' type, so
 `{"type": "string", "const": "box", "maxLength": 5}` keeps `max_length`, while a `const` without `type` keeps none of
 them. A `--type-overrides` type decides again the keywords the replaced type left out: an override to `str` takes back
 such a length without a warning. `msgspec.Struct` leaves out, with a warning, a keyword that msgspec does not accept
 on the Python type, such as `pattern` on `bytes` or on the `Literal` of a `const`.
+
+An array that has no field of its own, the member of an `anyOf` or `oneOf`, the items of an array or the values of a
+map, writes its `minItems` and `maxItems` on a type alias of its own in Pydantic models and dataclasses, as the array
+member of a type list does: without `--field-constraints`, `{"anyOf": [{"type": "array", "minItems": 2}, {"type":
+"string"}]}` at a property `a` is `a: A | str` with `A = TypeAliasType("A", Annotated[list[Any], Field(min_length=2)])`;
+with it, `A` is a root model that holds them. In Pydantic `BaseModel` output, the items of an array that declares
+`minItems` or `maxItems` itself are such a root model in either case, as before: the items of `{"type": "array",
+"minItems": 1, "items": {"type": "array", "minItems": 2}}` at a property `rows` are `Row` instances, whose list is
+`.root`, where dataclasses keep the alias form. `--collapse-root-models` inlines a root model whose type names such
+aliases as it inlined the arrays before, and the aliases keep the counts: a property `a` that names a definition `A`,
+`{"anyOf": [{"type": "array", "maxItems": 1}, {"type": "array", "minItems": 3}]}`, is `a: A1 | A2`.
+
+A map of no properties (`additionalProperties`, `propertyNames` or none) that is the items of an array or the value of
+a map writes its `minProperties` and `maxProperties` on a type alias of its own the same way, with or without
+`--field-constraints`, which writes no root model for it: `{"type": "array", "items": {"type": "object",
+"additionalProperties": {"type": "string"}, "maxProperties": 2}}` at a property `tags` is `tags: list[Tag]` with
+`Tag = TypeAliasType("Tag", Annotated[dict[str, str], Field(max_length=2)])`, and the items of an object whose
+`additionalProperties` is `false` take `max_length=0`. A map that is a member of an `anyOf` or `oneOf` keeps the dict
+it shares with the other maps of the union.
 
 A `typing` alias, an abstract collection, `Annotated[T, ...]`, `Final[T]` and `Literal` are read as for number
 keywords, so `typing.List[int]`, `collections.abc.Sequence[int]` and `Annotated[list[int], ...]` take the keywords of
@@ -235,10 +266,11 @@ keywords, so `typing.List[int]`, `collections.abc.Sequence[int]` and `Annotated[
 | `str`, `constr`, `StrictStr` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength`, `pattern` |
 | `bytes`, `StrictBytes` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength` |
 | `EmailStr` | `minLength`, `maxLength`, `pattern` | none |
-| `Base64Str`, and the `Base64Bytes` of `--type-mappings byte=binary` | `minLength`, `maxLength`, `pattern`, which Pydantic checks on the decoded value | none |
+| `Base64Str` | `minLength`, `maxLength`, `pattern`, which Pydantic checks on the decoded value | none |
+| the `Base64Bytes` of `--type-mappings byte=binary` | `minLength`, `maxLength`; Pydantic cannot check a `pattern` on its base64 text | none |
 | `conbytes`, `SecretStr` | `minLength`, `maxLength` | none |
 | the `Literal` of a `const` | those of its value's type (a string: `minLength`, `maxLength`, `pattern`) | none |
-| `list`, `set`, `frozenset`, `tuple` and other sequences | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | `minItems`, `maxItems`, `minLength`, `maxLength`, except on a fixed-length tuple such as `tuple[int, int]` |
+| `list`, `set`, `frozenset`, `tuple` and other sequences | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` (`minLength` and `maxLength` only without `--read-length-keywords-by-type`) | `minItems`, `maxItems`, `minLength`, `maxLength`, except on a fixed-length tuple such as `tuple[int, int]` |
 | `deque` | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | none |
 | `collections.abc.Sized`, `Iterable`, `Generator` | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength`; an iterable is checked while it is iterated | none |
 | `typing.AnyStr`, `collections.abc.ByteString` | `minLength`, `maxLength`, `pattern` | none |

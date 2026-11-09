@@ -26,23 +26,29 @@ codec_3: Final[PydanticDataclassCodec[models.ObjectResponseItem]] = PydanticData
 codec_4: Final[PydanticDataclassCodec[models.EnumRequestItem]] = PydanticDataclassCodec(models.EnumRequestItem)
 """Codec of /paths/~1enum/post request_body (request application/json)."""
 
-codec_5: Final[PydanticDataclassCodec[models.EnumResponseItem]] = PydanticDataclassCodec(models.EnumResponseItem)
+codec_5: Final[PydanticDataclassCodec[models.EnumRequest1]] = PydanticDataclassCodec(models.EnumRequest1)
+"""Codec of /paths/~1enum/post request_body (request application/custom)."""
+
+codec_6: Final[PydanticDataclassCodec[models.EnumResponseItem]] = PydanticDataclassCodec(models.EnumResponseItem)
 """Codec of /paths/~1enum/post response_body (response 200 application/json)."""
 
-codec_6: Final[PydanticDataclassCodec[Union[int, str]]] = PydanticDataclassCodec(Union[int, str])
+codec_7: Final[PydanticDataclassCodec[models.EnumResponse1]] = PydanticDataclassCodec(models.EnumResponse1)
+"""Codec of /paths/~1enum/post response_body (response 200 application/custom)."""
+
+codec_8: Final[PydanticDataclassCodec[Union[int, str]]] = PydanticDataclassCodec(Union[int, str])
 """Codec of /paths/~1union/post request_body (request application/json)."""
 
-codec_7: Final[PydanticDataclassCodec[Union[int, str]]] = PydanticDataclassCodec(Union[int, str])
+codec_9: Final[PydanticDataclassCodec[Union[int, str]]] = PydanticDataclassCodec(Union[int, str])
 """Codec of /paths/~1union/post response_body (response 200 application/json)."""
 
-codec_8: Final[PydanticDataclassCodec[Any]] = PydanticDataclassCodec(Any)
+codec_10: Final[PydanticDataclassCodec[Any]] = PydanticDataclassCodec(Any)
 """Codec of /paths/~1any/post request_body (request application/json)."""
 
-codec_9: Final[PydanticDataclassCodec[Any]] = PydanticDataclassCodec(Any)
+codec_11: Final[PydanticDataclassCodec[Any]] = PydanticDataclassCodec(Any)
 """Codec of /paths/~1any/post response_body (response 200 application/json)."""
 
-codec_10: Final[PydanticDataclassCodec[Any]] = PydanticDataclassCodec(Any)
+codec_12: Final[PydanticDataclassCodec[Any]] = PydanticDataclassCodec(Any)
 """Codec of /paths/~1empty/post request_body (request application/json)."""
 
-codec_11: Final[PydanticDataclassCodec[Any]] = PydanticDataclassCodec(Any)
+codec_13: Final[PydanticDataclassCodec[Any]] = PydanticDataclassCodec(Any)
 """Codec of /paths/~1empty/post response_body (response 200 application/json)."""

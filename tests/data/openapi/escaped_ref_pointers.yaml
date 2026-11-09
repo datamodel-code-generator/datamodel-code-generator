@@ -1,0 +1,33 @@
+openapi: 3.1.0
+info:
+  title: Escaped reference pointers
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        line:
+          $ref: '#/components/schemas/Line%20Item'
+        tax:
+          $ref: '#/components/schemas/tax~1rate'
+        share:
+          $ref: '#/components/schemas/50%25'
+    Line Item:
+      type: object
+      properties:
+        sku:
+          type: string
+      required:
+        - sku
+    tax/rate:
+      type: object
+      properties:
+        rate:
+          type: number
+    50%:
+      type: object
+      properties:
+        share:
+          type: integer

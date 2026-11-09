@@ -14,7 +14,8 @@ or: uv add "fastapi[standard]" && uv run fastapi dev --entrypoint app.api.main:a
 See app/api/README.md.
 """Your implementations of app.api, which app.api.main imports.
 
-datamodel-code-generator wrote this file once and never overwrites it, or the modules beside it."""
+datamodel-code-generator wrote this file once and never overwrites it, or the modules beside it.
+"""
 
 # Yours
 Error: app/services: The server packages app.api, generated before, and app.other would both import their implementations from the app.services package: put each server package under a parent package of its own, or delete the directory app/api of app.api when it is no longer used

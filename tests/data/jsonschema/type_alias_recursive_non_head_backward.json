@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Head": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Branch"
+      }
+    },
+    "Branch": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Head"
+              },
+              {
+                "$ref": "#/$defs/Twig"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "Twig": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Branch"
+              },
+              {
+                "$ref": "#/$defs/Leaf"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "Leaf": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Branch"
+      }
+    },
+    "Holder": {
+      "type": "object",
+      "properties": {
+        "l": {
+          "$ref": "#/$defs/Branch"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,3 @@
+# parts-bound-types-errors
+render pydantic_v2.BaseModel
+  Error: /paths/~1docs/post/requestBody/content/application~1json/schema/properties/data: The application/json request body of POST /docs carries a binary string as text; declare it with format: byte for base64 text, optionally with --type-mappings string+byte=binary to keep bytes, or send it as a whole binary body or a file part; /paths/~1blobs/put/parameters/0/schema: The query parameter 'sized' of PUT /blobs carries a binary string as text; declare it with format: byte for base64 text, optionally with --type-mappings string+byte=binary to keep bytes, or send it as a whole binary body or a file part

@@ -1,0 +1,8 @@
+SpacedReversed 'a{ 3 , 2 }': valid
+SpacedReversed 'aaa': string_pattern_mismatch
+VerboseSpacedReversed 'a{3,2}': valid
+VerboseSpacedReversed 'aaa': string_pattern_mismatch
+VerboseCommentedReversed 'a{3,2}': valid
+VerboseCommentedReversed 'aaa': string_pattern_mismatch
+SpacedOrdered 'aa': valid
+SpacedOrdered 'a{ 2 , 3 }': string_pattern_mismatch

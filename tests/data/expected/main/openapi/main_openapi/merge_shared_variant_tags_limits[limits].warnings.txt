@@ -1,0 +1,3 @@
+Ant is a variant of discriminated unions that map 'kind' to different tags: it keeps 'ant' from Outer, so these unions cannot decode it: Other ('bee').
+Blue is a variant of discriminated unions that map 'kind' to different tags: it keeps 'b' from Forward, so these unions cannot decode it: Backward ('a').
+Red is a variant of discriminated unions that map 'kind' to different tags: it keeps 'a' from Forward, so these unions cannot decode it: Backward ('b').

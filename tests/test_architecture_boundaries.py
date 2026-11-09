@@ -47,7 +47,6 @@ def test_architecture_boundary_detector_reports_cross_layer_dependencies() -> No
         (FIXTURE_ROOT / "requirements" / "forbidden.py", "requirements"),
         (FIXTURE_ROOT / "constraints" / "forbidden.py", "constraints"),
         (FIXTURE_ROOT / "regex" / "forbidden.py", "regex"),
-        (FIXTURE_ROOT / "checks" / "forbidden.py", "checks"),
     ]
     violations = check_architecture_boundaries.check_files(files, allowlist={})
 
@@ -111,7 +110,6 @@ def test_architecture_boundary_source_classification() -> None:
         source_root / "_requirements.py",
         source_root / "_constraint_applicability.py",
         source_root / "_regex_syntax.py",
-        source_root / "_checks.py",
         source_root / "types.py",
     )
     classification = "".join(

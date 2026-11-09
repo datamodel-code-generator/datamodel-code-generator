@@ -1,0 +1,4 @@
+{"item": {"sku": "s", "kind": "book"}}: accepted Order(item=Item(sku='s', kind=<Kind.book: 'book'>), kind=UNSET)
+{"item": {"sku": 1}}: rejected ValidationError
+{"featured": {"sku": "s"}, "parent": {"featured": {"sku": "t"}}}: accepted Catalog(featured=Item(sku='s', kind=UNSET), parent=Catalog(featured=Item(sku='t', kind=UNSET), parent=UNSET))
+{"featured": {"sku": 1}}: rejected ValidationError

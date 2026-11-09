@@ -9,9 +9,9 @@ Options are grouped from shared CLI metadata and link back to their generated re
 | Group | Options | Description |
 |-------|---------|-------------|
 | [Imports](#imports) | 2 | Generated imports and type-checking import behavior. |
-| [Collection Types](#collection-types) | 7 | Collection and tuple/set generation. |
-| [Type Alias](#type-alias) | 3 | TypeAlias and root-model alias output. |
-| [Type Mapping](#type-mapping) | 14 | Scalar, date/time, and custom type mapping. |
+| [Collection Types](#collection-types) | 8 | Collection and tuple/set generation. |
+| [Type Alias](#type-alias) | 4 | TypeAlias and root-model alias output. |
+| [Type Mapping](#type-mapping) | 19 | Scalar, date/time, and custom type mapping. |
 | [Type Syntax](#type-syntax) | 3 | Modern annotation syntax and Annotated usage. |
 
 ## Imports {#imports}
@@ -36,6 +36,7 @@ Collection and tuple/set generation.
 | [`--use-tuple-for-fixed-items`](../typing-customization.md#use-tuple-for-fixed-items) | Generate tuple types for arrays with items array syntax. |
 | [`--use-tuple-for-fixed-length-arrays`](../typing-customization.md#use-tuple-for-fixed-length-arrays) | Generate tuple types for homogeneous fixed-length arrays. |
 | [`--use-unique-items-as-set`](../typing-customization.md#use-unique-items-as-set) | Generate set types for arrays with uniqueItems constraint. |
+| [`--use-unique-items-as-set-by-value`](../typing-customization.md#use-unique-items-as-set-by-value) | Write a uniqueItems set only where its final items hash by value. |
 
 ## Type Alias {#type-alias}
 
@@ -43,6 +44,7 @@ TypeAlias and root-model alias output.
 
 | Option | Description |
 |--------|-------------|
+| [`--use-plain-alias-for-recursive-models`](../typing-customization.md#use-plain-alias-for-recursive-models) | Write the type alias of a model that names itself as a plain alias in Pydantic o... |
 | [`--use-root-model-type-alias`](../typing-customization.md#use-root-model-type-alias) | Generate RootModel as type alias format for better mypy support. |
 | [`--use-type-alias`](../typing-customization.md#use-type-alias) | Use TypeAlias instead of root models for type definitions (experimental). |
 | [`--use-type-alias-type`](../typing-customization.md#use-type-alias-type) | Use runtime TypeAliasType objects for aliases before Python 3.12 (experimental). |
@@ -59,14 +61,19 @@ Scalar, date/time, and custom type mapping.
 | [`--strict-types`](../typing-customization.md#strict-types) | Enable strict type validation for specified Python types. |
 | [`--type-mappings`](../typing-customization.md#type-mappings) | Override default type mappings for schema formats. |
 | [`--type-overrides`](../typing-customization.md#type-overrides) | Replace schema model types with custom Python types via JSON mapping. |
+| [`--type-overrides-replace-whole-type`](../typing-customization.md#type-overrides-replace-whole-type) | Make every `--type-overrides` value of a field replace the field's whole type. |
+| [`--use-bytes-for-content-media-type`](../typing-customization.md#use-bytes-for-content-media-type) | Type an OpenAPI string with a `contentMediaType` and no `contentEncoding` as `by... |
 | [`--use-decimal-for-multiple-of`](../typing-customization.md#use-decimal-for-multiple-of) | Generate Decimal types for fields with multipleOf constraint. |
 | [`--use-decimal-in-field-forms`](../typing-customization.md#use-decimal-in-field-forms) | Write `Decimal` for a number with `multipleOf` in the field forms too. |
+| [`--use-encoded-str-for-constrained-base64`](../typing-customization.md#use-encoded-str-for-constrained-base64) | Check the constraints of a `format: byte` string on its base64 text in the field... |
 | [`--use-object-type`](../typing-customization.md#use-object-type) | Use object instead of Any for unspecified object and array values. |
 | [`--use-pendulum`](../typing-customization.md#use-pendulum) | Use pendulum types for date, time, and duration fields. |
 | [`--use-single-dict-for-object-maps`](../typing-customization.md#use-single-dict-for-object-maps) | Type an object map as one dict instead of a union of dicts. |
 | [`--use-standard-primitive-types`](../typing-customization.md#use-standard-primitive-types) | Use Python standard library types for string formats instead of str. |
+| [`--use-strict-str-for-base64`](../typing-customization.md#use-strict-str-for-base64) | Make a `format: byte` string strict under `--strict-types str`. |
 | [`--use-typed-map-values-beside-other-types`](../typing-customization.md#use-typed-map-values-beside-other-types) | Type the map values of type arrays that list object beside other types. |
 | [`--use-typed-nullable-map-values`](../typing-customization.md#use-typed-nullable-map-values) | Type the values of nullable maps as their schemas say instead of Any. |
+| [`--use-x-python-type-as-written`](../typing-customization.md#use-x-python-type-as-written) | Write a field's `x-python-type` as given: unions of every spelling and container... |
 
 ## Type Syntax {#type-syntax}
 

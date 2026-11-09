@@ -12,33 +12,26 @@ from datamodel_code_generator.model._compiled_template_runtime import (
 )
 
 
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
-
-
 def render_with_scope(_scope: _Scope) -> str:
     def _macro_signature(_parent: _Scope, function: Any) -> str:
         _parts: list[str] = []
         if _getattr(function, "coroutine"):
             _parts.append("async ")
-        _value_0 = _stringify(_getattr(function, "name"))
-        _parts.append(f"def {_value_0}(")
+        _parts.append(f"def {_stringify(_getattr(function, 'name'))}(")
         for parameter in _getattr(function, "positional"):
-            _value_1 = _stringify(_getattr(parameter, "name"))
-            _value_2 = _stringify(_getattr(parameter, "annotation"))
-            _parts.append(f"\n    {_value_1}: {_value_2},")
+            _parts.append(
+                f"\n    {_stringify(_getattr(parameter, 'name'))}: {_stringify(_getattr(parameter, 'annotation'))},"
+            )
         if _getattr(function, "keywords"):
             _parts.append("\n    *,")
         for parameter in _getattr(function, "keywords"):
-            _value_3 = _stringify(_getattr(parameter, "name"))
-            _value_4 = _stringify(_getattr(parameter, "annotation"))
-            _parts.append(f"\n    {_value_3}: {_value_4}")
+            _parts.append(
+                f"\n    {_stringify(_getattr(parameter, 'name'))}: {_stringify(_getattr(parameter, 'annotation'))}"
+            )
             if _getattr(parameter, "default"):
-                _value_5 = _stringify(_getattr(parameter, "default"))
-                _parts.append(f" = {_value_5}")
+                _parts.append(f" = {_stringify(_getattr(parameter, 'default'))}")
             _parts.append(",")
-        _value_6 = _stringify(_getattr(function, "returns"))
-        _parts.append(f"\n) -> {_value_6}:")
+        _parts.append(f"\n) -> {_stringify(_getattr(function, 'returns'))}:")
         return "".join(_parts)
 
     def _macro_call(_parent: _Scope, function: Any) -> str:
@@ -46,15 +39,12 @@ def render_with_scope(_scope: _Scope) -> str:
         _parts.append("return ")
         if _getattr(function, "coroutine"):
             _parts.append("await ")
-        _value_7 = _stringify(_getattr(function, "function"))
-        _parts.append(f"{_value_7}(")
+        _parts.append(f"{_stringify(_getattr(function, 'function'))}(")
         for argument in _getattr(function, "arguments"):
             _parts.append("\n        ")
             if _getattr(argument, "keyword"):
-                _value_8 = _stringify(_getattr(argument, "keyword"))
-                _parts.append(f"{_value_8}=")
-            _value_9 = _stringify(_getattr(argument, "value"))
-            _parts.append(f"{_value_9},")
+                _parts.append(f"{_stringify(_getattr(argument, 'keyword'))}=")
+            _parts.append(f"{_stringify(_getattr(argument, 'value'))},")
         _parts.append("\n    )")
         return "".join(_parts)
 
@@ -68,42 +58,31 @@ def render_with_scope(_scope: _Scope) -> str:
     _context_typevar = _scope.get("typevar")
     _parts: list[str] = []
     if _context_kind == "none":
-        _value_10 = _stringify(_scope.get("name"))
         _parts.append(
-            f'"""Decode the unsigned deliveries of one webhook helper.\n\nThe helper is {_value_10}, whose deliveries carry no signature:\nnothing authenticates who sent one, that its body is unchanged, or that it is not a replay,\nso treat every event as untrusted input.\n"""'
+            f'"""Decode the unsigned deliveries of one webhook helper.\n\nThe helper is {_stringify(_scope.get("name"))}, whose deliveries carry no signature:\nnothing authenticates who sent one, that its body is unchanged, or that it is not a replay,\nso treat every event as untrusted input.\n"""'
         )
     elif _context_kind == "adapter":
-        _value_11 = _stringify(_scope.get("name"))
         _parts.append(
-            f'"""Verify the deliveries of one webhook helper with the caller\'s verifier, then decode their events.\n\nThe helper is {_value_11}, whose deliveries are verified by the Verifier the caller passes,\nwhich must authenticate the whole raw body and every fact it returns.\n"""'
+            f'"""Verify the deliveries of one webhook helper with the caller\'s verifier, then decode their events.\n\nThe helper is {_stringify(_scope.get("name"))}, whose deliveries are verified by the Verifier the caller passes,\nwhich must authenticate the whole raw body and every fact it returns.\n"""'
         )
     else:
-        _value_12 = _stringify(_scope.get("name"))
-        _value_13 = _stringify(_context_algorithm)
         _parts.append(
-            f'"""Verify the signed deliveries of one webhook helper, then decode their events.\n\nThe helper is {_value_12}, whose deliveries are signed with {_value_13}.\n"""'
+            f'"""Verify the signed deliveries of one webhook helper, then decode their events.\n\nThe helper is {_stringify(_scope.get("name"))}, whose deliveries are signed with {_stringify(_context_algorithm)}.\n"""'
         )
-    _value_14 = _stringify(_context_imports)
-    _parts.append(f"\n\nfrom __future__ import annotations\n\n{_value_14}\n\n\n__all__ = [")
+    _parts.append(f"\n\nfrom __future__ import annotations\n\n{_stringify(_context_imports)}\n\n\n__all__ = [")
     for name in _context_exports:
-        _value_15 = _stringify(_filter_repr(name))
-        _parts.append(f"\n    {_value_15},")
+        _parts.append(f"\n    {_stringify(_filter_repr(name))},")
     _parts.append("\n]")
     if _context_typevar:
-        _value_16 = _stringify(_context_typevar)
-        _parts.append(f'\n\n\nK = {_value_16}("K")')
-    _value_17 = _stringify(_getattr(_context_plan, "name"))
-    _value_18 = _stringify(_getattr(_context_plan, "annotation"))
-    _value_19 = _stringify(_getattr(_context_plan, "constructor"))
-    _parts.append(f"\n\n\n{_value_17}: {_value_18} = {_value_19}(")
+        _parts.append(f'\n\n\nK = {_stringify(_context_typevar)}("K")')
+    _parts.append(
+        f"\n\n\n{_stringify(_getattr(_context_plan, 'name'))}: {_stringify(_getattr(_context_plan, 'annotation'))} = {_stringify(_getattr(_context_plan, 'constructor'))}("
+    )
     for argument in _getattr(_context_plan, "arguments"):
-        _value_20 = _stringify(_getattr(argument, "keyword"))
-        _value_21 = _stringify(_getattr(argument, "value"))
-        _parts.append(f"\n    {_value_20}={_value_21},")
+        _parts.append(f"\n    {_stringify(_getattr(argument, 'keyword'))}={_stringify(_getattr(argument, 'value'))},")
     _parts.append("\n)")
     for function in _context_functions:
-        _value_22 = _stringify(_macro_signature(_scope, function))
-        _parts.append(f"\n\n\n{_value_22}")
+        _parts.append(f"\n\n\n{_stringify(_macro_signature(_scope, function))}")
         if _context_kind == "none":
             _parts.append(
                 '\n    """Decode a delivery\'s event without authenticating it.\n\n    Nothing verifies who sent the delivery, that its body is unchanged, or that it is not a replay,\n    and no duplicate information is returned: treat the event as untrusted input.\n    """'
@@ -122,6 +101,5 @@ def render_with_scope(_scope: _Scope) -> str:
             _parts.append(
                 '\n    Verification retains no delivery state; deduplicate in your application using delivery_id when present.\n    """'
             )
-        _value_23 = _stringify(_macro_call(_scope, function))
-        _parts.append(f"\n    {_value_23}")
+        _parts.append(f"\n    {_stringify(_macro_call(_scope, function))}")
     return "".join(_parts)

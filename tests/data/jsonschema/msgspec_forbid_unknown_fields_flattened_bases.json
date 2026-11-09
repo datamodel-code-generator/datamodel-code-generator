@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "$defs": {
+    "Closed": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Open": {
+      "type": "object",
+      "properties": {
+        "b": {
+          "type": "string"
+        }
+      }
+    },
+    "Both": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Closed"
+        },
+        {
+          "$ref": "#/$defs/Open"
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "both": {
+      "$ref": "#/$defs/Both"
+    }
+  }
+}

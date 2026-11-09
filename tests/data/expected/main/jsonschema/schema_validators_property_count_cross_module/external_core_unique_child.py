@@ -304,8 +304,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
 
 class ExternalCoreUniqueChild(
-    _JsonSchemaRuntimeValidationBase,
-    ExternalCoreUniqueParent,
+    _JsonSchemaRuntimeValidationBase, ExternalCoreUniqueParent
 ):
     model_config = ConfigDict(
         extra='allow',

@@ -1,9 +1,8 @@
 """Enum class kind and literal value kind: which class an enum is written as, and which values a ``Literal`` holds.
 
 Every input is an immutable fact passed by keyword, so the functions read nothing else. The adapters read the facts
-from the live objects and build the class through ``model/enum.py:_enum_class``:
-``parser/jsonschema.py:JsonSchemaParser._get_enum_model_class``,
-``parser/graphql.py:GraphQLParser.parse_enum_as_enum_class`` and ``parser/_passes/modules.py:extract_inherited_enum``.
+from the live objects and build the class through ``model/enum.py:_enum_class``; they are listed in
+``docs/architecture.md``.
 
 The rows named ``legacy-*`` keep today's output where the kind does not follow from the member values; a fix of that
 output deletes its row.
@@ -15,13 +14,14 @@ that enum a class.
 
 from __future__ import annotations
 
+from decimal import Decimal
 from math import isnan
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, final
 
 from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection, Mapping
+    from collections.abc import Callable, Collection, Iterable, Mapping
 
 __all__ = [
     "EnumBase",
@@ -32,12 +32,15 @@ __all__ = [
     "LiteralValueKind",
     "decide_enum_kind",
     "enum_as_literal",
+    "enum_member_kinds",
     "holds_inherited_member_value",
     "holds_member_value",
     "is_literal_kind",
     "is_tag_kind",
+    "json_type",
     "keeps_member_value",
     "literal_value_kind",
+    "values_no_literal_holds",
 ]
 
 EnumOrigin: TypeAlias = Literal["schema", "graphql", "merged"]
@@ -290,6 +293,55 @@ def literal_value_kind(value: object, /) -> LiteralValueKind:
     return "other"
 
 
+_WRITTEN_MEMBER_VALUES: Final[Mapping[LiteralValueKind, Callable[[Any], object]]] = {
+    "bool": bool,
+    "int": int.__index__,
+    "float": float.__float__,
+    "str": str.__str__,
+}
+"""The value an enum module writes for a member value of each kind: a plain ``bool``, ``int``, ``float`` or ``str``."""
+
+
+def enum_member_kinds(values: Iterable[object], /, *, value_base: str | None) -> frozenset[str]:
+    """Return the kinds of the members an enum class holds for its values, as ``literal_value_kind`` names them.
+
+    A value base (``Enum.value_base``) makes every member one of its type, which names the kind, and holds no
+    ``None``. A plain ``Enum`` keeps the values as the module writes them, where one equal to an earlier value is an
+    alias of that member, as Python has it, so ``1`` and ``True`` make one int member and ``True`` and ``1`` one bool
+    member; ``None`` is the member of kind ``none`` and a list or an object value one of kind ``other``.
+    """
+    if value_base is not None:
+        return frozenset({value_base} if any(value is not None for value in values) else ())
+    kinds: set[str] = set()
+    members: dict[object, None] = {}
+    for value in values:
+        if (written := _WRITTEN_MEMBER_VALUES.get(kind := literal_value_kind(value))) is None:
+            kinds.add(kind)
+        elif (member := written(value)) not in members:
+            members[member] = None
+            kinds.add(kind)
+    return frozenset(kinds)
+
+
+_JSON_TYPES: Final[dict[LiteralValueKind, str]] = {
+    "none": "null",
+    "bool": "boolean",
+    "int": "integer",
+    "float": "number",
+    "str": "string",
+}
+
+
+def json_type(value: object) -> str:
+    """Return the JSON type of an enum or const value by its literal kind.
+
+    Any other value is a number when it is a Decimal, an object when it is a dict, and an array otherwise.
+    """
+    if (found := _JSON_TYPES.get(literal_value_kind(value))) is not None:
+        return found
+    return "number" if isinstance(value, Decimal) else "object" if isinstance(value, dict) else "array"
+
+
 def is_literal_kind(kind: LiteralValueKind, /, *, bool_literals: bool = True) -> bool:
     """Return whether a ``Literal`` holds a value of the kind.
 
@@ -297,6 +349,23 @@ def is_literal_kind(kind: LiteralValueKind, /, *, bool_literals: bool = True) ->
     values given as discriminator tags read this.
     """
     return kind in {"int", "str"} or (bool_literals and kind == "bool")
+
+
+def values_no_literal_holds(values: Iterable[object], /, *, bool_literals: bool) -> tuple[object, ...]:
+    """Return the values of an enum or a const that its type admits others beside, as no ``Literal`` holds them.
+
+    The type of such a value (``is_literal_kind``) is written in its place: a float, a list or an object value admits
+    any other of its type, and a bool where the output writes no bool literals, unless both bools are values. ``None``
+    is no such value.
+    """
+    listed = (*values,)
+    both_bools = any(value is True for value in listed) and any(value is False for value in listed)
+    return tuple(
+        value
+        for value in listed
+        if (kind := literal_value_kind(value)) != "none"
+        and not is_literal_kind(kind, bool_literals=bool_literals or both_bools)
+    )
 
 
 def is_tag_kind(kind: LiteralValueKind, /) -> bool:

@@ -1,0 +1,2 @@
+msgspec cannot decode every integer of the union Model.const_or_number: its members Literal[1], float hold an int Literal beside float, and msgspec sends every integer to the Literal, so an integer that is not one of its values is refused although float admits it.
+msgspec cannot decode every integer of the union Model.const_or_number_min: its members Literal[0], ConstOrNumberMin hold an int Literal beside float, and msgspec sends every integer to the Literal, so an integer that is not one of its values is refused although float admits it.

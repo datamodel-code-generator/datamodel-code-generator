@@ -19,7 +19,13 @@ from jsonschema import Draft202012Validator
 from pydantic import ValidationError
 
 from tests.conftest import assert_output
-from tests.main.conftest import JSON_SCHEMA_DATA_PATH, _generated_model, _model_json_validator, run_main_and_assert
+from tests.main.conftest import (
+    JSON_SCHEMA_DATA_PATH,
+    _generated_model,
+    _model_json_validator,
+    assert_generated_model_json_validation,
+    run_main_and_assert,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -128,9 +134,9 @@ def test_use_enum_values_in_discriminator_without_member(output_model_type: str,
     lack, ``E`` by a mapping key that names a member and one that does not, ``I`` inherits the Enum of its base. ``G``
     and ``H`` share one Enum, so their tags would share every value: that union keeps no discriminator, as does the
     one of ``N1`` and ``N2``, whose mapping key ``"1"`` names the member ``1`` that the other one, tagged by no member,
-    takes too. The member ``1`` of the plain Enum that ``P1`` is tagged with never equals the literal ``1`` of ``P2``,
-    so that union keeps its discriminator. The module imports and each model accepts the documents of its schema and
-    rejects the others, ``P1`` apart, whose Enum member Pydantic does not take for the JSON value.
+    takes too. The member ``1`` of the plain Enum that ``P1`` is tagged with equals no JSON value, so its tag also holds
+    the value ``1`` (#6390), which ``P2``'s ``Literal[1]`` holds too, so that union is a plain one as well. The module
+    imports and each model accepts the documents of its schema and rejects the others.
     """
     run_main_and_assert(
         input_path=INPUT_PATH,
@@ -154,4 +160,29 @@ def test_use_enum_values_in_discriminator_const_outside_enum(output_model_type: 
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--output-model-type", output_model_type, *OPTIONS],
+    )
+
+
+def test_mapping_key_naming_an_integer_member_without_options(output_file: Path) -> None:
+    """Build the union whose mapping key ``"1"`` tags ``P1`` with the member ``1`` that ``P2``'s ``const`` holds too.
+
+    Both variants take the tag ``1``, so the union is a plain one. Up to 0.88.0 the check read the key as the text
+    ``"1"`` while ``P1`` was written ``Literal[1]``, and Pydantic refused the model at its first use: ``Value 1 for
+    discriminator 'k' mapped to multiple choices`` (#5091).
+    """
+    run_main_and_assert(
+        input_path=INPUT_PATH,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", "--disable-timestamp"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="discriminator_enum_unnamed_tags_without_options",
+        model_name="Model",
+        valid_json=json.dumps({"plain": {"k": 1, "q": "a"}}),
+        invalid_json=json.dumps({"plain": {"k": 3, "q": "a"}}),
+        expected_error_type="enum",
+        expected_attribute_path=("plain", "q"),
+        expected_attribute_value="a",
     )

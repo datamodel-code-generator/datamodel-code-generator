@@ -816,6 +816,12 @@ cannot be opened, and an async file or async iterable as a `FilePart` (HTTPX2 re
 raise a request `DecodeError` with the reason `unencodable` before anything is sent, with the underlying failure as
 `cause`. An async file is not inspected first: a text-mode or closed one fails while sending as `APIConnectionError`.
 
+A `FilePart` of a member that the models type as `str`, a `--type-overrides` value or a `contentMediaType` string, also
+takes text, which is sent in the charset of the part's media type, UTF-8 when it names none; text that charset cannot
+represent raises a request `DecodeError` with the reason `unencodable`. A member typed `bytes` takes the inputs above
+alone. A binary member whose models type is any other (`datetime.datetime`) is not a file: it is a field part of that
+type.
+
 Caller files stay open, wherever the last read left them. A path the call opened is closed when the call ends; a close
 failure is attached to an error already propagating, and otherwise raises `SDKError` with the reason
 `cleanup_failed`. Sync calls do all file I/O on the calling thread. In async calls a path the call opens is opened,
@@ -839,7 +845,10 @@ reason `unencodable` before sending; OpenAPI 3.0 ignores them for `multipart/for
 one without them, in its `contentType`. Generation stops for a form whose exploded object that allows other properties
 shares the form with another such member, a `deepObject` member, or other properties of its own that its schema allows
 with `additionalProperties` as `true` or a schema, or that its Pydantic model keeps by its configuration, such as
-`--extra-fields allow`, which would write the same names, as it does for query parameters.
+`--extra-fields allow`, which would write the same names. An operation's query parameters are only written, so they
+may hold several exploded objects that allow other properties: each writes the pairs of
+its own members, and a call that gives two of them the same name sends both pairs, as the style writes them. Names that
+two query parameters always write, as their declarations name them, still leave the operation out.
 The SDK does not check parts against the schema. A part header HTTPX2 refuses, and a part that is not
 a `FieldPart` or a `FilePart` with a string name, raises a request `DecodeError` with the reason `unencodable` before
 sending. A body whose parts are all bytes is encoded once, with `Content-Length`; a body without parts, which HTTPX2
@@ -855,6 +864,14 @@ type, whose schema is `{}`, takes any value, and that value is one `application/
 array included; an array whose items have no type has one such part for each item. A media type that the member's
 `encoding` declares takes precedence. A multipart response is read by the same rule, and a part that names a JSON
 media type is read as JSON; a part of a member without a type that names none is read as text.
+
+A form-data body whose schema is a union of objects, such as `oneOf` two schemas with properties, also through a
+nested union, has the parts of its objects merged by name, since its value is one of them and their properties are its
+parts: a member that several objects declare takes the union of their types, as long as they agree on its parts (each
+holds files, repeats and has structured values alike, and its text has one kind), and other parts are refused only
+when every object allows no other properties. Generation leaves out an operation whose union is not such, such as one
+of a string or an enum and an object, or of objects that disagree on a member, with a warning that its media `needs an
+object schema, or objects that agree on the parts of each property, to be sent as parts`.
 
 The client sends a JSON part as a field, without a filename, and Starlette, which the generated server and FastAPI
 use, answers `400` for a field part of more than 1 MiB. Send such a value as a `FilePart` with a filename, which
@@ -878,9 +895,10 @@ same message at the same place. Both also refuse a URL-encoded body whose schema
 (`Pattern properties have no builtin parameter encoding`) or is not an object, such as an array, a string, or
 `properties` without `type: object` (`A URL-encoded value must be an object`); the server reads such a body only in the
 request body mode. A form body whose schema is a union of one schema and `null` alone is written as the form of that
-schema, by its members and other properties; a multipart body whose schema is a union of several schemas has no members
-to write parts by, and generation stops with `needs an object schema to be sent as parts`, as the server's generation
-stops for it.
+schema, by its members and other properties; a multipart body whose schema is a union of several schemas is sent by
+the parts of its objects only when they are objects that agree on the parts of each property, as described above, and
+generation leaves out an operation with any other such union with that warning, as the server's generation refuses it
+outside the request body mode.
 
 A multipart response is read only when the operation declares one, with the standard library's MIME parser: a part's
 bytes are kept as they arrived unless it names a transfer encoding, and a broken body, or a part that is itself a
@@ -1103,7 +1121,8 @@ or `malformed_coding` for a body whose content coding does not decode. A stream 
 message that does not decode has the reason `missing`, `null`, `type`, `value`, or `malformed`, the `location` `("event", sequence)` or `("message", sequence)` with a pointer
 where a member is at fault, and at most 64 KiB of it as `body_bytes`. `AuthError` has the reason `provider_failed`, `invalid_expiry`, `oauth_error`, `timeout`, or `reauthorization_required`.
 It keeps no credential material or provider description itself; the `cause` of `provider_failed` is the application's
-own exception from its credential callable or token callback.
+own exception from its credential callable or token callback. An `SDKError` such a callable or callback raises reaches
+the caller as it is, with the exception it chains.
 
 Helpers raise `ProtocolDataError`, `SessionLimitError`, `StreamInterruptedError`, and
 `WebSocketClosedError`, described with each helper, and `SDKError` with the reason `store_failed` for a cache store that

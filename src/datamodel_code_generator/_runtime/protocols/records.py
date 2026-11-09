@@ -1,22 +1,28 @@
-"""Selectors, request targets, poll snapshots, cancel receipts, progress keys, and canonical JSON."""
+"""Selectors, request targets, poll snapshots, cancel receipts, progress keys, canonical JSON, and helper steps."""
 
 from __future__ import annotations
 
-import json
 import re
 from collections.abc import Mapping
 from dataclasses import FrozenInstanceError, dataclass, field
-from typing import Final, Generic, Literal, NoReturn, TypeAlias, cast, get_args
+from enum import Enum
+from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeAlias, final, get_args
 
 from typing_extensions import Self, TypeVar
 
 from ..client.responses import ResponseInfo
 from ..model_codecs.media import (
+    TOKEN,
     JSONValue,
     json_bytes,
+    json_value,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
 __all__ = (
+    "AsyncSteps",
     "BodySelector",
     "BodyTarget",
     "CancelReceipt",
@@ -28,11 +34,14 @@ __all__ = (
     "QuerystringTarget",
     "RequestTarget",
     "Selector",
+    "SessionState",
     "StatusSelector",
+    "Steps",
 )
 
 P_co = TypeVar("P_co", covariant=True, default=object)
 C_co = TypeVar("C_co", covariant=True, default=object)
+R_co = TypeVar("R_co", covariant=True)
 
 ProgressKey: TypeAlias = Literal[
     "pages",
@@ -50,7 +59,6 @@ PROGRESS_KEYS: Final = get_args(ProgressKey)
 _OCCURRENCES: Final = ("single", "all")
 _PARAMETER_LOCATIONS: Final = ("path", "query", "header", "cookie")
 _POINTER: Final = re.compile(r"(?:/(?:[^~/]|~[01])*)*")
-_TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 
 
 def record_string(value: object, name: str) -> str:
@@ -87,7 +95,7 @@ def _choice(value: object, name: str, choices: tuple[str, ...]) -> None:
 
 def plain_copy(value: object) -> JSONValue:
     """Copy a JSON value through its UTF-8 JSON text, refusing what `canonical_json` refuses."""
-    return cast("JSONValue", json.loads(json_bytes(value)))
+    return json_value(json_bytes(value))
 
 
 def canonical_json(value: object) -> bytes:
@@ -97,6 +105,16 @@ def canonical_json(value: object) -> bytes:
     decimal conversion limit raises ValueError, and a value that is not JSON raises TypeError.
     """
     return json_bytes(value, sort_keys=True)
+
+
+def json_digest(value: object) -> bytes:
+    """Return the SHA-256 digest of a JSON value's canonical JSON, which identifies the value as `canonical_json` does.
+
+    It refuses what `canonical_json` refuses.
+    """
+    from hashlib import sha256  # noqa: PLC0415 - Only a pager and a cache helper digest values, as they use them.
+
+    return sha256(canonical_json(value)).digest()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -119,7 +137,7 @@ class HeaderSelector:
 
     def __post_init__(self) -> None:
         """Require an HTTP token name, kept as given, and a declared occurrence."""
-        _matching(self.name, "name", _TOKEN)
+        _matching(self.name, "name", TOKEN)
         _choice(self.occurrence, "occurrence", _OCCURRENCES)
 
 
@@ -142,7 +160,7 @@ class ParameterTarget:
         """Require a declared location and a nonempty name, an HTTP token for headers and cookies."""
         _choice(self.location, "location", _PARAMETER_LOCATIONS)
         if self.location in {"header", "cookie"}:
-            _matching(self.name, "name", _TOKEN)
+            _matching(self.name, "name", TOKEN)
         else:
             _nonempty(self.name, "name")
 
@@ -229,3 +247,50 @@ class CancelReceipt(Generic[C_co]):
     def __post_init__(self) -> None:
         """Require the response metadata."""
         record_instance(self.response, ResponseInfo, "response must be a ResponseInfo")
+
+
+class SessionState(Enum):
+    """Where a stream or a WebSocket session stands: open, ended as declared, failed, or closed by its caller."""
+
+    OPEN = "open"
+    ENDED = "ended"
+    FAILED = "failed"
+    CLOSED = "closed"
+
+
+@final
+class Steps(Generic[R_co]):
+    """Iterate by calling a helper's step, such as the next page of a pager or the data of a stream's next event."""
+
+    __slots__ = ("_step",)
+
+    def __init__(self, step: Callable[[], R_co]) -> None:
+        """Keep the step that returns the next value, or raises StopIteration after the last."""
+        self._step = step
+
+    def __iter__(self) -> Self:
+        """Return this iterator."""
+        return self
+
+    def __next__(self) -> R_co:
+        """Return the next value."""
+        return self._step()
+
+
+@final
+class AsyncSteps(Generic[R_co]):
+    """Iterate with asyncio by awaiting a helper's step, as `Steps` iterates by calling one."""
+
+    __slots__ = ("_step",)
+
+    def __init__(self, step: Callable[[], Awaitable[R_co]]) -> None:
+        """Keep the step that returns the next value, or raises StopAsyncIteration after the last."""
+        self._step = step
+
+    def __aiter__(self) -> Self:
+        """Return this iterator."""
+        return self
+
+    async def __anext__(self) -> R_co:
+        """Return the next value."""
+        return await self._step()

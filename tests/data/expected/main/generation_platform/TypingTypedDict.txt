@@ -1,15 +1,15 @@
 {
   "calls": {
     "_cache_ref_data_type_facts": 3,
-    "_copy_data_model_field": 12,
-    "_copy_data_type": 16,
+    "_copy_data_model_field": 13,
+    "_copy_data_type": 17,
     "_copy_resolved_inherited_field": 1,
     "_generate_module_output": 1,
-    "_get_ref_raw_schema": 6,
-    "_load_ref_schema_object": 5,
+    "_get_ref_raw_schema": 7,
+    "_load_ref_schema_object": 6,
     "_validate_schema_object": 5,
     "add_ref": 8,
-    "resolve_ref": 15
+    "resolve_ref": 8
   },
   "phases": [
     "_build_generation_parser",

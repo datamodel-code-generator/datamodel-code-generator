@@ -2,8 +2,6 @@
 # Source: UnionTypeAliasAnnotation.jinja2 (sha256:529cafc06bb3cdd3)
 from __future__ import annotations
 
-from typing import Any
-
 from datamodel_code_generator.model._compiled_template_runtime import (
     Scope as _Scope,
     filter_length as _filter_length,
@@ -12,10 +10,6 @@ from datamodel_code_generator.model._compiled_template_runtime import (
     getitem as _getitem,
     stringify as _stringify,
 )
-
-
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
 
 
 def render_with_scope(_scope: _Scope) -> str:
@@ -28,18 +22,14 @@ def render_with_scope(_scope: _Scope) -> str:
         _value_0 = _stringify(_filter_replace(_context_description, "\n", "\n# "))
         _parts.append(f"\n# {_value_0}")
     if _filter_length(_context_fields) > 1:
-        _value_1 = _stringify(_context_class_name)
-        _parts.append(f"\n{_value_1}: TypeAlias = Union[")
+        _parts.append(f"\n{_stringify(_context_class_name)}: TypeAlias = Union[")
         for field in _context_fields:
-            _value_2 = _stringify(field.name)
-            _parts.append(f"\n        '{_value_2}',")
+            _parts.append(f"\n        '{_stringify(field.name)}',")
         _parts.append("\n    ]")
     elif _context_fields:
-        _value_3 = _stringify(_context_class_name)
-        _value_4 = _stringify(_getattr(_getitem(_context_fields, 0), "name"))
-        _parts.append(f"\n{_value_3}: TypeAlias = {_value_4}")
+        _parts.append(
+            f"\n{_stringify(_context_class_name)}: TypeAlias = {_stringify(_getattr(_getitem(_context_fields, 0), 'name'))}"
+        )
     else:
-        _value_5 = _stringify(_context_class_name)
-        _value_6 = _stringify(_context_base_class)
-        _parts.append(f"\n{_value_5}: TypeAlias = {_value_6}")
+        _parts.append(f"\n{_stringify(_context_class_name)}: TypeAlias = {_stringify(_context_base_class)}")
     return "".join(_parts)

@@ -1,0 +1,56 @@
+openapi: 3.1.0
+info:
+  title: Form-data members holding no files written as text in a declared media type
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /calls:
+    post:
+      operationId: createCall
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/Call"}
+            encoding:
+              sdp: {contentType: application/sdp}
+              session: {contentType: application/json}
+      responses:
+        "204":
+          description: Created.
+  /offers:
+    post:
+      operationId: sendOffer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/Offer"}
+            encoding:
+              offer: {contentType: "application/sdp; charset=iso-8859-1"}
+              counts: {contentType: application/octet-stream}
+      responses:
+        "204":
+          description: Stored.
+components:
+  schemas:
+    Call:
+      type: object
+      required: [sdp]
+      properties:
+        sdp: {type: string}
+        session:
+          type: object
+          properties:
+            model: {type: string}
+      additionalProperties: false
+    Offer:
+      type: object
+      required: [offer, recording]
+      properties:
+        offer: {type: string}
+        counts:
+          type: array
+          items: {type: integer}
+        recording: {type: string, format: binary}

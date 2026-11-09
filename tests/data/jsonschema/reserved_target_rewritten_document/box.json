@@ -5,7 +5,8 @@
       "$id": "https://example.com/box.json",
       "type": "object",
       "properties": {
-        "item": {"$ref": "#/definitions/Item"}
+        "item": {"$ref": "#/definitions/Item"},
+        "other": {"$ref": "#/definitions/Item"}
       },
       "definitions": {
         "Item": {"type": "string"}

@@ -1,0 +1,6 @@
+{
+  "root_class": null,
+  "models_by_source_ref": {
+    "#/components/schemas/Address": "Address"
+  }
+}

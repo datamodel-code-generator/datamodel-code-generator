@@ -26,6 +26,7 @@
 | [`--recommend-options`](#recommend-options) | Recommend options for the input schema on top of the latest ... |
 | [`--shared-module-name`](#shared-module-name) | Customize the name of the shared module for deduplicated mod... |
 | [`--strict-refs`](#strict-refs) | Treat unresolved local `$ref` JSON pointers as errors. |
+| [`--untrusted-input`](#untrusted-input) | Treat the input as a schema from an untrusted source. |
 | [`--update-lock`](#update-lock) | Create or atomically update the selected remote lock after g... |
 | [`--watch`](#watch) | Watch input file(s) for changes and regenerate output automa... |
 | [`--watch-delay`](#watch-delay) | Set debounce delay in seconds for watch mode. |
@@ -2251,8 +2252,8 @@ Select the remote reference integrity lock file (experimental).
 An existing selected lock is verified automatically; a missing selected lock is ignored unless `--locked` requires it.
 Without `--lockfile`, the CLI uses `datamodel-codegen.lock` beside the discovered `pyproject.toml`, or in the invocation
 working directory when no project is found. Explicit relative `--lockfile` paths resolve from the invocation working
-directory, not the project root or output directory. The public API uses the caller's working directory for both its
-default lock and relative `lockfile` paths.
+directory, not the project root or output directory. The public API reads relative `lockfile` paths from the caller's
+working directory and keeps its default lock there, or beside the `pyproject.toml` that `load_pyproject_config()` read.
 
 Remote reference lock support is experimental: its lock document schema and request-identity compatibility may evolve. It remains fail-closed on integrity mismatches, and it never persists credentials.
 
@@ -2646,7 +2647,7 @@ reported when the rules suggest another value. Add `--output-format json` for a 
       formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
       integer/number/boolean schemas   5
 
-    Start from  --preset standard-py310-20261027
+    Start from  --preset standard-py310-20261106
 
     Add (5 options)
       --enum-field-as-literal all   [enums.inline-value-sets-as-literal]
@@ -2702,11 +2703,11 @@ reported when the rules suggest another value. Add `--output-format json` for a 
             Payment2 -> PaymentBank   at components/schemas/Payment > oneOf 1
 
     Left out after the trial (the rules recommend these)
-      --naming-strategy full-path   [naming.qualify-shared-inline-names]
+      --naming-strategy enclosing-model   [naming.qualify-shared-inline-names]
           Inline schemas under different parents share property names (names: 4, e.g. status x3, owner
           x3, state x2, total x2; inline names equal to a component name: 0). Numbered names (Status,
-          Status1) depend on parse order and shift when the schema grows; full-path names each inline
-          model after its parent.
+          Status1) depend on parse order and shift when the schema grows; enclosing-model names each
+          inline model after the model it is built for, once, and leaves definitions their own names.
           measured: GitHub REST API description: numbered names 663 -> 53; locations renamed between two
           versions 17% -> 0.0%
           measured: Petstore: Status and Status1 became OrderStatus and PetStatus
@@ -2714,11 +2715,10 @@ reported when the rules suggest another value. Add `--output-format json` for a 
           charge component (ChargeModel)
           measured: SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and
           lost
-          trial: recommended - naming-strategy -> recommended: classes 9 -> 9, problem names 0 -> 2; 4
+          trial: recommended - naming-strategy -> recommended: classes 9 -> 9, problem names 0 -> 0; 2
           of 9 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
             Total -> OrderTotal   at components/schemas/Order > total
-            PaymentCard -> PaymentPaymentCard   at components/schemas/Payment > oneOf 0
-            PaymentBank -> PaymentPaymentBank   at components/schemas/Payment > oneOf 1
+            Owner -> PetOwner   at components/schemas/Pet > owner
 
     Optional (policy; not in the command)
       --strict-types int float bool   [policy.strict-scalar-types]
@@ -2748,12 +2748,12 @@ reported when the rules suggest another value. Add `--output-format json` for a 
       candidate                                            classes   problems  numbered  long  doubled  displaced  median  unconstrained
       current                                                   22  5 (22.7%)         5     0        0          0       6              0
       preset                                                    22  5 (22.7%)         5     0        0          0       6              0
-      recommended                                                9  2 (22.2%)         0     0        2          0      10              0
+      recommended                                                9   0 (0.0%)         0     0        0          0      10              0
       recommended - naming-strategy                              9   0 (0.0%)         0     0        0          0       5              0   selected
-      recommended - enum-shape                                  15  2 (13.3%)         0     0        2          0      11              0
-      recommended - reuse                                       17  2 (11.8%)         0     0        2          0      14              0
-      recommended - dotted-keys                                 12  2 (16.7%)         0     0        2          0       7              0
-      recommended - union-variant-names                          9  2 (22.2%)         1     0        2          0      10              0
+      recommended - enum-shape                                  15   0 (0.0%)         0     0        0          0      11              0
+      recommended - reuse                                       17   0 (0.0%)         0     0        0          0      11              0
+      recommended - dotted-keys                                 12   0 (0.0%)         0     0        0          0       7              0
+      recommended - union-variant-names                          9  2 (22.2%)         2     0        0          0       8              0
       recommended - naming-strategy - enum-shape                15  3 (20.0%)         3     0        0          0       6              0
       recommended - naming-strategy - reuse                     14   0 (0.0%)         0     0        0          0       5              0
       recommended - naming-strategy - dotted-keys               12   0 (0.0%)         0     0        0          0       5              0
@@ -2775,7 +2775,7 @@ reported when the rules suggest another value. Add `--output-format json` for a 
       - The rules were calibrated on the 20261017 presets.
 
     Command
-      datamodel-codegen --collapse-reuse-models --enum-field-as-literal all --input api.yaml --input-file-type openapi --preset standard-py310-20261027 --reuse-model --no-treat-dot-as-module --use-tag-as-union-variant-name
+      datamodel-codegen --collapse-reuse-models --enum-field-as-literal all --input api.yaml --input-file-type openapi --preset standard-py310-20261106 --reuse-model --no-treat-dot-as-module --use-tag-as-union-variant-name
 
     pyproject.toml
       [tool.datamodel-codegen]
@@ -2783,7 +2783,7 @@ reported when the rules suggest another value. Add `--output-format json` for a 
       enum-field-as-literal = "all"
       input = "api.yaml"
       input-file-type = "openapi"
-      preset = "standard-py310-20261027"
+      preset = "standard-py310-20261106"
       reuse-model = true
       treat-dot-as-module = false
       use-tag-as-union-variant-name = true
@@ -2911,6 +2911,79 @@ generation instead. Existing empty schemas remain valid references.
 
     class Model(RootModel[Empty]):
         root: Empty
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--untrusted-input` {#untrusted-input}
+
+Treat the input as a schema from an untrusted source.
+
+Use it when the schema comes from a source the project does not control, such as an HTTP request or a tool schema of
+an LLM, and the generated module is imported or executed. dcg then reads no file or URL but the input: a `$ref` must
+name a location in the input (a JSON pointer, an anchor, an embedded `$id` resource or another file of a directory
+input), not another file or a URL, and an XML Schema includes or imports only files of the input. The schema
+keywords whose values the generated module imports or evaluates as Python code (`x-python-type`, `x-python-import`,
+`customTypePath`, `customBasePath`) are refused, as are Protocol Buffers input, whose imports protoc reads by itself,
+and `--validation`. The option implies `--no-allow-remote-refs`. A schema that does none of this generates the same
+models.
+
+**Option relationships:**
+
+- **Implies:** [`--allow-remote-refs`](general-options.md#allow-remote-refs) disabled
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input local_id_ref.json --untrusted-input # (1)!
+    ```
+
+    1. :material-arrow-left: `--untrusted-input` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "title": "LocalIdRef",
+      "type": "object",
+      "$defs": {
+        "Target": {
+          "$id": "https://example.test/target",
+          "type": "object",
+          "properties": {
+            "name": {"type": "string"}
+          }
+        }
+      },
+      "properties": {
+        "target": {"$ref": "https://example.test/target"}
+      }
+    }
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  local_id_ref.json
+
+    from __future__ import annotations
+
+    from pydantic import BaseModel
+
+
+    class Target(BaseModel):
+        name: str | None = None
+
+
+    class LocalIdRef(BaseModel):
+        target: Target | None = None
     ```
 
     <!-- fmt: on -->

@@ -1,0 +1,16 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "aliased": {"enum": [1, true, null]},
+    "listed": {"enum": ["x", ["y"], null]},
+    "objects": {"enum": [{"k": 1}, null]},
+    "plain": {"enum": ["p", "q"]},
+    "integralFloat": {"anyOf": [{"$ref": "#/$defs/IntegralFloat"}, {"type": "integer"}]},
+    "integers": {"anyOf": [{"$ref": "#/$defs/Integers"}, {"type": "integer"}]}
+  },
+  "$defs": {
+    "IntegralFloat": {"type": "integer", "enum": [1, 2.0]},
+    "Integers": {"type": "integer", "enum": [1, 2]}
+  }
+}

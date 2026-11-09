@@ -99,6 +99,12 @@ ROWS = {
         options="--snake-case-field --pin-aliases-with-alias-generator --target-pydantic-version 2",
         kind="cli-doc",
     ),
+    "base_skipped": _row(
+        "tests/data/jsonschema/json_pointer_empty_token.json",
+        "pydantic_v2.BaseModel",
+        "base-skipped",
+        ["base skipped: 0.88.0 loops on an empty JSON pointer segment and grows without bound (#5935)"],
+    ),
 }
 
 
@@ -187,9 +193,9 @@ def test_error_name_and_redact(case: str) -> None:
 
 
 RELEASE_CASES = {
-    "fixes_only": [name for name in ROWS if name not in {"new_option", "accepted_anchor"}],
+    "fixes_only": [name for name in ROWS if name not in {"new_option", "accepted_anchor", "base_skipped"}],
     "every_class": list(ROWS),
-    "pr_tier": [name for name in ROWS if name not in {"new_option", "accepted_anchor"}],
+    "pr_tier": [name for name in ROWS if name not in {"new_option", "accepted_anchor", "base_skipped"}],
 }
 
 

@@ -48,7 +48,6 @@ from datamodel_code_generator.model import base as model_base
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from datamodel_code_generator.reference import get_singular_name
 from tests.conftest import (
-    CHECK_SCHEMA_GRAPH_ENV,
     HttpxGetMockFactory,
     MockHttpxResponse,
     assert_directory_content,
@@ -97,6 +96,7 @@ from tests.main.conftest import (
 from tests.main.openapi.conftest import EXPECTED_OPENAPI_PATH, assert_file_content
 
 if TYPE_CHECKING:
+    from _pytest.recwarn import WarningsRecorder
     from pytest_mock import MockerFixture
 
 EXTERNAL_REF_MAPPING_DATA_PATH = OPEN_API_DATA_PATH / "external_ref_mapping"
@@ -317,6 +317,56 @@ def test_main_openapi_discriminator_enum_use_enum_values(output_file: Path) -> N
     )
 
 
+def _plain_enum_verdict(validate: Any, document: object) -> str:
+    """Return the value a generated model parses a JSON document to, else that it rejects it."""
+    try:
+        return repr(validate(json.dumps(document)))
+    except pydantic.ValidationError:
+        return "rejected"
+
+
+@pytest.mark.parametrize(
+    ("input_name", "output_model_type", "extra_args"),
+    [
+        ("discriminator_plain_enum_tags", "pydantic_v2.BaseModel", []),
+        ("discriminator_plain_enum_tags", "pydantic_v2.dataclass", []),
+        ("discriminator_plain_enum_tags_string", "pydantic_v2.BaseModel", []),
+        ("discriminator_plain_enum_tags_string", "pydantic_v2.BaseModel", ["--use-subclass-enum"]),
+    ],
+    ids=["untyped", "untyped-pydantic-dataclass", "string", "string-subclass-enum"],
+)
+def test_main_openapi_discriminator_plain_enum_use_enum_values(
+    input_name: str, output_model_type: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Write the value beside a plain Enum member that tags a variant under ``--use-enum-values-in-discriminator``.
+
+    A member of a plain ``Enum`` equals no value a payload carries, so up to 0.90.0 the tags ``Literal[PetType.cat]``
+    made the union reject every payload with ``union_tag_invalid``, whether or not the enum's schema had
+    ``type: string`` (#6390). The tags are now ``Literal[PetType.cat, 'cat']``: the union parses the payload's value
+    and keeps the member a Python caller passes. A ``(str, Enum)`` member equals its value and stays
+    ``Literal[PetType.cat]``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{input_name}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", output_model_type, "--use-enum-values-in-discriminator", *extra_args),
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+    )
+    with _generated_model(
+        output_file, f"{input_name}_{output_model_type.replace('.', '_')}_{len(extra_args)}", "Holder"
+    ) as holder:
+        namespace = vars(sys.modules[holder.__module__])
+        validate = _model_json_validator(holder)
+        documents = ({"pet": {"petType": "cat"}}, {"pet": {"petType": "lion", "b": "x"}}, {"pet": {"petType": "dog"}})
+        verdicts = [f"{json.dumps(document)}: {_plain_enum_verdict(validate, document)}\n" for document in documents]
+        built = holder(pet=namespace["Cat"](petType=namespace["PetType"].cat))
+        verdicts.append(f"Holder(pet=Cat(petType=PetType.cat)) from Python: {built!r}\n")
+    assert_output("".join(verdicts), name="payloads")
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [["--output-model-type", "pydantic_v2.BaseModel"], ["--output-model-type", "msgspec.Struct"]],
@@ -489,7 +539,12 @@ def test_main_openapi_discriminator_integer_mapping_use_enum(output_file: Path) 
     reason="Installed black doesn't support the old style",
 )
 def test_main_openapi_discriminator_float_mapping(output_file: Path) -> None:
-    """Unsupported discriminator enum values keep their mapping string values."""
+    """Write a union whose mapping keys name float values without ``discriminator=``, keeping the Enums of its tags.
+
+    The keys ``'1.5'`` and ``'3.5'`` name the members ``1.5`` and ``3.5``, which no ``Literal`` holds, so the union is a
+    plain one, as for float ``const`` tags. Up to 0.88.0 the variants were tagged ``Literal['1.5']``, which rejected
+    ``{"kind": 1.5}`` and accepted the string the schema rejects (#5091).
+    """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "discriminator_float_mapping.yaml",
         output_path=output_file,
@@ -498,6 +553,78 @@ def test_main_openapi_discriminator_float_mapping(output_file: Path) -> None:
         expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / "float_mapping.py",
         extra_args=["--target-python-version", "3.10", "--output-model-type", "pydantic_v2.BaseModel"],
     )
+    for kind, expected_repr in (
+        (1.5, "Base(root=Foo(kind=<Kind.number_1_5: 1.5>))"),
+        (3.5, "Base(root=Bar(kind=<Kind1.number_3_5: 3.5>))"),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="discriminator_float_mapping",
+            model_name="Base",
+            valid_json=json.dumps({"kind": kind}),
+            invalid_json=json.dumps({"kind": "1.5"}),
+            expected_error_type="enum",
+            expected_repr=expected_repr,
+        )
+
+
+def test_main_openapi_discriminator_mapping_declared_in_other_document(output_file: Path) -> None:
+    """Tag the variants by a mapping that another document declares, whose paths its own directory resolves.
+
+    ``a/openapi.yaml`` holds the union through a ``$ref`` to ``Pet`` of ``b/base.yaml``, whose mapping paths
+    ``./sub/../cat.yaml``, ``./dog.yaml`` and ``../a/cat.yaml`` are relative to ``b``: ``c`` names ``CatModel`` of
+    ``b/cat.yaml`` and ``e`` names ``Cat`` of ``a/cat.yaml``, as the union reads them. Up to 0.88.0 the paths were
+    resolved against ``a``, where the union is held, so ``c`` and ``e`` both named ``Cat`` and ``CatModel`` was tagged
+    by its file name, ``Literal['cat.yaml#']``: a payload tagged ``c`` decoded as ``Cat`` and none decoded as
+    ``CatModel`` (#6159).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_mapping_other_document" / "a" / "openapi.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--allow-remote-refs", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    for tag, extra, model in (("c", "x", "CatModel"), ("d", "y", "Dog"), ("e", "a_only", "Cat")):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="discriminator_mapping_other_document",
+            model_name="Owner",
+            valid_json=json.dumps({"pet": {"pet_type": tag, extra: "1"}}),
+            invalid_json=json.dumps({"pet": {"pet_type": f"{'cat' if tag != 'd' else 'dog'}.yaml#"}}),
+            expected_error_type="union_tag_invalid",
+            expected_attribute_path=("pet", "pet_type"),
+            expected_attribute_value=tag,
+            expected_repr=f"Owner(pet={model}(pet_type='{tag}', {extra}='1'))",
+        )
+
+
+def test_main_openapi_discriminator_mapping_declared_in_other_document_directory(output_dir: Path) -> None:
+    """Tag the variants that an import cycle merges into ``_internal.py`` by the mapping another document declares.
+
+    The directory ``a`` is the input, so the documents of ``b`` that ``a`` reaches and that reach ``a`` back merge into
+    ``_internal.py``, which moves the paths of their models there. The tags are still read from the paths of their
+    schemas: up to 0.88.0 they were read from the moved paths, so no mapping path named a variant and each was tagged
+    by its moved path, ``Literal['_internal.Cat_1']``, and the union rejected every payload (#6178).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_mapping_other_document" / "a",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--allow-remote-refs", "--disable-timestamp", "--formatters", "builtin"],
+    )
+    for tag, extra, model in (("c", "x", "Cat_1"), ("d", "y", "Dog"), ("e", "a_only", "Cat")):
+        assert_generated_model_json_validation(
+            output_dir / "_internal.py",
+            module_name="discriminator_mapping_other_document_directory_internal",
+            model_name="Owner",
+            valid_json=json.dumps({"pet": {"pet_type": tag, extra: "1"}}),
+            invalid_json=json.dumps({"pet": {"pet_type": f"_internal.{model}"}}),
+            expected_error_type="union_tag_invalid",
+            expected_attribute_path=("pet", "pet_type"),
+            expected_attribute_value=tag,
+            expected_repr=f"Owner(pet={model}(pet_type='{tag}', {extra}='1'))",
+        )
 
 
 @pytest.mark.skipif(
@@ -614,6 +741,56 @@ def test_main_openapi_discriminator_enum_single_value_anyof_use_enum(output_file
             "pydantic_v2.BaseModel",
             "--use-enum-values-in-discriminator",
         ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "attribute_path", "expected_repr"),
+    [
+        (
+            "pydantic_v2.BaseModel",
+            ("root", "type"),
+            "ToolCallUnion(root=FunctionToolCall(id='1', type='function'))",
+        ),
+        ("pydantic_v2.dataclass", ("type",), "FunctionToolCall(id='1', type='function')"),
+    ],
+    ids=["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],
+)
+def test_main_openapi_discriminator_enum_single_value_anyof_enum_field_as_literal(
+    output_model_type: str, attribute_path: tuple[str, ...], expected_repr: str, output_file: Path
+) -> None:
+    """Tag a variant by the one value of the enum its tag property references, written as a root model of a Literal.
+
+    Under ``--enum-field-as-literal all`` ``ToolType`` is a ``RootModel[Literal['function']]``, or a type alias of the
+    ``Literal`` for a Pydantic dataclass. Up to 0.88.0 the tag of
+    ``FunctionToolCall`` was not read through it, so the variant was tagged by its schema name,
+    ``Literal['FunctionToolCall']``: the union rejected ``{"type": "function"}`` and accepted ``"FunctionToolCall"``,
+    which the schema rejects (#6044).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_enum_single_value_anyof.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--enum-field-as-literal",
+            "all",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="discriminator_enum_single_value_anyof_enum_field_as_literal",
+        model_name="ToolCallUnion",
+        valid_json=json.dumps({"id": "1", "type": "function"}),
+        invalid_json=json.dumps({"id": "1", "type": "FunctionToolCall"}),
+        expected_error_type="union_tag_invalid",
+        expected_attribute_path=attribute_path,
+        expected_attribute_value="function",
+        expected_repr=expected_repr,
     )
 
 
@@ -1594,6 +1771,26 @@ def test_main_openapi_msgspec_tagged_unions_inherited(output_file: Path, entrypo
         )
 
 
+def test_main_openapi_msgspec_tagged_unions_diamond(output_file: Path) -> None:
+    """Visit a struct derived through two bases once when looking for a derived struct that keeps the tag property."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_msgspec_tagged_unions_diamond.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / "msgspec_tagged_unions_diamond.py",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--use-msgspec-tagged-unions",
+            "--target-python-version",
+            "3.10",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
 def test_main_openapi_discriminator_mapping_msgspec_tags(output_file: Path) -> None:
     """Tag msgspec variants whose discriminator value comes from the mapping or the schema name."""
     run_main_and_assert(
@@ -1712,27 +1909,80 @@ def test_main_openapi_discriminator_pattern(option: str, expected_file: str, out
 
 
 def test_main_openapi_discriminator_pattern_mismatch(output_file: Path) -> None:
-    """Keep the patterns of a union whose tag is outside its pattern, as the schema rejects that variant.
+    """Drop the patterns of a union whose tag is outside its pattern, and warn that the variant never validates.
 
-    The `const` tag `cat` and the mapped tags `parrot` and `shark` do not match their patterns, so each union keeps the
-    patterns that hide its tags from Pydantic, as before, and only its source is compared.
+    The `const` tag `cat` and the mapped tags `parrot` and `shark` do not match their patterns. A pattern beside a tag
+    `Literal` hides it from Pydantic's discriminator, so the module would not import; each union writes its tags
+    without patterns, and a warning names each tag the schema accepts no variant with (#6238).
     """
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "discriminator_pattern_mismatch.yaml",
-        output_path=output_file,
-        input_file_type="openapi",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / "pattern_mismatch.py",
-        extra_args=[
-            "--target-python-version",
-            "3.10",
-            "--output-model-type",
-            "pydantic_v2.BaseModel",
-            "--formatters",
-            "builtin",
-            "--use-annotated",
-        ],
-        skip_code_validation=True,
+    with pytest.warns(UserWarning, match="of its tag field rejects") as records:
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_pattern_mismatch.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / "pattern_mismatch.py",
+            extra_args=[
+                "--target-python-version",
+                "3.10",
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--formatters",
+                "builtin",
+                "--use-annotated",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in records if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
+def test_main_openapi_discriminator_pattern_mismatch_field_constraints(
+    output_model_type: str, output_file: Path
+) -> None:
+    """Write the tags of a union without patterns under ``--field-constraints`` too, so each union decodes by its tag.
+
+    A tag outside its pattern is warned about, and the union still selects the variant by the tag (#6238).
+    """
+    with pytest.warns(UserWarning, match="of its tag field rejects") as records:
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_pattern_mismatch.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--output-model-type",
+                output_model_type,
+                "--formatters",
+                "builtin",
+                "--field-constraints",
+                "--disable-timestamp",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in records if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"discriminator_pattern_mismatch_{output_model_type.replace('.', '_')}",
+        model_name="Pets",
+        valid_json=json.dumps({
+            "constTag": {"type": "dog"},
+            "mappedTag": {"type": "bee"},
+            "oneOfMappedTags": {"type": "frog"},
+        }),
+        invalid_json=json.dumps({"oneOfMappedTags": {"type": "toad"}}),
+        expected_error_type="union_tag_invalid",
     )
 
 
@@ -2555,6 +2805,44 @@ def test_main_usable_discriminator_invalid_dotted_models_reuse(
     )
     with _generated_package_module(output_dir, "Bar.field_1") as module:
         assert_output(f"{module.Literal(bar='bar')!r}\n", expected / "literal.txt")
+
+
+@pytest.mark.isolate_builtin_formatter_config
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        [],
+        ["--output-model-type", "dataclasses.dataclass"],
+        pytest.param(
+            ["--output-model-type", "msgspec.Struct"],
+            marks=pytest.mark.filterwarnings("ignore:msgspec cannot decode the discriminated union PetOwner.pet"),
+        ),
+        ["--use-annotated"],
+        ["--use-type-alias"],
+        ["--collapse-root-models"],
+    ],
+)
+def test_main_literal_fields_keep_model_named_literal(output_dir: Path, extra_args: list[str]) -> None:
+    """Keep a model named Literal where fields named Literal hide typing.Literal from the tags beside them.
+
+    The fields bind typing.Literal under an alias before the models that imports shadow are renamed, so no import
+    binds the name Literal any more and the model keeps it, as up to 0.90.0.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "literal_fields_beside_dotted_literal_model.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--reuse-model",
+            *extra_args,
+            "--target-python-version",
+            "3.14",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -3386,7 +3674,12 @@ def test_validation_failed(mocker: MockerFixture, output_file: Path) -> None:
 
 The `--use-unique-items-as-set` flag generates Python set types instead of
 list types for JSON Schema arrays that have the uniqueItems constraint set
-to true, enforcing uniqueness at the type level.""",
+to true, enforcing uniqueness at the type level: a property, a root model,
+the member of an anyOf or oneOf, the items of an array and the values of a
+map. An array whose items no set can hold, such as objects or arrays, stays
+a list. So does a nested array in a union beside another member of its kind
+that keeps its lists, an array beside an array or a map beside a map, as a
+msgspec union holds one of each.""",
     input_schema="openapi/api_constrained.yaml",
     cli_args=["--use-unique-items-as-set", "--field-constraints"],
     golden_output="openapi/with_field_constraints_pydantic_v2_use_standard_collections_set.py",
@@ -3398,7 +3691,12 @@ def test_main_with_field_constraints(
 
     The `--use-unique-items-as-set` flag generates Python set types instead of
     list types for JSON Schema arrays that have the uniqueItems constraint set
-    to true, enforcing uniqueness at the type level.
+    to true, enforcing uniqueness at the type level: a property, a root model,
+    the member of an anyOf or oneOf, the items of an array and the values of a
+    map. An array whose items no set can hold, such as objects or arrays, stays
+    a list. So does a nested array in a union beside another member of its kind
+    that keeps its lists, an array beside an array or a map beside a map, as a
+    msgspec union holds one of each.
     """
     with pytest.warns(UserWarning, match=r"fields holding AnyUrl are written without min_length; Api\.apiUrl "):
         run_main_and_assert(
@@ -3409,6 +3707,52 @@ def test_main_with_field_constraints(
             expected_file=expected_output,
             extra_args=["--field-constraints", "--output-model-type", output_model, *args],
         )
+
+
+def test_main_openapi_unique_items_as_set_nullable_alias_items(tmp_path: Path, output_file: Path) -> None:
+    """Write a uniqueItems array of nullable type aliases as a set, as 0.89.0 did, as their None can be a member.
+
+    ``X`` is an array and ``S`` a string with ``nullable: true``, whose None the alias's field holds; a set can hold
+    the None of ``X``, which takes no other value that hashes, and every value of ``S``.
+    """
+    input_file = tmp_path / "unique_items_nullable_alias_items.json"
+    input_file.write_text(
+        json.dumps({
+            "openapi": "3.0.3",
+            "info": {"title": "t", "version": "1"},
+            "paths": {},
+            "components": {
+                "schemas": {
+                    "X": {"type": "array", "nullable": True, "items": {"type": "integer"}},
+                    "S": {"type": "string", "nullable": True},
+                    "Holder": {
+                        "type": "object",
+                        "properties": {
+                            "xs": {"type": "array", "uniqueItems": True, "items": {"$ref": "#/components/schemas/X"}},
+                            "ss": {"type": "array", "uniqueItems": True, "items": {"$ref": "#/components/schemas/S"}},
+                        },
+                    },
+                }
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--use-type-alias", "--use-unique-items-as-set", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="unique_items_nullable_alias_items",
+        model_name="Holder",
+        valid_json='{"xs": [null, null], "ss": ["a", "a"]}',
+        invalid_json='{"ss": [1]}',
+        expected_error_type="string_type",
+        expected_repr="Holder(xs={None}, ss={'a'})",
+    )
 
 
 @pytest.mark.cli_doc(
@@ -3698,8 +4042,7 @@ def test_main_openapi_strip_default_none_nullable_reference(output_model_type: s
     """Keep the None default of a field naming a nullable model only where the field writes no ``Field()``.
 
     ``Field()`` decides from the type's None as written before render preparation, which leaves out the None the
-    nullable model gives (row ``legacy-strip-keeps-written-null-only``): ``n_1`` and ``n2`` write ``Field()`` without
-    it, while ``n`` keeps ``= None``.
+    nullable model gives: ``n_1`` and ``n2`` write ``Field()`` without it, while ``n`` keeps ``= None``.
     """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "strip_default_none_nullable_reference.yaml",
@@ -4458,12 +4801,26 @@ def test_main_openapi_date_class(date_class: str, expected_output: str, output_f
     )
 
 
-def test_main_models_not_found(capsys: pytest.CaptureFixture, output_file: Path) -> None:
-    """Test OpenAPI generation with models not found error."""
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param("no_components.yaml", [], id="default"),
+        pytest.param("no_components.yaml", ["--treat-dot-as-module"], id="treat-dot-as-module"),
+        pytest.param("paths_external_ref", ["--treat-dot-as-module"], id="treat-dot-as-module-directory"),
+    ],
+)
+def test_main_models_not_found(
+    capsys: pytest.CaptureFixture, output_file: Path, input_name: str, extra_args: list[str]
+) -> None:
+    """Test OpenAPI generation with models not found error.
+
+    ``--treat-dot-as-module`` has no package to write either, and fails the same way (#6087).
+    """
     run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "no_components.yaml",
+        input_path=OPEN_API_DATA_PATH / input_name,
         output_path=output_file,
         input_file_type="openapi",
+        extra_args=extra_args,
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr_contains="Models not found in the input data",
@@ -5497,6 +5854,105 @@ def test_main_openapi_nullable_map_value_model_name_map(
             "int_parsing",
             id="nested-models-of-one-title",
         ),
+        pytest.param(
+            OPEN_API_DATA_PATH / "model_name_map_same_name_documents" / "openapi.yaml",
+            "openapi",
+            '{"Pet": "Cat"}',
+            ["--class-name-prefix", "P"],
+            "PHolder",
+            '{"first":{"first":"a"},"second":{"second":"b"}}',
+            '{"first":{"first":1}}',
+            "string_type",
+            id="same-name-documents-with-class-name-prefix-of-all-names",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "model_name_map_value_is_a_key.json",
+            "jsonschema",
+            '{"Foo": "Bar", "Bar": "Baz"}',
+            [],
+            "Root",
+            '{"foo":{"x":"a"},"bar":{"y":"b"}}',
+            '{"bar":{"y":1}}',
+            "string_type",
+            id="value-is-another-key",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "naming_strategy" / "primary_first_multi_file" / "main.json",
+            "jsonschema",
+            '{"Target2": "Inline"}',
+            ["--naming-strategy", "primary-first"],
+            "Wrapper",
+            '{"target":{"source":"inline"}}',
+            '{"target":{"source":"main"}}',
+            "literal_error",
+            id="primary-first-late-rename-beside-a-renamed-model",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "naming_strategy" / "primary_first_multi_file" / "main.json",
+            "jsonschema",
+            '{"Target3": "Zz3"}',
+            ["--naming-strategy", "primary-first"],
+            "Zz3",
+            '{"source":"external1"}',
+            '{"source":"external2"}',
+            "literal_error",
+            id="primary-first-late-rename",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "model_name_map_duplicate_suffix" / "main.json",
+            "jsonschema",
+            '{"TagModel": "Second"}',
+            ["--duplicate-name-suffix", '{"model": "Model"}'],
+            "Model",
+            '{"tag":{"second":"a"},"external":{"external":"b"}}',
+            '{"external":{"external":1}}',
+            "string_type",
+            id="duplicate-name-suffix-in-module",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "model_name_map.json",
+            "jsonschema",
+            '{"#/definitions/Bar": "Foo", "Foo": "Qux"}',
+            [],
+            "Model",
+            '{"related":{"foo":{"value":"a"}}}',
+            '{"related":{"foo":{"value":1}}}',
+            "string_type",
+            id="path-key-needs-the-class-name-key",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "model_name_map_keys_as_written.json",
+            "jsonschema",
+            '{"#/definitions/Bar": "Foo", "Foo": "Qux", "Pet": "Cat"}',
+            [],
+            "Model",
+            '{"foo":{"inline":1},"related":{"bar":true},"other":{"age":2}}',
+            '{"other":{"age":"a"}}',
+            "int_parsing",
+            id="keys-as-written-beside-later-models-of-their-names",
+        ),
+        pytest.param(
+            OPEN_API_DATA_PATH / "model_name_map_read_write_variant.yaml",
+            "openapi",
+            '{"PetRequest": "Note"}',
+            ["--read-only-write-only-model-type", "request-response"],
+            "PetRequest1",
+            '{"name":"a","request":{"note":"b"}}',
+            '{"request":{"note":1}}',
+            "string_type",
+            id="read-write-variant-beside-a-renamed-model",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "model_name_map_deleted_common_part.json",
+            "jsonschema",
+            '{"Pet1": "Animal"}',
+            [],
+            "Other",
+            '{"pet":{"w":1}}',
+            '{"pet":{"w":"a"}}',
+            "int_parsing",
+            id="name-of-a-deleted-common-part",
+        ),
     ],
 )
 def test_main_openapi_model_name_map_key_of_numbered_name(
@@ -5510,7 +5966,11 @@ def test_main_openapi_model_name_map_key_of_numbered_name(
     invalid_json: str,
     error_type: str,
 ) -> None:
-    """Name the next model of a family without the name a class name key renamed, instead of matching the key again."""
+    """Rename by a class name key the model that has the name without the map; the others keep their names there.
+
+    Where the run without the class name keys fails (a path key takes the name a class name key frees), the keys apply
+    as written: each renames the first model generated under its name, as up to 0.88.0.
+    """
     run_main_and_assert(
         input_path=input_path,
         output_path=output_file,
@@ -5565,6 +6025,31 @@ def test_main_openapi_nullable_map_value_class_keyed_options(output_file: Path, 
             "--formatters",
             "builtin",
         ],
+    )
+
+
+def test_main_openapi_nullable_map_value_dotted_field_keys(output_file: Path) -> None:
+    """Apply ``Class.field`` keys whose field name holds a dot to a map value model under its final name."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "nullable_map_value_dotted_field_keys.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            DataModelType.PydanticV2BaseModel.value,
+            "--aliases",
+            json.dumps({"Tags1.a.b": "ab"}),
+            "--serialization-aliases",
+            json.dumps({"Tags1.c.d": "cd"}),
+            "--default-values",
+            json.dumps({"Tags1.a.b": "x"}),
+            "--use-typed-nullable-map-values",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
     )
 
 
@@ -6235,6 +6720,50 @@ def test_main_openapi_json_pointer(output_file: Path) -> None:
         input_file_type="openapi",
         assert_func=assert_file_content,
         expected_file="json_pointer.py",
+    )
+
+
+def test_main_openapi_json_pointer_through_scalar(output_file: Path) -> None:
+    """A pointer through a scalar names nothing, as a missing member does."""
+    with warnings.catch_warnings(record=True) as warning_records:
+        warnings.simplefilter("always", DanglingRefWarning)
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "json_pointer_through_scalar.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+        )
+
+    assert_warnings_contain(warning_records, "#/x-ext/k/j", "#/x-ext/items/0/j")
+
+
+@pytest.mark.parametrize("scopes", [[], ["--openapi-scopes", "schemas", "api"]], ids=["models", "api-scope"])
+def test_main_openapi_pointer_into_document_with_integer_top_level_key(output_file: Path, scopes: list[str]) -> None:
+    """Read the member a pointer names of a document whose top level has an integer key, `404:` (#6092).
+
+    The root of a document that a pointer enters is read by its string keys, so the integer key beside the member is
+    no schema error; up to 0.88.0 the root was validated as a schema and the generation stopped with a validation error.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "pointer_into_integer_keyed_document" / "openapi.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *scopes,
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_pointer_into_integer_keyed_document",
+        model_name="Reply",
+        valid_json='{"code": "abc"}',
+        invalid_json='{"code": "abcd"}',
+        expected_error_type="string_too_long",
     )
 
 
@@ -9349,25 +9878,30 @@ def test_main_openapi_structured_field_render_plan(
     expected_suffix: str,
     extra_args: list[str],
 ) -> None:
-    """Render defaults and syntax-like user values without parsing generated fields."""
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "field_render_plan.yaml",
-        output_path=output_file,
-        input_file_type="openapi",
-        assert_func=assert_file_content,
-        expected_file=f"output_model_types/field_render_plan_{expected_suffix}.py",
-        extra_args=[
-            "--output-model-type",
-            output_model_type,
-            "--use-default-kwarg",
-            "--use-default-factory-for-optional-nested-models",
-            "--field-extra-keys",
-            "x-render-marker",
-            "x-is-classvar",
-            *extra_args,
-        ],
-        force_exec_validation=True,
-    )
+    """Render defaults and syntax-like user values without parsing generated fields.
+
+    The default {} of empty_nested_convert lacks the required field of its model, which every output here validates,
+    so generation warns about it.
+    """
+    with pytest.warns(UserWarning, match=r"^The default of RenderPlan\.empty_nested_convert \(\{\} lacks 'value'"):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "field_render_plan.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file=f"output_model_types/field_render_plan_{expected_suffix}.py",
+            extra_args=[
+                "--output-model-type",
+                output_model_type,
+                "--use-default-kwarg",
+                "--use-default-factory-for-optional-nested-models",
+                "--field-extra-keys",
+                "x-render-marker",
+                "x-is-classvar",
+                *extra_args,
+            ],
+            force_exec_validation=True,
+        )
 
 
 @pytest.mark.parametrize(
@@ -9582,21 +10116,29 @@ def test_main_openapi_default_object(output_model: str, expected_output: str, tm
     reason="Installed black doesn't support the old style",
 )
 def test_main_openapi_union_default_object(output_model: str, expected_output: str, output_file: Path) -> None:
-    """Test OpenAPI generation with Union type default object values."""
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "union_default_object.yaml",
-        output_path=output_file,
-        expected_file=EXPECTED_OPENAPI_PATH / expected_output,
-        input_file_type="openapi",
-        extra_args=[
-            "--output-model-type",
-            output_model,
-            "--target-python-version",
-            "3.10",
-            "--openapi-scopes",
-            "schemas",
-        ],
-    )
+    """Test OpenAPI generation with Union type default object values.
+
+    msgspec decodes no union of a dict and a Struct, so msgspec output warns about it.
+    """
+    with (
+        pytest.warns(UserWarning, match=r"it holds the dict-like members dict\[str, str\], Interval")
+        if output_model == "msgspec.Struct"
+        else contextlib.nullcontext()
+    ):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "union_default_object.yaml",
+            output_path=output_file,
+            expected_file=EXPECTED_OPENAPI_PATH / expected_output,
+            input_file_type="openapi",
+            extra_args=[
+                "--output-model-type",
+                output_model,
+                "--target-python-version",
+                "3.10",
+                "--openapi-scopes",
+                "schemas",
+            ],
+        )
 
 
 @pytest.mark.parametrize(
@@ -9835,7 +10377,10 @@ def test_main_openapi_use_operation_id_as_name_not_found_operation_id(
         expected_exit=Exit.ERROR,
         extra_args=["--use-operation-id-as-name", "--openapi-scopes", "paths", "schemas", "parameters"],
         capsys=capsys,
-        expected_stderr_contains="All operations must have an operationId when --use_operation_id_as_name is set.",
+        expected_stderr_contains=(
+            "All operations must have an operationId when --use-operation-id-as-name is set. "
+            "The following path was missing an operationId: pets\n"
+        ),
     )
 
 
@@ -10010,7 +10555,7 @@ def test_main_custom_file_header_duplicate_options(
             custom_file_header,
         ],
         capsys=capsys,
-        expected_stderr_contains="`--custom_file_header_path` can not be used with `--custom_file_header`.",
+        expected_stderr_contains="`--custom-file-header-path` can not be used with `--custom-file-header`.",
     )
 
 
@@ -10174,6 +10719,41 @@ def test_main_openapi_serialize_as_any_pydantic_v2(output_file: Path) -> None:
     version.parse(pydantic.VERSION) < version.parse("2.0.0"),
     reason="Require Pydantic version 2.0.0 or later",
 )
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(["--use-serialize-as-any-for-every-subclass"], id="every-subclass"),
+        pytest.param(
+            ["--use-serialize-as-any-for-every-subclass", "--use-exact-imports", "--collapse-root-models"],
+            id="every-subclass-exact-collapsed",
+        ),
+    ],
+)
+def test_main_openapi_serialize_as_any_module_qualified(output_dir: Path, extra_args: list[str]) -> None:
+    """Wrap a field that names its model through its module in SerializeAsAny under the every-subclass option.
+
+    ``a.Holder.d`` names ``c.Base``, which ``c.Child`` extends, and ``b.Root`` holds a list of it. Without the option
+    ``d: c.Base`` and ``root: list[c.Base]`` are not wrapped, as the reference is written through its module (#5595),
+    and a ``Child`` serializes as a ``Base``; with it both are, as is the collapsed root under ``--use-exact-imports``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "serialize_as_any_module_qualified.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--use-serialize-as-any"),
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_package_module(output_dir, "a") as module:
+        child = importlib.import_module(f"{output_dir.name}.c").Child
+        holder = module.Holder(d=child(b="1", e="2"), r=[child(b="3", e="4")])
+        assert_output(json.dumps(holder.model_dump(mode="json"), sort_keys=True) + "\n", name="dump")
+
+
 def test_main_openapi_serialize_as_any_module_import_alias_pydantic_v2(output_dir: Path) -> None:
     """Test SerializeAsAny with modular output and dotted schema import aliases."""
     run_main_and_assert(
@@ -10217,22 +10797,14 @@ def test_main_openapi_all_of_with_relative_ref(output_file: Path) -> None:
     )
 
 
-def test_main_openapi_keep_model_order_same_short_name_in_another_module(
-    monkeypatch: pytest.MonkeyPatch, output_dir: Path, tmp_path: Path
-) -> None:
-    """Keep the model order that a same-named model of another module imported as a module gives.
-
-    The model graph check reports that the dependencies by model key differ (`report:<path>` appends one JSON line).
-    """
-    report_path = tmp_path / "checks.jsonl"
-    monkeypatch.setenv("DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH", f"report:{report_path}")
+def test_main_openapi_keep_model_order_same_short_name_in_another_module(output_dir: Path) -> None:
+    """Keep the model order that a same-named model of another module imported as a module gives."""
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "keep_model_order_same_short_name.yaml",
         output_path=output_dir,
         input_file_type="openapi",
         extra_args=["--keep-model-order", "--disable-future-imports", "--disable-timestamp"],
     )
-    assert_output("\n".join(dict.fromkeys(report_path.read_text(encoding="utf-8").splitlines())) + "\n", name="report")
 
 
 @LEGACY_BLACK_SKIP
@@ -11345,19 +11917,43 @@ def test_main_openapi_shadowed_imports(output_file: Path) -> None:
             ["--use-type-alias", "--use-annotated", "--target-python-version", "3.12"],
             "annotated_property_type_statement.py",
         ),
+        ("alias_description_property_names.yaml", "pydantic_v2.BaseModel", [], None),
+        ("literal_property_enum_root_names.yaml", "pydantic_v2.BaseModel", ["--enum-field-as-literal", "all"], None),
+        ("annotated_property_use_annotated.yaml", "pydantic_v2.BaseModel", ["--use-annotated"], None),
     ],
 )
 def test_main_openapi_field_name_collision_with_alias_constraints(
-    output_file: Path, input_file: str, output_model_type: str, extra_args: list[str], expected_file: str
+    output_file: Path, input_file: str, output_model_type: str, extra_args: list[str], expected_file: str | None
 ) -> None:
-    """Models and properties named like ``Field`` or ``Annotated`` keep template calls bound beside alias imports."""
+    """Models and properties named like ``Field`` or ``Annotated`` keep template calls bound beside alias imports.
+
+    A root model of the module writes the alias of an import a property hides, in its root field and its base class.
+    """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / input_file,
         output_path=output_file,
         input_file_type="openapi",
         assert_func=assert_file_content,
-        expected_file=f"field_name_collision/{expected_file}",
+        expected_file=expected_file and f"field_name_collision/{expected_file}",
         extra_args=["--output-model-type", output_model_type, "--disable-timestamp", *extra_args],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+def test_main_openapi_builtin_property_beside_root_models(output_file: Path, output_model_type: str) -> None:
+    """A root model keeps the builtins that a property of another model hides, as the module binds them beside.
+
+    Only the fields of the model whose property hides ``list`` write the alias, as up to 0.90.0.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "builtin_property_beside_root_model.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", output_model_type, "--disable-timestamp", "--formatters", "builtin"],
         force_exec_validation=True,
     )
 
@@ -11496,21 +12092,25 @@ def test_main_openapi_type_alias_mutual_recursive_py311(output_file: Path) -> No
     reason="Installed black doesn't support the target python version",
 )
 def test_main_openapi_type_alias_mutual_recursive_typealiastype_py311(output_file: Path) -> None:
-    """Test mutual recursive type aliases render with quoted forward refs for TypeAliasType on Python 3.11."""
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "type_alias_mutual_recursive.yaml",
-        output_path=output_file,
-        input_file_type="openapi",
-        assert_func=assert_file_content,
-        expected_file="msgspec_mutual_type_alias.py",
-        extra_args=[
-            "--use-type-alias",
-            "--target-python-version",
-            "3.11",
-            "--output-model-type",
-            "msgspec.Struct",
-        ],
-    )
+    """Test mutual recursive type aliases render with quoted forward refs for TypeAliasType on Python 3.11.
+
+    msgspec decodes no type alias on a recursion that no Struct breaks, which the generation warns about.
+    """
+    with pytest.warns(UserWarning, match=r"msgspec cannot decode the type aliases NodeA, NodeB, or a type that uses"):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "type_alias_mutual_recursive.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file="msgspec_mutual_type_alias.py",
+            extra_args=[
+                "--use-type-alias",
+                "--target-python-version",
+                "3.11",
+                "--output-model-type",
+                "msgspec.Struct",
+            ],
+        )
 
 
 @pytest.mark.skipif(
@@ -11714,6 +12314,24 @@ def test_main_openapi_item_schema(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "scopes",
+    [
+        pytest.param(["schemas", "paths", "requestbodies"], id="paths-and-request-bodies"),
+        pytest.param(["api"], id="api"),
+    ],
+)
+def test_main_openapi_item_schema_beside_null_schema(scopes: list[str], output_file: Path) -> None:
+    """Read the itemSchema of a media type object whose schema is null, as one with no schema."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "item_schema_null_schema.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        extra_args=["--disable-timestamp", "--openapi-scopes", *scopes],
+    )
+
+
 def test_main_openapi_item_schema_requires_32(output_file: Path) -> None:
     """Test OpenAPI 3.1 ignores OpenAPI 3.2 itemSchema in media type objects."""
     run_main_and_assert(
@@ -11791,22 +12409,6 @@ def test_main_openapi_webhooks_with_parameters(output_file: Path) -> None:
     )
 
 
-def test_schema_graph_check_counts_references_without_an_edge(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """Every `$ref` of a path item, operation, request body, response and media type reaches its site with an edge.
-
-    The report of the schema graph check counts, by site, the references that arrived as plain strings.
-    """
-    report_path = tmp_path / "checks.jsonl"
-    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, f"report:{report_path}")
-    parser = OpenAPIParser(
-        OPEN_API_DATA_PATH / "ref_edges" / "operation_refs.yaml",
-        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Paths, OpenAPIScope.Parameters, OpenAPIScope.RequestBodies],
-        formatters=[Formatter.BUILTIN],
-    )
-    parser.parse()
-    assert_output(report_path.read_text(encoding="utf-8"))
-
-
 class _ReservedTargetWriterParser(OpenAPIParser):
     """Adds a property to a target its document reserves: a prepared tree that differs from its source."""
 
@@ -11817,54 +12419,180 @@ class _ReservedTargetWriterParser(OpenAPIParser):
         }
 
 
-@pytest.mark.parametrize("flag", ["check", "report", "off"])
-def test_schema_graph_check_of_a_reserved_target_that_differs_from_its_source(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
-) -> None:
-    """A reserved target is parsed from the prepared tree of its document, which the check compares with its source.
-
-    The check (`1`, as the test suite sets it) loads the source again and raises when the value at a reserved target
-    differs, `report:<path>` appends it as a JSON line, and with the check off (`0`) the target is parsed from the
-    prepared tree, with the property added to it.
-    """
-    report_path = tmp_path / "checks.jsonl"
-    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
+def test_main_openapi_reserved_target_parsed_from_the_prepared_tree() -> None:
+    """A reserved target is parsed from the prepared tree of its document, with the property a parser added to it."""
     parser = _ReservedTargetWriterParser(
         OPEN_API_DATA_PATH / "reference_to_object_properties.yaml", formatters=[Formatter.BUILTIN]
     )
-    if flag == "check":
-        with pytest.raises(
-            Error,
-            match=f"^{CHECK_SCHEMA_GRAPH_ENV}: the reserved target "
-            "'reference_to_object_properties.yaml#/components/schemas/Parent/properties/pet' differs between the "
-            "prepared tree and a fresh load of its source$",
-        ):
-            parser.parse()
-        return
     assert_output(str(parser.parse()))
-    if flag == "report":
-        assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
-def test_schema_graph_check_records_a_dynamic_anchor_registered_after_its_reference(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_main_openapi_dynamic_anchor_registered_after_its_reference() -> None:
     """A `$dynamicRef` parsed before the components that declare its anchor resolves through its edge.
 
     `Holder` is parsed before `First` and `Second` register `$dynamicAnchor: T`, so `#T` resolves as a reference,
-    to the last component that declares the anchor; parsed after them it resolves to the first. The schema graph check
-    compares the answer with every anchor of the document and records it as an `anchor-answer` line.
+    to the last component that declares the anchor; parsed after them it resolves to the first. Two components declare
+    the name, which JSON Schema leaves undefined, so the reference warns (#5131).
     """
-    report_path = tmp_path / "checks.jsonl"
-    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, f"report:{report_path}")
-    output = generate(
-        OPEN_API_DATA_PATH / "dynamic_ref_anchor_parse_order.yaml",
-        input_file_type=InputFileType.OpenAPI,
-        disable_timestamp=True,
-        formatters=[Formatter.BUILTIN],
-    )
+    with pytest.warns(SchemaResourceRefWarning, match=r"^The anchor 'T' is declared by more than one schema in "):
+        output = generate(
+            OPEN_API_DATA_PATH / "dynamic_ref_anchor_parse_order.yaml",
+            input_file_type=InputFileType.OpenAPI,
+            disable_timestamp=True,
+            formatters=[Formatter.BUILTIN],
+        )
     assert_output(str(output))
-    assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
+@pytest.mark.cli_doc(
+    options=["--read-dynamic-anchors-in-document-order"],
+    option_description="""Resolve a `$dynamicRef` to the first `$dynamicAnchor` of its name in document order.
+
+A plain-name `$dynamicRef` that its dynamic scope does not bind names a `$dynamicAnchor` of its name in its document.
+Without this option that is the first one the parse has met, so the answer depends on the order of the schemas: with
+`Holder` written before the components `First` and `Second` that both declare `$dynamicAnchor: T`, `#T` resolves to
+`Second`, written after them to `First`. With it the document as loaded decides: the first declaration in document
+order. A `$ref` or `$dynamicRef` to a plain name several schemas of a document declare, which JSON Schema leaves
+undefined and which warns either way, names the first declaration too, where it names the last without the option.""",
+    input_schema="openapi/dynamic_ref_anchor_parse_order.yaml",
+    cli_args=["--read-dynamic-anchors-in-document-order"],
+    golden_output="main/openapi/main_openapi/read_dynamic_anchors_in_document_order[read].py",
+    comparison_output="main/openapi/main_openapi/read_dynamic_anchors_in_document_order[released].py",
+)
+@pytest.mark.parametrize(
+    ("extra_args", "invalid_json", "expected_error_type"),
+    [
+        pytest.param([], '{"item": {"second": 2}}', "string_type", id="released"),
+        pytest.param(
+            ["--read-dynamic-anchors-in-document-order"], '{"item": {"first": "one"}}', "int_parsing", id="read"
+        ),
+    ],
+)
+def test_main_openapi_read_dynamic_anchors_in_document_order(
+    output_file: Path, extra_args: list[str], invalid_json: str, expected_error_type: str
+) -> None:
+    """Resolve a `$dynamicRef` parsed before the anchors it names to the first in document order (#5131).
+
+    `Holder` is parsed before `First` and `Second`, which both declare `$dynamicAnchor: T`. Without the option `#T`
+    resolves through its edge to the last declaration, `Second`, where parsed after them it resolves to `First`; with
+    it the document decides, so it is `First` in either order. The duplicated name warns either way.
+    """
+    with pytest.warns(SchemaResourceRefWarning, match=r"^The anchor 'T' is declared by more than one schema in "):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "dynamic_ref_anchor_parse_order.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                *("--output-model-type", "pydantic_v2.BaseModel"),
+                *extra_args,
+                *("--formatters", "builtin", "--disable-timestamp"),
+            ],
+        )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_read_dynamic_anchors_in_document_order",
+        model_name="Holder",
+        valid_json='{"item": {"first": 1, "second": "a"}}',
+        invalid_json=invalid_json,
+        expected_error_type=expected_error_type,
+    )
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "invalid_json", "expected_error_type"),
+    [
+        pytest.param([], '{"dynamic": {"second": 2}}', "string_type", id="released"),
+        pytest.param(
+            ["--read-dynamic-anchors-in-document-order"], '{"dynamic": {"first": "one"}}', "int_parsing", id="read"
+        ),
+    ],
+)
+def test_main_openapi_dynamic_ref_to_anchor_and_dynamic_anchor(
+    output_file: Path, extra_args: list[str], invalid_json: str, expected_error_type: str
+) -> None:
+    """Resolve a `$dynamicRef` to a name an `$anchor` and a `$dynamicAnchor` declare as a `$ref` to it.
+
+    `First` declares `$anchor: T` and `Second` `$dynamicAnchor: T`, and nothing binds `T` in the dynamic scope of
+    `Holder`. Under the document-order option `#T` names `First`, the first declaration, from the `$dynamicRef` as from
+    the `$ref`; without it both name `Second`, as in 0.89.0.
+    """
+    with pytest.warns(SchemaResourceRefWarning, match=r"^The anchor 'T' is declared by more than one schema in "):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "dynamic_ref_anchor_and_dynamic_anchor.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                *("--output-model-type", "pydantic_v2.BaseModel"),
+                *extra_args,
+                *("--formatters", "builtin", "--disable-timestamp"),
+            ],
+        )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_dynamic_ref_to_anchor_and_dynamic_anchor",
+        model_name="Holder",
+        valid_json='{"dynamic": {"first": 1, "second": "a"}, "static": {"first": 1, "second": "a"}}',
+        invalid_json=invalid_json,
+        expected_error_type=expected_error_type,
+    )
+
+
+def test_main_openapi_dynamic_anchor_of_held_document_in_document_order(output_file: Path) -> None:
+    """Name the first `$dynamicAnchor` of a document as written, also in a document a reference holds as a parameter.
+
+    `parameter.yaml` is a Parameter Object, whose `schema` declares `$dynamicAnchor: T` before its component
+    `Component` does. The resources of the document are read with its component schemas first, but under the
+    document-order option the unbound `$dynamicRef` of `Holder` names the declaration written first, the `schema`.
+    """
+    with pytest.warns(SchemaResourceRefWarning, match=r"^The anchor 'T' is declared by more than one schema in "):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "dynamic_anchor_held_document" / "api.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                *("--output-model-type", "pydantic_v2.BaseModel", "--read-dynamic-anchors-in-document-order"),
+                *("--openapi-scopes", "schemas", "paths", "parameters"),
+                *("--formatters", "builtin", "--disable-timestamp"),
+            ],
+        )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_dynamic_anchor_of_held_document_in_document_order",
+        model_name="Holder",
+        valid_json='{"item": {"held": 1}}',
+        invalid_json='{"item": {"held": "one"}}',
+        expected_error_type="int_parsing",
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="released"), pytest.param(["--read-dynamic-anchors-in-document-order"], id="read")],
+)
+def test_main_openapi_dynamic_anchor_declared_once(output_file: Path, extra_args: list[str]) -> None:
+    """Resolve an unbound `$dynamicRef` to the one `$dynamicAnchor` of its name, with the document-order option or not.
+
+    Only `First` declares `$dynamicAnchor: T`, and nothing binds `T` in the dynamic scope of `Holder`, so under the
+    option the document as loaded names `First`, the anchor the parse meets without the option, too.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "dynamic_ref_anchor_declared_once.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel"),
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_dynamic_anchor_declared_once",
+        model_name="Holder",
+        valid_json='{"item": {"first": 1}}',
+        invalid_json='{"item": {"first": "one"}}',
+        expected_error_type="int_parsing",
+    )
 
 
 def test_main_openapi_all_of_request_body(output_file: Path) -> None:
@@ -11892,6 +12620,60 @@ def test_main_openapi_one_of_body_without_member_types_beside_properties() -> No
         formatters=[Formatter.BUILTIN],
     )
     assert_output(str(parser.parse()))
+
+
+@pytest.mark.parametrize("scope", ["paths", "api"])
+def test_main_openapi_responses_object_extensions_are_no_responses(scope: str, output_file: Path) -> None:
+    """Leave the `x-` extensions of a Responses Object out of the responses, in the paths scope and the api scope.
+
+    OpenAPI lets a Responses Object be extended with specification extensions. Up to 0.88.0 both walks read
+    `x-note: internal` as a response and refused the document.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "responses_extensions.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "schemas", scope],
+    )
+
+
+@pytest.mark.parametrize("scope", ["paths", "api"])
+def test_main_openapi_responses_object_extension_holding_an_object_is_a_response(scope: str, output_file: Path) -> None:
+    """Keep reading an `x-` extension of a Responses Object that holds an object as a response (legacy row).
+
+    The paths scope and the api scope have generated the models of its content since their releases, so they still do,
+    while `x-note: internal` beside it is skipped.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "responses_object_extension.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "schemas", scope],
+    )
+
+
+def test_main_openapi_paths_header_override_is_case_insensitive() -> None:
+    """An operation's header overrides the path item's one that another case spells, as in the `api` scope.
+
+    Header names are case-insensitive (RFC 9110), so `parse_operation` gets the operation's `x-request-id` alone. A
+    query parameter is case-sensitive: `trace` and `Trace` stay two parameters. Up to 0.88.0 the paths scope handed
+    on `X-Request-Id` beside `x-request-id`.
+    """
+    seen: list[str] = []
+
+    class _OperationParametersParser(OpenAPIParser):
+        """Records the parameters each operation reaches parse_operation with."""
+
+        def parse_operation(self, raw_operation: dict[str, Any], path: list[str], **kwargs: Any) -> None:
+            seen.append(f"{path[-1]}: {[(item['name'], item['in']) for item in raw_operation.get('parameters', [])]}")
+            super().parse_operation(raw_operation, path, **kwargs)
+
+    _OperationParametersParser(
+        OPEN_API_DATA_PATH / "parameter_header_case.yaml",
+        openapi_scopes=[OpenAPIScope.Paths],
+        formatters=[Formatter.BUILTIN],
+    ).parse()
+    assert_output("\n".join(seen))
 
 
 def test_webhooks_ref_with_external_schema(output_file: Path) -> None:
@@ -12283,6 +13065,68 @@ def test_main_openapi_read_only_write_only_allof_request_response(output_file: P
     )
 
 
+@pytest.mark.parametrize("model_type", ["request-response", "all"])
+def test_main_openapi_read_only_write_only_allof_member_declarations(output_file: Path, model_type: str) -> None:
+    """Each declaration of a property that two allOf members declare checks the bounds of both (#6276).
+
+    The model ``Members`` writes the first declaration and the request and response models the last, as 0.89.0 does;
+    each takes the bounds of the other, also in the variants of ``Child``, which reads ``Members`` before its model is
+    built. ``Members`` itself keeps one field of the two declarations, with the warning of 0.89.0.
+    """
+    with (
+        pytest.warns(UserWarning, match="Field name `mid` is duplicated on Members")
+        if model_type == "all"
+        else contextlib.nullcontext()
+    ):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "allof_member_declarations_rw.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--read-only-write-only-model-type",
+                model_type,
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+            ],
+        )
+    for invalid_json, error_type in (('{"mid": ""}', "string_too_short"), ('{"mid": "abcd"}', "string_too_long")):
+        assert_generated_model_json_invalid(
+            output_file,
+            module_name=f"allof_member_declarations_rw_{model_type.replace('-', '_')}",
+            model_name="ChildRequest",
+            invalid_json=invalid_json,
+            expected_error_type=error_type,
+        )
+
+
+def test_main_openapi_read_only_write_only_extra_items_patterns(output_file: Path, recwarn: WarningsRecorder) -> None:
+    """Warn once about the patterns of a map's values that one regular expression cannot check together.
+
+    The request/response walk of ``Account`` reads the values of ``Passwords`` as the TypedDict extra items type with
+    its warnings ignored before ``Passwords`` is parsed; the parse still reports them.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "read_only_write_only_extra_items_patterns.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "typing.TypedDict",
+            "--intersect-allof-keywords",
+            "--read-only-write-only-model-type",
+            "request-response",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recwarn if issubclass(warning.category, UserWarning)),
+        name="warnings",
+    )
+
+
 def test_main_openapi_read_only_write_only_collision(output_file: Path) -> None:
     """Test readOnly/writeOnly with name collision (UserRequest already exists)."""
     run_main_and_assert(
@@ -12314,6 +13158,108 @@ def test_main_openapi_read_only_write_only_ref(output_file: Path) -> None:
             "--read-only-write-only-model-type",
             "all",
         ],
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--keep-content-parameter-refs"],
+    option_description="""Type a parameter whose content media schema is a `$ref` by the model the `$ref` names.
+
+Without this option a parameter with `content` reads its media schema `{"$ref": "#/components/schemas/Page"}` as a
+copy of the referenced schema: an object gets a model of the parameter's own (merged back into `Page` only where the
+two render alike), and a scalar its inline type with the default and description of the target. Under
+`--read-only-write-only-model-type request-response` the copy splits into `Page1Request` and `Page1Response` beside
+`PageRequest` and `PageResponse`, and the parameter names `Page1Request`. With the option the parameter names the
+referenced model, its Request variant there, as a parameter's `schema: {"$ref": ...}` does.""",
+    input_schema="openapi/content_parameter_refs.yaml",
+    cli_args=[
+        "--openapi-scopes",
+        "schemas",
+        "paths",
+        "parameters",
+        "--read-only-write-only-model-type",
+        "request-response",
+        "--keep-content-parameter-refs",
+    ],
+    golden_output="main/openapi/main_openapi/keep_content_parameter_refs[request-response-kept].py",
+    comparison_output="main/openapi/main_openapi/keep_content_parameter_refs[request-response].py",
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(["--keep-content-parameter-refs"], id="kept"),
+        pytest.param(["--read-only-write-only-model-type", "request-response"], id="request-response"),
+        pytest.param(
+            ["--read-only-write-only-model-type", "request-response", "--keep-content-parameter-refs"],
+            id="request-response-kept",
+        ),
+        pytest.param(["--read-only-write-only-model-type", "all", "--keep-content-parameter-refs"], id="all-kept"),
+    ],
+)
+def test_main_openapi_keep_content_parameter_refs(output_file: Path, extra_args: list[str]) -> None:
+    """Type a content parameter whose media schema is a `$ref` by the model it names under the option (#6322).
+
+    Without it `page` takes a copy of `Page` with its description, merged into `Page`, and `count` the inline
+    `conint(ge=1)` with the default and description of `Count`; under request-response the copy writes `Page1Request`
+    and `Page1Response` too. With it `page` names `Page` (`PageRequest` under request-response) and `count` names
+    `Count`, as `other`, whose own schema is the `$ref`, does, and no copy is written.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "content_parameter_refs.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--openapi-scopes", "schemas", "paths", "parameters"),
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--openapi-scopes", "paths", "parameters"], id="paths-parameters"),
+        pytest.param(
+            ["--openapi-scopes", "paths", "parameters", "--dedupe-request-response-variants"],
+            id="paths-parameters-dedupe",
+        ),
+        pytest.param(["--openapi-scopes", "schemas", "paths", "parameters"], id="schemas-paths-parameters"),
+    ],
+)
+def test_main_openapi_read_only_write_only_parameters(output_file: Path, extra_args: list[str]) -> None:
+    """Name the Request variants of the models that parameter schemas use under ``request-response``.
+
+    A parameter model holds what a request sends, so a parameter whose schema is, holds or nests a model that splits
+    into variants takes its Request variant, also through a ``$ref`` to a component parameter and through ``content``
+    (#6213); before, the parameter model named the model the split leaves out and generation stopped.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "read_only_write_only_parameters.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--read-only-write-only-model-type",
+            "request-response",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"read_only_write_only_parameters_{'_'.join(extra_args).replace('-', '_')}",
+        model_name="NestedGetParametersQuery",
+        valid_json=json.dumps({"holder": {"filter": {"q": "x", "secret": "s"}}}),
+        invalid_json=json.dumps({"holder": {"filter": {"q": 1}}}),
+        expected_error_type="string_type",
+        expected_repr="NestedGetParametersQuery(holder=HolderRequest(filter=FilterRequest(q='x', secret='s')))",
     )
 
 
@@ -13104,6 +14050,51 @@ def test_main_openapi_dot_notation_inheritance(output_dir: Path) -> None:
     )
 
 
+def test_main_openapi_all_exports_scope_package_cycle(output_dir: Path) -> None:
+    """Merge a package whose exports run a submodule that imports a model of the package before it is defined."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "dot_notation_inheritance.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--all-exports-scope", "recursive", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    [
+        DataModelType.MsgspecStruct.value,
+        DataModelType.PydanticV2Dataclass.value,
+        DataModelType.DataclassesDataclass.value,
+        DataModelType.TypingTypedDict.value,
+    ],
+)
+def test_main_openapi_all_exports_scope_package_cycle_output_model_types(
+    output_model_type: str, output_dir: Path
+) -> None:
+    """Merge the root package, whose exports run ``sub``, which imports a model of the root, in every output (#6194).
+
+    ``sub`` only uses ``RootModel`` of the root package, but with ``--all-exports-scope recursive`` the root
+    ``__init__`` module imports ``sub`` before it defines ``RootModel``, so importing either failed.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "circular_imports_acyclic.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--all-exports-scope",
+            "recursive",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize(
     ("expected_name", "extra_args"),
     [
@@ -13712,6 +14703,135 @@ def test_main_openapi_reuse_model_cross_module_users(
             *reuse_args,
             "--target-python-version",
             "3.10",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_file", "output_model_type"),
+    [
+        pytest.param("modular.yaml", DataModelType.PydanticV2BaseModel.value, id="modular-pydantic_v2"),
+        pytest.param("modular.yaml", DataModelType.DataclassesDataclass.value, id="modular-dataclasses"),
+        pytest.param(
+            "reuse_model_cross_module_users.yaml",
+            DataModelType.PydanticV2BaseModel.value,
+            id="cross-module-users-pydantic_v2",
+        ),
+        pytest.param(
+            "reuse_model_cross_module_users.yaml",
+            DataModelType.DataclassesDataclass.value,
+            id="cross-module-users-dataclasses",
+        ),
+    ],
+)
+def test_main_openapi_reuse_scope_tree_imports(input_file: str, output_model_type: str, output_dir: Path) -> None:
+    """Merge the modules whose import of a tree-scope duplicate runs back into them, so every module imports."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / input_file,
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--reuse-model",
+            "--reuse-scope",
+            "tree",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args", "models"),
+    [
+        pytest.param(
+            DataModelType.PydanticV2BaseModel.value,
+            [],
+            {"a.Rank": ("a", "Rank"), "c.Rank": ("c", "Rank")},
+            id="pydantic_v2",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2BaseModel.value,
+            ["--module-split-mode", "single"],
+            {"a.Item": ("a.item", "Item"), "c.Item": ("c.item", "Item")},
+            id="pydantic_v2-single",
+        ),
+        pytest.param(
+            DataModelType.DataclassesDataclass.value,
+            [],
+            {"a.Rank": ("a", "Rank"), "c.Rank": ("c", "Rank")},
+            id="dataclasses",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct.value,
+            [],
+            {"a.Item": ("shared", "Item"), "c.Item": ("shared", "Item_1")},
+            id="msgspec",
+        ),
+    ],
+)
+def test_main_openapi_reuse_scope_tree_shared_class_names(
+    output_model_type: str, extra_args: list[str], models: dict[str, tuple[str, str]], output_dir: Path
+) -> None:
+    """Name the canonical models of one name in the shared module apart, the one written last keeping it (#6182).
+
+    The string maps of ``a`` and the integer maps of ``c`` each share one canonical, both named ``Item`` (``Rank``
+    under ``--module-split-mode single``): ``shared.py`` wrote the class twice, so the users of the first validated the
+    second. The first is now ``Item_1``, and every model accepts and rejects the payloads as its schema does.
+    """
+    input_path = OPEN_API_DATA_PATH / "reuse_scope_tree_shared_class_names.yaml"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--reuse-model",
+            "--reuse-scope",
+            "tree",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    components = yaml.safe_load(input_path.read_text())["components"]
+    verdicts = []
+    for schema_name, (module_path, model_name) in models.items():
+        validator = Draft202012Validator({"$ref": f"#/components/schemas/{schema_name}", "components": components})
+        with _generated_package_module(output_dir, module_path) as module:
+            validate = _model_json_validator(getattr(module, model_name))
+            for payload in ({"x": 1}, {"x": "s"}):
+                try:
+                    validate(json.dumps(payload))
+                except pydantic.ValidationError:
+                    result = "rejects"
+                else:
+                    result = "accepts"
+                schema_result = "accepts" if validator.is_valid(payload) else "rejects"
+                verdicts.append(f"{schema_name} {json.dumps(payload)}: schema {schema_result}, model {result}\n")
+    assert_output("".join(verdicts))
+
+
+def test_main_openapi_generic_base_class_package_cycle(output_dir: Path) -> None:
+    """Write the generic base class in the package whose models a submodule imports, so that importing it runs none."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "generic_base_class_package_cycle.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--use-generic-base-class",
+            "--extra-fields",
+            "forbid",
             "--disable-timestamp",
             "--formatters",
             "builtin",
@@ -14371,6 +15491,73 @@ def test_main_openapi_include_paths_without_leading_slash(output_file: Path) -> 
     )
 
 
+@pytest.mark.parametrize("pattern", [pytest.param("/PETS*", id="upper-case"), pytest.param("/pets\\*", id="backslash")])
+def test_main_openapi_include_paths_match_case_and_slash_on_every_os(output_file: Path, pattern: str) -> None:
+    """Match ``--openapi-include-paths`` with letter case and backslashes as written, so no OS selects ``/pets``."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "body_and_parameters.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "paths", "schemas", "--openapi-include-paths", pattern, "--disable-timestamp"],
+    )
+
+
+@pytest.mark.parametrize(
+    "scope_args",
+    [
+        pytest.param(["--openapi-scopes", "schemas", "paths", "parameters"], id="paths"),
+        pytest.param(
+            ["--openapi-scopes", "schemas", "paths", "parameters", "--openapi-include-paths", "*"],
+            id="paths-include-all",
+        ),
+        pytest.param(["--openapi-scopes", "schemas", "api"], id="api"),
+    ],
+)
+def test_main_openapi_paths_keys_that_are_not_path_items(output_file: Path, scope_args: list[str]) -> None:
+    """Skip the ``parameters`` list and an ``x-`` extension that holds no object under ``paths``.
+
+    The ``parameters`` list applies to every path, as with ``--openapi-include-paths`` leaving the key out, and neither
+    key is walked as a path item under any scope or ``--openapi-include-paths`` pattern. An ``x-`` key that holds an
+    object is still read as a path by the paths scope, not by the API scope.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "paths_non_path_keys.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[*scope_args, "--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "scope_args",
+    [
+        pytest.param(["--openapi-scopes", "paths", "parameters"], id="paths"),
+        pytest.param(["--openapi-scopes", "paths", "parameters", "--openapi-include-paths", "/pets"], id="include"),
+    ],
+)
+def test_main_openapi_paths_parameters_by_local_reference(output_file: Path, scope_args: list[str]) -> None:
+    """Resolve a ``$ref`` in the ``parameters`` of every path inside the document, as the API scope does."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "paths_parameters_local_ref.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[*scope_args, "--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+
+
+def test_main_openapi_paths_parameters_object_is_a_path_item(output_file: Path) -> None:
+    """Read an object under the ``parameters`` key of ``paths`` as a path item, which declares no parameter of /pets."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "paths_parameters_path_item.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "paths", "parameters", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+
+
 def test_main_openapi_include_paths_warning_without_paths_scope() -> None:
     """Warn when --openapi-include-paths used without paths scope."""
     import warnings
@@ -14727,6 +15914,21 @@ def test_main_openapi_component_embedded_ids(output_file: Path) -> None:
     )
 
 
+def test_main_openapi_component_embedded_ids_inferred_input_type(output_file: Path) -> None:
+    """Name the input in the warnings of references resolved for compatibility when its file type is inferred."""
+    with pytest.warns(SchemaResourceRefWarning) as warning_records:
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "component_embedded_ids" / "api.yaml",
+            output_path=output_file,
+            extra_args=["--openapi-scopes", "schemas", "paths", "--output-model-type", "pydantic_v2.BaseModel"],
+        )
+    assert_warnings_contain(
+        warning_records,
+        "$ref '#/components/schemas/Tag' in api.yaml is resolved against the document for compatibility",
+        "$ref 'shared.json' in api.yaml loads the referenced document for compatibility",
+    )
+
+
 def test_main_openapi_component_embedded_remote_ids(output_file: Path) -> None:
     """Resolve a reference to the absolute $id of a component schema when remote references are not fetched."""
     run_main_and_assert(
@@ -14757,6 +15959,391 @@ def test_main_openapi_anchor_refs(output_file: Path) -> None:
         invalid_json='{"size": "one"}',
         expected_error_type="int_parsing",
     )
+
+
+def test_main_openapi_anchor_refs_in_referenced_object_documents(output_file: Path) -> None:
+    """Resolve plain-name references to the $anchor of a schema that a document a reference names as an object holds.
+
+    A document named at its root as a Parameter, Request Body, Response or Path Item Object holds that object, so the
+    schemas the object holds declare its anchors, one below an `$id` included; up to 0.88.0 generation failed with
+    "Unresolved $id reference" (#6036).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "anchor_object_documents" / "api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "parameters",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_anchor_refs_in_referenced_object_documents",
+        model_name="NotesPostRequest",
+        valid_json='{"title": "a", "subtitle": "b"}',
+        invalid_json=json.dumps({"subtitle": "x" * 21}),
+        expected_error_type="string_too_long",
+    )
+
+
+def test_main_openapi_anchor_refs_in_path_item_document(output_file: Path) -> None:
+    """Resolve a plain-name reference in the Path Item Object a reference names, to the schema that holds the anchor.
+
+    The schema of a parameter in a list declares an `$id`, so the reference to its anchor is rewritten at a position in
+    a list (it stopped the run with a TypeError). The Reference Object beside it holds no schema, so the `$id` and
+    `$anchor` of its ignored `schema` name no resource and the reference reads the anchor of the parameter above it.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "anchor_object_documents" / "held_by_path_item" / "api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "parameters",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_anchor_refs_in_path_item_document",
+        model_name="TagsGetParametersQuery",
+        valid_json='{"tag": {"label": "ab", "alias": "cd"}}',
+        invalid_json=json.dumps({"tag": {"alias": "x" * 6}}),
+        expected_error_type="string_too_long",
+    )
+
+
+def test_main_openapi_anchor_refs_in_path_item_document_that_holds_itself(output_file: Path) -> None:
+    """Resolve a plain-name reference in a Path Item Object that a callback of its own operation holds again.
+
+    A YAML alias makes the object reach itself through the callback, so the walk of the schemas it holds descends into
+    each object once on its path; it ran to the recursion limit and stopped the run.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "anchor_object_documents" / "held_by_cyclic_path_item" / "api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "parameters",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_anchor_refs_in_path_item_document_that_holds_itself",
+        model_name="EventsGetParametersQuery",
+        valid_json='{"event": {"kind": "ab", "again": "cd"}}',
+        invalid_json=json.dumps({"event": {"again": "x" * 9}}),
+        expected_error_type="string_too_long",
+    )
+
+
+def test_main_openapi_reference_object_siblings(output_file: Path) -> None:
+    """Read a parameter, request body or response with `$ref` and other members as the object it references (#6072).
+
+    OpenAPI ignores the other members of a Reference Object, also when they set a `schema`, a `name` or `content`;
+    up to 0.88.0 such a parameter was dropped or renamed and such a body or response was read from its own `content`.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "reference_object_siblings" / "api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "parameters",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_reference_object_siblings",
+        model_name="NotesGetParametersQuery",
+        valid_json='{"limit": 100, "page": 1}',
+        invalid_json='{"limit": 101}',
+        expected_error_type="less_than_equal",
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_reference_object_siblings_request",
+        model_name="TagsPostRequest",
+        valid_json='{"title": "a"}',
+        invalid_json=json.dumps({"title": "x" * 21}),
+        expected_error_type="string_too_long",
+    )
+
+
+def test_main_openapi_json_pointer_boolean_key(output_file: Path) -> None:
+    """A pointer token names no boolean YAML key equal to its integer (`true:`), so the reference stays unresolved."""
+    with pytest.warns(DanglingRefWarning, match=r"Unresolved local \$ref"):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "json_pointer_boolean_key.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+            ],
+        )
+
+
+def test_main_openapi_json_pointer_integer_keys(output_file: Path) -> None:
+    """Resolve JSON pointers through maps whose unquoted YAML keys (`200:`) load as integers (#6073).
+
+    A token names the integer key it spells when the map has no such string key, with and without an escaped `/` in
+    the pointer; up to 0.88.0 both references resolved to `Any` with an unresolved `$ref` warning.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "json_pointer_integer_keys.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", "--disable-timestamp"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_json_pointer_integer_keys",
+        model_name="Created",
+        valid_json='{"code": "ab"}',
+        invalid_json='{"code": "abc"}',
+        expected_error_type="string_too_long",
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_json_pointer_integer_keys_ok",
+        model_name="Ok",
+        valid_json='{"a": 1}',
+        invalid_json='{"a": "one"}',
+        expected_error_type="int_parsing",
+    )
+
+
+_HELD_AFTER_POINTER = OPEN_API_DATA_PATH / "anchor_object_documents" / "held_after_pointer"
+_HELD_AFTER_POINTER_ARGS = [
+    "--openapi-scopes",
+    "schemas",
+    "paths",
+    "parameters",
+    "--output-model-type",
+    "pydantic_v2.BaseModel",
+    "--formatters",
+    "builtin",
+    "--disable-timestamp",
+]
+
+
+@pytest.mark.parametrize(
+    ("input_name", "model_name", "valid_json", "invalid_json", "expected_error_type"),
+    [
+        pytest.param(
+            "api.yaml",
+            "NotesGetParametersQuery",
+            '{"page": {"size": 1, "limit": 2}}',
+            '{"page": {"limit": "two"}}',
+            "int_parsing",
+            id="parameter",
+        ),
+        pytest.param(
+            "request_body_api.yaml",
+            "NotesPostRequest",
+            '{"title": "a", "subtitle": "b"}',
+            json.dumps({"subtitle": "x" * 21}),
+            "string_too_long",
+            id="request-body",
+        ),
+    ],
+)
+def test_main_openapi_anchor_refs_in_object_document_loaded_by_pointer(
+    output_file: Path,
+    input_name: str,
+    model_name: str,
+    valid_json: str,
+    invalid_json: str,
+    expected_error_type: str,
+) -> None:
+    """Resolve a plain-name reference in an object document that a pointer into it loaded first.
+
+    A component schema takes a member of the document by a JSON pointer, which loads the document before the reference
+    that names its root as a Parameter or Request Body Object holds it, so the anchors of the schemas the object holds
+    were not indexed and generation failed with "Unresolved $id reference" (#6070). The run parses again with the
+    role known when the document loads, as where the reference loads the document.
+    """
+    run_main_and_assert(
+        input_path=_HELD_AFTER_POINTER / input_name,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=_HELD_AFTER_POINTER_ARGS,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"openapi_anchor_refs_loaded_by_pointer_{input_name.removesuffix('.yaml')}",
+        model_name=model_name,
+        valid_json=valid_json,
+        invalid_json=invalid_json,
+        expected_error_type=expected_error_type,
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param("two_documents_api.yaml", [], id="two-documents"),
+        pytest.param("id_api.yaml", [], id="dangling-fallback"),
+        pytest.param("id_api.yaml", ["--strict-refs"], id="strict-refs"),
+        pytest.param("collapse_cycle_api.yaml", ["--collapse-root-models"], id="collapse-cycle"),
+        pytest.param("dangling_ref_api.yaml", ["--model-name-map", '{"Nope": "Other"}'], id="settle-diagnostics"),
+        pytest.param("late_warning_api.yaml", [], id="parse-warning-after-failure"),
+    ],
+)
+def test_main_openapi_object_documents_loaded_by_pointer_parse_again(
+    output_file: Path, monkeypatch: pytest.MonkeyPatch, input_name: str, extra_args: list[str]
+) -> None:
+    """Parse again until no reference holds a document loaded before as a new role, and report each warning once.
+
+    The parameter document stops the first parse, the request body document the second, which knows the parameter's
+    role, and the third knows both; the warning of the unknown format, which the first parse gives, and the warning of
+    the Decimal default, which only the last one reaches, are each reported once. A run that completes parses once, so
+    the pointer below the `$id` of a parameter document keeps its fallback model and its warning, and only the run that
+    --strict-refs stops parses again, where the pointer names the schema the `$id` holds. A parse again that stops
+    before a cycle of root models it would collapse parses once more with every circular root model kept named, with
+    the role known. The diagnostics of the settle step, a pointer that finds no schema and a --model-name-map key
+    that names no model, which the first parse never reaches, are reported by the parse again (#6106), as is the
+    warning of a parameter's unknown format that L1 reaches only after the parameter document stopped it (#6311). One
+    generation is recorded, so the second one of the formatter parity check is left out.
+    """
+    monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=_HELD_AFTER_POINTER / input_name,
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[*_HELD_AFTER_POINTER_ARGS, *extra_args],
+        )
+    assert_output(
+        "".join(
+            f"{record.category.__name__}: {record.message}\n"
+            for record in recorded
+            if issubclass(record.category, UserWarning)
+        )
+    )
+
+
+def test_main_openapi_anchor_refs_in_object_document_loaded_by_pointer_unresolved(
+    output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Stop with the error of the parse again where a reference names an anchor no schema of the document declares.
+
+    The role the reference recorded indexes the anchors the parameter's schema declares, and the parse again records
+    no new role, so the run stops with the error that parse gives.
+    """
+    run_main_and_assert(
+        input_path=_HELD_AFTER_POINTER / "missing_anchor_api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        expected_exit=Exit.ERROR,
+        extra_args=_HELD_AFTER_POINTER_ARGS,
+        capsys=capsys,
+        expected_stderr_contains="Unresolved $id reference '#count' in scope 'missing_anchor_parameter.yaml'.",
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="released"), pytest.param(["--read-escaped-ref-pointers"], id="read")],
+)
+def test_main_openapi_read_escaped_ref_pointers(output_file: Path, extra_args: list[str]) -> None:
+    """Name the component an escaped pointer spells, parsed before the component, by its name (#4952).
+
+    `Order` references `Line Item`, `tax/rate` and `50%` as `Line%20Item`, `tax~1rate` and `50%25` before they are
+    declared. Without the option each reference gets a copy named after the escaped text (`Line20Item`, `Tax1rate`,
+    `Field5025`); with it each names the component's model, named after the decoded name.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "escaped_ref_pointers.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel"),
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_escaped_ref_pointers",
+        model_name="Order",
+        valid_json='{"line": {"sku": "a"}, "tax": {"rate": 0.2}, "share": {"share": 1}}',
+        invalid_json='{"share": {"share": "one"}}',
+        expected_error_type="int_parsing",
+    )
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "warned", "not_warned"),
+    [
+        pytest.param(
+            [],
+            ("--model-name-map: 1 key matched no generated model: '#/components/schemas/Line Item'",),
+            (),
+            id="released",
+        ),
+        pytest.param(["--read-escaped-ref-pointers"], (), ("matched no generated model",), id="read"),
+    ],
+)
+def test_main_openapi_api_scope_name_map_spellings(
+    output_file: Path, extra_args: list[str], warned: tuple[str, ...], not_warned: tuple[str, ...]
+) -> None:
+    """Match a `--model-name-map` path key in any spelling in the api scope under --read-escaped-ref-pointers.
+
+    The api scope keys `Line Item` as `#/components/schemas/Line%20Item`. Without the option the key written
+    `#/components/schemas/Line Item` matches no model, as in 0.89.0; with it the key names the component in either
+    spelling and renames it.
+    """
+    with warnings.catch_warnings(record=True) as warning_records:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "escaped_ref_pointers.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                *("--output-model-type", "pydantic_v2.BaseModel", "--openapi-scopes", "schemas", "api"),
+                *extra_args,
+                "--model-name-map",
+                '{"#/components/schemas/Line Item": "LineEntry", "#/components/schemas/tax~1rate": "Rate"}',
+                *("--formatters", "builtin", "--disable-timestamp"),
+            ],
+        )
+    assert_warnings_contain(warning_records, *warned)
+    assert_warnings_do_not_contain(warning_records, *not_warned)
 
 
 def test_main_openapi_allof_array_ref_no_duplicate_model(output_file: Path) -> None:
@@ -15284,6 +16871,17 @@ def test_external_discriminator_parent_load_order(output_file: Path, entrypoint:
                     json.dumps(model.model_validate(payloads[tag]).model_dump(), sort_keys=True) + "\n",
                     DATA_PATH / "expected/payloads/external_discriminator_outputs" / f"local_{tag}.txt",
                 )
+
+
+def test_external_discriminator_base_distributed(output_file: Path) -> None:
+    """Give the subtypes of an external discriminated ``$ref`` branch the allOf members beside its union."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "external_discriminator_base" / "distributed.json",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--disable-timestamp", "--distribute-allof-over-unions"],
+        force_exec_validation=True,
+    )
 
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
@@ -16005,3 +17603,1291 @@ def test_main_openapi_ref_components_as_definitions(output_file: Path, extra_arg
         invalid_json=json.dumps({"trees": [{"children": [1]}]}),
         expected_error_type="model_type",
     )
+
+
+def test_main_openapi_collapse_root_models_package_init(output_dir: Path) -> None:
+    """Import a model that collapse inlines into a package ``__init__`` from the package above, as a reference does.
+
+    ``pkg/__init__.py`` inlines ``other.Root`` and types the dict key ``other.KindKey`` by its root type, which name
+    models of the top-level module ``third``; up to 0.88.0 it wrote ``from . import third``, which does not import
+    (#5465).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "collapse_root_models_package_init.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--collapse-root-models", "--disable-timestamp", "--formatters", "builtin"],
+    )
+
+
+def test_main_openapi_generic_base_class_other_packages(output_dir: Path) -> None:
+    """Import the generated base class from the module that writes it, as a base class of another module is imported.
+
+    The base class is written to ``c/d.py``; up to 0.88.0 ``a/b.py`` and ``top.py`` wrote ``from .d import
+    BaseModel``, which does not import (#5594).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "generic_base_class_other_packages.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--use-generic-base-class",
+            "--extra-fields",
+            "forbid",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+def test_main_openapi_discriminator_typed_mapping_keys(output_file: Path) -> None:
+    """Tag a variant with the value of its tag property's type that a mapping key names.
+
+    A mapping key is text, so ``'1'`` and ``'-2'`` of an integer property name ``1`` and ``-2``, ``'true'`` of a boolean
+    ``True``, and ``'0'`` and ``'10'`` of a number ``0`` and ``10``; up to 0.88.0 the variants were tagged
+    ``Literal['1']``, which rejected every payload the schema accepts (#5091). The keys ``'0.5'`` and ``'2.5e-1'`` name
+    floats, which no ``Literal`` holds, so that union is a plain one. ``ByIntegerAgain`` and ``ByBooleanAgain`` read
+    the keys as the ``Literal`` values the first unions wrote, so they agree with them on every tag.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_typed_mapping_keys.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="discriminator_typed_mapping_keys",
+        model_name="Holder",
+        valid_json=json.dumps({
+            "integer": {"code": -2, "extra": "x"},
+            "boolean": {"ok": False, "reason": "r"},
+            "whole": {"level": 10.0, "boost": 1},
+            "fraction": {"share": 0.25, "note": "n"},
+            "integerAgain": {"code": 1},
+            "booleanAgain": {"ok": True},
+        }),
+        invalid_json=json.dumps({"integer": {"code": "1"}}),
+        expected_error_type="union_tag_invalid",
+        expected_repr=(
+            "Holder(integer=ByInteger(root=Two(code=-2, extra='x')), "
+            "boolean=ByBoolean(root=No(ok=False, reason='r')), "
+            "whole=ByWholeNumber(root=High(level=10, boost=1)), "
+            "fraction=ByFraction(root=Quarter(share=0.25, note='n')), "
+            "integerAgain=ByIntegerAgain(root=One(code=1)), "
+            "booleanAgain=ByBooleanAgain(root=Yes(ok=True)))"
+        ),
+    )
+
+
+def test_main_openapi_discriminator_typed_mapping_keys_msgspec(output_file: Path) -> None:
+    """Tag msgspec Structs with the integers the mapping keys of an integer or a number property name (#5091).
+
+    msgspec takes no bool or float tag, so the unions whose keys name booleans or floats are left untagged, with the
+    warning that msgspec cannot decode them; up to 0.88.0 they were tagged ``tag='true'`` and ``tag='0.5'``, which
+    decode only the strings.
+    """
+    with pytest.warns(
+        UserWarning, match=r"msgspec cannot decode the union By(Boolean|BooleanAgain|Fraction):"
+    ) as records:
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_typed_mapping_keys.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--use-msgspec-tagged-unions",
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in records if record.category is UserWarning), name="warnings"
+    )
+
+
+MERGED_VARIANT_TAGS_PAYLOAD: dict[str, dict[str, str]] = {
+    "byName": {"kind": "cat"},
+    "byKey": {"kind": "Dog"},
+    "stock": {"kind": "Pig"},
+    "herd": {"kind": "cow"},
+    "pet": {"kind": "vulpine"},
+    "animal": {"kind": "owl"},
+}
+"""A document whose variants each union selects by the tag another union gives them."""
+
+
+@pytest.mark.cli_doc(
+    options=["--merge-shared-variant-tags"],
+    option_description="""Give a variant that discriminated unions tag differently every tag they give it.
+
+A variant that several discriminated unions list has one tag field. Without the option it keeps the tags of the first
+union that tags it, so a union that tags it otherwise, by a mapping key or by the schema name, rejects the documents
+that select the variant by a tag it does not keep, and a warning says so. With `--merge-shared-variant-tags` its tag
+field is a `Literal` of every tag the unions give it, so each union decodes the documents it selects the variant by; a
+union then also accepts the tags the other unions give the variant. A tag that the pattern of the tag field rejects is
+left out, as the schema rejects the documents it selects the variant by. A variant keeps the first union's tags where a
+union listing it, or nesting a union that lists it, would then read one of its tags on another variant, as crossing
+mappings do, and msgspec Structs, which take one tag, are unchanged.""",
+    input_schema="openapi/discriminator_merged_variant_tags.yaml",
+    cli_args=["--merge-shared-variant-tags"],
+    golden_output="main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2-merged].py",
+    comparison_output="main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2].py",
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.BaseModel", ["--merge-shared-variant-tags"], id="pydantic_v2-merged"),
+        pytest.param("pydantic_v2.dataclass", ["--merge-shared-variant-tags"], id="pydantic_v2_dataclass-merged"),
+    ],
+)
+def test_main_openapi_merge_shared_variant_tags(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Merge the tags of a variant that discriminated unions tag differently under ``--merge-shared-variant-tags``.
+
+    ``ByName`` tags ``Cat`` by its name and ``ByKey`` by the mapping key ``cat``; ``Herd`` and ``Stock`` do the same in
+    the other order, and ``Pet`` and ``Animal`` map ``Fox`` to ``fox`` and ``vulpine``. Without the option each variant
+    keeps the first union's tag and the other union rejects every document that selects it (#5361, #4666); with it
+    each variant takes every tag, so every union decodes its documents. ``Forward`` and ``Backward`` map ``a`` and ``b``
+    the other way round, so merging would give ``Red`` and ``Blue`` both tags: they keep the first union's, with the
+    warning. ``Mixed`` lists a string beside ``Cat``, so it is a plain union and gives ``Cat`` no tag.
+    """
+    with pytest.warns(
+        UserWarning, match=r"is a variant of discriminated unions that map 'kind' to different tags"
+    ) as records:
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_merged_variant_tags.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--output-model-type",
+                output_model_type,
+                *extra_args,
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in records if record.category is UserWarning), name="warnings"
+    )
+    if extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"merge_shared_variant_tags_{output_model_type.replace('.', '_')}",
+            model_name="Holder",
+            valid_json=json.dumps(MERGED_VARIANT_TAGS_PAYLOAD),
+            invalid_json=json.dumps({"byName": {"kind": "vulpine"}}),
+            expected_error_type="union_tag_invalid",
+        )
+
+
+def test_main_openapi_merge_shared_variant_tags_msgspec(tmp_path: Path) -> None:
+    """Leave msgspec Structs as they are under ``--merge-shared-variant-tags``, as a Struct takes one tag."""
+    common = ["--output-model-type", "msgspec.Struct", "--disable-timestamp", "--formatters", "builtin"]
+    output_file = tmp_path / "output.py"
+    with pytest.warns(UserWarning, match=r"is a variant of discriminated unions that map 'kind' to different tags"):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_merged_variant_tags.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=common,
+        )
+    with pytest.warns(UserWarning, match=r"is a variant of discriminated unions that map 'kind' to different tags"):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_merged_variant_tags.yaml",
+            output_path=tmp_path / "merged.py",
+            input_file_type="openapi",
+            extra_args=[*common, "--merge-shared-variant-tags"],
+            expected_output=output_file.read_text(encoding="utf-8"),
+        )
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
+def test_main_openapi_merge_shared_variant_tags_nested(output_file: Path, output_model_type: str) -> None:
+    """Keep a union discriminated that nests a union of variants whose tags ``--merge-shared-variant-tags`` merges.
+
+    ``DogOrBird`` tags ``Dog`` and ``Bird`` by their names and ``ByKey`` by the mapping keys, so each takes both tags.
+    ``Outer`` lists ``Cat`` beside ``DogOrBird``, and ``inline`` lists ``Cat`` beside an inline choice of ``Dog`` and
+    ``Bird``: both read every tag of a nested variant, which stay distinct, so they stay discriminated as without the
+    option.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_merged_nested_variant_tags.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--merge-shared-variant-tags",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"merge_shared_variant_tags_nested_{output_model_type.replace('.', '_')}",
+        model_name="Holder",
+        valid_json=json.dumps({
+            "outer": {"kind": "dog", "bark": "woof"},
+            "byKey": {"kind": "Bird"},
+            "inline": {"kind": "bird", "wing": "left"},
+        }),
+        invalid_json=json.dumps({"outer": {"kind": "fox"}}),
+        expected_error_type="union_tag_invalid",
+    )
+
+
+MERGED_NESTED_CLASH_PAYLOAD = {
+    "outer": {"kind": "Cat"},
+    "byKey": {"kind": "bird"},
+    "inline": {"kind": "Dog"},
+    "top": {"kind": "Fox"},
+    "herd": {"kind": "hen"},
+    "pond": {"kind": "Duck"},
+    "coast": {"kind": "Seal"},
+    "pinniped": {"kind": "seal"},
+    "tank": {"kind": "kit"},
+    "stream": {"kind": "Trout"},
+}
+"""A document of each union of ``discriminator_merged_variant_tags_nested_clash.yaml`` that it selects a variant by."""
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.dataclass", [], id="pydantic_v2_dataclass"),
+        pytest.param("pydantic_v2.BaseModel", ["--collapse-root-models"], id="pydantic_v2-collapse_root_models"),
+    ],
+)
+def test_main_openapi_merge_shared_variant_tags_nested_clash(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Read every union that nests a union listing a shared variant where ``--merge-shared-variant-tags`` merges tags.
+
+    ``ByKey`` maps ``Cat`` to ``Dog``, which ``Outer`` and ``inline`` hold through a nested union beside ``Cat``, so
+    ``Dog`` keeps ``Dog``, with the warning, and both stay discriminated as without the option (#6233), while ``Bird``
+    takes ``Bird`` and ``bird``. ``Herd`` maps ``Fox`` to ``Cow``, which ``Top`` holds two unions down beside ``Fox``,
+    and ``Farm`` maps ``Duck`` to ``Pig``, which ``Pond`` lists beside the nested ``Duck``: ``Cow`` and ``Pig`` keep
+    one union's tags, and ``Hen`` and ``Goose`` still take both of theirs. ``Coast`` and ``Tank`` have tags only
+    through the unions they nest, and give ``Seal`` and ``Trout`` other tags than ``Pinniped`` and ``Stream`` do, so
+    ``Seal`` and ``Trout`` take both.
+    """
+    with pytest.warns(
+        UserWarning, match=r"is a variant of discriminated unions that map 'kind' to different tags"
+    ) as records:
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_merged_variant_tags_nested_clash.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                *("--output-model-type", output_model_type, "--merge-shared-variant-tags"),
+                *extra_args,
+                *("--disable-timestamp", "--formatters", "builtin"),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in records if record.category is UserWarning), name="warnings"
+    )
+    module_name = f"merge_shared_variant_tags_nested_clash_{output_model_type.replace('.', '_')}"
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=module_name,
+        model_name="Holder",
+        valid_json=json.dumps(MERGED_NESTED_CLASH_PAYLOAD),
+        invalid_json=json.dumps({"outer": {"kind": "zzz"}}),
+        expected_error_type="union_tag_invalid",
+    )
+    for property_name in ("inline", "top", "pond", "coast", "tank", "stream"):
+        assert_generated_model_json_invalid(
+            output_file,
+            module_name=module_name,
+            model_name="Holder",
+            invalid_json=json.dumps({property_name: {"kind": "zzz"}}),
+            expected_error_type="union_tag_invalid",
+        )
+
+
+MERGED_VARIANT_TAG_LIMIT_PAYLOADS: dict[str, dict[str, list[dict[str, Any]]]] = {
+    "discriminator_merged_variant_tag_limits": {
+        "byKey": [{"kind": "cat"}, {"kind": "dog"}],
+        "byName": [{"kind": "Cat"}, {"kind": "cat"}],
+        "outer": [{"kind": "ant"}, {"kind": "bee", "legs": 6}, {"kind": "wasp"}],
+        "other": [{"kind": "bee", "legs": 6}, {"kind": "moth"}],
+        "forward": [{"kind": "a"}, {"kind": "c"}],
+        "backward": [{"kind": "d"}],
+        "maybe": [{"kind": "c"}, {"kind": "d"}],
+    },
+    "discriminator_merged_collapsed_variant_tags": {
+        "cats": [{"kind": "cat"}, {"kind": "Cat"}, {"kind": "dog"}],
+        "kitties": [{"kind": "kitty"}, {"kind": "Cat"}, {"kind": "dog"}],
+    },
+}
+"""Documents of each union of the inputs, which the generated ``Holder`` decodes into the variant it records."""
+
+
+@pytest.mark.parametrize(
+    ("name", "extra_args"),
+    [
+        pytest.param("discriminator_merged_variant_tag_limits", [], id="limits"),
+        pytest.param("discriminator_merged_variant_tag_limits", ["--field-constraints"], id="limits-field_constraints"),
+        pytest.param(
+            "discriminator_merged_collapsed_variant_tags",
+            ["--reuse-model", "--collapse-reuse-models"],
+            id="collapsed_reuse",
+        ),
+    ],
+)
+def test_main_openapi_merge_shared_variant_tags_limits(output_file: Path, name: str, extra_args: list[str]) -> None:
+    """Merge under ``--merge-shared-variant-tags`` only the tags each union decodes, as its schema reads them.
+
+    ``Cat`` and ``Dog`` take their tags by the mapping of ``ByKey`` and by their names in ``ByName``, which the pattern
+    of their tag fields rejects, so they keep the mapped tags, which the field forms write without the pattern and a
+    model builds. ``Other`` maps ``bee`` to ``Ant``, which ``Outer`` lists beside the nested ``Bee`` it maps ``bee`` to,
+    so ``Ant`` keeps ``ant`` and ``Outer`` stays discriminated. ``Forward`` and ``Backward`` cross ``a`` and ``b`` but
+    map ``Green`` to ``c`` and ``d``, so ``Green`` takes both, also where ``maybe`` lists it beside null. Collapsed
+    reuse writes ``Kitties`` with ``Cat`` for the equal ``Kitty``, which it maps to ``kitty``, so ``Cat`` takes ``cat``
+    and ``kitty`` and no other tag.
+    """
+    with warnings.catch_warnings(record=True) as records:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / f"{name}.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                *("--output-model-type", "pydantic_v2.BaseModel", "--merge-shared-variant-tags"),
+                *extra_args,
+                *("--disable-timestamp", "--formatters", "builtin"),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(sorted({f"{record.message}\n" for record in records if record.category is UserWarning})),
+        name="warnings",
+    )
+    decoded = []
+    with _generated_model(output_file, name, "Holder") as holder:
+        validate = _model_json_validator(holder)
+        for property_name, documents in MERGED_VARIANT_TAG_LIMIT_PAYLOADS[name].items():
+            for document in documents:
+                try:
+                    value = getattr(validate(json.dumps({property_name: document})), property_name)
+                except pydantic.ValidationError:
+                    result = "rejected"
+                else:
+                    while (root := getattr(value, "root", None)) is not None:
+                        value = root
+                    result = type(value).__name__
+                decoded.append(f"{property_name} {json.dumps(document)}: {result}\n")
+    assert_output("".join(decoded), name="decoded")
+
+
+@pytest.mark.cli_doc(
+    options=["--skip-path-extension-keys"],
+    option_description="""Skip the `x-` keys of `paths` in the `paths` scope, as the `api` scope does.
+
+OpenAPI reads a key of the Paths Object that begins with `x-` as a specification extension, not as a path. The
+`paths` scope reads such a key that holds an object as a path, so the operations under `x-internal` get models
+(`FieldInternalGetResponse`). With `--skip-path-extension-keys` the `paths` scope skips it, as the `api` scope always
+does. A key that holds no object is skipped either way.""",
+    input_schema="openapi/paths_extension_keys.yaml",
+    cli_args=["--openapi-scopes", "schemas", "paths", "parameters", "--skip-path-extension-keys"],
+    golden_output="main/openapi/main_openapi/skip_path_extension_keys[pydantic_v2-skipped].py",
+    comparison_output="main/openapi/main_openapi/skip_path_extension_keys[pydantic_v2].py",
+    related_options=["--openapi-scopes"],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.BaseModel", ["--skip-path-extension-keys"], id="pydantic_v2-skipped"),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--skip-path-extension-keys", "--no-skip-path-extension-keys"],
+            id="pydantic_v2-no-skip",
+        ),
+        pytest.param("msgspec.Struct", ["--skip-path-extension-keys"], id="msgspec-skipped"),
+    ],
+)
+def test_main_openapi_skip_path_extension_keys(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Skip the extension key ``x-internal`` of paths under the option, as the api scope does (#5746).
+
+    Without the option its operation gets ``FieldInternalGetParametersQuery`` and ``FieldInternalGetResponse``, as in
+    0.89.0; ``/pets`` gets its models either way, and ``x-owner``, which holds no object, none.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "paths_extension_keys.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "parameters",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--use-enum-field-as-literal-in-operations"],
+    option_description="""Write an operation body or response enum as a Literal root model as a definition's enum is.
+
+`--enum-field-as-literal`, `--enum-field-as-literal-map` and `x-enum-field-as-literal` write the enum of a definition
+as a root model of a `Literal` (`C`), but the enum of a request body or response schema written inline in an
+operation stays an `Enum` class (`APostRequest`). With `--use-enum-field-as-literal-in-operations` such an enum reads
+the three as a definition's enum does, so `APostRequest` and `APostResponse` are root models of a `Literal`, while
+`APostResponse1`, whose `x-enum-field-as-literal` is false, stays an `Enum` class.""",
+    input_schema="openapi/operation_enums_as_literal.yaml",
+    cli_args=[
+        *("--openapi-scopes", "schemas", "paths", "--enum-field-as-literal", "all"),
+        "--use-enum-field-as-literal-in-operations",
+    ],
+    golden_output="main/openapi/main_openapi/use_enum_field_as_literal_in_operations[pydantic_v2-literal].py",
+    comparison_output="main/openapi/main_openapi/use_enum_field_as_literal_in_operations[pydantic_v2].py",
+    related_options=["--enum-field-as-literal", "--enum-field-as-literal-map"],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", ["--enum-field-as-literal", "all"], id="pydantic_v2"),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--enum-field-as-literal", "all", "--use-enum-field-as-literal-in-operations"],
+            id="pydantic_v2-literal",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            [
+                *("--enum-field-as-literal", "all"),
+                *("--use-enum-field-as-literal-in-operations", "--no-use-enum-field-as-literal-in-operations"),
+            ],
+            id="pydantic_v2-no-literal",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            [
+                *("--enum-field-as-literal-map", '{"APostResponse": "literal"}'),
+                "--use-enum-field-as-literal-in-operations",
+            ],
+            id="pydantic_v2-map",
+        ),
+        pytest.param(
+            "msgspec.Struct",
+            ["--enum-field-as-literal", "all", "--use-enum-field-as-literal-in-operations"],
+            id="msgspec-literal",
+        ),
+    ],
+)
+def test_main_openapi_use_enum_field_as_literal_in_operations(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Write the enum of a body or response as a Literal root model under the option, as a definition's (#5478).
+
+    Without the option ``APostRequest`` and ``APostResponse`` stay Enum classes under ``--enum-field-as-literal all``,
+    as in 0.90.0; ``APostResponse1``, whose ``x-enum-field-as-literal`` is false, stays one either way.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "operation_enums_as_literal.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", output_model_type, "--openapi-scopes", "schemas", "paths"),
+            *extra_args,
+            *("--disable-timestamp", "--formatters", "builtin"),
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--dedupe-numbered-request-response-variants"],
+    option_description="""Deduplicate a Request or Response variant of a numbered model like the model.
+
+An inline object that renders as a component gets a numbered name (`Page1`) and merges into the component (`Page`),
+but its read/write variants keep names of their own (`Page1Request`, `Page1Response`): under
+`--read-only-write-only-model-type request-response` the fields of `HolderRequest` and `HolderResponse` name them, and
+under `all` an unused `Page1Request` is written. With `--dedupe-numbered-request-response-variants` such a variant is
+deduplicated by the variant name of the name its model was numbered from, so it merges into `PageRequest` or
+`PageResponse` where it renders the same.""",
+    input_schema="openapi/read_only_numbered_variants.yaml",
+    cli_args=["--read-only-write-only-model-type", "request-response", "--dedupe-numbered-request-response-variants"],
+    golden_output=(
+        "main/openapi/main_openapi/"
+        "dedupe_numbered_request_response_variants[request-response-deduped-read_only_numbered_variants].py"
+    ),
+    comparison_output=(
+        "main/openapi/main_openapi/"
+        "dedupe_numbered_request_response_variants[request-response-no-dedupe-read_only_numbered_variants].py"
+    ),
+    related_options=["--read-only-write-only-model-type", "--dedupe-request-response-variants"],
+)
+@pytest.mark.parametrize("input_name", ["read_only_numbered_variants", "read_only_numbered_variants_by_direction"])
+@pytest.mark.parametrize(
+    ("output_model_type", "mode", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", "request-response", [], id="request-response"),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            "request-response",
+            ["--dedupe-numbered-request-response-variants"],
+            id="request-response-deduped",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            "request-response",
+            ["--dedupe-numbered-request-response-variants", "--no-dedupe-numbered-request-response-variants"],
+            id="request-response-no-dedupe",
+        ),
+        pytest.param("pydantic_v2.BaseModel", "all", [], id="all"),
+        pytest.param("pydantic_v2.BaseModel", "all", ["--dedupe-numbered-request-response-variants"], id="all-deduped"),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            "all",
+            ["--dedupe-numbered-request-response-variants", "--reuse-model"],
+            id="all-deduped-reuse-model",
+        ),
+        pytest.param(
+            "msgspec.Struct",
+            "request-response",
+            ["--dedupe-numbered-request-response-variants"],
+            id="msgspec-request-response-deduped",
+        ),
+    ],
+)
+def test_main_openapi_dedupe_numbered_request_response_variants(
+    output_file: Path, input_name: str, output_model_type: str, mode: str, extra_args: list[str]
+) -> None:
+    """Merge the read/write variants of a numbered inline copy into those of the model it was numbered from (#6370).
+
+    Without the option ``Page1Request`` and ``Page1Response`` stay, as in 0.90.0. In the second input the component
+    is the numbered copy (``Holder`` comes first), and only the variants that render the same merge: ``OtherRequest``
+    names ``PageRequest``, while ``Page2Response``, whose ``cursor`` is an integer, stays.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{input_name}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", output_model_type, "--read-only-write-only-model-type", mode),
+            *extra_args,
+            *("--disable-timestamp", "--formatters", "builtin"),
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--keep-first-character-of-path-keys"],
+    option_description="""Strip only a leading slash from a paths key when naming its operation models.
+
+The models of an operation are named after its path, without the leading `/`. A paths key that does not start with
+`/`, which OpenAPI does not allow but which is read, loses its first character instead: `pets` gives `EtsGetResponse`.
+With `--keep-first-character-of-path-keys` only a leading slash is stripped, as for webhook names and the `api` scope:
+`pets` gives `PetsGetResponse`. Keys that start with `/` are named as before.""",
+    input_schema="openapi/paths_key_without_leading_slash.yaml",
+    cli_args=["--openapi-scopes", "schemas", "paths", "parameters", "--keep-first-character-of-path-keys"],
+    golden_output="main/openapi/main_openapi/keep_first_character_of_path_keys[pydantic_v2-kept].py",
+    comparison_output="main/openapi/main_openapi/keep_first_character_of_path_keys[pydantic_v2].py",
+    related_options=["--openapi-scopes"],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.BaseModel", ["--keep-first-character-of-path-keys"], id="pydantic_v2-kept"),
+        pytest.param("typing.TypedDict", ["--keep-first-character-of-path-keys"], id="typed_dict-kept"),
+    ],
+)
+def test_main_openapi_keep_first_character_of_path_keys(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Name the operation models of a paths key without a leading slash after the whole key (#5539).
+
+    ``pets`` gives ``EtsGetParametersQuery`` and ``EtsGetResponse`` without the option and ``PetsGetParametersQuery``
+    and ``PetsGetResponse`` with it; ``/stores`` gives ``StoresGetResponse`` either way.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "paths_key_without_leading_slash.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "parameters",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    if output_model_type == "pydantic_v2.BaseModel" and extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="keep_first_character_of_path_keys",
+            model_name="PetsGetResponse",
+            valid_json=json.dumps({"a": "x"}),
+            invalid_json=json.dumps({"a": 1}),
+            expected_error_type="string_type",
+        )
+
+
+@pytest.mark.cli_doc(
+    options=["--singularize-last-word-of-item-names"],
+    option_description="""Name the item model of an array by singularizing only the last word of its name.
+
+The item model of an array property is named by singularizing the property name. Without the option the whole name
+is singularized as one word, which goes wrong for some endings: `actions_caches` gives `ActionsCach` and
+`payment_status` gives `PaymentStatu`. With `--singularize-last-word-of-item-names` only the last word is
+singularized, `ActionsCache`, and a last word without a singular takes the `Item` suffix, `PaymentStatusItem`.""",
+    input_schema="openapi/singularize_last_word_of_item_names.yaml",
+    cli_args=["--singularize-last-word-of-item-names"],
+    golden_output="main/openapi/main_openapi/singularize_last_word_of_item_names[pydantic_v2-last-word].py",
+    comparison_output="main/openapi/main_openapi/singularize_last_word_of_item_names[pydantic_v2].py",
+    related_options=["--disable-appending-item-suffix"],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.BaseModel", ["--singularize-last-word-of-item-names"], id="pydantic_v2-last-word"),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--singularize-last-word-of-item-names", "--naming-strategy", "full-path"],
+            id="pydantic_v2-last-word-full-path",
+        ),
+        pytest.param("msgspec.Struct", ["--singularize-last-word-of-item-names"], id="msgspec-last-word"),
+    ],
+)
+def test_main_openapi_singularize_last_word_of_item_names(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Singularize only the last word of an item model's name under ``--singularize-last-word-of-item-names`` (#4824).
+
+    ``actions_caches`` and ``payment_status`` give ``ActionsCach`` and ``PaymentStatu`` without the option and
+    ``ActionsCache`` and ``PaymentStatusItem`` with it; ``shipping_addresses`` gives ``ShippingAddress`` either way.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "singularize_last_word_of_item_names.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    if output_model_type == "pydantic_v2.BaseModel" and extra_args == ["--singularize-last-word-of-item-names"]:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="singularize_last_word_of_item_names",
+            model_name="ActionsCacheList",
+            valid_json=json.dumps({"actions_caches": [{"id": 1}], "payment_status": [{"s": "x"}]}),
+            invalid_json=json.dumps({"actions_caches": [{"id": "x"}]}),
+            expected_error_type="int_parsing",
+        )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="first-read"), pytest.param(["--read-schema-version-per-document"], id="per-document")],
+)
+def test_main_openapi_read_schema_version_per_document(output_file: Path, extra_args: list[str]) -> None:
+    """Check a ``uniqueItems`` beside a ``$ref`` of an OpenAPI 3.1 document with the option (#5699).
+
+    OpenAPI 3.1 reads the keywords beside a ``$ref`` as JSON Schema 2020-12 does; without the option the schema
+    validators read the document as draft 7, so ``Holder(tags=['a', 'a'])`` is accepted.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "ref_sibling_unique_items_oas31.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[*extra_args, "--generate-schema-validators", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    if extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="read_schema_version_per_document_oas31",
+            model_name="Holder",
+            valid_json=json.dumps({"tags": ["a", "b"]}),
+            invalid_json=json.dumps({"tags": ["a", "a"]}),
+            expected_error_type="value_error",
+        )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--openapi-scopes", "paths"], id="first-read"),
+        pytest.param(["--openapi-scopes", "paths", "--read-schema-version-per-document"], id="per-document"),
+        pytest.param(["--openapi-scopes", "api", "--read-schema-version-per-document"], id="per-document-api-scope"),
+    ],
+)
+def test_main_openapi_read_schema_version_per_document_external_item_schema(
+    output_file: Path, extra_args: list[str]
+) -> None:
+    """Read the ``itemSchema`` of a response that an OpenAPI 3.1 document takes from a 3.2 document with the option.
+
+    ``itemSchema`` is an OpenAPI 3.2 keyword; with the option the media type object is read by the version of the
+    document that holds it, so ``/pets`` gets a list of ``PetsGetResponseItem``, also in the api scope. Without it the
+    3.1 document's version reads it, which has no ``itemSchema``, and the response has no model.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "item_schema_external_32" / "root.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    if "--read-schema-version-per-document" in extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="read_schema_version_per_document_external_item_schema",
+            model_name="PetsGetResponse",
+            valid_json=json.dumps([{"name": "x"}]),
+            invalid_json=json.dumps([{"name": 1}]),
+            expected_error_type="string_type",
+        )
+
+
+@pytest.mark.cli_doc(
+    options=["--ignore-ref-siblings-by-schema-version"],
+    option_description="""Read a `$ref` as its target alone where the schema version ignores the keywords beside it.
+
+JSON Schema draft 4, 6 and 7, OpenAPI 3.0 and AsyncAPI 2 ignore every keyword beside a `$ref`. Without the option
+those keywords overlay the referenced schema: a sibling `format: binary` types the field `bytes`, a sibling
+`maxLength` constrains it, and a sibling `uniqueItems` makes it a set under `--use-unique-items-as-set`. With
+`--ignore-ref-siblings-by-schema-version` the field is typed by the referenced schema alone, and annotations beside
+the `$ref`, such as `description` or `default`, are left out too. Versions that apply the keywords beside a `$ref`
+(2019-09 and later, OpenAPI 3.1 and later, AsyncAPI 3) read them as before. The version is the one
+`--read-schema-version-per-document` reads, else that of the document being parsed. A schema converted from Avro,
+XML Schema or Protocol Buffers, also as an AsyncAPI payload, keeps the keywords its converter writes beside a `$ref`,
+such as the default of a field typed by a named type.""",
+    input_schema="openapi/ref_siblings_ignored_oas30.yaml",
+    cli_args=["--ignore-ref-siblings-by-schema-version"],
+    golden_output="main/openapi/main_openapi/ignore_ref_siblings_by_schema_version[ignored].py",
+    comparison_output="main/openapi/main_openapi/ignore_ref_siblings_by_schema_version[overlaid].py",
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="overlaid"), pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignored")],
+)
+def test_main_openapi_ignore_ref_siblings_by_schema_version(output_file: Path, extra_args: list[str]) -> None:
+    """Type a ``$ref`` of an OpenAPI 3.0 document by its target alone with the option (#5845).
+
+    The siblings of a Reference Object are ignored in OpenAPI 3.0; without the option ``format: binary`` types
+    ``data`` as ``bytes`` and ``maxLength`` constrains ``note``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "ref_siblings_ignored_oas30.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    if extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="ignore_ref_siblings_by_schema_version_oas30",
+            model_name="Holder",
+            valid_json=json.dumps({"data": "text", "note": "longer than three"}),
+            invalid_json=json.dumps({"data": 1}),
+            expected_error_type="string_type",
+        )
+
+
+def test_main_openapi_ignore_ref_siblings_by_schema_version_applies_them_in_31(tmp_path: Path) -> None:
+    """Keep the keywords beside a ``$ref`` of an OpenAPI 3.1 document, which applies them, under the option."""
+    common = ["--generate-schema-validators", "--disable-timestamp", "--formatters", "builtin"]
+    output_file = tmp_path / "output.py"
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "ref_sibling_unique_items_oas31.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=common,
+    )
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "ref_sibling_unique_items_oas31.yaml",
+        output_path=tmp_path / "ignored.py",
+        input_file_type="openapi",
+        extra_args=[*common, "--ignore-ref-siblings-by-schema-version"],
+        expected_output=output_file.read_text(encoding="utf-8"),
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--intersect-allof-keywords"], id="released"),
+        pytest.param(["--intersect-combined-schema-keywords"], id="combined"),
+        pytest.param(
+            ["--intersect-combined-schema-keywords", "--dedupe-request-response-variants"], id="combined-deduped"
+        ),
+    ],
+)
+def test_main_openapi_allof_member_parts_request_response(output_file: Path, extra_args: list[str]) -> None:
+    """Split the request and response models by the allOf members as the parse reads them.
+
+    With --intersect-combined-schema-keywords the siblings of an allOf member's ``$ref`` are a part of it in OpenAPI
+    3.1 and a member naming a ``$ref`` alias names its target, so ``MResponse`` gets the read-only ``extra`` and
+    ``MRequest`` the write-only ``secret`` of the aliased ``Real``, with and without the deduplicated walk.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_member_parts_request_response.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--read-only-write-only-model-type",
+            "request-response",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--naming-strategy"],
+    option_description="""Give every definition its own name before the other models that ask for it.
+
+Models take their names in the order the parser reaches them, so an inline model or a union branch that asks for the
+name of a definition parsed after it takes the name, and the definition is numbered: the inline `package` of `build`
+takes `Package` and the definition `package` becomes `Package1`. `primary-first` renames only models of other files.
+With `--naming-strategy definitions-first` the first definition of a name (in `/definitions/`, `/$defs/` or
+`/components/schemas/` of any document, those of the input before those of the documents it references) takes it,
+and the model that held it takes the name the definition would have taken. A model whose name is made from a renamed
+model, such as the model of its extra properties or its request and response variants, is renamed with it.""",
+    input_schema="openapi/definitions_first.yaml",
+    cli_args=["--naming-strategy", "definitions-first"],
+    golden_output="main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-definitions-first].py",
+    comparison_output="main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2].py",
+    related_options=["--duplicate-name-suffix", "--read-only-write-only-model-type"],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.BaseModel", ["--naming-strategy", "primary-first"], id="pydantic_v2-primary-first"),
+        pytest.param(
+            "pydantic_v2.BaseModel", ["--naming-strategy", "definitions-first"], id="pydantic_v2-definitions-first"
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--naming-strategy", "definitions-first", "--use-annotated"],
+            id="pydantic_v2-definitions-first-annotated",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--naming-strategy", "definitions-first", "--read-only-write-only-model-type", "request-response"],
+            id="pydantic_v2-definitions-first-request-response",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            [
+                *("--naming-strategy", "definitions-first", "--read-only-write-only-model-type", "request-response"),
+                *("--aliases", '{"Package.name": "label"}'),
+            ],
+            id="pydantic_v2-definitions-first-request-response-aliases",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--naming-strategy", "definitions-first", "--use-title-as-name"],
+            id="pydantic_v2-definitions-first-titles",
+        ),
+        pytest.param("typing.TypedDict", ["--naming-strategy", "definitions-first"], id="typed_dict-definitions-first"),
+        pytest.param(
+            "dataclasses.dataclass", ["--naming-strategy", "definitions-first"], id="dataclass-definitions-first"
+        ),
+    ],
+)
+def test_main_openapi_naming_strategy_definitions_first(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Give the component ``package`` its own name before the inline ``package`` of ``build`` (#4825).
+
+    Without the option and under ``primary-first`` the inline model, parsed first, takes ``Package`` and the component
+    is ``Package1``; under ``definitions-first`` the component takes ``Package`` and the inline model ``Package1``, and
+    the models of their extra properties and their request and response variants follow them. Under
+    ``--use-annotated`` the constrained string branch of ``charge`` gives way to the component ``charge``
+    (``Charge1``, ``Charge``) instead of the component taking ``ChargeModel``. Under ``--use-title-as-name`` the
+    model of the extra properties of the inline ``package`` takes its title, ``PackageExtra``, and keeps it. An alias
+    keyed by ``Package`` names the field of the component, whose request and response variants alone are written.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "definitions_first.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    if extra_args == ["--naming-strategy", "definitions-first"] and output_model_type == "pydantic_v2.BaseModel":
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="naming_strategy_definitions_first",
+            model_name="Holder",
+            valid_json=json.dumps({"pkg": {"name": "x", "box": {"weight": 1}}}),
+            invalid_json=json.dumps({"pkg": {"name": 1}}),
+            expected_error_type="string_type",
+        )
+
+
+@pytest.mark.cli_doc(
+    options=["--naming-strategy"],
+    option_description="""Prefix every nested model with the final name of the model it is built for, once.
+
+`full-path` prefixes a nested model with the name of the closest model registered above it when the model is named,
+so a model of an `allOf` property finds none (`Issue1`), a branch of a union without a name of its own takes the
+union's name and is prefixed with it again (`StreamEventStreamEvent`), and a definition parsed after the root model
+takes the root's name (`ModelCustomer`). With `--naming-strategy enclosing-model` a model built for another model
+takes that model's final name and its own part once: the property key (`IssueClosedIssue`), the tag of a union branch
+(`PetCat`), or the position of a branch without a name of its own (`StreamEvent1`); a definition, a document root and
+an operation model keep their own names (`Customer`). `--parent-scoped-naming` adds no second prefix.""",
+    input_schema="openapi/enclosing_model.yaml",
+    cli_args=["--naming-strategy", "enclosing-model"],
+    golden_output="main/openapi/main_openapi/naming_strategy_enclosing_model[pydantic_v2-enclosing-model].py",
+    comparison_output="main/openapi/main_openapi/naming_strategy_enclosing_model[pydantic_v2-full-path].py",
+    related_options=["--parent-scoped-naming", "--use-tag-as-union-variant-name"],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", ["--naming-strategy", "full-path"], id="pydantic_v2-full-path"),
+        pytest.param(
+            "pydantic_v2.BaseModel", ["--naming-strategy", "enclosing-model"], id="pydantic_v2-enclosing-model"
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--naming-strategy", "enclosing-model", "--parent-scoped-naming"],
+            id="pydantic_v2-enclosing-model-parent-scoped",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--naming-strategy", "full-path", "--use-tag-as-union-variant-name"],
+            id="pydantic_v2-full-path-tags",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--naming-strategy", "enclosing-model", "--use-tag-as-union-variant-name"],
+            id="pydantic_v2-enclosing-model-tags",
+        ),
+        pytest.param(
+            "msgspec.Struct",
+            ["--naming-strategy", "enclosing-model", "--use-msgspec-tagged-unions"],
+            id="msgspec-enclosing-model",
+            marks=pytest.mark.filterwarnings("ignore:msgspec cannot decode the union StreamEvent:UserWarning"),
+        ),
+        pytest.param("typing.TypedDict", ["--naming-strategy", "enclosing-model"], id="typed_dict-enclosing-model"),
+        pytest.param("dataclasses.dataclass", ["--naming-strategy", "enclosing-model"], id="dataclass-enclosing-model"),
+    ],
+)
+def test_main_openapi_naming_strategy_enclosing_model(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Prefix every nested model with the final name of the model it is built for, once (#4845, #4826, #5666).
+
+    Under ``full-path`` the models of the ``allOf`` properties ``issue`` find no parent (``Issue1``, ``Issue2``), the
+    branches of ``StreamEvent`` are ``StreamEventStreamEvent`` and ``StreamEventStreamEvent1``, and the tagged
+    branches of ``Pet`` are ``PetPetCat`` and ``PetPetDog``; under ``enclosing-model`` they are ``IssueClosedIssue``
+    and ``IssueOpenedIssue``, ``StreamEvent1`` and ``StreamEvent2``, ``PetCat`` and ``PetDog``. ``Order`` >
+    ``other`` > ``item`` gives ``OrderOtherItem`` with or without ``--parent-scoped-naming``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "enclosing_model.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    if extra_args == ["--naming-strategy", "enclosing-model"] and output_model_type == "pydantic_v2.BaseModel":
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="naming_strategy_enclosing_model",
+            model_name="IssueClosed",
+            valid_json=json.dumps({"issue": {"id": 1, "state": "closed"}, "label": {"name": "bug"}}),
+            invalid_json=json.dumps({"issue": {"id": "x"}}),
+            expected_error_type="int_parsing",
+        )
+
+
+@pytest.mark.cli_doc(
+    options=["--name-allof-union-members-after-branches"],
+    option_description="""Name the classes an allOf gives the branches of a oneOf or anyOf it holds after the branches.
+
+An allOf that holds a oneOf or anyOf gives each branch a class that combines it with the other parts of the allOf.
+These classes are numbered after the holder, `Event1` to `Event5` for two branches, and `--infer-union-variant-names`
+names the branch-only bases after their tags, not the classes of the union. With
+`--name-allof-union-members-after-branches` each class of the union takes the holder's name and the branch's tag
+(under `--infer-union-variant-names` or `--use-tag-as-union-variant-name`), the class of a `$ref` branch, or its
+position (`EventCreated`, `NoticeOpened`, `Event1`), a branch-only base takes the class's name and `Base`
+(`EventCreatedBase`), and the part the branches share takes the holder's name and `Base` (`EventBase`).""",
+    input_schema="openapi/allof_union_members.yaml",
+    cli_args=["--name-allof-union-members-after-branches", "--infer-union-variant-names"],
+    golden_output="main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-infer].py",
+    comparison_output="main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-infer].py",
+    related_options=["--infer-union-variant-names", "--use-tag-as-union-variant-name", "--naming-strategy"],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.BaseModel", ["--infer-union-variant-names"], id="pydantic_v2-infer"),
+        pytest.param("pydantic_v2.BaseModel", ["--name-allof-union-members-after-branches"], id="pydantic_v2-members"),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--name-allof-union-members-after-branches", "--infer-union-variant-names"],
+            id="pydantic_v2-members-infer",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            [
+                "--name-allof-union-members-after-branches",
+                "--infer-union-variant-names",
+                "--naming-strategy",
+                "enclosing-model",
+            ],
+            id="pydantic_v2-members-enclosing-model",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            [
+                "--name-allof-union-members-after-branches",
+                "--infer-union-variant-names",
+                "--naming-strategy",
+                "full-path",
+            ],
+            id="pydantic_v2-members-full-path",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            [
+                "--name-allof-union-members-after-branches",
+                "--infer-union-variant-names",
+                "--naming-strategy",
+                "definitions-first",
+            ],
+            id="pydantic_v2-members-definitions-first",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            [
+                "--name-allof-union-members-after-branches",
+                "--infer-union-variant-names",
+                "--class-name-suffix",
+                "Model",
+            ],
+            id="pydantic_v2-members-suffix",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            [
+                "--name-allof-union-members-after-branches",
+                "--infer-union-variant-names",
+                "--class-name-suffix",
+                "Model",
+                "--model-name-map",
+                '{"Notice": "ExternalModel"}',
+            ],
+            id="pydantic_v2-members-suffix-mapped",
+        ),
+        pytest.param(
+            "msgspec.Struct",
+            ["--name-allof-union-members-after-branches", "--infer-union-variant-names"],
+            id="msgspec-members-infer",
+            marks=pytest.mark.filterwarnings("ignore:msgspec cannot decode the union:UserWarning"),
+        ),
+        pytest.param(
+            "typing.TypedDict",
+            ["--name-allof-union-members-after-branches", "--infer-union-variant-names"],
+            id="typed_dict-members-infer",
+        ),
+        pytest.param(
+            "dataclasses.dataclass",
+            ["--name-allof-union-members-after-branches", "--infer-union-variant-names"],
+            id="dataclass-members-infer",
+        ),
+    ],
+)
+def test_main_openapi_name_allof_union_members_after_branches(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Name the union members of an allOf after their branches (#4847).
+
+    Without the option the members of ``Event`` are ``Event4`` and ``Event5``, its branch-only bases ``Event1`` and
+    ``Event2`` (``EventCreated`` and ``EventDeleted`` under ``--infer-union-variant-names``) and its shared part
+    ``Event3``; with it the members are ``Event1`` and ``Event2`` (``EventCreated`` and ``EventDeleted``), the bases
+    ``Event1Base`` and ``Event2Base`` and the shared part ``EventBase``. The members of ``Notice``, whose branches are
+    ``$ref`` targets, are ``NoticeOpened`` and ``NoticeClosed``. A ``--class-name-suffix`` ends each of these names
+    once, as it ends the others: ``EventCreatedModel``, ``EventBaseModel``, ``NoticeOpenedModel``. A name that
+    ``--model-name-map`` gives takes no suffix, so the names made of it keep it whole: ``ExternalModelOpenedModel``,
+    as under ``--naming-strategy enclosing-model``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_union_members.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    if extra_args == ["--name-allof-union-members-after-branches", "--infer-union-variant-names"] and (
+        output_model_type == "pydantic_v2.BaseModel"
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="name_allof_union_members_after_branches",
+            model_name="Event",
+            valid_json=json.dumps({"id": "1", "type": "created", "name": "x"}),
+            invalid_json=json.dumps({"type": "created"}),
+            expected_error_type="missing",
+        )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="members"),
+        pytest.param(["--model-name-map", '{"Pair11": "Special"}'], id="mapped-member"),
+    ],
+)
+def test_main_openapi_name_allof_union_members_after_branches_nested(
+    tmp_path: Path, output_file: Path, extra_args: list[str]
+) -> None:
+    """Name each allOf part after the final name of the part it is named after, and count every member's branches.
+
+    The first branch of ``Event`` is an allOf that holds a oneOf, the branch-only base of ``Event1``, so it is
+    ``Event1Base``, and its members, their bases and its shared part are named after that name (``Event1Base1``,
+    ``Event1Base1Base``, ``Event1BaseBase``), as under ``--naming-strategy enclosing-model``. Under
+    ``--distribute-allof-over-unions`` each member of ``Pair`` combines a branch of each of its two oneOfs, so every
+    branch is combined twice and none is the base of one member, also where ``--model-name-map`` names a member.
+    """
+
+    def branches(*names: str) -> dict[str, Any]:
+        return {
+            "oneOf": [
+                {"type": "object", "required": [name], "properties": {name: {"type": "string"}}} for name in names
+            ]
+        }
+
+    envelope = {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}}
+    input_file = tmp_path / "allof_union_members_nested.json"
+    input_file.write_text(
+        json.dumps({
+            "openapi": "3.1.0",
+            "info": {"title": "allOf union members nested", "version": "1"},
+            "paths": {},
+            "components": {
+                "schemas": {
+                    "Event": {
+                        "allOf": [
+                            envelope,
+                            {
+                                "oneOf": [
+                                    {
+                                        "allOf": [
+                                            {"type": "object", "properties": {"kind": {"type": "string"}}},
+                                            branches("p", "q"),
+                                        ]
+                                    },
+                                    *branches("b")["oneOf"],
+                                ]
+                            },
+                        ]
+                    },
+                    "Pair": {"allOf": [envelope, branches("a", "b"), branches("c", "d")]},
+                }
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--name-allof-union-members-after-branches",
+            "--distribute-allof-over-unions",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
+def test_name_allof_union_members_after_branches_beside_a_resolver_that_names_models() -> None:
+    """A model resolver class that overrides how models are named keeps its names under the allOf naming rule.
+
+    The parser warns once that the option's names are not given, and the members of the allOf of ``Event`` keep the
+    names they are numbered under, as in 0.89.0.
+    """
+    from datamodel_code_generator.reference import ModelResolver
+
+    class NamingResolver(ModelResolver):
+        def default_class_name_generator(self, name: str) -> str:
+            return super().default_class_name_generator(name)
+
+    class NamingParser(OpenAPIParser):
+        _model_resolver_factory = staticmethod(NamingResolver)
+
+    with warnings.catch_warnings(record=True) as records:
+        warnings.simplefilter("always", UserWarning)
+        output = NamingParser(
+            OPEN_API_DATA_PATH / "allof_union_members.yaml",
+            name_allof_union_members_after_branches=True,
+            formatters=[Formatter.BUILTIN],
+        ).parse()
+    assert_output("".join(f"{record.message}\n" for record in records if record.category is UserWarning) + str(output))

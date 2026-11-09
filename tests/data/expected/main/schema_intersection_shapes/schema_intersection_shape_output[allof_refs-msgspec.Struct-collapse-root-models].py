@@ -92,11 +92,11 @@ class Model(Struct):
     level2_items: list[Level] | UnsetType = UNSET
     level2_map: dict[str, Level] | UnsetType = UNSET
     number5: Annotated[int, Meta(ge=5)] | UnsetType = UNSET
-    number5_prop: int | UnsetType = UNSET
+    number5_prop: Annotated[int, Meta(ge=5)] | UnsetType = UNSET
     number5_items: list[Number5Item] | UnsetType = UNSET
     number5_map: dict[str, Number5Map] | UnsetType = UNSET
     non_negative: Annotated[float, Meta(ge=0.0)] | UnsetType = UNSET
-    non_negative_prop: float | UnsetType = UNSET
+    non_negative_prop: Annotated[float, Meta(ge=0.0)] | UnsetType = UNSET
     non_negative_items: list[float] | UnsetType = UNSET
     non_negative_map: dict[str, NonNegativeMap] | UnsetType = UNSET
     two_refs: Annotated[int, Meta(ge=3, le=5)] | UnsetType = UNSET
@@ -104,16 +104,16 @@ class Model(Struct):
     two_refs_items: list[TwoRefsItem] | UnsetType = UNSET
     two_refs_map: dict[str, TwoRefsMap] | UnsetType = UNSET
     stamp_len: Annotated[str, Meta(max_length=40)] | UnsetType = UNSET
-    stamp_len_prop: str | UnsetType = UNSET
+    stamp_len_prop: Annotated[str, Meta(max_length=40)] | UnsetType = UNSET
     stamp_len_items: list[StampLenItem] | UnsetType = UNSET
     stamp_len_map: dict[str, StampLenMap] | UnsetType = UNSET
     quantity: Annotated[int, Meta(ge=1)] | UnsetType = UNSET
     q_allof: Annotated[int, Meta(ge=1, le=10)] | UnsetType = UNSET
-    q_allof_prop: Annotated[int, Meta(ge=1)] | UnsetType = UNSET
+    q_allof_prop: Annotated[int, Meta(ge=1, le=10)] | UnsetType = UNSET
     q_allof_items: list[QAllofItem] | UnsetType = UNSET
     q_allof_map: dict[str, QAllofMap] | UnsetType = UNSET
     q_allof2: Annotated[int, Meta(ge=1, le=10)] | UnsetType = UNSET
-    q_allof2_prop: Annotated[int, Meta(ge=1)] | UnsetType = UNSET
+    q_allof2_prop: Annotated[int, Meta(ge=1, le=10)] | UnsetType = UNSET
     q_allof2_items: list[Quantity] | UnsetType = UNSET
     q_allof2_map: dict[str, QAllof2Map] | UnsetType = UNSET
     xpt_a: Decimal | UnsetType = UNSET

@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import keyword
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
-from datamodel_code_generator._target_unicode import NEWEST_TARGET, is_identifier
+from datamodel_code_generator._target_unicode import NEWEST_TARGET, is_dotted_python_name
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -16,16 +15,17 @@ if TYPE_CHECKING:
     from datamodel_code_generator._format_types import PythonVersion
 
 
-def _diagnostic(code: str, option_path: str, message: str) -> Diagnostic:
+def _diagnostic(code: str, option_path: str | None, message: str) -> Diagnostic:
     return Diagnostic(code=code, severity="error", stage="config", message=message, option_path=option_path)
 
 
+def config_error(*, code: str, option_path: str | None, message: str) -> APIGenerationError:
+    """Raise one configuration diagnostic as an API generation error."""
+    return APIGenerationError((_diagnostic(code, option_path, message),))
+
+
 def _dotted(value: object, target_python_version: PythonVersion) -> bool:
-    return (
-        isinstance(value, str)
-        and bool(value)
-        and all(is_identifier(part, target_python_version) and not keyword.iskeyword(part) for part in value.split("."))
-    )
+    return isinstance(value, str) and is_dotted_python_name(value, target_python_version)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

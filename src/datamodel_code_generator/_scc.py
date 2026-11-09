@@ -7,7 +7,7 @@ patterns in generated code, and graphs of models by model key.
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeAlias, TypeVar
+from typing import TYPE_CHECKING, Generic, Protocol, TypeAlias, TypeVar
 
 from typing_extensions import NamedTuple, Self
 
@@ -26,8 +26,6 @@ class _SortableNode(Protocol):
 NodeT = TypeVar("NodeT", bound=_SortableNode)
 ModulePath: TypeAlias = tuple[str, ...]
 SCC: TypeAlias = set[ModulePath]
-
-_EMPTY_SET: frozenset[Any] = frozenset()
 
 
 class _Phase(IntEnum):
@@ -64,7 +62,7 @@ class _TarjanState(Generic[NodeT]):
         """Get sorted neighbors with lazy memoization."""
         cached: list[NodeT] | None = self.sorted_cache.get(node)
         if cached is None:
-            cached = sorted(self.graph.get(node, _EMPTY_SET))
+            cached = sorted(self.graph.get(node, ()))
             self.sorted_cache[node] = cached
         return cached
 
@@ -98,20 +96,16 @@ def _strongconnect(state: _TarjanState[NodeT], start: NodeT) -> None:
         neighbors: list[NodeT] = state.get_sorted_neighbors(node)
         neighbor_idx: int = frame.neighbor_idx
 
-        # Handle post-visit: update lowlink from child
         if frame.phase == _Phase.POSTVISIT:
             child: NodeT = neighbors[neighbor_idx]
             state.lowlinks[node] = min(state.lowlinks[node], state.lowlinks[child])
             neighbor_idx += 1
 
-        # Process remaining neighbors
         while neighbor_idx < len(neighbors):
             w: NodeT = neighbors[neighbor_idx]
 
             if w not in state.index:
-                # Save state for post-visit
                 call_stack.append(_Frame(node, neighbor_idx, _Phase.POSTVISIT))
-                # Initialize and push unvisited neighbor
                 state.initialize_node(w)
                 call_stack.append(_Frame(w, 0, _Phase.VISIT))
                 break
@@ -120,34 +114,20 @@ def _strongconnect(state: _TarjanState[NodeT], start: NodeT) -> None:
 
             neighbor_idx += 1
         else:
-            # All neighbors processed: check if node is SCC root
             if state.lowlinks[node] == state.index[node]:
                 state.extract_scc(node)
 
 
 def strongly_connected_components(graph: Mapping[NodeT, AbstractSet[NodeT]]) -> list[set[NodeT]]:
-    """Find all strongly connected components using Tarjan's algorithm.
+    """Return every strongly connected component, singletons included, leaves first (Tarjan's algorithm).
 
-    Uses an iterative approach to avoid Python recursion limits on large graphs.
-    Neighbors are lazily sorted and memoized for determinism with O(E log V) cost.
-
-    Args:
-        graph: Adjacency list mapping module tuple to set of dependency module tuples.
-               Each node is a tuple like ("pkg", "__init__.py") or ("pkg", "module.py").
-
-    Returns:
-        List of all SCCs, each being a set of module tuples.
-        SCCs are returned in reverse topological order (leaves first).
-        Includes all SCCs, including singleton nodes without self-loops.
+    The walk is iterative, so deep graphs do not reach the recursion limit; neighbors are sorted once, lazily.
     """
-    # Collect all nodes (including those only referenced as edges)
     all_nodes: set[NodeT] = set(graph.keys())
     for neighbors in graph.values():
         all_nodes.update(neighbors)
 
     state = _TarjanState(graph)
-
-    # Run algorithm on all unvisited nodes (sorted for determinism)
     for node in sorted(all_nodes):
         if node not in state.index:
             _strongconnect(state, node)
@@ -156,27 +136,12 @@ def strongly_connected_components(graph: Mapping[NodeT, AbstractSet[NodeT]]) -> 
 
 
 def find_circular_sccs(graph: Mapping[NodeT, AbstractSet[NodeT]]) -> list[set[NodeT]]:
-    """Find SCCs that represent circular dependencies.
-
-    A circular SCC is one with:
-    - More than one node, OR
-    - Exactly one node with a self-loop (edge to itself)
-
-    Args:
-        graph: Module dependency graph
-
-    Returns:
-        List of circular SCCs, sorted by their minimum element for determinism
-    """
-    all_sccs: list[set[NodeT]] = strongly_connected_components(graph)
-    circular: list[set[NodeT]] = []
-
-    for scc in all_sccs:
-        if len(scc) > 1:
-            circular.append(scc)
-        elif len(scc) == 1:  # pragma: no branch
-            node: NodeT = next(iter(scc))
-            if node in graph and node in graph[node]:
-                circular.append(scc)
-
-    return sorted(circular, key=min)
+    """Return the components on a cycle, of more than one node or of one node with an edge to itself, by minimum."""
+    return sorted(
+        (
+            scc
+            for scc in strongly_connected_components(graph)
+            if len(scc) > 1 or (node := next(iter(scc))) in graph.get(node, ())
+        ),
+        key=min,
+    )

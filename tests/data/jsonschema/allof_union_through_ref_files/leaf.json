@@ -1,0 +1,16 @@
+{
+  "title": "Leaf",
+  "allOf": [
+    {
+      "$ref": "mid.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "leaf": {
+          "type": "string"
+        }
+      }
+    }
+  ]
+}

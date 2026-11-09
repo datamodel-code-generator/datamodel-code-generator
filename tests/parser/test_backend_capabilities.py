@@ -14,7 +14,6 @@ from datamodel_code_generator.model.imports import IMPORT_TYPED_DICT_BACKPORT
 from datamodel_code_generator.model.pydantic_v2 import BaseModel, dump_resolve_reference_action
 from datamodel_code_generator.model.pydantic_v2 import DataModelField as PydanticDataModelField
 from datamodel_code_generator.model.typed_dict import TypedDict
-from datamodel_code_generator.parser.base import _is_pydantic_v2_dump_resolve_reference_action
 from datamodel_code_generator.reference import Reference
 from datamodel_code_generator.types import DataType
 from tests.conftest import assert_output
@@ -40,8 +39,6 @@ def test_output_owned_parser_capabilities() -> None:
     data_type = DataType(type="str")
     canonical_action = get_resolve_reference_action_capabilities(dump_resolve_reference_action)
     custom_action = get_resolve_reference_action_capabilities(_custom_resolve_reference_action)
-    legacy_canonical = _is_pydantic_v2_dump_resolve_reference_action(dump_resolve_reference_action)
-    legacy_custom = _is_pydantic_v2_dump_resolve_reference_action(_custom_resolve_reference_action)
     custom_action_output = _custom_resolve_reference_action([])
     typed_dict_model = TypedDict(reference=Reference(path="Model", name="Model"), fields=[])
     backport_only_imports = Imports()
@@ -70,8 +67,6 @@ def test_output_owned_parser_capabilities() -> None:
         f"canonical action is formatter safe: {canonical_action.generated_formatter_safe}",
         f"custom action filters forward references: {custom_action.filter_forward_references}",
         f"custom action is formatter safe: {custom_action.generated_formatter_safe}",
-        f"legacy canonical action detection: {legacy_canonical}",
-        f"legacy custom action detection: {legacy_custom}",
         f"custom action output: {custom_action_output!r}",
         f"backport-only imports: {backport_only_imports}",
     ]

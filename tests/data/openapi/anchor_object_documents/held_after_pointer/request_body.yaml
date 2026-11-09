@@ -1,0 +1,11 @@
+content:
+  application/json:
+    schema:
+      type: object
+      properties:
+        title:
+          $anchor: title
+          type: string
+          maxLength: 20
+        subtitle:
+          $ref: "#title"

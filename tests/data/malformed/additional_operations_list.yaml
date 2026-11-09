@@ -1,0 +1,10 @@
+openapi: 3.2.0
+info:
+  title: Additional operations that are no mapping
+  version: '1.0'
+paths:
+  /pets:
+    additionalOperations:
+      - responses:
+          '200':
+            description: OK

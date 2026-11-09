@@ -12,38 +12,21 @@ from typing import Any, ClassVar, Literal, TypeAlias, cast
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel, ValidationError
 
+from datamodel_code_generator._config_fields import DEFAULT_ENCODING, json_file
+from datamodel_code_generator._json_config_fields import JsonConfigFieldName as _JsonConfigFieldName
 from datamodel_code_generator._json_limits import CLIENT_PROTOCOLS_MAX_DEPTH
+from datamodel_code_generator._json_output import (
+    JSON_SCHEMA_DRAFT_2020_12,  # noqa: F401  # Preserve the established json_config export.
+    schema_document,
+)
 from datamodel_code_generator.deprecations import warn_deprecated
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.validators import ValidatorsConfig, format_validation_error
 
-DEFAULT_ENCODING = "utf-8"
-JSON_SCHEMA_DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema"
 _JSON_STRING_OR_BRACKET = re.compile(r'"[^"\\]*(?:\\.[^"\\]*)*"?|[\[\]{}]')
 
 JsonConfigSource: TypeAlias = str | Path | TextIOBase | dict[str, Any] | None
-JsonConfigFieldName: TypeAlias = Literal[
-    "aliases",
-    "base_class_map",
-    "client_operations",
-    "client_protocols",
-    "client_resource_names",
-    "custom_formatters_kwargs",
-    "default_values",
-    "duplicate_name_suffix",
-    "enum_field_as_literal_map",
-    "extra_template_data",
-    "import_overrides",
-    "model_name_map",
-    "serialization_aliases",
-    "server_body_modes",
-    "server_handler_modes",
-    "server_operation_names",
-    "server_parameter_names",
-    "server_primary_responses",
-    "server_router_names",
-    "type_overrides",
-    "validators",
-]
+JsonConfigFieldName: TypeAlias = _JsonConfigFieldName
 JsonConfigOptionName: TypeAlias = Literal[
     "--aliases",
     "--base-class-map",
@@ -204,16 +187,9 @@ class JsonConfigSchemasPayload(BaseModel):
     validators: ValidatorsConfig | None = Field(default=None)
 
 
-def _dump_json(value: Any) -> str:
-    return json.dumps(value, indent=2, sort_keys=True)
-
-
 def json_config_json_schema() -> str:
     """Return JSON Schema for strict JSON configuration payloads."""
-    return _dump_json({
-        "$schema": JSON_SCHEMA_DRAFT_2020_12,
-        **JsonConfigSchemasPayload.model_json_schema(mode="validation"),
-    })
+    return schema_document(JsonConfigSchemasPayload.model_json_schema(mode="validation"), "sorted-ascii")
 
 
 def _invalid_json_message(option_name: str, error: object, load_error_name: str | None) -> str:
@@ -224,26 +200,26 @@ def _invalid_json_message(option_name: str, error: object, load_error_name: str 
     return f"Invalid JSON: {error}"
 
 
-def _path_is_file(path: Path) -> bool:
-    try:
-        return path.is_file()
-    except OSError:
-        return False
+def document_base(value: Any, directory: Path, fallback: Path) -> Path:
+    """Return the directory that the documents a JSON option value names resolve against.
 
-
-def _json_file(value: str | Path) -> Path | None:
-    """Return the file a JSON option value names, or None for inline JSON."""
-    return path if _path_is_file(path := Path(value).expanduser()) else None
+    A value that names a JSON file resolves against that file's directory, or against the directory of a link when the
+    file is given through one; a relative file is joined to ``directory``. Inline JSON, a table and no value resolve
+    against ``fallback``.
+    """
+    if isinstance(value, str | Path) and (file := json_file(value)) is not None:
+        return (directory / file).parent
+    return fallback
 
 
 def _read_json_or_inline(value: str) -> str:
-    if (path := _json_file(value)) is None:
+    if (path := json_file(value)) is None:
         return value
 
     try:
         return path.read_text(encoding=DEFAULT_ENCODING)
     except (OSError, UnicodeDecodeError) as e:
-        msg = f"Unable to read JSON file {value!r}: {e}"
+        msg = f"Unable to read JSON file {stable_repr(value)}: {e}"
         raise JsonConfigError(msg) from e
 
 
@@ -289,7 +265,9 @@ def _load_json_source(
             return value
         case TextIOBase() as data:
             with data:
-                return _loads_json(data.read(), option_name=option_name, load_error_name=load_error_name)
+                return _loads_json(
+                    data.read(), option_name=option_name, load_error_name=load_error_name, max_depth=max_depth
+                )
 
     text = _read_json_or_inline(str(value))
     return _loads_json(text, option_name=option_name, load_error_name=load_error_name, max_depth=max_depth)

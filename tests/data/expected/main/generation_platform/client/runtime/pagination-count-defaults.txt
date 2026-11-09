@@ -48,6 +48,9 @@
   query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
   query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
   query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid 4e1 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid 040 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  query invalid 1E+99999999 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   header client = [6,7] continuation=6 status=200 attempts=1
@@ -97,6 +100,9 @@
   header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
   header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
   header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid 4e1 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid 040 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  header invalid 1E+99999999 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   > GET https://api.example.com/users?offset=42&limit=2
@@ -151,6 +157,9 @@
   async query invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
   async query invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
   async query invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid 4e1 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid 040 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
+  async query invalid 1E+99999999 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='offset')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   async header client = [6,7] continuation=6 status=200 attempts=1
@@ -200,6 +209,9 @@
   async header invalid 40.00000000000000000001 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
   async header invalid NaN ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
   async header invalid Infinity ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid 4e1 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid 040 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
+  async header invalid 1E+99999999 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='header', name='X-Page')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-page: 5] b''
   > GET https://api.example.com/users?offset=42&limit=2

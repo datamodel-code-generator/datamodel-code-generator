@@ -15,19 +15,19 @@ class ItemResponse(TypedDict):
     name: NotRequired[str]
 
 
-class MergedRequest(TypedDict, extra_items='ItemRequest'):
+class MergedRequest(TypedDict, extra_items=ItemRequest):
     count: NotRequired[int]
 
 
-class MergedResponse(TypedDict, extra_items='ItemResponse'):
+class MergedResponse(TypedDict, extra_items=ItemResponse):
     count: NotRequired[int]
 
 
-class ListedRequest(TypedDict, extra_items='list[ItemRequest]'):
+class ListedRequest(TypedDict, extra_items=list[ItemRequest]):
     count: NotRequired[int]
 
 
-class ListedResponse(TypedDict, extra_items='list[ItemResponse]'):
+class ListedResponse(TypedDict, extra_items=list[ItemResponse]):
     count: NotRequired[int]
 
 

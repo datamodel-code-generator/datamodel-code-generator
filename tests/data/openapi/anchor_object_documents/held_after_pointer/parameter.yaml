@@ -1,0 +1,11 @@
+name: page
+in: query
+schema:
+  title: Page
+  type: object
+  properties:
+    size:
+      $anchor: size
+      type: integer
+    limit:
+      $ref: "#size"

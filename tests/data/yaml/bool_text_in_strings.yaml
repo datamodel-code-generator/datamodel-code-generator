@@ -1,0 +1,8 @@
+type: object
+properties:
+  a:
+    type: string
+    title: "True story"
+    description: |
+      enabled: True
+      - FALSE

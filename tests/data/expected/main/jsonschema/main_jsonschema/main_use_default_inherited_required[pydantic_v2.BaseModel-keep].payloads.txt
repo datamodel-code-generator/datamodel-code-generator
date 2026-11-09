@@ -1,0 +1,2 @@
+Model(child=Child(a='v', b='q'), own=Own(a='v', b='q'), grandchild=Grandchild(a='v', b='q'), inline_member=InlineMember(a='v', b='q'))
+Model(child=Child(a='x', b='q'), own=Own(a='x', b='q'), grandchild=Grandchild(a='y', b='q'), inline_member=InlineMember(a='z', b='q'))

@@ -1,0 +1,28 @@
+openapi: 3.0.3
+info:
+  title: An object under the parameters key of paths
+  version: "1"
+paths:
+  parameters:
+    get:
+      operationId: listParameters
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+  /pets:
+    get:
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: ok

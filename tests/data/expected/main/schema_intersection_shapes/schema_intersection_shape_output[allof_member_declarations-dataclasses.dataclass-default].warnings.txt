@@ -1,0 +1,9 @@
+Field name `ratio` is duplicated on FieldSite
+Field name `mid` is duplicated on Model
+Field name `n` is duplicated on Nested
+Field name `code` is duplicated on Inherited
+Field name `tag` is duplicated on KeptDefault
+Field name `mid` is duplicated on Members
+Field name `ref` is duplicated on Reference
+allof_member_declarations.json#/$defs/Positional/allOf/1/properties/pair: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+Field name `pair` is duplicated on Positional

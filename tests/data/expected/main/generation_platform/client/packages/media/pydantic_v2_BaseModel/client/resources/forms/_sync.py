@@ -176,7 +176,9 @@ class FormsResource:
     def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        response_media_type: (
+            Literal['multipart/mixed', 'multipart/form-data'] | None
+        ) = None,
         options: RequestOptions | None = None,
     ) -> ReadPartsResponse:
         """
@@ -551,7 +553,9 @@ class FormsWithResponse:
     def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        response_media_type: (
+            Literal['multipart/mixed', 'multipart/form-data'] | None
+        ) = None,
         options: RequestOptions | None = None,
     ) -> Response[ReadPartsResponse]:
         """
@@ -905,7 +909,9 @@ class FormsWithRawResponse:
     def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        response_media_type: (
+            Literal['multipart/mixed', 'multipart/form-data'] | None
+        ) = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """
@@ -1259,7 +1265,9 @@ class FormsWithStreamingResponse:
     def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        response_media_type: (
+            Literal['multipart/mixed', 'multipart/form-data'] | None
+        ) = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """

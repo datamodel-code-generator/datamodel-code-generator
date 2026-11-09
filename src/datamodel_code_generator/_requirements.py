@@ -8,8 +8,9 @@ Every Pydantic construct generated code can contain has a row, also those writte
 key the generator can write (``config_key``) and the forms older releases reject or ignore. ``pydantic_floor`` reads
 the rows of the constructs a run writes and ``pydantic_floor_message`` states the release they need above the target.
 
-This module is a leaf: it imports only the standard library, ``typing_extensions`` and ``enums``, so the command line,
-presets and ``PythonVersion`` read it without loading the model package.
+This module is a leaf: it imports only the standard library, ``typing_extensions``, ``enums`` and the leaves
+``_records`` and ``_message_text``, so the command line, presets and ``PythonVersion`` read it without loading the model
+package.
 """
 
 from __future__ import annotations
@@ -20,8 +21,14 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
 from typing_extensions import final
 
+from datamodel_code_generator._message_text import listed_with_more
 from datamodel_code_generator._records import record
-from datamodel_code_generator.enums import TargetPydanticVersion, _is_pydantic_version_at_least, _pydantic_version_key
+from datamodel_code_generator.enums import (
+    TargetPydanticVersion,
+    _is_pydantic_version_at_least,
+    _pydantic_version_key,
+    _version_key,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -32,10 +39,12 @@ PythonConstruct: TypeAlias = Literal[
     "python.union_operator",
     "python.type_alias_annotation",
     "python.kw_only_dataclass",
+    "python.dataclass_weakref_slot",
     "python.typed_dict_required",
     "python.typed_dict_not_required",
     "python.builtin_generic_strings",
     "python.strenum",
+    "python.subclass_any",
     "python.type_statement",
     "python.typed_dict_read_only",
     "python.deprecated_decorator",
@@ -78,6 +87,7 @@ PydanticConstruct: TypeAlias = Literal[
     "pydantic.config_ser_json_inf_nan",
     "pydantic.config_validation_error_cause",
     "pydantic.config_cache_strings",
+    "pydantic.config_experimental_defer_build_mode",
     "pydantic.config_field_title_generator",
     "pydantic.config_model_title_generator",
     "pydantic.config_val_json_bytes",
@@ -98,7 +108,7 @@ PydanticConstruct: TypeAlias = Literal[
     "pydantic.compiled_pattern",
     "pydantic.model_type_alias",
     "pydantic.type_statement",
-    "pydantic.encoded_bytes_length",
+    "pydantic.encoded_text_constraints",
     "pydantic.dataclass_own_name",
     "pydantic.protected_namespaces",
     "pydantic.type_alias_module_namespace",
@@ -141,6 +151,7 @@ _ROWS: Final[tuple[Requirement, ...]] = (
     Requirement("python.union_operator", "python", "3.10"),
     Requirement("python.type_alias_annotation", "python", "3.10"),
     Requirement("python.kw_only_dataclass", "python", "3.10"),
+    Requirement("python.dataclass_weakref_slot", "python", "3.11"),
     Requirement(
         "python.typed_dict_required", "python", "3.11", form="typing.Required", backport="typing_extensions.Required"
     ),
@@ -153,6 +164,7 @@ _ROWS: Final[tuple[Requirement, ...]] = (
     ),
     Requirement("python.builtin_generic_strings", "python", "3.11"),
     Requirement("python.strenum", "python", "3.11"),
+    Requirement("python.subclass_any", "python", "3.11"),
     Requirement("python.type_statement", "python", "3.12", backport="typing_extensions.TypeAliasType"),
     Requirement(
         "python.typed_dict_read_only", "python", "3.13", form="typing.ReadOnly", backport="typing_extensions.ReadOnly"
@@ -235,7 +247,7 @@ _ROWS: Final[tuple[Requirement, ...]] = (
     Requirement("pydantic.compiled_pattern", "pydantic", "2.8", label="a pattern compiled with re.compile"),
     Requirement("pydantic.model_type_alias", "pydantic", "2.10", label="a TypeAliasType alias of a model or alias"),
     Requirement("pydantic.type_statement", "pydantic", "2.10", label="a type statement"),
-    Requirement("pydantic.encoded_bytes_length", "pydantic", "2.10"),
+    Requirement("pydantic.encoded_text_constraints", "pydantic", "2.10"),
     Requirement("pydantic.dataclass_own_name", "pydantic", "2.10"),
     Requirement("pydantic.protected_namespaces", "pydantic", "2.10"),
     Requirement("pydantic.type_alias_module_namespace", "pydantic", "2.10"),
@@ -270,7 +282,7 @@ _ROW_ORDER: Final[Mapping[Construct, int]] = MappingProxyType({row.construct: in
 _LISTED_OWNERS: Final = 3
 NEWEST_TARGET_PYDANTIC_VERSION: Final = max(TargetPydanticVersion, key=_pydantic_version_key)
 _MINIMUM_KEYS: Final[Mapping[Construct, tuple[int, ...]]] = MappingProxyType({
-    row.construct: tuple(int(part) for part in row.minimum.split(".")) for row in _ROWS
+    row.construct: _version_key(row.minimum) for row in _ROWS
 })
 _VERSION_PARTS: Final = 3
 
@@ -349,10 +361,8 @@ def pydantic_floor_message(floor: PydanticFloor, *, target_from: str | None = No
     """
     parts: list[str] = []
     for construct, owners in floor.constructs:
-        listed = ", ".join(owners[:_LISTED_OWNERS])
-        more = f" and {len(owners) - _LISTED_OWNERS} more" if len(owners) > _LISTED_OWNERS else ""
         row = REQUIREMENTS[construct]
-        parts.append(f"{row.label} needs {row.minimum} ({listed}{more})")
+        parts.append(f"{row.label} needs {row.minimum} ({listed_with_more(owners[:_LISTED_OWNERS], len(owners))})")
     source = f", the minimum {target_from} needs" if target_from else ""
     return (
         f"The generated models need pydantic>={floor.minimum}, newer than the target Pydantic version "

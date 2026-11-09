@@ -125,6 +125,12 @@ __all__ = ["user_types_ID", "order_types_ID"]
 
 All names use the full module path prefix.
 
+### A prefixed name that is another export's name
+
+A prefixed name that is also the name of another export is written over that export, as in every release. The export it
+replaces takes the next free name (`Name1`, `Name2`) instead of being left out, so every name keeps the model it has
+always referred to. A prefixed name that is the name of a model in the `__init__.py` itself is an error.
+
 ---
 
 ## `--treat-dot-as-module`
@@ -163,6 +169,19 @@ This is useful for:
 - Organizing large schemas by namespace
 - Mirroring API versioning structure
 - Keeping related models together
+
+Each dot of a directory or file name of the input is a package, so `1.0/version.json` is written below `_1/0/`. Python
+cannot import a module by a part that is not an identifier (`0`), so a generated module that has to import one is
+refused: generation fails and names the module and the part. Use `--no-treat-dot-as-module`, which writes the dots as
+`_`, or rename the input. A module that nothing imports is written as before. A directory or file named like a
+keyword (`class/`, `class.json`) cannot be imported by its name either, with or without the option: a generated module
+that has to import it is refused the same way.
+
+A package whose `__init__.py` defines a class named like a module or package below it (the class `Warn` in
+`pkg/__init__.py` beside `pkg/Warn.py`) is refused too: importing `pkg.Warn` binds `Warn` in `pkg` over the class, so the
+models that use the class fail to import or decode. Generation fails and names the class and the module; rename either
+in the input. A package whose `__init__.py` imports from the module before it defines its classes (a model of the
+module that its models use, or `--all-exports-scope`) is written as before.
 
 When writing plain Python text to stdout with the standard renderer and without
 an explicit `--treat-dot-as-module` setting, historical automatic module

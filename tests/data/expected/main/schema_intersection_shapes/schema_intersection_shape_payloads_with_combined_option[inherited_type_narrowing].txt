@@ -1,0 +1,406 @@
+pydantic_v2.BaseModel default to_null null accepted
+pydantic_v2.BaseModel default to_null "x" rejected
+pydantic_v2.BaseModel default to_string "x" accepted
+pydantic_v2.BaseModel default to_string 1 rejected
+pydantic_v2.BaseModel default to_int_or_null 1 accepted
+pydantic_v2.BaseModel default to_int_or_null null accepted
+pydantic_v2.BaseModel default to_int_or_null "s" rejected
+pydantic_v2.BaseModel default to_int 1 accepted
+pydantic_v2.BaseModel default to_int 1.5 rejected
+pydantic_v2.BaseModel default drop_null "x" accepted
+pydantic_v2.BaseModel default drop_null 1 rejected
+pydantic_v2.BaseModel default bounded_to_null null accepted
+pydantic_v2.BaseModel default bounded_to_null "ab" rejected
+pydantic_v2.BaseModel default to_object {"x": 1} accepted
+pydantic_v2.BaseModel default to_object {"x": "a"} rejected
+pydantic_v2.BaseModel default to_object "s" rejected
+pydantic_v2.BaseModel default ref_to_string "s" accepted
+pydantic_v2.BaseModel default ref_to_string 1 rejected
+pydantic_v2.BaseModel default items_to_string ["a"] accepted
+pydantic_v2.BaseModel default items_to_string [1] rejected
+pydantic_v2.BaseModel default nested_to_string {"x": "a", "y": 1} accepted
+pydantic_v2.BaseModel default nested_to_string {"x": 1} rejected
+pydantic_v2.BaseModel default nested_to_string {"y": "s"} rejected
+pydantic_v2.BaseModel default restated {"x": "a"} accepted
+pydantic_v2.BaseModel default restated {"x": 1} rejected
+pydantic_v2.BaseModel default add_items ["a"] accepted
+pydantic_v2.BaseModel default add_items [1] rejected
+pydantic_v2.BaseModel default open_map {"k": 1} accepted
+pydantic_v2.BaseModel default open_map {"k": "s"} rejected
+pydantic_v2.dataclass default to_null null accepted
+pydantic_v2.dataclass default to_null "x" rejected
+pydantic_v2.dataclass default to_string "x" accepted
+pydantic_v2.dataclass default to_string 1 rejected
+pydantic_v2.dataclass default to_int_or_null 1 accepted
+pydantic_v2.dataclass default to_int_or_null null accepted
+pydantic_v2.dataclass default to_int_or_null "s" rejected
+pydantic_v2.dataclass default to_int 1 accepted
+pydantic_v2.dataclass default to_int 1.5 rejected
+pydantic_v2.dataclass default drop_null "x" accepted
+pydantic_v2.dataclass default drop_null 1 rejected
+pydantic_v2.dataclass default bounded_to_null null accepted
+pydantic_v2.dataclass default bounded_to_null "ab" rejected
+pydantic_v2.dataclass default to_object {"x": 1} accepted
+pydantic_v2.dataclass default to_object {"x": "a"} rejected
+pydantic_v2.dataclass default to_object "s" rejected
+pydantic_v2.dataclass default ref_to_string "s" accepted
+pydantic_v2.dataclass default ref_to_string 1 rejected
+pydantic_v2.dataclass default items_to_string ["a"] accepted
+pydantic_v2.dataclass default items_to_string [1] rejected
+pydantic_v2.dataclass default nested_to_string {"x": "a", "y": 1} accepted
+pydantic_v2.dataclass default nested_to_string {"x": 1} rejected
+pydantic_v2.dataclass default nested_to_string {"y": "s"} rejected
+pydantic_v2.dataclass default restated {"x": "a"} accepted
+pydantic_v2.dataclass default restated {"x": 1} rejected
+pydantic_v2.dataclass default add_items ["a"] accepted
+pydantic_v2.dataclass default add_items [1] rejected
+pydantic_v2.dataclass default open_map {"k": 1} accepted
+pydantic_v2.dataclass default open_map {"k": "s"} rejected
+msgspec.Struct default to_null null accepted
+msgspec.Struct default to_null "x" rejected
+msgspec.Struct default to_string "x" accepted
+msgspec.Struct default to_string 1 rejected
+msgspec.Struct default to_int_or_null 1 accepted
+msgspec.Struct default to_int_or_null null accepted
+msgspec.Struct default to_int_or_null "s" rejected
+msgspec.Struct default to_int 1 accepted
+msgspec.Struct default to_int 1.5 rejected
+msgspec.Struct default drop_null "x" accepted
+msgspec.Struct default drop_null 1 rejected
+msgspec.Struct default bounded_to_null null accepted
+msgspec.Struct default bounded_to_null "ab" rejected
+msgspec.Struct default to_object {"x": 1} accepted
+msgspec.Struct default to_object {"x": "a"} rejected
+msgspec.Struct default to_object "s" rejected
+msgspec.Struct default ref_to_string "s" accepted
+msgspec.Struct default ref_to_string 1 rejected
+msgspec.Struct default items_to_string ["a"] accepted
+msgspec.Struct default items_to_string [1] rejected
+msgspec.Struct default nested_to_string {"x": "a", "y": 1} accepted
+msgspec.Struct default nested_to_string {"x": 1} rejected
+msgspec.Struct default nested_to_string {"y": "s"} rejected
+msgspec.Struct default restated {"x": "a"} accepted
+msgspec.Struct default restated {"x": 1} rejected
+msgspec.Struct default add_items ["a"] accepted
+msgspec.Struct default add_items [1] rejected
+msgspec.Struct default open_map {"k": 1} accepted
+msgspec.Struct default open_map {"k": "s"} rejected
+pydantic_v2.BaseModel --field-constraints to_null null accepted
+pydantic_v2.BaseModel --field-constraints to_null "x" rejected
+pydantic_v2.BaseModel --field-constraints to_string "x" accepted
+pydantic_v2.BaseModel --field-constraints to_string 1 rejected
+pydantic_v2.BaseModel --field-constraints to_int_or_null 1 accepted
+pydantic_v2.BaseModel --field-constraints to_int_or_null null accepted
+pydantic_v2.BaseModel --field-constraints to_int_or_null "s" rejected
+pydantic_v2.BaseModel --field-constraints to_int 1 accepted
+pydantic_v2.BaseModel --field-constraints to_int 1.5 rejected
+pydantic_v2.BaseModel --field-constraints drop_null "x" accepted
+pydantic_v2.BaseModel --field-constraints drop_null 1 rejected
+pydantic_v2.BaseModel --field-constraints bounded_to_null null accepted
+pydantic_v2.BaseModel --field-constraints bounded_to_null "ab" rejected
+pydantic_v2.BaseModel --field-constraints to_object {"x": 1} accepted
+pydantic_v2.BaseModel --field-constraints to_object {"x": "a"} rejected
+pydantic_v2.BaseModel --field-constraints to_object "s" rejected
+pydantic_v2.BaseModel --field-constraints ref_to_string "s" accepted
+pydantic_v2.BaseModel --field-constraints ref_to_string 1 rejected
+pydantic_v2.BaseModel --field-constraints items_to_string ["a"] accepted
+pydantic_v2.BaseModel --field-constraints items_to_string [1] rejected
+pydantic_v2.BaseModel --field-constraints nested_to_string {"x": "a", "y": 1} accepted
+pydantic_v2.BaseModel --field-constraints nested_to_string {"x": 1} rejected
+pydantic_v2.BaseModel --field-constraints nested_to_string {"y": "s"} rejected
+pydantic_v2.BaseModel --field-constraints restated {"x": "a"} accepted
+pydantic_v2.BaseModel --field-constraints restated {"x": 1} rejected
+pydantic_v2.BaseModel --field-constraints add_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints add_items [1] rejected
+pydantic_v2.BaseModel --field-constraints open_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints open_map {"k": "s"} rejected
+pydantic_v2.BaseModel --use-annotated to_null null accepted
+pydantic_v2.BaseModel --use-annotated to_null "x" rejected
+pydantic_v2.BaseModel --use-annotated to_string "x" accepted
+pydantic_v2.BaseModel --use-annotated to_string 1 rejected
+pydantic_v2.BaseModel --use-annotated to_int_or_null 1 accepted
+pydantic_v2.BaseModel --use-annotated to_int_or_null null accepted
+pydantic_v2.BaseModel --use-annotated to_int_or_null "s" rejected
+pydantic_v2.BaseModel --use-annotated to_int 1 accepted
+pydantic_v2.BaseModel --use-annotated to_int 1.5 rejected
+pydantic_v2.BaseModel --use-annotated drop_null "x" accepted
+pydantic_v2.BaseModel --use-annotated drop_null 1 rejected
+pydantic_v2.BaseModel --use-annotated bounded_to_null null accepted
+pydantic_v2.BaseModel --use-annotated bounded_to_null "ab" rejected
+pydantic_v2.BaseModel --use-annotated to_object {"x": 1} accepted
+pydantic_v2.BaseModel --use-annotated to_object {"x": "a"} rejected
+pydantic_v2.BaseModel --use-annotated to_object "s" rejected
+pydantic_v2.BaseModel --use-annotated ref_to_string "s" accepted
+pydantic_v2.BaseModel --use-annotated ref_to_string 1 rejected
+pydantic_v2.BaseModel --use-annotated items_to_string ["a"] accepted
+pydantic_v2.BaseModel --use-annotated items_to_string [1] rejected
+pydantic_v2.BaseModel --use-annotated nested_to_string {"x": "a", "y": 1} accepted
+pydantic_v2.BaseModel --use-annotated nested_to_string {"x": 1} rejected
+pydantic_v2.BaseModel --use-annotated nested_to_string {"y": "s"} rejected
+pydantic_v2.BaseModel --use-annotated restated {"x": "a"} accepted
+pydantic_v2.BaseModel --use-annotated restated {"x": 1} rejected
+pydantic_v2.BaseModel --use-annotated add_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated add_items [1] rejected
+pydantic_v2.BaseModel --use-annotated open_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated open_map {"k": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models to_null null accepted
+pydantic_v2.BaseModel --collapse-root-models to_null "x" rejected
+pydantic_v2.BaseModel --collapse-root-models to_string "x" accepted
+pydantic_v2.BaseModel --collapse-root-models to_string 1 rejected
+pydantic_v2.BaseModel --collapse-root-models to_int_or_null 1 accepted
+pydantic_v2.BaseModel --collapse-root-models to_int_or_null null accepted
+pydantic_v2.BaseModel --collapse-root-models to_int_or_null "s" rejected
+pydantic_v2.BaseModel --collapse-root-models to_int 1 accepted
+pydantic_v2.BaseModel --collapse-root-models to_int 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models drop_null "x" accepted
+pydantic_v2.BaseModel --collapse-root-models drop_null 1 rejected
+pydantic_v2.BaseModel --collapse-root-models bounded_to_null null accepted
+pydantic_v2.BaseModel --collapse-root-models bounded_to_null "ab" rejected
+pydantic_v2.BaseModel --collapse-root-models to_object {"x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models to_object {"x": "a"} rejected
+pydantic_v2.BaseModel --collapse-root-models to_object "s" rejected
+pydantic_v2.BaseModel --collapse-root-models ref_to_string "s" accepted
+pydantic_v2.BaseModel --collapse-root-models ref_to_string 1 rejected
+pydantic_v2.BaseModel --collapse-root-models items_to_string ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models items_to_string [1] rejected
+pydantic_v2.BaseModel --collapse-root-models nested_to_string {"x": "a", "y": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models nested_to_string {"x": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models nested_to_string {"y": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models restated {"x": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models restated {"x": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models add_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models add_items [1] rejected
+pydantic_v2.BaseModel --collapse-root-models open_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models open_map {"k": "s"} rejected
+msgspec.Struct --collapse-root-models to_null null accepted
+msgspec.Struct --collapse-root-models to_null "x" rejected
+msgspec.Struct --collapse-root-models to_string "x" accepted
+msgspec.Struct --collapse-root-models to_string 1 rejected
+msgspec.Struct --collapse-root-models to_int_or_null 1 accepted
+msgspec.Struct --collapse-root-models to_int_or_null null accepted
+msgspec.Struct --collapse-root-models to_int_or_null "s" rejected
+msgspec.Struct --collapse-root-models to_int 1 accepted
+msgspec.Struct --collapse-root-models to_int 1.5 rejected
+msgspec.Struct --collapse-root-models drop_null "x" accepted
+msgspec.Struct --collapse-root-models drop_null 1 rejected
+msgspec.Struct --collapse-root-models bounded_to_null null accepted
+msgspec.Struct --collapse-root-models bounded_to_null "ab" rejected
+msgspec.Struct --collapse-root-models to_object {"x": 1} accepted
+msgspec.Struct --collapse-root-models to_object {"x": "a"} rejected
+msgspec.Struct --collapse-root-models to_object "s" rejected
+msgspec.Struct --collapse-root-models ref_to_string "s" accepted
+msgspec.Struct --collapse-root-models ref_to_string 1 rejected
+msgspec.Struct --collapse-root-models items_to_string ["a"] accepted
+msgspec.Struct --collapse-root-models items_to_string [1] rejected
+msgspec.Struct --collapse-root-models nested_to_string {"x": "a", "y": 1} accepted
+msgspec.Struct --collapse-root-models nested_to_string {"x": 1} rejected
+msgspec.Struct --collapse-root-models nested_to_string {"y": "s"} rejected
+msgspec.Struct --collapse-root-models restated {"x": "a"} accepted
+msgspec.Struct --collapse-root-models restated {"x": 1} rejected
+msgspec.Struct --collapse-root-models add_items ["a"] accepted
+msgspec.Struct --collapse-root-models add_items [1] rejected
+msgspec.Struct --collapse-root-models open_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models open_map {"k": "s"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs to_null null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs to_null "x" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs to_string "x" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs to_string 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs to_int_or_null 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs to_int_or_null null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs to_int_or_null "s" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs to_int 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs to_int 1.5 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs drop_null "x" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs drop_null 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bounded_to_null null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bounded_to_null "ab" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs to_object {"x": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs to_object {"x": "a"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs to_object "s" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_to_string "s" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_to_string 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs items_to_string ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs items_to_string [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested_to_string {"x": "a", "y": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested_to_string {"x": 1} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested_to_string {"y": "s"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs restated {"x": "a"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs restated {"x": 1} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs add_items ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs add_items [1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs open_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs open_map {"k": "s"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs to_null null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs to_null "x" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs to_string "x" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs to_string 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs to_int_or_null 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs to_int_or_null null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs to_int_or_null "s" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs to_int 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs to_int 1.5 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs drop_null "x" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs drop_null 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bounded_to_null null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bounded_to_null "ab" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs to_object {"x": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs to_object {"x": "a"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs to_object "s" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_to_string "s" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_to_string 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs items_to_string ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs items_to_string [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested_to_string {"x": "a", "y": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested_to_string {"x": 1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested_to_string {"y": "s"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs restated {"x": "a"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs restated {"x": 1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs add_items ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs add_items [1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs open_map {"k": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs open_map {"k": "s"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs to_null null accepted
+msgspec.Struct --use-site-models-for-constrained-refs to_null "x" rejected
+msgspec.Struct --use-site-models-for-constrained-refs to_string "x" accepted
+msgspec.Struct --use-site-models-for-constrained-refs to_string 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs to_int_or_null 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs to_int_or_null null accepted
+msgspec.Struct --use-site-models-for-constrained-refs to_int_or_null "s" rejected
+msgspec.Struct --use-site-models-for-constrained-refs to_int 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs to_int 1.5 rejected
+msgspec.Struct --use-site-models-for-constrained-refs drop_null "x" accepted
+msgspec.Struct --use-site-models-for-constrained-refs drop_null 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs bounded_to_null null accepted
+msgspec.Struct --use-site-models-for-constrained-refs bounded_to_null "ab" rejected
+msgspec.Struct --use-site-models-for-constrained-refs to_object {"x": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs to_object {"x": "a"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs to_object "s" rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_to_string "s" accepted
+msgspec.Struct --use-site-models-for-constrained-refs ref_to_string 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs items_to_string ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs items_to_string [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs nested_to_string {"x": "a", "y": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs nested_to_string {"x": 1} rejected
+msgspec.Struct --use-site-models-for-constrained-refs nested_to_string {"y": "s"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs restated {"x": "a"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs restated {"x": 1} rejected
+msgspec.Struct --use-site-models-for-constrained-refs add_items ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs add_items [1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs open_map {"k": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs open_map {"k": "s"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs to_null null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs to_null "x" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs to_string "x" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs to_string 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs to_int_or_null 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs to_int_or_null null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs to_int_or_null "s" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs to_int 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs to_int 1.5 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs drop_null "x" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs drop_null 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bounded_to_null null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bounded_to_null "ab" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs to_object {"x": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs to_object {"x": "a"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs to_object "s" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_to_string "s" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_to_string 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs items_to_string ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs items_to_string [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested_to_string {"x": "a", "y": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested_to_string {"x": 1} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested_to_string {"y": "s"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs restated {"x": "a"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs restated {"x": 1} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs add_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs add_items [1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs open_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs open_map {"k": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs to_null null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs to_null "x" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs to_string "x" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs to_string 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs to_int_or_null 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs to_int_or_null null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs to_int_or_null "s" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs to_int 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs to_int 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs drop_null "x" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs drop_null 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bounded_to_null null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bounded_to_null "ab" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs to_object {"x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs to_object {"x": "a"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs to_object "s" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_to_string "s" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_to_string 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs items_to_string ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs items_to_string [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested_to_string {"x": "a", "y": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested_to_string {"x": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested_to_string {"y": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs restated {"x": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs restated {"x": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs add_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs add_items [1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs open_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs open_map {"k": "s"} rejected
+pydantic_v2.dataclass --allof-merge-mode all to_null null accepted
+pydantic_v2.dataclass --allof-merge-mode all to_null "x" rejected
+pydantic_v2.dataclass --allof-merge-mode all to_string "x" accepted
+pydantic_v2.dataclass --allof-merge-mode all to_string 1 rejected
+pydantic_v2.dataclass --allof-merge-mode all to_int_or_null 1 accepted
+pydantic_v2.dataclass --allof-merge-mode all to_int_or_null null accepted
+pydantic_v2.dataclass --allof-merge-mode all to_int_or_null "s" rejected
+pydantic_v2.dataclass --allof-merge-mode all to_int 1 accepted
+pydantic_v2.dataclass --allof-merge-mode all to_int 1.5 rejected
+pydantic_v2.dataclass --allof-merge-mode all drop_null "x" accepted
+pydantic_v2.dataclass --allof-merge-mode all drop_null 1 rejected
+pydantic_v2.dataclass --allof-merge-mode all bounded_to_null null accepted
+pydantic_v2.dataclass --allof-merge-mode all bounded_to_null "ab" rejected
+pydantic_v2.dataclass --allof-merge-mode all to_object {"x": 1} accepted
+pydantic_v2.dataclass --allof-merge-mode all to_object {"x": "a"} rejected
+pydantic_v2.dataclass --allof-merge-mode all to_object "s" rejected
+pydantic_v2.dataclass --allof-merge-mode all ref_to_string "s" accepted
+pydantic_v2.dataclass --allof-merge-mode all ref_to_string 1 rejected
+pydantic_v2.dataclass --allof-merge-mode all items_to_string ["a"] accepted
+pydantic_v2.dataclass --allof-merge-mode all items_to_string [1] rejected
+pydantic_v2.dataclass --allof-merge-mode all nested_to_string {"x": "a", "y": 1} accepted
+pydantic_v2.dataclass --allof-merge-mode all nested_to_string {"x": 1} rejected
+pydantic_v2.dataclass --allof-merge-mode all nested_to_string {"y": "s"} rejected
+pydantic_v2.dataclass --allof-merge-mode all restated {"x": "a"} accepted
+pydantic_v2.dataclass --allof-merge-mode all restated {"x": 1} rejected
+pydantic_v2.dataclass --allof-merge-mode all add_items ["a"] accepted
+pydantic_v2.dataclass --allof-merge-mode all add_items [1] rejected
+pydantic_v2.dataclass --allof-merge-mode all open_map {"k": 1} accepted
+pydantic_v2.dataclass --allof-merge-mode all open_map {"k": "s"} rejected
+pydantic_v2.BaseModel --allof-merge-mode none to_null null accepted
+pydantic_v2.BaseModel --allof-merge-mode none to_null "x" rejected
+pydantic_v2.BaseModel --allof-merge-mode none to_string "x" accepted
+pydantic_v2.BaseModel --allof-merge-mode none to_string 1 rejected
+pydantic_v2.BaseModel --allof-merge-mode none to_int_or_null 1 accepted
+pydantic_v2.BaseModel --allof-merge-mode none to_int_or_null null accepted
+pydantic_v2.BaseModel --allof-merge-mode none to_int_or_null "s" rejected
+pydantic_v2.BaseModel --allof-merge-mode none to_int 1 accepted
+pydantic_v2.BaseModel --allof-merge-mode none to_int 1.5 rejected
+pydantic_v2.BaseModel --allof-merge-mode none drop_null "x" accepted
+pydantic_v2.BaseModel --allof-merge-mode none drop_null 1 rejected
+pydantic_v2.BaseModel --allof-merge-mode none bounded_to_null null accepted
+pydantic_v2.BaseModel --allof-merge-mode none bounded_to_null "ab" rejected
+pydantic_v2.BaseModel --allof-merge-mode none to_object {"x": 1} accepted
+pydantic_v2.BaseModel --allof-merge-mode none to_object {"x": "a"} rejected
+pydantic_v2.BaseModel --allof-merge-mode none to_object "s" rejected
+pydantic_v2.BaseModel --allof-merge-mode none ref_to_string "s" accepted
+pydantic_v2.BaseModel --allof-merge-mode none ref_to_string 1 rejected
+pydantic_v2.BaseModel --allof-merge-mode none items_to_string ["a"] accepted
+pydantic_v2.BaseModel --allof-merge-mode none items_to_string [1] rejected
+pydantic_v2.BaseModel --allof-merge-mode none nested_to_string {"x": "a", "y": 1} accepted
+pydantic_v2.BaseModel --allof-merge-mode none nested_to_string {"x": 1} rejected
+pydantic_v2.BaseModel --allof-merge-mode none nested_to_string {"y": "s"} rejected
+pydantic_v2.BaseModel --allof-merge-mode none restated {"x": "a"} accepted
+pydantic_v2.BaseModel --allof-merge-mode none restated {"x": 1} rejected
+pydantic_v2.BaseModel --allof-merge-mode none add_items ["a"] accepted
+pydantic_v2.BaseModel --allof-merge-mode none add_items [1] rejected
+pydantic_v2.BaseModel --allof-merge-mode none open_map {"k": 1} accepted
+pydantic_v2.BaseModel --allof-merge-mode none open_map {"k": "s"} rejected

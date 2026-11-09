@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "required": [
+    "nullable_member",
+    "nullable_sibling",
+    "object_site",
+    "ref_sibling",
+    "object_member"
+  ],
+  "properties": {
+    "member": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/A"
+        },
+        {
+          "required": [
+            "id"
+          ]
+        }
+      ]
+    },
+    "sibling": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/A"
+        }
+      ],
+      "required": [
+        "id"
+      ]
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/A"
+          },
+          {
+            "required": [
+              "id"
+            ]
+          }
+        ]
+      }
+    },
+    "kept": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Required"
+        },
+        {
+          "required": [
+            "id"
+          ]
+        }
+      ]
+    },
+    "nullable_member": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Nullable"
+        },
+        {
+          "required": [
+            "id"
+          ]
+        }
+      ]
+    },
+    "nullable_sibling": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Nullable"
+        }
+      ],
+      "required": [
+        "id"
+      ]
+    },
+    "object_site": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/Nullable"
+        }
+      ],
+      "required": [
+        "id"
+      ]
+    },
+    "ref_sibling": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/A",
+          "required": [
+            "id"
+          ]
+        }
+      ]
+    },
+    "object_member": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Nullable"
+        },
+        {
+          "type": "object",
+          "required": [
+            "id"
+          ]
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "A": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "B": {
+      "type": "object",
+      "required": [
+        "n"
+      ],
+      "properties": {
+        "n": {
+          "type": "string"
+        }
+      }
+    },
+    "Required": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      }
+    },
+    "Branch": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/A"
+        },
+        {
+          "$ref": "#/$defs/B"
+        }
+      ],
+      "required": [
+        "id"
+      ]
+    },
+    "Nullable": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

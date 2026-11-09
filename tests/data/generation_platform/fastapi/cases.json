@@ -212,6 +212,13 @@
     },
     "package_snapshots": []
   },
+  "containers": {
+    "input": "containers.yaml",
+    "model": {
+      "use_x_python_type_as_written": true,
+      "collapse_root_models": true
+    }
+  },
   "unbound": {
     "input": "unbound.yaml",
     "model": {
@@ -258,6 +265,9 @@
   "header-names": {
     "input": "header-names.yaml"
   },
+  "required-body-errors": {
+    "input": "required-body-errors.yaml"
+  },
   "native": {
     "input": "native.yaml",
     "backends": [
@@ -265,6 +275,16 @@
       "pydantic_v2.dataclass"
     ],
     "package_snapshots": []
+  },
+  "native-merged-null": {
+    "input": "native.yaml",
+    "model": {
+      "reuse_model": true,
+      "collapse_reuse_models": true
+    },
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
   },
   "required-alias-order": {
     "input": "required-alias-order.yaml",
@@ -323,6 +343,9 @@
       "collapse_root_models": true
     }
   },
+  "empty-body": {
+    "input": "empty-body.yaml"
+  },
   "argument-errors": {
     "input": "argument-errors.yaml",
     "model": {
@@ -358,6 +381,31 @@
   "security-errors": {
     "input": "security-errors.yaml"
   },
+  "auth-parameters": {
+    "input": "auth-parameters.yaml"
+  },
+  "security-roles": {
+    "input": "auth-roles.yaml"
+  },
+  "parameter-ref-loop-30": {
+    "input": "parameter-ref-loop-30.yaml"
+  },
+  "security-roles-30": {
+    "input": "auth-roles-30.yaml"
+  },
+  "version-per-document": {
+    "input": "version-per-document.yaml",
+    "files": ["version-per-document-parameters.yaml"],
+    "model": {"read_schema_version_per_document": true}
+  },
+  "version-per-document-root": {
+    "input": "version-per-document.yaml",
+    "files": ["version-per-document-parameters.yaml"]
+  },
+  "security-roles-read-as-30": {
+    "input": "auth-roles.yaml",
+    "model": {"schema_version": "3.0"}
+  },
   "references": {
     "input": "references.yaml",
     "files": [
@@ -384,6 +432,9 @@
   },
   "reference-errors": {
     "input": "reference-errors.yaml"
+  },
+  "pointer-references": {
+    "input": "pointer-references.yaml"
   },
   "link-errors": {
     "input": "link-errors.yaml",
@@ -488,5 +539,37 @@
         "date": ".local"
       }
     }
+  },
+  "response-keys": {
+    "input": "response-keys.yaml",
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "querystring-nameless": {
+    "input": "querystring-nameless.yaml",
+    "config": {
+      "server_parameter_names": {
+        "/paths/~1search/get": {
+          "querystring:": "q"
+        }
+      }
+    },
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "serialize-as-any-aliases": {
+    "input": "serialize-as-any-aliases.yaml",
+    "model": {
+      "use_serialize_as_any": true,
+      "use_type_alias": true
+    }
+  },
+  "text-bound-types-errors": {
+    "input": "text-bound-types-errors.yaml"
+  },
+  "parts-bound-types-errors": {
+    "input": "parts-bound-types-errors.yaml"
   }
 }

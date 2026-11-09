@@ -127,11 +127,11 @@ datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261027 \
+  --preset standard-py312-20261106 \
   --output model.py
 ```
 
-This quick start uses `standard-py312-20261027` as the modern Python 3.12 baseline.
+This quick start uses `standard-py312-20261106` as the modern Python 3.12 baseline.
 Preset names include the target Python version: `py312` means Python 3.12.
 
 See [CLI Reference](https://datamodel-code-generator.koxudaxi.dev/cli-reference/) for all options. See [Presets](https://datamodel-code-generator.koxudaxi.dev/presets/),
@@ -139,7 +139,7 @@ See [CLI Reference](https://datamodel-code-generator.koxudaxi.dev/cli-reference/
 [`--output-model-type`](https://datamodel-code-generator.koxudaxi.dev/cli-reference/model-customization/#output-model-type) for this command.
 
 For more schema-aware output that preserves schema-authored names, reuses models, and embeds generated
-documentation, use [`practical-py312-20261027`](https://datamodel-code-generator.koxudaxi.dev/presets/#practical-py312-20261027).
+documentation, use [`practical-py312-20261106`](https://datamodel-code-generator.koxudaxi.dev/presets/#practical-py312-20261106).
 
 **Not sure which options fit your schema?** Add `--recommend-options` to the command above (experimental). It
 analyses the schema and prints the options to add on top of the latest preset with the reason for each, and a ready
@@ -365,7 +365,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261027 \
+  --preset standard-py312-20261106 \
   --output app/models.py \
   --generate-server fastapi \
   --server-output app/server \
@@ -378,7 +378,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261027 \
+  --preset standard-py312-20261106 \
   --output app/models.py \
   --generate-client httpx2 \
   --client-output app/client \
@@ -660,6 +660,8 @@ datamodel-codegen --install-skill claude-code
 
 For a personal install, add `--skill-scope user`. Existing skills are preserved
 unless you explicitly add `--overwrite-skill`.
+
+To install without the Python package, for example in Claude Code, run `claude plugin marketplace add datamodel-code-generator/datamodel-code-generator` and then `claude plugin install datamodel-code-generator@datamodel-code-generator`. See [Install from the repository](docs/coding-agent-skill.md#install-from-the-repository) for other agents.
 
 Check your agent's current documentation for exact search paths.
 

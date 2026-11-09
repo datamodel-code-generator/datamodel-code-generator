@@ -179,6 +179,21 @@
     "results_match": true,
     "stderr": ""
   },
+  "mid-stack:test-shard-main:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-shard-main:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-shard-main:success": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
   "mid-stack:test-shard-nocov-main:cancelled": {
     "exit": 1,
     "results_match": true,
@@ -384,6 +399,26 @@
     "results_match": true,
     "stderr": ""
   },
+  "pull-request:test-shard-main:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-shard-main:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-shard-main:skipped": {
+    "exit": 0,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:test-shard-main:success": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
   "pull-request:test-shard-nocov-main:cancelled": {
     "exit": 1,
     "results_match": true,
@@ -520,6 +555,21 @@
     "stderr": ""
   },
   "test-http-backends:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "test-shard-main:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "test-shard-main:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "test-shard-main:skipped": {
     "exit": 1,
     "results_match": true,
     "stderr": ""

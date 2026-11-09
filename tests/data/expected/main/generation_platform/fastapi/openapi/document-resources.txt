@@ -89,6 +89,26 @@ DocumentationAnnotationWarning: <root>/docs_resources: /paths/~1owners~1{id}/get
           }
         }
       }
+    },
+    "/api/notes": {
+      "get": {
+        "operationId": "getNote",
+        "responses": {
+          "200": {
+            "description": "The note.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/paths/~1api~1notes/get/responses/200"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -135,6 +155,67 @@ DocumentationAnnotationWarning: <root>/docs_resources: /paths/~1owners~1{id}/get
               "$ref": "#/components/schemas/Tree"
             }
           }
+        }
+      },
+      "Label": {
+        "$anchor": "label",
+        "type": "string"
+      },
+      "Keywords": {
+        "type": "object",
+        "properties": {
+          "default": {
+            "$ref": "#/paths/~1api~1pets~1{id}/get/responses/200/content/application~1json/schema"
+          },
+          "example": {
+            "$ref": "#/paths/~1api~1pets~1{id}/get/responses/200/content/application~1json/schema"
+          },
+          "value": {
+            "$ref": "#/paths/~1api~1pets~1{id}/get/responses/200/content/application~1json/schema"
+          },
+          "enum": {
+            "$ref": "#/paths/~1api~1pets~1{id}/get/responses/200/content/application~1json/schema"
+          },
+          "const": {
+            "$ref": "#/paths/~1api~1pets~1{id}/get/responses/200/content/application~1json/schema"
+          },
+          "x-tag": {
+            "$ref": "#/paths/~1api~1pets~1{id}/get/responses/200/content/application~1json/schema"
+          },
+          "other": {
+            "$ref": "#/paths/~1api~1pets~1{id}/get/responses/200/content/application~1json/schema"
+          }
+        }
+      },
+      "Note": {
+        "type": "object",
+        "properties": {
+          "examples": {
+            "$anchor": "listed",
+            "type": "string"
+          },
+          "label": {
+            "$ref": "#/components/schemas/Label"
+          },
+          "listed": {
+            "$ref": "#/components/schemas/Note/properties/examples"
+          },
+          "keywords": {
+            "$ref": "#/components/schemas/Keywords"
+          }
+        },
+        "examples": [
+          {
+            "$anchor": "label",
+            "kind": "example-only"
+          },
+          {
+            "$id": "https://example.com/owner.json",
+            "kind": "example-only"
+          }
+        ],
+        "default": {
+          "$anchor": "node"
         }
       }
     }

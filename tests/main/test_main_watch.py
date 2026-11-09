@@ -22,7 +22,7 @@ import pytest
 
 import datamodel_code_generator
 from datamodel_code_generator.__main__ import Exit
-from tests.conftest import TARGET_PYTHON, assert_output
+from tests.conftest import CHILD_COVERAGE_ENV, TARGET_PYTHON, assert_output
 from tests.main.conftest import (
     EXPECTED_MAIN_PATH,
     JSON_SCHEMA_DATA_PATH,
@@ -181,6 +181,7 @@ def _start_watch_process(
 ) -> tuple[subprocess.Popen[str], list[str], list[str], threading.Thread, threading.Thread]:
     environment = {
         **os.environ,
+        **CHILD_COVERAGE_ENV,
         "PYTHONUNBUFFERED": "1",
         "WATCHFILES_FORCE_POLLING": os.environ.get("WATCHFILES_FORCE_POLLING", "true"),
     }
@@ -263,14 +264,15 @@ def _wait_for_watch_cli(
     condition: Callable[[], bool],
     description: str,
     *,
-    timeout: float = WATCH_CLI_TIMEOUT_SECONDS,
+    timeout: float | None = None,
 ) -> None:
     """Wait until the condition holds, failing when the process exits first or ``timeout`` seconds pass.
 
-    The default bounds a reaction of the watcher. The start waits ``WATCH_CLI_STARTUP_TIMEOUT_SECONDS``: it covers the
-    process's initial generation, whose first run under the coverage tracer takes seconds on a loaded runner.
+    The default, ``WATCH_CLI_TIMEOUT_SECONDS`` as it is when the wait starts, bounds a reaction of the watcher. The
+    start waits ``WATCH_CLI_STARTUP_TIMEOUT_SECONDS``: it covers the process's initial generation, whose first run under
+    the coverage tracer takes seconds on a loaded runner.
     """
-    end = time.monotonic() + timeout
+    end = time.monotonic() + (WATCH_CLI_TIMEOUT_SECONDS if timeout is None else timeout)
     while time.monotonic() < end:
         if condition():
             return
@@ -918,6 +920,40 @@ def test_watch_cli_regenerates_file_output_on_change(tmp_path: Path) -> None:
         _stop_watch_cli(process, stdout_thread, stderr_thread)
 
 
+@pytest.mark.skipif(
+    os.name == "nt" or os.geteuid() == 0,
+    reason="removing every permission denies reading only to an unprivileged POSIX user",
+)
+def test_watch_cli_keeps_watching_beside_an_unreadable_directory(tmp_path: Path) -> None:
+    """A directory the user cannot read beside the watched files does not stop watch mode."""
+    input_file = tmp_path / "schema.json"
+    output_file = tmp_path / "output.py"
+    unreadable_directory = tmp_path / "pgdata"
+    input_file.write_text(WATCH_SCHEMA_INITIAL, encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text("[tool.datamodel-codegen]\n", encoding="utf-8")
+    unreadable_directory.mkdir()
+    unreadable_directory.chmod(0)
+    try:
+        process, stdout_lines, stderr_lines, stdout_thread, stderr_thread = _start_watch_cli_until_ready(
+            input_file, output_file, working_directory=tmp_path
+        )
+        try:
+            _write_watch_cli_input_and_wait(
+                process,
+                stdout_lines,
+                stderr_lines,
+                input_file,
+                WATCH_SCHEMA_CHANGED,
+                lambda: _file_contains(output_file, "age: int | None = None"),
+                "file output to be regenerated",
+            )
+            assert_output(output_file.read_text(encoding="utf-8"))
+        finally:
+            _stop_watch_cli(process, stdout_thread, stderr_thread)
+    finally:
+        unreadable_directory.chmod(0o700)
+
+
 @pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
 def test_watch_cli_regenerates_server_on_change(tmp_path: Path) -> None:
     """Regenerate the models and the server package of a single run whenever its input changes."""
@@ -1456,6 +1492,7 @@ def test_watch_dependencies_collect_module_formatter_and_protobuf_files(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Generation collection includes module, formatter, and nested protobuf resources."""
+    monkeypatch.delenv("PYTHONPATH", raising=False)
     import py_compile
     from importlib.util import cache_from_source
 
@@ -2210,6 +2247,7 @@ def test_watch_polling_filters_unchanged_timeouts_and_late_directory_events(
     dependencies.configure(config, config_values={})
     replacement = tmp_path / "replacement.json"
     replacement.write_text(WATCH_SCHEMA_CHANGED, encoding="utf-8")
+    dependencies.enable_polling_fingerprints()
     watch_options: dict[str, object] = {}
 
     class PollingEvents:
@@ -2278,7 +2316,10 @@ def test_watch_dependencies_rejects_polling_directory_events_containing_output(t
 
 @pytest.mark.allow_direct_assert
 def test_watch_dependencies_accepts_polling_parent_events_for_changed_inputs(tmp_path: Path) -> None:
-    """A polling parent event is kept when an atomic input replacement changed its fingerprint."""
+    """A polling parent event is kept when an atomic input replacement changed its fingerprint.
+
+    A configured directory removed during a generation still differs from what that generation read.
+    """
     from datamodel_code_generator.__main__ import Config
     from datamodel_code_generator.watch_dependencies import WatchDependencies, _path_fingerprint
 
@@ -2332,6 +2373,18 @@ def test_watch_dependencies_accepts_polling_parent_events_for_changed_inputs(tmp
     assert dependencies._polling_dependencies_changed()
     assert dependencies.accepts_event(project_directory, accept_directory_events=True)
 
+    template_directory = tmp_path / "templates"
+    template_directory.mkdir()
+    dependencies.configure(
+        Config(input=input_file, output=output_file, custom_template_dir=template_directory), config_values={}
+    )
+    with dependencies.generation():
+        pass
+    assert not dependencies._polling_dependencies_changed()
+    with dependencies.generation():
+        template_directory.rmdir()
+    assert dependencies._polling_dependencies_changed()
+
 
 @pytest.mark.allow_direct_assert
 def test_watch_dependencies_accept_events_with_unresolvable_paths(
@@ -2344,15 +2397,15 @@ def test_watch_dependencies_accept_events_with_unresolvable_paths(
     input_file.write_text(WATCH_SCHEMA_INITIAL, encoding="utf-8")
     dependencies = WatchDependencies()
     dependencies.add_file(input_file)
-    original_resolve = Path.resolve
+    original_realpath = os.path.realpath
 
-    def raise_value_error(path: Path, *args: object, **kwargs: object) -> Path:
-        if path == input_file:
+    def raise_value_error(path: str | os.PathLike[str], *args: object, **kwargs: object) -> str:
+        if Path(path) == input_file:
             msg = "unresolvable"
             raise ValueError(msg)
-        return original_resolve(path, *args, **kwargs)
+        return original_realpath(path, *args, **kwargs)
 
-    monkeypatch.setattr(Path, "resolve", raise_value_error)
+    monkeypatch.setattr(os.path, "realpath", raise_value_error)
 
     assert dependencies.accepts_event(input_file)
 
@@ -2566,6 +2619,139 @@ client-operations = "operations.json"
     ] == [True, True, False, True, False]
 
 
+@pytest.mark.allow_direct_assert("checks which paths the failed plan's recovery graph accepts")
+def test_batch_watch_reads_raw_paths_as_the_planned_job_does(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A failed plan watches `~` in the home directory and no file for inline JSON, as a planned job reads them.
+
+    A `~user` that names no user is left unwatched without stopping the other values.
+    """
+    from datamodel_code_generator import __main__ as main_module
+    from datamodel_code_generator.arguments import arg_parser
+    from datamodel_code_generator.watch_dependencies import WatchDependencies
+
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    (tmp_path / "pyproject.toml").write_text(
+        """[tool.datamodel-codegen.jobs.invalid]
+client-protocols = "~no-such-user-for-datamodel-codegen/protocols.json"
+input = "~/input.json"
+aliases = "{}"
+client-operations = "~/operations.json"
+server-operation-names = "[]"
+""",
+        encoding="utf-8",
+    )
+    working_directory = tmp_path / "child"
+    working_directory.mkdir()
+    dependencies = WatchDependencies()
+    monkeypatch.chdir(working_directory)
+    arg_parser.parse_args(["--all-jobs"], namespace=main_module.namespace)
+
+    assert main_module._main(["--all-jobs"], start_watch=False, dependencies=dependencies) is Exit.ERROR
+    assert [
+        dependencies.accepts_event(path)
+        for path in (
+            home / "input.json",
+            tmp_path / "~" / "input.json",
+            home / "operations.json",
+            tmp_path / "~" / "operations.json",
+            working_directory / "{}",
+            tmp_path / "[]",
+        )
+    ] == [True, False, True, False, False, False]
+
+
+@pytest.mark.allow_direct_assert("checks which paths the failed run's recovery graph accepts")
+def test_watch_records_raw_inline_json_values_as_values(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A failed configuration watches the JSON file a value names, not a file named like an inline JSON value."""
+    from datamodel_code_generator import __main__ as main_module
+    from datamodel_code_generator.arguments import arg_parser
+    from datamodel_code_generator.watch_dependencies import WatchDependencies
+
+    (tmp_path / "pyproject.toml").write_text(
+        """[tool.datamodel-codegen]
+input = "input.json"
+aliases = "{}"
+client-protocols = "protocols.json"
+""",
+        encoding="utf-8",
+    )
+    dependencies = WatchDependencies()
+    monkeypatch.chdir(tmp_path)
+    arg_parser.parse_args([], namespace=main_module.namespace)
+
+    assert main_module._main([], start_watch=False, dependencies=dependencies) is Exit.ERROR
+    assert [
+        dependencies.accepts_event(path)
+        for path in (tmp_path / "input.json", tmp_path / "protocols.json", tmp_path / "{}")
+    ] == [True, True, False]
+
+
+@pytest.mark.allow_direct_assert("checks which paths the failed run's recovery graph accepts")
+def test_watch_records_a_json_file_named_like_inline_json(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A failed configuration watches a JSON file whose name starts like inline JSON, as the option reads it first.
+
+    The option reads a file of that name before it reads the value as JSON, for a model option (`aliases`) and for a
+    target option (`client-protocols`); a name no file has is inline JSON and watches nothing.
+    """
+    from datamodel_code_generator import __main__ as main_module
+    from datamodel_code_generator.arguments import arg_parser
+    from datamodel_code_generator.watch_dependencies import WatchDependencies
+
+    (tmp_path / "pyproject.toml").write_text(
+        """[tool.datamodel-codegen]
+input = "input.json"
+aliases = "[aliases].json"
+client-protocols = "{protocols}.json"
+default-values = "{missing}.json"
+""",
+        encoding="utf-8",
+    )
+    (tmp_path / "[aliases].json").write_text("{}", encoding="utf-8")
+    (tmp_path / "{protocols}.json").write_text("{}", encoding="utf-8")
+    dependencies = WatchDependencies()
+    monkeypatch.chdir(tmp_path)
+    arg_parser.parse_args([], namespace=main_module.namespace)
+
+    assert main_module._main([], start_watch=False, dependencies=dependencies) is Exit.ERROR
+    assert [
+        dependencies.accepts_event(path)
+        for path in (
+            tmp_path / "input.json",
+            tmp_path / "[aliases].json",
+            tmp_path / "{protocols}.json",
+            tmp_path / "{missing}.json",
+        )
+    ] == [True, True, True, False]
+
+
+@pytest.mark.allow_direct_assert("checks which paths a raw config adds to the watch graph")
+def test_watch_dependencies_read_a_json_file_before_inline_json(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A raw config value that starts like inline JSON is a watched file where a file has that name."""
+    from datamodel_code_generator.watch_dependencies import WatchDependencies
+
+    (tmp_path / "[aliases].json").write_text("{}", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    dependencies = WatchDependencies()
+    dependencies.stage_raw_config({"aliases": "[aliases].json", "default_values": "[missing].json"})
+
+    assert [dependencies.includes(tmp_path / name) for name in ("[aliases].json", "[missing].json")] == [True, False]
+
+
 @pytest.mark.allow_direct_assert
 def test_batch_watch_excludes_a_shared_update_lock_from_events(
     monkeypatch: pytest.MonkeyPatch,
@@ -2745,6 +2931,258 @@ def test_watch_with_no_collected_dependencies_stops_cleanly(tmp_path: Path) -> N
             regenerate=lambda: Exit.OK,
         )
         == Exit.OK
+    )
+
+
+WATCH_STEPS_TIMEOUT_SECONDS = 60.0
+
+
+@pytest.mark.abnormal_path("the macOS polling backend is selected by the platform, so other hosts patch it")
+@pytest.mark.allow_direct_assert("a watch run that never finishes its steps fails instead of hanging the suite")
+def _watch_in_steps(
+    monkeypatch: pytest.MonkeyPatch,
+    platform: str,
+    dependencies: WatchDependencies,
+    observed_path: Path,
+    steps: list[Callable[[], None]],
+    watch_delay: float = 0.05,
+) -> list[bool]:
+    """Watch with real watchfiles as on ``platform`` and return, per generation, whether ``observed_path`` existed.
+
+    Each generation runs the next step after it ends, and the generation after the last step stops watch mode.
+    """
+    from datamodel_code_generator import watch as watch_module
+    from datamodel_code_generator.__main__ import Config
+
+    monkeypatch.setattr(watch_module.sys, "platform", platform)
+    generations: list[bool] = []
+    pending_steps = iter(steps)
+
+    def regenerate() -> Exit:
+        with dependencies.generation():
+            observed = observed_path.exists()
+        generations.append(observed)
+        if (step := next(pending_steps, None)) is None:
+            raise KeyboardInterrupt
+        step()
+        return Exit.OK if observed else Exit.ERROR
+
+    watcher = threading.Thread(
+        target=watch_module.watch_and_regenerate,
+        args=(Config(input=observed_path, watch_delay=watch_delay),),
+        kwargs={"dependencies": dependencies, "regenerate": regenerate},
+        name="watch-in-steps",
+        daemon=True,
+    )
+    watcher.start()
+    watcher.join(WATCH_STEPS_TIMEOUT_SECONDS)
+    assert not watcher.is_alive(), f"watch mode did not finish its steps; generations so far: {generations}"
+    return generations
+
+
+def _write_atomically(path: Path, content: str) -> None:
+    pending = path.with_name(f".{path.name}.pending")
+    pending.write_text(content, encoding="utf-8")
+    pending.replace(path)
+
+
+@pytest.mark.allow_direct_assert("a watch run is checked by the generations it made, which no output file records")
+def test_watch_polling_keeps_its_roots_when_the_input_is_renamed_away_and_back(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A polling watcher keeps scanning a vanished input, so renaming it away and back regenerates twice, no more."""
+    from datamodel_code_generator.watch_dependencies import WatchDependencies
+
+    input_file = tmp_path / "schema.json"
+    renamed_file = tmp_path / "renamed.json"
+    input_file.write_text(WATCH_SCHEMA_INITIAL, encoding="utf-8")
+    dependencies = WatchDependencies()
+    dependencies.add_file(input_file)
+    dependencies.enable_polling_fingerprints()
+    _write_atomically(input_file, WATCH_SCHEMA_CHANGED)
+
+    generations = _watch_in_steps(
+        monkeypatch,
+        "darwin",
+        dependencies,
+        input_file,
+        [lambda: input_file.rename(renamed_file), lambda: renamed_file.rename(input_file)],
+    )
+
+    assert generations == [True, False, True]
+    assert "restarting the watcher" not in capsys.readouterr().out
+
+
+@pytest.mark.allow_direct_assert("a watch run is checked by the generations it made, which no output file records")
+def test_watch_polling_keeps_scanning_a_configured_directory_that_is_removed_and_recreated(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """While a configured directory is missing, polls do not regenerate again; once recreated, its tree is watched."""
+    from datamodel_code_generator.watch_dependencies import WatchDependencies
+
+    input_file = tmp_path / "schema.json"
+    template_directory = tmp_path / "templates"
+    removed_directory = tmp_path / "removed-templates"
+    template_file = template_directory / "pydantic_v2" / "BaseModel.jinja2"
+    input_file.write_text(WATCH_SCHEMA_INITIAL, encoding="utf-8")
+    template_file.parent.mkdir(parents=True)
+    template_file.write_text("initial", encoding="utf-8")
+    template_timestamp = 1_700_000_000
+    os.utime(template_file, (template_timestamp, template_timestamp))
+    dependencies = WatchDependencies()
+    dependencies.add_file(input_file)
+    dependencies.add_directory(template_directory)
+    dependencies.enable_polling_fingerprints()
+    _write_atomically(input_file, WATCH_SCHEMA_CHANGED)
+
+    recreation = threading.Timer(WATCH_CLI_READY_DELAY_SECONDS * 2, removed_directory.rename, [template_directory])
+
+    generations = _watch_in_steps(
+        monkeypatch,
+        "darwin",
+        dependencies,
+        template_directory,
+        [
+            lambda: template_directory.rename(removed_directory),
+            recreation.start,
+            lambda: _write_atomically(template_file, "changed"),
+        ],
+    )
+    recreation.join()
+
+    assert generations == [True, False, True, True]
+    assert "restarting the watcher" not in capsys.readouterr().out
+
+
+@pytest.mark.allow_direct_assert("a watch run is checked by the generations it made, which no output file records")
+def test_watch_polling_keeps_running_without_an_existing_dependency(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A polling watcher without roots still notices a missing input appearing."""
+    from datamodel_code_generator.watch_dependencies import WatchDependencies
+
+    input_file = tmp_path / "schema.json"
+    dependencies = WatchDependencies()
+    dependencies.add_file(input_file)
+    dependencies.enable_polling_fingerprints()
+    input_file.write_text(WATCH_SCHEMA_INITIAL, encoding="utf-8")
+
+    assert not dependencies.watch_roots()
+    assert _watch_in_steps(monkeypatch, "darwin", dependencies, input_file, []) == [True]
+
+
+@pytest.mark.allow_direct_assert("a watch run is checked by the generations it made, which no output file records")
+def test_watch_polling_notices_a_missing_dependency_beside_a_vanished_former_root(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A former dependency removed under a polling watcher does not hide a missing dependency appearing.
+
+    The watcher still scans the removed root and reports its removal on every poll, which at the default delay leaves
+    no poll without events.
+    """
+    from datamodel_code_generator.__main__ import Config
+    from datamodel_code_generator.watch_dependencies import WatchDependencies
+
+    input_file = tmp_path / "schema.json"
+    former_file = tmp_path / "former.json"
+    lock_file = tmp_path / "datamodel-codegen.lock"
+    input_file.write_text(WATCH_SCHEMA_INITIAL, encoding="utf-8")
+    former_file.write_text("{}", encoding="utf-8")
+    dependencies = WatchDependencies()
+    dependencies.add_file(input_file)
+    dependencies.record_file(former_file)
+    dependencies.enable_polling_fingerprints()
+    _write_atomically(input_file, WATCH_SCHEMA_CHANGED)
+
+    restoration = threading.Timer(WATCH_CLI_READY_DELAY_SECONDS * 2, lock_file.write_text, ["{}"])
+
+    def remove_former_and_restore_lock() -> None:
+        former_file.unlink()
+        dependencies.record_file(lock_file)
+        restoration.start()
+
+    generations = _watch_in_steps(
+        monkeypatch,
+        "darwin",
+        dependencies,
+        lock_file,
+        [remove_former_and_restore_lock],
+        Config.model_fields["watch_delay"].default,
+    )
+    restoration.join()
+
+    assert generations == [False, True]
+
+
+@pytest.mark.parametrize("platform", ["darwin", "linux"])
+@pytest.mark.allow_direct_assert("a watch run is checked by the generations it made, which no output file records")
+def test_watch_restarts_when_a_root_vanishes_before_the_watcher_starts(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str], platform: str
+) -> None:
+    """A root removed after the graph was published restarts the watcher on the current roots and catches up.
+
+    The input restored in a new directory is a new root again: the watcher restarts once more and catches up the edit
+    made before it started.
+    """
+    from datamodel_code_generator.watch_dependencies import WatchDependencies
+
+    schema_directory = tmp_path / "schemas"
+    restored_directory = tmp_path / "restored-schemas"
+    input_file = schema_directory / "schema.json"
+    schema_directory.mkdir()
+    input_file.write_text(WATCH_SCHEMA_INITIAL, encoding="utf-8")
+    dependencies = WatchDependencies()
+    dependencies.add_file(input_file)
+    if platform == "darwin":
+        dependencies.enable_polling_fingerprints()
+    published_roots = dependencies.watch_roots()
+    shutil.rmtree(schema_directory)
+    restored_directory.mkdir()
+    (restored_directory / input_file.name).write_text(WATCH_SCHEMA_INITIAL, encoding="utf-8")
+
+    generations = _watch_in_steps(
+        monkeypatch,
+        platform,
+        dependencies,
+        input_file,
+        [
+            lambda: restored_directory.rename(schema_directory),
+            lambda: _write_atomically(input_file, WATCH_SCHEMA_CHANGED),
+        ],
+    )
+
+    assert published_roots
+    assert generations == [False, True, True]
+    assert capsys.readouterr().out.count("Detected changes while restarting the watcher.") == 2
+
+
+@pytest.mark.allow_direct_assert("a watch run is checked by the generations it made, which no output file records")
+def test_watch_polling_roots_leave_out_unrelated_project_trees(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """With the configuration in the project's pyproject.toml, a poll scans the dependencies, not the project tree."""
+    from datamodel_code_generator.__main__ import Config
+    from datamodel_code_generator.watch_dependencies import WatchDependencies
+
+    project_directory = tmp_path / "project"
+    input_file = project_directory / "schema.json"
+    template_directory = project_directory / "templates"
+    pyproject_file = project_directory / "pyproject.toml"
+    (project_directory / ".venv" / "lib").mkdir(parents=True)
+    (project_directory / ".venv" / "lib" / "module.py").write_text("", encoding="utf-8")
+    template_directory.mkdir()
+    input_file.write_text(WATCH_SCHEMA_INITIAL, encoding="utf-8")
+    pyproject_file.write_text("[tool.datamodel-codegen]\n", encoding="utf-8")
+    monkeypatch.chdir(project_directory)
+    monkeypatch.delenv("PWD", raising=False)
+    config = Config(input=input_file, output=project_directory / "output.py", custom_template_dir=template_directory)
+    native_dependencies = WatchDependencies()
+    native_dependencies.configure(config, config_values={})
+    polling_dependencies = WatchDependencies()
+    polling_dependencies.enable_polling_fingerprints()
+    polling_dependencies.configure(config, config_values={})
+
+    assert native_dependencies.watch_roots() == (project_directory,)
+    assert polling_dependencies.watch_roots() == tuple(
+        path.resolve() for path in (pyproject_file, input_file, template_directory)
     )
 
 
@@ -4037,10 +4475,10 @@ def test_watch_dependencies_handle_path_resolution_errors(monkeypatch: pytest.Mo
     unresolved_path = tmp_path / "unresolved.json"
     resolution_error = "unresolvable"
 
-    def raise_resolution_error(_path: Path, *_args: object, **_kwargs: object) -> Path:
+    def raise_resolution_error(_path: str | os.PathLike[str], *_args: object, **_kwargs: object) -> str:
         raise OSError(resolution_error)
 
-    monkeypatch.setattr(Path, "resolve", raise_resolution_error)
+    monkeypatch.setattr(os.path, "realpath", raise_resolution_error)
     assert _path_variants(unresolved_path) == frozenset({unresolved_path})
 
     def raise_samefile_error(_path: Path, _other: Path) -> bool:

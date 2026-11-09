@@ -1,0 +1,13 @@
+openapi: 3.0.3
+info:
+  title: A JSON pointer token never names a boolean YAML key
+  version: "1.0"
+paths: {}
+x-shared:
+  flags:
+    true:
+      type: string
+components:
+  schemas:
+    Flag:
+      $ref: "#/x-shared/flags/1"

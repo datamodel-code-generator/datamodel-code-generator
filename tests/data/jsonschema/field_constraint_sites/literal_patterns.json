@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "$defs": {
+    "Repeated": {"type": "string", "enum": ["aa", "b"], "pattern": "(a)\\1"}
+  },
+  "properties": {
+    "referenced": {"$ref": "#/$defs/Repeated"},
+    "inline": {"type": "string", "enum": ["aa", "b"], "pattern": "(a)\\1"},
+    "fixed": {"type": "string", "const": "aa", "pattern": "(a)\\1"}
+  }
+}

@@ -4,4 +4,3 @@ diagnostics:diagnostic-person.json
 formatter:formatter-root
 dispose
 default:True
-legacy:legacy.json,formatter-root,True

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "$defs": {
+    "Item": {"type": "object", "properties": {"id": {"type": "integer"}}},
+    "Level": {"type": "integer", "enum": [1, 2]},
+    "LengthOrNumber": {"anyOf": [{"type": "string"}, {"type": "integer"}], "minLength": 2},
+    "PatternOrNumber": {"oneOf": [{"type": "string"}, {"type": "integer"}], "pattern": "^a"},
+    "BoundedNumber": {"anyOf": [{"type": "integer"}, {"type": "number"}], "minimum": 2},
+    "ShortOrNull": {"anyOf": [{"type": "string"}, {"type": "null"}], "maxLength": 3},
+    "ShortOrItem": {"anyOf": [{"type": "string"}, {"$ref": "#/$defs/Item"}], "maxLength": 3},
+    "LevelOrText": {"anyOf": [{"$ref": "#/$defs/Level"}, {"type": "string"}], "minLength": 2},
+    "PatternOfBounded": {"anyOf": [{"$ref": "#/$defs/BoundedNumber"}], "pattern": "^a"}
+  },
+  "properties": {
+    "length": {"$ref": "#/$defs/LengthOrNumber"},
+    "pattern": {"$ref": "#/$defs/PatternOrNumber"},
+    "bound": {"$ref": "#/$defs/BoundedNumber"},
+    "short": {"$ref": "#/$defs/ShortOrNull"},
+    "item": {"$ref": "#/$defs/ShortOrItem"},
+    "level": {"$ref": "#/$defs/LevelOrText"},
+    "held": {"$ref": "#/$defs/PatternOfBounded"},
+    "items": {"type": "array", "items": {"anyOf": [{"type": "string"}, {"type": "integer"}], "maxLength": 3}}
+  }
+}

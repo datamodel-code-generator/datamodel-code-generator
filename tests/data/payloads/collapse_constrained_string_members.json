@@ -1,0 +1,19 @@
+{
+  "valid": [
+    {"account": "acct_123"},
+    {"account": {"id": "a"}},
+    {"tags": ["abc"], "labels": ["a"], "codes": {"k": "ab"}},
+    {"slug": "abc"},
+    {"slug": 0},
+    {"notes": [null, "abcd"]}
+  ],
+  "invalid": [
+    {"account": "acct_1234"},
+    {"tags": ["abcd"]},
+    {"labels": [""]},
+    {"codes": {"k": "abc"}},
+    {"slug": "xab"},
+    {"slug": -1},
+    {"notes": ["abcde"]}
+  ]
+}

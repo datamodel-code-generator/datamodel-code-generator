@@ -417,8 +417,41 @@
     },
     "config": {}
   },
+  "multipart-split-all": {
+    "input": "multipart-split.yaml",
+    "model": {
+      "read_only_write_only_model_type": "all"
+    },
+    "config": {}
+  },
+  "multipart-read-only-exploded": {
+    "input": "multipart-read-only-exploded.yaml",
+    "model": {"read_only_write_only_model_type": "request-response"},
+    "modules": [["client", "_operations.py"]]
+  },
   "multipart-kinds": {
     "input": "multipart-kinds.yaml",
+    "config": {}
+  },
+  "multipart-text-files": {
+    "input": "multipart-text-files.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "type_overrides": {
+        "Files.file": "builtins.str",
+        "Files.notes": "builtins.str",
+        "Stamp.taken": "datetime.datetime"
+      }
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ],
     "config": {}
   },
   "servers": {
@@ -479,6 +512,12 @@
     "input": "default-server.yaml",
     "config": {
       "default_base_url": "https://default.example.com/base"
+    }
+  },
+  "default-server-template": {
+    "input": "default-server.yaml",
+    "config": {
+      "default_base_url": "https://default.example.com/{tenant}"
     }
   },
   "implicit-server": {
@@ -803,7 +842,8 @@
     "input": "media-errors.yaml"
   },
   "form-name-errors": {
-    "input": "form-name-errors.yaml"
+    "input": "form-name-errors.yaml",
+    "modules": false
   },
   "form-name-kept": {
     "input": "form-name-errors.yaml",
@@ -828,7 +868,8 @@
     "backends": [
       "pydantic_v2.BaseModel",
       "pydantic_v2.dataclass"
-    ]
+    ],
+    "modules": false
   },
   "binary-text": {
     "input": "binary-text.yaml",
@@ -884,6 +925,9 @@
   "header-names": {
     "input": "header-names.yaml"
   },
+  "required-errors": {
+    "input": "required-errors.yaml"
+  },
   "setting-errors": {
     "input": "pets.yaml",
     "config": {
@@ -920,6 +964,12 @@
     "config": {"body_arguments": "both"},
     "modules": [["client", "resources", "item_store", "_sync.py"]]
   },
+  "naming-other-class-aliases": {
+    "input": "naming.yaml",
+    "model": {"aliases": {"Nothing.name": "name", "client.Nothing.name": "name", "NewItem.itemCount": "count"}},
+    "config": {"body_arguments": "both"},
+    "modules": [["client", "resources", "item_store", "_sync.py"]]
+  },
   "naming-snake": {
     "input": "naming.yaml",
     "model": {"snake_case_field": true},
@@ -938,10 +988,22 @@
     "config": {"body_arguments": "both"},
     "modules": false
   },
+  "naming-enclosing-model": {
+    "input": "naming.yaml",
+    "model": {"naming_strategy": "enclosing-model"},
+    "config": {"body_arguments": "both"},
+    "modules": false
+  },
   "naming-primary-first": {
     "input": "naming-refs.yaml",
     "references": ["naming-refs-shared.yaml"],
     "model": {"naming_strategy": "primary-first"},
+    "modules": false
+  },
+  "naming-definitions-first": {
+    "input": "naming-refs.yaml",
+    "references": ["naming-refs-shared.yaml"],
+    "model": {"naming_strategy": "definitions-first"},
     "modules": false
   },
   "naming-default": {
@@ -1098,6 +1160,26 @@
         "models.py"
       ]
     ]
+  },
+  "pointer-references": {
+    "input": "pointer-references.yaml",
+    "modules": [
+      [
+        "models.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "pointer-errors": {
+    "input": "pointer-errors.yaml"
   },
   "references": {
     "input": "references.yaml",
@@ -1511,11 +1593,6 @@
               "media_type": "application/json",
               "name": "tag",
               "python_name": "pet_tag"
-            },
-            {
-              "media_type": "application/x-www-form-urlencoded",
-              "name": "tag",
-              "python_name": "pet_tag"
             }
           ]
         },
@@ -1534,6 +1611,29 @@
           "body_arguments": "body"
         }
       ]
+    }
+  },
+  "fields-typeddict-template-bases": {
+    "input": "linked-data-keys.yaml",
+    "references": [
+      "templates/custom/TypedDict.jinja2"
+    ],
+    "backends": [
+      "typing.TypedDict"
+    ],
+    "modules": [
+      [
+        "models.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ],
+    "cwd": true,
+    "model": {
+      "custom_template_dir": "templates/custom"
     }
   },
   "fields-cycle": {
@@ -1713,6 +1813,112 @@
         "types",
         "default",
         "_operations.py"
+      ]
+    ]
+  },
+  "merged-nullable-reference": {
+    "input": "merged-nullable-reference.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "strict_nullable": true,
+      "reuse_model": true,
+      "collapse_reuse_models": true
+    },
+    "modules": [
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
+  },
+  "merged-nullable-forms": {
+    "input": "merged-nullable-forms.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "reuse_model": true,
+      "collapse_reuse_models": true
+    },
+    "modules": [
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
+  },
+  "merged-nullable-kept": {
+    "input": "merged-nullable-kept.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "model": {
+      "reuse_model": true,
+      "collapse_reuse_models": true,
+      "keep_reference_null_on_merged_models": true
+    },
+    "modules": [
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "models.py"
       ]
     ]
   },
@@ -2266,8 +2472,166 @@
   "auth-errors": {
     "input": "auth-errors.yaml"
   },
+  "auth-roles": {
+    "input": "auth-roles.yaml",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ]
+    ]
+  },
+  "auth-roles-30": {
+    "input": "auth-roles-30.yaml",
+    "modules": false
+  },
+  "version-per-document": {
+    "input": "version-per-document.yaml",
+    "references": ["version-per-document-parameters.yaml"],
+    "model": {"read_schema_version_per_document": true},
+    "modules": [["client", "_operations.py"]]
+  },
+  "version-per-document-root": {
+    "input": "version-per-document.yaml",
+    "references": ["version-per-document-parameters.yaml"]
+  },
+  "auth-roles-30-read-as-31": {
+    "input": "auth-roles-30.yaml",
+    "model": {"schema_version": "3.1"},
+    "modules": [["client", "_generated", "security.py"]]
+  },
   "auth-wire-conflicts": {
-    "input": "auth-wire-conflicts.yaml"
+    "input": "auth-wire-conflicts.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "auth-parameters": {
+    "input": "auth-parameters.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "multipart-media-text": {
+    "input": "multipart-media-text.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "parameter-item-or-array": {
+    "input": "parameter-item-or-array.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "parameter-item-or-array-errors": {
+    "input": "parameter-item-or-array-errors.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "multipart-union-parts": {
+    "input": "multipart-union-parts.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "multipart-union-parts-errors": {
+    "input": "multipart-union-parts-errors.yaml"
+  },
+  "query-free-objects": {
+    "input": "query-free-objects.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "deep-object-brackets-errors": {
+    "input": "deep-object-brackets-errors.yaml",
+    "config": {
+      "deep_object_brackets": true
+    },
+    "modules": false
+  },
+  "deep-object-brackets": {
+    "input": "deep-object-brackets.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "config": {
+      "deep_object_brackets": true
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "binary-json-bodies": {
+    "input": "binary-json-bodies.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "auth-shared-wire": {
+    "input": "auth-shared-wire.yaml",
+    "modules": [
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ]
+    ]
   },
   "credential-name-errors": {
     "input": "credential-name-errors.yaml",
@@ -3236,6 +3600,29 @@
       ]
     },
     "modules": false
+  },
+  "protocols-reserved-arguments": {
+    "input": "reserved-arguments.yaml",
+    "references": [
+      "protocols/reserved-arguments.json"
+    ],
+    "modules": false,
+    "config": {
+      "protocols": "protocols/reserved-arguments.json",
+      "operations": [
+        {
+          "ref": "/paths/~1tags/get",
+          "parameter_names": [
+            {"in_": "query", "name": "items", "python_name": "items"},
+            {"in_": "query", "name": "state", "python_name": "state"}
+          ]
+        },
+        {
+          "ref": "/paths/~1labels/get",
+          "parameter_names": [{"in_": "query", "name": "items", "python_name": "items"}]
+        }
+      ]
+    }
   },
   "protocols-querystring": {
     "input": "querystring.yaml",
@@ -4500,6 +4887,16 @@
     },
     "modules": false
   },
+  "protocols-cache-bodyless": {
+    "input": "response-keys.yaml",
+    "references": [
+      "protocols/cache-bodyless.json"
+    ],
+    "config": {
+      "protocols": "protocols/cache-bodyless.json"
+    },
+    "modules": false
+  },
   "caching-typing": {
     "input": "caching.yaml",
     "references": [
@@ -4842,6 +5239,16 @@
         "bool"
       ]
     }
+  },
+  "codec-docstrings": {
+    "input": "codec-docstrings.json",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ]
   },
   "docstrings": {
     "input": "docstrings.yaml",
@@ -5335,6 +5742,18 @@
       "reuse_model": true
     }
   },
+  "discriminator-forms": {
+    "input": "discriminator-forms.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
   "parameter-content-defaults-30": {
     "input": "parameter-content-defaults-30.yaml",
     "modules": [
@@ -5345,6 +5764,10 @@
         "_sync.py"
       ]
     ]
+  },
+  "parameter-ref-loop-30": {
+    "input": "parameter-ref-loop-30.yaml",
+    "modules": [["client", "resources", "default", "_sync.py"]]
   },
   "parameter-content-defaults-31": {
     "input": "parameter-content-defaults-31.yaml",
@@ -5368,6 +5791,59 @@
   },
   "multipart-referenced-items": {
     "input": "multipart-referenced-items.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "forms-reuse-response": {
+    "input": "forms-reuse-response.yaml",
+    "model": {
+      "reuse_model": true
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
+  },
+  "forms-allof-cycle": {
+    "input": "forms-allof-cycle.yaml",
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "forms-member-locations": {
+    "input": "forms-member-locations.yaml",
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "forms-boolean-properties": {
+    "input": "forms-boolean-properties.yaml",
     "modules": [
       [
         "client",
@@ -5448,6 +5924,55 @@
       ]
     ]
   },
+  "type-spellings-containers": {
+    "input": "type-spellings-containers.yaml",
+    "references": [
+      "protocols/type-spellings-containers.json"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ],
+    "model": {
+      "use_x_python_type_as_written": true
+    },
+    "config": {
+      "protocols": "protocols/type-spellings-containers.json"
+    },
+    "modules": {
+      "pydantic_v2.BaseModel": [
+        [
+          "client",
+          "_generated",
+          "model_bindings.py"
+        ],
+        [
+          "client",
+          "protocols",
+          "_plans.py"
+        ],
+        [
+          "client",
+          "resources",
+          "default",
+          "_sync.py"
+        ],
+        [
+          "models.py"
+        ]
+      ],
+      "dataclasses.dataclass": [
+        [
+          "client",
+          "_generated",
+          "model_bindings.py"
+        ],
+        [
+          "models.py"
+        ]
+      ]
+    }
+  },
   "typeddict-target-keys": {
     "input": "typeddict-target-keys.yaml",
     "backends": [
@@ -5506,5 +6031,192 @@
         "models.py"
       ]
     ]
+  },
+  "call-layers": {
+    "input": "call-layers.yaml",
+    "references": [
+      "protocols/call-layers.json"
+    ],
+    "config": {
+      "protocols": "protocols/call-layers.json"
+    },
+    "modules": false
+  },
+  "response-keys": {
+    "input": "response-keys.yaml",
+    "references": [
+      "protocols/response-keys.json"
+    ],
+    "config": {
+      "protocols": "protocols/response-keys.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "text-bound-types": {
+    "input": "text-bound-types.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "text-bound-types-reuse": {
+    "input": "text-bound-types.yaml",
+    "model": {
+      "reuse_model": true
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "text-bound-types-errors": {
+    "input": "text-bound-types-errors.yaml"
+  },
+  "parts-bound-types": {
+    "input": "parts-bound-types.yaml",
+    "model": {
+      "type_mappings": [
+        "string+mybin=binary"
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "parts-bound-types-reuse": {
+    "input": "parts-bound-types.yaml",
+    "model": {
+      "type_mappings": [
+        "string+mybin=binary"
+      ],
+      "reuse_model": true
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "parts-bound-types-collapse": {
+    "input": "parts-bound-types.yaml",
+    "model": {
+      "type_mappings": [
+        "string+mybin=binary"
+      ],
+      "reuse_model": true,
+      "collapse_reuse_models": true
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "parts-bound-types-errors": {
+    "input": "parts-bound-types-errors.yaml"
+  },
+  "parts-bound-responses": {
+    "input": "parts-bound-responses.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "parts-bound-responses-reuse": {
+    "input": "parts-bound-responses.yaml",
+    "model": {
+      "reuse_model": true
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "skip-operations": {
+    "input": "skip-operations.yaml"
+  },
+  "skip-operations-resources": {
+    "input": "skip-operations.yaml",
+    "config": {
+      "resource_names": [
+        {
+          "tag": "owners",
+          "namespace": "owners"
+        }
+      ]
+    },
+    "modules": false
+  },
+  "skip-operations-document-errors": {
+    "input": "skip-operations-document-errors.yaml"
+  },
+  "skip-operations-every": {
+    "input": "skip-operations-every.yaml"
+  },
+  "skip-operations-features": {
+    "input": "skip-operations-features.yaml",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "skip-operations-helper": {
+    "input": "skip-operations-helper.yaml",
+    "references": [
+      "protocols/skip-operations-helper.json"
+    ],
+    "config": {
+      "protocols": "protocols/skip-operations-helper.json"
+    }
+  },
+  "skip-operations-helper-disabled": {
+    "input": "skip-operations-helper.yaml",
+    "references": [
+      "protocols/skip-operations-disabled.json"
+    ],
+    "config": {
+      "protocols": "protocols/skip-operations-disabled.json"
+    }
+  },
+  "skip-operations-helper-later": {
+    "input": "skip-operations-helper.yaml",
+    "references": [
+      "protocols/skip-operations-later.json"
+    ],
+    "config": {
+      "protocols": "protocols/skip-operations-later.json"
+    }
   }
 }

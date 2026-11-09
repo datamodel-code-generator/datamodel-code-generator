@@ -1,0 +1,45 @@
+from __future__ import annotations
+
+from enum import Enum
+from typing import Dict, List, Optional, Union
+
+from pydantic import BaseModel, RootModel
+
+
+class Name(RootModel[Optional[str]]):
+    root: Optional[str]
+
+
+class Color(Enum):
+    red = 'red'
+    NoneType_None = None
+
+
+class Size(Enum):
+    s = 's'
+    m = 'm'
+
+
+class Pet(BaseModel):
+    id: Optional[int] = None
+
+
+class Use(BaseModel):
+    name_f: Optional[Name]
+    name_a: List[Optional[Name]]
+    name_m: Dict[str, Optional[Name]]
+    name_u: Union[Optional[Name], int]
+    name_o: Optional[Optional[Name]]
+    name_d: Optional[Name] = None
+    color_f: Color
+    color_a: List[Color]
+    color_m: Dict[str, Color]
+    color_u: Union[Color, int]
+    size_f: Size
+    size_a: List[Size]
+    size_m: Dict[str, Size]
+    size_u: Union[Size, int]
+    pet_f: Pet
+    pet_a: List[Pet]
+    pet_m: Dict[str, Pet]
+    pet_u: Union[Pet, int]

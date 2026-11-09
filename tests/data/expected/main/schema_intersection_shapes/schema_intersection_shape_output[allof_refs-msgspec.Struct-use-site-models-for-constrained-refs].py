@@ -137,10 +137,10 @@ Number5Prop: TypeAlias = Annotated[Number, Meta(ge=5)]
 Number5Item: TypeAlias = Annotated[Number, Meta(ge=5)]
 
 
-NonNegativeProp: TypeAlias = Annotated[Real, Meta(ge=0)]
+NonNegativeProp: TypeAlias = Annotated[Real, Meta(ge=0.0)]
 
 
-NonNegativeItem: TypeAlias = Annotated[Real, Meta(ge=0)]
+NonNegativeItem: TypeAlias = Annotated[Real, Meta(ge=0.0)]
 
 
 StampLenProp: TypeAlias = Annotated[Stamp, Meta(max_length=40)]

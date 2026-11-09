@@ -17,7 +17,7 @@ Secret = TypeAliasType("Secret", Annotated[str, Field(min_length=1)])
 
 @dataclass
 class Pet:
-    id: Id
+    id: Annotated[Id, Field(max_length=5)]
     name: str
     secret: constr(min_length=1, max_length=9)
-    s2: Secret
+    s2: Annotated[Secret, Field(max_length=9)]

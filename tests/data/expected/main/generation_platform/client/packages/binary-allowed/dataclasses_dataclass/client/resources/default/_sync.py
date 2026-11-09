@@ -72,6 +72,7 @@ class DefaultResource:
     def upload(
         self,
         *,
+        pageSize: int = 20,
         body: MultipartBody[models.Record | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -81,7 +82,7 @@ class DefaultResource:
         """
         return self._core.execute(
             _operations.OPERATION_1,
-            (),
+            (pageSize,),
             body=body,
             media_type=media_type,
             options=options,
@@ -179,6 +180,7 @@ class DefaultWithResponse:
     def upload(
         self,
         *,
+        pageSize: int = 20,
         body: MultipartBody[models.Record | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -188,7 +190,7 @@ class DefaultWithResponse:
         """
         return self._core.execute(
             _operations.OPERATION_1,
-            (),
+            (pageSize,),
             body=body,
             media_type=media_type,
             options=options,
@@ -286,6 +288,7 @@ class DefaultWithRawResponse:
     def upload(
         self,
         *,
+        pageSize: int = 20,
         body: MultipartBody[models.Record | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -295,7 +298,7 @@ class DefaultWithRawResponse:
         """
         return self._core.execute_raw(
             _operations.OPERATION_1,
-            (),
+            (pageSize,),
             body=body,
             media_type=media_type,
             options=options,
@@ -393,6 +396,7 @@ class DefaultWithStreamingResponse:
     def upload(
         self,
         *,
+        pageSize: int = 20,
         body: MultipartBody[models.Record | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -402,7 +406,7 @@ class DefaultWithStreamingResponse:
         """
         return self._core.stream(
             _operations.OPERATION_1,
-            (),
+            (pageSize,),
             body=body,
             media_type=media_type,
             options=options,

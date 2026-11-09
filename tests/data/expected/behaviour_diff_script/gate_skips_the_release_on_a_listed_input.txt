@@ -1,0 +1,7 @@
+exit=0
+base-skipped: tests/data/jsonschema/person.json | loops (#5935) | 2 cells
+summary: same=2, no-behaviour=0, crash-fix=0, accepted=0, violation=0, both-fail=0, opt-in=0, base-skipped=2
+tests/data/jsonschema/person.json | default | base-skipped | ['base skipped: loops (#5935)']
+tests/data/jsonschema/person.json | default | base-skipped | ['base skipped: loops (#5935)']
+tests/data/openapi/api.yaml | default | same | []
+tests/data/openapi/api.yaml | default | same | []

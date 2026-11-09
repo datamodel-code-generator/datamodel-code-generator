@@ -1,0 +1,1 @@
+DanglingRefWarning: Unresolved local $ref '#/properties/size' in id_parameter.yaml: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.

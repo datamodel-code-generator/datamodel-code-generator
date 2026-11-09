@@ -1,0 +1,12 @@
+openapi: 3.0.3
+info: {title: T, version: "1.0"}
+paths: {}
+components:
+  schemas:
+    Kind: {type: string, enum: [a, b], description: Kind of holder.}
+    Holder:
+      type: object
+      required: [kind]
+      properties:
+        Literal: {type: string}
+        kind: {type: string, enum: [c]}

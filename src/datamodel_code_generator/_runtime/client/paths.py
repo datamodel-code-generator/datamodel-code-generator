@@ -5,14 +5,16 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Final
 
+from ..model_codecs.parameters import PLACEHOLDER
+
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-__all__ = ("PLACEHOLDER", "dot_segment", "dotted_route", "path_segments")
+__all__ = ("PLACEHOLDER", "dot_segment", "dotted_route", "filled", "path_segments")
 
-PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
-_DOT_SEGMENT: Final = re.compile(r"(?:\.|%2[Ee]){1,2}")
-_DOTTED_ROUTE: Final = re.compile(r"/(?:\.|%2[Ee]){1,2}(?=/|$)")
+_DOTS: Final = r"(?:\.|%2[Ee]){1,2}"
+_DOT_SEGMENT: Final = re.compile(_DOTS)
+_DOTTED_ROUTE: Final = re.compile(rf"/{_DOTS}(?=/|$)")
 
 
 def path_segments(template: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
@@ -24,12 +26,17 @@ def path_segments(template: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
     )
 
 
+def filled(template: str, values: Mapping[str, str]) -> str:
+    """Return a template with each `{name}` replaced by the value of that name, which every placeholder must have."""
+    return PLACEHOLDER.sub(lambda match: values[match[1]], template)
+
+
 def dot_segment(segment: str, texts: Mapping[str, str]) -> bool:
     """Return whether a path template segment with its parameters' texts is `.` or `..`, which normalization removes.
 
     `%2E` in either case counts as the `.` it is equivalent to.
     """
-    return _DOT_SEGMENT.fullmatch(PLACEHOLDER.sub(lambda match: texts[match[1]], segment)) is not None
+    return _DOT_SEGMENT.fullmatch(filled(segment, texts)) is not None
 
 
 def dotted_route(route: str) -> bool:

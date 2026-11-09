@@ -35,14 +35,14 @@
       "Item"
     ],
     "nullable_items": [
-      "dict",
-      "dict"
+      "Item",
+      "Item"
     ],
     "nullable_container": [
       "Item"
     ],
     "nonnull_nullable_items": [
-      "dict"
+      "Item"
     ],
     "empty": []
   },
@@ -68,11 +68,11 @@
   ],
   "matrix_types": [
     [
-      "dict"
+      "Item"
     ],
     [
-      "dict",
-      "dict"
+      "Item",
+      "Item"
     ]
   ],
   "cube_values": [
@@ -91,13 +91,13 @@
   "cube_types": [
     [
       [
-        "dict"
+        "Item"
       ]
     ],
     [
       [
-        "dict",
-        "dict"
+        "Item",
+        "Item"
       ]
     ]
   ],

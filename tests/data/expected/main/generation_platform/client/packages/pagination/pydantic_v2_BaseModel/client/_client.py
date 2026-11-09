@@ -35,7 +35,19 @@ if TYPE_CHECKING:
 
 _DEFAULTS = ClientDefaults(
     security_schemes=security.ROOT_SCHEMES,
-    helpers=(('users.all', 'pagination'), ('users.by_header', 'pagination'), ('users.search', 'pagination'), ('loose.all', 'pagination'), ('loose.tokens', 'pagination'), ('nested.all', 'pagination'), ('labels.all', 'pagination'), ('labels.sets', 'pagination'), ('archive.all', 'pagination'), ('statuses.all', 'pagination'), ('secure.users', 'pagination')),
+    helpers=(
+        ('users.all', 'pagination'),
+        ('users.by_header', 'pagination'),
+        ('users.search', 'pagination'),
+        ('loose.all', 'pagination'),
+        ('loose.tokens', 'pagination'),
+        ('nested.all', 'pagination'),
+        ('labels.all', 'pagination'),
+        ('labels.sets', 'pagination'),
+        ('archive.all', 'pagination'),
+        ('statuses.all', 'pagination'),
+        ('secure.users', 'pagination'),
+    ),
 )
 
 

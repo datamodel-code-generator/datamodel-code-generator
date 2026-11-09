@@ -35,6 +35,21 @@ paths:
       responses:
         '204':
           description: An encoding of no member.
+  /unnamed-part-encoding:
+    post:
+      operationId: submitUnnamedPartEncoding
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                term: {type: string}
+            encoding:
+              other: {contentType: text/plain}
+      responses:
+        '204':
+          description: A part encoding of no member.
   /xml-member:
     post:
       operationId: submitXmlMember
@@ -50,6 +65,18 @@ paths:
       responses:
         '204':
           description: A member content no builtin codec writes.
+  /enum-arrays:
+    get:
+      operationId: getEnumArrays
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            enum: [[1, 2], [3]]
+      responses:
+        '204':
+          description: An enum of arrays no parameter encoding writes.
   /deep-array:
     post:
       operationId: submitDeepArray

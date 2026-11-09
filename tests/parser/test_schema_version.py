@@ -199,6 +199,7 @@ def test_jsonschema_features_2019_09() -> None:
             anchor=True,
             recursive_ref=True,
             dynamic_ref=False,
+            ref_sibling_keywords=True,
         )
     )
 
@@ -218,6 +219,7 @@ def test_jsonschema_features_2020_12() -> None:
             anchor=True,
             recursive_ref=True,
             dynamic_ref=True,
+            ref_sibling_keywords=True,
         )
     )
 
@@ -237,6 +239,7 @@ def test_jsonschema_features_auto() -> None:
             anchor=True,
             recursive_ref=True,
             dynamic_ref=True,
+            ref_sibling_keywords=True,
         )
     )
 
@@ -287,6 +290,7 @@ def test_openapi_features_v31() -> None:
             dynamic_ref=True,
             nullable_keyword=False,
             discriminator_support=True,
+            mutual_tls=True,
         )
     )
 
@@ -310,6 +314,7 @@ def test_openapi_features_auto() -> None:
             dynamic_ref=True,
             nullable_keyword=False,
             discriminator_support=True,
+            mutual_tls=True,
         )
     )
 
@@ -1376,3 +1381,19 @@ def test_e2e_exclusive_maximum_as_number_strict_warning_draft4() -> None:
             user_warnings = [x for x in w if issubclass(x.category, UserWarning)]
             assert any("exclusiveMaximum as number" in str(uw.message) for uw in user_warnings)
             assert result is not None
+
+
+def test_read_schema_version_per_document_keeps_a_subclass_schema_features() -> None:
+    """Keep the version a parser subclass's ``schema_features`` decides, with a warning, under the option."""
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+    from tests.conftest import assert_output
+
+    class Draft7Parser(JsonSchemaParser):
+        @property
+        def schema_features(self) -> JsonSchemaFeatures:
+            return JsonSchemaFeatures.from_version(JsonSchemaVersion.Draft7)
+
+    source = JSON_SCHEMA_DATA_PATH / "schema_version_per_document" / "b_2020_12.json"
+    with pytest.warns(UserWarning, match=r"--read-schema-version-per-document has no effect with Draft7Parser"):
+        generated = Draft7Parser(source, read_schema_version_per_document=True, formatters=["builtin"]).parse()
+    assert_output(generated)

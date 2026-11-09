@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "legacy": {
+      "$ref": "legacy_draft07.json#/definitions/Score"
+    },
+    "score": {
+      "$ref": "#/$defs/Score"
+    }
+  },
+  "$defs": {
+    "Positive": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "Score": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Positive",
+          "maximum": 10
+        }
+      ]
+    }
+  }
+}

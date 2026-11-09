@@ -5,12 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal, TypeAlias
 
+from .positions import unfilled
+
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
+    from collections.abc import Callable, Collection, Mapping
 
     import httpx2
 
-    from .client import AsyncSend, Send
+    from .positions import AsyncSend, Send
     from .urls import Origin
 
 
@@ -62,19 +64,23 @@ class Credentials:
         """Keep the credentials given, leaving out None."""
         self.values = {name: value for name, value in values.items() if value is not None}
 
-    def selected(self, binding: SecurityBinding) -> tuple[Placement, ...] | None:
+    def selected(
+        self, binding: SecurityBinding, given: Collection[tuple[str, str]] = ()
+    ) -> tuple[Placement, ...] | None:
         """Return the placements of an operation's first credentialed alternative the credentials satisfy, or None.
 
         An anonymous alternative, and an operation declaring empty security, take none, and an anonymous alternative
-        applies only when no other alternative is satisfied.
+        applies only when no other alternative is satisfied. A scheme whose position the call's request fills from a
+        parameter, by its `parameter_key` in `given`, takes the parameter's value and no credential.
         """
         values = self.values
         anonymous = not binding.alternatives
         for alternative in binding.alternatives:
+            placed = unfilled(alternative, given)
             if not alternative:
                 anonymous = True
-            elif all(item.scheme.name in values for item in alternative):
-                return tuple((item.scheme, values[item.scheme.name]) for item in alternative)
+            elif all(item.scheme.name in values for item in placed):
+                return tuple((item.scheme, values[item.scheme.name]) for item in placed)
         return () if anonymous else None
 
     def auth(  # noqa: PLR0913

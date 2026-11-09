@@ -165,7 +165,7 @@ a remote offset regressed
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 g3h/BgpZSTrv3NSyNpmQ5zA+GG4=, content-type: application/offset+octet-stream, content-length: 4] b'4567'
   > HEAD https://api.example.com/files/u12
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance ! ProtocolDataError: ProtocolDataError(reason='inconsistent') [location=HeaderSelector(name='Upload-Offset', occurrence='single')] inconsistent
+  advance ! ProtocolDataError: ProtocolDataError(reason='inconsistent') [location=HeaderSelector(name='Upload-Offset', occurrence='single')] inconsistent [operation=OperationRef(pointer='/paths/~1files~1{fileId}/head', document=None)]
 a remote offset past the content
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -176,7 +176,7 @@ a remote offset past the content
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 g3h/BgpZSTrv3NSyNpmQ5zA+GG4=, content-type: application/offset+octet-stream, content-length: 4] b'4567'
   > HEAD https://api.example.com/files/u13
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance ! ProtocolDataError: ProtocolDataError(reason='inconsistent') [location=HeaderSelector(name='Upload-Offset', occurrence='single')] inconsistent
+  advance ! ProtocolDataError: ProtocolDataError(reason='inconsistent') [location=HeaderSelector(name='Upload-Offset', occurrence='single')] inconsistent [operation=OperationRef(pointer='/paths/~1files~1{fileId}/head', document=None)]
 a remote offset past the chunk
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -187,7 +187,7 @@ a remote offset past the chunk
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 g3h/BgpZSTrv3NSyNpmQ5zA+GG4=, content-type: application/offset+octet-stream, content-length: 4] b'4567'
   > HEAD https://api.example.com/files/u14
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance ! ProtocolDataError: ProtocolDataError(reason='inconsistent') [location=HeaderSelector(name='Upload-Offset', occurrence='single')] inconsistent
+  advance ! ProtocolDataError: ProtocolDataError(reason='inconsistent') [location=HeaderSelector(name='Upload-Offset', occurrence='single')] inconsistent [operation=OperationRef(pointer='/paths/~1files~1{fileId}/head', document=None)]
 a probe after an error answer that claims bytes never sent
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -196,7 +196,7 @@ a probe after an error answer that claims bytes never sent
   advance ! InternalServerError: Error code: 500 [operation_id='appendFile', status_code=500, body=b'', body_bytes=b'', truncated=False]
   > HEAD https://api.example.com/files/u15
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance ! ProtocolDataError: ProtocolDataError(reason='inconsistent') [location=HeaderSelector(name='Upload-Offset', occurrence='single')] inconsistent
+  advance ! ProtocolDataError: ProtocolDataError(reason='inconsistent') [location=HeaderSelector(name='Upload-Offset', occurrence='single')] inconsistent [operation=OperationRef(pointer='/paths/~1files~1{fileId}/head', document=None)]
 part of a chunk where partial commits are forbidden
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -204,7 +204,7 @@ part of a chunk where partial commits are forbidden
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 8] b'01234567'
   > GET https://api.example.com/files/u16/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  advance ! ProtocolDataError: ProtocolDataError(reason='inconsistent') [location=BodySelector(pointer='/offset')] inconsistent
+  advance ! ProtocolDataError: ProtocolDataError(reason='inconsistent') [location=BodySelector(pointer='/offset')] inconsistent [operation=OperationRef(pointer='/paths/~1files~1{fileId}~1status/get', document=None)]
 probe responses without a usable offset
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -212,35 +212,35 @@ probe responses without a usable offset
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   > HEAD https://api.example.com/files/u17
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance with a missing offset ! ProtocolDataError: ProtocolDataError(operation_id='probeFile', reason='missing') [operation_id='probeFile', location=HeaderSelector(name='Upload-Offset', occurrence='single')] missing
+  advance with a missing offset ! ProtocolDataError: ProtocolDataError(operation_id='probeFile', reason='missing') [operation_id='probeFile', location=HeaderSelector(name='Upload-Offset', occurrence='single')] missing [operation=OperationRef(pointer='/paths/~1files~1{fileId}/head', document=None)]
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u18
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   > HEAD https://api.example.com/files/u18
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance with a not digits offset ! ProtocolDataError: ProtocolDataError(operation_id='probeFile', reason='value') [operation_id='probeFile', location=HeaderSelector(name='Upload-Offset', occurrence='single')] value
+  advance with a not digits offset ! ProtocolDataError: ProtocolDataError(operation_id='probeFile', reason='value') [operation_id='probeFile', location=HeaderSelector(name='Upload-Offset', occurrence='single')] value [operation=OperationRef(pointer='/paths/~1files~1{fileId}/head', document=None)]
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u19
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   > HEAD https://api.example.com/files/u19
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance with a too many digits offset ! ProtocolDataError: ProtocolDataError(operation_id='probeFile', reason='value') [operation_id='probeFile', location=HeaderSelector(name='Upload-Offset', occurrence='single')] value
+  advance with a too many digits offset ! ProtocolDataError: ProtocolDataError(operation_id='probeFile', reason='value') [operation_id='probeFile', location=HeaderSelector(name='Upload-Offset', occurrence='single')] value [operation=OperationRef(pointer='/paths/~1files~1{fileId}/head', document=None)]
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u20
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   > HEAD https://api.example.com/files/u20
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance with a repeated offset ! ProtocolDataError: ProtocolDataError(operation_id='probeFile', reason='malformed') [operation_id='probeFile', location=HeaderSelector(name='Upload-Offset', occurrence='single')] malformed
+  advance with a repeated offset ! ProtocolDataError: ProtocolDataError(operation_id='probeFile', reason='malformed') [operation_id='probeFile', location=HeaderSelector(name='Upload-Offset', occurrence='single')] malformed [operation=OperationRef(pointer='/paths/~1files~1{fileId}/head', document=None)]
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u21
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 8] b'01234567'
   > GET https://api.example.com/files/u21/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  advance with a string offset ! ProtocolDataError: ProtocolDataError(operation_id='getFileStatus', reason='type') [operation_id='getFileStatus', location=BodySelector(pointer='/offset')] type
+  advance with a string offset ! ProtocolDataError: ProtocolDataError(operation_id='getFileStatus', reason='type') [operation_id='getFileStatus', location=BodySelector(pointer='/offset')] type [operation=OperationRef(pointer='/paths/~1files~1{fileId}~1status/get', document=None)]
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u22
@@ -257,7 +257,7 @@ offset
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 8] b'01234567'
   > GET https://api.example.com/files/u23/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  advance with a negative offset ! ProtocolDataError: ProtocolDataError(operation_id='getFileStatus', reason='value') [operation_id='getFileStatus', location=BodySelector(pointer='/offset')] value
+  advance with a negative offset ! ProtocolDataError: ProtocolDataError(operation_id='getFileStatus', reason='value') [operation_id='getFileStatus', location=BodySelector(pointer='/offset')] value [operation=OperationRef(pointer='/paths/~1files~1{fileId}~1status/get', document=None)]
 a completion of unknown outcome
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -507,6 +507,9 @@ refused options
   start with a patch of the written offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_headers.upload-offset') [field_path=('options', 'extra_headers', 'upload-offset')] invalid_value
   start with a patch of the written size ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_headers.Upload-Length') [field_path=('options', 'extra_headers', 'Upload-Length')] invalid_value
   start with a patch of the written query offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_query.offset') [field_path=('options', 'extra_query', 'offset')] invalid_value
+  start through a view whose default header patches the written offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='default_headers.Upload-Offset') [field_path=('default_headers', 'Upload-Offset')] invalid_value
+  start through a view whose default query patches the written query offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='default_query.offset') [field_path=('default_query', 'offset')] invalid_value
+  start on a client whose default header patches the written size ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='default_headers.upload-length') [field_path=('default_headers', 'upload-length')] invalid_value
   upload options with zero chunk bytes ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='chunk_bytes') [field_path=('chunk_bytes',)] invalid_value
   upload options with a removed chunk count ! TypeError: UploadOptions.__init__() got an unexpected keyword argument 'max_parts' []
 defaults from the client
@@ -629,14 +632,14 @@ async resume and refusals
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 g3h/BgpZSTrv3NSyNpmQ5zA+GG4=, content-type: application/offset+octet-stream, content-length: 4] b'4567'
   > HEAD https://api.example.com/files/u55
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  advance to a regressed offset ! ProtocolDataError: ProtocolDataError(reason='inconsistent') [location=HeaderSelector(name='Upload-Offset', occurrence='single')] inconsistent
+  advance to a regressed offset ! ProtocolDataError: ProtocolDataError(reason='inconsistent') [location=HeaderSelector(name='Upload-Offset', occurrence='single')] inconsistent [operation=OperationRef(pointer='/paths/~1files~1{fileId}/head', document=None)]
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u56
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 8] b'01234567'
   > GET https://api.example.com/files/u56/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  advance with a forbidden partial commit ! ProtocolDataError: ProtocolDataError(reason='inconsistent') [location=BodySelector(pointer='/offset')] inconsistent
+  advance with a forbidden partial commit ! ProtocolDataError: ProtocolDataError(reason='inconsistent') [location=BodySelector(pointer='/offset')] inconsistent [operation=OperationRef(pointer='/paths/~1files~1{fileId}~1status/get', document=None)]
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   advance over shrunk content ! ConfigurationError: ConfigurationError(reason='source_changed', field_path='source') [field_path=('source',)] source_changed

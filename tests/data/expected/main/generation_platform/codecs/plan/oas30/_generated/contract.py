@@ -21,7 +21,7 @@ from .._runtime.server.responses import Declared, OperationResponses
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        'get_items': Sequence[params.Depends]
+        'get_items': Sequence[params.Depends],
     },
     total=False,
 )
@@ -40,9 +40,62 @@ class GetItems:
         pref: plan_oas30_models.ItemsGetCookiePrefParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='flags', plan=ParameterPlan(location='query', name='flags', style='spaceDelimited', shape='array', kind='boolean', reserved_names=('limit', 'page', 'q')), adapter=TypeAdapter(list[bool])), ParameterArgument(name='page', plan=ParameterPlan(location='query', name='page', style='form', shape='object', fields=(FieldPlan('size', 'integer'),), additional=FieldPlan('', 'string'), reserved_names=('flags', 'limit', 'q')), adapter=TypeAdapter(plan_oas30_models.ItemsGetQueryPageParameter)), ParameterArgument(name='X_Id', plan=ParameterPlan(location='header', name='X-Id', style='simple', required=True, shape='array', kind='integer'), adapter=TypeAdapter(list[int])), ParameterArgument(name='pref', plan=ParameterPlan(location='cookie', name='pref', style='form', explode=True, shape='object', fields=(FieldPlan('theme', 'string'),), additional=FieldPlan('', 'string')), adapter=TypeAdapter(plan_oas30_models.ItemsGetCookiePrefParameter))),
+        arguments=(
+            ParameterArgument(
+                name='flags',
+                plan=ParameterPlan(
+                    location='query',
+                    name='flags',
+                    style='spaceDelimited',
+                    shape='array',
+                    kind='boolean',
+                    reserved_names=('limit', 'page', 'q'),
+                ),
+                adapter=TypeAdapter(list[bool]),
+            ),
+            ParameterArgument(
+                name='page',
+                plan=ParameterPlan(
+                    location='query',
+                    name='page',
+                    style='form',
+                    shape='object',
+                    fields=(FieldPlan('size', 'integer'),),
+                    additional=FieldPlan('', 'string'),
+                    reserved_names=('flags', 'limit', 'q'),
+                ),
+                adapter=TypeAdapter(plan_oas30_models.ItemsGetQueryPageParameter),
+            ),
+            ParameterArgument(
+                name='X_Id',
+                plan=ParameterPlan(
+                    location='header',
+                    name='X-Id',
+                    style='simple',
+                    required=True,
+                    shape='array',
+                    kind='integer',
+                ),
+                adapter=TypeAdapter(list[int]),
+            ),
+            ParameterArgument(
+                name='pref',
+                plan=ParameterPlan(
+                    location='cookie',
+                    name='pref',
+                    style='form',
+                    explode=True,
+                    shape='object',
+                    fields=(FieldPlan('theme', 'string'),),
+                    additional=FieldPlan('', 'string'),
+                ),
+                adapter=TypeAdapter(plan_oas30_models.ItemsGetCookiePrefParameter),
+            ),
+        ),
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=plan_oas30_models.Item)},
+        responses={
+            '200': Declared(media_type='application/json', model=plan_oas30_models.Item)
+        },
     )

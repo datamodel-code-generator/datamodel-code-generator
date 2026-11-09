@@ -1,0 +1,11 @@
+{
+  "valid": [
+    {"referenced": "aa", "inline": "aa", "fixed": "aa"},
+    {}
+  ],
+  "invalid": [
+    {"referenced": "b"},
+    {"inline": "b"},
+    {"fixed": "b"}
+  ]
+}

@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 from functools import lru_cache
 
+from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._python_type_annotation import (
     _LITERAL_VALUE_TYPES,
     PythonTypeEllipsis,
@@ -16,7 +17,7 @@ from datamodel_code_generator._python_type_annotation import (
     PythonTypeSubscript,
     PythonTypeTuple,
     PythonTypeUnion,
-    _python_type_name,
+    python_type_name,
 )
 
 
@@ -65,9 +66,7 @@ def _legacy_starred_parse_text(type_str: str) -> tuple[str, str] | None:
         tokenize.NL,
     })
     identifiers = {token_info.string for token_info in tokens if token_info.type == tokenize.NAME}
-    sentinel = _LEGACY_STARRED_SENTINEL_BASE
-    while sentinel in identifiers:
-        sentinel += "_"
+    sentinel, _ = first_free(_LEGACY_STARRED_SENTINEL_BASE, identifiers.__contains__, "padded")
 
     result: list[tuple[int, str]] = []
     delimiter_stack: list[str] = []
@@ -173,7 +172,7 @@ def _python_type_expr_from_ast(  # noqa: PLR0911, PLR0912
 ) -> PythonTypeExpr:
     match node:
         case ast.Name(id=name):
-            return _python_type_name(name)
+            return python_type_name(name)
         case ast.Attribute():
             if (parts := _qualified_name_parts(node)) is None:
                 raise _InvalidPythonTypeAnnotationError
@@ -181,28 +180,19 @@ def _python_type_expr_from_ast(  # noqa: PLR0911, PLR0912
         case ast.Subscript(value=value, slice=slice_node):
             base = _python_type_expr_from_ast(value, allow_literal=False)
             strings_allowed = _is_literal_base(base)
-            if isinstance(slice_node, ast.Tuple):
-                arguments = tuple(
+            arguments = slice_node.elts if isinstance(slice_node, ast.Tuple) else (slice_node,)
+            return PythonTypeSubscript(
+                base,
+                tuple(
                     _python_type_expr_from_ast(item, allow_literal=True, allow_string_literal=strings_allowed)
-                    for item in slice_node.elts
-                )
-            else:
-                arguments = (
-                    _python_type_expr_from_ast(slice_node, allow_literal=True, allow_string_literal=strings_allowed),
-                )
-            return PythonTypeSubscript(base, arguments)
-        case ast.List(elts=items) if allow_literal:
-            return PythonTypeParameterList(
-                tuple(
-                    _python_type_expr_from_ast(item, allow_literal=True, allow_string_literal=allow_string_literal)
-                    for item in items
-                )
+                    for item in arguments
+                ),
             )
-        case ast.Tuple(elts=items) if allow_literal:
-            return PythonTypeTuple(
+        case ast.List() | ast.Tuple() if allow_literal:
+            return (PythonTypeParameterList if isinstance(node, ast.List) else PythonTypeTuple)(
                 tuple(
                     _python_type_expr_from_ast(item, allow_literal=True, allow_string_literal=allow_string_literal)
-                    for item in items
+                    for item in node.elts
                 )
             )
         case ast.Starred(value=value) if allow_literal:
@@ -210,7 +200,7 @@ def _python_type_expr_from_ast(  # noqa: PLR0911, PLR0912
         case ast.BinOp(op=ast.BitOr()):
             return _python_type_union_from_ast(node)
         case ast.Constant(value=None):
-            return _python_type_name("None")
+            return python_type_name("None")
         case ast.Constant(value=value) if allow_literal and value is Ellipsis:
             return PythonTypeEllipsis()
         case ast.Constant(value=value) if allow_literal and isinstance(value, (str, bytes)):

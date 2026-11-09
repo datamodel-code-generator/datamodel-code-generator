@@ -1,1 +1,0 @@
-{"area": "SCHEMA_GRAPH", "message": "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH: _load_ref_schema_object read 1 references of origin x-python-type definition with their edge and 0 as plain strings", "kind": "ref-sites", "site": "_load_ref_schema_object", "origin": "x-python-type definition", "plain": 0, "carried": 1}

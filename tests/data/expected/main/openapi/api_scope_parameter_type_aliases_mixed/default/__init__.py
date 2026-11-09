@@ -20,7 +20,9 @@ ItemsGetQueryOtherParameter = TypeAliasType(
 )
 
 
-ItemsGetQueryCodesParameter = TypeAliasType("ItemsGetQueryCodesParameter", list[common.Code])
+ItemsGetQueryCodesParameter = TypeAliasType(
+    "ItemsGetQueryCodesParameter", list[common.Code]
+)
 
 
 ItemsCodeGetPathCodeParameter = TypeAliasType(

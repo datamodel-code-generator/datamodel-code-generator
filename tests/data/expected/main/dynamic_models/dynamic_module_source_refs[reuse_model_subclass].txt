@@ -1,0 +1,8 @@
+{
+  "root_class": "Model",
+  "models_by_source_ref": {
+    "#/properties/a": "A",
+    "#/properties/b": "B",
+    "#": "Model"
+  }
+}

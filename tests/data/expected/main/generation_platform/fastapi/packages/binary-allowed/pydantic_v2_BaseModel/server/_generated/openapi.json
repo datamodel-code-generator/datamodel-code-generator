@@ -61,6 +61,15 @@
   "/uploads": {
    "post": {
     "operationId": "upload",
+    "parameters": [
+     {
+      "name": "pageSize",
+      "in": "query",
+      "schema": {
+       "$ref": "#/components/schemas/PageSize"
+      }
+     }
+    ],
     "requestBody": {
      "required": true,
      "content": {
@@ -88,6 +97,9 @@
          },
          "record": {
           "$ref": "#/components/schemas/Record"
+         },
+         "scan": {
+          "$ref": "#/components/schemas/Scan"
          }
         }
        }
@@ -219,6 +231,17 @@
      "draft",
      "final"
     ]
+   },
+   "Scan": {
+    "$anchor": "scan",
+    "type": "string",
+    "format": "binary"
+   },
+   "PageSize": {
+    "$anchor": "pageSize",
+    "type": "integer",
+    "default": 20,
+    "title": "Page size"
    }
   }
  }

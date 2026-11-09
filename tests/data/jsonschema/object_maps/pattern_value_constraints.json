@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "pInt": {
+      "type": "object",
+      "patternProperties": {
+        "^n": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "pLook": {
+      "type": "object",
+      "patternProperties": {
+        "^x": {
+          "type": "string",
+          "pattern": "^(?!ab)"
+        }
+      }
+    },
+    "pStr": {
+      "type": "object",
+      "patternProperties": {
+        "^x": {
+          "type": "string",
+          "pattern": "^ab$"
+        }
+      }
+    },
+    "pArr": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2
+        }
+      }
+    },
+    "pRef": {
+      "type": "object",
+      "patternProperties": {
+        "^r": {
+          "$ref": "#/$defs/Pos"
+        }
+      }
+    },
+    "pRefSib": {
+      "type": "object",
+      "patternProperties": {
+        "^r": {
+          "$ref": "#/$defs/Pos",
+          "maximum": 10
+        }
+      }
+    },
+    "pNull": {
+      "type": "object",
+      "patternProperties": {
+        "^z": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "pSame": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "^b": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2
+        }
+      }
+    },
+    "pItems": {
+      "type": "object",
+      "patternProperties": {
+        "^i": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "v": {
+                "type": "integer"
+              }
+            }
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "pObjCount": {
+      "type": "object",
+      "patternProperties": {
+        "^o": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "minProperties": 1
+        }
+      }
+    },
+    "pOther": {
+      "type": "object",
+      "patternProperties": {
+        "^n": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 2
+      }
+    },
+    "pEnumKeys": {
+      "type": "object",
+      "propertyNames": {
+        "enum": [
+          "a1",
+          "zz"
+        ]
+      },
+      "patternProperties": {
+        "^a": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "pAny": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "^b": true
+      }
+    },
+    "pPlain": {
+      "type": "object",
+      "patternProperties": {
+        "^p": {
+          "type": "integer"
+        }
+      }
+    },
+    "rPat": {
+      "$ref": "#/$defs/Pat"
+    }
+  },
+  "$defs": {
+    "Pos": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "Pat": {
+      "type": "object",
+      "patternProperties": {
+        "^d": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

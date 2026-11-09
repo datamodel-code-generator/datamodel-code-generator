@@ -83,9 +83,7 @@ def _add_get_values(
     )
 
 
-LITERAL_ROUTES: Final = (
-    ('get_values', _add_get_values),
-)
+LITERAL_ROUTES: Final = (('get_values', _add_get_values),)
 TEMPLATED_ROUTES: Final = ()
 
 

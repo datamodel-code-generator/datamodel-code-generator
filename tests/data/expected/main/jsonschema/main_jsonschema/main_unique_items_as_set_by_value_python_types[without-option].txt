@@ -1,0 +1,31 @@
+{
+  "containers": "set_item_not_hashable",
+  "sequences": "set_item_not_hashable",
+  "queues": "set_item_not_hashable",
+  "anything": "set_item_not_hashable",
+  "measured": "set_item_not_hashable",
+  "tagged": [
+    "set",
+    2
+  ],
+  "scalars": [
+    "set",
+    2
+  ],
+  "pairs": [
+    "set",
+    2
+  ],
+  "frozen": [
+    "set",
+    2
+  ],
+  "letters": [
+    "set",
+    2
+  ],
+  "dates": [
+    "set",
+    2
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "title": "Dog",
+  "type": "object",
+  "properties": {
+    "pet_type": {"type": "string"},
+    "barks": {"type": "boolean"}
+  },
+  "required": ["pet_type"]
+}

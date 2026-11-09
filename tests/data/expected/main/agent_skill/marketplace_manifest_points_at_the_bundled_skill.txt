@@ -1,0 +1,1 @@
+datamodel-code-generator: source=./skills/datamodel-code-generator directory=datamodel-code-generator skill_name=datamodel-code-generator skill_file=True

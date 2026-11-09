@@ -84,6 +84,16 @@ paths:
           content:
             application/json:
               schema: {type: [object, "null"], allOf: [{$ref: "#/components/schemas/Note"}, {properties: {tag: {type: string}}}]}
+  /works:
+    put:
+      operationId: putWork
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Note"}
+      responses:
+        "204": {description: Done.}
   /drafts:
     post:
       operationId: postDraft

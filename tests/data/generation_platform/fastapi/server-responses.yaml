@@ -151,6 +151,14 @@ paths:
               schema: {$ref: "#/components/schemas/Pet"}
             application/vnd.tally+json:
               schema: {$ref: "#/components/schemas/Tally"}
+  /ratios:
+    get:
+      operationId: getRatio
+      parameters:
+        - {name: kind, in: query, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: A ratio whose JSON has no declared schema.
 components:
   schemas:
     Tally:

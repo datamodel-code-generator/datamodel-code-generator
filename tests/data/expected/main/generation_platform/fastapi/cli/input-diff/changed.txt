@@ -8,7 +8,7 @@
  
  
  class NewPet(BaseModel):
-@@ -68,5 +67,5 @@
+@@ -70,5 +69,5 @@
  )
  
  
@@ -27,7 +27,7 @@
      },
      total=False,
  )
-@@ -68,9 +68,9 @@
+@@ -80,13 +80,13 @@
      )
  
  
@@ -37,8 +37,12 @@
 +    """Plans of the get_inventory operation."""
  
      RESPONSES: Final = OperationResponses(
--        responses={'200': Declared(media_type='application/json', model=models.OwnersGetResponse)},
-+        responses={'200': Declared(media_type='application/json', model=models.StoreInventoryGetResponse)},
+         responses={
+             '200': Declared(
+-                media_type='application/json', model=models.OwnersGetResponse
++                media_type='application/json', model=models.StoreInventoryGetResponse
+             )
+         },
      )
 --- server/application.py (baseline input)
 +++ server/application.py (current input)
@@ -135,7 +139,7 @@
          X_Request_Id: Annotated[UUID | None, Header(alias='X-Request-Id', convert_underscores=False)] = None,
 --- server/services.py (baseline input)
 +++ server/services.py (current input)
-@@ -73,13 +73,13 @@
+@@ -77,13 +77,17 @@
          """
  
  
@@ -149,7 +153,11 @@
 +    def get_inventory(
          self,
 -    ) -> models.OwnersGetResponse | HTTPResult[models.OwnersGetResponse] | Response:
-+    ) -> models.StoreInventoryGetResponse | HTTPResult[models.StoreInventoryGetResponse] | Response:
++    ) -> (
++        models.StoreInventoryGetResponse
++        | HTTPResult[models.StoreInventoryGetResponse]
++        | Response
++    ):
          """
 -        Handle GET /owners.
 +        Handle GET /store/inventory.
@@ -221,7 +229,7 @@ REMOVED: server/routers/owners.py (generated only from baseline input)
  
  The file paths are relative to this README.
  Replace each stub with your code, then run the application with an ASGI server, from the directory that holds the top-level package (add `--app-dir src` for a `src` layout):
-@@ -105,10 +105,10 @@
+@@ -109,10 +109,10 @@
          raise NotImplementedError
  ```
  
@@ -236,7 +244,7 @@ REMOVED: server/routers/owners.py (generated only from baseline input)
  
  datamodel-code-generator wrote this module once, with a stub for each method, and never overwrites it. Generating the
  server again updates the Protocol, so type checkers point at the methods to change.
-@@ -119,17 +119,17 @@
+@@ -123,17 +123,21 @@
  import models
  from fastapi.responses import Response
  from server import HTTPResult
@@ -259,13 +267,17 @@ REMOVED: server/routers/owners.py (generated only from baseline input)
 +
 +    def get_inventory(
 +        self,
-+    ) -> models.StoreInventoryGetResponse | HTTPResult[models.StoreInventoryGetResponse] | Response:
++    ) -> (
++        models.StoreInventoryGetResponse
++        | HTTPResult[models.StoreInventoryGetResponse]
++        | Response
++    ):
 +        """
 +        Handle GET /store/inventory.
          """
          raise NotImplementedError
  ```
-@@ -159,7 +159,7 @@
+@@ -163,7 +167,7 @@
  | `PetsService` | `list_my_pets` | GET | `/pets/mine` | `/paths/~1pets~1mine/get` |
  | `PetsService` | `get_pet` | GET | `/pets/{petId}` | `/paths/~1pets~1{petId}/get` |
  | `PetsService` | `delete_pet` | DELETE | `/pets/{petId}` | `/paths/~1pets~1{petId}/delete` |
@@ -274,7 +286,7 @@ REMOVED: server/routers/owners.py (generated only from baseline input)
  
  `operation_dependencies` takes the method names, the keys of `OperationDependencies`; the per-operation generation settings, such as `--server-handler-modes`, take the operation references.
  
-@@ -180,19 +180,19 @@
+@@ -184,19 +188,19 @@
  
  from server import create_app
  from services.pets import Pets
@@ -298,7 +310,7 @@ REMOVED: server/routers/owners.py (generated only from baseline input)
          ...
  ```
  
-@@ -204,10 +204,10 @@
+@@ -208,10 +212,10 @@
  
  from server import build_router
  from services.pets import Pets

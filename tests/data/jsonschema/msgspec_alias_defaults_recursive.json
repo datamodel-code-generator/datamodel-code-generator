@@ -2,9 +2,13 @@
   "title": "RecursiveDefaults",
   "type": "object",
   "$defs": {
-    "Values": {"anyOf": [{"type": "array", "items": {"$ref": "#/$defs/Values"}}, {"type": "integer"}]}
+    "Values": {"anyOf": [{"type": "array", "items": {"$ref": "#/$defs/Values"}}, {"type": "integer"}]},
+    "Pod": {"type": "object", "properties": {"a": {"type": "string"}}},
+    "CycleA": {"anyOf": [{"$ref": "#/$defs/CycleB"}, {"$ref": "#/$defs/Pod"}]},
+    "CycleB": {"anyOf": [{"$ref": "#/$defs/CycleA"}, {"type": "integer"}]}
   },
   "properties": {
-    "values": {"$ref": "#/$defs/Values", "default": [1, [2]]}
+    "values": {"$ref": "#/$defs/Values", "default": [1, [2]]},
+    "cycle": {"anyOf": [{"$ref": "#/$defs/CycleA"}, {"type": "array", "items": {"type": "string"}}], "default": ["c"]}
   }
 }

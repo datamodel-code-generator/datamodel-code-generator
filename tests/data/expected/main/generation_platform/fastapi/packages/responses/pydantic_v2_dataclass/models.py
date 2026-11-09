@@ -34,7 +34,9 @@ class Secret:
 CreatedPostResponse = TypeAliasType("CreatedPostResponse", str)
 
 
-CreatedPostResponse201LocationHeader = TypeAliasType("CreatedPostResponse201LocationHeader", str)
+CreatedPostResponse201LocationHeader = TypeAliasType(
+    "CreatedPostResponse201LocationHeader", str
+)
 
 
 CreatedPostResponse201XRateHeader = TypeAliasType(
@@ -42,7 +44,9 @@ CreatedPostResponse201XRateHeader = TypeAliasType(
 )
 
 
-CreatedPostResponse201XNoteHeader = TypeAliasType("CreatedPostResponse201XNoteHeader", str)
+CreatedPostResponse201XNoteHeader = TypeAliasType(
+    "CreatedPostResponse201XNoteHeader", str
+)
 
 
 RangesGetResponse = TypeAliasType("RangesGetResponse", str)
@@ -51,4 +55,6 @@ RangesGetResponse = TypeAliasType("RangesGetResponse", str)
 DownloadGetResponse = TypeAliasType("DownloadGetResponse", str)
 
 
-DownloadGetResponse303LocationHeader = TypeAliasType("DownloadGetResponse303LocationHeader", str)
+DownloadGetResponse303LocationHeader = TypeAliasType(
+    "DownloadGetResponse303LocationHeader", str
+)

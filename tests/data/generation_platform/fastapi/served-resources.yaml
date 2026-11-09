@@ -34,6 +34,17 @@ paths:
             pet:
               operationRef: "#/paths/~1pets~1{id}/get"
               parameters: {id: $response.body#/pet}
+  /notes:
+    get:
+      operationId: getNote
+      responses:
+        "200":
+          description: The note.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Note"}
+        default:
+          $ref: "#/paths/~1notes/get/responses/200"
 components:
   schemas:
     Pet:
@@ -56,3 +67,32 @@ components:
       type: object
       properties:
         children: {type: array, items: {$ref: "#node"}}
+    Label: {$anchor: label, type: string}
+    Keywords:
+      type: object
+      properties:
+        default: {$ref: "#/paths/~1pets~1{id}/get/responses/200/content/application~1json/schema"}
+        example: {$ref: "#/paths/~1pets~1{id}/get/responses/200/content/application~1json/schema"}
+        value: {$ref: "#/paths/~1pets~1{id}/get/responses/200/content/application~1json/schema"}
+        enum: {$ref: "#/paths/~1pets~1{id}/get/responses/200/content/application~1json/schema"}
+        const: {$ref: "#/paths/~1pets~1{id}/get/responses/200/content/application~1json/schema"}
+        x-tag: {$ref: "#/paths/~1pets~1{id}/get/responses/200/content/application~1json/schema"}
+        other: {$ref: "#/paths/~1pets~1{id}/get/responses/200/content/application~1json/schema"}
+    Note:
+      type: object
+      properties:
+        examples: {$anchor: listed, type: string}
+        label: {$ref: "#label"}
+        listed: {$ref: "#listed"}
+        keywords: {$ref: "#/components/schemas/Keywords"}
+      examples:
+        - {$anchor: label, kind: example-only}
+        - {$id: https://example.com/owner.json, kind: example-only}
+      default: {$anchor: node}
+  parameters:
+    Kept:
+      name: kept
+      in: query
+      schema: {type: string}
+      examples:
+        kept: {value: {$anchor: label}}

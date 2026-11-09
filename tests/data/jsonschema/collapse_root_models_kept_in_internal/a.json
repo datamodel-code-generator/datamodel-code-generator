@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A",
+  "type": "object",
+  "properties": {
+    "b": {"$ref": "b.json"},
+    "code": {"$ref": "#/$defs/Code"},
+    "items": {"$ref": "#/$defs/Items"}
+  },
+  "$defs": {
+    "Code": {"type": "string", "pattern": "^[A-Z]{3}$", "maxLength": 3},
+    "Item": {"type": "object", "properties": {"x": {"type": "integer"}}},
+    "Items": {"type": "array", "items": {"$ref": "#/$defs/Item"}, "default": [{"x": 1}]}
+  }
+}

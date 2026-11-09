@@ -7,4 +7,6 @@ from typing import Literal
 
 from typing_extensions import TypeAliasType
 
-RegionalGetQueryOrderParameter = TypeAliasType("RegionalGetQueryOrderParameter", Literal['newest'])
+RegionalGetQueryOrderParameter = TypeAliasType(
+    "RegionalGetQueryOrderParameter", Literal['newest']
+)

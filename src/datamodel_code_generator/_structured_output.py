@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeAlias
 
-from pydantic import VERSION, BaseModel, ConfigDict, Field, TypeAdapter
+from pydantic import VERSION, ConfigDict, Field, TypeAdapter
 
 from datamodel_code_generator import _StructuredOutputUnavailableError
-from datamodel_code_generator.prompt import PromptPayload
+from datamodel_code_generator._json_output import OUTPUT_HEAD, dump_json, schema_document
+from datamodel_code_generator._recommend_vocabulary import (  # noqa: TC001 - pydantic evaluates the payload annotations.
+    DisagreementKind,
+    InputSource,
+    OptionValue,
+    RecommendMode,
+)
+from datamodel_code_generator.prompt import PromptPayload, _Envelope, _Payload
 
 try:
     from pydantic.json_schema import SkipJsonSchema
@@ -22,13 +28,9 @@ except ImportError as exc:
 if TYPE_CHECKING:
     from pydantic.json_schema import JsonDict
 
-JSON_SCHEMA_DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema"
 
-
-class GeneratedFilePayload(BaseModel):
+class GeneratedFilePayload(_Payload):
     """One generated file emitted by --output-format json."""
-
-    model_config = ConfigDict(extra="forbid")
 
     path: str | None
     content: str
@@ -48,13 +50,13 @@ def _implied(key: str, description: str) -> Any:
     return Field(default=None, alias=key, description=description, json_schema_extra=_absent_when_unset)
 
 
-class ImpliedPayload(BaseModel):
+class ImpliedPayload(_Payload):
     """The model settings a server or client target set because the run left them unset, keyed as pyproject.toml keys.
 
     Each key is absent unless the target set it.
     """
 
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True)
 
     openapi_scopes: list[str] | _Absent = _implied("openapi-scopes", "The scopes, with api added to the default ones.")
     target_python_version: str | _Absent = _implied("target-python-version", "The target Python version, 3.11.")
@@ -72,10 +74,8 @@ class ImpliedPayload(BaseModel):
     )
 
 
-class TargetPayload(BaseModel):
+class TargetPayload(_Payload):
     """The package a server or client generation renders and the requirements it needs at run time."""
-
-    model_config = ConfigDict(extra="forbid")
 
     package: str
     dependencies: list[str]
@@ -89,22 +89,18 @@ class TargetPayload(BaseModel):
     )
 
 
-class EntrypointPayload(BaseModel):
+class EntrypointPayload(_Payload):
     """The entrypoint module of a generated server and the import string of the ASGI application it defines."""
-
-    model_config = ConfigDict(extra="forbid")
 
     app: str
     path: str
 
 
-class ImplementationPayload(BaseModel):
+class ImplementationPayload(_Payload):
     """A module of the user's that a generated server's entrypoint imports, and the class or function it imports.
 
     Generation writes the module with stubs only while it is missing; `created` says whether this run wrote it.
     """
-
-    model_config = ConfigDict(extra="forbid")
 
     module: str
     name: str
@@ -133,13 +129,9 @@ class GeneratedTargetPayload(TargetPayload):
     )
 
 
-class GenerationPayload(BaseModel):
+class GenerationPayload(_Envelope):
     """Structured JSON payload emitted by generation mode --output-format json."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    version: Literal[1]
-    format: Literal["json"]
     kind: Literal["generation"]
     output: str | None
     files: list[GeneratedFilePayload]
@@ -156,35 +148,25 @@ CommandOutputKind: TypeAlias = Literal[
 ]
 
 
-class PyprojectConfigOutputPayload(BaseModel):
+class PyprojectConfigOutputPayload(_Envelope):
     """Structured JSON payload emitted by --generate-pyproject-config."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    version: Literal[1]
-    format: Literal["json"]
     kind: Literal["pyproject-config"]
     content: str
     config: dict[str, Any]
 
 
-class CliCommandOutputPayload(BaseModel):
+class CliCommandOutputPayload(_Envelope):
     """Structured JSON payload emitted by --generate-cli-command."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    version: Literal[1]
-    format: Literal["json"]
     kind: Literal["cli-command"]
     content: str
     config: dict[str, Any]
     arguments: list[str]
 
 
-class DeprecationItemPayload(BaseModel):
+class DeprecationItemPayload(_Payload):
     """One deprecation entry emitted by --list-deprecations --output-format json."""
-
-    model_config = ConfigDict(extra="forbid")
 
     id: str
     kind: str
@@ -198,22 +180,16 @@ class DeprecationItemPayload(BaseModel):
     note: str | None
 
 
-class DeprecationsOutputPayload(BaseModel):
+class DeprecationsOutputPayload(_Envelope):
     """Structured JSON payload emitted by --list-deprecations."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    version: Literal[1]
-    format: Literal["json"]
     kind: Literal["deprecations"]
     content: str
     items: list[DeprecationItemPayload]
 
 
-class ExperimentalItemPayload(BaseModel):
+class ExperimentalItemPayload(_Payload):
     """One experimental feature entry emitted by --list-experimental --output-format json."""
-
-    model_config = ConfigDict(extra="forbid")
 
     id: str
     kind: str
@@ -224,22 +200,16 @@ class ExperimentalItemPayload(BaseModel):
     note: str | None
 
 
-class ExperimentalOutputPayload(BaseModel):
+class ExperimentalOutputPayload(_Envelope):
     """Structured JSON payload emitted by --list-experimental."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    version: Literal[1]
-    format: Literal["json"]
     kind: Literal["experimental"]
     content: str
     items: list[ExperimentalItemPayload]
 
 
-class CheckDifferencePayload(BaseModel):
+class CheckDifferencePayload(_Payload):
     """One generated-output difference emitted by --check or --diff-against."""
-
-    model_config = ConfigDict(extra="forbid")
 
     kind: Literal["changed", "missing", "extra", "added", "removed"]
     path: str
@@ -247,13 +217,9 @@ class CheckDifferencePayload(BaseModel):
     diff: str | None = None
 
 
-class CheckOutputPayload(BaseModel):
+class CheckOutputPayload(_Envelope):
     """Structured JSON payload emitted by generated-output comparison commands."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    version: Literal[1]
-    format: Literal["json"]
     kind: Literal["check", "input-diff"]
     success: bool
     content: str
@@ -263,35 +229,24 @@ class CheckOutputPayload(BaseModel):
     )
 
 
-class BatchJobPayload(BaseModel):
+class BatchJobPayload(_Payload):
     """One named job result emitted by batch generation."""
-
-    model_config = ConfigDict(extra="forbid")
 
     name: str
     result: GenerationPayload | CheckOutputPayload
 
 
-class BatchOutputPayload(BaseModel):
+class BatchOutputPayload(_Envelope):
     """Structured JSON payload emitted by --job/--all-jobs with --output-format json."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    version: Literal[1]
-    format: Literal["json"]
     kind: Literal["batch"]
     jobs: list[BatchJobPayload]
 
 
-RecommendOptionValue: TypeAlias = bool | str | list[str]
-
-
-class RecommendInputPayload(BaseModel):
+class RecommendInputPayload(_Payload):
     """The input a recommendation read and whether its schema rules could analyse it."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    source: Literal["file", "url", "stdin", "directory", "input-model"]
+    source: InputSource
     input_file_type: str | None = Field(description="The configured or detected input file type.")
     document: str | None = Field(
         description="The schema format and version, such as OpenAPI 3.1.0; null when not analysed."
@@ -299,19 +254,15 @@ class RecommendInputPayload(BaseModel):
     analysed: bool
 
 
-class RecommendContextPayload(BaseModel):
+class RecommendContextPayload(_Payload):
     """The output model type and target Python version the recommendation chose presets for."""
-
-    model_config = ConfigDict(extra="forbid")
 
     output_model_type: str
     target_python_version: str
 
 
-class RecommendNameChangePayload(BaseModel):
+class RecommendNameChangePayload(_Payload):
     """One class that two candidates name differently at the same schema location."""
-
-    model_config = ConfigDict(extra="forbid")
 
     location: str = Field(
         description=(
@@ -323,10 +274,8 @@ class RecommendNameChangePayload(BaseModel):
     after: str
 
 
-class RecommendNameChangesPayload(BaseModel):
+class RecommendNameChangesPayload(_Payload):
     """How the class names of two candidates differ, matching classes by schema location."""
-
-    model_config = ConfigDict(extra="forbid")
 
     matched: int = Field(description="Locations with one class in both candidates.")
     renamed: int
@@ -338,10 +287,8 @@ class RecommendNameChangesPayload(BaseModel):
     )
 
 
-class RecommendNameMetricsPayload(BaseModel):
+class RecommendNameMetricsPayload(_Payload):
     """Counts over the class names one candidate generates; problems counts each class once."""
-
-    model_config = ConfigDict(extra="forbid")
 
     types: int = Field(description="Generated classes.")
     component: int
@@ -366,10 +313,8 @@ class RecommendNameMetricsPayload(BaseModel):
     problems_percent: float
 
 
-class RecommendNameStabilityPayload(BaseModel):
+class RecommendNameStabilityPayload(_Payload):
     """How one candidate's class names move between --diff-against and the input."""
-
-    model_config = ConfigDict(extra="forbid")
 
     fingerprints_matched: int = Field(description="Classes matched by a unique set of at least two field names.")
     fingerprints_renamed: int
@@ -377,14 +322,12 @@ class RecommendNameStabilityPayload(BaseModel):
     locations: RecommendNameChangesPayload
 
 
-class RecommendCandidatePayload(BaseModel):
+class RecommendCandidatePayload(_Payload):
     """One compared configuration and the class names it generates, or the error that rejected it."""
-
-    model_config = ConfigDict(extra="forbid")
 
     label: str
     preset: str | None = Field(description="The preset the candidate starts from; null for the configuration as set.")
-    set: dict[str, RecommendOptionValue] = Field(description="Options added on top of the preset, as config values.")
+    set: dict[str, OptionValue] = Field(description="Options added on top of the preset, as config values.")
     arguments: list[str]
     selectable: bool = Field(description="False for the configuration as set without the recommended preset.")
     error: str | None
@@ -398,10 +341,8 @@ class RecommendCandidatePayload(BaseModel):
     stability: RecommendNameStabilityPayload | None
 
 
-class RecommendTrialPayload(BaseModel):
+class RecommendTrialPayload(_Payload):
     """The candidates full mode generated and compared, and the one it selected."""
-
-    model_config = ConfigDict(extra="forbid")
 
     metrics_version: int
     candidates: list[RecommendCandidatePayload]
@@ -420,31 +361,24 @@ class RecommendTrialPayload(BaseModel):
     )
 
 
-class RecommendOptionTrialPayload(BaseModel):
+class RecommendOptionTrialPayload(_Payload):
     """The candidates without and with one option, and the class names it changes."""
-
-    model_config = ConfigDict(extra="forbid")
 
     before: str = Field(description="Label of the candidate without the option.")
     after: str = Field(description="Label of the candidate with the option.")
     changes: RecommendNameChangesPayload
 
 
-class RecommendOptionPayload(BaseModel):
+class RecommendOptionPayload(_Payload):
     """One rule outcome: the config values it sets, the CLI arguments for them, and why."""
-
-    model_config = ConfigDict(extra="forbid")
 
     rule: str
     decision: str
-    set: dict[str, RecommendOptionValue] = Field(description="Config fields and values, as pyproject.toml spells them.")
+    set: dict[str, OptionValue] = Field(description="Config fields and values, as pyproject.toml spells them.")
     arguments: list[str] = Field(
         description="The CLI arguments of the values; for not_recommended, the options the rule advises against."
     )
     reason: str
-    contested_reason: str | None = Field(
-        description="Why the schema also argues against the values; set only for consider entries."
-    )
     caveats: list[str]
     evidence: list[str]
     trial: RecommendOptionTrialPayload | None = Field(
@@ -455,10 +389,8 @@ class RecommendOptionPayload(BaseModel):
     )
 
 
-class RecommendBaselinePayload(BaseModel):
+class RecommendBaselinePayload(_Payload):
     """The dated preset the recommendation starts from."""
-
-    model_config = ConfigDict(extra="forbid")
 
     preset: str
     family: str
@@ -466,13 +398,11 @@ class RecommendBaselinePayload(BaseModel):
     covers: list[RecommendOptionPayload] = Field(description="Rule outcomes the preset already sets.")
 
 
-class RecommendDisagreementPayload(BaseModel):
+class RecommendDisagreementPayload(_Payload):
     """A configured value the recommendation keeps although the rules suggest another value."""
 
-    model_config = ConfigDict(extra="forbid")
-
     field: str
-    kind: Literal["explicit", "preset", "newer-preset"] = Field(
+    kind: DisagreementKind = Field(
         description=(
             "explicit: the configuration sets the field; preset: the configured preset sets it and no option "
             "undoes it; newer-preset: a newer dated preset of the same family exists."
@@ -483,15 +413,11 @@ class RecommendDisagreementPayload(BaseModel):
     rule: str | None
 
 
-class RecommendOptionsPayload(BaseModel):
+class RecommendOptionsPayload(_Envelope):
     """Structured JSON payload emitted by --recommend-options --output-format json (experimental)."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    version: Literal[1]
-    format: Literal["json"]
     kind: Literal["recommend-options"]
-    mode: Literal["quick", "full"]
+    mode: RecommendMode
     rules_revision: str
     calibrated_presets: str
     input: RecommendInputPayload
@@ -503,7 +429,6 @@ class RecommendOptionsPayload(BaseModel):
     left_out: list[RecommendOptionPayload] = Field(
         description="Options the rules recommend that the candidate full mode selected does not take."
     )
-    consider: list[RecommendOptionPayload]
     validation: list[RecommendOptionPayload] = Field(
         description=(
             "Options for checks the schema declares that the models leave out by default; the user decides, and they "
@@ -554,18 +479,18 @@ StructuredOutputPayload: TypeAlias = Annotated[
     Field(discriminator="kind"),
 ]
 
-_DEPRECATION_ITEMS_ADAPTER = TypeAdapter(list[DeprecationItemPayload])
-_EXPERIMENTAL_ITEMS_ADAPTER = TypeAdapter(list[ExperimentalItemPayload])
+_COMMAND_OUTPUT_PAYLOADS: dict[CommandOutputKind, type[CommandOutputPayload]] = {
+    "pyproject-config": PyprojectConfigOutputPayload,
+    "cli-command": CliCommandOutputPayload,
+    "deprecations": DeprecationsOutputPayload,
+    "experimental": ExperimentalOutputPayload,
+}
 _STRUCTURED_OUTPUT_ADAPTER = TypeAdapter(StructuredOutputPayload)
-
-
-def _dump_json(value: Any) -> str:
-    return json.dumps(value, indent=2, ensure_ascii=False)
 
 
 def _dump_payload(payload: GenerationPayload | CheckOutputPayload) -> str:
     """Dump a payload, leaving out the target of a model-only run and the keys a server's or client's target lacks."""
-    return _dump_json(payload.model_dump(mode="json", by_alias=True, exclude=_absent(payload)))
+    return dump_json(payload.model_dump(mode="json", by_alias=True, exclude=_absent(payload)), "ordered")
 
 
 def _absent(payload: GenerationPayload | CheckOutputPayload) -> dict[str, Any] | set[str]:
@@ -583,19 +508,10 @@ def batch_job_json(job: BatchJobPayload) -> dict[str, Any]:
     return job.model_dump(mode="json", by_alias=True, exclude={"result": _absent(job.result)})
 
 
-def _schema_with_metadata(schema: dict[str, Any], *, title: str, description: str) -> dict[str, Any]:
-    schema = dict(schema)
-    schema.setdefault("title", title)
-    schema.setdefault("description", description)
-    return {"$schema": JSON_SCHEMA_DRAFT_2020_12, **schema}
-
-
 def generation_output_json(
     files: list[GeneratedFilePayload], *, output: str | None, target: GeneratedTargetPayload | None = None
 ) -> str:
-    return _dump_payload(
-        GenerationPayload(version=1, format="json", kind="generation", output=output, files=files, target=target)
-    )
+    return _dump_payload(GenerationPayload(**OUTPUT_HEAD, kind="generation", output=output, files=files, target=target))
 
 
 def command_output_json(
@@ -606,41 +522,15 @@ def command_output_json(
     items: list[dict[str, Any]] | None = None,
     arguments: list[str] | None = None,
 ) -> str:
-    payload: CommandOutputPayload
-    if kind == "pyproject-config":
-        payload = PyprojectConfigOutputPayload(
-            version=1,
-            format="json",
-            kind=kind,
-            content=content,
-            config=config or {},
-        )
-    elif kind == "cli-command":
-        payload = CliCommandOutputPayload(
-            version=1,
-            format="json",
-            kind=kind,
-            content=content,
-            config=config or {},
-            arguments=arguments or [],
-        )
-    elif kind == "deprecations":
-        payload = DeprecationsOutputPayload(
-            version=1,
-            format="json",
-            kind=kind,
-            content=content,
-            items=_DEPRECATION_ITEMS_ADAPTER.validate_python(items or []),
-        )
-    else:
-        payload = ExperimentalOutputPayload(
-            version=1,
-            format="json",
-            kind=kind,
-            content=content,
-            items=_EXPERIMENTAL_ITEMS_ADAPTER.validate_python(items or []),
-        )
-    return _dump_json(payload.model_dump(mode="json"))
+    payload_class = _COMMAND_OUTPUT_PAYLOADS[kind]
+    extras = {"config": config or {}, "arguments": arguments or [], "items": items or []}
+    payload = payload_class.model_validate({
+        **OUTPUT_HEAD,
+        "kind": kind,
+        "content": content,
+        **{name: value for name, value in extras.items() if name in payload_class.model_fields},
+    })
+    return dump_json(payload.model_dump(mode="json"), "ordered")
 
 
 def check_output_json(
@@ -653,8 +543,7 @@ def check_output_json(
 ) -> str:
     return _dump_payload(
         CheckOutputPayload(
-            version=1,
-            format="json",
+            **OUTPUT_HEAD,
             kind=kind,
             success=success,
             content=content,
@@ -665,30 +554,15 @@ def check_output_json(
 
 
 def generation_output_json_schema() -> str:
-    return _dump_json(
-        _schema_with_metadata(
-            GenerationPayload.model_json_schema(mode="serialization"),
-            title="GenerationPayload",
-            description="Structured JSON payload emitted by generation mode --output-format json.",
-        )
-    )
+    return schema_document(GenerationPayload.model_json_schema(mode="serialization"), "ordered")
 
 
 def structured_output_json_schema() -> str:
-    return _dump_json(
-        _schema_with_metadata(
-            _STRUCTURED_OUTPUT_ADAPTER.json_schema(mode="serialization"),
-            title="StructuredOutputPayload",
-            description="Schema for all structured JSON outputs emitted by the CLI.",
-        )
-    )
+    schema = _STRUCTURED_OUTPUT_ADAPTER.json_schema(mode="serialization")
+    schema.setdefault("title", "StructuredOutputPayload")
+    schema.setdefault("description", "Schema for all structured JSON outputs emitted by the CLI.")
+    return schema_document(schema, "ordered")
 
 
 def recommend_options_json_schema() -> str:
-    return _dump_json(
-        _schema_with_metadata(
-            RecommendOptionsPayload.model_json_schema(mode="serialization"),
-            title="RecommendOptionsPayload",
-            description="Structured JSON payload emitted by --recommend-options --output-format json.",
-        )
-    )
+    return schema_document(RecommendOptionsPayload.model_json_schema(mode="serialization"), "ordered")

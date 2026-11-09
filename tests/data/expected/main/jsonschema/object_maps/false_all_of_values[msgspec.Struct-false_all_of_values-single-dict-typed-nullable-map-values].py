@@ -9,6 +9,12 @@ from msgspec import UNSET, Meta, Struct, UnsetType
 VAdditionalProperty: TypeAlias = Annotated[dict[str, Any], Meta(max_length=0)]
 
 
+RItem: TypeAlias = Annotated[dict[str, Any], Meta(max_length=0)]
+
+
+IItem: TypeAlias = Annotated[dict[str, Any], Meta(max_length=0)]
+
+
 class Empty(Struct):
     pass
 
@@ -27,5 +33,5 @@ class Model(Struct):
     t: Annotated[list[str], Meta(max_length=1)] | UnsetType = UNSET
     e: Empty | UnsetType = UNSET
     s: Nothing | UnsetType = UNSET
-    r: list[dict[str, Any]] | UnsetType = UNSET
-    i: list[dict[str, Any]] | UnsetType = UNSET
+    r: list[RItem] | UnsetType = UNSET
+    i: list[IItem] | UnsetType = UNSET

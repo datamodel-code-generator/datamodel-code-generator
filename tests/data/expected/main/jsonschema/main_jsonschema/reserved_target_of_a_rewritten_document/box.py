@@ -17,9 +17,10 @@ class Item(RootModel[str]):
     root: str
 
 
-class ItemModel(RootModel[Any]):
-    root: Any
+class Other(RootModel[Item]):
+    root: Item
 
 
 class Box(BaseModel):
     item: Item | None = None
+    other: Item | None = None

@@ -1,0 +1,48 @@
+{
+ "openapi": "3.0.3",
+ "info": {
+  "title": "Parameter schemas whose reference chain loops back",
+  "version": "1.0.0"
+ },
+ "servers": [
+  {
+   "url": "https://api.example.com"
+  }
+ ],
+ "paths": {
+  "/items": {
+   "get": {
+    "operationId": "listItems",
+    "parameters": [
+     {
+      "name": "limit",
+      "in": "query",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Start"
+        }
+       }
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Listed."
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "Start": {
+    "$ref": "#/components/schemas/Back"
+   },
+   "Back": {
+    "$ref": "#/components/schemas/Start",
+    "default": 5
+   }
+  }
+ }
+}

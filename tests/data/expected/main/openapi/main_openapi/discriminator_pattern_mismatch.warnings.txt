@@ -1,0 +1,3 @@
+Discriminator 'type' of Pets.constTag tags Cat with 'cat', which the pattern '^dog$' of its tag field rejects, so the schema accepts no Cat with that tag; the tag is written without the pattern.
+Discriminator 'type' of Pets.mappedTag tags Bird with 'parrot', which the pattern '^b' of its tag field rejects, so the schema accepts no Bird with that tag; the tag is written without the pattern.
+Discriminator 'type' of Pets.oneOfMappedTags tags Fish with 'shark', which the pattern '^f' of its tag field rejects, so the schema accepts no Fish with that tag; the tag is written without the pattern.

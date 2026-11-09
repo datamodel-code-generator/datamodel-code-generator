@@ -1,0 +1,14 @@
+openapi: 3.1.0
+info: {title: Version per document, version: "1.0"}
+paths:
+  /sessions:
+    get:
+      operationId: getSession
+      parameters:
+        - $ref: "version-per-document-parameters.yaml#/components/parameters/Session"
+      responses:
+        "200":
+          description: The session.
+          content:
+            application/json:
+              schema: {type: string}

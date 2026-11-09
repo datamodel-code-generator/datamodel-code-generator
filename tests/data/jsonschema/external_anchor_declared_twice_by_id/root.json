@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/root.json",
+  "title": "Holder",
+  "type": "object",
+  "properties": {"inner": {"$ref": "#/$defs/Inner"}},
+  "$defs": {
+    "Inner": {
+      "$id": "https://example.com/inner.json",
+      "type": "object",
+      "properties": {
+        "absolute": {"$ref": "https://example.com/defs.json#T"},
+        "relative": {"$ref": "defs.json#T"}
+      }
+    }
+  }
+}

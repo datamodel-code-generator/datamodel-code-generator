@@ -1,0 +1,7 @@
+{
+  "cls": "base-skipped",
+  "notes": [
+    "base skipped: loops (#5935)"
+  ],
+  "accepted_by": []
+}

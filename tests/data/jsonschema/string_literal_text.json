@@ -1,0 +1,12 @@
+{
+  "title": "Literals",
+  "type": "object",
+  "description": "A model with \"quotes\" and a null \u0000 byte, ending with a quote \"",
+  "properties": {
+    "quoted": {"type": "string", "description": "say \"hi\""},
+    "slashed": {"type": "string", "description": "ends with a backslash\\"},
+    "slash_quote": {"type": "string", "description": "a backslash and a quote\\\""},
+    "null_byte": {"type": "string", "description": "a null \u0000 byte"},
+    "mode": {"enum": ["it's", "tab\there", "null\u0000value", "back\\slash"]}
+  }
+}

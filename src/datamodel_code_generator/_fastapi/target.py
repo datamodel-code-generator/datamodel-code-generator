@@ -6,17 +6,18 @@ import warnings
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import TargetRender
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, DocumentationAnnotationWarning
+from datamodel_code_generator._api_types import APIGenerationError, DocumentationAnnotationWarning
 from datamodel_code_generator._fastapi.callbacks import CallbackIndex, flattened
 from datamodel_code_generator._fastapi.config import FastAPIConfig
-from datamodel_code_generator._fastapi.plan import PlanError, Planner, invalid_links
+from datamodel_code_generator._fastapi.plan import Planner, invalid_links
 from datamodel_code_generator._fastapi.render import ServerRenderer
 from datamodel_code_generator._fastapi.source_document import SourceDocument
 from datamodel_code_generator._fastapi.templates import FastAPITemplates
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._target_documents import shown
 from datamodel_code_generator._target_module import TypeNames
-from datamodel_code_generator._target_render import model_dependencies, pydantic_dependency
+from datamodel_code_generator._target_operations import PlanError, raise_selected
+from datamodel_code_generator._target_render import TYPING_EXTENSIONS, model_dependencies, pydantic_dependency
 from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
@@ -24,10 +25,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._fastapi.plan import ServerPlan
     from datamodel_code_generator._openapi_codec_plan import PydanticBackend
-    from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic
 
 FASTAPI: Final = "fastapi>=0.141.1"
-TYPING_EXTENSIONS: Final = "typing-extensions>=4.16"
 FORMS: Final = "python-multipart>=0.0.32"
 _BACKENDS: Final[dict[DataModelType, PydanticBackend]] = {
     DataModelType.PydanticV2BaseModel: "pydantic_v2.BaseModel",
@@ -52,11 +51,7 @@ class FastAPITarget:
             [use for operation in request.operations for use in operation_uses(operation)],
             operations=frozenset(operation.id for operation in request.operations),
         )
-        types = TypeNames(
-            request.batch,
-            exact=bool(request.model_config.use_exact_imports),
-            overrides=request.model_config.import_overrides,
-        )
+        types = TypeNames.of(request.batch, request.model_config)
         try:
             plan = Planner(request, config, wire, types).plan()
         except PlanError as error:
@@ -64,11 +59,9 @@ class FastAPITarget:
                 error.diagnostics,
                 option_prefix=FastAPIConfig._option_prefix,  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
             ) from None
-        selected = {operation.contract.id for operation in plan.operations}
-        if problems := [item for item in wire.diagnostics if item.operation in {None, *selected}]:
-            raise APIGenerationError(tuple(map(_diagnostic, problems)))
+        raise_selected(wire.diagnostics, (operation.contract.id for operation in plan.operations))
         _check_links(plan, request)
-        source = SourceDocument(request.lease)
+        source = SourceDocument(request.lease, request.batch.openapi)
         document = source.text(spec.contract for spec in plan.operations)
         dependencies = _dependencies(plan, request.model_imports)
         renderer = ServerRenderer(
@@ -108,16 +101,6 @@ def _check_links(plan: ServerPlan, request: TargetRequest) -> None:
     )
     if links := invalid_links((*(spec.contract for spec in plan.operations), *callbacks)):
         raise APIGenerationError(links)
-
-
-def _diagnostic(item: CodecDiagnostic) -> Diagnostic:
-    return Diagnostic(
-        code=item.code,
-        severity="error",
-        stage="binding",
-        message=item.message,
-        source_pointer=item.source.pointer,
-    )
 
 
 def _dependencies(plan: ServerPlan, model_imports: frozenset[str]) -> tuple[str, ...]:

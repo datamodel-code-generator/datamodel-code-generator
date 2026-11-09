@@ -2,21 +2,27 @@
 
 from __future__ import annotations
 
+import contextlib
 import re
 import sys
 import warnings
+from copy import deepcopy
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Literal, cast
+from io import BytesIO
+from typing import TYPE_CHECKING, Any, Literal, TypeVar
 
-from typing_extensions import Sentinel
+from typing_extensions import Sentinel, override
 
 from datamodel_code_generator.deprecations import warn_deprecated
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
     from pathlib import Path
+    from types import ModuleType
 
     from datamodel_code_generator._format_types import PythonVersion
+
+_T = TypeVar("_T")
 
 
 @lru_cache(maxsize=1)
@@ -30,22 +36,44 @@ def _get_toml_loader() -> Callable[[Any], dict[str, Any]]:
     return load_toml_data
 
 
+@lru_cache(maxsize=32)
+def _parse_toml(data: bytes) -> dict[str, Any]:
+    """Parse the bytes of a TOML document; the result depends on the bytes alone, so equal content is parsed once."""
+    return _get_toml_loader()(BytesIO(data))
+
+
 def load_toml(path: Path) -> dict[str, Any]:
-    """Load and parse a TOML file."""
+    """Load and parse a TOML file, returning a document the caller owns."""
     record_watch_dependency(path)
-    with path.open("rb") as f:
-        return _get_toml_loader()(f)
+    return deepcopy(_parse_toml(path.read_bytes()))
+
+
+def _find_pyproject_toml(settings_path: Path) -> Path | None:
+    """Return the nearest pyproject.toml in ``settings_path`` or one of its parents."""
+    for path in (settings_path, *settings_path.parents):
+        pyproject_toml = path / "pyproject.toml"
+        if pyproject_toml.is_file():
+            return pyproject_toml
+    return None
+
+
+def _collecting_watch_dependencies() -> ModuleType | None:
+    """Return watch support while it collects dependencies, without importing it on normal paths; else None."""
+    if (watch_dependencies := sys.modules.get("datamodel_code_generator.watch_dependencies")) is not None and (
+        watch_dependencies.collector_is_active()
+    ):
+        return watch_dependencies
+    return None
 
 
 def record_watch_dependency(path: Path) -> None:
     """Record an active watch dependency without importing watch support on normal paths."""
-    if (watch_dependencies := sys.modules.get("datamodel_code_generator.watch_dependencies")) is not None and (
-        watch_dependencies.collector_is_active()
-    ):
+    if (watch_dependencies := _collecting_watch_dependencies()) is not None:
         watch_dependencies.record_local_dependency(path)
 
 
 _YAML_1_2_BOOL_PATTERN = re.compile(r"^(?:true|false|True|False|TRUE|FALSE)$")
+_YAML_1_1_RESOLVER_TAGS = frozenset({"tag:yaml.org,2002:bool", "tag:yaml.org,2002:value"})
 _YAML_DEPRECATED_BOOL_VALUES = ("True", "False", "TRUE", "FALSE")
 _YAML_DEPRECATED_BOOL_LINE_PATTERN = re.compile(r"(?m)(?::|-\s*)\s*(True|False|TRUE|FALSE)(?:\s*(?:#.*)?)$")
 _YAML_DEPRECATED_BOOL_WARNING_MESSAGE = "YAML bool "
@@ -53,6 +81,10 @@ _YAML_DEPRECATED_BOOL_WARNING_MODULE = "datamodel_code_generator"
 _YAML_UNSUPPORTED_TAGS = {"tag:yaml.org,2002:set"}
 _YAML_UNSUPPORTED_TAG_MARKERS = ("!!set", "tag:yaml.org,2002:set")
 _YAML_TAG_DIRECTIVE_PATTERN = re.compile(r"(?m)^%TAG(?:\s|$)")
+_YAML_LINE_BREAKS = "\r\n\x85\u2028\u2029"
+_YAML_LINE_ENDS = f"\0{_YAML_LINE_BREAKS}"
+_YAML_BLANKS = " \t"
+_YAML_TOKEN_ENDS = f"\0{_YAML_BLANKS}{_YAML_LINE_BREAKS}"
 # Pattern for scientific notation without decimal point (e.g., 1e-5, 1E+10)
 # Standard YAML only matches floats with decimal points, missing patterns like "1e-5"
 _YAML_SCIENTIFIC_NOTATION_PATTERN = re.compile(r"^[-+]?[0-9][0-9_]*[eE][-+]?[0-9]+$")
@@ -78,14 +110,37 @@ def _is_yaml_deprecated_bool_warning_enabled() -> bool:
     return True
 
 
+def _plain_deprecated_bool_offsets(text: str) -> set[int]:
+    """Return the offsets of the unquoted scalars in ``text`` that spell a YAML 1.1 boolean."""
+    import yaml  # noqa: PLC0415
+
+    offsets: set[int] = set()
+    with contextlib.suppress(yaml.YAMLError):
+        offsets.update(
+            token.start_mark.index
+            for token in yaml.scan(text, Loader=yaml.SafeLoader)
+            if isinstance(token, yaml.ScalarToken) and token.plain and token.value in _YAML_DEPRECATED_BOOL_VALUES
+        )
+    return offsets
+
+
 def warn_yaml_deprecated_bool_values(text: str) -> None:
-    """Warn for YAML 1.1-style boolean scalars when ryaml is used."""
+    """Warn for YAML 1.1-style boolean scalars when ryaml is used.
+
+    Only unquoted scalars warn: a quoted string or a block scalar line such as ``enabled: True`` holds text.
+    """
     if not _is_yaml_deprecated_bool_warning_enabled() or not any(
         value in text for value in _YAML_DEPRECATED_BOOL_VALUES
     ):
         return
 
-    for match in _YAML_DEPRECATED_BOOL_LINE_PATTERN.finditer(text):
+    matches = list(_YAML_DEPRECATED_BOOL_LINE_PATTERN.finditer(text))
+    if not matches:
+        return
+    offsets = _plain_deprecated_bool_offsets(text)
+    for match in matches:
+        if match.start(1) not in offsets:
+            continue
         warnings.warn(
             f"YAML bool '{match.group(1)}' is deprecated. Use lowercase 'true' or 'false' instead. "
             f"In a future version, only lowercase booleans will be recognized.",
@@ -116,7 +171,7 @@ def reject_unsupported_yaml_tags(text: str) -> None:
 
     import yaml  # noqa: PLC0415
 
-    node = yaml.compose(text, Loader=cast("type[yaml.SafeLoader | yaml.CSafeLoader]", get_safe_loader()))
+    node = read_yaml_text(yaml.compose, text)
     if node is None:
         return
     for yaml_node in _iter_yaml_nodes(node):
@@ -128,10 +183,13 @@ def reject_unsupported_yaml_tags(text: str) -> None:
 def _construct_yaml_bool_with_warning(loader: Any, node: Any) -> bool:
     value = loader.construct_scalar(node)
     if value in _YAML_DEPRECATED_BOOL_VALUES:
+        from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
         warn_deprecated(
             "config.yaml-non-lowercase-bool",
             details=(
-                f"YAML bool {value!r} is deprecated. In a future version, only lowercase booleans will be recognized."
+                f"YAML bool {stable_repr(value)} is deprecated. In a future version, only lowercase booleans will be "
+                "recognized."
             ),
             stacklevel=6,
         )
@@ -236,23 +294,21 @@ def _fast_construct_document(loader: Any, root: Any) -> Any:  # noqa: PLR0914, P
     return result
 
 
-@lru_cache(maxsize=1)
-def get_safe_loader() -> type:
-    """Get customized SafeLoader lazily."""
-    try:
-        from yaml import CSafeLoader as _SafeLoader  # noqa: PLC0415
-    except ImportError:  # pragma: no cover
-        from yaml import SafeLoader as _SafeLoader  # noqa: PLC0415
+def _custom_safe_loader(base: Any) -> type:
+    """Return ``base`` with YAML 1.2 bool handling, timestamps as strings and exponents without a point.
 
-    class CustomSafeLoader(_SafeLoader):  # ty: ignore[unsupported-base]
+    A plain ``=`` is a string, as in YAML 1.2: the YAML 1.1 ``value`` type it would resolve to has no constructor.
+    """
+
+    class CustomSafeLoader(base):
         """SafeLoader with YAML 1.2 bool handling and timestamp-as-string."""
 
-        yaml_constructors = _SafeLoader.yaml_constructors.copy()
+        yaml_constructors = base.yaml_constructors.copy()
         yaml_implicit_resolvers = {  # noqa: RUF012
             k: v
             for k, v in (
-                (k, [(tag, pat) for tag, pat in v if tag != "tag:yaml.org,2002:bool"])
-                for k, v in _SafeLoader.yaml_implicit_resolvers.items()
+                (k, [(tag, pat) for tag, pat in v if tag not in _YAML_1_1_RESOLVER_TAGS])
+                for k, v in base.yaml_implicit_resolvers.items()
             )
             if v
         }
@@ -290,6 +346,102 @@ def get_safe_loader() -> type:
         ))
 
     return CustomSafeLoader
+
+
+@lru_cache(maxsize=1)
+def get_pure_safe_loader() -> type:
+    """Get the customized SafeLoader on PyYAML's own scanner, which reads tabs as libyaml does, lazily.
+
+    Tabs separate tokens on a line except before a simple key in block context, and stand between the words of a
+    plain scalar, where a tab left of the scalar's indentation on a continuation line is an error. PyYAML's scanner
+    reads spaces alone there, so a document that libyaml reads would not be read without it.
+    """
+    import yaml  # noqa: PLC0415
+    from yaml.scanner import ScannerError  # noqa: PLC0415
+
+    def at_document_marker(scanner: Any) -> bool:
+        return scanner.prefix(3) in {"---", "..."} and scanner.peek(3) in _YAML_TOKEN_ENDS
+
+    class TabReadingSafeLoader(yaml.SafeLoader):
+        @override
+        def scan_to_next_token(self) -> None:
+            if self.index == 0 and self.peek() == "\ufeff":
+                self.forward()
+            while True:
+                while (character := self.peek()) == " " or (
+                    character == "\t" and (self.flow_level or not self.allow_simple_key)
+                ):
+                    self.forward()
+                if self.peek() == "#":
+                    while self.peek() not in _YAML_LINE_ENDS:
+                        self.forward()
+                if not self.scan_line_break():
+                    return
+                if not self.flow_level:
+                    self.allow_simple_key = True
+
+        @override
+        def scan_plain_spaces(self, indent: int, start_mark: Any) -> list[str] | None:
+            length = 0
+            while self.peek(length) in _YAML_BLANKS:
+                length += 1
+            whitespaces = self.prefix(length)
+            self.forward(length)
+            if self.peek() not in _YAML_LINE_BREAKS:
+                return [whitespaces] if whitespaces else []
+            line_break = self.scan_line_break()
+            self.allow_simple_key = True
+            if at_document_marker(self):
+                return None
+            breaks: list[str] = []
+            while (character := self.peek()) in _YAML_BLANKS or character in _YAML_LINE_BREAKS:
+                if character in _YAML_LINE_BREAKS:
+                    breaks.append(self.scan_line_break())
+                    if at_document_marker(self):
+                        return None
+                    continue
+                if character == "\t" and self.column < indent:
+                    msg = "while scanning a plain scalar"
+                    raise ScannerError(
+                        msg,
+                        start_mark,
+                        "found a tab character that violates indentation",
+                        self.get_mark(),
+                    )
+                self.forward()
+            if line_break != "\n":
+                return [line_break, *breaks]
+            return breaks or [" "]
+
+    return _custom_safe_loader(TabReadingSafeLoader)
+
+
+@lru_cache(maxsize=1)
+def get_safe_loader() -> type:
+    """Get customized SafeLoader lazily: on libyaml where PyYAML has it, else on PyYAML's own scanner."""
+    try:
+        from yaml import CSafeLoader  # noqa: PLC0415
+    except ImportError:
+        return get_pure_safe_loader()
+    return _custom_safe_loader(CSafeLoader)
+
+
+def read_yaml_text(read: Callable[..., _T], text: str) -> _T:
+    """Read YAML text with ``read`` (``yaml.load`` or ``yaml.compose``), so that every install reads it alike.
+
+    libyaml, where PyYAML has it, reads first; a document it cannot read, such as one with a tab inside a block
+    scalar, is read on PyYAML's own scanner (``get_pure_safe_loader``), whose error is raised as on an install without
+    libyaml. Both read every document they both accept to the same data.
+    """
+    import yaml  # noqa: PLC0415
+
+    loader = get_safe_loader()
+    try:
+        return read(text, Loader=loader)
+    except yaml.YAMLError as error:
+        if isinstance(error, yaml.constructor.ConstructorError) or (pure := get_pure_safe_loader()) is loader:
+            raise
+    return read(text, Loader=pure)
 
 
 YamlBackend = Literal["ryaml", "pyyaml"]
@@ -385,3 +537,9 @@ def camel_to_snake(string: str, target_python_version: PythonVersion | None = No
 
     subbed = _UNDER_SCORE_1.sub(r"\1_\2", string)
     return lower(_UNDER_SCORE_2.sub(r"\1_\2", subbed), target_python_version)
+
+
+def last_camel_word(string: str) -> str:
+    """Return the last word of a camelCase, PascalCase or snake_case name, split where ``camel_to_snake`` splits it."""
+    marked = _UNDER_SCORE_2.sub("\\1\x00\\2", _UNDER_SCORE_1.sub("\\1\x00\\2", string))
+    return re.split(r"[\x00_]", marked)[-1]

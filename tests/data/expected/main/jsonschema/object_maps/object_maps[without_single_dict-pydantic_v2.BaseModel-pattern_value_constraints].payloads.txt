@@ -1,0 +1,18 @@
+valid: accepted
+invalid pInt: rejected (greater_than_equal)
+invalid pLook: rejected (string_pattern_mismatch)
+invalid pStr: rejected (string_pattern_mismatch)
+invalid pArr: rejected (too_short)
+invalid pRef: rejected (greater_than_equal)
+invalid pRefSib: rejected (less_than_equal)
+invalid pRefSib: rejected (greater_than_equal)
+invalid pNull: rejected (greater_than_equal)
+invalid pSame: rejected (too_short)
+invalid pSame: accepted
+invalid pItems: rejected (too_short)
+invalid pObjCount: rejected (too_short)
+invalid pOther: rejected (greater_than_equal)
+invalid pOther: rejected (string_pattern_mismatch)
+invalid pEnumKeys: rejected (greater_than_equal)
+invalid pAny: rejected (greater_than_equal)
+invalid rPat: rejected (greater_than_equal)

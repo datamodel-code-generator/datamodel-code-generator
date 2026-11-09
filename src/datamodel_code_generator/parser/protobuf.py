@@ -9,7 +9,6 @@ from __future__ import annotations
 import contextlib
 import io
 import re
-import sys
 import tempfile
 from copy import deepcopy
 from pathlib import Path
@@ -19,9 +18,21 @@ from warnings import warn
 from typing_extensions import Unpack
 
 from datamodel_code_generator import Error, ProtobufVersion, SchemaParseError, VersionMode
+from datamodel_code_generator._json_schema import definition_ref
+from datamodel_code_generator._message_text import install_command
+from datamodel_code_generator._paths import files_under
+from datamodel_code_generator._python_syntax import (
+    normalize_newlines,  # noqa: F401  # Preserve the established parser.protobuf export.
+)
+from datamodel_code_generator._source import input_text as _input_text
+from datamodel_code_generator.parser import _schema_documents
+from datamodel_code_generator.parser._null_facts import null_schema, with_null
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-from datamodel_code_generator.python_literal import _safe_non_finite_float
-from datamodel_code_generator.util import record_watch_dependency
+from datamodel_code_generator.python_literal import _converted_float, stable_repr
+from datamodel_code_generator.util import (
+    _collecting_watch_dependencies,  # pyright: ignore[reportPrivateUsage]
+    record_watch_dependency,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
@@ -30,7 +41,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._types import ProtobufParserConfigDict
     from datamodel_code_generator.config import ProtobufParserConfig
 
-PROTO_TOKEN_PATTERN = re.compile(
+PROTO_TCHARS = re.compile(
     r"(?P<comment>//[^\n]*|/\*[\s\S]*?(?:\*/|\Z))"
     r"|\"(?:\\[\s\S]|[^\"\\])*\"|'(?:\\[\s\S]|[^'\\])*'|[a-zA-Z_][a-zA-Z_0-9]*|[^\s]"
 )
@@ -59,23 +70,31 @@ TYPE_SFIXED64 = 16
 TYPE_SINT32 = 17
 TYPE_SINT64 = 18
 
-PROTO2_DEFAULTS: dict[int, Any] = {
-    TYPE_DOUBLE: 0.0,
-    TYPE_FLOAT: 0.0,
-    TYPE_INT64: 0,
-    TYPE_UINT64: 0,
-    TYPE_INT32: 0,
-    TYPE_FIXED64: 0,
-    TYPE_FIXED32: 0,
-    TYPE_BOOL: False,
-    TYPE_STRING: "",
-    TYPE_BYTES: b"",
-    TYPE_UINT32: 0,
-    TYPE_SFIXED32: 0,
-    TYPE_SFIXED64: 0,
-    TYPE_SINT32: 0,
-    TYPE_SINT64: 0,
-}
+_INTEGER_TYPES = (
+    TYPE_INT32,
+    TYPE_INT64,
+    TYPE_UINT32,
+    TYPE_UINT64,
+    TYPE_SINT32,
+    TYPE_SINT64,
+    TYPE_FIXED32,
+    TYPE_FIXED64,
+    TYPE_SFIXED32,
+    TYPE_SFIXED64,
+)
+
+PROTO2_DEFAULTS: dict[int, Any] = dict(
+    sorted(
+        {
+            **dict.fromkeys(_INTEGER_TYPES, 0),
+            TYPE_DOUBLE: 0.0,
+            TYPE_FLOAT: 0.0,
+            TYPE_BOOL: False,
+            TYPE_STRING: "",
+            TYPE_BYTES: b"",
+        }.items()
+    )
+)
 
 SCALAR_SCHEMAS: dict[int, dict[str, Any]] = {
     TYPE_DOUBLE: {"type": "number", "format": "double"},
@@ -97,27 +116,7 @@ SCALAR_SCHEMAS: dict[int, dict[str, Any]] = {
 SCALAR_OR_ENUM_TYPES = frozenset({*SCALAR_SCHEMAS, TYPE_ENUM})
 
 
-def _watch_dependency_collection_is_active() -> bool:
-    """Check the optional watch collector without importing it on regular generation."""
-    return (watch_dependencies := sys.modules.get("datamodel_code_generator.watch_dependencies")) is not None and (
-        watch_dependencies.collector_is_active()
-    )
-
-
-MAP_KEY_PYTHON_TYPES: dict[int, str] = {
-    TYPE_INT32: "int",
-    TYPE_INT64: "int",
-    TYPE_UINT32: "int",
-    TYPE_UINT64: "int",
-    TYPE_SINT32: "int",
-    TYPE_SINT64: "int",
-    TYPE_FIXED32: "int",
-    TYPE_FIXED64: "int",
-    TYPE_SFIXED32: "int",
-    TYPE_SFIXED64: "int",
-    TYPE_BOOL: "bool",
-    TYPE_STRING: "str",
-}
+MAP_KEY_PYTHON_TYPES: dict[int, str] = {**dict.fromkeys(_INTEGER_TYPES, "int"), TYPE_BOOL: "bool", TYPE_STRING: "str"}
 WELL_KNOWN_PROTO_PATHS = frozenset({
     "google/protobuf/any.proto",
     "google/protobuf/api.proto",
@@ -139,7 +138,7 @@ WELL_KNOWN_SCHEMAS: dict[str, dict[str, Any]] = {
     "google.protobuf.ListValue": {"type": "array", "items": {}},
     "google.protobuf.Value": {
         "anyOf": [
-            {"type": "null"},
+            null_schema(),
             {"type": "boolean"},
             {"type": "number"},
             {"type": "string"},
@@ -150,15 +149,20 @@ WELL_KNOWN_SCHEMAS: dict[str, dict[str, Any]] = {
     "google.protobuf.Any": {"type": "object", "additionalProperties": True},
     "google.protobuf.Empty": {"type": "object", "properties": {}, "additionalProperties": False},
     "google.protobuf.FieldMask": {"type": "string"},
-    "google.protobuf.DoubleValue": {"anyOf": [{"type": "number", "format": "double"}, {"type": "null"}]},
-    "google.protobuf.FloatValue": {"anyOf": [{"type": "number", "format": "float"}, {"type": "null"}]},
-    "google.protobuf.Int64Value": {"anyOf": [{"type": "integer", "format": "int64"}, {"type": "null"}]},
-    "google.protobuf.UInt64Value": {"anyOf": [{"type": "integer", "format": "int64", "minimum": 0}, {"type": "null"}]},
-    "google.protobuf.Int32Value": {"anyOf": [{"type": "integer", "format": "int32"}, {"type": "null"}]},
-    "google.protobuf.UInt32Value": {"anyOf": [{"type": "integer", "format": "int32", "minimum": 0}, {"type": "null"}]},
-    "google.protobuf.BoolValue": {"anyOf": [{"type": "boolean"}, {"type": "null"}]},
-    "google.protobuf.StringValue": {"anyOf": [{"type": "string"}, {"type": "null"}]},
-    "google.protobuf.BytesValue": {"anyOf": [{"type": "string", "format": "binary"}, {"type": "null"}]},
+    **{
+        f"google.protobuf.{name}Value": with_null(SCALAR_SCHEMAS[type_], "member")
+        for name, type_ in (
+            ("Double", TYPE_DOUBLE),
+            ("Float", TYPE_FLOAT),
+            ("Int64", TYPE_INT64),
+            ("UInt64", TYPE_UINT64),
+            ("Int32", TYPE_INT32),
+            ("UInt32", TYPE_UINT32),
+            ("Bool", TYPE_BOOL),
+            ("String", TYPE_STRING),
+            ("Bytes", TYPE_BYTES),
+        )
+    },
 }
 
 
@@ -167,7 +171,7 @@ def _load_grpc_tools() -> tuple[Any, Path]:
         import grpc_tools  # noqa: PLC0415
         from grpc_tools import protoc  # noqa: PLC0415
     except ImportError as exc:  # pragma: no cover
-        msg = "protobuf input requires grpcio-tools. Install datamodel-code-generator[protobuf]."
+        msg = f"protobuf input requires grpcio-tools. Please run {install_command('protobuf')}."
         raise Error(msg) from exc
     return protoc, Path(grpc_tools.__file__).parent / "_proto"
 
@@ -176,7 +180,7 @@ def _load_descriptor_pb2() -> Any:
     try:
         from google.protobuf import descriptor_pb2  # noqa: PLC0415
     except ImportError as exc:  # pragma: no cover
-        msg = "protobuf input requires google.protobuf. Install datamodel-code-generator[protobuf]."
+        msg = f"protobuf input requires google.protobuf. Please run {install_command('protobuf')}."
         raise Error(msg) from exc
     return descriptor_pb2
 
@@ -197,7 +201,7 @@ def _sanitize_proto_source(text: str) -> str:
     """Drop custom options while preserving comments and both string delimiters."""
     if "(" not in text:
         return text
-    tokens = (token for token in PROTO_TOKEN_PATTERN.finditer(text) if token.lastgroup != "comment")
+    tokens = (token for token in PROTO_TCHARS.finditer(text) if token.lastgroup != "comment")
     result: list[str] = []
     copied = 0
     previous = None
@@ -292,6 +296,7 @@ def _convert_protobuf_schema_data(  # noqa: PLR0913
     schema_version_mode: VersionMode | None = None,
     encoding: str = "utf-8",
     source_safe_non_finite: bool,
+    untrusted_input: bool = False,
 ) -> dict[str, Any]:
     """Convert Protocol Buffers data for a parser that may need source-safe float values."""
     if not isinstance(raw_schema, str):
@@ -303,8 +308,48 @@ def _convert_protobuf_schema_data(  # noqa: PLR0913
         protobuf_version=protobuf_version,
         schema_version_mode=schema_version_mode,
         encoding=encoding,
+        untrusted_input=untrusted_input,
     )
     return parser._convert_to_json_schema_data(source_safe_non_finite=source_safe_non_finite)  # noqa: SLF001
+
+
+def _declarations(
+    file_descriptor: Any, *, post_order: bool = False
+) -> Iterator[tuple[bool, Any, str, tuple[int, ...]]]:
+    """Yield ``(is_enum, descriptor, full name, source path)`` for every message and enum declared in a file.
+
+    In pre-order each message comes before its enums and nested messages and the file's enums come last, as symbols
+    are registered; in post-order the file's enums come first and each message after its enums and nested messages,
+    as definitions are written.
+    """
+    package = file_descriptor.package
+    enums = [
+        (True, enum, _full_name(package, (), enum.name), (5, index))
+        for index, enum in enumerate(file_descriptor.enum_type)
+    ]
+    if post_order:
+        yield from enums
+    yield from _message_declarations(file_descriptor.message_type, package, (), (4,), post_order=post_order)
+    if not post_order:
+        yield from enums
+
+
+def _message_declarations(
+    messages: Iterable[Any], package: str, parents: tuple[str, ...], path: tuple[int, ...], *, post_order: bool
+) -> Iterator[tuple[bool, Any, str, tuple[int, ...]]]:
+    for index, message in enumerate(messages):
+        message_path = (*path, index)
+        declaration = (False, message, _full_name(package, parents, message.name), message_path)
+        if not post_order:
+            yield declaration
+        nested_parents = (*parents, message.name)
+        for enum_index, enum in enumerate(message.enum_type):
+            yield True, enum, _full_name(package, nested_parents, enum.name), (*message_path, 4, enum_index)
+        yield from _message_declarations(
+            message.nested_type, package, nested_parents, (*message_path, 3), post_order=post_order
+        )
+        if post_order:
+            yield declaration
 
 
 def _comment_map(file_descriptor: Any) -> dict[tuple[int, ...], str]:
@@ -359,8 +404,10 @@ class _ProtoInputPreparer:
         source = self.parser.source
         if isinstance(source, Path):
             if source.is_dir():
-                paths = sorted((path for path in source.rglob("*.proto") if path.is_file()), key=lambda path: path.name)
-                return [self._write_sanitized_file(path, temp_path, source) for path in paths]
+                return [
+                    self._write_sanitized_file(path, temp_path, source)
+                    for path in files_under(source, "*.proto", order="name")
+                ]
             return [self._write_sanitized_file(source, temp_path, self.parser.base_path)]
         if isinstance(source, list):
             return [self._write_sanitized_file(path, temp_path, self.parser.base_path) for path in source]
@@ -380,9 +427,10 @@ class _ProtoInputPreparer:
         else:  # pragma: no cover
             target = temp_path / source_path.name
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(
-            _sanitize_proto_source(source_path.read_text(encoding=self.parser.encoding)), encoding=self.parser.encoding
-        )
+        encoding = self.parser.encoding
+        data = self.parser._prefetched_data(source_path)  # noqa: SLF001
+        text = _input_text(source_path, encoding, data)
+        target.write_text(_sanitize_proto_source(text), encoding=encoding)
         return target
 
     def _write_missing_weak_imports(self, input_files: Iterable[Path], include_paths: Sequence[Path]) -> None:
@@ -394,7 +442,7 @@ class _ProtoInputPreparer:
             for import_path in WEAK_IMPORT_PATTERN.findall(text):
                 stub = (weak_import_dir / import_path).resolve()
                 if not stub.is_relative_to(weak_import_dir):
-                    msg = f"Invalid Protocol Buffers weak import path: {import_path!r}"
+                    msg = f"Invalid Protocol Buffers weak import path: {stable_repr(import_path)}"
                     raise SchemaParseError(msg)
                 if any((include_path / import_path).exists() for include_path in include_paths):
                     continue
@@ -425,35 +473,21 @@ class _ProtobufDescriptorConverter:
 
     def convert(self, file_descriptor_set: Any) -> dict[str, Any]:
         for file_descriptor in file_descriptor_set.file:
-            package = file_descriptor.package
-            self._collect_symbols(file_descriptor.message_type, package, ())
-            for enum_descriptor in file_descriptor.enum_type:
-                enum_full_name = _full_name(package, (), enum_descriptor.name)
-                self._register_definition_key(enum_full_name)
-                self.enums[enum_full_name] = enum_descriptor
+            for is_enum, descriptor, full_name, _ in _declarations(file_descriptor):
+                self._register_definition_key(full_name)
+                symbols = self.enums if is_enum else self.map_entries if descriptor.options.map_entry else self.messages
+                symbols[full_name] = descriptor
 
         for file_descriptor in file_descriptor_set.file:
             if file_descriptor.name in WELL_KNOWN_PROTO_PATHS and file_descriptor.name not in self.input_file_names:
                 continue
             comments = _comment_map(file_descriptor)
             effective_version = self._effective_version(file_descriptor)
-            for index, enum_descriptor in enumerate(file_descriptor.enum_type):
-                path = (5, index)
-                self._convert_enum(
-                    enum_descriptor,
-                    _full_name(file_descriptor.package, (), enum_descriptor.name),
-                    comments,
-                    path,
-                )
-            for index, message_descriptor in enumerate(file_descriptor.message_type):
-                self._convert_message(
-                    message_descriptor,
-                    file_descriptor.package,
-                    (),
-                    comments,
-                    (4, index),
-                    effective_version,
-                )
+            for is_enum, descriptor, full_name, path in _declarations(file_descriptor, post_order=True):
+                if is_enum:
+                    self._convert_enum(descriptor, full_name, comments, path)
+                else:
+                    self._convert_message(descriptor, full_name, comments, path, effective_version)
 
         if referenced := self._referenced_standard_types:
             omitted_files = [
@@ -470,20 +504,11 @@ class _ProtobufDescriptorConverter:
         }
 
     def _convert_referenced_standard_types(self, omitted_files: list[Any], referenced: dict[str, None]) -> None:
-        locations: dict[str, tuple[Any, tuple[str, ...], tuple[int, ...]]] = {}
-        for file_descriptor in omitted_files:
-            pending: list[tuple[Any, tuple[str, ...], tuple[int, ...]]] = [(file_descriptor, (), ())]
-            while pending:
-                container, parents, path = pending.pop()
-                for index, enum_descriptor in enumerate(container.enum_type):
-                    full_name = _full_name(file_descriptor.package, parents, enum_descriptor.name)
-                    locations[full_name] = (file_descriptor, parents, (*path, 4 if parents else 5, index))
-                messages = container.nested_type if parents else container.message_type
-                for index, message in enumerate(messages):
-                    full_name = _full_name(file_descriptor.package, parents, message.name)
-                    message_path = (*path, 3 if parents else 4, index)
-                    locations[full_name] = (file_descriptor, parents, message_path)
-                    pending.append((message, (*parents, message.name), message_path))
+        locations = {
+            full_name: (file_descriptor, path)
+            for file_descriptor in omitted_files
+            for _, _, full_name, path in _declarations(file_descriptor)
+        }
         comments_by_file: dict[str, dict[tuple[int, ...], str]] = {}
         while referenced:
             pending_names = tuple(referenced)
@@ -491,7 +516,7 @@ class _ProtobufDescriptorConverter:
             for full_name in pending_names:
                 if self._definition_key(full_name) in self.definitions:
                     continue
-                file_descriptor, parents, path = locations[full_name]
+                file_descriptor, path = locations[full_name]
                 if file_descriptor.name not in comments_by_file:
                     comments_by_file[file_descriptor.name] = _comment_map(file_descriptor)
                 comments = comments_by_file[file_descriptor.name]
@@ -499,13 +524,7 @@ class _ProtobufDescriptorConverter:
                     self._convert_enum(self.enums[full_name], full_name, comments, path)
                 else:
                     self._convert_message(
-                        self.messages[full_name],
-                        file_descriptor.package,
-                        parents,
-                        comments,
-                        path,
-                        self._effective_version(file_descriptor),
-                        include_nested=False,
+                        self.messages[full_name], full_name, comments, path, self._effective_version(file_descriptor)
                     )
 
     def _reference_schema(self, full_name: str) -> dict[str, Any]:
@@ -513,21 +532,7 @@ class _ProtobufDescriptorConverter:
             if self._referenced_standard_types is None:
                 self._referenced_standard_types = {}
             self._referenced_standard_types.setdefault(full_name, None)
-        return {"$ref": f"#/definitions/{self._definition_key(full_name)}"}
-
-    def _collect_symbols(self, messages: Iterable[Any], package: str, parents: tuple[str, ...]) -> None:
-        for message_descriptor in messages:
-            full_name = _full_name(package, parents, message_descriptor.name)
-            self._register_definition_key(full_name)
-            if message_descriptor.options.map_entry:
-                self.map_entries[full_name] = message_descriptor
-            else:
-                self.messages[full_name] = message_descriptor
-            for enum_descriptor in message_descriptor.enum_type:
-                enum_full_name = _full_name(package, (*parents, message_descriptor.name), enum_descriptor.name)
-                self._register_definition_key(enum_full_name)
-                self.enums[enum_full_name] = enum_descriptor
-            self._collect_symbols(message_descriptor.nested_type, package, (*parents, message_descriptor.name))
+        return {"$ref": definition_ref("definitions", self._definition_key(full_name))}
 
     @staticmethod
     def _make_definition_key(full_name: str) -> str:
@@ -550,8 +555,8 @@ class _ProtobufDescriptorConverter:
             return declared
         if self.schema_version_mode == VersionMode.Strict and self.protobuf_version != declared:
             warn(
-                f"Protobuf file {file_descriptor.name!r} declares {declared.value}, "
-                f"but --schema-version {self.protobuf_version.value} was requested.",
+                f"Protobuf file {stable_repr(file_descriptor.name)} declares {declared.value}, but --schema-version "
+                f"{self.protobuf_version.value} was requested.",
                 stacklevel=3,
             )
         return self.protobuf_version
@@ -581,39 +586,16 @@ class _ProtobufDescriptorConverter:
             schema["x-enum-descriptions"] = value_comments
         self.definitions[self._definition_key(full_name)] = schema
 
-    def _convert_message(  # noqa: PLR0913, PLR0917
+    def _convert_message(
         self,
         message_descriptor: Any,
-        package: str,
-        parents: tuple[str, ...],
+        full_name: str,
         comments: dict[tuple[int, ...], str],
         path: tuple[int, ...],
         syntax: ProtobufVersion,
-        *,
-        include_nested: bool = True,
     ) -> None:
-        full_name = _full_name(package, parents, message_descriptor.name)
         if message_descriptor.options.map_entry:
             return
-
-        if include_nested:
-            for index, enum_descriptor in enumerate(message_descriptor.enum_type):
-                enum_path = (*path, 4, index)
-                self._convert_enum(
-                    enum_descriptor,
-                    _full_name(package, (*parents, message_descriptor.name), enum_descriptor.name),
-                    comments,
-                    enum_path,
-                )
-            for index, nested_descriptor in enumerate(message_descriptor.nested_type):
-                self._convert_message(
-                    nested_descriptor,
-                    package,
-                    (*parents, message_descriptor.name),
-                    comments,
-                    (*path, 3, index),
-                    syntax,
-                )
 
         properties: dict[str, Any] = {}
         required: list[str] = []
@@ -692,7 +674,7 @@ class _ProtobufDescriptorConverter:
             return None
         map_key_python_type = MAP_KEY_PYTHON_TYPES.get(key_field.type)
         if map_key_python_type is None:  # pragma: no cover
-            msg = f"Protocol Buffers map field {field.name!r} uses unsupported key type"
+            msg = f"Protocol Buffers map field {stable_repr(field.name)} uses unsupported key type"
             raise SchemaParseError(msg)
         value_field = next((item for item in entry.field if item.name == "value"), None)
         if value_field is None:  # pragma: no cover
@@ -728,19 +710,8 @@ class _ProtobufDescriptorConverter:
             return text_encoding.CUnescape(value)
         if field.type in {TYPE_DOUBLE, TYPE_FLOAT}:
             number = float(value)
-            return _safe_non_finite_float(number) if self.source_safe_non_finite else number
-        if field.type in {
-            TYPE_INT32,
-            TYPE_INT64,
-            TYPE_UINT32,
-            TYPE_UINT64,
-            TYPE_SINT32,
-            TYPE_SINT64,
-            TYPE_FIXED32,
-            TYPE_FIXED64,
-            TYPE_SFIXED32,
-            TYPE_SFIXED64,
-        }:
+            return _converted_float(number, source_safe_non_finite=self.source_safe_non_finite)
+        if field.type in _INTEGER_TYPES:
             return int(value)
         return value
 
@@ -763,6 +734,12 @@ class ProtobufParser(JsonSchemaParser):
         super().__init__(source=source, config=config, **options)
 
     def _compile_descriptor_set(self) -> tuple[Any, frozenset[str]]:
+        if self.untrusted_input:
+            msg = (
+                "Protocol Buffers input is refused under --untrusted-input: protoc reads the files its imports name "
+                "from the include paths by itself, so the input cannot be kept to the given document."
+            )
+            raise Error(msg)
         protoc, well_known_include = _load_grpc_tools()
         descriptor_pb2 = _load_descriptor_pb2()
         with _ProtoInputPreparer(self) as (input_files, include_paths, input_file_names):
@@ -771,7 +748,7 @@ class ProtobufParser(JsonSchemaParser):
                 raise SchemaParseError(msg)
             with tempfile.NamedTemporaryFile(suffix=".pb", delete=False) as output_file:
                 output_path = Path(output_file.name)
-            collect_dependencies = _watch_dependency_collection_is_active()
+            collect_dependencies = _collecting_watch_dependencies() is not None
             persistent_include_paths: tuple[Path, ...] = ()
             try:
                 if collect_dependencies:
@@ -870,13 +847,13 @@ class ProtobufParser(JsonSchemaParser):
 
     def parse_raw(self) -> None:
         """Parse all Protocol Buffers input sources into data models."""
-        raw_obj = self._convert_to_json_schema_data(source_safe_non_finite=True)
-        source = next(self.iter_source)
-        source.raw_data = raw_obj
-        self.raw_obj = raw_obj
-        self._parse_file(raw_obj, "Model", [])
-        self._resolve_unparsed_json_pointer()
-        self._end_schema_parsing()
+        with self._parsing_session():
+            raw_obj = self._convert_to_json_schema_data(source_safe_non_finite=True)
+            source = next(self.iter_source)
+            source.raw_data = raw_obj
+            self.raw_obj = raw_obj
+            _schema_documents.note_converted_document(self, [])
+            self._parse_file(raw_obj, "Model", [])
 
 
 __all__ = ["ProtobufParser", "convert_protobuf_schema_data"]

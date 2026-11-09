@@ -13,15 +13,18 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast, get_args
 
 import httpx2
 
-from ..model_codecs.parameters import header_text
-from .errors import ConfigurationError, SDKError
+from ..model_codecs.media import TCHARS
+from ..model_codecs.parameters import cookie_octets, header_text
+from .errors import ConfigurationError, SDKError, called
+from .positions import cookie_name
 from .security import Credentials
+from .timing import checked_instance
 from .urls import request_origin
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator, Mapping
 
-    from .client import AsyncSend, Send
+    from .positions import AsyncSend, Send
     from .security import Placement, SecurityScheme
     from .urls import Origin
 
@@ -34,6 +37,7 @@ __all__ = (
     "Secret",
     "TokenSource",
     "UserPassword",
+    "checked_text",
 )
 
 AuthReason: TypeAlias = Literal[
@@ -58,9 +62,9 @@ UserPassword: TypeAlias = tuple[str, str] | Callable[[], tuple[str, str]]
 
 _UNAUTHORIZED: Final = 401
 _CHALLENGE_ITEMS: Final = re.compile(r'(?:[^,"]|"(?:[^"\\]|\\.)*(?:"|$))+')
-_CHALLENGE: Final = re.compile(r"([!#$%&'*+.^_`|~0-9A-Za-z-]+)(?![ \t]*=)(?:[ \t]+(.*))?", re.DOTALL)
+_CHALLENGE: Final = re.compile(rf"({TCHARS})(?![ \t]*=)(?:[ \t]+(.*))?", re.DOTALL)
 _INVALID_TOKEN: Final = re.compile(r'error[ \t]*=[ \t]*(?:invalid_token|"invalid_token")', re.IGNORECASE)
-_COOKIE_UNSAFE: Final = re.compile(r'[\x00-\x20\x7f";,\\]')
+_SURROGATE: Final = re.compile(r"[\ud800-\udfff]")
 
 
 class AuthError(SDKError):
@@ -109,8 +113,7 @@ class SchemeCredentials(Credentials):
         """Keep the credentials given, leaving out None."""
         super().__init__(values)
         for name, value in self.values.items():
-            if not (isinstance(value, (str, tuple, TokenSource)) or callable(value)):
-                raise ConfigurationError(field_path=(name,), reason="invalid_type")
+            checked_instance(value, (str, tuple, TokenSource), (name,), callables=True)
 
     def auth(  # noqa: PLR0913, PLR6301
         self,
@@ -133,16 +136,25 @@ class SchemeCredentials(Credentials):
         )
 
 
+def provider_failure(error: Exception) -> AuthError:
+    """Return the `provider_failed` error of an application's credential callable or callback, keeping its failure."""
+    return AuthError(reason="provider_failed", cause=error)
+
+
+def checked_text(field: str, *texts: str) -> None:
+    """Refuse credential text that UTF-8 cannot encode, a lone surrogate, which no request can send, by its field."""
+    if any(_SURROGATE.search(text) for text in texts):
+        raise ConfigurationError(field_path=(field,), reason="invalid_value")
+
+
+def basic_credentials(user: str, password: str) -> str:
+    """Return the credentials of the Basic scheme for a user and a password, as RFC 7617 writes them in UTF-8."""
+    return "Basic " + base64.b64encode(f"{user}:{password}".encode()).decode("ascii")
+
+
 def _called(value: object) -> object:
     """Return a credential's value for this request, calling a callable credential."""
-    if not callable(value):
-        return value
-    try:
-        return value()
-    except SDKError:
-        raise
-    except Exception as error:  # noqa: BLE001 - The application's callable failed; its cause is kept.
-        raise AuthError(reason="provider_failed", cause=error) from None
+    return called(value, provider_failure) if callable(value) else value
 
 
 def _pair(value: object) -> tuple[str, str] | None:
@@ -156,13 +168,18 @@ def _pair(value: object) -> tuple[str, str] | None:
 
 
 def _text(scheme: SecurityScheme, value: object) -> str:
-    """Return the wire text of a resolved credential, refusing a value of another type than its scheme's."""
+    """Return the wire text of a resolved credential, refusing a value of another type than its scheme's.
+
+    Text that UTF-8 cannot encode is refused as an unusable value, before any position takes it.
+    """
     if scheme.kind == "basic":
         if (pair := _pair(value)) is None:
             raise ConfigurationError(field_path=(scheme.name,), reason="invalid_type")
-        return "Basic " + base64.b64encode(f"{pair[0]}:{pair[1]}".encode()).decode("ascii")
+        checked_text(scheme.name, *pair)
+        return basic_credentials(*pair)
     if not isinstance(value, str):
         raise ConfigurationError(field_path=(scheme.name,), reason="invalid_type")
+    checked_text(scheme.name, value)
     return f"Bearer {value}" if scheme.kind == "bearer" else value
 
 
@@ -178,7 +195,7 @@ def _place(request: httpx2.Request, scheme: SecurityScheme, text: str) -> None:
             request.url = request.url.copy_set_param(name, text)
             return
         case "cookie":
-            unsafe = _COOKIE_UNSAFE.search(text) is not None or not text.isascii()
+            unsafe = not cookie_octets(text)
         case _:
             unsafe = not header_text(text)
     if unsafe:
@@ -190,7 +207,7 @@ def _place(request: httpx2.Request, scheme: SecurityScheme, text: str) -> None:
         part
         for value in request.headers.get_list("cookie")
         for part in (item.strip(" \t") for item in value.split(";"))
-        if part and part.partition("=")[0].strip() != name
+        if part and cookie_name(part) != name
     ]
     request.headers["Cookie"] = "; ".join((*kept, f"{name}={text}"))
 

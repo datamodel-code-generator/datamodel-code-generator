@@ -6,7 +6,9 @@ from __future__ import annotations
 from pydantic import BaseModel, Field, conint
 
 
-class BoxListAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3(BaseModel):
+class BoxListAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3(
+    BaseModel
+):
     value: list[conint(gt=3)] = Field(..., title='Value')
 
 

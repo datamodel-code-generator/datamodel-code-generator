@@ -2,8 +2,6 @@
 # Source: TypedDictFunction.jinja2 (sha256:6b1edba085c5bc16)
 from __future__ import annotations
 
-from typing import Any
-
 from datamodel_code_generator.model._compiled_template_runtime import (
     MISSING as _MISSING,
     Scope as _Scope,
@@ -13,10 +11,6 @@ from datamodel_code_generator.model._compiled_template_runtime import (
 )
 
 
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
-
-
 def render_with_scope(_scope: _Scope) -> str:
     _context_all_fields = _scope.get("all_fields")
     _context_class_name = _scope.get("class_name")
@@ -24,25 +18,17 @@ def render_with_scope(_scope: _Scope) -> str:
     _context_typed_dict_kwargs_suffix = _scope.get("typed_dict_kwargs_suffix")
     _parts: list[str] = []
     if _context_description:
-        _value_0 = _stringify(_context_description)
-        _parts.append(f"\n    {_value_0}")
-    _value_1 = _stringify(_context_class_name)
-    _value_2 = _stringify(_context_class_name)
-    _parts.append(f"\n{_value_1} = TypedDict('{_value_2}', {{")
-    for field, _loop_last_3 in _loop_last_iter(_context_all_fields):
-        _value_4 = _stringify(getattr(field, "key", _MISSING))
-        _value_5 = _stringify(field.type_hint)
-        _parts.append(f"\n    '{_value_4}': {_value_5},")
+        _parts.append(f"\n    {_stringify(_context_description)}")
+    _parts.append(f"\n{_stringify(_context_class_name)} = TypedDict('{_stringify(_context_class_name)}', {{")
+    for field, _loop_last_0 in _loop_last_iter(_context_all_fields):
+        _parts.append(f"\n    '{_stringify(getattr(field, 'key', _MISSING))}': {_stringify(field.type_hint)},")
         if field.docstring:
-            _value_6 = _stringify(field.docstring)
-            _parts.append(f"\n    {_value_6}")
-            if field.use_inline_field_description and (not _loop_last_3):
+            _parts.append(f"\n    {_stringify(field.docstring)}")
+            if field.use_inline_field_description and (not _loop_last_0):
                 _parts.append("\n\n")
         elif field.inline_field_docstring:
-            _value_7 = _stringify(field.inline_field_docstring)
-            _parts.append(f"\n    {_value_7}")
-            if not _loop_last_3:
+            _parts.append(f"\n    {_stringify(field.inline_field_docstring)}")
+            if not _loop_last_0:
                 _parts.append("\n\n")
-    _value_8 = _stringify(_filter_default(_context_typed_dict_kwargs_suffix, ""))
-    _parts.append(f"}}{_value_8})\n")
+    _parts.append(f"}}{_stringify(_filter_default(_context_typed_dict_kwargs_suffix, ''))})\n")
     return "".join(_parts)

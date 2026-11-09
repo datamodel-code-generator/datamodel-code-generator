@@ -12,6 +12,10 @@ bases of a merged model's children. The rows named ``legacy-*`` (:data:`SAME_NAM
 :data:`TREE_SCOPE`, :data:`REUSE_MODEL`) keep that output; keys over model facts (G06 for #4834, G07 for #4816) replace
 them. Every user but collapse-reuse compares the keys the parse's memo kept for a model in an earlier pass
 (:data:`STALE_DEDUP_KEYS`).
+
+Which model of a group of duplicates stays canonical, keeping its name and its place, is the reuse groups plan
+(:class:`ReuseGroups`), which every user asks: a model created to yield its name to the others yields that place to
+them too, so the models that were there before keep their names.
 """
 
 from __future__ import annotations
@@ -23,11 +27,12 @@ from typing import TYPE_CHECKING, Generic, Literal, TypeAlias, final
 
 from typing_extensions import Protocol, TypeVar
 
+from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
     import re
-    from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Hashable, Iterable, Iterator, Mapping, Sequence
 
 __all__ = [
     "COLLAPSE_REUSE",
@@ -39,6 +44,7 @@ __all__ = [
     "KeyCache",
     "KeySlot",
     "ModelShapes",
+    "ReuseGroups",
     "RootModels",
     "ShapeRow",
     "ShapeSource",
@@ -86,6 +92,7 @@ class ShapeRow:
     root_models: RootModels
     key_cache: KeyCache
     base_dedup: BaseDedup | None
+    """How the user tells apart the bases of the children of a model it merges, or None to keep them as redirected."""
 
 
 SAME_NAME: ShapeRow = ShapeRow(
@@ -124,6 +131,63 @@ REUSE_MODEL: ShapeRow = ShapeRow(
     base_dedup=None,
 )
 """L5 ``--reuse-model``: models of a module, root models left out only under ``--collapse-root-models``."""
+
+
+class _Referenced(Protocol):
+    """A model as the reuse groups plan reads it: by the model key of its reference."""
+
+    @property
+    def reference(self) -> object:
+        """The reference of the model."""
+        raise NotImplementedError
+
+
+ReferencedT = TypeVar("ReferencedT", bound=_Referenced)
+
+
+@final
+@record
+class ReuseGroups:
+    """Which model of a group of duplicates stays canonical, for every deduplication and reuse user.
+
+    A model yields the canonical place to the models it duplicates when it was created to yield its name: a site model
+    a reference with more assertions gets (:attr:`site_models`) in same-name deduplication, and a model whose name the
+    parse settled as yielding, as a model of a typed map value is (:attr:`typed_map_values`), for every other user.
+    ``parser/_passes/settle.py:settle_yielding_names`` records the plan once those names are settled, before the first
+    user.
+    """
+
+    site_models: frozenset[ModelKey] = frozenset()
+    """The model keys of the site models, which same-name deduplication orders after the others."""
+    typed_map_values: frozenset[ModelKey] = frozenset()
+    """The model keys of the models whose names yield, which every other user orders after the others."""
+
+    def is_typed_map_value(self, model: _Referenced) -> bool:
+        """Return whether a model yields the canonical place to the models that do not."""
+        return model_key_of(model.reference) in self.typed_map_values
+
+    def site_models_last(self, models: list[ReferencedT]) -> list[ReferencedT]:
+        """Order the site models after the others, which then stay canonical in same-name deduplication."""
+        return _yielding_last(models, self.site_models)
+
+    def typed_map_values_last(self, models: list[ReferencedT]) -> list[ReferencedT]:
+        """Order the models whose names yield after the others, which then stay canonical and keep their names."""
+        return _yielding_last(models, self.typed_map_values)
+
+    def yields_to(self, model: _Referenced, other: _Referenced) -> bool:
+        """Return whether ``model`` yields the canonical place to ``other``, which does not yield."""
+        return self.is_typed_map_value(model) and not self.is_typed_map_value(other)
+
+    def canonical_pair(self, first: ReferencedT, duplicate: ReferencedT) -> tuple[ReferencedT, ReferencedT]:
+        """Return the canonical and the duplicate of a pair that a user found in model order."""
+        return (duplicate, first) if self.yields_to(first, duplicate) else (first, duplicate)
+
+
+def _yielding_last(models: list[ReferencedT], yielding: frozenset[ModelKey]) -> list[ReferencedT]:
+    """Order the models whose model keys are in ``yielding`` after the others, each part keeping its order."""
+    if yielding:
+        return sorted(models, key=lambda model: model_key_of(model.reference) in yielding)
+    return models
 
 
 def skips_root_model(row: ShapeRow, *, collapse_root_models: bool) -> bool:
@@ -229,13 +293,6 @@ class ShapeSource(Protocol[ModelT, ReferenceT]):
         """Return what tells apart the models that references name: the model key."""
         raise NotImplementedError
 
-    def agreed(self, site: str, *, by_key: bool, by_path: Callable[[], bool]) -> bool:
-        """Return ``by_key``, what a site found by `identity`.
-
-        Under the adapter's check, a different ``by_path()``, what the site found by path, is a violation.
-        """
-        raise NotImplementedError
-
 
 @final
 @dataclass(slots=True)
@@ -247,8 +304,9 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
     union_tags: Mapping[ModelT, tuple[Hashable, ...]]
     memo: dict[ModelT, tuple[Key, Sequence[ReferenceT]]] = field(default_factory=dict)
 
-    def _tags(self, model: ModelT) -> tuple[Hashable, ...]:
-        return self.union_tags.get(model, ()) if self.row.union_tags else ()
+    def _tagged(self, model: ModelT, key: Key) -> Key:
+        """Return ``key`` with the tags of the model's discriminated unions when the row compares them."""
+        return (*key, *tags) if self.row.union_tags and (tags := self.union_tags.get(model, ())) else key
 
     def key(self, model: ModelT) -> Key:
         """Return the rendered model with the tags of its discriminated unions when the row compares them.
@@ -259,8 +317,7 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
         slot: KeySlot = (self.source.own_class_name(model), False) if self.row.own_class_name else (None, True)
         if self.row.key_cache == "rendered":
             self.source.forget_dedup_keys(model)
-        key = self.source.dedup_key(model, slot)
-        return (*key, *tags) if (tags := self._tags(model)) else key
+        return self._tagged(model, self.source.dedup_key(model, slot))
 
     def shape(self, model: ModelT) -> tuple[Key, Sequence[ReferenceT]]:
         """Return a model's dedup key with referenced model names masked, and its references in order.
@@ -281,17 +338,21 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
             lambda match: masks.get(name, name) if (name := match[1]) else match[0], rendered
         )
         key = (type(model), masked, imports, len(references), *written)
-        compared = (*references, *self.source.rule_references(model))
-        self.memo[model] = shape = ((*key, *tags) if (tags := self._tags(model)) else key), compared
+        compared = self._compared_references(model, references)
+        self.memo[model] = shape = self._tagged(model, key), compared
         return shape
 
-    def _compared_references(self, model: ModelT) -> tuple[ReferenceT, ...]:
+    def _compared_references(
+        self, model: ModelT, references: Sequence[ReferenceT] | None = None
+    ) -> tuple[ReferenceT, ...]:
         """Return the references that the models a model matches must match too: its own, then those its rules name.
 
-        Rules name a model by its class name alone until imports are final, so models of other modules that share a
-        name tell the rules apart only by their shapes. The masked rendering keeps the names that rules write.
+        ``references`` are the model's own when the caller already read them. Rules name a model by its class name
+        alone until imports are final, so models of other modules that share a name tell the rules apart only by their
+        shapes. The masked rendering keeps the names that rules write.
         """
-        return (*self.source.references(model), *self.source.rule_references(model))
+        own = self.source.references(model) if references is None else references
+        return (*own, *self.source.rule_references(model))
 
     def references_match(self, left: ModelT, right: ModelT) -> bool:
         """Return whether equally rendered models also reference models of the same shape.
@@ -308,7 +369,6 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
             return True
         pending: list[tuple[ModelT | None, ModelT | None]] = [(left, right)]
         assumed_pairs: set[tuple[Hashable, Hashable]] = set()
-        assumed_paths: set[tuple[str, str]] = set()
         while pending:
             left_model, right_model = pending.pop()
             if (
@@ -320,16 +380,11 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
             for left_reference, right_reference in zip(left_shape[1], right_shape[1], strict=True):
                 if left_reference is right_reference:
                     continue
-                pair = (self.source.identity(left_reference), self.source.identity(right_reference))
-                paths = (left_reference.path, right_reference.path)
-                if self.source.agreed(
-                    "assumed reference pairs",
-                    by_key=pair in assumed_pairs,
-                    by_path=lambda paths=paths: paths in assumed_paths,
-                ):
+                if (
+                    pair := (self.source.identity(left_reference), self.source.identity(right_reference))
+                ) in assumed_pairs:
                     continue
                 assumed_pairs.add(pair)
-                assumed_paths.add(paths)
                 pending.append((self.source.model_of(left_reference), self.source.model_of(right_reference)))
         return True
 
@@ -339,7 +394,9 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
         A reference to anything other than a model matches only itself, so it stands for itself.
         """
         return tuple(
-            self.shape(source)[0] if (source := self.source.model_of(reference)) is not None else id(reference)
+            self.shape(source)[0]
+            if (source := self.source.model_of(reference)) is not None
+            else model_key_of(reference)
             for reference in self._compared_references(model)
         )
 

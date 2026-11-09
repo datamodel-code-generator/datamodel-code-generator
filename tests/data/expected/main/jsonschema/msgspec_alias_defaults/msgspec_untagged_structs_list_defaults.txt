@@ -1,0 +1,28 @@
+{
+  "shapes": [
+    "list",
+    {
+      "radius": "int"
+    }
+  ],
+  "aliasShapes": [
+    "list",
+    {
+      "side": "int"
+    }
+  ],
+  "pair": [
+    "list",
+    {
+      "radius": "int"
+    },
+    {
+      "side": "int"
+    }
+  ],
+  "aliasPair": [
+    "tuple",
+    "Circle",
+    "Square"
+  ]
+}

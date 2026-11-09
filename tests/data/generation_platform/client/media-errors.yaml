@@ -87,8 +87,8 @@ paths:
                 g: {type: object}
                 h: {type: string, format: binary}
                 i: {type: string}
+                j: {type: string}
             encoding:
-              other: {contentType: text/plain}
               a:
                 headers:
                   X-Trace:
@@ -100,6 +100,7 @@ paths:
               f: {contentType: 'image/*'}
               g: {contentType: text/plain}
               i: {contentType: 'application/json; a="x,y"'}
+              j: {contentType: application/x-www-form-urlencoded}
               h: {style: form}
       responses:
         '204':

@@ -59,11 +59,25 @@ class ContainerDefaults(BaseModel):
     string_union: list[str | bytes] | None = ['ÿ', 'ASCII']
     nullable_array: list[bytes] | None = None
     record: Entry | None = Field(
-        {'last': 'ÿ', 'reference': b'\xff', 'inline': b'A', 'array': [b'\xff', b'A'], 'first': 'ASCII'},
+        {
+            'last': 'ÿ',
+            'reference': b'\xff',
+            'inline': b'A',
+            'array': [b'\xff', b'A'],
+            'first': 'ASCII',
+        },
         validate_default=True,
     )
     record_array: list[Entry] | None = Field(
-        [{'first': 'ÿ', 'inline': b'\xff', 'reference': b'A', 'array': [b'A', b'\xff'], 'last': 'end'}],
+        [
+            {
+                'first': 'ÿ',
+                'inline': b'\xff',
+                'reference': b'A',
+                'array': [b'A', b'\xff'],
+                'last': 'end',
+            }
+        ],
         validate_default=True,
     )
     empty_record: Empty | None = Field({}, validate_default=True)

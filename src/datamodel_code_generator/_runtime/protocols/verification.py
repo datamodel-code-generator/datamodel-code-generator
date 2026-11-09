@@ -8,15 +8,15 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Final, Generic
+from typing import TYPE_CHECKING, Final, Generic, cast
 
 from typing_extensions import TypeVar
 
+from ..model_codecs.media import ascii_digits
+from .errors import configuration_error
 from .signatures import UnsupportedKeyError, signature_bytes
 from .webhook_events import (
     EventPlan,
-    Facts,
-    configuration_error,
     instant,
     local_arguments,
     received,
@@ -24,6 +24,7 @@ from .webhook_events import (
     size,
     within,
 )
+from .webhooks import VerifiedSignature
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -37,7 +38,7 @@ __all__ = ("WebhookPlan", "averify_webhook", "verify_webhook")
 
 T = TypeVar("T")
 K = TypeVar("K")
-_TIMESTAMP: Final = re.compile(r"[0-9]{1,19}")
+_TIMESTAMP_DIGITS: Final = 19
 _VISIBLE: Final = re.compile(r"[\x21-\x7e]+")
 
 
@@ -57,9 +58,9 @@ def _checked_keys(keys: KeySet[K], algorithm: SignatureAlgorithm[K], helper_id: 
     candidates, seen = list[tuple[K, str]](), set[str]()
     for index, key in enumerate(keys.keys):
         if type(key) is not algorithm.key_type:
-            raise configuration_error(("keys", str(index)), "wrong_capability", helper_id)
+            raise configuration_error(helper_id, ("keys", str(index)), "wrong_capability")
         if (identity := algorithm.key_id(key)) in seen:
-            raise configuration_error(("keys", str(index), "id"), "invalid_value", helper_id)
+            raise configuration_error(helper_id, ("keys", str(index), "id"))
         seen.add(identity)
         candidates.append((key, identity))
     return candidates
@@ -90,7 +91,7 @@ def _matches(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         return algorithm.matches(key, parts, signatures)
     except UnsupportedKeyError:
         pass
-    raise configuration_error(("keys", str(index)), "wrong_capability", helper_id)
+    raise configuration_error(helper_id, ("keys", str(index)), "wrong_capability")
 
 
 def _signed(
@@ -138,7 +139,7 @@ def _authenticate(  # ruff: ignore[too-many-arguments]
     *,
     now: datetime,
     options: object,
-) -> Facts:
+) -> VerifiedSignature:
     """Authenticate the exact bytes of one preset and return its verified facts."""
     helper_id, algorithm = plan.helper_id, plan.algorithm
     now_us, limits = local_arguments(helper_id, raw_body, headers, keys, now=now, options=options)
@@ -155,14 +156,14 @@ def _authenticate(  # ruff: ignore[too-many-arguments]
         reject("malformed_signature", helper_id)
     moment = None
     if stamp is not None:
-        if not _TIMESTAMP.fullmatch(stamp):
+        if not (ascii_digits(stamp) and len(stamp) <= _TIMESTAMP_DIGITS):
             reject("malformed_signature", helper_id)
         signed = int(stamp) * 1_000_000
         if not within(now_us, signed, limits) or (moment := instant(signed)) is None:
             reject("timestamp_window", helper_id)
     if not candidates:
         reject("missing_key", helper_id)
-    verified = tuple(signature for signature in signatures if signature is not None)
+    verified = cast("tuple[bytes, ...]", signatures)
     found = (
         identity
         for index, (key, identity) in enumerate(candidates)
@@ -170,7 +171,7 @@ def _authenticate(  # ruff: ignore[too-many-arguments]
     )
     if (matched := next(found, None)) is None:
         reject("invalid_signature", helper_id)
-    return Facts(delivery, moment, matched)
+    return VerifiedSignature(delivery_id=delivery, timestamp=moment, matched_key_id=matched)
 
 
 def verify_webhook(  # ruff: ignore[too-many-arguments]

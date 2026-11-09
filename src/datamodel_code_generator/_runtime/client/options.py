@@ -2,18 +2,18 @@
 
 from __future__ import annotations
 
-import math
 from collections.abc import Mapping  # noqa: TC003 - Public annotations support get_type_hints().
 from collections.abc import Set as AbstractSet  # noqa: TC003 - Public annotations support get_type_hints().
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field, fields, replace
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, TypeVar
 from urllib.parse import urlsplit
 
-from ..model_codecs.parameters import TOKEN, header_text
+from ..model_codecs.media import ERROR_STATUSES, is_token
+from ..model_codecs.parameters import header_text
 from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
-from .timing import SYSTEM_CLOCK, Clock, ResolvedTimeoutOptions, checked_count, seconds
+from .timing import SYSTEM_CLOCK, Clock, ResolvedTimeoutOptions, checked_count, every_phase, seconds
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator, Iterable
@@ -30,9 +30,7 @@ __all__ = (
 
 Pairs: TypeAlias = tuple[tuple[str, str | None], ...]
 
-_SCHEMES: Final = frozenset({"http", "https"})
-_RETRY_STATUS_MIN: Final = 400
-_RETRY_STATUS_MAX: Final = 599
+HTTP_SCHEMES: Final = frozenset({"http", "https"})
 _RETRY_STATUS_EXCLUDED: Final = frozenset({401, 403, 407})
 _OptionT = TypeVar("_OptionT")
 
@@ -43,7 +41,7 @@ def is_base_url(value: str) -> bool:
     Raises ValueError when the URL or its port does not parse.
     """
     parts = urlsplit(value)
-    absolute = parts.scheme in _SCHEMES and bool(parts.hostname) and parts.port != 0
+    absolute = parts.scheme in HTTP_SCHEMES and bool(parts.hostname) and parts.port != 0
     return absolute and parts.username is None and not parts.query and not parts.fragment
 
 
@@ -85,14 +83,16 @@ class NativeTimeout(Protocol):
 
 
 DEFAULT_TIMEOUT: Final = ResolvedTimeoutOptions(connect=5.0, read=600.0, write=600.0, pool=600.0)
-_UNLIMITED: Final = ResolvedTimeoutOptions(connect=None, read=None, write=None, pool=None)
+_UNLIMITED: Final = every_phase(None)
+
+
+def retryable_status(status: int) -> bool:
+    """Return whether a retry may select a status: an error status other than an authentication challenge."""
+    return status in ERROR_STATUSES and status not in _RETRY_STATUS_EXCLUDED
 
 
 def _statuses(value: AbstractSet[int]) -> frozenset[int]:
-    if any(
-        type(item) is not int or not _RETRY_STATUS_MIN <= item <= _RETRY_STATUS_MAX or item in _RETRY_STATUS_EXCLUDED
-        for item in value
-    ):
+    if any(type(item) is not int or not retryable_status(item) for item in value):
         raise ConfigurationError(field_path=("retry", "statuses"), reason="out_of_range")
     return frozenset(value)
 
@@ -125,9 +125,7 @@ class RetryOptions:
         if self.statuses is not UNSET:
             object.__setattr__(self, "statuses", _statuses(self.statuses))
         if self.max_retry_after is not None and self.max_retry_after is not UNSET:
-            path = ("retry", "max_retry_after")
-            if not 0 < (duration := seconds(self.max_retry_after, path)) < math.inf:
-                raise ConfigurationError(field_path=path, reason="out_of_range")
+            duration = seconds(self.max_retry_after, ("retry", "max_retry_after"), allow_zero=False)
             object.__setattr__(self, "max_retry_after", duration)
 
 
@@ -148,6 +146,7 @@ class ResolvedRetryOptions:
 
 
 DEFAULT_RETRY: Final = ResolvedRetryOptions()
+_RETRY_FIELDS: Final = tuple(item.name for item in fields(RetryOptions))
 
 
 def _inherited(current: _OptionT, layer: _OptionT | UNSET) -> _OptionT:
@@ -162,21 +161,10 @@ def layered_retry(
         current = replace(current, max_retries=max_retries)
     if layer is None:
         return current
-    initial_delay = _inherited(current.initial_delay, layer.initial_delay)
-    max_delay = _inherited(current.max_delay, layer.max_delay)
-    _ordered_delays(initial_delay, max_delay, operation_id)
-    return ResolvedRetryOptions(
-        max_retries=current.max_retries,
-        initial_delay=initial_delay,
-        max_delay=max_delay,
-        jitter=_inherited(current.jitter, layer.jitter),
-        statuses=frozenset(_inherited(current.statuses, layer.statuses)),
-        max_retry_after=_inherited(current.max_retry_after, layer.max_retry_after),
-        respect_retry_after=_inherited(current.respect_retry_after, layer.respect_retry_after),
-        retry_after_ms_header=_inherited(current.retry_after_ms_header, layer.retry_after_ms_header),
-        should_retry_header=_inherited(current.should_retry_header, layer.should_retry_header),
-        retry_on_pool_timeout=_inherited(current.retry_on_pool_timeout, layer.retry_on_pool_timeout),
-    )
+    given = {name: value for name in _RETRY_FIELDS if (value := getattr(layer, name)) is not UNSET}
+    resolved = replace(current, **given)
+    _ordered_delays(resolved.initial_delay, resolved.max_delay, operation_id)
+    return resolved
 
 
 def phases(value: float | NativeTimeout | UNSET | None, current: ResolvedTimeoutOptions) -> ResolvedTimeoutOptions:
@@ -190,7 +178,7 @@ def phases(value: float | NativeTimeout | UNSET | None, current: ResolvedTimeout
         case None:
             return _UNLIMITED
         case int() | float():
-            return ResolvedTimeoutOptions(connect=value, read=value, write=value, pool=value)
+            return every_phase(value)
         case _:
             pass
     return ResolvedTimeoutOptions(connect=value.connect, read=value.read, write=value.write, pool=value.pool)
@@ -210,7 +198,7 @@ def _sendable(headers: Iterable[tuple[object, object]], key: object) -> None:
     for name, value in headers:
         if not isinstance(name, str):
             raise ConfigurationError(field_path=("headers",), reason="invalid_value")
-        if not TOKEN.fullmatch(name) or not (value is None or (isinstance(value, str) and header_text(value))):
+        if not is_token(name) or not (value is None or (isinstance(value, str) and header_text(value))):
             raise ConfigurationError(field_path=("headers", name), reason="invalid_value")
 
 
@@ -308,11 +296,11 @@ def layered(settings: Settings, layer: RequestOptions, *, view: bool, operation_
         merged(settings.headers, layer.extra_headers, fold=True) if view else settings.headers,
         merged(settings.query, layer.extra_query, fold=False) if view else settings.query,
         timeout=phases(layer.timeout, settings.timeout),
-        total_timeout=settings.total_timeout if layer.total_timeout is UNSET else layer.total_timeout,
+        total_timeout=_inherited(settings.total_timeout, layer.total_timeout),
         retry=layered_retry(settings.retry, layer.retry, layer.max_retries, operation_id),
         follow_redirects=settings.follow_redirects if layer.follow_redirects is None else layer.follow_redirects,
         idempotency_key=layer.idempotency_key,
-        auth=settings.auth if layer.auth is UNSET else layer.auth,
+        auth=_inherited(settings.auth, layer.auth),
         clock=settings.clock,
         compression=settings.compression,
     )

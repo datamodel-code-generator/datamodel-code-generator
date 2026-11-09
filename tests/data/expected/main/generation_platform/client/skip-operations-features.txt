@@ -1,0 +1,31 @@
+# skip-operations-features
+render pydantic_v2.BaseModel
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /certificates (operationId 'listCertificates'), which uses mutualTLS (OAS 3.1) that the client does not support: /paths/~1certificates/get: The security of GET /certificates requires the unavailable scheme 'clientCertificate'
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /digests (operationId 'listDigests'), which uses http security schemes (OAS 3.0) that the client does not support: /paths/~1digests/get: The security of GET /digests requires the unavailable scheme 'digestAuth'
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /devices (operationId 'listDevices'), which uses http security schemes (OAS 3.0), mutualTLS (OAS 3.1) that the client does not support: /paths/~1devices/get: The security of GET /devices requires the unavailable scheme 'digestAuth'; /paths/~1devices/get: The security of GET /devices requires the unavailable scheme 'clientCertificate'
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /related (operationId 'postRelated'), which uses multipart media types (OAS 3.0) that the client does not support: /paths/~1related/post/requestBody/content/multipart~1related: The multipart/related media of POST /related is not supported yet
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /documents (operationId 'postDocument'), which uses Encoding contentType (OAS 3.0) that the client does not support: /paths/~1documents/post/requestBody/content/multipart~1form-data/encoding/meta: The meta encoding of the multipart/form-data media of POST /documents has no builtin encoding for a member holding no files
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /expanded (operationId 'listExpanded'), which uses style: deepObject (OAS 3.0) that the client does not support: /paths/~1expanded/get/parameters/0: query parameter style 'deepObject' has no builtin form for array values
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /sessions (operationId 'getSession'), which uses style: cookie (OAS 3.2) that the client does not support: /paths/~1sessions/get/parameters/0: Cookie style requires OpenAPI 3.2
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /blobs (operationId 'postBlob'), which uses Binary strings in text media (OAS 3.0) that the client does not support: /paths/~1blobs/post/requestBody/content/application~1json/schema/properties/data: The application/json request body of POST /blobs carries a binary string as text; declare it with format: byte for base64 text, optionally with --type-mappings string+byte=binary to keep bytes, or send it as a whole binary body or a file part
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated/security.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/default/__init__.py
+  client/resources/default/_async.py
+  client/resources/default/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/default/__init__.py
+  client/types/default/_operations.py
+  models.py

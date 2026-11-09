@@ -8,7 +8,11 @@ from typing import Annotated, Any
 from msgspec import UNSET, Meta, Struct, UnsetType
 
 
-class Person(Struct, omit_defaults=True, tag='"; builtin_template_data_marker = True #\rprint("never")'):
+class Person(
+    Struct,
+    omit_defaults=True,
+    tag='"; builtin_template_data_marker = True #\rprint("never")',
+):
     firstName: (
         Annotated[str, Meta(description="The person's first name.")] | UnsetType
     ) = UNSET

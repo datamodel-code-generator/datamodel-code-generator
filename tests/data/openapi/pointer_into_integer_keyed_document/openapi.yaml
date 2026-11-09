@@ -1,0 +1,16 @@
+openapi: 3.0.3
+info:
+  title: A pointer into a document whose top level has an integer key
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Code:
+      $ref: "shared.yaml#/codes/schema"
+    Reply:
+      type: object
+      properties:
+        code:
+          $ref: "shared.yaml#/codes/schema"
+    Tag:
+      $ref: "plain.yaml#/definitions/Tag"

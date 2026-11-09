@@ -8,12 +8,14 @@ symbols and field bindings alone, never from a codec.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from functools import cached_property
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
-from datamodel_code_generator._openapi_codec_plan import artifact_module
+from datamodel_code_generator._all_or_none import all_or_none
+from datamodel_code_generator._container_kinds import MAPPINGS
+from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._target_contract import (
+    WRAPPER_KINDS,
     BuiltinType,
     ConstructorType,
     GeneratedEnumMember,
@@ -25,7 +27,12 @@ from datamodel_code_generator._target_contract import (
     LiteralType,
     NoneType,
     UnionType,
+    members_by_consumer,
+    symbols_by_id,
+    wrapped_type,
 )
+from datamodel_code_generator._target_types import CONSTRAINED_SCALARS, container_slot, sole_present, without_none
+from datamodel_code_generator.imports import _import_path
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -39,7 +46,7 @@ if TYPE_CHECKING:
         TypeView,
     )
 
-__all__ = ("ALIASES", "WRAPPERS", "ItemStep", "JSONTypes", "ModelFacts", "ModelField", "StepKind")
+__all__ = ("ALIASES", "ItemStep", "JSONTypes", "ModelFacts", "ModelField", "StepKind")
 
 StepKind: TypeAlias = Literal["attr", "key", "get", "root"]
 JSONTypes: TypeAlias = frozenset[str] | None
@@ -71,24 +78,12 @@ _NAMED: Final = MappingProxyType({
     "datetime.timedelta": "string",
     "uuid.UUID": "string",
     "decimal.Decimal": "number",
-    "pydantic.PositiveInt": "integer",
-    "pydantic.NegativeInt": "integer",
-    "pydantic.NonPositiveInt": "integer",
-    "pydantic.NonNegativeInt": "integer",
-    "pydantic.StrictInt": "integer",
-    "pydantic.PositiveFloat": "number",
-    "pydantic.NegativeFloat": "number",
-    "pydantic.NonPositiveFloat": "number",
-    "pydantic.NonNegativeFloat": "number",
-    "pydantic.StrictFloat": "number",
-    "pydantic.StrictBool": "boolean",
+    **{dotted_name(*key): kind for key, kind in CONSTRAINED_SCALARS.items()},
 })
-_MAPPINGS: Final = frozenset({"dict", "typing.Mapping", "collections.abc.Mapping", "typing.Dict"})
 _EXTRAS: Final = "__pydantic_extra__"
 _WRAPPER: Final = "pydantic.SerializeAsAny"
 _FALSE: Final = KnownBackendValue(LiteralScalar(kind="bool", value=False))
 _MODELS: Final = frozenset({"model", "root"})
-WRAPPERS: Final = frozenset({"alias", "root"})
 ALIASES: Final = frozenset({"alias"})
 
 
@@ -112,7 +107,7 @@ class ModelField:
     """A field of a generated model by its wire name: its attribute, or key, its type, and what its model gives it.
 
     `required` says the model's constructor needs the field, and `missing` that it defaults to Pydantic's MISSING;
-    `member` is the field's binding in its consumer.
+    `explicit` that an `--aliases` entry of its class gave its name; `member` is the field's binding in its consumer.
     """
 
     wire_name: str
@@ -123,6 +118,7 @@ class ModelField:
     write_only: bool
     member: FieldUseBinding
     missing: bool = False
+    explicit: bool = False
 
 
 def _partial(symbol: FinalModelSymbol) -> bool:
@@ -154,20 +150,9 @@ class ModelFacts:
 
     def __init__(self, batch: GeneratedTypeContractBatch) -> None:
         """Index the batch's symbols by identity and its field bindings by consuming symbol."""
-        self.symbols = {symbol.id: symbol for symbol in batch.symbols}
-        self.members: dict[SymbolId, list[FieldUseBinding]] = {}
-        for member in batch.fields:
-            self.members.setdefault(member.consumer, []).append(member)
+        self.symbols = symbols_by_id(batch)
+        self.members = members_by_consumer(batch)
         self.planned: dict[SymbolId, tuple[ModelField, ...]] = {}
-
-    @cached_property
-    def imports(self) -> dict[int, str]:
-        """Return where each emitted symbol is imported from, as `module:Name` by symbol identity."""
-        return {
-            symbol.id: f"{artifact_module(symbol.artifact)}:{symbol.name}"
-            for symbol in self.symbols.values()
-            if symbol.artifact is not None
-        }
 
     def symbol(self, value: TypeView) -> FinalModelSymbol | None:
         """Return the model or root model a type names when its backend declares it, or None for any other type."""
@@ -205,16 +190,15 @@ class ModelFacts:
                 write_only=facts.write_only,
                 member=member,
                 missing=facts.backend.emitted.emitted_default_kind == "pydantic_missing",
+                explicit=facts.explicit_name,
             )
 
     def root(self, symbol: SymbolId) -> TypeView | None:
         """Return the type an alias or root symbol stands for, or None when the batch binds none."""
-        return next(
-            (facts.type for member in self.members.get(symbol, ()) if (facts := member.model_facts) is not None), None
-        )
+        return wrapped_type(self.members, symbol)
 
     def argument(
-        self, value: TypeView, kinds: frozenset[str] = WRAPPERS, seen: frozenset[SymbolId] = frozenset()
+        self, value: TypeView, kinds: frozenset[str] = WRAPPER_KINDS, seen: frozenset[SymbolId] = frozenset()
     ) -> TypeView:
         """Return the type an argument of a model type takes: each symbol of the kinds by the type it stands for."""
         match value:
@@ -250,8 +234,8 @@ class ModelFacts:
         """Return the type a root model or a union of one type and None stands for, adding each root step taken."""
         while True:
             value = self.plain(value)
-            if isinstance(value, UnionType) and len(present := _present(value)) == 1:
-                value = present[0]
+            if (member := sole_present(value)) is not None:
+                value = member
             elif (
                 (symbol := self.symbol(value)) is not None
                 and symbol.kind == "root"
@@ -274,8 +258,8 @@ class ModelFacts:
             and (root := self.root(symbol.id)) is not None
         ):
             value = self.plain(root)
-        if isinstance(value, UnionType) and len(present := _present(value)) == 1:
-            value = self.plain(present[0])
+        if (member := sole_present(value)) is not None:
+            value = self.plain(member)
         return symbol if (symbol := self.symbol(value)) is not None and symbol.kind == "model" else None
 
     def json_types(self, value: TypeView, seen: frozenset[SymbolId] = frozenset()) -> JSONTypes:
@@ -292,8 +276,8 @@ class ModelFacts:
         types: JSONTypes = None if named is None else frozenset({named})
         match value:
             case UnionType():
-                found = [self.json_types(member, seen) for member in value.members]
-                types = None if None in found else frozenset().union(*(item for item in found if item is not None))
+                found = all_or_none([self.json_types(member, seen) for member in value.members])
+                types = None if found is None else frozenset().union(*found)
             case LiteralType():
                 types = frozenset().union(
                     *(
@@ -306,7 +290,7 @@ class ModelFacts:
             case GeneratedSymbolType() if (symbol := self.symbols[value.symbol]).kind == "enum":
                 types = frozenset(symbol.value_types)
             case GeneratedSymbolType() if (
-                self.symbols[value.symbol].kind in WRAPPERS
+                self.symbols[value.symbol].kind in WRAPPER_KINDS
                 and value.symbol not in seen
                 and (root := self.root(value.symbol)) is not None
             ):
@@ -316,7 +300,7 @@ class ModelFacts:
             case GenericType() if _name(value.base) == _WRAPPER and len(value.arguments) == 1:
                 types = self.json_types(value.arguments[0], seen)
             case GenericType():
-                types = frozenset({"object" if _name(value.base) in _MAPPINGS else "array"})
+                types = frozenset({"object" if container_slot(value) in MAPPINGS.slots else "array"})
             case NoneType():
                 types = _NULL
             case _:
@@ -329,32 +313,15 @@ class ModelFacts:
         A schema admits null by its own nullability, or by a type it refers to that does, such as a nullable model; an
         annotation that only makes an omitted field optional does not.
         """
-        present = self.json_types(_without_none(field.type))
+        kinds = self.json_types(without_none(field.type))
         accepts_null = field.nullable or field.type_has_null
         if field.nullable is None:
             accepts_null = accepts_null or field.schema_null
-        return present if present is None or not accepts_null else present | _NULL
-
-    def nullable(self, value: TypeView) -> bool:
-        """Return whether a type admits None, through its aliases."""
-        value = self.plain(value)
-        return isinstance(value, UnionType) and len(_present(value)) != len(value.members)
+        return kinds if kinds is None or not accepts_null else kinds | _NULL
 
 
 def _name(value: TypeView) -> str | None:
-    """Return the dotted name of a builtin or imported type, or None for any other type."""
+    """Return the dotted name of a builtin or imported type, or None for any other type, a module import included."""
     if isinstance(value, BuiltinType):
         return value.name
-    return f"{value.import_.from_}.{value.import_.import_}" if isinstance(value, ImportedType) else None
-
-
-def _without_none(value: TypeView) -> TypeView:
-    """Return a type without its None member, or the type itself when it is no union."""
-    if not isinstance(value, UnionType):
-        return value
-    present = _present(value)
-    return present[0] if len(present) == 1 else replace(value, members=tuple(present), hint=None)
-
-
-def _present(value: UnionType) -> list[TypeView]:
-    return [member for member in value.members if not isinstance(member, NoneType)]
+    return _import_path(value.import_) if isinstance(value, ImportedType) and value.import_.from_ else None

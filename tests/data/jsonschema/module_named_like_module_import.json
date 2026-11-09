@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "pkg.BaseModel.Thing": {"type": "object", "properties": {"n": {"type": "integer"}}},
+    "pkg.Literal.Kind": {"type": "string", "enum": ["book", "disc"]},
+    "pkg.api.Order": {
+      "type": "object",
+      "properties": {
+        "thing": {"$ref": "#/$defs/pkg.BaseModel.Thing"},
+        "kind": {"$ref": "#/$defs/pkg.Literal.Kind", "default": "book"},
+        "tag": {"const": "order"}
+      }
+    }
+  }
+}

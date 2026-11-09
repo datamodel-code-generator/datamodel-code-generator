@@ -20,13 +20,13 @@ import httpx2
 from typing_extensions import TypeAliasType, TypeIs
 
 from ..model_codecs.errors import CodecError, ParameterEncodingError
+from ..model_codecs.media import JSON_MEDIA_TYPE, media_kind
 from ..model_codecs.media import json_bytes as _json_bytes
-from ..model_codecs.media import media_kind
 from ..model_codecs.parameters import ParameterPlan, part_pairs
 from ..model_codecs.unset import UNSET
 from .bodies import AsyncBinaryBody, SyncBinaryBody, is_binary_input, next_chunk
 from .body_sources import BinaryBodies, BodyBindings, BoundBody
-from .errors import DecodeError
+from .errors import request_failure
 from .logical import in_thread
 from .media import encode_text
 from .parts import MEDIA_OUTSIDE_ENCODING, PartPlan
@@ -54,7 +54,6 @@ _TEXT: Final = "A text part carries a scalar"
 _DISPOSITION: Final = "A part's Content-Disposition comes from its name and filename, so its headers may not name it"
 _CLAIMED: Final = "Two form-data members write parts of the same name"
 _OCTETS: Final = "application/octet-stream"
-_JSON: Final = "application/json"
 _FORM_DATA: Final = "multipart/form-data"
 
 
@@ -204,11 +203,6 @@ class FormParts:
     media_type: str
 
 
-def _malformed(name: object, cause: BaseException) -> DecodeError:
-    location = ("body",) if name is None else ("body", name if isinstance(name, str) else "?")
-    return DecodeError(reason="unencodable", direction="request", location=location, cause=cause)
-
-
 def multipart_member(value: JSONValue, media_type: str | None = None) -> tuple[bytes, str | None]:
     """Return a part's bytes and media type: a string as it is, another scalar as JSON text, the rest as JSON.
 
@@ -220,18 +214,14 @@ def multipart_member(value: JSONValue, media_type: str | None = None) -> tuple[b
             case str():
                 return value.encode(), None
             case Mapping() | list():
-                return _json_bytes(value), "application/json"
+                return _json_bytes(value), JSON_MEDIA_TYPE
             case _:
                 return _json_bytes(value), None
-    match media_kind(media_type), value:
-        case "json", _:
-            return _json_bytes(value), media_type
-        case _, Mapping() | list():
-            raise ParameterEncodingError(_TEXT)
-        case _, str():
-            return encode_text(value, media_type), media_type
-        case _:
-            return encode_text(_json_bytes(value).decode(), media_type), media_type
+    if media_kind(media_type) == "json":
+        return _json_bytes(value), media_type
+    if isinstance(value, Mapping | list):
+        raise ParameterEncodingError(_TEXT)
+    return encode_text(value if isinstance(value, str) else _json_bytes(value).decode(), media_type), media_type
 
 
 def _entry(
@@ -281,7 +271,7 @@ def _encoded(entries: list[Entry], media_type: str | None) -> tuple[bytes | Form
     opened.
     """
     if any(key.lower() == "content-disposition" for _, _, _, _, headers in entries for key, _ in headers):
-        raise _malformed(None, ValueError(_DISPOSITION))
+        raise request_failure(("body",), cause=ValueError(_DISPOSITION))
     boundary = urandom(16).hex()
     sent = f"{media_type or _FORM_DATA}; boundary={boundary}"
     if not entries:
@@ -291,13 +281,13 @@ def _encoded(entries: list[Entry], media_type: str | None) -> tuple[bytes | Form
             return httpx2.Request("POST", "/", headers={"Content-Type": sent}, files=native_files(entries)).read(), sent
         httpx2.Request("POST", "/", files=native_files(entries, (b"" for _ in entries)))
     except (TypeError, ValueError) as error:
-        raise _malformed(None, error) from None
+        raise request_failure(("body",), cause=error) from None
     return FormParts(tuple(entries), sent), sent
 
 
 def _shaped(plan: PartPlan | None) -> Literal["application/json"] | None:
     """Return the media type a member's plan gives each value: JSON for the JSON kind, else the value's shape's."""
-    return _JSON if plan is not None and plan.kind == "json" else None
+    return JSON_MEDIA_TYPE if plan is not None and plan.kind == "json" else None
 
 
 def encode_multipart(value: JSONValue, form: MultipartForm, sent: str | None = None) -> tuple[bytes | FormParts, str]:
@@ -338,7 +328,9 @@ def encode_multipart(value: JSONValue, form: MultipartForm, sent: str | None = N
 
 
 def _refused(part: object) -> NoReturn:
-    raise _malformed(getattr(part, "name", "?"), TypeError(_PART))
+    name = getattr(part, "name", "?")
+    location = ("body",) if name is None else ("body", name if isinstance(name, str) else "?")
+    raise request_failure(location, cause=TypeError(_PART))
 
 
 def _errors(plan: PartPlan) -> tuple[type[Exception], ...]:
@@ -369,7 +361,7 @@ def _field(part: FieldPart[object], plan: PartPlan) -> list[Entry]:
         items = wire if plan.repeated and isinstance(wire, list) else (wire,)
         return [_member(part, item, plan) for item in items]
     except _errors(plan) as error:
-        raise _malformed(part.name, error) from None
+        raise request_failure(("body", part.name), cause=error) from None
 
 
 def _member(part: FieldPart[object], item: JSONValue, plan: PartPlan) -> Entry:
@@ -382,15 +374,19 @@ def _member(part: FieldPart[object], item: JSONValue, plan: PartPlan) -> Entry:
 
 
 def _file(part: FilePart[SyncBinaryBody | AsyncBinaryBody], plan: PartPlan) -> Entry:
-    if not is_binary_input(part.content):
-        raise _malformed(part.name, TypeError(_SYNC))
+    """Return a file part's entry, the text of a member typed `str` in the charset of the part's media type."""
+    content = part.content
+    text = content if plan.text and isinstance(content, str) else None
+    if text is None and not is_binary_input(content):
+        raise request_failure(("body", part.name), cause=TypeError(_SYNC))
     try:
         media_type = plan.media(part.content_type) if plan.content_types else part.content_type
         if media_type is None and plan.content_types:
             raise ParameterEncodingError(MEDIA_OUTSIDE_ENCODING)
+        sent = content if text is None else encode_text(text, media_type or _OCTETS)
     except (CodecError, TypeError, AttributeError) as error:
-        raise _malformed(part.name, error) from None
-    return _entry(part.name, part.content, media_type or _OCTETS, part.headers, part.filename)
+        raise request_failure(("body", part.name), cause=error) from None
+    return _entry(part.name, sent, media_type or _OCTETS, part.headers, part.filename)
 
 
 def _named(part: object) -> bool:
@@ -417,7 +413,7 @@ def encode_parts(
     A file part without a media type is sent as application/octet-stream, and the body in the media type `sent` names.
     """
     if not is_multipart(body):
-        raise _malformed(None, TypeError(_MULTIPART))
+        raise request_failure(("body",), cause=TypeError(_MULTIPART))
     declared = {} if plans is None else {plan.name: plan for plan in plans}
     entries: list[Entry] = []
     for part in body.parts:

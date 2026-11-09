@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Entry": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Chain"
+      }
+    },
+    "Chain": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Link"
+          }
+        }
+      ]
+    },
+    "Link": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Chain"
+      }
+    },
+    "Holder": {
+      "type": "object",
+      "properties": {
+        "e": {
+          "$ref": "#/$defs/Entry"
+        }
+      }
+    }
+  }
+}

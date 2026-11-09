@@ -10,8 +10,8 @@ Options are grouped from shared CLI metadata and link back to their generated re
 |-------|---------|-------------|
 | [Custom Templates](#custom-templates) | 3 | Custom templates and extra template data. |
 | [Generated Output](#generated-output) | 9 | Generated file headers and reproducible output. |
-| [Imports](#imports) | 4 | Generated imports and type-checking import behavior. |
-| [Output Formatting](#output-formatting) | 5 | Formatter selection, quote style, and string wrapping. |
+| [Imports](#imports) | 5 | Generated imports and type-checking import behavior. |
+| [Output Formatting](#output-formatting) | 6 | Formatter selection, quote style, and string wrapping. |
 
 ## Custom Templates {#custom-templates}
 
@@ -47,6 +47,7 @@ Generated imports and type-checking import behavior.
 |--------|-------------|
 | [`--additional-imports`](../template-customization.md#additional-imports) | Add custom imports to generated output files. |
 | [`--no-use-type-checking-imports`](../template-customization.md#no-use-type-checking-imports) | Keep generated model imports available at runtime when using Ruff fixes. |
+| [`--rename-submodules-hidden-by-classes`](../template-customization.md#rename-submodules-hidden-by-classes) | Rename a submodule named like a class of its package. |
 | [`--use-exact-imports`](../template-customization.md#use-exact-imports) | Import exact types instead of modules. |
 | [`--use-type-checking-imports`](../template-customization.md#use-type-checking-imports) | Allow Ruff to move typing-only imports into TYPE_CHECKING blocks. |
 
@@ -59,5 +60,6 @@ Formatter selection, quote style, and string wrapping.
 | [`--custom-formatters`](../template-customization.md#custom-formatters) | Apply custom Python code formatters to generated output. |
 | [`--custom-formatters-kwargs`](../template-customization.md#custom-formatters-kwargs) | Pass custom arguments to custom formatters via inline JSON or a JSON file path. |
 | [`--formatters`](../template-customization.md#formatters) | Specify code formatters to apply to generated output. |
+| [`--no-formatters`](../template-customization.md#no-formatters) | Select no formatter for the generated output. |
 | [`--use-double-quotes`](../template-customization.md#use-double-quotes) | Use double quotes for string literals in generated code. |
 | [`--wrap-string-literal`](../template-customization.md#wrap-string-literal) | Wrap long string literals across multiple lines. |

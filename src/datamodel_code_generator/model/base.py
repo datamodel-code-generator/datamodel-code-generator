@@ -6,31 +6,52 @@ representation, and DataModel as the abstract base for all model types.
 
 from __future__ import annotations
 
-import ast
+import ast  # noqa: F401  # Preserve the established model.base export.
 import re
 import sys
 from abc import ABC, abstractmethod
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 from contextlib import contextmanager
 from contextvars import ContextVar
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import (
+    dataclass,  # noqa: F401  # Preserve the established model.base export.
+)
 from functools import cached_property, lru_cache
-from itertools import accumulate, chain, takewhile
+from itertools import (
+    accumulate,  # noqa: F401  # Preserve the established model.base export.
+    chain,
+    takewhile,
+)
 from pathlib import Path
 from threading import RLock
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, NamedTuple, Optional, TypeAlias, TypeVar, cast
 from warnings import warn
 
 from pydantic import ConfigDict, Field
-from typing_extensions import Self, deprecated, final, override
+from typing_extensions import Self, Sentinel, deprecated, final, override
 
-from datamodel_code_generator import Error, cached_path_exists
-from datamodel_code_generator._checks import CheckArea, check_mode
-from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY
-from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
-from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
-from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of
+from datamodel_code_generator import Error, _mro, cached_path_exists
+from datamodel_code_generator._caches import BoundedLru
+from datamodel_code_generator._constraint_applicability import (
+    UNION_SIBLING_CONSTRAINTS_KEY,
+    VALUES_AS_WRITTEN_KEY,
+    render_drop,
+)
+from datamodel_code_generator._context_scope import context_values
+from datamodel_code_generator._format_types import (
+    NEWEST_TARGET,
+    PythonVersion,
+)
+from datamodel_code_generator._free_names import numbered_class as _numbered_class
+from datamodel_code_generator._graph_links import add_child, base_owners, chain_root, data_type_children, nearest_field
+from datamodel_code_generator._internal_utils import (
+    get_most_of_parent,  # noqa: F401  # Preserve the established model.base export.
+    to_hashable,
+)
+from datamodel_code_generator._message_text import for_count
+from datamodel_code_generator._model_keys import FieldKey, ModelKey, model_key_of, names_by_path
+from datamodel_code_generator._module_paths import flat_name, written_name
 from datamodel_code_generator._parse_memo import (
     MemoTable,
     bump_deep,
@@ -40,41 +61,80 @@ from datamodel_code_generator._parse_memo import (
     memoized,
     note_reads,
 )
+from datamodel_code_generator._python_syntax import (
+    _normalize_string,
+    _single_line_docstring,
+    comment_safe,  # noqa: F401  # Preserve the established model.base export.
+    escape_docstring,
+    format_docstring,
+    inline_comment_safe,
+)
 from datamodel_code_generator._records import record
-from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
-from datamodel_code_generator._requirements import backport_path, python_target_meets
-from datamodel_code_generator._target_unicode import host_identifiers, host_parsable
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
+from datamodel_code_generator._requirements import REQUIREMENTS, backport_path, python_target_meets
+from datamodel_code_generator._target_unicode import (
+    host_identifiers,  # noqa: F401  # Preserve the established model.base export.
+    host_parsable,  # noqa: F401  # Preserve the established model.base export.
+    is_importable_part,
+)
+from datamodel_code_generator._user_keys import template_data_keys
+from datamodel_code_generator.enums import DataclassArguments
 from datamodel_code_generator.imports import (
-    IMPORT_ANNOTATED,
-    IMPORT_ANY,
-    IMPORT_OPTIONAL,
-    IMPORT_UNION,
+    IMPORT_ANNOTATED,  # noqa: F401  # Preserve the established model.base export.
+    IMPORT_ANY,  # noqa: F401  # Preserve the established model.base export.
+    IMPORT_OPTIONAL,  # noqa: F401  # Preserve the established model.base export.
+    IMPORT_UNION,  # noqa: F401  # Preserve the established model.base export.
     Import,
 )
+from datamodel_code_generator.model import _field_imports
 from datamodel_code_generator.model._decisions.assignment import (
     AssignmentInputs,
     DataclassVisibility,
     ModelWritten,
     PydanticDataclassWritten,
     classify_assignment,
+    excluded_from_init,
     participates_in_constructor,
+    requires_value,
+)
+from datamodel_code_generator.model._decisions.hashability import (
+    HashClassFacts,
+    SetItemHash,
+    class_set_item_hash,
+    dict_key_takes_root_type,
+    keeps_builtin_hash,
+    set_items_may_keep_builtin_hash,
 )
 from datamodel_code_generator.model._decisions.literal_default import const_type, decide_literal_default
-from datamodel_code_generator.model._decisions.nullability import field_renders_none
+from datamodel_code_generator.model._field_imports import (
+    _annotation_typing_import_names,  # noqa: F401  # Preserve the established model.base export.
+    _TypingImportNames,  # noqa: TC001  # Preserve the established model.base export.
+)
 from datamodel_code_generator.model._render_plan import (
+    DEFAULT_VALUE,
+    PLAIN_ANNOTATION,
     RENDER_READY,
     AssignmentFacts,
     FieldDefault,
     FieldRenderPlan,
+    Kwarg,
     RuleId,
     Why,
-    frozen_render_plan,
     visible_nested_factories,
+)
+from datamodel_code_generator.model._rendered_names import (
+    FieldNameBindings,
+    _bare_loads_of,  # noqa: F401  # Preserve the established model.base export.
+    _bind_bare_loads,
+    _bind_field_expressions,
 )
 from datamodel_code_generator.python_literal import (
     _make_internal_type_expression,
-    _normalize_string,
+    _make_referencing_type_expression,
+    message_repr,
     represent_python_value,
+    stable_pformat,
+    stable_repr,
 )
 from datamodel_code_generator.reference import Reference, _BaseModel
 from datamodel_code_generator.types import (
@@ -90,36 +150,45 @@ if TYPE_CHECKING:
 
     from jinja2 import Environment, Template
 
-    from datamodel_code_generator import DataclassArguments
     from datamodel_code_generator import types as _types
-    from datamodel_code_generator._checks import CheckMode
+    from datamodel_code_generator._constraint_applicability import ConstraintOptions, OutputKeywords, RenderDrop
+    from datamodel_code_generator._parse_memo import ParseMemo
     from datamodel_code_generator._reference_graph import ReachedModels
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model import runtime_validation as _runtime_validation
-    from datamodel_code_generator.model._decisions.assignment import AssignmentRow, WrittenAssignment
+    from datamodel_code_generator.model._decisions.assignment import AssignmentRow, DefaultState, WrittenAssignment
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
     from datamodel_code_generator.model._decisions.nullability import FieldNullSource
     from datamodel_code_generator.model._render_plan import (
         NestedFactoryMetadata,
+        Omitted,
         PlannedField,
         RenderInputs,
         RenderReady,
     )
+    from datamodel_code_generator.model._views import FieldView, ModelForm
     from datamodel_code_generator.python_literal import PythonRuntimeExpression
 
 TEMPLATE_DIR: Path = Path(__file__).parents[0] / "template"
-_TYPING_IMPORT_NAMES: frozenset[str] = frozenset({
-    IMPORT_ANNOTATED.import_,
-    IMPORT_OPTIONAL.import_,
-    IMPORT_UNION.import_,
-})
+
+
+def overrides_builtin_templates(directory: Path) -> bool:
+    """Return whether a custom template directory overrides the builtin templates: any directory but the builtin one."""
+    return directory.resolve() != TEMPLATE_DIR.resolve()
+
+
 _ADDITIONAL_PROPERTIES_REFERENCE_CLASSES_TEMPLATE_DATA_KEY = "additionalPropertiesReferenceClasses"
 _ADDITIONAL_PROPERTIES_TEMPLATE_DATA_KEY = "additionalProperties"
 _ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY = "additionalPropertiesType"
+_FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY = "_forbid_unknown_fields"
+"""Set under --use-msgspec-forbid-unknown-fields on a model whose schema admits no property but its own, and on every
+model with --extra-fields forbid."""
 # This key remains part of the legacy template contract, including custom outputs.
 _USE_TYPED_DICT_BACKPORT_TEMPLATE_DATA_KEY = "use_typeddict_backport"
+_USE_CLOSED_TYPED_DICT_TEMPLATE_DATA_KEY = "use_closed_typed_dict"
+_KEEP_FALSE_DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY = "keep_false_dataclass_arguments"
 _MODULE_NAME_INVALID_CHAR_PATTERN = re.compile(r"[^0-9a-zA-Z_]")
 _MODULE_NAME_INVALID_CHAR_WITH_DOTS_PATTERN = re.compile(r"[^0-9a-zA-Z_.]")
 _MAX_MISSING_CUSTOM_TEMPLATE_SUBDIRS = 128
@@ -130,6 +199,9 @@ _NESTED_MODEL_DEFAULT_FACTORY_ORDER_KEY = "_nested_model_default_factory_order"
 _NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_KEYS_KEY = "_nested_model_default_factory_recursive_keys"
 _PATH_PARTNER_KEY = "_path_partner_model_key"
 _REQUIRED_INHERITED_DEFAULT_FACTORY_KEY = "_required_inherited_default_factory"
+_REUSE_PATH_SUFFIX: Final = "/reuse"
+"""The suffix of the path of the empty subclass reuse makes of a model (``DataModel.create_reuse_model``): no resolver
+key holds it, and the target binding takes it off to find the schema and the model it replaced."""
 _UNTAKEN_CONSTRAINTS_KEY = "_untaken_constraints"
 _MEMBER_UNTAKEN_CONSTRAINTS_KEY = "_member_untaken_constraints"
 _OVERRIDDEN_CONSTRAINTS_KEY = "_overridden_constraints"
@@ -138,18 +210,15 @@ _EXTRA_TEMPLATE_DATA_MAPPING_ERROR = "extra template data must be a dictionary"
 _EXTRA_TEMPLATE_DATA_KEY_ERROR = "extra template data keys must be strings"
 _DATACLASS_ARGUMENTS_MAPPING_ERROR = "dataclass_arguments must be a dictionary"
 _DATACLASS_ARGUMENTS_KEY_ERROR = "dataclass_arguments keys must be strings"
-_DATACLASS_ARGUMENT_NAMES: frozenset[str] = frozenset({
-    "eq",
-    "frozen",
-    "init",
-    "kw_only",
-    "match_args",
-    "order",
-    "repr",
-    "slots",
-    "unsafe_hash",
-    "weakref_slot",
-})
+_TEMPLATE_DATA_MODEL_VALUE_ERRORS: dict[str, str] = {
+    "dataclass_arguments": _DATACLASS_ARGUMENTS_MAPPING_ERROR,
+    "description": "description must be a string",
+    "decorators": "decorators must be a list of strings",
+    "methods": "methods must be a list of strings",
+}
+_TEMPLATE_DATA_OVERRIDABLE_KEYS: frozenset[str] = frozenset({*_TEMPLATE_DATA_MODEL_VALUE_ERRORS, "base_class"})
+_TEMPLATE_DATA_RENAME_HINT = "; rename a model with --model-name-map or --class-name"
+_DATACLASS_ARGUMENT_NAMES: frozenset[str] = frozenset(DataclassArguments.__annotations__)
 _BUILTIN_TEMPLATE_INTERNAL_DATA_KEYS: frozenset[str] = frozenset({
     "class_body_lines",
     "config_items",
@@ -165,7 +234,7 @@ _BUILTIN_TEMPLATE_INTERNAL_DATA_KEYS: frozenset[str] = frozenset({
 })
 _RESOLVE_REFERENCE_ACTION_CAPABILITIES_MARKER = "__datamodel_code_generator_resolve_reference_action_capabilities__"
 MroT = TypeVar("MroT")
-_AnswerT = TypeVar("_AnswerT")
+_BuiltT = TypeVar("_BuiltT")
 _CustomTemplateSignature = bytes
 
 
@@ -235,190 +304,19 @@ class _MissingCustomTemplateState:
     __slots__ = ("count", "dependencies", "lock", "overflow", "paths", "signatures")
 
     def __init__(self) -> None:
+        self.lock = RLock()
+        self.reset()
+
+    def reset(self) -> None:
+        """Forget every remembered missing path, signature and dependency."""
         self.paths: dict[Path, tuple[Path, ...]] = {}
-        self.signatures: OrderedDict[Path, _CustomTemplateSignature] = OrderedDict()
+        self.signatures: BoundedLru[Path, _CustomTemplateSignature] = BoundedLru()
         self.dependencies: dict[Path, _CustomTemplateDependencies] = {}
         self.count = 0
         self.overflow = False
-        self.lock = RLock()
 
 
 _missing_custom_template_state = _MissingCustomTemplateState()
-
-
-@dataclass(slots=True)
-class _TypingImportNames:
-    """The typing imports a field's type hint needs, collected over its type tree into one value."""
-
-    union: bool = False
-    optional: bool = False
-    annotated: bool = False
-    any_: bool = False
-
-    def add(self, name: str) -> None:
-        match name:
-            case IMPORT_UNION.import_:
-                self.union = True
-            case IMPORT_OPTIONAL.import_:
-                self.optional = True
-            case IMPORT_ANNOTATED.import_:
-                self.annotated = True
-
-    def requirements(self) -> _TypingImportRequirements:
-        return _TypingImportRequirements(self.union, self.optional, self.annotated, self.any_)
-
-
-@record
-class _TypingImportRequirements:
-    union: bool = False
-    optional: bool = False
-    annotated: bool = False
-    any_: bool = False
-
-    def allows(self, import_: Import) -> bool:
-        match import_:
-            case _ if import_ == IMPORT_UNION:
-                return self.union
-            case _ if import_ == IMPORT_OPTIONAL:
-                return self.optional
-        return True
-
-    @property
-    def leading_imports(self) -> tuple[Import, ...]:
-        return (IMPORT_ANY,) if self.any_ else ()
-
-    @property
-    def trailing_imports(self) -> tuple[Import, ...]:
-        imports = []
-        if self.union:
-            imports.append(IMPORT_UNION)
-        if self.optional:
-            imports.append(IMPORT_OPTIONAL)
-        if self.annotated:
-            imports.append(IMPORT_ANNOTATED)
-        return tuple(imports)
-
-
-@lru_cache(maxsize=1024)
-def _annotation_typing_import_names(annotation: str) -> frozenset[str]:
-    if annotation in _TYPING_IMPORT_NAMES:
-        return frozenset((annotation,))
-    if annotation.isidentifier():
-        return frozenset()
-
-    try:
-        tree = ast.parse(lent.source if (lent := host_identifiers(annotation)) else annotation, mode="eval")
-    except SyntaxError:
-        return frozenset()
-
-    return frozenset(
-        node.id for node in ast.walk(tree) if isinstance(node, ast.Name) and node.id in _TYPING_IMPORT_NAMES
-    )
-
-
-class _EscapedDocstring(str):  # noqa: FURB189
-    """Marker for values already escaped for a generated Python docstring."""
-
-    __slots__ = ()
-
-
-def escape_docstring(value: str | None) -> str | None:
-    r"""Escape special characters in a docstring to prevent syntax errors.
-
-    Handles:
-    - Backslashes: `\\` -> `\\\\` (must be escaped first)
-    - Triple quotes: `\"\"\"` -> `\\\"\\\"\\\"` (would terminate docstring)
-
-    Args:
-        value: The string to escape, or None.
-
-    Returns:
-        The escaped string, or None if input was None.
-    """
-    if value is None:
-        return None
-    if type(value) is _EscapedDocstring:
-        return value
-    value = _normalize_string(value)
-    # Escape backslashes first, then triple quotes. Retain the original string
-    # when no escaping is needed so custom-template fast paths stay allocation-free.
-    escaped = value.replace("\\", "\\\\").replace('"""', '\\"\\"\\"')
-    return _EscapedDocstring(escaped) if escaped != value else value
-
-
-def _ends_with_unescaped_quote(value: str) -> bool:
-    """Return whether *value* ends with a double quote that is not escaped."""
-    if not value.endswith('"'):
-        return False
-
-    backslash_count = 0
-    for char in reversed(value[:-1]):
-        if char != "\\":
-            break
-        backslash_count += 1
-    return backslash_count % 2 == 0
-
-
-def format_docstring(value: str | None, indent_spaces: int = 0, *, use_single_line_docstring: bool = False) -> str:
-    """Format *value* as a docstring as per PEP 257.
-
-    PEP 257 recommends that docstrings that can fit on one line should be formatted on a
-    single line, for consistency and readability. When use_single_line_docstring is
-    false, docstrings retain the historical multi-line formatting. It is assumed that
-    the opening triple-quotes are indented appropriately in the template. If it's a
-    multi-line docstring, each line including the closing triple-quotes will be indented
-    as per indent_spaces.
-
-    Args:
-        value: docstring text
-        indent_spaces: Spaces to indent for all lines after the opening triple-quotes
-        use_single_line_docstring: Use one-line docstrings when possible
-
-    Returns:
-        Empty string when `value` is falsy; otherwise the docstring block.
-    """
-    if value is None:
-        return ""
-    if type(value) is not _EscapedDocstring:
-        value = _normalize_string(value)
-    if not value.strip():
-        return ""
-
-    escaped = escape_docstring(value) or ""
-
-    if use_single_line_docstring and "\n" not in value and "\r" not in value:
-        if _ends_with_unescaped_quote(escaped):
-            escaped = f'{escaped[:-1]}\\"'
-
-        return f'"""{escaped}"""'
-
-    indent = max(indent_spaces, 0) * " "
-    if indent:
-        escaped = "\n".join(f"{indent}{line}" if line else "" for line in escaped.split("\n"))
-        return f'"""\n{escaped}\n{indent}"""'
-    return f'"""\n{escaped}\n"""'
-
-
-def comment_safe(value: str | None) -> str | None:
-    """Normalize line endings before rendering text in Python comments.
-
-    Built-in union templates already prefix LF continuation lines with ``# ``.
-    This helper converts CRLF and bare CR into LF so that existing template
-    behavior keeps the whole description inside the comment block.
-    """
-    if value is None:
-        return None
-    value = _normalize_string(value)
-    # Collapse CRLF before converting lone CR.
-    return value.replace("\r\n", "\n").replace("\r", "\n")
-
-
-def inline_comment_safe(value: str | None) -> str | None:
-    """Make a value safe for a generated inline Python comment."""
-    if value is None:
-        return None
-    safe_value = comment_safe(value) or ""
-    return safe_value.replace("\v", "\n").replace("\f", "\n").replace("\n", "\n# ")
 
 
 def _safe_extra_template_data(
@@ -478,10 +376,40 @@ def _normalize_template_data_keys(extra_template_data: dict[str, Any]) -> dict[s
             raise Error(_EXTRA_TEMPLATE_DATA_KEY_ERROR)
         normalized_key = _normalize_string(key)
         if normalized_key in normalized_template_data:
-            msg = f"extra template data contains duplicate key {normalized_key!r}"
+            msg = f"extra template data contains duplicate key {message_repr(normalized_key)}"
             raise Error(msg)
         normalized_template_data[normalized_key] = value
     return normalized_template_data
+
+
+def _written_dataclass_arguments(arguments: Mapping[str, Any], *, keep_false: bool) -> dict[str, Any]:
+    """Return the decorator arguments a dataclass writes: those set, and those set to False when ``keep_false``.
+
+    The built-in templates write them by the same rule, reading ``keep_false_dataclass_arguments`` of the template
+    data (``--keep-false-dataclass-arguments``). An argument the decorator leaves out takes its default, so ``eq=False``
+    left out compares by value, as ``eq`` does by default.
+    """
+    return {
+        name: value for name, value in arguments.items() if value is not None and (keep_false or value is not False)
+    }
+
+
+def _mark_forbids_unknown_fields(template_data: dict[str, Any]) -> None:
+    """Mark the template data of a model whose schema admits no property but its own.
+
+    The parser marks it under --use-msgspec-forbid-unknown-fields, and a msgspec Struct reads it.
+    """
+    template_data[_FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY] = True
+
+
+def _forbids_unknown_fields_marked(template_data: Mapping[str, Any]) -> bool:
+    """Return whether ``_mark_forbids_unknown_fields`` marked the template data of a model."""
+    return bool(template_data.get(_FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY))
+
+
+def _order_refusals(arguments: Mapping[str, bool]) -> list[str]:
+    """Return why ``dataclass()`` refuses ``order=True`` beside ``eq=False``: it raises ``ValueError``."""
+    return ["order=True needs eq=True"] if arguments.get("order") and arguments.get("eq") is False else []
 
 
 def _safe_dataclass_arguments(dataclass_arguments: Any) -> dict[str, bool]:
@@ -495,13 +423,13 @@ def _safe_dataclass_arguments(dataclass_arguments: Any) -> dict[str, bool]:
             raise Error(_DATACLASS_ARGUMENTS_KEY_ERROR)
         normalized_key = _normalize_string(key)
         if normalized_key not in _DATACLASS_ARGUMENT_NAMES:
-            msg = f"invalid dataclass argument {normalized_key!r}"
+            msg = f"invalid dataclass argument {message_repr(normalized_key)}"
             raise Error(msg)
         if type(value) is not bool:
-            msg = f"dataclass argument {normalized_key!r} must be a bool"
+            msg = f"dataclass argument {message_repr(normalized_key)} must be a bool"
             raise Error(msg)
         if normalized_key in safe_arguments:
-            msg = f"dataclass_arguments contains duplicate key {normalized_key!r}"
+            msg = f"dataclass_arguments contains duplicate key {message_repr(normalized_key)}"
             raise Error(msg)
         safe_arguments[normalized_key] = value
     return safe_arguments
@@ -600,6 +528,44 @@ def _overlay_constraints(
     return constraints_class.model_validate(values) if issubclass(constraints_class, ConstraintsBase) else None
 
 
+def _normalized_constraint_kwargs(  # noqa: PLR0913
+    constraints: Mapping[str, Any],
+    omitted: list[Omitted],
+    output: OutputKeywords,
+    rule: RuleId,
+    drop: Callable[[str, str, Any, tuple[str, Any] | None], Omitted | None],
+    *,
+    is_float_type: bool,
+    is_int_type: bool,
+) -> dict[str, Kwarg]:
+    """Return the constraint arguments a call writes, normalized for the field's numeric type, merging collisions.
+
+    A constraint that ``drop`` returns an entry for, given its item, keyword, value and normalized form (None where
+    ``strict_number_constraint`` leaves it out), goes to ``omitted`` as that entry.
+    """
+    from datamodel_code_generator.types import merge_normalized_constraint, strict_number_constraint  # noqa: PLC0415
+
+    values: dict[str, Any] = {}
+    sources: dict[str, tuple[str, ...]] = {}
+    for k, v in constraints.items():
+        item = f"constraint:{k}"
+        normalized = strict_number_constraint(output, k, v, is_float_type=is_float_type, is_int_type=is_int_type)
+        if (dropped := drop(item, k, v, normalized)) is not None:
+            omitted.append(dropped)
+            continue
+        key, value = cast("tuple[str, Any]", normalized)
+        merge_normalized_constraint(values, key, value)
+        sources[key] = (*sources.get(key, ()), item)
+    return {
+        key: Kwarg(key, value, Why(rule, sources[key][0].removeprefix("constraint:")), sources[key])
+        for key, value in values.items()
+    }
+
+
+NULLABLE_WITHOUT_DEFAULT_KEY: Final = "_nullable_without_default"
+"""The ``nullable`` a property field reads without its default, where it differs (``nullable_without_default``)."""
+
+
 class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     """Base class for model field representation and rendering."""
 
@@ -617,17 +583,21 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     NEEDS_MODEL_REGEX_ENGINE: ClassVar[Callable[[list[DataModelFieldBase]], bool] | None] = None
     """Return whether a pattern of the fields selects a regex engine in the config of the model that holds them."""
     PATTERN_NEEDS_HOLDER_ENGINE: ClassVar[
-        Callable[[type[DataModel], str, PythonVersion, TargetPydanticVersion | None], bool] | None
+        Callable[[type[DataModel], str, TargetPydanticVersion | None], bool] | None
     ] = None
     """Return whether a pattern in a model of the given root type needs a regex engine of the models that use it.
 
-    It takes the root type, the pattern and the target Python and Pydantic versions.
+    It takes the root type, the pattern and the target Pydantic version.
     """
     SUPPORTS_FIELD_CONSTRAINTS: ClassVar[bool] = False
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = False
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = None
     SUPPORTS_DISCRIMINATOR: ClassVar[bool] = False
     _FIELD_ASSIGNMENT_ROW: ClassVar[AssignmentRow] = "model"
+    _FREEZES_RENDER_PLAN: ClassVar[bool] = False
+    """Whether the field renders from a plan that the parse freezes at B2 (``_build_frozen_render_plan``)."""
+    VALIDATES_STRUCTURED_DEFAULTS: ClassVar[bool] = False
+    """Whether the output validates or converts an object default into its model, rejecting an incomplete one."""
 
     if TYPE_CHECKING:
 
@@ -706,7 +676,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Return the dropped constraints warning for ``reason``, naming the model and field that leave them out."""
         return (
             f"{reason}; {self._constraint_owner} is generated without "
-            f"{'this constraint' if count == 1 else 'these constraints'}."
+            f"{for_count(count, 'this constraint', 'these constraints')}."
         )
 
     @property
@@ -714,6 +684,16 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Return the model and field that a constraint warning names; the field of a root model is its model."""
         owner = getattr(self.parent, "class_name", "")
         return f"{owner}.{self.name}" if self.name and not getattr(self.parent, "IS_ROOT_MODEL", False) else owner
+
+    @property
+    def written_constraints(self) -> Mapping[str, Any]:
+        """The constraint values the field writes as ``Field()`` arguments, by schema keyword: none here."""
+        return {}
+
+    @property
+    def union_sibling_constraints(self) -> Mapping[str, Any] | None:
+        """Return the constraints the field writes from the keywords a schema declares beside a union, by keyword."""
+        return self.__dict__.get(UNION_SIBLING_CONSTRAINTS_KEY)
 
     @property
     def untaken_constraints(self) -> tuple[dict[str, Any], dict[str, str]]:
@@ -764,11 +744,12 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Remember that ``--type-overrides`` replaces the type hint ``replaced`` and ``count`` constraints with it."""
         self.__dict__[_OVERRIDDEN_CONSTRAINTS_KEY] = (replaced, count)
 
-    def unconstrain_union_members(self) -> bool | None:
+    def unconstrain_union_members(self, options: ConstraintOptions | None = None) -> bool | None:
         """Write union members without the constraints the output model cannot check on one member alone.
 
-        Return False when the field stayed as it was; None, which an override that returns nothing gives, counts as a
-        change.
+        ``options`` are the constraint options of the run (``DataTypeManager.constraint_options``), given only under
+        ``--read-msgspec-union-bounds-exactly``. Return False when the field stayed as it was; None, which an override
+        that returns nothing gives, counts as a change.
         """
 
     def inherit_unconstrained_union_members(self, source: DataModelFieldBase) -> None:
@@ -827,39 +808,26 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             self,
             None,
             lambda: any(
-                _reference_names_model(d.reference, parent, "self reference")
-                for d in self.data_type.all_data_types
-                if d.reference
+                _reference_names_model(d.reference, parent) for d in self.data_type.all_data_types if d.reference
             ),
         )
 
-    @property
-    def _can_apply_constraints(self) -> bool:
-        """Apply constraints to containers without suppressing recursive item types."""
-        return self._constraints_blocked_by() is None
+    def _constraints_blocked_by(self, *, anyurl_outside_container: bool = False) -> RenderDrop | None:
+        """Return why the field's call cannot write its constraints, or None when it can (``render_drop``)."""
+        return render_drop(
+            self_reference_outside_container=self.self_reference() and self._self_reference_outside_container(),
+            strict_arguments=bool(self.data_type.strict and self.data_type.kwargs),
+            anyurl_outside_container=anyurl_outside_container,
+        )
 
-    def _constraints_blocked_by(self) -> Literal["self-reference-container", "strict-kwargs"] | None:
-        """Return why the field's call cannot write its constraints, or None when it can.
-
-        A field naming its own model outside a container takes none; a strict type with arguments writes them itself.
-        """
-        if self.self_reference():
-            data_type = self.data_type
-            while True:
-                if (
-                    data_type.is_list  # noqa: PLR0916
-                    or data_type.is_sequence
-                    or data_type.is_dict
-                    or data_type.is_mapping
-                    or data_type.is_set
-                    or data_type.is_frozen_set
-                    or data_type.is_tuple
-                ):
-                    break
-                if data_type.alias or data_type.type or data_type.reference or len(data_type.data_types) != 1:
-                    return "self-reference-container"
-                data_type = data_type.data_types[0]
-        return "strict-kwargs" if self.data_type.strict and self.data_type.kwargs else None
+    def _self_reference_outside_container(self) -> bool:
+        """Return whether the field's type names its model outside a container, through single-member wrappers."""
+        data_type = self.data_type
+        while not data_type._is_container:  # noqa: SLF001
+            if not data_type._writes_nothing_of_its_own or len(data_type.data_types) != 1:  # noqa: SLF001
+                return True
+            data_type = data_type.data_types[0]
+        return False
 
     @property
     def _use_union_operator(self) -> bool:
@@ -875,11 +843,14 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
     def _type_hint_from_data_type(self, data_type: DataType, *, base: bool = False) -> str:
         """Get the type hint string, or with ``base`` the base hint, for a field data type, including nullability."""
-        type_hint = data_type.base_type_hint if base else data_type.type_hint
+        if base:
+            type_hint, hint_has_none = data_type.base_type_hint, None
+        else:
+            type_hint, hint_has_none = data_type._type_hint_and_null()  # noqa: SLF001
 
         if not type_hint:
             return NONE
-        if self._field_null_source(data_type) is None:
+        if self._field_null_source(data_type, hint_has_none=hint_has_none) is None:
             return type_hint
         return data_type._optional_hint(type_hint, self._use_union_operator)  # noqa: SLF001
 
@@ -888,24 +859,20 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         data_type: DataType,
         *,
         pending_reference_null: bool = False,
+        hint_has_none: bool | None = None,
     ) -> FieldNullSource | None:
         """Return why the field writes None around the hint of ``data_type`` (``field_renders_none``).
 
-        Without ``pending_reference_null`` the hint is the one ``type_hint`` renders; with it, imports collected
-        without a hint read the type's own None and pass its model's.
+        Without ``pending_reference_null`` the hint is the one ``type_hint`` renders, whose None ``hint_has_none``
+        gives when the caller rendered it; with it, imports collected without a hint read the type's own None and pass
+        its model's.
         """
-        required = self.required
-        hint_has_none = (
-            data_type.is_optional if pending_reference_null else data_type._hint_null_source() is not None  # noqa: SLF001
-        )
-        return field_renders_none(
-            hint_has_none=hint_has_none and data_type.type != ANY,
-            has_default_factory=self.has_default_factory,
-            nullable=self.nullable,
-            required=required,
-            type_has_null=required and self.type_has_null,
-            fall_back_to_nullable=not required and self.fall_back_to_nullable,
-            pending_reference_null=pending_reference_null,
+        if hint_has_none is None:
+            hint_has_none = (
+                data_type.is_optional if pending_reference_null else data_type._hint_null_source() is not None  # noqa: SLF001
+            )
+        return _field_imports.field_none_source(
+            self, hint_has_none=hint_has_none and data_type.type != ANY, pending_reference_null=pending_reference_null
         )
 
     @property
@@ -944,72 +911,33 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
         ``needs_annotated`` is passed in so subclasses can precompute it.
         """
-        data_type = data_type or self.data_type
-        if self._can_collect_imports_without_type_hint(needs_annotated=needs_annotated, data_type=data_type):
-            return self._collect_field_imports_without_type_hint(data_type=data_type)
-        requirements = self._typing_import_requirements(needs_annotated=needs_annotated, data_type=data_type)
-        imports = tuple(data_type.all_imports)
-        if requirements.any_ and IMPORT_ANY not in imports:
-            imports = chain_as_tuple(requirements.leading_imports, imports)
-
-        filtered_imports = tuple(import_ for import_ in imports if requirements.allows(import_))
-        missing_imports = tuple(import_ for import_ in requirements.trailing_imports if import_ not in filtered_imports)
-        if not missing_imports:
-            return filtered_imports
-        return chain_as_tuple(filtered_imports, missing_imports)
+        return _field_imports.collect_field_imports(self, needs_annotated=needs_annotated, data_type=data_type)
 
     def _collect_field_imports_without_type_hint(self, *, data_type: DataType) -> tuple[Import, ...]:
-        needs_optional = self._needs_optional_import_without_type_hint(data_type=data_type)
-        if self._can_skip_data_type_imports(data_type=data_type):
-            return (IMPORT_OPTIONAL,) if needs_optional else ()
-
-        imports = tuple(data_type.all_imports)
-        if needs_optional and IMPORT_OPTIONAL not in imports:
-            return chain_as_tuple(imports, (IMPORT_OPTIONAL,))
-        return imports
+        return _field_imports.collect_field_imports_without_type_hint(self, data_type=data_type)
 
     def _import_state_data_type(self) -> DataType | None:
         """Return the data type ``imports`` collects from, or None when it collects without a type hint."""
-        return self._import_state_target(
-            needs_annotated=self.use_annotated and self.needs_annotated_import, data_type=self.data_type
-        )
+        return _field_imports.import_state_data_type(self)
 
     def _hint_renders_own_type(self) -> bool:  # noqa: PLR6301
         """Return whether the type hint renders the field's own data type rather than a copy of it."""
         return True
 
     def _import_state_target(self, *, needs_annotated: bool, data_type: DataType) -> DataType | None:
-        if self._can_collect_imports_without_type_hint(needs_annotated=needs_annotated, data_type=data_type):
-            return None
-        return data_type
+        return _field_imports.import_state_target(self, needs_annotated=needs_annotated, data_type=data_type)
 
     def _write_pre_render_nullability(self, data_type: DataType) -> None:
         """Write the None of the nullable models the type names and of bare None union members, as L3 imports did."""
-        if data_type.reference:
-            data_type._materialize_render_state("reference-null")  # noqa: SLF001
-
-        for child in data_type.data_types:
-            self._write_pre_render_nullability(child)
-        if data_type.dict_key:
-            self._write_pre_render_nullability(data_type.dict_key)
-
-        if not data_type.is_union or data_type.preserve_union_member_order:
-            return
-        if any(self._data_type_renders_none(child) for child in data_type.data_types):
-            data_type._materialize_render_state("member-null")  # noqa: SLF001
+        _field_imports.write_pre_render_nullability(self, data_type)
 
     @staticmethod
     def _import_key(import_: Import | None) -> tuple[str, str | None, str | None, str | None] | None:
-        if import_ is None:
-            return None
-        return (import_.import_, import_.from_, import_.alias, import_.reference_path)
+        return _field_imports.import_key(import_)
 
     @staticmethod
     def _reference_source_import_key(reference: Reference | None) -> tuple[bool, bool] | None:
-        if reference is None:
-            return None
-        source = reference.source
-        return (bool(getattr(source, "nullable", False)), bool(getattr(source, "is_alias", False)))
+        return _field_imports.reference_source_import_key(reference)
 
     def _can_collect_imports_without_type_hint(
         self,
@@ -1018,304 +946,115 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         data_type: DataType | None = None,
     ) -> bool:
         """Return whether imports can be collected without rendering the type hint."""
-        if needs_annotated:
-            return False
-        if self.parent and self.parent.has_forward_reference:
-            return False
-
-        data_type = data_type or self.data_type
-        if data_type.use_serialize_as_any:
-            return False
-
-        if self._has_explicit_typing_import_requirements(data_type):
-            return False
-
-        return not (
-            data_type.data_types
-            or data_type.dict_key
-            or data_type.literals
-            or data_type.enum_member_literals
-            or (data_type.is_optional and data_type.type == ANY)
+        return _field_imports.can_collect_imports_without_type_hint(
+            self, needs_annotated=needs_annotated, data_type=data_type
         )
 
     @staticmethod
     def _has_explicit_typing_import_requirements(data_type: DataType) -> bool:
-        if data_type.python_type:
-            from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
-                iter_python_type_expr_names,
-            )
-
-            if any(
-                name in _TYPING_IMPORT_NAMES for name in iter_python_type_expr_names(data_type.python_type.expression)
-            ):
-                return True
-        for annotation in data_type._annotation_texts:  # noqa: SLF001
-            if annotation and (names := _annotation_typing_import_names(annotation)):
-                return bool(names)
-        return False
+        return _field_imports.has_explicit_typing_import_requirements(data_type)
 
     def _typing_import_requirements(
         self,
         *,
         needs_annotated: bool,
         data_type: DataType | None = None,
-    ) -> _TypingImportRequirements:
-        data_type = data_type or self.data_type
-        names = _TypingImportNames()
-        self._add_typing_import_names(data_type, names)
-        if needs_annotated:
-            names.add(IMPORT_ANNOTATED.import_)
-        if not names.optional and self._needs_field_optional_import_from_structure(data_type=data_type):
-            names.add(IMPORT_OPTIONAL.import_)
-        return names.requirements()
+    ) -> _TypingImportNames:
+        return _field_imports.typing_import_requirements(self, needs_annotated=needs_annotated, data_type=data_type)
 
     def _add_typing_import_names(self, data_type: DataType, names: _TypingImportNames) -> None:
         """Add the typing imports the hint of ``data_type`` needs to ``names``."""
-        self._add_explicit_typing_import_names(data_type, names)
-
-        if data_type.is_union:
-            self._add_union_typing_import_names(data_type, names)
-        elif len(data_type.data_types) == 1:
-            self._add_typing_import_names(data_type.data_types[0], names)
-
-        if data_type.dict_key:
-            self._add_typing_import_names(data_type.dict_key, names)
-            if not self._mapping_writes_value(data_type):
-                names.any_ = True
-
-        if data_type.discriminator:
-            names.add(IMPORT_ANNOTATED.import_)
-        if self._data_type_needs_optional_import(data_type):
-            names.add(IMPORT_OPTIONAL.import_)
+        _field_imports.add_typing_import_names(self, data_type, names)
 
     def _add_union_typing_import_names(self, data_type: DataType, names: _TypingImportNames) -> None:
         """Add the typing imports a union needs; one whose members all write nothing or None renders ``Any``."""
-        branch_keys: set[tuple[Any, ...]] = set()
-        has_none = False
-        writes_member = False
-        for child in data_type.data_types:
-            self._add_typing_import_names(child, names)
-            if self._data_type_renders_none(child):
-                has_none = True
-                continue
-            branch_keys.add(self._data_type_import_key(child))
-            writes_member = writes_member or self._data_type_writes_hint(child)
-
-        if has_none and not data_type.preserve_union_member_order and not data_type.use_union_operator:
-            names.add(IMPORT_OPTIONAL.import_)
-        ordered_none_branch_count = int(data_type.preserve_union_member_order and has_none)
-        if not writes_member and data_type.data_types and not ordered_none_branch_count:
-            names.any_ = True
-        if len(branch_keys) + ordered_none_branch_count > 1 and not data_type.use_union_operator:
-            names.add(IMPORT_UNION.import_)
+        _field_imports.add_union_typing_import_names(self, data_type, names)
 
     @staticmethod
     def _add_explicit_typing_import_names(data_type: DataType, names: _TypingImportNames) -> None:
-        if data_type.python_type:
-            from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
-                iter_python_type_expr_names,
-            )
-
-            for name in iter_python_type_expr_names(data_type.python_type.expression):
-                names.add(name)
-        for annotation in data_type._annotation_texts:  # noqa: SLF001
-            if not annotation:
-                continue
-            for name in _annotation_typing_import_names(annotation):
-                names.add(name)
+        _field_imports.add_explicit_typing_import_names(data_type, names)
 
     def _data_type_needs_optional_import(self, data_type: DataType) -> bool:
-        if data_type.use_union_operator or data_type.type == ANY:
-            return False
-        return data_type.admits_none and self._data_type_renders_importable_hint(data_type)
+        return _field_imports.data_type_needs_optional_import(self, data_type)
 
     def _needs_field_optional_import_from_structure(self, *, data_type: DataType | None = None) -> bool:
-        data_type = data_type or self.data_type
-        if self._use_union_operator or not self._data_type_renders_importable_hint(data_type):
-            return False
-        return self._field_null_source(data_type) is not None
+        return _field_imports.needs_field_optional_import_from_structure(self, data_type=data_type)
 
     def _data_type_renders_importable_hint(self, data_type: DataType) -> bool:
-        if self._data_type_renders_none(data_type):
-            return False
-        return self._data_type_has_renderable_structure(data_type)
+        return _field_imports.data_type_renders_importable_hint(self, data_type)
 
     @classmethod
     def _data_type_writes_hint(cls, data_type: DataType) -> bool:
         """Return whether a data type writes a hint: a renderable structure or a hint of its own."""
-        return cls._data_type_has_renderable_structure(data_type) or bool(data_type.type_hint)
+        return _field_imports.data_type_writes_hint(cls, data_type)
 
     @classmethod
     def _mapping_writes_value(cls, data_type: DataType) -> bool:
         """Return whether a mapping writes a value type of its own; one with a key type writes ``Any`` otherwise."""
-        return bool(data_type.alias or data_type.type) or any(
-            cls._data_type_writes_hint(child) for child in data_type.data_types
-        )
+        return _field_imports.mapping_writes_value(cls, data_type)
 
     @staticmethod
     def _data_type_has_renderable_structure(data_type: DataType) -> bool:
-        if data_type.alias or data_type.type or data_type.reference:
-            return True
-        return bool(
-            data_type.data_types
-            or data_type.dict_key
-            or data_type.literals
-            or data_type.enum_member_literals
-            or data_type.is_dict
-            or data_type.is_list
-            or data_type.is_set
-            or data_type.is_frozen_set
-            or data_type.is_mapping
-            or data_type.is_sequence
-            or data_type.is_tuple
-        )
+        return _field_imports.data_type_has_renderable_structure(data_type)
 
     def _admits_none(self) -> bool:
         """Return whether the field's annotation admits None, from the facts final at B1 and without rendering it."""
-        data_type = self.data_type
-        return (
-            data_type.admits_none
-            or self._data_type_renders_none(data_type)
-            or field_renders_none(
-                hint_has_none=False,
-                has_default_factory=self.has_default_factory,
-                nullable=self.nullable,
-                required=(required := self.required),
-                type_has_null=required and self.type_has_null,
-                fall_back_to_nullable=not required and self.fall_back_to_nullable,
-            )
-            is not None
-        )
+        return _field_imports.field_admits_none(self)
 
-    def _data_type_renders_none(self, data_type: DataType) -> bool:
-        if any((
-            data_type.is_dict,
-            data_type.is_list,
-            data_type.is_set,
-            data_type.is_frozen_set,
-            data_type.is_mapping,
-            data_type.is_sequence,
-            data_type.is_tuple,
-        )):
-            return False
-        if data_type.alias or data_type.reference or data_type.literals or data_type.enum_member_literals:
-            return False
-        if data_type.type == NONE:
-            return not data_type.data_types
-        return len(data_type.data_types) == 1 and self._data_type_renders_none(data_type.data_types[0])
+    def _data_type_renders_none(self, data_type: DataType) -> bool:  # noqa: PLR6301
+        return data_type._renders_none  # noqa: SLF001
 
     def _data_type_import_key(self, data_type: DataType) -> tuple[Any, ...]:
-        return (
-            data_type.__class__,
-            data_type.alias,
-            data_type.type,
-            data_type.python_type,
-            self._import_key(data_type.import_),
-            data_type.reference.path if data_type.reference else None,
-            self._reference_source_import_key(data_type.reference),
-            tuple(self._data_type_import_key(child) for child in data_type.data_types),
-            self._data_type_import_key(data_type.dict_key) if data_type.dict_key else None,
-            tuple(data_type.literals),
-            tuple(data_type.enum_member_literals),
-            to_hashable(data_type.kwargs),
-            data_type.strict,
-            data_type.is_custom_type,
-            data_type.admits_none,
-            data_type.is_func,
-            data_type.is_dict,
-            data_type.is_list,
-            data_type.is_set,
-            data_type.is_frozen_set,
-            data_type.is_mapping,
-            data_type.is_sequence,
-            data_type.is_tuple,
-            data_type.tuple_item_count,
-            data_type.use_standard_collections,
-            data_type.use_generic_container,
-            data_type.use_union_operator,
-            data_type.preserve_union_member_order,
-            data_type.use_serialize_as_any,
-            data_type.discriminator,
-        )
+        return _field_imports.data_type_import_key(self, data_type)
 
     def _can_skip_data_type_imports(self, *, data_type: DataType | None = None) -> bool:
         """Return whether the simple DataType cannot contribute imports."""
-        data_type = data_type or self.data_type
-        return not (
-            data_type.import_
-            or data_type.python_type
-            or data_type.kwargs
-            or data_type.is_optional
-            or data_type.is_dict
-            or data_type.is_list
-            or data_type.is_set
-            or data_type.is_frozen_set
-            or data_type.is_mapping
-            or data_type.is_sequence
-            or data_type.is_tuple
-            or data_type.use_generic_container
-        )
+        return _field_imports.can_skip_data_type_imports(self, data_type=data_type)
 
     def _needs_optional_import_without_type_hint(self, *, data_type: DataType | None = None) -> bool:
         """Return whether the field-level nullable wrapper needs typing.Optional.
 
         No hint is rendered here, so the None of a nullable model that the type names is not written yet.
         """
-        data_type = data_type or self.data_type
-        if self._use_union_operator or not self._has_renderable_data_type_without_type_hint(data_type=data_type):
-            return False
-        return self._field_null_source(data_type, pending_reference_null=data_type.names_nullable_model) is not None
+        return _field_imports.needs_optional_import_without_type_hint(self, data_type=data_type)
 
     def _has_renderable_data_type_without_type_hint(self, *, data_type: DataType | None = None) -> bool:
         """Return whether this simple DataType renders to something other than None."""
-        data_type = data_type or self.data_type
-        return bool(
-            data_type.alias
-            or data_type.type
-            or data_type.reference
-            or data_type.is_dict
-            or data_type.is_list
-            or data_type.is_set
-            or data_type.is_frozen_set
-            or data_type.is_mapping
-            or data_type.is_sequence
-            or data_type.is_tuple
-        )
+        return _field_imports.has_renderable_data_type_without_type_hint(self, data_type=data_type)
 
     @property
     def docstring(self) -> str | None:
         """Get the docstring for this field from its description and/or example."""
         parts = []
-
+        description = self.extras.get("description")
         if self.use_field_description:
-            description = self.extras.get("description")
             if description is not None:
                 parts.append(description)
-        elif self.use_inline_field_description and self.use_field_description_example:
-            description = self.extras.get("description")
-            if description is not None and "\n" in description:
-                parts.append(description)
+        elif (
+            self.use_inline_field_description
+            and self.use_field_description_example
+            and description is not None
+            and "\n" in description
+        ):
+            parts.append(description)
 
         if self.use_field_description_example:
             example = self.extras.get("example")
             examples = self.extras.get("examples")
 
             if examples and isinstance(examples, list) and len(examples) > 1:
-                examples_str = "\n".join(f"- {e!r}" for e in examples)
+                examples_str = "\n".join(f"- {stable_repr(e)}" for e in examples)
                 parts.append(f"Examples:\n{examples_str}")
             elif example is not None:
-                parts.append(f"Example: {example!r}")
+                parts.append(f"Example: {stable_repr(example)}")
             elif examples and isinstance(examples, list) and len(examples) == 1:  # pragma: no branch
-                parts.append(f"Example: {examples[0]!r}")
+                parts.append(f"Example: {stable_repr(examples[0])}")
 
         if parts:
             return "\n\n".join(parts)
 
-        if self.use_inline_field_description:
-            description = self.extras.get("description")
-            if description is not None and "\n" in description:
-                return description
-
+        if self.use_inline_field_description and description is not None and "\n" in description:
+            return description
         return None
 
     @property
@@ -1324,8 +1063,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         if self.use_inline_field_description:
             description = self.extras.get("description", None)
             if description is not None and "\n" not in description:
-                escaped = escape_docstring(description)
-                return f'"""{escaped}"""'
+                return _single_line_docstring(escape_docstring(description) or "")
 
         return None
 
@@ -1378,13 +1116,13 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Return the constructor default of the field, as its own written assignment gives it."""
         return _classify_field_assignment(self, self._FIELD_ASSIGNMENT_ROW).default_info
 
-    def _build_frozen_render_plan(self) -> FieldRenderPlan | None:  # noqa: PLR6301
+    def _build_frozen_render_plan(self) -> FieldRenderPlan | None:
         """Return the render plan the parse freezes for this field at B2, or None when it renders without one.
 
-        A field that renders from a plan freezes its live plan (``_render_plan`` before B2), which ``RenderReady``
-        rebuilds from the field's facts while it compares or refreshes a frozen plan.
+        A field that renders from a plan (``_FREEZES_RENDER_PLAN``) freezes its live plan (``_render_plan`` before B2),
+        which ``RenderReady`` rebuilds from the field's facts while it compares or refreshes a frozen plan.
         """
-        return None
+        return self._render_plan() if self._FREEZES_RENDER_PLAN else None
 
     def _render_inputs(self) -> RenderInputs:
         """Return what the field's render plan reads from the field, to compare when it renders (``RenderReady``)."""
@@ -1392,7 +1130,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
     def _render_plan(self) -> FieldRenderPlan:
         """Return the plan the parse froze for this field, or the plan its facts give now (`live_render_plan`)."""
-        if (plan := frozen_render_plan(self)) is not None:
+        if (ready := RENDER_READY.get()) is not None and (plan := ready.plan_of(self)) is not None:
             return plan
         return live_render_plan(self)
 
@@ -1401,11 +1139,11 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return FieldRenderPlan(
             annotation_form="plain",
             call=None,
-            default=FieldDefault(self.default, missing_sentinel=False, why=_DEFAULT_VALUE),
+            default=FieldDefault(self.default, missing_sentinel=False, why=DEFAULT_VALUE),
             has_default_factory_in_field=False,
             omitted=(),
             symbol_imports=(),
-            why=_PLAIN_ANNOTATION,
+            why=PLAIN_ANNOTATION,
         )
 
     def _written_assignment(self) -> WrittenAssignment:
@@ -1430,12 +1168,68 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             admits_none=not _ORDERS_BY_CONSTRUCTION_DEFAULTS.get() and self.data_type.admits_none,
         )
 
+    def constrained_value_type(self, data_type: DataType, seen: frozenset[int] = frozenset()) -> DataType | None:
+        """Return the type a constraint written beside ``data_type`` checks, or None where that type takes none.
+
+        A referenced type alias stands for its type, and takes none where the output says its type admits null
+        (``_alias_value_admits_null``); any other referenced model takes none. A chain of aliases that comes back to an
+        alias of its own, and an alias without a field, stand for themselves; a type whose shape decides its keywords
+        itself (``_stops_constraint_walk``) stands for itself.
+        """
+        if self._stops_constraint_walk(data_type):
+            return data_type
+        if (
+            (reference := data_type.reference) is not None
+            and (source := reference.source) is not None
+            and id(source) not in seen
+        ):
+            is_alias = isinstance(source, DataModel) and source.form == "alias"
+            if source.fields or not is_alias:
+                alias_field = source.fields[0] if is_alias else None
+                if alias_field is None or self._alias_value_admits_null(alias_field):
+                    return None
+                return self.constrained_value_type(alias_field.data_type, seen | {id(source)})
+        if len(data_type.data_types) == 1 and not (
+            data_type.type or data_type.reference or data_type.python_type or data_type._is_container  # noqa: SLF001
+        ):
+            return self.constrained_value_type(data_type.data_types[0], seen)
+        return data_type
+
+    def _stops_constraint_walk(self, data_type: DataType) -> bool:  # noqa: ARG002, PLR6301
+        """Return whether ``constrained_value_type`` takes ``data_type`` as it is: none here."""
+        return False
+
+    def _alias_value_admits_null(self, alias_field: DataModelFieldBase) -> bool:  # noqa: ARG002, PLR6301
+        """Return whether a constraint beside an alias whose root is ``alias_field`` checks no value: none here."""
+        return False
+
+    def _has_numeric_data_type(self, type_name: str, strict_import_part: str | None = None) -> bool:
+        """Return whether a field data type is ``type_name``, or a strict import naming ``strict_import_part``.
+
+        A type that names a type alias is the type the alias stands for (``constrained_value_type``).
+        """
+        value_type = self.constrained_value_type(self.data_type) or self.data_type
+        return any(
+            data_type.type == type_name
+            or (
+                strict_import_part is not None
+                and data_type.strict
+                and data_type.import_
+                and strict_import_part in data_type.import_.import_
+            )
+            for data_type in (
+                self.data_type.all_data_types
+                if value_type is self.data_type
+                else chain(self.data_type.all_data_types, value_type.all_data_types)
+            )
+        )
+
     def _takes_nested_model_factory(self) -> bool:
         """Return whether the field may write its nested model's factory: optional, defaulting to None, option on."""
         return (
             self.use_default_factory_for_optional_nested_models
             and not self.required
-            and (self.default is None or self.default is UNDEFINED)
+            and _default_state(self.default) != "value"
         )
 
     def _has_default_for_nested_model_factory(self) -> bool:
@@ -1447,7 +1241,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         if _COUNTS_CONSTRUCTION_DEFAULTS.get() and self._FIELD_ASSIGNMENT_ROW == "pydantic-dataclass":
             return (
                 not self.is_class_var
-                and not (self.required and not self.use_default_with_required)
+                and not requires_value(self)
                 and _classify_field_assignment(self, "pydantic-dataclass").construction_assigned
             )
         return self._get_constructor_default_info()[0]
@@ -1487,18 +1281,56 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Check if optional fields should be nullable by default."""
         return True
 
+    @property
+    def nullable_without_default(self) -> bool | None:
+        """The ``nullable`` the field has as one without its default, which ``--strict-nullable`` reads as not null.
+
+        Under ``--omit-incomplete-model-defaults`` a property field built with a default records it where it differs
+        (``GenerationStore.record_nullable_without_default``), and a copy that takes another ``nullable`` drops it.
+        """
+        values = self.__dict__
+        return values.get(NULLABLE_WITHOUT_DEFAULT_KEY, self.nullable)
+
     def copy_deep(self) -> Self:
-        """Create a deep copy of this field to avoid mutating the original."""
-        copied = self.model_copy()
-        copied.parent = None
-        copied.extras = deepcopy(self.extras)
-        copied.data_type = self.data_type.model_copy()
-        if self.data_type.data_types:
-            copied.data_type.data_types = [dt.model_copy() for dt in self.data_type.data_types]
-        if self.data_type.dict_key:
-            copied.data_type.dict_key = self.data_type.dict_key.model_copy()
+        """Create a copy that owns its type tree, extras, validation aliases and default (``copy_owning``)."""
+        copied = self.copy_owning()
         copied.invalidate_semantic_caches()
         return copied
+
+    def copy_owning(
+        self, *, data_type: DataType | None = None, register_references: bool = True, **values: Any
+    ) -> Self:
+        """Copy the field with its own type tree (``data_type`` when given), extras, validation aliases and default.
+
+        The copy shares the references its types name, registered with them unless ``register_references`` is false,
+        and takes every field value in ``values`` when it is made, so no caller finishes it by hand. A copy given
+        ``extras`` or ``default`` owns those instead of a copy of this field's.
+        """
+        from datamodel_code_generator.types import _copy_data_type  # noqa: PLC0415
+
+        copied_data_type = data_type or _copy_data_type(self.data_type, register_references=register_references)
+        update: dict[str, Any] = {"data_type": copied_data_type, "parent": None}
+        if "extras" not in values:
+            update["extras"] = deepcopy(self.extras)
+        if self.validation_aliases is not None:
+            update["validation_aliases"] = list(self.validation_aliases)
+        if "default" not in values:
+            match self.default:
+                case dict() | list() | set():
+                    update["default"] = deepcopy(self.default)
+        update.update(values)
+        copied = self.model_copy(update=update)
+        copied_data_type.parent = copied
+        return copied
+
+    def alias_form(self, *, inherits: bool = False) -> dict[str, Any]:  # noqa: PLR6301, ARG002
+        """Return the aliases this field class writes in place of the ones it holds; none when it writes them as held.
+
+        A field takes its aliases when it is built and when the names of a field built earlier change
+        (``GenerationStore.set_field_identity``, ``rename_field``): both write this form. ``inherits`` tells whether
+        the class that holds the field has a generated base class; a field built before its class is made has none.
+        """
+        return {}
 
     def invalidate_semantic_caches(self, *, invalidate_parent: bool = True) -> None:
         """Clear field caches derived from mutable type and parent semantics, and move the field's revision."""
@@ -1542,11 +1374,17 @@ _LOOKING_UP_REQUIRED_FIELDS: Final[ContextVar[frozenset[ModelKey]]] = ContextVar
 
 def _nested_model_required_fields(source: DataModel, key: ModelKey) -> bool:
     """Look up whether ``source`` has required constructor fields, with ``source`` marked as being looked up."""
-    token = _LOOKING_UP_REQUIRED_FIELDS.set(_LOOKING_UP_REQUIRED_FIELDS.get() | {key})
-    try:
+    with context_values({_LOOKING_UP_REQUIRED_FIELDS: _LOOKING_UP_REQUIRED_FIELDS.get() | {key}}):
         return _nested_model_has_required_constructor_fields(source)
-    finally:
-        _LOOKING_UP_REQUIRED_FIELDS.reset(token)
+
+
+def _has_opaque_custom_base(model: DataModel, base_class: str) -> bool:
+    """Return whether a model's configured base other than ``base_class`` hides what it inherits: no generated model."""
+    return (
+        (custom_base_class := model.custom_base_class) is not None
+        and custom_base_class not in (base_class, [base_class])
+        and any(not base.reference for base in model.base_classes)
+    )
 
 
 def _nested_model_has_required_constructor_fields(source: DataModel) -> bool:
@@ -1555,13 +1393,9 @@ def _nested_model_has_required_constructor_fields(source: DataModel) -> bool:
     models = linearize_data_models([source]) if inherited else (source,)
     for model in models:
         if (
-            model.decorators or (model._custom_template_dir is not None and model._uses_custom_root_template)  # noqa: SLF001
-        ):
-            return False
-        if (
-            (custom_base_class := model.custom_base_class) is not None
-            and custom_base_class not in (model.BASE_CLASS, [model.BASE_CLASS])
-            and any(not base.reference for base in model.base_classes)
+            model.decorators
+            or (model._custom_template_dir is not None and model._uses_custom_root_template)  # noqa: SLF001
+            or _has_opaque_custom_base(model, model.BASE_CLASS)
         ):
             return False
     fields = get_effective_fields(source) if inherited else source.fields
@@ -1570,10 +1404,9 @@ def _nested_model_has_required_constructor_fields(source: DataModel) -> bool:
         and (source.USES_DATACLASS_ARGUMENTS or not field.is_class_var)
         and source.FIELD_PARTICIPATES_IN_CONSTRUCTOR(field)
         and (
-            (field.required and not field.use_default_with_required)
+            requires_value(field)
             or (
-                (field.default is UNDEFINED or field.default is None)
-                and not field._has_default_for_nested_model_factory()  # noqa: SLF001  # output-owned default policy
+                _default_state(field.default) != "value" and not field._has_default_for_nested_model_factory()  # noqa: SLF001  # output-owned default policy
             )
         )
         for field in fields
@@ -1657,25 +1490,6 @@ def _holds_render_inputs(value: object) -> bool:
     return isinstance(value, _HOLDERS) and not isinstance(value, Reference)
 
 
-def _check_render_plan_accounting(
-    mode: CheckMode, model: DataModel, field: PlannedField, plan: FieldRenderPlan
-) -> None:
-    """Report a frozen or rebuilt plan that drops a declared item without a reason or writes an undeclared one."""
-    missing, extra = plan.unaccounted(field._declared_render_items())  # noqa: SLF001
-    if missing or extra:
-        mode.violation(
-            Error,
-            f"the render plan of {model.class_name}.{field.name} leaves {sorted(missing)} unaccounted and "
-            f"accounts for undeclared {sorted(extra)}",
-        )
-
-
-_PLAIN_ANNOTATION = Why(RuleId("D11.annotation.plain"))
-"""The annotation is the field's type alone."""
-_DEFAULT_VALUE = Why(RuleId("D4.default.value"), keyword="default")
-"""The field's default, as its schema or the parser gives it."""
-
-
 @final
 @record(eq=False)
 class _ValueFactory:
@@ -1730,6 +1544,20 @@ def _nested_factory_decision(model: DataModel) -> tuple[tuple[int, int] | None, 
     )
 
 
+_MODEL_TARGET: Final[ContextVar[PythonVersion | None]] = ContextVar("model_target", default=None)
+"""The target Python of the models ``_build_for_target`` builds, which ``DataModel.__init__`` gives each of them."""
+
+
+def _build_for_target(target: PythonVersion, factory: Callable[..., _BuiltT], /, **kwargs: Any) -> _BuiltT:
+    """Build with ``factory``, a model class or a model factory, every model it builds taking ``target``.
+
+    The target is set while the models are constructed, so the decisions their constructors make read it and a model
+    class whose ``__init__`` names its own arguments needs no argument for it.
+    """
+    with context_values({_MODEL_TARGET: target}):
+        return factory(**kwargs)
+
+
 _ORDERS_BEFORE_NULLABILITY: Final[ContextVar[bool]] = ContextVar("orders_before_nullability", default=False)
 """Whether the nested factories read row ``legacy-nested-factory-order-before-nullability``: in constructor ordering,
 and in the row's own required check."""
@@ -1754,15 +1582,12 @@ def ordering_constructor_fields(
     ``legacy-nested-factory-order-before-nullability`` otherwise. ``construction_defaults`` counts the defaults as the
     construction key gives them, for an ordering that runs before the rendered nullability is final.
     """
-    ordering = _ORDERS_CONSTRUCTOR_FIELDS.set(True)
-    token = _ORDERS_BEFORE_NULLABILITY.set(before_nullability)
-    defaults = _ORDERS_BY_CONSTRUCTION_DEFAULTS.set(construction_defaults)
-    try:
+    with context_values({
+        _ORDERS_CONSTRUCTOR_FIELDS: True,
+        _ORDERS_BEFORE_NULLABILITY: before_nullability,
+        _ORDERS_BY_CONSTRUCTION_DEFAULTS: construction_defaults,
+    }):
         yield
-    finally:
-        _ORDERS_BY_CONSTRUCTION_DEFAULTS.reset(defaults)
-        _ORDERS_BEFORE_NULLABILITY.reset(token)
-        _ORDERS_CONSTRUCTOR_FIELDS.reset(ordering)
 
 
 def _counting_construction_defaults(compute: Callable[[], bool], *, counts: bool) -> bool:
@@ -1770,17 +1595,13 @@ def _counting_construction_defaults(compute: Callable[[], bool], *, counts: bool
 
     A required check is no constructor ordering: the nested factories it reads are those it would answer anywhere.
     """
-    ordering = _ORDERS_CONSTRUCTOR_FIELDS.set(False)
-    orders = _ORDERS_BEFORE_NULLABILITY.set(counts)
-    defaults = _ORDERS_BY_CONSTRUCTION_DEFAULTS.set(False)
-    token = _COUNTS_CONSTRUCTION_DEFAULTS.set(counts)
-    try:
+    with context_values({
+        _ORDERS_CONSTRUCTOR_FIELDS: False,
+        _ORDERS_BEFORE_NULLABILITY: counts,
+        _ORDERS_BY_CONSTRUCTION_DEFAULTS: False,
+        _COUNTS_CONSTRUCTION_DEFAULTS: counts,
+    }):
         return compute()
-    finally:
-        _COUNTS_CONSTRUCTION_DEFAULTS.reset(token)
-        _ORDERS_BY_CONSTRUCTION_DEFAULTS.reset(defaults)
-        _ORDERS_BEFORE_NULLABILITY.reset(orders)
-        _ORDERS_CONSTRUCTOR_FIELDS.reset(ordering)
 
 
 def _plan_view(field: DataModelFieldBase, ready: RenderReady) -> Hashable:
@@ -1808,7 +1629,12 @@ def live_render_plan(field: DataModelFieldBase) -> FieldRenderPlan:
     """
     if (ready := RENDER_READY.get()) is None or (memo := ready.derived_from(field)) is None:
         return field._build_render_plan()  # noqa: SLF001
-    return memo.derived(MemoTable.FIELD_RENDER_PLAN, field, _plan_view(field, ready), field._build_render_plan)  # noqa: SLF001
+    return _kept_render_plan(field, memo, _plan_view(field, ready))
+
+
+def _kept_render_plan(field: DataModelFieldBase, memo: ParseMemo, view: Hashable) -> FieldRenderPlan:
+    """Return the live plan of ``field`` that the parse's memo keeps for ``view`` (`live_render_plan`)."""
+    return memo.derived(MemoTable.FIELD_RENDER_PLAN, field, view, field._build_render_plan)  # noqa: SLF001
 
 
 def field_imports(field: DataModelFieldBase) -> tuple[Import, ...]:
@@ -1818,8 +1644,9 @@ def field_imports(field: DataModelFieldBase) -> tuple[Import, ...]:
     """
     if (ready := RENDER_READY.get()) is None or (memo := ready.derived_from(field)) is None:
         return field.imports
-    plan = ready.plan_of(field) or live_render_plan(field)
-    return memo.derived(MemoTable.FIELD_IMPORTS, field, _plan_view(field, ready), lambda: field.imports, source=plan)
+    view = _plan_view(field, ready)
+    plan = ready.plan_of(field) or _kept_render_plan(field, memo, view)
+    return memo.derived(MemoTable.FIELD_IMPORTS, field, view, lambda: field.imports, source=plan)
 
 
 def _keeps_order_before_nullability(field: DataModelFieldBase) -> bool:
@@ -1937,7 +1764,8 @@ def _build_environment(loader: Any, *, auto_reload: bool = True) -> Environment:
     )
     env.filters["escape_docstring"] = escape_docstring  # For old custom templates
     env.filters["format_docstring"] = format_docstring
-    env.filters["repr"] = repr
+    env.filters["repr"] = stable_repr
+    env.filters["pprint"] = stable_pformat
     return env
 
 
@@ -1978,14 +1806,19 @@ def _get_template_with_custom_dir(
     This allows users to override individual templates (including included ones)
     while keeping other templates from the default directory.
     """
-    template_subdir = template_file_path.parent
-    environment = _get_environment(template_subdir, custom_template_dir)
-    template = environment.get_template(template_file_path.name)
-    return (
-        _apply_custom_template_adapter(template, template_adapter, custom_template_dir)
-        if template_adapter is not None
-        else template
-    )
+    environment = _get_environment(template_file_path.parent, custom_template_dir)
+    return _adapted_template(environment, template_file_path.name, template_adapter, custom_template_dir)
+
+
+def _adapted_template(
+    environment: Environment,
+    name: str,
+    adapter: Callable[[Template], Template] | None,
+    custom_template_dir: Path | None,
+) -> Template:
+    """Load the template ``name`` from ``environment``, through ``adapter`` when there is one."""
+    template = environment.get_template(name)
+    return template if adapter is None else _apply_custom_template_adapter(template, adapter, custom_template_dir)
 
 
 def _uses_original_template_loader(adapter: Callable[[Template], Template]) -> Callable[[Template], Template]:
@@ -2018,11 +1851,7 @@ def _clear_custom_template_caches() -> None:
     """Clear mutable custom-template path, environment, and template caches."""
     with _missing_custom_template_state.lock:
         _clear_custom_template_render_caches()
-        _missing_custom_template_state.paths.clear()
-        _missing_custom_template_state.signatures.clear()
-        _missing_custom_template_state.dependencies.clear()
-        _missing_custom_template_state.count = 0
-        _missing_custom_template_state.overflow = False
+        _missing_custom_template_state.reset()
 
 
 def _remember_missing_custom_template_subdir(custom_template_dir: Path, custom_subdir: Path) -> None:
@@ -2204,15 +2033,11 @@ def _refresh_custom_template_paths(custom_template_dir: Path) -> None:
         ):
             _missing_custom_template_state.signatures.move_to_end(custom_template_dir)
             return
-        if (
-            custom_template_dir not in _missing_custom_template_state.signatures
-            and len(_missing_custom_template_state.signatures) >= _MAX_CUSTOM_TEMPLATE_SIGNATURES
-        ):
-            evicted, _ = _missing_custom_template_state.signatures.popitem(last=False)
-            _missing_custom_template_state.dependencies.pop(evicted, None)
         _clear_custom_template_render_caches()
-        _missing_custom_template_state.signatures[custom_template_dir] = signature
-        _missing_custom_template_state.signatures.move_to_end(custom_template_dir)
+        for evicted, _ in _missing_custom_template_state.signatures.put(
+            custom_template_dir, signature, _MAX_CUSTOM_TEMPLATE_SIGNATURES
+        ):
+            _missing_custom_template_state.dependencies.pop(evicted, None)
         _missing_custom_template_state.dependencies[custom_template_dir] = _CustomTemplateDependencies()
 
 
@@ -2249,12 +2074,7 @@ def _get_template_with_absolute_path(
     environment = _get_environment_with_absolute_path(
         absolute_template_path.parent, builtin_subdir, custom_template_dir
     )
-    template = environment.get_template(absolute_template_path.name)
-    return (
-        _apply_custom_template_adapter(template, template_adapter, custom_template_dir)
-        if template_adapter is not None
-        else template
-    )
+    return _adapted_template(environment, absolute_template_path.name, template_adapter, custom_template_dir)
 
 
 @lru_cache
@@ -2276,21 +2096,35 @@ def sanitize_module_name(name: str, *, treat_dot_as_module: bool | None) -> str:
     return sanitized
 
 
+def _directory_module_name(name: str, *, keep_dots: bool) -> str:
+    """Return the name of a directory in a module path: its own when Python imports it by that name, else a file's.
+
+    A directory whose every part is an identifier of the oldest target once its ``-`` is ``_`` as the output writes it
+    (``ユーザー``, ``café-models``) keeps its name, a keyword too (row ``legacy-keyword-directory-kept``); any other
+    (``my dir``, ``1.0``) is sanitized as the name of a file is. Unless ``keep_dots``, the dots of the name are ``_``.
+    """
+    name = written_name(name if keep_dots else flat_name(name))
+    if all(is_importable_part(part, None, row="legacy-keyword-directory-kept") for part in name.split(".")):
+        return name
+    return sanitize_module_name(name, treat_dot_as_module=keep_dots)
+
+
 def get_module_path(name: str, file_path: Path | None, *, treat_dot_as_module: bool | None) -> list[str]:
     """Get the module path components from a name and file path.
 
     The treat_dot_as_module flag controls behavior:
-    - None (default): Split names on dots (backward compat), but sanitize file names (replace dots)
-    - True: Split names on dots AND keep dots in file names (for modular output)
-    - False: Don't split names on dots AND sanitize file names (new feature for flat output)
+    - None (default): Split names on dots (backward compat), but sanitize directory and file names (replace dots)
+    - True: Split names on dots AND keep dots in directory and file names (for modular output)
+    - False: Don't split names on dots AND sanitize directory and file names (new feature for flat output)
+    A directory that is not named as Python imports it is sanitized as a file is (``_directory_module_name``).
     """
     should_split_names = treat_dot_as_module is not False
-    should_keep_dots_in_files = treat_dot_as_module is True
+    should_keep_dots = treat_dot_as_module is True
     if file_path:
-        sanitized_stem = sanitize_module_name(file_path.stem, treat_dot_as_module=should_keep_dots_in_files)
+        sanitized_stem = sanitize_module_name(file_path.stem, treat_dot_as_module=should_keep_dots)
         module_parts = name.split(".")[:-1] if should_split_names else []
         return [
-            *file_path.parts[:-1],
+            *(_directory_module_name(part, keep_dots=should_keep_dots) for part in file_path.parts[:-1]),
             sanitized_stem,
             *module_parts,
         ]
@@ -2334,13 +2168,20 @@ class TemplateBase(ABC):
 class BaseClassDataType(DataType):
     """DataType subclass for base class references."""
 
+    @property
     @override
-    def _reference_adds_null(self) -> bool:
+    def adds_reference_null(self) -> bool:
         """Keep nullable model references out of class inheritance clauses."""
         return False
 
 
-UNDEFINED: Any = object()
+UNDEFINED: Any = Sentinel("UNDEFINED")
+"""The default of a field that declares none; a copy, a deep copy and a pickle of it are itself."""
+
+
+def _default_state(default: object) -> DefaultState:
+    """Return what a field's default is: none given (``UNDEFINED``), ``None``, or another value."""
+    return "undefined" if default is UNDEFINED else "none" if default is None else "value"
 
 
 class BaseLayoutView(NamedTuple):
@@ -2357,11 +2198,10 @@ class BaseLayoutView(NamedTuple):
 
 def _model_written(field: DataModelFieldBase) -> ModelWritten:
     """Return the written assignment of a field as the neutral rule reads it: its call, declared factory and default."""
-    default = field.default
     return ModelWritten(
         text=bool(field.field),
-        declared_factory="default_factory" in field.extras,
-        default="undefined" if default is UNDEFINED else "none" if default is None else "value",
+        declared_factory=field.has_default_factory,
+        default=_default_state(field.default),
     )
 
 
@@ -2378,11 +2218,11 @@ def _assignment_inputs(
     return AssignmentInputs(
         row=row,
         written=written,
-        required=field.required and not field.use_default_with_required,
+        required=requires_value(field),
         strips_none=field.should_strip_default_none(),
         annotated=field.use_annotated,
         class_var=field.is_class_var,
-        init_excluded=field.extras.get("init") is False,
+        init_excluded=excluded_from_init(field),
         visibility=(
             field._dataclass_visibility()  # noqa: SLF001
             if row == "pydantic-dataclass" or isinstance(written, PydanticDataclassWritten)
@@ -2412,6 +2252,11 @@ def _classify_field_assignment(
     return classify_assignment(_assignment_inputs(field, row, written))
 
 
+def _field_source_name(field: FieldView) -> str | None:
+    """Return the name the schema gives the field: its original name, else its name."""
+    return field.original_name if field.original_name is not None else field.name
+
+
 def _has_field_assignment(field: DataModelFieldBase) -> bool:
     """Return whether a standard model field renders with an assignment."""
     return _classify_field_assignment(field, "model").assigned
@@ -2424,111 +2269,7 @@ def _get_field_default_info(field: DataModelFieldBase) -> tuple[bool, bool]:
 
 def _field_participates_in_constructor(field: DataModelFieldBase) -> bool:
     """Return whether a field participates in its model constructor."""
-    return participates_in_constructor(
-        "model", init_excluded=field.extras.get("init") is False, class_var=field.is_class_var
-    )
-
-
-def _rewrite_names(rendered: str, replacements: Iterable[tuple[ast.Name, str]]) -> str:
-    """Write each name node parsed from ``rendered`` as its replacement, at the UTF-8 offsets ``ast`` gives."""
-    source = rendered.encode()
-    offsets = [0, *accumulate(map(len, source.splitlines(keepends=True)))]
-    spans = [
-        (
-            offsets[node.lineno - 1] + node.col_offset,
-            offsets[cast("int", node.end_lineno) - 1] + cast("int", node.end_col_offset),
-            alias,
-        )
-        for node, alias in replacements
-    ]
-    for start, end, alias in sorted(spans, reverse=True):
-        source = source[:start] + alias.encode() + source[end:]
-    return source.decode()
-
-
-def _bind_field_expressions(rendered: str, class_name: str, bindings: Mapping[str, str]) -> str:
-    """Bind names in field annotations and defaults without changing template objects.
-
-    Identifier characters the running interpreter does not know are lent letters of the same UTF-8 length and a type
-    statement is parsed as an assignment of the same length (`host_parsable`), so the offsets it parses hold for the
-    rendered text.
-    """
-    replacements: list[tuple[ast.Name, str]] = []
-    host_source, restore_name = host_parsable(rendered)
-    for statement in ast.parse(host_source).body:
-        if not isinstance(statement, ast.ClassDef) or restore_name(statement.name) != class_name:
-            continue
-        for field in statement.body:
-            if not isinstance(field, ast.AnnAssign):
-                continue
-            expressions = (field.annotation,) if field.value is None else (field.annotation, field.value)
-            replacements.extend(
-                (node, alias)
-                for expression in expressions
-                for node in ast.walk(expression)
-                if isinstance(node, ast.Name)
-                and isinstance(node.ctx, ast.Load)
-                and (alias := bindings.get(restore_name(node.id))) is not None
-            )
-    return _rewrite_names(rendered, replacements)
-
-
-_NAME_SCOPES: Final = (
-    ast.FunctionDef,
-    ast.AsyncFunctionDef,
-    ast.Lambda,
-    ast.ListComp,
-    ast.SetComp,
-    ast.DictComp,
-    ast.GeneratorExp,
-)
-
-
-def _local_names(scope: ast.AST) -> set[str]:
-    """Return the names a function, lambda or comprehension binds itself: its parameters and its assigned names."""
-    arguments = getattr(scope, "args", None)
-    parameters = (
-        (*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs, arguments.vararg, arguments.kwarg)
-        if isinstance(arguments, ast.arguments)
-        else ()
-    )
-    return {parameter.arg for parameter in parameters if parameter is not None} | {
-        node.id for node in ast.walk(scope) if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)
-    }
-
-
-def _bare_loads(tree: ast.AST, bound: frozenset[str] = frozenset()) -> Iterator[ast.Name]:
-    """Yield the names a tree loads bare: loaded, not the module of an attribute (``name.X``), not bound locally."""
-    match tree:
-        case ast.Name(ctx=ast.Load()):
-            if tree.id not in bound:
-                yield tree
-        case ast.Attribute(value=ast.Name()):
-            return
-        case _:
-            if isinstance(tree, _NAME_SCOPES):
-                bound |= _local_names(tree)
-            for child in ast.iter_child_nodes(tree):
-                yield from _bare_loads(child, bound)
-
-
-def _bare_loads_of(rendered: str, names: Collection[str]) -> set[str]:
-    """Return the names of ``names`` that ``rendered`` loads bare, the loads ``_bind_builtin_names`` rewrites."""
-    host_source, restore_name = host_parsable(rendered)
-    return {name for node in _bare_loads(ast.parse(host_source)) if (name := restore_name(node.id)) in names}
-
-
-def _bind_builtin_names(rendered: str, bindings: Mapping[str, str]) -> str:
-    """Write every bare load of a bound builtin in ``rendered`` through its alias, e.g. ``list_aliased[str]``."""
-    host_source, restore_name = host_parsable(rendered)
-    return _rewrite_names(
-        rendered,
-        [
-            (node, alias)
-            for node in _bare_loads(ast.parse(host_source))
-            if (alias := bindings.get(restore_name(node.id))) is not None
-        ],
-    )
+    return participates_in_constructor("model", init_excluded=excluded_from_init(field), class_var=field.is_class_var)
 
 
 class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
@@ -2537,8 +2278,10 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     Handles template rendering, import collection, and model relationships.
     """
 
-    _field_name_bindings: Mapping[str, str] | None = None
+    _field_name_bindings: FieldNameBindings | None = None
     _builtin_name_bindings: Mapping[str, str] | None = None
+    target_python_version: PythonVersion = NEWEST_TARGET
+    """The target Python whose names the model writes from template data: the newest unless it was built for one."""
     reused_reference: Reference | None = None
     """The reference of the model that reuse replaced with this empty subclass of an equal model."""
 
@@ -2596,14 +2339,27 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     """Whether msgspec decodes data by the output's annotations, which it resolves at the first decode."""
     _PYDANTIC_FORM: ClassVar[PydanticConstruct | None] = None
     """The construct that the model's own form writes where Pydantic reads it, such as a ``type`` statement."""
-    _CONFIG_KEYS_WITHOUT_REQUIREMENT: ClassVar[Callable[[], tuple[str, ...]]] = staticmethod(tuple)
-    """The config keys that the model can write without a row in ``_requirements.py``, for the debug check."""
     _LITERAL_HOLDS_ENUM_MEMBERS: ClassVar[bool] = True
     """Whether the output validates a ``Literal`` of enum members (msgspec does not)."""
     _LAYERS_REPEATED_CONSTRAINTS: ClassVar[bool] = True
     """Whether the output checks a constraint written on an alias whose type sets the same one (msgspec raises)."""
     _CHECKS_CONSTRAINTS: ClassVar[bool] = False
     """Whether the output checks the constraints of a value (bounds, lengths, patterns) when it reads data."""
+    _FIELD_VALUE_HASHES: ClassVar[Callable[[DataModelFieldBase], bool] | None] = None
+    """Whether the values the output validates for a field hash as builtin values (``field_value_hashes``), where a
+    set item model of a parse whose models the class writes may keep its builtin hash; None where none may."""
+    _DICT_KEYS_TAKE_ROOT_TYPE: ClassVar[bool] = False
+    """Whether a dict key that names a model of the class may take its root type (hashability): the class wraps one
+    root value, and its instances can be dict keys only when frozen."""
+    _BASE_FIELDS: ClassVar[_mro.MemberRule] = "collected"
+    """How a model of the class takes the fields it does not declare from its bases (`_mro.collect_members`): as
+    dataclasses, Pydantic and msgspec collect them; TypedDict output keeps the nearest declaration."""
+    _PYTHON_CHECKS_BASES: ClassVar[bool] = True
+    """Whether Python creates the class from its bases, refusing a base listed twice and bases whose orders C3 cannot
+    merge; a TypedDict merges the keys of its bases itself."""
+    _KEEPS_INHERITED_FIELD_TYPES: ClassVar[bool] = False
+    """Whether a subclass must declare an inherited field as its bases declare it, as type checkers hold a TypedDict
+    key: a model whose field narrows one declares the fields of its bases itself (`_declares_inherited_fields`)."""
     REQUIRES_FIELD_DEPENDENCY_ORDERING: ClassVar[bool] = False
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = False
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = False
@@ -2620,6 +2376,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = False
     """Whether the parse freezes a render plan for each field at B2 (``model/_render_plan.py``)."""
     SUPPORTS_SCHEMA_RUNTIME_VALIDATION: ClassVar[bool] = False
+    WRITES_CLOSED_ADDITIONAL_PROPERTIES: ClassVar[bool] = False
+    """Whether ``additionalProperties: false`` is written as closedness (``extra='forbid'``, ``closed=True``)."""
     ROOT_MODEL_CONSTRAINTS_FALLBACK: ClassVar[
         Callable[[Path | None], Callable[[list[DataModelFieldBase]], type[DataModel] | None] | None] | None
     ] = None
@@ -2650,6 +2408,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     _INCLUDE_DICT_KEY_REFERENCE_CLASSES: ClassVar[Callable[[DataModel], bool] | None] = None
     _TYPED_EXTRA_DICT_KEY_CAPABILITY: ClassVar[Callable[[DataType], bool] | None] = None
     has_forward_reference: bool = False
+    serialized_as_any: bool | None = None
+    """Whether ``--use-serialize-as-any`` wraps a type naming the model, as the final class hierarchy decides under
+    --use-serialize-as-any-for-every-subclass; None where nothing decided it (``_writes_serialize_as_any``)."""
     discriminator_tag: tuple[Any, Any] | None = None
 
     @classmethod
@@ -2700,15 +2461,30 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def flatten_conflicting_base_layouts(self, view: BaseLayoutView, flatten: Callable[[DataModel], None]) -> None:
         """Flatten the model where the output cannot combine the layouts of its generated bases, as msgspec cannot."""
 
+    def _declares_inherited_fields(self) -> bool:  # noqa: PLR6301
+        """Return whether the model declares the fields of its bases itself (`_KEEPS_INHERITED_FIELD_TYPES`)."""
+        return False
+
+    @staticmethod
+    def _base_layout_key(field: DataModelFieldBase) -> object:
+        """Return the name that ``flatten_base_layouts`` merges the declarations of a field by: its Python name."""
+        return id(field) if field.name is None else field.name
+
+    def adopt_base_options(self) -> None:
+        """Make the options the generated bases give the model its own, before it drops them (``flatten_base_layouts``).
+
+        Only msgspec Structs take options from their bases; other models have none to take.
+        """
+
     def flatten_base_layouts(
         self, adopt_field: Callable[[DataModelFieldBase, bool], DataModelFieldBase]
     ) -> list[DataModelFieldBase]:
         """Return the fields that declare the model without its generated bases.
 
         Each base gives its fields after those of its own bases, in declaration order, and the model its fields last.
-        A name keeps its first position and the field declared last, and is required where any declaration requires
-        it, as allOf merges the properties of its parts. ``adopt_field`` makes a field one of the model, required or
-        not.
+        A name (``_base_layout_key``) keeps its first position and the field declared last, and is required where any
+        declaration requires it, as allOf merges the properties of its parts. ``adopt_field`` makes a field one of the
+        model, required or not.
         """
         fields: dict[object, DataModelFieldBase] = {}
         required: dict[object, bool] = {}
@@ -2721,7 +2497,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             for base in _find_base_classes(model):
                 collect(base)
             for field in model.fields:
-                key = id(field) if field.name is None else field.name
+                key = self._base_layout_key(field)
                 fields[key] = field
                 required[key] = required.get(key, False) or field.required
 
@@ -2765,6 +2541,75 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             data["use_total_false_for_typed_dict"] = True
             if not python_target_meets("python.typed_dict_required", target_python_version.version_key):
                 data["use_total_false_typeddict_backport"] = True
+
+    @classmethod
+    def configure_closed_typed_dict(
+        cls,
+        extra_template_data: defaultdict[str, dict[str, Any]],
+        *,
+        use_closed_typed_dict: bool,
+    ) -> None:
+        """Record ``--no-use-closed-typed-dict``, which only a TypedDict reads: no PEP 728 ``closed``.
+
+        The ``additionalProperties`` a schema states stays in the template data of every output, which reads it as
+        its own closedness (``extra='forbid'`` of a Pydantic model).
+        """
+        if not use_closed_typed_dict:
+            extra_template_data[ALL_MODEL][_USE_CLOSED_TYPED_DICT_TEMPLATE_DATA_KEY] = False
+
+    @classmethod
+    def configure_dataclass_arguments(
+        cls,
+        extra_template_data: defaultdict[str, dict[str, Any]],
+        *,
+        keep_false_dataclass_arguments: bool,
+    ) -> None:
+        """Record ``--keep-false-dataclass-arguments``, which an output that writes dataclass arguments reads."""
+        if keep_false_dataclass_arguments and cls.USES_DATACLASS_ARGUMENTS:
+            extra_template_data[ALL_MODEL][_KEEP_FALSE_DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY] = True
+
+    @property
+    def written_dataclass_arguments(self) -> dict[str, Any]:
+        """Return the dataclass arguments the decorator writes (``_written_dataclass_arguments``)."""
+        return _written_dataclass_arguments(
+            self.dataclass_arguments,
+            keep_false=self._keeps_false_dataclass_arguments,
+        )
+
+    @property
+    def _keeps_false_dataclass_arguments(self) -> bool:
+        """Return whether the decorator writes the dataclass arguments set False (--keep-false-dataclass-arguments)."""
+        return bool(self.extra_template_data.get(_KEEP_FALSE_DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY))
+
+    def _refused_dataclass_arguments(self, arguments: Mapping[str, bool]) -> list[str]:
+        """Return why ``dataclasses.dataclass`` refuses these written arguments at import, one reason each.
+
+        It does on every Python from 3.10: ``order`` needs ``eq``; ``weakref_slot`` needs ``slots`` and Python 3.11,
+        which added it.
+        """
+        refused = _order_refusals(arguments)
+        if arguments.get("weakref_slot") and not arguments.get("slots"):
+            refused.append("weakref_slot=True needs slots=True")
+        if "weakref_slot" in arguments and not python_target_meets(
+            "python.dataclass_weakref_slot", self.target_python_version.version_key
+        ):
+            minimum = REQUIREMENTS["python.dataclass_weakref_slot"].minimum
+            refused.append(f"weakref_slot needs --target-python-version {minimum} or higher")
+        return refused
+
+    def _checked_dataclass_arguments(self, class_name: str) -> dict[str, bool]:
+        """Return the decorator arguments the built-in template reads (``_safe_dataclass_arguments``).
+
+        The generation stops on those it writes (``written_dataclass_arguments``) that the decorator refuses
+        (``_refused_dataclass_arguments``), instead of writing a module that fails to import.
+        """
+        arguments = _safe_dataclass_arguments(self.dataclass_arguments)
+        written = _written_dataclass_arguments(arguments, keep_false=self._keeps_false_dataclass_arguments)
+        if refused := self._refused_dataclass_arguments(written):
+            decorator = ", ".join(f"{name}={value}" for name, value in written.items())
+            msg = f"model {stable_repr(class_name)} cannot write @dataclass({decorator}): {'; '.join(refused)}"
+            raise Error(msg)
+        return arguments
 
     @staticmethod
     def requires_extra_items_backport(target_python_version: PythonVersion) -> bool:
@@ -2818,7 +2663,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         explicit_extras: Collection[str] = (),
     ) -> None:
         """Preserve output-specific inherited state until requiredness is final."""
-        if "default_factory" in inherited_field.extras and "default_factory" not in explicit_extras:
+        if inherited_field.has_default_factory and "default_factory" not in explicit_extras:
             field.__dict__[_REQUIRED_INHERITED_DEFAULT_FACTORY_KEY] = True
         cls.finalize_required_inherited_field(field)
 
@@ -2880,7 +2725,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     ) -> None:
         """Store typed additional-properties metadata and its dependencies."""
         del imports
-        expression = repr(str(type_hint)) if reference_classes else type_hint
+        expression = stable_repr(str(type_hint)) if reference_classes else type_hint
         extra_template_data[_ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY] = _make_internal_type_expression(
             type_hint,
             expression,
@@ -2951,16 +2796,19 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         treat_dot_as_module: bool | None = None,
         dataclass_arguments: DataclassArguments | None = None,
     ) -> None:
-        """Initialize a data model with fields, base classes, and configuration."""
+        """Initialize a data model with fields, base classes, and configuration.
+
+        A model built inside ``_build_for_target`` takes its target Python.
+        """
+        if (target_python_version := _MODEL_TARGET.get()) is not None:
+            self.target_python_version = target_python_version
         self.keyword_only = keyword_only
         self.frozen = frozen
-        self.dataclass_arguments: DataclassArguments = dataclass_arguments if dataclass_arguments is not None else {}
         if not self.TEMPLATE_FILE_PATH:
             msg = "TEMPLATE_FILE_PATH is undefined"
             raise Exception(msg)  # noqa: TRY002
 
         self._custom_template_dir: Path | None = custom_template_dir
-        self.decorators: list[str] = decorators or []
         self._additional_imports: list[Import] = []
         self.custom_base_class = custom_base_class
         if base_classes:
@@ -2983,13 +2831,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         if extra_template_data is not None:
             # The supplied defaultdict will either create a new entry,
             # or already contain a predefined entry for this type
-            self.extra_template_data = extra_template_data[self.reference.path]
-
-            # We use the full object reference path as dictionary key, but
-            # we still support `name` as key because it was used for
-            # `--extra-template-data` input file and we don't want to break the
-            # existing behavior.
-            self.extra_template_data.update(extra_template_data[self.name])
+            path_key, name_key = template_data_keys(self.reference)
+            self.extra_template_data = extra_template_data[path_key]
+            self.extra_template_data.update(extra_template_data[name_key])
         else:
             self.extra_template_data = defaultdict(dict)
 
@@ -2997,16 +2841,18 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
         for base_class in self.base_classes:
             if base_class.reference:
-                base_class.reference.children.append(self)
+                add_child(base_class.reference, self)
 
         if extra_template_data is not None:
             all_model_extra_template_data = extra_template_data.get(ALL_MODEL)
             if all_model_extra_template_data:
                 _copy_all_model_data(all_model_extra_template_data, self.extra_template_data)
-
-        self.methods: list[str] = methods or []
-
-        self.description = description
+        self.dataclass_arguments: DataclassArguments = self._with_template_value(
+            "dataclass_arguments", dataclass_arguments if dataclass_arguments is not None else {}
+        )
+        self.decorators: list[str] = self._with_template_value("decorators", decorators or [])
+        self.methods: list[str] = self._with_template_value("methods", methods or [])
+        self.description: str | None = self._with_template_value("description", description)
         for field in self.fields:
             field.parent = self
             field.invalidate_semantic_caches(invalidate_parent=False)
@@ -3015,6 +2861,24 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         self.default: Any = default
         self._nullable: bool = nullable
         self._treat_dot_as_module: bool | None = treat_dot_as_module
+
+    def _with_template_value(self, key: str, value: Any) -> Any:
+        """Return the value the options give the model with the one of the template data over it.
+
+        The ``dataclass_arguments`` merge key by key, the ``description``, ``decorators`` and ``methods`` replace.
+        """
+        if (template_value := self.extra_template_data.get(key)) is None:
+            return value
+        match key:
+            case "dataclass_arguments" if isinstance(template_value, dict):
+                return {**value, **template_value}
+            case "description" if isinstance(template_value, str):
+                return template_value
+            case "decorators" | "methods" if isinstance(template_value, list) and all(
+                isinstance(item, str) for item in template_value
+            ):
+                return list(template_value)
+        raise Error(_TEMPLATE_DATA_MODEL_VALUE_ERRORS[key])
 
     def _validate_fields(self, fields: list[DataModelFieldBase]) -> list[DataModelFieldBase]:
         names: set[str] = set()
@@ -3035,13 +2899,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         added to it.
         """
         met = set() if visited is None else visited
-        met_before = set(met)
         walk = _base_walk(GraphSnapshot.INHERITED_FIELDS, (self,))
-        for key in graph_answer(
-            GraphSnapshot.INHERITED_FIELDS,
-            walk.graph.postorder(walk.starts[0], EdgeKind.BASE, met),
-            lambda: [_model_key_of_model(model) for model in _walked_inherited_field_models(self, met_before)],
-        ):
+        for key in walk.graph.postorder(walk.starts[0], EdgeKind.BASE, met):
             yield from walk.node_of[key].fields
 
     def get_dedup_key(self, class_name: str | None = None, *, use_default: bool = True) -> tuple[Any, ...]:
@@ -3050,20 +2909,24 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         The parse's memo keeps the key per (class_name, use_default) combination, since the key computation involves
         expensive render() and imports calls.
         """
-        render_class_name = class_name if class_name is not None or not use_default else "M"
-
-        def compute() -> tuple[Any, ...]:
-            self._prepare_dedup_key()
-            return self._render_dedup_key(render_class_name)
-
+        render_class_name = self._dedup_key_class_name(class_name, use_default=use_default)
         return memoized(
             MemoTable.DEDUP_KEYS,
             model_key_of(self.reference),
             self,
             (class_name, use_default),
-            compute,
-            lambda: self._render_dedup_key(render_class_name),
+            lambda: self._fresh_dedup_key(render_class_name),
         )
+
+    @staticmethod
+    def _dedup_key_class_name(class_name: str | None, *, use_default: bool) -> str | None:
+        """Return the class name a dedup key renders the model under: ``M`` stands in for its own one by default."""
+        return class_name if class_name is not None or not use_default else "M"
+
+    def _fresh_dedup_key(self, class_name: str | None) -> tuple[Any, ...]:
+        """Write what rendering the dedup key decides (``_prepare_dedup_key``), then render it under a class name."""
+        self._prepare_dedup_key()
+        return self._render_dedup_key(class_name)
 
     def _prepare_dedup_key(self) -> None:
         """Write what rendering the dedup key decides, so rendering it writes nothing.
@@ -3109,16 +2972,12 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         None later, so models whose types render alike today stay apart when their None comes from different places.
         """
         return tuple(
-            position
-            for position, data_type in enumerate(
-                data_type for field in self.fields for data_type in field.data_type.all_data_types
-            )
-            if data_type.has_target_null
+            position for position, data_type in enumerate(self._field_type_nodes()) if data_type.has_target_null
         )
 
     def _written_values_by_position(self) -> tuple[tuple[int, tuple[Any, ...]], ...]:
         """Return the values as written that the model and the types of its fields keep, by their position."""
-        holders = chain((self,), (data_type for field in self.fields for data_type in field.data_type.all_data_types))
+        holders = chain((self,), self._field_type_nodes())
         return tuple(
             (position, values)
             for position, holder in enumerate(holders)
@@ -3140,7 +2999,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def create_reuse_model(self, base_ref: Reference) -> Self:
         """Create inherited model with empty fields pointing to base reference."""
         reuse_model = self._derive(
-            reference=Reference(name=self.name, path=self.reference.path + "/reuse"),
+            reference=Reference(name=self.name, path=self.reference.path + _REUSE_PATH_SUFFIX),
             fields=[],
             base_classes=[base_ref],
             description=self.description,
@@ -3158,9 +3017,12 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     ) -> Self:
         """Build a model of this class from ``reference``, ``fields`` and the rest, carrying over this model's options.
 
-        The options are those ``_derived_options`` returns; a model built from another one goes through here.
+        The options are those ``_derived_options`` returns, and the model takes this model's target Python; a model
+        built from another one goes through here.
         """
-        return self.__class__(
+        return _build_for_target(
+            self.target_python_version,
+            self.__class__,
             reference=reference,
             fields=fields,
             base_classes=base_classes,
@@ -3188,44 +3050,36 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
         if not any(is_named_python_decorator(decorator, "deprecated") for decorator in self.decorators):
             message = f"{self.class_name} is deprecated."
-            self.decorators = [*self.decorators, f"@deprecated({message!r})"]
+            self.decorators = [*self.decorators, f"@deprecated({stable_repr(message)})"]
         self._additional_imports.append(Import.from_full_path(backport_path("python.deprecated_decorator")))
 
     def replace_children_in_models(self, models: list[DataModel], new_ref: Reference) -> None:
         """Replace reference children if their parent model is in models list."""
-        for child in self.reference.children[:]:
-            if not isinstance(child, DataType):
-                continue
-            owner_model = get_most_of_parent(child, DataModel)
-            if isinstance(owner_model, DataModel):
+        for child in data_type_children(self.reference):
+            field = nearest_field(child)
+            if isinstance(owner_model := chain_root(child), DataModel):
                 if owner_model not in models:
                     continue
                 owner_models = (owner_model,)
             else:
-                owner_models = tuple(
-                    model for model in models if any(base_class is child for base_class in model.base_classes)
-                )
+                owner_models = base_owners(child, models)
             if not owner_models:
                 continue
             child.replace_reference(new_ref)
-            current: DataType | DataModelFieldBase = child
-            while isinstance(parent := current.parent, DataType):
-                current = parent
-            if isinstance(parent, DataModelFieldBase):
-                parent.invalidate_semantic_caches(invalidate_parent=False)
+            if field is not None:
+                field.invalidate_semantic_caches(invalidate_parent=False)
             for owner_model in owner_models:
                 owner_model.invalidate_render_caches()
 
+    def _configured_base_classes(self) -> list[str]:
+        """Return the base classes the model takes without generated bases: the configured ones, else ``BASE_CLASS``."""
+        if (custom_base_class := self.custom_base_class) is None:
+            return [self.BASE_CLASS] if self.BASE_CLASS else []
+        return custom_base_class if isinstance(custom_base_class, list) else [custom_base_class]
+
     def set_base_class(self) -> None:
         """Set up the base class(es) for this model."""
-        if self.custom_base_class is None:
-            base_class_list = [self.BASE_CLASS] if self.BASE_CLASS else []
-        elif isinstance(self.custom_base_class, list):
-            base_class_list = self.custom_base_class
-        else:
-            base_class_list = [self.custom_base_class]
-
-        if not base_class_list:
+        if not (base_class_list := self._configured_base_classes()):
             self.base_classes = []
             self.invalidate_render_caches()
             return
@@ -3243,12 +3097,18 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def template_file_path(self) -> Path:
         """Get the path to the template file, checking custom directory first."""
         template_file_path = Path(self.TEMPLATE_FILE_PATH)
-        if self._custom_template_dir is not None:
-            custom_template_file_path = self._custom_template_dir / template_file_path
-            _remember_custom_template_dependency(self._custom_template_dir, custom_template_file_path)
-            if cached_path_exists(custom_template_file_path):
-                return custom_template_file_path
-        return template_file_path
+        return self._custom_template_path(template_file_path) or template_file_path
+
+    def _custom_template_path(self, template_path: Path | str) -> Path | None:
+        """Return the template at ``template_path`` in the custom template directory, if it is there.
+
+        The path counts as a dependency of the generation whether it is there or not.
+        """
+        if (custom_template_dir := self._custom_template_dir) is None:
+            return None
+        custom_template_file_path = custom_template_dir / template_path
+        _remember_custom_template_dependency(custom_template_dir, custom_template_file_path)
+        return custom_template_file_path if cached_path_exists(custom_template_file_path) else None
 
     @cached_property
     def _uses_custom_root_template(self) -> bool:
@@ -3263,26 +3123,22 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
     @override
     def _render(self, *args: Any, **kwargs: Any) -> str:
-        """Render the template, writing the bare builtins that the module imports under aliases through the aliases."""
+        """Render the template, writing the bare names that the module imports under aliases through the aliases.
+
+        The aliases are those of the builtins a submodule hides and of the imports a field name hides, which the module
+        binds only under the alias, so every model of the module writes them.
+        """
         rendered = self._render_template(*args, **kwargs)
-        if self._builtin_name_bindings is None:
+        field_loads = {} if self._field_name_bindings is None else self._field_name_bindings.loads
+        if not (bindings := {**field_loads, **(self._builtin_name_bindings or {})}):
             return rendered
-        return _bind_builtin_names(rendered, self._builtin_name_bindings)
+        return _bind_bare_loads(rendered, bindings)
 
     def _render_template(self, *args: Any, **kwargs: Any) -> str:
         """Render project-owned built-ins without loading Jinja."""
-        if (
-            args
-            or self._custom_template_dir is not None
-            or not type(self).__module__.startswith("datamodel_code_generator.model.")
-        ):
-            return super()._render(*args, **kwargs)
-
-        from datamodel_code_generator.model._compiled_templates import get_builtin_renderer  # noqa: PLC0415
-
-        if renderer := get_builtin_renderer(self.TEMPLATE_FILE_PATH):
+        if not args and (renderer := _builtin_renderer(type(self), self.TEMPLATE_FILE_PATH, self._custom_template_dir)):
             return renderer(**kwargs)
-        return super()._render(**kwargs)
+        return super()._render(*args, **kwargs)
 
     @cached_property
     @override
@@ -3291,26 +3147,13 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         resolved_path = self.template_file_path
         template_adapter = self.CUSTOM_TEMPLATE_ADAPTER if self._custom_template_dir is not None else None
         if self._uses_custom_root_template:
-            absolute_template_path = resolved_path.absolute()
-            if template_adapter is None:
-                return _get_template_with_absolute_path(
-                    absolute_template_path,
-                    Path(self.TEMPLATE_FILE_PATH).parent,
-                    custom_template_dir=self._custom_template_dir,
-                )
             return _get_template_with_absolute_path(
-                absolute_template_path,
+                resolved_path.absolute(),
                 Path(self.TEMPLATE_FILE_PATH).parent,
                 template_adapter,
                 self._custom_template_dir,
             )
-        if template_adapter is None:
-            return _get_template_with_custom_dir(Path(self.TEMPLATE_FILE_PATH), self._custom_template_dir)
-        return _get_template_with_custom_dir(
-            Path(self.TEMPLATE_FILE_PATH),
-            self._custom_template_dir,
-            template_adapter,
-        )
+        return _get_template_with_custom_dir(Path(self.TEMPLATE_FILE_PATH), self._custom_template_dir, template_adapter)
 
     @property
     def imports(self) -> tuple[Import, ...]:
@@ -3460,9 +3303,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
     @staticmethod
     def _get_class_name(name: str) -> str:
-        if "." in name:
-            return name.rsplit(".", 1)[-1]
-        return name
+        return name.rsplit(".", 1)[-1]
 
     @property
     def class_name(self) -> str:
@@ -3480,7 +3321,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     @property
     def duplicate_class_name(self) -> str:
         """Get the duplicate class name without module path."""
-        return self._get_class_name(self.duplicate_name)
+        return _numbered_class(self.duplicate_name)
 
     @property
     def module_path(self) -> list[str]:
@@ -3492,11 +3333,15 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Get the full module name for this model."""
         return get_module_name(self.name, self.file_path, treat_dot_as_module=self._treat_dot_as_module)
 
+    def _field_type_nodes(self) -> Iterator[DataType]:
+        """Iterate over the data types of the model's fields, field by field, each type's tree in order."""
+        for field in self.fields:
+            yield from field.data_type.all_data_types
+
     @property
     def all_data_types(self) -> Iterator[DataType]:
         """Iterate over all data types used in this model."""
-        for field in self.fields:
-            yield from field.data_type.all_data_types
+        yield from self._field_type_nodes()
         yield from self.base_classes
 
     @property
@@ -3505,12 +3350,35 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         return self.IS_ALIAS
 
     @property
+    def effective_fields(self) -> tuple[DataModelFieldBase, ...]:
+        """The named fields of an instance after C3 inheritance and overrides (``get_effective_fields``)."""
+        return get_effective_fields(self)
+
+    @property
     def holds_null(self) -> bool:
         """Whether the class holds null as a value of its own: a root model or type alias whose type admits None.
 
         A type that names it restates no None under ``--omit-redundant-reference-null``.
         """
         return (self.IS_ROOT_MODEL or self.IS_ALIAS) and len(fields := self.fields) == 1 and fields[0]._admits_none()  # noqa: SLF001
+
+    @property
+    def form(self) -> ModelForm:
+        """How the model holds its value: as a root model, a type alias or the fields of an object.
+
+        A root model written as an assignment (``Foo = RootModel[str]``) is a root model: its value is its instance.
+        """
+        return "root" if self.IS_ROOT_MODEL else "alias" if self.IS_ALIAS else "object"
+
+    @property
+    def value_base(self) -> str | None:
+        """The builtin type an enum subclasses for the values of its members; a model that is no enum has none."""
+        return None
+
+    @property
+    def has_length(self) -> bool:
+        """Whether the instance of the model has a length (``__len__``); only a sequence interface gives it one."""
+        return False
 
     @classmethod
     def create_base_class_model(
@@ -3541,29 +3409,116 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def finalize_sequence_interface(self) -> None:
         """Finalize sequence helper metadata after parser type transformations."""
 
-    def _name_final_classes(self) -> None:
-        """Render the backend settings that name the classes of additional properties once class names are final."""
+    def _name_final_classes(self, *, binds_named_classes: bool = False) -> None:
+        """Render the backend settings that name the classes of additional properties once class names are final.
+
+        ``binds_named_classes`` tells that every class they name is bound when the class statement runs.
+        """
 
     def _setting_data_types(self) -> Iterator[DataType]:  # ruff: ignore[no-self-use]
         """Yield the data types that the backend settings of the class write; the neutral model has none."""
         yield from ()
 
+    def _setting_data_types_read_at_definition(self) -> Iterator[DataType]:  # ruff: ignore[no-self-use]
+        """Yield the data types of the backend settings the class statement evaluates; the neutral model has none."""
+        yield from ()
+
+    @property
+    def additional_properties_type(self) -> DataType | None:
+        """The type of the additional properties that the backend settings of the class write, or None.
+
+        TypedDict writes it as ``extra_items``; the neutral model writes none.
+        """
+        return None
+
+    def _write_additional_properties_type(self, data_type: DataType) -> None:
+        """Write ``data_type`` as the type of the additional properties, with its imports, as the settings render it.
+
+        The classes it names stay those recorded for the additional properties. ``GenerationStore`` runs it
+        (``replace_additional_properties_type``).
+        """
+        self.store_additional_properties_type(
+            self.extra_template_data,
+            _make_referencing_type_expression(data_type),
+            set(self.additional_properties_reference_classes),
+            imports=tuple(data_type.all_imports),
+        )
+        self._name_final_classes()
+
     def _decide_config_items(self) -> None:
         """Decide the config items the class writes, once every fact they read is final; the neutral model has none."""
-
-    @classmethod
-    def get_native_hash_model_paths(cls, models: list[DataModel]) -> set[str]:  # noqa: ARG003
-        """Return models whose backend hash can replace the legacy set-item hash."""
-        return set()
 
     def enable_identity_hash(self) -> None:
         """Retain the legacy identity hash for a set item without a usable native hash."""
         self._append_internal_template_data("class_body_lines", "__hash__ = object.__hash__")
 
+    def _class_hash(self, generic_base_config: Mapping[str, Any] | None) -> SetItemHash:  # noqa: ARG002, PLR6301
+        """Return how the class hashes its instances (``class_set_item_hash``), as far as its class alone tells.
+
+        A class hashes its instances by identity here: a Pydantic class takes the identity hash as a set item; a backend
+        whose classes compare by value says otherwise. ``generic_base_config`` is the configuration of the generic base
+        class the output's models inherit from (--use-generic-base-class) before it is a base of theirs, if any.
+        """
+        return "identity"
+
+    def _instances_never_hash(self, generic_base_config: Mapping[str, Any] | None) -> bool:
+        """Return whether the instances of the class never hash, so that no set holds one (``_class_hash``)."""
+        return self._class_hash(generic_base_config) == "never"
+
+    def _compared_class_hash(
+        self, *, dicts: bool = False, compares_by_value: bool = True, frozen: bool = False, own_hash: bool = False
+    ) -> SetItemHash:
+        """Return ``class_set_item_hash`` for the class; class code, a custom base class or templates may hash it."""
+        facts = self._hash_class_facts()
+        return class_set_item_hash(
+            dicts=dicts,
+            compares_by_value=compares_by_value,
+            frozen=frozen,
+            own_hash=own_hash or facts.user_class_code or facts.custom_base_class or facts.custom_template_dir,
+        )
+
+    def set_item_hash(self, *, user_imports: bool) -> SetItemHash:
+        """Return how the instances of the class hash as set items once the generic base class is one of its bases.
+
+        A class that hashes by identity keeps the builtin hash of a frozen Pydantic class, which hashes by value, where
+        the backend lets set item models keep it (``set_item_models_keeping_builtin_hash``) and no user import
+        (``user_imports``) may shadow the annotations it reads.
+        """
+        if (
+            (class_hash := self._class_hash(None)) == "identity"
+            and (field_value_hashes := self._FIELD_VALUE_HASHES) is not None
+            and set_items_may_keep_builtin_hash(user_imports=user_imports)
+            and set_item_models_keeping_builtin_hash((self,), field_value_hashes)
+        ):
+            return "value"
+        return class_hash
+
+    def _hash_class_facts(self) -> HashClassFacts:
+        """Read the facts of the class that hashability reads; only a backend's own class keeps a builtin hash."""
+        return HashClassFacts(
+            custom_base_class=bool(self.custom_base_class),
+            user_class_code=bool(
+                self.methods
+                or self.decorators
+                or self.extra_template_data.get("validators")
+                or self.extra_template_data.get("class_body_lines")
+            ),
+            custom_template_dir=(directory := self._custom_template_dir) is not None
+            and overrides_builtin_templates(directory),
+        )
+
     @property
     def _keys_take_root_type(self) -> bool:
-        """Whether a dict key that names the model takes its root type instead."""
-        return False
+        """Whether a dict key that names the model takes its root type instead (``dict_key_takes_root_type``)."""
+        if not self._DICT_KEYS_TAKE_ROOT_TYPE:
+            return False
+        chain = _hash_chain(GraphSnapshot.DICT_KEY_ROOT_TYPES, (self,))[0]
+        return dict_key_takes_root_type(
+            chain=chain,
+            generated_checks=bool(self._internal_template_data.get("class_body_lines"))
+            or self.has_runtime_object_validation,
+            custom_root_template=chain[0].custom_template_dir and self._uses_custom_root_template,
+        )
 
     @property
     def schema_runtime_validation(self) -> _runtime_validation.SchemaRuntimeValidation | None:
@@ -3592,8 +3547,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             reference
             for rule_data_type in runtime_validation.data_types
             for data_type in rule_data_type.all_data_types
-            if (reference := data_type.reference) is not None
-            and not _reference_names_model(reference, self, "schema runtime validation references")
+            if (reference := data_type.reference) is not None and not _reference_names_model(reference, self)
         )
 
     @property
@@ -3678,13 +3632,29 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             return self.extra_template_data
         return {**self.extra_template_data, **self._internal_template_data}
 
+    def _render_with_template_data(self, *, use_custom_template: bool, **render_arguments: Any) -> str:
+        """Render with the template data over the arguments the model passes, but for the values it merged itself.
+
+        The template data replaces ``base_class`` and the merged values only. The other arguments, such as the
+        ``class_name``, the ``fields`` and the ``path``, are what other models reference and the parser decided, so
+        template data of the same name is refused.
+        """
+        template_data = self._custom_template_data() if use_custom_template else self._builtin_template_data()
+        if refused := sorted(template_data.keys() & render_arguments.keys() - _TEMPLATE_DATA_OVERRIDABLE_KEYS):
+            msg = f"extra template data cannot set {', '.join(refused)}, which the generator decides for the model"
+            raise Error(msg + (_TEMPLATE_DATA_RENAME_HINT if "class_name" in refused else ""))
+        return self._render(**{
+            **render_arguments,
+            **{key: value for key, value in template_data.items() if key not in _TEMPLATE_DATA_MODEL_VALUE_ERRORS},
+        })
+
     @override
     def render(self, *, class_name: str | None = None) -> str:
         """Render the model to a string using the template."""
         use_custom_template = self._uses_custom_root_template
-        extra_template_data = self._custom_template_data() if use_custom_template else self._builtin_template_data()
         rendered_class_name = class_name or self.class_name
-        rendered = self._render(
+        rendered = self._render_with_template_data(
+            use_custom_template=use_custom_template,
             class_name=rendered_class_name,
             fields=self._template_fields(use_custom_template=use_custom_template),
             decorators=self.decorators,
@@ -3694,17 +3664,16 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             dataclass_arguments=(
                 self.dataclass_arguments
                 if use_custom_template or not self.USES_DATACLASS_ARGUMENTS
-                else _safe_dataclass_arguments(self.dataclass_arguments)
+                else self._checked_dataclass_arguments(rendered_class_name)
             ),
             path=self.path,
-            **extra_template_data,
         )
-        if self._field_name_bindings is None:
+        if self._field_name_bindings is None or not self._field_name_bindings.expressions:
             return rendered
-        return _bind_field_expressions(rendered, rendered_class_name, self._field_name_bindings)
+        return _bind_field_expressions(rendered, rendered_class_name, self._field_name_bindings.expressions)
 
-    def set_field_name_bindings(self, bindings: Mapping[str, str]) -> None:
-        """Set module import names used by rendered field expressions."""
+    def set_field_name_bindings(self, bindings: FieldNameBindings) -> None:
+        """Set the aliases of the names the module's field names hide, which the rendered text writes."""
         self._field_name_bindings = bindings
         self.invalidate_render_caches()
 
@@ -3740,18 +3709,11 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         return self.rendered_fields
 
     def _refresh_field_render_plans(self) -> None:
-        """Rebuild the frozen plan of each field whose contents changed since, as ``render`` may change them.
-
-        A rebuilt plan must account for every item its field declares, as a frozen one, under
-        ``DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS``.
-        """
+        """Rebuild the frozen plan of each field whose contents changed since, as ``render`` may change them."""
         if (ready := RENDER_READY.get()) is None:
             return
         for field in cast("list[PlannedField]", self.fields):
-            if (plan := ready.refreshed(field)) is not None and (
-                mode := check_mode(CheckArea.RENDER_PLANS)
-            ) is not None:
-                _check_render_plan_accounting(mode, self, field, plan)
+            ready.refreshed(field)
 
     def _template_description(self, *, use_custom_template: bool) -> str | None:
         """Return a description safe for the selected template convention."""
@@ -3787,6 +3749,24 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         ]
 
 
+def _model_package_class(cls: type) -> bool:
+    """Return whether ``cls`` is a built-in model, field or type class, one that the model package defines."""
+    return cls.__module__.startswith("datamodel_code_generator.model.")
+
+
+def _builtin_renderer(cls: type, template_path: str, custom_template_dir: Path | None) -> Callable[..., str] | None:
+    """Return the compiled renderer of a built-in template, none where Jinja renders it.
+
+    A class that the model package defines renders its template with the compiled renderer, whose output equals the
+    Jinja output; a custom class or a custom template directory renders it with Jinja.
+    """
+    if custom_template_dir is not None or not _model_package_class(cls):
+        return None
+    from datamodel_code_generator.model._compiled_templates import get_builtin_renderer  # noqa: PLC0415
+
+    return get_builtin_renderer(template_path)
+
+
 def direct_base_models(model: DataModel, stand_ins: Mapping[int, Reference | None] | None = None) -> list[DataModel]:
     """Return the generated models ``model`` inherits from; a base a type override replaced is its stand-in model."""
     if not stand_ins:
@@ -3807,39 +3787,38 @@ def _base_walk(
     )
 
 
-def _walked_inherited_field_models(model: DataModel, met: set[ModelKey]) -> list[DataModel]:
-    """Return the models whose fields ``model`` inherits, bases first, each once, by walking its bases."""
-    if (key := model_key_of(model.reference)) in met:
-        return []
-    met.add(key)
-    models = [
-        inherited for base in _find_base_classes(model) for inherited in _walked_inherited_field_models(base, met)
-    ]
-    models.append(model)
-    return models
-
-
 def _model_ancestor_keys(model: DataModel, stand_ins: Mapping[int, Reference | None] | None) -> frozenset[ModelKey]:
     """Collect the model keys of generated ancestors without assuming direct bases are already sorted."""
     walk = _base_walk(GraphSnapshot.ANCESTORS, (model,), stand_ins)
-    return graph_answer(
-        GraphSnapshot.ANCESTORS,
-        walk.graph.reached(walk.starts[0], (EdgeKind.BASE,)),
-        lambda: _walked_ancestors(model, stand_ins),
-    )
+    return walk.graph.reached(walk.starts[0], (EdgeKind.BASE,))
 
 
-def _walked_ancestors(model: DataModel, stand_ins: Mapping[int, Reference | None] | None) -> frozenset[ModelKey]:
-    """Collect the model keys of the generated ancestors of ``model`` by walking its bases."""
-    ancestors: set[ModelKey] = set()
-    to_visit = direct_base_models(model, stand_ins)
-    while to_visit:
-        parent = to_visit.pop()
-        if (parent_key := model_key_of(parent.reference)) in ancestors:
-            continue
-        ancestors.add(parent_key)
-        to_visit.extend(direct_base_models(parent, stand_ins))
-    return frozenset(ancestors)
+def _hash_chain(snapshot: GraphSnapshot, models: Sequence[DataModel]) -> list[list[HashClassFacts]]:
+    """Return the hash facts of the chain of each of ``models``: the model and the generated models it inherits from.
+
+    The chain is in the order a walk of the reference graph over bases meets them, each model once.
+    """
+    walk = _base_walk(snapshot, models)
+    facts = {key: model._hash_class_facts() for key, model in walk.node_of.items()}  # noqa: SLF001
+    return [[facts[key] for key in walk.graph.preorder(start, EdgeKind.BASE)] for start in walk.starts]
+
+
+def set_item_models_keeping_builtin_hash(
+    models: Sequence[DataModel], field_value_hashes: Callable[[DataModelFieldBase], bool]
+) -> set[ModelKey]:
+    """Return the model keys of the set item ``models`` that keep the builtin hash of their class.
+
+    The others hash by identity (``keeps_builtin_hash``). ``field_value_hashes`` is the backend's
+    ``DataModel._FIELD_VALUE_HASHES``.
+    """
+    return {
+        model_key_of(model.reference)
+        for model, chain in zip(models, _hash_chain(GraphSnapshot.SET_ITEM_HASH, models), strict=True)
+        if keeps_builtin_hash(
+            chain=chain,
+            field_values=(field_value_hashes(field) for field in get_effective_fields(model) if not field.is_class_var),
+        )
+    }
 
 
 def _model_key_of_model(model: DataModel) -> ModelKey:
@@ -3847,37 +3826,19 @@ def _model_key_of_model(model: DataModel) -> ModelKey:
     return model_key_of(model.reference)
 
 
-def _keyed_answer(site: str, by_key: _AnswerT, by_path: Callable[[], _AnswerT]) -> _AnswerT:
-    """Return ``by_key``, what a site finds by model key or Reference identity.
-
-    Under the ``MODEL_GRAPH`` check, a ``by_key`` that differs from ``by_path()``, what the site found by path, name or
-    Reference equality before, is a violation.
-    """
-    if (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None and by_key != by_path():
-        mode.violation(Error, f"{site}: the lookups by model key and by path disagree", site=site)
-    return by_key
-
-
 @final
 class _ModelKeys:
-    """The model keys of the models that one walk, map or cache meets, which it tells models apart by.
+    """The model keys of the models that one walk, map or cache meets, which it tells models apart by."""
 
-    Under the ``MODEL_GRAPH`` check, a model met at the path of another model the same walk met is a violation
-    (`_keyed_answer`): told apart by path, the two would be taken for one model.
-    """
+    __slots__ = ("_met",)
 
-    __slots__ = ("_keys_by_path", "_met", "_site")
-
-    def __init__(self, site: str) -> None:
-        """Start the keys of one walk, map or cache, which ``site`` names in a violation."""
-        self._site = site
-        self._keys_by_path: dict[str, ModelKey] = {}
+    def __init__(self) -> None:
+        """Start the keys of one walk, map or cache."""
         self._met: set[ModelKey] = set()
 
-    def of(self, model: DataModel) -> ModelKey:
+    def of(self, model: DataModel) -> ModelKey:  # noqa: PLR6301
         """Return the model key of ``model``."""
-        key = model_key_of(model.reference)
-        return _keyed_answer(self._site, key, lambda: self._keys_by_path.setdefault(model.path, key))
+        return model_key_of(model.reference)
 
     def first(self, model: DataModel) -> bool:
         """Return whether the walk meets ``model`` for the first time, and remember it as met."""
@@ -3914,57 +3875,29 @@ def forget_model_memos(model: DataModel, *tables: MemoTable) -> None:
             forget(table, model_key_of(reference), model)
 
 
-def _reference_names_model(reference: Reference, model: DataModel, site: str) -> bool:
+def _reference_names_model(reference: Reference, model: DataModel) -> bool:
     """Return whether ``reference`` names ``model``: whether the two carry one model key.
 
     Row ``legacy-keyless-reference-by-path``: a reference that no model was built with (one built outside the resolver,
     such as by a parser extension) names the model at its path. Row ``legacy-replaced-root-shares-path``: a reference
     to the model that shares the path of ``model`` since collapse replaced one by the other names it too
-    (`_share_path_identity`). Under the ``MODEL_GRAPH`` check, a reference whose path and model key disagree on
-    whether it names ``model`` is a violation (`_keyed_answer`).
+    (`_share_path_identity`).
     """
-    by_path = reference.path == model.path
-    key = model_key_of(reference)
-    named = (
-        by_path
-        if reference.source is None
-        else key in {model_key_of(model.reference), model.__dict__.get(_PATH_PARTNER_KEY)}
-    )
-    return _keyed_answer(site, named, lambda: by_path)
+    if names_by_path(reference):
+        return reference.path == model.path
+    return model_key_of(reference) in _path_identity_keys(model)
 
 
 def sort_data_models_for_mro(
     models: list[DataModel], stand_ins: Mapping[int, Reference | None] | None = None
 ) -> list[DataModel]:
     """Match the stable descendant-before-ancestor order used for rendered bases."""
-    return _sort_for_mro(models, lambda model: _model_ancestor_keys(model, stand_ins))
-
-
-def _sort_for_mro(models: list[DataModel], ancestors_of: Callable[[DataModel], frozenset[ModelKey]]) -> list[DataModel]:
-    """Order ``models`` descendants first, stably, by the model keys of the ancestors ``ancestors_of`` gives."""
-    if len(models) <= 1:
-        return models.copy()
-    ancestor_keys = {model_key_of(model.reference): ancestors_of(model) for model in models}
-    return sorted(
-        models,
-        key=lambda model: sum(model_key_of(model.reference) in ancestors for ancestors in ancestor_keys.values()),
+    return _mro.sort_descendants_first(
+        models, _model_key_of_model, lambda model: _model_ancestor_keys(model, stand_ins)
     )
 
 
-def c3_merge(sequences: list[list[MroT]], key: Callable[[MroT], Hashable]) -> list[MroT]:
-    """Merge inheritance sequences using C3 with a deterministic cycle fallback."""
-    result: list[MroT] = []
-    while sequences := [sequence for sequence in sequences if sequence]:
-        tail_keys = {key(item) for sequence in sequences for item in sequence[1:]}
-        candidate = next(
-            (sequence[0] for sequence in sequences if key(sequence[0]) not in tail_keys),
-            sequences[0][0],
-        )
-        candidate_key = key(candidate)
-        result.append(candidate)
-        for sequence in sequences:
-            sequence[:] = [item for item in sequence if key(item) != candidate_key]
-    return result
+c3_merge = _mro.c3_merge
 
 
 def linearize_data_models(
@@ -3973,72 +3906,127 @@ def linearize_data_models(
     """Return the effective C3 order for direct generated models; ``stand_ins`` give the bases overrides replaced.
 
     Each model is linearized after its bases, from the snapshot of the models reached through base classes, a base a
-    type override replaced counted at every level. An inheritance cycle, which the generated code cannot define, keeps
-    the depth-first walk that cuts the cycle where it meets a model again (`_linearize_depth_first`).
+    type override replaced counted at every level, each level descendants first. An inheritance cycle, which the
+    generated code cannot define, keeps the walk that cuts the cycle where it meets a model again, each level sorted
+    by the ancestors of its own models (`_mro.linearize`, row ``first-head``).
     """
     if len(models) == 1 and not models[0].base_classes:
         return models.copy()
     walk = _base_walk(GraphSnapshot.BASE_CLASS_ORDER, models, stand_ins)
     graph = walk.graph
-    if (order := graph.acyclic_order((EdgeKind.BASE,))) is None:
-        return _linearize_depth_first(models, stand_ins)
+    if graph.acyclic_order((EdgeKind.BASE,)) is None:
+        return _mro.linearize(
+            sort_data_models_for_mro(models, stand_ins),
+            _model_key_of_model,
+            lambda model: sort_data_models_for_mro(direct_base_models(model, stand_ins), stand_ins),
+        )
     node_of = walk.node_of
 
-    def ancestors_of(model: DataModel) -> frozenset[ModelKey]:
-        return graph.reached(model_key_of(model.reference), (EdgeKind.BASE,))
-
-    def merged(heads: list[DataModel]) -> list[DataModel]:
-        heads = _sort_for_mro(heads, ancestors_of)
-        return c3_merge(
-            [*[lineages[model_key_of(head.reference)].copy() for head in heads], heads.copy()], key=_model_key_of_model
+    def descendants_first(heads: list[DataModel]) -> list[DataModel]:
+        return _mro.sort_descendants_first(
+            heads, _model_key_of_model, lambda model: graph.reached(model_key_of(model.reference), (EdgeKind.BASE,))
         )
 
-    lineages: dict[ModelKey, list[DataModel]] = {}
-    for key in order:
-        lineages[key] = [node_of[key], *merged([node_of[base] for base in graph.ordered_targets(key, EdgeKind.BASE)])]
-    return [
-        node_of[key]
-        for key in graph_answer(
-            GraphSnapshot.BASE_CLASS_ORDER,
-            list(map(_model_key_of_model, merged(list(models)))),
-            lambda: list(map(_model_key_of_model, _linearize_depth_first(models, stand_ins))),
-        )
-    ]
+    order = _mro.linearize(
+        descendants_first(list(models)),
+        _model_key_of_model,
+        lambda model: descendants_first([
+            node_of[base] for base in graph.ordered_targets(model_key_of(model.reference), EdgeKind.BASE)
+        ]),
+    )
+    return [node_of[key] for key in map(_model_key_of_model, order)]
 
 
-def _linearize_depth_first(
-    models: list[DataModel], stand_ins: Mapping[int, Reference | None] | None
-) -> list[DataModel]:
-    """Return the effective C3 order for direct generated models by a depth-first walk of their bases."""
-    linearized_models: dict[ModelKey, list[DataModel]] = {}
+def inherited_root_field(model: DataModel) -> DataModelFieldBase:
+    """Return the field of a root model, or of the root model that the empty subclass reuse made of it inherits."""
+    while not model.fields:
+        model = _find_base_classes(model)[0]
+    return model.fields[0]
 
-    def linearize(model: DataModel, active: frozenset[ModelKey] = frozenset()) -> list[DataModel]:
-        model_key = model_key_of(model.reference)
-        if cached := linearized_models.get(model_key):
-            return cached
-        if model_key in active:
-            return [model]
-        parents = sort_data_models_for_mro(direct_base_models(model, stand_ins), stand_ins)
-        result = [
-            model,
-            *c3_merge(
-                [
-                    *[linearize(parent, active | {model_key}).copy() for parent in parents],
-                    parents.copy(),
-                ],
-                key=_model_key_of_model,
-            ),
-        ]
-        linearized_models[model_key] = result
-        return result
 
-    direct_models = sort_data_models_for_mro(models, stand_ins)
-    return c3_merge(
-        [
-            *[linearize(model).copy() for model in direct_models],
-            direct_models.copy(),
-        ],
-        key=_model_key_of_model,
+def python_base_classes(model: DataModel) -> list[BaseClassDataType] | None:
+    """Return the bases Python creates the class of ``model`` from, where it refuses those the model lists, or None.
+
+    Python refuses a generated base listed twice and bases whose orders C3 cannot merge (`_mro.linearize`, row
+    ``python``); the bases are then listed once each, descendants first as `sort_data_models_for_mro` orders them.
+    """
+    if not model._PYTHON_CHECKS_BASES or (  # noqa: SLF001
+        _mro.linearize([model], _model_key_of_model, _find_base_classes, rule="python") is not None
+    ):
+        return None
+    bases = list({id(base.reference) if base.reference else id(base): base for base in model.base_classes}.values())
+    order = {
+        model_key_of(source.reference): index
+        for index, source in enumerate(sort_data_models_for_mro(_find_base_classes_of(bases)))
+    }
+    return sorted(bases, key=lambda base: order.get(model_key_of(base.reference), 0) if base.reference else 0)
+
+
+_ClassVarRow: TypeAlias = Literal["declared", "no-place"]
+"""How a class variable counts among the fields a model has with its bases.
+
+* ``declared``: like any other declaration, so one overrides an inherited field of its name.
+* ``no-place``: not at all, as msgspec leaves class variables out of a struct's fields: a field named like an inherited
+  class variable comes after the inherited fields (`parser/_passes/render_prep.py:fix_tag_opt_out_field_ordering`).
+"""
+
+
+_RootConstraintRow: TypeAlias = Literal["declared", "with-consumed"]
+"""What constrains a root field: row ``declared`` the values its constraints set (``ConstraintsBase.has_constraints``:
+the collapse facts, an alias or root model a target checks), row ``with-consumed`` those or the keywords its type or a
+direct member of it writes itself (collapsing a root model, site models of constrained references)."""
+
+
+def _has_root_field_constraints(root_field: DataModelFieldBase, *, row: _RootConstraintRow = "with-consumed") -> bool:
+    """Return whether a root field has constraints as Field() arguments or, in row ``with-consumed``, in its type."""
+    if isinstance(constraints := root_field.constraints, ConstraintsBase) and constraints.has_constraints:
+        return True
+    return row == "with-consumed" and any(
+        data_type._consumed_constraints  # noqa: SLF001
+        for data_type in (root_field.data_type, *root_field.data_type.data_types)
+    )
+
+
+def _root_constraint_keywords(root_field: DataModelFieldBase) -> dict[str, Any]:
+    """Return the constraints other than ``unique_items`` that a root field sets, by their keywords."""
+    if not isinstance(constraints := root_field.constraints, ConstraintsBase):
+        return {}
+    return constraints.model_dump(by_alias=True, exclude_none=True, exclude={"unique_items"})
+
+
+def _named_field(field: DataModelFieldBase) -> str | None:
+    return field.name or None
+
+
+def _named_instance_field(field: DataModelFieldBase) -> str | None:
+    return None if field.is_class_var else field.name or None
+
+
+def _fields_of(model: DataModel) -> list[DataModelFieldBase]:
+    return model.fields
+
+
+def _effective_field_owners(
+    model: DataModel,
+    ancestors: Sequence[DataModel],
+    *,
+    class_vars: _ClassVarRow = "declared",
+    stand_ins: Mapping[int, Reference | None] | None = None,
+) -> dict[str, tuple[DataModel, DataModelFieldBase]]:
+    """Return the field each name of ``model`` resolves to with its bases, and the model that declares it.
+
+    ``ancestors`` are the models ``model`` inherits from in its method resolution order (`linearize_data_models`),
+    ``stand_ins`` the bases overrides replaced. A name keeps the place where the farthest of them declares it and
+    takes the declaration the class of the model's row takes (``_BASE_FIELDS``), the model's own first; unnamed fields
+    are left out. ``class_vars`` names how a class variable counts.
+    """
+    return _mro.collect_members(
+        (model, *ancestors),
+        _fields_of,
+        _named_field if class_vars == "declared" else _named_instance_field,
+        lambda base: direct_base_models(base, stand_ins),
+        _model_key_of_model,
+        rule=model._BASE_FIELDS,  # noqa: SLF001
     )
 
 
@@ -4046,13 +4034,7 @@ def get_effective_fields(model: DataModel) -> tuple[DataModelFieldBase, ...]:
     """Return constructor-visible fields after C3 inheritance and overrides."""
     if not model.base_classes:
         return tuple(field for field in model.fields if field.name is not None)
-
-    effective_fields: dict[str, DataModelFieldBase] = {}
-    for inherited_model in reversed(linearize_data_models([model])):
-        for field in inherited_model.fields:
-            if field.name is not None:
-                effective_fields[field.name] = field
-    return tuple(effective_fields.values())
+    return tuple(field for _, field in _effective_field_owners(model, linearize_data_models([model])[1:]).values())
 
 
 def get_inherited_fields(models: list[DataModel]) -> dict[str, DataModelFieldBase]:
@@ -4080,9 +4062,15 @@ _rebuild_namespace = _model_rebuild_namespace(DataType, BaseClassDataType, DataM
 
 
 def _rebuild_model_with_datamodel_namespace(model: type[Any]) -> None:
+    """Complete ``model`` with the names of its own module over those of the data type and data model modules.
+
+    The schema of a model whose fields hold a complete model takes that model's schema as it is, so ``Reference`` is
+    completed first, once: each data type class would otherwise build a copy of it into its own schema.
+    """
     model.model_rebuild(_types_namespace={**_rebuild_namespace, **vars(sys.modules[model.__module__])})
 
 
+_rebuild_model_with_datamodel_namespace(Reference)
 _rebuild_model_with_datamodel_namespace(DataType)
 _rebuild_model_with_datamodel_namespace(BaseClassDataType)
 _rebuild_model_with_datamodel_namespace(DataModelFieldBase)
@@ -4090,4 +4078,9 @@ _rebuild_model_with_datamodel_namespace(DataModelFieldBase)
 
 def _find_base_classes(model: DataModel) -> list[DataModel]:
     """Get direct base class DataModels."""
-    return [b.reference.source for b in model.base_classes if b.reference and isinstance(b.reference.source, DataModel)]
+    return _find_base_classes_of(model.base_classes)
+
+
+def _find_base_classes_of(base_classes: Iterable[BaseClassDataType]) -> list[DataModel]:
+    """Return the generated models ``base_classes`` name."""
+    return [b.reference.source for b in base_classes if b.reference and isinstance(b.reference.source, DataModel)]

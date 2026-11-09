@@ -14,7 +14,7 @@ check
   MISSING: server/_generated/openapi.json (file does not exist but should be generated)
   MISSING: server/README.md (file does not exist but should be generated)
   MISSING: server/py.typed (file does not exist but should be generated)
-  5 runtime modules ['MISSING']
+  9 runtime modules ['MISSING']
 check
   Error: The --server-operation-names entry '/paths/~1items/get' in 'urn:dcg:root' selects no root path operation
 check

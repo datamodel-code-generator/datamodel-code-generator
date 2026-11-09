@@ -1,0 +1,2 @@
+{"errors": {"count": 1}, "detail": {"message": "m"}, "group": {"size": 2}, "group_detail": {"reason": "r"}}: accepted Report(errors=Warning(count=1), detail=Detail(message='m'), group=ExceptionGroup(size=2), group_detail=Detail(reason='r'))
+{"errors": {"count": "one"}}: rejected ValidationError

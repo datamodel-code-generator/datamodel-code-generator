@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING
 
 from fastapi.exceptions import HTTPException
 
 if TYPE_CHECKING:
     from pydantic import ValidationError
-
-_VALUE: Final = ("value_error", "Invalid value")
 
 Record = dict[str, object]
 
@@ -26,8 +24,7 @@ def missing(location: tuple[str, ...]) -> Record:
 
 def invalid(location: tuple[str, ...]) -> Record:
     """Return the record of a value the request carries in a form its declaration rejects."""
-    kind, message = _VALUE
-    return {"type": kind, "loc": location, "msg": message}
+    return {"type": "value_error", "loc": location, "msg": "Invalid value"}
 
 
 def media_invalid(location: tuple[str, ...]) -> Record:

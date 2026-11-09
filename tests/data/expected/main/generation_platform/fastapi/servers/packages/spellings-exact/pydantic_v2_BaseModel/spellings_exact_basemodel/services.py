@@ -12,8 +12,6 @@ from typing import List, Literal, Optional, Protocol, Union
 
 from fastapi.responses import Response
 from pydantic import Base64Str
-from spellings_exact_basemodel_models import Response as Response_1
-from spellings_exact_basemodel_models import Tag
 from spellings_exact_basemodel_models import (
     CountsGetResponse,
     Day,
@@ -23,6 +21,8 @@ from spellings_exact_basemodel_models import (
     PetsGetResponse,
     Query,
 )
+from spellings_exact_basemodel_models import Response as Response_1
+from spellings_exact_basemodel_models import Tag
 from typing_extensions import TypeVar
 
 import tests.data.python.fastapi_handlers.spelling_types as tests_data_python_fastapi_handlers_spelling_types
@@ -118,8 +118,20 @@ class FieldsService(Protocol):
     def post_thing(
         self,
         *,
-        body: tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0],
-    ) -> Union[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0], HTTPResult[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0]], Response]:
+        body: tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields[
+            'items'
+        ].annotation.__args__[0],
+    ) -> Union[
+        tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields[
+            'items'
+        ].annotation.__args__[0],
+        HTTPResult[
+            tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields[
+                'items'
+            ].annotation.__args__[0]
+        ],
+        Response,
+    ]:
         """
         Handle POST /things.
         """

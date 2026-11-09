@@ -8,8 +8,9 @@ from functools import cached_property
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final
 
-from datamodel_code_generator._api_generation import RenderedFile, implementation_text
+from datamodel_code_generator._api_generation import RenderedFile, implementation_text, runtime_files
 from datamodel_code_generator._api_types import Implementation, NextSteps
+from datamodel_code_generator._container_kinds import CONTAINER_FLAGS, MAPPINGS
 from datamodel_code_generator._fastapi._compiled_templates import application as application_template
 from datamodel_code_generator._fastapi._compiled_templates import authorize as authorize_template
 from datamodel_code_generator._fastapi._compiled_templates import contract as contract_template
@@ -21,36 +22,61 @@ from datamodel_code_generator._fastapi._compiled_templates import readme as read
 from datamodel_code_generator._fastapi._compiled_templates import router as router_template
 from datamodel_code_generator._fastapi._compiled_templates import security as security_template
 from datamodel_code_generator._fastapi._compiled_templates import services as services_template
+from datamodel_code_generator._fastapi.packages import (
+    SERVICES,
+    implementations_docstring,
+    server_docstring,
+    services_package,
+)
 from datamodel_code_generator._fastapi.plan import (
     Default,
+    FilePartSpec,
     JsonPartSpec,
     MemberDefault,
     ParameterDefault,
     RootDefault,
     default_media,
-    fact,
     json_value,
 )
-from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, tags
-from datamodel_code_generator._runtime.model_codecs.media import charset, media_kind
+from datamodel_code_generator._fastapi.routes import BUILDER_NAMES
+from datamodel_code_generator._openapi_codec_plan import EXTRAS
+from datamodel_code_generator._python_syntax import (
+    call_text,
+    dict_display,
+    escape_docstring,
+    format_docstring,
+    keyword_argument,
+    list_display,
+    set_display,
+    subscript_text,
+    tuple_display,
+)
+from datamodel_code_generator._runtime.model_codecs.media import charset, media_kind, range_key
 from datamodel_code_generator._target_contract import (
     BuiltinType,
     ConstructorType,
     GenericType,
-    ImportedExpression,
     ImportedType,
     LiteralScalar,
     LiteralSequence,
-    NoneType,
-    SourceExpression,
     UnionType,
+    fact,
 )
+from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_module import TargetModule
-from datamodel_code_generator._target_render import Keyword, Parameter, field_plan, parameter_plan, runtime_sources
-from datamodel_code_generator._target_templates import builtin_role, templated
+from datamodel_code_generator._target_naming import NameScope
+from datamodel_code_generator._target_operations import coded_use, described, tags
+from datamodel_code_generator._target_render import (
+    Keyword,
+    Parameter,
+    member_plan,
+    parameter_plan,
+)
+from datamodel_code_generator._target_templates import roles, templated
+from datamodel_code_generator._target_types import admits_none, container_slot
 from datamodel_code_generator._target_unicode import casefold
-from datamodel_code_generator.model.base import escape_docstring, format_docstring
 from datamodel_code_generator.model.pydantic_v2._annotated_types import annotated_constraint_metadata
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -64,34 +90,17 @@ if TYPE_CHECKING:
         NativeField,
         OperationSpec,
         ParameterSpec,
-        Requirement,
         SchemeKind,
         SchemeSpec,
         ServerPlan,
     )
     from datamodel_code_generator._openapi_codec_plan import PydanticBackend
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._target_contract import (
-        GeneratedTypeContractBatch,
-        TypeArgument,
-        TypeView,
-    )
+    from datamodel_code_generator._target_contract import GeneratedTypeContractBatch, TypeView
     from datamodel_code_generator._target_module import TypeNames
     from datamodel_code_generator._target_templates import Role, Templated, TemplateOverlay
 
-_MIN_CONTENT_STATUS: Final = 200
 _METADATA: Final = frozenset({"Field", "StringConstraints"})
-_CONTAINERS: Final[dict[tuple[str | None, str], str]] = {
-    (None, "list"): "is_list",
-    (None, "set"): "is_set",
-    (None, "frozenset"): "is_frozen_set",
-    (None, "dict"): "is_dict",
-    ("collections.abc", "Sequence"): "is_sequence",
-    ("typing", "Sequence"): "is_sequence",
-    ("collections.abc", "Mapping"): "is_mapping",
-    ("typing", "Mapping"): "is_mapping",
-}
-_KEYED: Final = frozenset({"is_dict", "is_mapping"})
 _SETTINGS: Final = ("dependencies", "operation_dependencies", "prefix")
 _EXPORTS: Final = (
     ("_generated.contract", "OperationDependencies"),
@@ -139,15 +148,17 @@ _SCHEME_FACTS: Final[dict[SchemeKind, tuple[str, ...]]] = {
 }
 
 
-_SERVER_RUNTIME: Final = ("server/application.py", "server/openapi.py", "server/responses.py")
-_SECURITY_RUNTIME: Final = ("server/security.py",)
-_EXTRAS_MODULE: Final = "_runtime.model_codecs.pydantic_extras"
-_EXTRAS_RUNTIME: Final = ("model_codecs/pydantic_extras.py",)
-_INPUT_RUNTIME: Final = (
+_SERVER_RUNTIME: Final = (
     "model_codecs/errors.py",
     "model_codecs/media.py",
-    "model_codecs/parameter_reads.py",
     "model_codecs/parameters.py",
+    "server/application.py",
+    "server/openapi.py",
+    "server/responses.py",
+)
+_SECURITY_RUNTIME: Final = ("server/security.py",)
+_INPUT_RUNTIME: Final = (
+    "model_codecs/parameter_reads.py",
     "model_codecs/unset.py",
     "server/errors.py",
     "server/requests.py",
@@ -176,19 +187,11 @@ def _plan_classes(plan: ServerPlan, written: set[str]) -> dict[str, str]:
 
     A name the model types write takes a `Model` suffix, then a number, as the model generator renames such a class.
     """
-    taken = {spec.pascal for spec in plan.operations if spec.pascal not in written}
-    classes: dict[str, str] = {}
-    for spec in plan.operations:
-        name = spec.pascal
-        if name in written:
-            base, count = f"{name}Model", 0
-            name = base
-            while name in taken:
-                count += 1
-                name = f"{base}{count}"
-            taken.add(name)
-        classes[spec.key] = name
-    return classes
+    scope = NameScope(spec.pascal for spec in plan.operations if spec.pascal not in written)
+    return {
+        spec.key: scope.claim(f"{spec.pascal}Model", camel=True) if spec.pascal in written else spec.pascal
+        for spec in plan.operations
+    }
 
 
 def _chain(module: Module, members: Iterable[str]) -> str:
@@ -208,45 +211,29 @@ def _keeps_extras(spec: OperationSpec) -> bool:
     """Return whether an operation's response media, or chosen primary media, writes extras of Pydantic dataclasses."""
     primary = spec.primary
     return any(
-        media is not None and media.extras and _body_status(spec, status)
-        for status, media in (
-            *((response.status, default_media(response)) for response in spec.responses),
-            *(((str(primary.status), primary.media),) if primary is not None else ()),
+        media is not None and media.extras and not bodyless
+        for bodyless, media in (
+            *((response.bodyless, default_media(response)) for response in spec.responses),
+            *(((primary.bodyless, primary.media),) if primary is not None else ()),
         )
     )
 
 
-def _python(value: object) -> str:
-    """Return a Python literal for a finite configuration or schema value."""
-    return repr(value)
-
-
-def _unique(base: str, taken: Iterable[str]) -> str:
-    names = set(taken)
-    name = base
-    count = 0
-    while name in names or keyword.iskeyword(name):
-        count += 1
-        name = f"{base}_{count}"
-    return name
-
-
 def _route_names(spec: OperationSpec, group: GroupSpec) -> dict[str, str]:
     """Name what one route adder defines so that none equals the method, an argument, or another of its names."""
-    taken = {spec.python_name, *(argument.name for argument in spec.arguments)}
-    names: dict[str, str] = {}
-    for key, base in (
-        ("router", "router"),
-        ("wiring", "wiring"),
-        ("service", group.stem),
-        ("handler", f"{spec.python_name}_handler"),
-        ("principal", f"{spec.python_name}_principal"),
-        ("authorize", f"{spec.python_name}_authorize"),
-        ("record", "parameters"),
-    ):
-        taken.add(name := _unique(base, taken))
-        names[key] = name
-    return names
+    scope = NameScope((spec.python_name, *(argument.name for argument in spec.arguments), *keyword.kwlist))
+    return {
+        key: scope.claim(base)
+        for key, base in (
+            ("router", "router"),
+            ("wiring", "wiring"),
+            ("service", group.stem),
+            ("handler", f"{spec.python_name}_handler"),
+            ("principal", f"{spec.python_name}_principal"),
+            ("authorize", f"{spec.python_name}_authorize"),
+            ("record", "parameters"),
+        )
+    }
 
 
 class Module(TargetModule):
@@ -274,7 +261,7 @@ class Module(TargetModule):
         base, own = self.parts(value)
         if not (items := (*own, *metadata)):
             return base
-        return f"{self.name('typing', 'Annotated')}[{base}, {', '.join(items)}]"
+        return subscript_text(self.name("typing", "Annotated"), (base, *items))
 
     def parts(self, value: TypeView) -> tuple[str, tuple[str, ...]]:
         """Return a type's validating base and the Annotated metadata that constrains a constrained scalar."""
@@ -293,17 +280,20 @@ class Module(TargetModule):
         return self.hint(value, static=False)
 
     def composed(self, value: UnionType | GenericType, *, static: bool) -> str:
-        """Return a union or container of spelled parts, as the model generator writes one."""
+        """Return a union or container of spelled parts, as the model generator writes one.
+
+        A generic of no container, such as the `SerializeAsAny` of a model type, is its class of the spelled parts.
+        """
         spell = self.static if static else self.validating
         if isinstance(value, UnionType):
             return self.union(*map(spell, value.members))
         arguments = [spell(item) for item in value.arguments]
-        base = value.base
-        identity = (base.import_.from_, base.import_.import_) if isinstance(base, ImportedType) else (None, "")
-        flag = _CONTAINERS[(None, base.name) if isinstance(base, BuiltinType) else identity]
-        if flag in _KEYED:
-            return self.container(flag, arguments[-1], key=arguments[0])
-        return self.container(flag, arguments[0])
+        if (slot := container_slot(value)) is None:
+            return subscript_text(self.hint(value.base), arguments)
+        flag = CONTAINER_FLAGS[slot]
+        if flag in MAPPINGS.flags:
+            return self.container(flag, arguments[-1], key=arguments[0], given=value.given)
+        return self.container(flag, arguments[0], given=value.given)
 
     def constraints(self, value: ConstructorType, base: BuiltinType | ImportedType) -> tuple[str, ...]:
         """Return the metadata of a constrained scalar's keywords, split as the model generator splits them."""
@@ -319,24 +309,10 @@ class Module(TargetModule):
         )
         found: list[str] = []
         if field:
-            found.append(f"{metadata}({', '.join(f'{key}={self.argument(keywords[key])}' for key in field)})")
+            found.append(call_text(metadata, (keyword_argument(key, self.argument(keywords[key])) for key in field)))
         if multiple_of is not None:
             found.append(f"{self.name('annotated_types', 'MultipleOf')}({self.argument(keywords['multiple_of'])})")
         return tuple(found)
-
-    def argument(self, value: TypeArgument) -> str:
-        """Return the Python expression of a recorded literal or source expression."""
-        match value:
-            case LiteralScalar(kind="decimal"):
-                return f"{self.name('decimal', 'Decimal')}({str(value.value)!r})"
-            case LiteralScalar():
-                return repr(value.value)
-            case SourceExpression():
-                return value.text
-            case _:
-                pass
-        assert isinstance(value, ImportedExpression), "constraints and defaults hold scalars and expressions"
-        return f"{value.prefix}{self.imported(value.import_)}{value.suffix}"
 
 
 class UserModule(Module):
@@ -537,7 +513,7 @@ class Owned:
     @property
     def path(self) -> PurePosixPath:
         """Return the module's file relative to the directory that holds the server package."""
-        return PurePosixPath("services", f"{self.stem}.py")
+        return PurePosixPath(SERVICES, f"{self.stem}.py")
 
     @property
     def file(self) -> str:
@@ -578,7 +554,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         self.config = config
         self.backend = backend
         self.plan = plan
-        self.role: Role = builtin_role if templates is None else templates.role
+        self.role: Role = roles(templates)
         self.document = document
         self.batch = batch
         self.wire = wire
@@ -616,8 +592,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
     @property
     def services_package(self) -> str:
         """Return the package of the user's implementations: `services`, beside the server package."""
-        parent = self.config.package.rpartition(".")[0]
-        return f"{parent}.services" if parent else "services"
+        return services_package(self.config.package)
 
     @cached_property
     def owned(self) -> tuple[Owned, ...]:
@@ -626,12 +601,12 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         A router group's class takes the name of its Protocol without the `Service` suffix and lives in the module of
         the group's stem; the operations of a secured document also need the authorize function.
         """
-        services, taken = self.services_package, set[str]()
+        services, scope = self.services_package, NameScope(keyword.kwlist)
         owned: list[Owned] = []
         for group in self.plan.groups:
             name = _implementation(group)
-            taken.add(alias := _unique(name, taken))
-            base = f"{group.service}[object]" if group.secured else group.service
+            alias = scope.claim(name)
+            base = subscript_text(group.service, ("object",)) if group.secured else group.service
             source = self.stub(group, name).render(self.role)
             owned.append(Owned(f"{services}.{group.stem}", name, alias, group.stem, base, source))
         if self.plan.schemes:
@@ -650,12 +625,12 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         protocol = module.name(f"{package}.services", group.service)
         return templated(
             "implementation.jinja2",
-            implementation_template.render,
+            implementation_template.render_with_scope,
             protocol=group.service,
             services=f"{package}.services",
             entrypoint=f"{package}.main",
             name=name,
-            base=f"{protocol}[object]" if group.secured else protocol,
+            base=subscript_text(protocol, ("object",)) if group.secured else protocol,
             methods="every operation" if self.config.layout == "single" else f"the {group.stem} operations",
             protocol_methods=[self.method(module, spec, "object") for spec in group.operations],
             imports=module.imports(),
@@ -667,7 +642,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         module = UserModule(self.types, {"authorize", "requirement_sets", "credentials"}, package)
         return templated(
             "authorize.jinja2",
-            authorize_template.render,
+            authorize_template.render_with_scope,
             package=package,
             entrypoint=f"{package}.main",
             requirement_sets=module.name(package, "RequirementSets"),
@@ -679,26 +654,20 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         """Return the user modules `main.py` imports, with stubs, and their package, beside the server package."""
         if not (owned := self.owned):
             return ()
-        docstring = (
-            f"Your implementations of {self.config.package}, which {self.config.package}.main imports.\n\n"
-            "datamodel-code-generator wrote this file once and never overwrites it, or the modules beside it."
-        )
+        docstring = implementations_docstring(self.config.package)
         return (
-            self.file(
-                PurePosixPath("services", "__init__.py"), "package", self.facade(self.services_package, docstring)
-            ),
+            self.file(PurePosixPath(SERVICES, "__init__.py"), "package", self.facade(self.services_package, docstring)),
             *(RenderedFile(path=item.path, kind="implementation", text=item.source) for item in owned),
         )
 
     def next_steps(self) -> NextSteps:
         """Return the README, the entrypoint and its application, and the implementations it imports."""
-        services = self.services_package.rpartition(".")[2]
         return NextSteps(
             readme=Path("README.md"),
             app=f"{self.config.package}.main:app",
             entrypoint=Path("main.py"),
             implementations=tuple(
-                Implementation(module=item.module, name=item.name, path=Path(services, f"{item.stem}.py"))
+                Implementation(module=item.module, name=item.name, path=Path(SERVICES, f"{item.stem}.py"))
                 for item in self.owned
             ),
         )
@@ -713,11 +682,11 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         missing = module.local("_runtime.server.application", "missing_implementation") if owned else ""
         return templated(
             "main.jinja2",
-            main_template.render,
+            main_template.render_with_scope,
             app=f"{self.config.package}.main:app",
             services=self.services_package,
             implementations=sorted(owned, key=lambda item: casefold(item.module, target)),
-            table=[Keyword(repr(item.module), repr(item.name)) for item in owned],
+            table=[Keyword(stable_repr(item.module), stable_repr(item.name)) for item in owned],
             missing=missing,
             create_app=create_app,
             arguments=[Keyword(item.keyword, f"{item.alias}()" if item.base else item.alias) for item in owned],
@@ -729,7 +698,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         """Return a package initializer of the facade role: its docstring, imports, and exports."""
         return templated(
             "facade.jinja2",
-            facade_template.render,
+            facade_template.render_with_scope,
             module=module,
             docstring=docstring,
             imports=imports,
@@ -749,13 +718,12 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             *(module.local("application", name) for name in names),
             module.local("_runtime.server.responses", "HTTPResult"),
         ))
-        docstring = f"FastAPI server package {self.config.package}, generated by datamodel-code-generator."
-        return self.facade("", docstring, module.imports(), exported)
+        return self.facade("", server_docstring(self.config.package), module.imports(), exported)
 
     @staticmethod
     def openapi() -> Templated:
         """Return the module of the served document, which reads `openapi.json` beside it on first use."""
-        return templated("openapi.jinja2", openapi_template.render)
+        return templated("openapi.jinja2", openapi_template.render_with_scope)
 
     def readme(self) -> Templated:
         """Return the README of the target root: the operations, how to implement and connect them, and regeneration."""
@@ -765,13 +733,12 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
 
         def arguments(prefix: str) -> str:
             return ", ".join(
-                f"{item.keyword}={prefix}{item.alias}()" if item.base else f"{item.keyword}={item.alias}"
-                for item in owned
+                keyword_argument(item.keyword, f"{prefix}{item.alias}()" if item.base else item.alias) for item in owned
             )
 
         return templated(
             "readme.jinja2",
-            readme_template.render,
+            readme_template.render_with_scope,
             title=info.get("title", config.package),
             package=config.package,
             model_package=config.model_package,
@@ -817,9 +784,8 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         """
         security = _SECURITY_RUNTIME if self.plan.schemes else ()
         inputs = _INPUT_RUNTIME if any(map(_reads_inputs, self.plan.operations)) else ()
-        extras = _EXTRAS_RUNTIME if any(map(_keeps_extras, self.plan.operations)) else ()
-        for path, text in runtime_sources((*_SERVER_RUNTIME, *security, *inputs, *extras)):
-            yield RenderedFile(path=path, kind="runtime", text=text, verbatim=True)
+        extras = EXTRAS.paths if any(map(_keeps_extras, self.plan.operations)) else ()
+        yield from runtime_files((*_SERVER_RUNTIME, *security, *inputs, *extras))
 
     def application(self) -> Templated:
         """Return the application module, rendered from its builtin template.
@@ -835,19 +801,19 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         routes = [*(f"*{name}.LITERAL_ROUTES" for name in modules), *(f"*{name}.TEMPLATED_ROUTES" for name in modules)]
         secured = bool(self.plan.schemes)
         final = module.name("typing", "Final")
-        options = f"dict[str, {module.name('typing', 'Any')}]"
-        info = "{" + ", ".join(f"{key!r}: {_python(value)}" for key, value in self.plan.info) + "}"
+        options = subscript_text("dict", ("str", module.name("typing", "Any")))
+        info = dict_display((stable_repr(key), stable_repr(value)) for key, value in self.plan.info)
         router = module.name("fastapi", "APIRouter")
         fastapi = module.name("fastapi", "FastAPI")
         exports = sorted({
-            *(repr(module.local(*item)) for item in (*_EXPORTS, *(_SECURITY_EXPORTS if secured else ()))),
+            *(stable_repr(module.local(*item)) for item in (*_EXPORTS, *(_SECURITY_EXPORTS if secured else ()))),
             "'build_router'",
             "'create_app'",
         })
         any_ = module.name("typing", "Any")
         return templated(
             "application.jinja2",
-            application_template.render,
+            application_template.render_with_scope,
             final=final,
             options=options,
             routes=routes,
@@ -907,7 +873,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         )
         entries = {
             templated: [
-                RouteEntry(repr(spec.python_name), f"_add_{spec.python_name}")
+                RouteEntry(stable_repr(spec.python_name), f"_add_{spec.python_name}")
                 for spec in operations
                 if spec.route.templated is templated
             ]
@@ -918,7 +884,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         final = module.name("typing", "Final")
         return templated(
             "router.jinja2",
-            router_template.render,
+            router_template.render_with_scope,
             docstring=f"Endpoints of {name}; regenerate them instead of editing.",
             routes=routes,
             api_router=router,
@@ -941,12 +907,12 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         handler, record = names["handler"], names["record"]
         principal = "" if spec.security is None else names["principal"]
         asynchronous = spec.mode == "async"
-        label = f"The {group.stem}.{spec.python_name} method of {spec.contract.method.upper()} {spec.contract.path}"
+        label = f"The {group.stem}.{spec.python_name} method of {_label(spec.contract)}"
         lookup = Lookup(
             module.local("_runtime.server.application", "checked"),
             spec.python_name,
-            repr(label),
-            _tuple([repr(argument.name) for argument in spec.arguments]),
+            stable_repr(label),
+            stable_repr(tuple(argument.name for argument in spec.arguments)),
             asynchronous,
         )
         parameters = [
@@ -957,7 +923,9 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         accepted = ""
         if any(argument.kind == "adapter" for argument in spec.arguments):
             annotated, depends = module.name("typing", "Annotated"), module.name("fastapi", "Depends")
-            parameters.append(Parameter(record, f"{annotated}[{plan}.Parameters, {depends}({plan}.PARAMETERS)]"))
+            parameters.append(
+                Parameter(record, subscript_text(annotated, (f"{plan}.Parameters", f"{depends}({plan}.PARAMETERS)")))
+            )
             accepted = module.local("_runtime.server.requests", "accepted")
         call = Call(
             module.local("_runtime.server.responses", "dispatch"),
@@ -969,8 +937,8 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             router=names["router"],
             wiring=names["wiring"],
             service=names["service"],
-            protocol=f"{service}[object]" if group.secured else service,
-            group=repr(group.stem),
+            protocol=subscript_text(service, ("object",)) if group.secured else service,
+            group=stable_repr(group.stem),
             handler=handler,
             lookup=lookup,
             principal=None if not principal else self.principal(module, spec, names),
@@ -995,14 +963,16 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         annotated, depends = module.name("typing", "Annotated"), module.name("fastapi", "Security")
         authenticate = module.local("_runtime.server.security", "authenticate")
         authorize = locals_["authorize"]
-        taken = {authorize, authenticate}
+        scope = NameScope((authorize, authenticate, *keyword.kwlist))
         names: dict[str, str] = {}
         parameters: list[Parameter] = []
         for scheme, needed in scopes.items():
-            taken.add(local := names.setdefault(scheme, _unique(self.scheme_names[scheme], taken)))
-            arguments = f"{security}.{self.scheme_names[scheme]}" + (f", scopes={list(needed)!r}" if needed else "")
+            local = names[scheme] = scope.claim(self.scheme_names[scheme])
+            arguments = f"{security}.{self.scheme_names[scheme]}" + (
+                f", scopes={stable_repr(list(needed))}" if needed else ""
+            )
             kind = _credential_type(module, schemes[scheme])
-            parameters.append(Parameter(local, f"{annotated}[{kind}, {depends}({arguments})]"))
+            parameters.append(Parameter(local, subscript_text(annotated, (kind, f"{depends}({arguments})"))))
         challenge = ", ".join(
             dict.fromkeys(_CHALLENGES[kind] for scheme in scopes if (kind := schemes[scheme].kind) in _CHALLENGES)
         )
@@ -1011,9 +981,9 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             authorize=authorize,
             authenticate=authenticate,
             parameters=tuple(parameters),
-            requirements=_tuple([_requirement(item) for item in requirements]),
-            credentials="{" + ", ".join(f"{scheme!r}: {names[scheme]}" for scheme in scopes) + "}",
-            challenge=repr(challenge),
+            requirements=stable_repr(requirements),
+            credentials=dict_display((stable_repr(scheme), names[scheme]) for scheme in scopes),
+            challenge=stable_repr(challenge),
         )
 
     def security(self) -> Templated:
@@ -1022,9 +992,9 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         schemes = [_scheme(module, scheme, self.scheme_names[scheme.name]) for scheme in self.plan.schemes]
         return templated(
             "security.jinja2",
-            security_template.render,
+            security_template.render_with_scope,
             schemes=schemes,
-            exports=[repr(name) for name in sorted(self.scheme_names.values())],
+            exports=[stable_repr(name) for name in sorted(self.scheme_names.values())],
             imports=module.imports(),
         )
 
@@ -1036,7 +1006,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             return Parameter("request", module.name("fastapi", "Request"))
         if argument.kind == "principal":
             annotated, depends = module.name("typing", "Annotated"), module.name("fastapi", "Depends")
-            return Parameter("principal", f"{annotated}[object, {depends}({principal})]")
+            return Parameter("principal", subscript_text(annotated, ("object", f"{depends}({principal})")))
         if argument.native is not None:
             return _native(module, argument.name, argument.native)
         body = spec.body
@@ -1045,21 +1015,28 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         if body.decision.transport == "fastapi_native":
             media = body.media[0]
             api = module.name("fastapi", "Form" if body.form else "Body")
-            annotation = (
-                f"{annotated}[{_body(module, media, required=body.required)}, {api}(media_type={media.media_type!r})]"
+            annotation = subscript_text(
+                annotated,
+                (_body(module, media, required=body.required), f"{api}(media_type={stable_repr(media.media_type)})"),
             )
             return Parameter(argument.name, annotation, "" if body.required else "None")
         depends = module.name("fastapi", "Depends")
         kind = self.body_type(module, body)
         if len(body.media) > 1:
             media_type = module.optional("str")
-            return Parameter(argument.name, f"{annotated}[tuple[{media_type}, {kind}], {depends}({plan}.BODY.receive)]")
-        return Parameter(argument.name, f"{annotated}[{kind}, {depends}({plan}.BODY)]")
+            received = (subscript_text("tuple", (media_type, kind)), f"{depends}({plan}.BODY.receive)")
+            return Parameter(argument.name, subscript_text(annotated, received))
+        return Parameter(argument.name, subscript_text(annotated, (kind, f"{depends}({plan}.BODY)")))
 
     def body_type(self, module: Module, body: BodySpec) -> str:
-        """Return the type the handler receives for a body, with None for an optional one."""
+        """Return the type the handler receives for a body, with None for an optional one.
+
+        A body that declares no media carries none, as the client takes none for it: its type is None, required or not.
+        """
+        if not body.media:
+            return "None"
         kinds = module.union(*(self.media_type(module, media) for media in body.media))
-        if body.required or any(_nullable(_payload(media)) for media in body.media):
+        if body.required or any(admits_none(_payload(media)) for media in body.media):
             return kinds
         return module.optional(kinds)
 
@@ -1082,7 +1059,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         protocols = [
             Service(
                 name=group.service,
-                base=f"{protocol}[PrincipalT_contra]" if group.secured else protocol,
+                base=subscript_text(protocol, ("PrincipalT_contra",)) if group.secured else protocol,
                 docstring=f"Implement {'every operation' if single else f'the {group.stem} operations'}: "
                 "subclass this Protocol, or give an object its methods.",
                 methods=tuple(self.method(module, spec) for spec in group.operations),
@@ -1091,7 +1068,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         ]
         return templated(
             "services.jinja2",
-            services_template.render,
+            services_template.render_with_scope,
             typevar=module.name("typing_extensions", "TypeVar") if any(group.secured for group in groups) else "",
             abstract=module.name("abc", "abstractmethod"),
             protocol_type=protocol,
@@ -1116,12 +1093,9 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
 
     def docstring(self, spec: OperationSpec) -> str:
         """Return an operation's docstring text: its summary and description, as the models document, or its route."""
-        if self.use_schema_description:
-            facts = {name: getattr(value, "value", None) for name, value in spec.contract.facts}
-            texts = [text for name in ("summary", "description") if isinstance(text := facts.get(name), str)]
-            if text := "\n\n".join(text.strip() for text in texts if text.strip()):
-                return text
-        return f"Handle {spec.contract.method.upper()} {spec.contract.path}."
+        if self.use_schema_description and (text := described(spec.contract)):
+            return text
+        return f"Handle {_label(spec.contract)}."
 
     def parameters(self, module: Module, spec: OperationSpec, principal: str) -> list[Parameter]:
         """Return the keyword-only parameters of one operation's method, typed as the endpoint passes them."""
@@ -1152,9 +1126,11 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         payloads = dict.fromkeys(
             self.media_type(module, media)
             for response in spec.responses
-            if _body_status(spec, response.status) and (media := default_media(response)) is not None
+            if not response.bodyless and (media := default_media(response)) is not None
         )
-        result = f"{module.local('_runtime.server.responses', 'HTTPResult')}[{module.union(*payloads) or 'None'}]"
+        result = subscript_text(
+            module.local("_runtime.server.responses", "HTTPResult"), (module.union(*payloads) or "None",)
+        )
         return [*self.bare(module, spec), result, module.name("fastapi.responses", "Response")]
 
     def bare(self, module: Module, spec: OperationSpec) -> list[str]:
@@ -1164,10 +1140,10 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         """
         if (primary := spec.primary) is None:
             return []
-        if (media := primary.media) is None or not _body_status(spec, str(primary.status)):
+        if (media := primary.media) is None or primary.bodyless:
             return ["None"]
         payload = self.media_type(module, media)
-        if primary.null and (value := _payload(media)) is not None and not _nullable(value):
+        if primary.null and (value := _payload(media)) is not None and not admits_none(value):
             return [payload, "None"]
         return [payload]
 
@@ -1177,7 +1153,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         module = Module(self.types, reserved, level=2)
         typed_dict = module.name("typing", "TypedDict")
         dependencies = [
-            Parameter(repr(spec.python_name), _dependency_sequence(module)) for spec in self.plan.operations
+            Parameter(stable_repr(spec.python_name), _dependency_sequence(module)) for spec in self.plan.operations
         ]
         plans = [self.operation_plan(module, spec, self.classes[spec.key]) for spec in self.plan.operations]
         adapters = any(plan.parameters for plan in plans)
@@ -1185,7 +1161,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         requests = "_runtime.server.requests"
         return templated(
             "contract.jinja2",
-            contract_template.render,
+            contract_template.render_with_scope,
             typed_dict=typed_dict,
             dependencies=dependencies,
             plans=plans,
@@ -1224,9 +1200,9 @@ def _responses_plan(module: Module, spec: OperationSpec) -> ResponsesPlan:
     A primary response the route sends itself with a chosen media other than its default also declares that media.
     """
     responses = [
-        f"{response.status!r}: "
-        + _declared(
-            module, default_media(response) if _body_status(spec, response.status) else None, null=response.null
+        (
+            stable_repr(response.status),
+            _declared(module, None if response.bodyless else default_media(response), null=response.null),
         )
         for response in spec.responses
     ]
@@ -1236,11 +1212,11 @@ def _responses_plan(module: Module, spec: OperationSpec) -> ResponsesPlan:
         if (
             (chosen := primary.media) is not None
             and chosen is not default_media(primary.response)
-            and _body_status(spec, status)
+            and not primary.bodyless
         ):
             media = _declared(module, chosen, null=primary.null)
     return ResponsesPlan(
-        responses="{" + ", ".join(responses) + "}",
+        responses=dict_display(responses),
         primary=status,
         media=media,
         head=spec.head,
@@ -1252,23 +1228,18 @@ def _declared(module: Module, media: MediaSpec | None, *, null: bool) -> str:
     """Return the Declared value of a response's media, its kind, charset, and model, or of a response without one."""
     entries: list[str] = []
     if media is not None:
-        entries.append(f"media_type={media.media_type!r}")
+        entries.append(f"media_type={stable_repr(media.media_type)}")
         if media.kind != "json":
-            entries.append(f"kind={media.kind!r}")
-        if (encoding := charset(media.media_type)) != "utf-8":
-            entries.append(f"charset={encoding!r}")
+            entries.append(f"kind={stable_repr(media.kind)}")
+        if (encoding := charset(media.media_type, as_written=True)) != "utf-8":
+            entries.append(f"charset={stable_repr(encoding)}")
         if (value := _checked(media)) is not None:
             entries.append(f"model={module.annotation(value)}")
         if media.extras:
-            entries.append(f"dump={module.local(_EXTRAS_MODULE, 'extras_json')}")
+            entries.append(f"dump={module.local(EXTRAS.module, EXTRAS.writer)}")
         if null:
             entries.append("null=True")
-    return f"{module.local('_runtime.server.responses', 'Declared')}({', '.join(entries)})"
-
-
-def _body_status(spec: OperationSpec, status: str) -> bool:
-    """Return whether a declared response of an operation carries a body: not for HEAD, 1XX, 204, 205, or 304."""
-    return not spec.head and not status.startswith("1") and status not in {"204", "205", "304"}
+    return call_text(module.local("_runtime.server.responses", "Declared"), entries)
 
 
 def _implementation(group: GroupSpec) -> str:
@@ -1282,16 +1253,11 @@ def _credential(scheme: SchemeSpec) -> str:
     return f"an API key in the `{scheme.parameter}` {place}"
 
 
-def _tuple(items: list[str]) -> str:
-    """Return a tuple display of expressions, with the comma a lone item needs."""
-    return f"({', '.join(items)}{',' if len(items) == 1 else ''})"
-
-
 def _native(module: Module, name: str, field: NativeField) -> Parameter:
-    keywords = [f"alias={field.alias!r}"]
+    keywords = [f"alias={stable_repr(field.alias)}"]
     if field.api == "Header":
         keywords.append("convert_underscores=False")
-    keywords.extend(f"{key}={_python(value)}" for key, value in field.keywords)
+    keywords.extend(keyword_argument(key, stable_repr(value)) for key, value in field.keywords)
     if field.default is Default.ABSENT:
         parts: tuple[str, ...] = (_none(module, module.annotation(field.type), field.type),)
         default = "None"
@@ -1299,15 +1265,13 @@ def _native(module: Module, name: str, field: NativeField) -> Parameter:
         base, metadata = module.parts(field.type)
         parts = (base, *metadata)
         default = _default_value(module, field.default) or ""
-    declaration = f"{module.name('fastapi', field.api)}({', '.join(keywords)})"
-    return Parameter(name, f"{module.name('typing', 'Annotated')}[{', '.join((*parts, declaration))}]", default)
+    declaration = call_text(module.name("fastapi", field.api), keywords)
+    return Parameter(name, subscript_text(module.name("typing", "Annotated"), (*parts, declaration)), default)
 
 
 def _checked(media: MediaSpec) -> TypeView | None:
     """Return the model type that validates a media's body: any but raw bytes the models leave unconstrained."""
-    if (use := media.use) is None or (media.kind == "binary" and not use.checked):
-        return None
-    return use.type
+    return None if (use := coded_use(media.kind, media.use)) is None else use.type
 
 
 def _payload(media: MediaSpec) -> TypeView | None:
@@ -1315,14 +1279,9 @@ def _payload(media: MediaSpec) -> TypeView | None:
     return None if media.kind == "binary" or media.use is None else media.use.type
 
 
-def _nullable(value: TypeView | None) -> bool:
-    """Return whether a type already takes None, so an optional input of it needs no None member."""
-    return isinstance(value, UnionType) and any(isinstance(member, NoneType) for member in value.members)
-
-
 def _none(module: Module, text: str, value: TypeView | None) -> str:
     """Return a runtime annotation that also takes None, as FastAPI declares an optional input."""
-    return text if _nullable(value) else module.optional(text)
+    return text if admits_none(value) else module.optional(text)
 
 
 def _body(module: Module, media: MediaSpec, *, required: bool) -> str:
@@ -1338,7 +1297,7 @@ def _adapter(module: Module, value: TypeView) -> str:
 def _default(module: Module, value: LiteralScalar | LiteralSequence) -> str:
     if isinstance(value, LiteralScalar):
         return module.argument(value)
-    return f"[{', '.join(module.argument(item) for item in value.items if isinstance(item, LiteralScalar))}]"
+    return list_display(module.argument(item) for item in value.items if isinstance(item, LiteralScalar))
 
 
 def _default_value(module: Module, default: ParameterDefault) -> str | None:
@@ -1359,7 +1318,7 @@ def _default_value(module: Module, default: ParameterDefault) -> str | None:
             if isinstance(literal, LiteralScalar):
                 return f"{enum}({module.argument(literal)})"
             items = (item for item in literal.items if isinstance(item, LiteralScalar))
-            return f"[{', '.join(f'{enum}({module.argument(item)})' for item in items)}]"
+            return list_display(f"{enum}({module.argument(item)})" for item in items)
         case _:
             pass
     return None
@@ -1374,7 +1333,7 @@ def _parameter_type(module: Module, parameter: ParameterSpec | None) -> str:
         text = "str"
     else:
         text = module.name("typing", "Any")
-    if parameter.required or parameter.default is not Default.ABSENT or _nullable(parameter.type):
+    if parameter.required or parameter.default is not Default.ABSENT or admits_none(parameter.type):
         return text
     return module.optional(text)
 
@@ -1386,13 +1345,13 @@ def _parameter_arguments(module: Module, adapters: list[Argument]) -> str:
         parameter = argument.parameter
         assert parameter is not None
         assert parameter.plan is not None
-        entries = [f"name={argument.name!r}", f"plan={parameter_plan(module.local, parameter.plan)}"]
+        entries = [f"name={stable_repr(argument.name)}", f"plan={parameter_plan(module.local, parameter.plan)}"]
         if parameter.type is not None:
             entries.append(f"adapter={_adapter(module, parameter.type)}")
         if (value := _default_value(module, parameter.default)) is not None:
             entries.append(f"default={value}")
-        arguments.append(f"{module.local('_runtime.server.requests', 'ParameterArgument')}({', '.join(entries)})")
-    return _tuple(arguments)
+        arguments.append(call_text(module.local("_runtime.server.requests", "ParameterArgument"), entries))
+    return tuple_display(arguments)
 
 
 def _json_part(module: Module, part: JsonPartSpec) -> str:
@@ -1402,40 +1361,56 @@ def _json_part(module: Module, part: JsonPartSpec) -> str:
     adapter = (
         _adapter(module, part.type)
         if (field := part.field) is None
-        else f"{module.local('_runtime.server.requests', 'field_adapter')}({module.annotation(field[0])}, {field[1]!r})"
+        else (
+            f"{module.local('_runtime.server.requests', 'field_adapter')}({module.annotation(field[0])}, "
+            f"{stable_repr(field[1])})"
+        )
     )
-    return f"{module.local('_runtime.server.requests', 'JsonPart')}({part.name!r}, {adapter}{repeated}{untyped})"
+    return (
+        f"{module.local('_runtime.server.requests', 'JsonPart')}({stable_repr(part.name)}, "
+        f"{adapter}{repeated}{untyped})"
+    )
+
+
+def _file_part(module: Module, part: FilePartSpec) -> str:
+    """Return the FilePart constructor of one multipart member holding files, whose parts are read as their octets."""
+    repeated = (keyword_argument("repeated", "True"),) if part.repeated else ()
+    return call_text(module.local("_runtime.server.requests", "FilePart"), (stable_repr(part.name), *repeated))
 
 
 def _body_media(module: Module, body: BodySpec) -> str:
     """Return the BodyMedia constructors of an adapter body, as one tuple."""
     media: list[str] = []
     for item in body.media:
-        entries = [f"media_type={item.media_type!r}", f"kind={_request_kind(item)!r}"]
+        entries = [f"media_type={stable_repr(item.media_type)}", f"kind={stable_repr(item.kind)}"]
         if (value := _checked(item)) is not None:
             entries.append(f"adapter={_adapter(module, value)}")
         if fields := item.fields:
-            entries.append(f"fields={_tuple([field_plan(module.local, plan) for plan in fields])}")
+            entries.append(f"fields={tuple_display(member_plan(module.local, plan) for plan in fields)}")
         if parts := item.json_parts:
-            entries.append(f"json_parts={_tuple([_json_part(module, part) for part in parts])}")
+            entries.append(f"json_parts={tuple_display(_json_part(module, part) for part in parts)}")
+        if files := item.file_parts:
+            entries.append(f"file_parts={tuple_display(_file_part(module, part) for part in files)}")
         if (additional := item.additional) is not None:
-            plan = (
-                _json_part(module, additional)
-                if isinstance(additional, JsonPartSpec)
-                else field_plan(module.local, additional)
-            )
+            match additional:
+                case JsonPartSpec():
+                    plan = _json_part(module, additional)
+                case FilePartSpec():
+                    plan = _file_part(module, additional)
+                case _:
+                    plan = member_plan(module.local, additional)
             entries.append(f"additional={plan}")
         if (checked := item.checked) is not None:
-            entries.append(f"checked={module.name('pydantic', 'TypeAdapter')}(dict[str, {module.annotation(checked)}])")
+            type_adapter = module.name("pydantic", "TypeAdapter")
+            entries.append(f"checked={type_adapter}({subscript_text('dict', ('str', module.annotation(checked)))})")
         if encoded := item.encoded:
-            entries.append(f"encoded={_tuple([parameter_plan(module.local, plan) for plan in encoded])}")
-        media.append(f"{module.local('_runtime.server.requests', 'BodyMedia')}({', '.join(entries)})")
-    return _tuple(media)
+            entries.append(f"encoded={tuple_display(parameter_plan(module.local, plan) for plan in encoded)}")
+        media.append(call_text(module.local("_runtime.server.requests", "BodyMedia"), entries))
+    return tuple_display(media)
 
 
 def _registration(module: Module, spec: OperationSpec) -> Registration:
     contract = spec.contract
-    facts = {name: getattr(value, "value", None) for name, value in contract.facts}
     primary = spec.primary
     model = response_class = ""
     if (
@@ -1449,28 +1424,30 @@ def _registration(module: Module, spec: OperationSpec) -> Registration:
     else:
         response_class = module.name("fastapi.responses", "Response")
     keywords: list[Keyword] = []
-    if contract.explicit_operation_id and isinstance(operation_id := facts.get("operationId"), str):
-        keywords.append(Keyword("operation_id", repr(operation_id)))
+    if contract.explicit_operation_id and isinstance(operation_id := fact(contract, "operationId"), str):
+        keywords.append(Keyword("operation_id", stable_repr(operation_id)))
     if found := tags(contract):
-        keywords.append(Keyword("tags", f"[{', '.join(repr(tag) for tag in found)}]"))
+        keywords.append(Keyword("tags", list_display(map(stable_repr, found))))
     keywords.extend(
-        Keyword(name, repr(value)) for name in ("summary", "description") if isinstance(value := facts.get(name), str)
+        Keyword(name, stable_repr(value))
+        for name in ("summary", "description")
+        if isinstance(value := fact(contract, name), str)
     )
-    if facts.get("deprecated") is True:
+    if fact(contract, "deprecated") is True:
         keywords.append(Keyword("deprecated", "True"))
     if isinstance(description := _response_description(spec), str):
-        keywords.append(Keyword("response_description", repr(description)))
+        keywords.append(Keyword("response_description", stable_repr(description)))
     if names := {
         argument.native.alias: argument.wire_name
         for argument in spec.arguments
         if argument.location == "path" and argument.native is not None and argument.native.alias != argument.wire_name
     }:
         wire_named = module.local("_runtime.server.application", "wire_named")
-        keywords.append(Keyword("route_class_override", f"{wire_named}({names!r})"))
+        keywords.append(Keyword("route_class_override", f"{wire_named}({stable_repr(names)})"))
     return Registration(
-        name=repr(spec.python_name),
-        path=repr(spec.route.route_path),
-        methods=f"[{contract.method.upper()!r}]",
+        name=stable_repr(spec.python_name),
+        path=stable_repr(spec.route.route_path),
+        methods=f"[{stable_repr(contract.method.upper())}]",
         status_code=str(spec.registration_status),
         response_model=model,
         response_class=response_class,
@@ -1482,8 +1459,7 @@ def _response_description(spec: OperationSpec) -> object:
     if (primary := spec.primary) is not None:
         return fact(primary.response.declaration, "description")
     responses = {response.status: response for response in spec.responses}
-    status = str(spec.registration_status)
-    represented = responses.get(f"{status[0]}XX")
+    represented = responses.get(range_key(spec.registration_status))
     return None if represented is None else fact(represented.declaration, "description")
 
 
@@ -1500,8 +1476,10 @@ def _value(spec: OperationSpec, argument: Argument, record: str) -> str:
 def _raw_path(module: Module, spec: OperationSpec, adapters: list[Argument]) -> str:
     if not (wanted := {item.wire_name for item in adapters if item.location == "path" and item.wire_name is not None}):
         return ""
-    names = f"frozenset({{{', '.join(repr(name) for name in sorted(wanted))}}})"
-    return f"{module.local('_runtime.server.requests', 'RawPath')}(template={spec.route.path!r}, names={names})"
+    names = f"frozenset({set_display(map(stable_repr, sorted(wanted)))})"
+    return (
+        f"{module.local('_runtime.server.requests', 'RawPath')}(template={stable_repr(spec.route.path)}, names={names})"
+    )
 
 
 def _settings(*, secured: bool, dependencies: bool = True) -> tuple[str, ...]:
@@ -1510,7 +1488,7 @@ def _settings(*, secured: bool, dependencies: bool = True) -> tuple[str, ...]:
 
 
 def _services(services: list[str]) -> str:
-    return "{" + ", ".join(f"{service!r}: {service}" for service in services) + "}"
+    return dict_display((stable_repr(service), service) for service in services)
 
 
 def _builder(  # ruff: ignore[too-many-arguments]
@@ -1536,7 +1514,9 @@ def _builder(  # ruff: ignore[too-many-arguments]
 
 def _service(module: Module, group: GroupSpec) -> str:
     service = module.local("services", group.service)
-    return f"{service}[{module.local('_runtime.server.security', 'PrincipalT')}]" if group.secured else service
+    return (
+        subscript_text(service, (module.local("_runtime.server.security", "PrincipalT"),)) if group.secured else service
+    )
 
 
 def _security(module: Module) -> Parameter:
@@ -1545,11 +1525,11 @@ def _security(module: Module) -> Parameter:
         module.local("_runtime.server.security", "Authorize"),
         module.local("_runtime.server.security", "AsyncAuthorize"),
     )
-    return Parameter("authorize", _chain(module, [f"{item}[{principal}]" for item in authorizers]))
+    return Parameter("authorize", _chain(module, [subscript_text(item, (principal,)) for item in authorizers]))
 
 
 def _dependency_sequence(module: Module) -> str:
-    return f"{module.name('collections.abc', 'Sequence')}[{module.name('fastapi', 'params')}.Depends]"
+    return subscript_text(module.name("collections.abc", "Sequence"), (f"{module.name('fastapi', 'params')}.Depends",))
 
 
 def _credential_type(module: Module, scheme: SchemeSpec) -> str:
@@ -1574,23 +1554,15 @@ def _scheme(module: Module, scheme: SchemeSpec, name: str) -> Scheme:
     keywords: list[Keyword] = []
     runtime = _API_KEY_CLASSES.get(str(scheme.location)) if scheme.kind == "api_key" else _RUNTIME_CLASSES[scheme.kind]
     if scheme.kind == "api_key":
-        keywords.append(Keyword("name", repr(scheme.parameter)))
+        keywords.append(Keyword("name", stable_repr(scheme.parameter)))
     if runtime is None:
         cls = module.name("fastapi.security", "APIKeyQuery")
     else:
         cls = module.local("_runtime.server.security", runtime)
     keywords.extend(
-        Keyword(keyword, repr(value))
+        Keyword(keyword, stable_repr(value))
         for keyword in _SCHEME_FACTS.get(scheme.kind, ("description",))
         if (fact_value := facts.get(keyword)) is not None and (value := json_value(fact_value)) is not None
     )
-    keywords.extend((Keyword("scheme_name", repr(scheme.name)), Keyword("auto_error", "False")))
+    keywords.extend((Keyword("scheme_name", stable_repr(scheme.name)), Keyword("auto_error", "False")))
     return Scheme(name, scheme.name, cls, tuple(keywords))
-
-
-def _requirement(requirement: Requirement) -> str:
-    return _tuple([f"({name!r}, {scopes!r})" for name, scopes in requirement])
-
-
-def _request_kind(media: MediaSpec) -> str:
-    return media.kind if media.kind in {"json", "text", "form", "multipart"} else "binary"

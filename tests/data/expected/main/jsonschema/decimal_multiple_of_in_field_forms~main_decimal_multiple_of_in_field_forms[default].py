@@ -9,18 +9,24 @@ from pydantic import BaseModel, RootModel, condecimal, confloat, conint
 
 
 class Rate(
-    RootModel[condecimal(le=Decimal('1000000'), multiple_of=Decimal('0.001'), gt=Decimal('0.0'))]
+    RootModel[
+        condecimal(
+            le=Decimal('1000000'), multiple_of=Decimal('0.001'), gt=Decimal('0.0')
+        )
+    ]
 ):
-    root: condecimal(le=Decimal('1000000'), multiple_of=Decimal('0.001'), gt=Decimal('0.0'))
+    root: condecimal(
+        le=Decimal('1000000'), multiple_of=Decimal('0.001'), gt=Decimal('0.0')
+    )
 
 
 class DecimalMultipleOfFieldForms(BaseModel):
-    amount: condecimal(ge=Decimal('0'), le=Decimal('1000000'), multiple_of=Decimal('0.01'))
+    amount: condecimal(
+        ge=Decimal('0'), le=Decimal('1000000'), multiple_of=Decimal('0.01')
+    )
     opt: (
         condecimal(
-            ge=Decimal('-1000000'),
-            le=Decimal('1000000'),
-            multiple_of=Decimal('0.5'),
+            ge=Decimal('-1000000'), le=Decimal('1000000'), multiple_of=Decimal('0.5')
         )
         | None
     ) = None
@@ -29,11 +35,26 @@ class DecimalMultipleOfFieldForms(BaseModel):
         | None
     ) = None
     inty: conint(multiple_of=2) | None = None
-    arr: list[condecimal(ge=Decimal('-1000000'), le=Decimal('1000000'), multiple_of=Decimal('0.01'))] | None = (
-        None
-    )
-    mapv: dict[str, condecimal(ge=Decimal('-1000000'), le=Decimal('1000000'), multiple_of=Decimal('0.01'))] | None = (
-        None
-    )
+    arr: (
+        list[
+            condecimal(
+                ge=Decimal('-1000000'),
+                le=Decimal('1000000'),
+                multiple_of=Decimal('0.01'),
+            )
+        ]
+        | None
+    ) = None
+    mapv: (
+        dict[
+            str,
+            condecimal(
+                ge=Decimal('-1000000'),
+                le=Decimal('1000000'),
+                multiple_of=Decimal('0.01'),
+            ),
+        ]
+        | None
+    ) = None
     rate: Rate | None = None
     plainf: confloat(ge=0.0) | None = None

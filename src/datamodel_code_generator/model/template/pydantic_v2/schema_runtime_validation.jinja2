@@ -22,45 +22,21 @@
 {{ '\n' }}
 {%- set schema_validator_state.has_prior = true %}
 {%- endif %}
-{%- set one_of_required_groups = schema_runtime_validation.required_groups|selectattr('keyword', 'equalto', 'oneOf')|list %}
-{%- if one_of_required_groups %}
+{%- for keyword, stem in [('oneOf', 'one_of'), ('anyOf', 'any_of'), ('not', 'not')] %}
+{%- set required_groups = schema_runtime_validation.required_groups|selectattr('keyword', 'equalto', keyword)|list %}
+{%- if required_groups %}
 {%- if schema_validator_state.has_prior %}
 {{ '\n' }}
 {%- endif %}
-    __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
-{%- for rule in one_of_required_groups %}
+    __json_schema_{{ stem }}_required_groups__: ClassVar[tuple[Any, ...]] = (
+{%- for rule in required_groups %}
         {{ rule.groups|repr }},
 {%- endfor %}
     )
 {{ '\n' }}
 {%- set schema_validator_state.has_prior = true %}
 {%- endif %}
-{%- set any_of_required_groups = schema_runtime_validation.required_groups|selectattr('keyword', 'equalto', 'anyOf')|list %}
-{%- if any_of_required_groups %}
-{%- if schema_validator_state.has_prior %}
-{{ '\n' }}
-{%- endif %}
-    __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = (
-{%- for rule in any_of_required_groups %}
-        {{ rule.groups|repr }},
 {%- endfor %}
-    )
-{{ '\n' }}
-{%- set schema_validator_state.has_prior = true %}
-{%- endif %}
-{%- set not_required_groups = schema_runtime_validation.required_groups|selectattr('keyword', 'equalto', 'not')|list %}
-{%- if not_required_groups %}
-{%- if schema_validator_state.has_prior %}
-{{ '\n' }}
-{%- endif %}
-    __json_schema_not_required_groups__: ClassVar[tuple[Any, ...]] = (
-{%- for rule in not_required_groups %}
-        {{ rule.groups|repr }},
-{%- endfor %}
-    )
-{{ '\n' }}
-{%- set schema_validator_state.has_prior = true %}
-{%- endif %}
 {%- if schema_runtime_validation.conditional_required %}
 {%- if schema_validator_state.has_prior %}
 {{ '\n' }}

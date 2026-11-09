@@ -13,13 +13,14 @@ from datamodel_code_generator import Error
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
 from datamodel_code_generator._target_documents import document_identity
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from datamodel_code_generator import GeneratedModules, _GenerationInput  # pyright: ignore[reportPrivateUsage]
     from datamodel_code_generator._api_generation import TargetGenerator
-    from datamodel_code_generator._api_types import GeneratedArtifact, OperationSelector
+    from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._client.config import ClientGenerationConfig
     from datamodel_code_generator._client.target import ClientTarget
     from datamodel_code_generator._fastapi.config import FastAPIConfig
@@ -35,7 +36,13 @@ _OPERATION_SETTINGS: Final = (
     "server_operation_names",
     "server_parameter_names",
 )
-_CLIENT_CHOICES: Final = ("signature_style", "body_arguments", "default_base_url", "server_base_url")
+_CLIENT_CHOICES: Final = (
+    "signature_style",
+    "body_arguments",
+    "default_base_url",
+    "server_base_url",
+    "deep_object_brackets",
+)
 _INDEXED: Final = re.compile(r"(operations|resource_names)\[(\d+)\](?:\.(parameter_names|body_field_names)\[(\d+)\])?")
 
 
@@ -141,13 +148,16 @@ def keyed(error: Exception, config: Any) -> Exception:
     def named(item: Diagnostic) -> Diagnostic:
         if (path := item.option_path) is None or (found := _INDEXED.match(path)) is None:
             return item
-        spelled = f"{found[1]}[{(key := keys[found[1]][int(found[2])])!r}]"
+        key = keys[found[1]][int(found[2])]
+        spelled = f"{found[1]}[{stable_repr(key)}]"
         if (member := found[3]) is not None:
             names = config.client_operations[key][member]
             members = (
-                [f"[{name!r}]" for name in names]
+                [f"[{stable_repr(name)}]" for name in names]
                 if member == "parameter_names"
-                else [f"[{media!r}][{name!r}]" for media, fields in names.items() for name in fields]
+                else [
+                    f"[{stable_repr(media)}][{stable_repr(name)}]" for media, fields in names.items() for name in fields
+                ]
             )
             spelled += f".{member}{members[int(found[4])]}"
         return replace(item, option_path=f"{spelled}{path[found.end() :]}")
@@ -195,7 +205,7 @@ def _render(input_: _GenerationInput, config: GenerateConfig, cwd: Path, bases: 
     """Render the target under a private directory of the working directory and publish only the side files."""
     from tempfile import TemporaryDirectory  # noqa: PLC0415
 
-    from datamodel_code_generator._api_generation import plan_target, publish_target  # noqa: PLC0415
+    from datamodel_code_generator._api_generation import artifact_text, plan_target, publish_target  # noqa: PLC0415
 
     selected = "server" if config.generate_client is None else "client"
     with TemporaryDirectory(prefix=".datamodel-codegen-", dir=cwd) as directory:
@@ -231,7 +241,7 @@ def _render(input_: _GenerationInput, config: GenerateConfig, cwd: Path, bases: 
             )
         )
         return {
-            item.path.relative_to(root).parts: _text(item, config.encoding)
+            item.path.relative_to(root).parts: artifact_text(item, config.encoding)
             for item in artifacts
             if item.kind in {"model", "target"}
         }
@@ -247,11 +257,3 @@ def _staged(error: APIGenerationError, root: str) -> APIGenerationError:
         for item in error.diagnostics
     )
     return error if diagnostics == error.diagnostics else APIGenerationError(diagnostics)
-
-
-def _text(artifact: GeneratedArtifact, encoding: str) -> str:
-    """Read a rendered file as its written file reads: Python files in the model encoding, other text as UTF-8."""
-    from io import BytesIO, TextIOWrapper  # noqa: PLC0415
-
-    python = artifact.kind == "model" or artifact.path.suffix in {".py", ".pyi"}
-    return TextIOWrapper(BytesIO(artifact.content), encoding=encoding if python else "utf-8").read()

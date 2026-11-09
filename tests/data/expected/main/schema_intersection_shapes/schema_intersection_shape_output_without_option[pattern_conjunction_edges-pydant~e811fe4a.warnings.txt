@@ -1,0 +1,2 @@
+The pattern '(?=a)(?=\\x{62})' of the schema at edges.yaml#/properties/braced_escape/allOf/0 is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '(?=\\p{L})(?=a)' of the schema at edges.yaml#/properties/rust_escape/allOf/0 is left out: no regex engine of the output compiles it, so the generated code does not check it.

@@ -1,5 +1,3 @@
-literal-object=True
-type-list=True
 schema-object=True
 branch-rule-counts=(0, 0)
 candidate-paths=()

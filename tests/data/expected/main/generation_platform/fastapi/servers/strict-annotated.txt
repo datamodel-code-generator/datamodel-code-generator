@@ -1,6 +1,6 @@
 # strict-annotated
 serve pydantic_v2.BaseModel
-service DefaultService: get_values, post_form, upload
+service DefaultService: get_values, post_form, search, upload
 service DefaultService without its methods: TypeError
 > GET /values/5
   get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=None)
@@ -65,8 +65,16 @@ service DefaultService without its methods: TypeError
 < 204 - b''
 > POST /uploads
 < 422 application/json [{"type": "int_type", "loc": ["body", "count"]}, {"type": "bool_type", "loc": ["body", "flag"]}]
+> GET /search?size=5&note=n
+  search(BySize(size=5, note='n'))
+< 204 - b''
+> GET /search?name=x
+  search(ByName(name='x', note=None))
+< 204 - b''
+> GET /search?size=x
+< 422 application/json [{"type": "int_type", "loc": ["query", "q", "BySize", "size"]}, {"type": "missing", "loc": ["query", "q", "ByName", "name"]}]
 serve pydantic_v2.dataclass
-service DefaultService: get_values, post_form, upload
+service DefaultService: get_values, post_form, search, upload
 service DefaultService without its methods: TypeError
 > GET /values/5
   get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=None)
@@ -131,3 +139,11 @@ service DefaultService without its methods: TypeError
 < 204 - b''
 > POST /uploads
 < 422 application/json [{"type": "int_type", "loc": ["body", "count"]}, {"type": "bool_type", "loc": ["body", "flag"]}]
+> GET /search?size=5&note=n
+  search(BySize(size=5, note='n'))
+< 204 - b''
+> GET /search?name=x
+  search(ByName(name='x', note=MISSING))
+< 204 - b''
+> GET /search?size=x
+< 422 application/json [{"type": "int_type", "loc": ["query", "q", "BySize", "size"]}, {"type": "missing", "loc": ["query", "q", "ByName", "name"]}]

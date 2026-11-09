@@ -81,6 +81,15 @@
     "tracking_issue": null
   },
   {
+    "id": "cli-option.untrusted-input",
+    "kind": "cli-option",
+    "message": "The untrusted input switch is experimental; the references and schema keywords it refuses may grow as new ways for a schema to read files or write code are found.",
+    "note": "With --untrusted-input (untrusted_input=True in generate() and in the GenerateConfig of the dynamic API), dcg reads no file or URL but the input, refuses x-python-type, x-python-import, customTypePath and customBasePath, Protocol Buffers input and --validation, and implies --no-allow-remote-refs. It does not sandbox the generated code.",
+    "since_version": "0.92.0",
+    "target": "--untrusted-input",
+    "tracking_issue": null
+  },
+  {
     "id": "cli-option.use-missing-sentinel",
     "kind": "cli-option",
     "message": "Pydantic MISSING sentinel output is experimental because it depends on pydantic.experimental.missing_sentinel, or on pydantic.MISSING for a 2.14 target.",
@@ -168,6 +177,15 @@
     "note": "The parser focuses on model generation from XSD documents, not full XML instance validation.",
     "since_version": "0.59.0",
     "target": "--input-file-type xmlschema",
+    "tracking_issue": null
+  },
+  {
+    "id": "python-api.generate-dynamic-module",
+    "kind": "python-api",
+    "message": "Dynamic module generation is experimental; its parameters, the DynamicModule attributes, the schema locations it keys classes by, and the module registration rules may change.",
+    "note": "generate_dynamic_module() generates the classes like generate_dynamic_models() and also returns the class of the document itself, if it has one (None for an OpenAPI document or with skip_root_model), and the class of each schema location that becomes a class (a location written as a type alias or merged into another class has no entry). With register_module=True, it keeps the module of the classes registered in sys.modules, so that the classes and their instances pickle. generate_dynamic_models() is not experimental.",
+    "since_version": "0.92.0",
+    "target": "generate_dynamic_module(), DynamicModule, and register_module=True",
     "tracking_issue": null
   }
 ]

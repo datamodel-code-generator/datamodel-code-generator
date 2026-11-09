@@ -1,0 +1,3 @@
+mypy extras: clean
+pyright extras: clean
+ty extras: clean

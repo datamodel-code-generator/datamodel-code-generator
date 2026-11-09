@@ -91,10 +91,14 @@ class ApiInlineObjectArrayItemResponseModel:
     id: int | None = None
 
 
-ApiInlineObjectArrayRequestModel = TypeAliasType("ApiInlineObjectArrayRequestModel", list[ApiInlineObjectArrayItemRequestModel])
+ApiInlineObjectArrayRequestModel = TypeAliasType(
+    "ApiInlineObjectArrayRequestModel", list[ApiInlineObjectArrayItemRequestModel]
+)
 
 
-ApiInlineObjectArrayResponseModel = TypeAliasType("ApiInlineObjectArrayResponseModel", list[ApiInlineObjectArrayItemResponseModel])
+ApiInlineObjectArrayResponseModel = TypeAliasType(
+    "ApiInlineObjectArrayResponseModel", list[ApiInlineObjectArrayItemResponseModel]
+)
 
 
 @dataclass
@@ -113,16 +117,26 @@ class ApiInlineObjectUnionModel:
     name: str
 
 
-ApiInlineObjectUnionRequestModel = TypeAliasType("ApiInlineObjectUnionRequestModel", ApiInlineObjectUnionRequestModel1 | ApiInlineObjectUnionModel)
+ApiInlineObjectUnionRequestModel = TypeAliasType(
+    "ApiInlineObjectUnionRequestModel",
+    ApiInlineObjectUnionRequestModel1 | ApiInlineObjectUnionModel,
+)
 
 
-ApiInlineObjectUnionResponseModel = TypeAliasType("ApiInlineObjectUnionResponseModel", ApiInlineObjectUnionResponseModel1 | ApiInlineObjectUnionModel)
+ApiInlineObjectUnionResponseModel = TypeAliasType(
+    "ApiInlineObjectUnionResponseModel",
+    ApiInlineObjectUnionResponseModel1 | ApiInlineObjectUnionModel,
+)
 
 
-ApiForwardDictKeyMapRequestModel = TypeAliasType("ApiForwardDictKeyMapRequestModel", dict["ApiReadOnlyLeafRequestModel", str])
+ApiForwardDictKeyMapRequestModel = TypeAliasType(
+    "ApiForwardDictKeyMapRequestModel", dict["ApiReadOnlyLeafRequestModel", str]
+)
 
 
-ApiForwardDictKeyMapResponseModel = TypeAliasType("ApiForwardDictKeyMapResponseModel", dict["ApiReadOnlyLeafResponseModel", str])
+ApiForwardDictKeyMapResponseModel = TypeAliasType(
+    "ApiForwardDictKeyMapResponseModel", dict["ApiReadOnlyLeafResponseModel", str]
+)
 
 
 @dataclass
@@ -190,28 +204,46 @@ class ApiConditionalForwardWrapperModel:
     payload: ApiConditionalEnvelopeModel
 
 
-ApiForwardAliasRequestModel = TypeAliasType("ApiForwardAliasRequestModel", ApiReadOnlyLeafRequestModel)
+ApiForwardAliasRequestModel = TypeAliasType(
+    "ApiForwardAliasRequestModel", ApiReadOnlyLeafRequestModel
+)
 
 
-ApiForwardAliasResponseModel = TypeAliasType("ApiForwardAliasResponseModel", ApiReadOnlyLeafResponseModel)
+ApiForwardAliasResponseModel = TypeAliasType(
+    "ApiForwardAliasResponseModel", ApiReadOnlyLeafResponseModel
+)
 
 
-ApiForwardArrayRequestModel = TypeAliasType("ApiForwardArrayRequestModel", list[ApiReadOnlyLeafRequestModel])
+ApiForwardArrayRequestModel = TypeAliasType(
+    "ApiForwardArrayRequestModel", list[ApiReadOnlyLeafRequestModel]
+)
 
 
-ApiForwardArrayResponseModel = TypeAliasType("ApiForwardArrayResponseModel", list[ApiReadOnlyLeafResponseModel])
+ApiForwardArrayResponseModel = TypeAliasType(
+    "ApiForwardArrayResponseModel", list[ApiReadOnlyLeafResponseModel]
+)
 
 
-ApiForwardMapRequestModel = TypeAliasType("ApiForwardMapRequestModel", dict[str, ApiReadOnlyLeafRequestModel])
+ApiForwardMapRequestModel = TypeAliasType(
+    "ApiForwardMapRequestModel", dict[str, ApiReadOnlyLeafRequestModel]
+)
 
 
-ApiForwardMapResponseModel = TypeAliasType("ApiForwardMapResponseModel", dict[str, ApiReadOnlyLeafResponseModel])
+ApiForwardMapResponseModel = TypeAliasType(
+    "ApiForwardMapResponseModel", dict[str, ApiReadOnlyLeafResponseModel]
+)
 
 
-ApiForwardKeyedMapRequestModel = TypeAliasType("ApiForwardKeyedMapRequestModel", dict[ApiAllowedKeyModel, ApiReadOnlyLeafRequestModel])
+ApiForwardKeyedMapRequestModel = TypeAliasType(
+    "ApiForwardKeyedMapRequestModel",
+    dict[ApiAllowedKeyModel, ApiReadOnlyLeafRequestModel],
+)
 
 
-ApiForwardKeyedMapResponseModel = TypeAliasType("ApiForwardKeyedMapResponseModel", dict[ApiAllowedKeyModel, ApiReadOnlyLeafResponseModel])
+ApiForwardKeyedMapResponseModel = TypeAliasType(
+    "ApiForwardKeyedMapResponseModel",
+    dict[ApiAllowedKeyModel, ApiReadOnlyLeafResponseModel],
+)
 
 
 @dataclass

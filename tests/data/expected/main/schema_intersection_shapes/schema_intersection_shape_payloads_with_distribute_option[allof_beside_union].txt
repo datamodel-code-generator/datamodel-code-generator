@@ -1,0 +1,228 @@
+pydantic_v2.BaseModel default pet {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel default pet {"id": "p", "bark": false} accepted
+pydantic_v2.BaseModel default pet {"meow": true} rejected
+pydantic_v2.BaseModel default pet {"id": "p"} rejected
+pydantic_v2.BaseModel default pet_inline_member {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel default pet_inline_member {"meow": true} rejected
+pydantic_v2.BaseModel default pet_mixed {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel default pet_mixed {"id": "p", "bark": true} accepted
+pydantic_v2.BaseModel default pet_mixed {"meow": true} rejected
+pydantic_v2.BaseModel default pet_inline {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel default pet_inline {"meow": true} rejected
+pydantic_v2.BaseModel default pet_props {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel default pet_props {"meow": true} rejected
+pydantic_v2.BaseModel default pet_field {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel default pet_field {"meow": true} rejected
+pydantic_v2.BaseModel default items [{"id": "p", "meow": true}] accepted
+pydantic_v2.BaseModel default items [{"meow": true}] rejected
+pydantic_v2.BaseModel default values {"k": {"id": "p", "bark": true}} accepted
+pydantic_v2.BaseModel default values {"k": {"bark": true}} rejected
+pydantic_v2.dataclass default pet {"id": "p", "meow": true} accepted
+pydantic_v2.dataclass default pet {"id": "p", "bark": false} accepted
+pydantic_v2.dataclass default pet {"meow": true} rejected
+pydantic_v2.dataclass default pet {"id": "p"} rejected
+pydantic_v2.dataclass default pet_inline_member {"id": "p", "meow": true} accepted
+pydantic_v2.dataclass default pet_inline_member {"meow": true} rejected
+pydantic_v2.dataclass default pet_mixed {"id": "p", "meow": true} accepted
+pydantic_v2.dataclass default pet_mixed {"id": "p", "bark": true} accepted
+pydantic_v2.dataclass default pet_mixed {"meow": true} rejected
+pydantic_v2.dataclass default pet_inline {"id": "p", "meow": true} accepted
+pydantic_v2.dataclass default pet_inline {"meow": true} rejected
+pydantic_v2.dataclass default pet_props {"id": "p", "meow": true} accepted
+pydantic_v2.dataclass default pet_props {"meow": true} rejected
+pydantic_v2.dataclass default pet_field {"id": "p", "meow": true} accepted
+pydantic_v2.dataclass default pet_field {"meow": true} rejected
+pydantic_v2.dataclass default items [{"id": "p", "meow": true}] accepted
+pydantic_v2.dataclass default items [{"meow": true}] rejected
+pydantic_v2.dataclass default values {"k": {"id": "p", "bark": true}} accepted
+pydantic_v2.dataclass default values {"k": {"bark": true}} rejected
+msgspec.Struct default pet {"id": "p", "meow": true} import error
+msgspec.Struct default pet {"id": "p", "bark": false} import error
+msgspec.Struct default pet {"meow": true} import error
+msgspec.Struct default pet {"id": "p"} import error
+msgspec.Struct default pet_inline_member {"id": "p", "meow": true} import error
+msgspec.Struct default pet_inline_member {"meow": true} import error
+msgspec.Struct default pet_mixed {"id": "p", "meow": true} import error
+msgspec.Struct default pet_mixed {"id": "p", "bark": true} import error
+msgspec.Struct default pet_mixed {"meow": true} import error
+msgspec.Struct default pet_inline {"id": "p", "meow": true} import error
+msgspec.Struct default pet_inline {"meow": true} import error
+msgspec.Struct default pet_props {"id": "p", "meow": true} import error
+msgspec.Struct default pet_props {"meow": true} import error
+msgspec.Struct default pet_field {"id": "p", "meow": true} import error
+msgspec.Struct default pet_field {"meow": true} import error
+msgspec.Struct default items [{"id": "p", "meow": true}] import error
+msgspec.Struct default items [{"meow": true}] import error
+msgspec.Struct default values {"k": {"id": "p", "bark": true}} import error
+msgspec.Struct default values {"k": {"bark": true}} import error
+pydantic_v2.BaseModel --field-constraints pet {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --field-constraints pet {"id": "p", "bark": false} accepted
+pydantic_v2.BaseModel --field-constraints pet {"meow": true} rejected
+pydantic_v2.BaseModel --field-constraints pet {"id": "p"} rejected
+pydantic_v2.BaseModel --field-constraints pet_inline_member {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --field-constraints pet_inline_member {"meow": true} rejected
+pydantic_v2.BaseModel --field-constraints pet_mixed {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --field-constraints pet_mixed {"id": "p", "bark": true} accepted
+pydantic_v2.BaseModel --field-constraints pet_mixed {"meow": true} rejected
+pydantic_v2.BaseModel --field-constraints pet_inline {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --field-constraints pet_inline {"meow": true} rejected
+pydantic_v2.BaseModel --field-constraints pet_props {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --field-constraints pet_props {"meow": true} rejected
+pydantic_v2.BaseModel --field-constraints pet_field {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --field-constraints pet_field {"meow": true} rejected
+pydantic_v2.BaseModel --field-constraints items [{"id": "p", "meow": true}] accepted
+pydantic_v2.BaseModel --field-constraints items [{"meow": true}] rejected
+pydantic_v2.BaseModel --field-constraints values {"k": {"id": "p", "bark": true}} accepted
+pydantic_v2.BaseModel --field-constraints values {"k": {"bark": true}} rejected
+pydantic_v2.BaseModel --use-annotated pet {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --use-annotated pet {"id": "p", "bark": false} accepted
+pydantic_v2.BaseModel --use-annotated pet {"meow": true} rejected
+pydantic_v2.BaseModel --use-annotated pet {"id": "p"} rejected
+pydantic_v2.BaseModel --use-annotated pet_inline_member {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --use-annotated pet_inline_member {"meow": true} rejected
+pydantic_v2.BaseModel --use-annotated pet_mixed {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --use-annotated pet_mixed {"id": "p", "bark": true} accepted
+pydantic_v2.BaseModel --use-annotated pet_mixed {"meow": true} rejected
+pydantic_v2.BaseModel --use-annotated pet_inline {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --use-annotated pet_inline {"meow": true} rejected
+pydantic_v2.BaseModel --use-annotated pet_props {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --use-annotated pet_props {"meow": true} rejected
+pydantic_v2.BaseModel --use-annotated pet_field {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --use-annotated pet_field {"meow": true} rejected
+pydantic_v2.BaseModel --use-annotated items [{"id": "p", "meow": true}] accepted
+pydantic_v2.BaseModel --use-annotated items [{"meow": true}] rejected
+pydantic_v2.BaseModel --use-annotated values {"k": {"id": "p", "bark": true}} accepted
+pydantic_v2.BaseModel --use-annotated values {"k": {"bark": true}} rejected
+pydantic_v2.BaseModel --collapse-root-models pet {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --collapse-root-models pet {"id": "p", "bark": false} accepted
+pydantic_v2.BaseModel --collapse-root-models pet {"meow": true} rejected
+pydantic_v2.BaseModel --collapse-root-models pet {"id": "p"} rejected
+pydantic_v2.BaseModel --collapse-root-models pet_inline_member {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --collapse-root-models pet_inline_member {"meow": true} rejected
+pydantic_v2.BaseModel --collapse-root-models pet_mixed {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --collapse-root-models pet_mixed {"id": "p", "bark": true} accepted
+pydantic_v2.BaseModel --collapse-root-models pet_mixed {"meow": true} rejected
+pydantic_v2.BaseModel --collapse-root-models pet_inline {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --collapse-root-models pet_inline {"meow": true} rejected
+pydantic_v2.BaseModel --collapse-root-models pet_props {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --collapse-root-models pet_props {"meow": true} rejected
+pydantic_v2.BaseModel --collapse-root-models pet_field {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --collapse-root-models pet_field {"meow": true} rejected
+pydantic_v2.BaseModel --collapse-root-models items [{"id": "p", "meow": true}] accepted
+pydantic_v2.BaseModel --collapse-root-models items [{"meow": true}] rejected
+pydantic_v2.BaseModel --collapse-root-models values {"k": {"id": "p", "bark": true}} accepted
+pydantic_v2.BaseModel --collapse-root-models values {"k": {"bark": true}} rejected
+msgspec.Struct --collapse-root-models pet {"id": "p", "meow": true} import error
+msgspec.Struct --collapse-root-models pet {"id": "p", "bark": false} import error
+msgspec.Struct --collapse-root-models pet {"meow": true} import error
+msgspec.Struct --collapse-root-models pet {"id": "p"} import error
+msgspec.Struct --collapse-root-models pet_inline_member {"id": "p", "meow": true} import error
+msgspec.Struct --collapse-root-models pet_inline_member {"meow": true} import error
+msgspec.Struct --collapse-root-models pet_mixed {"id": "p", "meow": true} import error
+msgspec.Struct --collapse-root-models pet_mixed {"id": "p", "bark": true} import error
+msgspec.Struct --collapse-root-models pet_mixed {"meow": true} import error
+msgspec.Struct --collapse-root-models pet_inline {"id": "p", "meow": true} import error
+msgspec.Struct --collapse-root-models pet_inline {"meow": true} import error
+msgspec.Struct --collapse-root-models pet_props {"id": "p", "meow": true} import error
+msgspec.Struct --collapse-root-models pet_props {"meow": true} import error
+msgspec.Struct --collapse-root-models pet_field {"id": "p", "meow": true} import error
+msgspec.Struct --collapse-root-models pet_field {"meow": true} import error
+msgspec.Struct --collapse-root-models items [{"id": "p", "meow": true}] import error
+msgspec.Struct --collapse-root-models items [{"meow": true}] import error
+msgspec.Struct --collapse-root-models values {"k": {"id": "p", "bark": true}} import error
+msgspec.Struct --collapse-root-models values {"k": {"bark": true}} import error
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet {"id": "p", "bark": false} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet {"meow": true} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet {"id": "p"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet_inline_member {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet_inline_member {"meow": true} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet_mixed {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet_mixed {"id": "p", "bark": true} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet_mixed {"meow": true} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet_inline {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet_inline {"meow": true} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet_props {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet_props {"meow": true} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet_field {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pet_field {"meow": true} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs items [{"id": "p", "meow": true}] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs items [{"meow": true}] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs values {"k": {"id": "p", "bark": true}} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs values {"k": {"bark": true}} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet {"id": "p", "meow": true} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet {"id": "p", "bark": false} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet {"meow": true} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet {"id": "p"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet_inline_member {"id": "p", "meow": true} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet_inline_member {"meow": true} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet_mixed {"id": "p", "meow": true} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet_mixed {"id": "p", "bark": true} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet_mixed {"meow": true} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet_inline {"id": "p", "meow": true} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet_inline {"meow": true} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet_props {"id": "p", "meow": true} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet_props {"meow": true} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet_field {"id": "p", "meow": true} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pet_field {"meow": true} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs items [{"id": "p", "meow": true}] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs items [{"meow": true}] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs values {"k": {"id": "p", "bark": true}} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs values {"k": {"bark": true}} rejected
+msgspec.Struct --use-site-models-for-constrained-refs pet {"id": "p", "meow": true} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet {"id": "p", "bark": false} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet {"meow": true} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet {"id": "p"} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet_inline_member {"id": "p", "meow": true} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet_inline_member {"meow": true} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet_mixed {"id": "p", "meow": true} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet_mixed {"id": "p", "bark": true} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet_mixed {"meow": true} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet_inline {"id": "p", "meow": true} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet_inline {"meow": true} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet_props {"id": "p", "meow": true} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet_props {"meow": true} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet_field {"id": "p", "meow": true} import error
+msgspec.Struct --use-site-models-for-constrained-refs pet_field {"meow": true} import error
+msgspec.Struct --use-site-models-for-constrained-refs items [{"id": "p", "meow": true}] import error
+msgspec.Struct --use-site-models-for-constrained-refs items [{"meow": true}] import error
+msgspec.Struct --use-site-models-for-constrained-refs values {"k": {"id": "p", "bark": true}} import error
+msgspec.Struct --use-site-models-for-constrained-refs values {"k": {"bark": true}} import error
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet {"id": "p", "bark": false} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet {"meow": true} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet {"id": "p"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet_inline_member {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet_inline_member {"meow": true} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet_mixed {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet_mixed {"id": "p", "bark": true} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet_mixed {"meow": true} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet_inline {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet_inline {"meow": true} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet_props {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet_props {"meow": true} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet_field {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pet_field {"meow": true} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs items [{"id": "p", "meow": true}] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs items [{"meow": true}] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs values {"k": {"id": "p", "bark": true}} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs values {"k": {"bark": true}} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet {"id": "p", "bark": false} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet {"meow": true} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet {"id": "p"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet_inline_member {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet_inline_member {"meow": true} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet_mixed {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet_mixed {"id": "p", "bark": true} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet_mixed {"meow": true} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet_inline {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet_inline {"meow": true} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet_props {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet_props {"meow": true} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet_field {"id": "p", "meow": true} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pet_field {"meow": true} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs items [{"id": "p", "meow": true}] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs items [{"meow": true}] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs values {"k": {"id": "p", "bark": true}} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs values {"k": {"bark": true}} rejected

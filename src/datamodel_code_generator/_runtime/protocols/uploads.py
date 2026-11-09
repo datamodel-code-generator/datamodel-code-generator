@@ -11,45 +11,46 @@ from __future__ import annotations
 import threading
 from dataclasses import dataclass, field
 from enum import Enum
+from functools import partial
 from io import SEEK_END
 from types import CoroutineType, MappingProxyType
 from typing import TYPE_CHECKING, Any, BinaryIO, Final, Generic, Literal, cast, final
 
-from typing_extensions import Self, TypeVar
+from typing_extensions import TypeVar
 
-from ..client.client import request_decode_error
+from ..client.content import CHUNK
 from ..client.errors import (
     APIConnectionError,
     APIStatusError,
-    ConfigurationError,
     SDKError,
     add_secondary,
     is_transport,
+    request_failure,
 )
 from ..client.operations import request_errors
-from ..client.options import RequestOptions
 from ..client.retry import Delivery
-from ..client.timing import SYSTEM_CLOCK, Clock
+from ..model_codecs.media import SUCCESS_STATUSES, ascii_digits, json_integer
 from ..model_codecs.unset import UNSET
-from .errors import ProtocolDataError
-from .options import UploadOptions, layered
+from .errors import ProtocolDataError, configuration_error, data_error, data_refusal
+from .options import AsyncStepHandle, HelperLimits, StepHandle, StepLock, UploadOptions, layered, new_session
+from .pagination import saved_values, targeted_values
 from .records import HeaderSelector, plain_copy
 from .resume import (
-    MalformedStateError,
     require_state,
+    restored,
     saved_expiry,
     state_array,
     state_count,
     state_expiry,
+    state_fields,
     state_text,
 )
 from .sources import UploadProgress
-from .values import MISSING, RepeatedValueError, selected, server_expiry
+from .values import read_expiry, required
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from datetime import datetime
-    from types import TracebackType
 
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
@@ -59,7 +60,7 @@ if TYPE_CHECKING:
     from .pagination import PageBinding
     from .records import ParameterTarget, Selector
     from .references import OperationRef
-    from .writes import Targeted
+    from .writes import Targeted, Writer
 
 __all__ = (
     "AsyncUploadHandle",
@@ -73,11 +74,10 @@ __all__ = (
 
 T = TypeVar("T")
 C = TypeVar("C")
+V = TypeVar("V")
+R = TypeVar("R")
 
-_READ: Final = 65536
 _STATE: Final = frozenset({"size", "chunk", "confirmed", "phase", "bound", "expires_at"})
-_MIN_SUCCESS: Final = 200
-_MAX_SUCCESS: Final = 299
 _GATEWAY_STATUSES: Final = frozenset({502, 504})
 _BOUND_FIELDS: Final = 3
 
@@ -146,8 +146,7 @@ class UploadPlan(Generic[T, C]):
     probed: Targeted[object] = field(init=False)
     appended: Targeted[object] = field(init=False)
     completed: Targeted[T] | None = field(init=False)
-    headers: frozenset[str] = field(init=False)
-    queries: frozenset[str] = field(init=False)
+    writers: tuple[Writer, ...] = field(init=False)
 
     def __post_init__(self) -> None:
         """Derive the operations writing the bindings and each chunk's offset, length, and checksum, and the size."""
@@ -165,23 +164,19 @@ class UploadPlan(Generic[T, C]):
             if completion is None
             else targeted_writes(completion, (binding.written for binding in self.completion_bindings))
         )
-        children = (probed, appended, *(() if completed is None else (completed,)))
-        headers, queries = set[str](), set[str]()
-        if (size := self.size) is not None:
-            (headers if size.location == "header" else queries).add(
-                size.name.lower() if size.location == "header" else size.name
-            )
+        size = self.size
         size_position = None if size is None else position(self.create, size.location, size.name)
+        sized = () if size_position is None else ((self.create, ((size_position, None),)),)
+        writers = (*sized, *(child.writer for child in (probed, appended, completed) if child is not None))
         object.__setattr__(self, "size_position", size_position)
         object.__setattr__(self, "probed", probed)
         object.__setattr__(self, "appended", appended)
         object.__setattr__(self, "completed", completed)
-        object.__setattr__(self, "headers", frozenset(headers.union(*(item.headers for item in children))))
-        object.__setattr__(self, "queries", frozenset(queries.union(*(item.queries for item in children))))
+        object.__setattr__(self, "writers", writers)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class _Limits:
+class _Limits(HelperLimits):
     """The effective limits of one helper call, each from the first layer that sets it; None removes a limit.
 
     `chunk_path` names where the chunk size comes from: the client's helper default when it sets the size and the
@@ -190,20 +185,9 @@ class _Limits:
 
     chunk_bytes: int = 8 * 1024 * 1024
     chunk_path: tuple[str, ...] = ("upload_options", "chunk_bytes")
-    total_timeout: float | None = None
-    options: RequestOptions | None = None
-    clock: Clock = SYSTEM_CLOCK
 
 
 _DEFAULTS: Final = _Limits()
-
-
-def _invalid(
-    plan: UploadPlan[Any, Any],
-    path: tuple[str, ...],
-    condition: Literal["invalid_value", "wrong_capability", "source_changed", "expired"] = "invalid_value",
-) -> ConfigurationError:
-    return ConfigurationError(field_path=path, reason=condition, helper_id=plan.helper_id)
 
 
 def _limits(
@@ -215,31 +199,16 @@ def _limits(
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
 
     A fixed idempotency key, the call's own or a header of its name the call, the client, or a view sends, is refused,
-    since the create call and each append need keys of their own, and so are the call's extra headers or query names
-    of a parameter the helper writes.
+    since the create call and each append need keys of their own, and so are the headers or query names of a field
+    the helper writes, the size included, that any of them sends.
     """
-    for name, value, kind in (
-        ("upload_options", upload_options, UploadOptions),
-        ("options", options, RequestOptions),
-    ):
-        if value is not None and not isinstance(value, kind):
-            raise _invalid(plan, (name,))
-    request = options if isinstance(options, RequestOptions) else None
-    if (fixed := core.fixed_key(request, (plan.create, plan.probe, plan.append, plan.completion))) is not None:
-        raise _invalid(plan, fixed)
-    if request is not None:
-        for name in request.extra_headers or ():
-            if name.lower() in plan.headers:
-                raise _invalid(plan, ("options", "extra_headers", name))
-        for name in request.extra_query or ():
-            if name in plan.queries:
-                raise _invalid(plan, ("options", "extra_query", name))
-    kinds = (upload_options, defaults := core.helper_defaults(plan.helper_id))
+    request, kinds = core.helper_layers(plan.helper_id, "upload_options", upload_options, UploadOptions, options)
+    operations = (plan.create, plan.probe, plan.append, plan.completion)
+    from .writes import written_fields  # noqa: PLC0415 - A plan loaded the operation runtime.
+
+    core.refuse_patched(plan.helper_id, request, operations, written_fields(plan.writers))
     chunk_path = _DEFAULTS.chunk_path
-    if (
-        layered((upload_options,), "chunk_bytes", None) is None
-        and layered((defaults,), "chunk_bytes", None) is not None
-    ):
+    if layered(kinds[:1], "chunk_bytes", None) is None and layered(kinds[1:], "chunk_bytes", None) is not None:
         chunk_path = ("helper_defaults", plan.helper_id, "chunk_bytes")
     return _Limits(
         chunk_bytes=layered(kinds, "chunk_bytes", _DEFAULTS.chunk_bytes),
@@ -294,9 +263,9 @@ class _Content:
         parts: list[bytes] = []
         got = 0
         while got < length:
-            data = cast("object", file.read(min(length - got, _READ)))
+            data = cast("object", file.read(min(length - got, CHUNK)))
             if not isinstance(data, bytes) or len(data) > length - got:
-                raise _invalid(plan, ("source",), "wrong_capability")
+                raise configuration_error(plan.helper_id, ("source",), "wrong_capability")
             if not data:
                 break
             parts.append(data)
@@ -314,7 +283,7 @@ def _content(plan: UploadPlan[T, C], source: object) -> _Content:
         data = cast("bytes", source)
         with memoryview(data) as view:
             if not view.c_contiguous:
-                raise _invalid(plan, ("source",), "wrong_capability")
+                raise configuration_error(plan.helper_id, ("source",), "wrong_capability")
             return _Content(data, None, 0, view.nbytes)
     file = cast("BinaryIO", source)
     if all(hasattr(file, name) for name in ("read", "seek", "tell")) and (
@@ -322,14 +291,14 @@ def _content(plan: UploadPlan[T, C], source: object) -> _Content:
     ):
         empty, base, end = cast("tuple[object, object, object]", (file.read(0), file.tell(), file.seek(0, SEEK_END)))
         if _discarded(empty, base, end) or type(empty) is not bytes or type(base) is not int or type(end) is not int:
-            raise _invalid(plan, ("source",), "wrong_capability")
+            raise configuration_error(plan.helper_id, ("source",), "wrong_capability")
         return _Content(source, file, base, max(end - base, 0))
     if _source_kind(source) is None:
-        raise _invalid(plan, ("source",))
-    raise _invalid(plan, ("source",), "wrong_capability")
+        raise configuration_error(plan.helper_id, ("source",))
+    raise configuration_error(plan.helper_id, ("source",), "wrong_capability")
 
 
-class _Upload(Generic[T]):
+class _Upload(StepLock, Generic[T]):
     """What the synchronous and asyncio handles share: the plan, limits, session, content, and confirmed offset.
 
     Only a settled child call changes the confirmed offset. A failed append leaves it and makes the next step probe the
@@ -341,7 +310,6 @@ class _Upload(Generic[T]):
         "_bound",
         "_changed",
         "_chunk",
-        "_closed",
         "_completion_delivery",
         "_confirmed",
         "_content",
@@ -349,7 +317,6 @@ class _Upload(Generic[T]):
         "_guard",
         "_high",
         "_limits",
-        "_lock",
         "_phase",
         "_plan",
         "_result",
@@ -358,24 +325,25 @@ class _Upload(Generic[T]):
         "_verify",
     )
 
+    _busy = "uploading"
+
     def __init__(
         self, plan: UploadPlan[T, Any], limits: _Limits, session: OperationSession, content: _Content, chunk: int
     ) -> None:
         """Keep the plan, limits, session, the borrowed source's content, and the chunk size."""
+        super().__init__(plan.helper_id)
         self._plan = plan
         self._limits = limits
         self._session = session
         self._content = content
         self._size = content.size
         self._chunk = chunk
-        self._lock = threading.Lock()
         self._guard = threading.Lock()
         self._phase = _Phase.UPLOADING
         self._append_delivery = self._completion_delivery = Delivery.NOT_SENT
         self._confirmed = 0
         self._verify = False
         self._high: int | None = 0
-        self._closed = False
         self._changed = False
         self._bound: tuple[tuple[JSONValue, ...], tuple[JSONValue, ...], tuple[JSONValue, ...]] = ((), (), ())
         self._expires_at: datetime | None = None
@@ -395,25 +363,9 @@ class _Upload(Generic[T]):
             complete=self._phase is _Phase.COMPLETE,
         )
 
-    def _state_error(self, action: str, state: str) -> ConfigurationError:
-        return ConfigurationError(field_path=(action, state), reason="invalid_state", helper_id=self._plan.helper_id)
-
-    def _enter(self, action: str) -> None:
-        """Take the handle for one step, refusing a concurrent step, a closed handle, and a changed source."""
-        if not self._lock.acquire(blocking=False):
-            raise self._state_error(action, "uploading")
-        if self._closed or self._changed:
-            self._lock.release()
-            raise self._state_error(action, "closed" if self._closed else "source_changed")
-
-    def _close(self, action: str, *, quiet: bool = False) -> None:
-        """Close the handle, refusing while a step runs, or leaving it open then when `quiet`."""
-        if not self._lock.acquire(blocking=False):
-            if quiet:
-                return
-            raise self._state_error(action, "uploading")
-        self._closed = True
-        self._lock.release()
+    def _refused(self) -> str | None:
+        """Return the state that refuses every step: closed, or a changed source."""
+        return "closed" if self._closed else "source_changed" if self._changed else None
 
     def _sending(self, end: int) -> None:
         """Probe before the next append unless this one settles, and raise the end this handle ever sent to.
@@ -450,81 +402,48 @@ class _Upload(Generic[T]):
 
     def _offset_error(self, info: ResponseInfo | None) -> ProtocolDataError:
         plan = self._plan
-        return ProtocolDataError(
-            reason="inconsistent",
-            location=plan.remote_offset,
-            helper_id=plan.helper_id,
-            operation=plan.probe_operation,
-            info=info,
-        )
-
-    def _data_error(
-        self,
-        info: ResponseInfo | None,
-        condition: Literal["missing", "null", "type", "value", "malformed"],
-        at: Selector,
-    ) -> ProtocolDataError:
-        plan = self._plan
-        return ProtocolDataError(
-            reason=condition, location=at, helper_id=plan.helper_id, operation=plan.operation, info=info
-        )
-
-    def _read(self, read: Selector, wire: JSONValue, info: ResponseInfo) -> JSONValue:
-        """Return what a selector reads from a response, refusing a missing value and a header repeated once."""
-        try:
-            value = selected(read, wire, info)
-        except RepeatedValueError:
-            raise self._data_error(info, "malformed", read) from None
-        if value is MISSING:
-            raise self._data_error(info, "missing", read)
-        return value
-
-    def _values(
-        self, targeted: Targeted[Any], bindings: tuple[PageBinding, ...], wire: JSONValue, info: ResponseInfo
-    ) -> tuple[JSONValue, ...]:
-        """Return what bindings write: their literals and what the create response gives, refusing dot segments."""
-        written = tuple(
-            binding.literal if binding.selector is None else self._read(binding.selector, wire, info)
-            for binding in bindings
-        )
-        _dotted(self._plan, targeted, written, info)
-        return written
+        return data_error(plan.helper_id, plan.probe_operation, info, "inconsistent", plan.remote_offset)
 
     def _created(
         self, _data: object, wire: JSONValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
     ) -> tuple[tuple[tuple[JSONValue, ...], tuple[JSONValue, ...], tuple[JSONValue, ...]], datetime | None]:
-        """Read what each later call writes from the create response, and the server's expiry."""
+        """Read what each later call writes from the create response, and the server's expiry.
+
+        The values read are refused when missing or when they make a path segment a dot segment once encoded.
+        """
         plan = self._plan
+        refuse = data_refusal(plan.helper_id, plan.operation, info)
         bound = (
-            self._values(plan.probed, plan.probe_bindings, wire, info),
-            self._values(plan.appended, plan.append_bindings, wire, info),
-            () if plan.completed is None else self._values(plan.completed, plan.completion_bindings, wire, info),
+            targeted_values(plan.probed, plan.probe_bindings, wire, info, refuse),
+            targeted_values(plan.appended, plan.append_bindings, wire, info, refuse),
+            ()
+            if (completed := plan.completed) is None
+            else targeted_values(completed, plan.completion_bindings, wire, info, refuse),
         )
-        expires_at = None
-        if (read := plan.expires_at) is not None:
-            if not isinstance(value := self._read(read, wire, info), str):
-                raise self._data_error(info, "null" if value is None else "type", read)
-            if (expires_at := server_expiry(value, self._limits.clock.time())) is None:
-                raise self._data_error(info, "value", read)
-        return bound, expires_at
+        expiry = plan.expires_at
+        return bound, None if expiry is None else read_expiry(expiry, wire, info, self._limits.clock, refuse)
 
     def _offered(
         self, _data: object, wire: JSONValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
     ) -> tuple[int, ResponseInfo]:
-        """Return the offset a probe response gives: a JSON integer, or a header of ASCII digits."""
-        read = self._plan.remote_offset
-        value = self._read(read, wire, info)
+        """Return the offset a probe response gives: a JSON integer, or a header of ASCII digits.
+
+        A refusal names the probe operation, whose response gave the offset.
+        """
+        plan = self._plan
+        read, refuse = plan.remote_offset, data_refusal(plan.helper_id, plan.probe_operation, info)
+        value = required(read, wire, info, refuse)
         if isinstance(read, HeaderSelector) and isinstance(value, str):
             try:
-                if not (value.isascii() and value.isdigit()):
+                if not ascii_digits(value):
                     raise ValueError(value)  # noqa: TRY301 - One refusal covers digits int() cannot convert.
                 return int(value), info
             except ValueError:
-                raise self._data_error(info, "value", read) from None
-        if not isinstance(value, int) or isinstance(value, bool):
-            raise self._data_error(info, "null" if value is None else "type", read)
+                raise refuse(read, "value") from None
+        if not json_integer(value):
+            raise refuse(read, "null" if value is None else "type")
         if value < 0:
-            raise self._data_error(info, "value", read)
+            raise refuse(read, "value")
         return value, info
 
     def _verified(self, remote: int, info: ResponseInfo) -> None:
@@ -571,20 +490,12 @@ class _Upload(Generic[T]):
             return data, end
         with self._guard:
             self._changed = True
-        raise _invalid(self._plan, ("source",), "source_changed")
+        raise configuration_error(self._plan.helper_id, ("source",), "source_changed")
 
     def _append_request(self, payload: bytes) -> Callable[[], tuple[tuple[object, ...], object, None]]:
         plan = self._plan
         arguments = plan.appended.request((*self._bound[1], *_written(plan, self._confirmed, payload)))[0]
         return lambda: (arguments, payload, None)
-
-    def _probe_request(self) -> tuple[tuple[object, ...], object, None]:
-        return (*self._plan.probed.request(self._bound[0]), None)
-
-    def _completion_request(self) -> tuple[tuple[object, ...], object, None]:
-        completed = self._plan.completed
-        assert completed is not None
-        return (*completed.request(self._bound[2]), None)
 
     def _completed(
         self, data: T, _wire: JSONValue, _content: bytes, _info: ResponseInfo, _url: str, _managed: frozenset[str]
@@ -638,18 +549,6 @@ class _Upload(Generic[T]):
             })
 
 
-def _dotted(
-    plan: UploadPlan[Any, Any], targeted: Targeted[Any], written: tuple[JSONValue, ...], info: ResponseInfo | None
-) -> None:
-    """Refuse read values that make a path segment a dot segment once encoded, as data a server gave."""
-    from .writes import dotted_write  # noqa: PLC0415 - A plan loaded the operation runtime.
-
-    if (read := dotted_write(targeted, written)) is not None:
-        raise ProtocolDataError(
-            reason="value", location=read, helper_id=plan.helper_id, operation=plan.operation, info=info
-        )
-
-
 def _written(plan: UploadPlan[Any, Any], offset: int, data: memoryview | bytes) -> tuple[JSONValue, ...]:
     """Return what an append writes after its bindings: its offset, and the length and checksum of what it sends."""
     values: list[JSONValue] = [offset]
@@ -681,7 +580,7 @@ def _refused(error: BaseException) -> bool:
     """
     return (
         isinstance(error, APIStatusError)
-        and not _MIN_SUCCESS <= (status := error.info.status_code) <= _MAX_SUCCESS
+        and (status := error.info.status_code) not in SUCCESS_STATUSES
         and status not in _GATEWAY_STATUSES
     )
 
@@ -691,17 +590,8 @@ def _probed_again(error: Exception) -> bool:
     return is_transport(error) or isinstance(error, APIStatusError)
 
 
-def _session(limits: _Limits) -> OperationSession:
-    from ..client.logical import OperationSession  # noqa: PLC0415 - Only a started helper loads the call runtime.
-
-    return OperationSession(
-        total_timeout=limits.total_timeout,
-        clock=limits.clock,
-    )
-
-
 @final
-class UploadHandle(_Upload[T]):
+class UploadHandle(_Upload[T], StepHandle):
     """A resumable upload a helper created or resumed: `advance` appends one chunk, and `run` uploads the rest.
 
     `close` only stops local uploading; the remote upload stays. Uploading from two threads at once raises
@@ -725,30 +615,30 @@ class UploadHandle(_Upload[T]):
 
     def _create(self, arguments: tuple[object, ...], body: object, media_type: str | None) -> None:
         """Send the create request as the session's first child call and keep what it gives."""
-        core, plan = self._core, self._plan
-        self._bound, self._expires_at = core.execute_page(
-            plan.create,
-            lambda: (arguments, body, None),
-            self._created,
-            body=body,
-            media_type=media_type,
-            options=self._limits.options,
-            session=self._session,
-        )
+        create = (self._plan.create, lambda: (arguments, body, None), self._created)
+        self._bound, self._expires_at = self._send(*create, body=body, media_type=media_type)
         self._settle(0)
+
+    def _send(  # noqa: PLR0913
+        self,
+        call: OperationPlan[V],
+        request: Callable[[], tuple[tuple[object, ...], object, None]],
+        build: Callable[[V, JSONValue, bytes, ResponseInfo, str, frozenset[str]], R],
+        *,
+        body: object = UNSET,
+        media_type: str | None = None,
+        failed: Callable[[BaseException, Delivery], None] | None = None,
+    ) -> R:
+        """Send a child call of the handle's session, with no body but the caller's of the create call or a chunk."""
+        options, session = self._limits.options, self._session
+        return self._core.execute_page(
+            call, request, build, body=body, media_type=media_type, options=options, session=session, failed=failed
+        )
 
     def _probe(self) -> tuple[int, ResponseInfo]:
         """Probe the server's offset once."""
-        plan = self._plan
-        return self._core.execute_page(
-            plan.probed.call,
-            self._probe_request,
-            self._offered,
-            body=UNSET,
-            media_type=None,
-            options=self._limits.options,
-            session=self._session,
-        )
+        probed = self._plan.probed
+        return self._send(probed.call, probed.sent(self._bound[0]), self._offered)
 
     def _append(self) -> None:
         """Append the chunk holding the confirmed offset until the server confirms all of it."""
@@ -758,14 +648,11 @@ class UploadHandle(_Upload[T]):
             payload = buffer[self._confirmed - start :]
             self._sending(end)
             try:
-                self._core.execute_page(
+                self._send(
                     self._plan.appended.call,
                     self._append_request(payload),
                     _ignored,
                     body=payload,
-                    media_type=None,
-                    options=self._limits.options,
-                    session=self._session,
                     failed=self._append_observed,
                 )
             except Exception as error:
@@ -794,15 +681,8 @@ class UploadHandle(_Upload[T]):
         self._completing()
         try:
             try:
-                self._core.execute_page(
-                    completed.call,
-                    self._completion_request,
-                    self._completed,
-                    body=UNSET,
-                    media_type=None,
-                    options=self._limits.options,
-                    session=self._session,
-                    failed=self._completion_observed,
+                self._send(
+                    completed.call, completed.sent(self._bound[2]), self._completed, failed=self._completion_observed
                 )
             except BaseException as error:
                 self._completion_failed(error)
@@ -851,19 +731,9 @@ class UploadHandle(_Upload[T]):
         """Stop uploading locally; the remote upload stays, later steps raise ConfigurationError."""
         self._close("close")
 
-    def __enter__(self) -> Self:
-        """Return this handle, which leaving the block closes."""
-        return self
-
-    def __exit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the handle; while another step runs, leave it open rather than mask the block's error."""
-        self._close("close", quiet=exc is not None)
-
 
 @final
-class AsyncUploadHandle(_Upload[T]):
+class AsyncUploadHandle(_Upload[T], AsyncStepHandle):
     """A resumable upload an asyncio helper created or resumed: `advance` appends one chunk, `run` uploads the rest.
 
     `aclose` only stops local uploading; the remote upload stays. Uploading from two tasks at once raises
@@ -887,30 +757,30 @@ class AsyncUploadHandle(_Upload[T]):
 
     async def _create(self, arguments: tuple[object, ...], body: object, media_type: str | None) -> None:
         """Send the create request as the session's first child call and keep what it gives."""
-        core, plan = self._core, self._plan
-        self._bound, self._expires_at = await core.execute_page(
-            plan.create,
-            lambda: (arguments, body, None),
-            self._created,
-            body=body,
-            media_type=media_type,
-            options=self._limits.options,
-            session=self._session,
-        )
+        create = (self._plan.create, lambda: (arguments, body, None), self._created)
+        self._bound, self._expires_at = await self._send(*create, body=body, media_type=media_type)
         self._settle(0)
+
+    async def _send(  # noqa: PLR0913
+        self,
+        call: OperationPlan[V],
+        request: Callable[[], tuple[tuple[object, ...], object, None]],
+        build: Callable[[V, JSONValue, bytes, ResponseInfo, str, frozenset[str]], R],
+        *,
+        body: object = UNSET,
+        media_type: str | None = None,
+        failed: Callable[[BaseException, Delivery], None] | None = None,
+    ) -> R:
+        """Send a child call of the handle's session, with no body but the caller's of the create call or a chunk."""
+        options, session = self._limits.options, self._session
+        return await self._core.execute_page(
+            call, request, build, body=body, media_type=media_type, options=options, session=session, failed=failed
+        )
 
     async def _probe(self) -> tuple[int, ResponseInfo]:
         """Probe the server's offset once."""
-        plan = self._plan
-        return await self._core.execute_page(
-            plan.probed.call,
-            self._probe_request,
-            self._offered,
-            body=UNSET,
-            media_type=None,
-            options=self._limits.options,
-            session=self._session,
-        )
+        probed = self._plan.probed
+        return await self._send(probed.call, probed.sent(self._bound[0]), self._offered)
 
     async def _append(self) -> None:
         """Append the chunk holding the confirmed offset until the server confirms all of it."""
@@ -920,14 +790,11 @@ class AsyncUploadHandle(_Upload[T]):
             payload = buffer[self._confirmed - start :]
             self._sending(end)
             try:
-                await self._core.execute_page(
+                await self._send(
                     self._plan.appended.call,
                     self._append_request(payload),
                     _ignored,
                     body=payload,
-                    media_type=None,
-                    options=self._limits.options,
-                    session=self._session,
                     failed=self._append_observed,
                 )
             except Exception as error:
@@ -956,15 +823,8 @@ class AsyncUploadHandle(_Upload[T]):
         self._completing()
         try:
             try:
-                await self._core.execute_page(
-                    completed.call,
-                    self._completion_request,
-                    self._completed,
-                    body=UNSET,
-                    media_type=None,
-                    options=self._limits.options,
-                    session=self._session,
-                    failed=self._completion_observed,
+                await self._send(
+                    completed.call, completed.sent(self._bound[2]), self._completed, failed=self._completion_observed
                 )
             except BaseException as error:
                 self._completion_failed(error)
@@ -1013,16 +873,6 @@ class AsyncUploadHandle(_Upload[T]):
         """Stop uploading locally; the remote upload stays, later steps raise ConfigurationError."""
         self._close("aclose")
 
-    async def __aenter__(self) -> Self:
-        """Return this handle, which leaving the block closes."""
-        return self
-
-    async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the handle; while another step runs, leave it open rather than mask the block's error."""
-        self._close("aclose", quiet=exc is not None)
-
 
 def _ignored(
     _data: object, _wire: JSONValue, _content: bytes, _info: ResponseInfo, _url: str, _managed: frozenset[str]
@@ -1038,7 +888,7 @@ def _sized(plan: UploadPlan[T, C], arguments: tuple[object, ...], size: int) -> 
     try:
         value = spec.restored(size)
     except request_errors(spec.codec) as error:
-        raise request_decode_error(plan.create, (spec.plan.location, spec.plan.name), error) from None
+        raise request_failure((spec.plan.location, spec.plan.name), plan.create.operation_id, error) from None
     return (*arguments[:position], value, *arguments[position:])
 
 
@@ -1056,7 +906,7 @@ def start_upload(  # noqa: PLR0913
     """Measure the source, create the helper's upload in a session of its own, and return the handle appending to it."""
     limits = _limits(core, plan, upload_options, options)
     content = _content(plan, source)
-    handle = UploadHandle(core, plan, limits, _session(limits), content, limits.chunk_bytes)
+    handle = UploadHandle(core, plan, limits, new_session(limits), content, limits.chunk_bytes)
     handle._create(_sized(plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 
@@ -1075,7 +925,7 @@ async def astart_upload(  # noqa: PLR0913
     """Measure the source, create the helper's upload with asyncio in a session of its own, and return its handle."""
     limits = _limits(core, plan, upload_options, options)
     content = _content(plan, source)
-    handle = AsyncUploadHandle(core, plan, limits, _session(limits), content, limits.chunk_bytes)
+    handle = AsyncUploadHandle(core, plan, limits, new_session(limits), content, limits.chunk_bytes)
     await handle._create(_sized(plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 
@@ -1098,13 +948,7 @@ def _bound(plan: UploadPlan[Any, Any], saved: JSONValue) -> tuple[tuple[JSONValu
     bindings = (plan.probe_bindings, plan.append_bindings, plan.completion_bindings)
     require_state(len(groups) == _BOUND_FIELDS)
     require_state(all(len(group) == len(items) for group, items in zip(groups, bindings, strict=True)))
-    return tuple(
-        tuple(
-            value if binding.selector is not None else binding.literal
-            for binding, value in zip(items, group, strict=True)
-        )
-        for group, items in zip(groups, bindings, strict=True)
-    )
+    return tuple(saved_values(items, group) for group, items in zip(groups, bindings, strict=True))
 
 
 def _decoded(plan: UploadPlan[Any, Any], state: JSONValue) -> _Saved:
@@ -1112,10 +956,7 @@ def _decoded(plan: UploadPlan[Any, Any], state: JSONValue) -> _Saved:
 
     Only an upload in progress or one whose completion's outcome is unknown is saved.
     """
-    from collections.abc import Mapping  # noqa: PLC0415
-
-    require_state(isinstance(state, Mapping) and frozenset(state) == _STATE)
-    fields = cast("Mapping[str, JSONValue]", state)
+    fields = state_fields(state, _STATE)
     size, chunk, confirmed = (state_count(fields[name]) for name in ("size", "chunk", "confirmed"))
     phase = state_text(fields["phase"])
     require_state(chunk > 0 and confirmed <= size and phase in _PHASES)
@@ -1149,22 +990,20 @@ def _resume_start(
     exceed the call's `chunk_bytes`, since one chunk is what an append holds in memory; the refusal names the option
     that set the call's size. Saved values are encoded as the server's are when each request is built.
     """
-    try:
-        saved = _decoded(plan, plain_copy(state))
-    except (MalformedStateError, TypeError, ValueError):
-        raise _invalid(plan, ("state",)) from None
-    if (expires_at := saved.expires_at) is not None and expires_at.timestamp() <= limits.clock.time():
-        raise _invalid(plan, ("state",), "expired")
+    saved = restored(plan.helper_id, state, partial(_decoded, plan), lambda saved: saved.expires_at, limits.clock)
     if saved.chunk > limits.chunk_bytes:
-        raise _invalid(plan, limits.chunk_path)
+        raise configuration_error(plan.helper_id, limits.chunk_path)
+    from .writes import refuse_dotted  # noqa: PLC0415 - A plan loaded the operation runtime.
+
     probe, append, completion = saved.bound
-    _dotted(plan, plan.probed, probe, None)
-    _dotted(plan, plan.appended, (*append, *_written(plan, 0, b"")), None)
+    refuse = data_refusal(plan.helper_id, plan.operation, None)
+    refuse_dotted(plan.probed, probe, refuse)
+    refuse_dotted(plan.appended, (*append, *_written(plan, 0, b"")), refuse)
     if (completed := plan.completed) is not None:
-        _dotted(plan, completed, completion, None)
+        refuse_dotted(completed, completion, refuse)
     content = _content(plan, source)
     if content.size != saved.size:
-        raise _invalid(plan, ("source",), "source_changed")
+        raise configuration_error(plan.helper_id, ("source",), "source_changed")
     return saved, content
 
 
@@ -1195,7 +1034,7 @@ def resume_upload(  # noqa: PLR0913
     """
     limits = _limits(core, plan, upload_options, options)
     saved, content = _resume_start(plan, source, state, limits)
-    handle = UploadHandle(core, plan, limits, _session(limits), content, saved.chunk)
+    handle = UploadHandle(core, plan, limits, new_session(limits), content, saved.chunk)
     _resumed(handle, saved)
     handle._verified(*handle._probe())  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
@@ -1216,7 +1055,7 @@ async def aresume_upload(  # noqa: PLR0913
     """
     limits = _limits(core, plan, upload_options, options)
     saved, content = _resume_start(plan, source, state, limits)
-    handle = AsyncUploadHandle(core, plan, limits, _session(limits), content, saved.chunk)
+    handle = AsyncUploadHandle(core, plan, limits, new_session(limits), content, saved.chunk)
     _resumed(handle, saved)
     handle._verified(*await handle._probe())  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle

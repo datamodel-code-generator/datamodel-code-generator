@@ -1,0 +1,4 @@
+{"detail": {"message": "m"}, "kind": "high"}: accepted Order(detail=Detail(message='m'), kind=<Kind.high: 'high'>)
+{"kind": "low"}: rejected ValidationError
+{"warn": {"count": 1}, "kind": "high"}: accepted Report(warn=Warn(count=1), kind=<Kind.high: 'high'>)
+{"kind": "low"}: rejected ValidationError

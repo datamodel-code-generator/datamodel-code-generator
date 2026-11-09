@@ -1,0 +1,37 @@
+{
+  "title": "Imported",
+  "allOf": [
+    {
+      "$ref": "#/$defs/ImportedMid"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "own": {
+          "type": "string"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "ImportedMid": {
+      "x-python-import": {
+        "module": "mypkg.models",
+        "name": "ImportedMid"
+      },
+      "allOf": [
+        {
+          "$ref": "parent.json"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mid": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

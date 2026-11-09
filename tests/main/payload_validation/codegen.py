@@ -48,6 +48,19 @@ def _stated_floor(recorded: list[warnings.WarningMessage]) -> str | None:
     )
 
 
+def _stated_msgspec_limit(recorded: list[warnings.WarningMessage], backend: PayloadBackend) -> str | None:
+    """Return the first warning of a msgspec generation that states what msgspec cannot decode or check, or None.
+
+    Those warnings start with "msgspec" ("msgspec cannot decode", "msgspec.Meta does not take", ...); the tests of those
+    limits decode the models, and a payload test of the case would fail on the stated limit. Other warnings of the
+    generation do not skip the case.
+    """
+    if backend is not PayloadBackend.MSGSPEC:
+        return None
+    messages = (str(record.message) for record in recorded if issubclass(record.category, UserWarning))
+    return next((message for message in messages if message.startswith("msgspec")), None)
+
+
 def _safe_filename(case_id: str) -> str:
     return re.sub(r"[^A-Za-z0-9_.-]+", "_", case_id)
 
@@ -265,10 +278,13 @@ def generate_payload_runtime(
         if warning_file:
             warnings.simplefilter("always", UserWarning)
         else:
+            if backend is PayloadBackend.MSGSPEC:
+                warnings.simplefilter("always", UserWarning)
             warnings.filterwarnings("ignore", r"The schema at .* admits (only its const|no value)", UserWarning)
         warnings.filterwarnings("always", _PYDANTIC_FLOOR_STATEMENT.pattern, UserWarning)
         return_code = _run_payload_codegen(_payload_codegen_args(case, input_path, output_path, backend))
     generated_model_cache.setdefault("floors", {})[cache_key] = _stated_floor(captured)
+    generated_model_cache.setdefault("limits", {})[cache_key] = _stated_msgspec_limit(captured, backend)
     if warning_file:
         messages = [str(record.message) for record in captured]
         generated_model_cache.setdefault("warnings", {})[cache_key] = messages
@@ -312,6 +328,14 @@ def stated_pydantic_floor(case: SchemaCase, directory: Path, backend: PayloadBac
     return _stated_floor(captured)
 
 
+def _skip_stated_msgspec_limit(
+    case: SchemaCase, generated_model_cache: dict[str, Any], backend: PayloadBackend
+) -> None:
+    """Skip a case whose generation warns about what its msgspec models cannot decode or check."""
+    if (limit := generated_model_cache.get("limits", {}).get((backend.value, case.id))) is not None:
+        pytest.skip(f"{case.id} [{backend.value}]: generation states a msgspec limit: {limit}")
+
+
 def _skip_below_stated_floor(case: SchemaCase, generated_model_cache: dict[str, Any], backend: PayloadBackend) -> None:
     """Skip a case whose generation states that its models need a newer Pydantic than the installed one."""
     if (floor := runtime_below_stated_floor(case, generated_model_cache, backend)) is not None:
@@ -331,6 +355,7 @@ def load_generated_payload_runtime(
         pytest.fail(f"{case.id} [{backend.value}]: {exc}")
         raise AssertionError from exc
     _skip_below_stated_floor(case, generated_model_cache, backend)
+    _skip_stated_msgspec_limit(case, generated_model_cache, backend)
     return runtime
 
 

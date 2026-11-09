@@ -1,0 +1,10 @@
+valid: accepted
+invalid {"named": {"Abc": "x"}}: rejected
+invalid {"sized": {"a": 1}}: rejected
+invalid {"sized": {"abcde": 1}}: rejected
+invalid {"patterned": {"y-a": "x"}}: rejected
+invalid {"named_and_patterned": {"abcdef": "x"}}: rejected
+invalid {"named_and_patterned": {"ABC": "x"}}: rejected
+invalid {"nested": [{"a": true}]}: rejected
+invalid {"either": {"c": "x"}}: accepted
+invalid {"single_branch": {"b": "x"}}: rejected

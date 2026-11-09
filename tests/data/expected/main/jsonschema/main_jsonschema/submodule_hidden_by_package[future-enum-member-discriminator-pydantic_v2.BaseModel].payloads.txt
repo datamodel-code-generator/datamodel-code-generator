@@ -1,0 +1,2 @@
+{"kind": "cat", "meow": "m"}: accepted Pet(root=Cat(kind=<Kind.cat: 'cat'>, meow='m'))
+{"kind": "dog", "bark": 1}: rejected ValidationError

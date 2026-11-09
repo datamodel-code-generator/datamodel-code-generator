@@ -7,6 +7,10 @@ app/server/_generated/contract.py
 app/server/_generated/openapi.json
 app/server/_generated/openapi.py
 app/server/_runtime/__init__.py
+app/server/_runtime/model_codecs/__init__.py
+app/server/_runtime/model_codecs/errors.py
+app/server/_runtime/model_codecs/media.py
+app/server/_runtime/model_codecs/parameters.py
 app/server/_runtime/server/__init__.py
 app/server/_runtime/server/application.py
 app/server/_runtime/server/openapi.py

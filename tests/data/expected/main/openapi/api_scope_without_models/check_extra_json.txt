@@ -3,7 +3,7 @@
   "format": "json",
   "kind": "check",
   "success": false,
-  "content": "EXTRA: <OUTPUT> (no longer generated)",
+  "content": "EXTRA: <OUTPUT> (no longer generated)\n",
   "differences": [
     {
       "kind": "extra",

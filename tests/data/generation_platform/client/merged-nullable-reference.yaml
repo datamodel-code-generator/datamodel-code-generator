@@ -1,0 +1,84 @@
+openapi: 3.0.3
+info: {title: Merged nullable references, version: "1.0"}
+servers: [{url: "https://merged.example.com"}]
+paths:
+  /work:
+    get:
+      operationId: getWork
+      parameters:
+        - {name: case, in: query, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: A work address, which is never null.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Work"}
+    put:
+      operationId: putWork
+      parameters:
+        - {name: case, in: query, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Work"}
+      responses:
+        "204": {description: Stored.}
+  /office:
+    get:
+      operationId: getOffice
+      parameters:
+        - {name: case, in: query, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: An inline address, which is never null.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  street: {type: string}
+  /home:
+    get:
+      operationId: getHome
+      parameters:
+        - {name: case, in: query, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: A home address, which may be null.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Home"}
+  /person:
+    put:
+      operationId: putPerson
+      parameters:
+        - {name: case, in: query, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Person"}
+      responses:
+        "200":
+          description: The stored person, whose work address is never null and whose home address may be.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Person"}
+components:
+  schemas:
+    Home:
+      type: object
+      nullable: true
+      properties:
+        street: {type: string}
+    Work:
+      type: object
+      properties:
+        street: {type: string}
+    Person:
+      type: object
+      required: [work, home]
+      properties:
+        work: {$ref: "#/components/schemas/Work"}
+        home: {$ref: "#/components/schemas/Home"}

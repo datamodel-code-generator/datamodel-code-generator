@@ -1,0 +1,20 @@
+openapi: 3.1.0
+info: {title: Anchors, version: "1.0"}
+servers: [{url: "https://api.example.com"}]
+paths:
+  /notes:
+    post:
+      operationId: postNote
+      parameters:
+        - $ref: served-anchors/parameter.yaml
+      requestBody:
+        $ref: served-anchors/request-body.yaml
+      responses:
+        "200":
+          $ref: served-anchors/response.yaml
+      callbacks:
+        onNote:
+          "{$request.body#/title}":
+            $ref: served-anchors/hook.yaml
+  /tags:
+    $ref: served-anchors/path-item.yaml

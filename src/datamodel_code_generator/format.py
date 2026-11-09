@@ -7,10 +7,10 @@ along with PythonVersion enum and DatetimeClassType for output configuration.
 from __future__ import annotations
 
 import os
-import re
 import shutil
 import subprocess  # noqa: S404
 import sys
+from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import lru_cache
 from importlib import import_module, invalidate_caches
@@ -19,18 +19,20 @@ from importlib.machinery import ModuleSpec, PathFinder
 from importlib.util import source_from_cache
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 from warnings import warn
 from weakref import ReferenceType, WeakKeyDictionary, ref
 
 from typing_extensions import Sentinel
 
 from datamodel_code_generator import _format_types
+from datamodel_code_generator._module_paths import is_below_name, is_within_name
 from datamodel_code_generator.deprecations import warn_deprecated, warn_legacy_dependency
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.util import load_toml
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Generator, Iterable, Sequence
     from types import CodeType
 
 DEFAULT_FORMATTERS = _format_types.DEFAULT_FORMATTERS
@@ -40,15 +42,13 @@ DatetimeClassType = _format_types.DatetimeClassType
 Formatter = _format_types.Formatter
 PythonVersion = _format_types.PythonVersion
 PythonVersionMin = _format_types.PythonVersionMin
-
-
-DEFAULT_LINE_LENGTH = 88
-DEFAULT_KNOWN_FIRST_PARTY = frozenset({"datamodel_code_generator", "tests"})
-MAX_TOP_LEVEL_BLANK_LINES = 2
-MAX_SHORT_DEFAULT_OVERFLOW = 13
-LONG_TARGET_PREFIX_LENGTH = 30
-TYPE_ALIAS_INLINE_ARGUMENT_COUNT = 2
-STRING_PREFIX_PATTERN = re.compile(r"(?i)^([rubf]*)(\"\"\"|'''|\"|')")
+DEFAULT_LINE_LENGTH = _format_types.DEFAULT_LINE_LENGTH
+DEFAULT_KNOWN_FIRST_PARTY = _format_types.DEFAULT_KNOWN_FIRST_PARTY
+MAX_TOP_LEVEL_BLANK_LINES = _format_types.MAX_TOP_LEVEL_BLANK_LINES
+MAX_SHORT_DEFAULT_OVERFLOW = _format_types.MAX_SHORT_DEFAULT_OVERFLOW
+LONG_TARGET_PREFIX_LENGTH = _format_types.LONG_TARGET_PREFIX_LENGTH
+TYPE_ALIAS_INLINE_ARGUMENT_COUNT = _format_types.TYPE_ALIAS_INLINE_ARGUMENT_COUNT
+STRING_PREFIX_PATTERN = _format_types.STRING_PREFIX_PATTERN
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,13 +78,12 @@ def _local_package_modules(module: ModuleType, *, previous_modules: frozenset[st
     if package_paths is None:
         return (module.__name__,)
     roots = tuple(Path(path).resolve(strict=False) for path in package_paths)
-    prefix = f"{module.__name__}."
     loaded_modules = sys.modules.copy()
     local_modules = tuple(
         name
         for name, candidate in loaded_modules.items()
         if name not in previous_modules
-        and name.startswith(prefix)
+        and is_below_name(name, module.__name__)
         and isinstance(candidate, ModuleType)
         and (source_path := _module_source_path(candidate)) is not None
         and any(source_path.is_relative_to(root) for root in roots)
@@ -148,7 +147,10 @@ class _WatchSourceLoader(Loader):
         if callable(exec_module):
             exec_module(module)
             return
-        msg = f"cannot load module {module.__name__!r}: get_source() returned None and exec_module() is unavailable"
+        msg = (
+            f"cannot load module {stable_repr(module.__name__)}: get_source() returned None and exec_module() is "
+            "unavailable"
+        )
         raise ImportError(msg)
 
 
@@ -156,12 +158,12 @@ class _WatchSourceFinder:
     """Wrap only current-package child imports with source-first loading."""
 
     def __init__(self, package_name: str) -> None:
-        self._prefix = f"{package_name}."
+        self._package = package_name
 
     def find_spec(
         self, fullname: str, path: Sequence[str] | None = None, target: ModuleType | None = None
     ) -> ModuleSpec | None:
-        if not fullname.startswith(self._prefix) or (spec := PathFinder.find_spec(fullname, path, target)) is None:
+        if not is_below_name(fullname, self._package) or (spec := PathFinder.find_spec(fullname, path, target)) is None:
             return None
         if spec.loader is not None and callable(getattr(spec.loader, "get_source", None)):
             spec.loader = _WatchSourceLoader(spec.loader, spec.origin)
@@ -190,6 +192,11 @@ def _fresh_watch_module(module: ModuleType) -> ModuleType:
     return replacement
 
 
+def _package_modules(name: str, modules: dict[str, ModuleType]) -> dict[str, ModuleType]:
+    """Return the modules of `modules` that are the package `name` or one of its submodules."""
+    return {loaded: module for loaded, module in modules.items() if is_within_name(loaded, name)}
+
+
 def _restore_watch_package(
     module_name: str,
     modules: dict[str, ModuleType],
@@ -198,10 +205,8 @@ def _restore_watch_package(
     parent_attribute: object,
 ) -> None:
     """Restore package interpreter state after a failed transactional refresh."""
-    prefix = f"{module_name}."
-    for loaded_name in tuple(sys.modules.copy()):
-        if loaded_name == module_name or loaded_name.startswith(prefix):
-            sys.modules.pop(loaded_name, None)
+    for loaded_name in _package_modules(module_name, sys.modules.copy()):
+        sys.modules.pop(loaded_name, None)
     sys.modules.update(modules)
     for original, namespace in module_namespaces.items():
         original.__dict__.clear()
@@ -227,13 +232,8 @@ def _fresh_watch_package(module: ModuleType) -> ModuleType:
     from datamodel_code_generator import PROCESS_STATE_LOCK  # noqa: PLC0415
 
     with PROCESS_STATE_LOCK:
-        prefix = f"{module.__name__}."
         loaded_modules = sys.modules.copy()
-        original_modules = {
-            loaded_name: loaded_module
-            for loaded_name, loaded_module in loaded_modules.items()
-            if loaded_name == module.__name__ or loaded_name.startswith(prefix)
-        }
+        original_modules = _package_modules(module.__name__, loaded_modules)
         module_namespaces = {
             loaded_module: loaded_module.__dict__.copy()
             for loaded_module in original_modules.values()
@@ -305,16 +305,8 @@ def _load_watch_formatter_module(module_name: str, watch_dependencies: Any) -> M
 _BUILTIN_FORMATTER_REEXPORTS: tuple[str, ...] = (
     "_AliasSortCategory",
     "_ImportCategory",
-    "DEFAULT_LINE_LENGTH",
-    "DEFAULT_KNOWN_FIRST_PARTY",
-    "MAX_TOP_LEVEL_BLANK_LINES",
-    "MAX_SHORT_DEFAULT_OVERFLOW",
-    "LONG_TARGET_PREFIX_LENGTH",
-    "TYPE_ALIAS_INLINE_ARGUMENT_COUNT",
-    "STRING_PREFIX_PATTERN",
     "_is_valid_builtin_line_length",
     "_line_indent",
-    "_indent_first_line",
     "_find_pyproject_toml",
     "_get_builtin_line_length",
     "_get_builtin_known_first_party",
@@ -336,59 +328,6 @@ _BUILTIN_FORMATTER_REEXPORTS: tuple[str, ...] = (
     "_build_builtin_import_block",
     "_is_name_or_attr",
     "_is_type_checking_if",
-    "_source_segment",
-    "_inline_source_segment",
-    "_format_call_argument",
-    "_format_dict_literal",
-    "_format_list_literal",
-    "_split_escaped_string_literal",
-    "_format_wrapped_string_literal",
-    "_format_call_argument_for_block",
-    "_format_call",
-    "_format_constrained_call",
-    "_is_call",
-    "_has_attribute_root",
-    "_is_datetime_module_call",
-    "_is_annotated",
-    "_is_list_of_annotated",
-    "_is_union",
-    "_CONSTRAINED_CALL_NAMES",
-    "_is_constrained_string_call",
-    "_is_constrained_call",
-    "_contains_constrained_string_call",
-    "_contains_annotated",
-    "_contains_list_of_annotated",
-    "_is_simple_union_annotation",
-    "_should_format_constrained_call_union",
-    "_can_parenthesize_field_value",
-    "_should_format_union_annotation",
-    "_iter_bit_or_elements",
-    "_format_bit_or_element",
-    "_format_bit_or_elements",
-    "_format_parenthesized_bit_or_annotation",
-    "_should_format_field_bit_or_annotation_assignment",
-    "_should_format_field_bit_or_value_assignment",
-    "_format_parenthesized_field_value",
-    "_should_format_string_bit_or_annotation_assignment",
-    "_format_bit_or_annotation_assignment",
-    "_iter_subscript_elements",
-    "_format_annotated",
-    "_config_dict_assignment",
-    "_format_generated_annotation_assignment",
-    "_format_generated_class_statement",
-    "_format_constrained_call_union",
-    "_format_annotated_union",
-    "_format_list_of_annotated",
-    "_format_union_subscript",
-    "_format_subscript_value",
-    "_format_type_alias_type_call",
-    "_format_type_alias_union_assignment",
-    "_format_typed_dict_call",
-    "_is_root_model_constrained_union",
-    "_format_root_model_constrained_union_base",
-    "_format_root_model_union_base",
-    "_format_generated_class_definition",
-    "_format_generated_module_statement",
     "_format_type_checking_block",
     "_LineReplacement",
     "_collect_builtin_replacements",
@@ -398,7 +337,6 @@ _BUILTIN_FORMATTER_REEXPORTS: tuple[str, ...] = (
     "_iter_module_import_nodes",
     "_apply_line_replacements",
     "_previous_non_empty_line_index",
-    "_ensure_post_class_annotation_assignment_spacing",
     "_normalize_top_level_blank_lines",
     "_normalize_string_quotes",
     "_finalize_builtin_code",
@@ -628,14 +566,12 @@ class CodeFormatter:
 
         builtin_tool_config: dict[str, Any] | None = None
         if use_builtin:
-            is_valid_builtin_line_length = _builtin_formatter_global("_is_valid_builtin_line_length")
-            if builtin_format_line_length is not None and not is_valid_builtin_line_length(builtin_format_line_length):
-                msg = "builtin_format_line_length must be a positive integer"
-                raise ValueError(msg)
-            if (pyproject_toml_path := _builtin_formatter_global("_find_pyproject_toml")(settings_path)) is not None:
-                builtin_tool_config = load_toml(pyproject_toml_path).get("tool", {})
-            else:
-                builtin_tool_config = {}
+            _builtin_formatter_attr("_check_builtin_line_length")(
+                builtin_format_line_length, _builtin_formatter_global("_is_valid_builtin_line_length")
+            )
+            builtin_tool_config = _builtin_formatter_attr("_load_builtin_tool_config")(
+                settings_path, _builtin_formatter_global("_find_pyproject_toml"), load_toml
+            )
 
         self.builtin_line_length = (
             _builtin_formatter_global("_get_builtin_line_length")(
@@ -747,7 +683,7 @@ class CodeFormatter:
         except ImportError as e:
             from datamodel_code_generator import Error  # noqa: PLC0415
 
-            msg = f"Unable to import custom formatter {custom_formatter_import!r}: {e}"
+            msg = f"Unable to import custom formatter {stable_repr(custom_formatter_import)}: {e}"
             raise Error(msg) from e
 
         if not hasattr(import_, "CodeFormatter"):
@@ -789,12 +725,11 @@ class CodeFormatter:
         if Formatter.ISORT in self.formatters:
             code = self.apply_isort(code)
         if self.use_builtin_formatter:
-            formatter = self.apply_builtin_formatter
-            match generated:
-                case True:
-                    formatter = _builtin_formatter_attr("_apply_builtin_generated_formatter")
-                case _:
-                    pass
+            formatter = (
+                _builtin_formatter_attr("_apply_builtin_generated_formatter")
+                if generated
+                else self.apply_builtin_formatter
+            )
             code = formatter(
                 code,
                 line_length=self.builtin_line_length,
@@ -851,35 +786,23 @@ class CodeFormatter:
 
     def apply_ruff_lint(self, code: str) -> str:
         """Run ruff check with auto-fix on code."""
-        result = self._run_ruff_command(
-            self._ruff_check_command("-"),
-            stdin=code.encode(self.encoding),
-            allow_stdout_on_error=True,
-        )
-        return result.stdout.decode(self.encoding)
+        return self._ruff_check(code).decode(_RUFF_ENCODING)
 
     def apply_ruff_formatter(self, code: str) -> str:
         """Format code using ruff format."""
-        ruff_path = self._find_ruff_path()
-        result = self._run_ruff_command(
-            (ruff_path, "format", "-"),
-            stdin=code.encode(self.encoding),
-        )
-        return result.stdout.decode(self.encoding)
+        return self._ruff_format(self._find_ruff_path(), code.encode(_RUFF_ENCODING)).decode(_RUFF_ENCODING)
 
     def apply_ruff_check_and_format(self, code: str) -> str:
         """Run ruff check and format sequentially for reliable processing."""
         ruff_path = self._find_ruff_path()
-        check_result = self._run_ruff_command(
-            self._ruff_check_command("-", ruff_path=ruff_path),
-            stdin=code.encode(self.encoding),
-            allow_stdout_on_error=True,
-        )
-        format_result = self._run_ruff_command(
-            (ruff_path, "format", "-"),
-            stdin=check_result.stdout,
-        )
-        return format_result.stdout.decode(self.encoding)
+        return self._ruff_format(ruff_path, self._ruff_check(code, ruff_path)).decode(_RUFF_ENCODING)
+
+    def _ruff_check(self, code: str, ruff_path: str | None = None) -> bytes:
+        command = self._ruff_check_command("-", ruff_path=ruff_path)
+        return self._run_ruff_command(command, stdin=code.encode(_RUFF_ENCODING), allow_stdout_on_error=True).stdout
+
+    def _ruff_format(self, ruff_path: str, stdin: bytes) -> bytes:
+        return self._run_ruff_command((ruff_path, "format", "-"), stdin=stdin).stdout
 
     def _run_ruff_command(
         self,
@@ -900,8 +823,8 @@ class CodeFormatter:
         )
         if result.returncode == 0 or (allow_stdout_on_error and result.returncode == 1 and result.stdout):
             return result
-        if (message := result.stderr.decode(self.encoding, errors="replace").strip()) or (
-            message := result.stdout.decode(self.encoding, errors="replace").strip()
+        if (message := result.stderr.decode(_RUFF_ENCODING, errors="replace").strip()) or (
+            message := result.stdout.decode(_RUFF_ENCODING, errors="replace").strip()
         ):
             detail = message
         else:
@@ -928,7 +851,9 @@ class CodeFormatter:
             return str(ruff_in_venv)
         if ruff_path := shutil.which("ruff"):
             return ruff_path
-        msg = "Ruff executable was not found. Install it with `pip install 'datamodel-code-generator[ruff]'`."
+        from datamodel_code_generator._message_text import install_command  # noqa: PLC0415
+
+        msg = f"Ruff executable was not found. Install it with {install_command('ruff')}."
         raise RuntimeError(msg)
 
     def apply_isort(self, code: str) -> str:
@@ -942,17 +867,54 @@ class CodeFormatter:
             ).output
         return isort.code(code, config=self.isort_config)
 
-    def format_directory(self, directory: Path) -> None:
-        """Apply ruff formatting to all Python files in a directory."""
+    def format_directory(self, directory: Path, files: Iterable[Path] = ()) -> None:
+        """Apply ruff formatting to all Python files in a directory.
+
+        Ruff reads and writes UTF-8 only. `files` are the files of the directory written in `self.encoding`: Ruff sees
+        them as UTF-8, and they are written back in `self.encoding`. The other files of the directory are UTF-8.
+        """
         ruff_path = self._find_ruff_path()
-        if Formatter.RUFF_CHECK in self.formatters:
-            self._run_ruff_command(
-                self._ruff_check_command(str(directory), ruff_path=ruff_path),
-            )
-        if Formatter.RUFF_FORMAT in self.formatters:
-            self._run_ruff_command(
-                (ruff_path, "format", str(directory)),
-            )
+        with _held_as_utf8(files, self.encoding):
+            if Formatter.RUFF_CHECK in self.formatters:
+                self._run_ruff_command(
+                    self._ruff_check_command(str(directory), ruff_path=ruff_path),
+                )
+            if Formatter.RUFF_FORMAT in self.formatters:
+                self._run_ruff_command(
+                    (ruff_path, "format", str(directory)),
+                )
+
+
+_RUFF_ENCODING: Final = "utf-8"
+"""The encoding of the text Ruff reads and of the code and messages it writes: Ruff reads and writes UTF-8 only."""
+
+
+def _read_by_ruff(raw: bytes, encoding: str) -> bool:
+    """Return whether Ruff, which reads UTF-8 and skips a byte order mark, reads the bytes as the text of `encoding`."""
+    try:
+        return raw.decode("utf-8-sig") == raw.decode(encoding)
+    except UnicodeDecodeError:
+        return False
+
+
+@contextmanager
+def _held_as_utf8(files: Iterable[Path], encoding: str) -> Generator[None]:
+    """Hold the files that Ruff would misread as UTF-8 while it runs, and write them back in `encoding`.
+
+    Ruff reads and writes UTF-8 only. A file whose bytes it reads as the text they hold in `encoding` stays as it is.
+    The held files are written back also when the block raises.
+    """
+    held: list[Path] = []
+    try:
+        for path in files:
+            if _read_by_ruff(raw := path.read_bytes(), encoding):
+                continue
+            path.write_bytes(raw.decode(encoding).encode(_RUFF_ENCODING))
+            held.append(path)
+        yield
+    finally:
+        for path in held:
+            path.write_bytes(path.read_bytes().decode(_RUFF_ENCODING).encode(encoding))
 
 
 class CustomCodeFormatter:
@@ -968,3 +930,31 @@ class CustomCodeFormatter:
     def apply(self, code: str) -> str:
         """Apply formatting to code. Must be implemented by subclasses."""
         raise NotImplementedError
+
+
+def _model_formatter_arguments(
+    settings: Any, *, custom_formatters: list[str] | None, backend: type[Any], is_multi_module_output: bool
+) -> dict[str, Any]:
+    """Return the arguments of a code formatter that the model settings give, by `CodeFormatter` parameter name.
+
+    `settings` is a `GenerateConfig` or a parser, read when called; the parser names its custom formatters
+    `custom_formatter`, so they are passed apart. Imports used only for type checking move into `TYPE_CHECKING` blocks
+    unless `settings` decides: the model class `backend` and whether the output has several modules give the default.
+    The caller adds the settings path, the third-party packages, deferred formatting and the formatter directory.
+    """
+    return {
+        "python_version": settings.target_python_version,
+        "wrap_string_literal": settings.wrap_string_literal,
+        "skip_string_normalization": not settings.use_double_quotes,
+        "custom_formatters": custom_formatters,
+        "custom_formatters_kwargs": settings.custom_formatters_kwargs,
+        "encoding": settings.encoding,
+        "formatters": settings.formatters,
+        "builtin_format_line_length": settings.builtin_format_line_length,
+        "use_type_checking_imports": resolve_use_type_checking_imports(
+            settings.use_type_checking_imports,
+            is_multi_module_output=is_multi_module_output,
+            formatters=settings.formatters,
+            requires_runtime_imports_with_ruff_check=backend.REQUIRES_RUNTIME_IMPORTS_WITH_RUFF_CHECK,
+        ),
+    }

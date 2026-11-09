@@ -36,6 +36,8 @@ if TYPE_CHECKING:
 
 SCHEMA = Path(__file__).parents[1] / "data" / "jsonschema" / "person.json"
 REPORTED = ("pass_name", "rule", "row", "facts", "model", "phase", "known")
+DECISIONS: dict[str, check_pass_pipeline.PassDecl] = {}
+"""The declaration of each decision the parsers below run, by name: ``_finality_only`` adds them to the registry."""
 
 
 class DiagnosingParser(JsonSchemaParser):
@@ -94,9 +96,9 @@ class SealedWriteParser(JsonSchemaParser):
         super()._finalize_modules(*args)
         builder = self.generation_store.builder()
         for model in self.results:
-            builder.move_model(model, new_path=model.path)
+            builder.update_model_reference(model, new_path=model.path)
             builder.clear_target_null(model.fields[0].data_type)
-            builder.remove_field(model, model.fields[-1])
+            builder.set_fields(model, model.fields[:-1])
 
 
 class RewritingParser(JsonSchemaParser):
@@ -145,6 +147,8 @@ def _finality_only(monkeypatch: pytest.MonkeyPatch, value: str, *, sweep: bool =
     monkeypatch.setenv(CHECK_FACT_FINALITY_SWEEP_ENV, "1" if sweep else "0")
     monkeypatch.setenv(CHECK_STORE_WRITES_ENV, "0")
     monkeypatch.setenv(CHECK_RENDER_PLANS_ENV, "0")
+    for name, decl in DECISIONS.items():
+        monkeypatch.setitem(check_pass_pipeline.DECISION_DECLS, name, decl)
 
 
 @pytest.mark.parametrize("flag", ["check", "report", "off"])
@@ -269,12 +273,18 @@ def test_fact_finality_reports_known_violations_without_raising(
 ) -> None:
     """A violation that ``KNOWN_WRITES`` lists is reported as known and does not stop the generation when raising."""
     report = tmp_path / "violations.jsonl"
-    schema = SCHEMA.with_name("collapse_root_models_empty_union.json")
+    schema = SCHEMA.with_name("type_alias_lookaround") / "model.json"
+    options = {
+        "formatters": [Formatter.BUILTIN],
+        "use_type_alias": True,
+        "use_annotated": True,
+        "field_constraints": True,
+    }
     _finality_only(monkeypatch, "1")
-    raised = JsonSchemaParser(schema, formatters=[Formatter.BUILTIN], collapse_root_models=True).parse()
+    raised = JsonSchemaParser(schema, **options).parse()
     _finality_only(monkeypatch, f"report:{report}")
 
-    reported = JsonSchemaParser(schema, formatters=[Formatter.BUILTIN], collapse_root_models=True).parse()
+    reported = JsonSchemaParser(schema, **options).parse()
 
     assert_output(raised, name="raised")
     assert_output(reported, name="reported")
@@ -313,16 +323,22 @@ def test_witness_problems_report_stale_entries_and_broken_witnesses() -> None:
     assert_output("".join(f"{problem}\n" for problem in [*problems, str(error.value)]))
 
 
-def _decide(name: str, run: Callable[[Any, Any], None]) -> tuple[Any, ...]:
-    """Return a registry of one decision ``name`` that reads defaults and writes nothing, running ``run``."""
-    decl = check_pass_pipeline.PassDecl(
+def _decide_writing(name: str, run: Callable[[Any, Any], None], *written: check_pass_pipeline.Fact) -> tuple[Any, ...]:
+    """Return a registry of one decision ``name`` that declares writing ``written`` and runs ``run``."""
+    DECISIONS[name] = check_pass_pipeline.PassDecl(
         name,
         check_pass_pipeline.Phase.DECIDE,
         check_pass_pipeline.Scope.GLOBAL,
         check_pass_pipeline.PassKind.TRANSFORM,
         reads=frozenset({check_pass_pipeline.Fact.DEFAULTS}),
+        writes=frozenset(written),
     )
-    return (check_pass_pipeline.DecisionPass({"decl": decl, "issue": "#0"}, check_pass_pipeline.DecisionWriter, run),)
+    return (check_pass_pipeline.DecisionPass({"name": name, "issue": "#0"}, check_pass_pipeline.DecisionWriter, run),)
+
+
+def _decide(name: str, run: Callable[[Any, Any], None]) -> tuple[Any, ...]:
+    """Return a registry of one decision ``name`` that reads defaults and writes nothing, running ``run``."""
+    return _decide_writing(name, run)
 
 
 READ: list[str] = []
@@ -428,11 +444,12 @@ def _iterate_names(form: str) -> Callable[[Any, Any], None]:
 @pytest.mark.parametrize("form", ["iter", "len", "keys", "items", "contains"])
 def test_fact_finality_reports_render_facts_that_decisions_iterate(monkeypatch: pytest.MonkeyPatch, form: str) -> None:
     """Iterating, counting, listing or testing the keys of a dict attribute reports its render-fact keys."""
-    _finality_only(monkeypatch, "1")
     READ.clear()
 
     class IteratingParser(CapturingParser):
         _DECISION_PASSES = _decide("iterate_keys", _iterate_names(form))
+
+    _finality_only(monkeypatch, "1")
 
     with pytest.raises(Error, match=rf"^{CHECK_FACT_FINALITY_ENV}: iterate_keys render-read: .* during DECIDE$"):
         IteratingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse()
@@ -446,19 +463,6 @@ def _write_default(_facts: Any, _writer: Any) -> None:
 def _write_description(_facts: Any, _writer: Any) -> None:
     """Write the description of a model, a fact the decision does not declare."""
     MODELS[0].description = "written"
-
-
-def _decide_writing(name: str, run: Callable[[Any, Any], None], *written: check_pass_pipeline.Fact) -> tuple[Any, ...]:
-    """Return a registry of one decision ``name`` that declares writing ``written`` and runs ``run``."""
-    decl = check_pass_pipeline.PassDecl(
-        name,
-        check_pass_pipeline.Phase.DECIDE,
-        check_pass_pipeline.Scope.GLOBAL,
-        check_pass_pipeline.PassKind.TRANSFORM,
-        reads=frozenset({check_pass_pipeline.Fact.DEFAULTS}),
-        writes=frozenset(written),
-    )
-    return (check_pass_pipeline.DecisionPass({"decl": decl, "issue": "#0"}, check_pass_pipeline.DecisionWriter, run),)
 
 
 class DeclaredWritingParser(CapturingParser):
@@ -602,6 +606,30 @@ def test_fact_finality_reports_a_base_field_that_changes_after_constructor_order
         target_python_version=PythonVersion.PY_311,
         formatters=[Formatter.BUILTIN],
     ).parse()
+
+    assert_output(_reported(report))
+
+
+class BaseClassStrictingParser(JsonSchemaParser):
+    """Makes the base classes of every model strict while it reports parse diagnostics, a pass that writes no fact."""
+
+    def _report_parse_diagnostics(self) -> None:
+        super()._report_parse_diagnostics()
+        for model in self.results:
+            for base_class in model.base_classes:
+                base_class.strict = True
+
+
+def test_fact_finality_reports_a_type_fact_of_a_base_class_as_the_bases(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A type fact of a model's base class is ``BASES`` for the model: a pass that does not declare it is reported."""
+    report = tmp_path / "violations.jsonl"
+    _finality_only(monkeypatch, f"report:{report}")
+    schema = tmp_path / "inheritance.json"
+    schema.write_text(json.dumps(INHERITANCE_SCHEMA), encoding="utf-8")
+
+    BaseClassStrictingParser(schema, formatters=[Formatter.BUILTIN]).parse()
 
     assert_output(_reported(report))
 

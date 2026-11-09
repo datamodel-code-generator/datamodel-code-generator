@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import sys
+import warnings
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import pytest
+import yaml
 
 from datamodel_code_generator.__main__ import Exit
-from datamodel_code_generator.util import get_yaml_backend, get_yaml_parse_errors
+from datamodel_code_generator.util import get_safe_loader, get_yaml_backend, get_yaml_parse_errors
 from tests.conftest import create_assert_file_content
 from tests.main.conftest import (
     EXPECTED_MAIN_PATH,
@@ -48,6 +50,16 @@ def yaml_backend(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
     get_yaml_parse_errors.cache_clear()
 
 
+@pytest.fixture
+def libyaml(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    """Read YAML with PyYAML on libyaml (the default) or, as an install without libyaml does, on its own scanner."""
+    if getattr(request, "param", "libyaml") == "pure":
+        monkeypatch.delattr(yaml, "CSafeLoader", raising=False)
+    get_safe_loader.cache_clear()
+    yield
+    get_safe_loader.cache_clear()
+
+
 @pytest.mark.benchmark
 @pytest.mark.cli_doc(
     options=["--input-file-type"],
@@ -78,6 +90,27 @@ def test_main_yaml(output_file: Path) -> None:
         output_path=output_file,
         input_file_type="yaml",
         assert_func=assert_file_content,
+    )
+
+
+@pytest.mark.parametrize(
+    "document",
+    [
+        pytest.param("a: 1\nb:\n  - x\n", id="block"),
+        pytest.param("{a: 1, b: [x]}\n", id="flow"),
+    ],
+)
+def test_main_yaml_sample_data_auto_detection(
+    output_file: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], document: str
+) -> None:
+    """Infer YAML sample data that is no JSON document as yaml, as `--input-file-type yaml` reads it (#6310)."""
+    input_path = tmp_path / "data.yaml"
+    input_path.write_text(document)
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        capsys=capsys,
+        expected_stderr_contains="The input file type was determined to be: yaml",
     )
 
 
@@ -112,6 +145,28 @@ def test_main_yaml_deprecated_bool(output_file: Path) -> None:
             output_path=output_file,
             input_file_type="openapi",
         )
+
+
+@pytest.mark.usefixtures("yaml_backend")
+def test_main_yaml_bool_text_in_strings_does_not_warn(output_file: Path) -> None:
+    """A block scalar or quoted string spelling a YAML 1.1 boolean holds text and does not warn with ryaml (#5546)."""
+    with warnings.catch_warnings():
+        warnings.filterwarnings("error", message="YAML bool", category=DeprecationWarning)
+        run_main_and_assert(
+            input_path=YAML_DATA_PATH / "bool_text_in_strings.yaml",
+            output_path=output_file,
+            input_file_type="jsonschema",
+        )
+
+
+@pytest.mark.usefixtures("yaml_backend")
+def test_main_yaml_bool_word_does_not_warn(output_file: Path, tmp_path: Path) -> None:
+    """A word that starts with a YAML 1.1 boolean, such as ``TrueColor``, holds no boolean and does not warn (#5546)."""
+    input_path = tmp_path / "bool_word.yaml"
+    input_path.write_text("type: object\ntitle: TrueColor\nproperties:\n  a:\n    type: string\n")
+    with warnings.catch_warnings():
+        warnings.filterwarnings("error", message="YAML bool", category=DeprecationWarning)
+        run_main_and_assert(input_path=input_path, output_path=output_file, input_file_type="jsonschema")
 
 
 @pytest.mark.parametrize("yaml_backend", ["pyyaml", "ryaml"], indirect=True)
@@ -181,4 +236,71 @@ def test_main_yaml_scientific_notation(output_file: Path) -> None:
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
         assert_func=assert_file_content,
         expected_file="yaml/scientific_notation.py",
+    )
+
+
+@pytest.mark.parametrize("yaml_backend", ["pyyaml"], indirect=True)
+@pytest.mark.parametrize("libyaml", ["libyaml", "pure"], indirect=True)
+@pytest.mark.usefixtures("yaml_backend", "libyaml")
+def test_main_yaml_tabs_read_alike(output_file: Path) -> None:
+    """Tabs in a block scalar and between the words of plain scalars read alike with and without libyaml (#6592).
+
+    libyaml refuses the tab in the block scalar and PyYAML's own scanner refused the others.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "tab_characters.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--use-schema-description"],
+    )
+
+
+@pytest.mark.parametrize("yaml_backend", ["pyyaml"], indirect=True)
+@pytest.mark.parametrize("libyaml", ["libyaml", "pure"], indirect=True)
+@pytest.mark.usefixtures("yaml_backend", "libyaml")
+def test_main_yaml_plain_equals_is_text(output_file: Path) -> None:
+    """A plain `=` reads as the string "=" with and without libyaml, as YAML 1.2 reads it (#6611)."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "equals_enum.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+    )
+
+
+@pytest.mark.parametrize(
+    ("document", "error"),
+    [
+        pytest.param(
+            "root:\n  child: [\n",
+            "ParserError: while parsing a flow node\nexpected the node content, but found '<stream end>'",
+            id="unclosed",
+        ),
+        pytest.param(
+            "root:\n  child: !!python/name:os.system\n",
+            "ConstructorError: could not determine a constructor for the tag 'tag:yaml.org,2002:python/name:os.system'",
+            id="unknown_tag",
+        ),
+        pytest.param(
+            "root:\n  child: !!value =\n",
+            "ConstructorError: could not determine a constructor for the tag 'tag:yaml.org,2002:value'",
+            id="value_tag",
+        ),
+    ],
+)
+@pytest.mark.parametrize("yaml_backend", ["pyyaml"], indirect=True)
+@pytest.mark.parametrize("libyaml", ["libyaml", "pure"], indirect=True)
+@pytest.mark.usefixtures("yaml_backend", "libyaml")
+def test_main_yaml_error_reads_alike(
+    output_file: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], document: str, error: str
+) -> None:
+    """A document that neither reader reads fails alike with and without libyaml (#6592)."""
+    input_path = tmp_path / "document.yaml"
+    input_path.write_text(document)
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=f"document.yaml: {error}",
     )

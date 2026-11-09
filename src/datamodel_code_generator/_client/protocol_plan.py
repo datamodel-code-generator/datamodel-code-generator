@@ -3,40 +3,67 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal, Protocol, TypeVar
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.config import OPTION_PREFIX
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, helper_classes
-from datamodel_code_generator._client.plan import fact
+from datamodel_code_generator._message_text import for_count
+from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
+from datamodel_code_generator._target_contract import SourceLocation, parameter_place, schema_uses
+from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_documents import document_identity, named_document, portable
 from datamodel_code_generator._url_redaction import redact_url
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Callable, Container, Iterator, Mapping
     from pathlib import Path
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import DiagnosticStage
-    from datamodel_code_generator._client.plan import ClientPlan
+    from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
     from datamodel_code_generator._client.protocols import Helper, Link
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
-    from datamodel_code_generator._target_contract import OperationContract, OperationId
+    from datamodel_code_generator._target_contract import (
+        Direction,
+        OperationContract,
+        OperationId,
+        TypeUseBinding,
+        TypeView,
+    )
+    from datamodel_code_generator._target_documents import JSONObject
+
+
+class _Coding(Protocol):
+    """A planned helper that codes some type uses."""
+
+    @property
+    def uses(self) -> tuple[TypeUseBinding, ...]:
+        """Return the type uses the helper codes."""
+
+
+_SpecT = TypeVar("_SpecT")
+_CodingT = TypeVar("_CodingT", bound=_Coding)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Protocols:
-    """A client target's valid helpers, and the operation or document each of their references names."""
+    """A client target's valid helpers, and the operation or document each of their references names.
+
+    `locations` holds the location of each schema reference in the accepted input's documents.
+    """
 
     helpers: tuple[Helper, ...]
     operations: Mapping[OperationRef, OperationContract]
     documents: Mapping[SchemaRef, str]
+    locations: Mapping[SchemaRef, SourceLocation]
     python_version: PythonVersion
 
-
-def _label(operation: OperationContract) -> str:
-    return f"{operation.method.upper()} {operation.path}"
+    def source(self, reference: SchemaRef) -> JSONObject:
+        """Return the source reference of a schema reference: its document's pointer and its own."""
+        return {"document": self.documents[reference], "pointer": reference.pointer}
 
 
 def _problem(
@@ -58,7 +85,7 @@ def _undocumented(at: str, document: str | None) -> Diagnostic:
         "E_CONFIG_VALUE",
         "config",
         f"{at}.document",
-        f"{at}.document {redact_url(str(document))!r} is not a document name",
+        f"{at}.document {stable_repr(redact_url(str(document)))} is not a document name",
     )
 
 
@@ -85,6 +112,7 @@ def plan_protocols(request: TargetRequest, source: Mapping[str, object] | None, 
         helpers=helpers,
         operations=resolver.operations,
         documents=resolver.documents,
+        locations=resolver.locations,
         python_version=request.model_config.target_python_version,
     )
 
@@ -97,6 +125,8 @@ class _Resolver:
         self.base = base
         self.operations: dict[OperationRef, OperationContract] = {}
         self.documents: dict[SchemaRef, str] = {}
+        self.locations: dict[SchemaRef, SourceLocation] = {}
+        self.sources = {pointer: document for document, pointer in request.documents.pointers.items()}
 
     def identity(self, document: str | None) -> str | None:
         """Return a named document's identity relative to the base; a malformed name raises ValueError."""
@@ -117,7 +147,7 @@ class _Resolver:
             return
         if (operation := self.request.resolve(OperationRef(pointer=reference.pointer, document=document))) is None:
             named = named_document(reference.document, document)
-            message = f"{link.at} {reference.pointer!r}{named} {self.request.unresolved}"
+            message = f"{link.at} {stable_repr(reference.pointer)}{named} {self.request.unresolved}"
             yield _problem("E_OPERATION_REF", "config", link.at, message, reference)
             return
         self.operations[reference] = operation
@@ -138,24 +168,94 @@ class _Resolver:
             yield _problem("E_CONFIG_VALUE", "config", at, message)
             return
         self.documents[schema] = located
+        self.locations[schema] = SourceLocation(self.sources[located], schema.pointer, "schema")
+
+
+class HelperPlanner:
+    """Check a client target's helpers against the selected operations and the value uses of their schemas."""
+
+    def __init__(self, protocols: Protocols, plan: ClientPlan, request: TargetRequest) -> None:
+        """Index the selected operations by identity and the value use of each schema by its location and direction."""
+        self.protocols = protocols
+        self.request = request
+        self.operations = {spec.contract.id: spec for spec in plan.operations}
+        self.schemas = schema_uses(request.batch.type_uses)
+
+    def spec(self, reference: OperationRef) -> OperationSpec:
+        """Return the selected operation a helper reference names."""
+        return self.operations[self.protocols.operations[reference].id]
+
+    def location(self, reference: SchemaRef) -> SourceLocation | None:
+        """Return the location of a schema reference, or None when its document has no such pointer."""
+        location = self.protocols.locations[reference]
+        return location if self.request.lease.exists(location) else None
+
+    def schema_type(self, reference: SchemaRef, direction: Direction) -> TypeView | Literal["missing"] | None:
+        """Return the type a helper's schema is read or sent as in a direction, or say its document has no such pointer.
+
+        None is a schema no model stands for.
+        """
+        from datamodel_code_generator._client.plan import schema_use  # noqa: PLC0415
+
+        if (location := self.location(reference)) is None:
+            return "missing"
+        return None if (use := schema_use(self.schemas, location, direction)) is None else use.type
+
+    def each(
+        self, kinds: Container[str], check: Callable[[Helper, OperationSpec], tuple[_SpecT | None, list[Diagnostic]]]
+    ) -> tuple[tuple[_SpecT, ...], dict[str, list[Diagnostic]]]:
+        """Check every enabled helper of some kinds against its entry operation, in declaration order.
+
+        Return the planned helpers and each checked helper's problems.
+        """
+        specs: list[_SpecT] = []
+        problems: dict[str, list[Diagnostic]] = {}
+        for helper in self.protocols.helpers:
+            if helper.enabled and helper.kind in kinds:
+                planned, problems[helper.name] = check(helper, self.spec(helper.links[0].ref))
+                if planned is not None:
+                    specs.append(planned)
+        return tuple(specs), problems
+
+    def coded(
+        self, kinds: Container[str], check: Callable[[Helper, OperationSpec], tuple[_CodingT | None, list[Diagnostic]]]
+    ) -> tuple[tuple[_CodingT, ...], tuple[TypeUseBinding, ...], dict[str, list[Diagnostic]]]:
+        """Check every enabled helper of some kinds as `each` does, returning the planned ones, uses, and problems.
+
+        Each use appears once, however many helpers code it.
+        """
+        specs, problems = self.each(kinds, check)
+        return specs, tuple({use.id: use for spec in specs for use in spec.uses}.values()), problems
+
+
+def missing_schema(helper: Helper, noun: str, reference: SchemaRef) -> str:
+    """Return the refusal of a helper's schema setting, which `noun` names, whose document has no such pointer."""
+    return f"The {noun} {stable_repr(reference.pointer)} of {stable_repr(helper.name)} does not exist in its document"
 
 
 def _target_problem(operation: OperationContract, target: Mapping[str, Any]) -> str | None:
     """Return why an operation cannot take a request target: an undeclared parameter, querystring, or body."""
-    declared = [(fact(item, "in"), item.name or "") for item in operation.parameters]
+    declared = [parameter_place(item) for item in operation.parameters]
     querystrings = {name for location, name in declared if location == "querystring"}
     location, name = target["in"], target.get("name", "")
     if location == "body":
         return None if operation.request_body is not None else f"{_label(operation)} has no request body"
     if location == "querystring":
-        return None if name in querystrings else f"{_label(operation)} has no querystring {name!r}"
+        return None if name in querystrings else f"{_label(operation)} has no querystring {stable_repr(name)}"
     if location == "query" and querystrings:
         return f"{_label(operation)} owns a querystring, which a querystring target writes"
-    present = any(
-        where == location and (item.lower() == name.lower() if location == "header" else item == name)
-        for where, item in declared
+    wanted = parameter_key(location, name)
+    present = any(where == location and parameter_key(location, item) == wanted for where, item in declared)
+    return None if present else f"{_label(operation)} has no {location} parameter {stable_repr(name)}"
+
+
+def helper_calls(protocols: Protocols | None) -> frozenset[OperationId]:
+    """Return every operation an enabled helper sends; a disabled helper generates no code that calls one."""
+    if protocols is None:
+        return frozenset()
+    return frozenset(
+        protocols.operations[link.ref].id for helper in protocols.helpers if helper.enabled for link in helper.links
     )
-    return None if present else f"{_label(operation)} has no {location} parameter {name!r}"
 
 
 def helper_operations(protocols: Protocols | None) -> frozenset[OperationId]:
@@ -186,9 +286,9 @@ def helper_problems(
         names = (*(parameter.python_name for parameter in spec.parameters), *spec.field_names)
         if taken := sorted(HELPER_ARGUMENTS.intersection(names)):
             message = (
-                f"The {helper.kind} helper {helper.name!r} reserves the argument{'s' if len(taken) > 1 else ''} "
-                f"{', '.join(map(repr, taken))} of "
-                f"{_label(spec.contract)}; rename them with the operation's parameter_names or body_field_names in "
+                f"The {helper.kind} helper {stable_repr(helper.name)} reserves the {for_count(len(taken), 'argument')} "
+                f"{', '.join(map(stable_repr, taken))} of {_label(spec.contract)}; rename "
+                f"{for_count(len(taken), 'it', 'them')} with the operation's parameter_names or body_field_names in "
                 "--client-operations"
             )
             entry = OperationRef(pointer=spec.contract.id.use_site.pointer)
@@ -205,8 +305,8 @@ def _class_problems(helpers: tuple[Helper, ...], protocols: Protocols) -> Iterat
         for parts, class_name in helper_classes(helper.name, helper.kind, protocols.python_version):
             if (owner := owners.setdefault(class_name, parts)) != parts:
                 message = (
-                    f"The helper name {helper.name!r} gives the class name {class_name!r}, which {'.'.join(owner)!r} "
-                    "already gives"
+                    f"The helper name {stable_repr(helper.name)} gives the class name {stable_repr(class_name)}, which "
+                    f"{stable_repr('.'.join(owner))} already gives"
                 )
                 entry = OperationRef(pointer=protocols.operations[helper.links[0].ref].id.use_site.pointer)
                 yield _problem("E_NAME_COLLISION", "target", helper.at, message, entry)
@@ -223,7 +323,7 @@ def helper_metadata(protocols: Protocols | None, request: TargetRequest) -> dict
 
     def refer(reference: OperationRef | SchemaRef) -> JSONValue:
         if isinstance(reference, SchemaRef):
-            return {"document": protocols.documents[reference], "pointer": reference.pointer}
+            return protocols.source(reference)
         return request.documents.operation(protocols.operations[reference].id)
 
     return {helper.name: portable(helper.tree, refer) for helper in protocols.helpers}

@@ -6,12 +6,24 @@ import os
 import sys
 import traceback
 from functools import partial
-from itertools import starmap
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Any, Final, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from datamodel_code_generator import Error, InvalidClassNameError
+from datamodel_code_generator._module_paths import is_package_init
+from datamodel_code_generator._option_names import (
+    config_table,
+    hyphenated,
+    json_ready,
+    shell_command,
+    toml_table,
+    toml_text,
+)
+from datamodel_code_generator._paths import names_directory
+from datamodel_code_generator._project_config import profile_table_keys
 from datamodel_code_generator._target_documents import shown
+from datamodel_code_generator.enums import _ExitCode
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -23,10 +35,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._publication import StagedFile
     from datamodel_code_generator._structured_output import ImpliedPayload, TargetPayload
     from datamodel_code_generator._target_config import TargetConfig
-
-_OK: Final = 0
-_DIFF: Final = 1
-_ERROR: Final = 2
 
 
 def run_target(  # noqa: PLR0913, PLR0917
@@ -55,30 +63,20 @@ def run_target(  # noqa: PLR0913, PLR0917
     from datamodel_code_generator._api_generation import model_requirement, python_problem  # noqa: PLC0415
 
     implied = implied or {}
-    if config.preset is not None and (problem := python_problem(config, _kind(config))) is not None:
+    kind, selector = _target_side(config)
+    if config.preset is not None and (problem := python_problem(config, kind)) is not None:
         print(f"Error: --target-python-version: {problem}", file=sys.stderr)  # noqa: T201
-        return _ERROR
-    if requirement := model_requirement(config.openapi_scopes, _selector(config)):
+        return _ExitCode.ERROR
+    if requirement := model_requirement(config.openapi_scopes, selector):
         print(f"Error: {requirement}", file=sys.stderr)  # noqa: T201
-        return _ERROR
+        return _ExitCode.ERROR
     try:
         return _run(args, namespace, config, pyproject_path, batch, lock, job, implied, announced or {})
     except Exception as error:  # noqa: BLE001
         from datamodel_code_generator._target_selection import keyed  # noqa: PLC0415
 
         _failure(keyed(error, config), namespace, config)
-        return _ERROR
-
-
-def _implied_option(name: str, value: object) -> tuple[str, Any]:
-    """Return the key of an implied setting and its JSON value, as `pyproject.toml` spells them."""
-    key = name.replace("_", "-")
-    match value:
-        case list():
-            return key, [item.value for item in cast("list[Any]", value)]
-        case bool():
-            return key, value
-    return key, cast("Any", value).value
+        return _ExitCode.ERROR
 
 
 def _print_notice(notice: str | None) -> None:
@@ -97,43 +95,25 @@ def _implied_notice(  # noqa: PLR0913, PLR0917
     """
     if not implied:
         return None
-    import json  # noqa: PLC0415
-    import shlex  # noqa: PLC0415
-
-    options = dict(starmap(_implied_option, implied.items()))
-    lead = f"{_selector(config)} set the options it needs that you left unset; to set them yourself"
+    values = {name: json_ready(value) for name, value in implied.items()}
+    lead = f"{_target_side(config)[1]} set the options it needs that you left unset; to set them yourself"
     selected = any(getattr(namespace, name, None) is not None for name in ("generate_server", "generate_client"))
     if pyproject is not None and (job or not selected):
-        named = ("jobs", job) if job else ("profiles", profile) if (profile := namespace.profile) else ()
-        table = ".".join(("tool.datamodel-codegen", *(_toml_key(part) for part in named)))
-        lines = (f"  {key} = {json.dumps(data)}" for key, data in options.items())
+        named = ("jobs", job) if job else profile_table_keys(namespace.profile)
+        table = toml_table(config_table(*named), "legacy-ascii-table-keys")
+        lines = (f"  {key} = {toml_text(data)}" for key, data in hyphenated(values).items())
         where = os.path.relpath(pyproject, Path.cwd())
-        return "\n".join((f"{lead}, add to [{table}] of {Path(where).as_posix()}:", *lines))
-    flags = [
-        token
-        for key, data in options.items()
-        for token in (f"--{key}", *(data if isinstance(data, list) else () if data is True else (data,)))
-    ]
+        return "\n".join((f"{lead}, add to {table} of {Path(where).as_posix()}:", *lines))
+    from datamodel_code_generator.cli_options import _values_arguments  # noqa: PLC0415
+
+    flags = _values_arguments(values.items())
     stdin = "" if config.input or config.url else " (with the same input on stdin)"
-    return f"{lead}, run{stdin}:\n  {shlex.join(('datamodel-codegen', *args, *flags))}"
+    return f"{lead}, run{stdin}:\n  {shell_command((*args, *flags))}"
 
 
-def _toml_key(key: str) -> str:
-    """Return a key of a TOML table header: bare when TOML allows it, or quoted."""
-    import json  # noqa: PLC0415
-    import re  # noqa: PLC0415
-
-    return key if re.fullmatch(r"[A-Za-z0-9_-]+", key) else json.dumps(key)
-
-
-def _kind(config: Any) -> str:
-    """Return the kind of the run's target, as its messages name it."""
-    return "fastapi" if config.generate_client is None else "client"
-
-
-def _selector(config: Any) -> str:
-    """Return the option that selects the run's target."""
-    return "--generate-server" if config.generate_client is None else "--generate-client"
+def _target_side(config: Any) -> tuple[str, str]:
+    """Return the kind of the run's target, as its messages name it, and the option that selects it."""
+    return ("fastapi", "--generate-server") if config.generate_client is None else ("client", "--generate-client")
 
 
 def _run(  # noqa: PLR0913, PLR0917
@@ -173,37 +153,40 @@ def _run(  # noqa: PLR0913, PLR0917
         source = sys.stdin.read()
     implied_conflict(config, implied, generator)
     notice = _implied_notice(announced, args, config, namespace, pyproject_path, job)
-    if config.check:
-        planned = plan_target(source, model_config=effective, config=target, generator=generator, job=job)
-        if batch is not None:
-            _join(batch, job, planned, None)
-        project = planned.project
-        comparison = _compare_target(project, config.output, target.output, config.encoding)
+    if config.check or config.diff_against is not None:
+        if config.check:
+            kind = "check"
+            planned = plan_target(source, model_config=effective, config=target, generator=generator, job=job)
+            if batch is not None:
+                _join(batch, job, planned, None)
+            project = planned.project
+            comparison = _compare_target(project, config.output, target.output, config.encoding)
+        else:
+            kind = "input-diff"
+            effective = effective.model_copy(update={"input_filename": "<input>"})
+            with unmatched_model_name_keys_unreported():
+                baseline = plan_target(
+                    config.diff_against, model_config=effective, config=target, generator=generator, compares=True
+                )
+            project = plan_target(
+                source,
+                model_config=effective,
+                config=target,
+                generator=generator,
+                timestamp=baseline.timestamp,
+                compares=True,
+            ).project
+            comparison = _compare_target(
+                project, config.output, target.output, config.encoding, baseline=baseline.project
+            )
         _write_comparison_output(
             comparison,
             namespace.output_format,
+            kind=kind,
             target=_target_payload(namespace.output_format, target, project, implied),
         )
         _print_notice(notice)
-        return _DIFF if comparison.differences else _OK
-    if config.diff_against is not None:
-        effective = effective.model_copy(update={"input_filename": "<input>"})
-        with unmatched_model_name_keys_unreported():
-            baseline = plan_target(config.diff_against, model_config=effective, config=target, generator=generator)
-        current = plan_target(
-            source, model_config=effective, config=target, generator=generator, timestamp=baseline.timestamp
-        )
-        comparison = _compare_target(
-            current.project, config.output, target.output, config.encoding, baseline=baseline.project
-        )
-        _write_comparison_output(
-            comparison,
-            namespace.output_format,
-            kind="input-diff",
-            target=_target_payload(namespace.output_format, target, current.project, implied),
-        )
-        _print_notice(notice)
-        return _DIFF if comparison.differences else _OK
+        return _ExitCode.DIFF if comparison.differences else _ExitCode.OK
     json_output = namespace.output_format == "json"
     if batch is not None:
         timestamp = next((earlier.timestamp for _, earlier, _ in batch if earlier.timestamp is not None), None)
@@ -213,7 +196,7 @@ def _run(  # noqa: PLR0913, PLR0917
         _join(batch, job, planned, _next_step(target, planned.project, notice))
         if json_output:
             print(_target_json(planned.project, config.output, config.encoding, target, implied))  # noqa: T201
-        return _OK
+        return _ExitCode.OK
     planned = plan_target(source, model_config=effective, config=target, generator=generator, publish=True)
     project = planned.project
     output = _target_json(project, config.output, config.encoding, target, implied) if json_output else None
@@ -223,7 +206,7 @@ def _run(  # noqa: PLR0913, PLR0917
         return int(failure)
     if output is not None:
         print(output)  # noqa: T201
-    return _OK
+    return _ExitCode.OK
 
 
 def _join(
@@ -258,7 +241,7 @@ def _shown(path: Path) -> str:
 def _payload_base(project: GeneratedProject, models: Path) -> Path:
     """Return the directory payload paths are relative to, as in the model payload: the model output or its parent."""
     rendered = [artifact.path for artifact in project.artifacts if artifact.kind == "model"]
-    return models.parent if models in rendered or (not rendered and models.suffix) else models
+    return models.parent if models in rendered or (not rendered and not names_directory(models)) else models
 
 
 def _target_payload(
@@ -273,9 +256,16 @@ def _target_payload(
         return None
     from datamodel_code_generator._structured_output import TargetPayload  # noqa: PLC0415
 
-    return TargetPayload(
-        package=target.package, dependencies=list(project.dependencies), implied=_implied_payload(implied)
-    )
+    return TargetPayload(**_payload_fields(target, project, implied))
+
+
+def _payload_fields(target: TargetConfig, project: GeneratedProject, implied: dict[str, Any]) -> dict[str, Any]:
+    """Return what both JSON reports record of a target: its package, its runtime dependencies and what it implied."""
+    return {
+        "package": target.package,
+        "dependencies": list(project.dependencies),
+        "implied": _implied_payload(implied),
+    }
 
 
 def _implied_payload(implied: dict[str, Any]) -> ImpliedPayload | None:
@@ -284,7 +274,7 @@ def _implied_payload(implied: dict[str, Any]) -> ImpliedPayload | None:
         return None
     from datamodel_code_generator._structured_output import ImpliedPayload  # noqa: PLC0415
 
-    return ImpliedPayload(**{name: _implied_option(name, value)[1] for name, value in implied.items()})
+    return ImpliedPayload(**{name: json_ready(value) for name, value in implied.items()})
 
 
 def _target_json(
@@ -296,8 +286,7 @@ def _target_json(
     As in the model payload, a path is relative to the model output directory; a file outside it has an absolute path.
     The payload's target names the package, its runtime dependencies, and the next steps with paths of the same base.
     """
-    from io import BytesIO, TextIOWrapper  # noqa: PLC0415
-
+    from datamodel_code_generator._api_generation import artifact_text  # noqa: PLC0415
     from datamodel_code_generator._structured_output import (  # noqa: PLC0415
         EntrypointPayload,
         GeneratedFilePayload,
@@ -307,22 +296,15 @@ def _target_json(
     )
 
     taken = _taken_over(project)
-    artifacts = [
-        (
-            artifact.path,
-            content,
-            encoding if artifact.kind == "model" or artifact.path.suffix in {".py", ".pyi"} else "utf-8",
-        )
+    artifacts = (
+        artifact
         for artifact in project.artifacts
-        if (artifact.kind in {"model", "target"} or artifact is taken) and (content := artifact.content) is not None
-    ]
+        if (artifact.kind in {"model", "target"} or artifact is taken) and artifact.content is not None
+    )
     base = _payload_base(project, models)
     files = [
-        GeneratedFilePayload(
-            path=shown(path, base).as_posix(),
-            content=TextIOWrapper(BytesIO(content), encoding=codec).read(),
-        )
-        for path, content, codec in sorted(artifacts, key=lambda artifact: artifact[0].parts)
+        GeneratedFilePayload(path=shown(artifact.path, base).as_posix(), content=artifact_text(artifact, encoding))
+        for artifact in sorted(artifacts, key=lambda artifact: artifact.path.parts)
     ]
     steps = project.next_steps
     entrypoint = implementation = None
@@ -335,13 +317,11 @@ def _target_json(
             for item in steps.implementations
         ]
     payload = GeneratedTargetPayload(
-        package=target.package,
-        dependencies=list(project.dependencies),
+        **_payload_fields(target, project, implied),
         readme=shown(steps.readme, base).as_posix(),
         entrypoint=entrypoint,
         implementation=implementation,
         usage=steps.usage,
-        implied=_implied_payload(implied),
     )
     return generation_output_json(files, output=models.as_posix(), target=payload)
 
@@ -382,6 +362,7 @@ def _compare_target(
         OutputComparisonOptions,
         _compare_generated_outputs,  # pyright: ignore[reportPrivateUsage]
     )
+    from datamodel_code_generator._api_generation import file_encoding  # noqa: PLC0415
 
     nested = _nested(models, target)
     differences: list[ComparisonDifference] = []
@@ -414,7 +395,7 @@ def _compare_target(
                 staged.parent.mkdir(parents=True, exist_ok=True)
                 staged.write_bytes(artifact.content)
                 if is_directory and path.suffix != ".py":
-                    non_python.append((staged, path, encoding if artifact.kind == "model" else "utf-8"))
+                    non_python.append((staged, path, file_encoding(path, encoding, artifact.kind)))
             _stage_implementations(project, output if is_directory and baseline is None else None, staged_root)
             comparisons.append((
                 staged_root if is_directory else staged_root / output.name,
@@ -438,7 +419,7 @@ def _compare_target(
                     ),
                 )
             except UnicodeError as error:
-                message = f"{_shown(actual)}: Output is not text in encoding {codec!r}: {error}"
+                message = f"{_shown(actual)}: Output is not text in encoding {stable_repr(codec)}: {error}"
                 raise Error(message) from error
             differences.extend(
                 difference._replace(path=shown(cwd / difference.path, base).as_posix())
@@ -468,7 +449,7 @@ def _taken_over(project: GeneratedProject) -> GeneratedArtifact | None:
     return next(
         artifact
         for artifact in project.artifacts
-        if artifact.kind == "implementation" and artifact.action == "write" and artifact.path.name == "__init__.py"
+        if artifact.kind == "implementation" and artifact.action == "write" and is_package_init(artifact.path.name)
     )
 
 
@@ -573,12 +554,14 @@ def _base(config: Any, namespace: Namespace, pyproject_path: Path | None, field:
     the file is given through one. Inline JSON and tables resolve against the pyproject.toml directory for its keys,
     and against the working directory for options.
     """
-    if (source := config._json_sources.get(field)) is not None:  # noqa: SLF001
-        from datamodel_code_generator.json_config import _json_file  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
+    from datamodel_code_generator.json_config import document_base  # noqa: PLC0415
 
-        if (file := _json_file(source)) is not None:
-            return (Path.cwd() / file).parent
-    return Path.cwd() if pyproject_path is None or getattr(namespace, field) is not None else pyproject_path.parent
+    cwd = Path.cwd()
+    return document_base(
+        config._json_sources.get(field),  # noqa: SLF001
+        cwd,
+        cwd if pyproject_path is None or getattr(namespace, field) is not None else pyproject_path.parent,
+    )
 
 
 def _failure(error: Exception, namespace: Namespace, config: Any) -> None:
@@ -589,7 +572,7 @@ def _failure(error: Exception, namespace: Namespace, config: Any) -> None:
 
         message = _invalid_class_name_message(error, namespace, config.class_name)
     elif isinstance(error, UnicodeDecodeError):
-        message = f"Unable to decode input using encoding {config.encoding!r}: {error}"
+        message = f"Unable to decode input using encoding {stable_repr(config.encoding)}: {error}"
     elif not isinstance(error, (Error, OSError)):
         from datamodel_code_generator.remote_lock import RemoteLockError  # noqa: PLC0415
 

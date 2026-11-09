@@ -10,42 +10,43 @@ from typing_extensions import TypeIs, TypeVar
 
 from ..model_codecs.errors import CodecError, ParameterEncodingError
 from ..model_codecs.media import (
+    ERROR_STATUSES,
+    NO_CONTENT,
+    SUCCESS_STATUSES,
+    bodyless,
+    declaring,
     decode_form,
     encode_form,
     finite,
     form_encode,
+    form_pairs,
     json_value,
-    percent_decode,
-    split_form,
+    media_range,
+    most_specific,
+    normalized,
+    status_key,
 )
 from ..model_codecs.media import json_bytes as _json_bytes
 from ..model_codecs.parameters import path_text, query_pairs
 from ..model_codecs.unset import UNSET
-from .errors import APIStatusError, ConfigurationError, DecodeError, response_failure, status_error
-from .media import charset, encode_text, essence, most_specific, normalized, with_charset
+from .errors import APIStatusError, ConfigurationError, DecodeError, request_failure, response_failure, status_error
+from .media import charset_text, encode_text, with_charset
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Container, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
     from typing import Any
 
     from ..model_codecs.media import FieldPlan, JSONValue
     from ..model_codecs.parameters import ParameterPlan
+    from .positions import SecurityAlternatives
     from .responses import ResponseInfo
-    from .retry import IdempotencyPlan
+    from .retry import IdempotencyPlan, RetrySafety
 
     class FormEncoder(Protocol):
         """How a package that declares form-data bodies writes them."""
 
         def encode(self, value: object, sent: str) -> tuple[object, str | None]:
             """Return a form-data body and the media type it is sent in."""
-            ...
-
-    class SecurityAlternatives(Protocol):
-        """An operation's declared security: its OR alternatives of AND requirements."""
-
-        @property
-        def alternatives(self) -> tuple[tuple[object, ...], ...]:
-            """Return the alternatives in their order; an empty one is anonymous."""
             ...
 
 
@@ -55,13 +56,8 @@ T_co = TypeVar("T_co", covariant=True)
 FormData: TypeAlias = tuple[tuple[str, str], ...]
 BodyKind: TypeAlias = Literal["json", "text", "form", "multipart", "binary"]
 ReadKind: TypeAlias = Literal["json", "text", "form"]
+CodecCondition: TypeAlias = Literal["malformed", "value"]
 
-NO_CONTENT: Final = 204
-BODYLESS_STATUSES: Final = frozenset({NO_CONTENT, 205, 304})
-_MIN_SUCCESS: Final = 200
-_MAX_SUCCESS: Final = 299
-_MIN_ERROR: Final = 400
-_MAX_ERROR: Final = 599
 _PAIR: Final = 2
 PARSE_ERRORS: Final = (CodecError,)
 
@@ -116,10 +112,20 @@ class InboundModelCodec(Protocol[T_co]):
         ...
 
 
+def codec_condition(codec: InboundModelCodec[object], error: Exception) -> CodecCondition:
+    """Return what a failure of a codec's backend says of received data: bytes that are not JSON, or a refused value."""
+    return "malformed" if codec.malformed(error) else "value"
+
+
 def request_errors(codec: OutboundModelCodec | None) -> tuple[type[Exception], ...]:
     """Return the failures of encoding a sent value: its codec's, its media's, and Python's own refusals."""
     codecs = () if codec is None else codec.errors
     return (*codecs, *PARSE_ERRORS, ValueError, TypeError)
+
+
+def _restored(codec: OutboundModelCodec | None, wire: JSONValue) -> object:
+    """Return the value that sends a saved wire value: itself without a codec, else as its codec decodes its JSON."""
+    return wire if codec is None else codec.decode(_json_bytes(wire))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -159,7 +165,7 @@ class ParameterSpec:
 
     def restored(self, wire: JSONValue) -> object:
         """Return the argument that sends a saved wire value, decoded as its codec decodes JSON."""
-        return wire if self.codec is None else self.codec.decode(_json_bytes(wire))
+        return _restored(self.codec, wire)
 
     def path_text(self, wire: JSONValue) -> str:
         """Return the text a path parameter's wire value substitutes for its placeholder."""
@@ -229,8 +235,8 @@ class BodyMedia:
     """One declared request media type and how an argument becomes its bytes.
 
     A form-data body is written by the package's form encoder, from a call's parts or an object's members. A binary
-    body has a codec only when its models constrain its bytes. `null` marks the JSON media of an optional body whose
-    schema admits null, which sends None as null.
+    body has a codec only when its models constrain its bytes. `null` marks the JSON media whose body type takes null,
+    which sends None as null.
     """
 
     media_type: str
@@ -281,7 +287,7 @@ class BodyMedia:
 
     def restored(self, wire: JSONValue) -> object:
         """Return the body that sends a saved wire value, decoded as its codec decodes JSON."""
-        return wire if self.codec is None else self.codec.decode(_json_bytes(wire))
+        return _restored(self.codec, wire)
 
     def multipart(self, value: object, sent: str) -> tuple[object, str | None]:
         """Return a form-data body and the media type it is sent in: an object's members as parts, or a call's parts."""
@@ -325,7 +331,8 @@ class RequestBody:
         """Select the media and encode the argument; an omitted optional body sends nothing.
 
         None for an optional body is left out as UNSET is, unless the media the call names, or the default one, takes
-        null; without either, unless any declared media takes it. A call never names a media range such as image/*.
+        null; without either, unless any declared media takes it. A required body given None is refused unless the
+        media it selects takes null. A call never names a media range such as image/*.
         """
         if value is None and not self.required and not self._takes_null(operation_id, media_type):
             value = UNSET
@@ -333,20 +340,22 @@ class RequestBody:
             if media_type is not None:
                 raise ConfigurationError(field_path=("media_type",), reason="without_body", operation_id=operation_id)
             if self.required:
-                raise _unencodable(("body",), operation_id)
+                raise request_failure(("body",), operation_id)
             return None
         selected, sent = (
             (value.media, value.sent) if isinstance(value, FieldBody) else self.selected(operation_id, media_type)
         )
+        if value is None and not selected.null:
+            raise request_failure(("body",), operation_id)
         try:
             if selected.kind == "multipart":
                 parts, multipart = selected.multipart(value, sent)
                 return EncodedBody(media_type=multipart, content=parts)
             content = selected.encode(value, sent)
         except DecodeError as error:
-            raise _unencodable(error.location, operation_id, error.cause) from None
+            raise request_failure(error.location, operation_id, error.cause) from None
         except request_errors(selected.codec) as error:
-            raise _unencodable(("body",), operation_id, error) from None
+            raise request_failure(("body",), operation_id, error) from None
         return EncodedBody(media_type=sent, content=content)
 
     def _takes_null(self, operation_id: str | None, media_type: str | None) -> bool:
@@ -360,7 +369,7 @@ class RequestBody:
         A concrete media type is sent as it is named, with the declared charset when it names none; a call never names
         a media range such as image/*.
         """
-        if media_type is not None and "*" in essence(media_type):
+        if media_type is not None and media_range(media_type):
             raise ConfigurationError(field_path=("media_type",), reason="undeclared", operation_id=operation_id)
         found = self.select(operation_id, media_type)
         concrete = None if media_type is None else normalized(media_type)
@@ -430,15 +439,6 @@ class Branch(Generic[T_co]):
         return paged(body, info)
 
 
-def _unencodable(
-    location: tuple[str | int, ...], operation_id: str | None, cause: BaseException | None = None
-) -> DecodeError:
-    """Return the failure of an argument its declared wire form cannot carry; the location never holds the value."""
-    return DecodeError(
-        reason="unencodable", direction="request", location=location, operation_id=operation_id, cause=cause
-    )
-
-
 class InvalidBodyError(Exception):
     """A body that failed to decode, published as the error of its kind of failure."""
 
@@ -461,6 +461,20 @@ class BodyFramingError(InvalidBodyError):
     reason = "invalid_framing"
 
 
+def coded(codec: InboundModelCodec[T], read: Callable[[], T], *, syntax: bool = True) -> T:
+    """Return what `read` gets through a model codec, raising a failure of the codec's backend as the body's error.
+
+    The failure is the body's syntax error when it is received bytes that are not JSON, else a value the model refuses;
+    `syntax=False` reads every failure as a refused value, since a checked binary body has no syntax.
+    """
+    try:
+        return read()
+    except codec.errors as error:
+        if syntax and codec_condition(codec, error) == "malformed":
+            raise InvalidBodyError(error) from None
+        raise BodyValueError(error) from None
+
+
 def _parsed(parse: Callable[[bytes], T], body: bytes) -> T:
     """Return what a body parses to, raising a parse failure as the body's decode failure."""
     try:
@@ -475,19 +489,13 @@ def _json(body: bytes, _: ResponseInfo) -> JSONValue:
 
 def _text(body: bytes, info: ResponseInfo) -> str:
     try:
-        return body.decode(charset(info.content_type or ""))
+        return charset_text(body, info.content_type)
     except UnicodeDecodeError as error:
         raise InvalidBodyError(error) from None
 
 
-def _form_pairs(body: bytes) -> FormData:
-    return tuple(
-        (percent_decode(name, plus=True), percent_decode(value, plus=True)) for name, value in split_form(body)
-    )
-
-
 def _pairs(body: bytes, _: ResponseInfo) -> FormData:
-    return _parsed(_form_pairs, body)
+    return _parsed(form_pairs, body)
 
 
 def _bytes(body: bytes, _: ResponseInfo) -> bytes:
@@ -508,13 +516,10 @@ class _Model(Generic[T_co]):
         self.read = read
 
     def __call__(self, body: bytes, info: ResponseInfo) -> T_co:
-        codec = self.codec
-        try:
-            return codec.decode(body) if self.read is None else codec.text(self.read(body, info))
-        except codec.errors as error:
-            if codec.malformed(error):
-                raise InvalidBodyError(error) from None
-            raise BodyValueError(error) from None
+        codec, read = self.codec, self.read
+        if read is None:
+            return coded(codec, partial(codec.decode, body))
+        return coded(codec, lambda: codec.text(read(body, info)))
 
     def paged(self, body: bytes, info: ResponseInfo) -> tuple[T_co, JSONValue]:
         """Decode a helper response and keep the parsed JSON its selectors read."""
@@ -531,11 +536,7 @@ class _Checked:
         self.codec = codec
 
     def __call__(self, body: bytes, _: ResponseInfo) -> bytes:
-        codec = self.codec
-        try:
-            codec.text(body)
-        except codec.errors as error:
-            raise BodyValueError(error) from None
+        coded(self.codec, partial(self.codec.text, body), syntax=False)
         return body
 
 
@@ -590,12 +591,6 @@ def empty_branch(status: str) -> Branch[None]:
     return Branch(status, None, _none)
 
 
-def status_key(status: int, keys: Container[str]) -> str | None:
-    """Return the declared response key a status selects: exact, then its hundreds range, then default."""
-    exact, family = str(status), f"{status // 100}XX"
-    return exact if exact in keys else family if family in keys else "default" if "default" in keys else None
-
-
 def _grouped(branches: tuple[Branch[T], ...]) -> dict[str, tuple[Branch[T], ...]]:
     """Group branches by status key in declaration order."""
     return {
@@ -606,8 +601,6 @@ def _grouped(branches: tuple[Branch[T], ...]) -> dict[str, tuple[Branch[T], ...]
 
 def _matching(received: str, branches: Sequence[Branch[T]]) -> Branch[T] | None:
     """Return the branch of a received media type: exact type, then parameters ignored, then type/*, then */*."""
-    if found := next((branch for branch in branches if branch.media_type == received), None):
-        return found
     if (winner := most_specific(received, (item.media_type for item in branches if item.media_type))) is None:
         return None
     return next(branch for branch in branches if branch.media_type == winner)
@@ -670,7 +663,7 @@ class ResponseDecoder(Generic[T_co]):
             for branch in group
             if branch.media_type is None or branch is winner
         )
-        if wanted is None or "*" in essence(wanted) or all(branch.media_type is None for branch in success):
+        if wanted is None or media_range(wanted) or all(branch.media_type is None for branch in success):
             raise ConfigurationError(
                 field_path=("response_media_type",), reason="undeclared", operation_id=operation_id
             )
@@ -686,7 +679,7 @@ class ResponseDecoder(Generic[T_co]):
 
     def success(self, status: int) -> bool:
         """Return whether a status is a typed success of this operation."""
-        return _MIN_SUCCESS <= status <= _MAX_SUCCESS or status in self._successes
+        return status in SUCCESS_STATUSES or status in self._successes
 
     def streamed(self, info: ResponseInfo) -> None:
         """Refuse a success whose body is not streamed in a declared media type: an undeclared status or media type.
@@ -709,7 +702,7 @@ class ResponseDecoder(Generic[T_co]):
         A problem that stopped reading an error body, such as a broken content coding, is kept as its decode error.
         """
         if self.success(info.status_code):
-            return self._decoded(info, body, self._branch(info, body))
+            return self._decoded(info, body, self._branch(info, body).decode)
         raise self.failure(info, body, truncated=truncated, problem=problem)
 
     def decode_page(
@@ -725,11 +718,7 @@ class ResponseDecoder(Generic[T_co]):
         Any other response raises its typed failure, as `decode` does.
         """
         if self.success(info.status_code):
-            branch = self._branch(info, body)
-            try:
-                return branch.page(body, info)
-            except InvalidBodyError as error:
-                raise error.failure(info, body) from None
+            return self._decoded(info, body, self._branch(info, body).page)
         raise self.failure(info, body, truncated=truncated, problem=problem)
 
     def failure(
@@ -741,12 +730,12 @@ class ResponseDecoder(Generic[T_co]):
         problem: BaseException | None = None,
     ) -> APIStatusError:
         """Return the status failure of a response that is not a success: its HTTP error, or an unexpected status."""
-        if _MIN_ERROR <= info.status_code <= _MAX_ERROR:
+        if info.status_code in ERROR_STATUSES:
             return self._failure(info, body, truncated=truncated, problem=problem)
         return _unexpected(info, body, truncated=truncated, problem=problem)
 
     def _bodyless(self, status: int) -> bool:
-        return self._head or status in BODYLESS_STATUSES
+        return bodyless(status, head=self._head)
 
     def _branch(self, info: ResponseInfo, body: bytes) -> Branch[T_co]:
         if (key := status_key(info.status_code, self._keys)) is None:
@@ -761,9 +750,10 @@ class ResponseDecoder(Generic[T_co]):
         return branch
 
     @staticmethod
-    def _decoded(info: ResponseInfo, body: bytes, branch: Branch[T]) -> T:
+    def _decoded(info: ResponseInfo, body: bytes, read: Callable[[bytes, ResponseInfo], T]) -> T:
+        """Return what a branch reads from a complete body, raising the body's decode failure as the response's."""
         try:
-            return branch.decode(body, info)
+            return read(body, info)
         except InvalidBodyError as error:
             raise error.failure(info, body) from None
 
@@ -771,8 +761,7 @@ class ResponseDecoder(Generic[T_co]):
         self, info: ResponseInfo, body: bytes, *, truncated: bool, problem: BaseException | None
     ) -> APIStatusError:
         data: object = body
-        key = status_key(info.status_code, self._error_groups.keys())
-        declared = () if key is None else self._error_groups[key]
+        declared = declaring(info.status_code, self._error_groups) or ()
         if declared and not truncated:
             try:
                 branch = _select(info, body, declared, bodyless=self._bodyless(info.status_code))
@@ -830,7 +819,7 @@ class OperationPlan(Generic[T_co]):
     request_id_header: str | None = None
     response_media_type: str | None = None
     fields: FieldArguments | None = None
-    retry_safety: Literal["method_default", "idempotent", "never"] = "method_default"
+    retry_safety: RetrySafety = "method_default"
     idempotency: IdempotencyPlan | None = None
     retry_after_ms_header: str | None = None
     should_retry_header: str | None = None

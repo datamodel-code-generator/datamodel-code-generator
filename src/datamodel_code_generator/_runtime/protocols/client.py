@@ -5,8 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from functools import partial
-from typing import TYPE_CHECKING, cast
-from urllib.parse import unquote_plus, urlsplit
+from typing import TYPE_CHECKING, Final, TypeAlias, cast
+from urllib.parse import urlsplit
 
 import httpx2
 
@@ -16,11 +16,9 @@ from ..client.client import (
     Core,
     HandleT,
     R,
-    ReceivedBody,
     T,
     build_request,
     decode_response,
-    delivery_state,
     request_body,
     strip_credentials,
 )
@@ -29,12 +27,14 @@ from ..client.client import ClientCore as NativeClientCore
 from ..client.logical import LogicalCallContext, run_sync
 from ..client.native import native_timeout, request_fields, wire_fields
 from ..client.positions import secret_names
-from ..client.raw import AsyncRawResponse, RawResponse, refuse, released
+from ..client.raw import AsyncRawResponse, RawResponse, ReceivedBody, refuse, released
 from ..client.responses import HeadersView, Response
 from ..client.retry import Delivery, RetryTiming, retry_delay
-from ..client.timing import ResolvedTimeoutOptions
-from ..client.urls import absolute_target, request_origin, strip_query
+from ..client.timing import earliest, every_phase
+from ..client.urls import absolute_target, query_field, request_origin, strip_query
+from ..model_codecs.media import NOT_MODIFIED, SWITCHING_PROTOCOLS
 from ..model_codecs.unset import UNSET
+from .options import checked_options
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
@@ -46,13 +46,13 @@ if TYPE_CHECKING:
     from ..client.positions import CredentialPosition
     from ..client.responses import ResponseInfo
     from ..client.retry import RetryDelay
-    from ..client.timing import Budget
+    from ..client.timing import Budget, ResolvedTimeoutOptions
     from ..client.urls import Origin
     from ..model_codecs.media import JSONValue
     from .options import HelperSettings
 
-_NOT_MODIFIED = 304
-_SWITCHING = 101
+_Written: TypeAlias = "tuple[Callable[[str], bool], Callable[[str], bool]]"
+_NOTHING: Final = frozenset[str]().__contains__
 
 
 def _secret(spec: ParameterSpec, value: JSONValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
@@ -166,7 +166,7 @@ class CacheRequest:
         authenticated = (
             any(values for _, values in headers)
             or sent.url != built.url
-            or any(unquote_plus(pair.partition("=")[0]) in queries for pair in urlsplit(url).query.split("&") if pair)
+            or any(query_field(pair)[0] in queries for pair in urlsplit(url).query.split("&") if pair)
         )
         return CacheIdentity(url, headers, authenticated, authorized)
 
@@ -201,23 +201,13 @@ class _SessionCall(Call):
         super().__init__(settings, operation)
         self.session = session
         self.url = ""
-        for limit in (session.deadline, bound):
-            if limit is not None and ((deadline := self.deadline) is None or limit.at < deadline.at):
-                self.deadline = limit
+        self.deadline = earliest(self.deadline, session.deadline, bound)
 
     def prepared(self, request: httpx2.Request) -> httpx2.Request:
         """Prepare the request as an ordinary call does, keeping its URL."""
         request = super().prepared(request)
         self.url = str(request.url)
         return request
-
-    @staticmethod
-    def followed_query(schemes: tuple[CredentialPosition, ...]) -> frozenset[str]:
-        """Return the query fields a followed URL is sent and saved without, whatever its origin.
-
-        They are the positions of the package's declared security schemes, where the call's credentials go again.
-        """
-        return secret_names(schemes)[1]
 
 
 class _SocketCall(_SessionCall):
@@ -256,8 +246,7 @@ class _SocketCall(_SessionCall):
             )
             if value is not None
         ]
-        cap = min(limits) if limits else None
-        return ResolvedTimeoutOptions(connect=cap, read=cap, write=cap, pool=cap)
+        return every_phase(min(limits) if limits else None)
 
     def follow(self, outgoing: httpx2.Request, schemes: tuple[CredentialPosition, ...]) -> bool:  # noqa: ARG002, PLR6301
         """Never follow a redirect of the handshake: a refused upgrade is terminal."""
@@ -286,8 +275,7 @@ class _SessionWait(LogicalCallContext):
         """Bind the wait to its session and the operation it comes before."""
         super().__init__(settings, operation_id)
         self.session = session
-        if (limit := session.deadline) is not None and ((deadline := self.deadline) is None or limit.at < deadline.at):
-            self.deadline = limit
+        self.deadline = earliest(self.deadline, session.deadline)
 
 
 class _ProtocolCore(Core[AdapterT, HandleT]):
@@ -314,13 +302,47 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         names = {plan.idempotency.header_name.lower() for plan in operations if plan and plan.idempotency}
         return self.named(options, lambda name, value: value is not None and name.lower() in names) if names else None
 
+    def refuse_patched(
+        self,
+        helper_id: str,
+        options: RequestOptions | None,
+        operations: Iterable[OperationPlan[object] | None],
+        written: _Written,
+        own: _Written = (_NOTHING, _NOTHING),
+    ) -> None:
+        """Refuse a call that fixes an idempotency key of the operations or patches a field a helper writes.
+
+        `written` tells whether a header name, and whether a query name, names a field the helper writes, as
+        `written_fields` of its writes does. A patch is such a name among the call's own extra ones and the client's
+        and its views' default ones, each of which every request sends, then one `own` tells among the call's own
+        extra ones only.
+        """
+        header, query = written
+        own_header, own_query = own
+        path = (
+            self.fixed_key(options, operations)
+            or self.named(options, lambda name, _: header(name))
+            or self.named(options, lambda name, _: query(name), query=True)
+            or self.named(options, lambda name, _: own_header(name), defaults=False)
+            or self.named(options, lambda name, _: own_query(name), query=True, defaults=False)
+        )
+        if path is not None:
+            from .errors import configuration_error  # noqa: PLC0415 - Only a refused call loads the helper errors.
+
+            raise configuration_error(helper_id, path)
+
     def named(
-        self, options: RequestOptions | None, matches: Callable[[str, str | None], bool], *, query: bool = False
+        self,
+        options: RequestOptions | None,
+        matches: Callable[[str, str | None], bool],
+        *,
+        query: bool = False,
+        defaults: bool = True,
     ) -> tuple[str, ...] | None:
         """Return the field path of the first header, or query name, of a call's layers that matches, or None.
 
-        The call's own extra ones come first, then the default ones the client and its views merged, except those the
-        call's own replace or remove.
+        The call's own extra ones come first, then, unless `defaults` is False, the default ones the client and its
+        views merged, except those the call's own replace or remove.
         """
         call = None if options is None else options.extra_query if query else options.extra_headers
         fold = str if query else str.lower
@@ -329,7 +351,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             if matches(name, value):
                 return ("options", "extra_query" if query else "extra_headers", name)
             replaced.add(fold(name))
-        for name, value in self._settings.query if query else self._settings.headers:
+        for name, value in (self._settings.query if query else self._settings.headers) if defaults else ():
             if fold(name) not in replaced and matches(name, value):
                 return ("default_query" if query else "default_headers", name)
         return None
@@ -377,6 +399,16 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         """Return the options the client's `helper_defaults` give one helper, or None."""
         return self._helpers().defaults.get(name)
 
+    def helper_layers(
+        self, helper_id: str, name: str, value: object, kind: type, options: object
+    ) -> tuple[RequestOptions | None, tuple[object, object]]:
+        """Refuse a call's helper options, then its request options, of another type; return the request options.
+
+        The layers each limit of the call is merged from come with them: the call's helper options, then the client's
+        helper defaults of the helper.
+        """
+        return checked_options(helper_id, name, value, kind, options), (value, self.helper_defaults(helper_id))
+
     def cache_store(self, name: str, create: Callable[[], object]) -> object:
         """Return the store the client lends a cache helper, or else the one store its root creates with `create`.
 
@@ -409,7 +441,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             accept=operation.responses.accept,
         )
         if operation.security is not None:
-            self._bind_auth(call)
+            self._bind_auth(call, request)
         headers, queries = self._secret_positions()
         return CacheRequest(settings, request, call, headers, queries)
 
@@ -478,7 +510,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         if url is None:
             return prepared, deferred
         server = call.server_origin = request_origin(self._base(operation, call.settings))
-        url = strip_query(url, call.followed_query(self._shared.security_schemes))
+        url = strip_query(url, self.follow_query())
         headers = HeadersView(request_fields(prepared))
         if request_origin(url) != server:
             items, url = strip_credentials(headers.items(), url, self._shared.security_schemes)
@@ -516,7 +548,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
 
             data, wire, content = _page(decoder, info, received)
             url = str(response.url) if response.history else call.url
-            result = build(data, wire, content, info, url, call.followed_query(self._shared.security_schemes))
+            result = build(data, wire, content, info, url, self.follow_query())
 
             return Response(data=data, info=info), result
 
@@ -524,9 +556,9 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             _, result = await self._run(call, body, prepare, receive)
 
         except BaseException as error:  # ruff: ignore[blind-except]
-            failure = call.stopped(error)
+            failure = call.failure(error)
             if failed is not None:
-                failed(failure, delivery_state(call))
+                failed(failure, call.furthest())
             raise failure from failure.__cause__
         else:
             return result
@@ -555,7 +587,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             redirected = call.redirects_followed > 0
             return (
                 not_modified(info, redirected, response.request)
-                if info.status_code == _NOT_MODIFIED
+                if info.status_code == NOT_MODIFIED
                 else modified(
                     decode_response(decoder, info, received, call.operation_id),
                     received.content,
@@ -568,7 +600,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             _, result = await self._run(call, UNSET, lambda: (request, UNSET), receive)
 
         except BaseException as error:  # ruff: ignore[blind-except]
-            failure = call.stopped(error)
+            failure = call.failure(error)
             raise failure from failure.__cause__
         else:
             return result
@@ -619,12 +651,12 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         try:
             result = await self._run(call, UNSET, prepare, receive)
 
-            if result.info.status_code != _SWITCHING:
+            if result.info.status_code != SWITCHING_PROTOCOLS:
                 await refuse(result)
             accept(result.info)
             call.handoff()
         except BaseException as error:  # ruff: ignore[blind-except]
-            failure = call.stopped(error)
+            failure = call.failure(error)
             if result is not None:
                 await released(result, failure)
             raise failure from failure.__cause__

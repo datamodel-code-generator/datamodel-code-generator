@@ -9,5 +9,5 @@ invalid l: rejected
 invalid t: rejected
 invalid e: accepted
 invalid s: rejected
-invalid r: accepted
-invalid i: accepted
+invalid r: rejected
+invalid i: rejected

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from typing import Literal, TypeAlias
 
 from typing_extensions import final
@@ -12,12 +11,7 @@ from datamodel_code_generator._records import record
 MediaOwner: TypeAlias = Literal["request_body", "response", "parameter", "header"]
 IgnoredEncodingReason: TypeAlias = Literal["oas_encoding_request_body_only", "oas_encoding_media_not_applicable"]
 
-_HTTP_WORD = r"[!#$%&'*+.^_`|~0-9a-zA-Z-]+"
-_MEDIA = re.compile(rf"[ \t]*(?P<type>{_HTTP_WORD})/(?P<subtype>{_HTTP_WORD})[ \t]*")
-_PARAMETER = re.compile(
-    rf";[ \t]*(?P<name>{_HTTP_WORD})=(?P<value>{_HTTP_WORD}|"
-    r'"(?:[\t !#-\[\]-~\x80-\xff]|\\[\t -~\x80-\xff])*")[ \t]*'
-)
+_ERRORS = ("Invalid media type", "Invalid media type parameter")
 
 
 @final
@@ -32,20 +26,17 @@ class MediaType:
 
 def parse_media_type(value: str) -> MediaType:
     """Parse HTTP media syntax once for generation and shared wire decisions."""
-    if (match := _MEDIA.match(value)) is None:
-        msg = "Invalid media type"
-        raise ValueError(msg)
-    position = match.end()
-    parameters: list[tuple[str, str]] = []
-    while position < len(value):
-        if (parameter := _PARAMETER.match(value, position)) is None:
-            msg = "Invalid media type parameter"
-            raise ValueError(msg)
-        raw_value = parameter["value"]
-        decoded = re.sub(r"\\(.)", r"\1", raw_value[1:-1]) if raw_value.startswith('"') else raw_value
-        parameters.append((parameter["name"].lower(), decoded))
-        position = parameter.end()
-    return MediaType(match["type"].lower(), match["subtype"].lower(), tuple(parameters))
+    from datamodel_code_generator._runtime.model_codecs.media import (  # ruff: ignore[import-outside-top-level]
+        media_parts,
+        unquoted,
+    )
+
+    kind, subtype, parameters = media_parts(value, _ERRORS)
+    return MediaType(
+        kind,
+        subtype,
+        tuple((name, unquoted(text)) for name, text in parameters),
+    )
 
 
 def encoding_applies(owner: MediaOwner, *, openapi_32: bool) -> bool:

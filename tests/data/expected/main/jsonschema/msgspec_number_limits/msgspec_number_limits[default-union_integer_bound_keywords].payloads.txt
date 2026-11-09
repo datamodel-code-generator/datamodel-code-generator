@@ -1,0 +1,6 @@
+valid: accepted
+valid: accepted
+valid: accepted
+invalid {"merged": 5}: accepted
+invalid {"superseded": 1234567890123456770}: accepted
+invalid {"upper": 28}: accepted

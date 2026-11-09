@@ -10,7 +10,9 @@ from urllib.parse import quote, unquote_to_bytes
 
 from fastapi.exceptions import RequestValidationError
 from pydantic import Field, TypeAdapter, ValidationError
-from starlette.datastructures import UploadFile
+from starlette.datastructures import FormData, Headers, UploadFile
+from starlette.exceptions import HTTPException
+from starlette.formparsers import MultiPartException, MultiPartParser
 from starlette.requests import Request  # noqa: TC002 - FastAPI resolves the dependencies' annotations.
 from typing_extensions import TypeVar
 
@@ -20,8 +22,11 @@ from ..model_codecs.media import (
     charset,
     decode_form,
     decode_text,
+    essence,
     media_kind,
-    normalize_media_type,
+    media_range,
+    most_specific,
+    normalized,
     plain,
     typed,
 )
@@ -33,6 +38,7 @@ from ..model_codecs.parameter_reads import (
     raw_parameter,
     split_query,
 )
+from ..model_codecs.parameters import PATH_SAFE, PLACEHOLDER
 from ..model_codecs.unset import UNSET
 from .application import ParameterReader, Rejected, malformed_request, reject
 from .errors import invalid, media_invalid, missing, model_records, unsupported_media
@@ -49,12 +55,12 @@ if TYPE_CHECKING:
 RequestKind: TypeAlias = Literal["json", "text", "binary", "form", "multipart"]
 T = TypeVar("T")
 
-_PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _HEX: Final = {digit: f"[{digit}{digit.lower()}]" for digit in "ABCDEF"}
-_PATH_SAFE: Final = "/:@!$&'()*+,;="
 _TEXT: Final = FieldPlan("")
 _ANY: Final[TypeAdapter[object]] = TypeAdapter(object)
 _JSON_WHITESPACE: Final = b" \t\r\n"
+_OCTETS: Final = "latin-1"
+_FORM_DATA: Final = b"multipart/form-data"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -81,7 +87,7 @@ class RawPath:
 
     def __post_init__(self) -> None:
         """Compile the template's patterns once: its usual encoding first, then any percent-encoding."""
-        pieces = _PLACEHOLDER.split(self.template)
+        pieces = PLACEHOLDER.split(self.template)
         patterns = tuple(_pattern(pieces[::2], literal) for literal in (_encoded, _any_encoding))
         object.__setattr__(self, "patterns", patterns)
         slots = tuple((f"s{index}", name) for index, name in enumerate(pieces[1::2]) if name in self.names)
@@ -100,7 +106,7 @@ def _pattern(literals: list[str], literal: Callable[[str], bytes]) -> re.Pattern
 
 
 def _encoded(text: str) -> bytes:
-    return re.escape(quote(text, safe=_PATH_SAFE).encode())
+    return re.escape(quote(text, safe=PATH_SAFE).encode())
 
 
 def _any_encoding(text: str) -> bytes:
@@ -174,7 +180,7 @@ class ParameterAdapter(ParameterReader):
         """Return the raw value of each named slot, adding the record of a repeated slot whose values differ."""
         if not isinstance(raw := scope.get("raw_path"), bytes):
             decoded = scope.get("path")
-            raw = quote(decoded, safe=_PATH_SAFE).encode() if isinstance(decoded, str) else b""
+            raw = quote(decoded, safe=PATH_SAFE).encode() if isinstance(decoded, str) else b""
         if (found := path.search(raw.partition(b"?")[0])) is None:
             raise malformed_request()
         captured: dict[str, bytes] = {}
@@ -226,11 +232,24 @@ class JsonPart:
     untyped: bool = False
 
 
+@dataclass(frozen=True, slots=True)
+class FilePart:
+    """One multipart member whose parts hold files the model keeps as bytes: its name and its repeats.
+
+    Its parts are read as the octets they carry, whether or not they name a filename. The one that reads a form's other
+    properties has no name.
+    """
+
+    name: str
+    repeated: bool = False
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class BodyMedia:
     """One declared request media type, how the adapter reads it, and the model's adapter.
 
-    A form's members are read as text in the kinds of `fields`, and those of a multipart form in `json_parts` as JSON.
+    A form's members are read as text in the kinds of `fields`, and those of a multipart form in `json_parts` as JSON
+    and in `file_parts` as octets.
     A URL-encoded member whose encoding gives it a style or content is read by its query parameter plan in `encoded`
     from the pairs its style names, and JSON content then by its JSON part. `additional` reads every member neither
     names: as text as it comes unless the form's schema types its other properties, and never as JSON in a
@@ -244,15 +263,16 @@ class BodyMedia:
     adapter: TypeAdapter[object] | None = None
     fields: tuple[FieldPlan, ...] = ()
     json_parts: tuple[JsonPart, ...] = ()
-    additional: FieldPlan | JsonPart = _TEXT
+    file_parts: tuple[FilePart, ...] = ()
+    additional: FieldPlan | JsonPart | FilePart = _TEXT
     checked: TypeAdapter[object] | None = None
     encoded: tuple[ParameterPlan, ...] = ()
-    members: Mapping[str, FieldPlan | JsonPart] = field(init=False, repr=False, compare=False)
+    members: Mapping[str, FieldPlan | JsonPart | FilePart] = field(init=False, repr=False, compare=False)
     other: FieldPlan = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         """Index the members of a multipart form by name once, and keep the text plan of any other member."""
-        members: tuple[FieldPlan | JsonPart, ...] = (*self.fields, *self.json_parts)
+        members: tuple[FieldPlan | JsonPart | FilePart, ...] = (*self.fields, *self.json_parts, *self.file_parts)
         object.__setattr__(self, "members", {item.name: item for item in members})
         object.__setattr__(self, "other", self.additional if isinstance(self.additional, FieldPlan) else _TEXT)
 
@@ -263,17 +283,6 @@ class BodyAdapter:
 
     media: tuple[BodyMedia, ...]
     required: bool = True
-    _essences: tuple[tuple[str, BodyMedia], ...] = field(init=False, repr=False, compare=False)
-
-    def __post_init__(self) -> None:
-        """Index the declared media by essence, most specific first: exact types, then type/*, then */*.
-
-        Within each, a declaration without parameters comes before one with parameters the request did not name.
-        """
-        essences = [(item.media_type.partition(";")[0], item) for item in self.media]
-        object.__setattr__(
-            self, "_essences", tuple(sorted(essences, key=lambda pair: (pair[0].count("*"), ";" in pair[1].media_type)))
-        )
 
     async def __call__(self, request: Request) -> object:
         """Return the validated body, or None for an omitted optional body."""
@@ -282,8 +291,10 @@ class BodyAdapter:
     async def receive(self, request: Request) -> tuple[str | None, object]:
         """Return the received media type with the validated body, or None for both of an omitted optional body.
 
-        An empty body is omitted when it names no media type or names JSON, which is never empty. A JSON `null` that
-        the model refuses is read as FastAPI reads it natively: a missing required body, or an omitted optional one.
+        An empty optional body is omitted whatever media type it names. An empty required body is missing when it names
+        no media type or names JSON, which is never empty; with another media type it is read like any body. A JSON
+        `null` that the model refuses is read as FastAPI reads it natively: a missing required body, or an omitted
+        optional one.
         """
         header = request.headers.get("content-type")
         body = await request.body()
@@ -308,18 +319,16 @@ class BodyAdapter:
             return None, None
 
     def _select(self, header: str | None) -> tuple[BodyMedia, str, str] | None:
-        try:
-            normalized = normalize_media_type(header or "")
-        except ValueError:
+        """Return the declared media a request's media type dispatches to, the media type it is read as, and its own.
+
+        A media range reads the request's media type without its parameters.
+        """
+        if (wanted := normalized(header or "")) is None:
             return None
-        if (exact := next((media for media in self.media if media.media_type == normalized), None)) is not None:
-            return exact, exact.media_type, normalized
-        received = normalized.partition(";")[0]
-        kind = received.partition("/")[0]
-        for essence, media in self._essences:
-            if essence in {received, f"{kind}/*", "*/*"}:
-                return media, media.media_type if "*" not in essence else received, normalized
-        return None
+        if (declared := most_specific(wanted, (media.media_type for media in self.media))) is None:
+            return None
+        media = next(media for media in self.media if media.media_type == declared)
+        return media, essence(wanted) if declared != wanted and media_range(declared) else declared, wanted
 
 
 async def _read(media: BodyMedia, media_type: str, body: bytes, request: Request) -> object:
@@ -330,7 +339,7 @@ async def _read(media: BodyMedia, media_type: str, body: bytes, request: Request
             return (adapter or _ANY).validate_json(body)
         case "text":
             try:
-                text = decode_text(body, charset(media_type))
+                text = decode_text(body, charset(media_type, as_written=True))
             except MalformedError as error:
                 raise RequestValidationError([media_invalid(("body",))]) from error
             return _validated(adapter, text)
@@ -402,24 +411,35 @@ def _claims(plan: ParameterPlan, name: str) -> bool:
 
 async def _parts(
     request: Request,
-    members: Mapping[str, FieldPlan | JsonPart],
-    additional: FieldPlan | JsonPart,
+    members: Mapping[str, FieldPlan | JsonPart | FilePart],
+    additional: FieldPlan | JsonPart | FilePart,
     encoded: tuple[ParameterPlan, ...] = (),
 ) -> dict[str, object]:
     """Return the parts of a multipart body by name: uploads read to bytes, text in its field's kind, JSON validated.
 
-    A part no member names is read as `additional` says. A repeated member holds a list, and a single-valued one its
-    last part. The request is refused with the records of every JSON part its member's adapter rejects. A styled
-    member takes the parts its style names, which carry its text without percent-encoding: each is percent-encoded
-    but for its style's delimiters, as a query writes it, and read by its plan as a query parameter is.
+    A part no member names is read as `additional` says, and a file member's parts as their octets. A repeated member
+    holds a list, and a single-valued one its last part. The request is refused with the records of every JSON part
+    its member's adapter rejects. A styled member takes the parts its style names, which carry its text without
+    percent-encoding: each is percent-encoded but for its style's delimiters, as a query writes it, and read by its
+    plan as a query parameter is.
     """
     parts: dict[str, object] = {}
     records: list[Record] = []
     styled: list[ParameterFragment] = []
-    async with request.form() as form:
-        for name in dict.fromkeys(form.keys()):
+    form, codec = await _form(request)
+    try:
+        grouped: dict[str, list[UploadFile | str]] = {}
+        for key, item in form.multi_items():
+            grouped.setdefault(_decoded(key, codec), []).append(item)
+        for name, octets in grouped.items():
             member = members.get(name, additional)
-            received = form.getlist(name)
+            if isinstance(member, FilePart):
+                values: list[object] = [
+                    await value.read() if isinstance(value, UploadFile) else value.encode(_OCTETS) for value in octets
+                ]
+                parts[name] = values if member.repeated else values[-1]
+                continue
+            received = [value if isinstance(value, UploadFile) else _decoded(value, codec) for value in octets]
             if encoded and any(_claims(plan, name) for plan in encoded):
                 styled.extend([
                     ParameterFragment(quote(name, safe="").encode(), quote(await _text(value), safe=",|").encode())
@@ -434,6 +454,8 @@ async def _parts(
                     for value in received
                 ]
             parts[name] = values if member.repeated else values[-1]
+    finally:
+        await form.close()
     view = RawParameter(location="query", fragments=tuple(styled))
     for plan in encoded:
         if (value := decode_parameter(plan, view)) is not UNSET:
@@ -441,6 +463,39 @@ async def _parts(
     if records:
         raise RequestValidationError(records)
     return parts
+
+
+async def _form(request: Request) -> tuple[FormData, str]:
+    """Return a form-data body's parts as Starlette's own parser reads them, with the charset it decodes their text in.
+
+    The parser decodes the names of the parts, and those without a filename, in the charset of the body's media type,
+    falling back to Latin-1 for text that is not in it, which loses the octets such a part carries. It decodes them
+    here in Latin-1, which keeps each octet as one character, so `_decoded` gives the text the parser would and a
+    file part keeps its octets. A body of another media type has no parts, and one the parser refuses is a bad
+    request, as `Request.form` does.
+    """
+    from python_multipart.multipart import parse_options_header  # noqa: PLC0415 - only form-data bodies need it.
+
+    media_type, options = parse_options_header(request.headers.get("content-type"))
+    if media_type != _FORM_DATA:
+        return FormData(), _OCTETS
+    content_type = _FORM_DATA
+    if (boundary := options.get(b"boundary")) is not None:
+        content_type += b'; boundary="%s"' % boundary.replace(b"\\", b"\\\\").replace(b'"', b'\\"')
+    headers = Headers(raw=[(b"content-type", content_type + b"; charset=" + _OCTETS.encode())])
+    try:
+        form = await MultiPartParser(headers, request.stream()).parse()
+    except MultiPartException as error:
+        raise HTTPException(status_code=400, detail=error.message) from error
+    return form, options.get(b"charset", b"utf-8").decode(_OCTETS)
+
+
+def _decoded(text: str, codec: str) -> str:
+    """Return text read as Latin-1 decoded in a charset as Starlette's parser decodes it, as Latin-1 when that fails."""
+    try:
+        return text.encode(_OCTETS).decode(codec)
+    except (UnicodeDecodeError, LookupError):
+        return text
 
 
 async def _text(value: UploadFile | str) -> str:

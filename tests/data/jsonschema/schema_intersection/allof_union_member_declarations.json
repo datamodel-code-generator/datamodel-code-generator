@@ -1,0 +1,261 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "inline": {
+      "$ref": "#/$defs/Inline"
+    },
+    "refs": {
+      "$ref": "#/$defs/Refs"
+    },
+    "required_branch": {
+      "$ref": "#/$defs/RequiredBranch"
+    },
+    "two_unions": {
+      "$ref": "#/$defs/TwoUnions"
+    },
+    "own": {
+      "$ref": "#/$defs/Own"
+    },
+    "formats": {
+      "$ref": "#/$defs/Formats"
+    }
+  },
+  "$defs": {
+    "Inline": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "properties": {
+                "x": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            {
+              "properties": {
+                "c": {
+                  "type": "integer"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "properties": {
+            "x": {
+              "type": "integer",
+              "maximum": 10
+            }
+          }
+        }
+      ]
+    },
+    "Cat": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "meow": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Dog": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "Refs": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Cat"
+            },
+            {
+              "$ref": "#/$defs/Dog"
+            }
+          ]
+        },
+        {
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 10
+            }
+          }
+        }
+      ]
+    },
+    "RequiredBranch": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "required": [
+                "x"
+              ],
+              "properties": {
+                "x": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            {
+              "required": [
+                "c"
+              ],
+              "properties": {
+                "c": {
+                  "type": "integer"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "properties": {
+            "x": {
+              "type": "integer",
+              "maximum": 10,
+              "description": "At most ten."
+            }
+          }
+        }
+      ]
+    },
+    "TwoUnions": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "required": [
+                "x"
+              ],
+              "properties": {
+                "x": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            {
+              "required": [
+                "c"
+              ],
+              "properties": {
+                "c": {
+                  "type": "integer"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "anyOf": [
+            {
+              "required": [
+                "x"
+              ],
+              "properties": {
+                "x": {
+                  "type": "integer",
+                  "maximum": 10
+                }
+              }
+            },
+            {
+              "required": [
+                "d"
+              ],
+              "properties": {
+                "d": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "Own": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "required": [
+                "x"
+              ],
+              "properties": {
+                "x": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            {
+              "required": [
+                "c"
+              ],
+              "properties": {
+                "c": {
+                  "type": "integer"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "properties": {
+        "x": {
+          "type": "integer",
+          "maximum": 10
+        }
+      }
+    },
+    "Formats": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            },
+            {
+              "properties": {
+                "c": {
+                  "type": "integer"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "properties": {
+            "at": {
+              "type": "string",
+              "maxLength": 30
+            }
+          }
+        }
+      ]
+    }
+  }
+}

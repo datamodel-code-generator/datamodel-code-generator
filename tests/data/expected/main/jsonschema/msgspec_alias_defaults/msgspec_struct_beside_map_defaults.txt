@@ -1,0 +1,23 @@
+{
+  "structBesideCounts": {
+    "a": "int"
+  },
+  "itemsBesideCounts": [
+    "list",
+    {
+      "name": "str"
+    }
+  ],
+  "aliasBesideCounts": {
+    "name": "str"
+  },
+  "countsThenStruct": [
+    "list",
+    {
+      "a": "int"
+    },
+    {
+      "name": "str"
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/root",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "x": {
+      "$ref": "site"
+    }
+  },
+  "$defs": {
+    "box": {
+      "$id": "box",
+      "type": "object",
+      "properties": {
+        "value": {
+          "$dynamicRef": "#item"
+        }
+      },
+      "$defs": {
+        "item": {
+          "$dynamicAnchor": "item",
+          "not": true
+        }
+      }
+    },
+    "site": {
+      "$id": "site",
+      "$defs": {
+        "item": {
+          "$dynamicAnchor": "item",
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "tag": {
+              "type": "string"
+            }
+          }
+        }
+      ],
+      "anyOf": [
+        {
+          "$ref": "box"
+        },
+        {
+          "type": "object",
+          "required": [
+            "n"
+          ],
+          "properties": {
+            "n": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

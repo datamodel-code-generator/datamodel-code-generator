@@ -1,0 +1,19 @@
+asyncapi: 2.6.0
+info:
+  title: Shared message traits
+  version: 1.0.0
+channels: {}
+components:
+  schemas:
+    TenantId:
+      type: integer
+      minimum: 1
+  messageTraits:
+    Tenant:
+      headers:
+        type: object
+        required:
+          - tenant
+        properties:
+          tenant:
+            $ref: '#/components/schemas/TenantId'

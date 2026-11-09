@@ -1,0 +1,21 @@
+name: filter
+in: query
+schema:
+  $dynamicAnchor: T
+  type: object
+  properties:
+    held:
+      type: integer
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        item:
+          $dynamicRef: '#T'
+    Component:
+      $dynamicAnchor: T
+      type: object
+      properties:
+        component:
+          type: string

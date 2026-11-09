@@ -49,6 +49,9 @@ def _failure(call: Any) -> BaseException | None:
     return None
 
 
+_BLOCK: Final = "the block's own error"
+
+
 class _Sends:
     """A native request hook reporting each request and running a pending action just before it is sent."""
 
@@ -69,6 +72,18 @@ class _AsyncSends(_Sends):
         if (action := self.action) is not None:
             self.action = None
             await action()
+
+
+def _left(pager: Any) -> None:
+    """Leave a pager's `with` block by the block's own error."""
+    with pager:
+        raise LookupError(_BLOCK)
+
+
+async def _aleft(pager: Any) -> None:
+    """Leave an asyncio pager's `async with` block by the block's own error."""
+    async with pager:
+        raise LookupError(_BLOCK)
 
 
 def _received(lines: list[str]) -> Any:
@@ -187,6 +202,7 @@ def _concurrency(harness: Harness, exchange: Exchange, lines: list[str]) -> None
         def concurrent() -> None:
             record(lines, "item while fetching", lambda: next(pager))
             record(lines, "close while fetching", pager.close)
+            record(lines, "block error while fetching", lambda: _left(pager))
 
         sends.action = concurrent
         exchange.respond(users("1"))
@@ -414,6 +430,7 @@ async def _async_sessions(harness: Harness, lines: list[str]) -> None:
         async def concurrent() -> None:
             await arecord(lines, "async item while fetching", lambda pager=pager: anext(pager))
             await arecord(lines, "async close while fetching", pager.aclose)
+            await arecord(lines, "async block error while fetching", lambda pager=pager: _aleft(pager))
 
         sends.action = concurrent
         exchange.respond(users("1"))

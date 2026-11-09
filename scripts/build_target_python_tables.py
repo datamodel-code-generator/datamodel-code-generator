@@ -27,19 +27,25 @@ import subprocess
 import sys
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor
+from itertools import groupby
+from operator import itemgetter
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "src/datamodel_code_generator/_target_unicode_data.py"
 STDLIB_OUTPUT = ROOT / "src/datamodel_code_generator/_target_stdlib_data.py"
-SET_NAMES = ("identifier_start", "identifier_continue", "word", "numeric", "assigned")
+SET_NAMES = ("identifier_start", "identifier_continue", "word", "numeric", "assigned", "unprintable")
 SET_DOCS = {
     "identifier_start": "Characters `str.isidentifier()` accepts first: XID_Start and the underscore.",
     "identifier_continue": "Characters `str.isidentifier()` accepts after the first: XID_Continue.",
     "word": "Characters the `re` pattern `\\\\w` matches.",
     "numeric": "Characters `str.isnumeric()` accepts.",
     "assigned": "Characters whose general category is not Cn.",
+    "unprintable": "Characters whose general category is not Cn that `str.isprintable()` refuses.",
 }
 HANGUL_SYLLABLES = range(0xAC00, 0xD7A4)
 SIGMA = "Σ"
@@ -85,6 +91,8 @@ def probe() -> dict[str, Any]:
             members["word"].append(code_point)
         if character.isnumeric():
             members["numeric"].append(code_point)
+        if not character.isprintable():
+            members["unprintable"].append(code_point)
         mappings = (character.upper(), character.lower(), character.title(), character.casefold())
         if (flags := _case_flags(character)) or any(mapping != character for mapping in mappings):
             case[code_point] = [*mappings, flags]
@@ -144,7 +152,7 @@ def _run_probe(version: str, interpreter: str) -> dict[str, Any]:
     return result
 
 
-def _members(ranges: list[list[int]]) -> set[int]:
+def _members(ranges: Iterable[Sequence[int]]) -> set[int]:
     return {code_point for start, end in ranges for code_point in range(start, end + 1)}
 
 
@@ -249,6 +257,15 @@ def _mapping(value: str, code_point: int) -> str:
     return '""' if value == chr(code_point) else _string(value)
 
 
+def _change_rows(texts: dict[int, str]) -> list[str]:
+    """Return one row per inclusive code point range of consecutive characters that share the spelled changes."""
+    return [
+        f"    (0x{start:X}, 0x{end:X}): {text},"
+        for text, group in groupby(texts.items(), key=itemgetter(1))
+        for start, end in _ranges([code_point for code_point, _ in group])
+    ]
+
+
 def render(tables: dict[str, Any]) -> str:
     """Return the source of the data module."""
     targets = ", ".join(_string(target) for target in tables["targets"])
@@ -275,6 +292,7 @@ def render(tables: dict[str, Any]) -> str:
         '    "NUMERIC",',
         '    "TARGETS",',
         '    "UNICODE_VERSIONS",',
+        '    "UNPRINTABLE",',
         '    "WORD",',
         ")",
         "",
@@ -291,32 +309,43 @@ def render(tables: dict[str, Any]) -> str:
             else:
                 lines.append(f"    {wrapped[0].strip()},")
         lines.extend((")", f'"""{SET_DOCS[name]}"""'))
-    lines.extend(("", "CASE_CHANGES: Final[dict[int, tuple[tuple[int, str, str, str, str, int], ...]]] = {"))
-    for code_point, changes in tables["case"].items():
-        items = [
-            f"({index}, {', '.join(_mapping(value, code_point) for value in values[:4])}, {values[4]})"
-            for index, values in changes
-        ]
-        lines.append(f"    0x{code_point:X}: {_tuple(items)},")
     lines.extend((
-        "}",
-        '"""Characters whose case data differs between targets: from each listed target on, the full uppercase,',
-        "lowercase, titlecase and casefold mappings (empty for the character itself) and the Lowercase, Uppercase,",
-        'Lt and Case_Ignorable bits. Before the first listed target a character has no case data."""',
         "",
-        "NORMALIZATION_CHANGES: Final[dict[int, tuple[tuple[int, str, str, int], ...]]] = {",
+        "CASE_CHANGES: Final[dict[tuple[int, int], tuple[tuple[int, str, str, str, str, int], ...]]] = {",
     ))
-    for code_point, changes in tables["normalization"].items():
-        items = [
-            f"({index}, {_mapping(values[0], code_point)}, {_mapping(values[1], code_point)}, {values[2]})"
-            for index, values in changes
-        ]
-        lines.append(f"    0x{code_point:X}: {_tuple(items)},")
+    lines.extend(
+        _change_rows({
+            code_point: _tuple([
+                f"({index}, {', '.join(_mapping(value, code_point) for value in values[:4])}, {values[4]})"
+                for index, values in changes
+            ])
+            for code_point, changes in tables["case"].items()
+        })
+    )
     lines.extend((
         "}",
-        '"""Characters whose normalization data differs between targets: from each listed target on, the full',
-        "canonical and compatibility decompositions (empty for the character itself) and the canonical combining",
-        'class. Before the first listed target a character decomposes to itself with combining class 0."""',
+        '"""Characters whose case data differs between targets, keyed by the inclusive code point range of consecutive',
+        "characters that share the changes: from each listed target on, the full uppercase, lowercase, titlecase and",
+        "casefold mappings (empty for the character itself) and the Lowercase, Uppercase, Lt and Case_Ignorable bits.",
+        'Before the first listed target a character has no case data."""',
+        "",
+        "NORMALIZATION_CHANGES: Final[dict[tuple[int, int], tuple[tuple[int, str, str, int], ...]]] = {",
+    ))
+    lines.extend(
+        _change_rows({
+            code_point: _tuple([
+                f"({index}, {_mapping(values[0], code_point)}, {_mapping(values[1], code_point)}, {values[2]})"
+                for index, values in changes
+            ])
+            for code_point, changes in tables["normalization"].items()
+        })
+    )
+    lines.extend((
+        "}",
+        '"""Characters whose normalization data differs between targets, keyed by the inclusive code point range of',
+        "consecutive characters that share the changes: from each listed target on, the full canonical and",
+        "compatibility decompositions (empty for the character itself) and the canonical combining class. Before the",
+        'first listed target a character decomposes to itself with combining class 0."""',
         "",
         "COMPOSITION_CHANGES: Final[tuple[tuple[int, int, int, int], ...]] = (",
     ))
@@ -353,6 +382,11 @@ def _rule_problems(version: str, sets: dict[str, list[list[int]]]) -> list[str]:
             or rules.is_numeric(character, target) != character.isnumeric()
         ):
             problems.append(f"identifier or numeric rule differs for U+{code_point:04X}")
+    problems.extend(
+        f"string_repr differs for a text of {len(value)} characters starting {value[:2]!a}"
+        for value in (text, "'\u00e9\u0378\U0002fffe\\\t\n\r\x00\x7f")
+        if rules.string_repr(value, target) != repr(value)
+    )
     words = rules.target_pattern(r"(?:(?!_)\w)+", target).findall(text)
     if words != re.findall(r"[^\W_]+", text):
         problems.append("target_pattern differs for \\w")
@@ -364,7 +398,8 @@ def _rule_problems(version: str, sets: dict[str, list[list[int]]]) -> list[str]:
     )
     marks = ("\u0301", "\u0323", "\u0345", "\u05b0")
     unassigned = "\u0378\U0002fffe"
-    case_characters = [chr(code_point) for code_point in (*data.CASE_CHANGES, *assigned[::97])] + list(unassigned)
+    case_characters = [chr(code_point) for code_point in (*sorted(_members(data.CASE_CHANGES)), *assigned[::97])]
+    case_characters += list(unassigned)
     for character in case_characters:
         for value in (
             character,
@@ -386,7 +421,7 @@ def _rule_problems(version: str, sets: dict[str, list[list[int]]]) -> list[str]:
     special = sorted({
         chr(code_point)
         for code_point in (
-            *data.NORMALIZATION_CHANGES,
+            *_members(data.NORMALIZATION_CHANGES),
             *(item for _, first, second, _ in data.COMPOSITION_CHANGES for item in (first, second)),
         )
     })

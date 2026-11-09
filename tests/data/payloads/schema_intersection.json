@@ -6757,5 +6757,1931 @@
         ]
       }
     }
+  },
+  "combined_branch_keywords": {
+    "model": "Model",
+    "fields": {
+      "bound": {
+        "valid": [
+          7,
+          "s"
+        ],
+        "invalid": [
+          3
+        ]
+      },
+      "length": {
+        "valid": [
+          "ab",
+          5
+        ],
+        "invalid": [
+          "abcdef"
+        ]
+      },
+      "pattern": {
+        "valid": [
+          "ab",
+          1
+        ],
+        "invalid": [
+          "xb",
+          "ac"
+        ]
+      },
+      "multiple": {
+        "valid": [
+          6,
+          "s"
+        ],
+        "invalid": [
+          3,
+          4
+        ]
+      },
+      "typed": {
+        "valid": [
+          "a",
+          "abcd",
+          ""
+        ],
+        "invalid": [
+          5
+        ]
+      },
+      "values": {
+        "valid": [
+          "b",
+          1
+        ],
+        "invalid": [
+          "a",
+          "c",
+          2
+        ]
+      },
+      "ref_branch": {
+        "valid": [
+          5,
+          "s"
+        ],
+        "invalid": [
+          3
+        ]
+      },
+      "ref_enum": {
+        "valid": [
+          1,
+          2
+        ],
+        "invalid": [
+          "a",
+          3
+        ]
+      },
+      "dead": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          1,
+          ""
+        ]
+      }
+    }
+  },
+  "combined_branch_nullable_oas30": {
+    "model": "Model",
+    "dialect": "http://json-schema.org/draft-04/schema#",
+    "fields": {
+      "bound": {
+        "valid": [
+          7,
+          "s"
+        ],
+        "invalid": [
+          3
+        ]
+      },
+      "own": {
+        "valid": [
+          9,
+          "ab"
+        ],
+        "invalid": [
+          10,
+          "abcd"
+        ]
+      }
+    }
+  },
+  "inherited_override_maps": {
+    "model": "Child",
+    "fields": {
+      "settings": {
+        "valid": [
+          {
+            "default": "x",
+            "name": "ab",
+            "nullable": 1,
+            "examples": 2,
+            "example": true,
+            "type": "t"
+          }
+        ],
+        "invalid": [
+          {
+            "default": 1
+          },
+          {
+            "nullable": "x"
+          },
+          {
+            "examples": "x"
+          },
+          {
+            "example": "x"
+          },
+          {
+            "name": "abcd"
+          }
+        ]
+      },
+      "tagged": {
+        "valid": [
+          {
+            "default": "x"
+          },
+          {
+            "n1": 1
+          }
+        ],
+        "invalid": [
+          {
+            "default": 1
+          }
+        ]
+      }
+    }
+  },
+  "inherited_type_narrowing": {
+    "model": "Child",
+    "fields": {
+      "to_null": {
+        "valid": [
+          null
+        ],
+        "invalid": [
+          "x"
+        ]
+      },
+      "to_string": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "to_int_or_null": {
+        "valid": [
+          1,
+          null
+        ],
+        "invalid": [
+          "s"
+        ]
+      },
+      "to_int": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          1.5
+        ]
+      },
+      "drop_null": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "bounded_to_null": {
+        "valid": [
+          null
+        ],
+        "invalid": [
+          "ab"
+        ]
+      },
+      "to_object": {
+        "valid": [
+          {
+            "x": 1
+          }
+        ],
+        "invalid": [
+          {
+            "x": "a"
+          },
+          "s"
+        ]
+      },
+      "ref_to_string": {
+        "valid": [
+          "s"
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "items_to_string": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [
+            1
+          ]
+        ]
+      },
+      "nested_to_string": {
+        "valid": [
+          {
+            "x": "a",
+            "y": 1
+          }
+        ],
+        "invalid": [
+          {
+            "x": 1
+          },
+          {
+            "y": "s"
+          }
+        ]
+      },
+      "restated": {
+        "valid": [
+          {
+            "x": "a"
+          }
+        ],
+        "invalid": [
+          {
+            "x": 1
+          }
+        ]
+      },
+      "add_items": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [
+            1
+          ]
+        ]
+      },
+      "open_map": {
+        "valid": [
+          {
+            "k": 1
+          }
+        ],
+        "invalid": [
+          {
+            "k": "s"
+          }
+        ]
+      }
+    }
+  },
+  "inherited_tuple_shape_oas31": {
+    "model": "Child",
+    "dialect": "https://json-schema.org/draft/2020-12/schema",
+    "fields": {
+      "closed": {
+        "valid": [
+          [
+            "ab",
+            1
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            "a"
+          ],
+          [
+            "abcd",
+            1
+          ]
+        ]
+      },
+      "open": {
+        "valid": [
+          [
+            "ab",
+            1
+          ],
+          [
+            "ab",
+            1,
+            "extra"
+          ]
+        ],
+        "invalid": [
+          [
+            "ab"
+          ]
+        ]
+      },
+      "contained": {
+        "valid": [
+          [
+            "ab",
+            1
+          ]
+        ],
+        "invalid": [
+          [
+            "abcd",
+            1
+          ],
+          [
+            1,
+            "ab"
+          ],
+          [
+            "ab"
+          ]
+        ]
+      }
+    }
+  },
+  "allof_member_parts": {
+    "model": "Model",
+    "base": {
+      "nullable_union": {
+        "y": "s"
+      }
+    },
+    "fields": {
+      "siblings": {
+        "valid": [
+          {
+            "extra": true,
+            "id": "a",
+            "code": 5
+          }
+        ],
+        "invalid": [
+          {},
+          {
+            "extra": "x"
+          },
+          {
+            "extra": true,
+            "code": 0
+          },
+          {
+            "extra": true,
+            "code": 10
+          }
+        ]
+      },
+      "branch": {
+        "valid": [
+          {
+            "id": 1,
+            "name": "x"
+          }
+        ],
+        "invalid": [
+          {
+            "id": "not a number",
+            "name": "x"
+          },
+          {
+            "id": 10
+          }
+        ]
+      },
+      "override": {
+        "valid": [
+          {
+            "id": 5
+          }
+        ],
+        "invalid": [
+          {
+            "id": 0
+          },
+          {
+            "id": 10
+          },
+          {
+            "id": "s"
+          }
+        ]
+      },
+      "nullable_union": {
+        "valid": [
+          null,
+          {
+            "y": "s",
+            "x": 1
+          }
+        ],
+        "invalid": [
+          {
+            "y": 1
+          },
+          {
+            "x": "s"
+          }
+        ]
+      }
+    }
+  },
+  "allof_member_parts_draft07": {
+    "model": "Model",
+    "fields": {
+      "siblings": {
+        "valid": [
+          {},
+          {
+            "extra": "x"
+          },
+          {
+            "id": "a"
+          }
+        ],
+        "invalid": [
+          {
+            "id": 1
+          }
+        ]
+      }
+    }
+  },
+  "combined_option_edges": {
+    "model": "Model",
+    "base": {
+      "false_branch": {
+        "q": "s"
+      },
+      "shared": {
+        "y": "s"
+      }
+    },
+    "fields": {
+      "false_branch": {
+        "valid": [
+          {
+            "q": "s",
+            "x": 1
+          }
+        ],
+        "invalid": [
+          null,
+          {
+            "x": "s"
+          }
+        ]
+      },
+      "shared": {
+        "valid": [
+          null,
+          {
+            "y": "s",
+            "x": 1
+          }
+        ],
+        "invalid": [
+          {
+            "x": "s"
+          },
+          {
+            "y": 1
+          }
+        ]
+      },
+      "int_branches": {
+        "valid": [
+          7,
+          0
+        ],
+        "invalid": [
+          3,
+          7.5
+        ]
+      },
+      "named": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          1,
+          "c"
+        ]
+      },
+      "ordered": {
+        "valid": [
+          {
+            "b": "x"
+          }
+        ],
+        "invalid": [
+          {
+            "b": 1
+          },
+          {
+            "a": "s"
+          }
+        ]
+      },
+      "sibling_child": {
+        "valid": [
+          {
+            "extra": 3,
+            "x": 1
+          }
+        ],
+        "invalid": [
+          {
+            "extra": 7
+          },
+          {
+            "extra": 0
+          },
+          {
+            "extra": "s"
+          },
+          {
+            "x": "s"
+          }
+        ]
+      }
+    }
+  },
+  "combined_option_edges_draft04": {
+    "model": "Model",
+    "base": {
+      "const_part": null
+    },
+    "fields": {
+      "const_part": {
+        "valid": [
+          null,
+          {
+            "y": "s"
+          }
+        ],
+        "invalid": [
+          {
+            "y": 1
+          }
+        ]
+      }
+    }
+  },
+  "combined_option_edges_draft07": {
+    "model": "Model",
+    "base": {
+      "ignored_sibling": null
+    },
+    "fields": {
+      "ignored_sibling": {
+        "valid": [
+          null,
+          {
+            "y": "s",
+            "x": 1
+          }
+        ],
+        "invalid": [
+          {
+            "x": "s"
+          },
+          {
+            "y": 1
+          }
+        ]
+      }
+    }
+  },
+  "allof_value_unions": {
+    "model": "Model",
+    "fields": {
+      "pair": {
+        "valid": [
+          "ab",
+          5
+        ],
+        "invalid": [
+          "a",
+          1.5
+        ]
+      },
+      "bounded": {
+        "valid": [
+          "abc",
+          3,
+          0
+        ],
+        "invalid": [
+          "abcdef",
+          "a",
+          -1
+        ]
+      },
+      "nullable": {
+        "valid": [
+          null,
+          "ab"
+        ],
+        "invalid": [
+          "a",
+          1
+        ]
+      },
+      "common": {
+        "valid": [
+          3
+        ],
+        "invalid": [
+          "a",
+          true,
+          1.5
+        ]
+      },
+      "refs": {
+        "valid": [
+          "ab",
+          3
+        ],
+        "invalid": [
+          "a",
+          "abcdef",
+          1.5
+        ]
+      },
+      "ranges": {
+        "valid": [
+          3,
+          7
+        ],
+        "invalid": [
+          6,
+          0,
+          "a"
+        ]
+      },
+      "twice": {
+        "valid": [
+          5,
+          7
+        ],
+        "invalid": [
+          6
+        ]
+      },
+      "beside": {
+        "valid": [
+          "ab",
+          5
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "via_union": {
+        "valid": [
+          "ab",
+          5
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "via_all_of": {
+        "valid": [
+          "ab",
+          5
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "any_branch": {
+        "valid": [
+          "a"
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "dead": {
+        "valid": [],
+        "invalid": [
+          "a",
+          1
+        ]
+      },
+      "with_object": {
+        "valid": [
+          "ab",
+          {
+            "a": "x"
+          }
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "with_enum": {
+        "valid": [
+          "bb",
+          3
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "untyped": {
+        "valid": [
+          "a",
+          1
+        ],
+        "invalid": [
+          ""
+        ]
+      },
+      "many": {
+        "valid": [
+          6
+        ],
+        "invalid": [
+          0,
+          20
+        ]
+      },
+      "inline": {
+        "valid": [
+          "ab",
+          5
+        ],
+        "invalid": [
+          "a",
+          1.5
+        ]
+      },
+      "one_base": {
+        "valid": [
+          3,
+          7
+        ],
+        "invalid": [
+          6,
+          0
+        ]
+      },
+      "two_bases": {
+        "valid": [
+          5,
+          7
+        ],
+        "invalid": [
+          6,
+          101
+        ]
+      },
+      "two_bases_items": {
+        "valid": [
+          [
+            5
+          ],
+          [
+            7
+          ]
+        ],
+        "invalid": [
+          [
+            6
+          ]
+        ]
+      },
+      "via_union_field": {
+        "valid": [
+          "ab",
+          5
+        ],
+        "invalid": [
+          "a"
+        ]
+      }
+    }
+  },
+  "allof_beside_union": {
+    "model": "Model",
+    "fields": {
+      "pet": {
+        "valid": [
+          {
+            "id": "p",
+            "meow": true
+          },
+          {
+            "id": "p",
+            "bark": false
+          }
+        ],
+        "invalid": [
+          {
+            "meow": true
+          },
+          {
+            "id": "p"
+          }
+        ]
+      },
+      "pet_inline_member": {
+        "valid": [
+          {
+            "id": "p",
+            "meow": true
+          }
+        ],
+        "invalid": [
+          {
+            "meow": true
+          }
+        ]
+      },
+      "pet_mixed": {
+        "valid": [
+          {
+            "id": "p",
+            "meow": true
+          },
+          {
+            "id": "p",
+            "bark": true
+          }
+        ],
+        "invalid": [
+          {
+            "meow": true
+          }
+        ]
+      },
+      "pet_inline": {
+        "valid": [
+          {
+            "id": "p",
+            "meow": true
+          }
+        ],
+        "invalid": [
+          {
+            "meow": true
+          }
+        ]
+      },
+      "pet_props": {
+        "valid": [
+          {
+            "id": "p",
+            "meow": true
+          }
+        ],
+        "invalid": [
+          {
+            "meow": true
+          }
+        ]
+      },
+      "pet_field": {
+        "valid": [
+          {
+            "id": "p",
+            "meow": true
+          }
+        ],
+        "invalid": [
+          {
+            "meow": true
+          }
+        ]
+      },
+      "items": {
+        "valid": [
+          [
+            {
+              "id": "p",
+              "meow": true
+            }
+          ]
+        ],
+        "invalid": [
+          [
+            {
+              "meow": true
+            }
+          ]
+        ]
+      },
+      "values": {
+        "valid": [
+          {
+            "k": {
+              "id": "p",
+              "bark": true
+            }
+          }
+        ],
+        "invalid": [
+          {
+            "k": {
+              "bark": true
+            }
+          }
+        ]
+      }
+    }
+  },
+  "allof_beside_union_oas31": {
+    "model": "Holder",
+    "dialect": "https://json-schema.org/draft/2020-12/schema",
+    "fields": {
+      "pet": {
+        "valid": [
+          {
+            "id": "p",
+            "petType": "cat",
+            "meow": true
+          },
+          {
+            "id": "p",
+            "petType": "dog",
+            "bark": true
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "cat",
+            "meow": true
+          },
+          {
+            "id": "p",
+            "petType": "cat"
+          }
+        ]
+      }
+    }
+  },
+  "union_ref_branch_values": {
+    "model": "Model",
+    "fields": {
+      "at_least": {
+        "valid": [
+          7,
+          "s"
+        ],
+        "invalid": [
+          3
+        ]
+      },
+      "letters": {
+        "valid": [
+          "aa",
+          5
+        ],
+        "invalid": [
+          "b",
+          "aaaa"
+        ]
+      },
+      "non_empty": {
+        "valid": [
+          [
+            "x"
+          ],
+          3
+        ],
+        "invalid": [
+          []
+        ]
+      },
+      "at_least_in_all_of": {
+        "valid": [
+          7,
+          "s"
+        ],
+        "invalid": [
+          3
+        ]
+      },
+      "at_least_field": {
+        "valid": [
+          7,
+          "s"
+        ],
+        "invalid": [
+          3
+        ]
+      },
+      "at_least_ten": {
+        "valid": [
+          12,
+          "s"
+        ],
+        "invalid": [
+          7,
+          3
+        ]
+      },
+      "short_letters": {
+        "valid": [
+          "abc",
+          5
+        ],
+        "invalid": [
+          "abcd"
+        ]
+      }
+    }
+  },
+  "union_ref_branch_values_draft07": {
+    "model": "Model",
+    "fields": {
+      "picked": {
+        "valid": [
+          "b",
+          "c"
+        ],
+        "invalid": [
+          "a",
+          "d"
+        ]
+      },
+      "bounded": {
+        "valid": [
+          3,
+          "s"
+        ],
+        "invalid": [
+          4,
+          6
+        ]
+      }
+    }
+  },
+  "allof_union_parts": {
+    "model": "Model",
+    "fields": {
+      "inline": {
+        "valid": [
+          {
+            "a": "x",
+            "c": "y"
+          }
+        ],
+        "invalid": [
+          {
+            "c": "y"
+          },
+          {
+            "a": "x"
+          }
+        ]
+      },
+      "refs": {
+        "valid": [
+          {
+            "a": "x",
+            "c": "y"
+          }
+        ],
+        "invalid": [
+          {
+            "c": "y"
+          },
+          {
+            "a": "x"
+          }
+        ]
+      },
+      "roots": {
+        "valid": [
+          {
+            "b": "x",
+            "d": "y"
+          }
+        ],
+        "invalid": [
+          {
+            "b": "x"
+          }
+        ]
+      },
+      "same": {
+        "valid": [
+          {
+            "a": "x"
+          },
+          {
+            "a": "x",
+            "b": "y"
+          }
+        ],
+        "invalid": [
+          {
+            "c": "x"
+          }
+        ]
+      },
+      "hierarchy": {
+        "valid": [
+          {
+            "a": "x"
+          },
+          {
+            "name": "n",
+            "meow": true
+          }
+        ],
+        "invalid": [
+          "x"
+        ]
+      },
+      "withvalue": {
+        "valid": [
+          {
+            "a": "p",
+            "c": "q",
+            "x": 1
+          }
+        ],
+        "invalid": [
+          {
+            "a": "p",
+            "c": "q"
+          },
+          "s"
+        ]
+      },
+      "nulls": {
+        "valid": [
+          {
+            "a": "x",
+            "c": "y"
+          }
+        ],
+        "invalid": [
+          {
+            "a": "x"
+          }
+        ]
+      },
+      "field": {
+        "valid": [
+          {
+            "a": "x",
+            "c": "y"
+          }
+        ],
+        "invalid": [
+          {
+            "c": "y"
+          }
+        ]
+      },
+      "many": {
+        "valid": [
+          {
+            "p0": "a",
+            "q0": "b",
+            "r0": "c"
+          }
+        ],
+        "invalid": [
+          {
+            "p0": "a"
+          }
+        ]
+      }
+    }
+  },
+  "allof_union_through_ref": {
+    "model": "Model",
+    "fields": {
+      "leaf": {
+        "valid": [
+          {
+            "left": "l"
+          },
+          {
+            "right": "r",
+            "leaf": "x"
+          }
+        ],
+        "invalid": [
+          {},
+          {
+            "left": 1
+          }
+        ]
+      },
+      "narrowed": {
+        "valid": [
+          {
+            "left": "l",
+            "mid": "abc"
+          }
+        ],
+        "invalid": [
+          {
+            "left": "l",
+            "mid": "abcd"
+          }
+        ]
+      },
+      "through_own_union": {
+        "valid": [
+          {
+            "id": "i",
+            "c": "x"
+          }
+        ],
+        "invalid": [
+          {
+            "c": "x"
+          }
+        ]
+      },
+      "loosened": {
+        "valid": [
+          {
+            "left": "l",
+            "mid": "abc"
+          }
+        ],
+        "invalid": [
+          {
+            "left": "l",
+            "mid": "abcd"
+          }
+        ]
+      },
+      "coded": {
+        "valid": [
+          {
+            "left": "l",
+            "mid": "abc"
+          }
+        ],
+        "invalid": [
+          {
+            "left": "l",
+            "mid": "abcd"
+          }
+        ]
+      }
+    }
+  },
+  "combined_any_of_one_of": {
+    "model": "Model",
+    "fields": {
+      "common": {
+        "valid": [
+          "s"
+        ],
+        "invalid": [
+          true,
+          1
+        ]
+      },
+      "every": {
+        "valid": [
+          1,
+          "s"
+        ],
+        "invalid": [
+          true,
+          1.5
+        ]
+      },
+      "untyped": {
+        "valid": [
+          "ab",
+          true
+        ],
+        "invalid": [
+          "a",
+          1
+        ]
+      },
+      "nulls": {
+        "valid": [
+          null
+        ],
+        "invalid": [
+          "s",
+          1,
+          true
+        ]
+      },
+      "objects": {
+        "valid": [
+          {
+            "a": "x",
+            "b": 1
+          }
+        ],
+        "invalid": [
+          {
+            "a": "x"
+          },
+          {
+            "b": 1
+          },
+          "s",
+          []
+        ]
+      },
+      "false_branch": {
+        "valid": [
+          "s"
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "ref_branch": {
+        "valid": [
+          "s"
+        ],
+        "invalid": [
+          1,
+          true
+        ]
+      },
+      "disjoint": {
+        "valid": [],
+        "invalid": [
+          1,
+          "s",
+          true
+        ]
+      }
+    }
+  },
+  "allof_member_declarations": {
+    "model": "Model",
+    "fields": {
+      "mid": {
+        "valid": [
+          "abc"
+        ],
+        "invalid": [
+          "abcd"
+        ]
+      },
+      "nested": {
+        "valid": [
+          {
+            "n": 3
+          }
+        ],
+        "invalid": [
+          {
+            "n": 12
+          },
+          {
+            "n": 4
+          },
+          {
+            "n": -3
+          }
+        ]
+      },
+      "inherited": {
+        "valid": [
+          {
+            "code": "Ab"
+          }
+        ],
+        "invalid": [
+          {
+            "code": ""
+          },
+          {
+            "code": "ab"
+          }
+        ]
+      },
+      "kept_default": {
+        "valid": [
+          {
+            "tag": "ab"
+          },
+          {}
+        ],
+        "invalid": [
+          {
+            "tag": "abc"
+          }
+        ]
+      },
+      "child": {
+        "valid": [
+          {
+            "mid": "ab"
+          }
+        ],
+        "invalid": [
+          {
+            "mid": ""
+          },
+          {
+            "mid": "abcd"
+          }
+        ]
+      },
+      "field_site": {
+        "valid": [
+          {
+            "ratio": 0.5
+          }
+        ],
+        "invalid": [
+          {
+            "ratio": 1
+          }
+        ]
+      },
+      "reference": {
+        "valid": [
+          {
+            "ref": "ab"
+          }
+        ],
+        "invalid": [
+          {
+            "ref": "a"
+          },
+          {
+            "ref": "abcde"
+          }
+        ]
+      },
+      "positional": {
+        "valid": [
+          {
+            "pair": [
+              "a"
+            ]
+          }
+        ],
+        "invalid": [
+          {
+            "pair": [
+              "a",
+              "b"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "allof_union_member_declarations": {
+    "model": "Model",
+    "fields": {
+      "inline": {
+        "valid": [
+          {
+            "x": 5
+          },
+          {
+            "x": -1
+          },
+          {
+            "c": 1
+          }
+        ],
+        "invalid": [
+          {
+            "x": 11
+          }
+        ]
+      },
+      "refs": {
+        "valid": [
+          {
+            "name": "Tom"
+          },
+          {
+            "name": ""
+          }
+        ],
+        "invalid": [
+          {
+            "name": "abcdefghijk"
+          }
+        ]
+      },
+      "required_branch": {
+        "valid": [
+          {
+            "x": 5
+          },
+          {
+            "c": 1
+          }
+        ],
+        "invalid": [
+          {
+            "x": 11
+          },
+          {
+            "x": -1
+          }
+        ]
+      },
+      "two_unions": {
+        "valid": [
+          {
+            "x": 5
+          },
+          {
+            "x": 11,
+            "d": "s"
+          }
+        ],
+        "invalid": [
+          {
+            "x": 11
+          },
+          {
+            "x": -1
+          }
+        ]
+      },
+      "own": {
+        "valid": [
+          {
+            "x": 5
+          },
+          {
+            "c": 1,
+            "x": -1
+          }
+        ],
+        "invalid": [
+          {
+            "x": 11
+          },
+          {
+            "x": -1
+          }
+        ]
+      },
+      "formats": {
+        "valid": [
+          {
+            "at": "2020-01-01T00:00:00Z"
+          }
+        ],
+        "invalid": [
+          {
+            "at": "2020-01-01T00:00:00.000000000000Z"
+          }
+        ]
+      }
+    }
+  },
+  "allof_required_members": {
+    "model": "Model",
+    "base": {
+      "nullable_member": {
+        "id": 1
+      },
+      "nullable_sibling": {
+        "id": 1
+      },
+      "object_site": {
+        "id": 1
+      },
+      "ref_sibling": {
+        "id": 1
+      },
+      "object_member": {
+        "id": 1
+      }
+    },
+    "fields": {
+      "member": {
+        "valid": [
+          {
+            "id": 1
+          },
+          {
+            "id": 1,
+            "name": "a"
+          }
+        ],
+        "invalid": [
+          {},
+          {
+            "name": "a"
+          }
+        ]
+      },
+      "sibling": {
+        "valid": [
+          {
+            "id": 1
+          }
+        ],
+        "invalid": [
+          {},
+          {
+            "name": "a"
+          }
+        ]
+      },
+      "items": {
+        "valid": [
+          [
+            {
+              "id": 1
+            }
+          ],
+          []
+        ],
+        "invalid": [
+          [
+            {}
+          ]
+        ]
+      },
+      "kept": {
+        "valid": [
+          {
+            "id": 1
+          }
+        ],
+        "invalid": [
+          {}
+        ]
+      },
+      "nullable_member": {
+        "valid": [
+          null,
+          {
+            "id": 1
+          }
+        ],
+        "invalid": [
+          {}
+        ]
+      },
+      "nullable_sibling": {
+        "valid": [
+          null,
+          {
+            "id": 1
+          }
+        ],
+        "invalid": [
+          {}
+        ]
+      },
+      "object_site": {
+        "valid": [
+          {
+            "id": 1
+          }
+        ],
+        "invalid": [
+          null,
+          {}
+        ]
+      },
+      "ref_sibling": {
+        "valid": [
+          {
+            "id": 1
+          },
+          {
+            "id": 1,
+            "name": "a"
+          }
+        ],
+        "invalid": [
+          {},
+          {
+            "name": "a"
+          }
+        ]
+      },
+      "object_member": {
+        "valid": [
+          {
+            "id": 1
+          }
+        ],
+        "invalid": [
+          null,
+          {}
+        ]
+      }
+    }
+  },
+  "allof_beside_discriminated_branch": {
+    "model": "Holder",
+    "dialect": "https://json-schema.org/draft/2020-12/schema",
+    "fields": {
+      "owned": {
+        "valid": [
+          {
+            "petType": "Cat",
+            "owner": "o"
+          },
+          {
+            "fins": 1,
+            "owner": "o"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "Cat"
+          },
+          {
+            "petType": "Cat",
+            "owner": "o",
+            "meow": "abcd"
+          }
+        ]
+      },
+      "nested": {
+        "valid": [
+          {
+            "petType": "Cat",
+            "owner": "o"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "Cat"
+          }
+        ]
+      },
+      "based": {
+        "valid": [
+          {
+            "id": "i",
+            "kind": "sq",
+            "side": 1
+          }
+        ],
+        "invalid": [
+          {
+            "kind": "sq",
+            "side": 1
+          }
+        ]
+      },
+      "field": {
+        "valid": [
+          {
+            "petType": "Dog",
+            "owner": "o"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "Dog"
+          }
+        ]
+      }
+    }
+  },
+  "allof_beside_site_discriminator": {
+    "model": "Holder",
+    "dialect": "https://json-schema.org/draft/2020-12/schema",
+    "fields": {
+      "named": {
+        "valid": [
+          {
+            "id": "i",
+            "petType": "Cat",
+            "meow": "m"
+          },
+          {
+            "id": "i",
+            "petType": "Dog",
+            "bark": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "Cat",
+            "meow": "m"
+          },
+          {
+            "id": "i",
+            "petType": "Cat"
+          }
+        ]
+      },
+      "mapped": {
+        "valid": [
+          {
+            "id": "i",
+            "petType": "c",
+            "meow": "m"
+          },
+          {
+            "id": "i",
+            "petType": "d",
+            "bark": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "c",
+            "meow": "m"
+          },
+          {
+            "id": "i",
+            "petType": "d"
+          }
+        ]
+      }
+    }
+  },
+  "ref_branches_beside_properties": {
+    "model": "Holder",
+    "dialect": "https://json-schema.org/draft/2020-12/schema",
+    "fields": {
+      "owned": {
+        "valid": [
+          {
+            "owner": "o",
+            "petType": "Cat",
+            "meow": "m"
+          },
+          {
+            "owner": "o",
+            "petType": "Dog",
+            "bark": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "Cat",
+            "meow": "m"
+          },
+          {
+            "owner": "o",
+            "petType": "Dog"
+          }
+        ]
+      },
+      "mapped": {
+        "valid": [
+          {
+            "petType": "c",
+            "meow": "m"
+          },
+          {
+            "owner": "o",
+            "petType": "d",
+            "bark": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "c"
+          },
+          {
+            "owner": 1,
+            "petType": "d",
+            "bark": "b"
+          }
+        ]
+      }
+    }
   }
 }

@@ -1,0 +1,15 @@
+from __future__ import annotations
+
+from decimal import Decimal
+from typing import Optional, Union
+
+from pydantic import BaseModel, confloat
+
+
+class Model(BaseModel):
+    infinite: Optional[float] = None
+    beyond: Optional[float] = None
+    bounded: Optional[confloat(ge=0.0)] = None
+    count: Optional[int] = None
+    amount: Optional[Decimal] = None
+    either: Optional[Union[float, str]] = None

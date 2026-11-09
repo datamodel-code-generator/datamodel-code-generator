@@ -37,8 +37,8 @@ generated code runs.
 Runs use only the pinned refs. With --check-upstream, `git ls-remote` asks each schema's source repository for its
 HEAD, and the report proposes rotating the entries whose head is not the newest pinned ref.
 
-Known limitations: a rule is judged by its own `when`; `contested_when` and the order of rules within a decision are
-not modelled. Each grid point is a full trial, which also generates the recommendation's neighbours when rules decide
+Known limitations: a rule is judged by its own `when`; the order of rules within a decision is not modelled. Each grid
+point is a full trial, which also generates the recommendation's neighbours when rules decide
 fields the grid leaves unset, and generates the baseline too, so large schemas take a while.
 """
 
@@ -454,12 +454,12 @@ def _load_document(path: Path) -> Any:
         return json.loads(text)
     import yaml  # ruff: ignore[import-outside-top-level] - only YAML specs need it
 
-    from datamodel_code_generator.util import get_safe_loader  # ruff: ignore[import-outside-top-level]
+    from datamodel_code_generator.util import read_yaml_text  # ruff: ignore[import-outside-top-level]
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         try:
-            return yaml.load(text, Loader=get_safe_loader())
+            return read_yaml_text(yaml.load, text)
         except yaml.YAMLError as exc:
             raise ValueError(str(exc)) from exc
 
@@ -660,12 +660,11 @@ def _effective_values(settings: Settings, kind: str, names: Iterable[str]) -> di
         InputFileType,
         PythonVersion,
     )
-    from datamodel_code_generator._recommend._rules import (  # ruff: ignore[import-outside-top-level, import-private-name]
-        toml_value,
-    )
+    from datamodel_code_generator._option_names import toml_value  # ruff: ignore[import-outside-top-level, import-private-name]
     from datamodel_code_generator.base_config import BaseGenerateConfig  # ruff: ignore[import-outside-top-level]
     from datamodel_code_generator.preset import (  # ruff: ignore[import-outside-top-level]
         PresetContext,
+        _pyproject_values,  # ruff: ignore[import-private-name]
         resolve_preset_config_updates,
     )
 
@@ -677,7 +676,7 @@ def _effective_values(settings: Settings, kind: str, names: Iterable[str]) -> di
     resolved = resolve_preset_config_updates(
         settings.preset, context=context, use_annotated=False, explicit_fields=set()
     )
-    preset = {item.field_name: item.pyproject_value for item in resolved.items}
+    preset = _pyproject_values(resolved.items)
     fields = BaseGenerateConfig.model_fields
     return {
         name: preset[name]
@@ -690,6 +689,11 @@ def _effective_values(settings: Settings, kind: str, names: Iterable[str]) -> di
 
 
 def _option(name: str, value: Any) -> list[str]:
+    """Return the options that set a grid value.
+
+    False is always the --no- option, so that argparse rejects a grid point no option can express instead of running
+    the preset's value under its label.
+    """
     flag = name.replace("_", "-")
     if value is True:
         return [f"--{flag}"]

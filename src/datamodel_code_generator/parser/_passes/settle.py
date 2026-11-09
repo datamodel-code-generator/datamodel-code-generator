@@ -15,22 +15,36 @@ from typing import TYPE_CHECKING, Any
 from typing_extensions import Protocol, TypeVar
 
 from datamodel_code_generator import Error
+from datamodel_code_generator._document_reader import nesting_limit
+from datamodel_code_generator._message_text import counted
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
-from datamodel_code_generator._url_redaction import redact_reference
+from datamodel_code_generator._url_redaction import named_location, redact_reference
 from datamodel_code_generator.model.base import DataModel, sort_data_models_for_mro
 from datamodel_code_generator.parser._graph_ids import keyed_models
+from datamodel_code_generator.parser._model_shapes import ReuseGroups
 from datamodel_code_generator.parser._passes._shared import (
-    _is_pydantic_v2_root_model,
+    GenerationStoreHost,
+    RecursionFactsHost,
+    RootModelTypeHost,
     _runtime_validation_reference_keys,
     _sort_models_by_class_body_references,
+    definition_reads,
+    with_dedupe_request_response_hint,
 )
-from datamodel_code_generator.parser._passes._state import ParseConfigView, RecursionFacts
+from datamodel_code_generator.parser._passes._state import (
+    ParseConfigView,
+    RecursionFacts,
+    mark_settle_diagnostics_reported,
+    parse_warnings_reported,
+    parse_warnings_shown_once,
+)
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser.generation import set_model_base_classes
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import _UNMATCHED_MODEL_NAME_KEYS_REPORTED, location_of
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
 
     from datamodel_code_generator import (
         AllExportsCollisionStrategy,
@@ -38,9 +52,10 @@ if TYPE_CHECKING:
         ModuleSplitMode,
         ReadOnlyWriteOnlyModelType,
     )
+    from datamodel_code_generator._user_keys import ConstructionKeys
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._passes._state import ConfigT, SettleRun, SortedDataModels, _ConstNarrowing
-    from datamodel_code_generator.parser.generation import GenerationIndex, GenerationStore, GraphBuilder
+    from datamodel_code_generator.parser.generation import GenerationIndex, GenerationStore
     from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataType
 
@@ -64,24 +79,19 @@ __all__ = [
 _ConfigT_co = TypeVar("_ConfigT_co", bound=ParseConfigView, covariant=True)
 
 
-class SettleHost(Protocol[_ConfigT_co]):
+class SettleHost(RecursionFactsHost, GenerationStoreHost, RootModelTypeHost, Protocol[_ConfigT_co]):
     """The options, run state and hooks of the parser that the settle passes read and write."""
 
-    _recursion_facts: RecursionFacts
-    _typed_map_value_reference_ids: set[int]
+    _reuse_groups: ReuseGroups
     yielding_names_to_assign: tuple[tuple[str, tuple[str, str | None]], ...]
 
     @property
-    def _graph_builder(self) -> GraphBuilder:
-        """The builder that changes the model graph through the generation store."""
+    def _site_model_keys(self) -> set[ModelKey]:
+        """The model keys of the site models a reference with more assertions gets."""
 
     @property
     def dedupe_request_response_variants(self) -> bool:
         """Whether the read and write variants are decided from the schema graph."""
-
-    @property
-    def generation_store(self) -> GenerationStore:
-        """The generation store of the parse."""
 
     @property
     def keep_model_order(self) -> bool:
@@ -92,10 +102,6 @@ class SettleHost(Protocol[_ConfigT_co]):
         """The resolver of references and class names."""
 
     @property
-    def pydantic_v2_root_model_type(self) -> type[DataModel] | None:
-        """The root model type whose class body evaluates its root type, if the output has one."""
-
-    @property
     def read_only_write_only_model_type(self) -> ReadOnlyWriteOnlyModelType | None:
         """The read and write variants the output generates, if any."""
 
@@ -103,8 +109,9 @@ class SettleHost(Protocol[_ConfigT_co]):
     def results(self) -> list[DataModel]:
         """The parsed models."""
 
-    def _names_have_class_keyed_options(self, names: set[str]) -> bool:
-        """Return whether an option keyed by class name, or by a class-scoped field, names one of ``names``."""
+    @property
+    def _construction_keys(self) -> ConstructionKeys:
+        """The class names that the options read while models are built key (``_user_keys.py``)."""
 
     def _prepare_parse_config(
         self,
@@ -145,6 +152,9 @@ class ParseHost(Protocol):
     def parse_raw(self) -> None:
         """Load the sources and parse them into models (L0 and L1)."""
 
+    def _start_naming_frames(self) -> None:
+        """Open the naming frames before L1 when it records them."""
+
 
 def _runtime_validation_names_later_model(
     models: list[DataModel],
@@ -165,7 +175,13 @@ MAX_RECURSION_COUNT: int = sys.getrecursionlimit()
 def _named_model_path(path: str, models: Mapping[str, DataModel]) -> str:
     """Return how a message names the model at a reference path: its schema location, or the path without one."""
     location = None if (model := models.get(path)) is None else location_of(model.reference)
-    return redact_reference(path if location is None else str(location))
+    return named_location(location, path)
+
+
+def _reference_set(paths: Iterable[str]) -> str:
+    """Write the paths a message lists as the frozenset it always wrote, in sorted order so runs give one text."""
+    listed = ", ".join(map(repr, sorted(set(paths))))
+    return f"frozenset({{{listed}}})" if listed else "frozenset()"
 
 
 def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
@@ -178,13 +194,16 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     pydantic_v2_root_model_type: type[DataModel] | None = None,
     runtime_validation_references: Mapping[ModelKey, frozenset[ModelKey]] | None = None,
     keyed: KeyedModels | None = None,
-    unresolved_hint: str = "",
+    legacy_request_response: bool = False,
 ) -> tuple[list[DataModel], SortedDataModels, list[ModelKey]]:
     """Sort data models by dependency order for correct forward references.
 
     Models, their references and the models needing a reference update action are keyed by model key; ``keyed``
-    holds the models of the outermost call, which the paths that models list themselves resolve against.
-    ``unresolved_hint`` ends the message of the error for models that cannot be ordered.
+    holds the models the paths that models list themselves resolve against (by default the sorted and unsorted ones).
+    Each model's reference keys are read once; up to ``recursion_count`` more passes place the models whose references
+    a pass placed.
+    ``legacy_request_response`` ends the message of the error for models that cannot be ordered with the option that
+    decides the read/write variants from the schema graph; the references it lists are sorted.
     """
     if sorted_data_models is None:
         sorted_data_models = OrderedDict()
@@ -206,55 +225,37 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         require_update_action_models.append(key)
         require_update_action_model_keys.add(key)
 
-    def get_reference_keys(model: DataModel, key: ModelKey) -> frozenset[ModelKey]:
+    def get_reference_keys(model: DataModel) -> frozenset[ModelKey]:
         reference_keys = (
             universe.resolve(model.reference_classes)
             if generation_index is None
             else generation_index.referenced_keys_for_model(model, universe)
         )
-        if model_runtime_validation_references := runtime_validation_references.get(key):
+        if model_runtime_validation_references := runtime_validation_references.get(model_key_of(model.reference)):
             return reference_keys | model_runtime_validation_references
         return reference_keys
 
-    sorted_model_count: int = len(sorted_data_models)
+    reference_keys_of = {model: get_reference_keys(model) for model in unsorted_data_models}
     sorted_model_keys = set(sorted_data_models)
-
-    unresolved_references: list[DataModel] = []
-    for model in unsorted_data_models:
-        key = model_key_of(model.reference)
-        reference_keys = get_reference_keys(model, key)
-        if not reference_keys:
-            sorted_data_models[key] = model
-            sorted_model_keys.add(key)
-        elif key in reference_keys and len(reference_keys) == 1:  # only self-referencing
-            sorted_data_models[key] = model
-            sorted_model_keys.add(key)
-            add_require_update_action_model(model, key)
-        elif not reference_keys - {key} - sorted_model_keys:  # reference classes have been resolved
+    unresolved_references = unsorted_data_models
+    while True:
+        sorted_model_count = len(sorted_data_models)
+        resolving, unresolved_references = unresolved_references, []
+        for model in resolving:
+            key = model_key_of(model.reference)
+            reference_keys = reference_keys_of[model]
+            if reference_keys - {key} - sorted_model_keys:
+                unresolved_references.append(model)
+                continue
             sorted_data_models[key] = model
             sorted_model_keys.add(key)
             if key in reference_keys:
                 add_require_update_action_model(model, key)
-        else:
-            unresolved_references.append(model)
+        if not (unresolved_references and sorted_model_count != len(sorted_data_models) and recursion_count):
+            break
+        recursion_count -= 1
 
     if unresolved_references:
-        if sorted_model_count != len(sorted_data_models) and recursion_count:
-            try:
-                return sort_data_models(
-                    unresolved_references,
-                    sorted_data_models,
-                    require_update_action_models,
-                    recursion_count - 1,
-                    generation_index,
-                    pydantic_v2_root_model_type=pydantic_v2_root_model_type,
-                    runtime_validation_references=runtime_validation_references,
-                    keyed=universe,
-                    unresolved_hint=unresolved_hint,
-                )
-            except RecursionError:  # pragma: no cover
-                pass
-
         # sort on base_class dependency
         seen_orderings: set[tuple[ModelKey, ...]] = set()
         while True:
@@ -262,30 +263,20 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
             # Build lookup dict for O(1) index access instead of O(n) list.index()
             key_to_index = {model_key_of(m.reference): idx for idx, m in enumerate(unresolved_references)}
             for model in unresolved_references:
-                if _is_pydantic_v2_root_model(model, pydantic_v2_root_model_type):
-                    indexes = [
-                        key_to_index[reference_key]
-                        for f in model.fields
-                        for t in f.data_type.all_data_types
-                        if t.reference and (reference_key := universe.key_of(t.reference)) in key_to_index
-                    ]
-                else:
-                    indexes = [
-                        key_to_index[reference_key]
-                        for b in model.base_classes
-                        if b.reference and (reference_key := universe.key_of(b.reference)) in key_to_index
-                    ]
-
-                if indexes:
-                    ordered_models.append((
-                        max(indexes),
-                        model,
-                    ))
-                else:
-                    ordered_models.append((
-                        -1,
-                        model,
-                    ))
+                fields = definition_reads(
+                    model, row="legacy-class-body-without-alias-values", root_model_type=pydantic_v2_root_model_type
+                )
+                references = (
+                    (t.reference for f in fields for t in f.data_type.all_data_types)
+                    if fields is not None
+                    else (b.reference for b in model.base_classes)
+                )
+                indexes = [
+                    key_to_index[reference_key]
+                    for reference in references
+                    if reference and (reference_key := universe.key_of(reference)) in key_to_index
+                ]
+                ordered_models.append((max(indexes, default=-1), model))
 
             sorted_unresolved_models = [m[1] for m in sorted(ordered_models, key=operator.itemgetter(0))]
             if sorted_unresolved_models == unresolved_references:
@@ -312,21 +303,15 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         unsorted_data_model_keys = set(key_to_index)
         for model in unresolved_references:
             key = model_key_of(model.reference)
-            reference_keys = get_reference_keys(model, key)
+            reference_keys = reference_keys_of[model]
             unresolved_model = reference_keys - {key} - sorted_model_keys
             base_model_keys = {universe.key_of(s.reference) for s in model.base_classes if s.reference}
             update_action_parent = require_update_action_model_keys.intersection(base_model_keys)
-            if not unresolved_model:
-                sorted_data_models[key] = model
-                sorted_model_keys.add(key)
-                if update_action_parent:
-                    add_require_update_action_model(model, key)
-                continue
-
             if not unresolved_model - unsorted_data_model_keys:
                 sorted_data_models[key] = model
                 sorted_model_keys.add(key)
-                add_require_update_action_model(model, key)
+                if unresolved_model or update_action_parent:
+                    add_require_update_action_model(model, key)
                 continue
 
             # unresolved
@@ -348,10 +333,12 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
 
             unresolved_classes = ", ".join(
                 f"[class: {_named_model_path(item.path, models_by_path)} references: "
-                f"{frozenset(_named_model_path(path, models_by_path) for path in reference_paths(item))}]"
+                f"{_reference_set(_named_model_path(path, models_by_path) for path in reference_paths(item))}]"
                 for item in unresolved_references
             )
-            msg = f"A Parser can not resolve classes: {unresolved_classes}.{unresolved_hint}"
+            msg = f"A Parser can not resolve classes: {unresolved_classes}."
+            if legacy_request_response:
+                raise Error(with_dedupe_request_response_hint(msg))
             raise Exception(msg)  # noqa: TRY002
 
     return unresolved_references, sorted_data_models, require_update_action_models
@@ -411,28 +398,37 @@ def warn_about_unmatched_model_name_keys(parser: SettleHost[Any]) -> None:
     if _UNMATCHED_MODEL_NAME_KEYS_REPORTED.get() and (
         unmatched_keys := sorted({redact_reference(key) for key in parser.model_resolver.unmatched_model_name_keys()})
     ):
-        listed = ", ".join(map(repr, unmatched_keys))
+        listed = ", ".join(map(stable_repr, unmatched_keys))
         warn_as_parser_base(
-            f"--model-name-map: {len(unmatched_keys)} key{'' if len(unmatched_keys) == 1 else 's'} "
-            f"matched no generated model: {listed}",
+            f"--model-name-map: {counted(len(unmatched_keys), 'key')} matched no generated model: {listed}",
             UserWarning,
             stacklevel=2,
         )
 
 
 def settle_yielding_names(parser: SettleHost[Any], _run: SettleRun[Any]) -> None:
-    """Give the names that yield to ``--model-name-map`` their final form."""
-    parser._typed_map_value_reference_ids = parser.model_resolver.settle_yielding_names()  # noqa: SLF001
-    if (changes := parser.model_resolver.yielding_name_changes) and parser._names_have_class_keyed_options(changes):  # noqa: SLF001
+    """Give the names that yield to ``--model-name-map`` their final form, and record the reuse groups plan.
+
+    The models whose names yield, and the site models of the parse, yield the canonical place of a group of
+    duplicates to the others too. The parse again with the final names (row ``legacy-reparse-for-final-names``)
+    follows the renames of the yielding names; the names the generation store renames after them
+    (``GenerationStore.renames``) are given by path to the parse again of ``imports.translate_final_name_keys``.
+    """
+    parser._reuse_groups = ReuseGroups(  # noqa: SLF001
+        site_models=frozenset(parser._site_model_keys),  # noqa: SLF001
+        typed_map_values=frozenset(parser.model_resolver.settle_yielding_names()),
+    )
+    if (changes := parser.model_resolver.yielding_name_changes) and parser._construction_keys.name_any(changes):  # noqa: SLF001
         parser.yielding_names_to_assign = tuple(parser.model_resolver.final_yielding_names.items())
 
 
 def report_parse_diagnostics(parser: SettleHost[Any], run: SettleRun[Any]) -> None:
-    """Report the parse diagnostics, without repeating them on a retry."""
-    if run.suppress_parse_warnings:
+    """Report the parse diagnostics once per generation run: a retry repeats none that an earlier parse reported."""
+    if run.suppress_settle_diagnostics:
         parser._run_with_suppressed_warnings(parser._report_parse_diagnostics)  # noqa: SLF001
     else:
         parser._report_parse_diagnostics()  # noqa: SLF001
+        mark_settle_diagnostics_reported()
 
 
 def prepare_run_parse_config(parser: SettleHost[ConfigT], run: SettleRun[ConfigT]) -> None:
@@ -458,11 +454,8 @@ def sort_parsed_models(parser: SettleHost[Any], run: SettleRun[Any]) -> None:
         runtime_validation_references=(
             None if parser.keep_model_order else _runtime_validation_reference_keys(parser.results, same_module=True)
         ),
-        unresolved_hint=(
-            " --dedupe-request-response-variants decides the read/write variants from the schema graph and can"
-            " generate such schemas."
-            if parser.read_only_write_only_model_type is not None and not parser.dedupe_request_response_variants
-            else ""
+        legacy_request_response=(
+            parser.read_only_write_only_model_type is not None and not parser.dedupe_request_response_variants
         ),
     )
     parser._recursion_facts = RecursionFacts(require_update=frozenset(require_update), circular_roots=frozenset())  # noqa: SLF001
@@ -478,21 +471,22 @@ def record_source_reference_paths(run: SettleRun[Any]) -> None:
 
 
 def parse_raw(parser: ParseHost, run: SettleRun[Any]) -> None:
-    """Run L0 and L1, without repeating warnings on a retry; the HTTP session closes either way.
+    """Run L0 and L1, with the naming frames open while L1 records them, showing no warning a parse before showed.
 
-    A parse that exceeds the recursion limit on deeply nested schemas stops with an error, not a partial result.
+    A retry after a parse that finished L1 shows none of the warnings of L0 and L1; one after a parse that failed in L1
+    shows those that parse did not reach (``parse_warnings_shown_once``).
+
+    The HTTP session closes either way. A parse that exceeds the recursion limit on deeply nested schemas stops with
+    an error, not a partial result.
     """
+    parser._start_naming_frames()  # noqa: SLF001
     try:
-        if run.suppress_parse_warnings:
-            parser._run_with_suppressed_warnings(parser.parse_raw)  # noqa: SLF001
-        else:
-            parser.parse_raw()
-    except RecursionError:
-        msg = (
-            "Schema nesting is too deep to generate: parsing the nested schemas exceeded the Python recursion "
-            f"limit ({sys.getrecursionlimit()})."
-        )
-        raise Error(msg) from None
+        with nesting_limit():
+            if run.suppress_parse_warnings and parse_warnings_reported():
+                parser._run_with_suppressed_warnings(parser.parse_raw)  # noqa: SLF001
+            else:
+                with parse_warnings_shown_once():
+                    parser.parse_raw()
     finally:
         parser._close_http_fetch_session()  # noqa: SLF001
 

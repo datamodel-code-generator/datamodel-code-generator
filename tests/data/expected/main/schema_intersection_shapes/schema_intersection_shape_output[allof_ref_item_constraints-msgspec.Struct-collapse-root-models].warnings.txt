@@ -1,1 +1,7 @@
 allOf combines $ref with 2 constraint(s) that will be ignored in inherited field type resolution. Consider defining constraints in the referenced schema.
+Pydantic does not take max_length on Stamp; StampItem is generated without this constraint.
+Pydantic does not take max_length on Stamp; StampMap is generated without this constraint.
+Pydantic does not take ge on Point; PointItem is generated without this constraint.
+Pydantic does not take ge on Point; PointMap is generated without this constraint.
+Pydantic does not take max_length on Letter; LetterItem is generated without this constraint.
+Pydantic does not take max_length on Letter; LetterMap is generated without this constraint.

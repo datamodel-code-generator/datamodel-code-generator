@@ -14,7 +14,7 @@ class Pet(TypedDict):
     petType: PetType
 
 
-class Cat(Pet):
+class Cat(TypedDict):
     petType: Literal['cat']
     meow: NotRequired[str]
 
@@ -22,7 +22,7 @@ class Cat(Pet):
 PetType1: TypeAlias = Literal['dog']
 
 
-class Dog(Pet):
+class Dog(TypedDict):
     petType: PetType1
 
 

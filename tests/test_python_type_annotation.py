@@ -33,11 +33,7 @@ from datamodel_code_generator._python_type_annotation import (
     render_python_type_expr,
     rewrite_python_type_expr,
 )
-from datamodel_code_generator._python_type_binding import (
-    BoundPythonType,
-    alias_bound_python_type,
-    python_type_import_name,
-)
+from datamodel_code_generator._python_type_binding import BoundPythonType, alias_bound_python_type
 from datamodel_code_generator.imports import Import, Imports
 from datamodel_code_generator.types import is_python_type_annotation
 
@@ -150,8 +146,8 @@ def test_bound_type_alias_keeps_unmodified_imports_and_reports_bound_names() -> 
     aliased = alias_bound_python_type(bound_type, {("first", "Thing"): aliased_import})
 
     assert aliased.imports == (aliased_import, second_import)
-    assert python_type_import_name(aliased_import) == "Thing_1"
-    assert python_type_import_name(Import(import_="pkg.models")) == "pkg"
+    assert aliased_import.binding_name == "Thing_1"
+    assert Import(import_="pkg.models").binding_name == "pkg"
 
 
 @pytest.mark.parametrize(

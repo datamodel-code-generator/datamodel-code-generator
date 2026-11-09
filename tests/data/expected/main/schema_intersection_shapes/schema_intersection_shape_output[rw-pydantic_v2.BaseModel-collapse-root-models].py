@@ -3,11 +3,11 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, constr
+from pydantic import BaseModel, Field, constr
 
 
 class Pet(BaseModel):
-    id: str
+    id: str = Field(..., max_length=5)
     name: str
     secret: constr(min_length=1, max_length=9)
-    s2: constr(min_length=1)
+    s2: constr(min_length=1) = Field(..., max_length=9)

@@ -2,30 +2,22 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
-from datamodel_code_generator._python_type_annotation import (
-    PythonTypeBoundName,
-    PythonTypeName,
-    PythonTypeSubscript,
-    PythonTypeUnion,
-)
+from datamodel_code_generator._graph import reaching
+from datamodel_code_generator._module_paths import dotted_module
 from datamodel_code_generator._target_contract import (
-    BoundType,
-    BuiltinType,
     GeneratedSymbolType,
     GenericType,
-    ImportedType,
     KnownBackendValue,
     LiteralScalar,
-    NoneType,
     UnionType,
 )
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping, Sequence
 
-    from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._target_contract import (
         BackendValue,
         FieldUseBinding,
@@ -37,19 +29,50 @@ if TYPE_CHECKING:
 
 PydanticBackend: TypeAlias = Literal["pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
 _ALLOW: Final = KnownBackendValue(LiteralScalar(kind="str", value="allow"))
-_TYPING: Final = ("typing", "typing_extensions")
-_ANY: Final = frozenset((module, "Any") for module in _TYPING)
-_LITERAL: Final = frozenset((module, "Literal") for module in _TYPING)
-_NONE: Final = PythonTypeName("None")
-_NULL_NAMES: Final = frozenset({_NONE, PythonTypeName("object")})
-_WRAPPERS: Final = frozenset({"root", "alias"})
+
+
+@dataclass(frozen=True, slots=True)
+class ExtrasRuntime:
+    """The runtime module that writes the extra members of Pydantic dataclasses, which Pydantic never dumps.
+
+    A client's codecs take its `serializer` and a server's responses dump by its `writer`; a target that uses either
+    copies the module's `paths`, its own and those of the codec modules it `imports`, and imports from its `module`.
+    """
+
+    name: str = "pydantic_extras"
+    serializer: str = "extras_serializer"
+    writer: str = "extras_json"
+    imports: tuple[str, ...] = ("shared",)
+
+    @property
+    def paths(self) -> tuple[str, ...]:
+        """Return the files below the runtime package a target copies for the module, as it declares them."""
+        return tuple(map(codec_file, (*self.imports, self.name)))
+
+    @property
+    def module(self) -> str:
+        """Return the module's dotted path below the generated package."""
+        return codec_module(self.name)
+
+
+EXTRAS: Final = ExtrasRuntime()
+
+
+def codec_file(name: str) -> str:
+    """Return the file of a model codec runtime module below the runtime package, as a target declares its copy."""
+    return f"model_codecs/{name}.py"
+
+
+def codec_module(name: str) -> str:
+    """Return the dotted path of a model codec runtime module below the generated package."""
+    return f"_runtime.model_codecs.{name}"
 
 
 def artifact_module(artifact: ModelArtifactAddress) -> str:
     """Return the dotted module path of a model artifact below its model package."""
-    *parents, name = artifact.relative_path
-    modules = () if artifact.result_key == "single" else (*parents, name.removesuffix(".py"))
-    return ".".join((artifact.model_package, *modules)).removesuffix(".__init__")
+    if artifact.result_key == "single":
+        return artifact.model_package.removesuffix(".__init__")
+    return dotted_module(artifact.relative_path, artifact.model_package)
 
 
 def extras_symbols(
@@ -60,23 +83,28 @@ def extras_symbols(
     A dataclass allows them by its own configuration or by a base's, which it inherits; a model, root model, or alias
     reaches what its bases and the types of its fields reach.
     """
-    if not (reached := {symbol for symbol, declared in symbols.items() if _allows_extras(declared)}):
+    if not (allowing := [symbol for symbol, declared in symbols.items() if _allows_extras(declared)]):
         return frozenset()
-    named = {
-        symbol: frozenset((
-            *declared.bases,
-            *(
-                name
-                for member in members.get(symbol, ())
-                if (facts := member.model_facts) is not None
-                for name in named_symbols(facts.type)
+    return frozenset(
+        reaching(
+            allowing,
+            (
+                (
+                    symbol,
+                    (
+                        *declared.bases,
+                        *(
+                            name
+                            for member in members.get(symbol, ())
+                            if (facts := member.model_facts) is not None
+                            for name in named_symbols(facts.type)
+                        ),
+                    ),
+                )
+                for symbol, declared in symbols.items()
             ),
-        ))
-        for symbol, declared in symbols.items()
-    }
-    while grown := {symbol for symbol, names in named.items() if not names.isdisjoint(reached)} - reached:
-        reached |= grown
-    return frozenset(reached)
+        )
+    )
 
 
 def named_symbols(value: TypeView) -> Iterator[SymbolId]:
@@ -90,72 +118,6 @@ def named_symbols(value: TypeView) -> Iterator[SymbolId]:
         case GenericType():
             for item in value.arguments:
                 yield from named_symbols(item)
-        case _:
-            pass
-
-
-def takes_null(
-    value: TypeView | None,
-    symbols: Mapping[SymbolId, FinalModelSymbol],
-    members: Mapping[SymbolId, Sequence[FieldUseBinding]],
-    seen: frozenset[SymbolId] = frozenset(),
-) -> bool:
-    """Return whether a type validates JSON null, as the generated models annotate it, which both targets send by.
-
-    Any value does without a type, as Any, or as object; so does None, an enum with a null value, a union with such a
-    member, a root model or alias whose annotation accepts None or whose type does, and an annotation the document
-    writes as None, a union with None, Any under any alias, object, or a `Literal` with None.
-    """
-    null = False
-    match value:
-        case None | NoneType():
-            null = True
-        case BuiltinType():
-            null = value.name == "object"
-        case ImportedType():
-            null = (value.import_.from_, value.import_.import_) in _ANY
-        case BoundType():
-            null = _written_null(value.binding.expression)
-        case UnionType():
-            null = any(takes_null(member, symbols, members, seen) for member in value.members)
-        case GeneratedSymbolType() if (declared := symbols[value.symbol]).kind == "enum":
-            null = "null" in declared.value_types
-        case GeneratedSymbolType() if (
-            value.symbol not in seen
-            and symbols[value.symbol].kind in _WRAPPERS
-            and (
-                facts := next(
-                    (found for member in members.get(value.symbol, ()) if (found := member.model_facts) is not None),
-                    None,
-                )
-            )
-            is not None
-        ):
-            null = facts.annotation_null or takes_null(facts.type, symbols, members, seen | {value.symbol})
-        case _:
-            pass
-    return null
-
-
-def _written_null(expression: PythonTypeExpr) -> bool:
-    """Return whether an annotation written in the document accepts None, by the imports its names come from.
-
-    None, object, Any under any alias, a union with such a member, and a `Literal` with a None value do.
-    """
-    null = expression in _NULL_NAMES
-    match expression:
-        case PythonTypeUnion():
-            null = any(map(_written_null, expression.items))
-        case PythonTypeBoundName():
-            null = (expression.import_from, expression.import_name) in _ANY
-        case PythonTypeSubscript() if (
-            isinstance(base := expression.base, PythonTypeBoundName)
-            and (base.import_from, base.import_name) in _LITERAL
-        ):
-            null = _NONE in expression.arguments
-        case _:
-            pass
-    return null
 
 
 def keeps_extras(symbols: Mapping[SymbolId, FinalModelSymbol], symbol: SymbolId) -> bool:

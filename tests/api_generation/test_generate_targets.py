@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import shutil
+import sys
 import warnings
 from pathlib import Path
 from typing import Any
@@ -494,6 +495,12 @@ def test_generate_target_input_errors(tmp_path: Path) -> None:
             "response status 200 is given by two keys, 200 and '200'",
             id="integer-and-string-status",
         ),
+        pytest.param(
+            "range_and_lowercase_range_status.yaml",
+            "Error at schema path 'range_and_lowercase_range_status.yaml#/paths/~1pets/get/responses/2xx': "
+            "response status 2XX is given by two keys, '2XX' and '2xx'",
+            id="range-and-lowercase-range-status",
+        ),
     ],
 )
 def test_generate_target_key_errors(fixture_name: str, message: str, target: dict[str, Any], tmp_path: Path) -> None:
@@ -530,6 +537,74 @@ def test_generate_server_warnings(output: str | None, tmp_path: Path, monkeypatc
             if issubclass(item.category, DocumentationAnnotationWarning)
         ),
         GENERATE / "documentation-warning.txt",
+    )
+
+
+def test_generate_reads_a_leading_tilde_of_an_output_as_the_home_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Write the models, the model metadata and the package under the home directory a leading `~` names.
+
+    The checks of the remote lock read the paths there too, as the command line does: a lock inside `~/client` is
+    refused, and the lock `./~/client/api.lock` lies apart from the package.
+    """
+    (home := tmp_path / "home").mkdir()
+    (work := tmp_path / "work").mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    monkeypatch.chdir(work)
+    source, package = _client(work), home / "client"
+    run_generate_and_assert(
+        input_=source,
+        expected_error=Error,
+        expected_error_match=f"^{re.escape(f'Client output and Remote lock paths must not overlap: {package}')}$",
+        **MODELS,
+        **CLIENT,
+        output=Path("models.py"),
+        client_output=Path("~/client"),
+        update_lock=True,
+        lockfile=Path("~/client/api.lock"),
+    )
+    generate(
+        source,
+        **MODELS,
+        **CLIENT,
+        output=Path("~/models.py"),
+        emit_model_metadata=Path("~/metadata.json"),
+        client_output=Path("~/client"),
+        update_lock=True,
+        lockfile=work / "~" / "client" / "api.lock",
+    )
+    written = sorted(
+        path.relative_to(tmp_path).as_posix()
+        for path in tmp_path.rglob("*")
+        if path.is_file() and not path.is_relative_to(package)
+    )
+    assert_output(f"package: {(package / '__init__.py').is_file()}\nwritten: {written}\n")
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows reads ~user as a sibling of the home directory")
+@pytest.mark.parametrize(
+    ("field", "option", "options"),
+    [
+        pytest.param("output", "--output", MODELS, id="output"),
+        pytest.param("emit_model_metadata", "--emit-model-metadata", MODELS, id="emit_model_metadata"),
+        pytest.param("client_output", "--client-output", {**MODELS, **CLIENT}, id="client_output"),
+        pytest.param("server_output", "--server-output", {**MODELS, **SERVER}, id="server_output"),
+    ],
+)
+def test_generate_output_path_of_an_unknown_user_is_a_configuration_error(
+    field: str, option: str, options: dict[str, Any]
+) -> None:
+    """A ``~user`` that names no user in a path the run writes ends in the command line's error, not a RuntimeError."""
+    run_generate_and_assert(
+        input_=CLIENT_SOURCE / "options.yaml",
+        expected_error=Error,
+        expected_error_match=re.escape(
+            f"Invalid path for {option}: ~nouser_xyz/x: the user after '~' has no home directory"
+        ),
+        **options,
+        **{field: Path("~nouser_xyz/x")},
     )
 
 

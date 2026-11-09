@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import date
 from enum import StrEnum
-from typing import Any, Dict, Literal
+from typing import Annotated, Any, Dict, Literal
 
 from pydantic import (
     AwareDatetime,
@@ -17,6 +17,7 @@ from pydantic import (
     conint,
     constr,
 )
+from typing_extensions import TypeAliasType
 
 
 class Cat(BaseModel):
@@ -100,7 +101,9 @@ class Constant(BaseModel):
 
 class Stamped(BaseModel):
     at: AwareDatetime
-    host: constr(pattern=r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]{0,61}[A-Za-z0-9])$')
+    host: constr(
+        pattern=r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]{0,61}[A-Za-z0-9])$'
+    )
     day: date
 
 
@@ -123,8 +126,11 @@ class Extra(BaseModel):
     a: str
 
 
+GridItem = TypeAliasType("GridItem", Annotated[list[int], Field(min_length=2)])
+
+
 class Nested(BaseModel):
-    grid: list[list[int]]
+    grid: list[GridItem]
     loose: dict[str, Any]
 
 

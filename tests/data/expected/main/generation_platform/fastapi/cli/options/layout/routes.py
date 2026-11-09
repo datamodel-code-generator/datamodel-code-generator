@@ -133,9 +133,7 @@ LITERAL_ROUTES: Final = (
     ('list_pets', _add_list_pets),
     ('create_pet', _add_create_pet),
 )
-TEMPLATED_ROUTES: Final = (
-    ('replace_pet', _add_replace_pet),
-)
+TEMPLATED_ROUTES: Final = (('replace_pet', _add_replace_pet),)
 
 
 def build_router(

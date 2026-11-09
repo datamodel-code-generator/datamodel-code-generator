@@ -10,25 +10,24 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
-from hashlib import sha256
-from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final
+from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 
 import httpx2
 from typing_extensions import TypeVar
 
-from ..client.errors import ConfigurationError, SDKError, add_secondary
-from ..client.media import normalized
+from ..client.errors import SDKError, acalled, add_secondary, called
 from ..client.native import request_fields, wire_fields
 from ..client.options import RequestOptions
 from ..client.responses import HeadersView, Response, ResponseInfo
 from ..client.retry import http_timestamp
+from ..model_codecs.media import NOT_MODIFIED, QUOTED, TCHARS, ascii_digits, fields_without, normalized
 from ..model_codecs.parameters import header_text
 from .cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
-from .caches import CacheEntry, CacheResult, CacheSource
+from .caches import CACHED_STATUSES, CacheEntry, CacheResult, CacheSource
 from .client import stored_value
-from .errors import ProtocolDataError
+from .errors import ProtocolDataError, configuration_error, data_error
 from .options import CacheOptions, layered
-from .records import canonical_json
+from .records import json_digest
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -80,14 +79,10 @@ _VALIDATORS: Final[tuple[tuple[Literal["If-None-Match", "If-Modified-Since"], st
     ("If-None-Match", "etag"),
     ("If-Modified-Since", "last-modified"),
 )
-_ITEM: Final = re.compile(
-    r"[ \t]*(?:([!#$%&'*+.^_`|~0-9A-Za-z-]+)(?:=([!#$%&'*+.^_`|~0-9A-Za-z-]+|\"(?:[^\"\\]|\\.)*\"))?)?[ \t]*(?:,|\Z)"
-)
-_DELTA: Final = re.compile(r"[0-9]+")
+_ITEM: Final = re.compile(rf"[ \t]*(?:({TCHARS})(?:=({TCHARS}|{QUOTED}))?)?[ \t]*(?:,|\Z)")
 _MAX_DELTA: Final = 2**31
 _DELTA_DIGITS: Final = 10
 _MAX_TTL: Final = 300.0
-_NOT_MODIFIED: Final = 304
 
 
 @final
@@ -104,7 +99,7 @@ class CachePlan(Generic[T]):
     validator: Literal["etag", "last_modified", "both"]
     authenticated: bool
     fingerprint: str
-    statuses: frozenset[int] = frozenset({200})
+    statuses: frozenset[int] = frozenset(CACHED_STATUSES)
     vary_allowlist: frozenset[str] = frozenset()
 
 
@@ -150,7 +145,7 @@ def _directives(values: tuple[str, ...]) -> dict[str, str | None] | None:
 
 def _delta(value: str | None) -> int | None:
     """Return delta-seconds, capped at 2**31 as RFC 9111 requires, or None for anything else."""
-    if value is None or not _DELTA.fullmatch(value := value.strip()):
+    if value is None or not ascii_digits(value := value.strip()):
         return None
     return _MAX_DELTA if len(value) > _DELTA_DIGITS else min(int(value), _MAX_DELTA)
 
@@ -187,7 +182,7 @@ def _age(entry: CacheEntry, now: float) -> float:
 
 
 def _without(headers: HeadersView, names: frozenset[str], length: int) -> list[tuple[str, str]]:
-    kept = [(name, value) for name, value in headers if name.lower() not in names]
+    kept = fields_without(headers, names)
     kept.append(("Content-Length", str(length)))
     return kept
 
@@ -195,7 +190,7 @@ def _without(headers: HeadersView, names: frozenset[str], length: int) -> list[t
 def _merged(stored: HeadersView, update: HeadersView, length: int) -> HeadersView:
     """Return stored headers with every field a 304 gives replaced by its values, except fields it may not update."""
     replaced = {name.lower() for name, _ in update if name.lower() not in _UNMERGED}
-    kept = [(name, value) for name, value in stored if name.lower() not in replaced]
+    kept = fields_without(stored, replaced)
     added = [(name, value) for name, value in update if name.lower() in replaced]
     return HeadersView(_without(HeadersView((*kept, *added)), frozenset({"content-length"}), length))
 
@@ -209,6 +204,7 @@ class _Fetch(Generic[T]):
         "credential_headers",
         "directives",
         "entry",
+        "headers",
         "identity",
         "implicit",
         "max_ttl",
@@ -245,9 +241,9 @@ class _Fetch(Generic[T]):
         self.settings, self.request = prepared.settings, prepared.request
         self.sending = self.request
         self.credential_headers = prepared.credential_headers
-        headers = HeadersView(request_fields(self.request))
+        headers = self.headers = HeadersView(request_fields(self.request))
         if (refused := next((name for name in _REFUSED if name in headers), None)) is not None:
-            raise _invalid(plan, ("headers", refused))
+            raise configuration_error(plan.helper_id, ("headers", refused))
         self.directives = _requested(plan, headers.get_all("cache-control"))
         extra = () if self.options is None or self.options.extra_headers is None else self.options.extra_headers
         patched = {name.lower() for name, _ in self.settings.headers} | {name.lower() for name in extra}
@@ -267,17 +263,15 @@ class _Fetch(Generic[T]):
         """
         authenticated = self.plan.authenticated
         if identity.authenticated > authenticated or authenticated > (identity.authenticated or identity.authorized):
-            raise _configuration(self.plan, ("auth",), "binding_mismatch")
+            raise configuration_error(self.plan.helper_id, ("auth",), "binding_mismatch")
         self.identity = identity
-        self.base_key = sha256(
-            canonical_json({
-                "method": self.request.method,
-                "url": identity.url,
-                "accept": HeadersView(request_fields(self.request)).get("accept"),
-                "credentials": identity.headers,
-                "varied": sorted(self.implicit),
-            })
-        ).digest()
+        self.base_key = json_digest({
+            "method": self.request.method,
+            "url": identity.url,
+            "accept": self.headers.get("accept"),
+            "credentials": identity.headers,
+            "varied": sorted(self.implicit),
+        })
         return self.base_key
 
     def found(self, entry: object) -> CacheEntry | None:
@@ -290,12 +284,12 @@ class _Fetch(Generic[T]):
         self.entry, plan = entry, self.plan
         if entry is None or entry.schema_fingerprint != plan.fingerprint or entry.status_code not in plan.statuses:
             return None
-        headers = HeadersView(request_fields(self.request))
+        headers = self.headers
         if entry.vary_values != tuple(headers.get_all(name) for name in entry.vary):
             return None
         for header, stored in _VALIDATORS:
             if (given := headers.get_all(header)) and given != (entry.headers.get(stored),):
-                raise _configuration(plan, (header,), "binding_mismatch")
+                raise configuration_error(plan.helper_id, (header,), "binding_mismatch")
         self.usable = entry
         return entry
 
@@ -376,25 +370,25 @@ class _Fetch(Generic[T]):
         """
         entry, plan = self.usable, self.plan
         if entry is None or redirected or not _validates(entry.headers, info.headers):
-            raise ProtocolDataError(
-                reason="inconsistent", helper_id=plan.helper_id, operation=plan.operation, info=info
-            )
+            raise data_error(plan.helper_id, plan.operation, info, "inconsistent", None)
         headers = _merged(entry.headers, info.headers, len(entry.body))
         merged = self.info(entry.status_code, headers, info)
         response = Response(data=stored_value(plan.call, merged, entry.body), info=merged)
         return response, _Received(response, entry.body, headers, "revalidated", info.headers, redirected, sent)
 
-    def stored(self, received: _Received[T]) -> dict[str, Any] | None:
-        """Return the fields of the entry a response becomes including its plain Vary values, or None to store nothing.
+    def stored(self, received: _Received[T]) -> CacheEntry | None:
+        """Return the entry a response becomes including its plain Vary values, or None to store nothing.
 
-        It is refused for a request sent as another identity than the one looked up, such as a rotated credential, a
-        renewed token, or a header an Auth's later round or a request hook added, an unlisted status, a redirect, a
-        Set-Cookie, an unsupported or malformed Cache-Control, no-store, a Vary outside the allowlist and the
-        credential headers the key covers or `*`, a revalidation whose Vary changed, and a response that is neither
-        fresh nor revalidatable. The entry varies on the response's Vary and on the headers its base key names, except
-        the credential headers, and its date and age are those of the response received, so a 304 without Age makes the
-        entry's age 0.
+        A fetch asking no-store stores nothing. A response is refused for a request sent as another identity than the
+        one looked up, such as a rotated credential, a renewed token, or a header an Auth's later round or a request
+        hook added, an unlisted status, a redirect, a Set-Cookie, an unsupported or malformed Cache-Control, no-store, a
+        Vary outside the allowlist and the credential headers the key covers or `*`, a revalidation whose Vary changed,
+        and a response that is neither fresh nor revalidatable. The entry varies on the response's Vary and on the
+        headers its base key names, except the credential headers, and its date and age are those of the response
+        received, so a 304 without Age makes the entry's age 0.
         """
+        if self.directives.no_store:
+            return None
         plan, headers, now = self.plan, received.headers, self.clock.time()
         directives = _directives(headers.get_all("cache-control"))
         vary = _vary(headers)
@@ -420,19 +414,19 @@ class _Fetch(Generic[T]):
         age = _delta(origin.get("age")) if "age" in origin else 0
         initial = max(now - date, (_MAX_DELTA if age is None else age) + (now - self.requested_at), 0.0)
         names = tuple(sorted(self.implicit.union(vary) - self.credential_headers))
-        return {
-            "vary": names,
-            "vary_values": tuple(tuple(self.request.headers.get_list(name)) for name in names),
-            "status_code": received.response.info.status_code,
-            "headers": headers,
-            "body": received.body,
-            "request_time": _instant(self.requested_at),
-            "response_time": _instant(now),
-            "stored_at": _instant(now),
-            "freshness_seconds": freshness,
-            "initial_age_seconds": initial,
-            "schema_fingerprint": plan.fingerprint,
-        }
+        return CacheEntry(
+            vary=names,
+            vary_values=tuple(self.headers.get_all(name) for name in names),
+            status_code=received.response.info.status_code,
+            headers=headers,
+            body=received.body,
+            request_time=_instant(self.requested_at),
+            response_time=_instant(now),
+            stored_at=_instant(now),
+            freshness_seconds=freshness,
+            initial_age_seconds=initial,
+            schema_fingerprint=plan.fingerprint,
+        )
 
     def fits(self, received: _Received[T], vary: tuple[str, ...]) -> bool:
         """Return whether the identity, status, origin, cookies, and a revalidation's Vary let it be stored."""
@@ -456,7 +450,7 @@ class _Fetch(Generic[T]):
             data=response.data,
             source=received.source,
             response=response.info,
-            network_status=response.info.status_code if network else _NOT_MODIFIED,
+            network_status=response.info.status_code if network else NOT_MODIFIED,
         )
 
 
@@ -480,18 +474,6 @@ def _validator(plan: CachePlan[T], headers: HeadersView) -> tuple[str, str] | No
     return None
 
 
-def _configuration(
-    plan: CachePlan[T],
-    path: tuple[str, ...],
-    condition: Literal["invalid_value", "binding_mismatch"],
-) -> ConfigurationError:
-    return ConfigurationError(field_path=path, reason=condition, helper_id=plan.helper_id)
-
-
-def _invalid(plan: CachePlan[T], path: tuple[str, ...]) -> ConfigurationError:
-    return _configuration(plan, path, "invalid_value")
-
-
 def _requested(plan: CachePlan[T], values: tuple[str, ...]) -> _Directives:
     """Return the directives a fetch's own Cache-Control gives, refusing any a stored response cannot honor."""
     directives = _directives(values)
@@ -499,7 +481,7 @@ def _requested(plan: CachePlan[T], values: tuple[str, ...]) -> _Directives:
         name in _REQUEST_DIRECTIVES and (_delta(value) is not None if name == "max-age" else value is None)
         for name, value in directives.items()
     ):
-        raise _invalid(plan, ("headers", "Cache-Control"))
+        raise configuration_error(plan.helper_id, ("headers", "Cache-Control"))
     return _Directives("no-store" in directives, "no-cache" in directives, _delta(directives.get("max-age")))
 
 
@@ -509,12 +491,8 @@ def _store_error(cause: Exception | None = None) -> SDKError:
 
 def _limits(core: ClientCore | AsyncClientCore, plan: CachePlan[T], cache_options: object, options: object) -> _Limits:
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's."""
-    for name, value, kind in (("cache_options", cache_options, CacheOptions), ("options", options, RequestOptions)):
-        if value is not None and not isinstance(value, kind):
-            raise _invalid(plan, (name,))
-    layers = (cache_options, core.helper_defaults(plan.helper_id))
-    request = options if isinstance(options, RequestOptions) else None
-    return layered(layers, "max_ttl", _MAX_TTL), request
+    request, kinds = core.helper_layers(plan.helper_id, "cache_options", cache_options, CacheOptions, options)
+    return layered(kinds, "max_ttl", _MAX_TTL), request
 
 
 def _checked(valid: bool) -> None:  # noqa: FBT001
@@ -524,22 +502,12 @@ def _checked(valid: bool) -> None:  # noqa: FBT001
 
 def _run(run: Callable[[], object]) -> object:
     """Run a store method, raising its failure as a store failure that keeps the cause."""
-    try:
-        return run()
-    except SDKError:
-        raise
-    except Exception as error:  # noqa: BLE001
-        raise _store_error(error) from None
+    return called(run, _store_error)
 
 
 async def _arun(run: Callable[[], Awaitable[object]]) -> object:
     """Await a store method, raising its failure as a store failure that keeps the cause."""
-    try:
-        return await run()
-    except SDKError:
-        raise
-    except Exception as error:  # noqa: BLE001
-        raise _store_error(error) from None
+    return await acalled(run, _store_error)
 
 
 def fetch(
@@ -575,10 +543,7 @@ def fetch(
             except SDKError as failure:
                 add_secondary(error, failure)
         raise
-    if state.directives.no_store:
-        return state.result(received)
-    if (fields := state.stored(received)) is not None:
-        entry = CacheEntry(**fields)
+    if (entry := state.stored(received)) is not None:
         _checked(_run(lambda: store.set(key, entry)) is None)
     elif state.entry is not None:
         _checked(_run(lambda: store.delete(key)) is None)
@@ -614,10 +579,7 @@ async def afetch(
             except SDKError as failure:
                 add_secondary(error, failure)
         raise
-    if state.directives.no_store:
-        return state.result(received)
-    if (fields := state.stored(received)) is not None:
-        entry = CacheEntry(**fields)
+    if (entry := state.stored(received)) is not None:
         _checked(await _arun(lambda: store.set(key, entry)) is None)
     elif state.entry is not None:
         _checked(await _arun(lambda: store.delete(key)) is None)

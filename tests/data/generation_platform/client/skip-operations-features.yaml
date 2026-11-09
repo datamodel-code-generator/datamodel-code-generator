@@ -1,0 +1,103 @@
+openapi: 3.1.0
+info:
+  title: Operations using features the client does not support
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      responses:
+        '204': {description: Up.}
+  /certificates:
+    get:
+      operationId: listCertificates
+      security:
+        - {clientCertificate: []}
+      responses:
+        '204': {description: No certificates.}
+  /digests:
+    get:
+      operationId: listDigests
+      security:
+        - {digestAuth: []}
+      responses:
+        '204': {description: No digests.}
+  /signed:
+    get:
+      operationId: listSigned
+      security:
+        - {digestAuth: []}
+        - {bearerAuth: []}
+      responses:
+        '204': {description: No signed items.}
+  /devices:
+    get:
+      operationId: listDevices
+      security:
+        - {digestAuth: []}
+        - {clientCertificate: []}
+      responses:
+        '204': {description: No devices.}
+  /expanded:
+    get:
+      operationId: listExpanded
+      parameters:
+        - name: expand
+          in: query
+          style: deepObject
+          explode: true
+          schema: {type: array, items: {type: string}}
+      responses:
+        '204': {description: Expanded.}
+  /sessions:
+    get:
+      operationId: getSession
+      parameters:
+        - {name: session, in: cookie, style: cookie, schema: {type: string}}
+      responses:
+        '204': {description: The session.}
+  /related:
+    post:
+      operationId: postRelated
+      requestBody:
+        content:
+          multipart/related:
+            schema:
+              type: object
+              properties:
+                meta: {type: string}
+      responses:
+        '204': {description: Posted.}
+  /documents:
+    post:
+      operationId: postDocument
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                meta: {type: object, properties: {title: {type: string}}}
+            encoding:
+              meta: {contentType: application/xml}
+      responses:
+        '204': {description: Posted.}
+  /blobs:
+    post:
+      operationId: postBlob
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data: {type: string, format: binary}
+      responses:
+        '204': {description: Posted.}
+components:
+  securitySchemes:
+    clientCertificate: {type: mutualTLS}
+    digestAuth: {type: http, scheme: digest}
+    bearerAuth: {type: http, scheme: bearer}

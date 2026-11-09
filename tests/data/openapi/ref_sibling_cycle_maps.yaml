@@ -1,0 +1,27 @@
+openapi: 3.1.0
+info:
+  title: Components that only reference each other, named by map values, map keys and additional properties
+  version: '1.0'
+paths: {}
+components:
+  schemas:
+    A:
+      $ref: '#/components/schemas/B'
+      minProperties: 1
+    B:
+      $ref: '#/components/schemas/A'
+    Holder:
+      type: object
+      properties:
+        scores:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/A'
+        tags:
+          type: object
+          propertyNames:
+            $ref: '#/components/schemas/A'
+        count:
+          type: integer
+      additionalProperties:
+        $ref: '#/components/schemas/A'

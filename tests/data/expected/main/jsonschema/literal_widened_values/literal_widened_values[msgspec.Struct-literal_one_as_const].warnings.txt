@@ -1,0 +1,5 @@
+a Literal of the output model cannot hold the value 2.5, so it is written as its type, which admits other values; Model.single is generated without this constraint.
+a Literal of the output model cannot hold the value True, so it is written as its type, which admits other values; Model.one_bool is generated without this constraint.
+a Literal of the output model cannot hold the value 1.5, so it is written as its type, which admits other values; Model.const_float is generated without this constraint.
+a Literal of the output model cannot hold the value True, so it is written as its type, which admits other values; Model.const_bool is generated without this constraint.
+a Literal of the output model cannot hold the value 4.5, so it is written as its type, which admits other values; Model.const_consts is generated without this constraint.

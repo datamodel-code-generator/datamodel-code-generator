@@ -1,0 +1,6 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {"counts": {"$ref": "#/$defs/Counts"}},
+  "$defs": {"Counts": {"type": "array", "items": {"type": "integer"}}}
+}

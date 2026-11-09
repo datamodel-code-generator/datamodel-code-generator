@@ -1,0 +1,25 @@
+{
+  "valid": [
+    {
+      "length": "ab", "pattern": "ab", "bound": 3, "short": "abc", "item": "abc", "level": 1, "held": 3,
+      "items": ["abc", 5]
+    },
+    {
+      "length": 5, "pattern": 5, "bound": 2.5, "short": null, "item": {"id": 1}, "level": "ab", "held": 2.5,
+      "items": []
+    },
+    {}
+  ],
+  "invalid": [
+    {"length": "a"},
+    {"pattern": "b"},
+    {"bound": 1},
+    {"short": "abcd"},
+    {"item": "abcd"},
+    {"level": "a"},
+    {"level": 3},
+    {"held": 1},
+    {"held": "abc"},
+    {"items": ["abcd"]}
+  ]
+}

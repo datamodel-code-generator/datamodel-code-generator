@@ -1,0 +1,174 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "labels": {
+      "$ref": "#/$defs/Labels"
+    },
+    "history": {
+      "$ref": "#/$defs/History"
+    },
+    "tags": {
+      "$ref": "#/$defs/Tags"
+    },
+    "marks": {
+      "$ref": "#/$defs/Marks"
+    }
+  },
+  "$defs": {
+    "Labels": {
+      "type": "object",
+      "properties": {
+        "member": {
+          "anyOf": [
+            {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "integer"
+              }
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "History": {
+      "type": "object",
+      "properties": {
+        "member": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "Tags": {
+      "type": "object",
+      "properties": {
+        "member": {
+          "anyOf": [
+            {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "integer"
+              }
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "Marks": {
+      "type": "object",
+      "properties": {
+        "member": {
+          "anyOf": [
+            {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "integer"
+              }
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    }
+  }
+}

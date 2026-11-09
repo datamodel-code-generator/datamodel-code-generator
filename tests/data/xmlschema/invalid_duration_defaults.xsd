@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="Span">
+    <xs:restriction base="xs:dayTimeDuration"/>
+  </xs:simpleType>
+  <xs:simpleType name="ShortSpan">
+    <xs:restriction base="Span"/>
+  </xs:simpleType>
+  <xs:simpleType name="Loop">
+    <xs:restriction base="Loop"/>
+  </xs:simpleType>
+  <xs:simpleType name="Spans">
+    <xs:list itemType="xs:dayTimeDuration"/>
+  </xs:simpleType>
+  <xs:complexType name="Labelled">
+    <xs:simpleContent>
+      <xs:extension base="xs:duration"/>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:attribute name="shared" type="xs:duration" default="-P"/>
+  <xs:complexType name="Timing">
+    <xs:sequence>
+      <xs:element name="any" type="xs:duration" default="P1DT"/>
+      <xs:element name="anyValid" type="xs:duration" default="P1Y2MT3.S"/>
+      <xs:element name="months" default="P">
+        <xs:simpleType>
+          <xs:restriction base="xs:yearMonthDuration"/>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="labelled" type="Labelled" default="P1DT"/>
+    </xs:sequence>
+    <xs:attribute name="noTime" type="xs:dayTimeDuration" default="P1DT"/>
+    <xs:attribute name="empty" type="xs:dayTimeDuration" default="PT"/>
+    <xs:attribute name="word" type="xs:dayTimeDuration" default="garbage"/>
+    <xs:attribute name="padded" type="xs:dayTimeDuration" default=" P1DT2H "/>
+    <xs:attribute name="unprefixed" type="dayTimeDuration" default="P1M"/>
+    <xs:attribute name="derived" type="ShortSpan" default="P1Y"/>
+    <xs:attribute name="inline" default="P1DT">
+      <xs:simpleType>
+        <xs:restriction base="Span"/>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="yearMonth" type="xs:yearMonthDuration" default="P1D"/>
+    <xs:attribute name="fraction" type="xs:duration" default="PT.5S"/>
+    <xs:attribute name="text" type="xs:string" default="P1DT"/>
+    <xs:attribute name="untyped" default="P1DT"/>
+    <xs:attribute name="looped" type="Loop" default="P1DT"/>
+    <xs:attribute name="listed" type="Spans" default="P1DT"/>
+    <xs:attribute ref="shared"/>
+  </xs:complexType>
+  <xs:element name="timing" type="Timing"/>
+</xs:schema>

@@ -152,7 +152,7 @@ Put the settings in `pyproject.toml` and run `datamodel-codegen` without argumen
     input-file-type = "openapi"
     openapi-scopes = ["schemas", "api"]
     output-model-type = "pydantic_v2.BaseModel"
-    preset = "standard-py312-20261027"
+    preset = "standard-py312-20261106"
     output = "app/models.py"
     generate-client = "httpx2"
     client-output = "app/client"
@@ -175,7 +175,7 @@ Put the settings in `pyproject.toml` and run `datamodel-codegen` without argumen
       --input-file-type openapi \
       --openapi-scopes schemas api \
       --output-model-type pydantic_v2.BaseModel \
-      --preset standard-py312-20261027 \
+      --preset standard-py312-20261106 \
       --output app/models.py \
       --generate-client httpx2 \
       --client-output app/client \
@@ -678,9 +678,10 @@ component's constraints refuse before sending: a call raises a `DecodeError` wit
 the server answering 422.
 
 A `format: binary` string is raw bytes, which only a whole body, such as `application/octet-stream`, `image/png` or
-`text/csv`, or a file part of a multipart form can carry; a `text/*` body whose model types its whole value as one
-binary string travels as its raw bytes, without a charset decoding or base64, as an `application/octet-stream` one
-does; the method takes such a body or part as `bytes`. The model type decides: the schema is such a string, or reaches
+`text/csv`, or a file part of a multipart form can carry; a `text/*` or JSON body whose model types its whole value as
+one binary string travels as its raw bytes, without a charset decoding, JSON or base64, as an `application/octet-stream`
+one does, since a whole body written as a binary string is the raw octets of its media type (OpenAPI 3.1 writes it as
+`contentMediaType` set to that type); the method takes such a body or part as `bytes`. The model type decides: the schema is such a string, or reaches
 one through a `$ref`, a single `allOf`, `anyOf` or `oneOf` branch, or `allOf` branches that merge into one, such as
 `allOf: [{type: string}, {format: binary}]`, also beside a `null`, a length limit or other binary strings. When the models
 constrain those bytes, such as `maxLength: 16` as Pydantic's `conbytes(max_length=16)`, the client checks them by the
@@ -689,20 +690,20 @@ and a response body it refuses one with the reason `invalid_value`; a file, a pa
 for the server to check. Models that keep no such constraint, such as dataclasses and TypedDicts, check nothing, and
 unconstrained bytes pass without a model call. An `enum` or a `const` of binary strings, also one that leaves out
 `type: string`, is text in the models, so the method takes a body of one, also an `application/octet-stream` one, as
-its model, such as an `Enum`, and sends its text. Generation stops with an error when
+its model, such as an `Enum`, and sends its text. Generation [leaves the operation out](#operations-the-client-leaves-out) when
 a binary string, at any depth of its schema and through references, `$dynamicRef` and `allOf`, would be sent as text:
-inside a JSON or URL-encoded body or response, also one whose model types its whole value as bytes, a `text/*` body
+inside a JSON or URL-encoded body or response, a URL-encoded body whose model types its whole value as bytes, a `text/*` body
 whose schema is an object, an array, or an `anyOf` or `oneOf` with a branch that is not a binary string, a binary body,
 such as `application/octet-stream`, whose model types its whole value as bytes only in part, such as
 `type: [string, integer]` or an `anyOf` of a binary string and an integer (`bytes | int`), a multipart part that is
 not a file, an item of a streamed response, or a parameter or header. The model backends write `bytes` in JSON differently, Pydantic as raw UTF-8 text and the
-others as base64, so such a value would not reach a server, such as a generated FastAPI one, intact. The error names the
-operation, the media or parameter, and where the schema declares the string:
+others as base64, so such a value would not reach a server, such as a generated FastAPI one, intact. The reason names
+the operation, the media or parameter, and where the schema declares the string:
 
 ```text
-Error: /components/schemas/Blob/properties/data: The application/json request body of POST /blobs carries a binary
-string as text; declare it with format: byte for base64 text, optionally with --type-mappings string+byte=binary to
-keep bytes, or send it as a whole binary body or a file part
+/components/schemas/Blob/properties/data: The application/json request body of POST /blobs carries a binary string as
+text; declare it with format: byte for base64 text, optionally with --type-mappings string+byte=binary to keep bytes,
+or send it as a whole binary body or a file part
 ```
 
 Declare such a value `format: byte`, which every backend sends as the same base64 text: Pydantic models hold it as a
@@ -743,11 +744,17 @@ same rule the generated FastAPI server reads a body and sends a response by, so 
 request: an `x-python-type` annotation admits `null` when it writes `None`, `object`, `Any` under any alias, or a
 `Literal` with `None`. The media a call names decides, or the default media without one; an operation with several
 media and no default leaves `None` out when none of them takes `null`, and otherwise needs `media_type`. A text, form,
-or binary body has no `null`, so its `None` is left out.
+or binary body has no `null`, so its `None` is left out. A required body has nothing to leave out: `None` for one is
+refused with a `DecodeError` whose reason is `unencodable`, unless the media it selects takes `null`.
 
 ### Responses
 
-A method returns the decoded body. Each resource also has three *response views*, the same methods returning more:
+A method returns the decoded body. A response is declared under a status from `100` to `599`, a range from `1XX` to
+`5XX`, or `default`; any other key of `responses`, such as an extension `x-note` or an empty key, declares no response.
+A `1XX` response carries no content, so no model reads it. When a response declares several media types with one
+essence, such as `application/json;profile=v1` and `application/json`, a received `Content-Type` selects its own
+declaration, else the one without parameters, as the generated server reads a request body. Each resource also has three
+*response views*, the same methods returning more:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.howto.responses -->
 <!-- fmt: off -->
@@ -1099,6 +1106,13 @@ origin: a page a server links at another origin, and `request_raw`, carry none o
 optional operation sends a credential given for a listed scheme and, with none, sends nothing. A required operation that no credential satisfies raises `ConfigurationError` with the reason
 `missing_credentials` before sending, unless the HTTP client has an Auth of its own, which it then uses. The client
 authorizes no scopes: the resource server decides, and a 403 is terminal.
+
+An operation may also declare a parameter at an API key's position, with the same location and name, as Trello's
+`key` and `token` query parameters are. The parameter comes first, and the method takes it as optional: a request that
+carries a value there, from that parameter or from a client, view, or call header or query, sends that value and no
+credential for the scheme, which it satisfies; a request that carries none sends the credential. The method never
+fills such a parameter from its schema `default`, so leaving it out sends the credential. The value applies to the
+request it is given for: a page that pagination follows from a server's URL carries the client's credential.
 
 `auth` of the client, a view, or a call's `RequestOptions` takes any `httpx2.Auth`, which replaces the credentials
 for those calls, and `auth=None` sends without an Auth; it cannot make a required operation anonymous. Unset, the
@@ -1501,6 +1515,45 @@ can be decoded`, and the Python API raises `datamodel_code_generator.Error`. A u
 discriminator, or that the option still leaves untagged (with a warning that names the reason), cannot be decoded: a
 call that receives it fails with an `APIConnectionError` whose cause is msgspec's `TypeError`.
 
+### Operations the client leaves out
+
+An operation whose own declarations the client cannot support is left out, and the others are generated. Such an
+operation is one that declares a path placeholder without a path parameter, security the client cannot send (an
+unavailable scheme, or two schemes of different kinds that own the same header in one requirement), a media key that is no media type,
+a body or parameter no builtin encoding writes, or expanded parameter names that collide. Each left-out operation is
+named in one `UserWarning` with its method, path and operationId, and the reasons it would be refused for:
+
+```text
+app/client: Skipping GET /pets/{petId} (operationId 'getPet'), which the client cannot generate:
+/paths/~1pets~1{petId}/get: The path placeholder 'petId' of GET /pets/{petId} has no path parameter
+```
+
+When the reason is an OpenAPI feature the client does not support, the warning names it and the version that introduced
+it, as the [supported features](supported_formats.md#supported-features-from-code) list them: the HTTP security schemes
+other than `basic` and `bearer`, `mutualTLS`, `style: deepObject` on a value that is no object (unless
+`--client-deep-object-brackets` writes it), `style: cookie` in a document before OpenAPI 3.2, values written with a
+style that are no single scalar kind (but for a parameter outside a header that takes one item or an array of them),
+binary strings in text media, multipart media other than `multipart/form-data` with an object schema or a union of
+objects that agree on the parts of each property, and an encoding `contentType` of a part holding no files that is a
+form or multipart media type, or other than JSON for objects and arrays:
+
+```text
+app/client: Skipping GET /certificates (operationId 'listCertificates'), which uses mutualTLS (OAS 3.1) that the
+client does not support: /paths/~1certificates/get: The security of GET /certificates requires the unavailable scheme
+'clientCertificate'
+```
+
+A security alternative that needs such a scheme is left out instead while the operation declares another one, such as
+a `bearer` alternative beside a `digest` one: the operation is generated, and a call sends the credentials of an
+alternative the client keeps.
+
+The generated client has no method, type, or documentation for it. The client package omits only its client code:
+the model files are generated from the whole document, so they can still hold the types the left-out operation used,
+such as the model of its request body or of a parameter's schema. Generation still stops with `Error:` and exit
+code 2 when every operation would be left out, when an operation that an enabled [helper](python-client-helpers.md)
+calls would be, and for any other refusal, such as a setting that cannot apply or a server URL that does not resolve;
+the error also names the operations left out before that refusal was found.
+
 ### Generator options
 
 Every client setting is an option, a key of `[tool.datamodel-codegen]` in `pyproject.toml`, and an option of
@@ -1519,6 +1572,7 @@ Every client setting is an option, a key of `[tool.datamodel-codegen]` in `pypro
 | [`--client-default-base-url`](cli-reference/target-generation-options.md#client-default-base-url) | `client-default-base-url` | `client_default_base_url` | none; see [Base URLs and servers](#base-urls-and-servers) |
 | [`--client-server-base-url`](cli-reference/target-generation-options.md#client-server-base-url) | `client-server-base-url` | `client_server_base_url` | none; see [Base URLs and servers](#base-urls-and-servers) |
 | [`--client-protocols`](cli-reference/target-generation-options.md#client-protocols) | `client-protocols` | `client_protocols` | none; see [Protocol Helpers](python-client-helpers.md) |
+| [`--client-deep-object-brackets`](cli-reference/target-generation-options.md#client-deep-object-brackets) | `client-deep-object-brackets` | `client_deep_object_brackets` | off; see below |
 
 `--client-resource-names`, `--client-operations`, and `--client-protocols` take a JSON object, inline or as the path
 of a JSON file, as `--aliases` does; in `pyproject.toml` they are tables, or the path of a JSON file, and in
@@ -1543,6 +1597,28 @@ resource. Such a move leaves the derived names as they are: a tag, or the operat
 them from its first operation, moved or not, as the server's groups do. An explicit namespace is shared by everything
 that names it: a tag mapped to `default`, or an operation whose `resource` is `default`, joins the resource of that
 name.
+
+OpenAPI defines `style: deepObject` for objects of scalars alone, which the client writes as `name[key]=value` pairs;
+an operation whose deepObject query parameter, or `application/x-www-form-urlencoded` body member, takes an array, a
+scalar, a nested object or a union of a scalar and an object is left out. `--client-deep-object-brackets` writes such a
+parameter or member in the bracket form some APIs, such as Stripe, document instead:
+
+- an array of scalars as `name[]=value` for each item, such as `expand[]=a&expand[]=b`, inside an object too
+  (`payment_settings[payment_method_types][]=card`);
+- a scalar as `name=value`;
+- the members of an object as `name[key]=value` at any depth, such as `shipping[address][city]=Paris`, its other
+  properties keyed the same way;
+- an array of objects by index, such as `items[0][price]=p_1&items[1][price]=p_2`;
+- a value that may be a scalar, or the empty string, and an object or an array, as the one a call gives: `created=5` or
+  `created[gt]=5`, and `metadata=`, with which Stripe clears a value, or `metadata[plan]=pro`.
+
+Scalars are written as the other parameters are, booleans as `true` and `false`. A member of None is left out, as an
+unset one is, and so is an empty array or object. The brackets are percent-encoded in the query or the form, as those of
+an object's pairs are (`expand%5B%5D=a`), which servers decode to the same names. A value the bracket form cannot write
+by what it is stays left out with the warning: an array of arrays, a recursive value, and a union whose members a value
+does not tell apart, such as scalars of two kinds, two objects beside a scalar, an object beside an array of objects,
+or objects that both declare a member with such values. The setting changes only how the client writes these
+parameters and members; `--no-client-deep-object-brackets` turns off one that a `pyproject.toml` key sets.
 
 `--generate-client` requires `--client-output`, `--client-package`, and `--client-model-package`, and a `--client-*`
 option given on the command line requires `--generate-client`; both stop with `Error:` and exit code 2.
@@ -1612,7 +1688,7 @@ generate(
     input_file_type=InputFileType.OpenAPI,
     openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
     output_model_type=DataModelType.PydanticV2BaseModel,
-    preset="standard-py312-20261027",
+    preset="standard-py312-20261106",
     output=Path("app/models.py"),
     generate_client=ClientType.HTTPX2,
     client_output=Path("app/client"),

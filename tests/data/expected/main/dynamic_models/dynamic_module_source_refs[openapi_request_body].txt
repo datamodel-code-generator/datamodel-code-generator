@@ -1,0 +1,7 @@
+{
+  "root_class": null,
+  "models_by_source_ref": {
+    "#/components/schemas/Owner": "Owner",
+    "#/paths/~1pets/post/requestBody/content/application~1json/schema": "PetsPostRequest"
+  }
+}

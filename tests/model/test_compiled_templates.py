@@ -9,7 +9,7 @@ import os
 import runpy
 from collections import defaultdict
 from dataclasses import fields as dataclass_fields
-from functools import cached_property
+from functools import cached_property, partial
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -41,6 +41,7 @@ from datamodel_code_generator.model._compiled_template_runtime import (
     setattr_,
     stringify,
 )
+from datamodel_code_generator.model._compiled_template_runtime import render as render_compiled
 from datamodel_code_generator.model._compiled_templates import get_builtin_renderer
 from datamodel_code_generator.model.base import (
     TEMPLATE_DIR,
@@ -1160,7 +1161,8 @@ def test_target_templates_match_jinja_oracle(target: str) -> None:
     jinja_output: list[str] = []
     for path in template_compiler_inventory.iter_template_paths(template_dir):
         relative_path = path.relative_to(template_dir)
-        render = runpy.run_path(str(output_dir / f"{module_name_for_path(relative_path)}.py"))["render"]
+        module = runpy.run_path(str(output_dir / f"{module_name_for_path(relative_path)}.py"))
+        render = partial(render_compiled, module["render_with_scope"])
         template = environment.get_template(relative_path.as_posix())
         for variant in cases[relative_path.as_posix()]:
             name, context = variant["name"], variant["context"]

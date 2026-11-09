@@ -1,0 +1,37 @@
+asyncapi: 2.6.0
+info:
+  title: Message trait headers merged in order (AsyncAPI 2)
+  version: 1.0.0
+channels:
+  user/signedup:
+    subscribe:
+      message:
+        traits:
+          - headers:
+              type: object
+              properties:
+                region:
+                  type: string
+          - $ref: './traits.yaml#/components/messageTraits/Tenant'
+        payload:
+          type: object
+          properties:
+            userId:
+              type: string
+components:
+  messages:
+    Ping:
+      traits:
+        - $ref: '#/components/messageTraits/Common'
+        - $ref: './traits.yaml#/components/messageTraits/Tenant'
+      payload:
+        type: string
+  messageTraits:
+    Common:
+      headers:
+        type: object
+        properties:
+          tenant:
+            type: string
+          correlationId:
+            type: string

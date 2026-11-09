@@ -1,0 +1,67 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "m": {
+      "$ref": "#/definitions/Merged"
+    },
+    "x": {
+      "$ref": "#/definitions/Mixed"
+    }
+  },
+  "definitions": {
+    "Parent": {
+      "type": "object",
+      "properties": {
+        "a-b": {
+          "type": "string"
+        }
+      }
+    },
+    "Merged": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Labels"
+        },
+        {
+          "type": "object",
+          "required": [
+            "x-y"
+          ],
+          "properties": {
+            "x-y": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "Mixed": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Labels"
+        },
+        {
+          "$ref": "#/definitions/Parent"
+        },
+        {
+          "type": "object",
+          "required": [
+            "p-q"
+          ],
+          "properties": {
+            "p-q": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "Labels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  }
+}

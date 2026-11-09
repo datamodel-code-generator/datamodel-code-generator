@@ -1,2 +1,0 @@
-{"area": "SCHEMA_GRAPH", "message": "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH: get_ref_data_type read 0 references of origin dynamic scope with their edge and 1 as plain strings", "kind": "ref-sites", "site": "get_ref_data_type", "origin": "dynamic scope", "plain": 1, "carried": 0}
-{"area": "SCHEMA_GRAPH", "message": "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH: resolve_ref read 0 references of origin dynamic scope with their edge and 1 as plain strings", "kind": "ref-sites", "site": "resolve_ref", "origin": "dynamic scope", "plain": 1, "carried": 0}

@@ -239,6 +239,22 @@ def test_main_asyncapi_non_object_components(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "components", [pytest.param("components:\n", id="null"), pytest.param("components: []\n", id="list")]
+)
+def test_main_asyncapi_components_that_are_not_an_object(tmp_path: Path, output_file: Path, components: str) -> None:
+    """Read a ``components`` that is no object as holding no schema, as a ``schemas`` that is no object."""
+    document = (ASYNC_API_DATA_PATH / "non-object-components.yaml").read_text(encoding="utf-8")
+    input_path = tmp_path / "non-object-components.yaml"
+    input_path.write_text(document[: document.index("components:")] + components, encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=PY310_TARGET_ARGS,
+    )
+
+
 def test_main_asyncapi_external_message_ref(output_file: Path) -> None:
     """Resolve external message refs using the referenced document context."""
     run_main_and_assert(
@@ -465,4 +481,205 @@ def test_main_asyncapi_invalid_schema_version(output_file: Path, capsys: pytest.
         expected_exit=Exit.ERROR,
         expected_stderr_contains="Invalid AsyncAPI version: invalid-version",
         capsys=capsys,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignore-ref-siblings"),
+        pytest.param(
+            ["--ignore-ref-siblings-by-schema-version", "--read-schema-version-per-document"], id="per-document"
+        ),
+    ],
+)
+def test_main_asyncapi_v2_converted_payload_ref_siblings(output_file: Path, extra_args: list[str]) -> None:
+    """Keep the defaults an Avro or XML Schema payload of an AsyncAPI 2 document writes beside a ``$ref`` (#6394).
+
+    AsyncAPI 2 ignores the keywords beside a ``$ref``, so --ignore-ref-siblings-by-schema-version leaves out the
+    ``default`` beside ``Tone`` in the JSON Schema payload; the converted payloads write theirs as parts of a field
+    typed by a named type, so ``suit`` and ``color`` keep them.
+    """
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "converted_payload_ref_siblings_v2.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=[*PY310_TARGET_ARGS, *extra_args],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="asyncapi_v2_converted_payload_ref_siblings",
+        model_name="PaintsPublishPayload",
+        valid_json="{}",
+        invalid_json='{"color": "green"}',
+        expected_error_type="enum",
+        expected_attribute_path=("color",),
+        expected_attribute_value="blue",
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--ignore-ref-siblings-by-schema-version"], id="first-read"),
+        pytest.param(
+            ["--ignore-ref-siblings-by-schema-version", "--read-schema-version-per-document"], id="per-document"
+        ),
+    ],
+)
+def test_main_asyncapi_read_schema_version_per_document_external_ref_siblings(
+    output_file: Path, extra_args: list[str]
+) -> None:
+    """Read a document an AsyncAPI 2 document references, which declares no version, as AsyncAPI 2.
+
+    AsyncAPI 2 ignores the keywords beside a ``$ref``, so ``Short`` is ``Text`` alone, without its ``maxLength``. With
+    ``--read-schema-version-per-document`` the referenced document takes the version of the AsyncAPI 2 document whose
+    reference loads it, as without it, where the document parsed decides.
+    """
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "ref_siblings_external_v2" / "api.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=[*PY310_TARGET_ARGS, *extra_args],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="asyncapi_read_schema_version_per_document_external_ref_siblings",
+        model_name="Note",
+        valid_json='"abcd"',
+        invalid_json="1",
+        expected_error_type="string_type",
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--name-converted-payloads-by-message"],
+    option_description="""Name a converted payload that names no type of its own after its message.
+
+An AsyncAPI payload in Avro or XML Schema is converted to JSON Schema first. A payload that names no type of its own,
+such as an Avro `string`, array, map or union, or an XML Schema with several global elements, takes the converter's
+placeholder title `Model`: the root of a string, array or union payload writes `Field(..., title='Model')`, and under
+`--use-title-as-name` a string, array, map or XML Schema payload is named `Model`, `Model1`, .... With
+`--name-converted-payloads-by-message` such a payload takes no title, as a JSON Schema payload, so its class is named
+after its message (`PingPublishPayload`) under `--use-title-as-name` too. A payload that names its type, such as an Avro
+record, keeps that name.""",
+    input_schema="asyncapi/converted_payload_names.yaml",
+    cli_args=["--name-converted-payloads-by-message"],
+    golden_output="main/asyncapi/main_asyncapi/name_converted_payloads_by_message[by-message].py",
+    comparison_output="main/asyncapi/main_asyncapi/name_converted_payloads_by_message[released].py",
+    related_options=["--use-title-as-name"],
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(["--name-converted-payloads-by-message"], id="by-message"),
+        pytest.param(["--use-title-as-name"], id="title-as-name-released"),
+        pytest.param(["--use-title-as-name", "--name-converted-payloads-by-message"], id="title-as-name-by-message"),
+    ],
+)
+def test_main_asyncapi_name_converted_payloads_by_message(output_file: Path, extra_args: list[str]) -> None:
+    """Drop the converter's placeholder title of a converted payload under ``--name-converted-payloads-by-message``.
+
+    The Avro ``string``, array, map and union payloads and the XML Schema payload with two global elements take the
+    title ``Model`` without the option: the root of the string, array and union payloads writes ``title='Model'``, and
+    ``--use-title-as-name`` names the string, array, map and XML Schema payloads ``Model``, ``Model1``, ...; with it
+    they take no title and the names of their messages (#5677). The record named ``Model`` keeps its name.
+    """
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "converted_payload_names.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=[*PY310_TARGET_ARGS, *extra_args],
+    )
+    if "--name-converted-payloads-by-message" in extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="asyncapi_name_converted_payloads_by_message",
+            model_name="TextPublishPayload",
+            valid_json='"a"',
+            invalid_json="1",
+            expected_error_type="string_type",
+        )
+
+
+def test_main_asyncapi_trait_headers_inline_and_ref_in_either_order(output_file: Path) -> None:
+    """Read the headers of an inline trait beside a referenced one the same way in either order (#5884).
+
+    The referenced trait keeps its component model; the inline trait's headers are the message's headers.
+    """
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "trait_headers_inline_and_ref.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=PY310_TARGET_ARGS,
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--merge-message-trait-headers"],
+    option_description="""Give an AsyncAPI message the headers of all its traits, merged in order, and then its own.
+
+AsyncAPI 2 and 3 apply the traits of a message in the order they are listed, each as a JSON Merge Patch, and the
+message's own fields win over them. Without the option a message's headers are its own, else those of its one trait
+that is no `$ref` and defines them, else those of a referenced trait; the headers of the other traits are left out, and
+a second inline trait with headers is an error. With `--merge-message-trait-headers` the headers of every trait, inline
+or `$ref`, are merged in order and then the message's own: a property a later trait or the message gives replaces the
+earlier one, a `$ref` is read as the schema it names, and a property set to null is removed. A message whose headers
+come from one place keeps the model it has without the option.""",
+    input_schema="asyncapi/merged_trait_headers/v3.yaml",
+    cli_args=["--merge-message-trait-headers"],
+    golden_output="main/asyncapi/main_asyncapi/merge_message_trait_headers[v3-merged].py",
+    comparison_output="main/asyncapi/main_asyncapi/merge_message_trait_headers[v3-released].py",
+)
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param("merged_trait_headers/v3.yaml", [], id="v3-released"),
+        pytest.param("merged_trait_headers/v3.yaml", ["--merge-message-trait-headers"], id="v3-merged"),
+        pytest.param("merged_trait_headers/v2/api.yaml", [], id="v2-released"),
+        pytest.param("merged_trait_headers/v2/api.yaml", ["--merge-message-trait-headers"], id="v2-merged"),
+        pytest.param("merged_trait_headers/null_member.yaml", ["--merge-message-trait-headers"], id="null-merged"),
+    ],
+)
+def test_main_asyncapi_merge_message_trait_headers(output_file: Path, input_name: str, extra_args: list[str]) -> None:
+    """Merge the headers of every trait of a message in order, then its own, under ``--merge-message-trait-headers``.
+
+    Without the option an inline trait's headers drop those of a referenced trait in either order and a message's own
+    headers drop those of its traits (#5884); with it they are merged as JSON Merge Patches in AsyncAPI 2 and 3, a
+    later string ``b`` replacing an earlier integer one, a referenced ``Trace`` read as its properties, a ``$ref`` of
+    another file keeping its model and a null property or headers removed.
+    """
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / input_name,
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=[*PY310_TARGET_ARGS, "--output-model-type", "pydantic_v2.BaseModel", *extra_args],
+    )
+    if input_name == "merged_trait_headers/v3.yaml" and extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="asyncapi_merge_message_trait_headers",
+            model_name="COwnHeadersHeaders",
+            valid_json='{"id": 1, "b": true, "traceId": "123e4567-e89b-12d3-a456-426614174000"}',
+            invalid_json='{"b": true}',
+            expected_error_type="missing",
+        )
+
+
+def test_main_asyncapi_merge_message_trait_headers_of_two_inline_traits(output_file: Path) -> None:
+    """Merge the headers of two inline traits under ``--merge-message-trait-headers``, an error without it (#5884)."""
+    run_main_and_assert(
+        input_path=DATA_PATH / "asyncapi_invalid" / "multiple-trait-headers.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=[
+            *PY310_TARGET_ARGS,
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--merge-message-trait-headers",
+        ],
     )

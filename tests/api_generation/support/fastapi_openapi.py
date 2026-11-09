@@ -36,6 +36,13 @@ PACKAGES: Final[dict[str, dict[str, Any]]] = {
     "hooks": {"input": "served-hooks.yaml", "files": ["served-event.yaml", "served-library.yaml"]},
     "streams": {"input": "served-items.yaml", "files": ["served-items-library.yaml", "events/stamp.yaml"]},
     "resources": {"input": "served-resources.yaml"},
+    "anchors": {
+        "input": "served-anchors.yaml",
+        "files": [
+            f"served-anchors/{name}.yaml"
+            for name in ("parameter", "request-body", "response", "header", "path-item", "hook")
+        ],
+    },
     "text": {"input": "served-text.yaml"},
     "local": {
         "input": "served-local.yaml",
@@ -226,6 +233,12 @@ def document_resources(packages: dict[str, Any]) -> list[str]:
         json.dumps(_connected(resources.create_app, prefix="/api").openapi(), indent=2),
         f"unset {sorted(unset)} {sorted(unset['info'])}",
     ]
+
+
+@_scenario("anchors")
+def document_anchors(packages: dict[str, Any]) -> list[str]:
+    """Bundle the schemas that `$anchor` names in documents the source names as parameters, bodies and path items."""
+    return [json.dumps(_connected(packages["anchors"].create_app).openapi(), indent=2)]
 
 
 @_scenario("text")

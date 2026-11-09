@@ -1,35 +1,111 @@
-"""Media-type identity plus ordinary JSON, text, and URL-encoded form representations."""
+"""HTTP tokens, status keys and media-type identity, plus ordinary JSON, text, and URL-encoded form representations."""
 
 from __future__ import annotations
 
+import codecs
 import json
 import re
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Container, Iterable, Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from math import isfinite
-from typing import Final, Literal, cast
+from typing import Final, Literal, TypeVar, cast
 from urllib.parse import quote, unquote_to_bytes
 
-from typing_extensions import Self, TypeAliasType
+from typing_extensions import Self, TypeAliasType, TypeIs
 
 from .errors import MalformedError, ParameterEncodingError
+
+__all__ = (
+    "BODYLESS_STATUSES",
+    "ERROR_STATUSES",
+    "JSON_MEDIA_TYPE",
+    "LENIENT_QUOTED",
+    "NOT_MODIFIED",
+    "NO_CONTENT",
+    "OK",
+    "QUOTED",
+    "REDIRECT_STATUSES",
+    "STATUSES",
+    "SUCCESS_STATUSES",
+    "SWITCHING_PROTOCOLS",
+    "TCHARS",
+    "TOKEN",
+    "FieldPlan",
+    "JSONKind",
+    "JSONScalar",
+    "JSONValue",
+    "LexicalKind",
+    "MediaKind",
+    "Unparsed",
+    "ascii_digits",
+    "bodyless",
+    "charset",
+    "declaring",
+    "decode_form",
+    "decode_text",
+    "encode_form",
+    "essence",
+    "fields_without",
+    "finite",
+    "form_encode",
+    "form_pairs",
+    "is_token",
+    "json_bytes",
+    "json_integer",
+    "json_number",
+    "json_text",
+    "json_value",
+    "lexical",
+    "media_kind",
+    "media_parts",
+    "media_range",
+    "most_specific",
+    "normalize_media_type",
+    "normalized",
+    "percent_decode",
+    "plain",
+    "range_key",
+    "split_form",
+    "status_key",
+    "typed",
+    "unquoted",
+)
 
 JSONValue = TypeAliasType("JSONValue", "bool | int | float | str | list[JSONValue] | dict[str, JSONValue] | None")
 JSONScalar = TypeAliasType("JSONScalar", "bool | int | float | str | None")
 
+JSONKind = Literal["object", "array", "string", "number", "boolean"]
 LexicalKind = Literal["string", "integer", "number", "boolean"]
 MediaKind = Literal["json", "text", "form", "multipart", "binary"]
+T = TypeVar("T")
 
-_HTTP_WORD: Final = r"[!#$%&'*+.^_`|~0-9a-zA-Z-]+"
-_MEDIA: Final = re.compile(rf"[ \t]*(?P<type>{_HTTP_WORD})/(?P<subtype>{_HTTP_WORD})[ \t]*")
-_PARAMETER: Final = re.compile(
-    rf";[ \t]*(?P<name>{_HTTP_WORD})=(?P<value>{_HTTP_WORD}|"
-    r'"(?:[\t !#-\[\]-~\x80-\xff]|\\[\t -~\x80-\xff])*")[ \t]*'
+TCHARS: Final = r"[!#$%&'*+.^_`|~0-9A-Za-z-]+"
+TOKEN: Final = re.compile(TCHARS)
+JSON_MEDIA_TYPE: Final = "application/json"
+QUOTED: Final = r'"(?:[\t !#-\[\]-~\x80-\xff]|\\[\t -~\x80-\xff])*"'
+LENIENT_QUOTED: Final = r'"(?:[^"\\]|\\.)*"'
+"""A quoted string of a MIME header field as a multipart part's Content-Disposition is read: any character but a double
+quote or a backslash, and any escaped one but a line feed, between double quotes."""
+STATUSES: Final = range(100, 600)
+SUCCESS_STATUSES: Final = range(200, 300)
+REDIRECT_STATUSES: Final = range(300, 400)
+ERROR_STATUSES: Final = range(400, 600)
+SWITCHING_PROTOCOLS: Final = 101
+OK: Final = 200
+NO_CONTENT: Final = 204
+NOT_MODIFIED: Final = 304
+BODYLESS_STATUSES: Final = frozenset({NO_CONTENT, 205, NOT_MODIFIED})
+_MEDIA: Final = re.compile(rf"[ \t]*(?P<type>{TCHARS})/(?P<subtype>{TCHARS})[ \t]*")
+_PARAMETER: Final = re.compile(rf";[ \t]*(?P<name>{TCHARS})=(?P<value>{TCHARS}|{QUOTED})[ \t]*")
+_MEDIA_ERRORS: Final = (
+    "A media type must be a token/token essence",
+    "A media type parameter must be a token=value pair",
 )
 _INTEGER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)")
 _NUMBER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
 _TRIPLET: Final = re.compile(rb"%[0-9A-Fa-f]{2}")
+_ESCAPED: Final = re.compile(r"\\(.)")
 _FORM_SAFE: Final = "*-._"
 _SCALARS: Final = frozenset({bool, int, float, str, type(None)})
 
@@ -39,18 +115,30 @@ _NOT_JSON: Final = "A wire value must be made of JSON values and string keys"
 _CIRCULAR: Final = "A wire value must not refer to itself"
 _NON_FINITE: Final = "A wire number must be finite"
 _TOO_LARGE: Final = "A wire integer must not exceed the interpreter's decimal conversion limit"
+_VALUE_ERRORS: Final = (("Circular reference", _CIRCULAR), ("Out of range float", _NON_FINITE))
+_JSON_ERRORS: Final = (RecursionError, TypeError, ValueError)
 
 
 @dataclass(frozen=True, slots=True)
 class FieldPlan:
-    """Declare one form or object member's lexical kind and whether it repeats."""
+    """Declare one form or object member's lexical kind and whether it repeats.
+
+    A member written in the bracket form also has the plans of the members of its objects, or of its items' objects.
+    """
 
     name: str
     kind: LexicalKind = "string"
     repeated: bool = False
+    fields: tuple[FieldPlan, ...] = ()
+    additional: FieldPlan | None = None
 
 
-def json_text(value: object, *, ascii_only: bool = False, sort_keys: bool = False) -> str:
+def json_text(
+    value: object,
+    *,
+    ascii_only: bool = False,
+    sort_keys: bool = False,
+) -> str:
     """Serialize ordinary JSON builtins as compact JSON text, escaping non-ASCII text when asked.
 
     The errors are the runtime's own, with the same messages on every Python version: ValueError for a circular
@@ -59,20 +147,15 @@ def json_text(value: object, *, ascii_only: bool = False, sort_keys: bool = Fals
     """
     try:
         return json.dumps(value, sort_keys=sort_keys, separators=(",", ":"), ensure_ascii=ascii_only, allow_nan=False)
-    except RecursionError:
-        raise ValueError(_NESTING) from None
-    except TypeError:
-        raise TypeError(_NOT_JSON) from None
-    except ValueError as error:
-        raise ValueError(_value_error(str(error))) from None
-
-
-def _value_error(text: str) -> str:
-    if text.startswith("Circular reference"):
-        return _CIRCULAR
-    if text.startswith("Out of range float"):
-        return _NON_FINITE
-    return _TOO_LARGE
+    except _JSON_ERRORS as error:
+        if isinstance(error, TypeError):
+            raise TypeError(_NOT_JSON) from None
+        message = (
+            _NESTING
+            if isinstance(error, RecursionError)
+            else next((text for prefix, text in _VALUE_ERRORS if str(error).startswith(prefix)), _TOO_LARGE)
+        )
+        raise ValueError(message) from None
 
 
 def json_bytes(value: object, *, ascii_only: bool = False, sort_keys: bool = False) -> bytes:
@@ -87,9 +170,26 @@ def json_bytes(value: object, *, ascii_only: bool = False, sort_keys: bool = Fal
         raise ValueError(_SURROGATES) from None
 
 
-def json_value(content: str | bytes) -> JSONValue:
-    """Parse ordinary JSON into its builtin values without model validation."""
-    return cast("JSONValue", json.loads(content))
+def json_value(
+    content: str | bytes,
+    *,
+    constants: Literal["accept", "refuse"] = "accept",
+    floats: Literal["float", "decimal"] = "float",
+) -> JSONValue:
+    """Parse ordinary JSON into its builtin values without model validation.
+
+    `constants="refuse"` raises ValueError for NaN and the infinities, which a saved value could not hold (`int` of
+    their names refuses them); `floats="decimal"` reads a number with a fraction or an exponent as the Decimal its
+    text spells, where a float may have rounded it.
+    """
+    return cast(
+        "JSONValue",
+        json.loads(
+            content,
+            parse_constant=int if constants == "refuse" else None,
+            parse_float=Decimal if floats == "decimal" else None,
+        ),
+    )
 
 
 class Unparsed(str):  # ruff: ignore[subclass-builtin] - Validating backends receive it as ordinary text.
@@ -126,26 +226,103 @@ def plain(value: object, *, strict: bool = False) -> JSONValue:
     return str(value)
 
 
-def normalize_media_type(value: str) -> str:
-    """Return lowercase type/subtype and parameter names, keeping parameter order and values."""
+def status_key(status: int, keys: Container[str]) -> str | None:
+    """Return the declared response key a status selects: exact, then its hundreds range, then default."""
+    return next((key for key in (str(status), range_key(status), "default") if key in keys), None)
+
+
+def declaring(status: int, responses: Mapping[str, T]) -> T | None:
+    """Return the value of the declared response key a status selects in a table keyed by response keys, or None."""
+    return None if (key := status_key(status, responses)) is None else responses[key]
+
+
+def range_key(status: int) -> str:
+    """Return the key of the hundreds range a status falls in, such as 2XX for 204."""
+    return f"{status // 100}XX"
+
+
+def bodyless(status: int, *, head: bool = False) -> bool:
+    """Return whether a response never carries content: one to HEAD, a 204, 205 or 304, and a 1XX one."""
+    return head or status in BODYLESS_STATUSES or status < SUCCESS_STATUSES.start
+
+
+def media_parts(value: str, errors: tuple[str, str] = _MEDIA_ERRORS) -> tuple[str, str, list[tuple[str, str]]]:
+    """Split a media type into lowercase type and subtype and its lowercase parameter names with their raw values.
+
+    `errors` holds the ValueError messages for a malformed essence and for a malformed parameter.
+    """
     if (essence := _MEDIA.match(value)) is None:
-        msg = "A media type must be a token/token essence"
-        raise ValueError(msg)
-    parts = [f"{essence['type'].lower()}/{essence['subtype'].lower()}"]
+        raise ValueError(errors[0])
+    parameters: list[tuple[str, str]] = []
     position = essence.end()
     while position < len(value):
         if (parameter := _PARAMETER.match(value, position)) is None:
-            msg = "A media type parameter must be a token=value pair"
-            raise ValueError(msg)
-        parts.append(f"{parameter['name'].lower()}={parameter['value']}")
+            raise ValueError(errors[1])
+        parameters.append((parameter["name"].lower(), parameter["value"]))
         position = parameter.end()
-    return "; ".join(parts)
+    return essence["type"].lower(), essence["subtype"].lower(), parameters
+
+
+def is_token(text: str) -> bool:
+    """Return whether text is an HTTP token as a whole, such as a method, a header field name or a cookie name."""
+    return TOKEN.fullmatch(text) is not None
+
+
+def fields_without(fields: Iterable[tuple[str, str]], names: Container[str]) -> list[tuple[str, str]]:
+    """Return header fields in order without those whose name, in lowercase, is one of the given lowercase names."""
+    return [(name, value) for name, value in fields if name.lower() not in names]
+
+
+def unquoted(value: str) -> str:
+    """Return the text of a parameter value: a quoted string without its quotes and escapes, a token as written."""
+    return _ESCAPED.sub(r"\1", value[1:-1]) if value.startswith('"') else value
+
+
+def normalize_media_type(value: str) -> str:
+    """Return lowercase type/subtype and parameter names, keeping parameter order and values."""
+    kind, subtype, parameters = media_parts(value)
+    return "; ".join([f"{kind}/{subtype}", *(f"{name}={text}" for name, text in parameters)])
+
+
+def normalized(media_type: str) -> str | None:
+    """Return a media type in its normalized form, or None when it is not a media type."""
+    try:
+        return normalize_media_type(media_type)
+    except ValueError:
+        return None
+
+
+def essence(media_type: str) -> str:
+    """Return a media type without its parameters."""
+    return media_type.partition(";")[0]
+
+
+def media_range(media_type: str) -> bool:
+    """Return whether a media type is a range such as image/* or */*."""
+    return "*" in essence(media_type)
+
+
+def most_specific(received: str, declared: Iterable[str]) -> str | None:
+    """Return the declared media type a received one falls under: itself, then its essence, type/*, and */*.
+
+    Among the declarations of one of these, the first without parameters wins (#4185).
+    """
+    declared = tuple(declared)
+    if received in declared:
+        return received
+    bare = essence(received)
+    candidates = (bare, f"{bare.partition('/')[0]}/*", "*/*")
+    return min((media for media in declared if essence(media) in candidates), key=_specificity, default=None)
+
+
+def _specificity(media_type: str) -> tuple[int, bool]:
+    """Rank a declared media type: fewer `*` first, then one without parameters."""
+    return essence(media_type).count("*"), ";" in media_type
 
 
 def media_kind(media_type: str) -> MediaKind:
     """Classify a normalized media type by its builtin representation."""
-    essence = media_type.partition(";")[0]
-    kind, _, subtype = essence.partition("/")
+    kind, _, subtype = essence(media_type).partition("/")
     match kind, subtype:
         case "application", "json":
             return "json"
@@ -161,13 +338,28 @@ def media_kind(media_type: str) -> MediaKind:
             return "binary"
 
 
-def charset(media_type: str) -> str:
-    """Return a normalized media type's charset, defaulting to UTF-8."""
-    if ";" not in media_type:
-        return "utf-8"
-    for parameter in _PARAMETER.finditer(media_type):
-        if parameter["name"] == "charset":
-            return parameter["value"].strip('"')
+def charset(media_type: str, *, as_written: bool = False) -> str:
+    """Return the codec name a raw media type's charset selects, UTF-8 when it names none or an unknown one.
+
+    With `as_written`, the media type is a normalized one and the charset's value is returned as it is written, which
+    a server then refuses in `decode_text` when it names no codec.
+    """
+    if as_written:
+        return next(
+            (
+                parameter["value"].strip('"')
+                for parameter in _PARAMETER.finditer(media_type)
+                if parameter["name"] == "charset"
+            ),
+            "utf-8",
+        )
+    for parameter in media_type.split(";")[1:]:
+        name, _, value = parameter.strip().partition("=")
+        if name.lower() == "charset":
+            try:
+                return codecs.lookup(value.strip('"')).name
+            except LookupError:
+                break
     return "utf-8"
 
 
@@ -195,6 +387,16 @@ def finite(value: object) -> None:
                 finite(item)
         case _:
             pass
+
+
+def json_integer(value: object) -> TypeIs[int]:
+    """Return whether a value is an integer as JSON reads one: an int that is not a bool."""
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def json_number(value: object) -> TypeIs[int | float]:
+    """Return whether a value is a number as JSON reads one: an int or a float that is not a bool."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
 def lexical(value: object, kind: LexicalKind) -> str:
@@ -240,6 +442,11 @@ def _integer_text(value: int) -> str:
     except ValueError:
         msg = "An integer exceeds the interpreter's decimal conversion limit"
         raise ParameterEncodingError(msg) from None
+
+
+def ascii_digits(text: str) -> bool:
+    """Return whether text is one or more ASCII decimal digits, the DIGIT run of HTTP counts and delays."""
+    return text.isascii() and text.isdigit()
 
 
 def typed(text: str, kind: LexicalKind) -> JSONScalar:
@@ -319,14 +526,18 @@ def split_form(raw: bytes) -> tuple[tuple[bytes, bytes], ...]:
     return tuple((name, value) for name, _, value in (part.partition(b"=") for part in raw.split(b"&") if part))
 
 
+def form_pairs(raw: bytes) -> tuple[tuple[str, str], ...]:
+    """Split URL-encoded bytes into ordered name/value pairs, each percent-decoded with a plus sign as a space."""
+    return tuple((percent_decode(name, plus=True), percent_decode(value, plus=True)) for name, value in split_form(raw))
+
+
 def decode_form(raw: bytes, fields: tuple[FieldPlan, ...], additional: FieldPlan | None) -> JSONValue:
     """Split URL-encoded text for native model conversion: repeated fields as lists, a single value by its last."""
     declared = {field.name: field for field in fields}
     result: dict[str, JSONValue] = {}
-    for raw_name, raw_value in split_form(raw):
-        name = percent_decode(raw_name, plus=True)
+    for name, text in form_pairs(raw):
         field = declared.get(name, additional)
-        value = typed(percent_decode(raw_value, plus=True), "string" if field is None else field.kind)
+        value = typed(text, "string" if field is None else field.kind)
         match result.get(name):
             case list() as values:
                 values.append(value)

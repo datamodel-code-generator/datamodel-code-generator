@@ -1,8 +1,9 @@
 """Reject writes of generation facts that bypass GenerationStore.
 
 The checker reads two tables with ``ast``, so it never imports the package: the store mutation API
-(``GENERATION_STORE_MUTATION_METHODS`` in ``parser/generation.py``) and the attribute-to-fact table
-(``ATTRIBUTE_FACTS`` in ``parser/_facts.py``). It scans
+(``GENERATION_STORE_MUTATION_METHODS``, the names of ``SITE_EFFECTS`` and ``NO_SITE_EFFECT`` in
+``parser/generation.py``) and the attribute-to-fact table (``ATTRIBUTE_FACTS`` in ``scripts/fact_tables.py``, whose rows
+name the ``Phase`` members of ``parser/_facts.py``). It scans
 
 * ``parser/`` (except the store and its runtime write guard) for writes of fact and presentation attributes, list
   and dict mutators on them, and direct reference and model-list mutations;
@@ -14,12 +15,12 @@ Every finding is keyed by (path, function, target) without line numbers. ``scrip
 lists the findings that existed when the checker learned them; a new finding fails, and so does an entry that no
 longer matches (the list only shrinks). ``--write-allowlist`` creates the file, or lowers it after writes were routed.
 
-The same list serves the runtime write guard (``DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES``, ``parser/_finality.py``),
-which reports writes by file and line: ``runtime_writes`` names them as the scan does, and ``runtime_problems`` returns
-the writes of the package that the list does not name. A write only the guard sees has an entry whose value is its
-witness, the arguments of one ``datamodel-codegen`` run that makes it; ``--witnesses`` runs them and reports the
-entries whose witness no longer writes them. When the scan learns to find such a write, ``--write-allowlist`` turns its
-witness into a count entry, the only move that may raise the counted total.
+The same list serves the runtime write guard of the test suite (``DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES``,
+``tests/checks/finality.py``), which reports writes by file and line: ``runtime_writes`` names them as the scan does,
+and ``runtime_problems`` returns the writes of the package that the list does not name. A write only the guard sees has
+an entry whose value is its witness, the arguments of one ``datamodel-codegen`` run that makes it; ``--witnesses`` runs
+them and reports the entries whose witness no longer writes them. When the scan learns to find such a write,
+``--write-allowlist`` turns its witness into a count entry, the only move that may raise the counted total.
 """
 
 from __future__ import annotations
@@ -45,8 +46,8 @@ SOURCE_ROOT = Path("src/datamodel_code_generator")
 DEFAULT_TARGET = SOURCE_ROOT / "parser"
 DEFAULT_TARGETS = (DEFAULT_TARGET, SOURCE_ROOT / "model", SOURCE_ROOT / "types.py")
 GENERATION_STORE_MODULE = SOURCE_ROOT / "parser" / "generation.py"
-WRITE_GUARD_MODULE = SOURCE_ROOT / "parser" / "_finality.py"
-FACTS_MODULE = SOURCE_ROOT / "parser" / "_facts.py"
+FACTS_MODULE = Path("scripts/fact_tables.py")
+PHASE_MODULE = SOURCE_ROOT / "parser" / "_facts.py"
 DECLARATION_MODULES = (SOURCE_ROOT / "types.py", SOURCE_ROOT / "reference.py", SOURCE_ROOT / "model")
 DEFAULT_ALLOWLIST = Path("scripts/generation_store_allowlist.toml")
 STORE_WRITES_VARIABLE = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
@@ -73,6 +74,8 @@ REFERENCE_METHODS = frozenset(
         "set_reference_path",
     },
 )
+CHILDREN_READER = "data_type_children"
+CHILDREN_READ_MESSAGE = "use GenerationIndex reverse-edge queries instead of Reference.children"
 SEQUENCE_OWNERS = frozenset({"base_classes", "fields"})
 SEQUENCE_MUTATORS = frozenset({"append", "clear", "extend", "insert", "pop", "remove", "reverse", "sort"})
 CONTAINER_MUTATORS = frozenset({
@@ -192,22 +195,6 @@ ALLOWLIST_HEADER = """\
 """
 
 
-def _literal_string_set(node: ast.AST) -> frozenset[str]:
-    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "frozenset" and node.args:
-        node = node.args[0]
-    if not isinstance(node, ast.Set):
-        msg = "GENERATION_STORE_MUTATION_METHODS must be a literal frozenset of strings"
-        raise TypeError(msg)
-
-    values: set[str] = set()
-    for item in node.elts:
-        if not isinstance(item, ast.Constant) or not isinstance(item.value, str):
-            msg = "GENERATION_STORE_MUTATION_METHODS must contain only literal strings"
-            raise TypeError(msg)
-        values.add(item.value)
-    return frozenset(values)
-
-
 def _module_assignment(tree: ast.Module, name: str) -> ast.expr | None:
     for node in tree.body:
         if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.target.id == name:
@@ -219,13 +206,38 @@ def _module_assignment(tree: ast.Module, name: str) -> ast.expr | None:
     return None
 
 
+def _literal_names(tree: ast.Module, name: str) -> frozenset[str]:
+    """Return the strings of the literal set, or the keys of the literal dict, that ``tree`` assigns to ``name``.
+
+    The literal may be wrapped in a ``frozenset(...)`` or ``MappingProxyType(...)`` call.
+    """
+    if (node := _module_assignment(tree, name)) is None:
+        msg = f"{name} was not found"
+        raise RuntimeError(msg)
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id in {"frozenset", "MappingProxyType"}
+        and node.args
+    ):
+        node = node.args[0]
+    if not isinstance(node, ast.Set | ast.Dict):
+        msg = f"{name} must be a literal set or dict of strings"
+        raise TypeError(msg)
+    values: set[str] = set()
+    for item in node.elts if isinstance(node, ast.Set) else node.keys:
+        if not isinstance(item, ast.Constant) or not isinstance(item.value, str):
+            msg = f"{name} must contain only literal strings"
+            raise TypeError(msg)
+        values.add(item.value)
+    return frozenset(values)
+
+
 def _load_generation_store_mutation_methods() -> frozenset[str]:
+    """Return the store mutations: the keys of ``SITE_EFFECTS`` and the names of ``NO_SITE_EFFECT``."""
     generation_store_module = ROOT / GENERATION_STORE_MODULE
     tree = ast.parse(generation_store_module.read_text(), filename=str(generation_store_module))
-    if (value := _module_assignment(tree, "GENERATION_STORE_MUTATION_METHODS")) is None:
-        msg = "GENERATION_STORE_MUTATION_METHODS was not found"
-        raise RuntimeError(msg)
-    return _literal_string_set(value)
+    return _literal_names(tree, "SITE_EFFECTS") | _literal_names(tree, "NO_SITE_EFFECT")
 
 
 GENERATION_STORE_MUTATION_METHODS = _load_generation_store_mutation_methods()
@@ -392,17 +404,23 @@ def _make_row(values: dict[str, object], freeze_points: dict[str, str]) -> FactR
     return row
 
 
+def _vocabulary(tree: ast.Module) -> dict[str, tuple[str, ...]]:
+    """Return the members of every enum of ``tree`` and of ``Phase`` in ``parser/_facts.py``, ``tree`` first."""
+    phase_module = ROOT / PHASE_MODULE
+    return {**_enum_members(ast.parse(phase_module.read_text(), filename=str(phase_module))), **_enum_members(tree)}
+
+
 def fact_vocabulary(path: Path | None = None) -> dict[str, tuple[str, ...]]:
-    """Return the members of every enum in ``parser/_facts.py`` in declaration order."""
+    """Return the members of every enum of the fact tables, ``Phase`` included, in declaration order."""
     facts_module = path or ROOT / FACTS_MODULE
-    return _enum_members(ast.parse(facts_module.read_text(), filename=str(facts_module)))
+    return _vocabulary(ast.parse(facts_module.read_text(), filename=str(facts_module)))
 
 
 def load_attribute_facts(path: Path | None = None) -> tuple[FactRow, ...]:
-    """Read ``ATTRIBUTE_FACTS`` from ``parser/_facts.py`` without importing it."""
+    """Read ``ATTRIBUTE_FACTS`` from ``scripts/fact_tables.py`` without importing it."""
     facts_module = path or ROOT / FACTS_MODULE
     tree = ast.parse(facts_module.read_text(), filename=str(facts_module))
-    enums = _enum_members(tree)
+    enums = _vocabulary(tree)
     names, defaults = _row_fields(tree)
     freeze_points = _load_freeze_points(tree, enums)
     if not isinstance(table := _module_assignment(tree, "ATTRIBUTE_FACTS"), ast.Tuple):
@@ -587,7 +605,7 @@ def _is_schema_object_value(node: ast.expr, schema_names: set[str]) -> bool:
     match node:
         case ast.Call(func=ast.Attribute(attr="model_validate", value=factory)):
             return bool(set(_attribute_chain(factory)) & SCHEMA_OBJECT_FACTORIES)
-        case ast.Call(func=ast.Attribute(attr="_schema_object", value=ast.Name(id="self"))):
+        case ast.Call(func=ast.Attribute(attr="_schema_object", value=ast.Name(id="self" | "parser"))):
             return True
         case ast.Call(func=ast.Attribute(attr=method, value=ast.Name(id=name))) if method in SCHEMA_OBJECT_COPIES:
             return name in schema_names
@@ -760,9 +778,11 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> None:
-        """Check mutating method calls and ``setattr`` with a literal name."""
+        """Check mutating method calls, ``setattr`` with a literal name and reads of the data-type children."""
         if isinstance(node.func, ast.Attribute):
             self._check_method_call(node, node.func.attr, node.func.value)
+        if _attribute_chain(node.func)[-1:] == (CHILDREN_READER,) and self._checks_fact_writes:
+            self._add(node, "children (read)", CHILDREN_READ_MESSAGE)
         if ".".join(_attribute_chain(node.func)) in self.setattr_functions and len(node.args) > 1:
             match node.args[1]:
                 case ast.Constant(value=str() as attribute):
@@ -776,7 +796,7 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
     def visit_Attribute(self, node: ast.Attribute) -> None:
         """Check direct ``Reference.children`` reads."""
         if node.attr == "children" and isinstance(node.ctx, ast.Load) and self._checks_fact_writes:
-            self._add(node, "children (read)", "use GenerationIndex reverse-edge queries instead of Reference.children")
+            self._add(node, "children (read)", CHILDREN_READ_MESSAGE)
         self.generic_visit(node)
 
     def _check_method_call(self, node: ast.Call, method: str, owner: ast.expr) -> None:
@@ -957,21 +977,20 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
                 "assign": "set_fields",
                 "append": "append_field",
                 "insert": "insert_field",
-                "remove": "remove_field",
             }.get(method, "set_fields")
             return _ensure_generation_store_api(helper)
         return _ensure_generation_store_api("set_base_classes")
 
 
 def iter_python_files(paths: Iterable[Path]) -> list[Path]:
-    """Return checked Python files below ``paths``, without the store and its runtime write guard."""
+    """Return checked Python files below ``paths``, without the store."""
     files: list[Path] = []
     for path in paths:
         if path.is_dir():
             files.extend(sorted(path.rglob("*.py")))
         elif path.suffix == ".py":
             files.append(path)
-    store_modules = {(ROOT / GENERATION_STORE_MODULE).resolve(), (ROOT / WRITE_GUARD_MODULE).resolve()}
+    store_modules = {(ROOT / GENERATION_STORE_MODULE).resolve()}
     return [
         path for path in files if path.resolve() not in store_modules and COMPILED_TEMPLATE_DIRECTORY not in path.parts
     ]
@@ -1394,7 +1413,8 @@ def check_default_targets(
     """Check the default targets and the table; also return the scan for ``--write-allowlist``.
 
     Every allowlist entry under the default targets must match, including entries of files that were deleted or renamed.
-    A write the scan finds is listed with its count, never with a witness.
+    A write the scan finds is listed with its count, never with a witness. A ``__dict__`` key that only a store
+    operation writes keeps its row.
     """
     scan = scan_paths(ROOT / target for target in DEFAULT_TARGETS)
     active = load_allowlist() if allowlist is None else allowlist
@@ -1428,7 +1448,12 @@ def check_default_targets(
         for source, function, target in sorted(load_witnesses() if witnesses is None else witnesses)
         if found[source, function, target]
     )
-    return [*table_problems(dict_keys_written=scan.dict_keys_written), *hook_problems, *violations], scan
+    store_keys = scan_files([(ROOT / GENERATION_STORE_MODULE, "parser")]).dict_keys_written
+    return [
+        *table_problems(dict_keys_written=scan.dict_keys_written | store_keys),
+        *hook_problems,
+        *violations,
+    ], scan
 
 
 def write_allowlist(found: Counter[StoreKey], path: Path | None = None) -> list[StoreKey]:
@@ -1543,7 +1568,7 @@ def check_runtime_writes(
 
 WITNESS_RUNNER = """\
 import json, os, shlex, sys
-from datamodel_code_generator.__main__ import main
+from tests.checks.__main__ import main
 for witness, output, report in json.loads(sys.argv[1]):
     os.environ[sys.argv[2]] = f"report:{report}"
     if main([*shlex.split(witness), "--output", output]):

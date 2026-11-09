@@ -47,7 +47,9 @@ ItemsItemIdPartsPartGetQueryRatioParameter = TypeAliasType(
 )
 
 
-ItemsItemIdPartsPartGetQueryFlagParameter = TypeAliasType("ItemsItemIdPartsPartGetQueryFlagParameter", bool)
+ItemsItemIdPartsPartGetQueryFlagParameter = TypeAliasType(
+    "ItemsItemIdPartsPartGetQueryFlagParameter", bool
+)
 
 
 ItemsItemIdPartsPartGetQueryTagsParameterItem = TypeAliasType(
@@ -69,7 +71,9 @@ ItemsItemIdPartsPartGetQueryDayParameter = TypeAliasType(
 )
 
 
-ItemsItemIdPartsPartGetQueryRefParameter = TypeAliasType("ItemsItemIdPartsPartGetQueryRefParameter", UUID)
+ItemsItemIdPartsPartGetQueryRefParameter = TypeAliasType(
+    "ItemsItemIdPartsPartGetQueryRefParameter", UUID
+)
 
 
 class ItemsItemIdPartsPartGetQueryModeParameter(StrEnum):
@@ -77,32 +81,46 @@ class ItemsItemIdPartsPartGetQueryModeParameter(StrEnum):
     slow = 'slow'
 
 
-ItemsItemIdPartsPartGetQueryLevelParameter = TypeAliasType("ItemsItemIdPartsPartGetQueryLevelParameter", Literal[3])
+ItemsItemIdPartsPartGetQueryLevelParameter = TypeAliasType(
+    "ItemsItemIdPartsPartGetQueryLevelParameter", Literal[3]
+)
 
 
-ItemsItemIdPartsPartGetHeaderXTraceParameter = TypeAliasType("ItemsItemIdPartsPartGetHeaderXTraceParameter", str)
+ItemsItemIdPartsPartGetHeaderXTraceParameter = TypeAliasType(
+    "ItemsItemIdPartsPartGetHeaderXTraceParameter", str
+)
 
 
-ItemsItemIdPartsPartGetQueryRequestParameter = TypeAliasType("ItemsItemIdPartsPartGetQueryRequestParameter", str)
+ItemsItemIdPartsPartGetQueryRequestParameter = TypeAliasType(
+    "ItemsItemIdPartsPartGetQueryRequestParameter", str
+)
 
 
-ItemsItemIdPartsPartGetQueryPartParameter = TypeAliasType("ItemsItemIdPartsPartGetQueryPartParameter", str)
+ItemsItemIdPartsPartGetQueryPartParameter = TypeAliasType(
+    "ItemsItemIdPartsPartGetQueryPartParameter", str
+)
 
 
-ItemsItemIdPartsPartGetQueryField2faParameter = TypeAliasType("ItemsItemIdPartsPartGetQueryField2faParameter", str)
+ItemsItemIdPartsPartGetQueryField2faParameter = TypeAliasType(
+    "ItemsItemIdPartsPartGetQueryField2faParameter", str
+)
 
 
 class ItemsItemIdPartsPartGetResponse(RootModel[str]):
     root: str
 
 
-AdaptersGetCookieSessionParameter = TypeAliasType("AdaptersGetCookieSessionParameter", str)
+AdaptersGetCookieSessionParameter = TypeAliasType(
+    "AdaptersGetCookieSessionParameter", str
+)
 
 
 AdaptersGetQueryIdsParameter = TypeAliasType("AdaptersGetQueryIdsParameter", list[int])
 
 
-AdaptersGetHeaderXIdsParameter = TypeAliasType("AdaptersGetHeaderXIdsParameter", list[int])
+AdaptersGetHeaderXIdsParameter = TypeAliasType(
+    "AdaptersGetHeaderXIdsParameter", list[int]
+)
 
 
 class AdaptersGetQueryBlobParameter(BaseModel):
@@ -123,10 +141,14 @@ AdaptersGetQueryOtherParameter = TypeAliasType("AdaptersGetQueryOtherParameter",
 AdaptersGetQueryCountParameter = TypeAliasType("AdaptersGetQueryCountParameter", int)
 
 
-AdaptersGetQueryStampParameter = TypeAliasType("AdaptersGetQueryStampParameter", AwareDatetime)
+AdaptersGetQueryStampParameter = TypeAliasType(
+    "AdaptersGetQueryStampParameter", AwareDatetime
+)
 
 
 AdaptersGetQueryPageParameter = TypeAliasType("AdaptersGetQueryPageParameter", int)
 
 
-RepeatIdAgainIdGetPathIdParameter = TypeAliasType("RepeatIdAgainIdGetPathIdParameter", int)
+RepeatIdAgainIdGetPathIdParameter = TypeAliasType(
+    "RepeatIdAgainIdGetPathIdParameter", int
+)

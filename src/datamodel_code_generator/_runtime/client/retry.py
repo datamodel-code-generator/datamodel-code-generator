@@ -10,8 +10,10 @@ from email.utils import parsedate_to_datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
+from ..model_codecs.media import ascii_digits
 from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
+from .options import retryable_status
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -20,6 +22,8 @@ if TYPE_CHECKING:
     from .responses import HeadersView
 
 RetryReason: TypeAlias = Literal["status", "connect_timeout", "connect_error", "pool_timeout", "read_error"]
+RetrySafety: TypeAlias = Literal["method_default", "idempotent", "never"]
+"""Whether an operation may be sent again: by its method, always (`idempotent`), or never."""
 _StopReason: TypeAlias = Literal[
     "unknown_delivery",
     "status_not_retryable",
@@ -33,9 +37,6 @@ _StopReason: TypeAlias = Literal[
 ]
 _ASCII_WHITESPACE: Final = " \t\r\n\f\v"
 _SAFE_METHODS: Final = frozenset({"GET", "HEAD", "OPTIONS", "PUT", "DELETE"})
-_AUTH_STATUSES: Final = frozenset({401, 403, 407})
-_ERROR_STATUS_MIN: Final = 400
-_ERROR_STATUS_MAX: Final = 599
 _RFC850_YEAR: Final = re.compile(r"[A-Za-z]+, *[0-9]{1,2}-[A-Za-z]+-(?P<year>[0-9]{2})[ \t]")
 _YEAR_WINDOW: Final = 50
 
@@ -104,11 +105,7 @@ def should_retry(headers: HeadersView | None, name: str | None) -> bool | None:
 
 def status_retry_reason(status: int, retry: ResolvedRetryOptions, *, hint: bool | None) -> RetryReason | None:
     """Select ordinary error-status candidates without enabling authentication retries."""
-    if (
-        _ERROR_STATUS_MIN <= status <= _ERROR_STATUS_MAX
-        and status not in _AUTH_STATUSES
-        and (status in retry.statuses or hint is True)
-    ):
+    if retryable_status(status) and (status in retry.statuses or hint is True):
         return "status"
     return None
 
@@ -120,7 +117,7 @@ class RetryState:
     failure_kind: Literal["status", "transport"]
     reason: RetryReason | None
     method: str
-    retry_safety: Literal["method_default", "idempotent", "never"]
+    retry_safety: RetrySafety
     idempotency: IdempotencyPlan | None
     delivery: Delivery
     delivered_before: bool
@@ -131,7 +128,7 @@ class RetryState:
 
 def replay_safe(
     method: str,
-    retry_safety: Literal["method_default", "idempotent", "never"],
+    retry_safety: RetrySafety,
     idempotency: IdempotencyPlan | None,
 ) -> bool:
     """Check payload-independent safety after the operation-never gate has passed."""
@@ -140,7 +137,7 @@ def replay_safe(
 
 def body_replay_safe(
     method: str,
-    retry_safety: Literal["method_default", "idempotent", "never"],
+    retry_safety: RetrySafety,
     idempotency: IdempotencyPlan | None,
 ) -> bool:
     """Return whether a request may send its body again with its method, as a 307 or 308 redirect does."""
@@ -203,7 +200,7 @@ class ServerDelay:
 
 
 def _integer(value: str) -> float | None:
-    if not value.isascii() or not value.isdecimal():
+    if not ascii_digits(value):
         return None
     result = float(value)
     return result if math.isfinite(result) else None

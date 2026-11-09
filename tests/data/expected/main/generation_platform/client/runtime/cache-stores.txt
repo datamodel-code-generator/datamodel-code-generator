@@ -8,6 +8,8 @@
   entry naive time ! ValueError: stored_at must be timezone-aware []
   entry negative freshness ! ValueError: freshness_seconds must be finite and not negative []
   entry infinite age ! ValueError: initial_age_seconds must be finite and not negative []
+  entry age rounding to the largest float = CacheEntry(status_code=200)
+  entry freshness past every float ! ValueError: freshness_seconds must be finite and not negative []
   entry text freshness ! TypeError: freshness_seconds has the wrong type []
   entry text body ! TypeError: body has the wrong type []
   entry headers ! TypeError: headers has the wrong type []

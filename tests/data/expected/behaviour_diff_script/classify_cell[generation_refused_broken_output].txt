@@ -1,0 +1,11 @@
+{
+  "cls": "crash-fix",
+  "notes": [
+    "generation refused an output that failed to import: SyntaxError: invalid syntax (main.py, line 7)"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[module-added] : added",
+    "[module-removed] main: removed"
+  ]
+}

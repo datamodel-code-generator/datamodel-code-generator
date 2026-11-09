@@ -19,11 +19,12 @@ from datamodel_code_generator import Error
 from tests.api_generation.scenarios.client_allowreserved import reserved_paths
 from tests.api_generation.scenarios.client_auth_errors import auth_errors
 from tests.api_generation.scenarios.client_auth_flows import auth_flows
-from tests.api_generation.scenarios.client_auth_values import auth_values
+from tests.api_generation.scenarios.client_auth_values import auth_parameters, auth_shared_wire, auth_values
 from tests.api_generation.scenarios.client_bodies import bodies
 from tests.api_generation.scenarios.client_body_replay import body_replay, multipart_replay
 from tests.api_generation.scenarios.client_body_replay_faults import body_replay_faults
 from tests.api_generation.scenarios.client_caching import cache_backends, cache_stores, caching
+from tests.api_generation.scenarios.client_call_layers import call_layers
 from tests.api_generation.scenarios.client_compression import compression
 from tests.api_generation.scenarios.client_deadline_cleanup import deadline_cleanup
 from tests.api_generation.scenarios.client_deadline_options import deadline_options
@@ -34,7 +35,13 @@ from tests.api_generation.scenarios.client_headers import headers, native_bounda
 from tests.api_generation.scenarios.client_hooks import hooks
 from tests.api_generation.scenarios.client_missing_sentinel import missing_members
 from tests.api_generation.scenarios.client_mock_transport import mock_transport
-from tests.api_generation.scenarios.client_multipart import kinded_parts, multipart, split_parts
+from tests.api_generation.scenarios.client_multipart import (
+    kinded_parts,
+    media_text_parts,
+    multipart,
+    split_parts,
+    text_files,
+)
 from tests.api_generation.scenarios.client_naming import (
     naming,
     naming_full_path,
@@ -68,7 +75,7 @@ from tests.api_generation.scenarios.client_polling import polling
 from tests.api_generation.scenarios.client_polling_resume import polling_resume
 from tests.api_generation.scenarios.client_protocol_contracts import protocol_contracts
 from tests.api_generation.scenarios.client_protocol_errors import protocol_errors
-from tests.api_generation.scenarios.client_query import query
+from tests.api_generation.scenarios.client_query import bracketed, free_objects, item_or_array, query
 from tests.api_generation.scenarios.client_raw import raw
 from tests.api_generation.scenarios.client_redirects import head_redirects, redirects
 from tests.api_generation.scenarios.client_regressions import (
@@ -77,6 +84,7 @@ from tests.api_generation.scenarios.client_regressions import (
     no_success,
     route_text,
 )
+from tests.api_generation.scenarios.client_response_keys import response_keys
 from tests.api_generation.scenarios.client_retry_boundaries import retry_boundaries
 from tests.api_generation.scenarios.client_retry_calls import retry_calls
 from tests.api_generation.scenarios.client_retry_errors import retry_errors
@@ -862,12 +870,15 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "json-decode-errors-sse": ("streams", ("pydantic_v2.BaseModel",), json_decode_errors),
     "json-decode-errors-ndjson": ("ndjson", ("pydantic_v2.BaseModel",), json_decode_errors),
     "route-text": ("route-text", ("pydantic_v2.BaseModel",), route_text),
+    "response-keys": ("response-keys", ("pydantic_v2.BaseModel",), response_keys),
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
     "type-checking-imports": ("type-checking-imports", ("msgspec.Struct",), type_checking_pets),
     "type-checking-imports-on": ("type-checking-imports-on", ("pydantic_v2.BaseModel",), pets),
     "auth-errors": ("auth", ("pydantic_v2.BaseModel",), auth_errors),
     "auth-values": ("auth", ("pydantic_v2.BaseModel",), auth_values),
     "auth-flows": ("auth", ("pydantic_v2.BaseModel",), auth_flows),
+    "auth-shared-wire": ("auth-shared-wire", ("pydantic_v2.BaseModel",), auth_shared_wire),
+    "auth-parameters": ("auth-parameters", ("pydantic_v2.BaseModel",), auth_parameters),
     "deadline-options": ("pets", ("pydantic_v2.BaseModel",), deadline_options),
     "deadline-cleanup": ("pets", ("pydantic_v2.BaseModel",), deadline_cleanup),
     "deadline-races": ("pets", ("pydantic_v2.BaseModel",), deadline_races),
@@ -899,9 +910,13 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "bodies": ("pets", ("pydantic_v2.BaseModel",), bodies),
     "multipart": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), multipart),
     "multipart-split": ("multipart-split", STRUCTURAL, split_parts),
+    "multipart-split-all": ("multipart-split-all", STRUCTURAL, split_parts),
     "multipart-kinds": ("multipart-kinds", ALL_BUT_MSGSPEC, kinded_parts),
+    "multipart-text-files": ("multipart-text-files", ("pydantic_v2.BaseModel", "msgspec.Struct"), text_files),
+    "multipart-media-text": ("multipart-media-text", ("pydantic_v2.BaseModel", "msgspec.Struct"), media_text_parts),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "native-boundaries": ("native-boundaries", BACKENDS, native_boundaries),
+    "call-layers": ("call-layers", ("pydantic_v2.BaseModel",), call_layers),
     "missing-sentinel": ("missing-sentinel", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), missing_members),
     "nullable-enums": ("nullable-enums", ("dataclasses.dataclass", "msgspec.Struct"), nullable_enums),
     "nullable-parameters": ("nullable-parameters", ("pydantic_v2.BaseModel",), nullable_parameters),
@@ -911,6 +926,9 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "parameter-kinds-literal": ("parameter-kinds-literal", BACKENDS, parameter_kinds),
     "parameter-kinds-strict": ("parameter-kinds-strict", BACKENDS, parameter_kinds),
     "query": ("pets", ("pydantic_v2.BaseModel",), query),
+    "item-or-array": ("parameter-item-or-array", ("pydantic_v2.BaseModel", "msgspec.Struct"), item_or_array),
+    "query-free-objects": ("query-free-objects", ("pydantic_v2.BaseModel", "msgspec.Struct"), free_objects),
+    "deep-object-brackets": ("deep-object-brackets", ("pydantic_v2.BaseModel", "msgspec.Struct"), bracketed),
     "signatures": ("pets", BACKENDS, signatures),
     "signatures-unpack": ("pets-unpack", BACKENDS, signatures),
     "keywords": ("keywords", ("pydantic_v2.BaseModel",), keywords),
@@ -918,7 +936,9 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "naming-snake": ("naming-snake", ("pydantic_v2.BaseModel",), naming_snake),
     "naming-parent-prefixed": ("naming-parent-prefixed", ("pydantic_v2.BaseModel",), naming_parent_prefixed),
     "naming-full-path": ("naming-full-path", ("pydantic_v2.BaseModel",), naming_full_path),
+    "naming-enclosing-model": ("naming-enclosing-model", ("pydantic_v2.BaseModel",), naming_full_path),
     "naming-primary-first": ("naming-primary-first", ("pydantic_v2.BaseModel",), naming_primary_first),
+    "naming-definitions-first": ("naming-definitions-first", ("pydantic_v2.BaseModel",), naming_primary_first),
     "hooks": ("pets", ("pydantic_v2.BaseModel",), hooks),
     "webhook-contracts": ("pets-protocols", BACKENDS, webhook_contracts),
     "webhook-errors": ("pets-protocols", ("pydantic_v2.BaseModel",), webhook_errors),

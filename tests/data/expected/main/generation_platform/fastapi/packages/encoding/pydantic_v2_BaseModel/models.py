@@ -41,7 +41,9 @@ SearchGetQueryIdsParameter = TypeAliasType("SearchGetQueryIdsParameter", list[in
 SearchGetHeaderXIdsParameter = TypeAliasType("SearchGetHeaderXIdsParameter", list[int])
 
 
-RatiosGetQueryRatiosParameter = TypeAliasType("RatiosGetQueryRatiosParameter", list[float])
+RatiosGetQueryRatiosParameter = TypeAliasType(
+    "RatiosGetQueryRatiosParameter", list[float]
+)
 
 
 RatiosGetQueryLimitsParameter = TypeAliasType(
@@ -52,10 +54,14 @@ RatiosGetQueryLimitsParameter = TypeAliasType(
 )
 
 
-RepeatIdAgainIdGetPathIdParameter = TypeAliasType("RepeatIdAgainIdGetPathIdParameter", int)
+RepeatIdAgainIdGetPathIdParameter = TypeAliasType(
+    "RepeatIdAgainIdGetPathIdParameter", int
+)
 
 
-NotesNoteIdGetPathNoteIdParameter = TypeAliasType("NotesNoteIdGetPathNoteIdParameter", int)
+NotesNoteIdGetPathNoteIdParameter = TypeAliasType(
+    "NotesNoteIdGetPathNoteIdParameter", int
+)
 
 
 FilesFileNameGetPathFileNameParameter = TypeAliasType(
@@ -84,7 +90,9 @@ class ItemsLevelGetQueryRatioParameter(Enum):
     number_1_5 = 1.5
 
 
-ItemsLevelGetHeaderXFlagParameter = TypeAliasType("ItemsLevelGetHeaderXFlagParameter", Literal[True])
+ItemsLevelGetHeaderXFlagParameter = TypeAliasType(
+    "ItemsLevelGetHeaderXFlagParameter", Literal[True]
+)
 
 
 class ItemsLevelGetQueryKindParameter(StrEnum):
@@ -97,7 +105,9 @@ class ItemsLevelGetQueryTierParameter1(IntEnum):
     integer_2 = 2
 
 
-ItemsLevelGetQueryTierParameter = TypeAliasType("ItemsLevelGetQueryTierParameter", ItemsLevelGetQueryTierParameter1 | None)
+ItemsLevelGetQueryTierParameter = TypeAliasType(
+    "ItemsLevelGetQueryTierParameter", ItemsLevelGetQueryTierParameter1 | None
+)
 
 
 class ItemsLevelGetQueryLevelsParameterEnum(IntEnum):
@@ -105,4 +115,6 @@ class ItemsLevelGetQueryLevelsParameterEnum(IntEnum):
     integer_2 = 2
 
 
-ItemsLevelGetQueryLevelsParameter = TypeAliasType("ItemsLevelGetQueryLevelsParameter", list[ItemsLevelGetQueryLevelsParameterEnum])
+ItemsLevelGetQueryLevelsParameter = TypeAliasType(
+    "ItemsLevelGetQueryLevelsParameter", list[ItemsLevelGetQueryLevelsParameterEnum]
+)

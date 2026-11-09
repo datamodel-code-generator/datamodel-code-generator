@@ -9,41 +9,46 @@ with the model generator's configured type class, so its union and collection op
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Final, TypeAlias
+from itertools import starmap
+from typing import TYPE_CHECKING, Any, Final, TypeAlias, get_args
 
+from datamodel_code_generator._free_names import first_free
+from datamodel_code_generator._module_paths import relative_level
 from datamodel_code_generator._openapi_codec_plan import artifact_module
+from datamodel_code_generator._python_syntax import aliased, from_import, module_import
 from datamodel_code_generator._target_contract import (
+    BuiltinName,
     BuiltinType,
     GeneratedSymbolType,
+    ImportedExpression,
     ImportedType,
+    LiteralScalar,
     ModelHint,
     NoneType,
+    SourceExpression,
     UnionType,
 )
 from datamodel_code_generator.imports import Import
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
-    from datamodel_code_generator._target_contract import GeneratedTypeContractBatch, HintText, SymbolId, TypeView
+    from typing_extensions import Self
+
+    from datamodel_code_generator._target_contract import (
+        GeneratedTypeContractBatch,
+        HintText,
+        SymbolId,
+        TypeArgument,
+        TypeView,
+    )
+    from datamodel_code_generator.config import GenerateConfig
     from datamodel_code_generator.types import DataType
 
 __all__ = ("TargetModule", "TypeComposer", "TypeNames")
 
-_BUILTINS: Final = (
-    "bool",
-    "bytes",
-    "complex",
-    "dict",
-    "float",
-    "frozenset",
-    "int",
-    "list",
-    "object",
-    "set",
-    "str",
-    "tuple",
-)
+_BUILTINS: Final = get_args(BuiltinName)
 _LOCAL: Final = (None, "")
 _FLAGS: Final[tuple[dict[str, Any], ...]] = tuple({flag: True} for flag in ("is_list", "is_set", "is_frozen_set"))
 _PART: Final = "\x01"
@@ -178,6 +183,11 @@ class TypeNames:
             dict.fromkeys(self.identity(item) for item in (*batch.hint_imports, *_written(batch.hint_type)))
         )
 
+    @classmethod
+    def of(cls, batch: GeneratedTypeContractBatch, model_config: GenerateConfig) -> Self:
+        """Return where a batch's models are imported from by `--use-exact-imports` and `--import-overrides`."""
+        return cls(batch, exact=bool(model_config.use_exact_imports), overrides=model_config.import_overrides)
+
     def identity(self, import_: Import) -> _Identity:
         """Return the module and name an import binds, after the import overrides."""
         return self.resolve(import_.from_, import_.import_)
@@ -191,7 +201,7 @@ class TypeNames:
         override = self.overrides.get(name) if module != "__future__" else None
         if override is None or not override.startswith("."):
             return override or module, name
-        level = len(override) - len(rest := override.lstrip("."))
+        level, rest = relative_level(override)
         parts = self.package.split(".") if self.package else []
         if not parts or level > len(parts):
             return override, name
@@ -241,10 +251,7 @@ class TargetModule:
     def _claim(self, identity: _Identity, preferred: str) -> str:
         if (bound := self.bound.get(identity)) is not None:
             return bound
-        name, count = preferred, 0
-        while self.taken.get(name, identity) != identity:
-            count += 1
-            name = f"{preferred}_{count}"
+        name, _ = first_free(preferred, lambda name: self.taken.get(name, identity) != identity, "underscore")
         self.taken[name] = identity
         self.bound[identity] = name
         return name
@@ -281,6 +288,20 @@ class TargetModule:
             if self.qualified
             else self._claim(identity, name)
         )
+
+    def argument(self, value: TypeArgument) -> str:
+        """Return the Python expression of a recorded literal or source expression."""
+        match value:
+            case LiteralScalar(kind="decimal"):
+                return f"{self.name('decimal', 'Decimal')}({stable_repr(str(value.value))})"
+            case LiteralScalar():
+                return stable_repr(value.value)
+            case SourceExpression():
+                return value.text
+            case _:
+                pass
+        assert isinstance(value, ImportedExpression), "constraints and defaults hold scalars and expressions"
+        return f"{value.prefix}{self.imported(value.import_)}{value.suffix}"
 
     def symbol(self, symbol: SymbolId) -> str:
         """Return the spelling of a generated model: an attribute of its module, or its own name with exact imports.
@@ -333,18 +354,21 @@ class TargetModule:
             )
         return found
 
-    def _composed(self, kind: str, *parts: str, key: str | None = None) -> str:
+    def _composed(self, kind: str, *parts: str, key: str | None = None, given: str | None = None) -> str:
         """Return a composite of spelled types this module writes, importing the names its text writes once.
 
-        A union is of its parts, and any other kind is the type flag of a container of its one part.
+        A union is of its parts, and any other kind is the type flag of a container of its one part, written as the
+        container class ``given`` where an ``x-python-type`` gives it one.
         """
-        if (found := self.spelled.get(cache := (kind, key, *parts))) is None:
+        if (found := self.spelled.get(cache := (kind, key, given, *parts))) is None:
             composer = self.names.composer
             match kind:
                 case "union":
                     text, imports = composer.compose(members=parts, preserve_union_member_order=True)
                 case _:
                     flags: dict[str, Any] = {kind: True}
+                    if given is not None:
+                        flags["given_container"] = given
                     text, imports = composer.compose(base=parts[0], key=key, **flags)
             if not self.qualified:
                 for item in imports:
@@ -365,17 +389,21 @@ class TargetModule:
         """Return a read-only sequence of a spelled type, as the model generator writes one."""
         return self._composed("is_sequence", part)
 
-    def container(self, flag: str, part: str, *, key: str | None = None) -> str:
-        """Return a container of a spelled type, by the model type flag that names it, with a mapping's key type."""
-        return self._composed(flag, part, key=key)
+    def container(self, flag: str, part: str, *, key: str | None = None, given: str | None = None) -> str:
+        """Return a container of a spelled type, by the model type flag that names it, with a mapping's key type.
+
+        ``given`` is the container class an ``x-python-type`` gives it (``GenericType.given``), which it is written as.
+        """
+        return self._composed(flag, part, key=key, given=given)
 
     def imports(self) -> str:
         """Return the module's import statements: whole modules in path order, then names by module."""
         modules: list[str] = []
         grouped: dict[str, list[str]] = {}
         for (module, name), alias in sorted(self.bound.items(), key=lambda item: (item[0][0] or "", item[0][1])):
+            listed = name if alias == name else aliased(name, alias)
             if module is None:
-                modules.append(f"import {name}" if alias == name else f"import {name} as {alias}")
+                modules.append(module_import(listed))
             else:
-                grouped.setdefault(module, []).append(name if alias == name else f"{name} as {alias}")
-        return "\n".join((*modules, *(f"from {module} import {', '.join(names)}" for module, names in grouped.items())))
+                grouped.setdefault(module, []).append(listed)
+        return "\n".join((*modules, *starmap(from_import, grouped.items())))

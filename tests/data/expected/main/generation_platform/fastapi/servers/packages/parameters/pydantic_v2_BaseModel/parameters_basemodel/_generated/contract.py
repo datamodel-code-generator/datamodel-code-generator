@@ -51,7 +51,58 @@ class Search:
         note: str | None
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='filter', plan=ParameterPlan(location='query', name='filter', style='deepObject', explode=True, shape='object', fields=(FieldPlan('id', 'integer'), FieldPlan('name', 'string')), reserved_names=('blob', 'code', 'ids', 'note')), adapter=TypeAdapter(parameters_basemodel_models.Filter)), ParameterArgument(name='ids', plan=ParameterPlan(location='query', name='ids', style='form', shape='array', kind='integer', reserved_names=('blob', 'code', 'filter', 'note')), adapter=TypeAdapter(list[int])), ParameterArgument(name='X_Ids', plan=ParameterPlan(location='header', name='X-Ids', style='simple', shape='array', kind='integer'), adapter=TypeAdapter(list[int]), default=[3]), ParameterArgument(name='blob', plan=ParameterPlan(location='query', name='blob', content_media_type='application/json'), adapter=TypeAdapter(parameters_basemodel_models.Blob)), ParameterArgument(name='note', plan=ParameterPlan(location='query', name='note', content_media_type='text/plain'))),
+        arguments=(
+            ParameterArgument(
+                name='filter',
+                plan=ParameterPlan(
+                    location='query',
+                    name='filter',
+                    style='deepObject',
+                    explode=True,
+                    shape='object',
+                    fields=(FieldPlan('id', 'integer'), FieldPlan('name', 'string')),
+                    reserved_names=('blob', 'code', 'ids', 'note'),
+                ),
+                adapter=TypeAdapter(parameters_basemodel_models.Filter),
+            ),
+            ParameterArgument(
+                name='ids',
+                plan=ParameterPlan(
+                    location='query',
+                    name='ids',
+                    style='form',
+                    shape='array',
+                    kind='integer',
+                    reserved_names=('blob', 'code', 'filter', 'note'),
+                ),
+                adapter=TypeAdapter(list[int]),
+            ),
+            ParameterArgument(
+                name='X_Ids',
+                plan=ParameterPlan(
+                    location='header',
+                    name='X-Ids',
+                    style='simple',
+                    shape='array',
+                    kind='integer',
+                ),
+                adapter=TypeAdapter(list[int]),
+                default=[3],
+            ),
+            ParameterArgument(
+                name='blob',
+                plan=ParameterPlan(
+                    location='query', name='blob', content_media_type='application/json'
+                ),
+                adapter=TypeAdapter(parameters_basemodel_models.Blob),
+            ),
+            ParameterArgument(
+                name='note',
+                plan=ParameterPlan(
+                    location='query', name='note', content_media_type='text/plain'
+                ),
+            ),
+        ),
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(
@@ -88,7 +139,20 @@ class GetCodes:
         X_Codes: list[int]
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='X_Codes', plan=ParameterPlan(location='header', name='X-Codes', style='simple', required=True, shape='array', kind='integer'), adapter=TypeAdapter(list[int])),),
+        arguments=(
+            ParameterArgument(
+                name='X_Codes',
+                plan=ParameterPlan(
+                    location='header',
+                    name='X-Codes',
+                    style='simple',
+                    required=True,
+                    shape='array',
+                    kind='integer',
+                ),
+                adapter=TypeAdapter(list[int]),
+            ),
+        ),
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(
@@ -107,7 +171,19 @@ class Repeat:
         id: int
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='id', plan=ParameterPlan(location='path', name='id', style='simple', required=True, kind='integer'), adapter=TypeAdapter(int)),),
+        arguments=(
+            ParameterArgument(
+                name='id',
+                plan=ParameterPlan(
+                    location='path',
+                    name='id',
+                    style='simple',
+                    required=True,
+                    kind='integer',
+                ),
+                adapter=TypeAdapter(int),
+            ),
+        ),
         record=Parameters,
         path=RawPath(template='/repeat/{id}/again/{id}', names=frozenset({'id'})),
     )
@@ -145,9 +221,25 @@ class GetPair:
         part: int
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='part', plan=ParameterPlan(location='path', name='part', style='simple', required=True, kind='integer', reserved_names=('class', 'pair.id')), adapter=TypeAdapter(Annotated[int, Field(ge=1)])),),
+        arguments=(
+            ParameterArgument(
+                name='part',
+                plan=ParameterPlan(
+                    location='path',
+                    name='part',
+                    style='simple',
+                    required=True,
+                    kind='integer',
+                    reserved_names=('class', 'pair.id'),
+                ),
+                adapter=TypeAdapter(Annotated[int, Field(ge=1)]),
+            ),
+        ),
         record=Parameters,
-        path=RawPath(template='/pairs/{pair.id}/{class}/{part}/of/{part}', names=frozenset({'part'})),
+        path=RawPath(
+            template='/pairs/{pair.id}/{class}/{part}/of/{part}',
+            names=frozenset({'part'}),
+        ),
     )
     RESPONSES: Final = OperationResponses(
         responses={'204': Declared()},
@@ -176,10 +268,93 @@ class GetItem:
         ratio: parameters_basemodel_models.ItemsLevelGetQueryRatioParameter | None
         X_Flag: Literal[True] | None
         tier: parameters_basemodel_models.ItemsLevelGetQueryTierParameter1 | None
-        levels: list[parameters_basemodel_models.ItemsLevelGetQueryLevelsParameterEnum] | None
+        levels: (
+            list[parameters_basemodel_models.ItemsLevelGetQueryLevelsParameterEnum]
+            | None
+        )
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='level', plan=ParameterPlan(location='path', name='level', style='simple', required=True, kind='integer'), adapter=TypeAdapter(parameters_basemodel_models.ItemsLevelGetPathLevelParameter)), ParameterArgument(name='mode', plan=ParameterPlan(location='query', name='mode', style='form', explode=True, kind='integer', reserved_names=('kind', 'levels', 'ratio', 'tier')), adapter=TypeAdapter(parameters_basemodel_models.ItemsLevelGetQueryModeParameter)), ParameterArgument(name='ratio', plan=ParameterPlan(location='query', name='ratio', style='form', explode=True, kind='number', reserved_names=('kind', 'levels', 'mode', 'tier')), adapter=TypeAdapter(parameters_basemodel_models.ItemsLevelGetQueryRatioParameter)), ParameterArgument(name='X_Flag', plan=ParameterPlan(location='header', name='X-Flag', style='simple', kind='boolean'), adapter=TypeAdapter(Literal[True])), ParameterArgument(name='tier', plan=ParameterPlan(location='query', name='tier', style='form', explode=True, kind='integer', reserved_names=('kind', 'levels', 'mode', 'ratio')), adapter=TypeAdapter(parameters_basemodel_models.ItemsLevelGetQueryTierParameter1 | None)), ParameterArgument(name='levels', plan=ParameterPlan(location='query', name='levels', style='form', explode=True, shape='array', kind='integer', reserved_names=('kind', 'mode', 'ratio', 'tier')), adapter=TypeAdapter(list[parameters_basemodel_models.ItemsLevelGetQueryLevelsParameterEnum]))),
+        arguments=(
+            ParameterArgument(
+                name='level',
+                plan=ParameterPlan(
+                    location='path',
+                    name='level',
+                    style='simple',
+                    required=True,
+                    kind='integer',
+                ),
+                adapter=TypeAdapter(
+                    parameters_basemodel_models.ItemsLevelGetPathLevelParameter
+                ),
+            ),
+            ParameterArgument(
+                name='mode',
+                plan=ParameterPlan(
+                    location='query',
+                    name='mode',
+                    style='form',
+                    explode=True,
+                    kind='integer',
+                    reserved_names=('kind', 'levels', 'ratio', 'tier'),
+                ),
+                adapter=TypeAdapter(
+                    parameters_basemodel_models.ItemsLevelGetQueryModeParameter
+                ),
+            ),
+            ParameterArgument(
+                name='ratio',
+                plan=ParameterPlan(
+                    location='query',
+                    name='ratio',
+                    style='form',
+                    explode=True,
+                    kind='number',
+                    reserved_names=('kind', 'levels', 'mode', 'tier'),
+                ),
+                adapter=TypeAdapter(
+                    parameters_basemodel_models.ItemsLevelGetQueryRatioParameter
+                ),
+            ),
+            ParameterArgument(
+                name='X_Flag',
+                plan=ParameterPlan(
+                    location='header', name='X-Flag', style='simple', kind='boolean'
+                ),
+                adapter=TypeAdapter(Literal[True]),
+            ),
+            ParameterArgument(
+                name='tier',
+                plan=ParameterPlan(
+                    location='query',
+                    name='tier',
+                    style='form',
+                    explode=True,
+                    kind='integer',
+                    reserved_names=('kind', 'levels', 'mode', 'ratio'),
+                ),
+                adapter=TypeAdapter(
+                    parameters_basemodel_models.ItemsLevelGetQueryTierParameter1 | None
+                ),
+            ),
+            ParameterArgument(
+                name='levels',
+                plan=ParameterPlan(
+                    location='query',
+                    name='levels',
+                    style='form',
+                    explode=True,
+                    shape='array',
+                    kind='integer',
+                    reserved_names=('kind', 'mode', 'ratio', 'tier'),
+                ),
+                adapter=TypeAdapter(
+                    list[
+                        parameters_basemodel_models.ItemsLevelGetQueryLevelsParameterEnum
+                    ]
+                ),
+            ),
+        ),
         record=Parameters,
         path=RawPath(template='/items/{level}', names=frozenset({'level'})),
     )

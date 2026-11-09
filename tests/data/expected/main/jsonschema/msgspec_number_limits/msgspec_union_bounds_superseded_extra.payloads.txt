@@ -1,0 +1,4 @@
+valid: accepted
+valid: accepted
+valid: accepted
+invalid {"merged": -0.5}: rejected

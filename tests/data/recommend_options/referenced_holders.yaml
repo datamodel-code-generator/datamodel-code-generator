@@ -1,0 +1,70 @@
+openapi: 3.1.0
+info:
+  title: Referenced holders
+  version: "1"
+paths:
+  /pets:
+    $ref: "#/components/pathItems/Pet%20Items"
+  /owners:
+    get:
+      responses:
+        "200":
+          $ref: "#/components/responses/Pets"
+webhooks:
+  petAdopted:
+    $ref: "#/components/pathItems/Adopted"
+components:
+  pathItems:
+    Pet Items:
+      get:
+        requestBody:
+          $ref: "#/components/requestBodies/Filter"
+        responses:
+          "200":
+            $ref: "#/components/responses/Pets"
+    Adopted:
+      post:
+        requestBody:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mood:
+                    type: string
+                    enum: [happy, shy]
+        responses:
+          "200":
+            description: Received
+  requestBodies:
+    Filter:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              owner:
+                type: object
+                properties:
+                  name:
+                    type: string
+  responses:
+    Pets:
+      description: Pets
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              pet:
+                $ref: "#/components/schemas/Pet%20Info"
+              state:
+                type: string
+                enum: [open, closed]
+  schemas:
+    Pet Info:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [cat, dog]

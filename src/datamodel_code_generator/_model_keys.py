@@ -6,7 +6,10 @@ The keys of the fields and data type nodes the generation store records live her
 
 from __future__ import annotations
 
-from typing import Final, NewType
+from typing import TYPE_CHECKING, Final, NewType, Protocol, TypeVar
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 MODEL_KEY_ATTRIBUTE: Final = "_model_key"
 FIELDLESS_SITE_KEY: Final = "_fieldless_site"
@@ -16,14 +19,71 @@ Under --collapse-root-models it inlines none of the models it names, and it keep
 to itself.
 """
 
+ITEM_COUNTS_SITE_KEY: Final = "_item_counts_site"
+"""Marks on a `Reference` the type alias of a nested array that holds its item counts as no field holds them (#6292).
+
+Its site, the member of an anyOf or oneOf, the items of an array or the values of a map, was an inline array in the
+type of its holder up to 0.89.0. Under --collapse-root-models a root model that names it is inlined as it was then:
+its counts stay on the alias that the holder names.
+"""
+
+REF_BRANCH_SCHEMA_KEY: Final = "_ref_branch_schema"
+"""Records on the `Reference` of the class of a `$ref` branch that takes the parts of its site (the `properties` and
+`required` beside its union, or the allOf members there) the `Reference` of the schema the branch names.
+
+A tag the variant takes from a mapping or a schema path is that schema's, as the schema takes it as a variant itself.
+"""
+
 ModelKey = NewType("ModelKey", int)
 """The identity of the model a `Reference` names, unlike `id(reference)` never reused within a process."""
 NodeKey = NewType("NodeKey", int)
 """The ``id`` of a data type node that the store records."""
 FieldKey = NewType("FieldKey", int)
 """The ``id`` of a field that holds a recorded node."""
+_ValueT = TypeVar("_ValueT")
+
+
+class _ReferenceView(Protocol):
+    """What `names_by_path` and `keyed_or_path` read of a `Reference`."""
+
+    @property
+    def path(self) -> str:
+        """The path of the model the reference names."""
+
+    @property
+    def source(self) -> object:
+        """The model the reference was built with, or None."""
 
 
 def model_key_of(reference: object) -> ModelKey:
     """Return the model key that ``reference`` took when it was built (`Reference.model_post_init`)."""
     return reference.__dict__[MODEL_KEY_ATTRIBUTE]
+
+
+def ref_branch_schema_of(reference: object) -> object | None:
+    """Return the `Reference` of the schema the `$ref` branch of a class names (``REF_BRANCH_SCHEMA_KEY``), if any."""
+    return reference.__dict__.get(REF_BRANCH_SCHEMA_KEY)
+
+
+def is_item_counts_site(reference: object) -> bool:
+    """Return whether ``reference`` names the type alias of an item-count site (``ITEM_COUNTS_SITE_KEY``)."""
+    return bool(reference.__dict__.get(ITEM_COUNTS_SITE_KEY))
+
+
+def names_by_path(reference: _ReferenceView) -> bool:
+    """Return whether ``reference`` names the model at its path instead of the model of its key.
+
+    Row ``legacy-keyless-reference-by-path``: a reference that no model was built with (one built outside the
+    resolver, such as by a parser extension) names the model at its path, as every reference did when models were
+    told apart by path.
+    """
+    return reference.source is None
+
+
+def keyed_or_path(
+    reference: _ReferenceView, by_key: Mapping[ModelKey, _ValueT], by_path: Mapping[str, _ValueT]
+) -> _ValueT | None:
+    """Return the value kept for the model ``reference`` names, by its model key or, `names_by_path`, at its path."""
+    if names_by_path(reference):
+        return by_path.get(reference.path)
+    return by_key.get(model_key_of(reference))

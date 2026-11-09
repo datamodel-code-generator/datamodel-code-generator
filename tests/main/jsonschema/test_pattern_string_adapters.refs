@@ -26,13 +26,13 @@ constraints_off-external-api	main/jsonschema/pattern_string_adapters/constraints
 constraints_off-external-cli	main/jsonschema/pattern_string_adapters/constraints_off.py	= main/jsonschema/pattern_string_adapters/direct.py
 constraints_off-external-cli	main/jsonschema/pattern_string_adapters/constraints_off.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 custom-builtin-api	main/jsonschema/pattern_string_adapters/custom.py
-custom-builtin-api	main/jsonschema/pattern_string_adapters/custom.runtime.txt
+custom-builtin-api	main/jsonschema/pattern_string_adapters/custom.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 custom-builtin-cli	main/jsonschema/pattern_string_adapters/custom.py
-custom-builtin-cli	main/jsonschema/pattern_string_adapters/custom.runtime.txt
+custom-builtin-cli	main/jsonschema/pattern_string_adapters/custom.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 custom-external-api	main/jsonschema/pattern_string_adapters/custom.py
-custom-external-api	main/jsonschema/pattern_string_adapters/custom.runtime.txt
+custom-external-api	main/jsonschema/pattern_string_adapters/custom.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 custom-external-cli	main/jsonschema/pattern_string_adapters/custom.py
-custom-external-cli	main/jsonschema/pattern_string_adapters/custom.runtime.txt
+custom-external-cli	main/jsonschema/pattern_string_adapters/custom.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 declared-builtin-api	main/jsonschema/pattern_string_adapters/declared.py
 declared-builtin-api	main/jsonschema/pattern_string_adapters/declared.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 declared-builtin-cli	main/jsonschema/pattern_string_adapters/declared.py
@@ -74,25 +74,29 @@ force_optional-external-api	main/jsonschema/pattern_string_adapters/force_option
 force_optional-external-cli	main/jsonschema/pattern_string_adapters/force_optional.py
 force_optional-external-cli	main/jsonschema/pattern_string_adapters/force_optional.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 impossible-builtin-api	main/jsonschema/pattern_string_adapters/impossible.py
-impossible-builtin-api	main/jsonschema/pattern_string_adapters/impossible.runtime.txt
+impossible-builtin-api	main/jsonschema/pattern_string_adapters/impossible.runtime.txt	= main/jsonschema/pattern_string_adapters/ordinary.runtime.txt
 impossible-builtin-cli	main/jsonschema/pattern_string_adapters/impossible.py
-impossible-builtin-cli	main/jsonschema/pattern_string_adapters/impossible.runtime.txt
+impossible-builtin-cli	main/jsonschema/pattern_string_adapters/impossible.runtime.txt	= main/jsonschema/pattern_string_adapters/ordinary.runtime.txt
 impossible-external-api	main/jsonschema/pattern_string_adapters/impossible.py
-impossible-external-api	main/jsonschema/pattern_string_adapters/impossible.runtime.txt
+impossible-external-api	main/jsonschema/pattern_string_adapters/impossible.runtime.txt	= main/jsonschema/pattern_string_adapters/ordinary.runtime.txt
 impossible-external-cli	main/jsonschema/pattern_string_adapters/impossible.py
-impossible-external-cli	main/jsonschema/pattern_string_adapters/impossible.runtime.txt
+impossible-external-cli	main/jsonschema/pattern_string_adapters/impossible.runtime.txt	= main/jsonschema/pattern_string_adapters/ordinary.runtime.txt
 inherited-builtin-api	main/jsonschema/pattern_string_adapters/inherited.py
 inherited-builtin-api	main/jsonschema/pattern_string_adapters/inherited.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 inherited-builtin-api	main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings.txt	?
+inherited-builtin-api	main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings@black26-external-isort8-python3.10.txt
 inherited-builtin-cli	main/jsonschema/pattern_string_adapters/inherited.py
 inherited-builtin-cli	main/jsonschema/pattern_string_adapters/inherited.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 inherited-builtin-cli	main/jsonschema/pattern_string_adapters/inherited_minimum_cli_warnings.txt	?	= main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings.txt
+inherited-builtin-cli	main/jsonschema/pattern_string_adapters/inherited_minimum_cli_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings@black26-external-isort8-python3.10.txt
 inherited-external-api	main/jsonschema/pattern_string_adapters/inherited.py
 inherited-external-api	main/jsonschema/pattern_string_adapters/inherited.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 inherited-external-api	main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings.txt	?
+inherited-external-api	main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings@black26-external-isort8-python3.10.txt
 inherited-external-cli	main/jsonschema/pattern_string_adapters/inherited.py
 inherited-external-cli	main/jsonschema/pattern_string_adapters/inherited.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 inherited-external-cli	main/jsonschema/pattern_string_adapters/inherited_minimum_cli_warnings.txt	?	= main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings.txt
+inherited-external-cli	main/jsonschema/pattern_string_adapters/inherited_minimum_cli_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings@black26-external-isort8-python3.10.txt
 maximum-builtin-api	main/jsonschema/pattern_string_adapters/maximum.py
 maximum-builtin-api	main/jsonschema/pattern_string_adapters/maximum.runtime.txt
 maximum-builtin-cli	main/jsonschema/pattern_string_adapters/maximum.py
@@ -102,13 +106,13 @@ maximum-external-api	main/jsonschema/pattern_string_adapters/maximum.runtime.txt
 maximum-external-cli	main/jsonschema/pattern_string_adapters/maximum.py
 maximum-external-cli	main/jsonschema/pattern_string_adapters/maximum.runtime.txt
 minimum-builtin-api	main/jsonschema/pattern_string_adapters/minimum.py
-minimum-builtin-api	main/jsonschema/pattern_string_adapters/minimum.runtime.txt
+minimum-builtin-api	main/jsonschema/pattern_string_adapters/minimum.runtime.txt	= main/jsonschema/pattern_string_adapters/titled.runtime.txt
 minimum-builtin-cli	main/jsonschema/pattern_string_adapters/minimum.py
-minimum-builtin-cli	main/jsonschema/pattern_string_adapters/minimum.runtime.txt
+minimum-builtin-cli	main/jsonschema/pattern_string_adapters/minimum.runtime.txt	= main/jsonschema/pattern_string_adapters/titled.runtime.txt
 minimum-external-api	main/jsonschema/pattern_string_adapters/minimum.py
-minimum-external-api	main/jsonschema/pattern_string_adapters/minimum.runtime.txt
+minimum-external-api	main/jsonschema/pattern_string_adapters/minimum.runtime.txt	= main/jsonschema/pattern_string_adapters/titled.runtime.txt
 minimum-external-cli	main/jsonschema/pattern_string_adapters/minimum.py
-minimum-external-cli	main/jsonschema/pattern_string_adapters/minimum.runtime.txt
+minimum-external-cli	main/jsonschema/pattern_string_adapters/minimum.runtime.txt	= main/jsonschema/pattern_string_adapters/titled.runtime.txt
 ordinary-builtin-api	main/jsonschema/pattern_string_adapters/ordinary.py
 ordinary-builtin-api	main/jsonschema/pattern_string_adapters/ordinary.runtime.txt
 ordinary-builtin-cli	main/jsonschema/pattern_string_adapters/ordinary.py
@@ -142,13 +146,13 @@ strip_defaults-external-api	main/jsonschema/pattern_string_adapters/strip_defaul
 strip_defaults-external-cli	main/jsonschema/pattern_string_adapters/strip_defaults.py	= main/jsonschema/pattern_string_adapters/direct.py
 strip_defaults-external-cli	main/jsonschema/pattern_string_adapters/strip_defaults.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 suffix-builtin-api	main/jsonschema/pattern_string_adapters/suffix.py
-suffix-builtin-api	main/jsonschema/pattern_string_adapters/suffix.runtime.txt	= main/jsonschema/pattern_string_adapters/custom.runtime.txt
+suffix-builtin-api	main/jsonschema/pattern_string_adapters/suffix.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 suffix-builtin-cli	main/jsonschema/pattern_string_adapters/suffix.py
-suffix-builtin-cli	main/jsonschema/pattern_string_adapters/suffix.runtime.txt	= main/jsonschema/pattern_string_adapters/custom.runtime.txt
+suffix-builtin-cli	main/jsonschema/pattern_string_adapters/suffix.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 suffix-external-api	main/jsonschema/pattern_string_adapters/suffix.py
-suffix-external-api	main/jsonschema/pattern_string_adapters/suffix.runtime.txt	= main/jsonschema/pattern_string_adapters/custom.runtime.txt
+suffix-external-api	main/jsonschema/pattern_string_adapters/suffix.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 suffix-external-cli	main/jsonschema/pattern_string_adapters/suffix.py
-suffix-external-cli	main/jsonschema/pattern_string_adapters/suffix.runtime.txt	= main/jsonschema/pattern_string_adapters/custom.runtime.txt
+suffix-external-cli	main/jsonschema/pattern_string_adapters/suffix.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 titled-builtin-api	main/jsonschema/pattern_string_adapters/titled.py
 titled-builtin-api	main/jsonschema/pattern_string_adapters/titled.runtime.txt
 titled-builtin-cli	main/jsonschema/pattern_string_adapters/titled.py
@@ -190,10 +194,10 @@ vacuous-external-api	main/jsonschema/pattern_string_adapters/vacuous.runtime.txt
 vacuous-external-cli	main/jsonschema/pattern_string_adapters/vacuous.py
 vacuous-external-cli	main/jsonschema/pattern_string_adapters/vacuous.runtime.txt	= main/jsonschema/pattern_string_adapters/boolean.runtime.txt
 validators_off-builtin-api	main/jsonschema/pattern_string_adapters/validators_off.py
-validators_off-builtin-api	main/jsonschema/pattern_string_adapters/validators_off.runtime.txt	= main/jsonschema/pattern_string_adapters/custom.runtime.txt
+validators_off-builtin-api	main/jsonschema/pattern_string_adapters/validators_off.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 validators_off-builtin-cli	main/jsonschema/pattern_string_adapters/validators_off.py
-validators_off-builtin-cli	main/jsonschema/pattern_string_adapters/validators_off.runtime.txt	= main/jsonschema/pattern_string_adapters/custom.runtime.txt
+validators_off-builtin-cli	main/jsonschema/pattern_string_adapters/validators_off.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 validators_off-external-api	main/jsonschema/pattern_string_adapters/validators_off.py
-validators_off-external-api	main/jsonschema/pattern_string_adapters/validators_off.runtime.txt	= main/jsonschema/pattern_string_adapters/custom.runtime.txt
+validators_off-external-api	main/jsonschema/pattern_string_adapters/validators_off.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 validators_off-external-cli	main/jsonschema/pattern_string_adapters/validators_off.py
-validators_off-external-cli	main/jsonschema/pattern_string_adapters/validators_off.runtime.txt	= main/jsonschema/pattern_string_adapters/custom.runtime.txt
+validators_off-external-cli	main/jsonschema/pattern_string_adapters/validators_off.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt

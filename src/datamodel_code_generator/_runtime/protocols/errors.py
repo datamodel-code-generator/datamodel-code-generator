@@ -7,25 +7,45 @@ values that do not decode as their declared model DecodeError; these classes cov
 from __future__ import annotations
 
 from types import MappingProxyType
-from typing import Final
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
-from ..client.errors import SDKError
+from ..client.errors import MAX_ERROR_BODY_BYTES as MAX_RAW_PREFIX
+from ..client.errors import ConfigurationError, SDKError
 from ..client.responses import ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
 from .records import ProtocolProgress, RequestTarget, Selector  # noqa: TC001 - Public annotations support get_type_hints().
 from .references import OperationRef  # noqa: TC001 - Public annotations support get_type_hints().
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 __all__ = (
     "HELPER_ERRORS",
     "MAX_CLOSE_REASON",
     "MAX_RAW_PREFIX",
+    "DataRule",
     "ProtocolDataError",
+    "Refuse",
     "SessionLimitError",
     "StreamInterruptedError",
     "WebSocketClosedError",
+    "configuration_error",
+    "data_error",
+    "data_refusal",
+    "state_error",
 )
 
-MAX_RAW_PREFIX: Final = 65536
 MAX_CLOSE_REASON: Final = 123
+DataRule: TypeAlias = Literal["missing", "null", "type", "value", "malformed", "inconsistent"]
+Refuse: TypeAlias = "Callable[[Selector, DataRule], ProtocolDataError]"
+_Refusal: TypeAlias = Literal[
+    "invalid_value",
+    "invalid_state",
+    "missing_metadata",
+    "wrong_capability",
+    "binding_mismatch",
+    "source_changed",
+    "expired",
+]
 
 
 class ProtocolDataError(SDKError):
@@ -158,3 +178,31 @@ class WebSocketClosedError(SDKError):
 
 
 HELPER_ERRORS: Final = (ProtocolDataError, SessionLimitError, StreamInterruptedError, WebSocketClosedError)
+
+
+def configuration_error(
+    helper_id: str, field_path: tuple[str, ...], reason: _Refusal = "invalid_value"
+) -> ConfigurationError:
+    """Return a helper's refusal of a setting, an argument, or a call, by its field path and the rule it broke."""
+    return ConfigurationError(field_path=field_path, reason=reason, helper_id=helper_id)
+
+
+def state_error(helper_id: str, action: str, state: str) -> ConfigurationError:
+    """Return a helper's refusal of an action the state of its handle, pager, stream, or session forbids."""
+    return configuration_error(helper_id, (action, state), "invalid_state")
+
+
+def data_error(
+    helper_id: str,
+    operation: OperationRef | None,
+    info: ResponseInfo | None,
+    reason: str,
+    location: Selector | RequestTarget | None,
+) -> ProtocolDataError:
+    """Return a helper's refusal of data an operation's response gave, by the rule it broke and where it was read."""
+    return ProtocolDataError(reason=reason, location=location, helper_id=helper_id, operation=operation, info=info)
+
+
+def data_refusal(helper_id: str, operation: OperationRef | None, info: ResponseInfo | None) -> Refuse:
+    """Return how a helper refuses data a response gave: by where it was read and the rule it broke."""
+    return lambda location, reason: data_error(helper_id, operation, info, reason, location)

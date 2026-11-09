@@ -11,5 +11,4 @@ class AliasParent(BaseModel):
 
 
 class AliasSameChild(AliasParent):
-    old: int = Field(1, title='Old')
     extra: int = Field(3, title='Extra')

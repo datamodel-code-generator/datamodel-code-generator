@@ -1,0 +1,23 @@
+from __future__ import annotations
+
+from typing import Optional
+
+from pydantic import BaseModel, RootModel
+
+
+class NullableString(RootModel[Optional[str]]):
+    root: Optional[str]
+
+
+class NonNullableString(RootModel[str]):
+    root: str
+
+
+class NullOnly(RootModel[None]):
+    root: None
+
+
+class Model(BaseModel):
+    nullableRef: NullableString
+    nonNullableRef: NonNullableString
+    nullOnlyRef: NullOnly

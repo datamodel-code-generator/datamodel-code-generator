@@ -28,8 +28,17 @@ class DataclassArguments(TypedDict, total=False):
 
 
 MIN_VERSION: Final[int] = 10
-MAX_VERSION: Final[int] = 13
+MAX_VERSION: Final[int] = 15
 DEFAULT_SHARED_MODULE_NAME: Final[str] = "shared"
+
+
+class _ExitCode:
+    """The exit codes of the command line: `__main__.Exit`, and those its fast paths and target runs return as ints."""
+
+    OK: Final = 0
+    DIFF: Final = 1
+    ERROR: Final = 2
+    INTERRUPTED: Final = 3
 
 
 class InputFileType(Enum):
@@ -60,6 +69,9 @@ class DataModelType(Enum):
     MsgspecStruct = "msgspec.Struct"
 
 
+_PYDANTIC_MODEL_TYPES: Final = frozenset({DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass})
+
+
 class _OutputModelFamily(str, Enum):
     """Compatibility family used when preserving input-model references."""
 
@@ -71,9 +83,9 @@ class _OutputModelFamily(str, Enum):
 
 def _get_output_model_family(data_model_type: DataModelType | None) -> _OutputModelFamily:
     """Resolve the reference-compatible family for an output model selection."""
+    if data_model_type is None or data_model_type in _PYDANTIC_MODEL_TYPES:
+        return _OutputModelFamily.PYDANTIC
     match data_model_type:
-        case None | DataModelType.PydanticV2BaseModel | DataModelType.PydanticV2Dataclass:
-            return _OutputModelFamily.PYDANTIC
         case DataModelType.DataclassesDataclass:
             return _OutputModelFamily.DATACLASS
         case DataModelType.TypingTypedDict:
@@ -165,18 +177,27 @@ class HTTPBackend(Enum):
 
 
 class NamingStrategy(Enum):
-    """Strategy for generating unique model names when duplicates occur.
+    """Strategy for naming models and telling duplicate model names apart.
 
     numbered: Append numeric suffix (Address1, Address2) [default].
-    parent_prefixed: Prefix with parent model name (CustomerAddress, UserAddress).
-    full_path: Use full schema path for unique names (OrdersItemsAddress).
+    parent_prefixed: Prefix every nested model with the name of the model that holds it, in CamelCase, nested parents
+        included (CompanyAddress, CompanyEmployeeHomeAddress); the model names are those of full_path where the class
+        names are converted as by default, as a custom_class_name_generator gets the names joined by an underscore
+        (Company_address) here and in CamelCase (CompanyAddress) under full_path.
+    full_path: Prefix every nested model with the names of the models that hold it (CompanyEmployeeHomeAddress).
     primary_first: Prioritize primary schema definitions, others get suffix.
+    definitions_first: Give a definition its own name before any other model that asks for it, in every document, and
+        number the model that took it first; the models are numbered as by numbered otherwise.
+    enclosing_model: Prefix every nested model with the final name of the model it is built for, once (CompanyAddress,
+        StreamEvent1 for the first branch of the union StreamEvent); a definition keeps its own name.
     """
 
     Numbered = "numbered"
     ParentPrefixed = "parent-prefixed"
     FullPath = "full-path"
     PrimaryFirst = "primary-first"
+    DefinitionsFirst = "definitions-first"
+    EnclosingModel = "enclosing-model"
 
 
 class ClassNameAffixScope(Enum):
@@ -269,10 +290,14 @@ class TargetPydanticVersion(Enum):
     V2_14 = "2.14"
 
 
+def _version_key(version: str) -> tuple[int, ...]:
+    """Convert a dotted version, such as a target or a requirement's minimum, into comparable integer parts."""
+    return tuple(int(part) for part in version.split("."))
+
+
 def _pydantic_version_key(target_version: TargetPydanticVersion | str) -> tuple[int, ...]:
     """Convert a target Pydantic version into comparable integer parts."""
-    value = target_version.value if isinstance(target_version, TargetPydanticVersion) else target_version
-    return tuple(int(part) for part in value.split("."))
+    return _version_key(target_version.value if isinstance(target_version, TargetPydanticVersion) else target_version)
 
 
 def _is_pydantic_version_at_least(

@@ -1,0 +1,30 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "aliasFirst": {
+      "anyOf": [{"$ref": "#/$defs/PodList"}, {"type": "array", "items": {"type": "string"}}],
+      "default": ["x"]
+    },
+    "aliasSecond": {
+      "anyOf": [{"type": "array", "items": {"type": "string"}}, {"$ref": "#/$defs/PodList"}],
+      "default": ["y"]
+    },
+    "structsBesideAlias": {
+      "anyOf": [{"type": "array", "items": {"type": "string"}}, {"$ref": "#/$defs/PodList"}],
+      "default": [{"a": "z"}]
+    },
+    "flagsBesideStructs": {
+      "anyOf": [
+        {"type": "array", "items": {"$ref": "#/$defs/PodSpec"}},
+        {"type": "array", "items": {"$ref": "#/$defs/Flag"}}
+      ],
+      "default": ["on"]
+    }
+  },
+  "$defs": {
+    "PodSpec": {"type": "object", "properties": {"a": {"type": "string"}}},
+    "PodList": {"type": "array", "items": {"$ref": "#/$defs/PodSpec"}},
+    "Flag": {"type": "string", "const": "on"}
+  }
+}

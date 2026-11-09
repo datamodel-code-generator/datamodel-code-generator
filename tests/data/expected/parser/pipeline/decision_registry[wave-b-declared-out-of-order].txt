@@ -1,0 +1,2 @@
+order: G12b -> G06 -> G03b -> G08
+problem: decision phase: the registry lists G03b, G08, G06, G12b, not the order the order rule computes: G12b, G06, G03b, G08

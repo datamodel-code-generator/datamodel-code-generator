@@ -18,16 +18,18 @@ from typing import TYPE_CHECKING, Any, BinaryIO, Final, Generic, Literal, TypeAl
 from typing_extensions import Self, TypeIs, TypeVar
 
 from ..model_codecs.media import json_value
-from .content import CHUNK
+from .content import CHUNK, pieces
 from .errors import (
+    MAX_ERROR_BODY_BYTES,
     ConfigurationError,
     DecodeError,
     SDKError,
     add_secondary,
+    bounded_body,
     response_failure,
 )
 from .logical import Ready, in_thread, run_sync
-from .media import charset
+from .media import charset_text
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable, Generator, Iterator
@@ -40,7 +42,6 @@ if TYPE_CHECKING:
     from .operations import ResponseDecoder
     from .responses import ResponseInfo
 
-MAX_ERROR_BODY_BYTES: Final = 64 * 1024
 _BINARY: Final[int] = getattr(os, "O_BINARY", 0)
 _UMASK: Final = threading.Lock()
 Action: TypeAlias = Literal["read", "text", "json", "iter_bytes", "iter_raw_bytes", "stream_to"]
@@ -48,11 +49,6 @@ State: TypeAlias = Literal["buffered", "open", "streaming", "consumed", "closed"
 SourceT = TypeVar("SourceT")
 HandleT = TypeVar("HandleT")
 T = TypeVar("T")
-
-
-def _pieces(data: bytes) -> Generator[bytes, None, None]:
-    for start in range(0, len(data), CHUNK):
-        yield data[start : start + CHUNK]
 
 
 def _temporary(path: Path) -> tuple[int, Path]:
@@ -121,6 +117,33 @@ def _committed(created: tuple[BinaryIO, Path], tail: bytes, path: Path, overwrit
     _commit(temporary, path, overwrite=overwrite)
 
 
+class ReceivedBody:
+    """A response body as it is read: a success body whole, an error body up to its bounded prefix."""
+
+    __slots__ = ("chunks", "problem", "size", "success", "truncated")
+
+    def __init__(self, *, success: bool) -> None:
+        self.success = success
+        self.chunks: list[bytes] = []
+        self.size = 0
+        self.truncated = False
+        self.problem: DecodeError | None = None
+
+    def add(self, chunk: bytes) -> bool:
+        """Keep a chunk and return whether reading continues: an error body keeps only its bounded prefix."""
+        self.size += len(chunk)
+        if self.success or self.size <= MAX_ERROR_BODY_BYTES:
+            self.chunks.append(chunk)
+            return True
+        self.chunks.append(chunk[: len(chunk) - (self.size - MAX_ERROR_BODY_BYTES)])
+        self.truncated = True
+        return False
+
+    @property
+    def content(self) -> bytes:
+        return b"".join(self.chunks)
+
+
 class _Download:
     """One temporary download, kept where its thread created it, and the chunks waiting for its next write."""
 
@@ -145,6 +168,44 @@ class _Download:
     async def discard(self) -> None:
         if self.created is not None:
             await in_thread(_discarded, self.created)
+
+
+class Closing:
+    """A mixin for a handle that leaving its `with` block closes, by the `close()` of the class that takes it."""
+
+    __slots__ = ()
+
+    def close(self) -> None:
+        """Release the handle, as the class that takes the mixin defines."""
+
+    def __enter__(self) -> Self:
+        """Return this handle, which leaving the block closes."""
+        return self
+
+    def __exit__(
+        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
+    ) -> None:
+        """Close this handle."""
+        self.close()
+
+
+class AsyncClosing:
+    """An asyncio `Closing`: leaving its `async with` block closes, by the `aclose()` of the class that takes it."""
+
+    __slots__ = ()
+
+    async def aclose(self) -> None:
+        """Release the handle, as the class that takes the mixin defines."""
+
+    async def __aenter__(self) -> Self:
+        """Return this handle, which leaving the block closes."""
+        return self
+
+    async def __aexit__(
+        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
+    ) -> None:
+        """Close this handle."""
+        await self.aclose()
 
 
 class _Raw(Generic[SourceT, HandleT]):
@@ -247,7 +308,7 @@ class _Raw(Generic[SourceT, HandleT]):
 
     def _text(self, body: bytes) -> str:
         try:
-            return body.decode(charset(self._info.content_type or ""))
+            return charset_text(body, self._info.content_type)
         except UnicodeDecodeError as error:
             raise self._undecodable(body, error) from None
 
@@ -258,30 +319,16 @@ class _Raw(Generic[SourceT, HandleT]):
             raise self._undecodable(body, error) from None
 
     def _undecodable(self, body: bytes, cause: BaseException) -> DecodeError:
-        error = response_failure(self._info, "invalid_syntax", body, cause)
-        error.operation_id = self._operation_id
-        return error
+        return response_failure(self._info, "invalid_syntax", body, cause, operation_id=self._operation_id)
 
     def _saved_failure(self) -> BaseException:
         """Return the typed failure of a buffered response from its bounded error prefix."""
-        body = self._body
-        error = self._decoder.failure(
-            self._info, body[:MAX_ERROR_BODY_BYTES], truncated=len(body) > MAX_ERROR_BODY_BYTES
-        )
-        return self._call.snapshot_error(error)
+        body, truncated = bounded_body(self._body)
+        return self._call.snapshot_error(self._decoder.failure(self._info, body, truncated=truncated))
 
     def _unread_failure(self) -> BaseException:
         """Return the typed failure of a response whose body was partly or wholly read: no body, truncated."""
         return self._failure(self._decoder.failure(self._info, b"", truncated=True))
-
-    @staticmethod
-    def _prefix(parts: list[bytes], chunk: bytes, size: int) -> bool:
-        """Keep a chunk of an error body within its prefix limit and return whether reading continues."""
-        if size <= MAX_ERROR_BODY_BYTES:
-            parts.append(chunk)
-            return True
-        parts.append(chunk[: len(chunk) - (size - MAX_ERROR_BODY_BYTES)])
-        return False
 
     def _save(self, decoded: list[bytes]) -> None:
         self._body = b"".join(decoded)
@@ -339,16 +386,13 @@ class _Raw(Generic[SourceT, HandleT]):
     async def _error_prefix(self) -> BaseException:
         """Read the error prefix of a streaming handle and return its typed failure."""
         self._state = "streaming"
-        parts: list[bytes] = []
-        size = 0
-        problem: DecodeError | None = None
+        received = ReceivedBody(success=False)
         try:
             async for chunk in self._chunks():
-                size += len(chunk)
-                if not self._prefix(parts, chunk, size):
+                if not received.add(chunk):
                     break
         except DecodeError as error:
-            problem = error
+            received.problem = error
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             await self._end("failed", failure)
@@ -356,8 +400,14 @@ class _Raw(Generic[SourceT, HandleT]):
         except BaseException as error:
             await self._end("failed", error)
             raise
-        truncated = size > MAX_ERROR_BODY_BYTES or problem is not None
-        return self._failure(self._decoder.failure(self._info, b"".join(parts), truncated=truncated, problem=problem))
+        problem = received.problem
+        truncated = received.truncated or problem is not None
+        return self._failure(self._decoder.failure(self._info, received.content, truncated=truncated, problem=problem))
+
+    async def _write_failed(self, error: BaseException) -> None:
+        """End the stream a failed write of this call left behind, before the failure propagates."""
+        if self._state == "streaming":
+            await self._end("failed", error)
 
     async def _end(self, state: State, error: BaseException | None = None) -> None:
         """Enter a final state, releasing the native connection once."""
@@ -462,7 +512,7 @@ async def afinished(response: AsyncRawResponse, error: BaseException | None = No
     await response._end("consumed" if error is None else "failed", error)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
-class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
+class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"], Closing):
     """A raw response of a synchronous client: buffered, or a streaming handle whose body is read at most once."""
 
     __slots__ = ()
@@ -494,13 +544,12 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             return
         self._downloadable()
         path = Path(target)
-        file, temporary = _created(path, overwrite)
+        created = _created(path, overwrite)
         try:
-            with file:
-                self._write(file.write)
-            _commit(temporary, path, overwrite=overwrite)
+            self._write(created[0].write)
+            _committed(created, b"", path, overwrite)
         except BaseException:
-            temporary.unlink(missing_ok=True)
+            _discarded(created)
             raise
 
     def _write(self, write: Callable[[bytes], object]) -> None:
@@ -510,8 +559,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             for chunk in chunks:
                 write(chunk)
         except BaseException as error:
-            if self._state == "streaming":
-                run_sync(self._end("failed", error))
+            run_sync(self._write_failed(error))
             raise
 
     def raise_for_status(self) -> None:
@@ -521,16 +569,6 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
     def close(self) -> None:
         """Release a streaming handle's connection; saved bytes stay readable, and closing twice does nothing."""
         run_sync(self._release())
-
-    def __enter__(self) -> Self:
-        """Return this response, which leaving the block closes."""
-        return self
-
-    def __exit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close this response."""
-        self.close()
 
     def discard(self, error: BaseException) -> None:
         """Close the handle while an error propagates, keeping a close failure beside that error."""
@@ -547,7 +585,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
     def _iterate(self, *, action: Action, decoded: bool) -> Iterator[bytes]:
         match self._state:
             case "buffered" if decoded:
-                return _pieces(self._body)
+                return pieces(self._body)
             case "open":
                 self._state = "streaming"
                 return self._stream(decoded=decoded)
@@ -572,7 +610,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             run_sync(self._end("consumed"))
 
 
-class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawResponse"]):
+class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawResponse"], AsyncClosing):
     """A raw response of an asyncio client: buffered, or a streaming handle whose body is read at most once."""
 
     __slots__ = ()
@@ -615,11 +653,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             await self._write_failed(error)
             raise
 
-    async def _write_failed(self, error: BaseException) -> None:
-        """End the stream a failed write of this call left behind, before the failure propagates."""
-        if self._state == "streaming":
-            await self._end("failed", error)
-
     async def _download(self, path: Path, *, overwrite: bool) -> None:
         """Write the body to a path through a temporary file, one file call at a time in a thread.
 
@@ -654,16 +687,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         """Release a streaming handle's connection; saved bytes stay readable, and closing twice does nothing."""
         await self._release()
 
-    async def __aenter__(self) -> Self:
-        """Return this response, which leaving the block closes."""
-        return self
-
-    async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close this response."""
-        await self.aclose()
-
     async def discard(self, error: BaseException) -> None:
         """Close the handle while an error propagates, keeping a close failure beside that error."""
         await self._release(error)
@@ -682,7 +705,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
     def _iterate(self, *, action: Action, decoded: bool) -> AsyncGenerator[bytes, None] | Ready[bytes]:
         match self._state:
             case "buffered" if decoded:
-                return Ready(_pieces(self._body))
+                return Ready(pieces(self._body))
             case "open":
                 self._state = "streaming"
                 return self._stream(decoded=decoded)

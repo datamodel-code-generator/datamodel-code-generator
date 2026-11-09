@@ -15,6 +15,7 @@ This page lists features that are available but still experimental.
 | `cli-option.install-skill` | cli-option | `--install-skill, --skill-scope, and --overwrite-skill` | 0.76.0 | - |
 | `cli-option.recommend-options` | cli-option | `--recommend-options, its rule data, its candidate comparison, its JSON payload, and --generate-prompt --recommend-options with the prompt JSON field recommendation` | 0.86.0 | - |
 | `cli-option.schema-validator-type` | cli-option | `--schema-validator-type` | 0.66.1 | - |
+| `cli-option.untrusted-input` | cli-option | `--untrusted-input` | 0.92.0 | - |
 | `cli-option.use-missing-sentinel` | cli-option | `--use-missing-sentinel` | 0.66.1 | - |
 | `cli-option.use-type-alias` | cli-option | `--use-type-alias` | 0.36.0 | - |
 | `cli-option.use-type-alias-type` | cli-option | `--use-type-alias-type` | 0.71.1 | - |
@@ -25,6 +26,7 @@ This page lists features that are available but still experimental.
 | `input-format.mcp-tools` | input-format | `--input-file-type mcp-tools` | 0.60.0 | - |
 | `input-format.protobuf` | input-format | `--input-file-type protobuf` | 0.59.0 | - |
 | `input-format.xmlschema` | input-format | `--input-file-type xmlschema` | 0.59.0 | - |
+| `python-api.generate-dynamic-module` | python-api | `generate_dynamic_module(), DynamicModule, and register_module=True` | 0.92.0 | - |
 
 ## Details
 
@@ -117,6 +119,16 @@ Option recommendations are experimental; the rules, the schema signals they read
 Schema-derived runtime validator backend selection is experimental and may change as validation backends are added.
 
 The only currently implemented backend is 'pydantic-v2', which preserves the existing generated Pydantic v2 validator behavior.
+
+### `cli-option.untrusted-input`
+
+- **Kind:** cli-option
+- **Target:** `--untrusted-input`
+- **Since:** 0.92.0
+
+The untrusted input switch is experimental; the references and schema keywords it refuses may grow as new ways for a schema to read files or write code are found.
+
+With --untrusted-input (untrusted_input=True in generate() and in the GenerateConfig of the dynamic API), dcg reads no file or URL but the input, refuses x-python-type, x-python-import, customTypePath and customBasePath, Protocol Buffers input and --validation, and implies --no-allow-remote-refs. It does not sandbox the generated code.
 
 ### `cli-option.use-missing-sentinel`
 
@@ -217,3 +229,13 @@ The parser generates Python models from .proto schemas; it does not provide prot
 XML Schema input support is experimental and may change as real-world usage is validated.
 
 The parser focuses on model generation from XSD documents, not full XML instance validation.
+
+### `python-api.generate-dynamic-module`
+
+- **Kind:** python-api
+- **Target:** `generate_dynamic_module(), DynamicModule, and register_module=True`
+- **Since:** 0.92.0
+
+Dynamic module generation is experimental; its parameters, the DynamicModule attributes, the schema locations it keys classes by, and the module registration rules may change.
+
+generate_dynamic_module() generates the classes like generate_dynamic_models() and also returns the class of the document itself, if it has one (None for an OpenAPI document or with skip_root_model), and the class of each schema location that becomes a class (a location written as a type alias or merged into another class has no entry). With register_module=True, it keeps the module of the classes registered in sys.modules, so that the classes and their instances pickle. generate_dynamic_models() is not experimental.

@@ -18,20 +18,14 @@ from .pydantic_v2_configdict import render_with_scope as _include_0
 from .pydantic_v2_schema_runtime_validation import render_with_scope as _include_1
 
 
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
-
-
 def render_with_scope(_scope: _Scope) -> str:
     def _macro_get_type_hint(_parent: _Scope, _fields: Any, use_base_type: Any) -> str:
         _parts: list[str] = []
         if _fields:
             if use_base_type:
-                _value_0 = _stringify(_getattr(_getitem(_fields, 0), "base_type_hint"))
-                _parts.append(f"{_value_0}")
+                _parts.append(f"{_stringify(_getattr(_getitem(_fields, 0), 'base_type_hint'))}")
             else:
-                _value_1 = _stringify(_getattr(_getitem(_fields, 0), "type_hint"))
-                _parts.append(f"{_value_1}")
+                _parts.append(f"{_stringify(_getattr(_getitem(_fields, 0), 'type_hint'))}")
         return "".join(_parts)
 
     _context_base_class = _scope.get("base_class")
@@ -52,47 +46,38 @@ def render_with_scope(_scope: _Scope) -> str:
     _context_string_pattern_alias_reached = _scope.get("string_pattern_alias_reached")
     _parts: list[str] = []
     for decorator in _context_decorators:
-        _value_2 = _stringify(decorator)
-        _parts.append(f"{_value_2}\n")
+        _parts.append(f"{_stringify(decorator)}\n")
     use_base_type = _context_config and _getattr(_context_config, "regex_engine")
-    _value_3 = _stringify(_context_class_name)
-    _parts.append(f"class {_value_3}(")
+    _parts.append(f"class {_stringify(_context_class_name)}(")
     if _context_schema_runtime_validation_use_base:
-        _value_4 = _stringify(_context_schema_runtime_validation_base_class_name)
-        _parts.append(f"{_value_4}, ")
-    _value_5 = _stringify(_context_base_class)
-    _parts.append(f"{_value_5}")
+        _parts.append(f"{_stringify(_context_schema_runtime_validation_base_class_name)}, ")
+    _parts.append(f"{_stringify(_context_base_class)}")
     if _context_fields:
         _parts.append("[")
         if _context_string_pattern_alias_reached:
             _parts.append("Any")
         else:
-            _value_6 = _stringify(_macro_get_type_hint(_scope, _context_fields, use_base_type))
-            _parts.append(f"{_value_6}")
+            _parts.append(f"{_stringify(_macro_get_type_hint(_scope, _context_fields, use_base_type))}")
         _parts.append("]")
     if _is_defined(_context_sequence_base_class):
-        _value_7 = _stringify(_context_sequence_base_class)
-        _parts.append(f", {_value_7}")
+        _parts.append(f", {_stringify(_context_sequence_base_class)}")
     _parts.append("):")
     if _is_defined(_context_comment):
-        _value_8 = _stringify(_context_comment)
-        _parts.append(f"  # {_value_8}")
+        _parts.append(f"  # {_stringify(_context_comment)}")
     if _context_description:
-        _value_9 = _stringify(_context_description)
-        _parts.append(f"\n    {_value_9}")
+        _parts.append(f"\n    {_stringify(_context_description)}")
     if _context_config:
-        _captured_10: list[str] = []
-        _captured_10.append("\n")
-        _include_scope_11 = _scope.child()
-        _include_scope_11.set("use_base_type", use_base_type)
-        _captured_10.append(_include_0(_include_scope_11))
-        _parts.append(_filter_indent("".join(_captured_10), 4))
+        _captured_0: list[str] = []
+        _captured_0.append("\n")
+        _include_scope_1 = _scope.child()
+        _include_scope_1.set("use_base_type", use_base_type)
+        _captured_0.append(_include_0(_include_scope_1))
+        _parts.append(_filter_indent("".join(_captured_0), 4))
     for line in _context_class_body_lines:
-        _value_12 = _stringify(line)
-        _parts.append(f"\n    {_value_12}")
-    _include_scope_13 = _scope.child()
-    _include_scope_13.set("use_base_type", use_base_type)
-    _parts.append(_include_1(_include_scope_13))
+        _parts.append(f"\n    {_stringify(line)}")
+    _include_scope_2 = _scope.child()
+    _include_scope_2.set("use_base_type", use_base_type)
+    _parts.append(_include_1(_include_scope_2))
     if not _context_fields:
         if (((not _context_description) and (not _context_config)) and (not _context_class_body_lines)) and (
             not _context_schema_runtime_validation
@@ -101,37 +86,24 @@ def render_with_scope(_scope: _Scope) -> str:
     else:
         field = _getitem(_context_fields, 0)
         if (not field.annotated) and field.field:
-            _value_14 = _stringify(field.type_hint)
-            _value_15 = _stringify(field.field)
-            _parts.append(f"\n    root: {_value_14} = {_value_15}")
+            _parts.append(f"\n    root: {_stringify(field.type_hint)} = {_stringify(field.field)}")
         else:
             if field.annotated:
-                _value_16 = _stringify(field.annotated)
-                _parts.append(f"\n    root: {_value_16}")
+                _parts.append(f"\n    root: {_stringify(field.annotated)}")
             else:
-                _value_17 = _stringify(field.type_hint)
-                _parts.append(f"\n    root: {_value_17}")
+                _parts.append(f"\n    root: {_stringify(field.type_hint)}")
             if (not getattr(field, "has_default_factory_in_field", _MISSING)) and (
                 not (field.required or ((field.represented_default == "None") and field.strip_default_none))
             ):
-                _value_18 = _stringify(field.represented_default)
-                _parts.append(f" = {_value_18}")
+                _parts.append(f" = {_stringify(field.represented_default)}")
         if field.docstring:
-            _value_19 = _stringify(field.docstring)
-            _parts.append(f"\n    {_value_19}")
+            _parts.append(f"\n    {_stringify(field.docstring)}")
         elif field.inline_field_docstring:
-            _value_20 = _stringify(field.inline_field_docstring)
-            _parts.append(f"\n    {_value_20}")
+            _parts.append(f"\n    {_stringify(field.inline_field_docstring)}")
         if _is_defined(_context_sequence_item_type) and _is_defined(_context_sequence_slice_type):
-            _value_21 = _stringify(_context_sequence_item_type)
-            _value_22 = _stringify(_context_sequence_item_type)
-            _value_23 = _stringify(_context_sequence_slice_type)
-            _value_24 = _stringify(_context_sequence_item_type)
-            _value_25 = _stringify(_context_sequence_slice_type)
             _parts.append(
-                f"\n\n    def __iter__(self) -> Iterator[{_value_21}]:\n        return iter(self.root)\n\n    @overload\n    def __getitem__(self, index: SupportsIndex) -> {_value_22}:\n        pass\n\n    @overload\n    def __getitem__(self, index: slice) -> {_value_23}:\n        pass\n\n    def __getitem__(self, index: SupportsIndex | slice) -> {_value_24} | {_value_25}:\n        return self.root[index]\n\n    def __len__(self) -> int:\n        return len(self.root)"
+                f"\n\n    def __iter__(self) -> Iterator[{_stringify(_context_sequence_item_type)}]:\n        return iter(self.root)\n\n    @overload\n    def __getitem__(self, index: SupportsIndex) -> {_stringify(_context_sequence_item_type)}:\n        pass\n\n    @overload\n    def __getitem__(self, index: slice) -> {_stringify(_context_sequence_slice_type)}:\n        pass\n\n    def __getitem__(self, index: SupportsIndex | slice) -> {_stringify(_context_sequence_item_type)} | {_stringify(_context_sequence_slice_type)}:\n        return self.root[index]\n\n    def __len__(self) -> int:\n        return len(self.root)"
             )
         for method in _context_methods:
-            _value_26 = _stringify(method)
-            _parts.append(f"\n\n    {_value_26}")
+            _parts.append(f"\n\n    {_stringify(method)}")
     return "".join(_parts)

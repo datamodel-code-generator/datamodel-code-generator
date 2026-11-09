@@ -15,6 +15,7 @@ def install_agent_skill_command(agent: str, scope: str, *, overwrite: bool) -> i
         SkillScope,
         install_agent_skill,
     )
+    from datamodel_code_generator.enums import _ExitCode  # noqa: PLC0415
 
     try:
         destination = install_agent_skill(
@@ -24,17 +25,16 @@ def install_agent_skill_command(agent: str, scope: str, *, overwrite: bool) -> i
         )
     except AgentSkillError as e:
         print(f"Error: {e}", file=sys.stderr)  # noqa: T201
-        return 2
+        return _ExitCode.ERROR
     print(f"Installed datamodel-code-generator skill at {destination}")  # noqa: T201
-    return 0
+    return _ExitCode.OK
 
 
 def run_agent_skill_installer(args: list[str]) -> int:
     """Parse only the normal CLI arguments needed for the installer fast path."""
-    from datamodel_code_generator.arguments import arg_parser, namespace  # noqa: PLC0415
+    from datamodel_code_generator.arguments import _reset_namespace, arg_parser, namespace  # noqa: PLC0415
 
-    vars(namespace).clear()
-    namespace.no_color = False
+    _reset_namespace(namespace)
     arg_parser.parse_args(args, namespace=namespace)
     return install_agent_skill_command(
         namespace.install_skill,

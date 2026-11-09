@@ -8,10 +8,13 @@ import re
 from decimal import Decimal
 from math import isfinite
 
-from datamodel_code_generator.imports import Import
+from datamodel_code_generator import imports
+from datamodel_code_generator._python_syntax import call_text, keyword_argument
 from datamodel_code_generator.python_literal import (
     PythonRuntimeExpression,
-    _safe_non_finite_float,
+    _converted_float,
+    _datetime_expression,
+    _isoformat_expression,
 )
 
 XML_DATE_PATTERN = re.compile(r"^(?P<date>-?\d{4,}-\d{2}-\d{2})(?:Z|[+-]\d{2}:\d{2})?$")
@@ -20,7 +23,30 @@ DAY_TIME_DURATION_PATTERN = re.compile(
     r"(?:T(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+(?:\.\d+)?)S)?)?$"
 )
 XSD_WHITESPACE_CHARS = " \t\n\r"
-IMPORT_DATETIME_MODULE = Import(import_="datetime", alias="datetime_module")
+_XSD_SECONDS = r"(?:(?:\d+(?:\.\d*)?|\.\d+)S)?"
+_XSD_TIME_PART = rf"(?:T(?!$)(?:\d+H)?(?:\d+M)?{_XSD_SECONDS})?"
+XSD_DURATION_LEXICAL_FORMS: dict[str, tuple[re.Pattern[str], str]] = {
+    "duration": (
+        re.compile(rf"^-?P(?!$)(?:\d+Y)?(?:\d+M)?(?:\d+D)?{_XSD_TIME_PART}$"),
+        (
+            "P, then years (Y), months (M) and days (D), then after a T hours (H), minutes (M) and seconds (S),"
+            " with at least one component, and one after a T"
+        ),
+    ),
+    "dayTimeDuration": (
+        re.compile(rf"^-?P(?!$)(?:\d+D)?{_XSD_TIME_PART}$"),
+        (
+            "P, then days (D), then after a T hours (H), minutes (M) and seconds (S), with at least one component,"
+            " and one after a T"
+        ),
+    ),
+    "yearMonthDuration": (
+        re.compile(r"^-?P(?!$)(?:\d+Y)?(?:\d+M)?$"),
+        "P, then years (Y) and months (M), with at least one component",
+    ),
+}
+"""The lexical form of each built-in duration type and the words that describe it, by the type's local name."""
+IMPORT_DATETIME_MODULE = imports.IMPORT_DATETIME_MODULE
 
 
 # Compatibility aliases for existing parser integrations. New runtime expressions
@@ -35,12 +61,8 @@ def _safe_float(value: str, *, source_safe_non_finite: bool = False) -> float | 
     except ValueError:
         return None
     match value:
-        case "INF" | "+INF":
-            return _safe_non_finite_float(number) if source_safe_non_finite else number
-        case "-INF":
-            return _safe_non_finite_float(number) if source_safe_non_finite else number
-        case "NaN":
-            return _safe_non_finite_float(number) if source_safe_non_finite else number
+        case "INF" | "+INF" | "-INF" | "NaN":
+            return _converted_float(number, source_safe_non_finite=source_safe_non_finite)
     return number if isfinite(number) else None
 
 
@@ -53,44 +75,32 @@ def _safe_bool(value: str) -> bool | None:
     return None
 
 
-def _datetime_expression(suffix: str, *, prefix: str = "") -> _PythonExpression:
-    return _PythonExpression(IMPORT_DATETIME_MODULE, prefix, suffix)
-
-
 def _normalize_timezone(value: str) -> str:
     return f"{value[:-1]}+00:00" if value.endswith("Z") else value
 
 
+def _safe_isoformat_expression(kind: str, value: str) -> _PythonExpression | None:
+    """Return the expression that builds ``kind`` from a value Python reads, with ``Z`` as ``+00:00``."""
+    normalized = _normalize_timezone(value.strip(XSD_WHITESPACE_CHARS))
+    with contextlib.suppress(ValueError):
+        getattr(datetime_module, kind).fromisoformat(normalized)
+        return _isoformat_expression(kind, normalized)
+    return None
+
+
 def _safe_date_expression(value: str) -> _PythonExpression | None:
     value = value.strip(XSD_WHITESPACE_CHARS)
-    date_match = XML_DATE_PATTERN.match(value)
-    if date_match is None:
+    if (date_match := XML_DATE_PATTERN.match(value)) is None or value != date_match["date"]:
         return None
-    date_value = date_match["date"]
-    if value != date_value:
-        return None
-    with contextlib.suppress(ValueError):
-        datetime_module.date.fromisoformat(date_value)
-        return _datetime_expression(f".date.fromisoformat({date_value!r})")
-    return None
+    return _safe_isoformat_expression("date", value)
 
 
 def _safe_time_expression(value: str) -> _PythonExpression | None:
-    value = value.strip(XSD_WHITESPACE_CHARS)
-    normalized = _normalize_timezone(value)
-    with contextlib.suppress(ValueError):
-        datetime_module.time.fromisoformat(normalized)
-        return _datetime_expression(f".time.fromisoformat({normalized!r})")
-    return None
+    return _safe_isoformat_expression("time", value)
 
 
 def _safe_datetime_expression(value: str) -> _PythonExpression | None:
-    value = value.strip(XSD_WHITESPACE_CHARS)
-    normalized = _normalize_timezone(value)
-    with contextlib.suppress(ValueError):
-        datetime_module.datetime.fromisoformat(normalized)
-        return _datetime_expression(f".datetime.fromisoformat({normalized!r})")
-    return None
+    return _safe_isoformat_expression("datetime", value)
 
 
 def _safe_day_time_duration_expression(value: str) -> _PythonExpression | None:
@@ -99,21 +109,15 @@ def _safe_day_time_duration_expression(value: str) -> _PythonExpression | None:
     if duration_match is None:
         return None
 
-    days = duration_match["days"]
-    hours = duration_match["hours"]
-    minutes = duration_match["minutes"]
-    seconds = duration_match["seconds"]
-    if not any((days, hours, minutes, seconds)):
+    if not any(duration_match.group("days", "hours", "minutes", "seconds")):
         return None
 
-    arguments: list[str] = []
-    if days:
-        arguments.append(f"days={int(days)}")
-    if hours:
-        arguments.append(f"hours={int(hours)}")
-    if minutes:
-        arguments.append(f"minutes={int(minutes)}")
-    if seconds:
+    arguments = [
+        keyword_argument(unit, str(int(amount)))
+        for unit in ("days", "hours", "minutes")
+        if (amount := duration_match[unit])
+    ]
+    if seconds := duration_match["seconds"]:
         seconds_in_microseconds = Decimal(seconds) * 1_000_000
         integral_microseconds = seconds_in_microseconds.to_integral_value()
         if seconds_in_microseconds != integral_microseconds:
@@ -124,8 +128,17 @@ def _safe_day_time_duration_expression(value: str) -> _PythonExpression | None:
         if microseconds:
             arguments.append(f"microseconds={microseconds}")
 
-    arguments_text = ", ".join(arguments) if arguments else "0"
     return _datetime_expression(
-        f".timedelta({arguments_text})",
+        call_text(".timedelta", arguments or ("0",)),
         prefix="-" if duration_match["sign"] else "",
     )
+
+
+def invalid_duration_message(type_name: str, value: str) -> str | None:
+    """Return why ``value`` is no lexical value of the built-in duration type ``type_name``; None when it is one."""
+    if (form := XSD_DURATION_LEXICAL_FORMS.get(type_name)) is None:
+        return None
+    pattern, requirement = form
+    if pattern.match(value.strip(XSD_WHITESPACE_CHARS)):
+        return None
+    return f"{value!r} is not a valid xs:{type_name} value: XML Schema requires {requirement}"

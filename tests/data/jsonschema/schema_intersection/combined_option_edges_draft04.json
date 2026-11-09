@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Model",
+  "type": "object",
+  "definitions": {
+    "NullOrObject": {"anyOf": [{"type": "object", "properties": {"y": {"type": "string"}}}, {"type": "null"}]}
+  },
+  "properties": {"const_part": {"allOf": [{"$ref": "#/definitions/NullOrObject"}, {"const": "k"}]}},
+  "required": ["const_part"]
+}

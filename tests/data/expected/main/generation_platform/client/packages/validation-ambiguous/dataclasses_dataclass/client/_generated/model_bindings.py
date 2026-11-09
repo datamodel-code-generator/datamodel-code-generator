@@ -19,14 +19,33 @@ from .._runtime.model_codecs.stdlib_dataclasses import (
 MODELS: Final[dict[type, Model]] = {
     models.Card: Model((Field('kind', 'kind'), Field('last4', 'last4'))),
     models.Transfer: Model((Field('kind', 'kind'), Field('iban', 'iban'))),
-    models.Order: Model((Field('id', 'id'), Field('status', 'status', models.Status), Field('note', 'note', omit_none=True), Field('channel', 'channel', models.Channel, omit_none=True), Field('payment', 'payment', Choice((), 'kind', (('card', models.Card), ('transfer', models.Transfer))), omit_none=True))),
+    models.Order: Model(
+        (
+            Field('id', 'id'),
+            Field('status', 'status', models.Status),
+            Field('note', 'note', omit_none=True),
+            Field('channel', 'channel', models.Channel, omit_none=True),
+            Field(
+                'payment',
+                'payment',
+                Choice(
+                    (), 'kind', (('card', models.Card), ('transfer', models.Transfer))
+                ),
+                omit_none=True,
+            ),
+        )
+    ),
     models.Problem: Model((Field('code', 'code'),)),
 }
 
-codec_0: Final[DataclassCodec[models.OrdersOrderIdGetPathOrderIdParameter]] = DataclassCodec(None, MODELS)
+codec_0: Final[DataclassCodec[models.OrdersOrderIdGetPathOrderIdParameter]] = (
+    DataclassCodec(None, MODELS)
+)
 """Codec of /paths/~1orders~1{orderId}/get parameter (request path orderId)."""
 
-codec_1: Final[DataclassCodec[models.OrdersOrderIdGetQueryViewParameter]] = DataclassCodec(models.OrdersOrderIdGetQueryViewParameter, MODELS)
+codec_1: Final[DataclassCodec[models.OrdersOrderIdGetQueryViewParameter]] = (
+    DataclassCodec(models.OrdersOrderIdGetQueryViewParameter, MODELS)
+)
 """Codec of /paths/~1orders~1{orderId}/get parameter (request query view)."""
 
 codec_2: Final[DataclassCodec[models.Order]] = DataclassCodec(models.Order, MODELS)

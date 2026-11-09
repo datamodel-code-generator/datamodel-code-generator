@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EncodedStrForConstrainedBase64",
+  "type": "object",
+  "required": ["required"],
+  "properties": {
+    "pattern": {"type": "string", "format": "byte", "pattern": "^Y"},
+    "lengths": {"type": "string", "format": "byte", "minLength": 4, "maxLength": 8},
+    "required": {"type": "string", "format": "byte", "minLength": 4},
+    "nullable": {"type": ["string", "null"], "format": "byte", "maxLength": 8},
+    "plain": {"type": "string", "format": "byte"},
+    "items": {"type": "array", "items": {"type": "string", "format": "byte", "maxLength": 8}},
+    "values": {"type": "object", "additionalProperties": {"type": "string", "format": "byte", "pattern": "^Y"}},
+    "ref": {"$ref": "#/$defs/Short"},
+    "member": {"anyOf": [{"type": "string", "format": "byte", "maxLength": 8}, {"type": "integer"}]},
+    "branch": {"type": ["array", "string"], "format": "byte", "maxLength": 8, "items": {"type": "integer"}}
+  },
+  "$defs": {
+    "Short": {"type": "string", "format": "byte", "maxLength": 8}
+  }
+}

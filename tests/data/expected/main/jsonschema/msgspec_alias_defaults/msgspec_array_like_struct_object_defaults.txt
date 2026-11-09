@@ -1,0 +1,14 @@
+{
+  "defaults": {
+    "row": "Row(a='x', b_c=UNSET)",
+    "rowBesideInteger": "Row(a=UNSET, b_c=2.0)",
+    "nullableRow": "Row(a='y', b_c=3.0)",
+    "rows": "[Row(a='w', b_c=UNSET)]",
+    "rowAlias": "Row(a='v', b_c=UNSET)",
+    "holder": "Holder(row=Row(a=UNSET, b_c=4.0), name='h', tags=['t'], nullableTags=None, rowsByKey={'k': Row(a='m', b_c=UNSET)}, labels={'x': 'y'})",
+    "rowArray": "Row(a='p', b_c=5.0)",
+    "labelsThenRow": "[{'a': 'b'}, {'a': 'z'}]",
+    "labelsThenRowAlias": "[{'a': 'b'}, {'a': 'z'}]"
+  },
+  "decoded_equal": true
+}

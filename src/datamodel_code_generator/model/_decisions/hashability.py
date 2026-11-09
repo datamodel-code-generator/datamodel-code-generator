@@ -1,0 +1,343 @@
+"""Hashability: whether the instances of a model hash by value, as set items and as dict keys.
+
+A model's chain is the model and the generated models it inherits from, in the order a walk of the reference graph
+over its bases meets them (`ReferenceGraph.preorder`); the first class of the chain that sets ``frozen`` decides
+whether its instances are frozen. ``keeps_builtin_hash`` decides whether a set item model keeps the hash of its
+backend class, which hashes frozen instances by their values, or hashes by identity (``__hash__ = object.__hash__``);
+``set_items_may_keep_builtin_hash`` decides whether a parse whose backend allows it lets any set item model keep it.
+``dict_key_takes_root_type`` decides whether a dict key that names a root model takes the model's root type, as the
+model's instances cannot be dict keys. ``value_hashes`` and ``field_value_hashes`` decide whether the values Pydantic
+validates for a field hash as builtin values. ``set_items_can_hash`` decides whether some value that the items of an
+array take hashes, so that a set can hold it, and ``class_set_item_hash`` how the instances of a model class hash: by
+the values of their fields, by identity or never. Under --use-unique-items-as-set-by-value, ``every_value_hashes``
+decides whether every value of an item type hashes consistently with equality, ``python_type_value_hash`` what it
+reads of a bound Python type, and ``hashes_by_value`` whether the instances of a model do.
+
+Every input is an immutable fact; the adapters read them from the live objects and are listed in
+``docs/architecture.md``.
+"""
+
+from __future__ import annotations
+
+from types import NoneType
+from typing import TYPE_CHECKING, Literal, TypeAlias, final
+
+from datamodel_code_generator._container_kinds import SLOT_CLASSES, UNHASHABLE_CONTAINERS
+from datamodel_code_generator._records import record
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
+    from datamodel_code_generator._python_type_annotation import PythonTypeExpr
+
+__all__ = [
+    "HashClassFacts",
+    "SetItemFacts",
+    "SetItemHash",
+    "ValueHashFacts",
+    "ValueHashItem",
+    "class_set_item_hash",
+    "dict_key_takes_root_type",
+    "every_value_hashes",
+    "field_value_hashes",
+    "frozen_by_config",
+    "hashes_by_value",
+    "keeps_builtin_hash",
+    "python_type_value_hash",
+    "set_items_can_hash",
+    "set_items_may_keep_builtin_hash",
+    "value_hashes",
+]
+
+SetItemHash: TypeAlias = Literal["value", "identity", "never", "alias"]
+"""How the instances of a model class hash as set items: by the values of their fields (a frozen class that compares
+by value), by identity (``eq=False``, class code of its own, the hash a Pydantic class takes as a set item), never (a
+dict, or a class that compares by value without being frozen), or as the value of a type alias."""
+
+_BUILTIN_VALUE_KINDS: frozenset[type] = frozenset({str, int, float, bool, NoneType})
+"""The kinds of literal and default values whose hash is builtin."""
+_BUILTIN_HASH_SCALARS: frozenset[str] = frozenset({"str", "int", "float", "bool", "None"})
+"""The builtin scalar types whose validated values have builtin hashes; bytes, date and UUID can keep an unhashable
+subclass instance."""
+
+
+@final
+@record
+class HashClassFacts:
+    """The facts of one class of a model's chain that its hashability reads."""
+
+    frozen: bool | None = None
+    """The ``frozen`` its own configuration sets, or None where it sets none."""
+    builtin_hash: bool = False
+    """The class is the backend's own class, whose frozen instances hash by their values."""
+    custom_base_class: bool = False
+    user_class_code: bool = False
+    """The class has methods, decorators, validators or class body lines from its template data."""
+    custom_template_dir: bool = False
+    """The class renders from a template directory other than the built-in one."""
+
+
+@final
+@record(eq=False)
+class ValueHashFacts:
+    """The facts of one data type of a field that tell whether the values validated for it hash as builtin values."""
+
+    container: bool
+    """The type is a list, sequence, dict, mapping or set."""
+    opaque: bool
+    """The type names a model, holds member types, is a custom type or a function, or takes keyword arguments: model
+    instances, frozen ones included, can keep unhashable user subclasses."""
+    python_type: PythonTypeExpr | None
+    literals: tuple[object, ...]
+    builtin_name: str | None
+    """The type's name where it imports nothing."""
+
+
+@final
+@record
+class SetItemFacts:
+    """The facts of one type that the items of an array take that tell whether a value of it can be a set member."""
+
+    unhashable: bool = False
+    """The type is a container whose values do not hash, as it is written: a list, a sequence, a set, a dict or a
+    mapping, or it names a model whose instances never hash (``instances_never_hash``)."""
+    null: bool = False
+    """The type takes None too."""
+    members: tuple[SetItemFacts, ...] = ()
+    """The types of a union, which takes the values of each."""
+    positions: tuple[SetItemFacts, ...] | None = None
+    """The types of the positions of a tuple, which takes a value of each; None for a type that is no tuple."""
+
+
+def set_items_can_hash(items: Sequence[SetItemFacts]) -> bool:
+    """Return whether some value that the items of an array take hashes, so that a set can hold it.
+
+    A container whose values do not hash takes none, a tuple takes one where each of its positions does, a union where
+    one of its members does and any other type does; items of no type take any value.
+    """
+    return not items or any(map(_takes_hashable_value, items))
+
+
+def _takes_hashable_value(facts: SetItemFacts) -> bool:
+    """Return whether some value of the type of ``facts`` hashes.
+
+    The types it is made of are read first, with a stack of their own, so the facts of a chain of type aliases of any
+    length are read.
+    """
+    taken: dict[int, bool] = {}
+    pending = [facts]
+    while pending:
+        current = pending[-1]
+        if unread := [part for part in _read_parts(current) if id(part) not in taken]:
+            pending.extend(unread)
+            continue
+        pending.pop()
+        values = [taken[id(part)] for part in _read_parts(current)]
+        if current.null:
+            taken[id(current)] = True
+        elif current.positions is not None:
+            taken[id(current)] = all(values)
+        else:
+            taken[id(current)] = not current.unhashable and (not current.members or any(values))
+    return taken[id(facts)]
+
+
+def _read_parts(facts: SetItemFacts) -> tuple[SetItemFacts, ...]:
+    """Return the facts whose values ``_takes_hashable_value`` reads for ``facts``: its positions or its members."""
+    if facts.null or facts.unhashable:
+        return ()
+    return facts.members if facts.positions is None else facts.positions
+
+
+def class_set_item_hash(*, dicts: bool, compares_by_value: bool, frozen: bool, own_hash: bool) -> SetItemHash:
+    """Return how the instances of a model class hash: by the values of their fields, by identity or never.
+
+    Instances that are dicts (a TypedDict) never hash; a class that compares its instances by value (a dataclass or
+    msgspec Struct by default, a RootModel without the hash a Pydantic class takes as a set item) hashes them by value
+    where it is frozen, or hashes the values of its fields as a dataclass with ``unsafe_hash`` does, and never
+    otherwise, unless it may have a hash of its own (class code, a custom base class or templates), which hashes by
+    identity as far as the set rule knows, as does a class that does not compare by value (``eq=False``).
+    """
+    if dicts:
+        return "never"
+    if not compares_by_value or own_hash:
+        return "identity"
+    return "value" if frozen else "never"
+
+
+@final
+@record
+class ValueHashItem:
+    """The facts of one item type that tell whether every value of it hashes consistently with equality.
+
+    ``hashes``: a scalar, a ``Literal``, an enum, a custom or imported type, None, or a model that hashes by value
+    (``hashes_by_value``); not: ``Any`` or ``object``, a list, sequence, set, dict or mapping, a model that hashes by
+    identity or never. ``members`` are what a union, a tuple or a frozen set takes, every one of which must hash.
+    """
+
+    hashes: bool = True
+    members: tuple[ValueHashItem, ...] | None = None
+
+
+def every_value_hashes(item: ValueHashItem) -> bool:
+    """Return whether every value of an item type hashes consistently with equality."""
+    return item.hashes if item.members is None else all(map(every_value_hashes, item.members))
+
+
+_UNHASHABLE_ANNOTATION_CLASSES: frozenset[str] = frozenset({
+    *(
+        name
+        for slot in UNHASHABLE_CONTAINERS.slots
+        for name in (SLOT_CLASSES[slot].name, SLOT_CLASSES[slot].typing_name)
+    ),
+    *("Any", "object", "bytearray", "MutableSequence", "MutableMapping", "AbstractSet", "MutableSet", "Collection"),
+    *("Iterable", "Container", "deque", "Deque", "defaultdict", "DefaultDict", "OrderedDict", "Counter", "ChainMap"),
+})
+"""The classes, by name, of a bound Python type that take values which do not hash: ``Any`` and ``object``, the
+containers but the tuple and the frozen set, and the abstract collections such containers are."""
+
+
+def python_type_value_hash(expression: PythonTypeExpr) -> ValueHashItem:
+    """Return the facts ``every_value_hashes`` reads of the type that a bound ``x-python-type`` annotation writes.
+
+    A union takes the values of its members, ``Annotated`` those of its type and a tuple or a frozen set those of its
+    items, every one of which must hash; a class of ``_UNHASHABLE_ANNOTATION_CLASSES`` takes values that do not, and a
+    ``Literal`` and any other class, a scalar or an imported type, hash.
+    """
+    from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+        PythonTypeEllipsis,
+        PythonTypeSubscript,
+        is_union_python_type_expr,
+        python_type_expr_arguments,
+        python_type_expr_base_name,
+    )
+
+    if is_union_python_type_expr(expression):
+        return ValueHashItem(members=tuple(map(python_type_value_hash, python_type_expr_arguments(expression))))
+    if (name := python_type_expr_base_name(expression)) in _UNHASHABLE_ANNOTATION_CLASSES:
+        return ValueHashItem(hashes=False)
+    arguments: tuple[PythonTypeExpr, ...] = ()
+    if isinstance(expression, PythonTypeSubscript):
+        match name:
+            case "Annotated":
+                arguments = expression.arguments[:1]
+            case "tuple" | "Tuple" | "frozenset" | "FrozenSet":
+                arguments = tuple(item for item in expression.arguments if not isinstance(item, PythonTypeEllipsis))
+    return ValueHashItem(members=tuple(map(python_type_value_hash, arguments))) if arguments else ValueHashItem()
+
+
+def hashes_by_value(class_hash: SetItemHash, field_values: Iterable[bool]) -> bool:
+    """Return whether the instances of a model hash by value: its class does and every value of its fields does."""
+    return class_hash == "value" and all(field_values)
+
+
+def frozen_by_config(chain: Iterable[HashClassFacts]) -> bool:
+    """Return whether the first class of ``chain`` that sets ``frozen`` freezes the instances."""
+    return next((facts.frozen for facts in chain if facts.frozen is not None), None) is True
+
+
+def set_items_may_keep_builtin_hash(*, user_imports: bool) -> bool:
+    """Return whether a set item model may keep its builtin hash in a parse whose backend allows it.
+
+    User imports may shadow the builtin annotations that ``value_hashes`` recognizes.
+    """
+    return not user_imports
+
+
+def keeps_builtin_hash(*, chain: Sequence[HashClassFacts], field_values: Iterable[bool]) -> bool:
+    """Return whether a set item model keeps the builtin hash of its class instead of hashing by identity.
+
+    Its chain freezes it, every class of the chain is the backend's own class without a custom base class, class code
+    or custom templates, and the value of each field that is no ClassVar hashes as a builtin value (``field_values``,
+    read in order until one does not).
+    """
+    return (
+        frozen_by_config(chain)
+        and all(
+            facts.builtin_hash and not (facts.custom_base_class or facts.user_class_code or facts.custom_template_dir)
+            for facts in chain
+        )
+        and all(field_values)
+    )
+
+
+def dict_key_takes_root_type(
+    *, chain: Sequence[HashClassFacts], generated_checks: bool, custom_root_template: bool
+) -> bool:
+    """Return whether a dict key that names a root model takes the model's root type.
+
+    The model's instances cannot be dict keys unless its chain freezes it, and the key takes the root type only where
+    the model checks nothing beyond it: no class code of its own (``chain[0]``), no class body lines or runtime object
+    rules of the generator (``generated_checks``) and no custom root template.
+    """
+    return not (frozen_by_config(chain) or chain[0].user_class_code or generated_checks or custom_root_template)
+
+
+def field_value_hashes(
+    *, default_factory: bool, default: object, defaulted: bool, values: Iterable[ValueHashFacts]
+) -> bool:
+    """Return whether the values validated for a field hash as builtin values.
+
+    A default factory or a default of another kind can give a value that Pydantic does not validate.
+    """
+    return (
+        not default_factory
+        and (not defaulted or type(default) in _BUILTIN_VALUE_KINDS)
+        and all(map(value_hashes, values))
+    )
+
+
+def value_hashes(facts: ValueHashFacts) -> bool:
+    """Return whether the values validated for a data type hash as builtin values."""
+    if facts.container or facts.opaque:
+        return False
+    if facts.python_type is not None:
+        return _python_type_hashes(facts.python_type)
+    if facts.literals:
+        return all(type(value) in _BUILTIN_VALUE_KINDS for value in facts.literals)
+    return facts.builtin_name in _BUILTIN_HASH_SCALARS
+
+
+def _python_type_hashes(expression: PythonTypeExpr) -> bool:
+    """Return whether the values validated for a bound Python type are builtin scalars or tuples and frozensets of them.
+
+    Pydantic 2.0 can keep unhashable subclasses in a union of several types, so a union holds one type and None.
+    """
+    from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+        PythonTypeBoundName,
+        PythonTypeEllipsis,
+        PythonTypeName,
+        PythonTypeSubscript,
+        PythonTypeUnion,
+    )
+
+    pending = [expression]
+    while pending:
+        expression = pending.pop()
+        if isinstance(expression, PythonTypeUnion):
+            if len(expression.items) != 2 or PythonTypeName("None") not in expression.items:  # noqa: PLR2004
+                return False
+            pending.extend(expression.items)
+            continue
+        arguments = None
+        if isinstance(expression, PythonTypeSubscript):
+            arguments = expression.arguments
+            expression = expression.base
+        module, name = "builtins", expression.value if isinstance(expression, PythonTypeName) else ""
+        if isinstance(expression, PythonTypeBoundName):
+            module, name = expression.import_from, expression.import_name
+        if arguments is None:
+            if module != "builtins" or name not in _BUILTIN_HASH_SCALARS:
+                return False
+            continue
+        match module, name:
+            case ("builtins", "tuple") | ("typing", "Tuple"):
+                match arguments:
+                    case (_, PythonTypeEllipsis()):
+                        arguments = arguments[:1]
+            case ("builtins", "frozenset") | ("typing", "FrozenSet") if len(arguments) == 1:
+                pass
+            case _:
+                return False
+        pending.extend(arguments)
+    return True

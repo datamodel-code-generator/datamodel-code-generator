@@ -20,6 +20,22 @@ _INFO: Final = {
 }
 _PATHS: Final = "#/paths/"
 _LITERALS: Final = frozenset({"value", "example", "default", "enum", "const"})
+_NAMES: Final = frozenset({
+    "properties",
+    "patternProperties",
+    "$defs",
+    "definitions",
+    "dependentSchemas",
+    "dependencies",
+    "callbacks",
+    "headers",
+    "links",
+    "examples",
+    "encoding",
+    "variables",
+    "webhooks",
+})
+_KINDS: Final = {"components": "components", "responses": "responses", **dict.fromkeys(_NAMES, "names")}
 _ROOT: Final = {"servers": "servers", "openapi_tags": "tags", "openapi_external_docs": "externalDocs"}
 
 
@@ -56,28 +72,42 @@ def serve_openapi(
     setattr(app, "openapi", openapi)  # ruff: ignore[set-attr-with-constant] - FastAPI's documented way to replace the document.
 
 
-def _prefixed(value: object, prefix: str) -> object:
+def _prefixed(value: object, prefix: str, kind: str = "object") -> object:
     """Return a document value whose references and operationRefs into the document's paths name prefixed paths.
 
-    Literal data, such as examples, defaults, and extensions, stays as it is.
+    Literal data, such as examples, defaults, and extensions, stays as it is. Only a keyword is literal: a name in a map
+    of names, such as a schema's `properties`, a media type's `examples` or the `components`, never is, whatever it
+    spells, and neither is the `default` response of an operation. `kind` is `names` for a map of named objects,
+    `components` for a map of maps of names, `responses` for the responses of an operation, else `object`.
     """
     if isinstance(value, list):
         return [_prefixed(item, prefix) for item in cast("list[object]", value)]
     if not isinstance(value, dict):
         return value
     prefixed = {
-        key: item if _literal(key, item) else _prefixed(item, prefix)
+        key: item if _literal(key, item, kind) else _prefixed(item, prefix, _member(key, kind))
         for key, item in cast("dict[str, object]", value).items()
     }
+    if kind == "names":
+        return prefixed
     for key in ("$ref", "operationRef"):
         if isinstance(ref := prefixed.get(key), str) and ref.startswith(_PATHS):
             prefixed[key] = _PATHS + prefix.replace("~", "~0").replace("/", "~1") + ref[len(_PATHS) :]
     return prefixed
 
 
-def _literal(key: str, value: object) -> bool:
+def _member(key: str, kind: str) -> str:
+    """Return the kind of the value a member of a map of one kind holds."""
+    if kind == "names":
+        return "object"
+    return "names" if kind == "components" else _KINDS.get(key, "object")
+
+
+def _literal(key: str, value: object, kind: str) -> bool:
     """Return whether a member holds literal data: an example value, a default, an enum, a const, or an extension.
 
     A map of examples holds Example Objects, whose `value` is literal; a list of examples is a schema's.
     """
+    if kind == "names" or (kind == "responses" and key == "default"):
+        return False
     return key in _LITERALS or key.startswith("x-") or (key == "examples" and isinstance(value, list))

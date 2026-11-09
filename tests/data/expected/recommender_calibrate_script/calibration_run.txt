@@ -6,7 +6,7 @@ fetch shop@<upstream head:12>: fetched
 fetch config@v1: fetched, 1 external $ref stubbed
 fetch broken@v1: fetched
 run 4 schemas x (recommendation + 8 grid configurations)
-regret: pets 0, shop 0, config 0, broken None; threshold proposals: 3; preset proposals: 0; upstream heads to rotate: 3 of 4; failed: broken
+regret: pets 0, shop 0, config 0, broken None; threshold proposals: 2; preset proposals: 0; upstream heads to rotate: 3 of 4; failed: broken
 wrote report.md, scores.json, calibration.json, rules.diff
 
 --- stderr
@@ -32,16 +32,16 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "all"
         ],
         "median_length": 12,
-        "preset": "standard-py310-20261027",
+        "preset": "standard-py310-20261106",
         "problems": 0
       },
       "diff_against": null,
       "recommended": {
         "arguments": [
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--preset",
-          "standard-py310-20261027"
+          "standard-py310-20261106"
         ],
         "median_length": 17,
         "problems": 0
@@ -61,16 +61,16 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "all"
         ],
         "median_length": 5,
-        "preset": "standard-py310-20261027",
+        "preset": "standard-py310-20261106",
         "problems": 0
       },
       "diff_against": "v1",
       "recommended": {
         "arguments": [
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--preset",
-          "standard-py310-20261027"
+          "standard-py310-20261106"
         ],
         "median_length": 9,
         "problems": 0
@@ -88,16 +88,16 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "all"
         ],
         "median_length": 4,
-        "preset": "standard-py310-20261027",
+        "preset": "standard-py310-20261106",
         "problems": 0
       },
       "diff_against": null,
       "recommended": {
         "arguments": [
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--preset",
-          "standard-py310-20261027"
+          "standard-py310-20261106"
         ],
         "median_length": 11,
         "problems": 0
@@ -111,7 +111,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
   },
   "settings": {
     "output_model_type": "pydantic_v2.BaseModel",
-    "preset": "standard-py310-20261027",
+    "preset": "standard-py310-20261106",
     "target_python_version": "3.10"
   }
 }
@@ -121,7 +121,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
 
 - Rules: revision 2026-10-19, calibrated on 20261017 presets
 - Settings: pydantic_v2.BaseModel, target Python 3.10
-- Grid: 8 configurations over naming-strategy, enum-shape, title-source, each on top of standard-py310-20261027
+- Grid: 8 configurations over naming-strategy, enum-shape, title-source, each on top of standard-py310-20261106
 - Schemas: 4 (2 calibration, 2 holdout)
 
 ## Schemas
@@ -143,9 +143,9 @@ A rule should fire on a schema when the grid's best configuration with its value
 |---|---|---|---|---|---|
 | titles.keys-when-titles-collide | title-source | - | shop | - | pets, config |
 | titles.names-from-unique-titles | title-source | - | - | - | pets, config |
-| naming.qualify-shared-inline-names | naming-strategy | pets, shop, config | shop | config | - |
 | enums.inline-value-sets-as-literal | enum-shape | - | pets, shop | config | - |
 
+- Not covered: naming.qualify-shared-inline-names (its values are not a grid value)
 - Not covered: enums.read-as-their-const (decision enum-const-reading has no grid axis)
 - Not covered: openapi.paths-bodies-as-definitions (decision paths-bodies-as-definitions has no grid axis)
 - Not covered: constraints.omit-redundant (decision redundant-constraints has no grid axis)
@@ -153,12 +153,13 @@ A rule should fire on a schema when the grid's best configuration with its value
 - Not covered: root.class-name-for-root-object (decision root-name has no grid axis)
 - Not covered: dotted-keys.flat-when-namespaces-cycle (decision dotted-keys has no grid axis)
 - Not covered: unions.name-variants-after-tags (decision union-variant-names has no grid axis)
+- Not covered: unions.merge-shared-variant-tags (decision shared-variant-tags has no grid axis)
+- Not covered: versions.read-per-document (decision schema-version-scope has no grid axis)
 - Optional, not calibrated: validation.check-unique-items-and-pattern-properties (listed for the user to decide, never in the command)
 - Optional, not calibrated: policy.strict-scalar-types (listed for the user to decide, never in the command)
 
 Rules that disagree on 2 or more schemas:
 
-- naming.qualify-shared-inline-names: config, shop
 - enums.inline-value-sets-as-literal: config, pets, shop
 
 ## Threshold proposals
@@ -168,7 +169,6 @@ One leaf per rule: the observed signal value that removes most calibration disag
 | Rule | Leaf | Proposed | Calibration disagreements | Holdout disagreements |
 |---|---|---|---|---|
 | titles.keys-when-titles-collide | `component_title_duplicate_groups >= 3` | 1 | 1 -> 0 | 0 -> 0 |
-| naming.qualify-shared-inline-names | `shared_inline_names >= 1` | 2 | 1 -> 0 | 1 -> 0 |
 | enums.inline-value-sets-as-literal | `inline_enums >= 5` | 2 | 2 -> 0 | 1 -> 0 |
 
 ## Preset proposals
@@ -185,13 +185,13 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
 
 | Schema | Configurations | Arguments | Result |
 |---|---|---|---|
-| pets | recommended | `--input-file-type openapi --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261027 --target-python-version 3.10` | ok |
-| pets | grid best | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261027 --naming-strategy full-path --enum-field-as-literal all` | ok |
-| pets | preset + enum_field_as_literal="all" | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261027 --enum-field-as-literal all` | ok |
-| shop | recommended | `--input-file-type openapi --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261027 --target-python-version 3.10` | ok |
-| shop | grid best, preset + enum_field_as_literal="all" | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261027 --enum-field-as-literal all` | ok |
-| config | recommended | `--input-file-type jsonschema --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261027 --target-python-version 3.10` | ok |
-| config | grid best, preset + enum_field_as_literal="all" | `--input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261027 --enum-field-as-literal all` | ok |
+| pets | recommended | `--input-file-type openapi --naming-strategy enclosing-model --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261106 --target-python-version 3.10` | ok |
+| pets | grid best | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261106 --naming-strategy full-path --enum-field-as-literal all` | ok |
+| pets | preset + enum_field_as_literal="all" | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261106 --enum-field-as-literal all` | ok |
+| shop | recommended | `--input-file-type openapi --naming-strategy enclosing-model --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261106 --target-python-version 3.10` | ok |
+| shop | grid best, preset + enum_field_as_literal="all" | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261106 --enum-field-as-literal all` | ok |
+| config | recommended | `--input-file-type jsonschema --naming-strategy enclosing-model --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261106 --target-python-version 3.10` | ok |
+| config | grid best, preset + enum_field_as_literal="all" | `--input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261106 --enum-field-as-literal all` | ok |
 
 ## Proposed rotation
 
@@ -211,12 +211,12 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
 
 - calibrated_presets 20261015 -> 20261017
 - rules_revision 2026-10-15 -> 2026-10-19
-- settings.preset None -> standard-py310-20261027
+- settings.preset None -> standard-py310-20261106
 - settings.target_python_version 3.14 -> 3.10
 - config: new
 - legacy: not in this run
-- pets: best.arguments [--enum-field-as-literal all] -> [--naming-strategy full-path --enum-field-as-literal all]; best.median_length 11 -> 5; best.preset None -> standard-py310-20261027; best.problems 3 -> 0; recommended.arguments [] -> [--naming-strategy full-path --preset standard-py310-20261027]; recommended.median_length 12 -> 9; recommended.problems 5 -> 0; regret 2 -> 0; rules [enums.inline-value-sets-as-literal] -> [naming.qualify-shared-inline-names]
-- shop: best.preset None -> standard-py310-20261027; recommended.arguments [--naming-strategy full-path] -> [--naming-strategy full-path --preset standard-py310-20261027]; ref v1 -> <upstream head>
+- pets: best.arguments [--enum-field-as-literal all] -> [--naming-strategy full-path --enum-field-as-literal all]; best.median_length 11 -> 5; best.preset None -> standard-py310-20261106; best.problems 3 -> 0; recommended.arguments [] -> [--naming-strategy enclosing-model --preset standard-py310-20261106]; recommended.median_length 12 -> 9; recommended.problems 5 -> 0; regret 2 -> 0; rules [enums.inline-value-sets-as-literal] -> [naming.qualify-shared-inline-names]
+- shop: best.preset None -> standard-py310-20261106; recommended.arguments [--naming-strategy full-path] -> [--naming-strategy enclosing-model --preset standard-py310-20261106]; ref v1 -> <upstream head>
 
 --- rules.diff
 --- a/src/datamodel_code_generator/resources/recommender_rules.json
@@ -230,16 +230,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
            },
            {
              "signal": "component_titles_equal_other_key",
-@@ -106,7 +106,7 @@
-           {
-             "signal": "shared_inline_names",
-             "op": ">=",
--            "value": 1
-+            "value": 2
-           },
-           {
-             "signal": "inline_names_equal_component",
-@@ -143,7 +143,7 @@
+@@ -134,7 +134,7 @@
            {
              "signal": "inline_enums",
              "op": ">=",
@@ -271,16 +262,16 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "all"
           ],
           "median_length": 12,
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "problems": 0
         },
         "diff_against": null,
         "recommended": {
           "arguments": [
             "--naming-strategy",
-            "full-path",
+            "enclosing-model",
             "--preset",
-            "standard-py310-20261027"
+            "standard-py310-20261106"
           ],
           "median_length": 17,
           "problems": 0
@@ -300,16 +291,16 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "all"
           ],
           "median_length": 5,
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "problems": 0
         },
         "diff_against": "v1",
         "recommended": {
           "arguments": [
             "--naming-strategy",
-            "full-path",
+            "enclosing-model",
             "--preset",
-            "standard-py310-20261027"
+            "standard-py310-20261106"
           ],
           "median_length": 9,
           "problems": 0
@@ -327,16 +318,16 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "all"
           ],
           "median_length": 4,
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "problems": 0
         },
         "diff_against": null,
         "recommended": {
           "arguments": [
             "--naming-strategy",
-            "full-path",
+            "enclosing-model",
             "--preset",
-            "standard-py310-20261027"
+            "standard-py310-20261106"
           ],
           "median_length": 11,
           "problems": 0
@@ -350,7 +341,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
     },
     "settings": {
       "output_model_type": "pydantic_v2.BaseModel",
-      "preset": "standard-py310-20261027",
+      "preset": "standard-py310-20261106",
       "target_python_version": "3.10"
     }
   },
@@ -398,11 +389,11 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "--input-file-type",
         "openapi",
         "--naming-strategy",
-        "full-path",
+        "enclosing-model",
         "--output-model-type",
         "pydantic_v2.BaseModel",
         "--preset",
-        "standard-py310-20261027",
+        "standard-py310-20261106",
         "--target-python-version",
         "3.10"
       ],
@@ -421,7 +412,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "--target-python-version",
         "3.10",
         "--preset",
-        "standard-py310-20261027",
+        "standard-py310-20261106",
         "--naming-strategy",
         "full-path",
         "--enum-field-as-literal",
@@ -442,7 +433,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "--target-python-version",
         "3.10",
         "--preset",
-        "standard-py310-20261027",
+        "standard-py310-20261106",
         "--enum-field-as-literal",
         "all"
       ],
@@ -457,11 +448,11 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "--input-file-type",
         "openapi",
         "--naming-strategy",
-        "full-path",
+        "enclosing-model",
         "--output-model-type",
         "pydantic_v2.BaseModel",
         "--preset",
-        "standard-py310-20261027",
+        "standard-py310-20261106",
         "--target-python-version",
         "3.10"
       ],
@@ -480,7 +471,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "--target-python-version",
         "3.10",
         "--preset",
-        "standard-py310-20261027",
+        "standard-py310-20261106",
         "--enum-field-as-literal",
         "all"
       ],
@@ -496,11 +487,11 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "--input-file-type",
         "jsonschema",
         "--naming-strategy",
-        "full-path",
+        "enclosing-model",
         "--output-model-type",
         "pydantic_v2.BaseModel",
         "--preset",
-        "standard-py310-20261027",
+        "standard-py310-20261106",
         "--target-python-version",
         "3.10"
       ],
@@ -519,7 +510,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "--target-python-version",
         "3.10",
         "--preset",
-        "standard-py310-20261027",
+        "standard-py310-20261106",
         "--enum-field-as-literal",
         "all"
       ],
@@ -601,7 +592,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         {
           "arguments": [],
           "delta": {},
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
         },
         {
@@ -611,7 +602,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "delta": {
             "use_title_as_name": true
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
         },
         {
@@ -622,7 +613,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "delta": {
             "enum_field_as_literal": "all"
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
         },
         {
@@ -635,7 +626,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "enum_field_as_literal": "all",
             "use_title_as_name": true
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
         },
         {
@@ -646,7 +637,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "delta": {
             "naming_strategy": "full-path"
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
         },
         {
@@ -659,7 +650,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "naming_strategy": "full-path",
             "use_title_as_name": true
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
         },
         {
@@ -673,7 +664,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "enum_field_as_literal": "all",
             "naming_strategy": "full-path"
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
         },
         {
@@ -689,7 +680,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "naming_strategy": "full-path",
             "use_title_as_name": true
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
         }
       ],
@@ -726,7 +717,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": null
         },
         {
@@ -760,7 +751,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": null
         },
         {
@@ -795,7 +786,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": null
         },
         {
@@ -832,7 +823,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": null
         },
         {
@@ -867,7 +858,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": null
         },
         {
@@ -904,7 +895,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": null
         },
         {
@@ -942,7 +933,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": null
         },
         {
@@ -982,7 +973,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": null
         }
       ],
@@ -991,11 +982,11 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "--input-file-type",
           "jsonschema",
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--output-model-type",
           "pydantic_v2.BaseModel",
           "--preset",
-          "standard-py310-20261027",
+          "standard-py310-20261106",
           "--target-python-version",
           "3.10"
         ],
@@ -1003,10 +994,9 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "configured": false,
           "covers": [],
           "family": "standard",
-          "preset": "standard-py310-20261027"
+          "preset": "standard-py310-20261106"
         },
         "calibrated_presets": "20261017",
-        "consider": [],
         "context": {
           "output_model_type": "pydantic_v2.BaseModel",
           "target_python_version": "3.10"
@@ -1037,7 +1027,6 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
               "Config"
             ],
             "caveats": [],
-            "contested_reason": null,
             "decision": "root-name",
             "evidence": [
               "SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile became TsConfig, names over 40 characters 6 -> 0",
@@ -1088,10 +1077,9 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           {
             "arguments": [
               "--naming-strategy",
-              "full-path"
+              "enclosing-model"
             ],
             "caveats": [],
-            "contested_reason": null,
             "decision": "naming-strategy",
             "evidence": [
               "GitHub REST API description: numbered names 663 -> 53; locations renamed between two versions 17% -> 0.0%",
@@ -1099,10 +1087,10 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
               "Stripe API description: the expandable ID string of charge no longer displaces the charge component (ChargeModel)",
               "SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and lost"
             ],
-            "reason": "Inline schemas under different parents share property names (names: 1, e.g. mode x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; full-path names each inline model after its parent.",
+            "reason": "Inline schemas under different parents share property names (names: 1, e.g. mode x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; enclosing-model names each inline model after the model it is built for, once, and leaves definitions their own names.",
             "rule": "naming.qualify-shared-inline-names",
             "set": {
-              "naming_strategy": "full-path"
+              "naming_strategy": "enclosing-model"
             },
             "trial": {
               "after": "recommended - root-name",
@@ -1175,7 +1163,9 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "operations": 0,
           "parent_copy_union_branches": 0,
           "pattern_properties": 0,
+          "property_counts_beside_ignored_ref": 0,
           "redundant_constraints": 0,
+          "ref_siblings_read_as_draft_07": 0,
           "root_is_object": 1,
           "root_title_words": 2,
           "shared_inline_enum_names": 1,
@@ -1189,7 +1179,8 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "titled_components": 0,
           "unions": 0,
           "unique_items": 0,
-          "unmodeled_pattern_properties": 0
+          "unmodeled_pattern_properties": 0,
+          "variants_with_differing_tags": 0
         },
         "trial": {
           "candidates": [
@@ -1254,7 +1245,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261027",
+              "preset": "standard-py310-20261106",
               "selectable": true,
               "set": {},
               "stability": null
@@ -1262,7 +1253,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             {
               "arguments": [
                 "--naming-strategy",
-                "full-path",
+                "enclosing-model",
                 "--class-name",
                 "Config"
               ],
@@ -1292,11 +1283,11 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261027",
+              "preset": "standard-py310-20261106",
               "selectable": true,
               "set": {
                 "class_name": "Config",
-                "naming_strategy": "full-path"
+                "naming_strategy": "enclosing-model"
               },
               "stability": null
             },
@@ -1331,7 +1322,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261027",
+              "preset": "standard-py310-20261106",
               "selectable": true,
               "set": {
                 "class_name": "Config"
@@ -1341,7 +1332,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             {
               "arguments": [
                 "--naming-strategy",
-                "full-path"
+                "enclosing-model"
               ],
               "dropped_constraint_warnings": 0,
               "error": null,
@@ -1369,10 +1360,10 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261027",
+              "preset": "standard-py310-20261106",
               "selectable": true,
               "set": {
-                "naming_strategy": "full-path"
+                "naming_strategy": "enclosing-model"
               },
               "stability": null
             }
@@ -1447,7 +1438,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": 0
         },
         {
@@ -1481,7 +1472,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": 0
         },
         {
@@ -1516,7 +1507,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": 0
         },
         {
@@ -1553,7 +1544,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": 0
         },
         {
@@ -1588,7 +1579,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": 0
         },
         {
@@ -1625,7 +1616,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": 0
         },
         {
@@ -1663,7 +1654,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": 0
         },
         {
@@ -1703,7 +1694,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": 0
         }
       ],
@@ -1712,11 +1703,11 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "--input-file-type",
           "openapi",
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--output-model-type",
           "pydantic_v2.BaseModel",
           "--preset",
-          "standard-py310-20261027",
+          "standard-py310-20261106",
           "--target-python-version",
           "3.10"
         ],
@@ -1724,10 +1715,9 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "configured": false,
           "covers": [],
           "family": "standard",
-          "preset": "standard-py310-20261027"
+          "preset": "standard-py310-20261106"
         },
         "calibrated_presets": "20261017",
-        "consider": [],
         "context": {
           "output_model_type": "pydantic_v2.BaseModel",
           "target_python_version": "3.10"
@@ -1762,10 +1752,9 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           {
             "arguments": [
               "--naming-strategy",
-              "full-path"
+              "enclosing-model"
             ],
             "caveats": [],
-            "contested_reason": null,
             "decision": "naming-strategy",
             "evidence": [
               "GitHub REST API description: numbered names 663 -> 53; locations renamed between two versions 17% -> 0.0%",
@@ -1773,10 +1762,10 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
               "Stripe API description: the expandable ID string of charge no longer displaces the charge component (ChargeModel)",
               "SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and lost"
             ],
-            "reason": "Inline schemas under different parents share property names (names: 2, e.g. status x3, owner x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; full-path names each inline model after its parent.",
+            "reason": "Inline schemas under different parents share property names (names: 2, e.g. status x3, owner x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; enclosing-model names each inline model after the model it is built for, once, and leaves definitions their own names.",
             "rule": "naming.qualify-shared-inline-names",
             "set": {
-              "naming_strategy": "full-path"
+              "naming_strategy": "enclosing-model"
             },
             "trial": {
               "after": "recommended",
@@ -1849,7 +1838,9 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "operations": 0,
           "parent_copy_union_branches": 0,
           "pattern_properties": 0,
+          "property_counts_beside_ignored_ref": 0,
           "redundant_constraints": 0,
+          "ref_siblings_read_as_draft_07": 0,
           "root_is_object": 0,
           "root_title_words": 0,
           "shared_inline_enum_names": 1,
@@ -1863,7 +1854,8 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "titled_components": 0,
           "unions": 0,
           "unique_items": 0,
-          "unmodeled_pattern_properties": 0
+          "unmodeled_pattern_properties": 0,
+          "variants_with_differing_tags": 0
         },
         "trial": {
           "candidates": [
@@ -1940,7 +1932,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261027",
+              "preset": "standard-py310-20261106",
               "selectable": true,
               "set": {},
               "stability": {
@@ -1960,7 +1952,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             {
               "arguments": [
                 "--naming-strategy",
-                "full-path"
+                "enclosing-model"
               ],
               "dropped_constraint_warnings": 0,
               "error": null,
@@ -1988,10 +1980,10 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261027",
+              "preset": "standard-py310-20261106",
               "selectable": true,
               "set": {
-                "naming_strategy": "full-path"
+                "naming_strategy": "enclosing-model"
               },
               "stability": {
                 "fingerprints_matched": 3,
@@ -2076,7 +2068,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": null
         },
         {
@@ -2110,7 +2102,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": null
         },
         {
@@ -2145,7 +2137,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": null
         },
         {
@@ -2182,7 +2174,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": null
         },
         {
@@ -2217,7 +2209,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": null
         },
         {
@@ -2254,7 +2246,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": null
         },
         {
@@ -2292,7 +2284,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": null
         },
         {
@@ -2332,7 +2324,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261027",
+          "preset": "standard-py310-20261106",
           "renamed": null
         }
       ],
@@ -2341,11 +2333,11 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "--input-file-type",
           "openapi",
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--output-model-type",
           "pydantic_v2.BaseModel",
           "--preset",
-          "standard-py310-20261027",
+          "standard-py310-20261106",
           "--target-python-version",
           "3.10"
         ],
@@ -2353,10 +2345,9 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "configured": false,
           "covers": [],
           "family": "standard",
-          "preset": "standard-py310-20261027"
+          "preset": "standard-py310-20261106"
         },
         "calibrated_presets": "20261017",
-        "consider": [],
         "context": {
           "output_model_type": "pydantic_v2.BaseModel",
           "target_python_version": "3.10"
@@ -2395,7 +2386,6 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
               "bool"
             ],
             "caveats": [],
-            "contested_reason": null,
             "decision": "strict-types",
             "evidence": [
               "11 JSON documents for integer, number, boolean and string properties, 6 of them invalid: lax mode accepted 5 invalid ones; with int float bool, 0 accepted and 1 valid one rejected (5.0 as an integer); with float bool, 2 accepted (\"5\" and true as integers) and none rejected"
@@ -2416,10 +2406,9 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           {
             "arguments": [
               "--naming-strategy",
-              "full-path"
+              "enclosing-model"
             ],
             "caveats": [],
-            "contested_reason": null,
             "decision": "naming-strategy",
             "evidence": [
               "GitHub REST API description: numbered names 663 -> 53; locations renamed between two versions 17% -> 0.0%",
@@ -2427,10 +2416,10 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
               "Stripe API description: the expandable ID string of charge no longer displaces the charge component (ChargeModel)",
               "SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and lost"
             ],
-            "reason": "Inline schemas under different parents share property names (names: 1, e.g. state x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; full-path names each inline model after its parent.",
+            "reason": "Inline schemas under different parents share property names (names: 1, e.g. state x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; enclosing-model names each inline model after the model it is built for, once, and leaves definitions their own names.",
             "rule": "naming.qualify-shared-inline-names",
             "set": {
-              "naming_strategy": "full-path"
+              "naming_strategy": "enclosing-model"
             },
             "trial": {
               "after": "recommended",
@@ -2503,7 +2492,9 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "operations": 0,
           "parent_copy_union_branches": 0,
           "pattern_properties": 0,
+          "property_counts_beside_ignored_ref": 0,
           "redundant_constraints": 0,
+          "ref_siblings_read_as_draft_07": 0,
           "root_is_object": 0,
           "root_title_words": 0,
           "shared_inline_enum_names": 1,
@@ -2517,7 +2508,8 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "titled_components": 2,
           "unions": 0,
           "unique_items": 0,
-          "unmodeled_pattern_properties": 0
+          "unmodeled_pattern_properties": 0,
+          "variants_with_differing_tags": 0
         },
         "trial": {
           "candidates": [
@@ -2582,7 +2574,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261027",
+              "preset": "standard-py310-20261106",
               "selectable": true,
               "set": {},
               "stability": null
@@ -2590,7 +2582,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             {
               "arguments": [
                 "--naming-strategy",
-                "full-path"
+                "enclosing-model"
               ],
               "dropped_constraint_warnings": 0,
               "error": null,
@@ -2618,10 +2610,10 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261027",
+              "preset": "standard-py310-20261106",
               "selectable": true,
               "set": {
-                "naming_strategy": "full-path"
+                "naming_strategy": "enclosing-model"
               },
               "stability": null
             }
@@ -2698,22 +2690,8 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
       "rule": "titles.names-from-unique-titles"
     },
     {
-      "covered": "yes",
+      "covered": "its values are not a grid value",
       "decision": "naming-strategy",
-      "disagrees": {
-        "calibration": [
-          "shop"
-        ],
-        "holdout": [
-          "config"
-        ]
-      },
-      "fires": [
-        "pets",
-        "shop",
-        "config"
-      ],
-      "neutral": [],
       "rule": "naming.qualify-shared-inline-names"
     },
     {
@@ -2768,6 +2746,11 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
       "rule": "unions.name-variants-after-tags"
     },
     {
+      "covered": "decision shared-variant-tags has no grid axis",
+      "decision": "shared-variant-tags",
+      "rule": "unions.merge-shared-variant-tags"
+    },
+    {
       "covered": "optional, not calibrated",
       "decision": "schema-validators",
       "rule": "validation.check-unique-items-and-pattern-properties"
@@ -2776,6 +2759,11 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
       "covered": "optional, not calibrated",
       "decision": "strict-types",
       "rule": "policy.strict-scalar-types"
+    },
+    {
+      "covered": "decision schema-version-scope has no grid axis",
+      "decision": "schema-version-scope",
+      "rule": "versions.read-per-document"
     }
   ],
   "schemas": [
@@ -2810,7 +2798,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "union_variants_numbered": 0,
           "union_variants_parent_numbered": 0
         },
-        "preset": "standard-py310-20261027",
+        "preset": "standard-py310-20261106",
         "renamed": 0,
         "values": {
           "enum_field_as_literal": "all",
@@ -2822,9 +2810,9 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
       "recommended": {
         "arguments": [
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--preset",
-          "standard-py310-20261027"
+          "standard-py310-20261106"
         ],
         "metrics": {
           "component": 3,
@@ -2889,7 +2877,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "union_variants_numbered": 0,
           "union_variants_parent_numbered": 0
         },
-        "preset": "standard-py310-20261027",
+        "preset": "standard-py310-20261106",
         "renamed": null,
         "values": {
           "enum_field_as_literal": "all",
@@ -2900,9 +2888,9 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
       "recommended": {
         "arguments": [
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--preset",
-          "standard-py310-20261027"
+          "standard-py310-20261106"
         ],
         "metrics": {
           "component": 2,
@@ -2967,7 +2955,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "union_variants_numbered": 0,
           "union_variants_parent_numbered": 0
         },
-        "preset": "standard-py310-20261027",
+        "preset": "standard-py310-20261106",
         "renamed": null,
         "values": {
           "enum_field_as_literal": "all",
@@ -2978,9 +2966,9 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
       "recommended": {
         "arguments": [
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--preset",
-          "standard-py310-20261027"
+          "standard-py310-20261106"
         ],
         "metrics": {
           "component": 1,
@@ -3041,21 +3029,6 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
       "pointer": "/rules/0/when/any/0/value",
       "proposed": 1,
       "rule": "titles.keys-when-titles-collide"
-    },
-    {
-      "calibration": [
-        1,
-        0
-      ],
-      "current": 1,
-      "holdout": [
-        1,
-        0
-      ],
-      "leaf": "shared_inline_names >= 1",
-      "pointer": "/rules/2/when/any/0/value",
-      "proposed": 2,
-      "rule": "naming.qualify-shared-inline-names"
     },
     {
       "calibration": [

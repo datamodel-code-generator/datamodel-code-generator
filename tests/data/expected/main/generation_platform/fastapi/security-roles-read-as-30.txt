@@ -1,0 +1,3 @@
+# security-roles-read-as-30
+render pydantic_v2.BaseModel
+  Error: /paths/~1billing/get: The security of GET /billing lists scopes for scheme 'key', whose type takes none in OpenAPI 3.0; /paths/~1billing/get: The security of GET /billing lists scopes for scheme 'bearer', whose type takes none in OpenAPI 3.0

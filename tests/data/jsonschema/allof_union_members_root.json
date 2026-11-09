@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Event",
+  "allOf": [
+    {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}},
+    {
+      "oneOf": [
+        {"type": "object", "required": ["type"], "properties": {"type": {"const": "created"}, "name": {"type": "string"}}},
+        {"type": "object", "required": ["type"], "properties": {"type": {"const": "deleted"}, "reason": {"type": "string"}}}
+      ]
+    }
+  ]
+}

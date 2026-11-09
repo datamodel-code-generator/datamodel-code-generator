@@ -26,23 +26,29 @@ codec_3: Final[MsgspecCodec[models.ObjectResponseItem]] = MsgspecCodec(models.Ob
 codec_4: Final[MsgspecCodec[models.EnumRequestItem]] = MsgspecCodec(models.EnumRequestItem)
 """Codec of /paths/~1enum/post request_body (request application/json)."""
 
-codec_5: Final[MsgspecCodec[models.EnumResponseItem]] = MsgspecCodec(models.EnumResponseItem)
+codec_5: Final[MsgspecCodec[models.EnumRequest1]] = MsgspecCodec(models.EnumRequest1)
+"""Codec of /paths/~1enum/post request_body (request application/custom)."""
+
+codec_6: Final[MsgspecCodec[models.EnumResponseItem]] = MsgspecCodec(models.EnumResponseItem)
 """Codec of /paths/~1enum/post response_body (response 200 application/json)."""
 
-codec_6: Final[MsgspecCodec[Union[int, str]]] = MsgspecCodec(Union[int, str])
+codec_7: Final[MsgspecCodec[models.EnumResponse1]] = MsgspecCodec(models.EnumResponse1)
+"""Codec of /paths/~1enum/post response_body (response 200 application/custom)."""
+
+codec_8: Final[MsgspecCodec[Union[int, str]]] = MsgspecCodec(Union[int, str])
 """Codec of /paths/~1union/post request_body (request application/json)."""
 
-codec_7: Final[MsgspecCodec[Union[int, str]]] = MsgspecCodec(Union[int, str])
+codec_9: Final[MsgspecCodec[Union[int, str]]] = MsgspecCodec(Union[int, str])
 """Codec of /paths/~1union/post response_body (response 200 application/json)."""
 
-codec_8: Final[MsgspecCodec[Any]] = MsgspecCodec(Any)
+codec_10: Final[MsgspecCodec[Any]] = MsgspecCodec(Any)
 """Codec of /paths/~1any/post request_body (request application/json)."""
 
-codec_9: Final[MsgspecCodec[Any]] = MsgspecCodec(Any)
+codec_11: Final[MsgspecCodec[Any]] = MsgspecCodec(Any)
 """Codec of /paths/~1any/post response_body (response 200 application/json)."""
 
-codec_10: Final[MsgspecCodec[Any]] = MsgspecCodec(Any)
+codec_12: Final[MsgspecCodec[Any]] = MsgspecCodec(Any)
 """Codec of /paths/~1empty/post request_body (request application/json)."""
 
-codec_11: Final[MsgspecCodec[Any]] = MsgspecCodec(Any)
+codec_13: Final[MsgspecCodec[Any]] = MsgspecCodec(Any)
 """Codec of /paths/~1empty/post response_body (response 200 application/json)."""

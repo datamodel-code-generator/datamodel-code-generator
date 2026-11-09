@@ -30,16 +30,16 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "all"
         ],
         "median_length": 12,
-        "preset": "standard-py314-20261027",
+        "preset": "standard-py314-20261106",
         "problems": 0
       },
       "diff_against": null,
       "recommended": {
         "arguments": [
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--preset",
-          "standard-py314-20261027"
+          "standard-py314-20261106"
         ],
         "median_length": 17,
         "problems": 0
@@ -59,16 +59,16 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "all"
         ],
         "median_length": 5,
-        "preset": "standard-py314-20261027",
+        "preset": "standard-py314-20261106",
         "problems": 0
       },
       "diff_against": "v1",
       "recommended": {
         "arguments": [
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--preset",
-          "standard-py314-20261027"
+          "standard-py314-20261106"
         ],
         "median_length": 9,
         "problems": 0
@@ -106,7 +106,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
   },
   "settings": {
     "output_model_type": "pydantic_v2.BaseModel",
-    "preset": "standard-py314-20261027",
+    "preset": "standard-py314-20261106",
     "target_python_version": "3.14"
   }
 }
@@ -116,7 +116,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
 
 - Rules: revision 2026-10-19, calibrated on 20261017 presets
 - Settings: pydantic_v2.BaseModel, target Python 3.14
-- Grid: 8 configurations over naming-strategy, enum-shape, title-source, each on top of standard-py314-20261027
+- Grid: 8 configurations over naming-strategy, enum-shape, title-source, each on top of standard-py314-20261106
 - Schemas: 2 (1 calibration, 1 holdout)
 
 ## Schemas
@@ -136,9 +136,9 @@ A rule should fire on a schema when the grid's best configuration with its value
 |---|---|---|---|---|---|
 | titles.keys-when-titles-collide | title-source | - | - | - | pets, config |
 | titles.names-from-unique-titles | title-source | - | - | - | pets, config |
-| naming.qualify-shared-inline-names | naming-strategy | pets, config | - | config | - |
 | enums.inline-value-sets-as-literal | enum-shape | - | pets | config | - |
 
+- Not covered: naming.qualify-shared-inline-names (its values are not a grid value)
 - Not covered: enums.read-as-their-const (decision enum-const-reading has no grid axis)
 - Not covered: openapi.paths-bodies-as-definitions (decision paths-bodies-as-definitions has no grid axis)
 - Not covered: constraints.omit-redundant (decision redundant-constraints has no grid axis)
@@ -146,6 +146,8 @@ A rule should fire on a schema when the grid's best configuration with its value
 - Not covered: root.class-name-for-root-object (decision root-name has no grid axis)
 - Not covered: dotted-keys.flat-when-namespaces-cycle (decision dotted-keys has no grid axis)
 - Not covered: unions.name-variants-after-tags (decision union-variant-names has no grid axis)
+- Not covered: unions.merge-shared-variant-tags (decision shared-variant-tags has no grid axis)
+- Not covered: versions.read-per-document (decision schema-version-scope has no grid axis)
 - Optional, not calibrated: validation.check-unique-items-and-pattern-properties (listed for the user to decide, never in the command)
 - Optional, not calibrated: policy.strict-scalar-types (listed for the user to decide, never in the command)
 
@@ -175,15 +177,15 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
 
 - calibrated_presets 20261015 -> 20261017
 - rules_revision 2026-10-15 -> 2026-10-19
-- settings.preset None -> standard-py314-20261027
+- settings.preset None -> standard-py314-20261106
 - config: new
 - legacy: not in this run
-- pets: best.arguments [--enum-field-as-literal all] -> [--naming-strategy full-path --enum-field-as-literal all]; best.median_length 11 -> 5; best.preset None -> standard-py314-20261027; best.problems 3 -> 0; recommended.arguments [] -> [--naming-strategy full-path --preset standard-py314-20261027]; recommended.median_length 12 -> 9; recommended.problems 5 -> 0; regret 2 -> 0; rules [enums.inline-value-sets-as-literal] -> [naming.qualify-shared-inline-names]
+- pets: best.arguments [--enum-field-as-literal all] -> [--naming-strategy full-path --enum-field-as-literal all]; best.median_length 11 -> 5; best.preset None -> standard-py314-20261106; best.problems 3 -> 0; recommended.arguments [] -> [--naming-strategy enclosing-model --preset standard-py314-20261106]; recommended.median_length 12 -> 9; recommended.problems 5 -> 0; regret 2 -> 0; rules [enums.inline-value-sets-as-literal] -> [naming.qualify-shared-inline-names]
 
 --- rules.diff
 --- a/src/datamodel_code_generator/resources/recommender_rules.json
 +++ b/src/datamodel_code_generator/resources/recommender_rules.json
-@@ -143,7 +143,7 @@
+@@ -134,7 +134,7 @@
            {
              "signal": "inline_enums",
              "op": ">=",
@@ -215,16 +217,16 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "all"
           ],
           "median_length": 12,
-          "preset": "standard-py314-20261027",
+          "preset": "standard-py314-20261106",
           "problems": 0
         },
         "diff_against": null,
         "recommended": {
           "arguments": [
             "--naming-strategy",
-            "full-path",
+            "enclosing-model",
             "--preset",
-            "standard-py314-20261027"
+            "standard-py314-20261106"
           ],
           "median_length": 17,
           "problems": 0
@@ -244,16 +246,16 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "all"
           ],
           "median_length": 5,
-          "preset": "standard-py314-20261027",
+          "preset": "standard-py314-20261106",
           "problems": 0
         },
         "diff_against": "v1",
         "recommended": {
           "arguments": [
             "--naming-strategy",
-            "full-path",
+            "enclosing-model",
             "--preset",
-            "standard-py314-20261027"
+            "standard-py314-20261106"
           ],
           "median_length": 9,
           "problems": 0
@@ -291,7 +293,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
     },
     "settings": {
       "output_model_type": "pydantic_v2.BaseModel",
-      "preset": "standard-py314-20261027",
+      "preset": "standard-py314-20261106",
       "target_python_version": "3.14"
     }
   },
@@ -425,7 +427,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261027",
+          "preset": "standard-py314-20261106",
           "renamed": null
         },
         {
@@ -459,7 +461,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261027",
+          "preset": "standard-py314-20261106",
           "renamed": null
         },
         {
@@ -494,7 +496,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261027",
+          "preset": "standard-py314-20261106",
           "renamed": null
         },
         {
@@ -531,7 +533,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261027",
+          "preset": "standard-py314-20261106",
           "renamed": null
         },
         {
@@ -566,7 +568,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261027",
+          "preset": "standard-py314-20261106",
           "renamed": null
         },
         {
@@ -603,7 +605,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261027",
+          "preset": "standard-py314-20261106",
           "renamed": null
         },
         {
@@ -641,7 +643,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261027",
+          "preset": "standard-py314-20261106",
           "renamed": null
         },
         {
@@ -681,7 +683,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261027",
+          "preset": "standard-py314-20261106",
           "renamed": null
         }
       ],
@@ -690,11 +692,11 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "--input-file-type",
           "jsonschema",
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--output-model-type",
           "pydantic_v2.BaseModel",
           "--preset",
-          "standard-py314-20261027",
+          "standard-py314-20261106",
           "--target-python-version",
           "3.14"
         ],
@@ -702,10 +704,9 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "configured": false,
           "covers": [],
           "family": "standard",
-          "preset": "standard-py314-20261027"
+          "preset": "standard-py314-20261106"
         },
         "calibrated_presets": "20261017",
-        "consider": [],
         "context": {
           "output_model_type": "pydantic_v2.BaseModel",
           "target_python_version": "3.14"
@@ -736,7 +737,6 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
               "Config"
             ],
             "caveats": [],
-            "contested_reason": null,
             "decision": "root-name",
             "evidence": [
               "SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile became TsConfig, names over 40 characters 6 -> 0",
@@ -787,10 +787,9 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           {
             "arguments": [
               "--naming-strategy",
-              "full-path"
+              "enclosing-model"
             ],
             "caveats": [],
-            "contested_reason": null,
             "decision": "naming-strategy",
             "evidence": [
               "GitHub REST API description: numbered names 663 -> 53; locations renamed between two versions 17% -> 0.0%",
@@ -798,10 +797,10 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
               "Stripe API description: the expandable ID string of charge no longer displaces the charge component (ChargeModel)",
               "SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and lost"
             ],
-            "reason": "Inline schemas under different parents share property names (names: 1, e.g. mode x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; full-path names each inline model after its parent.",
+            "reason": "Inline schemas under different parents share property names (names: 1, e.g. mode x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; enclosing-model names each inline model after the model it is built for, once, and leaves definitions their own names.",
             "rule": "naming.qualify-shared-inline-names",
             "set": {
-              "naming_strategy": "full-path"
+              "naming_strategy": "enclosing-model"
             },
             "trial": {
               "after": "recommended - root-name",
@@ -874,7 +873,9 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "operations": 0,
           "parent_copy_union_branches": 0,
           "pattern_properties": 0,
+          "property_counts_beside_ignored_ref": 0,
           "redundant_constraints": 0,
+          "ref_siblings_read_as_draft_07": 0,
           "root_is_object": 1,
           "root_title_words": 2,
           "shared_inline_enum_names": 1,
@@ -888,7 +889,8 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "titled_components": 0,
           "unions": 0,
           "unique_items": 0,
-          "unmodeled_pattern_properties": 0
+          "unmodeled_pattern_properties": 0,
+          "variants_with_differing_tags": 0
         },
         "trial": {
           "candidates": [
@@ -953,7 +955,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py314-20261027",
+              "preset": "standard-py314-20261106",
               "selectable": true,
               "set": {},
               "stability": null
@@ -961,7 +963,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             {
               "arguments": [
                 "--naming-strategy",
-                "full-path",
+                "enclosing-model",
                 "--class-name",
                 "Config"
               ],
@@ -991,11 +993,11 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py314-20261027",
+              "preset": "standard-py314-20261106",
               "selectable": true,
               "set": {
                 "class_name": "Config",
-                "naming_strategy": "full-path"
+                "naming_strategy": "enclosing-model"
               },
               "stability": null
             },
@@ -1030,7 +1032,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py314-20261027",
+              "preset": "standard-py314-20261106",
               "selectable": true,
               "set": {
                 "class_name": "Config"
@@ -1040,7 +1042,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             {
               "arguments": [
                 "--naming-strategy",
-                "full-path"
+                "enclosing-model"
               ],
               "dropped_constraint_warnings": 0,
               "error": null,
@@ -1068,10 +1070,10 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py314-20261027",
+              "preset": "standard-py314-20261106",
               "selectable": true,
               "set": {
-                "naming_strategy": "full-path"
+                "naming_strategy": "enclosing-model"
               },
               "stability": null
             }
@@ -1146,7 +1148,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261027",
+          "preset": "standard-py314-20261106",
           "renamed": 0
         },
         {
@@ -1180,7 +1182,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261027",
+          "preset": "standard-py314-20261106",
           "renamed": 0
         },
         {
@@ -1215,7 +1217,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261027",
+          "preset": "standard-py314-20261106",
           "renamed": 0
         },
         {
@@ -1252,7 +1254,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261027",
+          "preset": "standard-py314-20261106",
           "renamed": 0
         },
         {
@@ -1287,7 +1289,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261027",
+          "preset": "standard-py314-20261106",
           "renamed": 0
         },
         {
@@ -1324,7 +1326,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261027",
+          "preset": "standard-py314-20261106",
           "renamed": 0
         },
         {
@@ -1362,7 +1364,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261027",
+          "preset": "standard-py314-20261106",
           "renamed": 0
         },
         {
@@ -1402,7 +1404,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261027",
+          "preset": "standard-py314-20261106",
           "renamed": 0
         }
       ],
@@ -1411,11 +1413,11 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "--input-file-type",
           "openapi",
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--output-model-type",
           "pydantic_v2.BaseModel",
           "--preset",
-          "standard-py314-20261027",
+          "standard-py314-20261106",
           "--target-python-version",
           "3.14"
         ],
@@ -1423,10 +1425,9 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "configured": false,
           "covers": [],
           "family": "standard",
-          "preset": "standard-py314-20261027"
+          "preset": "standard-py314-20261106"
         },
         "calibrated_presets": "20261017",
-        "consider": [],
         "context": {
           "output_model_type": "pydantic_v2.BaseModel",
           "target_python_version": "3.14"
@@ -1461,10 +1462,9 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           {
             "arguments": [
               "--naming-strategy",
-              "full-path"
+              "enclosing-model"
             ],
             "caveats": [],
-            "contested_reason": null,
             "decision": "naming-strategy",
             "evidence": [
               "GitHub REST API description: numbered names 663 -> 53; locations renamed between two versions 17% -> 0.0%",
@@ -1472,10 +1472,10 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
               "Stripe API description: the expandable ID string of charge no longer displaces the charge component (ChargeModel)",
               "SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and lost"
             ],
-            "reason": "Inline schemas under different parents share property names (names: 2, e.g. status x3, owner x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; full-path names each inline model after its parent.",
+            "reason": "Inline schemas under different parents share property names (names: 2, e.g. status x3, owner x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; enclosing-model names each inline model after the model it is built for, once, and leaves definitions their own names.",
             "rule": "naming.qualify-shared-inline-names",
             "set": {
-              "naming_strategy": "full-path"
+              "naming_strategy": "enclosing-model"
             },
             "trial": {
               "after": "recommended",
@@ -1548,7 +1548,9 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "operations": 0,
           "parent_copy_union_branches": 0,
           "pattern_properties": 0,
+          "property_counts_beside_ignored_ref": 0,
           "redundant_constraints": 0,
+          "ref_siblings_read_as_draft_07": 0,
           "root_is_object": 0,
           "root_title_words": 0,
           "shared_inline_enum_names": 1,
@@ -1562,7 +1564,8 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "titled_components": 0,
           "unions": 0,
           "unique_items": 0,
-          "unmodeled_pattern_properties": 0
+          "unmodeled_pattern_properties": 0,
+          "variants_with_differing_tags": 0
         },
         "trial": {
           "candidates": [
@@ -1639,7 +1642,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py314-20261027",
+              "preset": "standard-py314-20261106",
               "selectable": true,
               "set": {},
               "stability": {
@@ -1659,7 +1662,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             {
               "arguments": [
                 "--naming-strategy",
-                "full-path"
+                "enclosing-model"
               ],
               "dropped_constraint_warnings": 0,
               "error": null,
@@ -1687,10 +1690,10 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py314-20261027",
+              "preset": "standard-py314-20261106",
               "selectable": true,
               "set": {
-                "naming_strategy": "full-path"
+                "naming_strategy": "enclosing-model"
               },
               "stability": {
                 "fingerprints_matched": 3,
@@ -1777,19 +1780,8 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "rule": "titles.names-from-unique-titles"
     },
     {
-      "covered": "yes",
+      "covered": "its values are not a grid value",
       "decision": "naming-strategy",
-      "disagrees": {
-        "calibration": [],
-        "holdout": [
-          "config"
-        ]
-      },
-      "fires": [
-        "pets",
-        "config"
-      ],
-      "neutral": [],
       "rule": "naming.qualify-shared-inline-names"
     },
     {
@@ -1843,6 +1835,11 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "rule": "unions.name-variants-after-tags"
     },
     {
+      "covered": "decision shared-variant-tags has no grid axis",
+      "decision": "shared-variant-tags",
+      "rule": "unions.merge-shared-variant-tags"
+    },
+    {
       "covered": "optional, not calibrated",
       "decision": "schema-validators",
       "rule": "validation.check-unique-items-and-pattern-properties"
@@ -1851,6 +1848,11 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "covered": "optional, not calibrated",
       "decision": "strict-types",
       "rule": "policy.strict-scalar-types"
+    },
+    {
+      "covered": "decision schema-version-scope has no grid axis",
+      "decision": "schema-version-scope",
+      "rule": "versions.read-per-document"
     }
   ],
   "schemas": [
@@ -1885,7 +1887,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "union_variants_numbered": 0,
           "union_variants_parent_numbered": 0
         },
-        "preset": "standard-py314-20261027",
+        "preset": "standard-py314-20261106",
         "renamed": 0,
         "values": {
           "enum_field_as_literal": "all",
@@ -1897,9 +1899,9 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "recommended": {
         "arguments": [
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--preset",
-          "standard-py314-20261027"
+          "standard-py314-20261106"
         ],
         "metrics": {
           "component": 3,
@@ -1964,7 +1966,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "union_variants_numbered": 0,
           "union_variants_parent_numbered": 0
         },
-        "preset": "standard-py314-20261027",
+        "preset": "standard-py314-20261106",
         "renamed": null,
         "values": {
           "enum_field_as_literal": "all",
@@ -1975,9 +1977,9 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "recommended": {
         "arguments": [
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--preset",
-          "standard-py314-20261027"
+          "standard-py314-20261106"
         ],
         "metrics": {
           "component": 1,

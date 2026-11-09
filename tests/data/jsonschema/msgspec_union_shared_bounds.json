@@ -1,0 +1,292 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Bounds",
+  "type": "object",
+  "$defs": {
+    "Parted": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 3
+        },
+        {
+          "type": "string",
+          "maxLength": 3,
+          "pattern": "^a"
+        }
+      ]
+    },
+    "Short": {
+      "type": "string",
+      "minLength": 2
+    },
+    "Longer": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Short"
+        }
+      ],
+      "minLength": 3
+    }
+  },
+  "properties": {
+    "apart": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 3
+        },
+        {
+          "type": "string",
+          "maxLength": 3,
+          "pattern": "^a"
+        }
+      ]
+    },
+    "bounded": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        {
+          "type": "integer",
+          "minimum": 7
+        }
+      ]
+    },
+    "bounded_or_null": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        {
+          "type": "integer",
+          "minimum": 7
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "bounded_or_number": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        {
+          "type": "integer",
+          "minimum": 7
+        },
+        {
+          "type": "number"
+        }
+      ]
+    },
+    "bounded_or_decimal": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        {
+          "type": "integer",
+          "minimum": 7
+        },
+        {
+          "type": "number",
+          "format": "decimal"
+        }
+      ]
+    },
+    "weight": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        {
+          "type": "number",
+          "minimum": 5,
+          "maximum": 20
+        },
+        {
+          "type": "number",
+          "format": "decimal",
+          "minimum": -1
+        }
+      ]
+    },
+    "height": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        {
+          "type": "number",
+          "minimum": 1
+        },
+        {
+          "type": "integer",
+          "minimum": -5
+        }
+      ]
+    },
+    "span": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        {
+          "type": "number",
+          "minimum": 5,
+          "maximum": 20
+        }
+      ]
+    },
+    "loose": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      ]
+    },
+    "tagged": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 3
+        },
+        {
+          "type": "string",
+          "maxLength": 3,
+          "pattern": "^a"
+        },
+        {
+          "const": "xyzw"
+        }
+      ]
+    },
+    "listed": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 3
+          },
+          {
+            "type": "string",
+            "maxLength": 3,
+            "pattern": "^a"
+          }
+        ]
+      }
+    },
+    "parted_twice": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Parted"
+        },
+        {
+          "$ref": "#/$defs/Parted"
+        }
+      ]
+    },
+    "parted_or_long": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Parted"
+        },
+        {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 10
+        }
+      ]
+    },
+    "parted_or_any": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Parted"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "prefixed": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^a",
+          "minLength": 2
+        },
+        {
+          "type": "string",
+          "pattern": "^a",
+          "maxLength": 5
+        }
+      ]
+    },
+    "ranked": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "type": "integer",
+          "minimum": 2
+        }
+      ]
+    },
+    "ranked_or_decimal": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "type": "integer",
+          "minimum": 2
+        },
+        {
+          "type": "number",
+          "format": "decimal"
+        }
+      ]
+    },
+    "chained": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Longer"
+        },
+        {
+          "type": "string",
+          "pattern": "^a"
+        }
+      ]
+    }
+  }
+}

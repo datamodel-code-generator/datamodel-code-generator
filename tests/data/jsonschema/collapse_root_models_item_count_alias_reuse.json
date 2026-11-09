@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "a": {"$ref": "#/$defs/A"},
+    "b": {"$ref": "#/$defs/B"},
+    "c": {"$ref": "#/$defs/C"}
+  },
+  "$defs": {
+    "A": {"anyOf": [{"type": "array", "items": {"type": "string"}, "minItems": 1}, {"type": "integer"}]},
+    "B": {"type": ["array", "integer"], "items": {"type": "string"}, "minItems": 1},
+    "C": {"anyOf": [{"type": "array", "items": {"type": "string"}, "minItems": 1}, {"type": "boolean"}]}
+  }
+}

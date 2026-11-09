@@ -1,0 +1,3 @@
+record: 2: --shard 2/nope: I and N must be integers, e.g. 2/8
+gate: 2: --shard 2/nope: I and N must be integers, e.g. 2/8
+shard part: query: 0.0.2 in <records> is a shard part: merge the parts with `merge-record` first

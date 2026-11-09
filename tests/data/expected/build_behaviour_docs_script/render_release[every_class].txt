@@ -16,7 +16,8 @@
     "crash-fix",
     "accepted",
     "both-fail",
-    "opt-in"
+    "opt-in",
+    "base-skipped"
   ],
   "counts": {
     "dataclasses.dataclass": {
@@ -27,6 +28,7 @@
     },
     "pydantic_v2.BaseModel": {
       "accepted": 1,
+      "base-skipped": 1,
       "both-fail": 1,
       "crash-fix": 3,
       "same": 1
@@ -40,7 +42,7 @@
   },
   "kinds": {
     "cli-doc": 1,
-    "default": 9
+    "default": 10
   },
   "crash_fixes": [
     {
@@ -178,16 +180,16 @@ How the models 0.87.0 generates differ in behaviour from the models 0.86.0 gener
 
 ## Summary
 
-| Output model type | same | no-behaviour | crash-fix | accepted | both-fail | opt-in |
-|---|---|---|---|---|---|---|
-| dataclasses.dataclass | 0 | 1 | 0 | 0 | 0 | 0 |
-| msgspec.Struct | 0 | 0 | 1 | 0 | 0 | 0 |
-| pydantic_v2.BaseModel | 1 | 0 | 3 | 1 | 1 | 0 |
-| pydantic_v2.dataclass | 0 | 0 | 0 | 0 | 0 | 1 |
-| typing.TypedDict | 0 | 0 | 1 | 0 | 0 | 0 |
-| Total | 1 | 1 | 5 | 1 | 1 | 1 |
+| Output model type | same | no-behaviour | crash-fix | accepted | both-fail | opt-in | base-skipped |
+|---|---|---|---|---|---|---|---|
+| dataclasses.dataclass | 0 | 1 | 0 | 0 | 0 | 0 | 0 |
+| msgspec.Struct | 0 | 0 | 1 | 0 | 0 | 0 | 0 |
+| pydantic_v2.BaseModel | 1 | 0 | 3 | 1 | 1 | 0 | 1 |
+| pydantic_v2.dataclass | 0 | 0 | 0 | 0 | 0 | 1 | 0 |
+| typing.TypedDict | 0 | 0 | 1 | 0 | 0 | 0 | 0 |
+| Total | 1 | 1 | 5 | 1 | 1 | 1 | 1 |
 
-Generations per kind: documented CLI examples 1, default options 9.
+Generations per kind: documented CLI examples 1, default options 10.
 
 - **same**: identical output
 - **no-behaviour**: the output differs, the models behave the same (formatting, import order, redundant lines)
@@ -195,6 +197,7 @@ Generations per kind: documented CLI examples 1, default options 9.
 - **accepted**: a behaviour change in default output that was decided and announced
 - **both-fail**: both releases fail on the input
 - **opt-in**: the generation uses an option or option value the previous release does not have
+- **base-skipped**: the previous release is known to hang on the input, so it did not run; the new one works
 
 ## Fixed crashes
 

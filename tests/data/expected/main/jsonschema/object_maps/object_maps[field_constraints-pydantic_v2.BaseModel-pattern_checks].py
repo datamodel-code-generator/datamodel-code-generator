@@ -4,11 +4,20 @@
 
 from __future__ import annotations
 
+from re import compile
+from typing import Annotated
+
 from pydantic import BaseModel, ConfigDict, Field, RootModel, constr
+from typing_extensions import TypeAliasType
 
 
 class LookDeclared(BaseModel):
     x: str | None = Field(None, pattern='^a')
+
+
+LookUndeclaredPatternProperty = TypeAliasType(
+    "LookUndeclaredPatternProperty", Annotated[str, Field(pattern=compile('^(?!ab)'))]
+)
 
 
 class CrossedLength(BaseModel):
@@ -25,7 +34,9 @@ class LookReference(BaseModel):
 
 class Model(BaseModel):
     lookDeclared: LookDeclared | None = None
-    lookUndeclared: dict[constr(pattern=r'^x'), str] | None = None
+    lookUndeclared: (
+        dict[constr(pattern=r'^x'), LookUndeclaredPatternProperty] | None
+    ) = None
     crossedLength: CrossedLength | None = None
     crossedRange: CrossedRange | None = None
     lookReference: LookReference | None = None

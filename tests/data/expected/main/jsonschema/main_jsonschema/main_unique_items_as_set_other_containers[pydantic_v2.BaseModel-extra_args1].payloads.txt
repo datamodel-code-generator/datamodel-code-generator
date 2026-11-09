@@ -1,0 +1,5 @@
+default of items {1, 2}: accepted
+default of sequence [1, 2]: accepted
+default of nested []: accepted
+default of pair [1, 2]: accepted
+nested [[1, 1]]: [[1, 1]]

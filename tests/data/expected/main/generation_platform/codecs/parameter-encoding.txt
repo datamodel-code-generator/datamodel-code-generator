@@ -105,20 +105,20 @@ querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodin
 querystring qs application/x-www-form-urlencoded scalar/string: ?z=1 => {"z":"1"}
 querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError An explicit querystring value cannot encode to an empty query
 querystring qs application/x-www-form-urlencoded scalar/string: ?t=x => {"t":["x"]}
-invalid {'location': 'query', 'name': 'q', 'style': 'spaceDelimited', 'shape': 'scalar'}: ValueError query parameter style 'spaceDelimited' has no builtin form for scalar values
-invalid {'location': 'query', 'name': 'q', 'style': 'pipeDelimited', 'explode': True, 'shape': 'array'}: ValueError query parameter style 'pipeDelimited' has no builtin form for array values
-invalid {'location': 'query', 'name': 'q', 'style': 'deepObject', 'explode': False, 'shape': 'object'}: ValueError query parameter style 'deepObject' has no builtin form for object values
-invalid {'location': 'query', 'name': 'q', 'style': 'deepObject', 'explode': True, 'shape': 'array'}: ValueError query parameter style 'deepObject' has no builtin form for array values
-invalid {'location': 'cookie', 'name': 'c', 'style': 'form', 'explode': False, 'shape': 'array'}: ValueError cookie parameter style 'form' has no builtin form for array values
-invalid {'location': 'cookie', 'name': 'c', 'style': 'cookie', 'explode': False, 'shape': 'object'}: ValueError cookie parameter style 'cookie' has no builtin form for object values
-invalid {'location': 'querystring', 'name': 'q', 'style': 'form'}: ValueError querystring parameter style 'form' has no builtin form for scalar values
-invalid {'location': 'querystring', 'name': 'q'}: ValueError querystring parameter style None has no builtin form for scalar values
-invalid {'location': 'query', 'name': 'q', 'style': 'form', 'content_media_type': 'application/json'}: ValueError query parameter style 'form' with content 'application/json' has no builtin form for scalar values
-invalid {'location': 'cookie', 'name': 'c', 'content_media_type': 'application/json'}: ValueError cookie parameter style None with content 'application/json' has no builtin form for scalar values
-invalid {'location': 'query', 'name': 'q', 'content_media_type': 'application/xml'}: ValueError query parameter style None with content 'application/xml' has no builtin form for scalar values
-invalid {'location': 'query', 'name': 'q', 'content_media_type': 'application/x-www-form-urlencoded'}: ValueError query parameter style None with content 'application/x-www-form-urlencoded' has no builtin form for scalar values
-invalid {'location': 'header', 'name': 'h', 'style': 'form'}: ValueError header parameter style 'form' has no builtin form for scalar values
-invalid {'location': 'path', 'name': 'p'}: ValueError path parameter style None has no builtin form for scalar values
+invalid {'location': 'query', 'name': 'q', 'style': 'spaceDelimited', 'shape': 'scalar'}: ParameterShapeError query parameter style 'spaceDelimited' has no builtin form for scalar values
+invalid {'location': 'query', 'name': 'q', 'style': 'pipeDelimited', 'explode': True, 'shape': 'array'}: ParameterShapeError query parameter style 'pipeDelimited' has no builtin form for array values
+invalid {'location': 'query', 'name': 'q', 'style': 'deepObject', 'explode': False, 'shape': 'object'}: ParameterShapeError query parameter style 'deepObject' has no builtin form for object values
+invalid {'location': 'query', 'name': 'q', 'style': 'deepObject', 'explode': True, 'shape': 'array'}: ParameterShapeError query parameter style 'deepObject' has no builtin form for array values
+invalid {'location': 'cookie', 'name': 'c', 'style': 'form', 'explode': False, 'shape': 'array'}: ParameterShapeError cookie parameter style 'form' has no builtin form for array values
+invalid {'location': 'cookie', 'name': 'c', 'style': 'cookie', 'explode': False, 'shape': 'object'}: ParameterShapeError cookie parameter style 'cookie' has no builtin form for object values
+invalid {'location': 'querystring', 'name': 'q', 'style': 'form'}: ParameterShapeError querystring parameter style 'form' has no builtin form for scalar values
+invalid {'location': 'querystring', 'name': 'q'}: ParameterShapeError querystring parameter style None has no builtin form for scalar values
+invalid {'location': 'query', 'name': 'q', 'style': 'form', 'content_media_type': 'application/json'}: ParameterShapeError query parameter style 'form' with content 'application/json' has no builtin form for scalar values
+invalid {'location': 'cookie', 'name': 'c', 'content_media_type': 'application/json'}: ParameterShapeError cookie parameter style None with content 'application/json' has no builtin form for scalar values
+invalid {'location': 'query', 'name': 'q', 'content_media_type': 'application/xml'}: ParameterShapeError query parameter style None with content 'application/xml' has no builtin form for scalar values
+invalid {'location': 'query', 'name': 'q', 'content_media_type': 'application/x-www-form-urlencoded'}: ParameterShapeError query parameter style None with content 'application/x-www-form-urlencoded' has no builtin form for scalar values
+invalid {'location': 'header', 'name': 'h', 'style': 'form'}: ParameterShapeError header parameter style 'form' has no builtin form for scalar values
+invalid {'location': 'path', 'name': 'p'}: ParameterShapeError path parameter style None has no builtin form for scalar values
 path text path p simple scalar/string: a.b
 path text path p matrix array/string: ParameterEncodingError An empty array or object cannot fill a path segment
 python query i form* scalar/integer: ?i=2 => 2

@@ -279,9 +279,9 @@ pydantic_v2.BaseModel --field-constraints nested_map {"k": 2} accepted
 pydantic_v2.BaseModel --field-constraints nested_map {"k": 9} accepted
 pydantic_v2.BaseModel --field-constraints nested_map {"k": 1} accepted
 pydantic_v2.BaseModel --field-constraints nested_map {"k": 10} accepted
-pydantic_v2.BaseModel --field-constraints point_items [{"x": 1}] raised TypeError
+pydantic_v2.BaseModel --field-constraints point_items [{"x": 1}] accepted
 pydantic_v2.BaseModel --field-constraints point_items [{"x": "a"}] rejected
-pydantic_v2.BaseModel --field-constraints point_map {"k": {"x": 1}} raised TypeError
+pydantic_v2.BaseModel --field-constraints point_map {"k": {"x": 1}} accepted
 pydantic_v2.BaseModel --field-constraints point_map {"k": {"x": "a"}} rejected
 pydantic_v2.BaseModel --field-constraints letter_items ["a"] accepted
 pydantic_v2.BaseModel --field-constraints letter_items ["bb"] accepted
@@ -352,7 +352,7 @@ pydantic_v2.BaseModel --use-annotated nested_map {"k": 2} accepted
 pydantic_v2.BaseModel --use-annotated nested_map {"k": 9} accepted
 pydantic_v2.BaseModel --use-annotated nested_map {"k": 1} rejected
 pydantic_v2.BaseModel --use-annotated nested_map {"k": 10} rejected
-pydantic_v2.BaseModel --use-annotated point_items [{"x": 1}] raised TypeError
+pydantic_v2.BaseModel --use-annotated point_items [{"x": 1}] accepted
 pydantic_v2.BaseModel --use-annotated point_items [{"x": "a"}] rejected
 pydantic_v2.BaseModel --use-annotated point_map {"k": {"x": 1}} accepted
 pydantic_v2.BaseModel --use-annotated point_map {"k": {"x": "a"}} rejected
@@ -790,9 +790,9 @@ pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested_map {"k": 9} accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested_map {"k": 1} rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested_map {"k": 10} rejected
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point_items [{"x": 1}] raised TypeError
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point_items [{"x": 1}] accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point_items [{"x": "a"}] rejected
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point_map {"k": {"x": 1}} raised TypeError
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point_map {"k": {"x": 1}} accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs point_map {"k": {"x": "a"}} rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letter_items ["a"] accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letter_items ["bb"] accepted
@@ -936,9 +936,9 @@ pydantic_v2.BaseModel --field-constraints --collapse-root-models nested_map {"k"
 pydantic_v2.BaseModel --field-constraints --collapse-root-models nested_map {"k": 9} accepted
 pydantic_v2.BaseModel --field-constraints --collapse-root-models nested_map {"k": 1} accepted
 pydantic_v2.BaseModel --field-constraints --collapse-root-models nested_map {"k": 10} accepted
-pydantic_v2.BaseModel --field-constraints --collapse-root-models point_items [{"x": 1}] raised TypeError
+pydantic_v2.BaseModel --field-constraints --collapse-root-models point_items [{"x": 1}] accepted
 pydantic_v2.BaseModel --field-constraints --collapse-root-models point_items [{"x": "a"}] rejected
-pydantic_v2.BaseModel --field-constraints --collapse-root-models point_map {"k": {"x": 1}} raised TypeError
+pydantic_v2.BaseModel --field-constraints --collapse-root-models point_map {"k": {"x": 1}} accepted
 pydantic_v2.BaseModel --field-constraints --collapse-root-models point_map {"k": {"x": "a"}} rejected
 pydantic_v2.BaseModel --field-constraints --collapse-root-models letter_items ["a"] accepted
 pydantic_v2.BaseModel --field-constraints --collapse-root-models letter_items ["bb"] accepted
@@ -976,11 +976,11 @@ pydantic_v2.dataclass --field-constraints looser_map {"k": 0} accepted
 pydantic_v2.dataclass --field-constraints member_items [2] accepted
 pydantic_v2.dataclass --field-constraints member_items [9] accepted
 pydantic_v2.dataclass --field-constraints member_items [1] rejected
-pydantic_v2.dataclass --field-constraints member_items [10] accepted
+pydantic_v2.dataclass --field-constraints member_items [10] rejected
 pydantic_v2.dataclass --field-constraints member_map {"k": 2} accepted
 pydantic_v2.dataclass --field-constraints member_map {"k": 9} accepted
 pydantic_v2.dataclass --field-constraints member_map {"k": 1} rejected
-pydantic_v2.dataclass --field-constraints member_map {"k": 10} accepted
+pydantic_v2.dataclass --field-constraints member_map {"k": 10} rejected
 pydantic_v2.dataclass --field-constraints two_items [4] accepted
 pydantic_v2.dataclass --field-constraints two_items [5] accepted
 pydantic_v2.dataclass --field-constraints two_items [3] rejected
@@ -1009,14 +1009,14 @@ pydantic_v2.dataclass --field-constraints nested_map {"k": 2} accepted
 pydantic_v2.dataclass --field-constraints nested_map {"k": 9} accepted
 pydantic_v2.dataclass --field-constraints nested_map {"k": 1} accepted
 pydantic_v2.dataclass --field-constraints nested_map {"k": 10} accepted
-pydantic_v2.dataclass --field-constraints point_items [{"x": 1}] raised TypeError
+pydantic_v2.dataclass --field-constraints point_items [{"x": 1}] accepted
 pydantic_v2.dataclass --field-constraints point_items [{"x": "a"}] rejected
-pydantic_v2.dataclass --field-constraints point_map {"k": {"x": 1}} raised TypeError
+pydantic_v2.dataclass --field-constraints point_map {"k": {"x": 1}} accepted
 pydantic_v2.dataclass --field-constraints point_map {"k": {"x": "a"}} rejected
-pydantic_v2.dataclass --field-constraints letter_items ["a"] raised TypeError
-pydantic_v2.dataclass --field-constraints letter_items ["bb"] raised TypeError
+pydantic_v2.dataclass --field-constraints letter_items ["a"] accepted
+pydantic_v2.dataclass --field-constraints letter_items ["bb"] accepted
 pydantic_v2.dataclass --field-constraints letter_items ["c"] rejected
-pydantic_v2.dataclass --field-constraints letter_map {"k": "a"} raised TypeError
-pydantic_v2.dataclass --field-constraints letter_map {"k": "bb"} raised TypeError
+pydantic_v2.dataclass --field-constraints letter_map {"k": "a"} accepted
+pydantic_v2.dataclass --field-constraints letter_map {"k": "bb"} accepted
 pydantic_v2.dataclass --field-constraints letter_map {"k": "c"} rejected
 pydantic_v2.dataclass --field-constraints false_items [1] accepted

@@ -1,7 +1,8 @@
 """Helper configuration of a client target: its JSON value and the validation that normalizes it.
 
 The JSON value is an object mapping each helper's name to its definition. Validation gives every diagnostic and the
-normalized metadata of each helper. Selectors and request targets are the runtime records generated helpers use.
+normalized metadata of each helper. Selectors and request targets are the runtime records generated helpers use, which
+`selector_record` and `target_record` build from the metadata.
 """
 
 from __future__ import annotations
@@ -11,26 +12,38 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import partial
 from math import isfinite
-from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef, SchemaRef
-from datamodel_code_generator._client.naming import folded, helper_name_problem, token
-from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
+from datamodel_code_generator._client.naming import helper_name_problem, token
+from datamodel_code_generator._json_schema import json_nodes
+from datamodel_code_generator._message_text import english_list
+from datamodel_code_generator._module_paths import is_within_name
+from datamodel_code_generator._runtime.client.timing import usable_seconds
+from datamodel_code_generator._runtime.model_codecs.media import STATUSES, normalized
+from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
 from datamodel_code_generator._target_config import _diagnostic  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._target_documents import canonical_bytes
+from datamodel_code_generator._target_naming import fold_key
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
     from datamodel_code_generator._format_types import PythonVersion
+    from datamodel_code_generator._runtime.protocols.records import RequestTarget, Selector
 
 __all__ = (
+    "MESSAGE_CODECS",
     "Converter",
     "Helper",
     "HelperKind",
     "Link",
+    "MessageCodec",
     "Spec",
     "Tree",
+    "selector_record",
+    "target_record",
     "validate",
 )
 
@@ -56,8 +69,25 @@ _SOURCES: Final = ("input", "initial", "previous")
 _ROOT: Final = "protocols"
 _EMPTY_STRING: Final = {"kind": "value", "value": ""}
 _STATE_SETS: Final = ("pending", "succeeded", "failed", "cancelled")
-_FRAMES: Final = {"json": None, "utf8": "text", "bytes": "binary"}
 _VALIDATOR_KINDS: Final = ("etag", "last_modified", "both")
+POLL_INTERVAL: Final = 1.0
+"""The seconds a polling helper waits after each response before the next poll when its definition declares none."""
+COUNTED_CONTINUATIONS: Final = ("offset", "page")
+"""The continuation kinds that count a pagination helper's position, by item offset or page number."""
+
+
+class MessageCodec(NamedTuple):
+    """The frame every WebSocket message of a codec takes, None where a helper chooses, and its payload's media kind."""
+
+    frame: str | None
+    media: str
+
+
+MESSAGE_CODECS: Final = {
+    "json": MessageCodec(None, "json"),
+    "utf8": MessageCodec("text", "text"),
+    "bytes": MessageCodec("binary", "binary"),
+}
 
 
 class _Mark(Enum):
@@ -106,10 +136,9 @@ def _encodable(text: str) -> bool:
 
 def _literal_problem(value: object) -> str | None:
     """Return why a value is no JSON literal: another type, or text with a lone surrogate."""
-    pending = [value]
-    while pending:
-        match item := pending.pop():
-            case None | bool() | int():
+    for item in json_nodes(value):
+        match item:
+            case None | bool() | int() | list():
                 continue
             case float() if isfinite(item):
                 continue
@@ -117,16 +146,36 @@ def _literal_problem(value: object) -> str | None:
                 if not _encodable(item):
                     return "has text that is not UTF-8"
                 continue
-            case list():
-                pending.extend(item)
-                continue
             case dict() if all(isinstance(key, str) and _encodable(key) for key in item):
-                pending.extend(item.values())
                 continue
             case _:
                 pass
         return "must be a JSON value"
     return None
+
+
+def selector_record(selector: Mapping[str, Any]) -> Selector:
+    """Return the runtime record of a selector's metadata, raising ValueError for a value the record refuses."""
+    from datamodel_code_generator._runtime.protocols import records  # noqa: PLC0415
+
+    match selector["from"]:
+        case "body":
+            return records.BodySelector(pointer=selector["pointer"])
+        case "header":
+            return records.HeaderSelector(name=selector["name"], occurrence=selector["occurrence"])
+    return records.StatusSelector()
+
+
+def target_record(target: Mapping[str, Any]) -> RequestTarget:
+    """Return the runtime record of a request target's metadata, raising ValueError for a value the record refuses."""
+    from datamodel_code_generator._runtime.protocols import records  # noqa: PLC0415
+
+    match location := target["in"]:
+        case "querystring":
+            return records.QuerystringTarget(name=target["name"], pointer=target["pointer"])
+        case "body":
+            return records.BodyTarget(pointer=target["pointer"])
+    return records.ParameterTarget(location=location, name=target["name"])
 
 
 def validate(
@@ -141,13 +190,8 @@ def validate(
     return helpers, validator.problems
 
 
-def _choices(values: tuple[str, ...]) -> str:
-    quoted = [repr(value) for value in values]
-    return quoted[0] if len(quoted) == 1 else f"{', '.join(quoted[:-1])} or {quoted[-1]}"
-
-
 def _collides(name: str, other: str) -> bool:
-    return name == other or name.startswith(f"{other}.") or other.startswith(f"{name}.")
+    return is_within_name(name, other) or is_within_name(other, name)
 
 
 class _Validator:  # noqa: PLR0904
@@ -171,13 +215,15 @@ class _Validator:  # noqa: PLR0904
             return self.value(at, f"{at} must be {noun}")
         for key in value:
             if key not in spec:
-                self.problems.append(_diagnostic("E_CONFIG_UNKNOWN", f"{at}.{key}", f"{at} has no key {key!r}"))
+                self.problems.append(
+                    _diagnostic("E_CONFIG_UNKNOWN", f"{at}.{key}", f"{at} has no key {stable_repr(key)}")
+                )
         result: Tree = {}
         for key, (convert, default) in spec.items():
             if key in value:
                 result[key] = convert(value[key], f"{at}.{key}")
             elif default is REQUIRED:
-                result[key] = self.value(f"{at}.{key}", f"{at} needs {key!r}")
+                result[key] = self.value(f"{at}.{key}", f"{at} needs {stable_repr(key)}")
             elif default is not OMITTED:
                 result[key] = default
         known = all(key in spec for key in value)
@@ -188,9 +234,9 @@ class _Validator:  # noqa: PLR0904
         if not isinstance(value, Mapping):
             return self.value(at, f"{at} must be {noun}")
         if key not in value:
-            return self.value(f"{at}.{key}", f"{at} needs {key!r}")
+            return self.value(f"{at}.{key}", f"{at} needs {stable_repr(key)}")
         if not isinstance(tag := value[key], str) or tag not in variants:
-            return self.value(f"{at}.{key}", f"{at}.{key} must be {_choices(tuple(variants))}")
+            return self.value(f"{at}.{key}", f"{at}.{key} must be {english_list(map(stable_repr, variants), 'or')}")
         return self.record(value, at, {key: (_keep, REQUIRED), **variants[tag]}, noun)
 
     def items(self, value: object, at: str, convert: Converter, *, nonempty: bool = False) -> object:
@@ -232,11 +278,8 @@ class _Validator:  # noqa: PLR0904
         return None if value is None else self.header(value, at)
 
     def media(self, value: object, at: str) -> object:
-        if isinstance(value, str):
-            try:
-                return normalize_media_type(value)
-            except ValueError:
-                pass
+        if isinstance(value, str) and (media_type := normalized(value)) is not None:
+            return media_type
         return self.value(at, f"{at} must be a media type")
 
     def natural(self, value: object, at: str) -> object:
@@ -250,7 +293,7 @@ class _Validator:  # noqa: PLR0904
         return value if value is True else self.value(at, f"{at} must be true")
 
     def seconds(self, value: object, at: str) -> object:
-        if isinstance(value, int | float) and not isinstance(value, bool) and isfinite(value) and value > 0:
+        if usable_seconds(value, allow_zero=False):
             return float(value)
         return self.value(at, f"{at} must be positive finite seconds")
 
@@ -269,7 +312,7 @@ class _Validator:  # noqa: PLR0904
     def choice(self, *choices: str) -> Converter:
         def convert(value: object, at: str) -> object:
             valid = isinstance(value, str) and value in choices
-            return value if valid else self.value(at, f"{at} must be {_choices(choices)}")
+            return value if valid else self.value(at, f"{at} must be {english_list(map(stable_repr, choices), 'or')}")
 
         return convert
 
@@ -289,8 +332,6 @@ class _Validator:  # noqa: PLR0904
 
     def selector(self, value: object, at: str, *, every: bool = False, body: bool = False) -> object:
         """Convert a selector, which may select every occurrence of a header only in a binding value."""
-        from datamodel_code_generator._runtime.protocols.records import BodySelector, HeaderSelector  # noqa: PLC0415
-
         variants: dict[str, Spec] = {"body": {"pointer": (self.text, REQUIRED)}}
         if not body:
             variants["header"] = {
@@ -303,21 +344,12 @@ class _Validator:  # noqa: PLR0904
         if selected.get("occurrence") == "all" and not every:
             return self.value(f"{at}.occurrence", f"{at}.occurrence can be 'all' only in a binding value")
         try:
-            if selected["from"] == "body":
-                BodySelector(pointer=selected["pointer"])
-            elif selected["from"] == "header":
-                HeaderSelector(name=selected["name"], occurrence=selected["occurrence"])
+            selector_record(selected)
         except ValueError as error:
             return self.value(at, f"{at}: {error}")
         return selected
 
     def target(self, value: object, at: str) -> object:
-        from datamodel_code_generator._runtime.protocols.records import (  # noqa: PLC0415
-            BodyTarget,
-            ParameterTarget,
-            QuerystringTarget,
-        )
-
         named: Spec = {"name": (self.text, REQUIRED)}
         selected = self.tagged(
             value,
@@ -336,13 +368,7 @@ class _Validator:  # noqa: PLR0904
         if selected is INVALID:
             return INVALID
         try:
-            match selected["in"]:
-                case "querystring":
-                    QuerystringTarget(name=selected["name"], pointer=selected["pointer"])
-                case "body":
-                    BodyTarget(pointer=selected["pointer"])
-                case _:
-                    ParameterTarget(location=selected["in"], name=selected["name"])
+            target_record(selected)
         except ValueError as error:
             return self.value(at, f"{at}: {error}")
         return selected
@@ -375,7 +401,7 @@ class _Validator:  # noqa: PLR0904
 
     def statuses(self, value: object, at: str) -> object:
         def status(item: object, where: str) -> object:
-            valid = type(item) is int and 100 <= item <= 599  # noqa: PLR2004
+            valid = type(item) is int and item in STATUSES
             return item if valid else self.value(where, f"{where} must be a status from 100 to 599")
 
         return self.distinct(at, self.items(value, at, status, nonempty=True), "a status")
@@ -391,15 +417,15 @@ class _Validator:  # noqa: PLR0904
         names: list[tuple[str, str]] = []
         helpers: list[Helper] = []
         for name, body in value.items():
-            here = f"{at}[{name!r}]"
+            here = f"{at}[{stable_repr(name)}]"
             target = self.target_python_version
             if (problem := helper_name_problem(name, target)) is not None:
                 self.value(here, problem)
-            elif other := next((other for key, other in names if _collides(folded(name, target), key)), None):
-                message = f"The helper names {other!r} and {name!r} collide"
+            elif other := next((other for key, other in names if _collides(fold_key(name, target), key)), None):
+                message = f"The helper names {stable_repr(other)} and {stable_repr(name)} collide"
                 self.problems.append(_diagnostic("E_NAME_COLLISION", here, message))
             else:
-                names.append((folded(name, target), name))
+                names.append((fold_key(name, target), name))
             if (helper := self.helper(name, body, here)) is not None:
                 helpers.append(helper)
         return tuple(helpers)
@@ -413,7 +439,7 @@ class _Validator:  # noqa: PLR0904
             self.value(f"{at}.kind", f"{at} needs 'kind'")
             return None
         if not isinstance(kind := value["kind"], str) or kind not in KINDS:
-            self.value(f"{at}.kind", f"{at}.kind must be {_choices(KINDS)}")
+            self.value(f"{at}.kind", f"{at}.kind must be {english_list(map(stable_repr, KINDS), 'or')}")
             return None
         self.schemas = []
         match kind:
@@ -475,8 +501,7 @@ class _Validator:  # noqa: PLR0904
                 "end": (self.ends, REQUIRED),
                 "empty_string": (self.choice("value", "end"), REQUIRED),
             },
-            "offset": count,
-            "page": count,
+            **dict.fromkeys(COUNTED_CONTINUATIONS, count),
             "next_url": {
                 "read": (self.selector, REQUIRED),
                 "end": (self.ends, REQUIRED),
@@ -490,7 +515,7 @@ class _Validator:  # noqa: PLR0904
             where = f"{at}.end[{selected['end'].index(_EMPTY_STRING)}]"
             self.conflict(where, f"{where} ends at the empty string, which empty_string decides alone")
             return INVALID
-        if selected["kind"] in {"offset", "page"} and ("has_more" in selected) == ("total" in selected):
+        if selected["kind"] in COUNTED_CONTINUATIONS and ("has_more" in selected) == ("total" in selected):
             if "total" in selected:
                 self.conflict(at, f"{at} needs has_more or total, not both")
                 return INVALID
@@ -521,7 +546,7 @@ class _Validator:  # noqa: PLR0904
                 "failed": (self.states(nonempty=False), ()),
                 "cancelled": (self.states(nonempty=False), ()),
                 "result": (self.result, REQUIRED),
-                "interval": (self.interval, {"seconds": 1.0, "retry_after_header": None}),
+                "interval": (self.interval, {"seconds": POLL_INTERVAL, "retry_after_header": None}),
                 "remote_cancel": (self.remote_cancel, OMITTED),
                 "immediate_result": (self.immediate, OMITTED),
                 "expires_at": (self.selector, OMITTED),
@@ -554,7 +579,7 @@ class _Validator:  # noqa: PLR0904
         return self.tagged(value, at, "kind", variants, "a result")
 
     def interval(self, value: object, at: str) -> object:
-        spec: Spec = {"seconds": (self.seconds, 1.0), "retry_after_header": (self.optional_header, None)}
+        spec: Spec = {"seconds": (self.seconds, POLL_INTERVAL), "retry_after_header": (self.optional_header, None)}
         return self.record(value, at, spec, "an interval")
 
     def remote_cancel(self, value: object, at: str) -> object:
@@ -572,7 +597,7 @@ class _Validator:  # noqa: PLR0904
     def upload(self, value: Mapping[object, object], at: str, name: str) -> Tree | _Invalid:
         """Convert a resumable upload helper of the offset profile; the parts profile is not supported yet."""
         if value.get("profile") == "parts":
-            message = f"The parts profile of the resumable_upload helper {name!r} is not supported yet"
+            message = f"The parts profile of the resumable_upload helper {stable_repr(name)} is not supported yet"
             self.problems.append(_unsupported(f"{at}.profile", message))
             return INVALID
         return self.record(
@@ -671,7 +696,7 @@ class _Validator:  # noqa: PLR0904
             self.conflict(f"{at}.error_events", f"{at}.error_events need a discriminator")
             return INVALID
         if shared := next((key for key in events if key in mapping), None):
-            where = f"{at}.error_events[{shared!r}]"
+            where = f"{at}.error_events[{stable_repr(shared)}]"
             self.conflict(where, f"{where} is also an event of {at}.event_schema.mapping")
             return INVALID
         return stream
@@ -696,9 +721,11 @@ class _Validator:  # noqa: PLR0904
         schemas: dict[str, object] = {}
         for key, item in value.items():
             if isinstance(key, str) and key and _encodable(key):
-                schemas[key] = self.schema(item, f"{at}[{key!r}]")
+                schemas[key] = self.schema(item, f"{at}[{stable_repr(key)}]")
             else:
-                schemas[""] = self.value(at, f"{at} has the key {key!r}, which is not a nonempty UTF-8 string")
+                schemas[""] = self.value(
+                    at, f"{at} has the key {stable_repr(key)}, which is not a nonempty UTF-8 string"
+                )
         return INVALID if any(item is INVALID for item in schemas.values()) else schemas
 
     def completion(self, value: object, at: str, *, sse: bool) -> object:
@@ -769,13 +796,13 @@ class _Validator:  # noqa: PLR0904
     def message(self, value: object, at: str) -> object:
         """Convert a message definition, giving it the frame its codec defaults to and refusing a mismatched one."""
         spec: Spec = {
-            "codec": (self.choice(*_FRAMES), REQUIRED),
+            "codec": (self.choice(*MESSAGE_CODECS), REQUIRED),
             "frame": (self.choice("text", "binary"), OMITTED),
             "schema": (self.schema, OMITTED),
         }
         if (message := self.record(value, at, spec, "a message definition")) is INVALID:
             return INVALID
-        codec, fixed = message["codec"], _FRAMES[message["codec"]]
+        codec, fixed = message["codec"], MESSAGE_CODECS[message["codec"]].frame
         if (codec == "json") != ("schema" in message):
             where = f"{at}.schema"
             if codec == "json":
@@ -784,7 +811,7 @@ class _Validator:  # noqa: PLR0904
             return INVALID
         frame = message.setdefault("frame", fixed or "text")
         if fixed is not None and frame != fixed:
-            self.conflict(f"{at}.frame", f"{at}.frame must be {fixed!r} for {codec} messages")
+            self.conflict(f"{at}.frame", f"{at}.frame must be {stable_repr(fixed)} for {codec} messages")
             return INVALID
         return message
 
@@ -798,7 +825,7 @@ class _Validator:  # noqa: PLR0904
                 "operation": (self.operation, REQUIRED),
                 "validator": (self.choice(*_VALIDATOR_KINDS), REQUIRED),
                 "authenticated": (self.boolean, REQUIRED),
-                "statuses": (self.statuses, [200]),
+                "statuses": (self.statuses, list(CACHED_STATUSES)),
                 "vary_allowlist": (self.vary_names, []),
             },
             "a helper definition",

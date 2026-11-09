@@ -6,11 +6,13 @@ from __future__ import annotations
 from pydantic import BaseModel, Field, conint
 
 
-class NamedBoxAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3(BaseModel):
+class NamedBoxAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3(
+    BaseModel
+):
     value: conint(gt=3) = Field(..., title='Value')
 
 
 class AnnotatedWrapperRoot(BaseModel):
-    boxes: list[NamedBoxAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3] = (
-        Field(..., title='Boxes')
-    )
+    boxes: list[
+        NamedBoxAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3
+    ] = Field(..., title='Boxes')

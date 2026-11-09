@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 _OK: Final = raw_response(200, b"ok", "application/octet-stream")
+_ACCEPTED: Final = raw_response(204)
 _SECRETS: Final = ("token-secret", "key-secret", "pass word", "q secret", "cookie-secret", "vault-secret")
 
 
@@ -165,6 +166,9 @@ def _refusals(package: ModuleType, exchange: Exchange, lines: list[str]) -> None
             ("callable of another type", {"bearer": lambda: 7}, "bearer"),
             ("basic of another shape", {"basic": "user:pass word"}, "basic"),
             ("basic of a pair of another size", {"basic": ("user", "pass", "word")}, "basic"),
+            ("basic lone surrogate", {"basic": ("user", "pass\udcff")}, "basic"),
+            ("query key lone surrogate", {"query_key": "q\udcff"}, "api_key_query"),
+            ("bearer lone surrogate", {"bearer": lambda: "token\ud800"}, "bearer"),
             ("header line break", {"header_key": "key-secret\r\nX-Injected: 1"}, "api_key_header"),
             ("cookie separator", {"cookie_key": "cookie-secret; admin=1"}, "api_key_cookie"),
             ("non-ascii header", {"header_key": "key-secreté"}, "api_key_header"),
@@ -207,3 +211,37 @@ def auth_values(package: ModuleType, lines: list[str]) -> None:
         part(package, exchange, lines)
     lines.append("async")
     run(lambda: _async_values(package, exchange, lines))
+
+
+def auth_shared_wire(package: ModuleType, lines: list[str]) -> None:
+    """Send one credential for the schemes of an AND alternative that place one kind at one position."""
+    exchange = Exchange(lines)
+    for credentials in (
+        {"implicit": "token-secret"},
+        {"code": "token-secret"},
+        {"implicit": "token-secret", "code": "other-secret"},
+        {"code": "token-secret", "key": "key-secret"},
+        {"key_lower": "key-secret"},
+        {},
+    ):
+        lines.append(f"credentials {tuple(credentials)}")
+        with exchange.client() as http, package.Client(http_client=http, **credentials) as api:
+            exchange.respond(_ACCEPTED, _ACCEPTED, _ACCEPTED)
+            record(lines, "flows", api.auth.flows)
+            record(lines, "keyed flows", api.auth.keyed_flows)
+            record(lines, "keys", api.auth.keys)
+
+
+def auth_parameters(package: ModuleType, lines: list[str]) -> None:
+    """Send a parameter written where an apiKey credential goes instead of the credential, and else the credential."""
+    exchange = Exchange(lines)
+    for credentials in ({"header": "header-secret", "query": "query-secret", "cookie": "cookie-secret"}, {}):
+        lines.append(f"credentials {tuple(credentials)}")
+        with exchange.client() as http, package.Client(http_client=http, **credentials) as api:
+            exchange.respond(*(_ACCEPTED,) * (6 if credentials else 3))
+            record(lines, "header given", lambda: api.auth.header(x_key="given"))
+            record(lines, "header", api.auth.header)
+            record(lines, "query given", lambda: api.auth.query(key="given"))
+            record(lines, "query", api.auth.query)
+            record(lines, "cookie given", lambda: api.auth.cookie(session="given"))
+            record(lines, "cookie", api.auth.cookie)

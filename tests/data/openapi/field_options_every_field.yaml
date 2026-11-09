@@ -1,0 +1,34 @@
+openapi: 3.1.0
+info: {title: Field options on every field, version: "1"}
+paths: {}
+components:
+  schemas:
+    Flags:
+      type: object
+      properties:
+        any-value: true
+        other-value: {}
+    Base:
+      type: object
+      properties:
+        id: {type: string}
+    Child:
+      allOf:
+        - $ref: '#/components/schemas/Base'
+        - properties:
+            display-name: {type: string}
+          required: [display-name, owner-id, id]
+    Pet:
+      oneOf: [{$ref: '#/components/schemas/Dog'}, {$ref: '#/components/schemas/Cat'}]
+      discriminator: {propertyName: pet-type, mapping: {dog: '#/components/schemas/Dog', cat: '#/components/schemas/Cat'}}
+    Dog: {type: object, properties: {bark: {type: string}}}
+    Cat: {type: object, properties: {meow: {type: string}}}
+    Owner:
+      type: object
+      properties:
+        address: {$ref: '#/components/schemas/Address'}
+        pet: {$ref: '#/components/schemas/Pet'}
+    Address:
+      type: object
+      properties:
+        city: {type: string}

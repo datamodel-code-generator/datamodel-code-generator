@@ -26,12 +26,19 @@ class DurationDefaults(Struct):
     maximum: Elapsed | UnsetType = timedelta_aliased(milliseconds=4294967295)
     array: list[Elapsed] | UnsetType = field(
         default_factory=lambda: convert(
-            [timedelta_aliased(milliseconds=0), timedelta_aliased(milliseconds=1), timedelta_aliased(milliseconds=1001)],
+            [
+                timedelta_aliased(milliseconds=0),
+                timedelta_aliased(milliseconds=1),
+                timedelta_aliased(milliseconds=1001),
+            ],
             type=list[Elapsed],
         )
     )
     map: dict[str, Elapsed] | UnsetType = field(
-        default_factory=lambda: {'z': timedelta_aliased(milliseconds=4294967295), 'a': timedelta_aliased(milliseconds=1)}
+        default_factory=lambda: {
+            'z': timedelta_aliased(milliseconds=4294967295),
+            'a': timedelta_aliased(milliseconds=1),
+        }
     )
     union: Elapsed | None | UnsetType = timedelta_aliased(milliseconds=1001)
     string_first: str | Elapsed | UnsetType = 'kept'
@@ -47,7 +54,12 @@ class DurationDefaults(Struct):
         )
     )
     nested: list[dict[str, Elapsed]] | UnsetType = field(
-        default_factory=lambda: [{'z': timedelta_aliased(milliseconds=1001), 'a': timedelta_aliased(milliseconds=1)}]
+        default_factory=lambda: [
+            {
+                'z': timedelta_aliased(milliseconds=1001),
+                'a': timedelta_aliased(milliseconds=1),
+            }
+        ]
     )
     ordinary_fixed: Raw | UnsetType = (
         b'\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00'

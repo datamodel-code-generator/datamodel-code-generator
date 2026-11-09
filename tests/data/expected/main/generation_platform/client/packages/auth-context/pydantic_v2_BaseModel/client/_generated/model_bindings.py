@@ -11,8 +11,12 @@ import models
 
 from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.InheritedPostHeaderXIdempotencyParameter]] = PydanticCodec(models.InheritedPostHeaderXIdempotencyParameter)
+codec_0: Final[PydanticCodec[models.InheritedPostHeaderXIdempotencyParameter]] = (
+    PydanticCodec(models.InheritedPostHeaderXIdempotencyParameter)
+)
 """Codec of /paths/~1inherited/post parameter (request header X-Idempotency)."""
 
-codec_1: Final[PydanticCodec[models.ExplicitPostHeaderXIdempotencyParameter]] = PydanticCodec(models.ExplicitPostHeaderXIdempotencyParameter)
+codec_1: Final[PydanticCodec[models.ExplicitPostHeaderXIdempotencyParameter]] = (
+    PydanticCodec(models.ExplicitPostHeaderXIdempotencyParameter)
+)
 """Codec of /paths/~1explicit/post parameter (request header X-Idempotency)."""

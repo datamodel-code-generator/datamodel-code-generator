@@ -35,7 +35,7 @@ def _runtime_symbol(module: str, qualname: str, *, qualify: bool) -> PythonTypeE
     return python_type_name(qualname) if len(parts) == 1 else PythonTypeRuntimeSymbol("", parts)
 
 
-def _runtime_leaf_expr(tp: object, *, qualify: bool) -> PythonTypeExpr:
+def _runtime_leaf_expr(tp: object) -> PythonTypeExpr:
     if isinstance(tp, ForwardRef):
         # ForwardRef text is already a raw external boundary. Never parse it
         # with the host AST/tokenizer: the configured target may use a newer
@@ -45,7 +45,7 @@ def _runtime_leaf_expr(tp: object, *, qualify: bool) -> PythonTypeExpr:
     qualname = getattr(tp, "__qualname__", None) or getattr(tp, "__name__", None)
     if qualname is None:
         return PythonTypeOpaqueText(str(tp).replace("typing.", ""))
-    return _runtime_symbol(module, qualname, qualify=qualify)
+    return _runtime_symbol(module, qualname, qualify=True)
 
 
 def _runtime_origin_expr(origin: object, *, qualify: bool) -> PythonTypeExpr:
@@ -56,65 +56,48 @@ def _runtime_origin_expr(origin: object, *, qualify: bool) -> PythonTypeExpr:
     return python_type_name(rendered) if rendered.isidentifier() else PythonTypeOpaqueText(rendered)
 
 
-def _callable_parameter_expr(parameters: object, *, qualify: bool) -> PythonTypeExpr:
+def _callable_parameter_expr(parameters: object) -> PythonTypeExpr:
     """Normalize the runtime parameter portion of a Callable annotation."""
     if parameters is ...:
         return PythonTypeEllipsis()
     if isinstance(parameters, (list, tuple)):
-        return PythonTypeParameterList(
-            tuple(_python_type_expr_from_runtime(item, qualify=qualify) for item in parameters)
-        )
+        return PythonTypeParameterList(tuple(_runtime_expr(item, full_name=False) for item in parameters))
     if isinstance(parameters, ParamSpec) or get_origin(parameters) is Concatenate:
-        return _python_type_expr_from_runtime(parameters, qualify=qualify)
-    return PythonTypeParameterList((_python_type_expr_from_runtime(parameters, qualify=qualify),))
-
-
-def _callable_expr_from_runtime_args(args: tuple[object, ...], *, qualify: bool) -> PythonTypeExpr:
-    if not args:
-        return python_type_name("Callable")
-    if len(args) == 2:  # noqa: PLR2004
-        parameters, return_type = args
-        return PythonTypeSubscript(
-            python_type_name("Callable"),
-            (
-                _callable_parameter_expr(parameters, qualify=qualify),
-                _python_type_expr_from_runtime(return_type, qualify=qualify),
-            ),
-        )
-    *parameters, return_type = args
-    return PythonTypeSubscript(
-        python_type_name("Callable"),
-        (
-            PythonTypeParameterList(
-                tuple(_python_type_expr_from_runtime(item, qualify=qualify) for item in parameters)
-            ),
-            _python_type_expr_from_runtime(return_type, qualify=qualify),
-        ),
-    )
+        return _runtime_expr(parameters, full_name=False)
+    return PythonTypeParameterList((_runtime_expr(parameters, full_name=False),))
 
 
 def python_callable_expr_from_runtime_args(args: tuple[object, ...]) -> PythonTypeExpr:
     """Build a normalized ``Callable`` expression from runtime arguments."""
-    return _callable_expr_from_runtime_args(args, qualify=True)
+    if not args:
+        return python_type_name("Callable")
+    parameters = args[0] if len(args) == 2 else list(args[:-1])  # noqa: PLR2004
+    return PythonTypeSubscript(
+        python_type_name("Callable"),
+        (_callable_parameter_expr(parameters), _runtime_expr(args[-1], full_name=False)),
+    )
 
 
-def _python_type_expr_from_runtime(tp: object, *, qualify: bool) -> PythonTypeExpr:  # noqa: PLR0911
+def _runtime_expr(tp: object, *, full_name: bool) -> PythonTypeExpr:  # noqa: PLR0911
+    """Convert a runtime type; ``full_name`` keeps the historical simple generic base and opaque strings."""
     if tp is type(None):
         return python_type_name("None")
-    if tp is ...:
+    if full_name and isinstance(tp, str):
+        return PythonTypeOpaqueText(tp)
+    if not full_name and tp is ...:
         return PythonTypeEllipsis()
 
     origin = get_origin(tp)
     args = get_args(tp)
     if origin is None:
-        return _runtime_leaf_expr(tp, qualify=qualify)
+        return _runtime_leaf_expr(tp)
     if origin is ABCCallable:
-        return _callable_expr_from_runtime_args(args, qualify=qualify)
+        return python_callable_expr_from_runtime_args(args)
     if origin is Union or origin is getattr(types, "UnionType", None):
-        return PythonTypeUnion(tuple(_python_type_expr_from_runtime(item, qualify=qualify) for item in args))
+        return PythonTypeUnion(tuple(_runtime_expr(item, full_name=full_name) for item in args))
     if origin is Annotated:
         return (
-            _python_type_expr_from_runtime(args[0], qualify=qualify)
+            _runtime_expr(args[0], full_name=full_name)
             if args
             else PythonTypeOpaqueText(str(tp).replace("typing.", ""))
         )
@@ -128,62 +111,12 @@ def _python_type_expr_from_runtime(tp: object, *, qualify: bool) -> PythonTypeEx
         )
     if origin is type:
         return (
-            PythonTypeSubscript(
-                python_type_name("Type"),
-                (_python_type_expr_from_runtime(args[0], qualify=qualify),),
-            )
+            PythonTypeSubscript(python_type_name("Type"), (_runtime_expr(args[0], full_name=full_name),))
             if args
             else python_type_name("Type")
         )
-    return (
-        PythonTypeSubscript(
-            _runtime_origin_expr(origin, qualify=qualify),
-            tuple(_python_type_expr_from_runtime(item, qualify=True) for item in args),
-        )
-        if args
-        else _runtime_origin_expr(origin, qualify=qualify)
-    )
-
-
-def _python_type_expr_from_runtime_full_name(tp: object) -> PythonTypeExpr:  # noqa: PLR0911
-    """Apply the historical policy: simple generic base, qualified arguments."""
-    if tp is type(None):
-        return python_type_name("None")
-    if isinstance(tp, str):
-        return PythonTypeOpaqueText(tp)
-    if isinstance(tp, ForwardRef):
-        # This string may target a newer Python than the running interpreter;
-        # keep it opaque instead of asking host-version AST/tokenizer to parse it.
-        return PythonTypeOpaqueText(tp.__forward_arg__)
-
-    origin = get_origin(tp)
-    args = get_args(tp)
-    if origin is None:
-        return _runtime_leaf_expr(tp, qualify=True)
-    if origin is ABCCallable:
-        return _callable_expr_from_runtime_args(args, qualify=True)
-    if origin is Union or origin is getattr(types, "UnionType", None):
-        return PythonTypeUnion(tuple(_python_type_expr_from_runtime_full_name(item) for item in args))
-    if origin is Annotated:
-        return (
-            _python_type_expr_from_runtime_full_name(args[0])
-            if args
-            else PythonTypeOpaqueText(str(tp).replace("typing.", ""))
-        )
-    if origin is Literal:
-        return _python_type_expr_from_runtime(tp, qualify=True)
-    if origin is type:
-        return (
-            PythonTypeSubscript(python_type_name("Type"), (_python_type_expr_from_runtime_full_name(args[0]),))
-            if args
-            else python_type_name("Type")
-        )
-    base = _runtime_origin_expr(origin, qualify=False)
-    return (
-        PythonTypeSubscript(base, tuple(_python_type_expr_from_runtime_full_name(item) for item in args))
-        if args
-        else base
-    )
+    base = _runtime_origin_expr(origin, qualify=not full_name)
+    return PythonTypeSubscript(base, tuple(_runtime_expr(item, full_name=full_name) for item in args)) if args else base
 
 
 class _IdentityWeakRef:
@@ -221,9 +154,7 @@ def _python_type_expr_from_runtime_cached(
     if (tp := type_ref()) is None:  # pragma: no cover
         msg = "Runtime type was released during annotation binding"
         raise RuntimeError(msg)
-    return (
-        _python_type_expr_from_runtime_full_name(tp) if full_name else _python_type_expr_from_runtime(tp, qualify=True)
-    )
+    return _runtime_expr(tp, full_name=full_name)
 
 
 def _cached_runtime_expression(tp: object, *, full_name: bool) -> PythonTypeExpr:
@@ -236,11 +167,7 @@ def _cached_runtime_expression(tp: object, *, full_name: bool) -> PythonTypeExpr
     try:
         type_ref = _IdentityWeakRef(tp)
     except TypeError:
-        return (
-            _python_type_expr_from_runtime_full_name(tp)
-            if full_name
-            else _python_type_expr_from_runtime(tp, qualify=True)
-        )
+        return _runtime_expr(tp, full_name=full_name)
     return _python_type_expr_from_runtime_cached(type_ref, full_name)
 
 

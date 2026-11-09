@@ -11,22 +11,34 @@ import models
 
 from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.FormsPostRequest]] = PydanticCodec(models.FormsPostRequest)
+codec_0: Final[PydanticCodec[models.FormsPostRequest]] = PydanticCodec(
+    models.FormsPostRequest
+)
 """Codec of /paths/~1forms/post request_body (request application/x-www-form-urlencoded)."""
 
-codec_1: Final[PydanticCodec[models.FormsPostResponse]] = PydanticCodec(models.FormsPostResponse)
+codec_1: Final[PydanticCodec[models.FormsPostResponse]] = PydanticCodec(
+    models.FormsPostResponse
+)
 """Codec of /paths/~1forms/post response_body (response 200 application/x-www-form-urlencoded)."""
 
-codec_2: Final[PydanticCodec[models.ProfilesPostRequest]] = PydanticCodec(models.ProfilesPostRequest)
+codec_2: Final[PydanticCodec[models.ProfilesPostRequest]] = PydanticCodec(
+    models.ProfilesPostRequest
+)
 """Codec of /paths/~1profiles/post request_body (request multipart/form-data)."""
 
-codec_3: Final[PydanticCodec[models.ProfilesGetResponse]] = PydanticCodec(models.ProfilesGetResponse)
+codec_3: Final[PydanticCodec[models.ProfilesGetResponse]] = PydanticCodec(
+    models.ProfilesGetResponse
+)
 """Codec of /paths/~1profiles/get response_body (response 200 multipart/form-data)."""
 
-codec_4: Final[PydanticCodec[models.AnythingPostRequest]] = PydanticCodec(models.AnythingPostRequest)
+codec_4: Final[PydanticCodec[models.AnythingPostRequest]] = PydanticCodec(
+    models.AnythingPostRequest
+)
 """Codec of /paths/~1anything/post request_body (request multipart/form-data)."""
 
-codec_5: Final[PydanticCodec[models.AttachmentsGetResponse]] = PydanticCodec(models.AttachmentsGetResponse)
+codec_5: Final[PydanticCodec[models.AttachmentsGetResponse]] = PydanticCodec(
+    models.AttachmentsGetResponse
+)
 """Codec of /paths/~1attachments/get response_body (response 202 multipart/form-data)."""
 
 codec_6: Final[PydanticCodec[models.Address]] = PydanticCodec(models.Address)
@@ -35,19 +47,27 @@ codec_6: Final[PydanticCodec[models.Address]] = PydanticCodec(models.Address)
 codec_7: Final[PydanticCodec[models.Address]] = PydanticCodec(models.Address)
 """Codec of /paths/~1files/post request_body (request application/json)."""
 
-codec_8: Final[PydanticCodec[models.FilesPostRequest2]] = PydanticCodec(models.FilesPostRequest2)
+codec_8: Final[PydanticCodec[models.FilesPostRequest2]] = PydanticCodec(
+    models.FilesPostRequest2
+)
 """Codec of /paths/~1files/post request_body (request text/*)."""
 
 codec_9: Final[PydanticCodec[models.Address]] = PydanticCodec(models.Address)
 """Codec of /paths/~1files/post response_body (response 200 application/json)."""
 
-codec_10: Final[PydanticCodec[models.SearchesPostRequest]] = PydanticCodec(models.SearchesPostRequest)
+codec_10: Final[PydanticCodec[models.SearchesPostRequest]] = PydanticCodec(
+    models.SearchesPostRequest
+)
 """Codec of /paths/~1searches/post request_body (request application/x-www-form-urlencoded)."""
 
-codec_11: Final[PydanticCodec[models.CardsPostRequest]] = PydanticCodec(models.CardsPostRequest)
+codec_11: Final[PydanticCodec[models.CardsPostRequest]] = PydanticCodec(
+    models.CardsPostRequest
+)
 """Codec of /paths/~1cards/post request_body (request multipart/form-data)."""
 
-codec_12: Final[PydanticCodec[models.StickersPostRequest]] = PydanticCodec(models.StickersPostRequest)
+codec_12: Final[PydanticCodec[models.StickersPostRequest]] = PydanticCodec(
+    models.StickersPostRequest
+)
 """Codec of /paths/~1stickers/post request_body (request multipart/form-data)."""
 
 codec_13: Final[PydanticCodec[models.Draft]] = PydanticCodec(models.Draft)
@@ -56,7 +76,9 @@ codec_13: Final[PydanticCodec[models.Draft]] = PydanticCodec(models.Draft)
 codec_14: Final[PydanticCodec[models.Draft]] = PydanticCodec(models.Draft)
 """Codec of /paths/~1documents/post response_body (response 3XX application/json)."""
 
-codec_15: Final[PydanticCodec[models.DocumentsIdGetPathIdParameter]] = PydanticCodec(models.DocumentsIdGetPathIdParameter)
+codec_15: Final[PydanticCodec[models.DocumentsIdGetPathIdParameter]] = PydanticCodec(
+    models.DocumentsIdGetPathIdParameter
+)
 """Codec of /paths/~1documents~1{id}/get parameter (request path id application/json)."""
 
 codec_16: Final[PydanticCodec[models.Draft]] = PydanticCodec(models.Draft)

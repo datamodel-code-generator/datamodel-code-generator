@@ -13,7 +13,7 @@ security.jinja2
 types.jinja2
 webhook.jinja2
 
-nodes: And, Call, Compare, Const, Filter, For, Getattr, If, Macro, Name, Not, Operand, Output, Template, TemplateData
+nodes: And, Call, Compare, Const, Filter, For, Getattr, Getitem, If, Macro, Name, Not, Operand, Output, Template, TemplateData
 filters: repr
 tests:
 globals:

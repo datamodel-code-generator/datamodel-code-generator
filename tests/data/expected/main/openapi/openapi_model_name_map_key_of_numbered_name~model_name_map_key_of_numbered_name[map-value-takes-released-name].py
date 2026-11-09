@@ -6,12 +6,12 @@ from __future__ import annotations
 from pydantic import BaseModel
 
 
-class Tag1(BaseModel):
+class Tag2(BaseModel):
     m: int | None = None
 
 
 class A(BaseModel):
-    tag: dict[str, Tag1] | None = None
+    tag: dict[str, Tag2] | None = None
 
 
 class Tag(BaseModel):

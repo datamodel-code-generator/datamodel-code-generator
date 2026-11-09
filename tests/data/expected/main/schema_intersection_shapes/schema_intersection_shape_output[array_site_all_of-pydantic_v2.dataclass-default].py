@@ -9,6 +9,17 @@ from pydantic import Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
+NestedItem = TypeAliasType("NestedItem", Annotated[list[int], Field(max_length=2)])
+
+
+MapAdditionalProperty = TypeAliasType(
+    "MapAdditionalProperty", Annotated[list[int], Field(max_length=2)]
+)
+
+
+AnyOf = TypeAliasType("AnyOf", Annotated[list[int], Field(max_length=2)])
+
+
 Named = TypeAliasType("Named", Annotated[list[str], Field(..., min_length=1)])
 
 
@@ -19,9 +30,9 @@ Bounded = TypeAliasType("Bounded", Annotated[list[str], Field(..., min_length=1)
 class M:
     named: Named | None = None
     inline: list[int] | None = Field(None, max_length=2)
-    nested: list[list[int]] | None = None
-    map: dict[str, list[int]] | None = None
-    any_of: list[int] | str | None = None
+    nested: list[NestedItem] | None = None
+    map: dict[str, MapAdditionalProperty] | None = None
+    any_of: AnyOf | str | None = None
     null_or_array: list[int] | None = Field(None, min_length=1)
     member_items: list[int] | None = Field(None, min_length=1)
     annotation_only: list[int] | None = Field(None, description='Integers.')

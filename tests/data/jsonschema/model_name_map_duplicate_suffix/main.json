@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "properties": {
+    "tag": {
+      "anyOf": [
+        {"type": "object", "properties": {"first": {"type": "string"}}},
+        {"type": "object", "properties": {"second": {"type": "string"}}}
+      ]
+    },
+    "local": {"$ref": "#/definitions/Tag"},
+    "external": {"$ref": "ext.json#/definitions/Tag"}
+  },
+  "definitions": {"Tag": {"type": "object", "properties": {"local": {"type": "string"}}}}
+}

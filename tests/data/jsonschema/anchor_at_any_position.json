@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "first": {"$ref": "#first"},
+    "contained": {"$ref": "#contained"},
+    "negated": {"$ref": "#negated"},
+    "conditional": {"$ref": "#conditional"},
+    "dependent": {"$ref": "#dependent"},
+    "nested": {"$ref": "#nested"},
+    "listed": {"$dynamicRef": "#listed"},
+    "box": {"$ref": "#/$defs/Box"},
+    "crate": {"$ref": "#/$defs/Crate"},
+    "tags": {
+      "type": "array",
+      "contains": {"$anchor": "contained", "type": "object", "properties": {"count": {"type": "integer"}}}
+    },
+    "anything": {"not": {"$anchor": "negated", "type": "object", "properties": {"flag": {"type": "boolean"}}}},
+    "choice": {"if": {"$anchor": "conditional", "type": "object", "properties": {"name": {"type": "string"}}}},
+    "pairs": {
+      "type": "object",
+      "dependentSchemas": {
+        "key": {"$anchor": "dependent", "type": "object", "properties": {"value": {"type": "number"}}}
+      }
+    },
+    "scoped": {
+      "type": "object",
+      "$defs": {"Inner": {"$anchor": "nested", "type": "object", "properties": {"label": {"type": "string"}}}}
+    },
+    "sizes": {
+      "type": "array",
+      "items": {"$anchor": "listed", "type": "object", "properties": {"size": {"type": "integer"}}}
+    }
+  },
+  "$defs": {
+    "First": {"$dynamicAnchor": "first", "type": "object", "properties": {"id": {"type": "integer"}}},
+    "Box": {
+      "$id": "https://example.com/box",
+      "type": "object",
+      "properties": {"thing": {"$dynamicRef": "#thing"}},
+      "$defs": {"Thing": {"$anchor": "thing", "type": "object", "properties": {"weight": {"type": "number"}}}}
+    },
+    "Crate": {
+      "$id": "https://example.com/crate",
+      "type": "object",
+      "properties": {"content": {"$dynamicRef": "#first"}}
+    }
+  }
+}

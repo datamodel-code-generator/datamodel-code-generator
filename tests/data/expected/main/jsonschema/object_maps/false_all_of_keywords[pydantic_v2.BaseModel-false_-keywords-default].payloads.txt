@@ -4,8 +4,8 @@ invalid p: rejected (too_long)
 invalid n: rejected (too_long)
 invalid m: rejected (too_long)
 invalid t: rejected (too_long)
-invalid a: accepted
-invalid e: accepted
+invalid a: rejected (too_long)
+invalid e: rejected (too_long)
 invalid x: rejected (string_pattern_mismatch)
 invalid x: rejected (string_pattern_mismatch)
 invalid y: rejected (too_long)

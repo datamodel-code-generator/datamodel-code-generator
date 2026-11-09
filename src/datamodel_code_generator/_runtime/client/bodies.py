@@ -12,7 +12,7 @@ from typing import IO, TYPE_CHECKING, Final, TypeAlias, cast
 from typing_extensions import TypeIs
 
 from .content import CHUNK
-from .errors import body_failure
+from .errors import request_failure
 from .logical import in_thread
 
 if TYPE_CHECKING:
@@ -83,7 +83,7 @@ class BinarySource:
         except (AttributeError, OSError):
             return
         except ValueError as error:
-            raise body_failure(reason="unencodable", cause=error) from error
+            raise request_failure(("body",), cause=error) from error
         self._offset, self.content_length = offset, max(0, end - offset)
 
     @property
@@ -97,14 +97,14 @@ class BinarySource:
             try:
                 file = Path(fsdecode(self._input)).open("rb")  # noqa: SIM115 - The call owns it until its end.
             except OSError as error:
-                raise body_failure(reason="unencodable", cause=error) from error
+                raise request_failure(("body",), cause=error) from error
             self._file, self._owned = file, True
             self._measure(file)
         if self._file is not None and self._offset is not None:
             try:
                 self._file.seek(self._offset)
             except (OSError, ValueError) as error:
-                raise body_failure(reason="body_not_replayable", cause=error) from error
+                raise request_failure(("body",), cause=error, reason="body_not_replayable") from error
         return BinaryContent(self)
 
     async def aopen(self) -> BinaryContent:

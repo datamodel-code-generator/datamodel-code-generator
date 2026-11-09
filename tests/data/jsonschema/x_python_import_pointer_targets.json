@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "options": {"$ref": "#/components/Options"},
+    "named": {"$ref": "#/components/Named"},
+    "labels": {"$ref": "#/components/Labels"}
+  },
+  "components": {
+    "Options": {"type": "object", "x-python-import": {"module": "collections", "name": "OrderedDict"}},
+    "Base": {"type": "object", "x-python-import": {"module": "collections", "name": "UserDict"}},
+    "Labels": {
+      "type": "object",
+      "properties": {"text": {"type": "string"}},
+      "x-python-import": {"module": "collections", "name": "Counter"}
+    },
+    "Named": {
+      "allOf": [{"$ref": "#/components/Base"}, {"type": "object", "properties": {"name": {"type": "string"}}}]
+    }
+  }
+}

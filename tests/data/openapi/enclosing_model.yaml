@@ -1,0 +1,67 @@
+openapi: 3.1.0
+info: {title: enclosing model, version: "1"}
+paths: {}
+components:
+  schemas:
+    Issue:
+      type: object
+      properties:
+        id: {type: integer}
+    IssueClosed:
+      type: object
+      properties:
+        issue:
+          allOf:
+            - $ref: '#/components/schemas/Issue'
+            - type: object
+              properties:
+                state: {type: string}
+        label:
+          type: object
+          properties:
+            name: {type: string}
+    IssueOpened:
+      type: object
+      properties:
+        issue:
+          allOf:
+            - $ref: '#/components/schemas/Issue'
+            - type: object
+              properties:
+                locked: {type: boolean}
+    StreamEvent:
+      oneOf:
+        - type: object
+          required: [delta]
+          properties:
+            delta: {type: string}
+        - type: object
+          required: [done]
+          properties:
+            done: {type: boolean}
+    Pet:
+      oneOf:
+        - type: object
+          required: [kind]
+          properties:
+            kind: {type: string, enum: [cat]}
+            meows: {type: boolean}
+        - type: object
+          required: [kind]
+          properties:
+            kind: {type: string, enum: [dog]}
+            barks: {type: boolean}
+    Order:
+      type: object
+      properties:
+        other:
+          type: object
+          properties:
+            item:
+              type: object
+              properties:
+                x: {type: string}
+          additionalProperties:
+            type: object
+            properties:
+              y: {type: integer}

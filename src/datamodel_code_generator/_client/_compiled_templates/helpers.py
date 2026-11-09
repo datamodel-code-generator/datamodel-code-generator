@@ -11,32 +11,25 @@ from datamodel_code_generator.model._compiled_template_runtime import (
 )
 
 
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
-
-
 def render_with_scope(_scope: _Scope) -> str:
     def _macro_signature(_parent: _Scope, method: Any) -> str:
         _parts: list[str] = []
         if _getattr(method, "coroutine"):
             _parts.append("async ")
-        _value_0 = _stringify(_getattr(method, "name"))
-        _parts.append(f"def {_value_0}(\n        self,")
+        _parts.append(f"def {_stringify(_getattr(method, 'name'))}(\n        self,")
         for parameter in _getattr(method, "positional"):
-            _value_1 = _stringify(_getattr(parameter, "name"))
-            _value_2 = _stringify(_getattr(parameter, "annotation"))
-            _parts.append(f"\n        {_value_1}: {_value_2},")
+            _parts.append(
+                f"\n        {_stringify(_getattr(parameter, 'name'))}: {_stringify(_getattr(parameter, 'annotation'))},"
+            )
         _parts.append("\n        *,")
         for parameter in _getattr(method, "keywords"):
-            _value_3 = _stringify(_getattr(parameter, "name"))
-            _value_4 = _stringify(_getattr(parameter, "annotation"))
-            _parts.append(f"\n        {_value_3}: {_value_4}")
+            _parts.append(
+                f"\n        {_stringify(_getattr(parameter, 'name'))}: {_stringify(_getattr(parameter, 'annotation'))}"
+            )
             if _getattr(parameter, "default"):
-                _value_5 = _stringify(_getattr(parameter, "default"))
-                _parts.append(f" = {_value_5}")
+                _parts.append(f" = {_stringify(_getattr(parameter, 'default'))}")
             _parts.append(",")
-        _value_6 = _stringify(_getattr(method, "returns"))
-        _parts.append(f"\n    ) -> {_value_6}:")
+        _parts.append(f"\n    ) -> {_stringify(_getattr(method, 'returns'))}:")
         return "".join(_parts)
 
     def _macro_call(_parent: _Scope, method: Any) -> str:
@@ -44,15 +37,12 @@ def render_with_scope(_scope: _Scope) -> str:
         _parts.append("return ")
         if _getattr(method, "coroutine"):
             _parts.append("await ")
-        _value_7 = _stringify(_getattr(method, "function"))
-        _parts.append(f"{_value_7}(")
+        _parts.append(f"{_stringify(_getattr(method, 'function'))}(")
         for argument in _getattr(method, "arguments"):
             _parts.append("\n            ")
             if _getattr(argument, "keyword"):
-                _value_8 = _stringify(_getattr(argument, "keyword"))
-                _parts.append(f"{_value_8}=")
-            _value_9 = _stringify(_getattr(argument, "value"))
-            _parts.append(f"{_value_9},")
+                _parts.append(f"{_stringify(_getattr(argument, 'keyword'))}=")
+            _parts.append(f"{_stringify(_getattr(argument, 'value'))},")
         _parts.append("\n        )")
         return "".join(_parts)
 
@@ -64,55 +54,39 @@ def render_with_scope(_scope: _Scope) -> str:
     _context_imports = _scope.get("imports")
     _context_namespaces = _scope.get("namespaces")
     _parts: list[str] = []
-    _value_10 = _stringify(_context_docstring)
-    _value_11 = _stringify(_context_imports)
-    _parts.append(f'"""{_value_10}"""\n\nfrom __future__ import annotations\n\n{_value_11}')
+    _parts.append(
+        f'"""{_stringify(_context_docstring)}"""\n\nfrom __future__ import annotations\n\n{_stringify(_context_imports)}'
+    )
     for group in _context_namespaces:
-        _value_12 = _stringify(_getattr(group, "name"))
-        _value_13 = _stringify(_getattr(group, "docstring"))
-        _value_14 = _stringify(_getattr(group, "core"))
         _parts.append(
-            f'\n\n\nclass {_value_12}:\n    """{_value_13}"""\n\n    def __init__(self, core: {_value_14}) -> None:\n        """Keep the client core its helpers send through."""\n        self._core = '
+            f'\n\n\nclass {_stringify(_getattr(group, "name"))}:\n    """{_stringify(_getattr(group, "docstring"))}"""\n\n    def __init__(self, core: {_stringify(_getattr(group, "core"))}) -> None:\n        """Keep the client core its helpers send through."""\n        self._core = '
         )
         if _getattr(group, "wrap"):
-            _value_15 = _stringify(_getattr(group, "wrap"))
-            _parts.append(f"{_value_15}.from_client(core)")
+            _parts.append(f"{_stringify(_getattr(group, 'wrap'))}.from_client(core)")
         else:
             _parts.append("core")
         for child in _getattr(group, "children"):
-            _value_16 = _stringify(_context_cached_property)
-            _value_17 = _stringify(_getattr(child, "attribute"))
-            _value_18 = _stringify(_getattr(child, "class_name"))
-            _value_19 = _stringify(_getattr(child, "docstring"))
-            _value_20 = _stringify(_getattr(child, "class_name"))
             _parts.append(
-                f'\n\n    @{_value_16}\n    def {_value_17}(self) -> {_value_18}:\n        """{_value_19}"""\n        return {_value_20}(self._core)'
+                f'\n\n    @{_stringify(_context_cached_property)}\n    def {_stringify(_getattr(child, "attribute"))}(self) -> {_stringify(_getattr(child, "class_name"))}:\n        """{_stringify(_getattr(child, "docstring"))}"""\n        return {_stringify(_getattr(child, "class_name"))}(self._core)'
             )
     for helper in _context_helpers:
-        _value_21 = _stringify(_getattr(helper, "name"))
-        _value_22 = _stringify(_getattr(helper, "docstring"))
-        _value_23 = _stringify(_context_core)
         _parts.append(
-            f'\n\n\nclass {_value_21}:\n    """{_value_22}"""\n\n    def __init__(self, core: {_value_23}) -> None:\n        """Keep the client core the helper sends through."""\n        self._core = core'
+            f'\n\n\nclass {_stringify(_getattr(helper, "name"))}:\n    """{_stringify(_getattr(helper, "docstring"))}"""\n\n    def __init__(self, core: {_stringify(_context_core)}) -> None:\n        """Keep the client core the helper sends through."""\n        self._core = core'
         )
         for method in _getattr(helper, "methods"):
-            _value_24 = _stringify(_macro_signature(_scope, method))
-            _value_25 = _stringify(_getattr(method, "docstring"))
-            _value_26 = _stringify(_macro_call(_scope, method))
-            _parts.append(f'\n\n    {_value_24}\n        """{_value_25}"""\n        {_value_26}')
+            _parts.append(
+                f'\n\n    {_stringify(_macro_signature(_scope, method))}\n        """{_stringify(_getattr(method, "docstring"))}"""\n        {_stringify(_macro_call(_scope, method))}'
+            )
         if _getattr(helper, "handle"):
-            _value_27 = _stringify(_getattr(_getattr(helper, "handle"), "name"))
-            _value_28 = _stringify(_getattr(_getattr(helper, "handle"), "base"))
-            _value_29 = _stringify(_getattr(_getattr(helper, "handle"), "docstring"))
-            _parts.append(f'\n\n\nclass {_value_27}({_value_28}):\n    """{_value_29}"""\n\n    __slots__ = ()\n\n    ')
+            _parts.append(
+                f'\n\n\nclass {_stringify(_getattr(_getattr(helper, "handle"), "name"))}({_stringify(_getattr(_getattr(helper, "handle"), "base"))}):\n    """{_stringify(_getattr(_getattr(helper, "handle"), "docstring"))}"""\n\n    __slots__ = ()\n\n    '
+            )
             if _context_asynchronous:
                 _parts.append("async ")
-            _value_30 = _stringify(_getattr(_getattr(helper, "handle"), "receipt"))
             _parts.append(
-                f'def cancel_remote(self) -> {_value_30}:\n        """Ask the server to cancel the operation; the handle keeps its last poll until it polls again."""\n        return '
+                f'def cancel_remote(self) -> {_stringify(_getattr(_getattr(helper, "handle"), "receipt"))}:\n        """Ask the server to cancel the operation; the handle keeps its last poll until it polls again."""\n        return '
             )
             if _context_asynchronous:
                 _parts.append("await ")
-            _value_31 = _stringify(_getattr(_getattr(helper, "handle"), "plan"))
-            _parts.append(f"self._cancel_remote({_value_31})")
+            _parts.append(f"self._cancel_remote({_stringify(_getattr(_getattr(helper, 'handle'), 'plan'))})")
     return "".join(_parts)

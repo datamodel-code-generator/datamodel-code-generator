@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from functools import cached_property
+from functools import cached_property, partial
 from pathlib import PurePosixPath
 from types import MappingProxyType
 from typing import TYPE_CHECKING, ClassVar, TypeAlias
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
+from datamodel_code_generator.model._compiled_template_runtime import render as render_compiled
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -19,6 +21,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from datamodel_code_generator.config import GenerateConfig
+    from datamodel_code_generator.model._compiled_template_runtime import Scope
 
 Role: TypeAlias = Callable[..., Callable[..., str]]
 
@@ -28,15 +31,15 @@ class Templated:
     """A generated module as its role renders it: the role, the role's compiled builtin renderer, and its values."""
 
     role: str
-    compiled: Callable[..., str]
+    compiled: Callable[[Scope], str]
     values: Mapping[str, object]
 
     def render(self, role: Role) -> str:
         """Render the module through a target's roles: a custom template directory's override, or the builtin."""
-        return role(self.role, self.compiled)(**self.values)
+        return role(self.role, partial(render_compiled, self.compiled))(**self.values)
 
 
-def templated(role: str, compiled: Callable[..., str], **values: object) -> Templated:
+def templated(role: str, compiled: Callable[[Scope], str], **values: object) -> Templated:
     """Return the module a role renders from these values."""
     return Templated(role, compiled, values)
 
@@ -47,12 +50,12 @@ class TemplateOverlay:
     The directory loads before the builtin templates through the Jinja environment of the model templates, so an
     override may include or import any other builtin template. A missing directory or role falls back to the builtin
     role, as model templates do, and overrides receive the template data, as custom model templates do. A target names
-    its builtin directory, its roles, its subdirectory, and the code of a template that does not render.
+    its builtin directory, whose templates are its roles, its subdirectory, and the code of a template that does not
+    render.
     A `Role` returns the renderer of a builtin role from its name and its compiled renderer.
     """
 
     BUILTIN: ClassVar[Path]
-    ROLES: ClassVar[frozenset[str]]
     SUBDIR: ClassVar[str]
     INVALID: ClassVar[str]
     OPTION: ClassVar[str] = "model_config.custom_template_dir"
@@ -65,7 +68,9 @@ class TemplateOverlay:
         """Find the roles the directory overrides."""
         self.directory = custom_template_dir / self.SUBDIR
         self.data = data
-        self.roles = frozenset(role for role in self.ROLES if (self.directory / role).is_file())
+        self.roles = frozenset(
+            role.name for role in self.BUILTIN.glob("*.jinja2") if (self.directory / role.name).is_file()
+        )
 
     @classmethod
     def custom(cls, model_config: GenerateConfig, cwd: Path) -> Self | None:
@@ -105,7 +110,7 @@ class TemplateOverlay:
         try:
             return self.environment.get_template(template).render(**values)
         except TemplateNotFound as error:
-            message = f"{PurePosixPath(self.SUBDIR, template)}: template {error.name!r} not found"
+            message = f"{PurePosixPath(self.SUBDIR, template)}: template {stable_repr(error.name)} not found"
             raise APIGenerationError((self.problem(message),)) from None
         except TemplateError as error:
             name = PurePosixPath(self.SUBDIR, getattr(error, "name", None) or template)
@@ -140,3 +145,8 @@ class TemplateOverlay:
 def builtin_role(_name: str, compiled: Callable[..., str]) -> Callable[..., str]:
     """Return the compiled builtin renderer of a role, for a target without a template directory."""
     return compiled
+
+
+def roles(templates: TemplateOverlay | None) -> Role:
+    """Return the roles a target renders through: its template directory's overrides, or the builtins without one."""
+    return builtin_role if templates is None else templates.role

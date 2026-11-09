@@ -81,6 +81,18 @@ def _metadata_docs_summary(
     }
 
 
+def test_playground_options_named_differently_by_generate() -> None:
+    """An option that generate() names differently runs in the browser under its generate() field."""
+    metadata = build_playground_assets.build_metadata()
+    output = {
+        option["dest"]: {"config_dest": option["config_dest"], "browser_supported": option["browser_supported"]}
+        for option in metadata["options"]
+        if option["config_dest"] != option["dest"]
+    }
+
+    assert_output(json.dumps(output, indent=2, sort_keys=True) + "\n")
+
+
 def test_playground_target_options_unsupported() -> None:
     """Server and client options are generate() options that the browser playground does not offer."""
     metadata = build_playground_assets.build_metadata()

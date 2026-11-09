@@ -78,6 +78,50 @@ def _methods(module: Path, root: Path) -> str:
     )
 
 
+_NEW_LETTER_DOCUMENT = {
+    "openapi": "3.1.0",
+    "info": {"title": "Pets", "version": "1"},
+    "servers": [{"url": "https://example.com"}],
+    "paths": {
+        "/pets": {
+            "get": {
+                "operationId": "listPets",
+                "summary": "List \U0001e4d0 pets",
+                "tags": ["pets"],
+                "parameters": [{"name": "q\U0001e4d0", "in": "query", "schema": {"type": "string"}}],
+                "responses": {
+                    "200": {
+                        "description": "ok \U0001e4d0",
+                        "content": {"application/json": {"schema": {"type": "string"}}},
+                    }
+                },
+            }
+        }
+    },
+}
+"""An operation whose summary, query parameter and response hold U+1E4D0, a letter Python 3.11 does not print."""
+
+
+def test_client_cli_quotes_text_alike_whatever_python_runs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Write the names of an operation's parameters as the newest Python writes them, whatever Python generates them.
+
+    ``repr()`` of Python 3.11 escapes U+1E4D0, which later Pythons print as itself.
+    """
+    monkeypatch.chdir(tmp_path)
+    Path("api.json").write_text(json.dumps(_NEW_LETTER_DOCUMENT), encoding="utf-8")
+    run_main_with_args([
+        "--input",
+        "api.json",
+        "--input-file-type",
+        "openapi",
+        "--output",
+        "models.py",
+        *OPTIONS,
+        *CLIENT,
+    ])
+    assert_output((tmp_path / "client" / "_operations.py").read_text(encoding="utf-8"))
+
+
 def test_client_cli_generate(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -935,6 +979,41 @@ def test_client_cli_shadowed_module(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "shadowed-module.txt")
 
 
+@pytest.mark.parametrize(
+    "option",
+    [[], ["--check"], ["--diff-against", str(DATA / "openapi" / "modular.yaml")]],
+    ids=["write", "check", "diff"],
+)
+def test_client_cli_models_package_onto_a_file(
+    option: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a models package whose output is an existing file, as a model run does, and write nothing (#4497).
+
+    --diff-against reads no destination, so it compares the two inputs instead.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "models").write_text("kept = 1\n", encoding="utf-8")
+    compares = bool(option) and option[0] == "--diff-against"
+    run_main_and_assert(
+        input_path=DATA / "openapi" / "modular.yaml",
+        output_path=Path("models"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *CLIENT, *option],
+        expected_exit=Exit.OK if compares else Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=None if compares else "Error: Modular references require an output directory, not a file\n",
+        expected_output="kept = 1\n" if compares else None,
+        assert_no_stderr=compares,
+    )
+    assert_output(
+        "".join(
+            f"{path.relative_to(tmp_path).as_posix()}: {path.read_text(encoding='utf-8')}"
+            for path in sorted(tmp_path.rglob("*"))
+            if path.is_file()
+        )
+    )
+
+
 def test_client_cli_leftover_files(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1444,6 +1523,31 @@ against the document's URL when it is read from one.""",
                 input_schema="generation_platform/client/cli/options-relative.yaml",
                 cli_args=[*DOC_OPTIONS, "--client-server-base-url", "https://api.example.com/"],
                 golden_output=f"{DOC_OUTPUT}/server-base-url/_operations.py",
+            ),
+        ),
+        pytest.param(
+            "options-deep-object.yaml",
+            ["--client-deep-object-brackets"],
+            "client/_operations.py",
+            "deep-object-brackets/_operations.py",
+            id="client-deep-object-brackets",
+            marks=pytest.mark.cli_doc(
+                options=["--client-deep-object-brackets"],
+                option_description="""Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (experimental).
+
+OpenAPI defines `style: deepObject` for objects of scalars alone, so an operation whose deepObject query parameter, or
+member of an `application/x-www-form-urlencoded` body, takes an array, a scalar, a nested object or a union of a
+scalar and an object is left out with a warning. With this option the client writes such values in the bracket form:
+an array of scalars as `name[]=value` for each item, such as `expand[]=a&expand[]=b`, a scalar as `name=value`, the
+members of objects as `name[key]=value` at any depth, such as `shipping[address][city]=Paris`, and an array of objects
+by index, such as `items[0][price]=p_1`, with the brackets percent-encoded as those of an object's `name[key]` pairs
+are. A value that may be a scalar or an object or array is written as the one a call gives: `created=5` or
+`created[gt]=5`, and an empty string as `metadata=`. Arrays of arrays, recursive values, and unions whose members a
+value does not tell apart stay left out. `--no-client-deep-object-brackets` turns off the
+`client-deep-object-brackets` key of pyproject.toml.""",
+                input_schema="generation_platform/client/cli/options-deep-object.yaml",
+                cli_args=[*DOC_OPTIONS, "--client-deep-object-brackets"],
+                golden_output=f"{DOC_OUTPUT}/deep-object-brackets/_operations.py",
             ),
         ),
         pytest.param(

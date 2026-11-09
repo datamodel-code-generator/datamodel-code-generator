@@ -1,0 +1,14 @@
+# parameter-item-or-array pydantic_v2.BaseModel, msgspec.Struct
+  > GET https://api.example.com/advisories/7?cwes=79%2C284&has=patch
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  items = None
+  > GET https://api.example.com/advisories/7,8?cwes=79&cwes=284&has=patch,deployment
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  arrays = None
+  > GET https://api.example.com/advisories/7?cwes=79&has=patch
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  one-item arrays = None
+  > GET https://api.example.com/advisories/7
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  empty arrays = None
+  empty path array ! DecodeError: DecodeError(operation_id='listAdvisories', reason='unencodable', location='path.ids') [operation_id='listAdvisories', location=('path', 'ids'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('An empty array or object cannot fill a path segment')] unencodable

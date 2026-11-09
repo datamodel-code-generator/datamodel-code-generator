@@ -440,9 +440,7 @@ def _add_get_inventory(
     )
 
 
-LITERAL_ROUTES: Final = (
-    ('get_inventory', _add_get_inventory),
-)
+LITERAL_ROUTES: Final = (('get_inventory', _add_get_inventory),)
 TEMPLATED_ROUTES: Final = ()
 
 
@@ -495,7 +493,11 @@ class AnimalsService(Protocol):
         trace: UUID | None,
         since: AwareDatetime | None,
         session: str | None,
-    ) -> models.PetsGetResponse | HTTPResult[models.PetsGetResponse | models.Error] | Response:
+    ) -> (
+        models.PetsGetResponse
+        | HTTPResult[models.PetsGetResponse | models.Error]
+        | Response
+    ):
         """
         Handle GET /pets.
         """
@@ -552,7 +554,11 @@ class StoreService(Protocol):
         self,
         *,
         request: Request,
-    ) -> models.StoreInventoryGetResponse | HTTPResult[models.StoreInventoryGetResponse] | Response:
+    ) -> (
+        models.StoreInventoryGetResponse
+        | HTTPResult[models.StoreInventoryGetResponse]
+        | Response
+    ):
         """
         Handle GET /store/inventory.
         """

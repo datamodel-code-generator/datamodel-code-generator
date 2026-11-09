@@ -254,52 +254,39 @@ class UniqueObject(BaseModel):
 
 
 class RootUniqueItems(_JsonSchemaRuntimeValidationBaseCore, RootModel[list[Any]]):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((),)
 
     root: list[Any]
 
 
 class NestedItem(_JsonSchemaRuntimeValidationBaseCore, RootModel[list[Any]]):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((),)
 
     root: list[Any]
 
 
 class TupleItemsTailItem(_JsonSchemaRuntimeValidationBaseCore, RootModel[list[Any]]):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((),)
 
     root: list[Any]
 
 
 class NullableAnyOf(_JsonSchemaRuntimeValidationBaseCore, RootModel[list[int]]):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((),)
 
     root: list[int]
 
 
 class UnconstrainedArrayAnyOf(
-    _JsonSchemaRuntimeValidationBaseCore,
-    RootModel[list[int]],
+    _JsonSchemaRuntimeValidationBaseCore, RootModel[list[int]]
 ):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((),)
 
     root: list[int]
 
 
 class NullableOneOf(_JsonSchemaRuntimeValidationBaseCore, RootModel[list[int]]):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((),)
 
     root: list[int]
 

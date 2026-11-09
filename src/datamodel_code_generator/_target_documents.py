@@ -1,4 +1,4 @@
-"""Target documents: canonical JSON, document identities, and the pointers that name documents."""
+"""Target documents: canonical JSON and document identities."""
 
 from __future__ import annotations
 
@@ -9,10 +9,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, TypeAlias, cast
 from urllib.parse import urlsplit
-from urllib.request import url2pathname
 
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
+from datamodel_code_generator._api_types import OperationRef, SchemaRef
+from datamodel_code_generator._paths import file_uri, file_uri_path
 from datamodel_code_generator._url_redaction import redact_url
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
@@ -28,16 +29,6 @@ ROOT_POINTER: Final = "/inputs/root"
 JSONObject: TypeAlias = "dict[str, JSONValue]"
 
 
-def escape_pointer_token(token: str | int) -> str:
-    """Escape one RFC 6901 reference token."""
-    return token.replace("~", "~0").replace("/", "~1") if isinstance(token, str) else str(token)
-
-
-def pointer_tokens(pointer: str) -> list[str]:
-    """Split an RFC 6901 pointer into its unescaped reference tokens."""
-    return [token.replace("~1", "/").replace("~0", "~") for token in pointer[1:].split("/")] if pointer else []
-
-
 def canonical_bytes(value: JSONValue) -> bytes:
     """Encode JSON with sorted keys, no whitespace, UTF-8, and no non-finite numbers."""
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
@@ -48,22 +39,15 @@ def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def config_error(*, code: str, option_path: str | None, message: str) -> APIGenerationError:
-    """Raise one configuration diagnostic as an API generation error."""
-    return APIGenerationError((
-        Diagnostic(code=code, severity="error", stage="config", message=message, option_path=option_path),
-    ))
-
-
 def document_identity(document: str, base: Path) -> str:
     """Canonicalize a document name: URLs and URNs as written, paths as resolved file URIs."""
     parts = urlsplit(document)
     match parts.scheme:
         case "file":
-            return Path(url2pathname(parts.path)).resolve().as_uri()
+            return file_uri(file_uri_path(document).resolve())
         case scheme if len(scheme) > 1:
             return document
-    return (base / document).resolve().as_uri()
+    return file_uri((base / document).resolve())
 
 
 def named_document(written: str | None, identity: str | None) -> str:
@@ -74,11 +58,14 @@ def named_document(written: str | None, identity: str | None) -> str:
     """
     if written is None:
         return ""
-    parts = urlsplit(identity or written)
-    if parts.scheme != "file":
-        return f" in {redact_url(written)!r}"
-    file = Path(url2pathname(parts.path)).as_posix()
-    return f" in {file!r}" if written == identity or Path(written).as_posix() == file else f" in {written!r} ({file})"
+    if urlsplit(named := identity or written).scheme != "file":
+        return f" in {stable_repr(redact_url(written))}"
+    file = file_uri_path(named).as_posix()
+    return (
+        f" in {stable_repr(file)}"
+        if written == identity or Path(written).as_posix() == file
+        else f" in {stable_repr(written)} ({file})"
+    )
 
 
 @dataclass(frozen=True, slots=True)

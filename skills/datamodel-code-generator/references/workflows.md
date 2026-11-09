@@ -25,7 +25,7 @@
 Use this for OpenAPI schemas when the user wants validation models or API payload types.
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input openapi.yaml \
   --input-file-type openapi \
   --output models.py \
@@ -48,7 +48,7 @@ Expect Pydantic v2 model classes for schema components, and optionally request, 
 Use this when the user wants a FastAPI server or an HTTPX2 client generated from an OpenAPI document, on top of the models.
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input openapi.yaml \
   --input-file-type openapi \
   --openapi-scopes schemas api \
@@ -79,7 +79,7 @@ Expect the README of the generated package to list the operations and, under Nex
 Use this for AsyncAPI message schemas.
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input asyncapi.yaml \
   --input-file-type asyncapi \
   --output models.py \
@@ -102,7 +102,7 @@ Expect models for payload schemas and reusable schema components.
 Use this for JSON Schema files or JSON Schema written as YAML.
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --output models.py \
@@ -125,7 +125,7 @@ Expect a root class and nested classes for object definitions.
 Use this when schemas are stored in a directory or reference each other across files.
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input schemas/ \
   --input-file-type jsonschema \
   --output models/ \
@@ -148,7 +148,7 @@ Expect a Python package with one or more generated modules and package exports w
 Use this when the input is example JSON data and not a schema.
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input sample.json \
   --input-file-type json \
   --output models.py \
@@ -165,7 +165,7 @@ Verify with the single-file import command. Expect a root model class and nested
 Use this when the input is example YAML data and not a schema.
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input sample.yaml \
   --input-file-type yaml \
   --output models.py \
@@ -182,7 +182,7 @@ Verify with the single-file import command. Expect model classes inferred from Y
 Use this when rows in a CSV sample should define a model shape.
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input sample.csv \
   --input-file-type csv \
   --output models.py \
@@ -216,7 +216,7 @@ Verify with the single-file import command. Expect Pydantic models for GraphQL o
 Use this for Avro `.avsc` schema files.
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input schema.avsc \
   --input-file-type avro \
   --output models.py \
@@ -233,7 +233,7 @@ Verify with the single-file import command. Expect model classes for Avro record
 Use this for XSD documents.
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input schema.xsd \
   --input-file-type xmlschema \
   --output models.py \
@@ -267,7 +267,7 @@ Verify with the single-file import command. Expect model classes for messages an
 Use this for MCP tool schema exports containing `inputSchema` and optional `outputSchema` objects.
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input mcp-tools.json \
   --input-file-type mcp-tools \
   --output models.py \
@@ -303,7 +303,7 @@ Verify with the single-file import command. Expect the same shape as local file 
 Use this to retarget existing Python models or schema dictionaries.
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input-model ./models.py:User \
   --output user_model.py \
   --output-model-type pydantic_v2.BaseModel \
@@ -313,7 +313,7 @@ uvx datamodel-codegen \
 For dict schema objects:
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input-model ./schemas.py:USER_SCHEMA \
   --input-file-type jsonschema \
   --output user_model.py \
@@ -330,7 +330,7 @@ Verify with the single-file import command. Expect models generated from the Pyt
 Use this when one file is too large or the project wants a package.
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input openapi.yaml \
   --input-file-type openapi \
   --output models/ \
@@ -355,7 +355,7 @@ Expect a package with generated modules and `__all__` exports.
 Use these when the user wants non-Pydantic output.
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --output models.py \
@@ -364,7 +364,7 @@ uvx datamodel-codegen \
 ```
 
 ```bash
-uvx datamodel-codegen \
+uvx --from datamodel-code-generator datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --output types.py \

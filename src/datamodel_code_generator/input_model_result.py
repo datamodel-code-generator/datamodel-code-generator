@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import TYPE_CHECKING
 
+from datamodel_code_generator._json_schema import json_nodes
+
 if TYPE_CHECKING:
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
 
@@ -138,18 +140,11 @@ class LoadedInputModelSchema(Mapping[str, object]):
         if (expressions := self._python_type_expressions_cache) is not None:
             return expressions
 
-        resolved: dict[str, PythonTypeExpr] = {}
-        pending: list[object] = [self.schema]
-        while pending:
-            match pending.pop():
-                case dict() as mapping:
-                    pending.extend(mapping.values())
-                case list() | tuple() as sequence:
-                    pending.extend(sequence)
-                case PythonTypeSchemaAnnotation() as annotation if annotation.legacy_token is not None:
-                    resolved[annotation.legacy_token] = annotation.expression
-                case _:
-                    continue
+        resolved: dict[str, PythonTypeExpr] = {
+            node.legacy_token: node.expression
+            for node in json_nodes(self.schema, tuples=True)
+            if isinstance(node, PythonTypeSchemaAnnotation) and node.legacy_token is not None
+        }
         expressions = MappingProxyType(resolved) if resolved else _EMPTY_PYTHON_TYPE_EXPRESSIONS
         object.__setattr__(self, "_python_type_expressions_cache", expressions)  # noqa: PLC2801
         return expressions

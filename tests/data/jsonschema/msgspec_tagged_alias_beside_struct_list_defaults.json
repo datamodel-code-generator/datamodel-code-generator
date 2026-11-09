@@ -1,0 +1,124 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "mixed": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Tagged"
+          },
+          {
+            "$ref": "#/$defs/Circle"
+          }
+        ]
+      },
+      "default": [
+        {
+          "kind": "c",
+          "r": 1
+        }
+      ]
+    },
+    "nested": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/TC"
+              },
+              {
+                "$ref": "#/$defs/TS"
+              }
+            ]
+          },
+          {
+            "$ref": "#/$defs/Circle"
+          }
+        ]
+      },
+      "default": [
+        {
+          "radius": 2
+        }
+      ]
+    },
+    "tagged": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Tagged"
+          },
+          {
+            "$ref": "#/$defs/TS"
+          }
+        ]
+      },
+      "default": [
+        {
+          "kind": "s",
+          "s": 3
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "Circle": {
+      "type": "object",
+      "properties": {
+        "radius": {
+          "type": "integer"
+        }
+      }
+    },
+    "TC": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "c"
+        },
+        "r": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind"
+      ]
+    },
+    "TS": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "s"
+        },
+        "s": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind"
+      ]
+    },
+    "Tagged": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/TC"
+        },
+        {
+          "$ref": "#/$defs/TS"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "kind",
+        "mapping": {
+          "c": "#/$defs/TC",
+          "s": "#/$defs/TS"
+        }
+      }
+    }
+  }
+}

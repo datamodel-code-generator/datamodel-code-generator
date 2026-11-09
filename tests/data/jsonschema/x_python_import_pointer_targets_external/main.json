@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "empty": {"$ref": "other.json#/components/Empty"},
+    "options": {"$ref": "other.json#/components/Options"},
+    "count": {"$ref": "other.json#/components/Count"},
+    "tally": {"$ref": "tally.json"},
+    "entry": {"$ref": "ledger.json#/$defs/Entry"}
+  }
+}

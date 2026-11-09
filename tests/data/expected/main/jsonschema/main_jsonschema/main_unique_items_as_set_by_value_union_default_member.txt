@@ -1,0 +1,20 @@
+{
+  "words": [
+    "list",
+    "str",
+    "str"
+  ],
+  "row": [
+    "set",
+    "int"
+  ],
+  "maybe": [
+    "set",
+    "NoneType",
+    "int"
+  ],
+  "scopes": [
+    "set",
+    "str"
+  ]
+}

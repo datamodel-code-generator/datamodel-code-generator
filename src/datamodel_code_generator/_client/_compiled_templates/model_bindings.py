@@ -2,17 +2,11 @@
 # Source: model_bindings.jinja2 (sha256:970d5a10d8b519aa)
 from __future__ import annotations
 
-from typing import Any
-
 from datamodel_code_generator.model._compiled_template_runtime import (
     Scope as _Scope,
     getattr_ as _getattr,
     stringify as _stringify,
 )
-
-
-def render(**context: Any) -> str:
-    return render_with_scope(_Scope(context))
 
 
 def render_with_scope(_scope: _Scope) -> str:
@@ -26,24 +20,17 @@ def render_with_scope(_scope: _Scope) -> str:
         '"""Native model codecs of this generated package; regenerate them instead of editing."""\n\nfrom __future__ import annotations'
     )
     if _context_imports:
-        _value_0 = _stringify(_context_imports)
-        _parts.append(f"\n\n{_value_0}\n")
+        _parts.append(f"\n\n{_stringify(_context_imports)}\n")
         for statement in _context_codec_imports:
-            _value_1 = _stringify(statement)
-            _parts.append(f"\n{_value_1}")
+            _parts.append(f"\n{_stringify(statement)}")
         _parts.append("\n")
     if _context_models:
-        _value_2 = _stringify(_context_models_annotation)
-        _parts.append(f"\n\n\nMODELS: {_value_2} = {{")
+        _parts.append(f"\n\n\nMODELS: {_stringify(_context_models_annotation)} = {{")
         for model in _context_models:
-            _value_3 = _stringify(_getattr(model, "type"))
-            _value_4 = _stringify(_getattr(model, "value"))
-            _parts.append(f"\n    {_value_3}: {_value_4},")
+            _parts.append(f"\n    {_stringify(_getattr(model, 'type'))}: {_stringify(_getattr(model, 'value'))},")
         _parts.append("\n}")
     for codec in _context_codecs:
-        _value_5 = _stringify(_getattr(codec, "name"))
-        _value_6 = _stringify(_getattr(codec, "annotation"))
-        _value_7 = _stringify(_getattr(codec, "value"))
-        _value_8 = _stringify(_getattr(codec, "description"))
-        _parts.append(f'\n\n{_value_5}: {_value_6} = {_value_7}\n"""{_value_8}"""')
+        _parts.append(
+            f'\n\n{_stringify(_getattr(codec, "name"))}: {_stringify(_getattr(codec, "annotation"))} = {_stringify(_getattr(codec, "value"))}\n"""{_stringify(_getattr(codec, "description"))}"""'
+        )
     return "".join(_parts)

@@ -10,12 +10,13 @@ from pathlib import Path
 
 import yaml
 
-from scripts.ci_coverage import EXPECTED_NAMES
+from scripts.ci_coverage import EXPECTED_NAMES, PULL_REQUEST_NAMES
 from scripts.select_ci_test_shard import PROFILES
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED = ROOT / "tests/data/expected/ci_coverage"
+MAIN_ONLY_IF = "github.event_name != 'pull_request'"
 
 
 def test_workflow_matrix_and_coverage_contract() -> None:
@@ -24,6 +25,7 @@ def test_workflow_matrix_and_coverage_contract() -> None:
     jobs = workflow["jobs"]
     groups = {name: job["strategy"]["matrix"]["include"] for name, job in jobs.items() if "strategy" in job}
     names = []
+    main_only_names = set()
     producers = []
     for name, entries in groups.items():
         for entry in entries:
@@ -33,13 +35,16 @@ def test_workflow_matrix_and_coverage_contract() -> None:
             env = entry.get("coverage_name", entry["tox_env"])
             shard = f"-shard{entry['shard']}" if "shard" in entry else ""
             names.append(f".coverage.{env}{shard}-{entry.get('os', 'ubuntu-24.04')}")
+            if jobs[name].get("if") == MAIN_ONLY_IF:
+                main_only_names.add(names[-1])
+    main_only_jobs = sorted(name for name, job in jobs.items() if job.get("if") == MAIN_ONLY_IF)
     configurations = sorted(
         f"{entry['tox_env']}:{entry.get('os', 'ubuntu-24.04')}:{entry.get('shard', '')}/{entry.get('shard_total', '')}"
         f":{entry.get('profile', '')}"
         for entries in groups.values()
         for entry in entries
     )
-    shard_entries = [entry for name in ("test-shard", "test-shard-nocov") for entry in groups[name]]
+    shard_entries = [entry for name in ("test-shard", "test-shard-main", "test-shard-nocov") for entry in groups[name]]
     shard_groups: dict[tuple[str, str, str, str], list[tuple[int, int]]] = {}
     for name, entries in groups.items():
         for entry in entries:
@@ -70,7 +75,13 @@ def test_workflow_matrix_and_coverage_contract() -> None:
         "coverage_count": len(names),
         "coverage_unique": len(set(names)),
         "expected_names_match": set(names) == EXPECTED_NAMES,
+        "main_only_names_match": main_only_names == EXPECTED_NAMES - PULL_REQUEST_NAMES,
+        "main_only_jobs": main_only_jobs,
+        "gate_main_only_jobs_match": jobs["test-gate"]["steps"][0]["env"]["MAIN_ONLY_JOBS"]
+        == f"${{{{ github.event_name == 'pull_request' && '{' '.join(main_only_jobs)}' || '' }}}}",
         "coverage_needs_only_producers": set(jobs["coverage"]["needs"]) == set(producers),
+        "coverage_if": jobs["coverage"]["if"],
+        "coverage_if_reads_every_need": all(f"needs.{name}.result" in jobs["coverage"]["if"] for name in producers),
         "gate_needs_all_jobs": set(jobs["test-gate"]["needs"]) == set(jobs) - {"test-gate"},
         "gate_always": jobs["test-gate"]["if"],
         "concurrency": workflow["concurrency"],
@@ -78,7 +89,10 @@ def test_workflow_matrix_and_coverage_contract() -> None:
         "permissions": workflow["permissions"],
         "cache_paths": sorted({step["with"]["cache-local-path"] for step in all_setup_steps}),
         "cache_dependencies": sorted({step["with"]["cache-dependency-glob"] for step in all_setup_steps}),
-        "shared_shard_steps": jobs["test-shard"]["steps"] is jobs["test-shard-nocov"]["steps"],
+        "shared_shard_steps": all(
+            jobs[name]["steps"] is jobs["test-shard"]["steps"]
+            for name in ("test-shard-main", "test-shard-nocov", "test-shard-nocov-main")
+        ),
         "shared_http_steps": jobs["test-http-backends"]["steps"] is jobs["test-http-backends-nocov"]["steps"],
         "checkout_credentials": sorted({
             step["with"]["persist-credentials"]
@@ -108,7 +122,7 @@ def test_gate_rejects_every_unsuccessful_group() -> None:
         for name in skipped
         for state in ("success", "failure", "cancelled")
     })
-    main_only_jobs = [name for name in gate["needs"] if jobs[name].get("if") == "github.event_name != 'pull_request'"]
+    main_only_jobs = [name for name in gate["needs"] if jobs[name].get("if") == MAIN_ONLY_IF]
     pull_request_cases = {
         f"pull-request:{name}:{state}": {
             **success,

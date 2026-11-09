@@ -12,24 +12,24 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._client.pagination import _label, _problem  # pyright: ignore[reportPrivateUsage]
-from datamodel_code_generator._client.plan import schema_use
 from datamodel_code_generator._client.streams import _Streams  # pyright: ignore[reportPrivateUsage]
-from datamodel_code_generator._target_contract import DeclarationId, TypeUseBinding, TypeUseId
+from datamodel_code_generator._runtime.model_codecs.media import JSON_MEDIA_TYPE
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Iterator
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import Diagnostic, SchemaRef
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._target_contract import SourceLocation
+    from datamodel_code_generator._target_contract import TypeUseBinding
+    from datamodel_code_generator._target_documents import JSONObject
 
 __all__ = ("DEPENDENCY", "SocketSpec", "plan_sockets", "socket_uses")
 
 DEPENDENCY: Final = "httpx2[ws]>=2.13.0"
-_JSON: Final = "application/json"
 _DIRECTIONS: Final = ("send", "receive")
 
 
@@ -45,7 +45,7 @@ class SocketSpec:
     operation: OperationSpec
     send: TypeUseBinding | None
     receive: TypeUseBinding | None
-    schemas: tuple[Mapping[str, str], ...]
+    schemas: tuple[JSONObject, ...]
 
     @property
     def uses(self) -> tuple[TypeUseBinding, ...]:
@@ -68,46 +68,23 @@ class _Sockets(_Streams):
         at, name = helper.at, helper.name
         problems: list[Diagnostic] = []
         if spec.contract.method != "get":
-            message = f"The WebSocket helper {name!r} opens {_label(spec)}, which is not a GET operation"
+            message = f"The WebSocket helper {stable_repr(name)} opens {_label(spec)}, which is not a GET operation"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, spec))
         elif spec.body is not None:
-            message = f"The WebSocket helper {name!r} opens {_label(spec)}, which takes a request body"
+            message = f"The WebSocket helper {stable_repr(name)} opens {_label(spec)}, which takes a request body"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, spec))
-        locations: dict[str, SourceLocation] = {}
-        for direction, where, reference in _references(helper):
-            if (location := self.location(reference)) is None:
-                message = f"The schema {reference.pointer!r} of {name!r} does not exist in its document"
-                problems.append(_problem("E_CONFIG_VALUE", "config", where, message, spec))
-            else:
-                locations[direction] = location
+        locations = self.locations(helper, spec, _references(helper), problems)
         if problems:
             return None, problems
         return SocketSpec(
             helper=helper,
             operation=spec,
-            send=None if (sent := locations.get("send")) is None else self.message(spec, sent, sent=True),
-            receive=None if (received := locations.get("receive")) is None else self.message(spec, received),
-            schemas=tuple(
-                {"document": self.protocols.documents[reference], "pointer": reference.pointer}
-                for _, _, reference in _references(helper)
-            ),
+            send=None if (sent := locations.get("send")) is None else self.bind(spec, sent, "request", JSON_MEDIA_TYPE),
+            receive=None
+            if (received := locations.get("receive")) is None
+            else self.bind(spec, received, "response", JSON_MEDIA_TYPE),
+            schemas=tuple(self.protocols.source(reference) for _, _, reference in _references(helper)),
         ), problems
-
-    def message(self, spec: OperationSpec, location: SourceLocation, *, sent: bool = False) -> TypeUseBinding:
-        """Return the use that codes a schema as the channel's sent or received messages, bound as its value use is."""
-        schema = schema_use(self.schemas, location, "request" if sent else "response")
-        use = TypeUseId(
-            owner=spec.contract.id,
-            role="request_body" if sent else "response_body",
-            use_site=location,
-            schema_site=location,
-            declaration=DeclarationId(location) if schema is None else schema.id.declaration,
-            direction="request" if sent else "response",
-            media=_JSON,
-        )
-        if schema is None:
-            return TypeUseBinding(use, "not_generated", None, None, schema=location)
-        return TypeUseBinding(use, schema.state, schema.type, schema.reason, schema=location)
 
 
 def socket_uses(
@@ -119,19 +96,8 @@ def socket_uses(
     """
     if protocols is None or not any(helper.enabled and helper.kind == "websocket" for helper in protocols.helpers):
         return (), (), {}
-    sockets = _Sockets(protocols, request)
-    operations = {spec.contract.id: spec for spec in plan.operations}
-    specs: list[SocketSpec] = []
-    problems: dict[str, list[Diagnostic]] = {}
-    for helper in protocols.helpers:
-        if not helper.enabled or helper.kind != "websocket":
-            continue
-        spec = operations[protocols.operations[helper.links[0].ref].id]
-        planned, problems[helper.name] = sockets.socket(helper, spec)
-        if planned is not None:
-            specs.append(planned)
-    uses = {use.id: use for spec in specs for use in spec.uses}
-    return tuple(specs), tuple(uses.values()), problems
+    sockets = _Sockets(protocols, plan, request)
+    return sockets.coded(("websocket",), sockets.socket)
 
 
 def plan_sockets(specs: tuple[SocketSpec, ...], problems: dict[str, list[Diagnostic]]) -> tuple[SocketSpec, ...]:

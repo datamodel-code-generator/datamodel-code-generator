@@ -6,7 +6,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from datamodel_code_generator._client._compiled_templates import facade as facade_template
+from datamodel_code_generator._python_syntax import set_display
 from datamodel_code_generator._target_templates import templated
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -46,14 +48,9 @@ class Subclass:
     attributes: tuple[Attribute, ...]
 
 
-def statement(module: str, names: Iterable[str]) -> str:
-    """Return one import statement of names from a module."""
-    return f"from {module} import {', '.join(names)}"
-
-
 def name_set(values: Iterable[str]) -> str:
     """Return the set literal of names, in the order given."""
-    return f"{{{', '.join(map(repr, values))}}}"
+    return set_display(map(stable_repr, values))
 
 
 def facade_module(  # noqa: PLR0913
@@ -77,7 +74,7 @@ def facade_module(  # noqa: PLR0913
     """
     return templated(
         "facade.jinja2",
-        facade_template.render,
+        facade_template.render_with_scope,
         module=module,
         docstring=docstring,
         future=future,

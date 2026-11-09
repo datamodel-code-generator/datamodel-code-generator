@@ -3,7 +3,7 @@
 {% endfor -%}
 {%- set args = [] %}
 {%- for k, v in (dataclass_arguments or {}).items() %}
-    {%- if v is not none and v is not false %}
+    {%- if v is not none and (v is not false or keep_false_dataclass_arguments) %}
         {%- set _ = args.append(k ~ '=' ~ (v|pprint)) %}
     {%- endif %}
 {%- endfor %}

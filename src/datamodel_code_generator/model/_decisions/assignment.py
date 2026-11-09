@@ -1,12 +1,8 @@
 """Field assignments: what the class body writes after a field's annotation and what that gives its constructor.
 
 Every input is an immutable fact of ``AssignmentInputs``, so ``classify_assignment`` reads nothing else. The output
-model names its row (``AssignmentRow``) and the field's backend reports what it writes (``WrittenAssignment``); the
-adapter ``model/base.py:_assignment_inputs`` reads both from the live objects, and
-``model/base.py:DataModel._field_assignment_facts`` is the one entry for the passes that read the result: the L1
-construction key (``DataModel.FIELD_CONSTRUCTION_ORDER_KEY``), in ``parser/_passes/render_prep.py``
-``fix_constructor_field_ordering`` and ``fix_tag_opt_out_field_ordering``, the hidden-type checks and the signature
-warning. The public hooks
+model names its row (``AssignmentRow``) and the field's backend reports what it writes (``WrittenAssignment``). The
+adapters are listed in ``docs/architecture.md``. The public hooks
 ``FIELD_ASSIGNMENT_CHECKER``, ``FIELD_DEFAULT_CLASSIFIER``, ``FIELD_PARTICIPATES_IN_CONSTRUCTOR``,
 ``FIELD_CONSTRUCTION_ORDER_KEY`` and ``DataModel.field_binds_class_attribute`` of the built-in outputs are views of
 the same rows.
@@ -38,6 +34,7 @@ if TYPE_CHECKING:
     from collections.abc import Collection
 
     from datamodel_code_generator.model._render_plan import AssignmentRule, ConstructorDefault
+    from datamodel_code_generator.model._views import FieldView
 
 __all__ = [
     "AssignmentInputs",
@@ -55,7 +52,9 @@ __all__ = [
     "WrittenData",
     "classify_assignment",
     "dataclass_field_items",
+    "excluded_from_init",
     "participates_in_constructor",
+    "requires_value",
     "struct_assigned",
     "struct_construction_assigned",
     "written_data",
@@ -278,6 +277,25 @@ def participates_in_constructor(row: AssignmentRow, *, init_excluded: bool, clas
     if row == "dataclass":
         return not init_excluded
     return not class_var if row == "pydantic-dataclass" else True
+
+
+def excluded_from_init(field: FieldView) -> bool:
+    """Return whether a field declares ``init=False``, which leaves it out of a dataclass ``__init__``.
+
+    The ``init_excluded`` of ``AssignmentInputs`` and ``DataclassItemInputs`` is this answer, and so is the one the
+    constructor participation hooks of the built-in outputs pass to ``participates_in_constructor``.
+    """
+    return field.extras.get("init") is False
+
+
+def requires_value(field: FieldView) -> bool:
+    """Return whether a field must be given a value: it is required and does not keep its default beside it.
+
+    A required field keeps its default where ``--use-default`` writes it (``use_default_with_required``). The
+    ``required`` of ``AssignmentInputs`` and ``DataclassItemInputs`` is this answer, and so is every backend's choice
+    of a required ``Field(...)``, a dropped default or default factory and a default in effect.
+    """
+    return field.required and not field.use_default_with_required
 
 
 def struct_assigned(*, required: bool) -> bool:

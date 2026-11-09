@@ -3,6 +3,8 @@
 [test_generate_client]
 	main/generation_platform/client/cli/options/_sync.py
 	main/generation_platform/client/cli/options/models.py
+[test_generate_reads_a_leading_tilde_of_an_output_as_the_home_directory]
+	api_generation/generate_targets/generate_reads_a_leading_tilde_of_an_output_as_the_home_directory.txt
 [test_generate_server]
 config	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 config	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/server//*.py
@@ -39,7 +41,7 @@ models.py	main/generation_platform/generate/nothing-written.txt
 None	main/generation_platform/generate/documentation-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 models.py	main/generation_platform/generate/documentation-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_generate_server_without_output]
-	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel//*.py
+	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel//*.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel~generate_server_without_output//*.py
 	main/generation_platform/generate/memory-written.txt
 [test_generate_server_without_output_modular]
 	main/generation_platform/generate/memory-metadata.txt
@@ -81,5 +83,7 @@ link-name-client	api_generation/generate_targets/generate_target_key_errors[link
 link-name-server	api_generation/generate_targets/generate_target_key_errors[link-name-server].txt	= main/generation_platform/generate/nothing-written.txt
 media-type-of-reference-client	api_generation/generate_targets/generate_target_key_errors[media-type-of-reference-client].txt	= main/generation_platform/generate/nothing-written.txt
 media-type-of-reference-server	api_generation/generate_targets/generate_target_key_errors[media-type-of-reference-server].txt	= main/generation_platform/generate/nothing-written.txt
+range-and-lowercase-range-status-client	api_generation/generate_targets/generate_target_key_errors[range-and-lowercase-range-status-client].txt	= main/generation_platform/generate/nothing-written.txt
+range-and-lowercase-range-status-server	api_generation/generate_targets/generate_target_key_errors[range-and-lowercase-range-status-server].txt	= main/generation_platform/generate/nothing-written.txt
 security-scheme-name-client	api_generation/generate_targets/generate_target_key_errors[security-scheme-name-client].txt	= main/generation_platform/generate/nothing-written.txt
 security-scheme-name-server	api_generation/generate_targets/generate_target_key_errors[security-scheme-name-server].txt	= main/generation_platform/generate/nothing-written.txt

@@ -1,0 +1,6 @@
+a Literal of the output model cannot hold the values 1.5 and 2.5, so they are written as their types, which admit other values; Floats is generated without this constraint.
+a Literal of the output model cannot hold the value 1.5, so it is written as its type, which admits other values; Numbers is generated without this constraint.
+a Literal of the output model cannot hold the value True, so it is written as its type, which admits other values; Aliased is generated without this constraint.
+a Literal of the output model cannot hold the value ['a'], so it is written as its type, which admits other values; Listed is generated without this constraint.
+a Literal of the output model cannot hold the values ['a'] and ['b'], so they are written as their types, which admit other values; ListOnly is generated without this constraint.
+msgspec cannot decode every integer of the union Numbers: its members Literal[2], float hold an int Literal beside float, and msgspec sends every integer to the Literal, so an integer that is not one of its values is refused although float admits it.

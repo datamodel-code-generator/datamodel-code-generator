@@ -72,9 +72,7 @@ def _add_authenticate(
     )
 
 
-LITERAL_ROUTES: Final = (
-    ('authenticate', _add_authenticate),
-)
+LITERAL_ROUTES: Final = (('authenticate', _add_authenticate),)
 TEMPLATED_ROUTES: Final = ()
 
 

@@ -15,6 +15,7 @@ class Moved(RootModel[int]):
 
 class Holder(BaseModel):
     value: Optional[Kept] = None
+    again: Optional[Kept] = None
     other: Optional[Kept] = None
     kept: Optional[str] = None
     moved: Optional[int] = None

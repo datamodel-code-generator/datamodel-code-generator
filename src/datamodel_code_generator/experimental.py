@@ -3,13 +3,22 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from textwrap import fill
+from textwrap import fill  # noqa: F401  # Preserve the established experimental export.
 from typing import Literal
 
-from datamodel_code_generator._registry_render import _render_registry_json, _render_registry_table
+from datamodel_code_generator._message_text import extra_requirement
+from datamodel_code_generator._registry_render import (
+    _RegistryPage,
+    _render_registry,
+    _render_registry_entries_json,
+    _render_registry_markdown,
+    _render_registry_table,
+    _render_release_notes,
+)
 
 ExperimentalFeatureKind = Literal["input-format", "formatter", "cli-option", "python-api", "behavior", "extra"]
 ExperimentalFeatureFormat = Literal["table", "json", "markdown"]
+_COLUMNS = ("ID", "Kind", "Target", "Since", "Tracking")
 ExperimentalFeatureId = Literal[
     "behavior.batch-generation-jobs",
     "behavior.naming-hint",
@@ -20,6 +29,7 @@ ExperimentalFeatureId = Literal[
     "cli-option.install-skill",
     "cli-option.recommend-options",
     "cli-option.schema-validator-type",
+    "cli-option.untrusted-input",
     "cli-option.use-missing-sentinel",
     "cli-option.use-type-alias",
     "cli-option.use-type-alias-type",
@@ -29,6 +39,7 @@ ExperimentalFeatureId = Literal[
     "input-format.mcp-tools",
     "input-format.protobuf",
     "input-format.xmlschema",
+    "python-api.generate-dynamic-module",
     "formatter.builtin",
 ]
 
@@ -100,12 +111,12 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
     "extra.httpx2": ExperimentalFeature(
         id="extra.httpx2",
         kind="extra",
-        target="datamodel-code-generator[httpx2]",
+        target=extra_requirement("httpx2"),
         message="The HTTPX2-backed HTTP client is experimental and may change as compatibility is validated.",
         since_version="0.71.1",
         note=(
-            "`datamodel-code-generator[http]` remains the stable HTTPX backend and is not deprecated; "
-            "`datamodel-code-generator[httpx2]` is experimental. The default HTTP backend policy is auto: stable "
+            f"`{extra_requirement('http')}` remains the stable HTTPX backend and is not deprecated; "
+            f"`{extra_requirement('httpx2')}` is experimental. The default HTTP backend policy is auto: stable "
             "httpx is selected when its client module is installed, including when both pairs are installed, and "
             "experimental httpx2 is selected only when that module is absent. Use `--http-backend httpx2` or "
             "`HTTPBackend.HTTPX2` to require the experimental pair. Explicit selections and paired dependency "
@@ -229,6 +240,22 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "Pydantic v2 validator behavior."
         ),
     ),
+    "cli-option.untrusted-input": ExperimentalFeature(
+        id="cli-option.untrusted-input",
+        kind="cli-option",
+        target="--untrusted-input",
+        message=(
+            "The untrusted input switch is experimental; the references and schema keywords it refuses may grow as "
+            "new ways for a schema to read files or write code are found."
+        ),
+        since_version="0.92.0",
+        note=(
+            "With --untrusted-input (untrusted_input=True in generate() and in the GenerateConfig of the dynamic "
+            "API), dcg reads no file or URL but the input, refuses x-python-type, x-python-import, customTypePath "
+            "and customBasePath, Protocol Buffers input and --validation, and implies --no-allow-remote-refs. It "
+            "does not sandbox the generated code."
+        ),
+    ),
     "cli-option.use-missing-sentinel": ExperimentalFeature(
         id="cli-option.use-missing-sentinel",
         kind="cli-option",
@@ -312,6 +339,24 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         since_version="0.59.0",
         note="The parser focuses on model generation from XSD documents, not full XML instance validation.",
     ),
+    "python-api.generate-dynamic-module": ExperimentalFeature(
+        id="python-api.generate-dynamic-module",
+        kind="python-api",
+        target="generate_dynamic_module(), DynamicModule, and register_module=True",
+        message=(
+            "Dynamic module generation is experimental; its parameters, the DynamicModule attributes, the schema "
+            "locations it keys classes by, and the module registration rules may change."
+        ),
+        since_version="0.92.0",
+        note=(
+            "generate_dynamic_module() generates the classes like generate_dynamic_models() and also returns the "
+            "class of the document itself, if it has one (None for an OpenAPI document or with skip_root_model), and "
+            "the class of each schema location that becomes a class (a location written as a type alias or merged "
+            "into another class has no entry). With register_module=True, it "
+            "keeps the module of the classes registered in sys.modules, so that the classes and their instances "
+            "pickle. generate_dynamic_models() is not experimental."
+        ),
+    ),
     "formatter.builtin": ExperimentalFeature(
         id="formatter.builtin",
         kind="formatter",
@@ -335,102 +380,59 @@ def experimental_feature_as_dict(feature: ExperimentalFeature) -> dict[str, str 
 
 def render_experimental_features_json() -> str:
     """Render all experimental features as JSON."""
-    return _render_registry_json(experimental_feature_as_dict(feature) for feature in iter_experimental_features())
+    return _render_registry_entries_json(iter_experimental_features())
+
+
+def _cells(feature: ExperimentalFeature) -> list[str]:
+    """Return the summary table cells of an experimental feature."""
+    return [feature.id, feature.kind, feature.target, feature.since_version, feature.tracking_issue or "-"]
+
+
+def _details(feature: ExperimentalFeature) -> list[tuple[str, str | None]]:
+    """Return the detail bullets of an experimental feature."""
+    return [
+        ("Kind", feature.kind),
+        ("Target", f"`{feature.target}`"),
+        ("Since", feature.since_version),
+        ("Tracking", feature.tracking_issue or None),
+    ]
+
+
+_PAGE = _RegistryPage(
+    title="Experimental Features",
+    script="build_experimental_docs.py",
+    intro="This page lists features that are available but still experimental.",
+    columns=_COLUMNS,
+    cells=_cells,
+    details=_details,
+    table_notes=True,
+)
 
 
 def render_experimental_features_table() -> str:
     """Render all experimental features as a plain text table with readable notes."""
-    features = iter_experimental_features()
-    table = _render_registry_table([
-        [
-            "ID",
-            "Kind",
-            "Target",
-            "Since",
-            "Tracking",
-        ],
-        *[
-            [
-                feature.id,
-                feature.kind,
-                feature.target,
-                feature.since_version,
-                feature.tracking_issue or "-",
-            ]
-            for feature in features
-        ],
-    ])
-    notes = [
-        f"{feature.id}:\n{fill(note, width=100, initial_indent='  ', subsequent_indent='  ', break_on_hyphens=False)}"
-        for feature in features
-        if (note := feature.note) is not None
-    ]
-    return "\n".join([
-        *(line.rstrip() for line in table.splitlines()),
-        "",
-        "Notes:",
-        *notes,
-        "",
-    ])
+    return _render_registry_table(iter_experimental_features(), _PAGE)
 
 
 def render_experimental_features_markdown(*, include_header: bool = True) -> str:
     """Render all experimental features as Markdown."""
-    lines: list[str] = []
-    if include_header:
-        lines.extend([
-            "# Experimental Features",
-            "",
-            "<!-- Generated by scripts/build_experimental_docs.py. Do not edit manually. -->",
-            "",
-            "This page lists features that are available but still experimental.",
-            "",
-        ])
-    lines.extend([
-        "| ID | Kind | Target | Since | Tracking |",
-        "|----|------|--------|-------|----------|",
-    ])
-    for feature in iter_experimental_features():
-        tracking = feature.tracking_issue or "-"
-        lines.append(f"| `{feature.id}` | {feature.kind} | `{feature.target}` | {feature.since_version} | {tracking} |")
-    lines.extend(("", "## Details", ""))
-    for feature in iter_experimental_features():
-        lines.extend([
-            f"### `{feature.id}`",
-            "",
-            f"- **Kind:** {feature.kind}",
-            f"- **Target:** `{feature.target}`",
-            f"- **Since:** {feature.since_version}",
-        ])
-        if feature.tracking_issue:
-            lines.append(f"- **Tracking:** {feature.tracking_issue}")
-        lines.extend([
-            "",
-            feature.message,
-            "",
-        ])
-        if feature.note:
-            lines.extend([feature.note, ""])
-    return "\n".join(lines).rstrip() + "\n"
+    return _render_registry_markdown(iter_experimental_features(), _PAGE, include_header=include_header)
 
 
 def render_experimental_features(format_: ExperimentalFeatureFormat) -> str:
     """Render experimental features in the requested format."""
-    if format_ == "json":
-        return render_experimental_features_json() + "\n"
-    if format_ == "markdown":
-        return render_experimental_features_markdown()
-    return render_experimental_features_table()
+    return _render_registry(iter_experimental_features(), _PAGE, format_)
 
 
 def render_release_note_experimental_features(version: str) -> str:
     """Render release-note text for experimental features introduced in a version."""
-    introduced = [item for item in iter_experimental_features() if item.since_version == version]
-
-    lines: list[str] = []
-    if introduced:
-        lines.extend(["## Experimental Features", ""])
-        lines.extend(f"- `{item.target}` is experimental. {item.message}" for item in introduced)
-        lines.append("")
-
-    return "\n".join(lines)
+    return _render_release_notes((
+        (
+            "Experimental Features",
+            (
+                f"`{item.target}` is experimental. {item.message}"
+                for item in iter_experimental_features()
+                if item.since_version == version
+            ),
+        ),
+    ))

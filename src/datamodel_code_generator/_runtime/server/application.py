@@ -30,7 +30,6 @@ _REQUEST_VALUES: Final = frozenset({"input", "ctx", "url"})
 _LOCATIONS: Final = {"path": 0, "query": 1, "header": 2, "cookie": 3}
 """The order of FastAPI's records by location; a body comes after every parameter."""
 _REJECTED: Final = "datamodel_code_generator.rejected"
-_PERCENT: Final = ord("%")
 _SLASH: Final = "\udc2f"
 """Stands for an encoded slash while a route matches; no decoded path holds a lone surrogate."""
 
@@ -222,7 +221,7 @@ def _location(record: Mapping[str, Any]) -> int:
 def _segmented(scope: Scope) -> str | None:
     """Return the path with the slashes its raw path encodes after the root path marked, or None without any."""
     raw: bytes = scope.get("raw_path") or b""
-    if _PERCENT not in raw or (raw.find(b"%2F") < 0 and raw.find(b"%2f") < 0):
+    if raw.find(b"%2F") < 0 and raw.find(b"%2f") < 0:
         return None
     path: str = scope["path"]
     segments = (unquote_to_bytes(segment).decode(errors="replace") for segment in raw.split(b"/"))

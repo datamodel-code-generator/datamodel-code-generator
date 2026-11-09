@@ -27,12 +27,13 @@ Ckind: TypeAlias = str
 Ckind1: TypeAlias = None
 
 
-class NamedCat(Cat):
+class NamedCat(TypedDict):
     kind: str | None
     kind2: NotRequired[str]
     kind3: NotRequired[str | None]
     kind4: str
     ckind: Ckind | Ckind1 | None
+    lives: int
     name: NotRequired[str]
     direct: str | None
     direct_obj: Dog | None

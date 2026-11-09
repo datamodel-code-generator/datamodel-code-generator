@@ -10,6 +10,7 @@ import os
 import re
 from collections import Counter
 from pathlib import Path
+from statistics import median
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -24,8 +25,9 @@ SPLIT_NODE_FILES = frozenset({
 })
 PART_PATTERN = re.compile(r"(?P<base>.+)@[1-9][0-9]*/[1-9][0-9]*")
 RECIPE_VERSION = 1
-WEIGHTS_VERSION = 3
+WEIGHTS_VERSION = 4
 SLOW_TEST_MS = 1000
+PART_DIVISORS = (2, 3, 4, 6, 8)
 PROFILES = ("3.10", "3.11", "3.12", "3.13", "3.14", "3.15", "windows", "macos", "e2e")
 TESTS_ROOT = Path("tests")
 WEIGHTS_PATH = Path(__file__).with_name("ci_shard_weights.json")
@@ -93,7 +95,7 @@ def median_weight(weights: Mapping[str, int]) -> int:
 
 def _is_profile(profile: object) -> bool:
     match profile:
-        case {"files": dict(files), "nodes": dict(), "slow": dict()} if files:
+        case {"fast": dict(), "files": dict(files), "nodes": dict(), "slow": dict()} if files:
             return True
     return False
 
@@ -115,22 +117,74 @@ def _profile_weights(document: dict[str, Any], profile: str) -> Profile:
     return measured["files"], measured["nodes"]
 
 
-def _item_weight(item: str, weights: Profile, fallback: tuple[int, int]) -> int:
-    index = 1 if "::" in item else 0
-    return weights[index].get(item, fallback[index])
+def _item_test_counts(measured: Mapping[str, Weights]) -> Weights:
+    """Return the number of measured tests of each measured item: its slow tests plus its fast time over their mean."""
+    slow: dict[str, list[int]] = {}
+    for test, weight in measured["slow"].items():
+        slow.setdefault(test_item(test), []).append(weight)
+    counts: Weights = {}
+    for item, weight in (*measured["files"].items(), *measured["nodes"].items()):
+        slow_weights = slow.get(item, [])
+        fast = max(1, round((weight - sum(slow_weights)) / mean)) if (mean := measured["fast"].get(item)) else 0
+        if tests := len(slow_weights) + fast:
+            counts[item] = tests
+    return counts
+
+
+def _file_node_means(nodes: Mapping[str, int]) -> Weights:
+    """Return the mean measured weight of the test functions of each split file."""
+    totals: dict[str, list[int]] = {}
+    for nodeid, weight in nodes.items():
+        total = totals.setdefault(nodeid.partition("::")[0], [0, 0])
+        total[0] += weight
+        total[1] += 1
+    return {file: max(1, round(weight / count)) for file, (weight, count) in totals.items()}
+
+
+def _item_weight(item: str, weights: Profile, fallback: tuple[int, int], node_means: Mapping[str, int]) -> int:
+    """Return an item's measured weight, the mean of its file's measured functions, or the profile median."""
+    if "::" not in item:
+        return weights[0].get(item, fallback[0])
+    return weights[1].get(item) or node_means.get(item.partition("::")[0], fallback[1])
 
 
 def _is_excluded(item: str, excluded: tuple[str, ...]) -> bool:
     return any(item == path or item.startswith((f"{path}::", f"{path}/")) for path in excluded)
 
 
-def _build_recipe_items(weights: Profile, excluded: tuple[str, ...] = ()) -> list[dict[str, int | str]]:
+def _build_recipe_items(
+    weights: Profile, excluded: tuple[str, ...] = (), tests: Mapping[str, int] | None = None
+) -> list[dict[str, int | str]]:
+    """Return each collected item with its weight and, when measured, its number of tests."""
     fallback = (median_weight(weights[0]), median_weight(weights[1]))
+    node_means = _file_node_means(weights[1])
+    counts = tests or {}
     return [
-        {"nodeid": item, "weight": _item_weight(item, weights, fallback)}
+        {"nodeid": item, "weight": _item_weight(item, weights, fallback, node_means)}
+        | ({"tests": count} if (count := counts.get(item)) else {})
         for item in _collect_test_items()
         if not _is_excluded(item, excluded)
     ]
+
+
+def test_item(nodeid: str) -> str:
+    """Return the shard item a pytest node id belongs to: its test function in a split file, else its file."""
+    file = nodeid.partition("::")[0]
+    return nodeid.partition("[")[0] if file in SPLIT_NODE_FILES else file
+
+
+def estimate_test_durations(nodeids: Iterable[str], slow: Mapping[str, int], fast: Mapping[str, int]) -> Weights:
+    """Estimate each test's duration from its measured slow time, else the mean of its item's fast tests.
+
+    Tests of items that have neither weigh the median of the measured ones, or 1 when nothing is measured.
+    """
+    estimates = {nodeid: slow.get(nodeid) or fast.get(test_item(nodeid)) for nodeid in nodeids}
+    fallback = median_weight({nodeid: weight for nodeid, weight in estimates.items() if weight})
+    return {nodeid: weight or fallback for nodeid, weight in estimates.items()}
+
+
+def _is_positive(value: object) -> bool:
+    return type(value) is int and value > 0
 
 
 def _validate_recipe_items(items: object) -> list[dict[str, int | str]]:
@@ -142,16 +196,18 @@ def _validate_recipe_items(items: object) -> list[dict[str, int | str]]:
     seen: set[str] = set()
     for item in items:
         match item:
-            case {"nodeid": str(nodeid), "weight": int(weight)} if (
-                not isinstance(weight, bool)
-                and weight > 0
+            case {"nodeid": str(nodeid), "weight": weight} if (
+                _is_positive(weight)
+                and _is_positive(item.get("tests", 1))
                 and nodeid.strip()
                 and "\n" not in nodeid
                 and "\r" not in nodeid
                 and nodeid not in seen
             ):
                 seen.add(nodeid)
-                validated.append({"nodeid": nodeid, "weight": weight})
+                validated.append(
+                    {"nodeid": nodeid, "weight": weight} | ({"tests": item["tests"]} if "tests" in item else {})
+                )
             case _:
                 msg = f"invalid recipe item: {item!r}"
                 raise SystemExit(msg)
@@ -184,45 +240,84 @@ def _milliseconds(totals: dict[str, float]) -> Weights:
     return {key: max(1, round(seconds * 1000)) for key, seconds in sorted(totals.items())}
 
 
-def _junit_weights(paths: Iterable[Path], files: Iterable[str]) -> tuple[Weights, Weights, Weights]:
-    """Sum JUnit durations per sharded module and per split-file test function, and keep each slow test's longest."""
+def _report_durations(path: Path, modules: dict[str, str]) -> dict[str, float]:
+    """Return the duration of each test of a sharded module in one JUnit report."""
     from xml.etree.ElementTree import iterparse  # noqa: PLC0415
 
+    durations: dict[str, float] = {}
+    with path.open("rb") as source:
+        for _, element in iterparse(source):
+            if element.tag != "testcase":
+                continue
+            located = _module_file(element.get("classname", ""), modules)
+            seconds = float(element.get("time", "0"))
+            name = element.get("name", "")
+            element.clear()
+            if located is not None:
+                test = "::".join(part for part in (located[0], located[1], name) if part)
+                durations[test] = durations.get(test, 0.0) + seconds
+    return durations
+
+
+def _test_medians(runs: list[list[dict[str, float]]]) -> dict[str, float]:
+    """Return each test's median duration over the runs, each the reports of one shard group, that ran it."""
+    durations: dict[str, list[float]] = {}
+    for reports in runs:
+        totals: dict[str, float] = {}
+        for report in reports:
+            for test, seconds in report.items():
+                totals[test] = totals.get(test, 0.0) + seconds
+        for test, seconds in totals.items():
+            durations.setdefault(test, []).append(seconds)
+    return {test: median(seconds) for test, seconds in durations.items()}
+
+
+def _at_median_speed(report: dict[str, float], medians: dict[str, float]) -> dict[str, float]:
+    """Divide a report's durations by how much longer its tests ran than their medians, when both sums are nonzero."""
+    actual = sum(report.values())
+    expected = sum(medians[test] for test in report)
+    speed = actual / expected if actual and expected else 1.0
+    return {test: seconds / speed for test, seconds in report.items()}
+
+
+def _junit_weights(runs: list[list[Path]], files: Iterable[str]) -> tuple[Weights, Weights, Weights, Weights]:
+    """Measure the sharded modules, split-file test functions, slow tests and fast-test means of CI runs.
+
+    Each run lists the reports of the shards of one group, such as one Python version on one OS, so it runs each test
+    once. Each report comes from one job, whose runner may be up to twice as fast as another's: its durations are
+    divided by how much longer its tests ran than their medians over the runs, and each test weighs its median of those.
+    A test under ``SLOW_TEST_MS`` adds to the mean of its item's fast tests, the estimate of a test with no measured
+    slow time when ``--test-part`` or ``--test-shard`` splits an item's tests.
+    """
     modules = {file[:-3].replace("/", "."): file for file in files}
+    reports = [[_report_durations(path, modules) for path in paths] for paths in runs]
+    medians = _test_medians(reports)
+    tests = _test_medians([[_at_median_speed(report, medians) for report in run_reports] for run_reports in reports])
     file_totals: dict[str, float] = {}
     node_totals: dict[str, float] = {}
     slow_tests: dict[str, float] = {}
-    for path in paths:
-        with path.open("rb") as source:
-            for _, element in iterparse(source):
-                if element.tag != "testcase":
-                    continue
-                located = _module_file(element.get("classname", ""), modules)
-                seconds = float(element.get("time", "0"))
-                name = element.get("name", "")
-                element.clear()
-                if located is None:
-                    continue
-                file, classes = located
-                if seconds * 1000 >= SLOW_TEST_MS:
-                    test = "::".join(part for part in (file, classes, name) if part)
-                    slow_tests[test] = max(seconds, slow_tests.get(test, 0.0))
-                if file not in SPLIT_NODE_FILES:
-                    file_totals[file] = file_totals.get(file, 0.0) + seconds
-                    continue
-                nodeid = "::".join(part for part in (file, classes, name.partition("[")[0]) if part)
-                node_totals[nodeid] = node_totals.get(nodeid, 0.0) + seconds
+    fast_tests: dict[str, list[float]] = {}
+    for test, seconds in tests.items():
+        item = test_item(test)
+        if seconds * 1000 >= SLOW_TEST_MS:
+            slow_tests[test] = seconds
+        else:
+            fast_tests.setdefault(item, []).append(seconds)
+        totals = node_totals if item.partition("::")[0] in SPLIT_NODE_FILES else file_totals
+        totals[item] = totals.get(item, 0.0) + seconds
     if not file_totals:
         msg = "no sharded module durations found in JUnit reports"
         raise SystemExit(msg)
-    return _milliseconds(file_totals), _milliseconds(node_totals), _milliseconds(slow_tests)
+    fast_means = {item: sum(seconds) / len(seconds) for item, seconds in fast_tests.items()}
+    return _milliseconds(file_totals), _milliseconds(node_totals), _milliseconds(slow_tests), _milliseconds(fast_means)
 
 
-def _record_weights(path: Path, profile: str, junit_paths: Iterable[Path], *, run_id: str, sha: str) -> None:
-    """Replace one profile's measured weights with durations from CI JUnit reports."""
+def _record_weights(path: Path, profile: str, runs: list[list[Path]], *, run_id: str, sha: str) -> None:
+    """Replace one profile's measured weights with durations from the JUnit reports of one or more shard group runs."""
     document = _read_weights(path)
-    files, nodes, slow = _junit_weights(junit_paths, _collect_test_files())
+    files, nodes, slow, fast = _junit_weights(runs, _collect_test_files())
     document["profiles"][profile] = {
+        "fast": fast,
         "files": files,
         "nodes": nodes,
         "provenance": {"run_id": run_id, "sha": sha},
@@ -273,30 +368,36 @@ def select_shard(weights: Mapping[str, int], shard_index: int, shard_total: int)
     return _assign_shards(weights, shard_total)[0][shard_index - 1]
 
 
-def _part_items(weights: Mapping[str, int], shard_total: int) -> dict[str, int]:
-    """Divide each item heavier than half a shard's share into ``ITEM@INDEX/TOTAL`` parts, at most one per shard."""
-    half_share = sum(weights.values()) / (2 * shard_total)
+def _part_items(weights: Mapping[str, int], shard_total: int, divisor: int, tests: Mapping[str, int]) -> dict[str, int]:
+    """Divide each item heavier than ``1/divisor`` of a shard's share into ``ITEM@INDEX/TOTAL`` parts.
+
+    Each item gets at most one part per shard and per test it holds, so no part is empty.
+    """
+    limit = sum(weights.values()) / (divisor * shard_total)
     parted: dict[str, int] = {}
     for item, weight in weights.items():
-        if (parts := min(shard_total, math.ceil(weight / half_share))) > 1:
+        if (parts := min(shard_total, tests.get(item, shard_total), math.ceil(weight / limit))) > 1:
             parted.update({f"{item}@{index}/{parts}": math.ceil(weight / parts) for index in range(1, parts + 1)})
         else:
             parted[item] = weight
     return parted
 
 
-def select_parted_shard(weights: Mapping[str, int], shard_index: int, shard_total: int) -> list[str]:
-    """Select a shard like ``select_shard``, after splitting heavy items into parts where that shortens the slowest.
+def select_parted_shard(
+    weights: Mapping[str, int], shard_index: int, shard_total: int, tests: Mapping[str, int] | None = None
+) -> list[str]:
+    """Select a shard like ``select_shard``, after splitting heavy items into the parts that shorten the slowest most.
 
+    Items heavier than a shard's share divided by each of ``PART_DIVISORS`` are split, and the split whose slowest
+    shard is lightest wins, the one with fewer items on a tie and no split when splitting does not help.
     pytest runs a part ``ITEM@INDEX/TOTAL`` through ``--test-part``, which splits the item's tests like
-    ``--test-shard``.
+    ``--test-shard``, so an item is never split into more parts than ``tests`` counts tests in it.
     """
     _check_shard(shard_index, shard_total)
-    parted = _part_items(weights, shard_total)
-    slowest = max(_assign_shards(weights, shard_total)[1])
-    return select_shard(
-        parted if max(_assign_shards(parted, shard_total)[1]) < slowest else weights, shard_index, shard_total
-    )
+    counts = tests or {}
+    candidates = [weights, *(_part_items(weights, shard_total, divisor, counts) for divisor in PART_DIVISORS)]
+    chosen = min(candidates, key=lambda candidate: (max(_assign_shards(candidate, shard_total)[1]), len(candidate)))
+    return select_shard(chosen, shard_index, shard_total)
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -309,7 +410,13 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--recipe", type=Path)
     parser.add_argument("--write-recipe", type=Path)
     parser.add_argument("--exclude", action="append", default=[], metavar="PATH")
-    parser.add_argument("--junit", type=Path, nargs="+")
+    parser.add_argument(
+        "--junit",
+        type=Path,
+        nargs="+",
+        action="append",
+        help="JUnit reports of one CI run of one shard group; repeatable",
+    )
     parser.add_argument("--run-id")
     parser.add_argument("--sha")
     args = parser.parse_args(argv)
@@ -320,11 +427,15 @@ def main(argv: list[str] | None = None) -> None:
         _record_weights(args.weights, args.profile, args.junit, run_id=args.run_id, sha=args.sha)
         return
 
-    items = (
-        _load_recipe_items(args.recipe)
-        if args.recipe
-        else _build_recipe_items(_profile_weights(_read_weights(args.weights), args.profile), tuple(args.exclude))
-    )
+    if args.recipe:
+        items = _load_recipe_items(args.recipe)
+    else:
+        document = _read_weights(args.weights)
+        items = _build_recipe_items(
+            _profile_weights(document, args.profile),
+            tuple(args.exclude),
+            _item_test_counts(document["profiles"][args.profile]),
+        )
     if args.write_recipe:
         _write_json(args.write_recipe, {"version": RECIPE_VERSION, "items": items})
         if args.shard_index is None and args.shard_total is None:
@@ -334,7 +445,8 @@ def main(argv: list[str] | None = None) -> None:
         parser.error("shard_index and shard_total are required unless only --write-recipe is used")
 
     weights = {str(item["nodeid"]): int(item["weight"]) for item in items}
-    if selected := select_parted_shard(weights, args.shard_index, args.shard_total):
+    tests = {str(item["nodeid"]): int(item["tests"]) for item in items if "tests" in item}
+    if selected := select_parted_shard(weights, args.shard_index, args.shard_total, tests):
         print(*selected, sep="\n")
         return
 

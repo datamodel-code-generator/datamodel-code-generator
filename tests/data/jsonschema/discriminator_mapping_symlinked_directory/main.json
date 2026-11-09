@@ -1,0 +1,11 @@
+{
+  "title": "Owner",
+  "type": "object",
+  "properties": {
+    "pet": {
+      "oneOf": [{"$ref": "./defs/cat.json"}, {"$ref": "./defs/dog.json"}],
+      "discriminator": {"propertyName": "pet_type", "mapping": {"c": "./link/cat.json", "d": "./defs/dog.json"}}
+    }
+  },
+  "required": ["pet"]
+}

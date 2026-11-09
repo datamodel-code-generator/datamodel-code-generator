@@ -1,0 +1,165 @@
+name: Behaviour Record
+
+on:
+  workflow_run:
+    workflows: ["Publish"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to record, e.g. 0.87.0."
+        required: true
+        type: string
+      ref:
+        description: "Checkout that records the tag (default: the tag). A tag without `record --shard` needs main."
+        required: false
+        default: ""
+        type: string
+
+concurrency:
+  group: behaviour-record-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SHARDS: 12
+
+jobs:
+  resolve:
+    name: Resolve the release tag
+    runs-on: ubuntu-24.04
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        github.event.workflow_run.head_repository.full_name == github.repository
+      }}
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      ref: ${{ steps.tag.outputs.ref }}
+      shards: ${{ steps.tag.outputs.shards }}
+    steps:
+      - name: Resolve the tag and check that Publish released it
+        id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || '' }}
+          INPUT_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || '' }}
+          RUN_TAG: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || '' }}
+          RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || '' }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          tag="$INPUT_TAG"
+          if [ "$EVENT_NAME" = "workflow_run" ]; then
+            tag="${RUN_TAG#refs/tags/}"
+            release_job="$(
+              gh api "repos/${REPOSITORY}/actions/runs/${RUN_ID}/jobs?per_page=100" \
+                --jq '.jobs[] | select(.name == "Publish package to PyPI") | .conclusion'
+            )"
+            if [ "$release_job" != "success" ]; then
+              echo "Publish run ${RUN_ID} did not publish ${tag} (PyPI job: ${release_job:-missing}); nothing to record."
+              exit 0
+            fi
+          fi
+          if ! [[ "$tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+(rc[0-9]+)?$ ]]; then
+            echo "Not recording ${tag:-an empty tag}: only release tags like 0.66.3 or 0.66.3rc1 are recorded."
+            exit 0
+          fi
+          shards="$(python3 -c "import json, sys; print(json.dumps(list(range(1, int(sys.argv[1]) + 1))))" "$SHARDS")"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "ref=${INPUT_REF:-refs/tags/$tag}" >> "$GITHUB_OUTPUT"
+          echo "shards=$shards" >> "$GITHUB_OUTPUT"
+
+  record:
+    name: Record the release's behaviour (shard ${{ matrix.shard }})
+    needs: resolve
+    if: needs.resolve.outputs.tag != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJson(needs.resolve.outputs.shards) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: false
+      - name: Setup environment
+        run: uv sync --frozen --python 3.14.6 --python-preference only-managed --extra all --group dev
+      - name: Wait for the release on PyPI
+        env:
+          RELEASE_TAG: ${{ needs.resolve.outputs.tag }}
+        run: |
+          set -euo pipefail
+          for _ in $(seq 60); do
+            if curl -fsS "https://pypi.org/pypi/datamodel-code-generator/${RELEASE_TAG}/json" > /dev/null; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "datamodel-code-generator ${RELEASE_TAG} did not appear on PyPI." >&2
+          exit 1
+      - name: Record the shard
+        env:
+          RELEASE_TAG: ${{ needs.resolve.outputs.tag }}
+          SHARD: ${{ matrix.shard }}
+          UV_PYTHON_PREFERENCE: "only-managed"
+        run: |
+          set -euo pipefail
+          .venv/bin/python scripts/behaviour_diff.py record "$RELEASE_TAG" \
+            --cache-dir "$RUNNER_TEMP/behaviour-diff" --out "behaviour-record-part-${SHARD}" --shard "${SHARD}/${SHARDS}"
+      - name: Upload the shard record
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: behaviour-record-part-${{ matrix.shard }}
+          path: behaviour-record-part-${{ matrix.shard }}
+          if-no-files-found: error
+
+  upload:
+    name: Merge and upload the behaviour record
+    needs: [resolve, record]
+    if: needs.record.result == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+          persist-credentials: false
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: false
+      - name: Setup environment
+        run: uv sync --frozen --python 3.14.6 --python-preference only-managed --extra all --group dev
+      - name: Download the shard records
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: behaviour-record-part-*
+          path: parts
+      - name: Merge the shard records
+        env:
+          RELEASE_TAG: ${{ needs.resolve.outputs.tag }}
+        run: |
+          set -euo pipefail
+          .venv/bin/python scripts/behaviour_diff.py merge-record "$RELEASE_TAG" parts/behaviour-record-part-* \
+            --out "behaviour-record-${RELEASE_TAG}"
+          tar -czf "behaviour-record-${RELEASE_TAG}.tar.gz" "behaviour-record-${RELEASE_TAG}"
+      - name: Upload the record as a release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.resolve.outputs.tag }}
+        run: gh release upload "$RELEASE_TAG" "behaviour-record-${RELEASE_TAG}.tar.gz" --clobber --repo "$GITHUB_REPOSITORY"

@@ -19,11 +19,6 @@
         }
       ],
       "properties": {
-        "old": {
-          "default": 1,
-          "title": "Old",
-          "type": "integer"
-        },
         "old_other": {
           "default": 4,
           "title": "Old Other",

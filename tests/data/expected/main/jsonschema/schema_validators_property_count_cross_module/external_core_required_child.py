@@ -291,8 +291,7 @@ class ExternalCoreRequiredChild3(_JsonSchemaRuntimeValidationBase):
 
 
 class ExternalCoreRequiredChild4(
-    ExternalCoreRequiredChild1,
-    ExternalCoreRequiredChild3,
+    ExternalCoreRequiredChild1, ExternalCoreRequiredChild3
 ):
     __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
         (('values',),),
@@ -304,8 +303,7 @@ class ExternalCoreRequiredChild4(
 
 
 class ExternalCoreRequiredChild5(
-    ExternalCoreRequiredChild2,
-    ExternalCoreRequiredChild3,
+    ExternalCoreRequiredChild2, ExternalCoreRequiredChild3
 ):
     __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
         (('values',),),

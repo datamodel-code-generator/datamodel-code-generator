@@ -19,11 +19,6 @@
     }
   ],
   "properties": {
-    "old": {
-      "default": 1,
-      "title": "Old",
-      "type": "integer"
-    },
     "extra": {
       "default": 3,
       "title": "Extra",

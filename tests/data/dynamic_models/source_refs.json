@@ -1,0 +1,15 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "root": {"$ref": "#/$defs/Root"},
+    "address": {"type": "object", "properties": {"street": {"type": "string"}}},
+    "tags": {"type": "array", "items": {"type": "object", "properties": {"label": {"type": "string"}}}},
+    "status": {"enum": ["active", "inactive"]},
+    "owner": {"anyOf": [{"type": "object", "properties": {"id": {"type": "integer"}}}, {"type": "string"}]}
+  },
+  "required": ["root"],
+  "$defs": {
+    "Root": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}
+  }
+}

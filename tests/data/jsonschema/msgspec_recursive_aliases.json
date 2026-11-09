@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "nested": {"$ref": "#/$defs/Nested"},
+    "uses": {"$ref": "#/$defs/Uses"},
+    "pair": {"$ref": "#/$defs/A"},
+    "tree": {"$ref": "#/$defs/Tree"}
+  },
+  "$defs": {
+    "Nested": {
+      "anyOf": [
+        {"type": "integer"},
+        {"type": "array", "items": {"$ref": "#/$defs/Nested"}}
+      ]
+    },
+    "Uses": {"type": "array", "items": {"$ref": "#/$defs/Nested"}},
+    "A": {"type": "array", "items": {"$ref": "#/$defs/B"}},
+    "B": {"anyOf": [{"type": "string"}, {"$ref": "#/$defs/A"}]},
+    "Tree": {"anyOf": [{"type": "integer"}, {"$ref": "#/$defs/Node"}]},
+    "Node": {
+      "type": "object",
+      "properties": {"children": {"type": "array", "items": {"$ref": "#/$defs/Tree"}}},
+      "required": ["children"]
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "title": "Bird",
+  "type": "object",
+  "properties": {
+    "kind": {"type": "string"},
+    "sings": {"type": "boolean"}
+  },
+  "required": ["kind"]
+}

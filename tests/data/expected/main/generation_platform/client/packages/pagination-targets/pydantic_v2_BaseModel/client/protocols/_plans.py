@@ -59,7 +59,13 @@ PLAN_0: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_0,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(read=BodySelector(pointer='/next_cursor'), write=ParameterTarget(location='header', name='x-cursor'), end_missing=True, end_null=True, empty_string_ends=True),
+    continuation=CursorPlan(
+        read=BodySelector(pointer='/next_cursor'),
+        write=ParameterTarget(location='header', name='x-cursor'),
+        end_missing=True,
+        end_null=True,
+        empty_string_ends=True,
+    ),
     fingerprint='2e5c06fe8859dee87d4f342b1fd82c1694ac5aa34f5cacca604374e64fac99cf',
 )
 
@@ -70,9 +76,32 @@ PLAN_1: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_1,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(read=BodySelector(pointer='/next_cursor'), write=ParameterTarget(location='query', name='cursor'), end_missing=True, end_null=True, empty_string_ends=True),
+    continuation=CursorPlan(
+        read=BodySelector(pointer='/next_cursor'),
+        write=ParameterTarget(location='query', name='cursor'),
+        end_missing=True,
+        end_null=True,
+        empty_string_ends=True,
+    ),
     fingerprint='a3565b59f5e3837d2caa765a0a9996e6d4cdfc347b18e7850717ef648d5683c9',
-    bindings=(PageBinding(target=ParameterTarget(location='header', name='X-Snapshot'), source='initial', selector=HeaderSelector(name='x-snapshot')), PageBinding(target=ParameterTarget(location='query', name='code'), source='previous', selector=StatusSelector()), PageBinding(target=ParameterTarget(location='query', name='limit'), literal=5), PageBinding(target=ParameterTarget(location='query', name='tags'), source='previous', selector=HeaderSelector(name='X-Tag', occurrence='all'))),
+    bindings=(
+        PageBinding(
+            target=ParameterTarget(location='header', name='X-Snapshot'),
+            source='initial',
+            selector=HeaderSelector(name='x-snapshot'),
+        ),
+        PageBinding(
+            target=ParameterTarget(location='query', name='code'),
+            source='previous',
+            selector=StatusSelector(),
+        ),
+        PageBinding(target=ParameterTarget(location='query', name='limit'), literal=5),
+        PageBinding(
+            target=ParameterTarget(location='query', name='tags'),
+            source='previous',
+            selector=HeaderSelector(name='X-Tag', occurrence='all'),
+        ),
+    ),
 )
 
 
@@ -82,9 +111,23 @@ PLAN_2: Final[PaginationPlan[models.User, SearchResponse]] = PaginationPlan(
     call=_operations.OPERATION_2,
     items=_items_2,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(read=BodySelector(pointer='/next'), write=BodyTarget(pointer='/page/cursor'), end_missing=True, empty_string_ends=True),
+    continuation=CursorPlan(
+        read=BodySelector(pointer='/next'),
+        write=BodyTarget(pointer='/page/cursor'),
+        end_missing=True,
+        empty_string_ends=True,
+    ),
     fingerprint='9dca7ae7487d530918730fca3c53df9f3729b40122c0c65af92690c18b862203',
-    bindings=(PageBinding(target=BodyTarget(pointer='/after'), source='previous', selector=BodySelector(pointer='/last')), PageBinding(target=BodyTarget(pointer='/size'), literal=10), PageBinding(target=BodyTarget(pointer='/filter'), literal={'states': ['open']}), PageBinding(target=BodyTarget(pointer='/range/from'), literal='a')),
+    bindings=(
+        PageBinding(
+            target=BodyTarget(pointer='/after'),
+            source='previous',
+            selector=BodySelector(pointer='/last'),
+        ),
+        PageBinding(target=BodyTarget(pointer='/size'), literal=10),
+        PageBinding(target=BodyTarget(pointer='/filter'), literal={'states': ['open']}),
+        PageBinding(target=BodyTarget(pointer='/range/from'), literal='a'),
+    ),
 )
 
 
@@ -94,6 +137,12 @@ PLAN_3: Final[PaginationPlan[models.User, ListFolderResponse]] = PaginationPlan(
     call=_operations.OPERATION_1,
     items=_items_3,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(read=BodySelector(pointer='/next_cursor'), write=ParameterTarget(location='path', name='folder'), end_missing=True, end_null=True, empty_string_ends=True),
+    continuation=CursorPlan(
+        read=BodySelector(pointer='/next_cursor'),
+        write=ParameterTarget(location='path', name='folder'),
+        end_missing=True,
+        end_null=True,
+        empty_string_ends=True,
+    ),
     fingerprint='4ac9d63af7f90a5401bb52bac108173cf1f907a38e2afe7d3ce3356238130015',
 )

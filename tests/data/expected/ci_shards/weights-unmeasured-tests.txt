@@ -1,0 +1,29 @@
+{
+  "items": [
+    {
+      "nodeid": "tests/main/test_payload_validation.py::TestNew::test_async_method",
+      "weight": 1
+    },
+    {
+      "nodeid": "tests/main/test_payload_validation.py::TestNew::test_method",
+      "weight": 1
+    },
+    {
+      "nodeid": "tests/main/test_payload_validation.py::test_async",
+      "weight": 1
+    },
+    {
+      "nodeid": "tests/main/test_payload_validation.py::test_generated_pydantic_v2_model_accepts_schema_derived_payloads",
+      "weight": 1
+    },
+    {
+      "nodeid": "tests/main/test_payload_validation.py::test_new",
+      "weight": 1
+    },
+    {
+      "nodeid": "tests/test_new.py",
+      "weight": 1
+    }
+  ],
+  "version": 1
+}

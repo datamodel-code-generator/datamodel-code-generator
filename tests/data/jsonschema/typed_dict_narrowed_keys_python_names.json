@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {"foo-bar": {"type": "string"}, "x": {"type": ["string", "null"]}}
+    },
+    "Child": {
+      "allOf": [
+        {"$ref": "#/$defs/Base"},
+        {"type": "object", "properties": {"foo_bar": {"type": "integer"}, "x": {"type": "string"}}, "required": ["foo_bar"]}
+      ]
+    }
+  },
+  "$ref": "#/$defs/Child"
+}

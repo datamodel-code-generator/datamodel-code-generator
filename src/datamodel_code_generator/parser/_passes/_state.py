@@ -15,9 +15,11 @@ from weakref import WeakKeyDictionary
 
 from typing_extensions import Protocol, ReadOnly, Self, TypedDict, TypeVar, final
 
-from datamodel_code_generator._model_keys import ModelKey, model_key_of
+from datamodel_code_generator._context_scope import context_values
+from datamodel_code_generator._model_keys import ModelKey, keyed_or_path, model_key_of
 from datamodel_code_generator._records import record
-from datamodel_code_generator.model.base import DataModel, _keyed_answer
+from datamodel_code_generator._warning_control import shown_once
+from datamodel_code_generator.model.base import DataModel
 from datamodel_code_generator.parser._phases import DecisionOutcome
 
 if TYPE_CHECKING:
@@ -26,8 +28,10 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator import AllExportsCollisionStrategy, AllExportsScope, ModuleSplitMode
     from datamodel_code_generator._requirements import PydanticFloor
+    from datamodel_code_generator._warning_control import ShownWarning
     from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.imports import Import, Imports
+    from datamodel_code_generator.model._decisions.collapse_eligibility import LaterHolderFacts
     from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataType
 
@@ -37,7 +41,6 @@ __all__ = [
     "FinishRun",
     "Forwarder",
     "ForwarderMap",
-    "ModuleContextFields",
     "ModuleContextView",
     "ModuleModels",
     "ModulePath",
@@ -50,7 +53,12 @@ __all__ = [
     "SettleRun",
     "SortedDataModels",
     "StructuredRun",
+    "mark_settle_diagnostics_reported",
+    "parse_warnings_reported",
+    "parse_warnings_shown_once",
     "pydantic_floors_recorded",
+    "settle_diagnostics_reported_once",
+    "settle_diagnostics_suppressed",
 ]
 
 ModulePath: TypeAlias = tuple[str, ...]
@@ -76,8 +84,6 @@ class Forwarder:
 
 
 ForwarderMap: TypeAlias = dict[ModulePath, Forwarder]
-ModuleContextFields: TypeAlias = "tuple[ModulePath, ModulePath, list[DataModel], bool, Imports, ModelResolver]"
-"""The fields of ``parser/base.py:ModuleContext`` in order, for the passes that unpack it."""
 
 
 class ModuleContextView(Protocol):
@@ -132,8 +138,7 @@ class _ModuleNames(dict[str, str]):  # noqa: FURB189
     ``legacy-keyless-reference-by-path``: a model with no entry by key, as for an entry a subclass wrote by path, and
     a reference that no model was built with are looked up by path. Row ``legacy-module-follows-path``: the entries
     were paths, so a model that moves to another path leaves its entry behind (`forget`), and a root model whose
-    inner model takes its path takes the inner model's entry. Under the ``MODEL_GRAPH`` check, an entry by key that
-    differs from the entry at the model's path is a violation.
+    inner model takes its path takes the inner model's entry.
     """
 
     __slots__ = ("assigned", "by_key")
@@ -147,13 +152,10 @@ class _ModuleNames(dict[str, str]):  # noqa: FURB189
     def assign(self, model: DataModel, module_name: str, *, keep: bool = False) -> None:
         """Give ``model`` the module name, or with ``keep`` only when it has none yet."""
         path = model.path
-        if keep:
-            if path not in self:
-                self[path] = self.assigned[path] = module_name
-            self.by_key.setdefault(model_key_of(model.reference), module_name)
-            return
-        self[path] = self.assigned[path] = module_name
-        self.by_key[model_key_of(model.reference)] = module_name
+        if not keep or path not in self:
+            self[path] = self.assigned[path] = module_name
+        if (key := model_key_of(model.reference)) not in self.by_key or not keep:
+            self.by_key[key] = module_name
 
     def forget(self, models: Iterable[DataModel]) -> None:
         """Drop the entries by key of models that moved to another path, whose entries by path name them no more.
@@ -166,28 +168,15 @@ class _ModuleNames(dict[str, str]):  # noqa: FURB189
     def of(self, reference: Reference) -> str | None:
         """Return the module name of the model ``reference`` names, or None when it has none.
 
-        An entry that a subclass wrote by path, before or after the parser gave the name, wins over the one by key;
-        under the ``MODEL_GRAPH`` check, the two differing is a violation.
+        An entry that a subclass wrote by path, before or after the parser gave the name, wins over the one by key.
         """
         path = reference.path
-        by_path = self.get(path)
-        written = by_path != self.assigned.get(path)
-        by_key = None if reference.source is None else self.by_key.get(model_key_of(reference))
-        if written:
-            return by_path if by_key is None else _keyed_answer("module names", by_path, lambda: by_key)
-        if by_key is None:
+        if (by_path := self.get(path)) != self.assigned.get(path):
             return by_path
-        return _keyed_answer("module names", by_key, lambda: by_path)
+        return by_path if (kept := keyed_or_path(reference, self.by_key, self)) is None else kept
 
 
 SortedDataModels = dict[ModelKey, DataModel]
-
-
-class _RenamedType(NamedTuple):
-    """A class name a type had before a rename, and the path imports of that name were added under."""
-
-    class_name: str
-    import_path: str
 
 
 @record
@@ -209,6 +198,8 @@ class _KeptParentRoot:
     root: DataModel
     inner: DataModel
     holders: list[_KeptHolder]
+    facts: LaterHolderFacts
+    """The facts its first holder decided on, which ``settle_kept_parent_roots`` completes with the final names."""
 
 
 @record
@@ -274,6 +265,8 @@ class SettleRun(Protocol[ConfigT]):
 
     args: _ParseArgs
     suppress_parse_warnings: bool
+    suppress_settle_diagnostics: bool
+    """Whether an earlier parse of the generation run reported the settle diagnostics, which this one leaves out."""
     config: ConfigT
     sorted_data_models: SortedDataModels
     model_identities: Mapping[DataModel, str] | None
@@ -304,8 +297,8 @@ class _StructureState:
     module_models: ModuleModels = dataclasses.field(init=False)
     model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]] = dataclasses.field(init=False)
     model_path_to_module_name: _ModuleNames = dataclasses.field(init=False)
-    internal_modules: set[ModulePath] = dataclasses.field(init=False)
-    forwarder_map: ForwarderMap = dataclasses.field(init=False)
+    internal_modules: set[ModulePath] = dataclasses.field(default_factory=set)
+    forwarder_map: ForwarderMap = dataclasses.field(default_factory=dict)
 
 
 @final
@@ -340,11 +333,70 @@ def pydantic_floors_recorded() -> Generator[PydanticFloors]:
     A parse a generation discards, such as a compatibility retry it does not take, is never read.
     """
     record = PydanticFloors()
-    token = _PYDANTIC_FLOORS.set(record)
-    try:
+    with context_values({_PYDANTIC_FLOORS: record}):
         yield record
-    finally:
-        _PYDANTIC_FLOORS.reset(token)
+
+
+@final
+@dataclass(slots=True)
+class _SettleDiagnostics:
+    """Whether a parse of the generation run reported the settle diagnostics, and the warnings of its L0 and L1.
+
+    ``parse_reported`` says a parse finished L1, so it showed every warning of L0 and L1; ``parse_warnings`` are those
+    the parses showed.
+    """
+
+    reported: bool = False
+    parse_reported: bool = False
+    parse_warnings: set[ShownWarning] = dataclasses.field(default_factory=set)
+
+
+_SETTLE_DIAGNOSTICS: ContextVar[_SettleDiagnostics | None] = ContextVar("settle_diagnostics", default=None)
+
+
+@contextlib.contextmanager
+def settle_diagnostics_reported_once() -> Generator[None]:
+    """Report the settle diagnostics of the generation run inside once, in the first of its parses that reaches them.
+
+    A parse again repeats no warning of L0 and L1 that a parse before showed, and reports the settle diagnostics where
+    no parse before reached them, such as after a parse that failed in L1.
+    """
+    with context_values({_SETTLE_DIAGNOSTICS: _SettleDiagnostics()}):
+        yield
+
+
+def settle_diagnostics_suppressed(suppress_parse_warnings: bool) -> bool:  # noqa: FBT001
+    """Return whether a parse leaves out the settle diagnostics: a parse again does after one that reported them.
+
+    A parse again outside a generation run (``settle_diagnostics_reported_once``) always leaves them out.
+    """
+    return suppress_parse_warnings and ((diagnostics := _SETTLE_DIAGNOSTICS.get()) is None or diagnostics.reported)
+
+
+def parse_warnings_reported() -> bool:
+    """Return whether a parse of the generation run finished L1; outside a generation run, a parse before did."""
+    return (diagnostics := _SETTLE_DIAGNOSTICS.get()) is None or diagnostics.parse_reported
+
+
+@contextlib.contextmanager
+def parse_warnings_shown_once() -> Generator[None]:
+    """Show each L0 and L1 warning of the parse inside that no parse of the generation run showed (#6311).
+
+    A parse again after one that failed in L1 shows the warnings that parse did not reach; a parse that finishes L1
+    marks them all reported.
+    """
+    if (diagnostics := _SETTLE_DIAGNOSTICS.get()) is None:
+        yield
+        return
+    with shown_once(diagnostics.parse_warnings):
+        yield
+    diagnostics.parse_reported = True
+
+
+def mark_settle_diagnostics_reported() -> None:
+    """Record that a parse of the generation run reported the settle diagnostics."""
+    if (diagnostics := _SETTLE_DIAGNOSTICS.get()) is not None:
+        diagnostics.reported = True
 
 
 _NO_DECISIONS: Final = DecisionOutcome(())
@@ -361,6 +413,7 @@ class _PipelineRun(Generic[ConfigT, ContextT, ResultT]):
 
     args: _ParseArgs
     suppress_parse_warnings: bool
+    suppress_settle_diagnostics: bool
     default_build_code_formatter: Callable[..., CodeFormatter]
     result_type: Callable[..., ResultT]
     config: ConfigT = dataclasses.field(init=False)
@@ -375,7 +428,6 @@ class _PipelineRun(Generic[ConfigT, ContextT, ResultT]):
     unused_models: list[DataModel] = dataclasses.field(default_factory=list)
     module_to_import: dict[ModulePath, Imports] = dataclasses.field(default_factory=dict)
     contexts: list[ContextT] = dataclasses.field(default_factory=list)
-    opted_out: list[DataModel] = dataclasses.field(default_factory=list)
     decisions: DecisionOutcome = _NO_DECISIONS
     output: str | dict[tuple[str, ...], ResultT] = dataclasses.field(init=False)
 
@@ -392,7 +444,6 @@ class ProcessingRun(StructuredRun[ConfigT], Protocol[ConfigT, ContextT, ResultT]
 class FinishRun(ProcessingRun[ConfigT, ContextT, ResultT], Protocol[ConfigT, ContextT, ResultT]):
     """What the passes after the output modules are processed read and write."""
 
-    opted_out: list[DataModel]
     decisions: DecisionOutcome
     """What the decision phase changed."""
     output: str | dict[tuple[str, ...], ResultT]
@@ -424,7 +475,6 @@ class _ModuleState(Generic[ConfigT]):
     unused_models_start: int = dataclasses.field(init=False)
     model_list_before_override_removal: list[DataModel] = dataclasses.field(init=False)
     current_unused_models: Sequence[DataModel] = ()
-    live_models: list[DataModel] = dataclasses.field(init=False)
 
 
 @final
@@ -459,7 +509,9 @@ class _PreparedModule(Generic[ConfigT]):
 class _FinalizeState(Generic[ContextT]):
     """The state of one ``_finalize_modules`` call.
 
-    ``all_models`` are the models of every module as they were before unused models left them.
+    ``all_models`` are the models of every module as they were before unused models left them. The configuration,
+    ``internal_modules`` and ``model_path_to_module_name`` are the run's; by the last two a module names a model of
+    another module (``ModuleNamesView``).
     """
 
     contexts: list[ContextT]
@@ -468,6 +520,9 @@ class _FinalizeState(Generic[ContextT]):
     module_to_import: dict[ModulePath, Imports]
     forwarder_modules: Collection[ModulePath]
     with_import: bool
+    config: ParseConfigView
+    internal_modules: set[ModulePath]
+    model_path_to_module_name: dict[str, str]
     all_models: list[DataModel] = dataclasses.field(init=False)
     model_imports: dict[DataModel, tuple[Import, ...]] = dataclasses.field(init=False)
     renamed_models: bool = False

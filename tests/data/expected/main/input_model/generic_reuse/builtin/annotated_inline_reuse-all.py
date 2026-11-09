@@ -9,4 +9,6 @@ import tests.data.python.input_model.generic_reuse
 
 
 class AnnotatedInlineRoot(BaseModel):
-    box: tests.data.python.input_model.generic_reuse.AnnotatedInlineRoot.model_fields['box'].annotation
+    box: tests.data.python.input_model.generic_reuse.AnnotatedInlineRoot.model_fields[
+        'box'
+    ].annotation

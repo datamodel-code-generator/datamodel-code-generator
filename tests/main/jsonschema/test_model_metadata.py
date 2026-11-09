@@ -14,7 +14,14 @@ from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model_metadata import dump_model_metadata
 from datamodel_code_generator.parser.jsonschema import JsonSchemaObject, JsonSchemaParser
 from datamodel_code_generator.parser.openapi import OpenAPIParser
-from tests.conftest import CHECK_SCHEMA_LOCATIONS_ENV, assert_inputs_not_mutated, assert_output, stored_expected
+from datamodel_code_generator.reference import binary_content_of, field_origin_of, type_origin_of
+from tests.conftest import (
+    CHECK_SCHEMA_GRAPH_ENV,
+    CHECK_SCHEMA_LOCATIONS_ENV,
+    assert_inputs_not_mutated,
+    assert_output,
+    stored_expected,
+)
 from tests.main.conftest import (
     ASYNC_API_DATA_PATH,
     GRAPHQL_DATA_PATH,
@@ -29,6 +36,10 @@ from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_fil
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from datamodel_code_generator.model import DataModel
+    from datamodel_code_generator.reference import SchemaLocation
+    from datamodel_code_generator.types import DataType
 
 
 @pytest.mark.parametrize("entry_point", ["cli", "api"])
@@ -163,6 +174,56 @@ def test_schema_location_metadata(
     assert_output(metadata_path.read_text(encoding="utf-8"), name="metadata")
 
 
+@pytest.mark.parametrize(
+    ("input_path", "options"),
+    [
+        pytest.param(JSON_SCHEMA_DATA_PATH / "reuse_model_subclass_metadata.json", [], id="module"),
+        pytest.param(JSON_SCHEMA_DATA_PATH / "reuse_scope_tree", ["--reuse-scope", "tree"], id="tree-scope"),
+    ],
+)
+def test_reuse_model_subclass_metadata(tmp_path: Path, output_dir: Path, input_path: Path, options: list[str]) -> None:
+    """List the empty subclass ``--reuse-model`` writes for a duplicate at the duplicate's location (#6581)."""
+    metadata_path = tmp_path / "metadata.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--reuse-model",
+            *options,
+            "--emit-model-metadata",
+            str(metadata_path),
+        ],
+    )
+    assert_output(metadata_path.read_text(encoding="utf-8"), name="metadata")
+
+
+@pytest.mark.parametrize("update_lock", [False, True], ids=["direct", "staged"])
+def test_emit_model_metadata_expands_the_home_directory(
+    update_lock: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Write `--emit-model-metadata=~/...` under the home directory, as `--output` is and a staged run publishes it."""
+    home = tmp_path / "home"
+    caller = tmp_path / "caller"
+    home.mkdir()
+    caller.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    monkeypatch.chdir(caller)
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "person.json",
+        output_path=caller / "person.py",
+        input_file_type="jsonschema",
+        extra_args=["--emit-model-metadata=~/metadata.json", "--disable-timestamp", *(["--update-lock"] * update_lock)],
+        file_should_not_exist=caller / "~",
+        skip_code_validation=True,
+    )
+    assert_output((home / "metadata.json").read_text(encoding="utf-8"))
+
+
 def test_schema_location_metadata_of_shared_dict_input(tmp_path: Path) -> None:
     """Locate the models of a dict input where it shares objects and holds a cycle, without changing the input."""
     inner: dict[str, Any] = {"type": "object", "properties": {"y": {"type": "integer"}}}
@@ -194,7 +255,7 @@ def test_schema_location_metadata_of_shared_dict_input(tmp_path: Path) -> None:
     assert_output(metadata_path.read_text(encoding="utf-8"), name="metadata")
 
 
-@pytest.mark.parametrize("flag", ["check", "report", "off", "fallback", "invalid"])
+@pytest.mark.parametrize("flag", ["check", "report", "off", "fallback"])
 def test_schema_location_of_schemas_a_custom_parser_rewrites(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
 ) -> None:
@@ -202,7 +263,6 @@ def test_schema_location_of_schemas_a_custom_parser_rewrites(
 
     The check (`1`, as the test suite sets it) raises for them at the end of parsing; `report:<path>` appends them to
     the file as a JSON line instead; with the check off (`0`) or unset, they keep their reference paths. Other values
-    are rejected.
     """
 
     class RewritingParser(OpenAPIParser):
@@ -210,7 +270,7 @@ def test_schema_location_of_schemas_a_custom_parser_rewrites(
             super().parse_raw_obj(name, json.loads(json.dumps(raw)), path)
 
     report_path = tmp_path / "checks.jsonl"
-    values = {"check": "1", "report": f"report:{report_path}", "off": "0", "invalid": "report:"}
+    values = {"check": "1", "report": f"report:{report_path}", "off": "0"}
     if (value := values.get(flag)) is None:
         monkeypatch.delenv(CHECK_SCHEMA_LOCATIONS_ENV, raising=False)
     else:
@@ -220,14 +280,18 @@ def test_schema_location_of_schemas_a_custom_parser_rewrites(
         with pytest.raises(Error, match=f"^{CHECK_SCHEMA_LOCATIONS_ENV}: models without a schema location: Owner "):
             parser.parse(collect_model_metadata=True)
         return
-    if flag == "invalid":
-        with pytest.raises(ValueError, match=r"='report:': expected 0, 1 or report:<path>$"):
-            parser.parse(collect_model_metadata=True)
-        return
     parser.parse(collect_model_metadata=True)
     assert_output(dump_model_metadata(parser.model_metadata), name="metadata")
     if flag == "report":
         assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
+def test_a_check_flag_of_the_package_with_an_invalid_value_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A value that is not `0`, `1` or `report:<path>` is rejected when the parse reads the flags of its checks."""
+    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, "report:")
+    parser = OpenAPIParser(OPEN_API_DATA_PATH / "schema_location_alias.yaml", formatters=[Formatter.BUILTIN])
+    with pytest.raises(ValueError, match=rf"^{CHECK_SCHEMA_GRAPH_ENV}='report:': expected 0, 1 or report:<path>$"):
+        parser.parse()
 
 
 def test_schema_location_of_fields_a_schema_object_subclass_adds(tmp_path: Path) -> None:
@@ -262,3 +326,165 @@ def test_schema_location_of_fields_a_schema_object_subclass_adds(tmp_path: Path)
     parser = ExtensionParser(input_path, base_path=tmp_path, formatters=[Formatter.BUILTIN])
     parser.parse(collect_model_metadata=True)
     assert_output(dump_model_metadata(parser.model_metadata), name="metadata")
+
+
+_ORIGINS_JSON_SCHEMA: dict[str, Any] = {
+    "$defs": {
+        "Base": {"type": "object", "properties": {"id": {"type": "integer"}}},
+        "Ids": {"type": "array", "items": {"type": "integer"}},
+        "Labels": {"type": "object", "additionalProperties": {"type": "string"}},
+        "Merged": {"allOf": [{"$ref": "#/$defs/Base"}, {"properties": {"id": {"maximum": 5}}}]},
+    },
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "tags": {"type": "array", "items": {"type": "string"}},
+        "pair": {"type": "array", "prefixItems": [{"type": "string"}, {"type": "integer"}], "items": False},
+        "counts": {"type": "object", "additionalProperties": {"type": "integer"}},
+        "flags": {"type": "object", "patternProperties": {"^x-": {"type": "boolean"}}},
+        "choice": {"anyOf": [{"type": "string"}, {"type": "integer"}]},
+        "maybe": {"oneOf": [{"$ref": "#/$defs/Base"}, {"type": "null"}]},
+        "either": {"type": ["string", "integer"]},
+        "fixed": {"const": "x"},
+        "keyed": {"type": "object", "propertyNames": {"pattern": "^a"}, "additionalProperties": {"type": "string"}},
+        "blob": {"type": "string", "format": "binary"},
+        "media": {"type": "string", "contentMediaType": "image/png"},
+        "flag": True,
+        "base": {"$ref": "#/$defs/Base"},
+        "ids": {"$ref": "#/$defs/Ids"},
+        "labels": {"$ref": "#/$defs/Labels"},
+        "child": {
+            "allOf": [{"$ref": "#/$defs/Base"}, {"required": ["code"], "properties": {"note": {"type": "string"}}}]
+        },
+    },
+    "additionalProperties": {"type": "number"},
+    "propertyNames": {"maxLength": 9},
+}
+_BINARY_SCHEMAS: dict[str, Any] = {
+    "Upload": {
+        "type": "object",
+        "properties": {
+            "raw": {"type": "string", "format": "binary"},
+            "maybe": {"type": ["string", "null"], "format": "binary"},
+            "mapped": {"type": "string", "format": "x-bin"},
+            "media": {"type": "string", "contentMediaType": "image/png"},
+            "medias": {"type": "array", "items": {"type": "string", "contentMediaType": "image/png"}},
+            "encoded": {"type": "string", "contentMediaType": "image/png", "contentEncoding": "base64"},
+            "byte": {"type": "string", "format": "byte"},
+            "stage": {"type": "string", "format": "binary", "enum": ["draft", "final"]},
+            "fixed": {"type": "string", "format": "binary", "const": "draft"},
+        },
+    }
+}
+_BINARY_TYPE_MAPPING = "string+x-bin=binary"
+_ORIGINS_OPENAPI: dict[str, Any] = {
+    "openapi": "3.1.0",
+    "info": {"title": "origins", "version": "1"},
+    "paths": {},
+    "components": {
+        "schemas": {
+            "Pet": {
+                "type": "object",
+                "discriminator": {
+                    "propertyName": "kind",
+                    "mapping": {"cat": "#/components/schemas/Cat", "dog": "#/components/schemas/Dog"},
+                },
+                "properties": {"kind": {"type": "string"}},
+                "required": ["kind"],
+            },
+            "Cat": {
+                "allOf": [
+                    {"$ref": "#/components/schemas/Pet"},
+                    {"type": "object", "properties": {"meow": {"type": "boolean"}}},
+                ]
+            },
+            "Dog": {
+                "allOf": [
+                    {"$ref": "#/components/schemas/Pet"},
+                    {"type": "object", "properties": {"kind": {"type": "string"}, "bark": {"type": "boolean"}}},
+                ]
+            },
+            "Owner": {"type": "object", "properties": {"pet": {"$ref": "#/components/schemas/Pet"}}},
+            **_BINARY_SCHEMAS,
+        }
+    },
+}
+_ORIGINS_OPENAPI_30: dict[str, Any] = {
+    "openapi": "3.0.3",
+    "info": {"title": "origins", "version": "1"},
+    "paths": {},
+    "components": {"schemas": _BINARY_SCHEMAS},
+}
+
+
+def _schema_at(document: Any, location: SchemaLocation | None) -> str:
+    """Return a location's pointer and the JSON of the schema value at it, as the input holds it."""
+    if location is None:
+        return "None"
+    value = document
+    for token in location.tokens:
+        value = value[int(token)] if isinstance(value, list) else value[token]
+    return f"{location.pointer} {json.dumps(value, sort_keys=True)}"
+
+
+def _type_origin_lines(data_type: DataType, position: str, document: Any) -> list[str]:
+    """Return the origin of a type node and of the nodes it holds, each under its position in the type tree."""
+    binary = " binary" if binary_content_of(data_type) else ""
+    lines = [f"    {position or '.'}:{binary} {_schema_at(document, type_origin_of(data_type))}"]
+    for index, member in enumerate(data_type.data_types):
+        lines.extend(_type_origin_lines(member, f"{position}/{index}", document))
+    if data_type.dict_key is not None:
+        lines.extend(_type_origin_lines(data_type.dict_key, f"{position}/key", document))
+    return lines
+
+
+def _origin_lines(models: list[DataModel], document: Any) -> str:
+    """Return the origin of every field of the models and of each node of their types."""
+    lines: list[str] = []
+    for model in models:
+        lines.append(model.class_name)
+        for field in model.fields:
+            origin = field_origin_of(field)
+            kind, location = (None, None) if origin is None else (origin.kind, origin.location)
+            lines.extend((
+                f"  {field.name}: {kind} {_schema_at(document, location)}",
+                *_type_origin_lines(field.data_type, "", document),
+            ))
+    return "\n".join(lines)
+
+
+@pytest.mark.parametrize(
+    ("parser_class", "document", "type_mappings"),
+    [
+        pytest.param(JsonSchemaParser, _ORIGINS_JSON_SCHEMA, None, id="jsonschema"),
+        pytest.param(OpenAPIParser, _ORIGINS_OPENAPI, [_BINARY_TYPE_MAPPING], id="openapi"),
+        pytest.param(
+            OpenAPIParser,
+            _ORIGINS_OPENAPI_30,
+            [_BINARY_TYPE_MAPPING, "string+byte=binary"],
+            id="openapi-3.0-type-mappings",
+        ),
+    ],
+)
+def test_fields_and_types_record_the_schema_they_are_built_from(
+    tmp_path: Path, parser_class: type[JsonSchemaParser], document: dict[str, Any], type_mappings: list[str] | None
+) -> None:
+    """Each field and type node records the schema object it is built from, which the dump shows beside its pointer.
+
+    A property field records its property schema, a root field and its type the schema of the root model, the typed
+    extra field the additionalProperties schema, a boolean property schema where its object declares it; a required
+    name without a property records its kind without a schema, as does a discriminator tag field the L5 pass appends
+    (kind ``tag``); an override of an inherited property records its own property schema. A type
+    node records the subschema it is parsed from (items, prefixItems, additionalProperties, patternProperties,
+    propertyNames, anyOf and oneOf branches, a merged allOf property its part); a container, a type list member and a
+    const the field types itself record the schema they are built from.
+
+    A string node marked ``binary`` holds raw octets as the specification reads it: a format that maps to bytes
+    (``binary``, a format ``--type-mappings`` maps to ``binary``), not bytes mapped from base64 text, and in OpenAPI
+    3.0 and later a content media type without a content encoding, which JSON Schema does not read so; an enum or
+    const of binary strings holds text.
+    """
+    (input_path := tmp_path / "schema.json").write_text(json.dumps(document), encoding="utf-8")
+    parser = parser_class(input_path, base_path=tmp_path, formatters=[Formatter.BUILTIN], type_mappings=type_mappings)
+    parser.parse()
+    assert_output(_origin_lines(parser.results, document))

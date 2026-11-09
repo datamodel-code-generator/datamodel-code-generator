@@ -20,6 +20,7 @@ import ast
 import builtins
 import math
 import sys
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -90,6 +91,19 @@ class _Scope:
     entry_deferred: int = 0
     uses: list[Use] = field(default_factory=list)
     star_import: bool = False
+
+
+def _parse_annotation(text: str) -> ast.Expression | None:
+    """Parse a string annotation, or return None when no Python parses it.
+
+    A character this Python does not know is read as a letter: an identifier of a newer target may hold one, and the
+    names the annotation loads do not depend on which letter it is.
+    """
+    known = "".join("x" if unicodedata.category(character) == "Cn" else character for character in text)
+    try:
+        return ast.parse(known, mode="eval")
+    except SyntaxError:
+        return None
 
 
 def _tail_name(node: ast.AST | None) -> str | None:
@@ -175,9 +189,7 @@ class _Collector(ast.NodeVisitor):
     def visit_Constant(self, node: ast.Constant) -> None:
         if not (self.in_type and isinstance(node.value, str)):
             return
-        try:
-            expression = ast.parse(node.value, mode="eval")
-        except SyntaxError:
+        if (expression := _parse_annotation(node.value)) is None:
             self._use(repr(node.value), in_type=True)
             return
         self._visit_deferred([expression.body], in_type=True)

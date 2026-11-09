@@ -6,9 +6,39 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from pydantic import StringConstraints
+from pydantic import Field, StringConstraints
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
+
+POverlapPatternProperty = TypeAliasType(
+    "POverlapPatternProperty", Annotated[int, Field(ge=0)]
+)
+
+
+POverlapPatternProperty1 = TypeAliasType(
+    "POverlapPatternProperty1", Annotated[int, Field(le=9)]
+)
+
+
+IOverlapPatternProperty = TypeAliasType(
+    "IOverlapPatternProperty", Annotated[int, Field(ge=0)]
+)
+
+
+IOverlapPatternProperty1 = TypeAliasType(
+    "IOverlapPatternProperty1", Annotated[int, Field(le=9)]
+)
+
+
+MOverlapPatternProperty = TypeAliasType(
+    "MOverlapPatternProperty", Annotated[int, Field(ge=0)]
+)
+
+
+MOverlapPatternProperty1 = TypeAliasType(
+    "MOverlapPatternProperty1", Annotated[int, Field(le=9)]
+)
+
 
 ClosedOne = TypeAliasType(
     "ClosedOne", dict[Annotated[str, StringConstraints(pattern=r'^a')], int]
@@ -30,8 +60,22 @@ OpenTwo = TypeAliasType(
 )
 
 
+OverlapPatternProperty = TypeAliasType(
+    "OverlapPatternProperty", Annotated[int, Field(ge=0)]
+)
+
+
+OverlapPatternProperty1 = TypeAliasType(
+    "OverlapPatternProperty1", Annotated[int, Field(le=9)]
+)
+
+
 Overlap = TypeAliasType(
-    "Overlap", dict[Annotated[str, StringConstraints(pattern=r'^a|b$')], int]
+    "Overlap",
+    dict[
+        Annotated[str, StringConstraints(pattern=r'^a|b$')],
+        OverlapPatternProperty | OverlapPatternProperty1,
+    ],
 )
 
 
@@ -66,7 +110,10 @@ class Model:
     rClosedTwo: ClosedTwo
     pOpenTwo: dict[Annotated[str, StringConstraints(pattern=r'^a|^b')], int | str]
     rOpenTwo: OpenTwo
-    pOverlap: dict[Annotated[str, StringConstraints(pattern=r'^a|b$')], int]
+    pOverlap: dict[
+        Annotated[str, StringConstraints(pattern=r'^a|b$')],
+        POverlapPatternProperty | POverlapPatternProperty1,
+    ]
     rOverlap: Overlap
     pAnyMember: dict[Annotated[str, StringConstraints(pattern=r'^a|^b')], Any]
     rAnyMember: AnyMember
@@ -107,10 +154,23 @@ class Model:
         | None
     ) = None
     iOverlap: (
-        list[dict[Annotated[str, StringConstraints(pattern=r'^a|b$')], int]] | None
+        list[
+            dict[
+                Annotated[str, StringConstraints(pattern=r'^a|b$')],
+                IOverlapPatternProperty | IOverlapPatternProperty1,
+            ]
+        ]
+        | None
     ) = None
     mOverlap: (
-        dict[str, dict[Annotated[str, StringConstraints(pattern=r'^a|b$')], int]] | None
+        dict[
+            str,
+            dict[
+                Annotated[str, StringConstraints(pattern=r'^a|b$')],
+                MOverlapPatternProperty | MOverlapPatternProperty1,
+            ],
+        ]
+        | None
     ) = None
     iAnyMember: (
         list[dict[Annotated[str, StringConstraints(pattern=r'^a|^b')], Any]] | None
@@ -132,14 +192,20 @@ class Model:
     ) = None
     iNamesTwo: (
         list[
-            dict[Annotated[str, StringConstraints(pattern=r'^a|^b', max_length=3)], int | str]
+            dict[
+                Annotated[str, StringConstraints(pattern=r'^a|^b', max_length=3)],
+                int | str,
+            ]
         ]
         | None
     ) = None
     mNamesTwo: (
         dict[
             str,
-            dict[Annotated[str, StringConstraints(pattern=r'^a|^b', max_length=3)], int | str],
+            dict[
+                Annotated[str, StringConstraints(pattern=r'^a|^b', max_length=3)],
+                int | str,
+            ],
         ]
         | None
     ) = None

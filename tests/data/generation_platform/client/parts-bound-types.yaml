@@ -1,0 +1,99 @@
+openapi: 3.1.0
+info: {title: Multipart parts by the types the models bind, version: "1"}
+servers: [{url: "https://parts.example.com"}]
+paths:
+  /uploads:
+    post:
+      operationId: sendUpload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [mapped, stage, doc]
+              properties:
+                mapped: {type: string, format: mybin}
+                stage: {type: string, format: binary, enum: [draft, final]}
+                doc:
+                  type: [string, null]
+                  format: binary
+      responses:
+        "204": {description: Parts whose files the models decide.}
+  /merged:
+    post:
+      operationId: sendMerged
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              allOf:
+                - {type: object, properties: {f: {type: string, format: binary}}}
+                - {type: object, properties: {f: {type: string}}}
+      responses:
+        "204": {description: A property two allOf branches declare, the binary one first.}
+  /merged-swapped:
+    post:
+      operationId: sendMergedSwapped
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              allOf:
+                - {type: object, properties: {f: {type: string}}}
+                - {type: object, properties: {f: {type: string, format: binary}}}
+      responses:
+        "204": {description: A property two allOf branches declare, the binary one last.}
+  /closed:
+    post:
+      operationId: sendClosed
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              allOf:
+                - {$ref: "#/components/schemas/Closed"}
+      responses:
+        "204": {description: Parts closed by the schema their allOf references.}
+  /files:
+    post:
+      operationId: attachFiles
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                note: {type: string}
+                file: {type: string, format: binary}
+      responses:
+        "204": {description: Attached.}
+  /copies:
+    post:
+      operationId: sendCopy
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/Copy"}
+      responses:
+        "204": {description: A form equal to another schema.}
+components:
+  schemas:
+    Closed:
+      type: object
+      additionalProperties: false
+      properties:
+        name: {type: string}
+    Original:
+      type: object
+      properties:
+        f: {type: string, format: binary}
+    Copy:
+      type: object
+      properties:
+        f: {type: string, format: binary}

@@ -9,11 +9,11 @@ from pydantic import BaseModel, StrictStr, condecimal
 
 
 class CondecimalCollision(BaseModel):
-    amount: (
-        condecimal(ge=Decimal_aliased('0'), le=Decimal_aliased('100')) | None
-    ) = Decimal_aliased('12.34')
-    tax: (
-        condecimal(ge=Decimal_aliased('0'), le=Decimal_aliased('1')) | None
-    ) = Decimal_aliased('0.2')
+    amount: condecimal(ge=Decimal_aliased('0'), le=Decimal_aliased('100')) | None = (
+        Decimal_aliased('12.34')
+    )
+    tax: condecimal(ge=Decimal_aliased('0'), le=Decimal_aliased('1')) | None = (
+        Decimal_aliased('0.2')
+    )
     Decimal: StrictStr | None = 'shadow'
     Decimal_default: StrictStr | None = 'shadow-default'

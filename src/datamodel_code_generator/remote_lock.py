@@ -18,20 +18,25 @@ import os
 import tempfile
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, TypeGuard, cast
+from typing import TYPE_CHECKING, Final, TypeGuard, cast
 from urllib.parse import SplitResult, parse_qsl, urlsplit, urlunsplit
 
+from datamodel_code_generator._document_reader import as_mapping
+from datamodel_code_generator._json_output import write_streamed_json
+from datamodel_code_generator._paths import concrete, existing_ancestor
 from datamodel_code_generator._url_redaction import redact_url
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import TextIO
 
-    from datamodel_code_generator._publication import StagedFile, StagingDirectory
+    from datamodel_code_generator._publication import PublicationAnchor, StagedFile, StagingDirectory
 
 
 _LOCK_VERSION = 1
 _SHA256_PREFIX = "sha256:"
+_LOCK_STAGING_PREFIX: Final = ".datamodel-codegen-lock-"
 
 
 class RemoteLockError(Exception):
@@ -53,18 +58,19 @@ def _sha256(value: bytes) -> str:
 
 def _split_remote_url(url: str, *, persisted: bool = False) -> tuple[SplitResult, int | None]:
     """Parse and validate the HTTP(S) origin fields used by a lock entry."""
-    message = "Invalid remote lock resource URL" if persisted else f"Invalid remote lock URL: {redact_url(url)!r}"
+    message = (
+        "Invalid remote lock resource URL" if persisted else f"Invalid remote lock URL: {stable_repr(redact_url(url))}"
+    )
     try:
         parsed = urlsplit(url)
         port = parsed.port
     except ValueError as exc:
         raise RemoteLockError(message) from exc
-    scheme = parsed.scheme.lower()
-    if scheme not in {"http", "https"} or not parsed.hostname:
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
         raise RemoteLockError(message)
     if port is None:
         return parsed, None
-    match scheme, port:
+    match parsed.scheme, port:
         case ("http", 80) | ("https", 443):
             return parsed, None
         case _:
@@ -84,7 +90,7 @@ def _display_url(url: str) -> str:
     if ":" in hostname and not hostname.startswith("["):
         hostname = f"[{hostname}]"
     netloc = hostname if port is None else f"{hostname}:{port}"
-    return urlunsplit((parsed.scheme.lower(), netloc, "", "", ""))
+    return urlunsplit((parsed.scheme, netloc, "", "", ""))
 
 
 def _request_sha256(
@@ -101,7 +107,7 @@ def _request_sha256(
             "hostname": parsed.hostname,
             "path": parsed.path,
             "port": port,
-            "scheme": parsed.scheme.lower(),
+            "scheme": parsed.scheme,
         },
         "url_query_parameters": [name for name, _ in parse_qsl(parsed.query, keep_blank_values=True)],
     }
@@ -122,8 +128,7 @@ def _is_sha256(value: object) -> TypeGuard[str]:
 def _validate_persisted_display_url(url: str) -> None:
     """Reject malformed display URLs before lock verification can proceed."""
     parsed, _ = _split_remote_url(url, persisted=True)
-    has_sensitive_url_parts = any((parsed.path, parsed.query, parsed.fragment, parsed.username, parsed.password))
-    if parsed.scheme not in {"http", "https"} or has_sensitive_url_parts:
+    if any((parsed.path, parsed.query, parsed.fragment, parsed.username, parsed.password)):
         msg = "Invalid remote lock resource URL"
         raise RemoteLockError(msg)
 
@@ -149,7 +154,7 @@ def _read_entries(path: Path) -> dict[str, RemoteLockEntry]:
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         msg = f"Unable to read remote lock {path}: {exc}"
         raise RemoteLockError(msg) from exc
-    version = data.get("version") if isinstance(data, dict) else None
+    version = as_mapping(data).get("version")
     if not isinstance(data, dict) or type(version) is not int or version != _LOCK_VERSION:
         msg = f"Invalid remote lock {path}: expected version {_LOCK_VERSION}"
         raise RemoteLockError(msg)
@@ -172,15 +177,40 @@ def _remove_temporary_file(path: Path) -> None:
         path.unlink()
 
 
+def _open_lock_staging(directory: Path) -> tuple[PublicationAnchor, StagingDirectory]:
+    """Hold the directory a lock update is published into and reserve the private staging of the update there.
+
+    The anchor is released again when the staging cannot be reserved.
+    """
+    from datamodel_code_generator._publication import (  # noqa: PLC0415
+        StagingDirectory,
+        publication_anchor,
+        release_all,
+    )
+
+    anchor = publication_anchor(directory)
+    try:
+        return anchor, StagingDirectory.create(anchor, prefix=_LOCK_STAGING_PREFIX)
+    except BaseException:
+        release_all((anchor,))
+        raise
+
+
+def _staged_lock(
+    lock: RemoteReferenceLock, staging: StagingDirectory, anchor: PublicationAnchor, target: Path | None = None
+) -> StagedFile:
+    """Stage a lock update for the publication journal: published to ``target`` (the lock's path) through ``anchor``."""
+    target = lock.path if target is None else target
+    return cast("StagedFile", lock.stage(staging))._replace(target=target, resolved_target=target, anchor=anchor)
+
+
 def _nearest_existing_directory(path: Path) -> Path:
     """Return an existing ancestor without creating target lock directories."""
-    while not path.is_dir():
-        parent = path.parent
-        if parent == path:
-            msg = f"Unable to find an existing directory for remote lock: {path}"
-            raise RemoteLockError(msg)
-        path = parent
-    return path
+    return existing_ancestor(path, error=_missing_lock_directory)
+
+
+def _missing_lock_directory(root: Path) -> RemoteLockError:
+    return RemoteLockError(f"Unable to find an existing directory for remote lock: {root}")
 
 
 @dataclass(slots=True)
@@ -229,38 +259,21 @@ class RemoteReferenceLock:
                 msg = f"Remote resource returned different content in one generation: {entry.url}"
                 raise RemoteLockError(msg)
             return
-        if (locked_entry := self._entries.get(request_sha256)) is None:
-            if self.update:
-                self._entries[request_sha256] = entry
-                self._seen[request_sha256] = entry
-                return
-            msg = f"Remote resource is not recorded in lock: {entry.url}"
-            raise RemoteLockError(msg)
-        if locked_entry.body_sha256 == entry.body_sha256:
-            self._seen[request_sha256] = entry
-            return
-        if self.update:
+        if (locked_entry := self._entries.get(request_sha256)) is None or locked_entry.body_sha256 != entry.body_sha256:
+            if not self.update:
+                msg = (
+                    f"Remote resource is not recorded in lock: {entry.url}"
+                    if locked_entry is None
+                    else f"Remote resource content does not match lock: {entry.url}"
+                )
+                raise RemoteLockError(msg)
             self._entries[request_sha256] = entry
-            self._seen[request_sha256] = entry
-            return
-        msg = f"Remote resource content does not match lock: {entry.url}"
-        raise RemoteLockError(msg)
+        self._seen[request_sha256] = entry
 
     def _write_staged_content(self, file: TextIO) -> None:
         """Stream one deterministic lock document without retaining a second full payload."""
         entries = sorted(self._seen.values(), key=lambda entry: entry.request_sha256)
-        file.write('{\n  "resources": ')
-        if not entries:
-            file.write("[]")
-        else:
-            file.write("[\n")
-            for index, entry in enumerate(entries):
-                if index:
-                    file.write(",\n")
-                serialized_entry = json.dumps(asdict(entry), ensure_ascii=False, indent=2, sort_keys=True)
-                file.write("\n".join(f"    {line}" for line in serialized_entry.splitlines()))
-            file.write("\n  ]")
-        file.write(f',\n  "version": {_LOCK_VERSION}\n}}\n')
+        write_streamed_json(file.write, {"version": _LOCK_VERSION}, "resources", map(asdict, entries), "sorted")
 
     def stage(self, staging_directory: StagingDirectory | Path | None = None) -> StagedFile | Path | None:
         """Write the updated lock into a pre-existing private staging directory.
@@ -348,22 +361,14 @@ class RemoteReferenceLock:
             self.discard_stage()
             msg = "Cannot commit remote lock after legacy Path staging; call discard_stage() before committing."
             raise RemoteLockError(msg)
-        from datamodel_code_generator._publication import (  # noqa: PLC0415
-            StagingDirectory,
-            close_anchor,
-            publication_anchor,
-            publish_staged_files,
-        )
+        from datamodel_code_generator._publication import close_anchor, publish_staged_files  # noqa: PLC0415
 
         anchor = None
         staging_directory = None
         try:
-            target = self.path if self.path.is_absolute() else Path.cwd() / self.path
-            target = target.expanduser().parent.resolve(strict=False) / target.name
-            anchor = publication_anchor(target.parent)
-            staging_directory = StagingDirectory.create(anchor, prefix=".datamodel-codegen-lock-")
-            staged_source = cast("StagedFile", self.stage(staging_directory))
-            publish_staged_files((staged_source._replace(target=target, resolved_target=target, anchor=anchor),))
+            target = concrete(self.path if self.path.is_absolute() else Path.cwd() / self.path)
+            anchor, staging_directory = _open_lock_staging(target.parent)
+            publish_staged_files((_staged_lock(self, staging_directory, anchor, target),))
         except OSError as exc:
             with contextlib.suppress(OSError):
                 self.discard_stage()

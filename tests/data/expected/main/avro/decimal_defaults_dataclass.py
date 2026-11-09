@@ -26,8 +26,8 @@ class DecimalDefaults:
     zero: Decimal_aliased | None = Decimal_aliased('0E-4')
     trailing: Decimal_aliased | None = Decimal_aliased('1200E-2')
     no_scale: Decimal_aliased | None = Decimal_aliased('123E-0')
-    large: Decimal_aliased | None = (
-        Decimal_aliased('12345678901234567890123456789012345678901234567890123456789012345678901234567890E-29')
+    large: Decimal_aliased | None = Decimal_aliased(
+        '12345678901234567890123456789012345678901234567890123456789012345678901234567890E-29'
     )
     fixed: Money | None = Decimal_aliased('258E-2')
     reference: Money | None = Decimal_aliased('-258E-2')
@@ -35,7 +35,10 @@ class DecimalDefaults:
         default_factory=lambda: [Decimal_aliased('1E-2'), Decimal_aliased('-1E-2')]
     )
     map: dict[str, Money] | None = field(
-        default_factory=lambda: {'z': Decimal_aliased('0E-2'), 'a': Decimal_aliased('1200E-2')}
+        default_factory=lambda: {
+            'z': Decimal_aliased('0E-2'),
+            'a': Decimal_aliased('1200E-2'),
+        }
     )
     union: Decimal_aliased | None = Decimal_aliased('1E-2')
     string_first: str | Decimal_aliased | None = '12'
@@ -47,7 +50,9 @@ class DecimalDefaults:
         default_factory=lambda: [{'amount': Decimal_aliased('-258E-2')}]
     )
     nested: list[dict[str, Decimal_aliased]] | None = field(
-        default_factory=lambda: [{'z': Decimal_aliased('12E-3'), 'a': Decimal_aliased('-12E-3')}]
+        default_factory=lambda: [
+            {'z': Decimal_aliased('12E-3'), 'a': Decimal_aliased('-12E-3')}
+        ]
     )
     ordinary: bytes | None = b'\xff'
     plain_fixed: Raw | None = b'\x01\x02'

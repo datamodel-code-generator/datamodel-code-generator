@@ -12,38 +12,31 @@ import json
 from contextlib import suppress
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
 from datamodel_code_generator import Error
-from datamodel_code_generator._recommend._rules import (
-    Decision,
-    OptionValue,
-    decide,
-    load_rules,
-    option_arguments,
-    toml_value,
-)
+from datamodel_code_generator._message_text import for_count
+from datamodel_code_generator._option_names import CONFIG_TABLE, SENSITIVE_FIELDS, configured_value, option_flag
+from datamodel_code_generator._recommend._rules import Decision, decide, load_rules
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
     from collections.abc import Set as AbstractSet
 
     from datamodel_code_generator._recommend._metrics import NameChanges, NameMetrics
-    from datamodel_code_generator._recommend._signals import SchemaKind, Signals
+    from datamodel_code_generator._recommend._signals import Signals
     from datamodel_code_generator._recommend._trial import CandidateOutcome, TrialCandidate, TrialInput
+    from datamodel_code_generator._recommend_vocabulary import DisagreementKind, InputSource, OptionValue, RecommendMode
     from datamodel_code_generator.enums import InputFileType
+    from datamodel_code_generator.parser.schema_version import SchemaKind
     from datamodel_code_generator.preset import ResolvedPresetConfig
 
-RecommendMode: TypeAlias = Literal["quick", "full"]
-InputSource: TypeAlias = Literal["file", "url", "stdin", "directory", "input-model"]
 _ANALYSED_TYPES: dict[str, SchemaKind] = {"openapi": "openapi", "jsonschema": "jsonschema", "asyncapi": "asyncapi"}
 _DOCUMENT_NAMES: dict[SchemaKind, str] = {
     "openapi": "an OpenAPI",
     "jsonschema": "a JSON Schema",
     "asyncapi": "an AsyncAPI",
 }
-_DEFAULT_TABLE = ("tool", "datamodel-codegen")
-_SENSITIVE_FIELDS = frozenset({"http_headers", "http_query_parameters"})
 _MAX_CANDIDATES = 8
 _CandidateKey: TypeAlias = tuple[bool, frozenset[str]]
 _Pair: TypeAlias = "tuple[Option, tuple[Option, ...], tuple[Option, ...]]"
@@ -69,7 +62,7 @@ class RecommendRequest:
     preset_on_command_line: bool
     read_stdin: Callable[[], str]
     generation_config: Callable[[Mapping[str, Any]], Any]
-    table: tuple[str, ...] = _DEFAULT_TABLE
+    table: tuple[str, ...] = CONFIG_TABLE
     selector: tuple[str, ...] = ()
     mode: RecommendMode | None = None
     response_observer: Callable[[str, Any, Any, bytes], None] | None = None
@@ -122,7 +115,7 @@ class Disagreement:
     configured: Any
     recommended: OptionValue
     decision: Decision | None
-    kind: Literal["explicit", "preset", "newer-preset"]
+    kind: DisagreementKind
 
 
 @dataclass(slots=True)
@@ -142,7 +135,6 @@ class Recommendation:
     preset_configured: bool
     covers: list[Option] = field(default_factory=list)
     recommendations: list[Option] = field(default_factory=list)
-    consider: list[Option] = field(default_factory=list)
     optional: list[Option] = field(default_factory=list)
     not_recommended: list[Option] = field(default_factory=list)
     disagreements: list[Disagreement] = field(default_factory=list)
@@ -154,7 +146,7 @@ class Recommendation:
     command_selector: tuple[str, ...] = ()
     config_values: dict[str, Any] | None = None
     config_complete: bool = True
-    table: tuple[str, ...] = _DEFAULT_TABLE
+    table: tuple[str, ...] = CONFIG_TABLE
 
 
 @dataclass(slots=True)
@@ -166,10 +158,14 @@ class _Plan:
     baseline: dict[str, Any]
     delta: list[Option] = field(default_factory=list)
     covers: list[Option] = field(default_factory=list)
-    consider: list[Option] = field(default_factory=list)
     optional: list[Option] = field(default_factory=list)
     not_recommended: list[Option] = field(default_factory=list)
     blocked: list[tuple[Decision, str, OptionValue]] = field(default_factory=list)
+
+
+def _diff_against_label(config: Any) -> str:
+    """Name the --diff-against file in a message: the option and the file's name."""
+    return f"--diff-against {Path(config.diff_against).name}"
 
 
 def _read_file(path: Path, encoding: str, what: str) -> str:
@@ -186,19 +182,9 @@ def _read_input(request: RecommendRequest) -> tuple[str | None, InputSource, str
     if config.input_model:
         return None, "input-model", None
     if config.url is not None:
-        from datamodel_code_generator.http import DEFAULT_HTTP_TIMEOUT, get_body  # noqa: PLC0415
+        from datamodel_code_generator.http import _get_configured_body  # noqa: PLC0415
 
-        text = get_body(
-            config.url.geturl(),
-            config.http_headers,
-            bool(config.http_ignore_tls),
-            config.http_query_parameters,
-            DEFAULT_HTTP_TIMEOUT if config.http_timeout is None else config.http_timeout,
-            allow_private_network=bool(config.allow_private_network),
-            http_backend=config.http_backend,
-            response_observer=request.response_observer,
-            encoding=config.encoding,
-        )
+        text = _get_configured_body(config.url.geturl(), config, response_observer=request.response_observer)
         return text, "url", Path(config.url.path).stem
     if config.input is not None:
         path = Path(config.input)
@@ -242,14 +228,17 @@ def _document(text: str, kind: SchemaKind, what: str) -> dict[str, Any]:
 
 def _measure(document: dict[str, Any], kind: SchemaKind, config: Any) -> Signals:
     """Return the signals of a schema document, for the scopes the configuration generates."""
+    from datamodel_code_generator._document_reader import nesting_limit  # noqa: PLC0415
     from datamodel_code_generator._recommend._signals import measure_signals  # noqa: PLC0415
 
-    return measure_signals(
-        document,
-        kind,
-        openapi_scopes=frozenset(scope.value for scope in config.openapi_scopes or ()) or frozenset({"schemas"}),
-        include_paths=config.openapi_include_paths or (),
-    )
+    with nesting_limit():
+        return measure_signals(
+            document,
+            kind,
+            openapi_scopes=frozenset(scope.value for scope in config.openapi_scopes or ()) or frozenset({"schemas"}),
+            include_paths=config.openapi_include_paths or (),
+            skip_path_extension_keys=config.skip_path_extension_keys,
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -279,35 +268,28 @@ def _analyse(request: RecommendRequest) -> _Input:
 
 
 def _option(decision: Decision, values: Mapping[str, OptionValue]) -> Option:
-    arguments = [argument for name, value in values.items() for argument in option_arguments(name, value) or ()]
-    return Option(decision, dict(values), arguments)
+    from datamodel_code_generator.cli_options import _values_arguments  # noqa: PLC0415
+
+    return Option(decision, dict(values), _values_arguments(values.items()))
 
 
 def _avoided(decision: Decision) -> Option:
     """Return the options an avoiding rule argues against, as the arguments that would turn them on."""
-    return Option(decision, dict(decision.values), [f"--{name.replace('_', '-')}" for name in decision.values])
+    return Option(decision, dict(decision.values), [option_flag(name) for name in decision.values])
 
 
 def _resolve_preset(preset: str, request: RecommendRequest) -> ResolvedPresetConfig:
     """Resolve a preset for the fields the user left unset, the way ``--preset`` does."""
-    from datamodel_code_generator.preset import PresetContext, resolve_preset_config_updates  # noqa: PLC0415
+    from datamodel_code_generator.preset import _resolve_config_preset  # noqa: PLC0415
 
-    config = request.config
-    return resolve_preset_config_updates(
-        preset,
-        context=PresetContext(
-            input_file_type=config.input_file_type,
-            output_model_type=config.output_model_type,
-            target_python_version=config.target_python_version,
-        ),
-        use_annotated=config.use_annotated,
-        explicit_fields=set(request.explicit_fields),
-    )
+    return _resolve_config_preset(preset, request.config, request.explicit_fields)
 
 
 def _preset_values(preset: str, request: RecommendRequest) -> dict[str, Any]:
     """Return the values a preset gives the fields the user left unset."""
-    return {item.field_name: item.pyproject_value for item in _resolve_preset(preset, request).items}
+    from datamodel_code_generator.preset import _pyproject_values  # noqa: PLC0415
+
+    return _pyproject_values(_resolve_preset(preset, request).items)
 
 
 def _plan(
@@ -322,10 +304,12 @@ def _plan(
 
     An optional rule lists the values the user did not set and the preset does not give, for the user to decide.
     """
+    from datamodel_code_generator.cli_options import _option_arguments  # noqa: PLC0415
+
     config = request.config
     preset_values = {} if configured else _preset_values(preset, request)
     baseline = {
-        name: preset_values[name] if name in preset_values else toml_value(getattr(config, name))
+        name: preset_values[name] if name in preset_values else configured_value(config, name)
         for decision in decisions
         for name in decision.values
     }
@@ -340,12 +324,8 @@ def _plan(
             if changes:
                 plan.optional.append(_option(decision, changes))
             continue
-        if decision.contested:
-            if changes:
-                plan.consider.append(_option(decision, changes))
-            continue
         if blocked := [
-            (decision, name, value) for name, value in changes.items() if option_arguments(name, value) is None
+            (decision, name, value) for name, value in changes.items() if _option_arguments(name, value) is None
         ]:
             plan.blocked.extend(blocked)
         elif changes:
@@ -381,7 +361,7 @@ def _start(decisions: Sequence[Decision], request: RecommendRequest, recommendat
     ]
     chosen = next((plan for plan in plans if not plan.blocked), plans[0])
     recommendation.notes.extend(
-        f"Starting from {chosen.preset}: no option sets --{name.replace('_', '-')} to {json.dumps(value)} on "
+        f"Starting from {chosen.preset}: no option sets {option_flag(name)} to {json.dumps(value)} on "
         f"{plan.preset} [{decision.rule.id}]."
         for plan in plans[: plans.index(chosen)]
         for decision, name, value in plan.blocked
@@ -394,9 +374,9 @@ def _disagreements(decisions: Sequence[Decision], request: RecommendRequest) -> 
     return [
         Disagreement(name, configured, value, decision, "explicit")
         for decision in decisions
-        if not decision.contested and decision.rule.optional is None
+        if decision.rule.optional is None
         for name, value in decision.values.items()
-        if name in request.explicit_fields and (configured := toml_value(getattr(config, name))) != value
+        if name in request.explicit_fields and (configured := configured_value(config, name)) != value
     ]
 
 
@@ -407,8 +387,8 @@ def _command_values(request: RecommendRequest) -> tuple[dict[str, Any], list[str
     notes: list[str] = []
     values: dict[str, Any] = {}
     for name, value in request.cli_values.items():
-        if name in _SENSITIVE_FIELDS:
-            notes.append(f"--{name.replace('_', '-')} is not repeated here; add it to the command again.")
+        if name in SENSITIVE_FIELDS:
+            notes.append(f"{option_flag(name)} is not repeated here; add it to the command again.")
             continue
         if name == "url":
             notes.append("--url is repeated without its user information, query, and fragment; add them again.")
@@ -431,11 +411,11 @@ def _mode(request: RecommendRequest, analysed: _Input, previous: str | None) -> 
     else:
         estimates = [analysed.signals.counts["estimated_models"]]
         if previous is not None:
-            document = _document(previous, analysed.kind, f"--diff-against {Path(request.config.diff_against).name}")
+            document = _document(previous, analysed.kind, _diff_against_label(request.config))
             estimates.append(_measure(document, analysed.kind, request.config).counts["estimated_models"])
         if sum(estimates) <= limit:
             return "full", None
-        inputs = "the input and --diff-against are" if len(estimates) > 1 else "the schema is"
+        inputs = for_count(len(estimates), "the schema is", "the input and --diff-against are")
         reason = f"{inputs} estimated at {sum(estimates)} models, more than the {limit} compared by default"
     return "quick", (
         f"Candidates were not compared: {reason}. Run --recommend-options full to generate each candidate "
@@ -447,20 +427,9 @@ def _trial_input(request: RecommendRequest, analysed: _Input) -> TrialInput:
     """Return the input a generation of this configuration reads."""
     config = request.config
     if analysed.source == "input-model":
-        from datamodel_code_generator.input_model import Error as InputModelError  # noqa: PLC0415
-        from datamodel_code_generator.input_model import (  # noqa: PLC0415
-            _load_model_schema_with_python_type_expressions,
-        )
+        from datamodel_code_generator.input_model import _load_config_input_model  # noqa: PLC0415
 
-        try:
-            return _load_model_schema_with_python_type_expressions(
-                config.input_model,
-                config.input_file_type,
-                config.input_model_ref_strategy,
-                config.output_model_type,
-            )
-        except InputModelError as e:
-            raise Error(str(e)) from e
+        return _load_config_input_model(config)
     if analysed.source == "stdin":
         return cast("str", analysed.text)
     return config.url if analysed.source == "url" else config.input
@@ -480,24 +449,23 @@ def _vocabulary_document(analysed: _Input, trial_input: TrialInput) -> Mapping[s
     return None
 
 
+def _merged_values(options: Iterable[Option]) -> dict[str, OptionValue]:
+    """Return the config values options set, in order: a later option's value of a field replaces an earlier one."""
+    return {name: value for option in options for name, value in option.values.items()}
+
+
 def _applied(options: Sequence[Option]) -> dict[str, Any]:
     """Return the config values of options, validated into the types generation takes."""
     from datamodel_code_generator.base_config import BaseGenerateConfig  # noqa: PLC0415
 
-    values = {name: value for option in options for name, value in option.values.items()}
+    values = _merged_values(options)
     validated = BaseGenerateConfig.model_validate(values)
     return {name: getattr(validated, name) for name in values}
 
 
 def _preset_updates(preset: str, request: RecommendRequest) -> dict[str, Any]:
     """Return the config updates ``--preset`` makes, including the target and forced field constraints."""
-    resolved = _resolve_preset(preset, request)
-    updates: dict[str, Any] = {item.field_name: item.applied_value for item in resolved.items}
-    if resolved.target_python_version is not None:
-        updates["target_python_version"] = resolved.target_python_version
-    if resolved.force_field_constraints:
-        updates["field_constraints"] = True
-    return updates
+    return _resolve_preset(preset, request).updates()
 
 
 @dataclass(frozen=True, slots=True)
@@ -518,14 +486,17 @@ def _key(options: Sequence[Option], *, on_preset: bool = True) -> _CandidateKey:
     return on_preset, frozenset(option.decision.rule.id for option in options)
 
 
-def _candidates(
-    delta: Sequence[Option], consider: Sequence[Option], *, configured: bool
-) -> tuple[list[_Candidate], int]:
+def _label(base: str, option: Option, *, removed: bool) -> str:
+    """Name a candidate by the configuration it starts from and the decision of the option it removes or adds."""
+    return f"{base} {'-' if removed else '+'} {option.decision.rule.decision}"
+
+
+def _candidates(delta: Sequence[Option], *, configured: bool) -> tuple[list[_Candidate], int]:
     """Return the candidates to compare and how many the limit of eight left out.
 
-    The current configuration, the preset, the recommendation, the recommendation with each option it may also take,
-    and the recommendation without each option it adds; with a configured preset, the current configuration is the
-    preset. A configuration is compared once, under its first label, and the last candidates are left out first.
+    The current configuration, the preset, the recommendation, and the recommendation without each option it adds;
+    with a configured preset, the current configuration is the preset. A configuration is compared once, under its
+    first label, and the last candidates are left out first.
     """
     base = "current" if configured else "preset"
     recommended = "recommended" if delta else base
@@ -534,12 +505,8 @@ def _candidates(
         _Candidate(base, on_preset=True, options=()),
         _Candidate(recommended, on_preset=True, options=tuple(delta)),
         *(
-            _Candidate(f"{recommended} + {option.decision.rule.decision}", on_preset=True, options=(*delta, option))
-            for option in consider
-        ),
-        *(
             _Candidate(
-                f"recommended - {option.decision.rule.decision}",
+                _label("recommended", option, removed=True),
                 on_preset=True,
                 options=tuple(other for other in delta if other is not option),
             )
@@ -571,7 +538,7 @@ def _remeasure(selected: _Candidate, pairs: Sequence[_Pair], known: AbstractSet[
     missing: dict[_CandidateKey, _Candidate] = {}
     for option, before, after in pairs:
         kept = option.decision.rule.id in chosen_rules
-        label = f"{selected.label} {'-' if kept else '+'} {option.decision.rule.decision}"
+        label = _label(selected.label, option, removed=kept)
         if (key := _key(options := before if kept else after)) not in known:
             missing.setdefault(key, _Candidate(label, on_preset=True, options=options, selectable=False))
     return list(missing.values())
@@ -626,7 +593,7 @@ def _trial_candidates(
                 **_applied(candidate.options),
             }),
             recommendation.preset if candidate.on_preset or configured else None,
-            {name: value for option in candidate.options for name, value in option.values.items()},
+            _merged_values(candidate.options),
             selectable=candidate.selectable,
         )
         for candidate in candidates
@@ -673,7 +640,7 @@ def _compare(request: RecommendRequest, recommendation: Recommendation, analysed
 
     run = _runner(request, analysed)
     delta = recommendation.recommendations
-    candidates, dropped = _candidates(delta, recommendation.consider, configured=request.config.preset is not None)
+    candidates, dropped = _candidates(delta, configured=request.config.preset is not None)
     known = _known_type(analysed)
     outcomes, detected = run(_trial_candidates(request, recommendation, candidates, known))
     by_key = {candidate.key: outcome for candidate, outcome in zip(candidates, outcomes, strict=True)}
@@ -682,7 +649,7 @@ def _compare(request: RecommendRequest, recommendation: Recommendation, analysed
     )
     center = next((candidate for candidate in candidates if by_key[candidate.key] is selected), None)
     chosen = delta if center is None else center.options
-    pairs = _pairs(chosen, [*delta, *recommendation.consider])
+    pairs = _pairs(chosen, delta)
     extra = [] if center is None or center.key == _key(delta) else _remeasure(center, pairs, by_key.keys())
     if extra:
         more, _ = run(_trial_candidates(request, recommendation, extra, detected))
@@ -709,11 +676,9 @@ def _select(
     from datamodel_code_generator._recommend._metrics import location_changes  # noqa: PLC0415
     from datamodel_code_generator._recommend._trial import rank  # noqa: PLC0415
 
-    delta_rules = _key(recommendation.recommendations)[1]
     measured = [_measured(option, by_key, before, after) for option, before, after in pairs]
     recommendation.recommendations = [option for option in measured if option.decision.rule.id in chosen]
-    recommendation.left_out = [option for option in measured if option.decision.rule.id in delta_rules - chosen]
-    recommendation.consider = [option for option in measured if option.decision.rule.id not in delta_rules | chosen]
+    recommendation.left_out = [option for option in measured if option.decision.rule.id not in chosen]
     current = next(outcome for outcome in trial.outcomes if outcome.candidate.label == "current")
     selected = trial.selected
     migration = (
@@ -730,7 +695,7 @@ def _trial_notes(request: RecommendRequest, recommendation: Recommendation, dete
     if trial.dropped:
         recommendation.notes.append(
             f"The trial compares at most {_MAX_CANDIDATES} candidates, so {trial.dropped} "
-            f"{'was' if trial.dropped == 1 else 'were'} left out; the options they would measure show no trial result."
+            f"{for_count(trial.dropped, 'was', 'were')} left out; the options they would measure show no trial result."
         )
     if trial.selected is None:
         recommendation.notes.append(
@@ -749,8 +714,7 @@ def _trial_notes(request: RecommendRequest, recommendation: Recommendation, dete
 def _set_command(request: RecommendRequest, recommendation: Recommendation, command_values: dict[str, Any]) -> None:
     """Set the command and the pyproject.toml keys that carry the recommendation."""
     additions: dict[str, Any] = {} if request.config.preset is not None else {"preset": recommendation.preset}
-    for option in recommendation.recommendations:
-        additions.update(option.values)
+    additions.update(_merged_values(recommendation.recommendations))
     if request.has_project_config and not request.preset_on_command_line:
         recommendation.command_values = command_values
         recommendation.config_values = additions
@@ -784,7 +748,7 @@ def recommend_options(request: RecommendRequest) -> Recommendation:
     previous = (
         None
         if config.diff_against is None
-        else _read_file(Path(config.diff_against), config.encoding, f"--diff-against {Path(config.diff_against).name}")
+        else _read_file(Path(config.diff_against), config.encoding, _diff_against_label(config))
     )
     mode, mode_note = _mode(request, analysed, previous)
     recommendation = Recommendation(
@@ -808,7 +772,6 @@ def recommend_options(request: RecommendRequest) -> Recommendation:
     recommendation.covers = plan.covers
     recommendation.recommendations = plan.delta
     recommendation.not_recommended = plan.not_recommended
-    recommendation.consider = plan.consider
     recommendation.optional = plan.optional
     recommendation.disagreements = [
         *recommendation.disagreements,

@@ -1,0 +1,5 @@
+Short:
+  $ref: "#/Text"
+  maxLength: 3
+Text:
+  type: string

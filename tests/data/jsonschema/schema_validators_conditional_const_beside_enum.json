@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "kind": {"type": "string"},
+    "x": {"type": "string"},
+    "never": {"$ref": "#/$defs/Never"},
+    "count": {"$ref": "#/$defs/Count"}
+  },
+  "if": {"properties": {"kind": {"const": "a", "enum": ["a", "b"]}}, "required": ["kind"]},
+  "then": {"required": ["x"]},
+  "$defs": {
+    "Never": {
+      "type": "object",
+      "properties": {"kind": {"type": "string"}, "y": {"type": "string"}},
+      "if": {"properties": {"kind": {"const": "a", "enum": ["b"]}}, "required": ["kind"]},
+      "then": {"required": ["y"]}
+    },
+    "Count": {
+      "type": "object",
+      "properties": {"n": {"type": "integer"}, "z": {"type": "string"}},
+      "if": {"properties": {"n": {"enum": [1.0, 2], "const": 1}}, "required": ["n"]},
+      "then": {"required": ["z"]}
+    }
+  }
+}

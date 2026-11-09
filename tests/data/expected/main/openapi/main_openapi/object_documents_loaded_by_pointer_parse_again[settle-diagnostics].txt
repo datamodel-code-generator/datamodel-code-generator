@@ -1,0 +1,2 @@
+DanglingRefWarning: Unresolved local $ref '#/components/schemas/Absent' in dangling_ref_api.yaml: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
+UserWarning: --model-name-map: 1 key matched no generated model: 'Nope'

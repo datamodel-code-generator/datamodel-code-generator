@@ -27,5 +27,7 @@ class DefaultControls(Struct):
     )
     empty_list: list[Item] | UnsetType = field(default_factory=list)
     numbers: Numbers | UnsetType = field(default_factory=lambda: [1, 2])
-    mapping: ItemMap | UnsetType = field(default_factory=lambda: {'item': {'id': 3}})
+    mapping: ItemMap | UnsetType = field(
+        default_factory=lambda: convert({'item': {'id': 3}}, type=ItemMap)
+    )
     empty_mapping: ItemMap | UnsetType = field(default_factory=dict)

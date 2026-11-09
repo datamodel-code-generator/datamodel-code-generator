@@ -7,6 +7,7 @@ helper's plan loads them, since they need the operation runtime every generated 
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from functools import partial
 from typing import TYPE_CHECKING, Any, Generic, TypeAlias
 
 from typing_extensions import TypeVar
@@ -15,16 +16,36 @@ from ..client.operations import BodyMedia, ParameterSpec
 from ..client.paths import dot_segment, path_segments
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.media import json_bytes as _json_bytes
+from ..model_codecs.media import media_kind
+from ..model_codecs.parameters import parameter_key
 from ..model_codecs.unset import UNSET
 from .records import BodyTarget, ParameterTarget, QuerystringTarget
-from .values import Patch, written
+from .values import Patch, pointer_tokens, written
 
 if TYPE_CHECKING:
+    from abc import abstractmethod
     from collections.abc import Callable, Iterable, Mapping, Sequence
+    from typing import Protocol
 
     from ..client.operations import OperationPlan
     from ..model_codecs.media import JSONValue
+    from ..model_codecs.parameters import ParameterPlan
+    from .errors import Refuse
     from .records import RequestTarget, Selector
+
+    class DottedPaths(Protocol):
+        """An operation a helper writes read values into, with the path segments they are written to."""
+
+        @property
+        @abstractmethod
+        def call(self) -> OperationPlan[Any]:
+            """Return the operation whose parameters encode the values."""
+
+        @property
+        @abstractmethod
+        def dotted(self) -> ReadPaths:
+            """Return the path segments a read value is written to, as `read_paths` gives them."""
+
 
 __all__ = (
     "PatchedMedia",
@@ -33,18 +54,25 @@ __all__ = (
     "ReadParameter",
     "ReadPaths",
     "Targeted",
+    "Writer",
     "Writes",
+    "caller_texts",
+    "dotted_path",
     "dotted_read",
     "dotted_write",
+    "header_written",
     "position",
     "query_written",
     "read_paths",
+    "refuse_dotted",
     "targeted",
     "targeted_writes",
+    "written_fields",
 )
 
 T = TypeVar("T")
 Writes: TypeAlias = tuple[tuple[int | None, str | None], ...]
+Writer: TypeAlias = "tuple[OperationPlan[Any], Writes]"
 PathPart: TypeAlias = "tuple[str, int | None, Selector | None, int]"
 ReadPaths: TypeAlias = "tuple[tuple[str, tuple[PathPart, ...]], ...]"
 
@@ -105,32 +133,23 @@ class ReadMedia(BodyMedia):
 
 def position(call: OperationPlan[T], location: str, name: str) -> int:
     """Return the argument position of a declared parameter, matching a header's name without regard to case."""
-
-    def key(value: str) -> str:
-        return value.lower() if location == "header" else value
-
-    wanted = key(name)
+    wanted = parameter_key(location, name)
     return next(
         index
         for index, spec in enumerate(call.parameters)
-        if spec.plan.location == location and key(spec.plan.name) == wanted
+        if parameter_key(spec.plan.location, spec.plan.name) == wanted
     )
 
 
-def targeted(
-    call: OperationPlan[T], targets: Iterable[RequestTarget]
-) -> tuple[OperationPlan[T], Writes, frozenset[str], frozenset[str]]:
+def targeted(call: OperationPlan[T], targets: Iterable[RequestTarget]) -> tuple[OperationPlan[T], Writes]:
     """Return an operation that takes the values written to the targets as wire values, and where each one goes.
 
     A write is a parameter's argument position without a pointer, a querystring's position with a pointer into its
-    value, or no position with a pointer into the JSON body, every media of which is JSON. The header and query names
-    written follow, which a call's options must not patch. The values written skip their codecs, since the server
-    chose them.
+    value, or no position with a pointer into the JSON body, every media of which is JSON. The values written skip their
+    codecs, since the server chose them.
     """
     parameters = list(call.parameters)
     writes: list[tuple[int | None, str | None]] = []
-    headers: set[str] = set()
-    queries: set[str] = set()
     patched = False
     for target in targets:
         if isinstance(target, BodyTarget):
@@ -141,10 +160,6 @@ def targeted(
             index, pointer = position(call, "querystring", target.name), target.pointer
         else:
             index, pointer = position(call, target.location, target.name), None
-            if (location := target.location) == "header":
-                headers.add(target.name.lower())
-            elif location == "query":
-                queries.add(target.name)
         spec = parameters[index]
         parameters[index] = (
             replace(spec, codec=None)
@@ -161,32 +176,70 @@ def targeted(
                 PatchedMedia(media_type=media.media_type, kind=media.kind, codec=media.codec) for media in body.media
             ),
         )
-    called = replace(call, parameters=tuple(parameters), body=body)
-    return called, tuple(writes), frozenset(headers), frozenset(queries)
+    return replace(call, parameters=tuple(parameters), body=body), tuple(writes)
 
 
-def query_written(call: OperationPlan[T], writes: Writes, name: str) -> bool:
-    """Return whether a query patch can replace a field written by a helper, including object properties.
+def header_written(writers: Iterable[Writer], name: str) -> bool:
+    """Return whether a header patch replaces a header parameter one of the writers writes, its name in any case.
 
-    Exploded form objects own their declared properties and any additional name their parameter accepts. Deep
-    objects own those properties within the parameter's brackets. Decoder reservations do not limit wire writes.
+    A writer is an operation and its writes; a query, path or cookie parameter, a querystring and the body write no
+    header.
     """
-    for position, _ in writes:
-        if position is None or (plan := call.parameters[position].plan).location != "query":
-            continue
-        if plan.shape != "object" or not plan.explode or plan.style not in {"form", "deepObject"}:
-            if name == plan.name:
-                return True
-            continue
-        member = name
-        if plan.style == "deepObject":
+    key = parameter_key("header", name)
+    return any(
+        parameter_key((plan := call.parameters[position].plan).location, plan.name) == key
+        for call, writes in writers
+        for position, _ in writes
+        if position is not None
+    )
+
+
+def written_fields(writers: Sequence[Writer]) -> tuple[Callable[[str], bool], Callable[[str], bool]]:
+    """Return whether a header name, and whether a query name, names a field one of the writers writes.
+
+    A helper's call options must not patch such a field, which `refuse_patched` of the protocol core refuses.
+    """
+    return partial(header_written, writers), partial(query_written, writers)
+
+
+def query_written(writers: Iterable[Writer], name: str) -> bool:
+    """Return whether a query patch replaces a field one of the writers writes, including object properties.
+
+    A writer is an operation and its writes. A query parameter writes its name, but an exploded form object owns its
+    declared properties and any additional name its parameter accepts instead, and a deep object those properties
+    within the parameter's brackets. A form querystring writes the property a pointer names, or, written whole, those
+    it owns as an exploded form object does; a header, path or cookie parameter, another querystring and the body
+    write no query name. Decoder reservations do not limit wire writes.
+    """
+    return any(
+        _field_written(call.parameters[position].plan, pointer, name)
+        for call, writes in writers
+        for position, pointer in writes
+        if position is not None
+    )
+
+
+def _field_written(plan: ParameterPlan, pointer: str | None, name: str) -> bool:
+    """Return whether one write of a parameter sends a query field of the name."""
+    written = False
+    match plan.location:
+        case "query" if plan.shape == "object" and plan.explode and plan.style == "deepObject":
             prefix = f"{plan.name}["
-            if not name.startswith(prefix) or not name.endswith("]"):
-                continue
-            member = name[len(prefix) : -1]
-        if any(item.name == member for item in plan.fields) or plan.additional is not None:
-            return True
-    return False
+            written = name.startswith(prefix) and name.endswith("]") and _owned(plan, name[len(prefix) : -1])
+        case "query" if plan.shape == "object" and plan.explode and plan.style == "form":
+            written = _owned(plan, name)
+        case "query":
+            written = name == plan.name
+        case "querystring" if media_kind(plan.content_media_type or "") == "form":
+            written = pointer_tokens(pointer)[0] == name if pointer else _owned(plan, name)
+        case _:
+            pass
+    return written
+
+
+def _owned(plan: ParameterPlan, member: str) -> bool:
+    """Return whether a form object writes a property of the name: a declared one, or any while it takes others."""
+    return plan.additional is not None or any(item.name == member for item in plan.fields)
 
 
 def read_paths(call: OperationPlan[T], sources: Sequence[tuple[RequestTarget, Selector | None]]) -> ReadPaths:
@@ -233,21 +286,55 @@ def dotted_read(
     return next((read for name, read in reads if texts[name]), reads[0][1])
 
 
+def caller_texts(
+    parameters: Sequence[ParameterSpec], dotted: ReadPaths, arguments: tuple[object, ...]
+) -> dict[str, str]:
+    """Return the texts of the caller's path arguments in a segment a read value is written to, by parameter name.
+
+    Each argument is encoded again by its parameter's codec, without validation.
+    """
+    return {
+        name: parameters[position].path_text(parameters[position].dump(arguments[position]))
+        for _, parts in dotted
+        for name, index, _, position in parts
+        if index is None
+    }
+
+
+def dotted_path(
+    parameters: Sequence[ParameterSpec],
+    dotted: ReadPaths,
+    written: tuple[JSONValue, ...],
+    callers: Callable[[], Mapping[str, str]] = dict,
+) -> Selector | None:
+    """Return the selector of the first read value that makes a path segment a dot segment once encoded, or None."""
+    return next(
+        (
+            read
+            for segment, parts in dotted
+            if (read := dotted_read(parameters, segment, parts, written, callers)) is not None
+        ),
+        None,
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class Targeted(Generic[T]):
     """An operation that sends only the values a helper writes into its targets, and where each value goes.
 
     A write is a parameter's argument position without a pointer, a querystring's position with a pointer into its
-    value, or no position with a pointer into the JSON body. `headers` and `queries` name the header and query
-    parameters it writes, which a call's options must not patch, and `dotted` the path segments a read value is
-    written to, which must not encode to a dot segment.
+    value, or no position with a pointer into the JSON body. `dotted` names the path segments a read value is written
+    to, which must not encode to a dot segment.
     """
 
     call: OperationPlan[T]
     writes: Writes
-    headers: frozenset[str]
-    queries: frozenset[str]
     dotted: ReadPaths
+
+    @property
+    def writer(self) -> Writer:
+        """Return the operation and its writes, whose header and query fields a call's options must not patch."""
+        return self.call, self.writes
 
     def request(self, values: tuple[JSONValue, ...]) -> tuple[tuple[object, ...], object]:
         """Return the arguments and body of a request writing each value in order, every other argument omitted.
@@ -256,6 +343,10 @@ class Targeted(Generic[T]):
         empty object.
         """
         return written(self.writes, (UNSET,) * len(self.call.parameters), UNSET, values)
+
+    def sent(self, values: tuple[JSONValue, ...]) -> Callable[[], tuple[tuple[object, ...], object, None]]:
+        """Return the request a child call sends writing the values, whatever their holder holds later."""
+        return lambda: (*self.request(values), None)
 
 
 def targeted_writes(
@@ -272,14 +363,27 @@ def targeted_writes(
     return Targeted(*targeted(call, (target for target, _ in sources)), read_paths(call, sources))
 
 
-def dotted_write(targeted: Targeted[Any], written: tuple[JSONValue, ...]) -> Selector | None:
-    """Return the selector of a read value that makes a path segment a dot segment once encoded, or None."""
-    parameters = targeted.call.parameters
-    return next(
-        (
-            read
-            for segment, parts in targeted.dotted
-            if (read := dotted_read(parameters, segment, parts, written, dict)) is not None
-        ),
-        None,
-    )
+def dotted_write(
+    targeted: DottedPaths, written: tuple[JSONValue, ...], callers: Callable[[], Mapping[str, str]] = dict
+) -> Selector | None:
+    """Return the selector of a read value that makes a path segment a dot segment once encoded, or None.
+
+    `targeted` is a targeted operation or a helper's plan; the caller's own path arguments keep the texts `callers`
+    gives.
+    """
+    return dotted_path(targeted.call.parameters, targeted.dotted, written, callers)
+
+
+def refuse_dotted(
+    targeted: DottedPaths,
+    written: tuple[JSONValue, ...],
+    refuse: Refuse,
+    callers: Callable[[], Mapping[str, str]] = dict,
+) -> None:
+    """Refuse a read value that makes a path segment a dot segment once encoded, as a value a server gave.
+
+    `targeted` is a targeted operation or a helper's plan; the caller's own path arguments keep the texts `callers`
+    gives.
+    """
+    if (read := dotted_write(targeted, written, callers)) is not None:
+        raise refuse(read, "value")

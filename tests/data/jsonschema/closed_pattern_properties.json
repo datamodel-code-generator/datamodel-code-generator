@@ -1,0 +1,1 @@
+{"title": "Model", "type": "object", "properties": {"a": {"type": "string"}}, "patternProperties": {"^x-": {"type": "string"}}, "additionalProperties": false}

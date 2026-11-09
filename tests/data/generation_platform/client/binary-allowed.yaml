@@ -24,6 +24,8 @@ paths:
   /uploads:
     post:
       operationId: upload
+      parameters:
+        - {name: pageSize, in: query, schema: {$ref: '#pageSize'}}
       requestBody:
         required: true
         content:
@@ -38,6 +40,7 @@ paths:
                   items: {type: string, format: binary}
                 icon: {type: string, contentMediaType: image/png}
                 record: {$ref: '#/components/schemas/Record'}
+                scan: {$ref: '#scan'}
       responses:
         '204':
           description: Stored.
@@ -94,3 +97,5 @@ components:
         secret: {type: string, format: password}
         stage: {$ref: '#/components/schemas/Mark'}
     Mark: {type: string, format: binary, enum: [draft, final]}
+    Scan: {$anchor: scan, type: string, format: binary}
+    PageSize: {$anchor: pageSize, type: integer, default: 20, title: Page size}

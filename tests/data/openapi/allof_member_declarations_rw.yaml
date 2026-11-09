@@ -1,0 +1,44 @@
+openapi: "3.0.3"
+info:
+  title: Declarations of one property in several allOf members
+  version: "1.0"
+paths:
+  /children:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Child"
+      responses:
+        "200":
+          description: The child as stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Child"
+components:
+  schemas:
+    Child:
+      allOf:
+        - $ref: "#/components/schemas/Members"
+        - properties:
+            extra:
+              type: string
+    Members:
+      allOf:
+        - $ref: "#/components/schemas/Base"
+        - properties:
+            mid:
+              type: string
+              minLength: 1
+        - properties:
+            mid:
+              type: string
+              maxLength: 3
+    Base:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true

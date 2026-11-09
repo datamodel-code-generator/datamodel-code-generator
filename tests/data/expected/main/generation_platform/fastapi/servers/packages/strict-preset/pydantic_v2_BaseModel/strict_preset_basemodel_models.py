@@ -18,6 +18,22 @@ from pydantic import (
 )
 
 
+class BySize(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    size: StrictInt
+    note: StrictStr | None = None
+
+
+class ByName(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    name: StrictStr
+    note: StrictStr | None = None
+
+
 class Size(RootModel[StrictInt]):
     root: Annotated[StrictInt, Field(ge=1)] = 10
 
@@ -88,3 +104,6 @@ class UploadsPostRequest(BaseModel):
     flag: StrictBool | None = None
     note: StrictStr | None = None
     counts: list[StrictInt] | None = None
+
+
+type SearchGetQueryQParameter = BySize | ByName

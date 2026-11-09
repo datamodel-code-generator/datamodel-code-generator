@@ -7,11 +7,11 @@ from typing import TYPE_CHECKING, Generic, NoReturn, cast
 
 from typing_extensions import TypeVar
 
-from ..model_codecs.media import media_kind
+from ..model_codecs.media import media_kind, status_key
 from ..model_codecs.parameter_reads import ParameterFragment, RawParameter, decode_parameter
 from ..model_codecs.unset import UNSET
 from .errors import response_failure
-from .operations import PARSE_ERRORS, status_key
+from .operations import PARSE_ERRORS
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -30,8 +30,7 @@ def _header_failure(
     info: ResponseInfo, operation_id: str | None, name: str, cause: BaseException | None = None
 ) -> DecodeError:
     """Return the failure of a declared response header that is missing, repeated, or invalid, located at its name."""
-    error = response_failure(info, "invalid_header", cause=cause)
-    error.operation_id = operation_id
+    error = response_failure(info, "invalid_header", cause=cause, operation_id=operation_id)
     error.location = ("header", name)
     return error
 

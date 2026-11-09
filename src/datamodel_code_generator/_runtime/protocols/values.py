@@ -11,9 +11,9 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Final, cast
+from typing import TYPE_CHECKING, Final, Literal, cast
 
-from typing_extensions import Sentinel
+from typing_extensions import Sentinel, TypeVar
 
 from ..model_codecs.unset import UNSET
 from .records import BodySelector, HeaderSelector
@@ -22,22 +22,43 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from ..client.responses import ResponseInfo
+    from ..client.timing import Clock
     from ..model_codecs.media import JSONValue
+    from .errors import Refuse
     from .records import Selector
 
-__all__ = ("MISSING", "Patch", "RepeatedValueError", "resolve", "selected", "server_expiry", "written")
+__all__ = (
+    "MISSING",
+    "Patch",
+    "RepeatedValueError",
+    "absence",
+    "accessed",
+    "pointer_tokens",
+    "read_expiry",
+    "read_selector",
+    "required",
+    "resolve",
+    "selected",
+    "server_expiry",
+    "unfit",
+    "written",
+)
 
 _RFC3339: Final = re.compile(
     r"([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:)([0-9]{2})(?:\.([0-9]+))?(Z|[+-][0-9]{2}:[0-9]{2})"
 )
 _LEAP_SECOND: Final = "60"
 
+T = TypeVar("T")
+D = TypeVar("D")
+
 
 MISSING = Sentinel("MISSING")
 """The absence of the member a selector names, which is neither JSON null nor an empty string."""
 
 
-def _tokens(pointer: str) -> list[str]:
+def pointer_tokens(pointer: str) -> list[str]:
+    """Return the reference tokens of an RFC 6901 pointer, each unescaped."""
     return [token.replace("~1", "/").replace("~0", "~") for token in pointer.split("/")[1:]]
 
 
@@ -47,7 +68,7 @@ def resolve(value: JSONValue, pointer: str) -> JSONValue | MISSING:
     Generated helpers point only through object members, so an absent member and a step into anything but an object,
     null included, both name nothing.
     """
-    for key in _tokens(pointer):
+    for key in pointer_tokens(pointer):
         if not isinstance(value, Mapping) or key not in value:
             return MISSING
         value = value[key]
@@ -75,6 +96,42 @@ def selected(read: Selector, wire: JSONValue, info: ResponseInfo) -> JSONValue |
     return info.status_code
 
 
+def absence(value: JSONValue | MISSING) -> Literal["missing", "null"]:
+    """Return the rule an absent value breaks, `missing`, or else the one a null value breaks."""
+    return "missing" if value is MISSING else "null"
+
+
+def unfit(value: JSONValue | MISSING) -> Literal["missing", "null", "type"]:
+    """Return the rule a value of another JSON type than the one read breaks, absent and null values their own."""
+    return "type" if value is not MISSING and value is not None else absence(value)
+
+
+def read_selector(read: Selector, wire: JSONValue, info: ResponseInfo, refuse: Refuse) -> JSONValue | MISSING:
+    """Return what a selector reads from a response, or MISSING, refusing a header read once that it repeats."""
+    try:
+        return selected(read, wire, info)
+    except RepeatedValueError:
+        raise refuse(read, "malformed") from None
+
+
+def required(read: Selector, wire: JSONValue, info: ResponseInfo, refuse: Refuse) -> JSONValue:
+    """Return what a selector reads from a response, refusing a missing value and a header read once that repeats."""
+    if (value := read_selector(read, wire, info, refuse)) is MISSING:
+        raise refuse(read, "missing")
+    return value
+
+
+def accessed(read: Callable[[D], T | None], selector: BodySelector, data: D, wire: JSONValue, refuse: Refuse) -> T:
+    """Return what an accessor reads from a decoded response, a page's items or an operation's result.
+
+    The member is checked in the wire value before the accessor reads the decoded one: a missing member is refused,
+    and so is a null one or one the accessor reads as None.
+    """
+    if (found := resolve(wire, selector.pointer)) is MISSING or found is None or (value := read(data)) is None:
+        raise refuse(selector, absence(found))
+    return value
+
+
 def _patched(value: JSONValue, tokens: list[str], new: JSONValue) -> JSONValue:
     """Return a copy of a JSON value with the member the tokens name set, the new value itself for none.
 
@@ -99,7 +156,7 @@ class Patch:
         """Return the encoded value, an empty object when omitted, with every write applied."""
         wire: JSONValue = {} if self.value is UNSET else encode(self.value)
         for pointer, new in self.writes:
-            wire = _patched(wire, _tokens(pointer), new)
+            wire = _patched(wire, pointer_tokens(pointer), new)
         return wire
 
 
@@ -123,6 +180,23 @@ def server_expiry(value: str, now: float) -> datetime | None:
         return http_date(value, now)
     except (ValueError, OverflowError):
         return None
+
+
+def read_expiry(  # noqa: PLR0913
+    read: Selector, wire: JSONValue, info: ResponseInfo, clock: Clock, refuse: Refuse, *, typed: bool = True
+) -> datetime:
+    """Return the server's expiry a response gives at a selector, which `server_expiry` must read at receipt time.
+
+    A missing value and a header read once that repeats are refused, and so is a value that is no string: as null or
+    of another type, or as an unreadable value where it is not `typed`, as a stream's header, which only a selector of
+    every occurrence would read as no string.
+    """
+    value = required(read, wire, info, refuse)
+    if not isinstance(value, str):
+        raise refuse(read, ("null" if value is None else "type") if typed else "value")
+    if (expires_at := server_expiry(value, clock.time())) is None:
+        raise refuse(read, "value")
+    return expires_at
 
 
 def written(

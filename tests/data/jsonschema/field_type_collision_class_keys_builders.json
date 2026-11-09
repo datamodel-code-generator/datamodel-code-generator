@@ -1,0 +1,23 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "Pet": {"$ref": "#/$defs/Pet"},
+    "Dog": {"$ref": "#/$defs/Dog"},
+    "Name": {"$ref": "#/$defs/Name"},
+    "Pets": {"$ref": "#/$defs/Pets"},
+    "Kind": {"$ref": "#/$defs/Kind"}
+  },
+  "$defs": {
+    "Pet": {"type": "object", "properties": {"name": {"type": "string"}}},
+    "Dog": {
+      "allOf": [
+        {"$ref": "#/$defs/Pet"},
+        {"type": "object", "properties": {"name": {"type": "string", "maxLength": 3}}, "required": ["name", "tag"]}
+      ]
+    },
+    "Name": {"type": "string", "pattern": "^a"},
+    "Pets": {"type": "array", "items": {"$ref": "#/$defs/Pet"}},
+    "Kind": {"type": "string", "enum": ["a", "b"]}
+  }
+}

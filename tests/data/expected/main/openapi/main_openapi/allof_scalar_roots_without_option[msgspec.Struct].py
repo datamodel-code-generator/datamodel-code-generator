@@ -50,7 +50,7 @@ class Mismatch(Struct):
     pass
 
 
-Nickname1: TypeAlias = str
+Nickname1: TypeAlias = Annotated[str, Meta(max_length=8)]
 
 
 class Named(Struct):

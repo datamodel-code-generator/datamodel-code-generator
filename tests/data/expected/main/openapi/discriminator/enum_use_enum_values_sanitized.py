@@ -21,11 +21,11 @@ class RequestBase(BaseModel):
 
 class RequestV1(RequestBase):
     request_id: str
-    version: Literal[RequestVersionEnum.v1_beta]
+    version: Literal[RequestVersionEnum.v1_beta, 'v1-beta']
 
 
 class RequestV2(RequestBase):
-    version: Literal[RequestVersionEnum.v2]
+    version: Literal[RequestVersionEnum.v2, 'v2']
 
 
 class Request(RootModel[RequestV1 | RequestV2]):

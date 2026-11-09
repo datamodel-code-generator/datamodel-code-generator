@@ -2,16 +2,32 @@
 
 from __future__ import annotations
 
-import keyword
+import re
 from dataclasses import dataclass
+from functools import partial
+from itertools import chain
 from math import isfinite, isnan
-from typing import TYPE_CHECKING, Any, Protocol, cast
+from pprint import PrettyPrinter
+from typing import IO, TYPE_CHECKING, Any, ClassVar, Final, Protocol, cast
 
-from typing_extensions import Self, Sentinel
+from typing_extensions import Self, Sentinel, override
+
+from datamodel_code_generator._copy_on_change import unchanged
+from datamodel_code_generator._python_syntax import (
+    _normalize_string,
+    call_text,
+    dict_display,
+    list_display,
+    set_display,
+    tuple_display,
+)
+from datamodel_code_generator._target_unicode import NEWEST_TARGET, is_dotted_python_name, is_python_name, string_repr
+from datamodel_code_generator.imports import IMPORT_DATETIME_MODULE, _import_key
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
 
+    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator.imports import Import
 
 
@@ -61,11 +77,11 @@ class PythonRuntimeExpression:
     @classmethod
     def from_import_call(cls, import_: Import, *arguments: str, value: str | None = None) -> Self:
         """Create a call expression that retains its constructor import identity."""
-        return cls(import_, "", f"({', '.join(arguments)})", value)
+        return cls(import_, "", call_text("", arguments), value)
 
     def with_import_aliases(self, aliases: Mapping[tuple[str | None, str], Import]) -> Self:
         """Return self unless module-wide import resolution changed a referenced binding."""
-        if (import_ := aliases.get((self.import_.from_, self.import_.import_))) is None or import_ is self.import_:
+        if (import_ := aliases.get(_import_key(self.import_))) is None or import_ is self.import_:
             return self
         return self.__class__(import_, self.prefix, self.suffix, self._value)
 
@@ -84,20 +100,29 @@ class PythonRuntimeExpression:
         return self
 
 
+def _datetime_expression(suffix: str, *, prefix: str = "") -> PythonRuntimeExpression:
+    """Return an expression on the ``datetime`` module, which generated code imports under one alias."""
+    return PythonRuntimeExpression(IMPORT_DATETIME_MODULE, prefix, suffix)
+
+
+def _isoformat_expression(kind: str, text: str) -> PythonRuntimeExpression:
+    """Return the expression that builds the ``datetime`` module's ``kind`` (date, time, datetime) from ISO ``text``."""
+    return _datetime_expression(call_text(f".{kind}.fromisoformat", (stable_repr(text),)))
+
+
+def _text_constructor_expression(import_: Import, text: str) -> PythonRuntimeExpression:
+    """Return the call of the constructor ``import_`` on the string literal of ``text``, whose value is ``text``."""
+    return PythonRuntimeExpression.from_import_call(import_, stable_repr(text), value=text)
+
+
+_RUNTIME_EXPRESSION_CONTAINERS = frozenset({list, tuple, set, frozenset})
+
+
 def _runtime_expression_container_items(value: object) -> Iterable[object] | None:
     """Return only exact built-in literal containers eligible for recursive handling."""
-    match value:
-        case dict() if type(value) is dict:
-            return value.items()
-        case list() if type(value) is list:
-            return value
-        case tuple() if type(value) is tuple:
-            return value
-        case set() if type(value) is set:
-            return value
-        case frozenset() if type(value) is frozenset:
-            return value
-    return None
+    if type(value) is dict:
+        return value.items()
+    return cast("Iterable[object]", value) if type(value) in _RUNTIME_EXPRESSION_CONTAINERS else None
 
 
 def runtime_expression_imports(value: object) -> tuple[Import, ...]:
@@ -133,12 +158,10 @@ def rewrite_runtime_imports(
     if not aliases:
         return imports
     for index, import_ in enumerate(imports):
-        if (aliased_import := aliases.get((import_.from_, import_.import_))) is None or aliased_import is import_:
+        if (aliased_import := aliases.get(_import_key(import_))) is None or aliased_import is import_:
             continue
         rewritten = [*imports[:index], aliased_import]
-        rewritten.extend(
-            aliases.get((remaining.from_, remaining.import_), remaining) for remaining in imports[index + 1 :]
-        )
+        rewritten.extend(aliases.get(_import_key(remaining), remaining) for remaining in imports[index + 1 :])
         return tuple(rewritten)
     return imports
 
@@ -147,25 +170,20 @@ def rewrite_runtime_expressions(
     value: object,
     aliases: Mapping[tuple[str | None, str], Import],
 ) -> object:
-    """Alias nested parser-owned runtime expressions while preserving unchanged containers."""
-    return _rewrite_runtime_value(value, aliases)
+    """Alias nested parser-owned runtime expressions while preserving unchanged containers.
 
-
-def _rewrite_runtime_value(
-    value: object,
-    aliases: Mapping[tuple[str | None, str], Import],
-) -> object:
-    """Rewrite one source value and make structural copies only after an actual change."""
+    Structural copies are made only after an actual change.
+    """
     if isinstance(value, PythonRuntimeExpression):
         return value.with_import_aliases(aliases)
     if type(value) is dict:
         return _rewrite_runtime_mapping(cast("dict[object, object]", value), aliases)
     if (items := _runtime_expression_container_items(value)) is None:
         return value
-    rewritten = tuple(_rewrite_runtime_value(item, aliases) for item in items)
-    if all(item is original for item, original in zip(rewritten, cast("Iterable[object]", value), strict=True)):
+    rewritten = tuple(rewrite_runtime_expressions(item, aliases) for item in items)
+    if unchanged(rewritten, items):
         return value
-    return _rebuild_runtime_container(value, rewritten)
+    return rewritten if type(value) is tuple else type(value)(rewritten)
 
 
 def _rewrite_runtime_mapping(
@@ -174,25 +192,12 @@ def _rewrite_runtime_mapping(
 ) -> object:
     """Copy a mapping only when a key or value received an alias."""
     items = tuple(
-        (_rewrite_runtime_value(key, aliases), _rewrite_runtime_value(item, aliases)) for key, item in value.items()
+        (rewrite_runtime_expressions(key, aliases), rewrite_runtime_expressions(item, aliases))
+        for key, item in value.items()
     )
-    if all(
-        rewritten_key is original_key and rewritten_item is original_item
-        for (rewritten_key, rewritten_item), (original_key, original_item) in zip(items, value.items(), strict=True)
-    ):
+    if unchanged(chain.from_iterable(items), chain.from_iterable(value.items())):
         return value
     return dict(items)
-
-
-def _rebuild_runtime_container(value: object, items: tuple[object, ...]) -> object:
-    """Create the exact built-in container type after a nested expression changed."""
-    if type(value) is list:
-        return list(items)
-    if type(value) is tuple:
-        return items
-    if type(value) is set:
-        return set(items)
-    return frozenset(items)
 
 
 class _NonFiniteFloat(float):
@@ -202,9 +207,7 @@ class _NonFiniteFloat(float):
 
     def __repr__(self) -> str:
         """Render a valid Python expression without changing numeric semantics."""
-        if isnan(self):
-            return "float('nan')"
-        return "float('inf')" if self > 0 else "float('-inf')"
+        return represent_python_value(float(self))
 
     def __str__(self) -> str:
         """Render a valid Python expression for templates that stringify values."""
@@ -216,6 +219,11 @@ def _safe_non_finite_float(value: float) -> float:
     return _NonFiniteFloat(value) if not isfinite(value) else value
 
 
+def _converted_float(value: float, *, source_safe_non_finite: bool) -> float:
+    """Return a float of a converted schema, source-safe when the converter's caller writes Python source."""
+    return _safe_non_finite_float(value) if source_safe_non_finite else value
+
+
 def _safe_non_finite_value(value: Any) -> Any:
     """Make every non-finite float of a parsed JSON value source-safe, copying only containers that hold one."""
     match value:
@@ -223,10 +231,10 @@ def _safe_non_finite_value(value: Any) -> Any:
             return _safe_non_finite_float(value)
         case dict():
             safe_items = {key: _safe_non_finite_value(item) for key, item in value.items()}
-            return value if all(safe_items[key] is item for key, item in value.items()) else safe_items
+            return value if unchanged(safe_items.values(), value.values()) else safe_items
         case list():
             safe_list = [_safe_non_finite_value(item) for item in value]
-            return value if all(safe is item for safe, item in zip(safe_list, value, strict=True)) else safe_list
+            return value if unchanged(safe_list, value) else safe_list
     return value
 
 
@@ -280,111 +288,201 @@ def _make_referencing_type_expression(source: _TypeHintSource) -> _InternalTypeE
     return _InternalTypeExpression(source.type_hint, _INTERNAL_TYPE_EXPRESSION_TOKEN, source=source)
 
 
-def _normalize_string(value: str) -> str:
-    """Return the underlying built-in string without invoking subclass overrides."""
-    return value if type(value) is str else str.__str__(value)  # noqa: PLC2801 - bypass untrusted subclass overrides
+def _normalized_safe_python_name(value: object, target: PythonVersion | None, *, dotted: bool = False) -> str | None:
+    """Return untrusted data as a plain string when it is a Python name, or Python names joined by dots with ``dotted``.
 
-
-def _stringify_untrusted_value(value: object) -> str:
-    """Stringify public data once, returning an exact built-in ``str``."""
-    return _normalize_string(str(value))
-
-
-def _normalized_safe_public_type_name(value: object) -> str | None:
-    """Return a normalized bare or dotted public type name when safe.
-
-    Built-in scalar and TypedDict template settings accept simple names such as
-    ``str`` and ``datetime.date``.  More expressive type syntax belongs to the
-    parser-owned boundary above; accepting it here would require parsing source
-    at runtime and would make this public extension point an execution sink.
+    Only a ``str`` counts, read without its subclass's overrides, and its names are names of the target Python, the
+    newest when ``target`` is None.
+    Template keys, option names and the simple type names of built-in templates (``str``, ``datetime.date``) take this
+    form; more expressive type syntax belongs to the parser-owned boundary above, since accepting it here would parse
+    source at runtime and make this public extension point an execution sink.
     """
     if not isinstance(value, str):
         return None
     normalized_value = _normalize_string(value)
-    if normalized_value and all(
-        part.isidentifier() and not keyword.iskeyword(part) for part in normalized_value.split(".")
-    ):
-        return normalized_value
-    return None
+    is_name = is_dotted_python_name if dotted else is_python_name
+    return normalized_value if is_name(normalized_value, NEWEST_TARGET if target is None else target) else None
 
 
-def is_safe_public_type_name(value: object) -> bool:
-    """Return whether public data is a bare or dotted Python identifier."""
-    return _normalized_safe_public_type_name(value) is not None
+def is_safe_public_type_name(value: object, *, target: PythonVersion | None = None) -> bool:
+    """Return whether public data is a bare or dotted Python identifier of the target Python, the newest by default."""
+    return _normalized_safe_python_name(value, target, dotted=True) is not None
 
 
-def represent_untrusted_public_type_name(value: Any) -> str:
-    """Render a public type name without admitting executable source syntax."""
+def represent_untrusted_public_type_name(value: Any, *, target: PythonVersion | None = None) -> str:
+    """Render a public type name without admitting executable source syntax.
+
+    A name of the target Python, the newest by default, is written as a name, and any other text as a string.
+    """
     if isinstance(value, str):
-        if normalized_value := _normalized_safe_public_type_name(value):
+        if normalized_value := _normalized_safe_python_name(value, target, dotted=True):
             return normalized_value
         return represent_untrusted_python_value(_normalize_string(value))
     return represent_untrusted_python_value(value)
 
 
-def represent_python_value(value: Any) -> str:  # noqa: PLR0911
+def _represent_container(value: object, render: Callable[[Any], str], *, sort_sets_by_repr: bool) -> str | None:
+    """Render a dict, list, tuple or set with ``render`` for its items; None for any other value.
+
+    Set items are ordered by type name, then by their ``repr`` or their rendered text; a string's ``repr`` is its
+    rendered text, as ``stable_repr`` writes it.
+    """
+    match value:
+        case dict():
+            return dict_display((render(key), render(item)) for key, item in value.items())
+        case list():
+            return list_display(map(render, value))
+        case tuple():
+            return tuple_display(map(render, value))
+        case set():
+            from operator import itemgetter  # noqa: PLC0415
+
+            rows = [
+                (type(item).__name__, repr(item) if sort_sets_by_repr and type(item) is not str else text, text)
+                for item in value
+                for text in (render(item),)
+            ]
+            rows.sort(key=itemgetter(0, 1))
+            return set_display(text for _, _, text in rows)
+    return None
+
+
+def stable_repr(value: object) -> str:
+    """Return ``repr()`` of a value as the newest target writes it, whatever interpreter runs.
+
+    ``repr()`` escapes the characters of a string that the running interpreter does not print, which follow its
+    Unicode version; here they follow the newest target's, in a string, also of a class that keeps the ``repr()`` of
+    ``str``, and in the tuples, lists, sets and dicts that hold one, so a message or a literal reads the same on every
+    interpreter. A container that holds itself is written as ``repr()`` writes it again (``[...]``). Any other value
+    is its ``repr()``.
+    """
+    return _stable_repr(value, set())
+
+
+def _stable_repr(value: object, active: set[int]) -> str:
+    """Return ``stable_repr`` of a value inside the containers whose ids ``active`` holds."""
+    if isinstance(value, str) and type(value).__repr__ is str.__repr__:
+        return string_repr(_normalize_string(value), NEWEST_TARGET)
+    if (display := _CONTAINER_REPRS.get(type(value))) is None:
+        return repr(value)
+    if (key := id(value)) in active:
+        return _RECURSIVE_REPRS[type(value)]
+    active.add(key)
+    try:
+        return display(value, partial(_stable_repr, active=active))
+    finally:
+        active.discard(key)
+
+
+_CONTAINER_REPRS: Final[dict[type, Callable[[Any, Callable[[object], str]], str]]] = {
+    tuple: lambda value, item: tuple_display(map(item, value)),
+    list: lambda value, item: list_display(map(item, value)),
+    set: lambda value, item: set_display(map(item, value)),
+    dict: lambda value, item: dict_display((item(key), item(entry)) for key, entry in value.items()),
+}
+"""How ``stable_repr`` writes each container whose ``repr()`` holds the ``repr()`` of its items, as ``repr()`` does."""
+_RECURSIVE_REPRS: Final[dict[type, str]] = {tuple: "(...)", list: "[...]", set: "set(...)", dict: "{...}"}
+"""What ``repr()`` writes for a container inside itself."""
+
+
+class _StablePrettyPrinter(PrettyPrinter):
+    """A ``pprint.PrettyPrinter`` that writes strings as ``stable_repr`` writes them, wrapped where ``pprint`` wraps."""
+
+    @override
+    def format(self, object: object, context: dict[int, int], maxlevels: int, level: int) -> tuple[str, bool, bool]:
+        """Write a string as ``stable_repr`` does; any other value as ``pprint`` does, its strings so too."""
+        if isinstance(object, str) and type(object).__repr__ is str.__repr__:
+            return stable_repr(object), True, False
+        return super().format(object, context, maxlevels, level)
+
+    def _pprint_stable_str(
+        self,
+        text: str,
+        stream: IO[str],
+        indent: int,
+        allowance: int,
+        _context: object,
+        level: int,
+    ) -> None:
+        """Write a string too long for its line as the strings ``pprint`` splits it into, each by ``stable_repr``.
+
+        An empty string is written whole, as ``pprint`` writes it, however narrow its line.
+        """
+        if not text:
+            stream.write(stable_repr(text))
+            return
+        width = self._width  # ty: ignore[unresolved-attribute]
+        if level == 1:
+            indent += 1
+            allowance += 1
+        chunks: list[str] = []
+        lines = text.splitlines(keepends=True)
+        for index, line in enumerate(lines):
+            last_line = index == len(lines) - 1
+            if len(rep := stable_repr(line)) <= width - indent - (allowance if last_line else 0):
+                chunks.append(rep)
+                continue
+            parts = re.findall(r"\S*\s*", line)[:-1]
+            current = ""
+            for part_index, part in enumerate(parts):
+                candidate = current + part
+                limit = width - indent - (allowance if last_line and part_index == len(parts) - 1 else 0)
+                if len(stable_repr(candidate)) > limit:
+                    if current:
+                        chunks.append(stable_repr(current))
+                    current = part
+                else:
+                    current = candidate
+            chunks.append(stable_repr(current))
+        if len(chunks) == 1:
+            stream.write(chunks[0])
+            return
+        body = f"\n{' ' * indent}".join(chunks)
+        stream.write(f"({body})" if level == 1 else body)
+
+    _dispatch: ClassVar = {**vars(PrettyPrinter)["_dispatch"], str.__repr__: _pprint_stable_str}
+
+
+def stable_pformat(value: object) -> str:
+    """Return ``pprint.pformat()`` of a value with its strings written as ``stable_repr`` writes them."""
+    return _StablePrettyPrinter().pformat(value)
+
+
+def message_repr(value: object) -> str:
+    """Return how a message quotes a value a user gave: ``stable_repr`` of it, a string read past its subclass."""
+    return stable_repr(_normalize_string(value) if isinstance(value, str) else value)
+
+
+def represent_python_value(value: Any) -> str:
     """Render a value as a Python expression safe for generated source."""
     match value:
-        case PythonRuntimeExpression():
+        case PythonRuntimeExpression() | PythonCode():
             return value.code
-        case PythonCode():
-            return value.code
+        case str() if type(value) is str:
+            return string_repr(value, NEWEST_TARGET)
         case float() if isnan(value):
             return "float('nan')"
         case float() if not isfinite(value):
             return "float('inf')" if value > 0 else "float('-inf')"
-        case dict():
-            rendered_items = ", ".join(
-                f"{represent_python_value(key)}: {represent_python_value(item)}" for key, item in value.items()
-            )
-            return f"{{{rendered_items}}}"
-        case list():
-            return "[" + ", ".join(represent_python_value(item) for item in value) + "]"
-        case tuple():
-            rendered_items = ", ".join(represent_python_value(item) for item in value)
-            trailing_comma = "," if len(value) == 1 else ""
-            return f"({rendered_items}{trailing_comma})"
-        case set() if not value:
-            return "set()"
-        case set():
-            sorted_items = sorted(value, key=lambda item: (type(item).__name__, repr(item)))
-            return "{" + ", ".join(represent_python_value(item) for item in sorted_items) + "}"
-    return repr(value)
+    rendered = _represent_container(value, represent_python_value, sort_sets_by_repr=True)
+    return repr(value) if rendered is None else rendered
 
 
-def represent_untrusted_python_value(value: Any) -> str:  # noqa: PLR0911
+def represent_untrusted_python_value(value: Any) -> str:
     """Render data from a public template context as a non-executing Python literal.
 
     Unlike :func:`represent_python_value`, this deliberately does not preserve
     ``PythonCode``.  Built-in templates call this at extension-data boundaries;
     parser-owned source fragments remain separate from those boundaries.
     """
-    if value is None or type(value) is bool:
-        return represent_python_value(value)
-    if type(value) is int or type(value) is float:
+    if value is None or type(value) is bool or type(value) is int or type(value) is float:
         return represent_python_value(value)
     if isinstance(value, int):
         return represent_python_value(int.__int__(value))  # noqa: PLC2801 - bypass untrusted subclass overrides
     if isinstance(value, float):
         return represent_python_value(float.__float__(value))  # noqa: PLC2801 - bypass untrusted subclass overrides
     if isinstance(value, str):
-        return repr(_normalize_string(value))
-    if isinstance(value, dict):
-        rendered_items = ", ".join(
-            f"{represent_untrusted_python_value(key)}: {represent_untrusted_python_value(item)}"
-            for key, item in value.items()
-        )
-        return f"{{{rendered_items}}}"
-    if isinstance(value, list):
-        return "[" + ", ".join(represent_untrusted_python_value(item) for item in value) + "]"
-    if isinstance(value, tuple):
-        rendered_items = ", ".join(represent_untrusted_python_value(item) for item in value)
-        trailing_comma = "," if len(value) == 1 else ""
-        return f"({rendered_items}{trailing_comma})"
-    if isinstance(value, set):
-        if not value:
-            return "set()"
-        rendered_items = [(type(item).__name__, represent_untrusted_python_value(item)) for item in value]
-        rendered_items.sort()
-        return "{" + ", ".join(item for _, item in rendered_items) + "}"
-    return repr(_stringify_untrusted_value(value))
+        return stable_repr(_normalize_string(value))
+    if (rendered := _represent_container(value, represent_untrusted_python_value, sort_sets_by_repr=False)) is not None:
+        return rendered
+    return stable_repr(_normalize_string(str(value)))

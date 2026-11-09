@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from keyword import iskeyword
 from typing import Final
 
 from typing_extensions import override
 
+from datamodel_code_generator._target_unicode import is_python_name
 from datamodel_code_generator.reference import FieldNameResolver
 
 PYDANTIC_BASE_MODEL_ATTRIBUTES: Final = frozenset({
@@ -165,9 +165,9 @@ class PydanticFieldNameResolver(FieldNameResolver):
         """Skip normalization for ordinary Pydantic field names."""
         if type(self) is not PydanticFieldNameResolver:
             return None
-        if not name.isascii() or not name.isidentifier() or name.startswith("_"):
+        if not is_python_name(name, rule="ascii") or name.startswith("_"):
             return None
-        if iskeyword(name) or self.capitalise_enum_members or upper_camel:
+        if self.capitalise_enum_members or upper_camel:
             return None
         if self.snake_case_field and not ignore_snake_case_field:
             return None

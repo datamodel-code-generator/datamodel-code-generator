@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from functools import lru_cache
+from functools import lru_cache, partial
 from importlib import import_module
 from os import PathLike
+
+from datamodel_code_generator.model._compiled_template_runtime import render
 
 _RENDERER_MODULES: dict[str, str] = {
     "Enum.jinja2": ".enum",
@@ -35,7 +37,7 @@ _RENDERER_MODULES: dict[str, str] = {
 
 @lru_cache
 def _load_renderer(module_name: str) -> Callable[..., str]:
-    return import_module(module_name, __package__).render
+    return partial(render, import_module(module_name, __package__).render_with_scope)
 
 
 def get_builtin_renderer(template_path: str | PathLike[str]) -> Callable[..., str] | None:

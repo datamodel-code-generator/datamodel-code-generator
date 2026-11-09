@@ -1,0 +1,11 @@
+openapi: 3.1.0
+info: {title: Required errors, version: '1'}
+servers: [{url: 'https://required.example.com'}]
+paths:
+  /items:
+    get:
+      operationId: listItems
+      parameters:
+        - {name: q, in: query, required: 'maybe', schema: {type: string}}
+      responses:
+        '204': {description: No items.}

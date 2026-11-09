@@ -37,29 +37,29 @@ class ZNode(TypedDict):
     typename__: NotRequired[Literal['ZNode']]
 
 
-class Cross(Base):
-    label: String
+class Cross(TypedDict):
     value: Int
     typename__: NotRequired[Literal['Cross']]
+    label: String
 
 
-class Item(ZNode):
+class Item(TypedDict):
     camelValue: Int
     label: String
-    spare: Int
     typename__: NotRequired[Literal['Item']]
+    spare: Int
 
 
-class Ordinary(Base):
+class Ordinary(TypedDict):
     value: Int
     typename__: NotRequired[Literal['Ordinary']]
 
 
-class Second(ZNode):
+class Second(TypedDict):
     camelValue: Int
     label: String
-    spare: Int
     typename__: NotRequired[Literal['Second']]
+    spare: Int
 
 
 class Solo(TypedDict):
@@ -80,8 +80,8 @@ Choice: TypeAlias = Union[
 ]
 
 
-class ANode(ZNode):
+class ANode(TypedDict):
     camelValue: Int
     label: String
-    spare: Int
     typename__: NotRequired[Literal['ANode']]
+    spare: Int

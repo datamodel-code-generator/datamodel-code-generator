@@ -1,0 +1,18 @@
+get:
+  parameters:
+    - name: tag
+      in: query
+      schema:
+        type: object
+        properties:
+          label:
+            $anchor: label
+            type: string
+          alias:
+            $ref: "#label"
+  responses:
+    "200":
+      description: The tags.
+      content:
+        text/plain:
+          schema: true

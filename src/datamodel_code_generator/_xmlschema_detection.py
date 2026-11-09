@@ -17,6 +17,4 @@ def is_xml_schema_text(text: str) -> bool:
     return root.tag == XML_SCHEMA_TAG
 
 
-is_xml_schema_text.__module__ = "datamodel_code_generator.parser._xmlschema_detection"
-
 __all__ = ["XML_SCHEMA_NAMESPACE", "XML_SCHEMA_TAG", "is_xml_schema_text"]

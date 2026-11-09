@@ -1,20 +1,24 @@
-"""The names a client target reserves, and the rules its explicit names and header tokens follow."""
+"""The names a client target reserves, and the rules its explicit names and header tokens follow.
+
+Each helper kind's names are here too: the label documentation and messages call it by, and its options keyword. So
+are the asyncio twin of a runtime class or function, and the names the generated modules define for each other: an
+operation's response alias and header decoder, a resource's classes, and each numbered plan, accessor and codec.
+"""
 
 from __future__ import annotations
 
-import keyword
-import re
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, Literal, NamedTuple, TypeAlias
 
-from datamodel_code_generator._target_naming import WINDOWS_DEVICES, explicit_name
-from datamodel_code_generator._target_unicode import casefold, is_identifier, is_nfkc, nfc
+from datamodel_code_generator._runtime.model_codecs.media import is_token
+from datamodel_code_generator._target_naming import explicit_name, windows_device
+from datamodel_code_generator._target_unicode import is_nfkc, is_python_name
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
     from datamodel_code_generator._format_types import PythonVersion
 
-_TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 TYPE_EXPORTS: Final = frozenset({"JSONValue"})
 RESERVED_MEMBERS: Final = frozenset({
     "aclose",
@@ -48,17 +52,28 @@ CLIENT_KEYWORDS: Final = (
     "cache_stores",
     "allowed_origins",
 )
-HELPER_ARGUMENTS: Final = frozenset({
-    "cache_options",
-    "items",
-    "pagination_options",
-    "poll_options",
-    "source",
-    "state",
-    "stream_options",
-    "upload_options",
-    "ws_options",
-})
+
+
+class HelperKindNames(NamedTuple):
+    """How documentation and messages call a helper kind, and the keyword its methods take the kind's options by."""
+
+    label: str
+    options: str
+
+
+HELPER_KINDS: Final = {
+    "pagination": HelperKindNames("pagination", "pagination_options"),
+    "polling": HelperKindNames("polling", "poll_options"),
+    "sse": HelperKindNames("SSE", "stream_options"),
+    "ndjson": HelperKindNames("NDJSON", "stream_options"),
+    "websocket": HelperKindNames("WebSocket", "ws_options"),
+    "cache": HelperKindNames("cache", "cache_options"),
+    "resumable_upload": HelperKindNames("upload", "upload_options"),
+}
+HELPER_ARGUMENTS: Final = frozenset({"items", "source", "state", *(names.options for names in HELPER_KINDS.values())})
+Numbered: TypeAlias = Literal[
+    "OPERATION", "KEYWORDS", "PLAN", "CANCEL", "STREAM", "SOCKET", "_items", "_result", "_immediate", "codec"
+]
 
 
 def namespace_problem(value: object, target_python_version: PythonVersion) -> str | None:
@@ -72,37 +87,34 @@ def namespace_problem(value: object, target_python_version: PythonVersion) -> st
     for index, part in enumerate(value.split(".")):
         if part in RESERVED_MEMBERS:
             reason = "a member of the clients and their resources"
-        elif casefold(part, target_python_version) in WINDOWS_DEVICES:
+        elif windows_device(part, target_python_version):
             reason = "a device name on Windows"
         elif not index and part in TYPE_EXPORTS:
             reason = "which the `types` package exports"
         else:
             continue
-        return f"A resource namespace cannot use the reserved name {part!r}, {reason}"
+        return f"A resource namespace cannot use the reserved name {stable_repr(part)}, {reason}"
     return None
 
 
 def token(value: object) -> bool:
     """Return whether a value is an HTTP token, such as a header name."""
-    return isinstance(value, str) and _TOKEN.fullmatch(value) is not None
-
-
-def folded(name: str, target_python_version: PythonVersion) -> str:
-    """Return the form two helper names are compared in: NFC-normalized, then case-folded, as the target does."""
-    return casefold(nfc(name, target_python_version), target_python_version)
+    return isinstance(value, str) and is_token(value)
 
 
 def helper_name_problem(value: str, target_python_version: PythonVersion) -> str | None:
     """Return why a helper name is invalid, or None for dotted public identifiers of the target in NFKC form."""
     for part in value.split("."):
-        if not is_identifier(part, target_python_version) or keyword.iskeyword(part):
-            return f"The helper name {value!r} must be Python identifiers separated by dots, without keywords"
+        if not is_python_name(part, target_python_version):
+            return (
+                f"The helper name {stable_repr(value)} must be Python identifiers separated by dots, without keywords"
+            )
         if (
             not is_nfkc(part, target_python_version)
             or part.startswith("_")
-            or casefold(part, target_python_version) in WINDOWS_DEVICES
+            or windows_device(part, target_python_version)
         ):
-            return f"The helper name {value!r} cannot use the part {part!r}"
+            return f"The helper name {stable_repr(value)} cannot use the part {stable_repr(part)}"
     return None
 
 
@@ -120,5 +132,61 @@ def helper_classes(name: str, kind: str, target_python_version: PythonVersion) -
     """
     parts = tuple(name.split("."))
     for end in range(1, len(parts)):
-        yield parts[:end], f"{pascal_parts(parts[:end], target_python_version)}Protocols"
+        yield parts[:end], namespace_class(parts[:end], target_python_version)
     yield parts, f"{pascal_parts(parts, target_python_version)}{pascal_parts((kind,), target_python_version)}"
+
+
+def numbered(family: Numbered, index: int) -> str:
+    """Return the name a generated module gives the constant or function of a family that serves its index-th item.
+
+    `OPERATION` names an operation's plan in the registry and its security binding, `KEYWORDS` the keywords record of
+    its unpacked methods, `PLAN`, `CANCEL`, `STREAM` and `SOCKET` a helper's plans, `_items`, `_result` and
+    `_immediate` a helper's typed accessors, and `codec` a planned use's model codec.
+    """
+    return f"{family}_{index}"
+
+
+def response_alias(pascal: str) -> str:
+    """Return the name of the response alias an operation's resource types module defines, by its PascalCase name."""
+    return f"{pascal}Response"
+
+
+def header_decoder(name: str) -> str:
+    """Return the name of the function that decodes an operation's declared response headers, by its method name."""
+    return f"decode_{name}_header"
+
+
+def header_constant(name: str) -> str:
+    """Return the name the constant holding the header decoders of an operation is derived from, by its method name.
+
+    Upper-casing is not injective (``straße`` and ``strasse`` give ``STRASSE``), so the types module claims it.
+    """
+    return f"_{name.upper()}_HEADERS"
+
+
+def class_prefix(*, asynchronous: bool) -> str:
+    """Return what a class of the asyncio client is named after before its sync twin's name: `Async`, else nothing."""
+    return "Async" if asynchronous else ""
+
+
+def twin_name(name: str, *, asynchronous: bool) -> str:
+    """Return a sync runtime class's or function's name, or its asyncio twin's: a class after `Async`, a function `a`.
+
+    The asyncio twin of `Pager` is `AsyncPager`, that of `fetch` is `afetch`; the sync client keeps the name.
+    """
+    if asynchronous and not name[:1].isupper():
+        return f"a{name}"
+    return f"{class_prefix(asynchronous=asynchronous)}{name}"
+
+
+def resource_class(pascal: str, prefix: str = "", suffix: str = "Resource") -> str:
+    """Return the name of a resource's class, or with a view's suffix of the view's, in the sync or asyncio module.
+
+    `prefix` is `Async` in the asyncio module and empty in the sync one.
+    """
+    return f"{prefix}{pascal}{suffix}"
+
+
+def namespace_class(parts: Iterable[str], target_python_version: PythonVersion) -> str:
+    """Return the class of the helper namespace a dotted helper name opens: its PascalCase parts, then `Protocols`."""
+    return f"{pascal_parts(parts, target_python_version)}Protocols"

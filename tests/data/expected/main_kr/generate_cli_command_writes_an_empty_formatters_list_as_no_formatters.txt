@@ -1,0 +1,1 @@
+datamodel-codegen --disable-timestamp --no-formatters --input schema.json --input-file-type jsonschema

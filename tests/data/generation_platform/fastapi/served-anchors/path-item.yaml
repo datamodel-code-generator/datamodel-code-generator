@@ -1,0 +1,14 @@
+get:
+  operationId: listTags
+  responses:
+    "200":
+      description: The tags.
+      content:
+        application/json:
+          schema:
+            type: array
+            items: {$ref: "#tag"}
+            $defs:
+              tag: {$anchor: tag, type: string, minLength: 1}
+        text/plain:
+          schema: true

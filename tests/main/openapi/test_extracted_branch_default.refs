@@ -15,9 +15,9 @@ default-dataclasses.dataclass	main/openapi/extracted_branch_default/extracted_br
 default-dataclasses.dataclass	main/openapi/extracted_branch_default/extracted_branch_default[default-dataclasses.dataclass].py
 default-msgspec.Struct	main/openapi/extracted_branch_default/extracted_branch_default[default-msgspec.Struct].payloads.txt	= main/openapi/extracted_branch_default/extracted_branch_default[annotated-msgspec.Struct].payloads.txt
 default-msgspec.Struct	main/openapi/extracted_branch_default/extracted_branch_default[default-msgspec.Struct].py	= main/openapi/extracted_branch_default/extracted_branch_default[annotated-msgspec.Struct].py
-default-pydantic_v2.BaseModel	main/openapi/extracted_branch_default/extracted_branch_default[default-pydantic_v2.BaseModel].payloads.txt
+default-pydantic_v2.BaseModel	main/openapi/extracted_branch_default/extracted_branch_default[default-pydantic_v2.BaseModel].payloads.txt	= main/openapi/extracted_branch_default/extracted_branch_default[annotated-pydantic_v2.dataclass].payloads.txt
 default-pydantic_v2.BaseModel	main/openapi/extracted_branch_default/extracted_branch_default[default-pydantic_v2.BaseModel].py
-default-pydantic_v2.dataclass	main/openapi/extracted_branch_default/extracted_branch_default[default-pydantic_v2.dataclass].payloads.txt	= main/openapi/extracted_branch_default/extracted_branch_default[default-pydantic_v2.BaseModel].payloads.txt
+default-pydantic_v2.dataclass	main/openapi/extracted_branch_default/extracted_branch_default[default-pydantic_v2.dataclass].payloads.txt	= main/openapi/extracted_branch_default/extracted_branch_default[annotated-pydantic_v2.dataclass].payloads.txt
 default-pydantic_v2.dataclass	main/openapi/extracted_branch_default/extracted_branch_default[default-pydantic_v2.dataclass].py
 default-typing.TypedDict	main/openapi/extracted_branch_default/extracted_branch_default[default-typing.TypedDict].payloads.txt	= main/openapi/extracted_branch_default/extracted_branch_default[annotated-dataclasses.dataclass].payloads.txt
 default-typing.TypedDict	main/openapi/extracted_branch_default/extracted_branch_default[default-typing.TypedDict].py

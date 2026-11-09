@@ -1,0 +1,18 @@
+openapi: 3.1.0
+info: {title: Empty body, version: "1.0"}
+paths:
+  /required:
+    post:
+      operationId: postRequired
+      requestBody:
+        required: true
+        content: {}
+      responses:
+        "204": {description: Done.}
+  /optional:
+    post:
+      operationId: postOptional
+      requestBody:
+        content: {}
+      responses:
+        "204": {description: Done.}

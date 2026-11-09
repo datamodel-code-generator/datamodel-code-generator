@@ -1,0 +1,1 @@
+msgspec cannot decode the union Branch: its Struct types Branch1, Branch2 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

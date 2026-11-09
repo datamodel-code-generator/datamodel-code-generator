@@ -39,6 +39,11 @@ def _invalid_numbers(options: ModuleType, lines: list[str]) -> None:
                 )
     for name in ("initial_delay", "max_delay", "max_retry_after"):
         record(lines, f"retry {name} overflow", lambda name=name: options.RetryOptions(**{name: 10**400}))
+        record(
+            lines,
+            f"retry {name} rounding to the largest float",
+            lambda name=name: options.RetryOptions(**{name: int(sys.float_info.max) + 1}),
+        )
     record(lines, "retry cap zero", lambda: options.RetryOptions(max_retry_after=0))
     record(lines, "retry delay order", lambda: options.RetryOptions(initial_delay=2, max_delay=1))
 

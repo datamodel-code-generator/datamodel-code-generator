@@ -1,0 +1,15 @@
+{
+  "anchors": {},
+  "shards": {
+    "tests/data/a.json | pydantic_v2.BaseModel": 1,
+    "tests/data/a.json | msgspec.Struct": 1,
+    "tests/data/b.json | pydantic_v2.BaseModel": 3,
+    "tests/data/b.json | msgspec.Struct": 3,
+    "tests/data/c.json | pydantic_v2.BaseModel": 2,
+    "tests/data/c.json | msgspec.Struct": 2,
+    "tests/data/d.json | pydantic_v2.BaseModel": 2,
+    "tests/data/d.json | msgspec.Struct": 2
+  },
+  "entries": [],
+  "skips": []
+}

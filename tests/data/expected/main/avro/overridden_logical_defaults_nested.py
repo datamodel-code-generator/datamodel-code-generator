@@ -58,7 +58,10 @@ class DurationDefaults(BaseModel):
         validate_default=True,
     )
     nested: list[dict[str, timedelta_aliased]] | None = [
-        {'z': timedelta_aliased(milliseconds=1001), 'a': timedelta_aliased(milliseconds=1)}
+        {
+            'z': timedelta_aliased(milliseconds=1001),
+            'a': timedelta_aliased(milliseconds=1),
+        }
     ]
     ordinary_fixed: conbytes(min_length=12, max_length=12) | None = Field(
         b'\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00', title='Raw'

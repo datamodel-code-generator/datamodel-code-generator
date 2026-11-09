@@ -1,0 +1,2 @@
+combined_branch_keywords.json#/properties/dead/anyOf/0: no value satisfies every part of this schema (the keywords beside its anyOf and its own keywords), since no value meets all of their `type`; the generated code keeps its earlier `type`.
+combined_branch_keywords.json#/$defs/NoneLeft: no value satisfies every part of this schema (the referenced or inherited schema and its own keywords), since no value meets all of their `enum`; the generated code keeps its earlier `enum`.

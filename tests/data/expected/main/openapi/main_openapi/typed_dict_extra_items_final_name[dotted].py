@@ -16,10 +16,10 @@ class BBarResponse(TypedDict):
     x: NotRequired[str]
 
 
-class AFooRequest(TypedDict, extra_items='BBarRequest'):
+class AFooRequest(TypedDict, extra_items=BBarRequest):
     name: NotRequired[str]
     secret: NotRequired[str]
 
 
-class AFooResponse(TypedDict, extra_items='BBarResponse'):
+class AFooResponse(TypedDict, extra_items=BBarResponse):
     name: NotRequired[str]

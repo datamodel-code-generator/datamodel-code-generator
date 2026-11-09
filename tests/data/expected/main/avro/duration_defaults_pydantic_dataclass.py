@@ -36,10 +36,17 @@ class DurationDefaults:
     endian: Elapsed | None = timedelta_aliased(milliseconds=16909060)
     maximum: Elapsed | None = timedelta_aliased(milliseconds=4294967295)
     array: list[Elapsed] | None = Field(
-        default_factory=lambda: [timedelta_aliased(milliseconds=0), timedelta_aliased(milliseconds=1), timedelta_aliased(milliseconds=1001)]
+        default_factory=lambda: [
+            timedelta_aliased(milliseconds=0),
+            timedelta_aliased(milliseconds=1),
+            timedelta_aliased(milliseconds=1001),
+        ]
     )
     map: dict[str, Elapsed] | None = Field(
-        default_factory=lambda: {'z': timedelta_aliased(milliseconds=4294967295), 'a': timedelta_aliased(milliseconds=1)}
+        default_factory=lambda: {
+            'z': timedelta_aliased(milliseconds=4294967295),
+            'a': timedelta_aliased(milliseconds=1),
+        }
     )
     union: Elapsed | None = timedelta_aliased(milliseconds=1001)
     string_first: str | Elapsed | None = 'kept'
@@ -53,7 +60,12 @@ class DurationDefaults:
         validate_default=True,
     )
     nested: list[dict[str, Elapsed]] | None = Field(
-        default_factory=lambda: [{'z': timedelta_aliased(milliseconds=1001), 'a': timedelta_aliased(milliseconds=1)}]
+        default_factory=lambda: [
+            {
+                'z': timedelta_aliased(milliseconds=1001),
+                'a': timedelta_aliased(milliseconds=1),
+            }
+        ]
     )
     ordinary_fixed: Raw | None = b'\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00'
     ordinary_bytes: bytes | None = b'\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00'

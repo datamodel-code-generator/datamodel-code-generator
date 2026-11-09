@@ -1,0 +1,7 @@
+valid {}: rejected
+valid {"spec": {"containers": ["app"]}, "nullableSpec": null, "completeSpec": {"containers": []}, "workload": {"matchLabels": {"a": "b"}}}: accepted
+valid {"spec": {"containers": []}, "nullableSpec": {"containers": ["c"], "hostname": "h"}}: rejected
+invalid {"spec": {}}: rejected
+invalid {"completeSpec": {"hostname": "h"}}: rejected
+invalid {"workload": {"replicas": 2}}: rejected
+invalid {"spec": null}: rejected

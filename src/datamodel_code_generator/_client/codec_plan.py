@@ -3,29 +3,35 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, get_args
 
-from datamodel_code_generator._openapi_codec_plan import extras_symbols, named_symbols
+from datamodel_code_generator._client.model_facts import _FALSE, _name
+from datamodel_code_generator._container_kinds import CONTAINER_CLASSES, MAPPINGS
+from datamodel_code_generator._message_text import english_list
+from datamodel_code_generator._module_paths import dotted_name
+from datamodel_code_generator._openapi_codec_plan import codec_file, extras_symbols, named_symbols
 from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic
 from datamodel_code_generator._python_type_annotation import render_python_type_expr
+from datamodel_code_generator._runtime.model_codecs.media import JSONKind
 from datamodel_code_generator._target_contract import (
+    WRAPPER_KINDS,
     BoundType,
-    BuiltinType,
     GeneratedEnumMember,
     GeneratedSymbolType,
     GenericType,
-    ImportedType,
-    KnownBackendValue,
     LiteralScalar,
     LiteralType,
-    NoneType,
     UnionType,
+    literal_text,
 )
+from datamodel_code_generator._target_operations import UNSPELLABLE, Refusal, native_type
+from datamodel_code_generator._target_types import container_slot, is_none
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator
 
     from datamodel_code_generator._client.model_facts import ModelFacts
+    from datamodel_code_generator._container_kinds import ContainerSlot
     from datamodel_code_generator._openapi_wire_plan import CodecReason, WirePlan
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
@@ -40,19 +46,14 @@ if TYPE_CHECKING:
 CodecBackend: TypeAlias = Literal[
     "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct", "dataclasses.dataclass", "typing.TypedDict"
 ]
-JSONKind: TypeAlias = Literal["object", "array", "string", "number", "boolean"]
 Shape: TypeAlias = "Class | Items | Fixed | Values | Choice | None"
-_SEQUENCES: Final = {
-    "list": "list",
-    "typing.List": "list",
-    "typing.Sequence": "list",
-    "collections.abc.Sequence": "list",
+_ITEM_KINDS: Final[dict[ContainerSlot, str]] = {
+    "frozen_set": "frozenset",
     "set": "set",
-    "frozenset": "frozenset",
-    "tuple": "tuple",
+    "sequence": "list",
+    "list": "list",
 }
 _PAIR: Final = 2
-_MAPPINGS: Final = frozenset({"dict", "typing.Mapping", "collections.abc.Mapping"})
 _LEAVES: Final = frozenset({
     "bytes",
     "datetime.datetime",
@@ -73,10 +74,13 @@ _PLAIN: Final = frozenset({
     "list",
     "dict",
 })
-_ALL_KINDS: Final[tuple[JSONKind, ...]] = ("object", "array", "string", "number", "boolean")
+_ALL_KINDS: Final[tuple[JSONKind, ...]] = get_args(JSONKind)
 _JSON_KINDS: Final[dict[str | None, tuple[JSONKind, ...]]] = {
-    **dict.fromkeys(_MAPPINGS | {"dict"}, ("object",)),
-    **dict.fromkeys(_SEQUENCES, ("array",)),
+    **{
+        dotted_name(*key): ("object",) if slot in MAPPINGS.slots else ("array",)
+        for key, slot in CONTAINER_CLASSES.items()
+    },
+    **dict.fromkeys(("typing.List", "tuple"), ("array",)),
     "bool": ("boolean",),
     "int": ("number",),
     "float": ("number",),
@@ -99,11 +103,9 @@ class CodecRuntime:
     @property
     def modules(self) -> tuple[str, ...]:
         """Return the runtime modules a package of the backend copies for its codec."""
-        return tuple(f"model_codecs/{name}.py" for name in (*self.imports, self.module))
+        return tuple(map(codec_file, (*self.imports, self.module)))
 
 
-EXTRAS: Final = "extras_serializer"
-EXTRAS_MODULE: Final = "pydantic_extras"
 CODEC_RUNTIMES: Final[dict[CodecBackend, CodecRuntime]] = {
     "pydantic_v2.BaseModel": CodecRuntime("pydantic_models", "PydanticCodec", ("pydantic_adapters",)),
     "pydantic_v2.dataclass": CodecRuntime("pydantic_dataclasses", "PydanticDataclassCodec", ("pydantic_adapters",)),
@@ -190,7 +192,6 @@ class ClientCodecs:
     uses: tuple[CodecUse, ...]
     models: tuple[Model, ...]
     diagnostics: tuple[CodecDiagnostic, ...]
-    imports: tuple[tuple[int, str], ...]
     backend: CodecBackend
 
     def __contains__(self, use: TypeUseId) -> bool:
@@ -208,15 +209,6 @@ class ClientCodecs:
         return any(item.extras for item in self.uses)
 
 
-def _name(value: TypeView) -> str | None:
-    name = None
-    if isinstance(value, BuiltinType):
-        name = value.name
-    elif isinstance(value, ImportedType):
-        name = f"{value.import_.from_}.{value.import_.import_}"
-    return name
-
-
 def _literal_kind(value: LiteralType) -> str | None:
     kinds = {item.kind if isinstance(item, LiteralScalar) else "enum" for item in value.values}
     return next(iter(kinds)) if len(kinds) == 1 and kinds <= {"str", "int", "none"} else None
@@ -230,7 +222,7 @@ class _Planner:
 
     def __init__(self, backend: CodecBackend, facts: ModelFacts) -> None:
         self.backend, self.facts = backend, facts
-        self.symbols, self.members = facts.symbols, facts.members
+        self.symbols = facts.symbols
         self.models: dict[SymbolId, Model] = {}
         self.building: set[SymbolId] = set()
         self.aliases: set[SymbolId] = set()
@@ -256,13 +248,13 @@ class _Planner:
         self, value: TypeView, schema: SourceLocation | None, declared: UnionDiscriminator | None = None
     ) -> Shape:
         """Return a type's conversion; an alias passes the discriminator it declares to the union it stands for."""
-        if isinstance(value, NoneType):
+        if is_none(value):
             return None
         if isinstance(value, UnionType):
             return self.union(value, schema, declared or value.discriminator)
         if isinstance(value, GeneratedSymbolType):
             symbol = self.symbols[value.symbol]
-            if symbol.kind in {"alias", "root"}:
+            if symbol.kind in WRAPPER_KINDS:
                 if value.symbol in self.aliases:
                     return None
                 root = self.root(symbol.id)
@@ -285,8 +277,7 @@ class _Planner:
                     )
                     for field in self.facts.fields(symbol.id)
                     if field.member.model_facts is not None
-                    and field.member.model_facts.backend.constructor_init
-                    != KnownBackendValue(LiteralScalar(kind="bool", value=False))
+                    and field.member.model_facts.backend.constructor_init != _FALSE
                 )
                 self.models[symbol.id] = Model(symbol.id, fields)
                 self.building.remove(symbol.id)
@@ -294,16 +285,18 @@ class _Planner:
         if isinstance(value, GenericType):
             if value.tuple_form == "fixed":
                 return Fixed(tuple(self.shape(item, schema) for item in value.arguments))
-            name = _name(value.base)
-            if name in _MAPPINGS and len(value.arguments) == _PAIR:
+            slot = container_slot(value)
+            if slot in MAPPINGS.slots and len(value.arguments) == _PAIR:
                 key, item = value.arguments
                 if _name(key) not in {"str", "object", "typing.Any", "typing_extensions.Any"}:
                     self.report(f"The {self.label(key)} key type has no {self.backend} conversion", schema)
                 nested = self.shape(item, schema)
                 return None if nested is None else Values(nested)
-            if name in _SEQUENCES and len(value.arguments) == 1:
+            if (kind := "tuple" if value.tuple_form == "variadic" else _ITEM_KINDS.get(slot)) is not None and len(
+                value.arguments
+            ) == 1:
                 item = self.shape(value.arguments[0], schema)
-                return None if item is None and _SEQUENCES[name] == "list" else Items(item, _SEQUENCES[name])
+                return None if item is None and kind == "list" else Items(item, kind)
             return None
         if isinstance(value, LiteralType):
             enums = [item for item in value.values if isinstance(item, GeneratedEnumMember)]
@@ -316,7 +309,10 @@ class _Planner:
         return None
 
     def root(self, symbol: SymbolId) -> TypeView:
-        return next(member.model_facts.type for member in self.members[symbol] if member.model_facts is not None)
+        """Return the type an alias or root model stands for, which the binder binds for each one a codec reaches."""
+        root = self.facts.root(symbol)
+        assert root is not None
+        return root
 
     def flattened(self, members: tuple[TypeView, ...], seen: frozenset[SymbolId] = frozenset()) -> Iterator[TypeView]:
         for member in members:
@@ -329,7 +325,7 @@ class _Planner:
                 yield from self.flattened(
                     root.members if isinstance(root, UnionType) else (root,), seen | {member.symbol}
                 )
-            elif not isinstance(member, NoneType):
+            elif not is_none(member):
                 yield member
 
     def kinds(self, value: TypeView) -> tuple[JSONKind, ...]:
@@ -339,7 +335,7 @@ class _Planner:
                 return tuple(kind for kind, native in (("string", "str"), ("number", "int")) if native in kinds)
             return ("object",)
         if isinstance(value, GenericType):
-            return ("object",) if _name(value.base) in _MAPPINGS else ("array",)
+            return ("object",) if container_slot(value) in MAPPINGS.slots else ("array",)
         if isinstance(value, LiteralType):
             native = _literal_kind(value)
             return ("string",) if native == "str" else ("number",) if native == "int" else ()
@@ -391,7 +387,7 @@ class _Planner:
         """
         if declared is None:
             self.report(
-                f"The union of {' and '.join(self.symbols[item].name for item in models)} "
+                f"The union of {english_list((self.symbols[item].name for item in models), 'and', 'each')} "
                 f"needs a declared discriminator for the {self.backend} converter"
             )
             return None, ()
@@ -404,7 +400,7 @@ class _Planner:
             field = next((field for field in self.facts.fields(symbol) if field.wire_name == tag), None)
             type_ = None if field is None else field.type
             values = (
-                [item.value for item in type_.values if isinstance(item, LiteralScalar) and isinstance(item.value, str)]
+                [text for item in type_.values if (text := literal_text(item)) is not None]
                 if isinstance(type_, LiteralType)
                 else []
             )
@@ -437,24 +433,17 @@ def plan_client_codecs(  # ruff: ignore[too-many-arguments]
         if use.id not in uses or use.id.direction == "neutral" or use.schema is None:
             continue
         planner.source = use.id.use_site
-        if use.state != "bound" or use.type is None:
-            planner.report(
-                "The use has no generated native type",
-                code="BND_MODEL_SCOPE_REQUIRED" if use.state == "not_generated" else use.reason or "MC_BINDING_MISSING",
-            )
+        if isinstance(value := native_type(use), Refusal):
+            planner.report(value.message, code=value.code)
             continue
-        if names.unspellable(use.type):
-            planner.report(
-                "The use's final type has no expression a generated module can import",
-                code="BND_TYPE_EXPRESSION_UNSUPPORTED",
-            )
+        if names.unspellable(value):
+            planner.report(UNSPELLABLE.message, code=UNSPELLABLE.code)
             continue
-        shape = planner.shape(use.type, use.schema) if CODEC_RUNTIMES[backend].mapped else None
-        planned.append(CodecUse(use.id, use.type, shape, not extras.isdisjoint(named_symbols(use.type))))
+        shape = planner.shape(value, use.schema) if CODEC_RUNTIMES[backend].mapped else None
+        planned.append(CodecUse(use.id, value, shape, not extras.isdisjoint(named_symbols(value))))
     return ClientCodecs(
         tuple(planned),
         tuple(planner.models[key] for key in sorted(planner.models)),
         (*wire.diagnostics, *planner.diagnostics),
-        tuple(facts.imports.items()),
         backend,
     )

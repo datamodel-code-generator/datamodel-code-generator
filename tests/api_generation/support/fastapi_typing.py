@@ -72,6 +72,12 @@ def fastapi_bodies_report(root: Path) -> str:
     return "\n".join(checked(root, ["bodies"], "bodies")) + "\n"
 
 
+def fastapi_extras_report(root: Path) -> str:
+    """Check the extras package, whose responses write the extra members of Pydantic dataclasses by its writer."""
+    _generate(root, SOURCE / "server-extras.yaml", "extras", DataModelType.PydanticV2Dataclass)
+    return "\n".join(checked(root, ["extras"], "extras")) + "\n"
+
+
 def fastapi_parameters_report(root: Path) -> str:
     """Check the parameters package, whose routes with renamed path placeholders register `wire_named` route classes."""
     _generate(root, SOURCE / "server-parameters.yaml", "parameters", DataModelType.PydanticV2BaseModel)

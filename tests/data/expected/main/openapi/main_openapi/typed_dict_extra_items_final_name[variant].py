@@ -18,11 +18,11 @@ class Bar(TypedDict):
     c: NotRequired[str]
 
 
-class FooResponse(TypedDict, extra_items='BarResponse1'):
+class FooResponse(TypedDict, extra_items=BarResponse1):
     name: NotRequired[str]
 
 
-class Foo(TypedDict, extra_items='Bar'):
+class Foo(TypedDict, extra_items=Bar):
     secret: NotRequired[str]
     name: NotRequired[str]
 

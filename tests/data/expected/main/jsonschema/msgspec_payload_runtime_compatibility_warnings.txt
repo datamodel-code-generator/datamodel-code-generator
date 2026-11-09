@@ -1,3 +1,7 @@
+a Literal of the output model cannot hold the value True, so it is written as its type, which admits other values; Flagged.flag is generated without this constraint.
+a Literal of the output model cannot hold the value False, so it is written as its type, which admits other values; Flagged1.flag is generated without this constraint.
+a Literal of the output model cannot hold the value True, so it is written as its type, which admits other values; Payload.negated is generated without this constraint.
 msgspec cannot decode the union Payload.flagged: its Struct types Flagged, Flagged1 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
 msgspec cannot decode the union Payload.partialTagged: its Struct types PartialTagged, PartialTagged1 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Payload.partialTagged: it holds the dict-like members PartialTagged, PartialTagged1, dict[str, Any], while a msgspec union holds only one dict-like member (its Struct types count as one).
 msgspec cannot decode the union Payload.optionalTagged: its Struct types OptionalTagged, OptionalTagged1 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

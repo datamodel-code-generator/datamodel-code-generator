@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    A:
+      type: object
+      properties:
+        id: {type: string, readOnly: true}
+    Real:
+      type: object
+      properties:
+        secret: {type: string, writeOnly: true}
+    Root:
+      $ref: '#/components/schemas/Real'
+    M:
+      allOf:
+        - $ref: '#/components/schemas/A'
+          properties:
+            extra: {type: boolean, readOnly: true}
+          required: [extra]
+        - $ref: '#/components/schemas/Root'

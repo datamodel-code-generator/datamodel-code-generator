@@ -21,6 +21,17 @@ Layer: TypeAlias = Literal[
     "parser-core",
     "facts",
     "schema-graph",
+    "json-pointer",
+    "python-syntax",
+    "free-names",
+    "name-words",
+    "naming",
+    "graph-links",
+    "container-kinds",
+    "warning-control",
+    "message-text",
+    "module-paths",
+    "openapi-paths",
     "config",
     "input-model",
     "reference",
@@ -31,7 +42,6 @@ Layer: TypeAlias = Literal[
     "requirements",
     "constraints",
     "regex",
-    "checks",
     "shared",
 ]
 SharedModelAliasState: TypeAlias = tuple[set[str], set[str], set[str], set[str], dict[str, str]]
@@ -77,6 +87,7 @@ _TARGET_MODULES: Final = frozenset({
     "datamodel_code_generator._target_config",
     "datamodel_code_generator._target_documents",
     "datamodel_code_generator._target_format",
+    "datamodel_code_generator._target_operations",
     "datamodel_code_generator._target_render",
     "datamodel_code_generator._target_selection",
     "datamodel_code_generator._target_templates",
@@ -93,25 +104,119 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
         frozenset({
             *sys.stdlib_module_names,
             "typing_extensions",
+            "datamodel_code_generator._json_pointer",
             "datamodel_code_generator._records",
             "datamodel_code_generator.reference",
         }),
         (
             "the schema graph is the L0 core the parsers build: import only the standard library, typing_extensions, "
-            "datamodel_code_generator._records and datamodel_code_generator.reference, and take parser rules as "
-            "arguments"
+            "datamodel_code_generator._json_pointer, datamodel_code_generator._records and "
+            "datamodel_code_generator.reference, and take parser rules as arguments"
+        ),
+    ),
+    "json-pointer": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the RFC 6901 pointer codec is a leaf that every layer reads: import only the standard library and "
+            "typing_extensions"
+        ),
+    ),
+    "free-names": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the free-name numbering is a leaf that every layer reads: import only the standard library and "
+            "typing_extensions"
+        ),
+    ),
+    "name-words": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the class name made from the words of a text is a leaf that every layer reads: import only the standard "
+            "library and typing_extensions"
+        ),
+    ),
+    "naming": (
+        frozenset({
+            *sys.stdlib_module_names,
+            "typing_extensions",
+            "datamodel_code_generator._free_names",
+            "datamodel_code_generator._model_keys",
+            "datamodel_code_generator._records",
+        }),
+        (
+            "the names of the models are a leaf that the parsers and their passes read: import only the standard "
+            "library, typing_extensions, datamodel_code_generator._free_names, datamodel_code_generator._model_keys "
+            "and datamodel_code_generator._records"
+        ),
+    ),
+    "graph-links": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the back links of the generation graph are a leaf that reference.py, types.py and the model package "
+            "import while they import each other: import only the standard library and typing_extensions"
+        ),
+    ),
+    "container-kinds": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the container slots and kinds of a type tree node are a leaf that types.py, the model package, the "
+            "parser and the targets read: import only the standard library and typing_extensions"
+        ),
+    ),
+    "context-scope": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the context variable scope is a leaf that the command line, the parser, the model package and the "
+            "reference resolver import: import only the standard library and typing_extensions"
+        ),
+    ),
+    "warning-control": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "how the generator's own warnings are shown is a leaf that the entry point, the recommender, the parser "
+            "and its passes import: import only the standard library and typing_extensions"
+        ),
+    ),
+    "message-text": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "how the generator's messages write English is a leaf that the command line, the recommender, the parser, "
+            "the model package and the targets import: import only the standard library and typing_extensions"
+        ),
+    ),
+    "module-paths": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the paths of the written modules are a leaf that every layer reads: import only the standard library and "
+            "typing_extensions"
+        ),
+    ),
+    "openapi-paths": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the operation fields of a path item and the paths --openapi-include-paths selects are a leaf that the "
+            "parsers, the targets and the recommender read: import only the standard library and typing_extensions"
+        ),
+    ),
+    "python-syntax": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the Python display writer is a leaf that the model backends, the formatter and the targets read: import "
+            "only the standard library and typing_extensions"
         ),
     ),
     "requirements": (
         frozenset({
             *sys.stdlib_module_names,
             "typing_extensions",
+            "datamodel_code_generator._message_text",
             "datamodel_code_generator._records",
             "datamodel_code_generator.enums",
         }),
         (
             "the requirement table is a leaf: import only the standard library, typing_extensions, "
-            "datamodel_code_generator._records and datamodel_code_generator.enums"
+            "datamodel_code_generator._message_text, datamodel_code_generator._records and "
+            "datamodel_code_generator.enums"
         ),
     ),
     "constraints": (
@@ -131,29 +236,38 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
         ),
     ),
     "regex": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        frozenset({
+            *sys.stdlib_module_names,
+            "typing_extensions",
+            "datamodel_code_generator._python_syntax",
+            "datamodel_code_generator._records",
+        }),
         (
             "the static regex scan is a leaf that the keyword table, the literal check and the backends read: import "
-            "only the standard library and typing_extensions"
+            "only the standard library, typing_extensions, datamodel_code_generator._python_syntax and "
+            "datamodel_code_generator._records"
+        ),
+    ),
+    "json-schema": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions", "datamodel_code_generator._json_pointer"}),
+        (
+            "the subschema position table is a leaf that every schema walker reads: import only the standard library, "
+            "typing_extensions and datamodel_code_generator._json_pointer"
         ),
     ),
     "parser-core": (
         frozenset({
             *sys.stdlib_module_names,
             "typing_extensions",
+            "datamodel_code_generator._json_schema",
+            "datamodel_code_generator._model_keys",
             "datamodel_code_generator._records",
             "datamodel_code_generator._regex_syntax",
         }),
         (
             "a pure parser core computes from the dumped schemas it is given: import only the standard library, "
-            "typing_extensions, datamodel_code_generator._records and datamodel_code_generator._regex_syntax"
-        ),
-    ),
-    "checks": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
-        (
-            "the debug check flags module is a leaf that every layer reads: import only the standard library "
-            "and typing_extensions"
+            "typing_extensions, datamodel_code_generator._json_schema, datamodel_code_generator._model_keys, "
+            "datamodel_code_generator._records and datamodel_code_generator._regex_syntax"
         ),
     ),
 }
@@ -161,18 +275,21 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
 _PARSER_LAYERS: Final = frozenset({"parser", "parser-passes"})
 """Layers of parser code: the parser modules and the pass modules under ``parser/_passes/``."""
 _PARSER_PASS_IMPORTS: Final = frozenset({
-    "datamodel_code_generator.parser._check_scopes",
     "datamodel_code_generator.parser._facts",
-    "datamodel_code_generator.parser._finality",
+    "datamodel_code_generator.parser._field_rows",
     "datamodel_code_generator.parser._graph_ids",
     "datamodel_code_generator.parser._imports_plan",
+    "datamodel_code_generator.parser._init_exports",
+    "datamodel_code_generator.parser._intersection",
     "datamodel_code_generator.parser._model_shapes",
+    "datamodel_code_generator.parser._naming",
     "datamodel_code_generator.parser._null_facts",
-    "datamodel_code_generator.parser._pass_decls",
+    "datamodel_code_generator.parser._origins",
     "datamodel_code_generator.parser._passes",
     "datamodel_code_generator.parser._phases",
     "datamodel_code_generator.parser._pipeline",
     "datamodel_code_generator.parser._python_type_imports",
+    "datamodel_code_generator.parser._tag_plan",
     "datamodel_code_generator.parser.generation",
 })
 """The parser modules a pass module may import: none imports ``parser/base.py``, so no pass closes a cycle."""
@@ -188,7 +305,9 @@ _NEUTRAL_MODEL_FILENAMES: Final = frozenset({
     "enum.py",
     "imports.py",
     "output.py",
+    "_field_imports.py",
     "_render_plan.py",
+    "_rendered_names.py",
     "runtime_validation.py",
     "scalar.py",
     "type_alias.py",
@@ -300,12 +419,6 @@ DEFAULT_ALLOWLIST: Final[dict[BoundaryKey, AllowlistEntry]] = {
     ): AllowlistEntry("Preserve the public ParserConfig default field model"),
     BoundaryKey(
         "src/datamodel_code_generator/parser/base.py",
-        "_is_pydantic_v2_data_model_field",
-        "backend-module-identity",
-        "datamodel_code_generator.model.pydantic_v2.base_model#DataModelField",
-    ): AllowlistEntry("Keep the production-unused private compatibility helper without eager backend imports"),
-    BoundaryKey(
-        "src/datamodel_code_generator/parser/base.py",
         "__getattr__",
         "backend-import",
         "datamodel_code_generator.model.dataclass",
@@ -334,18 +447,6 @@ DEFAULT_ALLOWLIST: Final[dict[BoundaryKey, AllowlistEntry]] = {
         "reference-backend-import",
         "datamodel_code_generator.model.field_name.MsgspecFieldNameResolver",
     ): AllowlistEntry("Keep the lazy legacy default msgspec field-name resolver lookup"),
-    BoundaryKey(
-        "src/datamodel_code_generator/reference.py",
-        "__getattr__",
-        "reference-backend-import",
-        "datamodel_code_generator.model.field_name.PydanticFieldNameResolver",
-    ): AllowlistEntry("Keep the lazy legacy reference.PydanticFieldNameResolver compatibility export"),
-    BoundaryKey(
-        "src/datamodel_code_generator/reference.py",
-        "__getattr__",
-        "reference-backend-import",
-        "datamodel_code_generator.model.field_name.MsgspecFieldNameResolver",
-    ): AllowlistEntry("Keep the lazy legacy reference.MsgspecFieldNameResolver compatibility export"),
 }
 
 
@@ -377,7 +478,6 @@ def _module_name(path: Path, layer: Layer) -> str:
             "requirements": "datamodel_code_generator.requirements_fixture",
             "constraints": "datamodel_code_generator.constraints_fixture",
             "regex": "datamodel_code_generator.regex_fixture",
-            "checks": "datamodel_code_generator.checks_fixture",
             "shared": "datamodel_code_generator.shared_fixture",
         }[layer]
 
@@ -1242,6 +1342,8 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "facts"
         case ("parser", "_schema_graph.py"):
             layer = "schema-graph"
+        case ("parser", "_naming.py"):
+            layer = "naming"
         case ("parser", "_passes", *_):
             layer = "parser-passes"
         case ("parser", filename) if filename in _PARSER_CORE_FILENAMES:
@@ -1258,8 +1360,30 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "constraints"
         case ("_regex_syntax.py",):
             layer = "regex"
-        case ("_checks.py",):
-            layer = "checks"
+        case ("_json_schema.py",):
+            layer = "json-schema"
+        case ("_json_pointer.py",):
+            layer = "json-pointer"
+        case ("_python_syntax.py",):
+            layer = "python-syntax"
+        case ("_free_names.py",):
+            layer = "free-names"
+        case ("_name_words.py",):
+            layer = "name-words"
+        case ("_graph_links.py",):
+            layer = "graph-links"
+        case ("_container_kinds.py",):
+            layer = "container-kinds"
+        case ("_context_scope.py",):
+            layer = "context-scope"
+        case ("_warning_control.py",):
+            layer = "warning-control"
+        case ("_message_text.py",):
+            layer = "message-text"
+        case ("_module_paths.py",):
+            layer = "module-paths"
+        case ("_openapi_paths.py",):
+            layer = "openapi-paths"
         case ("_client" | "_fastapi", *_):
             layer = "target"
         case (filename,) if f"datamodel_code_generator.{filename.removesuffix('.py')}" in _TARGET_MODULES:

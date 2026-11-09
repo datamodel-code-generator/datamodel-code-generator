@@ -7,19 +7,19 @@ from dataclasses import replace
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, cast
+from warnings import warn
 
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_generation import TargetRender
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, NextSteps
+from datamodel_code_generator._api_types import APIGenerationError, NextSteps, error_text
 from datamodel_code_generator._client.caching import plan_caches
 from datamodel_code_generator._client.codec_plan import plan_client_codecs
-from datamodel_code_generator._client.config import OPTION_PREFIX, ClientGenerationConfig
+from datamodel_code_generator._client.config import OPTION_PREFIX, ClientGenerationConfig, _is_sequence
 from datamodel_code_generator._client.fields import plan_fields
 from datamodel_code_generator._client.model_facts import ModelFacts
 from datamodel_code_generator._client.pagination import plan_pagination
 from datamodel_code_generator._client.plan import (
-    PlanError,
     Planner,
     encoding_header_uses,
     form_uses,
@@ -29,6 +29,7 @@ from datamodel_code_generator._client.plan import (
 )
 from datamodel_code_generator._client.polling import plan_polling
 from datamodel_code_generator._client.protocol_plan import (
+    helper_calls,
     helper_metadata,
     helper_operations,
     helper_problems,
@@ -47,39 +48,54 @@ from datamodel_code_generator._client.webhooks import (
     webhook_files,
     webhook_uses,
 )
+from datamodel_code_generator._graph import reach
+from datamodel_code_generator._openapi_features import feature_label
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
+from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._target_contract import (
     GeneratedEnumMember,
     GeneratedSymbolType,
     GenericType,
     UnionType,
+    label,
 )
-from datamodel_code_generator._target_documents import canonical_bytes, sha256
+from datamodel_code_generator._target_documents import canonical_bytes, sha256, shown
 from datamodel_code_generator._target_module import TargetModule, TypeNames
-from datamodel_code_generator._target_render import PYDANTIC_BACKENDS, model_dependencies, pydantic_dependency
+from datamodel_code_generator._target_operations import PlanError, raise_selected
+from datamodel_code_generator._target_render import (
+    PYDANTIC_BACKENDS,
+    TYPING_EXTENSIONS,
+    model_dependencies,
+    pydantic_dependency,
+)
 from datamodel_code_generator.enums import DataModelType
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._api_types import TargetKind
+    from datamodel_code_generator._api_types import Diagnostic, TargetKind
     from datamodel_code_generator._client.caching import CacheSpec
     from datamodel_code_generator._client.codec_plan import CodecBackend
     from datamodel_code_generator._client.pagination import PaginationSpec
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
+    from datamodel_code_generator._client.protocol_plan import Protocols
+    from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
-    from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
+    from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
         ModelFieldFacts,
+        OperationContract,
+        OperationId,
         SymbolId,
         TypeUseBinding,
         TypeView,
     )
+    from datamodel_code_generator._target_documents import JSONObject
 
 HTTPX2: Final = "httpx2>=2.13.0"
-DEPENDENCIES: Final = ("typing-extensions>=4.16",)
 MSGSPEC: Final = "msgspec>=0.22.0"
 _BACKENDS: Final[dict[DataModelType, CodecBackend]] = {
     DataModelType.PydanticV2BaseModel: "pydantic_v2.BaseModel",
@@ -102,98 +118,165 @@ class ClientTarget:
         """Resolve the documents that the helper JSON object names against protocol_base."""
         self.protocol_base = protocol_base
 
-    def render(self, request: TargetRequest) -> TargetRender:  # ruff: ignore[too-many-locals]
-        """Plan the selected operations, bind their codecs, and render the package."""
+    def render(self, request: TargetRequest) -> TargetRender:
+        """Plan the selected operations, bind their codecs, and render the package.
+
+        An operation that only its own declarations refuse, and that no enabled helper calls, is left out with a warning
+        that names the OpenAPI features it uses that the client does not support, and the others are planned again. A
+        refusal stays an error, with the findings of the operations skipped before it, when anything else is refused
+        too, or nothing is left.
+        """
         config = request.config
         assert isinstance(config, ClientGenerationConfig)
-        backend = _BACKENDS[request.model_config.output_model_type]
         protocols = plan_protocols(request, config.protocols, self.protocol_base)
-        wire = _wire(request, request.batch)
-        facts = ModelFacts(request.batch)
-        helping = helper_operations(protocols)
-        try:
-            plan = Planner(request, config, wire, facts, helping).plan()
-        except PlanError as error:
-            raise APIGenerationError(error.diagnostics, option_prefix=OPTION_PREFIX) from None
-        events, hooked = webhook_uses(protocols, request)
-        received = frozenset(event.use.id for spec in events for event in spec.events)
-        streamed, stream_events, stream_problems = stream_uses(protocols, plan, request)
-        opened, messages, socket_problems = socket_uses(protocols, plan, request)
-        uses = frozenset(plan_uses(plan)) | received | frozenset(use.id for use in (*stream_events, *messages))
-        batch = request.batch
-        if parts := (*part_uses(plan), *stream_events, *messages):
-            batch = replace(batch, type_uses=(*batch.type_uses, *parts))
-        types = TypeNames(
-            batch,
-            exact=bool(request.model_config.use_exact_imports),
-            overrides=request.model_config.import_overrides,
-        )
-        codecs = plan_client_codecs(batch, wire, backend, uses, facts, names=types)
-        selected = {spec.contract.id for spec in plan.operations}
-        if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
-            raise APIGenerationError(tuple(map(_diagnostic, problems)))
-        coded = frozenset(item.use for item in codecs.uses)
-        assert batch.names is not None
-        plan, named = plan_fields(plan, facts, coded, batch.names, helping)
-        pages, checked = plan_pagination(protocols, plan, facts, coded, request)
-        polls, polled = plan_polling(protocols, plan, facts, coded, request)
-        caches, cached = plan_caches(protocols, plan, facts, coded, request)
-        uploads, uploaded = plan_uploads(protocols, plan, facts, coded, request)
-        order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
-        helpers = tuple(sorted((*pages, *polls, *caches, *uploads), key=lambda spec: order[spec.helper.name]))
-        streams = plan_streams(streamed, protocols, plan, facts, coded, request, stream_problems)
-        sockets = plan_sockets(opened, socket_problems)
-        webhooks = plan_webhooks(events, codecs, hooked)
-        if refused := (
-            *named,
-            *helper_problems(
-                protocols,
-                plan,
-                {
-                    **checked,
-                    **polled,
-                    **cached,
-                    **uploaded,
-                    **hooked,
-                    **stream_problems,
-                    **socket_problems,
-                },
-            ),
-        ):
-            raise APIGenerationError(refused, option_prefix=OPTION_PREFIX)
-        data = _HelperDigests(request, types, facts)
-        metadata = helper_metadata(protocols, request)
-        fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in pages}
-        fingerprints.update((spec.helper.name, data.cache(spec, metadata[spec.helper.name])) for spec in caches)
-        fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
-        fingerprints.update((spec.helper.name, data.socket(spec, metadata[spec.helper.name])) for spec in sockets)
-        dependencies = (
-            WEBSOCKETS if sockets else HTTPX2,
-            *DEPENDENCIES,
-            *_backend_dependencies(backend, request.model_imports),
-            *webhook_dependencies(webhooks),
-            *model_dependencies(request.model_imports),
-        )
-        renderer = ClientRenderer(
-            config=config,
-            plan=plan,
-            batch=batch,
-            wire=wire,
-            codecs=codecs,
-            helpers=helpers,
-            streams=streams,
-            sockets=sockets,
-            fingerprints=fingerprints,
-            webhooks=partial(webhook_files, webhooks, types),
-            signatures=frozenset(spec.helper.tree["signature"]["kind"] for spec in webhooks),
-            backend=backend,
-            types=types,
-            dependencies=dependencies,
-            templates=ClientTemplates.custom(request.model_config, request.cwd),
-            use_schema_description=request.model_config.use_schema_description,
-            use_single_line_docstring=request.model_config.use_single_line_docstring,
-        )
-        return TargetRender(files=renderer.files(), dependencies=dependencies, next_steps=_next_steps(config, plan))
+        called = helper_calls(protocols)
+        skipped: list[tuple[OperationContract, list[Diagnostic]]] = []
+        selected = request.operations
+        while isinstance(rendered := _attempt(request, config, protocols, selected), APIGenerationError):
+            refused = _refused(rendered, request.operations, called)
+            if refused is None or len(refused) == len(request.operations):
+                earlier = (item for _, found in skipped for item in found)
+                diagnostics = (*earlier, *rendered.diagnostics)
+                raise APIGenerationError(diagnostics, option_prefix=rendered.option_prefix) from None
+            skipped.extend(refused.values())
+            request = replace(request, operations=tuple(item for item in request.operations if item.id not in refused))
+        output = shown(config.output, request.shown_root).as_posix()
+        for operation, found in skipped:
+            named = "" if operation.operation_id is None else f" (operationId {stable_repr(operation.operation_id)})"
+            features = ", ".join(dict.fromkeys(feature_label(item.feature) for item in found if item.feature))
+            why = (
+                f"which uses {features} that the client does not support"
+                if features
+                else "which the client cannot generate"
+            )
+            warn(f"{output}: Skipping {label(operation)}{named}, {why}: {error_text(found)}", stacklevel=2)
+        return rendered
+
+
+def _attempt(
+    request: TargetRequest,
+    config: ClientGenerationConfig,
+    protocols: Protocols | None,
+    selected: tuple[OperationContract, ...],
+) -> TargetRender | APIGenerationError:
+    """Render the request's operations, or return the error that refuses them.
+
+    `selected` are the operations selected before any was skipped.
+    """
+    try:
+        return _render(request, config, protocols, selected)
+    except APIGenerationError as error:
+        return error
+
+
+def _render(  # ruff: ignore[too-many-locals]
+    request: TargetRequest,
+    config: ClientGenerationConfig,
+    protocols: Protocols | None,
+    selected: tuple[OperationContract, ...],
+) -> TargetRender:
+    """Plan the request's operations, bind their codecs, and render the package."""
+    backend = _BACKENDS[request.model_config.output_model_type]
+    wire = _wire(request, request.batch, brackets=config.deep_object_brackets)
+    facts = ModelFacts(request.batch)
+    helping = helper_operations(protocols)
+    try:
+        plan = Planner(request, config, wire, facts, helping, selected=selected).plan()
+    except PlanError as error:
+        raise APIGenerationError(error.diagnostics, option_prefix=OPTION_PREFIX) from None
+    events, hooked = webhook_uses(protocols, plan, request)
+    received = frozenset(event.use.id for spec in events for event in spec.events)
+    streamed, stream_events, stream_problems = stream_uses(protocols, plan, request)
+    opened, messages, socket_problems = socket_uses(protocols, plan, request)
+    uses = frozenset(plan_uses(plan)) | received | frozenset(use.id for use in (*stream_events, *messages))
+    batch = request.batch
+    if parts := (*part_uses(plan), *stream_events, *messages):
+        batch = replace(batch, type_uses=(*batch.type_uses, *parts))
+    types = TypeNames.of(batch, request.model_config)
+    codecs = plan_client_codecs(batch, wire, backend, uses, facts, names=types)
+    raise_selected(codecs.diagnostics, (spec.contract.id for spec in plan.operations))
+    coded = frozenset(item.use for item in codecs.uses)
+    assert batch.names is not None
+    plan, named = plan_fields(plan, facts, coded, batch.names, helping)
+    pages, checked = plan_pagination(protocols, plan, facts, coded, request)
+    polls, polled = plan_polling(protocols, plan, facts, coded, request)
+    caches, cached = plan_caches(protocols, plan, facts, coded, request)
+    uploads, uploaded = plan_uploads(protocols, plan, facts, coded, request)
+    order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
+    helpers = tuple(sorted((*pages, *polls, *caches, *uploads), key=lambda spec: order[spec.helper.name]))
+    streams = plan_streams(streamed, protocols, plan, facts, coded, request, stream_problems)
+    sockets = plan_sockets(opened, socket_problems)
+    webhooks = plan_webhooks(events, codecs, hooked)
+    if refused := (
+        *named,
+        *helper_problems(
+            protocols,
+            plan,
+            {
+                **checked,
+                **polled,
+                **cached,
+                **uploaded,
+                **hooked,
+                **stream_problems,
+                **socket_problems,
+            },
+        ),
+    ):
+        raise APIGenerationError(refused, option_prefix=OPTION_PREFIX)
+    data = _HelperDigests(request, types, facts)
+    metadata = helper_metadata(protocols, request)
+    fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in pages}
+    fingerprints.update((spec.helper.name, data.cache(spec, metadata[spec.helper.name])) for spec in caches)
+    fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
+    fingerprints.update((spec.helper.name, data.socket(spec, metadata[spec.helper.name])) for spec in sockets)
+    dependencies = (
+        WEBSOCKETS if sockets else HTTPX2,
+        TYPING_EXTENSIONS,
+        *_backend_dependencies(backend, request.model_imports),
+        *webhook_dependencies(webhooks),
+        *model_dependencies(request.model_imports),
+    )
+    renderer = ClientRenderer(
+        config=config,
+        plan=plan,
+        batch=batch,
+        wire=wire,
+        codecs=codecs,
+        helpers=helpers,
+        streams=streams,
+        sockets=sockets,
+        fingerprints=fingerprints,
+        webhooks=partial(webhook_files, webhooks, types),
+        signatures=frozenset(spec.helper.tree["signature"]["kind"] for spec in webhooks),
+        backend=backend,
+        types=types,
+        dependencies=dependencies,
+        templates=ClientTemplates.custom(request.model_config, request.cwd),
+        use_schema_description=request.model_config.use_schema_description,
+        use_single_line_docstring=request.model_config.use_single_line_docstring,
+    )
+    return TargetRender(files=renderer.files(), dependencies=dependencies, next_steps=_next_steps(config, plan))
+
+
+def _refused(
+    error: APIGenerationError, operations: tuple[OperationContract, ...], called: frozenset[OperationId]
+) -> dict[OperationId, tuple[OperationContract, list[Diagnostic]]] | None:
+    """Return each operation an error refuses with its findings, or None when a finding refuses more than one operation.
+
+    A finding refuses one operation alone when that operation's own declarations cause it: no setting does, and no
+    enabled helper calls the operation.
+    """
+    by_pointer = {operation.id.use_site.pointer: operation for operation in operations}
+    refused: dict[OperationId, tuple[OperationContract, list[Diagnostic]]] = {}
+    for item in error.diagnostics:
+        if item.operation is None or item.option_path is not None:
+            return None
+        operation = by_pointer[item.operation.pointer]
+        if operation.id in called:
+            return None
+        refused.setdefault(operation.id, (operation, []))[1].append(item)
+    return refused
 
 
 def _next_steps(config: ClientGenerationConfig, plan: ClientPlan) -> NextSteps:
@@ -211,8 +294,11 @@ def _backend_dependencies(backend: CodecBackend, model_imports: frozenset[str]) 
     return (MSGSPEC,) if backend == "msgspec.Struct" else ()
 
 
-def _wire(request: TargetRequest, batch: GeneratedTypeContractBatch) -> WirePlan:
-    """Plan the parameters and headers of the selected operations, with the member plans of their forms."""
+def _wire(request: TargetRequest, batch: GeneratedTypeContractBatch, *, brackets: bool) -> WirePlan:
+    """Plan the parameters and headers of the selected operations, with the member plans of their forms.
+
+    With `brackets`, a deepObject query parameter or URL-encoded form member is written in the bracket form.
+    """
     return plan_wire(
         batch,
         [
@@ -222,16 +308,8 @@ def _wire(request: TargetRequest, batch: GeneratedTypeContractBatch) -> WirePlan
         operations=frozenset(operation.id for operation in request.operations),
         forms=dict(form_uses(request)),
         styles=dict(style_uses(request)),
-    )
-
-
-def _diagnostic(item: CodecDiagnostic) -> Diagnostic:
-    return Diagnostic(
-        code=item.code,
-        severity="error",
-        stage="binding",
-        message=item.message,
-        source_pointer=item.source.pointer,
+        writes=True,
+        brackets=brackets,
     )
 
 
@@ -249,55 +327,28 @@ class _HelperDigests:
 
         The settings are the helper's normalized metadata, so equivalent spellings of its references digest alike.
         """
-        operation, helper = spec.operation, spec.helper
-        body = operation.body
         signature = {
-            "name": helper.name,
-            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
-            "body": None
-            if body is None
-            else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
+            **self.call(spec.helper, spec.operation, settings),
+            "body": self.body(spec.operation),
             "item": self.spelled(spec.item),
             "page": self.type(spec.page),
-            "settings": settings,
         }
-        return _digest({
-            "kind": helper.kind,
-            "signatures": [signature],
-            "operations": [self.request.documents.operation(operation.contract.id)],
-            "schemas": [spec.item_schema],
-            "type_uses": [self.contract(spec.page)],
-        })
+        return self.digest(spec.helper.kind, signature, spec.operation, [spec.item_schema], [self.contract(spec.page)])
 
     def cache(self, spec: CacheSpec, settings: JSONValue) -> str:
         """Return the digest of a cache helper's contract closure: its fetch signature and operation.
 
         The fetch's signature carries the settings, and the type use of its cacheable response closes the contract.
         """
-
-        def signature(name: str, operation: OperationSpec) -> dict[str, object]:
-            body = operation.body
-            return {
-                "name": name,
-                "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
-                "body": None
-                if body is None
-                else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
-                "responses": [
-                    (item.status, [self.type(media.use) for media in item.media]) for item in operation.responses
-                ],
-            }
-
-        operations = (spec.operation,)
-        return _digest({
-            "kind": "cache",
-            "signatures": [
-                {**signature(spec.helper.name, spec.operation), "settings": settings},
+        operation = spec.operation
+        signature = {
+            **self.call(spec.helper, operation, settings),
+            "body": self.body(operation),
+            "responses": [
+                (item.status, [self.type(media.use) for media in item.media]) for item in operation.responses
             ],
-            "operations": [self.request.documents.operation(item.contract.id) for item in operations],
-            "schemas": [],
-            "type_uses": [self.contract(spec.response)],
-        })
+        }
+        return self.digest("cache", signature, operation, [], [self.contract(spec.response)])
 
     def webhook(self, spec: WebhookSpec, settings: JSONValue) -> str:
         """Return the digest of a webhook helper's contract closure: its signature, settings, schemas, and event uses.
@@ -312,34 +363,54 @@ class _HelperDigests:
             "key": key_class(spec.helper.tree["signature"]["kind"]),
             "settings": settings,
         }
-        return _digest({
-            "kind": "webhook",
-            "signatures": [signature],
-            "operations": [],
-            "schemas": [event.schema for event in events],
-            "type_uses": [self.contract(event.use) for event in events],
-        })
+        schemas, uses = [event.schema for event in events], [self.contract(event.use) for event in events]
+        return self.digest("webhook", signature, None, schemas, uses)
 
     def socket(self, spec: SocketSpec, settings: JSONValue) -> str:
         """Return the digest of a WebSocket helper's contract closure: its signature, settings, operation, and schemas.
 
         Each message use contributes its type and contract, so a changed schema changes the digest.
         """
-        operation, helper = spec.operation, spec.helper
         signature = {
-            "name": helper.name,
-            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
+            **self.call(spec.helper, spec.operation, settings),
             "send": None if spec.send is None else self.type(spec.send),
             "receive": None if spec.receive is None else self.type(spec.receive),
+        }
+        uses = [self.contract(use) for use in spec.uses]
+        return self.digest(spec.helper.kind, signature, spec.operation, list(spec.schemas), uses)
+
+    def call(self, helper: Helper, operation: OperationSpec, settings: JSONValue) -> dict[str, object]:
+        """Return the name, parameters, and settings of a helper's signature for the operation it calls."""
+        return {
+            "name": helper.name,
+            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
             "settings": settings,
         }
-        return _digest({
-            "kind": helper.kind,
+
+    def body(self, operation: OperationSpec) -> object:
+        """Return the requiredness and the typed media of an operation's request body, or None without one."""
+        if (body := operation.body) is None:
+            return None
+        return body.required, [(item.media_type, self.type(item.use)) for item in body.media]
+
+    def digest(
+        self,
+        kind: str,
+        signature: dict[str, object],
+        operation: OperationSpec | None,
+        schemas: list[JSONObject],
+        uses: list[object],
+    ) -> str:
+        """Return the digest of a helper's contract closure from its one signature, operation, schemas, and uses."""
+        operations = [] if operation is None else [self.request.documents.operation(operation.contract.id)]
+        closure = {
+            "kind": kind,
             "signatures": [signature],
-            "operations": [self.request.documents.operation(operation.contract.id)],
-            "schemas": list(spec.schemas),
-            "type_uses": [self.contract(use) for use in spec.uses],
-        })
+            "operations": operations,
+            "schemas": schemas,
+            "type_uses": uses,
+        }
+        return sha256(canonical_bytes(_projection(closure)))
 
     def spelled(self, value: TypeView) -> str:
         """Return a type's canonical spelling: its containers and unions by structure, its leaves as models spell them.
@@ -349,9 +420,11 @@ class _HelperDigests:
         """
         match value:
             case GenericType():
-                arguments = ", ".join(self.spelled(item) for item in value.arguments)
+                arguments = [self.spelled(item) for item in value.arguments]
+                if arguments and value.tuple_form == "variadic":
+                    arguments.append("...")
                 base = self.spelled(value.base)
-                return f"{base}[{arguments or '()'}]" if arguments or value.tuple_form == "fixed" else base
+                return subscript_text(base, arguments) if arguments or value.tuple_form == "fixed" else base
             case UnionType():
                 return " | ".join(self.spelled(member) for member in value.members)
             case _:
@@ -369,24 +442,21 @@ class _HelperDigests:
         wire name, member kind, exclusion, requiredness, nullability, direction, type and emitted default, so a schema
         change that changes any reached model changes the digest.
         """
-        pending = list(() if use.type is None else _named(use.type))
         models: dict[str, object] = {}
-        while pending:
-            symbol = pending.pop()
-            if (name := self.spelling.symbol(symbol)) in models:
-                continue
+
+        def visit(symbol: SymbolId) -> list[SymbolId]:
             found, members = self.facts.symbols[symbol], self.facts.members.get(symbol, ())
-            models[name] = {
+            models[self.spelling.symbol(symbol)] = {
                 "kind": found.kind,
-                "values": [None if value is None else repr(value.value) for value in found.values],
+                "values": [None if value is None else stable_repr(value.value) for value in found.values],
                 "fields": [
                     [member.wire_name, member.member_kind, member.exclusion, *self.field(member.model_facts)]
                     for member in members
                 ],
             }
-            pending.extend(
-                symbol for member in members if member.model_facts for symbol in _named(member.model_facts.type)
-            )
+            return [named for member in members if member.model_facts for named in _named(member.model_facts.type)]
+
+        reach(() if use.type is None else _named(use.type), visit, key=self.spelling.symbol)
         return {"type": self.type(use), "models": models}
 
     def field(self, facts: ModelFieldFacts | None) -> tuple[object, ...]:
@@ -401,7 +471,7 @@ class _HelperDigests:
                 facts.write_only,
                 self.spelled(facts.type),
                 facts.backend.emitted.emitted_default_kind,
-                repr(facts.backend.emitted.emitted_default_value),
+                stable_repr(facts.backend.emitted.emitted_default_value),
             )
         )
 
@@ -422,14 +492,6 @@ def _named(value: TypeView) -> tuple[SymbolId, ...]:
         *((value.symbol,) if isinstance(value, GeneratedSymbolType) else ()),
         *(symbol for item in nested for symbol in _named(item)),
     )
-
-
-def _digest(value: object) -> str:
-    return sha256(canonical_bytes(_projection(value)))
-
-
-def _is_sequence(value: object) -> TypeIs[tuple[object, ...] | list[object]]:
-    return isinstance(value, (tuple, list))
 
 
 def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:

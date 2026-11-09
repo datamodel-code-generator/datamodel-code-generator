@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "A": {
+      "type": "object",
+      "properties": {"p": {"type": "string", "maxLength": 5}, "q": {"type": "integer"}}
+    },
+    "B": {
+      "allOf": [{"$ref": "#/$defs/A"}, {"type": "object", "properties": {"p": {"type": "string", "maxLength": 3}}}]
+    },
+    "BaseFirst": {"allOf": [{"$ref": "#/$defs/A"}, {"$ref": "#/$defs/B"}]},
+    "DescendantFirst": {"allOf": [{"$ref": "#/$defs/B"}, {"$ref": "#/$defs/A"}]},
+    "FromBaseFirst": {
+      "allOf": [{"$ref": "#/$defs/BaseFirst"}, {"type": "object", "properties": {"p": {"minLength": 1}}, "required": ["p", "q"]}]
+    },
+    "FromDescendantFirst": {
+      "allOf": [
+        {"$ref": "#/$defs/DescendantFirst"},
+        {"type": "object", "properties": {"p": {"minLength": 1}}, "required": ["p", "q"]}
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "base_first": {"$ref": "#/$defs/FromBaseFirst"},
+    "descendant_first": {"$ref": "#/$defs/FromDescendantFirst"}
+  }
+}

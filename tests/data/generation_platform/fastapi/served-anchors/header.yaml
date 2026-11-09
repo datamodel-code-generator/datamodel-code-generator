@@ -1,0 +1,5 @@
+schema:
+  type: array
+  items: {$ref: "#trace"}
+  $defs:
+    trace: {$anchor: trace, type: string, pattern: "^[a-f0-9]+$"}

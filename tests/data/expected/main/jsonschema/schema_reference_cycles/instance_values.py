@@ -44,7 +44,13 @@ class PayloadRoot(BaseModel):
     enum_value: EnumValue
     examples_value: ExamplesValue = Field(
         ...,
-        examples=[{'text': 'examples', 'code': 4, 'nested': [{'$ref': '#/$defs/BaseExamples'}]}],
+        examples=[
+            {
+                'text': 'examples',
+                'code': 4,
+                'nested': [{'$ref': '#/$defs/BaseExamples'}],
+            }
+        ],
     )
     metadata_value: MetadataValue
 

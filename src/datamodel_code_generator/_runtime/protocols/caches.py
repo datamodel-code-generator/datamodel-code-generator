@@ -4,22 +4,32 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from math import isfinite
-from typing import Generic, Literal, Protocol, TypeAlias
+from typing import Final, Generic, Literal, Protocol, TypeAlias
 
 from typing_extensions import TypeIs, TypeVar
 
 from ..client.responses import HeadersView, ResponseInfo
+from ..client.timing import is_aware, usable_seconds
+from ..model_codecs.media import OK, STATUSES, json_integer, json_number
 
-__all__ = ("AsyncCacheStore", "CacheEntry", "CacheResult", "CacheSource", "CacheStore", "string_tuple")
+__all__ = (
+    "CACHED_STATUSES",
+    "AsyncCacheStore",
+    "CacheEntry",
+    "CacheResult",
+    "CacheSource",
+    "CacheStore",
+    "string_tuple",
+)
 
 T_co = TypeVar("T_co", covariant=True, default=object)
 
 CacheSource: TypeAlias = Literal["network", "fresh_cache", "revalidated"]
 
 _SOURCES: tuple[CacheSource, ...] = ("network", "fresh_cache", "revalidated")
-_MIN_STATUS = 100
-_MAX_STATUS = 599
+
+CACHED_STATUSES: Final = (OK,)
+"""The statuses a cache helper stores when its definition names none."""
 
 
 def _kind(valid: bool, name: str) -> None:  # noqa: FBT001
@@ -29,7 +39,7 @@ def _kind(valid: bool, name: str) -> None:  # noqa: FBT001
 
 
 def _typed(value: object, kinds: type | tuple[type, ...], name: str) -> None:
-    _kind(isinstance(value, kinds) and not isinstance(value, bool), name)
+    _kind(isinstance(value, kinds), name)
 
 
 def _tuple(value: object) -> TypeIs[tuple[object, ...]]:
@@ -71,17 +81,17 @@ class CacheEntry:
         _typed(self.schema_fingerprint, str, "schema_fingerprint")
         _kind(string_tuple(self.vary), "vary")
         _kind(_tuple(self.vary_values) and all(string_tuple(item) for item in self.vary_values), "vary_values")
-        _typed(self.status_code, int, "status_code")
+        _kind(json_integer(self.status_code), "status_code")
         _typed(self.headers, HeadersView, "headers")
         _typed(self.body, bytes, "body")
-        _range(_MIN_STATUS <= self.status_code <= _MAX_STATUS, "status_code must be from 100 to 599")
+        _range(self.status_code in STATUSES, "status_code must be from 100 to 599")
         _range(len(self.vary_values) == len(self.vary), "vary_values must match vary one to one")
         for name in ("request_time", "response_time", "stored_at"):
             _typed(instant := getattr(self, name), datetime, name)
-            _range(instant.utcoffset() is not None, f"{name} must be timezone-aware")
+            _range(is_aware(instant), f"{name} must be timezone-aware")
         for name in ("freshness_seconds", "initial_age_seconds"):
-            _typed(seconds := getattr(self, name), (int, float), name)
-            _range(isfinite(seconds) and seconds >= 0, f"{name} must be finite and not negative")
+            _kind(json_number(seconds := getattr(self, name)), name)
+            _range(usable_seconds(seconds), f"{name} must be finite and not negative")
             object.__setattr__(self, name, float(seconds))
 
 
@@ -105,7 +115,7 @@ class CacheResult(Generic[T_co]):
             raise ValueError(msg)
         _typed(self.response, ResponseInfo, "response")
         if self.network_status is not None:
-            _typed(self.network_status, int, "network_status")
+            _kind(json_integer(self.network_status), "network_status")
 
 
 class CacheStore(Protocol):

@@ -8,3 +8,83 @@ paths:
         - {name: choice, in: query, schema: {anyOf: [{type: string}, {type: object}]}}
       responses:
         "204": {description: Done.}
+  /items-or-arrays:
+    get:
+      operationId: getItemsOrArrays
+      parameters:
+        - {name: cwes, in: query, schema: {oneOf: [{type: string}, {type: array, items: {type: string}}]}}
+      responses:
+        "204": {description: Done.}
+  /enum-arrays:
+    get:
+      operationId: getEnumArrays
+      parameters:
+        - {name: q, in: query, required: true, schema: {enum: [[1, 2], [3]]}}
+      responses:
+        "204": {description: Done.}
+  /either:
+    get:
+      operationId: getEither
+      parameters:
+        - name: q
+          in: query
+          style: form
+          explode: true
+          schema:
+            oneOf:
+              - {$ref: "#/components/schemas/Counted"}
+              - {$ref: "#/components/schemas/Named"}
+      responses:
+        "204": {description: Done.}
+  /unnamed-encoding:
+    post:
+      operationId: submitUnnamedEncoding
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema: {type: object, properties: {term: {type: string}}}
+            encoding:
+              other: {style: form}
+      responses:
+        "204": {description: Done.}
+  /unnamed-part-encoding:
+    post:
+      operationId: submitUnnamedPartEncoding
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: {type: object, properties: {term: {type: string}}}
+            encoding:
+              other: {contentType: text/plain}
+      responses:
+        "204": {description: Done.}
+  /either-extra:
+    get:
+      operationId: getEitherExtra
+      parameters:
+        - name: q
+          in: query
+          style: form
+          explode: true
+          schema:
+            oneOf:
+              - {$ref: "#/components/schemas/ClosedCount"}
+              - {type: object, additionalProperties: {type: string}}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    ClosedCount:
+      type: object
+      additionalProperties: false
+      required: [x]
+      properties:
+        x: {type: integer}
+    Counted:
+      type: object
+      properties:
+        value: {type: integer}
+    Named:
+      type: object
+      properties:
+        value: {type: string}

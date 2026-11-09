@@ -14,7 +14,7 @@ class Pet(TypedDict):
     petType: PetType
 
 
-class Cat(Pet):
+class Cat(TypedDict):
     petType: Literal['cat', 'dog', 'cat']
     meow: NotRequired[str]
 

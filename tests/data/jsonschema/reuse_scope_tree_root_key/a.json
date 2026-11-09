@@ -1,0 +1,6 @@
+{
+  "title": "Settings",
+  "type": "object",
+  "propertyNames": {"allOf": [{"type": "string", "pattern": "^k", "title": "Key"}, {"type": "string", "minLength": 2}]},
+  "additionalProperties": {"type": "integer"}
+}

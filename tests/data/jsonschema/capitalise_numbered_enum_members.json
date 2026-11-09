@@ -1,0 +1,8 @@
+{
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "kind": {"type": "string", "enum": ["a", "A", "a_1", "b"]},
+    "mode": {"type": "string", "enum": ["On", "ON", "on"]}
+  }
+}

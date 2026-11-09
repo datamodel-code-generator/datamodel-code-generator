@@ -11,16 +11,24 @@ import models
 
 from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.ApiKeyCookieParametersGetCookieThemeParameter]] = PydanticCodec(models.ApiKeyCookieParametersGetCookieThemeParameter)
+codec_0: Final[PydanticCodec[models.ApiKeyCookieParametersGetCookieThemeParameter]] = (
+    PydanticCodec(models.ApiKeyCookieParametersGetCookieThemeParameter)
+)
 """Codec of /paths/~1api-key~1cookie-parameters/get parameter (request cookie theme)."""
 
-codec_1: Final[PydanticCodec[models.ApiKeyCookieParametersGetQueryPageParameter]] = PydanticCodec(models.ApiKeyCookieParametersGetQueryPageParameter)
+codec_1: Final[PydanticCodec[models.ApiKeyCookieParametersGetQueryPageParameter]] = (
+    PydanticCodec(models.ApiKeyCookieParametersGetQueryPageParameter)
+)
 """Codec of /paths/~1api-key~1cookie-parameters/get parameter (request query page)."""
 
-codec_2: Final[PydanticCodec[models.ApiKeyCookieParametersGetHeaderXTraceParameter]] = PydanticCodec(models.ApiKeyCookieParametersGetHeaderXTraceParameter)
+codec_2: Final[PydanticCodec[models.ApiKeyCookieParametersGetHeaderXTraceParameter]] = (
+    PydanticCodec(models.ApiKeyCookieParametersGetHeaderXTraceParameter)
+)
 """Codec of /paths/~1api-key~1cookie-parameters/get parameter (request header X-Trace)."""
 
-codec_3: Final[PydanticCodec[models.ApiKeyCookieParametersGetQueryFilterParameter]] = PydanticCodec(models.ApiKeyCookieParametersGetQueryFilterParameter)
+codec_3: Final[PydanticCodec[models.ApiKeyCookieParametersGetQueryFilterParameter]] = (
+    PydanticCodec(models.ApiKeyCookieParametersGetQueryFilterParameter)
+)
 """Codec of /paths/~1api-key~1cookie-parameters/get parameter (request query filter)."""
 
 codec_4: Final[PydanticCodec[str]] = PydanticCodec(str)

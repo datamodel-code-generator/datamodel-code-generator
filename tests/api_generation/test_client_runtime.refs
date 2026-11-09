@@ -16,10 +16,12 @@ allowreserved-path-31	main/generation_platform/client/runtime/allowreserved-path
 allowreserved-path-31-shorthand	main/generation_platform/client/packages/allowreserved-path-31/pydantic_v2_BaseModel//*.py
 allowreserved-path-31-shorthand	main/generation_platform/client/runtime/allowreserved-path-31.txt
 allowreserved-path-32	main/generation_platform/client/runtime/allowreserved-path-32.txt
-allowreserved-path-32-unknown	main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel//*.py
-allowreserved-path-32-unknown	main/generation_platform/client/runtime/allowreserved-path-32.txt
+allowreserved-path-32-unknown	main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel~client_runtime[allowreserved-path-32-unknown]//*.py
+allowreserved-path-32-unknown	main/generation_platform/client/runtime/allowreserved-path-32.txt	= main/generation_platform/client/runtime/allowreserved-path-32~client_runtime[allowreserved-path-32-unknown].txt
 auth-errors	main/generation_platform/client/runtime/auth-errors.txt
 auth-flows	main/generation_platform/client/runtime/auth-flows.txt
+auth-parameters	main/generation_platform/client/runtime/auth-parameters.txt
+auth-shared-wire	main/generation_platform/client/runtime/auth-shared-wire.txt
 auth-values	main/generation_platform/client/runtime/auth-values.txt
 bodies	main/generation_platform/client/runtime/bodies.txt
 body-replay	main/generation_platform/client/runtime/body-replay.txt
@@ -27,12 +29,14 @@ body-replay-faults	main/generation_platform/client/runtime/body-replay-faults.tx
 cache	main/generation_platform/client/runtime/cache.txt
 cache-backends	main/generation_platform/client/runtime/cache-backends.txt
 cache-stores	main/generation_platform/client/runtime/cache-stores.txt
+call-layers	main/generation_platform/client/runtime/call-layers.txt
 codings	main/generation_platform/client/runtime/codings.txt
 compression	main/generation_platform/client/runtime/compression.txt
 deadline-cleanup	main/generation_platform/client/runtime/deadline-cleanup.txt
 deadline-options	main/generation_platform/client/runtime/deadline-options.txt
 deadline-races	main/generation_platform/client/runtime/deadline-races.txt
 deadline-streams	main/generation_platform/client/runtime/deadline-streams.txt
+deep-object-brackets	main/generation_platform/client/runtime/deep-object-brackets.txt
 default-server	main/generation_platform/client/runtime/default-server.txt
 discriminator-copies	main/generation_platform/client/runtime/discriminator-copies.txt
 discriminator-reuse	main/generation_platform/client/runtime/discriminator-reuse.txt
@@ -46,6 +50,7 @@ fields-structural	main/generation_platform/client/runtime/fields-structural.txt
 fields-unpack	main/generation_platform/client/runtime/fields-unpack.txt
 headers	main/generation_platform/client/runtime/headers.txt
 hooks	main/generation_platform/client/runtime/hooks.txt
+item-or-array	main/generation_platform/client/runtime/item-or-array.txt
 json-decode-errors-ndjson	main/generation_platform/client/runtime/json-decode-errors-ndjson.txt
 json-decode-errors-sse	main/generation_platform/client/runtime/json-decode-errors-sse.txt
 keywords	main/generation_platform/client/runtime/keywords.txt
@@ -55,9 +60,14 @@ mock-transport	main/generation_platform/client/runtime/mock-transport.txt
 modelless-bodies	main/generation_platform/client/runtime/modelless-bodies.txt
 multipart	main/generation_platform/client/runtime/multipart.txt
 multipart-kinds	main/generation_platform/client/runtime/multipart-kinds.txt
+multipart-media-text	main/generation_platform/client/runtime/multipart-media-text.txt
 multipart-replay	main/generation_platform/client/runtime/multipart-replay.txt
 multipart-split	main/generation_platform/client/runtime/multipart-split.txt
+multipart-split-all	main/generation_platform/client/runtime/multipart-split-all.txt
+multipart-text-files	main/generation_platform/client/runtime/multipart-text-files.txt
 naming	main/generation_platform/client/runtime/naming.txt
+naming-definitions-first	main/generation_platform/client/runtime/naming-definitions-first.txt
+naming-enclosing-model	main/generation_platform/client/runtime/naming-enclosing-model.txt
 naming-full-path	main/generation_platform/client/runtime/naming-full-path.txt
 naming-parent-prefixed	main/generation_platform/client/runtime/naming-parent-prefixed.txt
 naming-primary-first	main/generation_platform/client/runtime/naming-primary-first.txt
@@ -101,10 +111,12 @@ polling-resume	main/generation_platform/client/runtime/polling-resume.txt
 protocol-contracts	main/generation_platform/client/runtime/protocol-contracts.txt
 protocol-errors	main/generation_platform/client/runtime/protocol-errors.txt
 query	main/generation_platform/client/runtime/query.txt
+query-free-objects	main/generation_platform/client/runtime/query-free-objects.txt
 querystring	main/generation_platform/client/runtime/querystring.txt
 raw	main/generation_platform/client/runtime/raw.txt
 redirect-head	main/generation_platform/client/runtime/redirect-head.txt
 redirects	main/generation_platform/client/runtime/redirects.txt
+response-keys	main/generation_platform/client/runtime/response-keys.txt
 retry-boundaries	main/generation_platform/client/runtime/retry-boundaries.txt
 retry-calls	main/generation_platform/client/runtime/retry-calls.txt
 retry-errors	main/generation_platform/client/runtime/retry-errors.txt

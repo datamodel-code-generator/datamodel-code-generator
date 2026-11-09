@@ -1,0 +1,75 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "tags": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Tags"
+      }
+    },
+    "objects": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Object"
+      }
+    },
+    "names": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Name"
+      }
+    },
+    "pets": {
+      "$ref": "#/$defs/Pets"
+    },
+    "tag_sets": {
+      "$ref": "#/$defs/TagSets"
+    }
+  },
+  "$defs": {
+    "Tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Object": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "Name": {
+      "type": "string"
+    },
+    "Pet": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      }
+    },
+    "Pets": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Pet"
+      }
+    },
+    "TagSets": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Tags"
+      }
+    }
+  }
+}

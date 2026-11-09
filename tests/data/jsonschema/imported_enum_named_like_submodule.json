@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "pkg.Report": {
+      "type": "object",
+      "properties": {
+        "status": {"$ref": "#/$defs/other.Status", "default": "ok"},
+        "history": {"type": "array", "items": {"$ref": "#/$defs/other.Status"}, "default": ["bad", "ok"]},
+        "detail": {"$ref": "#/$defs/pkg.Status.Detail"}
+      }
+    },
+    "other.Status": {"type": "string", "enum": ["ok", "bad"]},
+    "pkg.Status.Detail": {"type": "object", "properties": {"message": {"type": "string"}}}
+  }
+}

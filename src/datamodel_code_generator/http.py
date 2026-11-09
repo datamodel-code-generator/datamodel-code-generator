@@ -16,9 +16,9 @@ from __future__ import annotations
 import contextlib
 import socket
 from _thread import allocate_lock  # noqa: PLC2701
-from collections import OrderedDict
 from collections.abc import Callable, Sequence  # noqa: TC003  # Runtime public annotation introspection
 from dataclasses import dataclass, field
+from functools import partial
 from ipaddress import IPv4Address, IPv6Address, IPv6Network, ip_address
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Generic, Literal, TypeVar, cast
@@ -27,14 +27,26 @@ from urllib.parse import urlparse
 from typing_extensions import Self
 
 from datamodel_code_generator import SchemaFetchError
+from datamodel_code_generator._all_or_none import all_or_none
+from datamodel_code_generator._caches import BoundedLru
+from datamodel_code_generator._message_text import extra_requirement, install_command
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.enums import HTTPBackend
+from datamodel_code_generator.python_literal import stable_repr
+
+_HTTPTransportT_co = TypeVar("_HTTPTransportT_co", bound="_HTTPTransport", covariant=True)
+_NetworkStreamT_co = TypeVar("_NetworkStreamT_co", bound="_NetworkStream", covariant=True)
+_NetworkStreamT = TypeVar("_NetworkStreamT", bound="_NetworkStream")
+_HTTPBackendName = Literal["httpx", "httpx2"]
+_HTTPCoreBackendName = Literal["httpcore", "httpcore2"]
 
 if TYPE_CHECKING:
     import ssl
     from collections.abc import Iterable, Mapping
     from types import TracebackType
     from typing import Protocol, overload
+
+    from datamodel_code_generator._shared_types import ResponseObserver
 
     class _ResponseHeaders(Protocol):
         @overload
@@ -48,12 +60,6 @@ if TYPE_CHECKING:
         headers: _ResponseHeaders
         text: str
         content: bytes
-
-
-_HTTPTransportT_co = TypeVar("_HTTPTransportT_co", bound="_HTTPTransport", covariant=True)
-
-
-if TYPE_CHECKING:
 
     class _HTTPTransportURL(Protocol):
         @property
@@ -107,9 +113,6 @@ if TYPE_CHECKING:
             verify: bool,
         ) -> _HTTPTransportT_co: ...
 
-
-if TYPE_CHECKING:
-
     class _HTTPCookies(Protocol):
         def clear(self) -> None: ...
 
@@ -144,6 +147,37 @@ if TYPE_CHECKING:
             timeout: float,
             verify: bool = True,
         ) -> _HTTPXClient: ...
+
+    class _FetchSettings(Protocol):
+        """The options of a config or a parser that say how a URL input is fetched."""
+
+        @property
+        def http_headers(self) -> Sequence[tuple[str, str]] | None:
+            """The headers each request sends."""
+
+        @property
+        def http_ignore_tls(self) -> bool:
+            """Whether a request skips TLS certificate verification."""
+
+        @property
+        def http_query_parameters(self) -> Sequence[tuple[str, str]] | None:
+            """The query parameters the first request sends."""
+
+        @property
+        def http_timeout(self) -> float | None:
+            """The timeout of a request in seconds, or None for the default one."""
+
+        @property
+        def allow_private_network(self) -> bool:
+            """Whether a URL may name a private network host."""
+
+        @property
+        def http_backend(self) -> HTTPBackend:
+            """The HTTP client stack a request without a session uses."""
+
+        @property
+        def encoding(self) -> str:
+            """The encoding the body is read in."""
 
     class _HTTPXURLJoiner(Protocol):
         def join(self, url: str) -> _HTTPXURLJoiner: ...
@@ -182,17 +216,6 @@ if TYPE_CHECKING:
             timeout: float,
         ) -> _HTTPResponse: ...
 
-
-_HTTPBackendName = Literal["httpx", "httpx2"]
-_HTTPCoreBackendName = Literal["httpcore", "httpcore2"]
-
-
-_NetworkStreamT_co = TypeVar("_NetworkStreamT_co", bound="_NetworkStream", covariant=True)
-_NetworkStreamT = TypeVar("_NetworkStreamT", bound="_NetworkStream")
-
-
-if TYPE_CHECKING:
-
     class _ClosableByteStream(Iterable[bytes], Protocol):
         def close(self) -> None: ...
 
@@ -228,9 +251,6 @@ if TYPE_CHECKING:
         ) -> _NetworkStreamT_co: ...
 
         def sleep(self, seconds: float) -> None: ...
-
-
-if TYPE_CHECKING:
 
     class _HTTPCoreURL(Protocol):
         scheme: bytes
@@ -331,6 +351,14 @@ _AUTO_HTTP_STACK: _HTTPStack[_HTTPTransport] | None = None
 DEFAULT_HTTP_TIMEOUT = 30.0
 MAX_HTTP_REDIRECTS = 20
 _HTTP_BACKEND_PRIORITY: tuple[_HTTPBackendName, ...] = ("httpx", "httpx2")
+_HTTP_CORE_BACKENDS: Mapping[_HTTPBackendName, _HTTPCoreBackendName] = MappingProxyType({
+    "httpx": "httpcore",
+    "httpx2": "httpcore2",
+})
+_HTTP_POLICY_BACKENDS: Mapping[HTTPBackend, tuple[_HTTPBackendName, str]] = MappingProxyType({
+    HTTPBackend.HTTPX: ("httpx", "http"),
+    HTTPBackend.HTTPX2: ("httpx2", "httpx2"),
+})
 _HTTP_FETCH_CLIENT_CACHE_MAX_SIZE = 32
 _HTTP_FETCH_DNS_CACHE_MAX_SIZE = 128
 _HTTP_REDIRECT_STATUS_CODES = frozenset({301, 302, 303, 307, 308})
@@ -405,11 +433,8 @@ def _parse_legacy_ipv4_address(host: str) -> IPv4Address | None:
     if len(parts) > _IPV4_PART_COUNT:
         return None
 
-    numbers: list[int] = []
-    for part in parts:
-        if (number := _parse_legacy_ipv4_int(part)) is None:
-            return None
-        numbers.append(number)
+    if (numbers := all_or_none(map(_parse_legacy_ipv4_int, parts))) is None:
+        return None
 
     ipv4_value: int | None
     match numbers:
@@ -654,31 +679,14 @@ def _create_pinned_transport_type(
     return _PinnedHTTPTransport
 
 
-def _load_matched_http_stack(
-    backend: _HTTPBackendName,
-    core_backend: _HTTPCoreBackendName,
-) -> _HTTPStack[_HTTPTransport]:
-    """Import the selected client while retaining its exact paired core name."""
+def _load_http_stack(backend: _HTTPBackendName) -> _HTTPStack[_HTTPTransport]:
+    """Import the selected client, keeping its exact paired core name, without probing package metadata."""
+    if (core_backend := _HTTP_CORE_BACKENDS.get(backend)) is None:
+        msg = f"Unexpected HTTP backend: {stable_repr(backend)}"
+        raise AssertionError(msg)
     from importlib import import_module  # noqa: PLC0415
 
-    httpx_module = cast("_HTTPXModule", import_module(backend))
-    return _HTTPStack(
-        backend=backend,
-        httpx=httpx_module,
-        core_backend=core_backend,
-    )
-
-
-def _load_http_stack(backend: _HTTPBackendName) -> _HTTPStack[_HTTPTransport]:
-    """Select one matched HTTP client/core pair without probing package metadata."""
-    match backend:
-        case "httpx":
-            return _load_matched_http_stack(backend, "httpcore")
-        case "httpx2":
-            return _load_matched_http_stack(backend, "httpcore2")
-        case _:
-            msg = f"Unexpected HTTP backend: {backend!r}"
-            raise AssertionError(msg)
+    return _HTTPStack(backend=backend, httpx=cast("_HTTPXModule", import_module(backend)), core_backend=core_backend)
 
 
 def _get_or_load_http_stack(backend: _HTTPBackendName) -> _HTTPStack[_HTTPTransport]:
@@ -703,40 +711,28 @@ def _get_http_stack(http_backend: HTTPBackend = HTTPBackend.AUTO) -> _HTTPStack[
             try:
                 stack = _get_or_load_http_stack(backend)
             except ModuleNotFoundError as exc:
-                match exc.name:
-                    case missing_backend if missing_backend == backend:
-                        continue
-                    case _:
-                        raise
+                if exc.name != backend:
+                    raise
+                continue
             _AUTO_HTTP_STACK = stack
             return stack
 
         msg = (
-            "Please run `$pip install 'datamodel-code-generator[http]'` to resolve HTTP(S) URL references, "
-            "or install the experimental `datamodel-code-generator[httpx2]` extra"
+            f"Please run {install_command('http')} to resolve HTTP(S) URL references, "
+            f"or install the experimental `{extra_requirement('httpx2')}` extra"
         )
         raise Exception(msg) from None  # noqa: TRY002
 
-    match http_backend:
-        case HTTPBackend.HTTPX:
-            backend: _HTTPBackendName = "httpx"
-            extra = "http"
-        case HTTPBackend.HTTPX2:
-            backend = "httpx2"
-            extra = "httpx2"
-        case _:
-            msg = f"Unexpected HTTP backend policy: {http_backend!r}"
-            raise AssertionError(msg)
-
+    if (selected := _HTTP_POLICY_BACKENDS.get(http_backend)) is None:
+        msg = f"Unexpected HTTP backend policy: {stable_repr(http_backend)}"
+        raise AssertionError(msg)
+    backend, extra = selected
     try:
         return _get_or_load_http_stack(backend)
     except ModuleNotFoundError as exc:
         if exc.name != backend:
             raise
-        msg = (
-            f"The explicitly selected {backend} HTTP backend is not installed. "
-            f"Please run `$pip install 'datamodel-code-generator[{extra}]'`."
-        )
+        msg = f"The explicitly selected {backend} HTTP backend is not installed. Please run {install_command(extra)}."
         raise ModuleNotFoundError(msg, name=backend) from None
 
 
@@ -745,15 +741,19 @@ def _get_httpx(http_backend: HTTPBackend = HTTPBackend.AUTO) -> _HTTPXModule:
     return _get_http_stack(http_backend).httpx
 
 
-def _build_pinned_transport(
+def _new_client(
     http_stack: _HTTPStack[_HTTPTransport],
     *,
-    pinned_host: str,
+    pinned_host: str | None,
     pinned_ips: tuple[IPv4Address | IPv6Address, ...],
     verify: bool,
-) -> _HTTPTransport:
-    """Build a transport whose TCP connections use the validated address set."""
-    return http_stack.transport_type(pinned_host=pinned_host, pinned_ips=pinned_ips, verify=verify)
+    timeout: float,
+) -> _HTTPXClient:
+    """Build a client whose TCP connections use the validated address set, or a plain one without DNS pinning data."""
+    if pinned_host is None or not pinned_ips:
+        return http_stack.httpx.Client(timeout=timeout, verify=verify)
+    transport = http_stack.transport_type(pinned_host=pinned_host, pinned_ips=pinned_ips, verify=verify)
+    return http_stack.httpx.Client(transport=transport, timeout=timeout)
 
 
 class _HTTPFetchSession:
@@ -765,23 +765,16 @@ class _HTTPFetchSession:
     """
 
     def __init__(
-        self,
-        http_backend: HTTPBackend = HTTPBackend.AUTO,
-        *,
-        response_observer: Callable[
-            [str, Sequence[tuple[str, str]] | None, Sequence[tuple[str, str]] | None, bytes], None
-        ]
-        | None = None,
+        self, http_backend: HTTPBackend = HTTPBackend.AUTO, *, response_observer: ResponseObserver | None = None
     ) -> None:
         """Initialize empty size- and parser-lifetime-bounded caches."""
-        self._http_backend = http_backend
         self._response_observer = response_observer
         self.http_stack = _get_http_stack(http_backend)
-        self._dns_cache: OrderedDict[str, tuple[IPv4Address | IPv6Address, ...]] = OrderedDict()
-        self._clients: OrderedDict[
+        self._dns_cache: BoundedLru[str, tuple[IPv4Address | IPv6Address, ...]] = BoundedLru()
+        self._clients: BoundedLru[
             tuple[str | None, tuple[IPv4Address | IPv6Address, ...], bool, float],
             _HTTPXClient,
-        ] = OrderedDict()
+        ] = BoundedLru()
 
     def __enter__(self) -> Self:
         """Return this parser-scoped session."""
@@ -798,14 +791,11 @@ class _HTTPFetchSession:
 
     def get_ips_from_host(self, host: str) -> tuple[IPv4Address | IPv6Address, ...]:
         """Return a successful DNS result cached for this parser run."""
-        if (cached_ips := self._dns_cache.get(host)) is not None:
-            self._dns_cache.move_to_end(host)
+        if (cached_ips := self._dns_cache.recent(host)) is not None:
             return cached_ips
         if not (resolved_ips := _get_ips_from_host(host)):
             return resolved_ips
-        self._dns_cache[host] = resolved_ips
-        if len(self._dns_cache) > _HTTP_FETCH_DNS_CACHE_MAX_SIZE:
-            self._dns_cache.popitem(last=False)
+        self._dns_cache.put(host, resolved_ips, _HTTP_FETCH_DNS_CACHE_MAX_SIZE)
         return resolved_ips
 
     def get_response(  # noqa: PLR0913
@@ -823,24 +813,13 @@ class _HTTPFetchSession:
     ) -> _HTTPResponse:
         """Fetch through a connection pool isolated by DNS pin and TLS policy."""
         key = (pinned_host, pinned_ips, verify, timeout)
-        if (client := self._clients.get(key)) is None:
-            if pinned_host is not None and pinned_ips:
-                transport = _build_pinned_transport(
-                    http_stack,
-                    pinned_host=pinned_host,
-                    pinned_ips=pinned_ips,
-                    verify=verify,
-                )
-                client = http_stack.httpx.Client(transport=transport, timeout=timeout)
-            else:
-                client = http_stack.httpx.Client(timeout=timeout, verify=verify)
-            self._clients[key] = client
-            if len(self._clients) > _HTTP_FETCH_CLIENT_CACHE_MAX_SIZE:
-                _, evicted_client = self._clients.popitem(last=False)
+        if (client := self._clients.recent(key)) is None:
+            client = _new_client(
+                http_stack, pinned_host=pinned_host, pinned_ips=pinned_ips, verify=verify, timeout=timeout
+            )
+            for _, evicted_client in self._clients.put(key, client, _HTTP_FETCH_CLIENT_CACHE_MAX_SIZE):
                 with contextlib.suppress(Exception):
                     evicted_client.close()
-        else:
-            self._clients.move_to_end(key)
         try:
             return client.get(
                 url,
@@ -878,7 +857,6 @@ class _HTTPFetchSession:
             query_parameters,
             timeout,
             allow_private_network=allow_private_network,
-            http_backend=self._http_backend,
             session=self,
             response_observer=self._response_observer,
             encoding=encoding,
@@ -886,7 +864,7 @@ class _HTTPFetchSession:
 
     def close(self) -> None:
         """Close cached clients and discard validated DNS results."""
-        clients, self._clients = self._clients, OrderedDict()
+        clients, self._clients = self._clients, BoundedLru()
         self._dns_cache.clear()
         for client in clients.values():
             with contextlib.suppress(Exception):
@@ -920,13 +898,9 @@ def _get_http_response(  # noqa: PLR0913
             timeout=timeout,
         )
 
-    transport = _build_pinned_transport(
-        http_stack,
-        pinned_host=pinned_host,
-        pinned_ips=pinned_ips,
-        verify=verify,
-    )
-    with http_stack.httpx.Client(transport=transport, timeout=timeout) as client:
+    with _new_client(
+        http_stack, pinned_host=pinned_host, pinned_ips=pinned_ips, verify=verify, timeout=timeout
+    ) as client:
         return client.get(
             url,
             headers=headers,
@@ -1077,7 +1051,9 @@ def _get_redirect_headers(
     redirect_origin = _get_url_origin(redirect_url)
     if not headers or (current_origin is not None and current_origin == redirect_origin):
         return headers
-    return [(name, value) for name, value in headers if name.lower() not in _SENSITIVE_REDIRECT_HEADERS]
+    from datamodel_code_generator._runtime.model_codecs.media import fields_without  # noqa: PLC0415
+
+    return fields_without(headers, _SENSITIVE_REDIRECT_HEADERS)
 
 
 def get_body(  # noqa: PLR0913
@@ -1121,6 +1097,34 @@ def get_body(  # noqa: PLR0913
     )
 
 
+def _get_configured_body(
+    url: str,
+    settings: _FetchSettings,
+    *,
+    session: _HTTPFetchSession | None = None,
+    response_observer: ResponseObserver | None = None,
+) -> str:
+    """Fetch the text of a URL with the HTTP options of a config or a parser, the default timeout where none is set.
+
+    A parser fetches through its session, whose client stack and response observer take the place of the options'
+    backend and of `response_observer`.
+    """
+    fetch = (
+        partial(get_body, http_backend=settings.http_backend, response_observer=response_observer)
+        if session is None
+        else session.get_body
+    )
+    return fetch(
+        url,
+        settings.http_headers,
+        settings.http_ignore_tls,
+        settings.http_query_parameters,
+        DEFAULT_HTTP_TIMEOUT if settings.http_timeout is None else settings.http_timeout,
+        allow_private_network=settings.allow_private_network,
+        encoding=settings.encoding,
+    )
+
+
 def _get_body(  # noqa: PLR0913, PLR0914
     url: str,
     headers: Sequence[tuple[str, str]] | None,
@@ -1129,13 +1133,12 @@ def _get_body(  # noqa: PLR0913, PLR0914
     timeout: float,
     *,
     allow_private_network: bool,
-    http_backend: HTTPBackend,
+    http_backend: HTTPBackend = HTTPBackend.AUTO,
     session: _HTTPFetchSession | None = None,
-    response_observer: Callable[[str, Sequence[tuple[str, str]] | None, Sequence[tuple[str, str]] | None, bytes], None]
-    | None = None,
+    response_observer: ResponseObserver | None = None,
     encoding: str = "utf-8",
 ) -> str:
-    """Fetch one schema body, optionally reusing parser-scoped network state."""
+    """Fetch one schema body, optionally reusing parser-scoped network state, whose stack replaces `http_backend`."""
     http_stack = session.http_stack if session is not None else _get_http_stack(http_backend)
     # Joining URLs needs only the selected client. A fetch validates the exact paired
     # core eagerly so a broken experimental installation never falls back to stable.
@@ -1222,8 +1225,6 @@ def join_url(  # noqa: PLR0912
     require their exact backend without fallback.
     """
     if url.startswith("file://"):
-        from urllib.parse import urlparse  # noqa: PLC0415
-
         parsed = urlparse(url)
 
         if ref.startswith("file://"):

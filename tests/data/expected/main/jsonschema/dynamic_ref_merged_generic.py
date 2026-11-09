@@ -4,9 +4,10 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from pydantic import BaseModel, Field, RootModel
+from typing_extensions import TypeAliasType
 
 
 class Item(RootModel[Any]):
@@ -25,6 +26,11 @@ class Plain(BaseModel):
     values: list[Item] | None = Field(None, max_length=2, title='ItemList')
 
 
+MatrixItem = TypeAliasType(
+    "MatrixItem", Annotated[list[ItemModel], Field(max_length=3, title='ItemList')]
+)
+
+
 class List(RootModel[list[Item]]):
     root: list[Item] = Field(..., title='ItemList')
 
@@ -35,6 +41,6 @@ class Plain1(BaseModel):
 
 class Holder(BaseModel):
     numbers: list[ItemModel] | None = Field(None, min_length=1, title='ItemList')
-    matrix: list[list[ItemModel]] | None = None
+    matrix: list[MatrixItem] | None = None
     counts: Counts | None = None
     plain: Plain1 | None = None
