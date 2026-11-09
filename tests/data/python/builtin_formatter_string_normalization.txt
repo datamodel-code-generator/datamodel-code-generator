@@ -52,6 +52,13 @@ control
 value = "beforeformfeed"
 
 ---CASE---
+escapes
+spec = f'{x:\\>5} \"q\"' + f'{x:\\>5}'
+raw = r'say "hi"' + rf'{x} say "hi"'
+said = f'{x!r} said \'hi\'' + 'won\'t' + "a \"b\""
+both = 'it\'s "x"' + 'it\'s \'x\' "y"' + "it's \"x\"" + 'ends\\'
+
+---CASE---
 tab-whitespace
 value	=1
 

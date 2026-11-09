@@ -410,3 +410,41 @@ def test_wide_characters_count_twice_toward_the_line_length(output_file: Path, f
         input_file_type="jsonschema",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", *formatters, "--disable-timestamp"],
     )
+
+
+@pytest.mark.parametrize("formatters", [["black", "isort"], ["builtin"]], ids=["black", "builtin"])
+def test_use_double_quotes_chooses_the_quotes_black_chooses(output_file: Path, formatters: list[str]) -> None:
+    r"""Choose double quotes unless they need more escapes, drop escapes they make unneeded, then lay out (#6652).
+
+    The builtin formatter kept ``"won\'t fix"``, kept single quotes whenever a string held a double quote (black takes
+    double quotes when both need as many escapes), and laid out a line before its escapes were dropped, so a line of
+    88 columns that was 90 with them was split.
+    """
+    (input_path := output_file.parent / "quoted_texts.json").write_text(
+        json.dumps({
+            "title": "Report",
+            "type": "object",
+            "properties": {
+                "state": {"type": "string", "enum": ["open", "won't fix"]},
+                "range": {"type": "string", "description": "the report's 'range' is not \"NOW\" y"},
+                "correlator": {
+                    "type": "string",
+                    "description": "Only the \"latest\" snapshot counts for a repository's dependencies; it's kept.",
+                },
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--use-double-quotes",
+            "--formatters",
+            *formatters,
+            "--disable-timestamp",
+        ],
+    )

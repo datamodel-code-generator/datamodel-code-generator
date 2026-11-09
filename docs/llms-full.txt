@@ -17615,7 +17615,7 @@ datamodel-codegen \
 ```
 
 This overrides `skip_string_normalization` in black config.
-When using `--formatters builtin` without `--use-double-quotes`, the built-in formatter also reads `[tool.black].skip-string-normalization`. Set it to `false` to normalize simple generated string literals to double quotes.
+When using `--formatters builtin` without `--use-double-quotes`, the built-in formatter also reads `[tool.black].skip-string-normalization`. Set it to `false` to choose string quotes as Black does.
 
 ## 🎨 Custom Formatters
 
@@ -17740,7 +17740,7 @@ It covers the generated-code patterns that matter for model modules:
   quotes when needed. A docstring with a backslash at a line end stays as it is, as Black leaves it.
 - Keeps two blank lines around top-level `class`, `def`, or `async def` definitions and removes blank lines after
   a decorator.
-- Normalizes simple generated string quotes to double quotes when `--use-double-quotes` is passed or `[tool.black].skip-string-normalization = false`.
+- Chooses string quotes as Black does when `--use-double-quotes` is passed or `[tool.black].skip-string-normalization = false`: double quotes unless they need more escapes, without the escapes the chosen quotes make unneeded.
 
 If the generated code cannot be parsed as Python, the built-in formatter only applies whitespace cleanup and returns the code.
 
@@ -17756,8 +17756,8 @@ Known differences from Black and isort:
   expression gets no parentheses of its own; Black wraps it in them.
 - Module-level `del`, `assert`, `raise`, `global` and similar statements, and definitions with PEP 695 type
   parameters (`def f[T]`), are not laid out.
-- Quote normalization rewrites only plain single-quoted strings; it leaves escaped quotes, triple-quoted strings,
-  f-strings that need a quote change and string prefix case as written.
+- Quote normalization leaves triple-quoted strings and string prefixes as written: Black also drops a `u`/`U` prefix
+  (`u'x'` -> `"x"`) and lowercases `F`/`B` (`F'x'` -> `f"x"`).
 - `--wrap-string-literal` splits only long keyword string arguments; Black's preview string processing does more.
 - Comment placement beyond preserving commented import lines.
 - Import section rules beyond the simple groups listed above.
@@ -17798,7 +17798,7 @@ installed.
 
 ## String normalization
 
-The built-in formatter keeps single quotes by default. It normalizes simple generated string literals to double quotes when either condition is true:
+The built-in formatter keeps single quotes by default. It chooses the quotes of string literals as Black does when either condition is true:
 
 1. `--use-double-quotes` is passed.
 2. `[tool.black].skip-string-normalization = false` is set in `pyproject.toml`.

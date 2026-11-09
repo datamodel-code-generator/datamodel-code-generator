@@ -950,29 +950,65 @@ def _string_tokens(code: str) -> Iterator[tokenize.TokenInfo]:
             yield tokenize.TokenInfo(tokenize.STRING, text, first.start, last.end, first.line)
 
 
+_ESCAPED_QUOTES = {quote: re.compile(rf"([^\\]|^)\\((?:\\\\)*){quote}") for quote in "'\""}
+_UNESCAPED_QUOTES = {quote: re.compile(rf"(([^\\]|^)(\\\\)*){quote}") for quote in "'\""}
+_F_STRING_FIELD = re.compile(r"(?:(?<!\{)|^)\{([^{].*?)\}(?:(?!\})|$)")
+
+
+def _sub_twice(pattern: re.Pattern[str], replacement: str, text: str) -> str:
+    """Replace the matches of ``pattern`` twice, so that matches that share a character are all replaced."""
+    return pattern.sub(replacement, pattern.sub(replacement, text))
+
+
+def _has_escaped_f_string_field(prefix: str, body: str) -> bool:
+    return "f" in prefix.casefold() and any("\\" in field for field in _F_STRING_FIELD.findall(body))
+
+
+def _normalized_string_quotes(prefix: str, quote: str, body: str) -> str:
+    """Return a one-quote string literal with the quotes black's ``normalize_string_quotes`` chooses.
+
+    Double quotes are preferred unless they need more escapes; escapes the chosen quotes do not need are removed. A
+    raw string keeps its body, and an f-string whose replacement fields would hold a backslash keeps its quotes.
+    """
+    new_quote = "'" if quote == '"' else '"'
+    if _has_escaped_f_string_field(prefix, body):
+        return f"{prefix}{quote}{body}{quote}"
+    if "r" in prefix.casefold():
+        if _UNESCAPED_QUOTES[new_quote].search(body):
+            return f"{prefix}{quote}{body}{quote}"
+        new_body = body
+    else:
+        body = _sub_twice(_ESCAPED_QUOTES[new_quote], rf"\1\2{new_quote}", body)
+        new_body = _sub_twice(_ESCAPED_QUOTES[quote], rf"\1\2{quote}", body)
+        new_body = _sub_twice(_UNESCAPED_QUOTES[new_quote], rf"\1\\{new_quote}", new_body)
+    escapes, new_escapes = body.count("\\"), new_body.count("\\")
+    if (
+        _has_escaped_f_string_field(prefix, new_body)
+        or new_escapes > escapes
+        or (new_escapes == escapes and quote == '"')
+    ):
+        return f"{prefix}{quote}{body}{quote}"
+    return f"{prefix}{new_quote}{new_body}{new_quote}"
+
+
 def _normalize_string_quotes(code: str) -> str:
+    """Give each one-quote string literal of ``code`` the quotes black chooses; triple-quoted strings stay."""
     tokens: list[tokenize.TokenInfo] = []
     for token in _string_tokens(code):
-        normalized_token = token
-        if token.type == tokenize.STRING and (string_match := STRING_PREFIX_PATTERN.match(token.string)) is not None:
-            prefix, quote = string_match.groups()
-            if quote == "'":
-                body = token.string[string_match.end() : -1]
-                if '"' not in body and not body.endswith("\\"):
-                    normalized_token = tokenize.TokenInfo(
-                        token.type,
-                        f'{prefix}"{body}"',
-                        token.start,
-                        token.end,
-                        token.line,
-                    )
-        tokens.append(normalized_token)
+        if (
+            token.type == tokenize.STRING
+            and (string_match := STRING_PREFIX_PATTERN.match(token.string)) is not None
+            and len(quote := string_match[2]) == 1
+        ):
+            text = _normalized_string_quotes(string_match[1], quote, token.string[string_match.end() : -1])
+            token = tokenize.TokenInfo(token.type, text, token.start, token.end, token.line)  # noqa: PLW2901
+        tokens.append(token)
     return tokenize.untokenize(tokens)
 
 
 def _normalize_string_quotes_if_needed(code: str, *, source_is_valid: bool) -> str:
     """Normalize string quotes when the already-validated source may contain a candidate."""
-    if type(code) is not str or not source_is_valid or "'" in code or "\t" in code or "\f" in code:
+    if type(code) is not str or not source_is_valid or any(character in code for character in "'\\\t\f"):
         return _normalize_string_quotes(code)
     return code
 
@@ -1293,6 +1329,13 @@ def _apply_builtin_formatter(  # noqa: PLR0913, PLR0914
     tree, source_is_valid = _parse_builtin_code_with_source_validity(code, python_version)
     if tree is None:
         return f"{code}\n"
+    if (
+        string_normalization
+        and (normalized := _normalize_string_quotes_if_needed(code, source_is_valid=source_is_valid)) != code
+    ):
+        code = normalized
+        lines = _split_python_lines(code)
+        tree = _parse_builtin_code_with_source_validity(code, python_version)[0] or tree
     if lent is not None:
         _rename_lent_identifiers(tree, lent)
 
@@ -1310,7 +1353,7 @@ def _apply_builtin_formatter(  # noqa: PLR0913, PLR0914
         formatted_lines = _apply_line_replacements(lines, replacements)
         return _finalize_builtin_code(
             "\n".join(formatted_lines),
-            string_normalization=string_normalization,
+            string_normalization=string_normalization and wrap_string_literal,
             source_is_valid=source_is_valid,
         )
 
@@ -1325,6 +1368,6 @@ def _apply_builtin_formatter(  # noqa: PLR0913, PLR0914
         formatted_code = _join_import_block(formatted_code, body) if formatted_code else body
     return _finalize_builtin_code(
         formatted_code,
-        string_normalization=string_normalization,
+        string_normalization=string_normalization and wrap_string_literal,
         source_is_valid=source_is_valid,
     )

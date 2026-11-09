@@ -9,7 +9,7 @@ if (value := 1):
 value = "value"
 
 [escape]
-value = "has \' quote"
+value = "has ' quote"
 quoted = 'has " quote'
 
 [triple]
@@ -25,7 +25,7 @@ name = "value"
 width = 8
 spec = f"{name!r:>{width}} é{{kept}}"
 prefixed = rf"{name}\d" + F"{name}"
-quoted = f'{name["key"]}' + f'{name:"^10}' + f'ends\\'
+quoted = f'{name["key"]}' + f'{name:"^10}' + f"ends\\"
 nested = f'{f"nested {name}"}'
 joined = f"one {name}" f"two {name}"
 
@@ -42,6 +42,12 @@ nested = f'''a {f"b {name}"}
 
 [control]
 value = "beforeformfeed"
+
+[escapes]
+spec = f'{x:\\>5} \"q\"' + f'{x:\\>5}'
+raw = r'say "hi"' + rf'{x} say "hi"'
+said = f"{x!r} said 'hi'" + "won't" + 'a "b"'
+both = 'it\'s "x"' + "it's 'x' \"y\"" + 'it\'s "x"' + "ends\\"
 
 [tab-whitespace]
 value =1
