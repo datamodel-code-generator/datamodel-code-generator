@@ -1,8 +1,59 @@
 # Dependency migration notices
 
-This release prepares later changes. Black and isort remain the default formatters and required dependencies;
-all current dependency ranges, compatibility code and minimum-version tests remain in place. Generation still
-continues when formatters are omitted. The built-in formatter remains experimental.
+Black and isort remain the default formatters and required dependencies. All current dependency ranges,
+compatibility code and minimum-version tests remain in place. Generation still continues when formatters are
+omitted. The built-in formatter remains experimental. This page is the migration guide for the planned change of
+the default formatter to `builtin`.
+
+## Timeline
+
+- Black and isort stay the default in the next release.
+- The default changes only after a transition period. The release notes announce the change before it happens.
+- Until then, omitting `--formatters` keeps writing Black/isort output and emits the default formatter notice.
+
+## What builtin matches today
+
+For the code the standard templates generate, `--formatters builtin` writes what Black writes in its stable style
+(the current Black release), with isort's default import ordering. The builtin formatter reads these settings:
+
+| Setting | Source |
+| --- | --- |
+| Line length | `builtin_format_line_length` (API), `[tool.datamodel-codegen]` `builtin-format-line-length`, `[tool.ruff]` `line-length`, `[tool.black]` `line-length`, `[tool.isort]` `line_length`, then `88`. The first valid value wins. |
+| String quotes | Double quotes with `--use-double-quotes` or `[tool.black]` `skip-string-normalization = false`; otherwise quotes stay as generated. |
+| First-party modules | `[tool.isort]` `known_first_party`, added to the built-in defaults. |
+
+It does not read any other Black or isort setting. Output differs from Black/isort when you rely on one of these:
+
+- isort options other than `known_first_party` and `line_length`, such as `profile` and `force_single_line`.
+- Black's `target-version`, `preview` and `skip-magic-trailing-comma`. Builtin always follows the stable style
+  and always honors magic trailing commas.
+- The layout of older Black releases. The dependency range still allows them, and their output can differ from
+  the current stable style.
+
+Custom templates: builtin formats any valid Python, but leaves a construct it does not cover unchanged. For example,
+it does not lay out statements inside function bodies, or statements with comments, multi-line strings or
+backslash continuations. See [Formatter behavior](formatter-behavior.md) for the full scope.
+
+## How to migrate
+
+- **Keep today's output exactly.** Select Black and isort explicitly and declare the extras
+  (`datamodel-code-generator[black,isort]`). This also silences the default formatter notice.
+
+    ```bash
+    datamodel-codegen --input schema.json --output models.py --formatters black isort
+    ```
+
+    ```toml
+    [tool.datamodel-codegen]
+    formatters = ["black", "isort"]
+    ```
+
+    The Python API takes `formatters=[Formatter.BLACK, Formatter.ISORT]`.
+
+- **Switch now.** Pass `--formatters builtin`. To see the difference on your schemas, regenerate with builtin
+  and run `datamodel-codegen --check --formatters builtin` against the output you committed from Black/isort.
+  `--check` exits non-zero when the output would differ and does not write files (see [CI/CD](ci-cd.md)).
+- **Use Ruff.** Pass `--formatters ruff-check ruff-format` and install `datamodel-code-generator[ruff]`.
 
 ## Choose formatting independently of the default
 
@@ -156,4 +207,4 @@ with `--target-python-version 3.10` is unchanged.
 2. Remove Black/isort from mandatory dependencies, retaining the extras and explicit dependency errors.
 3. Raise the runtime dependency floors and reassess compatibility code and producer/consumer tests.
 
-None of these three changes is performed by this preparation release.
+None of these three changes is performed yet. The first one follows the [timeline](#timeline) above.
