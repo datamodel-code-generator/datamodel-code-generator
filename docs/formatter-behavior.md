@@ -11,8 +11,8 @@
 This page is the reference for the built-in formatter's exact scope and precedence. For a formatter selection guide,
 see [Code Formatting](formatting.md).
 
-This default will change after a transition period announced in the release notes; it does not change in the next
-release. The default formatter will become `builtin`, and external formatter dependencies will become opt-in so that
+This default changes no earlier than three months after 0.92.0 is released, after a transition period announced
+in the release notes. The default formatter will become `builtin`, and external formatter dependencies will become opt-in so that
 generated output can be produced without installing formatter packages. See the
 [migration guide](dependency-migration.md#how-to-migrate).
 

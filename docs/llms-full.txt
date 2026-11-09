@@ -17504,8 +17504,8 @@ Source: https://datamodel-code-generator.koxudaxi.dev/formatter-behavior/
 This page is the reference for the built-in formatter's exact scope and precedence. For a formatter selection guide,
 see [Code Formatting](formatting.md).
 
-This default will change after a transition period announced in the release notes; it does not change in the next
-release. The default formatter will become `builtin`, and external formatter dependencies will become opt-in so that
+This default changes no earlier than three months after 0.92.0 is released, after a transition period announced
+in the release notes. The default formatter will become `builtin`, and external formatter dependencies will become opt-in so that
 generated output can be produced without installing formatter packages. See the
 [migration guide](dependency-migration.md#how-to-migrate).
 
@@ -78235,8 +78235,9 @@ the default formatter to `builtin`.
 
 ## Timeline
 
-- Black and isort stay the default in the next release.
-- The default changes only after a transition period. The release notes announce the change before it happens.
+- Black and isort stay the default in 0.92.0, which starts a transition period of at least three months.
+- The default changes no earlier than three months after 0.92.0 is released. The release notes announce the
+  release that changes it beforehand.
 - Until then, omitting `--formatters` keeps writing Black/isort output and emits the default formatter notice.
 
 ## What builtin matches today

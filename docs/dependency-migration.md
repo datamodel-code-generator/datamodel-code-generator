@@ -7,8 +7,9 @@ the default formatter to `builtin`.
 
 ## Timeline
 
-- Black and isort stay the default in the next release.
-- The default changes only after a transition period. The release notes announce the change before it happens.
+- Black and isort stay the default in 0.92.0, which starts a transition period of at least three months.
+- The default changes no earlier than three months after 0.92.0 is released. The release notes announce the
+  release that changes it beforehand.
 - Until then, omitting `--formatters` keeps writing Black/isort output and emits the default formatter notice.
 
 ## What builtin matches today
