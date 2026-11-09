@@ -42,3 +42,23 @@ SOCKET_2: Final[ChannelPlan[str, str]] = ChannelPlan(
     send_codec='utf8',
     receive_codec='utf8',
 )
+
+
+SOCKET_3: Final[ChannelPlan[str, Never]] = ChannelPlan(
+    helper_id='traited',
+    operation=OperationRef(pointer='/channels/traited'),
+    call=_operations.OPERATION_3,
+    fingerprint='1fe85a176cc6aea2a51cc6b6efdedfa31ac68d832f0078a59bef7edba061ee64',
+    send_codec='utf8',
+    receive_codec='none',
+)
+
+
+SOCKET_4: Final[ChannelPlan[str, Never]] = ChannelPlan(
+    helper_id='owned',
+    operation=OperationRef(pointer='/channels/owned'),
+    call=_operations.OPERATION_4,
+    fingerprint='d7a04815da77a3c3b8c0be2403e1d22d146bb8019b2f4dd25f2d84953692cd6b',
+    send_codec='utf8',
+    receive_codec='none',
+)

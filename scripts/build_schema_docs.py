@@ -223,6 +223,7 @@ def generate_feature_table(
     features: list[tuple[str, FeatureMetadata]],
     *,
     include_client: bool = False,
+    include_status: bool = True,
 ) -> str:
     """Generate a Markdown table from feature metadata.
 
@@ -230,22 +231,25 @@ def generate_feature_table(
         features: List of (field_name, metadata) tuples.
         include_client: Whether to include the Client column (the Python client's support, a dash where the
             client does not plan the feature itself).
+        include_status: Whether to include the Status column (the model generation's support), which a table of
+            client-only features leaves out.
 
     Returns:
         Markdown table string.
     """
+    status_header = ("Status",) if include_status else ()
     client_header = ("Client",) if include_client else ()
     rows = (
         (
             f"`{meta['doc_name']}`",
             meta["introduced"],
-            _status_label(meta["status"]),
+            *((_status_label(meta["status"]),) if include_status else ()),
             *((_status_label(meta.get("client_status")),) if include_client else ()),
             meta["description"],
         )
         for _name, meta in features
     )
-    headers = ("Feature", "Introduced", "Status", *client_header, "Description")
+    headers = ("Feature", "Introduced", *status_header, *client_header, "Description")
     lines = [f"| {' | '.join(headers)} |", f"|{'|'.join('-' * (len(header) + 2) for header in headers)}|"]
     lines.extend(f"| {' | '.join(row)} |" for row in rows)
     return "\n".join(lines)
@@ -814,10 +818,11 @@ def generate_supported_features_content(
         "",
         (
             "The AsyncAPI features the generated Python client plans itself; a channel that uses an unsupported "
-            "one is left out of the client with a warning, and its models are generated as usual."
+            "one is left out of the client with a warning, and its models are generated as usual. Message headers "
+            "leave no channel out."
         ),
         "",
-        generate_feature_table(get_feature_metadata(AsyncAPIClientFeatures), include_client=True),
+        generate_feature_table(get_feature_metadata(AsyncAPIClientFeatures), include_client=True, include_status=False),
         "",
     ))
 

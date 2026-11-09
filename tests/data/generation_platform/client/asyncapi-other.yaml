@@ -35,3 +35,10 @@ components:
   parameters:
     region:
       description: The region.
+  messageTraits:
+    packed:
+      contentType: application/x-msgpack
+  channelBindings:
+    posted:
+      ws:
+        method: POST

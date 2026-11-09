@@ -10,6 +10,13 @@ channels:
         contentType: text/plain
         payload:
           type: string
+  notices:
+    address: notices
+    messages:
+      notice:
+        contentType: text/plain
+        payload:
+          type: string
 operations:
   speak:
     action: receive
@@ -19,3 +26,7 @@ operations:
     action: send
     channel:
       $ref: '#/channels/rooms'
+  notify:
+    action: receive
+    channel:
+      $ref: '#/channels/notices'

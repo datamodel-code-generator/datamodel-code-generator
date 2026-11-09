@@ -30,6 +30,7 @@ _V2_ACTIONS: Final[tuple[tuple[str, Action], ...]] = (("subscribe", "send"), ("p
 _JSON_FORMATS: Final = re.compile(r"application/(vnd\.aai\.asyncapi|schema)(\+(json|yaml))?(;.*)?")
 _SCHEME: Final = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://")
 _DEFAULT_MEDIA: Final = "application/json"
+_TRAIT_FIELDS: Final = frozenset(("contentType", "schemaFormat"))
 
 
 @dataclass(frozen=True, slots=True)
@@ -200,7 +201,9 @@ class _Reader:
             skips.append(("server_protocols", "it is served on no ws or wss server"))
         if secured:
             skips.append(("security_requirements", "a server it is served on requires security"))
-        binding = as_mapping(as_mapping(channel.get("bindings")).get("ws"))
+        if (bindings := self.document.resolved(channel.get("bindings"), ())) is None:
+            skips.append((None, "its bindings reference another document"))
+        binding = as_mapping(as_mapping(None if bindings is None else bindings[0]).get("ws"))
         if str(binding.get("method", "GET")).upper() != "GET":
             skips.append(("websocket_bindings", f"its WebSocket binding opens it with {binding.get('method')}"))
         skips.extend(
@@ -315,6 +318,20 @@ class _Reader:
             for item, written in items:
                 yield from self.message(item, written, action, skips)
 
+    def traited(self, message: Mapping[str, YamlValue]) -> Mapping[str, YamlValue] | None:
+        """Return a message with the fields its traits give it, or None when a trait references another document.
+
+        The traits apply in order, as AsyncAPI 2 and 3 merge them, and the message's own fields win. Only the fields
+        that choose a payload's codec are read: `contentType` and `schemaFormat`, which an AsyncAPI 2 trait may give.
+        """
+        traits = message.get("traits")
+        inherited: dict[str, YamlValue] = {}
+        for trait in traits if isinstance(traits, list) else ():
+            if (found := self.document.resolved(trait, ())) is None:
+                return None
+            inherited.update((key, value) for key, value in as_mapping(found[0]).items() if key in _TRAIT_FIELDS)
+        return {**inherited, **message} if inherited else message
+
     def message(
         self, value: YamlValue, written: Tokens, action: object, skips: list[tuple[str | None, str]]
     ) -> Iterator[ReadMessage]:
@@ -324,6 +341,9 @@ class _Reader:
             return
         message, declaration = as_mapping(found[0]), found[1]
         pointer = join_pointer(declaration)
+        if (message := self.traited(message)) is None:
+            skips.append((None, f"a trait of message {pointer} references another document"))
+            return
         payload = message.get("payload")
         schema_format = message.get("schemaFormat")
         tokens: Tokens = (*declaration, "payload")

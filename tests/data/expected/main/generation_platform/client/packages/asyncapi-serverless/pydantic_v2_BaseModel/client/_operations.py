@@ -33,3 +33,11 @@ OPERATION_0: Final[OperationPlan[None]] = OperationPlan(
         ),
     ),
 )
+
+OPERATION_1: Final[OperationPlan[None]] = OperationPlan(
+    operation_id=None,
+    method='GET',
+    path='/notices',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder((), ()),
+)

@@ -133,6 +133,8 @@ class ClientTarget:
         config = request.config
         assert isinstance(config, ClientGenerationConfig)
         skipped: list[tuple[str, list[Diagnostic]]] = []
+        protocols: Protocols | None = None
+        opened: dict[OperationId, ChannelContract] = {}
         if (channels := request.batch.channels) is None:
             protocols = plan_protocols(request, config.protocols, self.protocol_base)
             called = helper_calls(protocols)

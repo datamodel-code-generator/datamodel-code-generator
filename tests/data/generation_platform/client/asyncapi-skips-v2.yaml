@@ -79,7 +79,25 @@ channels:
         contentType: text/plain
         payload:
           type: string
+  /readings:
+    servers: [socket]
+    bindings:
+      $ref: '#/components/channelBindings/queried'
+    subscribe:
+      message:
+        traits:
+          - $ref: '#/components/messageTraits/avro'
+        payload:
+          type: string
 components:
+  channelBindings:
+    queried:
+      ws:
+        query:
+          type: object
+  messageTraits:
+    avro:
+      schemaFormat: application/vnd.apache.avro;version=1.9.0
   securitySchemes:
     token:
       type: httpApiKey

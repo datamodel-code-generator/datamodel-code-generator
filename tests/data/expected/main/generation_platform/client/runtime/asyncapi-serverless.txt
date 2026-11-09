@@ -1,3 +1,5 @@
 # asyncapi-serverless pydantic_v2.BaseModel
     rooms 1 text str'echo hello' raw=b'echo hello'
     server GET /ws/rooms/lobby [] | closed 1000 'done'
+  notices receive ! DecodeError: DecodeError(status_code=101, reason='type', location='message.1') [location=('message', 1), body_bytes=b'read closing', truncated=False] type
+    server GET /ws/notices [] | closed 1002 ''

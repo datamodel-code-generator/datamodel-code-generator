@@ -146,7 +146,81 @@ channels:
         contentType: text/plain
         payload:
           type: string
+  framed:
+    address: /framed
+    servers:
+      - $ref: '#/servers/socket'
+    bindings:
+      $ref: '#/components/channelBindings/posted'
+    messages:
+      frame:
+        payload:
+          type: string
+  traited:
+    address: /traited
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        traits:
+          - $ref: '#/components/messageTraits/packed'
+          - contentType: text/plain
+        payload:
+          type: string
+  owned:
+    address: /owned
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        contentType: text/plain
+        traits:
+          - $ref: '#/components/messageTraits/packed'
+        payload:
+          type: string
+  inherited:
+    address: /inherited
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      blob:
+        traits:
+          - $ref: '#/components/messageTraits/packed'
+        payload:
+          type: object
+  foreign:
+    address: /foreign
+    servers:
+      - $ref: '#/servers/socket'
+    bindings:
+      $ref: 'asyncapi-other.yaml#/components/channelBindings/posted'
+    messages:
+      blob:
+        traits:
+          - $ref: 'asyncapi-other.yaml#/components/messageTraits/packed'
+        payload:
+          type: object
 operations:
+  receiveFrame:
+    action: receive
+    channel:
+      $ref: '#/channels/framed'
+  receiveLine:
+    action: receive
+    channel:
+      $ref: '#/channels/traited'
+  receiveOwned:
+    action: receive
+    channel:
+      $ref: '#/channels/owned'
+  receiveInherited:
+    action: receive
+    channel:
+      $ref: '#/channels/inherited'
+  receiveForeign:
+    action: receive
+    channel:
+      $ref: '#/channels/foreign'
   receiveOrder:
     action: receive
     channel:
@@ -230,3 +304,10 @@ components:
   securitySchemes:
     user:
       type: userPassword
+  channelBindings:
+    posted:
+      ws:
+        method: POST
+  messageTraits:
+    packed:
+      contentType: application/x-msgpack
