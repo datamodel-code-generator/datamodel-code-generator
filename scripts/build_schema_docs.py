@@ -33,6 +33,7 @@ from datamodel_code_generator.enums import (
 from datamodel_code_generator.format import DatetimeClassType
 from datamodel_code_generator.model.pydantic_v2.types import DataTypeManager as PydanticV2DataTypeManager
 from datamodel_code_generator.parser.schema_version import (
+    AsyncAPIClientFeatures,
     DataFormatMapping,
     FeatureMetadata,
     JsonSchemaFeatures,
@@ -808,6 +809,15 @@ def generate_supported_features_content(
         ),
         "",
         generate_feature_table(get_openapi_specific_feature_metadata(), include_client=True),
+        "",
+        heading(heading_level + 1, "AsyncAPI Client Features"),
+        "",
+        (
+            "The AsyncAPI features the generated Python client plans itself; a channel that uses an unsupported "
+            "one is left out of the client with a warning, and its models are generated as usual."
+        ),
+        "",
+        generate_feature_table(get_feature_metadata(AsyncAPIClientFeatures), include_client=True),
         "",
     ))
 

@@ -173,14 +173,5 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
   and its parameters (`parameter_names`); `--client-protocols` is refused for AsyncAPI input.
 
 A channel that uses a feature the client does not support is left out with a warning that names the feature, and the
-other channels are generated:
-
-| Feature | Introduced | Client support |
-|---|---|---|
-| Server protocols | AsyncAPI 2.0 | partial: `ws` and `wss` only |
-| Channels without an address | AsyncAPI 3.0 | not supported |
-| WebSocket channel bindings | AsyncAPI 2.0 | partial: GET handshakes without `query` or `headers` |
-| Message content types | AsyncAPI 2.0 | partial: JSON, `text/plain` strings, and `application/octet-stream` payloads of JSON Schema or AsyncAPI schemas |
-| Several messages per direction | AsyncAPI 2.0 | not supported |
-| Operation replies | AsyncAPI 3.0 | not supported |
-| Security requirements | AsyncAPI 2.0 | not supported |
+other channels are generated. [AsyncAPI Client Features](supported_formats.md#asyncapi-client-features) lists each
+feature and the client's support.

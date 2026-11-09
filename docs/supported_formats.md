@@ -442,6 +442,20 @@ Client: whether the generated Python client (`--generate-client`) supports the f
 | `Binary strings in text media` | OAS 3.0 | ✅ Supported | ❌ Not Supported | `format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header |
 | `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema, or a union of objects that agree on the parts of each property, only, such as not `multipart/related` |
 | `Encoding contentType` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Media types of form-data parts; the client writes a part holding no files as JSON, or its scalars as text in a media type other than a form or multipart media type |
+
+#### AsyncAPI Client Features
+
+The AsyncAPI features the generated Python client plans itself; a channel that uses an unsupported one is left out of the client with a warning, and its models are generated as usual.
+
+| Feature | Introduced | Status | Client | Description |
+|---------|------------|--------|--------|-------------|
+| `server protocols` | AsyncAPI 2.0 | ✅ Supported | ⚠️ Partial | The protocol of a server; the client opens the channels of `ws` and `wss` servers only |
+| `channels without an address` | AsyncAPI 3.0 | ✅ Supported | ❌ Not Supported | A channel whose `address` is null or absent, which the client cannot open |
+| `WebSocket channel bindings` | AsyncAPI 2.0 | ✅ Supported | ⚠️ Partial | `bindings.ws` of a channel; the client opens GET handshakes without `query` or `headers` |
+| `message content types` | AsyncAPI 2.0 | ✅ Supported | ⚠️ Partial | The payloads of messages; the client codes JSON, `text/plain` strings and `application/octet-stream` payloads of JSON Schema or AsyncAPI schemas |
+| `several messages per direction` | AsyncAPI 2.0 | ✅ Supported | ❌ Not Supported | More than one message that an application sends, or receives, on one channel |
+| `operation replies` | AsyncAPI 3.0 | ✅ Supported | ❌ Not Supported | The `reply` of an operation |
+| `security requirements` | AsyncAPI 2.0 | ✅ Supported | ❌ Not Supported | The security of a server or an operation; the client sends no credentials on a handshake |
 <!-- END AUTO-GENERATED SUPPORTED FEATURES -->
 
 ## Data Format Support
