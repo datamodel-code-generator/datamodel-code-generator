@@ -12335,7 +12335,8 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
 - A channel is a server-sent event channel when it carries a `text/event-stream` message, by its own `contentType` or
   a trait's. A channel that no `ws` or `wss` server serves is one as well when an `sse` server serves it, or when the
   HTTP binding of the channel or of an operation on it fixes the `Accept` or `Content-Type` header to
-  `text/event-stream` (by its `const`, or an `enum` of that one value). A server-sent event channel is served on the
+  `text/event-stream` (by its `const`, or an `enum` of that one value). An operation's HTTP binding may come from one
+  of its traits, which gives it as the document's version merges traits. A server-sent event channel is served on the
   `http`, `https` and `sse` servers that serve it; the others are WebSocket channels, so a channel that lists no
   servers in a document with `ws` and `sse` servers is a WebSocket channel. Its `open(...)` returns the event stream of
   an [SSE helper](python-client-helpers.md), as `with client.prices.open(symbol="XBT") as stream:` or `async with

@@ -20,16 +20,22 @@ codec_1: Final[PydanticCodec[str]] = PydanticCodec(str)
 codec_2: Final[PydanticCodec[int]] = PydanticCodec(int)
 """Codec of /channels/prices parameter (request query depth)."""
 
-codec_3: Final[PydanticCodec[models.Price]] = PydanticCodec(models.Price)
+codec_3: Final[PydanticCodec[int]] = PydanticCodec(int)
+"""Codec of /channels/trades parameter (request query since)."""
+
+codec_4: Final[PydanticCodec[models.Price]] = PydanticCodec(models.Price)
 """Codec of /channels/prices response_body (response 200 text/event-stream)."""
 
-codec_4: Final[PydanticCodec[models.Created]] = PydanticCodec(models.Created)
+codec_5: Final[PydanticCodec[models.Created]] = PydanticCodec(models.Created)
 """Codec of /channels/activity response_body (response 200 text/event-stream)."""
 
-codec_5: Final[PydanticCodec[models.Deleted]] = PydanticCodec(models.Deleted)
+codec_6: Final[PydanticCodec[models.Deleted]] = PydanticCodec(models.Deleted)
 """Codec of /channels/activity response_body (response 200 text/event-stream)."""
 
-codec_6: Final[PydanticCodec[models.Notice | models.Alert]] = PydanticCodec(
+codec_7: Final[PydanticCodec[models.Trade]] = PydanticCodec(models.Trade)
+"""Codec of /channels/trades response_body (response 200 text/event-stream)."""
+
+codec_8: Final[PydanticCodec[models.Notice | models.Alert]] = PydanticCodec(
     models.Notice | models.Alert
 )
 """Codec of /channels/notices response_body (response application/json)."""

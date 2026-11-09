@@ -23,6 +23,11 @@ class Deleted(BaseModel):
     id: str
 
 
+class Trade(BaseModel):
+    id: int
+    size: float
+
+
 class Notice(BaseModel):
     text: str
 
@@ -51,11 +56,23 @@ class AlertPayload(RootModel[Alert]):
     root: Alert
 
 
+class EventStreamTraitHttpHeaders(BaseModel):
+    Accept: Literal['text/event-stream'] | None = None
+
+
+class EventStreamTraitHttpQuery(BaseModel):
+    since: int | None = Field(None, description='The trade ID to stream after.')
+
+
 class PricesHttpHeaders(BaseModel):
     Accept: Literal['text/event-stream'] | None = None
     X_Region: str | None = Field(
         None, alias='X-Region', description='The region to read prices of.'
     )
+
+
+class TradesTradePayload(RootModel[Trade]):
+    root: Trade
 
 
 class ChatLinePayload(RootModel[str]):

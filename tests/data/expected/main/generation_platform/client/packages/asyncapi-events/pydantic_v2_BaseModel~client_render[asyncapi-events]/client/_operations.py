@@ -65,13 +65,35 @@ OPERATION_1: Final[OperationPlan[str]] = OperationPlan(
 OPERATION_2: Final[OperationPlan[str]] = OperationPlan(
     operation_id=None,
     method='GET',
-    path='/v1/notices',
+    path='/v1/trades',
     servers=_SERVERS_0,
     responses=ResponseDecoder((text_branch('200', 'text/event-stream'),), ()),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query',
+                name='since',
+                style='form',
+                explode=True,
+                kind='integer',
+                reserved_names=('token',),
+            ),
+            codec=model_bindings.codec_3,
+        ),
+    ),
     security=security.OPERATION_2,
 )
 
-OPERATION_3: Final[OperationPlan[None]] = OperationPlan(
+OPERATION_3: Final[OperationPlan[str]] = OperationPlan(
+    operation_id=None,
+    method='GET',
+    path='/v1/notices',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder((text_branch('200', 'text/event-stream'),), ()),
+    security=security.OPERATION_3,
+)
+
+OPERATION_4: Final[OperationPlan[None]] = OperationPlan(
     operation_id=None,
     method='GET',
     path='/chat',

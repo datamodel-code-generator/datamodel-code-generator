@@ -36,6 +36,11 @@ class ProtocolHelpers:
         return ActivitySse(self._core)
 
     @cached_property
+    def trades(self) -> TradesSse:
+        """The trades SSE helper."""
+        return TradesSse(self._core)
+
+    @cached_property
     def notices(self) -> NoticesSse:
         """The notices SSE helper."""
         return NoticesSse(self._core)
@@ -95,6 +100,30 @@ class ActivitySse:
         )
 
 
+class TradesSse:
+    """The trades SSE helper of channel /v1/trades."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    def open(
+        self,
+        *,
+        since: int | UNSET = UNSET,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> EventStream[models.Trade]:
+        """Open the event stream of channel /v1/trades, returning once its response is a declared success."""
+        return open_events(
+            self._core,
+            _plans.STREAM_2,
+            (since,),
+            stream_options=stream_options,
+            options=options,
+        )
+
+
 class NoticesSse:
     """The notices SSE helper of channel /v1/notices."""
 
@@ -111,7 +140,7 @@ class NoticesSse:
         """Open the event stream of channel /v1/notices, returning once its response is a declared success."""
         return open_events(
             self._core,
-            _plans.STREAM_2,
+            _plans.STREAM_3,
             (),
             stream_options=stream_options,
             options=options,

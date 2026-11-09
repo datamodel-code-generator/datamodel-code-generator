@@ -29,12 +29,14 @@ if TYPE_CHECKING:
     from .protocols._async_helpers import AsyncNoticesSse
     from .protocols._async_helpers import AsyncPricesSse
     from .protocols._async_helpers import AsyncProtocolHelpers
+    from .protocols._async_helpers import AsyncTradesSse
 
 _DEFAULTS = ClientDefaults(
     security_schemes=security.ROOT_SCHEMES,
     helpers=(
         ('prices', 'sse'),
         ('activity', 'sse'),
+        ('trades', 'sse'),
         ('notices', 'sse'),
         ('chat', 'websocket'),
     ),
@@ -113,6 +115,11 @@ class AsyncClientView:
     def activity(self) -> AsyncActivitySse:
         """The server-sent event channel at /v1/activity."""
         return self.protocols.activity
+
+    @cached_property
+    def trades(self) -> AsyncTradesSse:
+        """The server-sent event channel at /v1/trades."""
+        return self.protocols.trades
 
     @cached_property
     def notices(self) -> AsyncNoticesSse:

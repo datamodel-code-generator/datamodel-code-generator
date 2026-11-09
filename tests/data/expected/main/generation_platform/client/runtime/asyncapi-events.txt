@@ -18,6 +18,11 @@ price
   > GET https://feed.example.com/v1/activity?token=secret
     [host: feed.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   activity refused ! NotFoundError: Error code: 404 - gone [status_code=404, body=b'gone', body_bytes=b'gone', truncated=False]
+  > GET https://feed.example.com/v1/trades?since=6&token=secret
+    [host: feed.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  trades
+    1 'message' id=None Trade{'id': 7, 'size': 0.5}
+    end
   > GET https://feed.example.com/v1/prices/ETH?token=secret
     [host: feed.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   async prices
@@ -27,6 +32,11 @@ price
 price
   Field required [type=missing, input_value={'symbol': 'XBT'}, input_type=dict]
     For further information visit https://errors.pydantic.dev/<version>/v/missing] value
+  > GET https://feed.example.com/v1/trades?token=secret
+    [host: feed.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  async trades
+    1 'message' id=None Trade{'id': 7, 'size': 0.5}
+    end
 # asyncapi-events msgspec.Struct
   warning UserWarning: <root>/asyncapi_events_msgspec_struct: Skipping channel 'notices', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/notices: the client receives JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
   channels True ActivitySse
@@ -45,9 +55,19 @@ price
   > GET https://feed.example.com/v1/activity?token=secret
     [host: feed.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   activity refused ! NotFoundError: Error code: 404 - gone [status_code=404, body=b'gone', body_bytes=b'gone', truncated=False]
+  > GET https://feed.example.com/v1/trades?since=6&token=secret
+    [host: feed.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  trades
+    1 'message' id=None Trade{'id': 7, 'size': 0.5}
+    end
   > GET https://feed.example.com/v1/prices/ETH?token=secret
     [host: feed.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   async prices
     1 'message' id=None Price{'symbol': 'XBT', 'price': 1.5}
     2 'tick' id='2' Price{'symbol': 'XBT', 'price': 2.0}
     ! DecodeError: DecodeError(status_code=200, reason='value', location='event.3') [location=('event', 3), body_bytes=b'{"symbol": "XBT"}', truncated=False, cause=ValidationError('Object missing required field `price`')] value
+  > GET https://feed.example.com/v1/trades?token=secret
+    [host: feed.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  async trades
+    1 'message' id=None Trade{'id': 7, 'size': 0.5}
+    end

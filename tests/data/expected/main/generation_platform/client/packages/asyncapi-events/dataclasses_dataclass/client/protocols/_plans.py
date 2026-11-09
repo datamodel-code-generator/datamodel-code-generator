@@ -21,7 +21,7 @@ STREAM_0: Final[EventPlan[models.Price]] = EventPlan(
     operation=OperationRef(pointer='/channels/prices'),
     call=_operations.OPERATION_0,
     media='text/event-stream',
-    event=model_bindings.codec_3,
+    event=model_bindings.codec_4,
 )
 
 
@@ -30,15 +30,24 @@ STREAM_1: Final[EventPlan[models.Created | models.Deleted]] = EventPlan(
     operation=OperationRef(pointer='/channels/activity'),
     call=_operations.OPERATION_1,
     media='text/event-stream',
-    routes=(('created', model_bindings.codec_4), ('deleted', model_bindings.codec_5)),
+    routes=(('created', model_bindings.codec_5), ('deleted', model_bindings.codec_6)),
     discriminator=BodySelector(pointer='/type'),
+)
+
+
+STREAM_2: Final[EventPlan[models.Trade]] = EventPlan(
+    helper_id='trades',
+    operation=OperationRef(pointer='/channels/trades'),
+    call=_operations.OPERATION_2,
+    media='text/event-stream',
+    event=model_bindings.codec_7,
 )
 
 
 SOCKET_0: Final[ChannelPlan[Never, str]] = ChannelPlan(
     helper_id='chat',
     operation=OperationRef(pointer='/channels/chat'),
-    call=_operations.OPERATION_2,
+    call=_operations.OPERATION_3,
     fingerprint='da69ebcec37bcb54cf61e81ba46bc42d42ae272aed7d57282da3e17a81b824b6',
     send_codec='none',
     receive_codec='utf8',

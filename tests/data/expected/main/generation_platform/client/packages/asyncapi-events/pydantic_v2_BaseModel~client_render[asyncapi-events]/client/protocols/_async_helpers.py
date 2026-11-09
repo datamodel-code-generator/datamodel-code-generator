@@ -37,6 +37,11 @@ class AsyncProtocolHelpers:
         return AsyncActivitySse(self._core)
 
     @cached_property
+    def trades(self) -> AsyncTradesSse:
+        """The trades SSE helper."""
+        return AsyncTradesSse(self._core)
+
+    @cached_property
     def notices(self) -> AsyncNoticesSse:
         """The notices SSE helper."""
         return AsyncNoticesSse(self._core)
@@ -96,6 +101,30 @@ class AsyncActivitySse:
         )
 
 
+class AsyncTradesSse:
+    """The trades SSE helper of channel /v1/trades."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    async def open(
+        self,
+        *,
+        since: int | UNSET = UNSET,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncEventStream[models.Trade]:
+        """Open the event stream of channel /v1/trades, returning once its response is a declared success."""
+        return await aopen_events(
+            self._core,
+            _plans.STREAM_2,
+            (since,),
+            stream_options=stream_options,
+            options=options,
+        )
+
+
 class AsyncNoticesSse:
     """The notices SSE helper of channel /v1/notices."""
 
@@ -112,7 +141,7 @@ class AsyncNoticesSse:
         """Open the event stream of channel /v1/notices, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
-            _plans.STREAM_2,
+            _plans.STREAM_3,
             (),
             stream_options=stream_options,
             options=options,

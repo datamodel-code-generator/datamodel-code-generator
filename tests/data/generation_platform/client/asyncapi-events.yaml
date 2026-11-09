@@ -45,6 +45,14 @@ channels:
         $ref: '#/components/messages/created'
       deleted:
         $ref: '#/components/messages/deleted'
+  trades:
+    address: /v1/trades
+    servers:
+      - $ref: '#/servers/feed'
+    messages:
+      trade:
+        payload:
+          $ref: '#/components/schemas/Trade'
   notices:
     address: /v1/notices
     servers:
@@ -81,6 +89,15 @@ operations:
     action: send
     channel:
       $ref: '#/channels/activity'
+  streamTrades:
+    action: send
+    channel:
+      $ref: '#/channels/trades'
+    traits:
+      - $ref: '#/components/operationTraits/eventStream'
+    bindings:
+      mqtt:
+        qos: 1
   streamNotices:
     action: send
     channel:
@@ -95,6 +112,22 @@ components:
       type: httpApiKey
       in: query
       name: token
+  operationTraits:
+    eventStream:
+      bindings:
+        http:
+          headers:
+            type: object
+            properties:
+              Accept:
+                type: string
+                const: text/event-stream
+          query:
+            type: object
+            properties:
+              since:
+                type: integer
+                description: The trade ID to stream after.
   messageTraits:
     event:
       contentType: text/event-stream
@@ -146,6 +179,14 @@ components:
         id:
           type: string
       required: [type, id]
+    Trade:
+      type: object
+      properties:
+        id:
+          type: integer
+        size:
+          type: number
+      required: [id, size]
     Notice:
       type: object
       properties:

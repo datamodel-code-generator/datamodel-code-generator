@@ -457,6 +457,46 @@ def _streams(document: _Document, holder: Tokens, owner: Mapping[str, YamlValue]
     )
 
 
+def _layers(
+    document: _Document, written: Mapping[str, YamlValue], tokens: Tokens, *, v2: bool
+) -> list[tuple[Mapping[str, YamlValue], Tokens]] | None:
+    """Return an operation or a message at `tokens` and its traits, each with its pointer, the strongest last.
+
+    AsyncAPI 2 (`v2`) merges each trait into the object in order, by JSON Merge Patch, so a trait's field wins over the
+    object's; AsyncAPI 3 applies the traits in order and then the object, whose own fields win. None is a trait that
+    does not resolve.
+    """
+    if not isinstance(traits := written.get("traits"), list):
+        return [(written, tokens)]
+    layers: list[tuple[Mapping[str, YamlValue], Tokens]] = []
+    for index, trait in enumerate(traits):
+        if (found := document.resolved(trait, (*tokens, "traits", str(index)))) is None:
+            return None
+        layers.append((as_mapping(found[0]), found[1]))
+    return [(written, tokens), *layers] if v2 else [*layers, (written, tokens)]
+
+
+def _bound(
+    document: _Document, written: Mapping[str, YamlValue], tokens: Tokens, *, v2: bool
+) -> tuple[Tokens, Mapping[str, YamlValue]]:
+    """Return where the bindings of an operation at `tokens` that give it its HTTP binding are, and their holder.
+
+    That is the strongest of its `_layers` whose bindings set the `http` one, which Merge Patch keeps whatever bindings
+    for other protocols a stronger layer has, or clear it (a null, which removes it); one whose bindings reference
+    another document is taken as well, as the handshake then leaves the channel out. Without such a layer, or where a
+    trait does not resolve, it is the operation's own.
+    """
+    protocol = _BINDINGS["sse"][0]
+    chosen = (written, tokens)
+    for layer, at in _layers(document, written, tokens, v2=v2) or ():
+        if "bindings" not in layer:
+            continue
+        found = document.resolved(layer["bindings"], (*at, "bindings"))
+        if found is None or found[0] is None or protocol in as_mapping(found[0]):
+            chosen = (layer, at)
+    return (*chosen[1], "bindings"), chosen[0]
+
+
 def _offered(document: _Document, value: YamlValue) -> tuple[str, ...]:
     """Return the subprotocol tokens a header's schema fixes by its `const` or `enum`, in order, else none.
 
@@ -889,7 +929,7 @@ class _Reader:
         for name, action in _V2_ACTIONS:
             if not isinstance(written := channel.get(name), dict):
                 continue
-            operations.append(((*declaration, name, "bindings"), written, False))
+            operations.append((*_bound(self.document, written, (*declaration, name), v2=True), False))
             if (operation := self.traited(written)) is None:
                 skips.append((None, f"a trait of its {name} operation references another document"))
                 continue
@@ -927,7 +967,7 @@ class _Reader:
             action = written.get("action")
             if action not in {"send", "receive"}:
                 continue
-            operations.append(((*pointer_tokens(pointer), "bindings"), written, True))
+            operations.append((*_bound(self.document, written, pointer_tokens(pointer), v2=False), True))
             if (operation := self.traited(written)) is None:
                 skips.append((None, f"a trait of operation {pointer} references another document"))
                 continue
@@ -996,20 +1036,13 @@ class _Reader:
     def traited(self, written: Mapping[str, YamlValue]) -> Mapping[str, YamlValue] | None:
         """Return an operation or a message with the fields its traits give it, or None when a trait does not resolve.
 
-        Only the fields the reader decides on are merged (`_TRAIT_FIELDS`), as the document's version merges them.
-        AsyncAPI 2 merges each trait into the object in order, by JSON Merge Patch, so a trait's field wins over the
-        object's; AsyncAPI 3 applies the traits in order and then the object, whose own fields win. A null field, which
-        Merge Patch removes, reads as an absent one.
+        Only the fields the reader decides on are merged (`_TRAIT_FIELDS`), each from the strongest of its `_layers`
+        that has it. A null field, which Merge Patch removes, reads as an absent one.
         """
-        if not isinstance(traits := written.get("traits"), list):
-            return written
-        layers: list[Mapping[str, YamlValue]] = []
-        for trait in traits:
-            if (found := self.document.resolved(trait, ())) is None:
-                return None
-            layers.append(as_mapping(found[0]))
+        if (layers := _layers(self.document, written, (), v2=self.v2)) is None:
+            return None
         merged = dict(written)
-        for layer in layers if self.v2 else (*layers, written):
+        for layer, _ in layers:
             merged.update((key, layer[key]) for key in _TRAIT_FIELDS & layer.keys())
         return merged
 

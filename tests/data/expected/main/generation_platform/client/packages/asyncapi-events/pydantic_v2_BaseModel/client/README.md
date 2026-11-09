@@ -102,6 +102,13 @@ See the runtime reference for their limits.
     "path": "/v1/activity"
   },
   {
+    "helper": "trades",
+    "kind": "sse",
+    "operation": "/channels/trades",
+    "method": "GET",
+    "path": "/v1/trades"
+  },
+  {
     "helper": "notices",
     "kind": "sse",
     "operation": "/channels/notices",
@@ -187,6 +194,21 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
     "operation": "/channels/activity",
     "method": "GET",
     "path": "/v1/activity",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": [
+      {
+        "token": []
+      }
+    ],
+    "auth_challenge_less_401": false
+  },
+  {
+    "operation": "/channels/trades",
+    "method": "GET",
+    "path": "/v1/trades",
     "retry_safety": "method_default",
     "idempotency": null,
     "retry_after_ms_header": null,

@@ -29,12 +29,14 @@ if TYPE_CHECKING:
     from .protocols._helpers import NoticesSse
     from .protocols._helpers import PricesSse
     from .protocols._helpers import ProtocolHelpers
+    from .protocols._helpers import TradesSse
 
 _DEFAULTS = ClientDefaults(
     security_schemes=security.ROOT_SCHEMES,
     helpers=(
         ('prices', 'sse'),
         ('activity', 'sse'),
+        ('trades', 'sse'),
         ('notices', 'sse'),
         ('chat', 'websocket'),
     ),
@@ -113,6 +115,11 @@ class ClientView:
     def activity(self) -> ActivitySse:
         """The server-sent event channel at /v1/activity."""
         return self.protocols.activity
+
+    @cached_property
+    def trades(self) -> TradesSse:
+        """The server-sent event channel at /v1/trades."""
+        return self.protocols.trades
 
     @cached_property
     def notices(self) -> NoticesSse:
