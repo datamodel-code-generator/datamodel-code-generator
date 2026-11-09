@@ -1,0 +1,278 @@
+asyncapi: 3.0.0
+info:
+  title: Quote stream
+  version: 1.0.0
+servers:
+  production:
+    host: stream.example.com
+    pathname: /v2
+    protocol: wss
+    security:
+      - $ref: '#/components/securitySchemes/token'
+      - $ref: '#/components/securitySchemes/bearer'
+  partner:
+    host: partner.example.com
+    protocol: wss
+    security:
+      - $ref: '#/components/securitySchemes/oauth'
+      - $ref: '#/components/securitySchemes/login'
+  edge:
+    host: '{host}:{port}'
+    protocol: ws
+    variables:
+      host:
+        description: The edge host.
+      port:
+        default: '8080'
+  relay:
+    host: '{zone}.relay.example.com'
+    protocol: wss
+  regional:
+    host: regional.example.com
+    protocol: wss
+    variables:
+      zone:
+        description: A zone the URL does not name.
+  device:
+    host: device.example.com
+    protocol: wss
+    security:
+      - $ref: '#/components/securitySchemes/login'
+channels:
+  quotes:
+    address: /quotes/{symbol}
+    servers:
+      - $ref: '#/servers/production'
+    parameters:
+      symbol:
+        description: The instrument.
+    bindings:
+      ws:
+        query:
+          $ref: '#/components/schemas/QuoteQuery'
+        headers:
+          type: object
+          properties:
+            X-Trace:
+              type: string
+              description: A trace id echoed in logs.
+            X-Api-Key:
+              type: string
+    messages:
+      quote:
+        $ref: '#/components/messages/quote'
+  orders:
+    address: /orders
+    servers:
+      - $ref: '#/servers/production'
+    bindings:
+      ws:
+        headers:
+          type: object
+          properties:
+            X-Api-Key:
+              type: string
+            Sec-WebSocket-Protocol:
+              type: string
+              description: The subprotocols the client offers.
+    messages:
+      order:
+        payload:
+          $ref: '#/components/schemas/Order'
+      confirmation:
+        payload:
+          $ref: '#/components/schemas/Order'
+  partners:
+    address: /partners
+    servers:
+      - $ref: '#/servers/partner'
+    messages:
+      quote:
+        $ref: '#/components/messages/quote'
+  remote:
+    address: /remote
+    servers:
+      - $ref: '#/servers/edge'
+      - $ref: '#/servers/relay'
+    messages:
+      quote:
+        $ref: '#/components/messages/quote'
+  devices:
+    address: /devices
+    servers:
+      - $ref: '#/servers/device'
+    messages:
+      quote:
+        $ref: '#/components/messages/quote'
+  mixed:
+    address: /mixed
+    servers:
+      - $ref: '#/servers/production'
+      - $ref: '#/servers/partner'
+    messages:
+      quote:
+        $ref: '#/components/messages/quote'
+  sessions:
+    address: /sessions
+    servers:
+      - $ref: '#/servers/regional'
+    bindings:
+      ws:
+        query:
+          type: object
+          properties:
+            limit:
+              type: integer
+              default: 10
+        headers:
+          type: object
+          properties:
+            Authorization:
+              type: string
+            Sec-WebSocket-Protocol:
+              type: string
+              enum: [quotes.v1, quotes.bin.v1]
+          required: [Sec-WebSocket-Protocol]
+    messages:
+      quote:
+        $ref: '#/components/messages/quote'
+  filtered:
+    address: /filtered
+    servers:
+      - $ref: '#/servers/production'
+    bindings:
+      ws:
+        query:
+          type: object
+          properties:
+            kind:
+              type: string
+          minProperties: 1
+        headers:
+          type: string
+    messages:
+      quote:
+        $ref: '#/components/messages/quote'
+operations:
+  sendQuotes:
+    action: send
+    channel:
+      $ref: '#/channels/quotes'
+  placeOrder:
+    action: receive
+    channel:
+      $ref: '#/channels/orders'
+    messages:
+      - $ref: '#/channels/orders/messages/order'
+    traits:
+      - $ref: '#/components/operationTraits/session'
+  confirmOrder:
+    action: send
+    channel:
+      $ref: '#/channels/orders'
+    messages:
+      - $ref: '#/channels/orders/messages/confirmation'
+    security:
+      - $ref: '#/components/securitySchemes/key'
+    traits:
+      - $ref: '#/components/operationTraits/audited'
+  sendPartnerQuotes:
+    action: send
+    channel:
+      $ref: '#/channels/partners'
+  sendRemoteQuotes:
+    action: send
+    channel:
+      $ref: '#/channels/remote'
+  sendDeviceQuotes:
+    action: send
+    channel:
+      $ref: '#/channels/devices'
+  sendMixedQuotes:
+    action: send
+    channel:
+      $ref: '#/channels/mixed'
+  sendSessionQuotes:
+    action: send
+    channel:
+      $ref: '#/channels/sessions'
+    security:
+      - $ref: '#/components/securitySchemes/bearer'
+      - type: http
+        scheme: basic
+  sendFilteredQuotes:
+    action: send
+    channel:
+      $ref: '#/channels/filtered'
+    security:
+      - type: http
+        scheme: bearer
+components:
+  operationTraits:
+    session:
+      security:
+        - $ref: '#/components/securitySchemes/session'
+    audited:
+      security:
+        - $ref: '#/components/securitySchemes/login'
+  messages:
+    quote:
+      payload:
+        $ref: '#/components/schemas/Quote'
+  schemas:
+    QuoteQuery:
+      type: object
+      properties:
+        depth:
+          type: integer
+          description: How many levels to send.
+        snapshot:
+          type: boolean
+        fields:
+          type: array
+          items:
+            type: string
+      required: [depth]
+    Quote:
+      type: object
+      properties:
+        symbol:
+          type: string
+        bid:
+          type: number
+      required: [symbol, bid]
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        size:
+          type: number
+      required: [id, size]
+  securitySchemes:
+    token:
+      type: httpApiKey
+      in: query
+      name: token
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    key:
+      type: httpApiKey
+      in: header
+      name: X-Api-Key
+    session:
+      type: httpApiKey
+      in: cookie
+      name: session
+    oauth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/token
+          availableScopes:
+            quotes:read: Read quotes.
+      scopes: ['quotes:read']
+    login:
+      type: userPassword

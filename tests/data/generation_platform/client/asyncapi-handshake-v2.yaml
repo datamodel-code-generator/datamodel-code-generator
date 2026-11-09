@@ -1,0 +1,159 @@
+asyncapi: 2.6.0
+info:
+  title: Ticker stream
+  version: 1.0.0
+servers:
+  live:
+    url: wss://ticker.example.com/{version}
+    protocol: wss
+    variables:
+      version:
+        default: v1
+        enum: [v1, v2]
+    security:
+      - apiKey: []
+      - oauth: [ticks:read]
+  admin:
+    url: admin.example.com
+    protocol: wss
+    security:
+      - basic: []
+  local:
+    url: localhost:{port}
+    protocol: ws
+    variables:
+      port:
+        enum: ['8080', '8081']
+channels:
+  /ticks/{market}:
+    servers: [live]
+    parameters:
+      market:
+        schema:
+          type: string
+    bindings:
+      ws:
+        $ref: '#/components/channelBindings/ticks/ws'
+    subscribe:
+      message:
+        payload:
+          $ref: '#/components/schemas/Tick'
+    publish:
+      security:
+        - user: []
+        - apiKey: []
+      message:
+        payload:
+          $ref: '#/components/schemas/Subscription'
+  /scoped:
+    servers: [live]
+    subscribe:
+      traits:
+        - $ref: '#/components/operationTraits/identified'
+      security:
+        - apiKey: []
+      message:
+        payload:
+          $ref: '#/components/schemas/Tick'
+  /admin:
+    servers: [admin]
+    publish:
+      message:
+        payload:
+          $ref: '#/components/schemas/Subscription'
+  /malformed:
+    servers: [live]
+    publish:
+      security:
+        apiKey: []
+      message:
+        payload:
+          $ref: '#/components/schemas/Subscription'
+    subscribe:
+      security:
+        - apiKey: read
+      message:
+        payload:
+          $ref: '#/components/schemas/Tick'
+  /local:
+    servers: [local]
+    subscribe:
+      message:
+        payload:
+          $ref: '#/components/schemas/Tick'
+  /legacy:
+    servers: [live]
+    subscribe:
+      security:
+        - legacy: []
+      message:
+        payload:
+          $ref: '#/components/schemas/Tick'
+components:
+  channelBindings:
+    ticks:
+      ws:
+        query:
+          type: object
+          properties:
+            interval:
+              type: integer
+              enum: [1, 5]
+            mode:
+              type: string
+              enum: [fast, slow]
+          required: [interval]
+        headers:
+          type: object
+          properties:
+            X-Client:
+              $ref: '#/components/schemas/ClientName'
+            Sec-WebSocket-Protocol:
+              const: ticks.v1
+  operationTraits:
+    identified:
+      security:
+        - oidc: [openid]
+  schemas:
+    ClientName:
+      type: string
+      maxLength: 32
+    Tick:
+      type: object
+      properties:
+        market:
+          type: string
+        price:
+          type: number
+      required: [market, price]
+    Subscription:
+      type: object
+      properties:
+        markets:
+          type: array
+          items:
+            type: string
+      required: [markets]
+  securitySchemes:
+    apiKey:
+      type: httpApiKey
+      in: header
+      name: X-Key
+    basic:
+      type: http
+      scheme: basic
+    oauth:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: https://auth.example.com/authorize
+          scopes:
+            ticks:read: Read ticks.
+    oidc:
+      type: openIdConnect
+      openIdConnectUrl: https://id.example.com/.well-known/openid-configuration
+    user:
+      type: userPassword
+    legacy:
+      type: apiKey
+      in: user

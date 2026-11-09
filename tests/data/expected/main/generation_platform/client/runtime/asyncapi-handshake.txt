@@ -1,0 +1,46 @@
+# asyncapi-handshake pydantic_v2.BaseModel
+  warning UserWarning: <root>/asyncapi_handshake_pydantic_v2_basemodel: Skipping channel 'remote', which uses server variables (AsyncAPI 2.0) that the client does not support: /channels/remote: the variable host of server edge has no default; /channels/remote: the URL of server relay uses the variable zone, which the server does not declare
+  warning UserWarning: <root>/asyncapi_handshake_pydantic_v2_basemodel: Skipping channel 'devices', which uses security requirements (AsyncAPI 2.0) that the client does not support: /channels/devices: the security of server device needs userPassword, which a handshake cannot send
+  warning UserWarning: <root>/asyncapi_handshake_pydantic_v2_basemodel: Skipping channel 'mixed', which uses security requirements (AsyncAPI 2.0) that the client does not support: /channels/mixed: the servers it is served on require different security
+  warning UserWarning: <root>/asyncapi_handshake_pydantic_v2_basemodel: Skipping channel 'filtered', which uses WebSocket channel bindings (AsyncAPI 2.0), security requirements (AsyncAPI 2.0) that the client does not support: /channels/filtered: the query schema of its WebSocket binding is not an object of properties; /channels/filtered: the headers schema of its WebSocket binding is not an object of properties; /channels/filtered: the security of operation /operations/sendFilteredQuotes needs a scheme written inline, which a handshake cannot send
+    quotes 1 text Quote{'symbol': 'XBT', 'bid': 1.5} raw=b'{"symbol": "XBT", "bid": 1.5}'
+    quotes 1 text Quote{'symbol': 'XBT', 'bid': 1.5} raw=b'{"symbol": "XBT", "bid": 1.5}'
+    orders 1 text Order{'id': 'o-1', 'size': 2.0} raw=b'{"id": "o-1", "size": 2.0}'
+    orders 1 text Order{'id': 'o-1', 'size': 2.0} raw=b'{"id": "o-1", "size": 2.0}'
+  orders without a session ! ConfigurationError: ConfigurationError(reason='missing_credentials', field_path='auth') [field_path=('auth',)] missing_credentials
+    sessions quotes.v1 1 text Quote{'symbol': 'XBT', 'bid': 1.5} raw=b'{"symbol": "XBT", "bid": 1.5}'
+    sessions quotes.v1 1 text Quote{'symbol': 'XBT', 'bid': 1.5} raw=b'{"symbol": "XBT", "bid": 1.5}'
+    sessions quotes.bin.v1 1 text Quote{'symbol': 'XBT', 'bid': 1.5} raw=b'{"symbol": "XBT", "bid": 1.5}'
+  sessions without a bearer token ! ConfigurationError: ConfigurationError(reason='missing_credentials', field_path='auth') [field_path=('auth',)] missing_credentials
+    async partners Quote{'symbol': 'XBT', 'bid': 1.5}
+    server got /quotes/XBT?depth=5&fields=bid&fields=ask&token=t-1 [x-trace: trace-1]
+    server got /quotes/ETH?depth=1&snapshot=true [authorization: Bearer b-1]
+    server got /orders?token=t-2 [cookie: session=s-2, x-api-key: k-2]
+    server got /orders?token=t-3 [cookie: session=s-3, x-api-key: from-parameter]
+    server got /sessions?limit=10 [authorization: Bearer b-5, sec-websocket-protocol: quotes.v1, quotes.bin.v1]
+    server got /sessions?limit=3 [authorization: Bearer from-parameter, sec-websocket-protocol: quotes.v1, quotes.bin.v1]
+    server got /sessions?limit=10 [authorization: Bearer from-parameter, sec-websocket-protocol: quotes.v1, quotes.bin.v1]
+    server got /partners [authorization: Bearer o-1]
+# asyncapi-handshake msgspec.Struct
+  warning UserWarning: <root>/asyncapi_handshake_msgspec_struct: Skipping channel 'remote', which uses server variables (AsyncAPI 2.0) that the client does not support: /channels/remote: the variable host of server edge has no default; /channels/remote: the URL of server relay uses the variable zone, which the server does not declare
+  warning UserWarning: <root>/asyncapi_handshake_msgspec_struct: Skipping channel 'devices', which uses security requirements (AsyncAPI 2.0) that the client does not support: /channels/devices: the security of server device needs userPassword, which a handshake cannot send
+  warning UserWarning: <root>/asyncapi_handshake_msgspec_struct: Skipping channel 'mixed', which uses security requirements (AsyncAPI 2.0) that the client does not support: /channels/mixed: the servers it is served on require different security
+  warning UserWarning: <root>/asyncapi_handshake_msgspec_struct: Skipping channel 'filtered', which uses WebSocket channel bindings (AsyncAPI 2.0), security requirements (AsyncAPI 2.0) that the client does not support: /channels/filtered: the query schema of its WebSocket binding is not an object of properties; /channels/filtered: the headers schema of its WebSocket binding is not an object of properties; /channels/filtered: the security of operation /operations/sendFilteredQuotes needs a scheme written inline, which a handshake cannot send
+    quotes 1 text Quote{'symbol': 'XBT', 'bid': 1.5} raw=b'{"symbol": "XBT", "bid": 1.5}'
+    quotes 1 text Quote{'symbol': 'XBT', 'bid': 1.5} raw=b'{"symbol": "XBT", "bid": 1.5}'
+    orders 1 text Order{'id': 'o-1', 'size': 2.0} raw=b'{"id": "o-1", "size": 2.0}'
+    orders 1 text Order{'id': 'o-1', 'size': 2.0} raw=b'{"id": "o-1", "size": 2.0}'
+  orders without a session ! ConfigurationError: ConfigurationError(reason='missing_credentials', field_path='auth') [field_path=('auth',)] missing_credentials
+    sessions quotes.v1 1 text Quote{'symbol': 'XBT', 'bid': 1.5} raw=b'{"symbol": "XBT", "bid": 1.5}'
+    sessions quotes.v1 1 text Quote{'symbol': 'XBT', 'bid': 1.5} raw=b'{"symbol": "XBT", "bid": 1.5}'
+    sessions quotes.bin.v1 1 text Quote{'symbol': 'XBT', 'bid': 1.5} raw=b'{"symbol": "XBT", "bid": 1.5}'
+  sessions without a bearer token ! ConfigurationError: ConfigurationError(reason='missing_credentials', field_path='auth') [field_path=('auth',)] missing_credentials
+    async partners Quote{'symbol': 'XBT', 'bid': 1.5}
+    server got /quotes/XBT?depth=5&fields=bid&fields=ask&token=t-1 [x-trace: trace-1]
+    server got /quotes/ETH?depth=1&snapshot=true [authorization: Bearer b-1]
+    server got /orders?token=t-2 [cookie: session=s-2, x-api-key: k-2]
+    server got /orders?token=t-3 [cookie: session=s-3, x-api-key: from-parameter]
+    server got /sessions?limit=10 [authorization: Bearer b-5, sec-websocket-protocol: quotes.v1, quotes.bin.v1]
+    server got /sessions?limit=3 [authorization: Bearer from-parameter, sec-websocket-protocol: quotes.v1, quotes.bin.v1]
+    server got /sessions?limit=10 [authorization: Bearer from-parameter, sec-websocket-protocol: quotes.v1, quotes.bin.v1]
+    server got /partners [authorization: Bearer o-1]

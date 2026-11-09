@@ -1,0 +1,53 @@
+# asyncapi-handshake
+render pydantic_v2.BaseModel
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'remote', which uses server variables (AsyncAPI 2.0) that the client does not support: /channels/remote: the variable host of server edge has no default; /channels/remote: the URL of server relay uses the variable zone, which the server does not declare
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'devices', which uses security requirements (AsyncAPI 2.0) that the client does not support: /channels/devices: the security of server device needs userPassword, which a handshake cannot send
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'mixed', which uses security requirements (AsyncAPI 2.0) that the client does not support: /channels/mixed: the servers it is served on require different security
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'filtered', which uses WebSocket channel bindings (AsyncAPI 2.0), security requirements (AsyncAPI 2.0) that the client does not support: /channels/filtered: the query schema of its WebSocket binding is not an object of properties; /channels/filtered: the headers schema of its WebSocket binding is not an object of properties; /channels/filtered: the security of operation /operations/sendFilteredQuotes needs a scheme written inline, which a handshake cannot send
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated/security.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/auth.py
+  client/errors.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/responses.py
+  client/types/__init__.py
+  models.py
+render msgspec.Struct
+  warning UserWarning: <root>/msgspec_Struct/client: Skipping channel 'remote', which uses server variables (AsyncAPI 2.0) that the client does not support: /channels/remote: the variable host of server edge has no default; /channels/remote: the URL of server relay uses the variable zone, which the server does not declare
+  warning UserWarning: <root>/msgspec_Struct/client: Skipping channel 'devices', which uses security requirements (AsyncAPI 2.0) that the client does not support: /channels/devices: the security of server device needs userPassword, which a handshake cannot send
+  warning UserWarning: <root>/msgspec_Struct/client: Skipping channel 'mixed', which uses security requirements (AsyncAPI 2.0) that the client does not support: /channels/mixed: the servers it is served on require different security
+  warning UserWarning: <root>/msgspec_Struct/client: Skipping channel 'filtered', which uses WebSocket channel bindings (AsyncAPI 2.0), security requirements (AsyncAPI 2.0) that the client does not support: /channels/filtered: the query schema of its WebSocket binding is not an object of properties; /channels/filtered: the headers schema of its WebSocket binding is not an object of properties; /channels/filtered: the security of operation /operations/sendFilteredQuotes needs a scheme written inline, which a handshake cannot send
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated/security.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/auth.py
+  client/errors.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/responses.py
+  client/types/__init__.py
+  models.py

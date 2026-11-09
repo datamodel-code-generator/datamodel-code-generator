@@ -200,6 +200,29 @@ channels:
           - $ref: 'asyncapi-other.yaml#/components/messageTraits/packed'
         payload:
           type: object
+  borrowed:
+    address: /borrowed
+    servers:
+      - $ref: '#/servers/socket'
+    bindings:
+      ws:
+        $ref: 'asyncapi-other.yaml#/components/channelBindings/posted/ws'
+    messages:
+      note:
+        payload:
+          type: string
+  queried:
+    address: /queried
+    servers:
+      - $ref: '#/servers/socket'
+    bindings:
+      ws:
+        query:
+          $ref: 'asyncapi-other.yaml#/components/schemas/Report'
+    messages:
+      note:
+        payload:
+          type: string
   guarded:
     address: /guarded
     servers:
@@ -228,6 +251,35 @@ channels:
         payload:
           type: string
           contentEncoding: base64
+  upgraded:
+    address: /upgraded
+    servers:
+      - $ref: '#/servers/socket'
+    bindings:
+      ws:
+        headers:
+          type: object
+          properties:
+            Upgrade:
+              type: string
+            Connection:
+              type: string
+            Sec-WebSocket-Protocol:
+              type: string
+              enum: [chat.v1, chat v2]
+          required: [Upgrade, Sec-WebSocket-Protocol]
+    messages:
+      line:
+        payload:
+          type: string
+  digested:
+    address: /digested
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        payload:
+          type: string
   listed:
     address: /listed
     servers:
@@ -254,6 +306,18 @@ operations:
     action: receive
     channel:
       $ref: '#/channels/encoded'
+  receiveUpgraded:
+    action: receive
+    channel:
+      $ref: '#/channels/upgraded'
+    security:
+      - user: []
+  receiveDigested:
+    action: receive
+    channel:
+      $ref: '#/channels/digested'
+    security:
+      - $ref: '#/components/securitySchemes/digest'
   receiveListed:
     action: receive
     channel:
@@ -368,6 +432,9 @@ components:
   securitySchemes:
     user:
       type: userPassword
+    digest:
+      type: http
+      scheme: digest
   channelBindings:
     posted:
       ws:

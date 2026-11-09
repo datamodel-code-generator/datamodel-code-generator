@@ -150,7 +150,7 @@ def channel_protocols(
             "kind": "websocket",
             "enabled": True,
             "operation": reference,
-            "subprotocols": [],
+            "subprotocols": list(channel.subprotocols),
             **{direction: _direction(found, request) for direction, found in members.items()},
         }
         schemas = []

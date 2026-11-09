@@ -7,15 +7,43 @@ from __future__ import annotations
 
 from typing import Final, Never
 
+import models
+
 from .. import _operations
+from .._generated import model_bindings
 from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.websocket import ChannelPlan
 
-SOCKET_0: Final[ChannelPlan[Never, str]] = ChannelPlan(
+SOCKET_0: Final[
+    ChannelPlan[
+        models.FeedPublishPayload,
+        models.FeedSubscribeMessage1Payload | models.FeedSubscribeMessage2Payload,
+    ]
+] = ChannelPlan(
+    helper_id='feed',
+    operation=OperationRef(pointer='/channels/~1feed'),
+    call=_operations.OPERATION_0,
+    fingerprint='b84b2f45fdec653543119c7a35d66935401efe20b9cf150be376f6c04e14849a',
+    encoder=model_bindings.codec_0,
+    decoder=model_bindings.codec_1,
+)
+
+
+SOCKET_1: Final[ChannelPlan[Never, str]] = ChannelPlan(
     helper_id='root',
     operation=OperationRef(pointer='/channels/~1'),
-    call=_operations.OPERATION_0,
+    call=_operations.OPERATION_1,
     fingerprint='77f2b9aff306793b3b577c4cda6d9791bd6f034f85623f1c823e7de9f8a57463',
     send_codec='none',
     receive_codec='utf8',
+)
+
+
+SOCKET_2: Final[ChannelPlan[Never, models.GuardedSubscribePayload]] = ChannelPlan(
+    helper_id='guarded',
+    operation=OperationRef(pointer='/channels/~1guarded'),
+    call=_operations.OPERATION_2,
+    fingerprint='ae18d094216464143b159b92b95d90c113b7fb7cd04da82b70a6fcca9368bf7b',
+    send_codec='none',
+    decoder=model_bindings.codec_2,
 )

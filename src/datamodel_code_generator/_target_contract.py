@@ -651,7 +651,7 @@ class ChannelContract:
     """An AsyncAPI channel, which a client opens as a WebSocket through its handshake, a GET operation.
 
     `name` is the channel's id (AsyncAPI 3) or address (AsyncAPI 2). `handshake` is None where a skip leaves no
-    address to open.
+    address to open. `subprotocols` are those the handshake offers.
     """
 
     use_site: SourceLocation
@@ -659,6 +659,7 @@ class ChannelContract:
     handshake: OperationContract | None
     messages: tuple[MessageContract, ...]
     skips: tuple[ChannelSkip, ...]
+    subprotocols: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -797,6 +798,18 @@ def api_key_place(declaration: WireDeclaration) -> tuple[ApiKeyLocation, str] | 
     if fact(declaration, "type") != "apiKey" or location is None or not isinstance(name, str) or not name:
         return None
     return (location, name) if location == "query" or is_token(name) else None
+
+
+def credential_place(declaration: WireDeclaration) -> tuple[ApiKeyLocation, str] | None:
+    """Return where a scheme a client sends places its credential: its location and its name.
+
+    An apiKey scheme places it where it names (`api_key_place`), and an http basic or bearer, an oauth2 or an
+    openIdConnect scheme in the Authorization header. None is any other declaration.
+    """
+    if (place := api_key_place(declaration)) is not None:
+        return place
+    sent = http_scheme(declaration) in {"basic", "bearer"} or fact(declaration, "type") in OAUTH_SCHEMES
+    return ("header", "Authorization") if sent else None
 
 
 def is_required(declaration: WireDeclaration) -> bool:

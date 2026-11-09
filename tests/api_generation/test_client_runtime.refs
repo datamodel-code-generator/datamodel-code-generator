@@ -20,6 +20,7 @@ allowreserved-path-32	main/generation_platform/client/runtime/allowreserved-path
 allowreserved-path-32-unknown	main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel~client_runtime[allowreserved-path-32-unknown]//*.py
 allowreserved-path-32-unknown	main/generation_platform/client/runtime/allowreserved-path-32.txt	= main/generation_platform/client/runtime/allowreserved-path-32~client_runtime[allowreserved-path-32-unknown].txt
 asyncapi-enum-tag-sends	main/generation_platform/client/runtime/asyncapi-enum-tag-sends.txt
+asyncapi-handshake	main/generation_platform/client/runtime/asyncapi-handshake.txt
 asyncapi-messages	main/generation_platform/client/runtime/asyncapi-messages.txt
 asyncapi-perspective	main/generation_platform/client/runtime/asyncapi-perspective.txt
 asyncapi-serverless	main/generation_platform/client/runtime/asyncapi-serverless.txt

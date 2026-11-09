@@ -19,6 +19,7 @@ from datamodel_code_generator import Error
 from tests.api_generation.scenarios.client_allowreserved import reserved_paths
 from tests.api_generation.scenarios.client_asyncapi_sockets import (
     asyncapi_enum_tag_sends,
+    asyncapi_handshake,
     asyncapi_messages,
     asyncapi_perspective,
     asyncapi_serverless,
@@ -996,6 +997,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
         asyncapi_subclass_sends,
     ),
     "asyncapi-enum-tag-sends": ("asyncapi-messages-enums", ("typing.TypedDict",), asyncapi_enum_tag_sends),
+    "asyncapi-handshake": ("asyncapi-handshake", ("pydantic_v2.BaseModel", "msgspec.Struct"), asyncapi_handshake),
     "protocol-errors": ("pets-protocols", ("pydantic_v2.BaseModel",), protocol_errors),
     "cache": ("caching", ("pydantic_v2.BaseModel",), caching),
     "cache-stores": ("caching-oauth", ("pydantic_v2.BaseModel",), cache_stores),
