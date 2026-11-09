@@ -75,7 +75,6 @@ _DEF_PREFIXES = ("class ", "def ", "async def ")
 PEP695_TYPE_ALIAS_START_PATTERN = re.compile(r"^(?P<indent>\s*)type\s+(?P<target>[A-Za-z_]\w*(?:\[.*?\])?)\s*=")
 _PEP695_IDENTIFIER_TYPE_ALIAS_START = r"^(?P<indent>\s*)type\s+(?P<target>(?#identifier)(?:\[.*?\])?)\s*="
 PEP695_TYPE_ALIAS_PLACEHOLDER = "__datamodel_codegen_builtin_type_alias__"
-_SOURCE_LINES_CACHE: list[tuple[str, list[str]]] = []
 
 
 def _split_python_lines(source: str) -> list[str]:
