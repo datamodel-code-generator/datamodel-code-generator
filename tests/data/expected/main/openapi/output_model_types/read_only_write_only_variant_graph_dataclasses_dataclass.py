@@ -92,7 +92,9 @@ class ApiInlineObjectArrayItemResponseModel:
 ApiInlineObjectArrayRequestModel: TypeAlias = list[ApiInlineObjectArrayItemRequestModel]
 
 
-ApiInlineObjectArrayResponseModel: TypeAlias = list[ApiInlineObjectArrayItemResponseModel]
+ApiInlineObjectArrayResponseModel: TypeAlias = list[
+    ApiInlineObjectArrayItemResponseModel
+]
 
 
 @dataclass
@@ -111,10 +113,14 @@ class ApiInlineObjectUnionModel:
     name: str
 
 
-ApiInlineObjectUnionRequestModel: TypeAlias = ApiInlineObjectUnionRequestModel1 | ApiInlineObjectUnionModel
+ApiInlineObjectUnionRequestModel: TypeAlias = (
+    ApiInlineObjectUnionRequestModel1 | ApiInlineObjectUnionModel
+)
 
 
-ApiInlineObjectUnionResponseModel: TypeAlias = ApiInlineObjectUnionResponseModel1 | ApiInlineObjectUnionModel
+ApiInlineObjectUnionResponseModel: TypeAlias = (
+    ApiInlineObjectUnionResponseModel1 | ApiInlineObjectUnionModel
+)
 
 
 ApiForwardDictKeyMapRequestModel: TypeAlias = dict["ApiReadOnlyLeafRequestModel", str]
@@ -206,10 +212,14 @@ ApiForwardMapRequestModel: TypeAlias = dict[str, ApiReadOnlyLeafRequestModel]
 ApiForwardMapResponseModel: TypeAlias = dict[str, ApiReadOnlyLeafResponseModel]
 
 
-ApiForwardKeyedMapRequestModel: TypeAlias = dict[ApiAllowedKeyModel, ApiReadOnlyLeafRequestModel]
+ApiForwardKeyedMapRequestModel: TypeAlias = dict[
+    ApiAllowedKeyModel, ApiReadOnlyLeafRequestModel
+]
 
 
-ApiForwardKeyedMapResponseModel: TypeAlias = dict[ApiAllowedKeyModel, ApiReadOnlyLeafResponseModel]
+ApiForwardKeyedMapResponseModel: TypeAlias = dict[
+    ApiAllowedKeyModel, ApiReadOnlyLeafResponseModel
+]
 
 
 @dataclass

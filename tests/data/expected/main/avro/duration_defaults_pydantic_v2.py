@@ -37,11 +37,18 @@ class DurationDefaults(BaseModel):
         timedelta_aliased(milliseconds=4294967295), validate_default=True
     )
     array: list[Elapsed] | None = Field(
-        [timedelta_aliased(milliseconds=0), timedelta_aliased(milliseconds=1), timedelta_aliased(milliseconds=1001)],
+        [
+            timedelta_aliased(milliseconds=0),
+            timedelta_aliased(milliseconds=1),
+            timedelta_aliased(milliseconds=1001),
+        ],
         validate_default=True,
     )
     map: dict[str, Elapsed] | None = Field(
-        {'z': timedelta_aliased(milliseconds=4294967295), 'a': timedelta_aliased(milliseconds=1)},
+        {
+            'z': timedelta_aliased(milliseconds=4294967295),
+            'a': timedelta_aliased(milliseconds=1),
+        },
         validate_default=True,
     )
     union: Elapsed | None = Field(
@@ -56,7 +63,12 @@ class DurationDefaults(BaseModel):
         [{'elapsed': timedelta_aliased(milliseconds=1)}], validate_default=True
     )
     nested: list[dict[str, Elapsed]] | None = Field(
-        [{'z': timedelta_aliased(milliseconds=1001), 'a': timedelta_aliased(milliseconds=1)}],
+        [
+            {
+                'z': timedelta_aliased(milliseconds=1001),
+                'a': timedelta_aliased(milliseconds=1),
+            }
+        ],
         validate_default=True,
     )
     ordinary_fixed: Raw | None = Field(

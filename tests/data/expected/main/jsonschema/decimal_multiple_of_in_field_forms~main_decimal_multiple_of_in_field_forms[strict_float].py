@@ -9,13 +9,27 @@ from pydantic import BaseModel, RootModel, condecimal, confloat, conint
 
 
 class Rate(
-    RootModel[condecimal(le=Decimal('1000000'), multiple_of=Decimal('0.001'), gt=Decimal('0.0'), strict=True)]
+    RootModel[
+        condecimal(
+            le=Decimal('1000000'),
+            multiple_of=Decimal('0.001'),
+            gt=Decimal('0.0'),
+            strict=True,
+        )
+    ]
 ):
-    root: condecimal(le=Decimal('1000000'), multiple_of=Decimal('0.001'), gt=Decimal('0.0'), strict=True)
+    root: condecimal(
+        le=Decimal('1000000'),
+        multiple_of=Decimal('0.001'),
+        gt=Decimal('0.0'),
+        strict=True,
+    )
 
 
 class DecimalMultipleOfFieldForms(BaseModel):
-    amount: condecimal(ge=Decimal('0'), le=Decimal('1000000'), multiple_of=Decimal('0.01'), strict=True)
+    amount: condecimal(
+        ge=Decimal('0'), le=Decimal('1000000'), multiple_of=Decimal('0.01'), strict=True
+    )
     opt: (
         condecimal(
             ge=Decimal('-1000000'),
@@ -35,11 +49,28 @@ class DecimalMultipleOfFieldForms(BaseModel):
         | None
     ) = None
     inty: conint(multiple_of=2) | None = None
-    arr: list[condecimal(ge=Decimal('-1000000'), le=Decimal('1000000'), multiple_of=Decimal('0.01'), strict=True)] | None = (
-        None
-    )
-    mapv: dict[str, condecimal(ge=Decimal('-1000000'), le=Decimal('1000000'), multiple_of=Decimal('0.01'), strict=True)] | None = (
-        None
-    )
+    arr: (
+        list[
+            condecimal(
+                ge=Decimal('-1000000'),
+                le=Decimal('1000000'),
+                multiple_of=Decimal('0.01'),
+                strict=True,
+            )
+        ]
+        | None
+    ) = None
+    mapv: (
+        dict[
+            str,
+            condecimal(
+                ge=Decimal('-1000000'),
+                le=Decimal('1000000'),
+                multiple_of=Decimal('0.01'),
+                strict=True,
+            ),
+        ]
+        | None
+    ) = None
     rate: Rate | None = None
     plainf: confloat(ge=0.0, strict=True) | None = None

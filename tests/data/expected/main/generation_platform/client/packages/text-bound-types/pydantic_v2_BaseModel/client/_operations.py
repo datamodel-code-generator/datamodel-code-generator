@@ -37,7 +37,20 @@ OPERATION_0: Final[OperationPlan[ListUntypedResponse]] = OperationPlan(
     path='/untyped',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='filter', style='form', explode=True, shape='object', fields=(FieldPlan('color', 'string'), FieldPlan('size', 'integer')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_0),),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query',
+                name='filter',
+                style='form',
+                explode=True,
+                shape='object',
+                fields=(FieldPlan('color', 'string'), FieldPlan('size', 'integer')),
+                additional=FieldPlan('', 'string'),
+            ),
+            codec=model_bindings.codec_0,
+        ),
+    ),
 )
 
 OPERATION_1: Final[OperationPlan[SubmitUntypedResponse]] = OperationPlan(
@@ -46,7 +59,19 @@ OPERATION_1: Final[OperationPlan[SubmitUntypedResponse]] = OperationPlan(
     path='/untyped',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='application/x-www-form-urlencoded', kind='form', codec=model_bindings.codec_1, fields=(FieldPlan('name', 'string'), FieldPlan('count', 'integer')), additional=FieldPlan('', 'string')),), default='application/x-www-form-urlencoded', required=True),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='application/x-www-form-urlencoded',
+                kind='form',
+                codec=model_bindings.codec_1,
+                fields=(FieldPlan('name', 'string'), FieldPlan('count', 'integer')),
+                additional=FieldPlan('', 'string'),
+            ),
+        ),
+        default='application/x-www-form-urlencoded',
+        required=True,
+    ),
 )
 
 OPERATION_2: Final[OperationPlan[ListMergedResponse]] = OperationPlan(
@@ -55,7 +80,24 @@ OPERATION_2: Final[OperationPlan[ListMergedResponse]] = OperationPlan(
     path='/merged',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='filter', style='form', explode=True, shape='object', fields=(FieldPlan('color', 'string'), FieldPlan('size', 'integer'), FieldPlan('flag', 'boolean')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_2),),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query',
+                name='filter',
+                style='form',
+                explode=True,
+                shape='object',
+                fields=(
+                    FieldPlan('color', 'string'),
+                    FieldPlan('size', 'integer'),
+                    FieldPlan('flag', 'boolean'),
+                ),
+                additional=FieldPlan('', 'string'),
+            ),
+            codec=model_bindings.codec_2,
+        ),
+    ),
 )
 
 OPERATION_3: Final[OperationPlan[ListMergedDeepResponse]] = OperationPlan(
@@ -64,7 +106,20 @@ OPERATION_3: Final[OperationPlan[ListMergedDeepResponse]] = OperationPlan(
     path='/merged-deep',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='deep', style='deepObject', explode=True, shape='object', fields=(FieldPlan('color', 'string'), FieldPlan('page', 'integer')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_3),),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query',
+                name='deep',
+                style='deepObject',
+                explode=True,
+                shape='object',
+                fields=(FieldPlan('color', 'string'), FieldPlan('page', 'integer')),
+                additional=FieldPlan('', 'string'),
+            ),
+            codec=model_bindings.codec_3,
+        ),
+    ),
 )
 
 OPERATION_4: Final[OperationPlan[SubmitClosedResponse]] = OperationPlan(
@@ -73,7 +128,18 @@ OPERATION_4: Final[OperationPlan[SubmitClosedResponse]] = OperationPlan(
     path='/closed',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='application/x-www-form-urlencoded', kind='form', codec=model_bindings.codec_4, fields=(FieldPlan('name', 'string'),)),), default='application/x-www-form-urlencoded', required=True),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='application/x-www-form-urlencoded',
+                kind='form',
+                codec=model_bindings.codec_4,
+                fields=(FieldPlan('name', 'string'),),
+            ),
+        ),
+        default='application/x-www-form-urlencoded',
+        required=True,
+    ),
 )
 
 OPERATION_5: Final[OperationPlan[ReadAResponse]] = OperationPlan(
@@ -82,7 +148,32 @@ OPERATION_5: Final[OperationPlan[ReadAResponse]] = OperationPlan(
     path='/a/{name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='name', style='simple', required=True, shape='object', fields=(FieldPlan('kind', 'string'),), additional=FieldPlan('', 'string')), codec=model_bindings.codec_5), ParameterSpec(plan=ParameterPlan(location='query', name='label', style='deepObject', explode=True, shape='object', fields=(FieldPlan('tone', 'string'), FieldPlan('level', 'integer')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_6)),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='path',
+                name='name',
+                style='simple',
+                required=True,
+                shape='object',
+                fields=(FieldPlan('kind', 'string'),),
+                additional=FieldPlan('', 'string'),
+            ),
+            codec=model_bindings.codec_5,
+        ),
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query',
+                name='label',
+                style='deepObject',
+                explode=True,
+                shape='object',
+                fields=(FieldPlan('tone', 'string'), FieldPlan('level', 'integer')),
+                additional=FieldPlan('', 'string'),
+            ),
+            codec=model_bindings.codec_6,
+        ),
+    ),
 )
 
 OPERATION_6: Final[OperationPlan[ReadBResponse]] = OperationPlan(
@@ -91,5 +182,30 @@ OPERATION_6: Final[OperationPlan[ReadBResponse]] = OperationPlan(
     path='/b/{name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='name', style='simple', required=True, shape='object', fields=(FieldPlan('kind', 'string'),), additional=FieldPlan('', 'string')), codec=model_bindings.codec_7), ParameterSpec(plan=ParameterPlan(location='query', name='label', style='deepObject', explode=True, shape='object', fields=(FieldPlan('tone', 'string'), FieldPlan('level', 'integer')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_8)),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='path',
+                name='name',
+                style='simple',
+                required=True,
+                shape='object',
+                fields=(FieldPlan('kind', 'string'),),
+                additional=FieldPlan('', 'string'),
+            ),
+            codec=model_bindings.codec_7,
+        ),
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query',
+                name='label',
+                style='deepObject',
+                explode=True,
+                shape='object',
+                fields=(FieldPlan('tone', 'string'), FieldPlan('level', 'integer')),
+                additional=FieldPlan('', 'string'),
+            ),
+            codec=model_bindings.codec_8,
+        ),
+    ),
 )

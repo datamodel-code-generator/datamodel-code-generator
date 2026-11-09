@@ -43,7 +43,9 @@ class Form(BaseModel):
 ValuesIdGetPathIdParameter = TypeAliasType("ValuesIdGetPathIdParameter", StrictInt)
 
 
-ValuesIdGetQueryCountParameter = TypeAliasType("ValuesIdGetQueryCountParameter", StrictInt)
+ValuesIdGetQueryCountParameter = TypeAliasType(
+    "ValuesIdGetQueryCountParameter", StrictInt
+)
 
 
 ValuesIdGetQueryBoundedParameter = TypeAliasType(
@@ -51,13 +53,19 @@ ValuesIdGetQueryBoundedParameter = TypeAliasType(
 )
 
 
-ValuesIdGetQueryScoreParameter = TypeAliasType("ValuesIdGetQueryScoreParameter", StrictFloat)
+ValuesIdGetQueryScoreParameter = TypeAliasType(
+    "ValuesIdGetQueryScoreParameter", StrictFloat
+)
 
 
-ValuesIdGetQueryFlagParameter = TypeAliasType("ValuesIdGetQueryFlagParameter", StrictBool)
+ValuesIdGetQueryFlagParameter = TypeAliasType(
+    "ValuesIdGetQueryFlagParameter", StrictBool
+)
 
 
-ValuesIdGetQueryNameParameter = TypeAliasType("ValuesIdGetQueryNameParameter", StrictStr)
+ValuesIdGetQueryNameParameter = TypeAliasType(
+    "ValuesIdGetQueryNameParameter", StrictStr
+)
 
 
 ValuesIdGetQueryLabelParameter = TypeAliasType(
@@ -65,28 +73,44 @@ ValuesIdGetQueryLabelParameter = TypeAliasType(
 )
 
 
-ValuesIdGetQueryCountsParameter = TypeAliasType("ValuesIdGetQueryCountsParameter", list[StrictInt])
+ValuesIdGetQueryCountsParameter = TypeAliasType(
+    "ValuesIdGetQueryCountsParameter", list[StrictInt]
+)
 
 
-ValuesIdGetQueryNamesParameter = TypeAliasType("ValuesIdGetQueryNamesParameter", list[StrictStr])
+ValuesIdGetQueryNamesParameter = TypeAliasType(
+    "ValuesIdGetQueryNamesParameter", list[StrictStr]
+)
 
 
-ValuesIdGetQueryPageParameter = TypeAliasType("ValuesIdGetQueryPageParameter", StrictInt)
+ValuesIdGetQueryPageParameter = TypeAliasType(
+    "ValuesIdGetQueryPageParameter", StrictInt
+)
 
 
-ValuesIdGetQueryMaybeParameter = TypeAliasType("ValuesIdGetQueryMaybeParameter", StrictInt | None)
+ValuesIdGetQueryMaybeParameter = TypeAliasType(
+    "ValuesIdGetQueryMaybeParameter", StrictInt | None
+)
 
 
-ValuesIdGetHeaderXTraceParameter = TypeAliasType("ValuesIdGetHeaderXTraceParameter", StrictInt)
+ValuesIdGetHeaderXTraceParameter = TypeAliasType(
+    "ValuesIdGetHeaderXTraceParameter", StrictInt
+)
 
 
-ValuesIdGetHeaderXTagParameter = TypeAliasType("ValuesIdGetHeaderXTagParameter", StrictStr)
+ValuesIdGetHeaderXTagParameter = TypeAliasType(
+    "ValuesIdGetHeaderXTagParameter", StrictStr
+)
 
 
-ValuesIdGetQueryBlobParameter = TypeAliasType("ValuesIdGetQueryBlobParameter", Base64Str)
+ValuesIdGetQueryBlobParameter = TypeAliasType(
+    "ValuesIdGetQueryBlobParameter", Base64Str
+)
 
 
-ValuesIdGetCookieVisitsParameter = TypeAliasType("ValuesIdGetCookieVisitsParameter", StrictInt)
+ValuesIdGetCookieVisitsParameter = TypeAliasType(
+    "ValuesIdGetCookieVisitsParameter", StrictInt
+)
 
 
 class UploadsPostRequest(BaseModel):

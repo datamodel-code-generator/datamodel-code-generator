@@ -26,5 +26,9 @@ class GetSession:
     """Plans of the get_session operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=models.SessionsGetResponse)},
+        responses={
+            '200': Declared(
+                media_type='application/json', model=models.SessionsGetResponse
+            )
+        },
     )

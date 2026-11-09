@@ -1,6 +1,6 @@
 --- models.py
 +++ models.py (expected)
-@@ -51,21 +51,3 @@
+@@ -53,21 +53,3 @@
  
  class PetsGetResponse(RootModel[list[Pet]]):
      root: list[Pet]
@@ -35,7 +35,7 @@
      },
      total=False,
  )
-@@ -41,36 +37,3 @@
+@@ -46,47 +42,3 @@
      RESPONSES: Final = OperationResponses(
          responses={'201': Declared(media_type='application/json', model=models.Pet)},
      )
@@ -45,7 +45,11 @@
 -    """Plans of the list_my_pets operation."""
 -
 -    RESPONSES: Final = OperationResponses(
--        responses={'200': Declared(media_type='application/json', model=models.PetsMineGetResponse)},
+-        responses={
+-            '200': Declared(
+-                media_type='application/json', model=models.PetsMineGetResponse
+-            )
+-        },
 -    )
 -
 -
@@ -53,7 +57,10 @@
 -    """Plans of the get_pet operation."""
 -
 -    RESPONSES: Final = OperationResponses(
--        responses={'200': Declared(media_type='application/json', model=models.Pet), '404': Declared(media_type='application/json', model=models.Error)},
+-        responses={
+-            '200': Declared(media_type='application/json', model=models.Pet),
+-            '404': Declared(media_type='application/json', model=models.Error),
+-        },
 -    )
 -
 -
@@ -70,7 +77,11 @@
 -    """Plans of the get_inventory operation."""
 -
 -    RESPONSES: Final = OperationResponses(
--        responses={'200': Declared(media_type='application/json', model=models.StoreInventoryGetResponse)},
+-        responses={
+-            '200': Declared(
+-                media_type='application/json', model=models.StoreInventoryGetResponse
+-            )
+-        },
 -    )
 --- server/application.py
 +++ server/application.py (expected)
@@ -281,7 +292,7 @@
  def build_router(
 --- server/services.py
 +++ server/services.py (expected)
-@@ -43,43 +43,3 @@
+@@ -47,47 +47,3 @@
          """
          Handle POST /pets.
          """
@@ -321,7 +332,11 @@
 -    @abstractmethod
 -    def get_inventory(
 -        self,
--    ) -> models.StoreInventoryGetResponse | HTTPResult[models.StoreInventoryGetResponse] | Response:
+-    ) -> (
+-        models.StoreInventoryGetResponse
+-        | HTTPResult[models.StoreInventoryGetResponse]
+-        | Response
+-    ):
 -        """
 -        Handle GET /store/inventory.
 -        """
@@ -456,7 +471,7 @@ EXTRA: server/routers/store.py (no longer generated)
  
  The file paths are relative to this README.
  Replace each stub with your code, then run the application with an ASGI server, from the directory that holds the top-level package (add `--app-dir src` for a `src` layout):
-@@ -75,63 +74,6 @@
+@@ -79,67 +78,6 @@
          Handle POST /pets.
          """
          raise NotImplementedError
@@ -512,7 +527,11 @@ EXTRA: server/routers/store.py (no longer generated)
 -
 -    def get_inventory(
 -        self,
--    ) -> models.StoreInventoryGetResponse | HTTPResult[models.StoreInventoryGetResponse] | Response:
+-    ) -> (
+-        models.StoreInventoryGetResponse
+-        | HTTPResult[models.StoreInventoryGetResponse]
+-        | Response
+-    ):
 -        """
 -        Handle GET /store/inventory.
 -        """
@@ -520,7 +539,7 @@ EXTRA: server/routers/store.py (no longer generated)
  ```
  
  ## Dependencies
-@@ -156,10 +98,6 @@
+@@ -164,10 +102,6 @@
  | --- | --- | --- | --- | --- |
  | `PetsService` | `list_pets` | GET | `/pets` | `/paths/~1pets/get` |
  | `PetsService` | `create_pet` | POST | `/pets` | `/paths/~1pets/post` |
@@ -531,7 +550,7 @@ EXTRA: server/routers/store.py (no longer generated)
  
  `operation_dependencies` takes the method names, the keys of `OperationDependencies`; the per-operation generation settings, such as `--server-handler-modes`, take the operation references.
  
-@@ -180,19 +118,14 @@
+@@ -188,19 +122,14 @@
  
  from server import create_app
  from services.pets import Pets
@@ -552,7 +571,7 @@ EXTRA: server/routers/store.py (no longer generated)
          ...
  ```
  
-@@ -204,10 +137,9 @@
+@@ -212,10 +141,9 @@
  
  from server import build_router
  from services.pets import Pets

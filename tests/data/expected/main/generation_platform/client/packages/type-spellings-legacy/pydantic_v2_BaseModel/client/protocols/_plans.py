@@ -31,7 +31,9 @@ def _immediate_0(
     return data.result
 
 
-PLAN_0: Final[PollingPlan[Union[models.Pet, models.Problem], GetJobResponse, CreateJobResponse]] = PollingPlan(
+PLAN_0: Final[
+    PollingPlan[Union[models.Pet, models.Problem], GetJobResponse, CreateJobResponse]
+] = PollingPlan(
     helper_id='jobs.run',
     operation=OperationRef(pointer='/paths/~1jobs/post'),
     create=_operations.OPERATION_2,
@@ -41,7 +43,13 @@ PLAN_0: Final[PollingPlan[Union[models.Pet, models.Problem], GetJobResponse, Cre
     state=BodySelector(pointer='/status'),
     pending=('running',),
     succeeded=('done',),
-    bindings=(PageBinding(target=ParameterTarget(location='path', name='jobId'), source='initial', selector=BodySelector(pointer='/id')),),
+    bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='jobId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
     inline=_result_0,
     inline_selector=BodySelector(pointer='/result'),
     immediate=_immediate_0,

@@ -5301,7 +5301,10 @@ and a root, with its length constraints; a string with a `contentEncoding` or a 
             picture: Picture | None = None
             encoded: str | None = Field(
                 None,
-                json_schema_extra={'contentMediaType': 'image/png', 'contentEncoding': 'base64'},
+                json_schema_extra={
+                    'contentMediaType': 'image/png',
+                    'contentEncoding': 'base64',
+                },
             )
             email: EmailStr | None = Field(
                 None, json_schema_extra={'contentMediaType': 'text/plain'}
@@ -5340,7 +5343,10 @@ and a root, with its length constraints; a string with a `contentEncoding` or a 
             picture: Picture | None = None
             encoded: str | None = Field(
                 None,
-                json_schema_extra={'contentMediaType': 'image/png', 'contentEncoding': 'base64'},
+                json_schema_extra={
+                    'contentMediaType': 'image/png',
+                    'contentEncoding': 'base64',
+                },
             )
             email: EmailStr | None = Field(
                 None, json_schema_extra={'contentMediaType': 'text/plain'}

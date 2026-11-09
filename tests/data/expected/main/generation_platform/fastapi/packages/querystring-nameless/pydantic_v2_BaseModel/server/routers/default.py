@@ -53,9 +53,7 @@ def _add_search(
     )
 
 
-LITERAL_ROUTES: Final = (
-    ('search', _add_search),
-)
+LITERAL_ROUTES: Final = (('search', _add_search),)
 TEMPLATED_ROUTES: Final = ()
 
 

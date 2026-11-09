@@ -35,7 +35,7 @@ ChainedDog = TypeAliasType("ChainedDog", DogDefault)
 @dataclass
 class Owner:
     pets: list[Annotated[Cat | DogDefault, Field(discriminator='type')]] | None = None
-    chained: (
-        list[Annotated[Cat | ChainedDog, Field(discriminator='type')]] | None
-    ) = None
+    chained: list[Annotated[Cat | ChainedDog, Field(discriminator='type')]] | None = (
+        None
+    )
     plain: list[Annotated[Cat | Bird, Field(discriminator='type')]] | None = None

@@ -33,7 +33,12 @@ class ListPets:
     OPERATION: Final = 'list_pets'
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=models.PetsGetResponse), 'default': Declared(media_type='application/json', model=models.Error)},
+        responses={
+            '200': Declared(
+                media_type='application/json', model=models.PetsGetResponse
+            ),
+            'default': Declared(media_type='application/json', model=models.Error),
+        },
     )
 
 
@@ -53,7 +58,11 @@ class ListMyPets:
     OPERATION: Final = 'list_my_pets'
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=models.PetsMineGetResponse)},
+        responses={
+            '200': Declared(
+                media_type='application/json', model=models.PetsMineGetResponse
+            )
+        },
     )
 
 
@@ -63,7 +72,10 @@ class GetPet:
     OPERATION: Final = 'get_pet'
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=models.Pet), '404': Declared(media_type='application/json', model=models.Error)},
+        responses={
+            '200': Declared(media_type='application/json', model=models.Pet),
+            '404': Declared(media_type='application/json', model=models.Error),
+        },
     )
 
 
@@ -84,5 +96,9 @@ class GetInventory:
     OPERATION: Final = 'get_inventory'
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=models.StoreInventoryGetResponse)},
+        responses={
+            '200': Declared(
+                media_type='application/json', model=models.StoreInventoryGetResponse
+            )
+        },
     )

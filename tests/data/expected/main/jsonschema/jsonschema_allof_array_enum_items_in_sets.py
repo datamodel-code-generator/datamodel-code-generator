@@ -282,12 +282,9 @@ class FrozenTagsItem(RootModel[Any]):
 
 
 class FrozenTags(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[frozenset[FrozenTagsItem]],
+    _JsonSchemaRuntimeValidationBase, RootModel[frozenset[FrozenTagsItem]]
 ):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((),)
 
     root: frozenset[FrozenTagsItem]
 
@@ -345,9 +342,7 @@ class TagsItem(RootModel[Any]):
 
 
 class Tags(_JsonSchemaRuntimeValidationBase, RootModel[set[TagsItem]]):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((),)
 
     root: set[TagsItem]
 

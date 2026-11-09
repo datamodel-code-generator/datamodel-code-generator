@@ -38,16 +38,24 @@ class Labeled(BaseModel):
     octets: bytes | None = None
 
 
-EnvelopesKeyPostPathKeyParameter = TypeAliasType("EnvelopesKeyPostPathKeyParameter", bytes)
+EnvelopesKeyPostPathKeyParameter = TypeAliasType(
+    "EnvelopesKeyPostPathKeyParameter", bytes
+)
 
 
-EnvelopesKeyPostQuerySigParameter = TypeAliasType("EnvelopesKeyPostQuerySigParameter", bytes)
+EnvelopesKeyPostQuerySigParameter = TypeAliasType(
+    "EnvelopesKeyPostQuerySigParameter", bytes
+)
 
 
-EnvelopesKeyPostHeaderXSigParameter = TypeAliasType("EnvelopesKeyPostHeaderXSigParameter", bytes)
+EnvelopesKeyPostHeaderXSigParameter = TypeAliasType(
+    "EnvelopesKeyPostHeaderXSigParameter", bytes
+)
 
 
-EnvelopesKeyPostCookieTokenParameter = TypeAliasType("EnvelopesKeyPostCookieTokenParameter", bytes)
+EnvelopesKeyPostCookieTokenParameter = TypeAliasType(
+    "EnvelopesKeyPostCookieTokenParameter", bytes
+)
 
 
 class EnvelopesKeyPostResponse(RootModel[dict[str, bytes]]):

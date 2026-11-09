@@ -18,10 +18,28 @@ from ...responses import ResponseInfo
 SearchResponse: TypeAlias = models.SearchGetResponse
 
 
-_SEARCH_HEADERS: Final[ResponseHeaders[models.SearchGetResponse200XNextHeader, UNSET]] = ResponseHeaders(
+_SEARCH_HEADERS: Final[
+    ResponseHeaders[models.SearchGetResponse200XNextHeader, UNSET]
+] = ResponseHeaders(
     'search',
     frozenset({'200'}),
-    (('X-Next', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Next', style='simple'), codec=model_bindings.codec_2, missing=optional_header)),)),),
+    (
+        (
+            'X-Next',
+            (
+                (
+                    '200',
+                    HeaderBranch(
+                        plan=ParameterPlan(
+                            location='header', name='X-Next', style='simple'
+                        ),
+                        codec=model_bindings.codec_2,
+                        missing=optional_header,
+                    ),
+                ),
+            ),
+        ),
+    ),
 )
 
 

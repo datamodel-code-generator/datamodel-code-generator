@@ -301,8 +301,7 @@ class _JsonSchemaRuntimeValidationBase(_JsonSchemaRuntimeValidationBaseCore):
 
 
 class ExternalCorePatternChild(
-    _JsonSchemaRuntimeValidationBase,
-    ExternalCorePatternParent,
+    _JsonSchemaRuntimeValidationBase, ExternalCorePatternParent
 ):
     model_config = ConfigDict(
         extra='allow',

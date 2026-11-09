@@ -30,7 +30,9 @@ OPERATION_0: Final[OperationPlan[GetOwnerResponse]] = OperationPlan(
     method='GET',
     path='/owners',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_0),), ()),
+    responses=ResponseDecoder(
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_0),), ()
+    ),
 )
 
 OPERATION_1: Final[OperationPlan[AddCatResponse]] = OperationPlan(
@@ -39,7 +41,22 @@ OPERATION_1: Final[OperationPlan[AddCatResponse]] = OperationPlan(
     path='/cats',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', codec=model_bindings.codec_1, form=MultipartForm(members=True, parts=(PartPlan('meow', 'string'),), additional=PartPlan('', 'json'))),), default='multipart/form-data', required=True),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                codec=model_bindings.codec_1,
+                form=MultipartForm(
+                    members=True,
+                    parts=(PartPlan('meow', 'string'),),
+                    additional=PartPlan('', 'json'),
+                ),
+            ),
+        ),
+        default='multipart/form-data',
+        required=True,
+    ),
 )
 
 OPERATION_2: Final[OperationPlan[AddDogResponse]] = OperationPlan(
@@ -47,6 +64,38 @@ OPERATION_2: Final[OperationPlan[AddDogResponse]] = OperationPlan(
     method='POST',
     path='/dogs',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((object_branch('200', 'multipart/form-data', model_bindings.codec_4, (PartPlan('kind', 'string'), PartPlan('bark', 'boolean')), PartPlan('', 'string')),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', codec=model_bindings.codec_2, form=MultipartForm(members=True, parts=(PartPlan('kind', 'string'), PartPlan('bark', 'string')), additional=PartPlan('', 'json'))), BodyMedia(media_type='application/x-www-form-urlencoded', kind='form', codec=model_bindings.codec_3, fields=(FieldPlan('kind', 'string'), FieldPlan('bark', 'boolean')), additional=FieldPlan('', 'string'))), required=True),
+    responses=ResponseDecoder(
+        (
+            object_branch(
+                '200',
+                'multipart/form-data',
+                model_bindings.codec_4,
+                (PartPlan('kind', 'string'), PartPlan('bark', 'boolean')),
+                PartPlan('', 'string'),
+            ),
+        ),
+        (),
+    ),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                codec=model_bindings.codec_2,
+                form=MultipartForm(
+                    members=True,
+                    parts=(PartPlan('kind', 'string'), PartPlan('bark', 'string')),
+                    additional=PartPlan('', 'json'),
+                ),
+            ),
+            BodyMedia(
+                media_type='application/x-www-form-urlencoded',
+                kind='form',
+                codec=model_bindings.codec_3,
+                fields=(FieldPlan('kind', 'string'), FieldPlan('bark', 'boolean')),
+                additional=FieldPlan('', 'string'),
+            ),
+        ),
+        required=True,
+    ),
 )

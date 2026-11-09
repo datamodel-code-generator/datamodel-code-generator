@@ -231,9 +231,9 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
 
 class Holder(_JsonSchemaRuntimeValidationBase):
-    __json_schema_unique_items__: ClassVar[tuple_aliased[tuple_aliased[object, ...], ...]] = (
-        (('tags',),),
-    )
+    __json_schema_unique_items__: ClassVar[
+        tuple_aliased[tuple_aliased[object, ...], ...]
+    ] = ((('tags',),),)
 
     set: str_aliased | None = None
     tags: list[str_aliased] | None = None

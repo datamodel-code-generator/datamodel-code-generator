@@ -49,7 +49,10 @@ MArrayOrNamesCountAdditionalPropertyObject = TypeAliasType(
 )
 
 
-MArrayOrNamesCountAdditionalProperty = TypeAliasType("MArrayOrNamesCountAdditionalProperty", MArrayOrNamesCountAdditionalPropertyObject | list[Any] | None)
+MArrayOrNamesCountAdditionalProperty = TypeAliasType(
+    "MArrayOrNamesCountAdditionalProperty",
+    MArrayOrNamesCountAdditionalPropertyObject | list[Any] | None,
+)
 
 
 StringOrPatterns = TypeAliasType(
@@ -74,7 +77,9 @@ ArrayOrNamesCountObject = TypeAliasType(
 )
 
 
-ArrayOrNamesCount = TypeAliasType("ArrayOrNamesCount", ArrayOrNamesCountObject | list[Any] | None)
+ArrayOrNamesCount = TypeAliasType(
+    "ArrayOrNamesCount", ArrayOrNamesCountObject | list[Any] | None
+)
 
 
 @dataclass

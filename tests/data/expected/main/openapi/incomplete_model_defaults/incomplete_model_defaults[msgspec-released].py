@@ -31,9 +31,7 @@ class PodTemplateSpec(Struct):
     selectorOrName: LabelSelector | str | UnsetType = field(
         default_factory=lambda: convert({'matchLabels': {}}, type=LabelSelector)
     )
-    spec: PodSpec | UnsetType = field(
-        default_factory=lambda: convert({}, type=PodSpec)
-    )
+    spec: PodSpec | UnsetType = field(default_factory=lambda: convert({}, type=PodSpec))
     nullableSpec: PodSpec | None | UnsetType = field(
         default_factory=lambda: convert({'hostname': 'a'}, type=PodSpec)
     )

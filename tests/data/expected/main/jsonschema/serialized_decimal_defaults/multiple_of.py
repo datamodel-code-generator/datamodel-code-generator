@@ -9,7 +9,7 @@ from pydantic import BaseModel, condecimal
 
 
 class DecimalMultipleOf(BaseModel):
-    amount: (
-        condecimal(multiple_of=Decimal_aliased('0.25')) | None
-    ) = Decimal_aliased('1.25')
+    amount: condecimal(multiple_of=Decimal_aliased('0.25')) | None = Decimal_aliased(
+        '1.25'
+    )
     Decimal: str | None = 'shadow'

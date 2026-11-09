@@ -229,8 +229,6 @@ class UniqueItemsPropertyAlias(_JsonSchemaRuntimeValidationBase):
         extra='allow',
         populate_by_name=True,
     )
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (('my-list', 'my_list'),),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((('my-list', 'my_list'),),)
 
     my_list: list[int] | None = Field(None, alias='my-list')

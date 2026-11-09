@@ -26,5 +26,12 @@ OPERATION_0: Final[OperationPlan[GetSessionResponse]] = OperationPlan(
     path='/sessions',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='cookie', name='session', style='cookie', explode=True), codec=model_bindings.codec_0),),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='cookie', name='session', style='cookie', explode=True
+            ),
+            codec=model_bindings.codec_0,
+        ),
+    ),
 )

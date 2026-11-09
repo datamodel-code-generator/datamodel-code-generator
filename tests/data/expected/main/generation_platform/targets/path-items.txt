@@ -118,9 +118,7 @@ show server/routers/pets.py
   |     )
   | 
   | 
-  | LITERAL_ROUTES: Final = (
-  |     ('list_pets', _add_list_pets),
-  | )
+  | LITERAL_ROUTES: Final = (('list_pets', _add_list_pets),)
   | TEMPLATED_ROUTES: Final = ()
   | 
   | 

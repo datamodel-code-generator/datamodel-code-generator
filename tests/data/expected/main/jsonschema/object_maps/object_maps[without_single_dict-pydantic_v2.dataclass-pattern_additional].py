@@ -42,9 +42,9 @@ class Model:
     rAnyOther: AnyOther
     pNoPatternKeys: dict[str, Any]
     rNoPatternKeys: NoPatternKeys
-    iMatrix: list[dict[constr(pattern=r'^(in|ex)clude$'), list[dict[str, Any]]]] | None = (
-        None
-    )
+    iMatrix: (
+        list[dict[constr(pattern=r'^(in|ex)clude$'), list[dict[str, Any]]]] | None
+    ) = None
     mMatrix: (
         dict[str, dict[constr(pattern=r'^(in|ex)clude$'), list[dict[str, Any]]]] | None
     ) = None

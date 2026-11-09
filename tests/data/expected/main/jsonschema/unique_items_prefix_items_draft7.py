@@ -225,8 +225,6 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
 
 class UniqueItemsPrefixItemsDraft7(_JsonSchemaRuntimeValidationBase, RootModel[list[str | list[int]]]):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (None,),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((None,),)
 
     root: list[str | list[int]] = Field(..., title='UniqueItemsPrefixItemsDraft7')

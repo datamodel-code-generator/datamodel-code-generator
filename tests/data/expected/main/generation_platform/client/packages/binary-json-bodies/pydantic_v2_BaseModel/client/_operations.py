@@ -28,8 +28,18 @@ OPERATION_0: Final[OperationPlan[GetExportResponse]] = OperationPlan(
     method='GET',
     path='/exports/{name}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((binary_branch('200', 'application/json'), binary_branch('200', 'image/png')), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='name', style='simple', required=True), codec=model_bindings.codec_0),),
+    responses=ResponseDecoder(
+        (binary_branch('200', 'application/json'), binary_branch('200', 'image/png')),
+        (),
+    ),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='path', name='name', style='simple', required=True
+            ),
+            codec=model_bindings.codec_0,
+        ),
+    ),
 )
 
 OPERATION_1: Final[OperationPlan[PutExportResponse]] = OperationPlan(
@@ -38,6 +48,17 @@ OPERATION_1: Final[OperationPlan[PutExportResponse]] = OperationPlan(
     path='/exports/{name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='name', style='simple', required=True), codec=model_bindings.codec_1),),
-    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='binary'),), default='application/json', required=True),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='path', name='name', style='simple', required=True
+            ),
+            codec=model_bindings.codec_1,
+        ),
+    ),
+    body=RequestBody(
+        media=(BodyMedia(media_type='application/json', kind='binary'),),
+        default='application/json',
+        required=True,
+    ),
 )

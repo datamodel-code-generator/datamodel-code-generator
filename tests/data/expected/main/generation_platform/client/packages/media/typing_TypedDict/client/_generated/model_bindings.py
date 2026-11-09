@@ -13,37 +13,94 @@ from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCod
 
 MODELS: Final[dict[type, Model]] = {
     models.Address: Model((Field('city', 'city'), Field('codes', 'codes'))),
-    models.Draft: Model((Field('id', 'id'), Field('title', 'title'), Field('secret', 'secret'))),
-    models.FormsPostRequest: Model((Field('name', 'name'), Field('count', 'count'), Field('labels', 'labels'))),
+    models.Draft: Model(
+        (Field('id', 'id'), Field('title', 'title'), Field('secret', 'secret'))
+    ),
+    models.FormsPostRequest: Model(
+        (Field('name', 'name'), Field('count', 'count'), Field('labels', 'labels'))
+    ),
     models.FormsPostResponse: Model((Field('name', 'name'), Field('count', 'count'))),
-    models.ProfilesPostRequest: Model((Field('name', 'name'), Field('age', 'age'), Field('active', 'active'), Field('tags', 'tags'), Field('address', 'address', models.Address), Field('nickname', 'nickname'))),
-    models.ProfilesGetResponse: Model((Field('name', 'name'), Field('age', 'age'), Field('score', 'score'), Field('ratio', 'ratio'), Field('active', 'active'), Field('tags', 'tags'), Field('address', 'address', models.Address))),
+    models.ProfilesPostRequest: Model(
+        (
+            Field('name', 'name'),
+            Field('age', 'age'),
+            Field('active', 'active'),
+            Field('tags', 'tags'),
+            Field('address', 'address', models.Address),
+            Field('nickname', 'nickname'),
+        )
+    ),
+    models.ProfilesGetResponse: Model(
+        (
+            Field('name', 'name'),
+            Field('age', 'age'),
+            Field('score', 'score'),
+            Field('ratio', 'ratio'),
+            Field('active', 'active'),
+            Field('tags', 'tags'),
+            Field('address', 'address', models.Address),
+        )
+    ),
     models.AttachmentsGetResponse: Model((Field('id', 'id'),)),
     models.Filter: Model((Field('name', 'name'), Field('min', 'min'))),
-    models.SearchesPostRequest: Model((Field('term', 'term'), Field('filter', 'filter', models.Filter), Field('tags', 'tags'), Field('ids', 'ids'), Field('meta', 'meta', models.Address), Field('path', 'path'), Field('extra', 'extra'))),
-    models.CardsPostRequest: Model((Field('title', 'title'), Field('count', 'count'), Field('tags', 'tags'))),
+    models.SearchesPostRequest: Model(
+        (
+            Field('term', 'term'),
+            Field('filter', 'filter', models.Filter),
+            Field('tags', 'tags'),
+            Field('ids', 'ids'),
+            Field('meta', 'meta', models.Address),
+            Field('path', 'path'),
+            Field('extra', 'extra'),
+        )
+    ),
+    models.CardsPostRequest: Model(
+        (Field('title', 'title'), Field('count', 'count'), Field('tags', 'tags'))
+    ),
     models.Point: Model((Field('x', 'x'),)),
-    models.StickersPostRequest: Model((Field('tags', 'tags'), Field('words', 'words'), Field('sizes', 'sizes'), Field('filter', 'filter', models.Filter), Field('point', 'point', models.Point), Field('label', 'label'), Field('y', 'y'))),
+    models.StickersPostRequest: Model(
+        (
+            Field('tags', 'tags'),
+            Field('words', 'words'),
+            Field('sizes', 'sizes'),
+            Field('filter', 'filter', models.Filter),
+            Field('point', 'point', models.Point),
+            Field('label', 'label'),
+            Field('y', 'y'),
+        )
+    ),
     models.Bounds: Model((Field('w', 'w'),)),
     models.DocumentsIdGetPathIdParameter: Model((Field('key', 'key'),)),
 }
 
-codec_0: Final[TypedDictCodec[models.FormsPostRequest]] = TypedDictCodec(models.FormsPostRequest, MODELS)
+codec_0: Final[TypedDictCodec[models.FormsPostRequest]] = TypedDictCodec(
+    models.FormsPostRequest, MODELS
+)
 """Codec of /paths/~1forms/post request_body (request application/x-www-form-urlencoded)."""
 
-codec_1: Final[TypedDictCodec[models.FormsPostResponse]] = TypedDictCodec(models.FormsPostResponse, MODELS)
+codec_1: Final[TypedDictCodec[models.FormsPostResponse]] = TypedDictCodec(
+    models.FormsPostResponse, MODELS
+)
 """Codec of /paths/~1forms/post response_body (response 200 application/x-www-form-urlencoded)."""
 
-codec_2: Final[TypedDictCodec[models.ProfilesPostRequest]] = TypedDictCodec(models.ProfilesPostRequest, MODELS)
+codec_2: Final[TypedDictCodec[models.ProfilesPostRequest]] = TypedDictCodec(
+    models.ProfilesPostRequest, MODELS
+)
 """Codec of /paths/~1profiles/post request_body (request multipart/form-data)."""
 
-codec_3: Final[TypedDictCodec[models.ProfilesGetResponse]] = TypedDictCodec(models.ProfilesGetResponse, MODELS)
+codec_3: Final[TypedDictCodec[models.ProfilesGetResponse]] = TypedDictCodec(
+    models.ProfilesGetResponse, MODELS
+)
 """Codec of /paths/~1profiles/get response_body (response 200 multipart/form-data)."""
 
-codec_4: Final[TypedDictCodec[models.AnythingPostRequest]] = TypedDictCodec(None, MODELS)
+codec_4: Final[TypedDictCodec[models.AnythingPostRequest]] = TypedDictCodec(
+    None, MODELS
+)
 """Codec of /paths/~1anything/post request_body (request multipart/form-data)."""
 
-codec_5: Final[TypedDictCodec[models.AttachmentsGetResponse]] = TypedDictCodec(models.AttachmentsGetResponse, MODELS)
+codec_5: Final[TypedDictCodec[models.AttachmentsGetResponse]] = TypedDictCodec(
+    models.AttachmentsGetResponse, MODELS
+)
 """Codec of /paths/~1attachments/get response_body (response 202 multipart/form-data)."""
 
 codec_6: Final[TypedDictCodec[models.Address]] = TypedDictCodec(models.Address, MODELS)
@@ -58,13 +115,19 @@ codec_8: Final[TypedDictCodec[models.FilesPostRequest2]] = TypedDictCodec(None, 
 codec_9: Final[TypedDictCodec[models.Address]] = TypedDictCodec(models.Address, MODELS)
 """Codec of /paths/~1files/post response_body (response 200 application/json)."""
 
-codec_10: Final[TypedDictCodec[models.SearchesPostRequest]] = TypedDictCodec(models.SearchesPostRequest, MODELS)
+codec_10: Final[TypedDictCodec[models.SearchesPostRequest]] = TypedDictCodec(
+    models.SearchesPostRequest, MODELS
+)
 """Codec of /paths/~1searches/post request_body (request application/x-www-form-urlencoded)."""
 
-codec_11: Final[TypedDictCodec[models.CardsPostRequest]] = TypedDictCodec(models.CardsPostRequest, MODELS)
+codec_11: Final[TypedDictCodec[models.CardsPostRequest]] = TypedDictCodec(
+    models.CardsPostRequest, MODELS
+)
 """Codec of /paths/~1cards/post request_body (request multipart/form-data)."""
 
-codec_12: Final[TypedDictCodec[models.StickersPostRequest]] = TypedDictCodec(models.StickersPostRequest, MODELS)
+codec_12: Final[TypedDictCodec[models.StickersPostRequest]] = TypedDictCodec(
+    models.StickersPostRequest, MODELS
+)
 """Codec of /paths/~1stickers/post request_body (request multipart/form-data)."""
 
 codec_13: Final[TypedDictCodec[models.Draft]] = TypedDictCodec(models.Draft, MODELS)
@@ -73,7 +136,9 @@ codec_13: Final[TypedDictCodec[models.Draft]] = TypedDictCodec(models.Draft, MOD
 codec_14: Final[TypedDictCodec[models.Draft]] = TypedDictCodec(models.Draft, MODELS)
 """Codec of /paths/~1documents/post response_body (response 3XX application/json)."""
 
-codec_15: Final[TypedDictCodec[models.DocumentsIdGetPathIdParameter]] = TypedDictCodec(models.DocumentsIdGetPathIdParameter, MODELS)
+codec_15: Final[TypedDictCodec[models.DocumentsIdGetPathIdParameter]] = TypedDictCodec(
+    models.DocumentsIdGetPathIdParameter, MODELS
+)
 """Codec of /paths/~1documents~1{id}/get parameter (request path id application/json)."""
 
 codec_16: Final[TypedDictCodec[models.Draft]] = TypedDictCodec(models.Draft, MODELS)

@@ -35,7 +35,24 @@ OPERATION_0: Final[OperationPlan[SendUploadResponse]] = OperationPlan(
     path='/uploads',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('mapped'), PartPlan('stage', codec=model_bindings.codec_1), PartPlan('doc')), additional=PartPlan('', 'json'))),), default='multipart/form-data', required=True),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                form=MultipartForm(
+                    parts=(
+                        PartPlan('mapped'),
+                        PartPlan('stage', codec=model_bindings.codec_1),
+                        PartPlan('doc'),
+                    ),
+                    additional=PartPlan('', 'json'),
+                ),
+            ),
+        ),
+        default='multipart/form-data',
+        required=True,
+    ),
 )
 
 OPERATION_1: Final[OperationPlan[SendMergedResponse]] = OperationPlan(
@@ -44,7 +61,19 @@ OPERATION_1: Final[OperationPlan[SendMergedResponse]] = OperationPlan(
     path='/merged',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('f'),), additional=PartPlan('', 'json'))),), default='multipart/form-data', required=True),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                form=MultipartForm(
+                    parts=(PartPlan('f'),), additional=PartPlan('', 'json')
+                ),
+            ),
+        ),
+        default='multipart/form-data',
+        required=True,
+    ),
 )
 
 OPERATION_2: Final[OperationPlan[SendMergedSwappedResponse]] = OperationPlan(
@@ -53,7 +82,19 @@ OPERATION_2: Final[OperationPlan[SendMergedSwappedResponse]] = OperationPlan(
     path='/merged-swapped',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('f'),), additional=PartPlan('', 'json'))),), default='multipart/form-data', required=True),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                form=MultipartForm(
+                    parts=(PartPlan('f'),), additional=PartPlan('', 'json')
+                ),
+            ),
+        ),
+        default='multipart/form-data',
+        required=True,
+    ),
 )
 
 OPERATION_3: Final[OperationPlan[SendClosedResponse]] = OperationPlan(
@@ -62,7 +103,18 @@ OPERATION_3: Final[OperationPlan[SendClosedResponse]] = OperationPlan(
     path='/closed',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', codec=model_bindings.codec_0, form=MultipartForm(members=True)),), default='multipart/form-data', required=True),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                codec=model_bindings.codec_0,
+                form=MultipartForm(members=True),
+            ),
+        ),
+        default='multipart/form-data',
+        required=True,
+    ),
 )
 
 OPERATION_4: Final[OperationPlan[AttachFilesResponse]] = OperationPlan(
@@ -71,7 +123,23 @@ OPERATION_4: Final[OperationPlan[AttachFilesResponse]] = OperationPlan(
     path='/files',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('note', codec=model_bindings.codec_2), PartPlan('file')), additional=PartPlan('', 'json'))),), default='multipart/form-data', required=True),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                form=MultipartForm(
+                    parts=(
+                        PartPlan('note', codec=model_bindings.codec_2),
+                        PartPlan('file'),
+                    ),
+                    additional=PartPlan('', 'json'),
+                ),
+            ),
+        ),
+        default='multipart/form-data',
+        required=True,
+    ),
 )
 
 OPERATION_5: Final[OperationPlan[SendCopyResponse]] = OperationPlan(
@@ -80,5 +148,17 @@ OPERATION_5: Final[OperationPlan[SendCopyResponse]] = OperationPlan(
     path='/copies',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('f'),), additional=PartPlan('', 'json'))),), default='multipart/form-data', required=True),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                form=MultipartForm(
+                    parts=(PartPlan('f'),), additional=PartPlan('', 'json')
+                ),
+            ),
+        ),
+        default='multipart/form-data',
+        required=True,
+    ),
 )

@@ -128,10 +128,23 @@ class Model:
     iOpenTwo: list[dict[constr(pattern=r'^a|^b'), int | str]] | None = None
     mOpenTwo: dict[str, dict[constr(pattern=r'^a|^b'), int | str]] | None = None
     iOverlap: (
-        list[dict[constr(pattern=r'^a|b$'), IOverlapPatternProperty | IOverlapPatternProperty1]] | None
+        list[
+            dict[
+                constr(pattern=r'^a|b$'),
+                IOverlapPatternProperty | IOverlapPatternProperty1,
+            ]
+        ]
+        | None
     ) = None
     mOverlap: (
-        dict[str, dict[constr(pattern=r'^a|b$'), MOverlapPatternProperty | MOverlapPatternProperty1]] | None
+        dict[
+            str,
+            dict[
+                constr(pattern=r'^a|b$'),
+                MOverlapPatternProperty | MOverlapPatternProperty1,
+            ],
+        ]
+        | None
     ) = None
     iAnyMember: list[dict[constr(pattern=r'^a|^b'), Any]] | None = None
     mAnyMember: dict[str, dict[constr(pattern=r'^a|^b'), Any]] | None = None
@@ -142,6 +155,6 @@ class Model:
     iNamesTwo: list[dict[constr(pattern=r'^a|^b', max_length=3), int | str]] | None = (
         None
     )
-    mNamesTwo: dict[str, dict[constr(pattern=r'^a|^b', max_length=3), int | str]] | None = (
-        None
-    )
+    mNamesTwo: (
+        dict[str, dict[constr(pattern=r'^a|^b', max_length=3), int | str]] | None
+    ) = None

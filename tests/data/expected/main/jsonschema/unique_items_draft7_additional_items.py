@@ -225,8 +225,6 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
 
 class Draft7UniqueItemsTail(_JsonSchemaRuntimeValidationBase, RootModel[list[str | int | list[int]]]):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (('__json_schema_array_tail__', 2),),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((('__json_schema_array_tail__', 2),),)
 
     root: list[str | int | list[int]] = Field(..., title='Draft7UniqueItemsTail')

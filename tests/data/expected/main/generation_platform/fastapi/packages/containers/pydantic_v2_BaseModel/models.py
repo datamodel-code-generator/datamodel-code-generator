@@ -20,4 +20,6 @@ RoutesGetQueryStopsParameter = TypeAliasType(
 )
 
 
-RoutesGetQueryNamesParameter = TypeAliasType("RoutesGetQueryNamesParameter", MutableSequence[str])
+RoutesGetQueryNamesParameter = TypeAliasType(
+    "RoutesGetQueryNamesParameter", MutableSequence[str]
+)

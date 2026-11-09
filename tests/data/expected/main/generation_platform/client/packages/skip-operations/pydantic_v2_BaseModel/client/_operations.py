@@ -28,8 +28,21 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse]] = OperationPlan(
     method='GET',
     path='/pets',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_1),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer'), codec=model_bindings.codec_0),),
+    responses=ResponseDecoder(
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_1),), ()
+    ),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query',
+                name='limit',
+                style='form',
+                explode=True,
+                kind='integer',
+            ),
+            codec=model_bindings.codec_0,
+        ),
+    ),
 )
 
 OPERATION_1: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
@@ -38,5 +51,13 @@ OPERATION_1: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
     path='/pets',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('201'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_2),), default='application/json', required=True),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='application/json', kind='json', codec=model_bindings.codec_2
+            ),
+        ),
+        default='application/json',
+        required=True,
+    ),
 )

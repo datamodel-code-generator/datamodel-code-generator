@@ -26,7 +26,18 @@ OPERATION_0: Final[OperationPlan[HeaderResponse]] = OperationPlan(
     path='/header',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='header', name='x-key', style='simple', reserved_names=('X-Key',), credential=True), codec=model_bindings.codec_0),),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='header',
+                name='x-key',
+                style='simple',
+                reserved_names=('X-Key',),
+                credential=True,
+            ),
+            codec=model_bindings.codec_0,
+        ),
+    ),
     security=security.OPERATION_0,
 )
 
@@ -36,7 +47,18 @@ OPERATION_1: Final[OperationPlan[QueryResponse]] = OperationPlan(
     path='/query',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='key', style='form', explode=True, credential=True), codec=model_bindings.codec_1),),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query',
+                name='key',
+                style='form',
+                explode=True,
+                credential=True,
+            ),
+            codec=model_bindings.codec_1,
+        ),
+    ),
     security=security.OPERATION_1,
 )
 
@@ -46,6 +68,17 @@ OPERATION_2: Final[OperationPlan[CookieResponse]] = OperationPlan(
     path='/cookie',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='cookie', name='session', style='form', explode=True, credential=True), codec=model_bindings.codec_2),),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='cookie',
+                name='session',
+                style='form',
+                explode=True,
+                credential=True,
+            ),
+            codec=model_bindings.codec_2,
+        ),
+    ),
     security=security.OPERATION_2,
 )

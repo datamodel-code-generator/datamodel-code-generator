@@ -61,7 +61,9 @@ class Board:
     fixed: dict[str, int] = None
 
 
-ScoresGetQueryPlayersParameter = TypeAliasType("ScoresGetQueryPlayersParameter", dict[str, Player] | None)
+ScoresGetQueryPlayersParameter = TypeAliasType(
+    "ScoresGetQueryPlayersParameter", dict[str, Player] | None
+)
 
 
 ScoresPostRequest = TypeAliasType("ScoresPostRequest", dict[str, int] | None)

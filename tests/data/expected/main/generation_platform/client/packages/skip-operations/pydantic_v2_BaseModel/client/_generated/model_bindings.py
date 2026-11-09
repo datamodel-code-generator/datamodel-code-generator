@@ -11,10 +11,14 @@ import models
 
 from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.PetsGetQueryLimitParameter]] = PydanticCodec(models.PetsGetQueryLimitParameter)
+codec_0: Final[PydanticCodec[models.PetsGetQueryLimitParameter]] = PydanticCodec(
+    models.PetsGetQueryLimitParameter
+)
 """Codec of /paths/~1pets/get parameter (request query limit)."""
 
-codec_1: Final[PydanticCodec[models.PetsGetResponse]] = PydanticCodec(models.PetsGetResponse)
+codec_1: Final[PydanticCodec[models.PetsGetResponse]] = PydanticCodec(
+    models.PetsGetResponse
+)
 """Codec of /paths/~1pets/get response_body (response 200 application/json)."""
 
 codec_2: Final[PydanticCodec[models.Pet]] = PydanticCodec(models.Pet)

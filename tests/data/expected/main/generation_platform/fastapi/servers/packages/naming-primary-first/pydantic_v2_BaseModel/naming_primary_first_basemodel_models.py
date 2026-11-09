@@ -5,13 +5,19 @@ from __future__ import annotations
 
 from typing_extensions import TypeAliasType
 
-ItemsItemIdGetQueryCursorParameter = TypeAliasType("ItemsItemIdGetQueryCursorParameter", str)
+ItemsItemIdGetQueryCursorParameter = TypeAliasType(
+    "ItemsItemIdGetQueryCursorParameter", str
+)
 
 
-ItemsItemIdGetHeaderCursorParameter = TypeAliasType("ItemsItemIdGetHeaderCursorParameter", str)
+ItemsItemIdGetHeaderCursorParameter = TypeAliasType(
+    "ItemsItemIdGetHeaderCursorParameter", str
+)
 
 
-ItemsItemIdGetPathItemIdParameter = TypeAliasType("ItemsItemIdGetPathItemIdParameter", int)
+ItemsItemIdGetPathItemIdParameter = TypeAliasType(
+    "ItemsItemIdGetPathItemIdParameter", int
+)
 
 
 SharedGetQueryLimitParameter = TypeAliasType("SharedGetQueryLimitParameter", int)

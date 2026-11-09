@@ -9,6 +9,6 @@ import tests.data.python.input_model.structured_annotations
 
 
 class NestedRuntimeAnnotations(BaseModel):
-    value: tests.data.python.input_model.structured_annotations.RuntimeNamespace.Nested = (
-        Field(..., title='Value')
-    )
+    value: (
+        tests.data.python.input_model.structured_annotations.RuntimeNamespace.Nested
+    ) = Field(..., title='Value')

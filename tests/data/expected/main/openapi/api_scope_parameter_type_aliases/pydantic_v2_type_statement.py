@@ -64,7 +64,9 @@ type ItemsItemIdGetQueryColorsParameter = Annotated[
 ]
 
 
-type ItemsItemIdGetQueryCodesParameter = Annotated[str, Field(max_length=4)] | list[Annotated[str, Field(max_length=4)]]
+type ItemsItemIdGetQueryCodesParameter = Annotated[str, Field(max_length=4)] | list[
+    Annotated[str, Field(max_length=4)]
+]
 
 
 type ItemsItemIdGetQueryNullableParameter = Annotated[int, Field(ge=0)] | None

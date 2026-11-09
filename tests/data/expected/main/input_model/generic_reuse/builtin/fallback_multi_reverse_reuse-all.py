@@ -16,12 +16,16 @@ class RepeatedRoot(BaseModel):
     items: list[Box[int]] = Field(..., title='Items')
 
 
-class DefaultBoxAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3(BaseModel):
+class DefaultBoxAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3(
+    BaseModel
+):
     value: conint(gt=3) | None = Field(4, title='Value')
     label: str | None = Field('kept', title='Label')
 
 
-class PairAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3Item(BaseModel):
+class PairAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3Item(
+    BaseModel
+):
     first: conint(gt=3) = Field(..., title='First')
     second: Item
 

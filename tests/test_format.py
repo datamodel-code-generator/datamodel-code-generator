@@ -28,14 +28,12 @@ CodeFormatter = format_module.CodeFormatter
 Formatter = format_module.Formatter
 PythonVersion = format_module.PythonVersion
 PythonVersionMin = format_module.PythonVersionMin
-_format_constrained_call = format_module._format_constrained_call
 _format_import_node = format_module._format_import_node
 _format_import_node_without_reordering = format_module._format_import_node_without_reordering
 _get_builtin_line_length = format_module._get_builtin_line_length
 _get_builtin_known_first_party = format_module._get_builtin_known_first_party
 _get_builtin_string_normalization = format_module._get_builtin_string_normalization
 _normalize_string_quotes = format_module._normalize_string_quotes
-_split_escaped_string_literal = format_module._split_escaped_string_literal
 apply_builtin_formatter = format_module.apply_builtin_formatter
 resolve_use_type_checking_imports = format_module.resolve_use_type_checking_imports
 
@@ -653,8 +651,8 @@ def test_format_code_builtin_formatter_sorts_type_checking_imports(
         "    pet: Antelope\n"
     )
 
-    assert (
-        formatted_code == "from typing import TYPE_CHECKING\n"
+    assert formatted_code == (
+        "from typing import TYPE_CHECKING\n"
         "\n"
         "from pydantic import BaseModel\n"
         "\n"
@@ -662,6 +660,7 @@ def test_format_code_builtin_formatter_sorts_type_checking_imports(
         "    import os\n"
         "\n"
         "    from .models import Antelope, Zebra\n"
+        "\n"
         "\n"
         "class Model(BaseModel):\n"
         "    pet: Antelope\n"
@@ -816,7 +815,9 @@ def test_apply_builtin_formatter_wraps_nested_module_subscript_assignment() -> N
     code = "Model.__annotations__['__pydantic_extra__'] = Dict[str, list[VeryLongName | OtherVeryLongName | None]]\n"
 
     assert apply_builtin_formatter(code, line_length=40) == (
-        "Model.__annotations__['__pydantic_extra__'] = Dict[\n"
+        "Model.__annotations__[\n"
+        "    '__pydantic_extra__'\n"
+        "] = Dict[\n"
         "    str,\n"
         "    list[\n"
         "        VeryLongName\n"
@@ -832,7 +833,9 @@ def test_apply_builtin_formatter_wraps_module_subscript_union_element() -> None:
     code = "Model.__annotations__['__pydantic_extra__'] = Dict[str, VeryLongName | OtherVeryLongName | None]\n"
 
     assert apply_builtin_formatter(code, line_length=40) == (
-        "Model.__annotations__['__pydantic_extra__'] = Dict[\n"
+        "Model.__annotations__[\n"
+        "    '__pydantic_extra__'\n"
+        "] = Dict[\n"
         "    str,\n"
         "    VeryLongName\n"
         "    | OtherVeryLongName\n"
@@ -1105,9 +1108,7 @@ def test_apply_builtin_formatter_wraps_annotated_type_alias_type_union_argument(
     assert apply_builtin_formatter(code) == (
         "Payment = TypeAliasType(\n"
         '    "Payment",\n'
-        "    Annotated[\n"
-        "        CardPayment | CashPayment | None, Field(None, discriminator='kind')\n"
-        "    ],\n"
+        "    Annotated[CardPayment | CashPayment | None, Field(None, discriminator='kind')],\n"
         ")\n"
     )
 
@@ -1227,8 +1228,8 @@ def test_apply_builtin_formatter_keeps_existing_tuple_element(nested_value: str)
     )
 
 
-def test_apply_builtin_formatter_preserves_empty_tuple_assignment_formatting() -> None:
-    """Keep the existing generic formatting for a long empty-tuple assignment."""
+def test_apply_builtin_formatter_wraps_empty_tuple_assignment_annotation() -> None:
+    """Test built-in formatter matches black for a long empty-tuple assignment."""
     code = (
         "class Payload:\n"
         "    very_long_generated_registry_name_that_exceeds_the_builtin_formatter_line_length_limit: tuple = ()\n"
@@ -1237,9 +1238,9 @@ def test_apply_builtin_formatter_preserves_empty_tuple_assignment_formatting() -
     assert len(code.splitlines()[1]) > 88
     assert apply_builtin_formatter(code) == (
         "class Payload:\n"
-        "    very_long_generated_registry_name_that_exceeds_the_builtin_formatter_line_length_limit: tuple = (\n"
-        "        ()\n"
-        "    )\n"
+        "    very_long_generated_registry_name_that_exceeds_the_builtin_formatter_line_length_limit: (\n"
+        "        tuple\n"
+        "    ) = ()\n"
     )
 
 
@@ -1326,8 +1327,8 @@ def test_apply_builtin_formatter_preserves_long_annotated_tuple_assignment() -> 
     )
 
 
-def test_apply_builtin_formatter_preserves_multiline_annotated_tuple_assignment() -> None:
-    """Do not partially rewrite an unrelated multiline Annotated tuple assignment."""
+def test_apply_builtin_formatter_splits_multiline_annotated_tuple_assignment() -> None:
+    """Test built-in formatter matches black for a multiline Annotated tuple assignment."""
     code = (
         "class Payload:\n"
         "    value: Annotated[VeryLongGeneratedTypeNameThatMakesTheAnnotationOverflow, "
@@ -1338,11 +1339,26 @@ def test_apply_builtin_formatter_preserves_multiline_annotated_tuple_assignment(
         "    )\n"
     )
 
-    assert apply_builtin_formatter(code) == code
+    assert apply_builtin_formatter(code) == (
+        "class Payload:\n"
+        "    value: Annotated[\n"
+        "        VeryLongGeneratedTypeNameThatMakesTheAnnotationOverflow,\n"
+        "        Field(description='metadata'),\n"
+        "    ] = (\n"
+        "        {\n"
+        "            'items': (\n"
+        "                'abcdefghijklmno',\n"
+        "                'abcdefghijklmno',\n"
+        "                'abcdefghijklmno',\n"
+        "                'abcdefghijklmno',\n"
+        "            ),\n"
+        "        },\n"
+        "    )\n"
+    )
 
 
-def test_apply_builtin_formatter_preserves_overlong_classvar_tuple_header() -> None:
-    """Do not partially rewrite a multiline ClassVar assignment with an overlong header."""
+def test_apply_builtin_formatter_splits_overlong_classvar_tuple_header() -> None:
+    """Test built-in formatter matches black for a multiline ClassVar assignment with an overlong header."""
     code = (
         "class Payload:\n"
         "    value: ClassVar[tuple[VeryLongGeneratedTypeNameThatMakesTheAnnotationOverflow, ...]] = (\n"
@@ -1353,7 +1369,21 @@ def test_apply_builtin_formatter_preserves_overlong_classvar_tuple_header() -> N
     )
 
     assert len(code.splitlines()[1]) > 88
-    assert apply_builtin_formatter(code) == code
+    assert apply_builtin_formatter(code) == (
+        "class Payload:\n"
+        "    value: ClassVar[\n"
+        "        tuple[VeryLongGeneratedTypeNameThatMakesTheAnnotationOverflow, ...]\n"
+        "    ] = (\n"
+        "        {\n"
+        "            'items': (\n"
+        "                'abcdefghijklmno',\n"
+        "                'abcdefghijklmno',\n"
+        "                'abcdefghijklmno',\n"
+        "                'abcdefghijklmno',\n"
+        "            ),\n"
+        "        },\n"
+        "    )\n"
+    )
 
 
 def test_apply_builtin_formatter_preserves_comment_in_multiline_tuple() -> None:
@@ -1371,8 +1401,8 @@ def test_apply_builtin_formatter_preserves_comment_in_multiline_tuple() -> None:
     assert apply_builtin_formatter(code) == code
 
 
-def test_apply_builtin_formatter_keeps_non_name_tuple_assignment_target() -> None:
-    """Do not route non-name annotated assignments through generated-field formatting."""
+def test_apply_builtin_formatter_splits_non_name_tuple_assignment_target() -> None:
+    """Test built-in formatter matches black for a non-name annotated assignment target."""
     code = (
         "class Payload:\n"
         "    registry['key']: ClassVar[tuple[Any, ...]] = (\n"
@@ -1382,7 +1412,19 @@ def test_apply_builtin_formatter_keeps_non_name_tuple_assignment_target() -> Non
         "    )\n"
     )
 
-    assert apply_builtin_formatter(code) == code
+    assert apply_builtin_formatter(code) == (
+        "class Payload:\n"
+        "    registry['key']: ClassVar[tuple[Any, ...]] = (\n"
+        "        {\n"
+        "            'items': (\n"
+        "                'abcdefghijklmno',\n"
+        "                'abcdefghijklmno',\n"
+        "                'abcdefghijklmno',\n"
+        "                'abcdefghijklmno',\n"
+        "            ),\n"
+        "        },\n"
+        "    )\n"
+    )
 
 
 def test_apply_builtin_formatter_preserves_comment_in_annotated_alias() -> None:
@@ -1560,79 +1602,12 @@ def test_builtin_formatter_pep695_placeholder_helpers(monkeypatch: pytest.Monkey
         f"x = 1\n{builtin_formatter.PEP695_TYPE_ALIAS_PLACEHOLDER} = None\n\n\n\ny = 2"
     )
 
-    assert builtin_formatter._parse_builtin_code("type Alias =\n", PythonVersion.PY_312) is not None
-    assert builtin_formatter._parse_builtin_code("if", PythonVersion.PY_312) is None
-    assert builtin_formatter._parse_builtin_code("    type Alias =\n", PythonVersion.PY_312) is None
-
-
-def test_builtin_formatter_pep695_type_alias_replacement_edges() -> None:
-    """Test PEP 695 alias replacement skips unsupported forms and rewrites generated Annotated aliases."""
+    parse = builtin_formatter._parse_builtin_code_with_source_validity
+    assert parse("type Alias =\n", PythonVersion.PY_312)[0] is not None
+    assert parse("if", PythonVersion.PY_312) == (None, False)
+    assert parse("    type Alias =\n", PythonVersion.PY_312) == (None, False)
     assert builtin_formatter._has_comment_token("value = 'unterminated #")
     assert not builtin_formatter._has_comment_token("value = 'https://example.com/#fragment'")
-    assert (
-        builtin_formatter._pep695_type_alias_replacement(
-            ["type Alias = Annotated[str, Field(..., description='kept')]  # noqa: F401"],
-            0,
-            40,
-        )
-        is None
-    )
-    assert builtin_formatter._pep695_type_alias_replacement(["type Alias = ["], 0, 40) is None
-    assert builtin_formatter._pep695_type_alias_replacement(["type Alias = str"], 0, 40) is None
-
-    replacements = builtin_formatter._collect_pep695_type_alias_replacements(
-        [
-            "value = 1",
-            "type Alias = Annotated[str, Field(..., description='long generated alias description')]",
-        ],
-        40,
-    )
-
-    assert replacements == [
-        (
-            2,
-            2,
-            [
-                "type Alias = Annotated[",
-                "    str,",
-                "    Field(",
-                "        ...,",
-                "        description='long generated alias description',",
-                "    ),",
-                "]",
-            ],
-        )
-    ]
-
-
-def test_builtin_formatter_source_segment_matches_ast() -> None:
-    """Source extraction should match ast.get_source_segment, including UTF-8 byte offsets."""
-    source = (
-        "from typing import Annotated\r\n"
-        "from pydantic import Field\n"
-        "\n"
-        "EXTRA = {'emoji': '🍣'}\n"
-        "\n"
-        "class Model:\n"
-        '    """説明."""\n'
-        "    field: Annotated[\n"
-        "        str,\n"
-        "        Field(default='é', description='長い説明'),\n"
-        "    ]\n"
-        "    data = {\n"
-        "        'emoji': '🍣',\n"
-        "        **EXTRA,\n"
-        "    }\n"
-        "\n"
-        "lambda_value = lambda: '空'\n"
-    )
-
-    for node in ast.walk(ast.parse(source)):
-        expected = ast.get_source_segment(source, node)
-        if not expected:
-            continue
-
-        assert builtin_formatter._source_segment(source, node) == expected
 
 
 @pytest.mark.parametrize(
@@ -1648,75 +1623,6 @@ def test_builtin_formatter_source_segment_matches_ast() -> None:
 def test_builtin_formatter_splits_only_physical_python_lines(source: str, expected: list[str]) -> None:
     """Unicode separators remain source content while physical newlines are normalized."""
     assert builtin_formatter._split_python_lines(source) == expected
-
-
-def test_builtin_formatter_splits_nested_annotated_formatting_as_python_lines() -> None:
-    """Nested Annotated formatting uses the physical-line splitter."""
-    annotated_union_source = "Annotated[str, Field(..., description='long generated field description')] | None"
-    annotated_union = ast.parse(annotated_union_source, mode="eval").body
-    assert isinstance(annotated_union, ast.BinOp)
-    assert builtin_formatter._format_annotated_union(annotated_union, "", 40, annotated_union_source) == (
-        "(\n"
-        "    Annotated[\n"
-        "        str,\n"
-        "        Field(\n"
-        "            ...,\n"
-        "            description='long generated field description',\n"
-        "        ),\n"
-        "    ]\n"
-        "    | None\n"
-        ")"
-    )
-
-    annotated_list_source = "list[Annotated[str, Field(..., description='long generated field description')]]"
-    annotated_list = ast.parse(annotated_list_source, mode="eval").body
-    assert isinstance(annotated_list, ast.Subscript)
-    assert builtin_formatter._format_list_of_annotated(annotated_list, "", 40, annotated_list_source) == (
-        "list[\n"
-        "    Annotated[\n"
-        "        str,\n"
-        "        Field(\n"
-        "            ...,\n"
-        "            description='long generated field description',\n"
-        "        ),\n"
-        "    ]\n"
-        "]"
-    )
-
-
-def test_builtin_formatter_source_segment_reuses_split_source_lines(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Repeated source extraction should split one source object once."""
-    source = "class Model:\n    field: str = 'é'\n    other: str = '🍣'\n"
-    nodes = [node for node in ast.walk(ast.parse(source)) if ast.get_source_segment(source, node)]
-    split_call_count = 0
-    original_splitlines = builtin_formatter._splitlines_no_ff
-
-    def spy_splitlines(value: str) -> list[str]:
-        nonlocal split_call_count
-        split_call_count += 1
-        return original_splitlines(value)
-
-    monkeypatch.setattr(builtin_formatter, "_SOURCE_LINES_CACHE", [])
-    monkeypatch.setattr(builtin_formatter, "_splitlines_no_ff", spy_splitlines)
-
-    for node in nodes:
-        builtin_formatter._source_segment(source, node)
-
-    assert split_call_count == 1
-
-
-def test_builtin_formatter_source_segment_handles_missing_locations() -> None:
-    """Source extraction should fall back when a node lacks complete location data."""
-    source = "field: str\n"
-    node_without_location = ast.Load()
-    node_without_end_location = ast.Name(id="field", ctx=ast.Load())
-    node_without_end_location.lineno = 1
-    node_without_end_location.col_offset = 0
-    node_without_end_location.end_lineno = None
-    node_without_end_location.end_col_offset = None
-
-    assert builtin_formatter._source_segment_from_cached_lines(source, node_without_location) is None
-    assert builtin_formatter._source_segment_from_cached_lines(source, node_without_end_location) is None
 
 
 def test_apply_builtin_formatter_parenthesizes_short_annotated_default() -> None:
@@ -1810,6 +1716,7 @@ def test_apply_builtin_formatter_wraps_string_default_with_single_quote() -> Non
     code = (
         "class Model:\n"
         '    message: str = Field(..., description="it\'s a generated description with enough words to wrap")\n'
+        '    note: str = Field(description="it\'s a generated note without a default value")\n'
     )
 
     assert apply_builtin_formatter(code, line_length=48, wrap_string_literal=True) == (
@@ -1820,6 +1727,71 @@ def test_apply_builtin_formatter_wraps_string_default_with_single_quote() -> Non
         '            "it\'s a generated description with"\n'
         '            " enough words to wrap"\n'
         "        ),\n"
+        "    )\n"
+        "    note: str = Field(\n"
+        "        description=(\n"
+        '            "it\'s a generated note without a"\n'
+        '            " default value"\n'
+        "        )\n"
+        "    )\n"
+    )
+
+
+def test_apply_builtin_formatter_wrap_string_literal_joins_implicitly_concatenated_strings() -> None:
+    """Wrap implicitly joined strings as one, and leave a parameter's default and an f-string's neighbour whole.
+
+    The first string of a joined value was wrapped alone, which left the next string after the parentheses.
+    """
+    code = (
+        "class Model(Base, note='a generated class keyword with words' ' Done.'):\n"
+        "    x: str = Field(None, description='a generated description text' f' {done}')\n"
+        "\n"
+        "    def f(self, value='a generated parameter default with words'):\n"
+        "        pass\n"
+    )
+
+    assert apply_builtin_formatter(code, line_length=40, wrap_string_literal=True) == (
+        "class Model(\n"
+        "    Base,\n"
+        "    note=(\n"
+        "        'a generated class keyword with'\n"
+        "        ' words Done.'\n"
+        "    ),\n"
+        "):\n"
+        "    x: str = Field(\n"
+        "        None,\n"
+        "        description='a generated description text'\n"
+        "        f' {done}',\n"
+        "    )\n"
+        "\n"
+        "    def f(\n"
+        "        self,\n"
+        "        value='a generated parameter default with words',\n"
+        "    ):\n"
+        "        pass\n"
+    )
+
+
+def test_apply_builtin_formatter_wrap_string_literal_keeps_bytes_and_f_strings_whole() -> None:
+    """Leave a long bytes literal or f-string argument whole when string literals are wrapped.
+
+    Wrapping read a bytes literal back as text, which changed its value, and raised ValueError on an f-string.
+    """
+    code = (
+        "class Model:\n"
+        "    x: str = Field(None, description=f'{prefix} a long description text that goes on and on')\n"
+        "    y: bytes = Field(None, default=b'a long bytes literal text that goes on and on and on')\n"
+    )
+
+    assert apply_builtin_formatter(code, line_length=40, wrap_string_literal=True) == (
+        "class Model:\n"
+        "    x: str = Field(\n"
+        "        None,\n"
+        "        description=f'{prefix} a long description text that goes on and on',\n"
+        "    )\n"
+        "    y: bytes = Field(\n"
+        "        None,\n"
+        "        default=b'a long bytes literal text that goes on and on and on',\n"
         "    )\n"
     )
 
@@ -1950,15 +1922,18 @@ def test_format_code_builtin_formatter_handles_additional_generated_model_edges(
         "Field(description='This nested field is long enough to wrap inside Annotated')]\n"
     )
 
-    assert (
-        formatted_code == "import sys  # noqa: F401\n"
+    assert formatted_code == (
+        "import sys  # noqa: F401\n"
         "from typing import TYPE_CHECKING\n"
         "\n"
         "if TYPE_CHECKING:\n"
         "    VALUE = 1\n"
         "\n"
+        "\n"
         "class Model:\n"
-        "    model_config_with_an_extremely_long_name_to_force_formatting = ConfigDict()\n"
+        "    model_config_with_an_extremely_long_name_to_force_formatting = (\n"
+        "        ConfigDict()\n"
+        "    )\n"
         "    model_config = ConfigDict(\n"
         "        **CONFIG_WITH_A_LONG_NAME_TO_FORCE_FORMATTING\n"
         "    )\n"
@@ -1984,16 +1959,21 @@ def test_format_code_builtin_formatter_handles_additional_generated_model_edges(
         "    ] = 'Notification'\n"
         "    hostName: (\n"
         "        constr(\n"
-        f"            pattern=r'{long_pattern}',\n"
+        "            pattern=r'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',\n"
         "            strict=True,\n"
         "        )\n"
         "        | None\n"
         "    ) = None\n"
-        "    optional_nested_value: list[list[VeryLongGeneratedTypeNameThatExceedsTheConfiguredLineLength | None] "
-        "| None] "
-        "| None = (\n"
-        "        None\n"
-        "    )\n"
+        "    optional_nested_value: (\n"
+        "        list[\n"
+        "            list[\n"
+        "                VeryLongGeneratedTypeNameThatExceedsTheConfiguredLineLength\n"
+        "                | None\n"
+        "            ]\n"
+        "            | None\n"
+        "        ]\n"
+        "        | None\n"
+        "    ) = None\n"
         "    nested: Annotated[\n"
         "        VeryLongGeneratedTypeNameThatExceedsTheConfiguredLineLength,\n"
         "        Field(\n"
@@ -2054,23 +2034,26 @@ def test_apply_builtin_formatter_handles_remaining_generated_edges() -> None:
 
     assert apply_builtin_formatter(code, line_length=40, string_normalization=True) == (
         "class Model:\n"
-        "    very_long_attribute_name: VeryLongPlainAnnotation = (\n"
-        "        DEFAULT_VALUE\n"
+        "    very_long_attribute_name: (\n"
+        "        VeryLongPlainAnnotation\n"
+        "    ) = DEFAULT_VALUE\n"
+        "    field_with_long_value: (\n"
+        "        VeryLongPlainAnnotation\n"
+        "    ) = Field(\n"
+        "        ...,\n"
+        '        description="long generated field",\n'
+        '        title="Long Field",\n'
         "    )\n"
-        "    field_with_long_value: VeryLongPlainAnnotation = (\n"
-        "        Field(\n"
-        "            ...,\n"
-        '            description="long generated field",\n'
-        '            title="Long Field",\n'
-        "        )\n"
+        "    empty_value_with_long_name: (\n"
+        "        VeryLongPlainAnnotation\n"
         "    )\n"
-        "    empty_value_with_long_name: VeryLongPlainAnnotation\n"
         "\n"
         "    data: dict[str, type] = {\n"
         "        **BASE_FIELDS,\n"
         '        "id": str,\n'
         '        "name": str,\n'
         "    }\n"
+        "\n"
         "\n"
         "class LeftRoot(\n"
         "    RootModel[\n"
@@ -2082,6 +2065,7 @@ def test_apply_builtin_formatter_handles_remaining_generated_edges() -> None:
         "):\n"
         "    pass\n"
         "\n"
+        "\n"
         "class RightRoot(\n"
         "    RootModel[\n"
         "        None\n"
@@ -2092,10 +2076,14 @@ def test_apply_builtin_formatter_handles_remaining_generated_edges() -> None:
         "):\n"
         "    pass\n"
         "\n"
+        "\n"
         "class UnionModel:\n"
         "    right_annotated: (\n"
         "        VeryLongPlainTypeName\n"
-        '        | Annotated[VeryLongAnnotatedTypeName, Field(description="x")]\n'
+        "        | Annotated[\n"
+        "            VeryLongAnnotatedTypeName,\n"
+        '            Field(description="x"),\n'
+        "        ]\n"
         "    ) = DEFAULT\n"
         "    simple_union: (\n"
         "        VeryLongPlainTypeName\n"
@@ -2103,13 +2091,9 @@ def test_apply_builtin_formatter_handles_remaining_generated_edges() -> None:
         "        | None\n"
         "    ) = DEFAULT\n"
         "\n"
+        "\n"
         "Alias = TypeAliasType(\n"
-        '    "Alias",\n'
-        "    Union[\n"
-        "        str,\n"
-        "        int,\n"
-        "    ],\n"
-        "    **OPTIONS,\n"
+        '    "Alias", Union[str, int], **OPTIONS\n'
         ")\n"
     )
 
@@ -2153,20 +2137,28 @@ def test_apply_builtin_formatter_handles_no_import_string_normalization_and_spac
         "        pass\n"
         "\n"
         "    def very_long_generated_method_name_with_arguments(\n"
-        "        value: str\n"
+        "        value: str,\n"
         "    ):\n"
         "        pass\n"
+        "\n"
         "\n"
         "def very_long_generated_function_name_without_arguments():\n"
         "    pass\n"
         "\n"
-        "def very_long_generated_function_name_with_arguments(value: str):\n"
+        "\n"
+        "def very_long_generated_function_name_with_arguments(\n"
+        "    value: str,\n"
+        "):\n"
         "    pass\n"
+        "\n"
         "\n"
         "class VeryLongGeneratedClassNameWithoutAnyBaseClass:\n"
         '    value = "x"\n'
         "\n"
-        "class VeryLongGeneratedClassNameWithPlainBase(VeryLongPlainBase):\n"
+        "\n"
+        "class VeryLongGeneratedClassNameWithPlainBase(\n"
+        "    VeryLongPlainBase\n"
+        "):\n"
         '    value = "x"\n'
     )
 
@@ -2177,15 +2169,7 @@ def test_builtin_formatter_private_edge_helpers(tmp_path: Path) -> None:
         '[tool.isort]\nknown_first_party = "not-a-list"\n',
         encoding="utf-8",
     )
-    statement = ast.parse("constr()").body[0]
-    assert isinstance(statement, ast.Expr)
-    call = statement.value
-    assert isinstance(call, ast.Call)
-
     assert _get_builtin_known_first_party(tmp_path) == DEFAULT_KNOWN_FIRST_PARTY
-    assert _split_escaped_string_literal("abc\\def", 4) == ["abc", "\\def"]
-    assert _split_escaped_string_literal("abcdef", 4) == ["abcd", "ef"]
-    assert _format_constrained_call(call, "", 88, "constr()") == "constr()"
     assert _normalize_string_quotes("a = \"ok\"\nb = 'has \" quote'\nc = 'abc\\\\'\nd = 'ok'\n") == (
         'a = "ok"\nb = \'has " quote\'\nc = \'abc\\\\\'\nd = "ok"\n'
     )
@@ -2937,3 +2921,93 @@ def test_code_formatter_no_warning_when_formatters_empty(tmp_path: Path, monkeyp
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         CodeFormatter(PythonVersionMin, formatters=[])
+
+
+BLACK_LAYOUT_CASES: tuple[tuple[str, int], ...] = (
+    ("values = [item.name for item in collection if item.enabled and item.visible]\n", 30),
+    ("def function_name(argument: int) -> tuple[int, str,]:\n    pass\n", 88),
+    ("value = prefix + function_name(first_argument_value_long_name_here_ok)\n", 30),
+    ("import os\n", 3),
+    ("def function_name(first_argument: int = 1, *, second_argument: str = 'x') -> None:\n    pass\n", 40),
+    ("value = '''multi\nline'''\n", 10),
+    ("value = 'string literal that is quite long and overflows the limit for sure'.a().b()\n", 40),
+    ("class Model(Base):\n    values: list[int] = [first_number, second_number, third_number]\n", 30),
+    ("text = ('first implicit part of a string ' 'second implicit part of the string')\n", 30),
+    ("value = [first_item_long, second_item_long] + other_value_name\n", 40),
+    ("flag = candidate in allowed_values or other_value is None or not enabled\n", 30),
+    ("value = function_name(first_argument,)[index_value].method_name(other_argument)\n", 40),
+    ("@decorator_with_a_long_name(first_argument_value, second_argument_value)\ndef f():\n    pass\n", 30),
+    ("callback = lambda: compute_something(first_argument, second_argument)\n", 30),
+    ("result_value_with_a_long_name = very_long_function_name_without_arguments()\n", 30),
+    ("message = 'a long template string with {} placeholder text'.format(value).strip()\n", 40),
+    ("value = f'{first_value}' + f'{second_value!r:>10}' + first_value_with_long_name\n", 30),
+    ("value = prefix_value_with_a_much_longer_name_than_fits + function_name(argument_one)\n", 40),
+    ("pair = (assigned := compute_value(first_argument, second_argument_value))\n", 30),
+    ("first = second = third_value_with_a_very_long_name_that_overflows_the_limit\n", 40),
+    ("def function_name(argument: int) -> Annotated[VeryLongReturnTypeName, Field(description='x')]:\n    pass\n", 40),
+    ("empty_tuple_with_a_very_long_name_that_overflows = ()\n", 30),
+    ("value = not_a_call_but_a_very_long_name_that_cannot_be_split_anywhere_at_all\n", 30),
+    ("value: Annotated[int, Field(description='some description text')] = default\n", 30),
+    ("message = 'a long template string with {} placeholder text'.format\n", 40),
+    ("values[index_name] = function_name(first_argument_value, second_argument_value)\n", 30),
+    ("class VeryLongClassNameForTesting(FirstBaseClassName, SecondBaseClassName, metaclass=Meta):\n    pass\n", 40),
+    ("value = (first for first in first_sequence_with_a_long_name if first_condition)\n", 30),
+    ("value = [first_item_long, second_item_long] + other_value_name_that_is_much_longer_than_the_line\n", 40),
+    ("value = prefix_value + function_name()\n", 30),
+    ("value = first_choice if some_condition_holds else second_choice_value\n", 30),
+    ("print(first_argument_value, second_argument_value, third_argument_value_x)\n", 30),
+    ('class A:\n    """Ends with "quote" """\n', 88),
+    ('class A:\n    """"Quoted" start."""\n', 88),
+    ('class A:\n    """Path \\\\"""\n', 88),
+    ('class A:\n    """   """\n', 88),
+    ('class A:\n    """Title.\n\n    """\n', 88),
+    ('class A:\n    """Title.\n    \n"""\n', 88),
+    ('class A:\n    r"""Path \\ """\n', 88),
+    ('class A:\n    class B:\n        """Title.\n\n        Last line."""\n', 10),
+    ('class A:\n    """"""\n', 88),
+    ("value = [first_item_long, second_item_long][index_value] + other_value_name\n", 40),
+    ("value = first_function(argument_one) + second_function(argument_two_long)\n", 40),
+    ("values[first_index, second_index,] = function_name(first_argument_value, second_argument)\n", 40),
+    ("class Model:\n    日本語の長いフィールド名日本語の長いフィールド名: str = Field(None)\n", 49),
+    ("class Model:\n    value: Optional[VeryLongGeneratedTypeName]() = None\n", 11),
+    ("value = (first_item + second_item) * third_item_with_a_long_name\n", 30),
+    ("def f() -> Optional[GeneratedNameOfTheFirstModel, GeneratedNameOfTheSecondModel]:\n    pass\n", 40),
+    ("def f() -> 'Forward[GeneratedNameOfTheFirstModel, GeneratedNameOfTheSecondModel]':\n    pass\n", 40),
+    ("def f(self) -> tuple[int, str,] | (FirstModel | SecondModel):\n    pass\n", 20),
+    ("class Model:\n    value: (yield first_value) = second_value_with_a_long_name\n", 32),
+    ("def function_name(first_argument, second_argument) -> (yield):\n    pass\n", 30),
+)
+UNSUPPORTED_LAYOUT_CASES: tuple[tuple[str, int], ...] = (
+    ("nested = ((first_value, second_value))\n", 30),
+    ("value = first_value.attribute[1:2]\n", 10),
+    ("value = (\n    first_value  # comment\n)\n", 10),
+    ("value = first_value_with_a_long_name \\\n    + second_value\n", 10),
+    ("value = first_value ** 2 + second_value_with_a_long_name_here_and_more_text\n", 30),
+    ("value = lambda argument: argument + first_value_with_a_long_name_here_more\n", 30),
+    ("def function_name[T](argument: T) -> T:\n    pass\n", 20),
+    ('x = """unterminated\n', 88),
+    ("class A:\n  value = function_name(first_argument, second_argument)\n", 20),
+    ("value = t'{first_value} and {second_value} in a long template string'\n", 30),
+    ("@(\n    decorator_name)\ndef f():\n    pass\n", 10),
+    ("value = function_name(1 .real, first_argument_value, second_argument_value)\n", 30),
+    ("x = 1; y = function_name(first_argument, second_argument)\n", 30),
+    ("class A:\n    x = 1; y = function_name(first_argument, second_argument)\n", 30),
+    ("class A(B): x: int = first_value_with_a_long_name\n", 20),
+    ("x: lambda: first_value_with_a_long_name = b\n", 20),
+)
+
+
+def test_builtin_formatter_lays_out_statements_as_black_does() -> None:
+    """Lay out statements, definition headers and docstrings as black does at the given line lengths."""
+    assert_output(
+        "\n".join(
+            f"[{line_length}]\n{apply_builtin_formatter(code, line_length=line_length)}"
+            for code, line_length in BLACK_LAYOUT_CASES
+        )
+    )
+
+
+@pytest.mark.parametrize(("code", "line_length"), UNSUPPORTED_LAYOUT_CASES)
+def test_builtin_formatter_leaves_unsupported_statements_as_they_are(code: str, line_length: int) -> None:
+    """Leave a statement whose constructs the line splitter does not lay out as it is."""
+    assert apply_builtin_formatter(code, line_length=line_length) == code

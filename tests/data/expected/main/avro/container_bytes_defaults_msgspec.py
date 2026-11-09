@@ -71,13 +71,27 @@ class ContainerDefaults(Struct):
     nullable_array: list[bytes] | None | UnsetType = UNSET
     record: Entry | UnsetType = field(
         default_factory=lambda: convert(
-            {'last': 'ÿ', 'reference': b'\xff', 'inline': b'A', 'array': [b'\xff', b'A'], 'first': 'ASCII'},
+            {
+                'last': 'ÿ',
+                'reference': b'\xff',
+                'inline': b'A',
+                'array': [b'\xff', b'A'],
+                'first': 'ASCII',
+            },
             type=Entry,
         )
     )
     record_array: list[Entry] | UnsetType = field(
         default_factory=lambda: convert(
-            [{'first': 'ÿ', 'inline': b'\xff', 'reference': b'A', 'array': [b'A', b'\xff'], 'last': 'end'}],
+            [
+                {
+                    'first': 'ÿ',
+                    'inline': b'\xff',
+                    'reference': b'A',
+                    'array': [b'A', b'\xff'],
+                    'last': 'end',
+                }
+            ],
             type=list[Entry],
         )
     )

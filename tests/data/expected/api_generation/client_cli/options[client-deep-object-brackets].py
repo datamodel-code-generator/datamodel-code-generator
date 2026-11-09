@@ -6,13 +6,19 @@ from __future__ import annotations
 from pydantic import BaseModel
 from typing_extensions import TypeAliasType
 
-V1ChargesChargeGetPathChargeParameter = TypeAliasType("V1ChargesChargeGetPathChargeParameter", str)
+V1ChargesChargeGetPathChargeParameter = TypeAliasType(
+    "V1ChargesChargeGetPathChargeParameter", str
+)
 
 
-V1ChargesChargeGetQueryExpandParameter = TypeAliasType("V1ChargesChargeGetQueryExpandParameter", list[str])
+V1ChargesChargeGetQueryExpandParameter = TypeAliasType(
+    "V1ChargesChargeGetQueryExpandParameter", list[str]
+)
 
 
-V1ChargesChargeGetQueryLimitParameter = TypeAliasType("V1ChargesChargeGetQueryLimitParameter", int)
+V1ChargesChargeGetQueryLimitParameter = TypeAliasType(
+    "V1ChargesChargeGetQueryLimitParameter", int
+)
 
 
 class V1ChargesChargeGetQueryCreatedParameter(BaseModel):

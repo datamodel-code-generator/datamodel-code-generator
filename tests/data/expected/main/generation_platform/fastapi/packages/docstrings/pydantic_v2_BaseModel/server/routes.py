@@ -118,9 +118,7 @@ LITERAL_ROUTES: Final = (
     ('list_notes', _add_list_notes),
     ('create_note', _add_create_note),
 )
-TEMPLATED_ROUTES: Final = (
-    ('delete_note', _add_delete_note),
-)
+TEMPLATED_ROUTES: Final = (('delete_note', _add_delete_note),)
 
 
 def build_router(

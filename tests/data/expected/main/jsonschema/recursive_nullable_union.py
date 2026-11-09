@@ -9,7 +9,18 @@ from pydantic import BaseModel, RootModel
 
 
 class JsonValue(
-    RootModel[Optional[Union[dict[str, Optional["JsonValue"]], list[Optional["JsonValue"]], str, int, float, bool]]]
+    RootModel[
+        Optional[
+            Union[
+                dict[str, Optional["JsonValue"]],
+                list[Optional["JsonValue"]],
+                str,
+                int,
+                float,
+                bool,
+            ]
+        ]
+    ]
 ):
     root: Optional[
         Union[

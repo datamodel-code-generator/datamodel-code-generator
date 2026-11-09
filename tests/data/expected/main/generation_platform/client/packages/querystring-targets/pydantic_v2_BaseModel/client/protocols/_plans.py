@@ -51,7 +51,12 @@ PLAN_0: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_0,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(read=BodySelector(pointer='/next'), write=ParameterTarget(location='header', name='X-Cursor'), end_missing=True, empty_string_ends=True),
+    continuation=CursorPlan(
+        read=BodySelector(pointer='/next'),
+        write=ParameterTarget(location='header', name='X-Cursor'),
+        end_missing=True,
+        empty_string_ends=True,
+    ),
     fingerprint='4ed5bf7d911a6ee149865a2956a17b965f6b63107350768f8e981a7c21636188',
 )
 
@@ -62,9 +67,21 @@ PLAN_1: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_1,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(read=BodySelector(pointer='/next'), write=ParameterTarget(location='header', name='x-cursor'), end_missing=True, empty_string_ends=True),
+    continuation=CursorPlan(
+        read=BodySelector(pointer='/next'),
+        write=ParameterTarget(location='header', name='x-cursor'),
+        end_missing=True,
+        empty_string_ends=True,
+    ),
     fingerprint='ae6d622b2dc484ce6ce4237d99348ae00568848782e8fc9898f547b24220197e',
-    bindings=(PageBinding(target=ParameterTarget(location='path', name='scope'), literal='everything'), PageBinding(target=QuerystringTarget(name='criteria', pointer='/limit'), literal=50)),
+    bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='scope'), literal='everything'
+        ),
+        PageBinding(
+            target=QuerystringTarget(name='criteria', pointer='/limit'), literal=50
+        ),
+    ),
 )
 
 
@@ -78,7 +95,19 @@ PLAN_2: Final[PollingPlan[None, GetJobResponse, CreateJobResponse]] = PollingPla
     state=BodySelector(pointer='/status'),
     pending=('queued', 'running'),
     succeeded=('done',),
-    bindings=(PageBinding(target=ParameterTarget(location='path', name='jobId'), source='initial', selector=BodySelector(pointer='/id')), PageBinding(target=ParameterTarget(location='header', name='X-Trace'), literal='poll'), PageBinding(target=QuerystringTarget(name='view', pointer='/fields'), literal='status')),
+    bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='jobId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+        PageBinding(
+            target=ParameterTarget(location='header', name='X-Trace'), literal='poll'
+        ),
+        PageBinding(
+            target=QuerystringTarget(name='view', pointer='/fields'), literal='status'
+        ),
+    ),
     interval=1.0,
 )
 
@@ -95,8 +124,23 @@ PLAN_3: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
     offset=ParameterTarget(location='header', name='Upload-Offset'),
     partial_commit=True,
     size=ParameterTarget(location='header', name='Upload-Length'),
-    probe_bindings=(PageBinding(target=ParameterTarget(location='path', name='fileId'), source='initial', selector=BodySelector(pointer='/id')), PageBinding(target=QuerystringTarget(name='detail', pointer='/kind'), literal='offset')),
-    append_bindings=(PageBinding(target=ParameterTarget(location='path', name='fileId'), source='initial', selector=BodySelector(pointer='/id')),),
+    probe_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+        PageBinding(
+            target=QuerystringTarget(name='detail', pointer='/kind'), literal='offset'
+        ),
+    ),
+    append_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
 )
 
 
@@ -106,5 +150,11 @@ STREAM_0: Final[EventPlan[models.Message]] = EventPlan(
     call=_operations.OPERATION_1,
     media='text/event-stream',
     event=model_bindings.codec_23,
-    resume=StreamResumePlan(operation=OperationRef(pointer='/paths/~1events/get'), call=_operations.OPERATION_1, media='text/event-stream', write=ParameterTarget(location='header', name='Last-Event-ID'), own=True),
+    resume=StreamResumePlan(
+        operation=OperationRef(pointer='/paths/~1events/get'),
+        call=_operations.OPERATION_1,
+        media='text/event-stream',
+        write=ParameterTarget(location='header', name='Last-Event-ID'),
+        own=True,
+    ),
 )

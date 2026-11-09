@@ -10,4 +10,6 @@ import tests.data.python.input_model.generic_reuse_future
 
 @dataclass
 class FutureInlineModel:
-    box: tests.data.python.input_model.generic_reuse_future.FutureInlineModel.model_fields['box'].annotation
+    box: tests.data.python.input_model.generic_reuse_future.FutureInlineModel.model_fields[
+        'box'
+    ].annotation

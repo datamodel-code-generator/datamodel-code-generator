@@ -114,9 +114,7 @@ class Root1(_JsonSchemaRuntimeValidationBase):
         extra='allow',
     )
 
-    __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = (
-        ((('b',),),),
-    )
+    __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = (((('b',),),),)
 
     a: int | None = None
 

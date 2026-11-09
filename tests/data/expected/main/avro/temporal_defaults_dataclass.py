@@ -51,6 +51,8 @@ class TemporalDefaults:
         )
     )
     record_array: list[LogicalRecord] | None = field(
-        default_factory=lambda: [{'day': '1969-12-31', 'instant': '1969-12-31T23:59:59.999999+00:00'}]
+        default_factory=lambda: [
+            {'day': '1969-12-31', 'instant': '1969-12-31T23:59:59.999999+00:00'}
+        ]
     )
     ordinary: int | None = 1000

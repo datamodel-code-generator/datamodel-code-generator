@@ -26,5 +26,17 @@ OPERATION_0: Final[OperationPlan[SearchResponse]] = OperationPlan(
     path='/search',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='tags', style='form', explode=True, shape='array', single=True), codec=model_bindings.codec_0),),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query',
+                name='tags',
+                style='form',
+                explode=True,
+                shape='array',
+                single=True,
+            ),
+            codec=model_bindings.codec_0,
+        ),
+    ),
 )

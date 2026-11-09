@@ -11,7 +11,9 @@ from pydantic import (
 )
 
 
-class NarrowWrap(BaseModel):
+class NarrowWrap(
+    BaseModel
+):
     text: str = (
         Field(
             ...,

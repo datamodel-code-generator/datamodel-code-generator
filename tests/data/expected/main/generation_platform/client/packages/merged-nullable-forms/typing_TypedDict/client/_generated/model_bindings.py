@@ -27,17 +27,27 @@ codec_0: Final[TypedDictCodec[models.NullObj]] = TypedDictCodec(models.NullObj, 
 codec_1: Final[TypedDictCodec[models.NullObj]] = TypedDictCodec(models.NullObj, MODELS)
 """Codec of /paths/~1plain/put response_body (response 200 application/json)."""
 
-codec_2: Final[TypedDictCodec[models.WrapNullable]] = TypedDictCodec(models.WrapNullable, MODELS)
+codec_2: Final[TypedDictCodec[models.WrapNullable]] = TypedDictCodec(
+    models.WrapNullable, MODELS
+)
 """Codec of /paths/~1wrap/put request_body (request application/json)."""
 
-codec_3: Final[TypedDictCodec[models.WrapNullable]] = TypedDictCodec(models.WrapNullable, MODELS)
+codec_3: Final[TypedDictCodec[models.WrapNullable]] = TypedDictCodec(
+    models.WrapNullable, MODELS
+)
 """Codec of /paths/~1wrap/put response_body (response 200 application/json)."""
 
-codec_4: Final[TypedDictCodec[models.WrapNullable | None]] = TypedDictCodec(Choice((('object', models.WrapNullable),)), MODELS)
+codec_4: Final[TypedDictCodec[models.WrapNullable | None]] = TypedDictCodec(
+    Choice((('object', models.WrapNullable),)), MODELS
+)
 """Codec of /paths/~1wrap-nullable/put request_body (request application/json)."""
 
-codec_5: Final[TypedDictCodec[models.WrapNullable | None]] = TypedDictCodec(Choice((('object', models.WrapNullable),)), MODELS)
+codec_5: Final[TypedDictCodec[models.WrapNullable | None]] = TypedDictCodec(
+    Choice((('object', models.WrapNullable),)), MODELS
+)
 """Codec of /paths/~1wrap-nullable/put response_body (response 200 application/json)."""
 
-codec_6: Final[TypedDictCodec[models.NullObj | None]] = TypedDictCodec(Choice((('object', models.NullObj),)), MODELS)
+codec_6: Final[TypedDictCodec[models.NullObj | None]] = TypedDictCodec(
+    Choice((('object', models.NullObj),)), MODELS
+)
 """Codec of /paths/~1null-object/get response_body (response 200 application/json)."""

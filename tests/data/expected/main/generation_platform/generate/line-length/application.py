@@ -24,7 +24,10 @@ ROUTES: Final = (
     *pets.TEMPLATED_ROUTES,
     *store.TEMPLATED_ROUTES,
 )
-INFO: Final[dict[str, Any]] = {'title': 'Pets', 'version': '1.0'}
+INFO: Final[dict[str, Any]] = {
+    'title': 'Pets',
+    'version': '1.0',
+}
 
 
 def build_router(
@@ -32,7 +35,9 @@ def build_router(
     pets: PetsService,
     store: StoreService,
     dependencies: Sequence[params.Depends] = (),
-    operation_dependencies: OperationDependencies | None = None,
+    operation_dependencies: (
+        OperationDependencies | None
+    ) = None,
     prefix: str = "",
 ) -> APIRouter:
     """Register every operation on a new router, literal paths first."""
@@ -49,7 +54,9 @@ def create_app(
     *,
     pets: PetsService,
     store: StoreService,
-    operation_dependencies: OperationDependencies | None = None,
+    operation_dependencies: (
+        OperationDependencies | None
+    ) = None,
     prefix: str = "",
     source_openapi: bool = True,
     **fastapi_kwargs: Any,

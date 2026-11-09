@@ -225,8 +225,6 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
 
 class UniqueItemsUnionConstRoot(_JsonSchemaRuntimeValidationBase, RootModel[list[int] | Literal['scalar']]):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((),)
 
     root: list[int] | Literal['scalar'] = Field(..., title='UniqueItemsUnionConstRoot')

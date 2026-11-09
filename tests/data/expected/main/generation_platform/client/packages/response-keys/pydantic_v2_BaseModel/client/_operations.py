@@ -30,7 +30,9 @@ OPERATION_0: Final[OperationPlan[GetRangeResponse]] = OperationPlan(
     method='GET',
     path='/range',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((model_branch('2XX', 'application/json', 'json', model_bindings.codec_0),), ()),
+    responses=ResponseDecoder(
+        (model_branch('2XX', 'application/json', 'json', model_bindings.codec_0),), ()
+    ),
 )
 
 OPERATION_1: Final[OperationPlan[GetFallbackResponse]] = OperationPlan(
@@ -38,7 +40,10 @@ OPERATION_1: Final[OperationPlan[GetFallbackResponse]] = OperationPlan(
     method='GET',
     path='/fallback',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((model_branch('default', 'application/json', 'json', model_bindings.codec_1),), (model_branch('default', 'application/json', 'json', model_bindings.codec_1),)),
+    responses=ResponseDecoder(
+        (model_branch('default', 'application/json', 'json', model_bindings.codec_1),),
+        (model_branch('default', 'application/json', 'json', model_bindings.codec_1),),
+    ),
 )
 
 OPERATION_2: Final[OperationPlan[GetLowercaseResponse]] = OperationPlan(
@@ -46,7 +51,10 @@ OPERATION_2: Final[OperationPlan[GetLowercaseResponse]] = OperationPlan(
     method='GET',
     path='/lowercase',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_2),), (model_branch('4XX', 'application/json', 'json', model_bindings.codec_3),)),
+    responses=ResponseDecoder(
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_2),),
+        (model_branch('4XX', 'application/json', 'json', model_bindings.codec_3),),
+    ),
 )
 
 OPERATION_3: Final[OperationPlan[GetMediaResponse]] = OperationPlan(
@@ -54,7 +62,15 @@ OPERATION_3: Final[OperationPlan[GetMediaResponse]] = OperationPlan(
     method='GET',
     path='/media',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((model_branch('200', 'application/json; profile=v1', 'json', model_bindings.codec_4), model_branch('200', 'application/json', 'json', model_bindings.codec_5)), ()),
+    responses=ResponseDecoder(
+        (
+            model_branch(
+                '200', 'application/json; profile=v1', 'json', model_bindings.codec_4
+            ),
+            model_branch('200', 'application/json', 'json', model_bindings.codec_5),
+        ),
+        (),
+    ),
 )
 
 OPERATION_4: Final[OperationPlan[GetInvalidResponse]] = OperationPlan(
@@ -62,7 +78,9 @@ OPERATION_4: Final[OperationPlan[GetInvalidResponse]] = OperationPlan(
     method='GET',
     path='/invalid',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_6),), ()),
+    responses=ResponseDecoder(
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_6),), ()
+    ),
 )
 
 OPERATION_5: Final[OperationPlan[GetInformationalResponse]] = OperationPlan(
@@ -70,5 +88,7 @@ OPERATION_5: Final[OperationPlan[GetInformationalResponse]] = OperationPlan(
     method='GET',
     path='/informational',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_7),), ()),
+    responses=ResponseDecoder(
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_7),), ()
+    ),
 )

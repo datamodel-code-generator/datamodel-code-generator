@@ -27,5 +27,42 @@ OPERATION_0: Final[OperationPlan[ListAppsResponse]] = OperationPlan(
     path='/apps',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='per_page', style='form', explode=True, kind='integer', reserved_names=('app_type', 'filter', 'sort_by')), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='sort_by', style='form', explode=True, shape='object', additional=FieldPlan('', 'string'), reserved_names=('app_type', 'filter', 'per_page')), codec=model_bindings.codec_1), ParameterSpec(plan=ParameterPlan(location='query', name='filter', style='form', explode=True, shape='object', fields=(FieldPlan('app_type', 'string'),), additional=FieldPlan('', 'string'), reserved_names=('per_page', 'sort_by')), codec=model_bindings.codec_2)),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query',
+                name='per_page',
+                style='form',
+                explode=True,
+                kind='integer',
+                reserved_names=('app_type', 'filter', 'sort_by'),
+            ),
+            codec=model_bindings.codec_0,
+        ),
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query',
+                name='sort_by',
+                style='form',
+                explode=True,
+                shape='object',
+                additional=FieldPlan('', 'string'),
+                reserved_names=('app_type', 'filter', 'per_page'),
+            ),
+            codec=model_bindings.codec_1,
+        ),
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query',
+                name='filter',
+                style='form',
+                explode=True,
+                shape='object',
+                fields=(FieldPlan('app_type', 'string'),),
+                additional=FieldPlan('', 'string'),
+                reserved_names=('per_page', 'sort_by'),
+            ),
+            codec=model_bindings.codec_2,
+        ),
+    ),
 )

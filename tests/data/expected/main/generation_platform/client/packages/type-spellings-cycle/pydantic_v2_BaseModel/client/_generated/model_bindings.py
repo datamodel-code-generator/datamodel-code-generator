@@ -11,11 +11,17 @@ import models._internal as models__internal
 
 from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[models__internal.Kind]] = PydanticCodec(models__internal.Kind)
+codec_0: Final[PydanticCodec[models__internal.Kind]] = PydanticCodec(
+    models__internal.Kind
+)
 """Codec of /paths/~1items/get parameter (request query kind)."""
 
-codec_1: Final[PydanticCodec[models__internal.Page]] = PydanticCodec(models__internal.Page)
+codec_1: Final[PydanticCodec[models__internal.Page]] = PydanticCodec(
+    models__internal.Page
+)
 """Codec of /paths/~1items/get response_body (response 200 application/json)."""
 
-codec_2: Final[PydanticCodec[models__internal.Item]] = PydanticCodec(models__internal.Item)
+codec_2: Final[PydanticCodec[models__internal.Item]] = PydanticCodec(
+    models__internal.Item
+)
 """Codec of /paths/~1items/post request_body (request application/json)."""

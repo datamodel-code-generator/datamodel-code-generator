@@ -229,27 +229,21 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
 
 class UniqueItemsUnionRefMappingRoot1(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[list[int]],
+    _JsonSchemaRuntimeValidationBase, RootModel[list[int]]
 ):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((),)
 
     root: list[int]
 
 
 class UniqueMapping1(_JsonSchemaRuntimeValidationBase, RootModel[list[int]]):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((),)
 
     root: list[int]
 
 
 class UniqueMapping(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[dict[str, UniqueMapping1]],
+    _JsonSchemaRuntimeValidationBase, RootModel[dict[str, UniqueMapping1]]
 ):
     __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
         ('__json_schema_mapping_values__',),

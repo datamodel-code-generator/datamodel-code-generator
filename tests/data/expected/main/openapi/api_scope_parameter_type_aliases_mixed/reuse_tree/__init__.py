@@ -8,10 +8,16 @@ from typing_extensions import TypeAliasType
 from . import common
 from .shared import ItemsGetQueryCodeParameter
 
-ItemsGetQueryOtherParameter = TypeAliasType("ItemsGetQueryOtherParameter", ItemsGetQueryCodeParameter)
+ItemsGetQueryOtherParameter = TypeAliasType(
+    "ItemsGetQueryOtherParameter", ItemsGetQueryCodeParameter
+)
 
 
-ItemsGetQueryCodesParameter = TypeAliasType("ItemsGetQueryCodesParameter", list[common.Code])
+ItemsGetQueryCodesParameter = TypeAliasType(
+    "ItemsGetQueryCodesParameter", list[common.Code]
+)
 
 
-ItemsCodeGetPathCodeParameter = TypeAliasType("ItemsCodeGetPathCodeParameter", ItemsGetQueryCodeParameter)
+ItemsCodeGetPathCodeParameter = TypeAliasType(
+    "ItemsCodeGetPathCodeParameter", ItemsGetQueryCodeParameter
+)

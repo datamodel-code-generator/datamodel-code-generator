@@ -12,11 +12,22 @@ import models
 from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 MODELS: Final[dict[type, Model]] = {
-    models.Document: Model((Field('@id', '@id'), Field('name', 'name'), Field('created', 'created'), Field('@type', '@type'))),
+    models.Document: Model(
+        (
+            Field('@id', '@id'),
+            Field('name', 'name'),
+            Field('created', 'created'),
+            Field('@type', '@type'),
+        )
+    ),
 }
 
-codec_0: Final[TypedDictCodec[models.Document]] = TypedDictCodec(models.Document, MODELS)
+codec_0: Final[TypedDictCodec[models.Document]] = TypedDictCodec(
+    models.Document, MODELS
+)
 """Codec of /paths/~1documents/post request_body (request application/json)."""
 
-codec_1: Final[TypedDictCodec[models.Document]] = TypedDictCodec(models.Document, MODELS)
+codec_1: Final[TypedDictCodec[models.Document]] = TypedDictCodec(
+    models.Document, MODELS
+)
 """Codec of /paths/~1documents/post response_body (response 200 application/json)."""

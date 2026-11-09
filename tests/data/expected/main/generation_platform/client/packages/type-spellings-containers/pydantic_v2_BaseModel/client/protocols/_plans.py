@@ -30,6 +30,12 @@ PLAN_0: Final[PaginationPlan[models.Leg, GetRouteResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_0,
     items_selector=BodySelector(pointer='/legs'),
-    continuation=CountPlan(kind='offset', write=ParameterTarget(location='query', name='offset'), first=0, step=None, has_more=BodySelector(pointer='/has_more')),
+    continuation=CountPlan(
+        kind='offset',
+        write=ParameterTarget(location='query', name='offset'),
+        first=0,
+        step=None,
+        has_more=BodySelector(pointer='/has_more'),
+    ),
     fingerprint='d772bd6e232841d14482b2badd6792902b3f9c7ee74da7cf349c011b976705b7',
 )

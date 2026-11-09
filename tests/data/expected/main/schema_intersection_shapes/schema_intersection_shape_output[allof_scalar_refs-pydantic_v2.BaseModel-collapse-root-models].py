@@ -107,7 +107,7 @@ class Model(BaseModel):
     nullable_items: list[conint(ge=3, le=5) | None] | None = None
     point_items: list[PointItem] | None = None
     name: constr(pattern=r'^x$') | None = None
-    pattern_refs: (
-        constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))') | None
-    ) = None
+    pattern_refs: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))') | None = (
+        None
+    )
     lookahead_items: LookaheadItems | None = None

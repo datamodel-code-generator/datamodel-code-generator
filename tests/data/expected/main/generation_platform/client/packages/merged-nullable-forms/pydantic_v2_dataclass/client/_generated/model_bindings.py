@@ -11,23 +11,37 @@ import models
 
 from .._runtime.model_codecs.pydantic_dataclasses import PydanticDataclassCodec
 
-codec_0: Final[PydanticDataclassCodec[models.NullObj]] = PydanticDataclassCodec(models.NullObj)
+codec_0: Final[PydanticDataclassCodec[models.NullObj]] = PydanticDataclassCodec(
+    models.NullObj
+)
 """Codec of /paths/~1plain/put request_body (request application/json)."""
 
-codec_1: Final[PydanticDataclassCodec[models.NullObj]] = PydanticDataclassCodec(models.NullObj)
+codec_1: Final[PydanticDataclassCodec[models.NullObj]] = PydanticDataclassCodec(
+    models.NullObj
+)
 """Codec of /paths/~1plain/put response_body (response 200 application/json)."""
 
-codec_2: Final[PydanticDataclassCodec[models.WrapNullable]] = PydanticDataclassCodec(models.WrapNullable)
+codec_2: Final[PydanticDataclassCodec[models.WrapNullable]] = PydanticDataclassCodec(
+    models.WrapNullable
+)
 """Codec of /paths/~1wrap/put request_body (request application/json)."""
 
-codec_3: Final[PydanticDataclassCodec[models.WrapNullable]] = PydanticDataclassCodec(models.WrapNullable)
+codec_3: Final[PydanticDataclassCodec[models.WrapNullable]] = PydanticDataclassCodec(
+    models.WrapNullable
+)
 """Codec of /paths/~1wrap/put response_body (response 200 application/json)."""
 
-codec_4: Final[PydanticDataclassCodec[models.WrapNullable | None]] = PydanticDataclassCodec(models.WrapNullable | None)
+codec_4: Final[PydanticDataclassCodec[models.WrapNullable | None]] = (
+    PydanticDataclassCodec(models.WrapNullable | None)
+)
 """Codec of /paths/~1wrap-nullable/put request_body (request application/json)."""
 
-codec_5: Final[PydanticDataclassCodec[models.WrapNullable | None]] = PydanticDataclassCodec(models.WrapNullable | None)
+codec_5: Final[PydanticDataclassCodec[models.WrapNullable | None]] = (
+    PydanticDataclassCodec(models.WrapNullable | None)
+)
 """Codec of /paths/~1wrap-nullable/put response_body (response 200 application/json)."""
 
-codec_6: Final[PydanticDataclassCodec[models.NullObj | None]] = PydanticDataclassCodec(models.NullObj | None)
+codec_6: Final[PydanticDataclassCodec[models.NullObj | None]] = PydanticDataclassCodec(
+    models.NullObj | None
+)
 """Codec of /paths/~1null-object/get response_body (response 200 application/json)."""

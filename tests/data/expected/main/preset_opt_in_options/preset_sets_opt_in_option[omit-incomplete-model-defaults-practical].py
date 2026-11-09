@@ -37,12 +37,12 @@ class PodTemplateSpec(BaseModel):
     priority: int = 0
     labels: dict[str, str] = {}
     annotations: dict[str, str] = {}
-    selector_or_name: Annotated[LabelSelector | str, Field(alias='selectorOrName', validate_default=True)] = {
-        'matchLabels': {}
-    }
+    selector_or_name: Annotated[
+        LabelSelector | str, Field(alias='selectorOrName', validate_default=True)
+    ] = {'matchLabels': {}}
     spec: PodSpec | None = None
     nullable_spec: Annotated[PodSpec | None, Field(alias='nullableSpec')] = None
-    complete_spec: Annotated[PodSpec, Field(alias='completeSpec', validate_default=True)] = {
-        'containers': ['app']
-    }
+    complete_spec: Annotated[
+        PodSpec, Field(alias='completeSpec', validate_default=True)
+    ] = {'containers': ['app']}
     workload: WorkloadSpec | None = None

@@ -34,9 +34,9 @@ class LookReference(BaseModel):
 
 class Model(BaseModel):
     lookDeclared: LookDeclared | None = None
-    lookUndeclared: dict[constr(pattern=r'^x'), LookUndeclaredPatternProperty] | None = (
-        None
-    )
+    lookUndeclared: (
+        dict[constr(pattern=r'^x'), LookUndeclaredPatternProperty] | None
+    ) = None
     crossedLength: CrossedLength | None = None
     crossedRange: CrossedRange | None = None
     lookReference: LookReference | None = None

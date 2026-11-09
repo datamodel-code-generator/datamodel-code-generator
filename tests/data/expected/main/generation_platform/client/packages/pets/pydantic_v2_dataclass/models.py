@@ -57,10 +57,14 @@ PetsPetIdGetPathPetIdParameter = TypeAliasType("PetsPetIdGetPathPetIdParameter",
 PetsPetIdGetResponse = TypeAliasType("PetsPetIdGetResponse", str)
 
 
-PetsPetIdHeadResponse200ETagHeader = TypeAliasType("PetsPetIdHeadResponse200ETagHeader", str)
+PetsPetIdHeadResponse200ETagHeader = TypeAliasType(
+    "PetsPetIdHeadResponse200ETagHeader", str
+)
 
 
-PetsPetIdPhotoPutPathPetIdParameter = TypeAliasType("PetsPetIdPhotoPutPathPetIdParameter", int)
+PetsPetIdPhotoPutPathPetIdParameter = TypeAliasType(
+    "PetsPetIdPhotoPutPathPetIdParameter", int
+)
 
 
 PetsPetIdPhotoPutRequest = TypeAliasType("PetsPetIdPhotoPutRequest", bytes)
@@ -69,7 +73,9 @@ PetsPetIdPhotoPutRequest = TypeAliasType("PetsPetIdPhotoPutRequest", bytes)
 PetsPetIdPhotoPutResponse = TypeAliasType("PetsPetIdPhotoPutResponse", bytes)
 
 
-PetsPetIdFilesPostPathPetIdParameter = TypeAliasType("PetsPetIdFilesPostPathPetIdParameter", int)
+PetsPetIdFilesPostPathPetIdParameter = TypeAliasType(
+    "PetsPetIdFilesPostPathPetIdParameter", int
+)
 
 
 @dataclass(config=ConfigDict(extra='forbid'))
@@ -79,7 +85,9 @@ class PetsPetIdFilesPostRequest:
     labels: list[str] | MISSING = MISSING
 
 
-PetsPetIdFilesGetPathPetIdParameter = TypeAliasType("PetsPetIdFilesGetPathPetIdParameter", int)
+PetsPetIdFilesGetPathPetIdParameter = TypeAliasType(
+    "PetsPetIdFilesGetPathPetIdParameter", int
+)
 
 
 @dataclass(config=ConfigDict(extra='forbid'))

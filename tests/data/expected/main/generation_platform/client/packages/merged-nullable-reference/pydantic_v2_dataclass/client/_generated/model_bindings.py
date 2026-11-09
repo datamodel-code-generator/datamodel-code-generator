@@ -11,35 +11,57 @@ import models
 
 from .._runtime.model_codecs.pydantic_dataclasses import PydanticDataclassCodec
 
-codec_0: Final[PydanticDataclassCodec[models.WorkGetQueryCaseParameter]] = PydanticDataclassCodec(models.WorkGetQueryCaseParameter)
+codec_0: Final[PydanticDataclassCodec[models.WorkGetQueryCaseParameter]] = (
+    PydanticDataclassCodec(models.WorkGetQueryCaseParameter)
+)
 """Codec of /paths/~1work/get parameter (request query case)."""
 
-codec_1: Final[PydanticDataclassCodec[models.Home]] = PydanticDataclassCodec(models.Home)
+codec_1: Final[PydanticDataclassCodec[models.Home]] = PydanticDataclassCodec(
+    models.Home
+)
 """Codec of /paths/~1work/get response_body (response 200 application/json)."""
 
-codec_2: Final[PydanticDataclassCodec[models.WorkGetQueryCaseParameter]] = PydanticDataclassCodec(models.WorkGetQueryCaseParameter)
+codec_2: Final[PydanticDataclassCodec[models.WorkGetQueryCaseParameter]] = (
+    PydanticDataclassCodec(models.WorkGetQueryCaseParameter)
+)
 """Codec of /paths/~1work/put parameter (request query case)."""
 
-codec_3: Final[PydanticDataclassCodec[models.Home]] = PydanticDataclassCodec(models.Home)
+codec_3: Final[PydanticDataclassCodec[models.Home]] = PydanticDataclassCodec(
+    models.Home
+)
 """Codec of /paths/~1work/put request_body (request application/json)."""
 
-codec_4: Final[PydanticDataclassCodec[models.WorkGetQueryCaseParameter]] = PydanticDataclassCodec(models.WorkGetQueryCaseParameter)
+codec_4: Final[PydanticDataclassCodec[models.WorkGetQueryCaseParameter]] = (
+    PydanticDataclassCodec(models.WorkGetQueryCaseParameter)
+)
 """Codec of /paths/~1office/get parameter (request query case)."""
 
-codec_5: Final[PydanticDataclassCodec[models.Home]] = PydanticDataclassCodec(models.Home)
+codec_5: Final[PydanticDataclassCodec[models.Home]] = PydanticDataclassCodec(
+    models.Home
+)
 """Codec of /paths/~1office/get response_body (response 200 application/json)."""
 
-codec_6: Final[PydanticDataclassCodec[models.WorkGetQueryCaseParameter]] = PydanticDataclassCodec(models.WorkGetQueryCaseParameter)
+codec_6: Final[PydanticDataclassCodec[models.WorkGetQueryCaseParameter]] = (
+    PydanticDataclassCodec(models.WorkGetQueryCaseParameter)
+)
 """Codec of /paths/~1home/get parameter (request query case)."""
 
-codec_7: Final[PydanticDataclassCodec[models.Home | None]] = PydanticDataclassCodec(models.Home | None)
+codec_7: Final[PydanticDataclassCodec[models.Home | None]] = PydanticDataclassCodec(
+    models.Home | None
+)
 """Codec of /paths/~1home/get response_body (response 200 application/json)."""
 
-codec_8: Final[PydanticDataclassCodec[models.WorkGetQueryCaseParameter]] = PydanticDataclassCodec(models.WorkGetQueryCaseParameter)
+codec_8: Final[PydanticDataclassCodec[models.WorkGetQueryCaseParameter]] = (
+    PydanticDataclassCodec(models.WorkGetQueryCaseParameter)
+)
 """Codec of /paths/~1person/put parameter (request query case)."""
 
-codec_9: Final[PydanticDataclassCodec[models.Person]] = PydanticDataclassCodec(models.Person)
+codec_9: Final[PydanticDataclassCodec[models.Person]] = PydanticDataclassCodec(
+    models.Person
+)
 """Codec of /paths/~1person/put request_body (request application/json)."""
 
-codec_10: Final[PydanticDataclassCodec[models.Person]] = PydanticDataclassCodec(models.Person)
+codec_10: Final[PydanticDataclassCodec[models.Person]] = PydanticDataclassCodec(
+    models.Person
+)
 """Codec of /paths/~1person/put response_body (response 200 application/json)."""

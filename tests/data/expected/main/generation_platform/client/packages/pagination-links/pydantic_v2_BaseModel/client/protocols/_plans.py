@@ -124,7 +124,9 @@ PLAN_1: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_1,
     items_selector=BodySelector(pointer='/data'),
-    continuation=NextUrlPlan(read=BodySelector(pointer='/maybe_next'), end_null=True, end_values=('',)),
+    continuation=NextUrlPlan(
+        read=BodySelector(pointer='/maybe_next'), end_null=True, end_values=('',)
+    ),
     fingerprint='af527c1a264012349a430065d8d26ad951a8db169b8592885e53fe09c84b937e',
 )
 
@@ -135,7 +137,9 @@ PLAN_2: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_2,
     items_selector=BodySelector(pointer='/data'),
-    continuation=NextUrlPlan(read=BodySelector(pointer='/loose_next'), end_missing=True),
+    continuation=NextUrlPlan(
+        read=BodySelector(pointer='/loose_next'), end_missing=True
+    ),
     fingerprint='c129b1b64661d8de2bd650fe10f9e9cd19a8d2af5acfeb5dc14f2a5ae0b4e969',
 )
 
@@ -170,7 +174,13 @@ PLAN_5: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     items_selector=BodySelector(pointer='/data'),
     continuation=LinkPlan(header='Link'),
     fingerprint='3d9f3de26957708fac782f1273d1e882fc31ab423f2d7fce4db393cb6d45493d',
-    bindings=(PageBinding(target=ParameterTarget(location='header', name='X-Trace'), source='initial', selector=HeaderSelector(name='X-Snapshot')),),
+    bindings=(
+        PageBinding(
+            target=ParameterTarget(location='header', name='X-Trace'),
+            source='initial',
+            selector=HeaderSelector(name='X-Snapshot'),
+        ),
+    ),
 )
 
 
@@ -191,9 +201,17 @@ PLAN_7: Final[PaginationPlan[models.User, SearchResponse]] = PaginationPlan(
     call=_operations.OPERATION_1,
     items=_items_7,
     items_selector=BodySelector(pointer='/data'),
-    continuation=NextUrlPlan(read=BodySelector(pointer='/next'), end_missing=True, repeat_request_body=True),
+    continuation=NextUrlPlan(
+        read=BodySelector(pointer='/next'), end_missing=True, repeat_request_body=True
+    ),
     fingerprint='a85dc03cb40a16a79b7ab42bfef89d19961d51430f3b18be9224850ff40b3563',
-    bindings=(PageBinding(target=BodyTarget(pointer='/token'), source='previous', selector=BodySelector(pointer='/token')),),
+    bindings=(
+        PageBinding(
+            target=BodyTarget(pointer='/token'),
+            source='previous',
+            selector=BodySelector(pointer='/token'),
+        ),
+    ),
 )
 
 

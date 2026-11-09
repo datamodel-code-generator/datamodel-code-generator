@@ -12,10 +12,19 @@ import models
 from .._runtime.model_codecs.stdlib_dataclasses import DataclassCodec, Field, Model
 
 MODELS: Final[dict[type, Model]] = {
-    models.Record: Model((Field('checksum', 'checksum', bytes), Field('image', 'image', omit_none=True), Field('secret', 'secret', omit_none=True), Field('stage', 'stage', models.Mark, omit_none=True))),
+    models.Record: Model(
+        (
+            Field('checksum', 'checksum', bytes),
+            Field('image', 'image', omit_none=True),
+            Field('secret', 'secret', omit_none=True),
+            Field('stage', 'stage', models.Mark, omit_none=True),
+        )
+    ),
 }
 
-codec_0: Final[DataclassCodec[models.FilesPostQueryDigestParameter]] = DataclassCodec(bytes, MODELS)
+codec_0: Final[DataclassCodec[models.FilesPostQueryDigestParameter]] = DataclassCodec(
+    bytes, MODELS
+)
 """Codec of /paths/~1files/post parameter (request query digest)."""
 
 codec_1: Final[DataclassCodec[models.PageSize]] = DataclassCodec(None, MODELS)

@@ -235,9 +235,7 @@ class RootMixed(_JsonSchemaRuntimeValidationBase, RootModel[str | list[int]]):
         regex_engine="python-re",
         extra=None,
     )
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((),)
 
     root: constr(pattern=r'^(?=a).*$') | list[int]
 

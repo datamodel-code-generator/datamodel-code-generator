@@ -18,7 +18,11 @@ ROUTES: Final = (
     *default.LITERAL_ROUTES,
     *default.TEMPLATED_ROUTES,
 )
-INFO: Final[dict[str, Any]] = {'title': 'Nameless querystring', 'version': '1.0.0', 'servers': [{'url': 'https://api.example.com'}]}
+INFO: Final[dict[str, Any]] = {
+    'title': 'Nameless querystring',
+    'version': '1.0.0',
+    'servers': [{'url': 'https://api.example.com'}],
+}
 
 
 def build_router(

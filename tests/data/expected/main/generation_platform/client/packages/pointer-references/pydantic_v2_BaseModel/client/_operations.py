@@ -26,8 +26,17 @@ OPERATION_0: Final[OperationPlan[AddPetResponse]] = OperationPlan(
     method='POST',
     path='/pets',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_1),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_0),), default='application/json'),
+    responses=ResponseDecoder(
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_1),), ()
+    ),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='application/json', kind='json', codec=model_bindings.codec_0
+            ),
+        ),
+        default='application/json',
+    ),
     security=security.OPERATION_0,
 )
 

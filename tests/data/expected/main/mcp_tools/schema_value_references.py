@@ -16,23 +16,63 @@ class SchemaValuesInputNested(BaseModel):
     value: SchemaValuesInputValue | None = None
     item: dict[str, Any] | None = {
         '$ref': '#/$defs/Value',
-        'nested': [{'default': {'$ref': '#/$defs/Allowed'}, 'const': {'$ref': '#/definitions/Value'}, 'enum': [{'$ref': '#/$defs/Value'}], 'examples': [{'$ref': '#/$defs/Value'}], '$defs': {'Value': {'$ref': '#/$defs/Value'}}}],
+        'nested': [
+            {
+                'default': {'$ref': '#/$defs/Allowed'},
+                'const': {'$ref': '#/definitions/Value'},
+                'enum': [{'$ref': '#/$defs/Value'}],
+                'examples': [{'$ref': '#/$defs/Value'}],
+                '$defs': {'Value': {'$ref': '#/$defs/Value'}},
+            }
+        ],
     }
 
 
 class SchemaValuesInput(BaseModel):
     item: dict[str, Any] | None = {
         '$ref': '#/$defs/Value',
-        'nested': [{'default': {'$ref': '#/$defs/Allowed'}, 'const': {'$ref': '#/definitions/Value'}, 'enum': [{'$ref': '#/$defs/Value'}], 'examples': [{'$ref': '#/$defs/Value'}], '$defs': {'Value': {'$ref': '#/$defs/Value'}}}],
+        'nested': [
+            {
+                'default': {'$ref': '#/$defs/Allowed'},
+                'const': {'$ref': '#/definitions/Value'},
+                'enum': [{'$ref': '#/$defs/Value'}],
+                'examples': [{'$ref': '#/$defs/Value'}],
+                '$defs': {'Value': {'$ref': '#/$defs/Value'}},
+            }
+        ],
     }
     sequence: list[dict[str, Any]] | None = [
-        {'$ref': '#/$defs/Value', 'nested': [{'default': {'$ref': '#/$defs/Allowed'}, 'const': {'$ref': '#/definitions/Value'}, 'enum': [{'$ref': '#/$defs/Value'}], 'examples': [{'$ref': '#/$defs/Value'}], '$defs': {'Value': {'$ref': '#/$defs/Value'}}}]}
+        {
+            '$ref': '#/$defs/Value',
+            'nested': [
+                {
+                    'default': {'$ref': '#/$defs/Allowed'},
+                    'const': {'$ref': '#/definitions/Value'},
+                    'enum': [{'$ref': '#/$defs/Value'}],
+                    'examples': [{'$ref': '#/$defs/Value'}],
+                    '$defs': {'Value': {'$ref': '#/$defs/Value'}},
+                }
+            ],
+        }
     ]
     constant: dict[str, Any] = None
     enumerated: dict[str, Any] | None = None
     sample: dict[str, Any] | None = Field(
         None,
-        examples=[{'$ref': '#/$defs/Value', 'nested': [{'default': {'$ref': '#/$defs/Allowed'}, 'const': {'$ref': '#/definitions/Value'}, 'enum': [{'$ref': '#/$defs/Value'}], 'examples': [{'$ref': '#/$defs/Value'}], '$defs': {'Value': {'$ref': '#/$defs/Value'}}}]}],
+        examples=[
+            {
+                '$ref': '#/$defs/Value',
+                'nested': [
+                    {
+                        'default': {'$ref': '#/$defs/Allowed'},
+                        'const': {'$ref': '#/definitions/Value'},
+                        'enum': [{'$ref': '#/$defs/Value'}],
+                        'examples': [{'$ref': '#/$defs/Value'}],
+                        '$defs': {'Value': {'$ref': '#/$defs/Value'}},
+                    }
+                ],
+            }
+        ],
     )
     default: SchemaValuesInputValue | None = None
     const: SchemaValuesInputValue | None = None
@@ -51,23 +91,63 @@ class SchemaValuesOutputNested(BaseModel):
     value: SchemaValuesOutputValue | None = None
     item: dict[str, Any] | None = {
         '$ref': '#/$defs/Value',
-        'nested': [{'default': {'$ref': '#/$defs/Allowed'}, 'const': {'$ref': '#/definitions/Value'}, 'enum': [{'$ref': '#/$defs/Value'}], 'examples': [{'$ref': '#/$defs/Value'}], '$defs': {'Value': {'$ref': '#/$defs/Value'}}}],
+        'nested': [
+            {
+                'default': {'$ref': '#/$defs/Allowed'},
+                'const': {'$ref': '#/definitions/Value'},
+                'enum': [{'$ref': '#/$defs/Value'}],
+                'examples': [{'$ref': '#/$defs/Value'}],
+                '$defs': {'Value': {'$ref': '#/$defs/Value'}},
+            }
+        ],
     }
 
 
 class SchemaValuesOutput(BaseModel):
     item: dict[str, Any] | None = {
         '$ref': '#/$defs/Value',
-        'nested': [{'default': {'$ref': '#/$defs/Allowed'}, 'const': {'$ref': '#/definitions/Value'}, 'enum': [{'$ref': '#/$defs/Value'}], 'examples': [{'$ref': '#/$defs/Value'}], '$defs': {'Value': {'$ref': '#/$defs/Value'}}}],
+        'nested': [
+            {
+                'default': {'$ref': '#/$defs/Allowed'},
+                'const': {'$ref': '#/definitions/Value'},
+                'enum': [{'$ref': '#/$defs/Value'}],
+                'examples': [{'$ref': '#/$defs/Value'}],
+                '$defs': {'Value': {'$ref': '#/$defs/Value'}},
+            }
+        ],
     }
     sequence: list[dict[str, Any]] | None = [
-        {'$ref': '#/$defs/Value', 'nested': [{'default': {'$ref': '#/$defs/Allowed'}, 'const': {'$ref': '#/definitions/Value'}, 'enum': [{'$ref': '#/$defs/Value'}], 'examples': [{'$ref': '#/$defs/Value'}], '$defs': {'Value': {'$ref': '#/$defs/Value'}}}]}
+        {
+            '$ref': '#/$defs/Value',
+            'nested': [
+                {
+                    'default': {'$ref': '#/$defs/Allowed'},
+                    'const': {'$ref': '#/definitions/Value'},
+                    'enum': [{'$ref': '#/$defs/Value'}],
+                    'examples': [{'$ref': '#/$defs/Value'}],
+                    '$defs': {'Value': {'$ref': '#/$defs/Value'}},
+                }
+            ],
+        }
     ]
     constant: dict[str, Any] = None
     enumerated: dict[str, Any] | None = None
     sample: dict[str, Any] | None = Field(
         None,
-        examples=[{'$ref': '#/$defs/Value', 'nested': [{'default': {'$ref': '#/$defs/Allowed'}, 'const': {'$ref': '#/definitions/Value'}, 'enum': [{'$ref': '#/$defs/Value'}], 'examples': [{'$ref': '#/$defs/Value'}], '$defs': {'Value': {'$ref': '#/$defs/Value'}}}]}],
+        examples=[
+            {
+                '$ref': '#/$defs/Value',
+                'nested': [
+                    {
+                        'default': {'$ref': '#/$defs/Allowed'},
+                        'const': {'$ref': '#/definitions/Value'},
+                        'enum': [{'$ref': '#/$defs/Value'}],
+                        'examples': [{'$ref': '#/$defs/Value'}],
+                        '$defs': {'Value': {'$ref': '#/$defs/Value'}},
+                    }
+                ],
+            }
+        ],
     )
     default: SchemaValuesOutputValue | None = None
     const: SchemaValuesOutputValue | None = None

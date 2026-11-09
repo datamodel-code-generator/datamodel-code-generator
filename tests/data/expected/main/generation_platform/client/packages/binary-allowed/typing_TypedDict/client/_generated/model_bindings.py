@@ -12,10 +12,19 @@ import models
 from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 MODELS: Final[dict[type, Model]] = {
-    models.Record: Model((Field('checksum', 'checksum', bytes), Field('image', 'image'), Field('secret', 'secret'), Field('stage', 'stage'))),
+    models.Record: Model(
+        (
+            Field('checksum', 'checksum', bytes),
+            Field('image', 'image'),
+            Field('secret', 'secret'),
+            Field('stage', 'stage'),
+        )
+    ),
 }
 
-codec_0: Final[TypedDictCodec[models.FilesPostQueryDigestParameter]] = TypedDictCodec(bytes, MODELS)
+codec_0: Final[TypedDictCodec[models.FilesPostQueryDigestParameter]] = TypedDictCodec(
+    bytes, MODELS
+)
 """Codec of /paths/~1files/post parameter (request query digest)."""
 
 codec_1: Final[TypedDictCodec[models.PageSize]] = TypedDictCodec(None, MODELS)

@@ -28,12 +28,12 @@ class Model(BaseModel):
     mode_map: dict[str, Literal[1, 2]] | None = None
     pat: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))') | None = None
     pat_prop: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))') | None = None
-    pat_items: list[constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))')] | None = (
-        None
-    )
-    pat_map: dict[str, constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))')] | None = (
-        None
-    )
+    pat_items: (
+        list[constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))')] | None
+    ) = None
+    pat_map: (
+        dict[str, constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))')] | None
+    ) = None
     untyped: Any | None = None
     untyped_prop: Any | None = None
     untyped_items: list[Any] | None = None

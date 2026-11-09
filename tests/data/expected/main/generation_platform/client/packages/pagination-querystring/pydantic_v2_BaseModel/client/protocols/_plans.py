@@ -54,7 +54,12 @@ PLAN_0: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_0,
     items_selector=BodySelector(pointer=''),
-    continuation=CursorPlan(read=StatusSelector(), write=QuerystringTarget(name='criteria', pointer='/page'), end_values=(204,), empty_string_ends=True),
+    continuation=CursorPlan(
+        read=StatusSelector(),
+        write=QuerystringTarget(name='criteria', pointer='/page'),
+        end_values=(204,),
+        empty_string_ends=True,
+    ),
     fingerprint='d95a5f1d29d74949243e1e10dec0f0a845b3de64bde64f9399d6824f7ed8755b',
 )
 
@@ -65,9 +70,18 @@ PLAN_1: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_1,
     items_selector=BodySelector(pointer=''),
-    continuation=CursorPlan(read=StatusSelector(), write=QuerystringTarget(name='criteria', pointer='/page'), end_values=(204,), empty_string_ends=True),
+    continuation=CursorPlan(
+        read=StatusSelector(),
+        write=QuerystringTarget(name='criteria', pointer='/page'),
+        end_values=(204,),
+        empty_string_ends=True,
+    ),
     fingerprint='e8c774581c9815fc94e2f3d8c1fd03bde8e914599b36f7aac28c80a3807d672f',
-    bindings=(PageBinding(target=QuerystringTarget(name='criteria', pointer='/term'), literal='all'),),
+    bindings=(
+        PageBinding(
+            target=QuerystringTarget(name='criteria', pointer='/term'), literal='all'
+        ),
+    ),
 )
 
 
@@ -77,7 +91,12 @@ PLAN_2: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_2,
     items_selector=BodySelector(pointer=''),
-    continuation=CursorPlan(read=HeaderSelector(name='X-Next'), write=QuerystringTarget(name='criteria', pointer='/term'), end_missing=True, empty_string_ends=True),
+    continuation=CursorPlan(
+        read=HeaderSelector(name='X-Next'),
+        write=QuerystringTarget(name='criteria', pointer='/term'),
+        end_missing=True,
+        empty_string_ends=True,
+    ),
     fingerprint='7f8434773e038defac668c27638ee75a76dd27824547eaa53dc341ba6969fd89',
 )
 
@@ -88,7 +107,16 @@ PLAN_3: Final[PaginationPlan[str, LookupResponse]] = PaginationPlan(
     call=_operations.OPERATION_1,
     items=_items_3,
     items_selector=BodySelector(pointer=''),
-    continuation=CursorPlan(read=StatusSelector(), write=QuerystringTarget(name='filter', pointer='/page'), end_values=(204,), empty_string_ends=True),
+    continuation=CursorPlan(
+        read=StatusSelector(),
+        write=QuerystringTarget(name='filter', pointer='/page'),
+        end_values=(204,),
+        empty_string_ends=True,
+    ),
     fingerprint='00431bb0a193b16fd3f90d3ccec7455c8db3748a747f21ae02295d814890441d',
-    bindings=(PageBinding(target=QuerystringTarget(name='filter', pointer='/term'), literal=None),),
+    bindings=(
+        PageBinding(
+            target=QuerystringTarget(name='filter', pointer='/term'), literal=None
+        ),
+    ),
 )

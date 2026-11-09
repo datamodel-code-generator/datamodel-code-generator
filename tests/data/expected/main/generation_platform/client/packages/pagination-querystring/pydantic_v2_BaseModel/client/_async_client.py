@@ -26,7 +26,12 @@ if TYPE_CHECKING:
     from .resources.default._async import AsyncDefaultResource
 
 _DEFAULTS = ClientDefaults(
-    helpers=(('search.all', 'pagination'), ('search.fixed', 'pagination'), ('search.next', 'pagination'), ('lookup.all', 'pagination')),
+    helpers=(
+        ('search.all', 'pagination'),
+        ('search.fixed', 'pagination'),
+        ('search.next', 'pagination'),
+        ('lookup.all', 'pagination'),
+    ),
 )
 
 

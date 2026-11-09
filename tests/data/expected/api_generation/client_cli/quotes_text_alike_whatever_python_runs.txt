@@ -25,6 +25,13 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse]] = OperationPlan(
     method='GET',
     path='/pets',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_1),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='q𞓐', style='form', explode=True), codec=model_bindings.codec_0),),
+    responses=ResponseDecoder(
+        (model_branch('200', 'application/json', 'json', model_bindings.codec_1),), ()
+    ),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(location='query', name='q𞓐', style='form', explode=True),
+            codec=model_bindings.codec_0,
+        ),
+    ),
 )

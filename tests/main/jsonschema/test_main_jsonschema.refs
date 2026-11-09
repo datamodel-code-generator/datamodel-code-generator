@@ -295,7 +295,7 @@ external-api-False-False-minimum_custom	main/jsonschema/additional_pattern_inter
 external-api-False-False-minimum_float	main/jsonschema/additional_pattern_intersections/minimum_False_False_runtime.txt
 external-api-False-False-minimum_float	main/jsonschema/additional_pattern_intersections/minimum_float_False_False_builtin.py	?
 external-api-False-False-minimum_float	main/jsonschema/additional_pattern_intersections/minimum_float_False_False_builtin_black23.py	?
-external-api-False-False-minimum_large	main/jsonschema/additional_pattern_intersections/minimum_large_False_False_external.py	?
+external-api-False-False-minimum_large	main/jsonschema/additional_pattern_intersections/minimum_large_False_False_external.py	?	= main/jsonschema/additional_pattern_intersections/minimum_large_False_False_builtin.py
 external-api-False-False-minimum_large	main/jsonschema/additional_pattern_intersections/minimum_large_False_False_external_black23.py	?
 external-api-False-False-minimum_large	main/jsonschema/additional_pattern_intersections/minimum_large_False_False_runtime.txt
 external-api-False-False-minimum_maximum	main/jsonschema/additional_pattern_intersections/minimum_False_False_runtime.txt
@@ -337,7 +337,7 @@ external-api-False-True-minimum_custom	main/jsonschema/additional_pattern_inters
 external-api-False-True-minimum_custom	main/jsonschema/additional_pattern_intersections/minimum_custom_True_False_runtime.txt
 external-api-False-True-minimum_float	main/jsonschema/additional_pattern_intersections/minimum_True_False_runtime.txt
 external-api-False-True-minimum_float	main/jsonschema/additional_pattern_intersections/minimum_float_True_False_builtin.py
-external-api-False-True-minimum_large	main/jsonschema/additional_pattern_intersections/minimum_large_True_False_external.py
+external-api-False-True-minimum_large	main/jsonschema/additional_pattern_intersections/minimum_large_True_False_external.py	= main/jsonschema/additional_pattern_intersections/minimum_large_True_False_builtin.py
 external-api-False-True-minimum_large	main/jsonschema/additional_pattern_intersections/minimum_large_True_False_runtime.txt
 external-api-False-True-minimum_maximum	main/jsonschema/additional_pattern_intersections/minimum_custom_True_False_runtime.txt
 external-api-False-True-minimum_maximum	main/jsonschema/additional_pattern_intersections/minimum_maximum_True_False_builtin.py
@@ -455,7 +455,7 @@ external-cli-False-False-minimum_custom	main/jsonschema/additional_pattern_inter
 external-cli-False-False-minimum_float	main/jsonschema/additional_pattern_intersections/minimum_False_False_runtime.txt
 external-cli-False-False-minimum_float	main/jsonschema/additional_pattern_intersections/minimum_float_False_False_builtin.py	?
 external-cli-False-False-minimum_float	main/jsonschema/additional_pattern_intersections/minimum_float_False_False_builtin_black23.py	?
-external-cli-False-False-minimum_large	main/jsonschema/additional_pattern_intersections/minimum_large_False_False_external.py	?
+external-cli-False-False-minimum_large	main/jsonschema/additional_pattern_intersections/minimum_large_False_False_external.py	?	= main/jsonschema/additional_pattern_intersections/minimum_large_False_False_builtin.py
 external-cli-False-False-minimum_large	main/jsonschema/additional_pattern_intersections/minimum_large_False_False_external_black23.py	?
 external-cli-False-False-minimum_large	main/jsonschema/additional_pattern_intersections/minimum_large_False_False_runtime.txt
 external-cli-False-False-minimum_maximum	main/jsonschema/additional_pattern_intersections/minimum_False_False_runtime.txt
@@ -497,7 +497,7 @@ external-cli-False-True-minimum_custom	main/jsonschema/additional_pattern_inters
 external-cli-False-True-minimum_custom	main/jsonschema/additional_pattern_intersections/minimum_custom_True_False_runtime.txt
 external-cli-False-True-minimum_float	main/jsonschema/additional_pattern_intersections/minimum_True_False_runtime.txt
 external-cli-False-True-minimum_float	main/jsonschema/additional_pattern_intersections/minimum_float_True_False_builtin.py
-external-cli-False-True-minimum_large	main/jsonschema/additional_pattern_intersections/minimum_large_True_False_external.py
+external-cli-False-True-minimum_large	main/jsonschema/additional_pattern_intersections/minimum_large_True_False_external.py	= main/jsonschema/additional_pattern_intersections/minimum_large_True_False_builtin.py
 external-cli-False-True-minimum_large	main/jsonschema/additional_pattern_intersections/minimum_large_True_False_runtime.txt
 external-cli-False-True-minimum_maximum	main/jsonschema/additional_pattern_intersections/minimum_custom_True_False_runtime.txt
 external-cli-False-True-minimum_maximum	main/jsonschema/additional_pattern_intersections/minimum_maximum_True_False_builtin.py
@@ -12923,7 +12923,7 @@ external-api-True-redundant_declared	main/jsonschema/pattern_intersections/redun
 external-api-True-redundant_declared	main/jsonschema/pattern_intersections/redundant_declared_runtime.txt	= main/jsonschema/pattern_intersections/any_declared_runtime.txt
 external-api-True-redundant_objects	main/jsonschema/pattern_intersections/redundant_objects.py
 external-api-True-redundant_objects	main/jsonschema/pattern_intersections/redundant_objects_runtime.txt
-external-api-True-rejected	main/jsonschema/pattern_intersections/rejected.py
+external-api-True-rejected	main/jsonschema/pattern_intersections/rejected.py	= main/jsonschema/pattern_intersections/rejected_builtin.py
 external-api-True-rejected	main/jsonschema/pattern_intersections/rejected_runtime.txt
 external-api-True-shared	main/jsonschema/pattern_intersections/shared.py
 external-api-True-shared	main/jsonschema/pattern_intersections/shared_runtime.txt
@@ -12933,7 +12933,7 @@ external-api-True-single_custom	main/jsonschema/pattern_intersections/single_cus
 external-api-True-single_custom	main/jsonschema/pattern_intersections/single_runtime.txt
 external-api-True-third_rejected_pattern	main/jsonschema/pattern_intersections/third_rejected_pattern.py
 external-api-True-third_rejected_pattern	main/jsonschema/pattern_intersections/third_rejected_pattern_runtime.txt	= main/jsonschema/pattern_intersections/closed_objects_runtime.txt
-external-api-True-undeclared_required_object	main/jsonschema/pattern_intersections/undeclared_required_object.py	= main/jsonschema/undeclared_required/objects_True_external.py
+external-api-True-undeclared_required_object	main/jsonschema/pattern_intersections/undeclared_required_object.py	= main/jsonschema/undeclared_required/objects_True_builtin.py
 external-api-True-undeclared_required_object	main/jsonschema/pattern_intersections/undeclared_required_object_runtime.txt
 external-api-True-undeclared_root_required	main/jsonschema/pattern_intersections/undeclared_root_required.py	= main/jsonschema/undeclared_required/closed_True_builtin.py
 external-api-True-undeclared_root_required	main/jsonschema/pattern_intersections/undeclared_root_required_runtime.txt
@@ -13066,7 +13066,7 @@ external-cli-True-redundant_declared	main/jsonschema/pattern_intersections/redun
 external-cli-True-redundant_declared	main/jsonschema/pattern_intersections/redundant_declared_runtime.txt	= main/jsonschema/pattern_intersections/any_declared_runtime.txt
 external-cli-True-redundant_objects	main/jsonschema/pattern_intersections/redundant_objects.py
 external-cli-True-redundant_objects	main/jsonschema/pattern_intersections/redundant_objects_runtime.txt
-external-cli-True-rejected	main/jsonschema/pattern_intersections/rejected.py
+external-cli-True-rejected	main/jsonschema/pattern_intersections/rejected.py	= main/jsonschema/pattern_intersections/rejected_builtin.py
 external-cli-True-rejected	main/jsonschema/pattern_intersections/rejected_runtime.txt
 external-cli-True-shared	main/jsonschema/pattern_intersections/shared.py
 external-cli-True-shared	main/jsonschema/pattern_intersections/shared_runtime.txt
@@ -13076,7 +13076,7 @@ external-cli-True-single_custom	main/jsonschema/pattern_intersections/single_cus
 external-cli-True-single_custom	main/jsonschema/pattern_intersections/single_runtime.txt
 external-cli-True-third_rejected_pattern	main/jsonschema/pattern_intersections/third_rejected_pattern.py
 external-cli-True-third_rejected_pattern	main/jsonschema/pattern_intersections/third_rejected_pattern_runtime.txt	= main/jsonschema/pattern_intersections/closed_objects_runtime.txt
-external-cli-True-undeclared_required_object	main/jsonschema/pattern_intersections/undeclared_required_object.py	= main/jsonschema/undeclared_required/objects_True_external.py
+external-cli-True-undeclared_required_object	main/jsonschema/pattern_intersections/undeclared_required_object.py	= main/jsonschema/undeclared_required/objects_True_builtin.py
 external-cli-True-undeclared_required_object	main/jsonschema/pattern_intersections/undeclared_required_object_runtime.txt
 external-cli-True-undeclared_root_required	main/jsonschema/pattern_intersections/undeclared_root_required.py	= main/jsonschema/undeclared_required/closed_True_builtin.py
 external-cli-True-undeclared_root_required	main/jsonschema/pattern_intersections/undeclared_root_required_runtime.txt
@@ -15001,12 +15001,12 @@ external-api-True-declared	main/jsonschema/undeclared_required/declared_False_bu
 external-api-True-declared	main/jsonschema/undeclared_required/declared_False_runtime.txt
 external-api-True-default_declared	main/jsonschema/undeclared_required/default_declared_False_builtin.py
 external-api-True-default_declared	main/jsonschema/undeclared_required/default_declared_False_runtime.txt
-external-api-True-default_objects	main/jsonschema/undeclared_required/default_objects_True_external.py	= main/jsonschema/undeclared_required/objects_True_external.py
+external-api-True-default_objects	main/jsonschema/undeclared_required/default_objects_True_external.py	= main/jsonschema/undeclared_required/objects_True_builtin.py
 external-api-True-default_objects	main/jsonschema/undeclared_required/default_objects_True_runtime.txt
 external-api-True-extra_objects	main/jsonschema/undeclared_required/custom_objects_True_runtime.txt
 external-api-True-extra_objects	main/jsonschema/undeclared_required/extra_objects_True_builtin.py
 external-api-True-objects	main/jsonschema/undeclared_required/default_objects_True_runtime.txt
-external-api-True-objects	main/jsonschema/undeclared_required/objects_True_external.py
+external-api-True-objects	main/jsonschema/undeclared_required/objects_True_external.py	= main/jsonschema/undeclared_required/objects_True_builtin.py
 external-api-True-open	main/jsonschema/undeclared_required/open_True_builtin.py
 external-api-True-open	main/jsonschema/undeclared_required/open_True_runtime.txt
 external-api-True-optional_objects	main/jsonschema/undeclared_required/custom_objects_True_runtime.txt
@@ -15063,12 +15063,12 @@ external-cli-True-declared	main/jsonschema/undeclared_required/declared_False_bu
 external-cli-True-declared	main/jsonschema/undeclared_required/declared_False_runtime.txt
 external-cli-True-default_declared	main/jsonschema/undeclared_required/default_declared_False_builtin.py
 external-cli-True-default_declared	main/jsonschema/undeclared_required/default_declared_False_runtime.txt
-external-cli-True-default_objects	main/jsonschema/undeclared_required/default_objects_True_external.py	= main/jsonschema/undeclared_required/objects_True_external.py
+external-cli-True-default_objects	main/jsonschema/undeclared_required/default_objects_True_external.py	= main/jsonschema/undeclared_required/objects_True_builtin.py
 external-cli-True-default_objects	main/jsonschema/undeclared_required/default_objects_True_runtime.txt
 external-cli-True-extra_objects	main/jsonschema/undeclared_required/custom_objects_True_runtime.txt
 external-cli-True-extra_objects	main/jsonschema/undeclared_required/extra_objects_True_builtin.py
 external-cli-True-objects	main/jsonschema/undeclared_required/default_objects_True_runtime.txt
-external-cli-True-objects	main/jsonschema/undeclared_required/objects_True_external.py
+external-cli-True-objects	main/jsonschema/undeclared_required/objects_True_external.py	= main/jsonschema/undeclared_required/objects_True_builtin.py
 external-cli-True-open	main/jsonschema/undeclared_required/open_True_builtin.py
 external-cli-True-open	main/jsonschema/undeclared_required/open_True_runtime.txt
 external-cli-True-optional_objects	main/jsonschema/undeclared_required/custom_objects_True_runtime.txt

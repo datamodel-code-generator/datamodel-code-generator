@@ -22,7 +22,9 @@ UsersIdGetQueryIdParameter = TypeAliasType("UsersIdGetQueryIdParameter", int)
 UsersIdGetQueryBodyParameter = TypeAliasType("UsersIdGetQueryBodyParameter", str)
 
 
-UsersIdGetHeaderMediaTypeParameter = TypeAliasType("UsersIdGetHeaderMediaTypeParameter", str)
+UsersIdGetHeaderMediaTypeParameter = TypeAliasType(
+    "UsersIdGetHeaderMediaTypeParameter", str
+)
 
 
 UsersIdGetQueryDcgP0Parameter = TypeAliasType(
@@ -31,29 +33,43 @@ UsersIdGetQueryDcgP0Parameter = TypeAliasType(
 )
 
 
-UsersIdGetQueryParametersParameter = TypeAliasType("UsersIdGetQueryParametersParameter", str)
+UsersIdGetQueryParametersParameter = TypeAliasType(
+    "UsersIdGetQueryParametersParameter", str
+)
 
 
-UsersIdGetCookieSessionParameter = TypeAliasType("UsersIdGetCookieSessionParameter", str)
+UsersIdGetCookieSessionParameter = TypeAliasType(
+    "UsersIdGetCookieSessionParameter", str
+)
 
 
-UsersIdGetQueryGetUserByIdHandlerParameter = TypeAliasType("UsersIdGetQueryGetUserByIdHandlerParameter", str)
+UsersIdGetQueryGetUserByIdHandlerParameter = TypeAliasType(
+    "UsersIdGetQueryGetUserByIdHandlerParameter", str
+)
 
 
 UsersIdPutPathIdParameter = TypeAliasType("UsersIdPutPathIdParameter", int)
 
 
-UsersIdPutQueryPrincipalParameter = TypeAliasType("UsersIdPutQueryPrincipalParameter", str)
+UsersIdPutQueryPrincipalParameter = TypeAliasType(
+    "UsersIdPutQueryPrincipalParameter", str
+)
 
 
 class UsersIdPutRequest(BaseModel):
     id: str | None = None
 
 
-FilesFileNameDcgP0GetPathFileNameParameter = TypeAliasType("FilesFileNameDcgP0GetPathFileNameParameter", str)
+FilesFileNameDcgP0GetPathFileNameParameter = TypeAliasType(
+    "FilesFileNameDcgP0GetPathFileNameParameter", str
+)
 
 
-FilesFileNameDcgP0GetPathDcgP0Parameter = TypeAliasType("FilesFileNameDcgP0GetPathDcgP0Parameter", str)
+FilesFileNameDcgP0GetPathDcgP0Parameter = TypeAliasType(
+    "FilesFileNameDcgP0GetPathDcgP0Parameter", str
+)
 
 
-FilesFileNameDcgP0GetQueryLimitParameter = TypeAliasType("FilesFileNameDcgP0GetQueryLimitParameter", int)
+FilesFileNameDcgP0GetQueryLimitParameter = TypeAliasType(
+    "FilesFileNameDcgP0GetQueryLimitParameter", int
+)

@@ -237,7 +237,6 @@ class SharedAliasParent(_JsonSchemaRuntimeValidationBase):
 
 
 class SharedAliasChild(SharedAliasParent):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ()
 
     shared: list[int] = Field(..., title='Shared')

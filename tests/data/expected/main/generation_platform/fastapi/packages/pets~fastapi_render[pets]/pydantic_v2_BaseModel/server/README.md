@@ -60,7 +60,11 @@ class Pets(PetsService):
         X_Request_Id: UUID | None,
         since: AwareDatetime | None,
         session: str | None,
-    ) -> models.PetsGetResponse | HTTPResult[models.PetsGetResponse | models.Error] | Response:
+    ) -> (
+        models.PetsGetResponse
+        | HTTPResult[models.PetsGetResponse | models.Error]
+        | Response
+    ):
         """
         Handle GET /pets.
         """
@@ -127,7 +131,11 @@ class Store(StoreService):
 
     def get_inventory(
         self,
-    ) -> models.StoreInventoryGetResponse | HTTPResult[models.StoreInventoryGetResponse] | Response:
+    ) -> (
+        models.StoreInventoryGetResponse
+        | HTTPResult[models.StoreInventoryGetResponse]
+        | Response
+    ):
         """
         Handle GET /store/inventory.
         """

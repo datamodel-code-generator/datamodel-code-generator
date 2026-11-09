@@ -27,8 +27,7 @@ spec = f"{name!r:>{width}} é{{kept}}"
 prefixed = rf"{name}\d" + F"{name}"
 quoted = f'{name["key"]}' + f'{name:"^10}' + f'ends\\'
 nested = f'{f"nested {name}"}'
-joined = (f"one {name}"
-          f"two {name}")
+joined = f"one {name}" f"two {name}"
 
 [f-string-multiline]
 name = "value"

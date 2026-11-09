@@ -22,4 +22,6 @@ class PhotosPutRequest(RootModel[str]):
     root: str
 
 
-SearchGetQueryKindParameter = TypeAliasType("SearchGetQueryKindParameter", str | list[int])
+SearchGetQueryKindParameter = TypeAliasType(
+    "SearchGetQueryKindParameter", str | list[int]
+)

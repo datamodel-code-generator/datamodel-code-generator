@@ -11,7 +11,9 @@ from pydantic import (
 )
 
 
-class NarrowWrap(BaseModel):
+class NarrowWrap(
+    BaseModel
+):
     text: str = (
         Field(
             ...,
@@ -37,12 +39,9 @@ class NarrowWrap(BaseModel):
             ),
         )
     )
-    hex: str = (
-        Field(
-            ...,
-            description=(
-                'abc'
-                '\x7f'
-            ),
-        )
+    hex: str = Field(
+        ...,
+        description=(
+            'abc\x7f'
+        ),
     )

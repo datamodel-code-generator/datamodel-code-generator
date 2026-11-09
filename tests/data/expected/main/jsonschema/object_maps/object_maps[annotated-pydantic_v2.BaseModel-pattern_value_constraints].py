@@ -80,7 +80,9 @@ PatPatternProperty = TypeAliasType("PatPatternProperty", Annotated[int, Field(ge
 
 
 class Pat(
-    RootModel[dict[Annotated[str, StringConstraints(pattern=r'^d')], PatPatternProperty]]
+    RootModel[
+        dict[Annotated[str, StringConstraints(pattern=r'^d')], PatPatternProperty]
+    ]
 ):
     root: dict[Annotated[str, StringConstraints(pattern=r'^d')], PatPatternProperty]
 

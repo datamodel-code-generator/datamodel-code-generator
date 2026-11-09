@@ -29,7 +29,9 @@ codec_4: Final[PydanticCodec[models.Tagged]] = PydanticCodec(models.Tagged)
 codec_5: Final[PydanticCodec[models.Plain]] = PydanticCodec(models.Plain)
 """Codec of /paths/~1media/get response_body (response 200 application/json)."""
 
-codec_6: Final[PydanticCodec[models.InvalidGetResponse]] = PydanticCodec(models.InvalidGetResponse)
+codec_6: Final[PydanticCodec[models.InvalidGetResponse]] = PydanticCodec(
+    models.InvalidGetResponse
+)
 """Codec of /paths/~1invalid/get response_body (response 200 application/json)."""
 
 codec_7: Final[PydanticCodec[models.Item]] = PydanticCodec(models.Item)

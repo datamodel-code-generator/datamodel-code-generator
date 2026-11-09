@@ -275,8 +275,7 @@ class POther(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
 
 
 class PEnumKeys(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[dict[Literal['a1', 'zz'], Any]],
+    _JsonSchemaRuntimeValidationBase, RootModel[dict[Literal['a1', 'zz'], Any]]
 ):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {

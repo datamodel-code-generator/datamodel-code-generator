@@ -165,13 +165,13 @@ class Model(BaseModel):
         )
 
     async def evaluate_async_with_a_descriptive_name_for_boolean_formatter_coverage(
-        self
+        self,
     ) -> Literal[True, False, ")"]:
         return await (
             self.evaluate_async_with_a_descriptive_multiline_annotation_coverage()
         )
 
-    async def evaluate_async_with_a_descriptive_multiline_annotation_coverage(self) -> Literal[
-        True, False, ")"
-    ]:
+    async def evaluate_async_with_a_descriptive_multiline_annotation_coverage(
+        self,
+    ) -> Literal[True, False, ")"]:
         return await async_boolean(self.value)

@@ -1,6 +1,6 @@
 --- server/services.py
 +++ server/services.py (expected)
-@@ -83,4 +83,3 @@
+@@ -91,4 +91,3 @@
          """
          Handle GET /store/inventory.
          """

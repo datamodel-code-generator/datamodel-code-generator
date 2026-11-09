@@ -6,9 +6,13 @@ from __future__ import annotations
 from pydantic import BaseModel, Field, conint
 
 
-class BoxUnionAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3NoneType(BaseModel):
+class BoxUnionAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3NoneType(
+    BaseModel
+):
     value: conint(gt=3) | None = Field(..., title='Value')
 
 
 class FutureUnionRoot(BaseModel):
-    box: BoxUnionAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3NoneType
+    box: (
+        BoxUnionAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3NoneType
+    )

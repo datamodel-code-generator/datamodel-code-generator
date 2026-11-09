@@ -25,5 +25,9 @@ OPERATION_0: Final[OperationPlan[SendComboResponse]] = OperationPlan(
     path='/combos',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='binary'),), default='application/json', required=True),
+    body=RequestBody(
+        media=(BodyMedia(media_type='application/json', kind='binary'),),
+        default='application/json',
+        required=True,
+    ),
 )

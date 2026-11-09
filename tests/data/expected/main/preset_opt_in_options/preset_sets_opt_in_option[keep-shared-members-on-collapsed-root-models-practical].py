@@ -16,7 +16,9 @@ class Model(BaseModel):
 
 
 class Entry(
-    RootModel[dict[Annotated[str, StringConstraints(pattern=r'^t@.+$')], Union["Entry", str]]]
+    RootModel[
+        dict[Annotated[str, StringConstraints(pattern=r'^t@.+$')], Union["Entry", str]]
+    ]
 ):
     root: dict[
         Annotated[str, StringConstraints(pattern=r'^t@.+$')], Union["Entry", str]

@@ -28,7 +28,25 @@ OPERATION_0: Final[OperationPlan[CreateCallResponse]] = OperationPlan(
     path='/calls',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', codec=model_bindings.codec_0, form=MultipartForm(members=True, parts=(PartPlan('session', 'json'),), content_types=(('sdp', 'application/sdp'), ('session', 'application/json')))),), default='multipart/form-data', required=True),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                codec=model_bindings.codec_0,
+                form=MultipartForm(
+                    members=True,
+                    parts=(PartPlan('session', 'json'),),
+                    content_types=(
+                        ('sdp', 'application/sdp'),
+                        ('session', 'application/json'),
+                    ),
+                ),
+            ),
+        ),
+        default='multipart/form-data',
+        required=True,
+    ),
 )
 
 OPERATION_1: Final[OperationPlan[SendOfferResponse]] = OperationPlan(
@@ -37,5 +55,31 @@ OPERATION_1: Final[OperationPlan[SendOfferResponse]] = OperationPlan(
     path='/offers',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('offer', codec=model_bindings.codec_1, content_types=('application/sdp; charset=iso-8859-1',)), PartPlan('counts', repeated=True, codec=model_bindings.codec_2, content_types=('application/octet-stream',)), PartPlan('recording')), additional=PartPlan('', 'json'))),), default='multipart/form-data', required=True),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                form=MultipartForm(
+                    parts=(
+                        PartPlan(
+                            'offer',
+                            codec=model_bindings.codec_1,
+                            content_types=('application/sdp; charset=iso-8859-1',),
+                        ),
+                        PartPlan(
+                            'counts',
+                            repeated=True,
+                            codec=model_bindings.codec_2,
+                            content_types=('application/octet-stream',),
+                        ),
+                        PartPlan('recording'),
+                    ),
+                    additional=PartPlan('', 'json'),
+                ),
+            ),
+        ),
+        default='multipart/form-data',
+        required=True,
+    ),
 )

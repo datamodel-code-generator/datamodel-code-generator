@@ -11,10 +11,14 @@ import models
 
 from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.RoutesGetQueryStopsParameter]] = PydanticCodec(models.RoutesGetQueryStopsParameter)
+codec_0: Final[PydanticCodec[models.RoutesGetQueryStopsParameter]] = PydanticCodec(
+    models.RoutesGetQueryStopsParameter
+)
 """Codec of /paths/~1routes/get parameter (request query stops)."""
 
-codec_1: Final[PydanticCodec[models.RoutesGetQueryOffsetParameter]] = PydanticCodec(models.RoutesGetQueryOffsetParameter)
+codec_1: Final[PydanticCodec[models.RoutesGetQueryOffsetParameter]] = PydanticCodec(
+    models.RoutesGetQueryOffsetParameter
+)
 """Codec of /paths/~1routes/get parameter (request query offset)."""
 
 codec_2: Final[PydanticCodec[models.Route]] = PydanticCodec(models.Route)

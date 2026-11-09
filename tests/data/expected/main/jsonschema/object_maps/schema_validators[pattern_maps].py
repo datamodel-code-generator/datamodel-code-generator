@@ -227,8 +227,7 @@ class PTrueEmpty(_JsonSchemaRuntimeValidationBase):
 
 
 class PNamesTwo(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[dict[constr(max_length=3), Any]],
+    _JsonSchemaRuntimeValidationBase, RootModel[dict[constr(max_length=3), Any]]
 ):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
@@ -545,8 +544,7 @@ class MTrueEmpty(_JsonSchemaRuntimeValidationBase):
 
 
 class INamesTwoItem(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[dict[constr(max_length=3), Any]],
+    _JsonSchemaRuntimeValidationBase, RootModel[dict[constr(max_length=3), Any]]
 ):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
@@ -565,8 +563,7 @@ class INamesTwoItem(
 
 
 class MNamesTwo(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[dict[constr(max_length=3), Any]],
+    _JsonSchemaRuntimeValidationBase, RootModel[dict[constr(max_length=3), Any]]
 ):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
@@ -734,8 +731,7 @@ class TrueEmpty(_JsonSchemaRuntimeValidationBase):
 
 
 class NamesTwo(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[dict[constr(max_length=3), Any]],
+    _JsonSchemaRuntimeValidationBase, RootModel[dict[constr(max_length=3), Any]]
 ):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
