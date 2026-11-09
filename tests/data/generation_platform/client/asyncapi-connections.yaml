@@ -1,0 +1,255 @@
+asyncapi: 3.0.0
+info:
+  title: Trading desk
+  version: 1.0.0
+servers:
+  desk:
+    host: desk.example.com
+    protocol: wss
+  backup:
+    host: backup.example.com
+    protocol: wss
+channels:
+  quotes:
+    address: /v1/desk/{region}
+    servers:
+      - $ref: '#/servers/desk'
+    parameters:
+      region:
+        description: The region of the desk.
+    messages:
+      subscribe:
+        $ref: '#/components/messages/subscribe'
+      quote:
+        $ref: '#/components/messages/quote'
+      ack:
+        $ref: '#/components/messages/ack'
+  orders:
+    address: /v1/desk/{region}
+    servers:
+      - $ref: '#/servers/desk'
+    parameters:
+      region: {}
+    messages:
+      order:
+        $ref: '#/components/messages/order'
+  receipts:
+    address: /v1/desk/{region}
+    servers:
+      - $ref: '#/servers/desk'
+    parameters:
+      region: {}
+    messages:
+      receipt:
+        $ref: '#/components/messages/receipt'
+  primary:
+    address: /v1/news
+    servers:
+      - $ref: '#/servers/desk'
+    messages:
+      headline:
+        $ref: '#/components/messages/quote'
+  secondary:
+    address: /v1/news
+    servers:
+      - $ref: '#/servers/backup'
+    messages:
+      headline:
+        $ref: '#/components/messages/quote'
+  filtered:
+    address: /v1/filtered
+    bindings:
+      ws:
+        query:
+          type: object
+          properties:
+            depth:
+              type: integer
+    messages:
+      quote:
+        $ref: '#/components/messages/quote'
+  unfiltered:
+    address: /v1/filtered
+    messages:
+      ack:
+        $ref: '#/components/messages/ack'
+  guarded:
+    address: /v1/guarded
+    messages:
+      quote:
+        $ref: '#/components/messages/quote'
+  unguarded:
+    address: /v1/guarded
+    messages:
+      ack:
+        $ref: '#/components/messages/ack'
+  forwarded:
+    address: /v1/forwarded
+    messages:
+      order:
+        $ref: '#/components/messages/order'
+      receipt:
+        $ref: '#/components/messages/receipt'
+  routed:
+    address: /v1/routed
+    messages:
+      order:
+        $ref: '#/components/messages/order'
+  outbox:
+    address: /v1/outbox
+    messages:
+      receipt:
+        $ref: '#/components/messages/receipt'
+  remote:
+    address: /v1/remote
+    messages:
+      order:
+        $ref: '#/components/messages/order'
+  relayed:
+    address: /v1/relayed
+    messages:
+      order:
+        $ref: '#/components/messages/order'
+operations:
+  takeSubscribe:
+    action: receive
+    channel:
+      $ref: '#/channels/quotes'
+    messages:
+      - $ref: '#/channels/quotes/messages/subscribe'
+    reply:
+      messages:
+        - $ref: '#/channels/quotes/messages/ack'
+  publishQuotes:
+    action: send
+    channel:
+      $ref: '#/channels/quotes'
+    messages:
+      - $ref: '#/channels/quotes/messages/quote'
+  takeOrder:
+    action: receive
+    channel:
+      $ref: '#/channels/orders'
+    reply:
+      $ref: '#/components/replies/receipt'
+  publishPrimary:
+    action: send
+    channel:
+      $ref: '#/channels/primary'
+  publishSecondary:
+    action: send
+    channel:
+      $ref: '#/channels/secondary'
+  publishFiltered:
+    action: send
+    channel:
+      $ref: '#/channels/filtered'
+  publishUnfiltered:
+    action: send
+    channel:
+      $ref: '#/channels/unfiltered'
+  publishGuarded:
+    action: send
+    channel:
+      $ref: '#/channels/guarded'
+    security:
+      - $ref: '#/components/securitySchemes/bearer'
+  publishUnguarded:
+    action: send
+    channel:
+      $ref: '#/channels/unguarded'
+  takeForwarded:
+    action: receive
+    channel:
+      $ref: '#/channels/forwarded'
+    messages:
+      - $ref: '#/channels/forwarded/messages/order'
+    reply:
+      address:
+        $ref: '#/components/replyAddresses/sender'
+      messages:
+        - $ref: '#/channels/forwarded/messages/receipt'
+  takeRouted:
+    action: receive
+    channel:
+      $ref: '#/channels/routed'
+    reply:
+      channel:
+        $ref: '#/channels/outbox'
+  takeRemote:
+    action: receive
+    channel:
+      $ref: '#/channels/remote'
+    reply:
+      $ref: 'asyncapi-other.yaml#/components/replies/missing'
+  takeRelayed:
+    action: receive
+    channel:
+      $ref: '#/channels/relayed'
+    reply:
+      channel:
+        $ref: 'asyncapi-other.yaml#/channels/alerts'
+components:
+  replies:
+    receipt:
+      channel:
+        $ref: '#/channels/receipts'
+  replyAddresses:
+    sender:
+      location: $message.header#/replyTo
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+  messages:
+    subscribe:
+      payload:
+        type: object
+        properties:
+          kind:
+            const: subscribe
+          symbols:
+            type: array
+            items:
+              type: string
+        required: [kind, symbols]
+    quote:
+      payload:
+        type: object
+        properties:
+          kind:
+            const: quote
+          symbol:
+            type: string
+          bid:
+            type: number
+        required: [kind, symbol, bid]
+    ack:
+      payload:
+        type: object
+        properties:
+          kind:
+            const: ack
+          symbols:
+            type: integer
+        required: [kind, symbols]
+    order:
+      payload:
+        type: object
+        properties:
+          kind:
+            const: order
+          symbol:
+            type: string
+          size:
+            type: number
+        required: [kind, symbol, size]
+    receipt:
+      payload:
+        type: object
+        properties:
+          kind:
+            const: receipt
+          id:
+            type: string
+        required: [kind, id]

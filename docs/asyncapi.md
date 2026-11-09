@@ -167,6 +167,16 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
   with or without its leading `/`. The channels of a document that declares no servers are opened at
   `--client-default-base-url`, which they need as OpenAPI operations without servers do, or at the `base_url` the
   client is given.
+- Channels at one address on the same servers are one connection: one attribute, named after the words of the address
+  (`root` for `/`), whose `connect(...)` opens the handshake of the first of them and sends and receives the messages
+  of them all, told apart as the messages of one channel are. Their handshakes must take the same parameters, offer
+  the same subprotocols and need the same security (a `description` may differ), or the connection is left out.
+  `--client-operations` keys it by the reference of its first channel.
+- The messages of an AsyncAPI 3 operation's `reply` go the other way on the operation's connection: the client
+  receives the replies to what it sends, or sends those to what it receives, among the other messages, and no request
+  is correlated with its reply. A reply lists its messages, else carries every message of its channel, which is the
+  channel it names, else the operation's own. A reply on a channel at another address or on other servers, or sent to
+  an address that a runtime expression gives (`reply.address`), leaves the connection out.
 - The models are the only codec: a JSON message is encoded and decoded by its payload's model, a payload that is only
   a `$ref` by the model of the schema it names, a `text/plain` string payload as `str`, and an
   `application/octet-stream` or binary payload as `bytes`. A string with a `contentEncoding` in a media type other

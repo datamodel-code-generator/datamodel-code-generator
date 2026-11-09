@@ -637,11 +637,21 @@ class AsyncAPIClientFeatures:
         "models code them as a union; it does not receive text and JSON messages on one channel",
         client_status="partial",
     )
+    shared_addresses: bool = _client_feature(
+        introduced="AsyncAPI 2.0",
+        doc_name="channels sharing an address",
+        description="Channels at one address on the same servers, which the client opens as one connection that "
+        "carries the messages of them all; their handshakes must take the same parameters, offer the same "
+        "subprotocols and need the same security",
+        client_status="partial",
+    )
     operation_replies: bool = _client_feature(
         introduced="AsyncAPI 3.0",
         doc_name="operation replies",
-        description="The `reply` of an operation",
-        client_status="not_supported",
+        description="The `reply` of an operation; the client sends or receives its messages on the operation's "
+        "connection, without correlating them with a request, and does not open a reply on a channel at another "
+        "address or sent to an address a runtime expression gives",
+        client_status="partial",
     )
     security_requirements: bool = _client_feature(
         introduced="AsyncAPI 2.0",
