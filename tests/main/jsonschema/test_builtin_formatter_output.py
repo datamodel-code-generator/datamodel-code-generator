@@ -363,3 +363,28 @@ def test_imported_names_with_digit_runs_sort_naturally(output_dir: Path, formatt
         input_file_type="jsonschema",
         extra_args=["--all-exports-scope", "children", "--formatters", *formatters, "--disable-timestamp"],
     )
+
+
+@pytest.mark.parametrize("formatters", [["black", "isort"], ["builtin"]], ids=["black", "builtin"])
+def test_msgspec_convert_default_factory_has_one_space_before_its_type(
+    output_file: Path, formatters: list[str]
+) -> None:
+    """Write one space before the ``type`` argument of a msgspec ``convert`` default factory, as black lays it out.
+
+    The generator wrote ``convert({},  type=Param)``; black closed the gap and the builtin formatter kept it.
+    """
+    (input_path := output_file.parent / "msgspec_convert_default.json").write_text(
+        json.dumps({
+            "title": "Holder",
+            "type": "object",
+            "properties": {"param": {"$ref": "#/$defs/Param", "default": {}}},
+            "$defs": {"Param": {"type": "object", "properties": {"a": {"type": "string"}}}},
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "msgspec.Struct", "--formatters", *formatters, "--disable-timestamp"],
+    )
