@@ -491,10 +491,6 @@ def _is_type_checking_if(node: ast.AST) -> TypeGuard[ast.If]:
     return isinstance(node, ast.If) and _is_name_or_attr(node.test, "TYPE_CHECKING")
 
 
-_ESCAPE_UNIT = re.compile(r"\\(?:x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|.)|.", re.DOTALL)
-_LONGEST_ESCAPE_UNIT = 10
-
-
 def _is_string_constant(node: ast.AST | None) -> TypeGuard[ast.Constant]:
     return isinstance(node, ast.Constant) and isinstance(node.value, str)
 
