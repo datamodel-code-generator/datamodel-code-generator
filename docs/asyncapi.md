@@ -163,15 +163,19 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
   words of its id (AsyncAPI 3) or its address (AsyncAPI 2). Its `connect(...)` takes the parameters of the address as
   keyword arguments and returns the session of a [WebSocket helper](python-client-helpers.md): it sends the channel's
   handshake, a GET of its address on its servers (with `wss` and `ws` sent as `https` and `http`), through the client's
-  call path, and sends and receives typed messages until the block ends.
+  call path, and sends and receives typed messages until the block ends. An address is a path under the server URL,
+  with or without its leading `/`. The channels of a document that declares no servers are opened at
+  `--client-default-base-url`, which they need as OpenAPI operations without servers do, or at the `base_url` the
+  client is given.
 - The models are the only codec: a JSON message is encoded and decoded by its payload's model, a payload that is only
   a `$ref` by the model of the schema it names, a `text/plain` string payload as `str`, and an
   `application/octet-stream` or binary payload as `bytes`. A direction that carries no message is typed `Never`.
 - [`--client-asyncapi-perspective`](cli-reference/target-generation-options.md#client-asyncapi-perspective) says which
   side the document describes: `server` (the default), whose sends the client receives, or `client`.
-- `--client-operations` keyed by a channel's reference, such as `/channels/market`, renames its attribute (`resource`)
-  and its parameters (`parameter_names`); `--client-protocols` is refused for AsyncAPI input.
+- `--client-operations` keyed by a channel's reference, such as `/channels/market`, renames its attribute (`resource`,
+  one identifier that no other channel takes) and its parameters (`parameter_names`); `--client-protocols` is refused
+  for AsyncAPI input.
 
 A channel that uses a feature the client does not support is left out with a warning that names the feature, and the
-other channels are generated. [AsyncAPI Client Features](supported_formats.md#asyncapi-client-features) lists each
+other channels are generated; when every channel is left out, the generation fails with their findings. [AsyncAPI Client Features](supported_formats.md#asyncapi-client-features) lists each
 feature and the client's support.

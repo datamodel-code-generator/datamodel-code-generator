@@ -1,0 +1,21 @@
+asyncapi: 3.0.0
+info:
+  title: Lobby
+  version: 1.0.0
+channels:
+  rooms:
+    address: rooms/{room}
+    messages:
+      line:
+        contentType: text/plain
+        payload:
+          type: string
+operations:
+  speak:
+    action: receive
+    channel:
+      $ref: '#/channels/rooms'
+  echo:
+    action: send
+    channel:
+      $ref: '#/channels/rooms'

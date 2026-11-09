@@ -12,16 +12,17 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any, Final
 
-from datamodel_code_generator._api_types import OperationRef, SchemaRef
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
+from datamodel_code_generator._client.config import OPTION_PREFIX
 from datamodel_code_generator._client.naming import RESERVED_MEMBERS
-from datamodel_code_generator._client.protocol_plan import Protocols
+from datamodel_code_generator._client.protocol_plan import Protocols, class_clashes
 from datamodel_code_generator._client.protocols import Helper, Link
 from datamodel_code_generator._target_naming import NameScope
 from datamodel_code_generator._target_operations import CLIENT, local, resolve_settings
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._api_types import Diagnostic
     from datamodel_code_generator._client.config import ClientGenerationConfig
     from datamodel_code_generator._target_contract import (
         ChannelContract,
@@ -53,31 +54,60 @@ def _names(request: TargetRequest, config: ClientGenerationConfig, channels: tup
     """Name each channel's attribute: the `resource` its `--client-operations` entry gives, else its derived name.
 
     A channel's name derives from the words of its id or address, `root` for an address without any. Derived names are
-    told apart from each other and from the members of the clients.
+    told apart from each other and from the members of the clients. A given `resource` names one attribute, so it is
+    refused when it is dotted or when another channel's takes it too; a name that gives the class an earlier name gave
+    is refused at its channel's `resource`.
     """
     problems: list[Diagnostic] = []
     entries = (
-        ("operation setting", f"operations[{index}].ref", item.ref, item)
+        ("operation setting", f"operations[{index}].ref", item.ref, (index, item))
         for index, item in enumerate(config.operations)
     )
     settings = resolve_settings(CLIENT, request, entries, problems)
     names = request.batch.names
     assert names is not None
-    given: dict[int, str] = {}
+    given: dict[int, tuple[str, str]] = {}
     candidates = []
+    taken = NameScope(folded=False, target_python_version=names.python_version)
+    refused: list[Diagnostic] = []
+    pointers = [channel.use_site.pointer for channel in channels]
     for index, channel in enumerate(channels):
         handshake = channel.handshake
         assert handshake is not None
-        if (setting := settings.get(handshake.id.use_site.pointer)) is not None and setting.resource is not None:
-            given[index] = setting.resource
+        if (found := settings.get(pointers[index])) is not None and (resource := found[1].resource):
+            given[index] = resource, (at := f"operations[{found[0]}].resource")
+            if "." in resource:
+                refused.append(_refusal("E_CONFIG_VALUE", at, "A channel's resource must be one Python identifier"))
+            elif not taken.take(resource):
+                message = f"The resource {stable_repr(resource)} names more than one channel"
+                refused.append(_refusal("E_NAME_COLLISION", at, message))
         else:
             basis = "_".join(_WORDS.findall(channel.name)) or "root"
             candidates.append((index, (names.function(basis), local(handshake), ())))
-    scope = NameScope({*RESERVED_MEMBERS, *given.values()}, folded=False, target_python_version=names.python_version)
+    scope = NameScope(
+        {*RESERVED_MEMBERS, *(name for name, _ in given.values())},
+        folded=False,
+        target_python_version=names.python_version,
+    )
     claimed = dict(
         zip((index for index, _ in candidates), names.claim(scope, [item for _, item in candidates]), strict=True)
     )
-    return [given.get(index) or claimed[index] for index in range(len(channels))]
+    chosen = [given[index][0] if index in given else claimed[index] for index in range(len(channels))]
+    if not refused:
+        refused.extend(
+            _refusal(
+                "E_NAME_COLLISION", given.get(index, ("", f"operations[{pointers[index]!r}].resource"))[1], message
+            )
+            for index, message in class_clashes(((name, "websocket") for name in chosen), names.python_version)
+        )
+    if refused:
+        raise APIGenerationError((*problems, *refused), option_prefix=OPTION_PREFIX)
+    return chosen
+
+
+def _refusal(code: str, at: str, message: str) -> Diagnostic:
+    """Return the refusal of a channel's setting."""
+    return Diagnostic(code=code, severity="error", stage="config", message=message, option_path=at)
 
 
 def channel_protocols(
@@ -93,7 +123,7 @@ def channel_protocols(
     for channel, name in zip(channels, _names(request, config, channels), strict=True):
         handshake = channel.handshake
         assert handshake is not None
-        at = f"channels[{handshake.path!r}]"
+        at = f"operations[{handshake.id.use_site.pointer!r}]"
         reference = OperationRef(pointer=handshake.id.use_site.pointer)
         operations[reference] = handshake
         tree: dict[str, Any] = {

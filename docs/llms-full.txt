@@ -10466,6 +10466,7 @@ The AsyncAPI features the generated Python client plans itself; a channel that u
 | `channels without an address` | AsyncAPI 3.0 | ✅ Supported | ❌ Not Supported | A channel whose `address` is null or absent, which the client cannot open |
 | `WebSocket channel bindings` | AsyncAPI 2.0 | ✅ Supported | ⚠️ Partial | `bindings.ws` of a channel; the client opens GET handshakes without `query` or `headers` |
 | `message content types` | AsyncAPI 2.0 | ✅ Supported | ⚠️ Partial | The payloads of messages; the client codes JSON, `text/plain` strings and `application/octet-stream` payloads of JSON Schema or AsyncAPI schemas |
+| `messages without a payload` | AsyncAPI 2.0 | ✅ Supported | ❌ Not Supported | A message that declares no `payload`, which the client cannot code |
 | `several messages per direction` | AsyncAPI 2.0 | ✅ Supported | ❌ Not Supported | More than one message that an application sends, or receives, on one channel |
 | `operation replies` | AsyncAPI 3.0 | ✅ Supported | ❌ Not Supported | The `reply` of an operation |
 | `security requirements` | AsyncAPI 2.0 | ✅ Supported | ❌ Not Supported | The security of a server or an operation; the client sends no credentials on a handshake |
@@ -11024,6 +11025,7 @@ The AsyncAPI features the generated Python client plans itself; a channel that u
 | `channels without an address` | AsyncAPI 3.0 | ✅ Supported | ❌ Not Supported | A channel whose `address` is null or absent, which the client cannot open |
 | `WebSocket channel bindings` | AsyncAPI 2.0 | ✅ Supported | ⚠️ Partial | `bindings.ws` of a channel; the client opens GET handshakes without `query` or `headers` |
 | `message content types` | AsyncAPI 2.0 | ✅ Supported | ⚠️ Partial | The payloads of messages; the client codes JSON, `text/plain` strings and `application/octet-stream` payloads of JSON Schema or AsyncAPI schemas |
+| `messages without a payload` | AsyncAPI 2.0 | ✅ Supported | ❌ Not Supported | A message that declares no `payload`, which the client cannot code |
 | `several messages per direction` | AsyncAPI 2.0 | ✅ Supported | ❌ Not Supported | More than one message that an application sends, or receives, on one channel |
 | `operation replies` | AsyncAPI 3.0 | ✅ Supported | ❌ Not Supported | The `reply` of an operation |
 | `security requirements` | AsyncAPI 2.0 | ✅ Supported | ❌ Not Supported | The security of a server or an operation; the client sends no credentials on a handshake |
@@ -12266,17 +12268,21 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
   words of its id (AsyncAPI 3) or its address (AsyncAPI 2). Its `connect(...)` takes the parameters of the address as
   keyword arguments and returns the session of a [WebSocket helper](python-client-helpers.md): it sends the channel's
   handshake, a GET of its address on its servers (with `wss` and `ws` sent as `https` and `http`), through the client's
-  call path, and sends and receives typed messages until the block ends.
+  call path, and sends and receives typed messages until the block ends. An address is a path under the server URL,
+  with or without its leading `/`. The channels of a document that declares no servers are opened at
+  `--client-default-base-url`, which they need as OpenAPI operations without servers do, or at the `base_url` the
+  client is given.
 - The models are the only codec: a JSON message is encoded and decoded by its payload's model, a payload that is only
   a `$ref` by the model of the schema it names, a `text/plain` string payload as `str`, and an
   `application/octet-stream` or binary payload as `bytes`. A direction that carries no message is typed `Never`.
 - [`--client-asyncapi-perspective`](cli-reference/target-generation-options.md#client-asyncapi-perspective) says which
   side the document describes: `server` (the default), whose sends the client receives, or `client`.
-- `--client-operations` keyed by a channel's reference, such as `/channels/market`, renames its attribute (`resource`)
-  and its parameters (`parameter_names`); `--client-protocols` is refused for AsyncAPI input.
+- `--client-operations` keyed by a channel's reference, such as `/channels/market`, renames its attribute (`resource`,
+  one identifier that no other channel takes) and its parameters (`parameter_names`); `--client-protocols` is refused
+  for AsyncAPI input.
 
 A channel that uses a feature the client does not support is left out with a warning that names the feature, and the
-other channels are generated. [AsyncAPI Client Features](supported_formats.md#asyncapi-client-features) lists each
+other channels are generated; when every channel is left out, the generation fails with their findings. [AsyncAPI Client Features](supported_formats.md#asyncapi-client-features) lists each
 feature and the client's support.
 
 ---

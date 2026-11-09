@@ -141,7 +141,12 @@ class TargetRequest:
 
     @property
     def unresolved(self) -> str:
-        """Say why an operation reference resolved to nothing, naming the include filter when one is set."""
+        """Say why an operation reference resolved to nothing, naming the include filter when one is set.
+
+        The operations of an AsyncAPI input are its channels.
+        """
+        if self.batch.channels is not None:
+            return "selects no channel"
         if self.model_config.openapi_include_paths:
             return "selects no root path operation that --openapi-include-paths keeps"
         return "selects no root path operation"

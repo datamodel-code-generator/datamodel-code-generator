@@ -453,6 +453,7 @@ The AsyncAPI features the generated Python client plans itself; a channel that u
 | `channels without an address` | AsyncAPI 3.0 | ✅ Supported | ❌ Not Supported | A channel whose `address` is null or absent, which the client cannot open |
 | `WebSocket channel bindings` | AsyncAPI 2.0 | ✅ Supported | ⚠️ Partial | `bindings.ws` of a channel; the client opens GET handshakes without `query` or `headers` |
 | `message content types` | AsyncAPI 2.0 | ✅ Supported | ⚠️ Partial | The payloads of messages; the client codes JSON, `text/plain` strings and `application/octet-stream` payloads of JSON Schema or AsyncAPI schemas |
+| `messages without a payload` | AsyncAPI 2.0 | ✅ Supported | ❌ Not Supported | A message that declares no `payload`, which the client cannot code |
 | `several messages per direction` | AsyncAPI 2.0 | ✅ Supported | ❌ Not Supported | More than one message that an application sends, or receives, on one channel |
 | `operation replies` | AsyncAPI 3.0 | ✅ Supported | ❌ Not Supported | The `reply` of an operation |
 | `security requirements` | AsyncAPI 2.0 | ✅ Supported | ❌ Not Supported | The security of a server or an operation; the client sends no credentials on a handshake |

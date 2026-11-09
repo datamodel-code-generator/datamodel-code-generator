@@ -605,6 +605,12 @@ class AsyncAPIClientFeatures:
         "`application/octet-stream` payloads of JSON Schema or AsyncAPI schemas",
         client_status="partial",
     )
+    message_payloads: bool = _client_feature(
+        introduced="AsyncAPI 2.0",
+        doc_name="messages without a payload",
+        description="A message that declares no `payload`, which the client cannot code",
+        client_status="not_supported",
+    )
     several_messages: bool = _client_feature(
         introduced="AsyncAPI 2.0",
         doc_name="several messages per direction",

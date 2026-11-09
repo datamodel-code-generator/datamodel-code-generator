@@ -71,7 +71,9 @@ class ReadChannel:
     """A channel as a client opens it, or the features and reasons that leave it out (`skips`).
 
     `declaration` is where the channel is written and `use_site` where the document lists it. `name` is the channel's
-    id (AsyncAPI 3) or its address (AsyncAPI 2).
+    id (AsyncAPI 3) or its address (AsyncAPI 2). `address` is the path the channel is at relative to its servers, which
+    always starts with `/`, as both versions read an address without one. A channel of a document that declares no
+    servers is served on none, so a client opens it at the base URL it is given.
     """
 
     use_site: Tokens
@@ -130,6 +132,7 @@ class _Reader:
         default = raw.get("defaultContentType")
         self.default_media = default if isinstance(default, str) else _DEFAULT_MEDIA
         self.servers = self.read_servers()
+        self.declares_servers = bool(as_mapping(self.document.value(("servers",))))
 
     def read_servers(self) -> dict[str, tuple[ReadServer | None, bool]]:
         """Return each server by name: its WebSocket form (None for another protocol), and whether it needs security."""
@@ -193,7 +196,7 @@ class _Reader:
         if not isinstance(address, str):
             skips.append(("channel_addresses", "it has no address"))
         servers, secured = self.channel_servers(channel)
-        if not servers:
+        if not servers and self.declares_servers:
             skips.append(("server_protocols", "it is served on no ws or wss server"))
         if secured:
             skips.append(("security_requirements", "a server it is served on requires security"))
@@ -219,7 +222,7 @@ class _Reader:
             use_site,
             declaration,
             key,
-            address if isinstance(address, str) else None,
+            f"/{address.removeprefix('/')}" if isinstance(address, str) else None,
             tuple(servers),
             tuple(self.parameters(declaration, channel)),
             tuple(dict.fromkeys(messages)),
@@ -330,7 +333,7 @@ class _Reader:
             skips.append(("message_content_types", f"the payload of message {pointer} is a {schema_format} schema"))
             return
         if payload is None:
-            skips.append(("message_content_types", f"message {pointer} declares no payload"))
+            skips.append(("message_payloads", f"message {pointer} declares no payload"))
             return
         ref = as_mapping(payload).get("$ref")
         payload_ref = ref if isinstance(ref, str) and len(as_mapping(payload)) == 1 else None

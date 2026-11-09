@@ -1,0 +1,3 @@
+# asyncapi-setting-errors
+render pydantic_v2.BaseModel
+  Error: --client-operations['/channels/nope'].ref: The operation setting '/channels/nope' selects no channel; --client-operations['/channels/market'].resource: A channel's resource must be one Python identifier; --client-operations['/channels/audio'].resource: The resource 'feed' names more than one channel

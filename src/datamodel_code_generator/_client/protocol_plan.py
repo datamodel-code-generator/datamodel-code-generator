@@ -17,7 +17,7 @@ from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Container, Iterator, Mapping
+    from collections.abc import Callable, Container, Iterable, Iterator, Mapping
     from pathlib import Path
 
     from datamodel_code_generator._api_generation import TargetRequest
@@ -298,19 +298,30 @@ def helper_problems(
         yield from checked[helper.name]
 
 
+def class_clashes(
+    helpers: Iterable[tuple[str, str]], target_python_version: PythonVersion
+) -> Iterator[tuple[int, str]]:
+    """Yield the index of each helper name, with its kind, that gives a class name an earlier name gave, and why."""
+    owners: dict[str, tuple[str, ...]] = {}
+    for index, (name, kind) in enumerate(helpers):
+        for parts, class_name in helper_classes(name, kind, target_python_version):
+            if (owner := owners.setdefault(class_name, parts)) != parts:
+                yield (
+                    index,
+                    (
+                        f"The helper name {stable_repr(name)} gives the class name {stable_repr(class_name)}, which "
+                        f"{stable_repr('.'.join(owner))} already gives"
+                    ),
+                )
+                break
+
+
 def _class_problems(helpers: tuple[Helper, ...], protocols: Protocols) -> Iterator[Diagnostic]:
     """Refuse an enabled helper whose name gives a namespace or helper class name another name already gave."""
-    owners: dict[str, tuple[str, ...]] = {}
-    for helper in helpers:
-        for parts, class_name in helper_classes(helper.name, helper.kind, protocols.python_version):
-            if (owner := owners.setdefault(class_name, parts)) != parts:
-                message = (
-                    f"The helper name {stable_repr(helper.name)} gives the class name {stable_repr(class_name)}, which "
-                    f"{stable_repr('.'.join(owner))} already gives"
-                )
-                entry = OperationRef(pointer=protocols.operations[helper.links[0].ref].id.use_site.pointer)
-                yield _problem("E_NAME_COLLISION", "target", helper.at, message, entry)
-                break
+    for index, message in class_clashes(((helper.name, helper.kind) for helper in helpers), protocols.python_version):
+        helper = helpers[index]
+        entry = OperationRef(pointer=protocols.operations[helper.links[0].ref].id.use_site.pointer)
+        yield _problem("E_NAME_COLLISION", "target", helper.at, message, entry)
 
 
 def helper_metadata(protocols: Protocols | None, request: TargetRequest) -> dict[str, JSONValue]:

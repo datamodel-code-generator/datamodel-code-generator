@@ -109,3 +109,26 @@ def asyncapi_perspective(package: ModuleType, lines: list[str]) -> None:
         lines.extend((played.report(), f"  closed {_described(session)}"))
     finally:
         server.stop()
+
+
+def _lobby(connection: ServerConnection) -> None:
+    """Echo a line of a chat room, and close normally."""
+    connection.send(f"echo {connection.recv()}")
+    connection.close(1000, "done")
+
+
+def asyncapi_serverless(package: ModuleType, lines: list[str]) -> None:
+    """Open a channel whose address has no leading slash, of a document without servers, under the given base URL."""
+    server = SocketServer()
+    try:
+        (played,) = server.play(Play(talk=_lobby))
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=f"{server.url}/ws", http_client=http) as client,
+            client.rooms.connect(room="lobby") as session,
+        ):
+            session.send("hello")
+            lines.extend(f"    rooms {_message(message)}" for message in session)
+        lines.append(played.report())
+    finally:
+        server.stop()

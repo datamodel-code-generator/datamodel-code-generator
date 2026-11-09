@@ -1,0 +1,43 @@
+asyncapi: 3.0.0
+info:
+  title: Broker only
+  version: 1.0.0
+servers:
+  broker:
+    host: kafka.example.com
+    protocol: kafka
+  socket:
+    host: socket.example.com
+    protocol: wss
+    security:
+      - $ref: '#/components/securitySchemes/user'
+channels:
+  orders:
+    address: orders
+    servers:
+      - $ref: '#/servers/broker'
+    messages:
+      order:
+        payload:
+          type: string
+  private:
+    address: /private
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      secret:
+        payload:
+          type: string
+operations:
+  receiveOrder:
+    action: receive
+    channel:
+      $ref: '#/channels/orders'
+  receiveSecret:
+    action: receive
+    channel:
+      $ref: '#/channels/private'
+components:
+  securitySchemes:
+    user:
+      type: userPassword

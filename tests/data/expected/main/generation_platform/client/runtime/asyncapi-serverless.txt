@@ -1,0 +1,3 @@
+# asyncapi-serverless pydantic_v2.BaseModel
+    rooms 1 text str'echo hello' raw=b'echo hello'
+    server GET /ws/rooms/lobby [] | closed 1000 'done'
