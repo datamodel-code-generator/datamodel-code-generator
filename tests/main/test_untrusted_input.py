@@ -40,6 +40,7 @@ REFUSED: dict[str, tuple[Path, InputFileTypeLiteral]] = {
     "custom_type_path": (JSON_SCHEMA_DATA_PATH / "custom_type_path.json", "jsonschema"),
     "custom_base_path": (JSON_SCHEMA_DATA_PATH / "custom_base_path.json", "jsonschema"),
     "xml_schema_include": (XML_SCHEMA_DATA_PATH / "versioning_include.xsd", "xmlschema"),
+    "xml_schema_missing_include": (XML_SCHEMA_DATA_PATH / "missing_include.xsd", "xmlschema"),
     "asyncapi_xml_schema_include": (ASYNC_API_DATA_PATH / "xml-schema-format.yaml", "asyncapi"),
     "protobuf": (PROTOBUF_DATA_PATH / "proto3_optional.proto", "protobuf"),
     "asyncapi_protobuf_import": (ASYNC_API_DATA_PATH / "protobuf-local-import.yaml", "asyncapi"),
