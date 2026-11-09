@@ -132,7 +132,7 @@ if TYPE_CHECKING:
         PythonVersion,
         PythonVersionMin,
     )
-    from datamodel_code_generator._generation_contract import GenerationCaptureSession, OpenAPIParserFactory
+    from datamodel_code_generator._generation_contract import GenerationCaptureSession, TargetParserFactory
     from datamodel_code_generator._paths import OutputLayout
     from datamodel_code_generator._project_config import load_pyproject_config
     from datamodel_code_generator._publication import PublicationAnchor
@@ -1469,7 +1469,7 @@ def _build_parser(  # noqa: PLR0911, PLR0913
     xmlschema_version: XMLSchemaVersion | None,
     protobuf_version: ProtobufVersion | None,
     python_type_expressions: _PythonTypeExpressions | None = None,
-    openapi_parser_factory: OpenAPIParserFactory | None = None,
+    parser_factory: TargetParserFactory | None = None,
 ) -> Any:
     match input_file_type:
         case InputFileType.OpenAPI:
@@ -1480,12 +1480,12 @@ def _build_parser(  # noqa: PLR0911, PLR0913
                 **additional_options,
             }
             parser_config = _create_parser_config(config, openapi_additional_options)
-            if openapi_parser_factory is None and OpenAPIScope.Api in (config.openapi_scopes or ()):
+            if parser_factory is not None:
+                return parser_factory(source=source, config=parser_config)
+            if OpenAPIScope.Api in (config.openapi_scopes or ()):
                 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser  # noqa: PLC0415
 
-                openapi_parser_factory = ApiOpenAPIParser
-            if openapi_parser_factory is not None:
-                return openapi_parser_factory(source=source, config=parser_config)
+                return ApiOpenAPIParser(source=source, config=parser_config)
             return OpenAPIParser(source=source, config=parser_config)
         case InputFileType.AsyncAPI:
             from datamodel_code_generator.parser.asyncapi import AsyncAPIParser  # noqa: PLC0415
@@ -1986,15 +1986,15 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
     *,
     reference_cache: Any | None = None,
     python_type_expressions: _PythonTypeExpressions | None = None,
-    openapi_parser_factory: OpenAPIParserFactory | None = None,
+    parser_factory: TargetParserFactory | None = None,
 ) -> Any:
     """Build one fresh parser using the caller's reference-resolution base, with the settings of its parse."""
     jsonschema_version, openapi_version, asyncapi_version, xmlschema_version, protobuf_version = schema_versions
     build_parser = _build_parser
-    if openapi_parser_factory is not None:
+    if parser_factory is not None:
         from functools import partial  # noqa: PLC0415
 
-        build_parser = partial(_build_parser, openapi_parser_factory=openapi_parser_factory)
+        build_parser = partial(_build_parser, parser_factory=parser_factory)
     with _warn_on_input_string_path_failure(input_):
         parser = build_parser(
             input_file_type,
@@ -2314,7 +2314,7 @@ def _parse_again(  # noqa: PLR0913, PLR0917
     parser_settings_path: Path | None,
     collect_model_metadata: bool,
     capture: GenerationCaptureSession[object] | None,
-    openapi_parser_factory: OpenAPIParserFactory | None,
+    parser_factory: TargetParserFactory | None,
     ignored_warnings: type[Warning] | None = Warning,
     collapse_retry: bool = False,
 ) -> tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]:
@@ -2368,7 +2368,7 @@ def _parse_again(  # noqa: PLR0913, PLR0917
                 run_context,
                 reference_cache=reference_cache,
                 python_type_expressions=python_type_expressions,
-                openapi_parser_factory=openapi_parser_factory,
+                parser_factory=parser_factory,
             )
             try:
                 results = (_parse_collapse_root_models_retry if collapse_retry else _parse_with_disposal)(
@@ -2548,7 +2548,7 @@ def _parse_generation(  # noqa: PLR0913, PLR0917
     output_context_path: Path,
     collect_model_metadata: bool,
     capture: GenerationCaptureSession[object] | None = None,
-    openapi_parser_factory: OpenAPIParserFactory | None = None,
+    parser_factory: TargetParserFactory | None = None,
 ) -> _ParsedGeneration:
     """Parse, dispose, and retry narrow compatibility failures inside the output cwd.
 
@@ -2556,8 +2556,6 @@ def _parse_generation(  # noqa: PLR0913, PLR0917
     are translated to the models that run names (``_user_keys.translate_class_keys``); a run without them that fails
     leaves the keys as written.
     """
-    if openapi_parser_factory is None and capture is not None:
-        openapi_parser_factory = capture.parser_factory
     from functools import partial  # noqa: PLC0415
 
     run = partial(
@@ -2575,7 +2573,7 @@ def _parse_generation(  # noqa: PLR0913, PLR0917
         use_output_cwd=use_output_cwd,
         output_context_path=output_context_path,
         collect_model_metadata=collect_model_metadata,
-        openapi_parser_factory=openapi_parser_factory,
+        parser_factory=parser_factory,
     )
     model_name_keys = None
     from datamodel_code_generator._user_keys import class_name_keys, translate_class_keys  # noqa: PLC0415
@@ -2650,7 +2648,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
     use_output_cwd: bool,
     output_context_path: Path,
     collect_model_metadata: bool,
-    openapi_parser_factory: OpenAPIParserFactory | None,
+    parser_factory: TargetParserFactory | None,
     capture: GenerationCaptureSession[object] | None = None,
     model_name_keys: ModelNameKeys | None = None,
     records_model_names: bool = False,
@@ -2687,7 +2685,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         schema_versions,
         run_context,
         python_type_expressions=python_type_expressions,
-        openapi_parser_factory=openapi_parser_factory,
+        parser_factory=parser_factory,
     )
     parse_again = partial(
         _parse_again,
@@ -2701,7 +2699,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         parser_settings_path=parser_settings_path,
         collect_model_metadata=collect_model_metadata,
         capture=capture,
-        openapi_parser_factory=openapi_parser_factory,
+        parser_factory=parser_factory,
     )
     # Phase 4: initial parse, disposal, and the complete retry flow share the output cwd.
     with (  # noqa: PLR1702
@@ -3077,12 +3075,11 @@ def _parse_run(  # noqa: PLR0913, PLR0914
     )
     allow_empty_api = input_file_type is InputFileType.OpenAPI and OpenAPIScope.Api in (config.openapi_scopes or ())
     parse_generation = _parse_generation
-    if allow_empty_api and capture is not None:
+    if capture is not None and (parser_factory := capture.parser_factory(input_file_type)) is not None:
         from functools import partial  # noqa: PLC0415
 
-        parser_factory = capture.parser_factory
-        parse_generation = partial(_parse_generation, openapi_parser_factory=parser_factory)
-        allow_empty_api = getattr(parser_factory, "_supports_api_scope", False) is True
+        parse_generation = partial(_parse_generation, parser_factory=parser_factory)
+        allow_empty_api = allow_empty_api and getattr(parser_factory, "_supports_api_scope", False) is True
     results, model_metadata, model_identities, data_model_types, defer_formatting, inline_object_bodies = (
         parse_generation(
             input_,

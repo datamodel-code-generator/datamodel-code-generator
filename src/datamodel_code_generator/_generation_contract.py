@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING, NewType, Protocol, TypeVar
 
 if TYPE_CHECKING:
     from datamodel_code_generator import _ParserSource
-    from datamodel_code_generator.config import OpenAPIParserConfig
+    from datamodel_code_generator.config import AsyncAPIParserConfig, OpenAPIParserConfig
+    from datamodel_code_generator.enums import InputFileType
     from datamodel_code_generator.parser.base import Result
     from datamodel_code_generator.parser.openapi import OpenAPIParser
 
@@ -18,11 +19,11 @@ class BindingCaptureError(RuntimeError):
     """An internal capture inconsistency that must never become repair success."""
 
 
-class OpenAPIParserFactory(Protocol):
+class TargetParserFactory(Protocol):
     """Construct a parser with capture state established before its base constructor."""
 
-    def __call__(self, *, source: _ParserSource, config: OpenAPIParserConfig) -> OpenAPIParser:
-        """Create one fresh attempt using the existing effective parser config."""
+    def __call__(self, *, source: _ParserSource, config: OpenAPIParserConfig | AsyncAPIParserConfig) -> OpenAPIParser:
+        """Create one fresh attempt using the existing effective parser config of its input kind."""
 
 
 class GenerationCaptureSession(Protocol[BatchT_co]):
@@ -36,9 +37,11 @@ class GenerationCaptureSession(Protocol[BatchT_co]):
     its accepted values; the core closes the session on failure.
     """
 
-    @property
-    def parser_factory(self) -> OpenAPIParserFactory:
-        """Return the same factory for initial and compatibility-retry construction."""
+    def parser_factory(self, input_file_type: InputFileType) -> TargetParserFactory | None:
+        """Return the same factory of an input kind for initial and compatibility-retry construction.
+
+        None is an input kind the session does not capture, which the plain parser of that kind reads.
+        """
 
     def freeze_attempt(self, parser: OpenAPIParser, results: str | dict[tuple[str, ...], Result]) -> AttemptId:
         """Freeze a provisional value candidate before the parser is disposed."""

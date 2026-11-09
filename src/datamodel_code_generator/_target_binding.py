@@ -143,7 +143,7 @@ from datamodel_code_generator.model.type_alias import TypeAlias as TypeAliasMode
 from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport, TypeStatement
 from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.jsonschema import Discriminator, JsonSchemaObject
-from datamodel_code_generator.parser.openapi import HeaderObject, ParameterObject, RequestBodyObject
+from datamodel_code_generator.parser.openapi import HeaderObject, OpenAPIParser, ParameterObject, RequestBodyObject
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression, stable_repr
 from datamodel_code_generator.reference import (
@@ -391,8 +391,13 @@ class _WalkedOperation(_WalkedHolder):
     parameters: list[tuple[SchemaLocation, _WalkedObject]]
 
 
-class TargetApiOpenAPIParser(ApiOpenAPIParser):
-    """Record API schema acquisitions, walked operations and emitted modules for one target generation attempt."""
+class _TargetRecording(OpenAPIParser):
+    """Record what binding reads of one target generation attempt, whatever the input kind.
+
+    It records the generation store's two reference redirects, the schema acquisitions with their engine keys, the
+    unions, field copies and variant splits the parser makes, and each emitted module's final models. The parser of an
+    input kind adds the records of its own walk.
+    """
 
     _generation_store_factory = staticmethod(RecordingGenerationStore.create_with_results)
 
@@ -401,15 +406,12 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         source: str | Path | list[Path] | ParseResult | dict[str, YamlValue],
         *,
         config: OpenAPIParserConfig | None = None,
-        serves_source: bool,
     ) -> None:
-        """Start with no acquisitions, walked operations or emitted modules."""
-        self.serves_source = serves_source
+        """Start with no acquisitions or emitted modules."""
         self.attempt = AttemptId(0)
         self.acquisitions: dict[tuple[SchemaLocation, Projection], str] = {}
         self.module_outputs: list[tuple[ModulePath, tuple[DataModel, ...], Result]] = []
         self.model_imports: set[str] = set()
-        self.operations: list[_WalkedOperation] = []
         self.unions: dict[int, _Union] = {}
         self.copies: dict[int, tuple[DataModelFieldBase, DataModelFieldBase]] = {}
         self.left_out: dict[str, tuple[tuple[DataModelFieldBase, ...], tuple[DataModelFieldBase, ...]]] = {}
@@ -419,6 +421,153 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.nullable_fields: dict[int, DataModelFieldBase] = {}
         self.document_facts: dict[str, tuple[tuple[str, FrozenLiteral], ...]] = {}
         self.document_versions: dict[str, OpenAPIVersion] = {}
+        super().__init__(source, config=config)
+
+    def _record_schema_object(self, reference: Reference, obj: JsonSchemaObject) -> None:
+        """Record what a model's schema says of its other and pattern properties, as the parser reads them.
+
+        The other properties are the model's (``_model_additional_properties``), and the schema of the typed ones
+        binds model-free. A schema the parser read at no location is recorded under None, which no model's location
+        looks up.
+        """
+        super()._record_schema_object(reference, obj)
+        location = obj.schema_location
+        if isinstance(additional := obj.additionalProperties, JsonSchemaObject) and location is not None:
+            self.free_schemas.setdefault(location.child("additionalProperties"), additional)
+        self.object_facts.setdefault(
+            location,
+            _ObjectFacts(_others_read(self._model_additional_properties(obj)), obj.patternProperties is not None),
+        )
+
+    def parse_combined_schema(
+        self, name: str, obj: JsonSchemaObject, path: list[str], target_attribute_name: str
+    ) -> list[DataType]:
+        """Record each combined schema with the discriminator it declares, by the members it parses into.
+
+        Each mapped value, a reference or a schema name, resolves where the union is declared, as the parser
+        resolves its references.
+        """
+        members = super().parse_combined_schema(name, obj, path, target_attribute_name)
+        mapping = obj.schema_location and obj.schema_location.child("discriminator", "mapping")
+        selector = (
+            _Selector(
+                declared.propertyName,
+                tuple(
+                    (value, self._ref_path(self._discriminator_mapping_ref(value, ref, mapping)))
+                    for value, ref in (declared.mapping or {}).items()
+                ),
+            )
+            if isinstance(declared := obj.discriminator, Discriminator)
+            else None
+        )
+        union = _Union(tuple(members), selector)
+        self.unions.update((id(member), union) for member in members)
+        return members
+
+    def _copy_model_field(  # pyright: ignore[reportIncompatibleMethodOverride]
+        self, field: DataModelFieldBase, **options: Any
+    ) -> DataModelFieldBase:
+        """Record the field a copy of a field is of, as inherited fields and read or write variants copy."""
+        copied = super()._copy_model_field(field, **options)
+        self.copies[id(copied)] = (copied, field)
+        return copied
+
+    def _copy_inherited_field(  # pyright: ignore[reportIncompatibleMethodOverride]
+        self, field: DataModelFieldBase, inherited_field: DataModelFieldBase, **options: Any
+    ) -> DataModelFieldBase | None:
+        """Record the inherited field a resolved copy of an inherited field is of."""
+        if (copied := super()._copy_inherited_field(field, inherited_field, **options)) is not None:
+            self.copies[id(copied)] = (copied, inherited_field)
+        return copied
+
+    def _create_variant_model(  # noqa: PLR0913
+        self,
+        base_reference: Reference,
+        suffix: Literal["Request", "Response"],
+        model_fields: list[DataModelFieldBase],
+        obj: JsonSchemaObject,
+        data_model_type_class: type[DataModel],
+        *,
+        source_fields: Sequence[DataModelFieldBase] = (),
+    ) -> None:
+        """Record, by the variant's reference key, the split's fields and those of them the variant leaves out."""
+        super()._create_variant_model(
+            base_reference, suffix, model_fields, obj, data_model_type_class, source_fields=source_fields
+        )
+        kept = {id(field) for field in model_fields}
+        key = self.model_resolver.join_path(tuple(_rw_variant_path(base_reference.path, _rw_direction(suffix))))
+        self.left_out[key] = tuple(source_fields), tuple(field for field in source_fields if id(field) not in kept)
+
+    def get_object_field(self, **options: Any) -> DataModelFieldBase:  # pyright: ignore[reportIncompatibleMethodOverride]
+        """Record a field whose own schema says it is nullable, which strict nullability alone puts on the field."""
+        field = super().get_object_field(**options)
+        if isinstance(schema := options.get("field"), JsonSchemaObject) and schema.nullable is True:
+            self.nullable_fields[id(field)] = field
+        return field
+
+    def nullable(self, field: DataModelFieldBase) -> bool:
+        """Return whether the schema a field, or the field it is a copy of, was generated from says it is nullable."""
+        while id(field) not in self.nullable_fields:
+            if (copy := self.copies.get(id(field))) is None:
+                return False
+            field = copy[1]
+        return True
+
+    def _free(self, declaration: SchemaLocation, projection: Projection, raw: YamlValue, path: list[str]) -> None:
+        """Record the schema of a declaration that binds as the parser's model-free type, when no model holds it."""
+        if (
+            declaration not in self.free_schemas
+            and self.model_resolver.references.get(self.acquisitions[declaration, projection]) is None
+        ):
+            self.free_schemas[declaration] = self._validate_schema_object(raw, path)
+
+    def _generate_module_output(  # noqa: PLR0913, PLR0917
+        self,
+        ctx: ModuleContext,
+        config: ParseConfig,
+        contexts: list[ModuleContext],
+        forwarder_map: ForwarderMap,
+        require_update: Collection[ModelKey],
+        future_imports_str: str,
+    ) -> Result | None:
+        """Record the module's final models and the imports the parser finalized for it once its output exists."""
+        result = super()._generate_module_output(
+            ctx, config, contexts, forwarder_map, require_update, future_imports_str
+        )
+        if result is not None:
+            self.module_outputs.append((ctx.module, tuple(ctx.models), result))
+            self.model_imports.update(_imported_names(self.imports), _imported_names(ctx.imports))
+        return result
+
+    def release_records(self) -> None:
+        """Drop the recorded graph anchors and borrowed source nodes."""
+        self.acquisitions.clear()
+        self.module_outputs.clear()
+        self.model_imports.clear()
+        self.unions.clear()
+        self.copies.clear()
+        self.schema_records.clear()
+        self.free_schemas.clear()
+        self.object_facts.clear()
+        self.nullable_fields.clear()
+        self.document_facts.clear()
+        self.document_versions.clear()
+        cast("RecordingGenerationStore", self.generation_store).redirects.clear()
+
+
+class TargetApiOpenAPIParser(_TargetRecording, ApiOpenAPIParser):
+    """Record API schema acquisitions and walked operations for one target generation attempt."""
+
+    def __init__(
+        self,
+        source: str | Path | list[Path] | ParseResult | dict[str, YamlValue],
+        *,
+        config: OpenAPIParserConfig | None = None,
+        serves_source: bool,
+    ) -> None:
+        """Start with no walked operations."""
+        self.serves_source = serves_source
+        self.operations: list[_WalkedOperation] = []
         self._walked_items: list[_WalkedPathItem] = []
         self._walked_operations: list[int] = []
         self._visits: list[_WalkedHolder] = []
@@ -541,102 +690,12 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         super()._walk_callback(raw, path, prefix, use_site)
         self._callback_origin = previous
 
-    def _record_schema_object(self, reference: Reference, obj: JsonSchemaObject) -> None:
-        """Record what a model's schema says of its other and pattern properties, as the parser reads them.
-
-        The other properties are the model's (``_model_additional_properties``), and the schema of the typed ones
-        binds model-free. A schema the parser read at no location is recorded under None, which no model's location
-        looks up.
-        """
-        super()._record_schema_object(reference, obj)
-        location = obj.schema_location
-        if isinstance(additional := obj.additionalProperties, JsonSchemaObject) and location is not None:
-            self.free_schemas.setdefault(location.child("additionalProperties"), additional)
-        self.object_facts.setdefault(
-            location,
-            _ObjectFacts(_others_read(self._model_additional_properties(obj)), obj.patternProperties is not None),
-        )
-
-    def parse_combined_schema(
-        self, name: str, obj: JsonSchemaObject, path: list[str], target_attribute_name: str
-    ) -> list[DataType]:
-        """Record each combined schema with the discriminator it declares, by the members it parses into.
-
-        Each mapped value, a reference or a schema name, resolves where the union is declared, as the parser
-        resolves its references.
-        """
-        members = super().parse_combined_schema(name, obj, path, target_attribute_name)
-        mapping = obj.schema_location and obj.schema_location.child("discriminator", "mapping")
-        selector = (
-            _Selector(
-                declared.propertyName,
-                tuple(
-                    (value, self._ref_path(self._discriminator_mapping_ref(value, ref, mapping)))
-                    for value, ref in (declared.mapping or {}).items()
-                ),
-            )
-            if isinstance(declared := obj.discriminator, Discriminator)
-            else None
-        )
-        union = _Union(tuple(members), selector)
-        self.unions.update((id(member), union) for member in members)
-        return members
-
-    def _copy_model_field(  # pyright: ignore[reportIncompatibleMethodOverride]
-        self, field: DataModelFieldBase, **options: Any
-    ) -> DataModelFieldBase:
-        """Record the field a copy of a field is of, as inherited fields and read or write variants copy."""
-        copied = super()._copy_model_field(field, **options)
-        self.copies[id(copied)] = (copied, field)
-        return copied
-
-    def _copy_inherited_field(  # pyright: ignore[reportIncompatibleMethodOverride]
-        self, field: DataModelFieldBase, inherited_field: DataModelFieldBase, **options: Any
-    ) -> DataModelFieldBase | None:
-        """Record the inherited field a resolved copy of an inherited field is of."""
-        if (copied := super()._copy_inherited_field(field, inherited_field, **options)) is not None:
-            self.copies[id(copied)] = (copied, inherited_field)
-        return copied
-
-    def _create_variant_model(  # noqa: PLR0913
-        self,
-        base_reference: Reference,
-        suffix: Literal["Request", "Response"],
-        model_fields: list[DataModelFieldBase],
-        obj: JsonSchemaObject,
-        data_model_type_class: type[DataModel],
-        *,
-        source_fields: Sequence[DataModelFieldBase] = (),
-    ) -> None:
-        """Record, by the variant's reference key, the split's fields and those of them the variant leaves out."""
-        super()._create_variant_model(
-            base_reference, suffix, model_fields, obj, data_model_type_class, source_fields=source_fields
-        )
-        kept = {id(field) for field in model_fields}
-        key = self.model_resolver.join_path(tuple(_rw_variant_path(base_reference.path, _rw_direction(suffix))))
-        self.left_out[key] = tuple(source_fields), tuple(field for field in source_fields if id(field) not in kept)
-
     def _parse_specification(self, specification: dict[str, YamlValue], path_parts: list[str]) -> None:
         """Record the OpenAPI version the parser reads each walked document by, and its info, tags and servers."""
         key = "/".join(path_parts)
         self.document_facts[key] = _keywords(self._document_as_written(specification), _DOCUMENT_FACTS)
         self.document_versions[key] = cast("OpenAPIVersion", self._read_dialect(specification).version)
         super()._parse_specification(specification, path_parts)
-
-    def get_object_field(self, **options: Any) -> DataModelFieldBase:  # pyright: ignore[reportIncompatibleMethodOverride]
-        """Record a field whose own schema says it is nullable, which strict nullability alone puts on the field."""
-        field = super().get_object_field(**options)
-        if isinstance(schema := options.get("field"), JsonSchemaObject) and schema.nullable is True:
-            self.nullable_fields[id(field)] = field
-        return field
-
-    def nullable(self, field: DataModelFieldBase) -> bool:
-        """Return whether the schema a field, or the field it is a copy of, was generated from says it is nullable."""
-        while id(field) not in self.nullable_fields:
-            if (copy := self.copies.get(id(field))) is None:
-                return False
-            field = copy[1]
-        return True
 
     @override
     def _reads_media_type(self, medium: dict[str, YamlValue], path: list[str], owner: MediaOwner) -> bool:
@@ -664,14 +723,6 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         if declaration not in self._declaration_types:
             self._free(declaration, "value", raw, path)
 
-    def _free(self, declaration: SchemaLocation, projection: Projection, raw: YamlValue, path: list[str]) -> None:
-        """Record the schema of a declaration that binds as the parser's model-free type, when no model holds it."""
-        if (
-            declaration not in self.free_schemas
-            and self.model_resolver.references.get(self.acquisitions[declaration, projection]) is None
-        ):
-            self.free_schemas[declaration] = self._validate_schema_object(raw, path)
-
     def _acquire_item_schema(  # ruff: ignore[too-many-arguments]
         self,
         name: str,
@@ -693,24 +744,6 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         if (visited := self._visited()) is not None:
             visited.schemas[declaration] = ("value", "item_stream_array")
         self._free(declaration, "item_stream_array", item, item_path)
-
-    def _generate_module_output(  # noqa: PLR0913, PLR0917
-        self,
-        ctx: ModuleContext,
-        config: ParseConfig,
-        contexts: list[ModuleContext],
-        forwarder_map: ForwarderMap,
-        require_update: Collection[ModelKey],
-        future_imports_str: str,
-    ) -> Result | None:
-        """Record the module's final models and the imports the parser finalized for it once its output exists."""
-        result = super()._generate_module_output(
-            ctx, config, contexts, forwarder_map, require_update, future_imports_str
-        )
-        if result is not None:
-            self.module_outputs.append((ctx.module, tuple(ctx.models), result))
-            self.model_imports.update(_imported_names(self.imports), _imported_names(ctx.imports))
-        return result
 
     def referenced_document(self, document: str, ref: str) -> str | None:
         """Return the document a reference in a loaded document names, resolved as the walk resolves them there.
@@ -739,26 +772,16 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self._api_documents[document] = raw
         return raw
 
+    @override
     def release_records(self) -> None:
         """Drop the recorded graph anchors and borrowed source nodes, and the state of a walk that failed."""
-        self.acquisitions.clear()
-        self.module_outputs.clear()
-        self.model_imports.clear()
+        super().release_records()
         self.operations.clear()
-        self.unions.clear()
-        self.copies.clear()
-        self.schema_records.clear()
         self._schema_sites.clear()
-        self.free_schemas.clear()
-        self.object_facts.clear()
-        self.nullable_fields.clear()
-        self.document_facts.clear()
-        self.document_versions.clear()
         self._walked_items.clear()
         self._walked_operations.clear()
         self._visits.clear()
         self._callback_origin = None
-        cast("RecordingGenerationStore", self.generation_store).redirects.clear()
 
 
 def _builtin_name(value: object) -> str | None:
