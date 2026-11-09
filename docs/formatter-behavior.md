@@ -5,14 +5,16 @@
 `datamodel-codegen` formats generated Python code after model generation. The default formatter list is currently `black` and `isort`.
 
 !!! warning "Experimental"
-    The built-in formatter (`--formatters builtin`) is experimental and may change as generated-output coverage is
-    expanded.
+    The built-in formatter (`--formatters builtin`) is experimental. It matches Black and isort for standard generated
+    code, with the differences listed below, and its output may still change as coverage is expanded.
 
 This page is the reference for the built-in formatter's exact scope and precedence. For a formatter selection guide,
 see [Code Formatting](formatting.md).
 
-This default will change in a future release. The default formatter will become `builtin`, and external formatter
-dependencies will become opt-in so that generated output can be produced without installing formatter packages.
+This default changes no earlier than three months after 0.92.0 is released, after a transition period announced
+in the release notes. The default formatter will become `builtin`, and external formatter dependencies will become opt-in so that
+generated output can be produced without installing formatter packages. See the
+[migration guide](dependency-migration.md#how-to-migrate).
 
 ## Formatter selection
 
@@ -64,8 +66,13 @@ output with a custom template, please open an issue with a small reproducer.
 ## Built-in formatter scope
 
 The built-in formatter is intentionally small. It is not a general Python formatter. For the code generated from
-the standard templates it aims to write the same bytes as the default Black and isort formatters (Black's stable
-style), so that it can become the default formatter.
+the standard templates it writes what the current Black release writes in its stable style, with isort's default
+ordering, so that it can become the default formatter. It reads only the settings in
+[Line length](#line-length), [String normalization](#string-normalization), `[tool.isort].known_first_party` and
+`--wrap-string-literal`.
+It ignores other isort options (such as `profile` and `force_single_line`) and Black's `target-version`, `preview`
+and `skip-magic-trailing-comma`, and it does not follow the layout of older Black releases. Output differs from
+Black/isort where those settings or releases matter, and in the cases listed under "Known differences".
 
 It covers the generated-code patterns that matter for model modules:
 
