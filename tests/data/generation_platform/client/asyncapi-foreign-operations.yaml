@@ -1,0 +1,25 @@
+asyncapi: 3.0.0
+info:
+  title: Operations in another document
+  version: 1.0.0
+servers:
+  socket:
+    host: socket.example.com
+    protocol: wss
+channels:
+  alerts:
+    address: /alerts
+    messages:
+      alert:
+        payload:
+          type: object
+          properties:
+            level:
+              type: string
+operations:
+  watchAlerts:
+    $ref: 'asyncapi-other.yaml#/operations/watchAlerts'
+  raiseAlert:
+    action: send
+    channel:
+      $ref: '#/channels/alerts'

@@ -6310,5 +6310,20 @@
         {"ref": "/channels/ticker", "resource": "live__feed"}
       ]
     }
+  },
+  "asyncapi-foreign-operations": {
+    "input": "asyncapi-foreign-operations.yaml",
+    "references": ["asyncapi-other.yaml"],
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]}
+  },
+  "asyncapi-mapped-payloads": {
+    "input": "asyncapi-mapped-payloads.yaml",
+    "references": ["asyncapi-other.yaml"],
+    "model": {
+      "input_file_type": "asyncapi",
+      "openapi_scopes": ["schemas"],
+      "external_ref_mapping": {"asyncapi-other.yaml": "shared.models"}
+    },
+    "modules": [["client", "protocols", "_plans.py"], ["models.py"]]
   }
 }

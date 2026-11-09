@@ -218,6 +218,8 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "asyncapi-unopened",
         "asyncapi-setting-errors",
         "asyncapi-class-clash",
+        "asyncapi-foreign-operations",
+        "asyncapi-mapped-payloads",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:

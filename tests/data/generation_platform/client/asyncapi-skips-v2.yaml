@@ -89,13 +89,44 @@ channels:
           - $ref: '#/components/messageTraits/avro'
         payload:
           type: string
+  /guarded:
+    servers: [socket]
+    subscribe:
+      traits:
+        - $ref: '#/components/operationTraits/secured'
+      message:
+        payload:
+          type: object
+  /delegated:
+    servers: [socket]
+    subscribe:
+      traits:
+        - $ref: 'asyncapi-other.yaml#/components/operationTraits/audited'
+      message:
+        payload:
+          type: object
+  /packed:
+    servers: [socket]
+    subscribe:
+      message:
+        contentType: text/plain
+        traits:
+          - $ref: '#/components/messageTraits/packed'
+        payload:
+          type: string
 components:
+  operationTraits:
+    secured:
+      security:
+        - token: []
   channelBindings:
     queried:
       ws:
         query:
           type: object
   messageTraits:
+    packed:
+      contentType: application/x-msgpack
     avro:
       schemaFormat: application/vnd.apache.avro;version=1.9.0
   securitySchemes:

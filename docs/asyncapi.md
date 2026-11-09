@@ -169,7 +169,9 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
   client is given.
 - The models are the only codec: a JSON message is encoded and decoded by its payload's model, a payload that is only
   a `$ref` by the model of the schema it names, a `text/plain` string payload as `str`, and an
-  `application/octet-stream` or binary payload as `bytes`. A direction that carries no message is typed `Never`.
+  `application/octet-stream` or binary payload as `bytes`. A string with a `contentEncoding` in a media type other
+  than JSON or `application/octet-stream`, such as base64 text, is not coded. A direction that carries no message is
+  typed `Never`.
 - [`--client-asyncapi-perspective`](cli-reference/target-generation-options.md#client-asyncapi-perspective) says which
   side the document describes: `server` (the default), whose sends the client receives, or `client`.
 - `--client-operations` keyed by a channel's reference, such as `/channels/market`, renames its attribute (`resource`,
@@ -177,5 +179,9 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
   for AsyncAPI input.
 
 A channel that uses a feature the client does not support is left out with a warning that names the feature, and the
-other channels are generated; when every channel is left out, the generation fails with their findings. [AsyncAPI Client Features](supported_formats.md#asyncapi-client-features) lists each
+other channels are generated; when every channel is left out, the generation fails with their findings. A channel is
+also left out, with a warning that names what does not resolve, when an operation, a message or a trait it needs is
+in another document, or its payload schema is in no loaded document (such as one `--external-ref-mapping` maps); an
+operation in another document may be on any channel, so it leaves every channel out. Operation and message traits are
+merged first, as the document's AsyncAPI version merges them. [AsyncAPI Client Features](supported_formats.md#asyncapi-client-features) lists each
 feature and the client's support.
