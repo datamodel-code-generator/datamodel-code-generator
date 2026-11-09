@@ -1,6 +1,6 @@
 # {{ package }}
 
-The `{{ package }}` package is an HTTPX2 client of the API the OpenAPI document describes.
+The `{{ package }}` package is an HTTPX2 client of the API the {% if channels %}AsyncAPI{% else %}OpenAPI{% endif %} document describes.
 datamodel-code-generator generated it from the document, together with the `{{ model_package }}` models of the `{{ backend }}` backend.
 Generation overwrites every file of the package, as it does the models: keep your code outside the package and regenerate the package instead of editing it; see [Regenerating](#regenerating).
 
@@ -31,9 +31,11 @@ async def main() -> None:
 {%- endfor %}
 ```
 {% if example.placeholders %}
-Replace each `...` with a value of the type its argument declares; [Operations](#operations) lists the arguments of each method.
+Replace each `...` with a value of the type its argument declares{% if not channels %}; [Operations](#operations) lists the arguments of each method{% endif %}.
 {%- endif %}
-{%- if example.helper %}
+{%- if channels %}
+Each WebSocket channel of the API is an attribute of the client, such as `{{ example.helper }}`, whose `connect` opens it, as [Protocol helpers](#protocol-helpers) describes.
+{%- elif example.helper %}
 No operation of the API is a plain request and response, so the example calls `{{ example.operation }}` through its protocol helper `{{ example.helper }}`, as [Protocol helpers](#protocol-helpers) describes.
 {%- else %}
 A method returns the decoded body of a success response, of the type its signature declares.
@@ -54,7 +56,11 @@ See [Authentication]({{ reference }}#authentication) in the runtime reference.
 ## Base URL and servers
 
 Without `base_url`, a call sends to the first server generation resolved for its operation, with the default of each server variable{% if example %}: `{{ example.server }}` for `{{ example.operation }}`{% endif %}.
+{% if channels -%}
+A channel's servers are the `ws` and `wss` servers of the AsyncAPI document that serve it, as `http` and `https` URLs, which its handshake is sent to.
+{%- else -%}
 An operation's servers are the OpenAPI `servers` of the operation, its path item, or the document; one without them takes the `--client-default-base-url` of the generation.
+{%- endif %}
 `server=ServerSelection(index=..., variables={...})`, with `ServerSelection` from `{{ package }}.options`, picks another declared server by position and supplies its variables; `base_url=` replaces the servers with one URL.
 `Client`, `AsyncClient`, `with_options`, and `RequestOptions` take both, and the nearest one given wins: a call's over its view's, and a view's over the client's.
 Giving both on one of them raises `ConfigurationError`.
@@ -82,6 +88,8 @@ A final status the operation does not declare as a success raises `APIStatusErro
 Its `body` is the payload decoded with the error schema the operation declares for the status, such as that of a `default` response, or else the bounded raw bytes; `status_code` and `headers` give the rest of the response.
 A failure to reach the server raises `APIConnectionError`, after the retries it allows, and a timeout its subclass `APITimeoutError`.
 Every exception of `{{ package }}.errors` derives from `SDKError`; the runtime reference describes the others.
+
+{%- if not channels %}
 
 ## Operations
 
@@ -128,11 +136,15 @@ The `with_response`, `with_raw_response`, and `with_streaming_response` attribut
 
 This package has no operations.
 {%- endfor %}
+{%- endif %}
 {%- if helpers %}
 
 ## Protocol helpers
 
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
+{%- if channels %}
+Each is the helper of an AsyncAPI channel, which the client also holds as `client.<name>`; generation read the document as its {{ perspective }}'s (`--client-asyncapi-perspective {{ perspective }}`), so the client sends what the {% if perspective == "server" %}server receives and receives what it sends{% else %}document's client sends and receives what it receives{% endif %}.
+{%- endif %}
 {%- if stream_label %}
 An {{ stream_label }} helper's `open` sends its operation in a session of its own and returns an event stream once the
 response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
@@ -205,7 +217,7 @@ uv add{% for dependency in dependencies %} "{{ dependency }}"{% endfor %}
 
 ## Regenerating
 
-Run the same generation again whenever the OpenAPI document changes; the `--check` option reports the files it would change without writing them.
+Run the same generation again whenever the {% if channels %}AsyncAPI{% else %}OpenAPI{% endif %} document changes; the `--check` option reports the files it would change without writing them.
 Generation overwrites every generated file, restoring any you edited or deleted, and never deletes one: delete the modules of removed resources yourself, which `--check` lists as extra files and each generation warns about.
 Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;
 run it again when a new version of datamodel-code-generator changes them.

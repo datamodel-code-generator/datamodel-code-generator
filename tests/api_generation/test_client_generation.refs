@@ -28,6 +28,7 @@ parameter-name-keys-options1	main/generation_platform/client/configs/parameter-n
 parameter-name-none-key-options2	main/generation_platform/client/configs/parameter-name-none-key.txt
 runtime-keys-options3	main/generation_platform/client/configs/runtime-keys.txt
 [test_client_documentation]
+asyncapi-market-v3	main/generation_platform/client/packages/asyncapi-market-v3/pydantic_v2_BaseModel//*.md	= main/generation_platform/client/packages/asyncapi-market-v3/pydantic_v2_BaseModel~client_documentation[asyncapi-market-v3]//*.md
 auth	main/generation_platform/client/packages/auth/pydantic_v2_BaseModel//*.md
 caching	main/generation_platform/client/packages/caching/pydantic_v2_BaseModel//*.md
 compression	main/generation_platform/client/packages/compression/pydantic_v2_BaseModel//*.md
@@ -117,6 +118,20 @@ allowreserved-path-31	main/generation_platform/client/packages/allowreserved-pat
 allowreserved-path-32	main/generation_platform/client/allowreserved-path-32.txt
 allowreserved-path-32	main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel//*.py
 api-scope-required	main/generation_platform/client/api-scope-required.txt
+asyncapi-market-v2	main/generation_platform/client/asyncapi-market-v2.txt
+asyncapi-market-v2	main/generation_platform/client/packages/asyncapi-market-v2/pydantic_v2_BaseModel//*.py
+asyncapi-market-v3	main/generation_platform/client/asyncapi-market-v3.txt
+asyncapi-market-v3	main/generation_platform/client/packages/asyncapi-market-v3/dataclasses_dataclass//*.py
+asyncapi-market-v3	main/generation_platform/client/packages/asyncapi-market-v3/msgspec_Struct//*.py
+asyncapi-market-v3	main/generation_platform/client/packages/asyncapi-market-v3/pydantic_v2_BaseModel//*.py
+asyncapi-market-v3	main/generation_platform/client/packages/asyncapi-market-v3/pydantic_v2_dataclass//*.py
+asyncapi-market-v3	main/generation_platform/client/packages/asyncapi-market-v3/typing_TypedDict//*.py
+asyncapi-perspective	main/generation_platform/client/asyncapi-perspective.txt
+asyncapi-perspective	main/generation_platform/client/packages/asyncapi-perspective/pydantic_v2_BaseModel//*.py
+asyncapi-skips	main/generation_platform/client/asyncapi-skips.txt
+asyncapi-skips	main/generation_platform/client/packages/asyncapi-skips/pydantic_v2_BaseModel//*.py
+asyncapi-skips-v2	main/generation_platform/client/asyncapi-skips-v2.txt
+asyncapi-skips-v2	main/generation_platform/client/packages/asyncapi-skips-v2/pydantic_v2_BaseModel//*.py
 auth	main/generation_platform/client/auth.txt
 auth	main/generation_platform/client/packages/auth/pydantic_v2_BaseModel//*.py
 auth-context	main/generation_platform/client/auth-context.txt

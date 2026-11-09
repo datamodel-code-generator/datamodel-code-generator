@@ -14,6 +14,7 @@ from contextlib import contextmanager, suppress
 from dataclasses import dataclass, replace
 from decimal import Decimal
 from functools import cached_property
+from itertools import starmap
 from math import isfinite
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, cast, get_args
@@ -51,6 +52,8 @@ from datamodel_code_generator._target_contract import (
     BoundType,
     BuiltinName,
     BuiltinType,
+    ChannelContract,
+    ChannelSkip,
     ConstructorType,
     DeclarationId,
     Direction,
@@ -75,6 +78,7 @@ from datamodel_code_generator._target_contract import (
     LiteralSequence,
     LiteralType,
     MemberShape,
+    MessageContract,
     ModelArtifactAddress,
     ModelFieldFacts,
     ModelHint,
@@ -141,6 +145,7 @@ from datamodel_code_generator.model.pydantic_v2.type_alias import TypeAlias as P
 from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType, _writes_serialize_as_any
 from datamodel_code_generator.model.type_alias import TypeAlias as TypeAliasModel
 from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport, TypeStatement
+from datamodel_code_generator.parser.asyncapi import AsyncAPIParser, AsyncAPISchema
 from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.jsonschema import Discriminator, JsonSchemaObject
 from datamodel_code_generator.parser.openapi import HeaderObject, OpenAPIParser, ParameterObject, RequestBodyObject
@@ -784,6 +789,64 @@ class TargetApiOpenAPIParser(_TargetRecording, ApiOpenAPIParser):
         self._callback_origin = None
 
 
+class TargetAsyncAPIParser(_TargetRecording, AsyncAPIParser):
+    """Record the schema acquisitions and loaded documents of an AsyncAPI document for one client generation attempt.
+
+    The channels themselves are read from the loaded documents when the attempt is bound (``_asyncapi_connections``).
+    """
+
+    def __init__(
+        self,
+        source: str | Path | list[Path] | ParseResult | dict[str, YamlValue],
+        *,
+        config: AsyncAPIParserConfig | None = None,
+    ) -> None:
+        """Start with no loaded documents."""
+        self._api_documents: dict[str, dict[str, YamlValue]] = {}
+        self._api_roots: set[str] = set()
+        self._declaration_types: dict[SchemaLocation, DataType] = {}
+        self.ignored_declarations: list[ApiIgnoredDeclaration] = []
+        super().__init__(source, config=config)  # ty: ignore[invalid-argument-type]
+
+    @override
+    def _note_scanned_document(self, document: str, raw: dict[str, YamlValue]) -> None:
+        """Hold each document the parser loads, which it scans once for discriminators, by its path."""
+        super()._note_scanned_document(document, raw)
+        self._api_documents[document.partition("#")[0]] = raw
+
+    @override
+    def _collect_discriminator_schemas(self) -> None:
+        """Hold the input document scanned now, before its schemas are parsed, as one whose channels are opened."""
+        super()._collect_discriminator_schemas()
+        self._api_roots.add(self.model_resolver.current_document)
+
+    @override
+    def _parse_asyncapi_schema(self, schema: AsyncAPISchema) -> None:
+        """Record a located schema's engine key, and its schema where no model holds it, once it is parsed."""
+        location = schema.location
+        if location is not None:
+            self.acquisitions.setdefault((location, "value"), self.model_resolver.join_path(tuple(schema.path)))
+        super()._parse_asyncapi_schema(schema)
+        if location is not None:
+            with self._asyncapi_context(schema.context):
+                self._free(location, "value", schema.raw_schema, schema.path)
+
+    def _schema_reference_location(self, holder: str, ref: str) -> SchemaLocation | None:
+        """Return the schema a `$ref` of a loaded document names, as the parser resolves it, or None."""
+        return self._reference_location(self._api_documents, holder, ref)
+
+    @override
+    def release_records(self) -> None:
+        """Drop the recorded graph anchors and the loaded documents."""
+        super().release_records()
+        self._api_documents.clear()
+        self._api_roots.clear()
+
+
+TargetParser: TypeAlias = TargetApiOpenAPIParser | TargetAsyncAPIParser
+"""A target parser of any input kind, whose attempt `bind_operations` binds."""
+
+
 def _builtin_name(value: object) -> str | None:
     """Return the name of the builtin a type is: the builtin itself, or an unaliased import of it from ``builtins``."""
     if isinstance(value, BuiltinType):
@@ -1112,7 +1175,7 @@ def _field_name(model: DataModel, name: str | None) -> str:
 class _Binder:
     """Read one attempt's final graph and loaded documents, then forget them."""
 
-    def __init__(self, parser: TargetApiOpenAPIParser, results: str | dict[tuple[str, ...], Result]) -> None:
+    def __init__(self, parser: TargetParser, results: str | dict[tuple[str, ...], Result]) -> None:
         self.parser = parser
         self.results = results
         self.redirects: dict[int, list[tuple[Reference, bool]]] = {}
@@ -2091,7 +2154,7 @@ class _Documents:
     which the walk does not follow.
     """
 
-    def __init__(self, parser: TargetApiOpenAPIParser) -> None:
+    def __init__(self, parser: TargetParser) -> None:
         loaded = parser._api_documents  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
         roots = [document for document in loaded if document in parser._api_roots]  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
         self.documents: dict[str, dict[str, YamlValue]] = {}
@@ -2117,7 +2180,7 @@ class _Models:
 
     def __init__(
         self,
-        parser: TargetApiOpenAPIParser,
+        parser: TargetParser,
         results: str | dict[tuple[str, ...], Result],
         *,
         attempt: AttemptId,
@@ -3656,7 +3719,10 @@ class _Contracts(_Octets):
         """
         if document in self.documents.ids:
             return True
-        if document in self.documents.unloadable or (raw := self.parser.load_document(document)) is None:
+        if (
+            document in self.documents.unloadable
+            or (raw := cast("TargetApiOpenAPIParser", self.parser).load_document(document)) is None
+        ):
             self.documents.unloadable.add(document)
             return False
         self.documents.ids[document] = SourceDocumentId(len(self.documents.ids))
@@ -3698,7 +3764,7 @@ class _Contracts(_Octets):
             document = (
                 declaration.document
                 if ref.startswith("#")
-                else self.parser.referenced_document(declaration.document, ref)
+                else cast("TargetApiOpenAPIParser", self.parser).referenced_document(declaration.document, ref)
             )
             if document is not None and not self.observed(document):
                 references.append(SourceReference(source, ref, None, "document_not_observed"))
@@ -3946,7 +4012,7 @@ class _Contracts(_Octets):
     def operations(self) -> tuple[OperationContract, ...]:
         """Bind the operations in the order the target parser walked them, each before its callbacks' operations."""
         contracts: list[OperationContract] = []
-        for walked in self.parser.operations:
+        for walked in cast("TargetApiOpenAPIParser", self.parser).operations:
             parent = None if walked.parent is None else contracts[walked.parent].id
             contracts.append(self.operation(walked, len(contracts), parent))
         return tuple(contracts)
@@ -4044,6 +4110,117 @@ class _Contracts(_Octets):
             ),
         )
 
+    def channels(self) -> tuple[ChannelContract, ...]:
+        """Bind the channels of the input documents of an AsyncAPI attempt, in document order."""
+        from datamodel_code_generator._asyncapi_connections import read  # noqa: PLC0415
+
+        contracts: list[ChannelContract] = []
+        for document in self.documents.walked:
+            if document in self.parser._api_roots:  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+                contracts.extend(
+                    self.channel(document, channel, len(contracts) + index)
+                    for index, channel in enumerate(read(self.documents.documents[document]))
+                )
+        return tuple(contracts)
+
+    def channel(self, document: str, read: ReadChannel, order: int) -> ChannelContract:
+        """Bind one channel: its handshake, a GET of its address on its WebSocket servers, and its messages."""
+        locate = self.documents.location
+        use_site = SchemaLocation(document, read.use_site)
+        declaration = SchemaLocation(document, read.declaration)
+        identity = OperationId(locate(use_site, "use"), "channel")
+        messages = tuple(
+            MessageContract(
+                locate(SchemaLocation(document, message.declaration), "declaration"),
+                message.action,
+                message.codec,
+                self.payload(document, message.payload, message.payload_ref),
+            )
+            for message in read.messages
+        )
+        skips = tuple(starmap(ChannelSkip, read.skips))
+        if read.address is None:
+            return ChannelContract(locate(use_site, "use"), read.name, None, messages, skips)
+        raw = as_mapping(self.documents.borrow(declaration))
+        servers: list[YamlValue] = [
+            {"url": server.url, **({} if server.variables is None else {"variables": server.variables})}
+            for server in read.servers
+        ]
+        declared = {parameter.name: parameter for parameter in read.parameters}
+        handshake = OperationContract(
+            identity,
+            DeclarationId(locate(declaration, "declaration")),
+            "get",
+            read.address,
+            False,  # noqa: FBT003
+            True,  # noqa: FBT003
+            order,
+            (
+                *_facts(dict(raw), ("summary", "description"), declaration),
+                *_facts({"servers": servers}, ("servers",), declaration),
+            ),
+            tuple(
+                self.address_parameter(identity, use_site, declaration, name, declared.get(name))
+                for name in dict.fromkeys(path_placeholders(read.address))
+            ),
+            None,
+            (),
+            (),
+            (),
+        )
+        return ChannelContract(locate(use_site, "use"), read.name, handshake, messages, skips)
+
+    def payload(self, document: str, tokens: tuple[str, ...], ref: str | None) -> SourceLocation | None:
+        """Return the location of the schema a message's payload binds as: that a lone `$ref` names, or its own."""
+        if ref is None:
+            return self.documents.location(SchemaLocation(document, tokens), "schema")
+        target = self.parser._schema_reference_location(document, ref)  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+        return (
+            None
+            if target is None or target.document not in self.documents.ids
+            else self.documents.location(target, "schema")
+        )
+
+    def address_parameter(
+        self,
+        owner: OperationId,
+        use_site: SchemaLocation,
+        channel: SchemaLocation,
+        name: str,
+        parameter: ReadParameter | None,
+    ) -> WireDeclaration:
+        """Bind a parameter of a channel's address, a required path parameter of its handshake.
+
+        An AsyncAPI 2 parameter's schema types it, and any other is a string.
+        """
+        locate = self.documents.location
+        declared = (
+            channel.child("parameters", name)
+            if parameter is None
+            else SchemaLocation(channel.document, parameter.declaration)
+        )
+        used = use_site.child("parameters", name)
+        facts: dict[str, YamlValue] = {"name": name, "in": "path", "required": True}
+        if parameter is not None and parameter.description is not None:
+            facts["description"] = parameter.description
+        if parameter is not None and parameter.schema is not None:
+            schema = SchemaLocation(channel.document, parameter.schema)
+            use = self.use_id(owner, "parameter", declared, used, schema, location="path", name=name)
+            schemas = self.media_facts((self.use(use, schema),), schema, "parameter", None)
+        else:
+            use = self.use_id(owner, "parameter", declared, used, declared, location="path", name=name)
+            self.uses[use] = TypeUseBinding(use, "bound", _BUILTINS["str"], None, schema=locate(declared, "schema"))
+            self.texts[use] = False
+            schemas = (use,)
+        return WireDeclaration(
+            "parameter",
+            name,
+            DeclarationId(locate(declared, "declaration")),
+            locate(used, "use"),
+            _facts(facts, _PARAMETER_FACTS, declared),
+            schemas,
+        )
+
     def security_schemes(self) -> tuple[WireDeclaration, ...]:
         """Bind the security schemes of the documents the walk loaded, loading the documents they reference."""
         declarations: list[WireDeclaration] = []
@@ -4067,7 +4244,7 @@ class BoundAttempt:
 
 
 def bind_operations(
-    parser: TargetApiOpenAPIParser,
+    parser: TargetParser,
     results: str | dict[tuple[str, ...], Result],
     *,
     output: Path,
@@ -4080,12 +4257,18 @@ def bind_operations(
     symbols, artifacts = builder.symbols()
     builder.field_facts(symbols)
     fields = builder.field_bindings(symbols)
-    operations = builder.operations()
+    asyncapi = isinstance(parser, TargetAsyncAPIParser)
+    channels = builder.channels() if asyncapi else None
+    operations = (
+        builder.operations()
+        if channels is None
+        else tuple(channel.handshake for channel in channels if channel.handshake is not None)
+    )
     builder.schema_uses()
     builder.helper_uses()
     builder.extras()
     builder.encodings()
-    security_schemes = builder.security_schemes()
+    security_schemes = () if asyncapi else builder.security_schemes()
     documents = builder.documents
     return BoundAttempt(
         GeneratedTypeContractBatch(
@@ -4102,18 +4285,19 @@ def bind_operations(
             openapi=(
                 version := parser.document_versions.get(root := next(iter(documents.ids), ""), OpenAPIVersion.V31)
             ),
-            document_versions=_own_versions(parser, documents, version),
+            document_versions=() if asyncapi else _own_versions(parser, documents, version),
             document_facts=parser.document_facts.get(root, ()),
             hint_type=builder.binder.hints.hint_type,
             hint_imports=tuple(builder.binder.hints.fixed),
             names=TargetNames.of(parser.model_resolver),
+            channels=channels,
         ),
         _pristine(parser, documents.documents),
     )
 
 
 def _own_versions(
-    parser: TargetApiOpenAPIParser, documents: _Documents, root: OpenAPIVersion
+    parser: TargetParser, documents: _Documents, root: OpenAPIVersion
 ) -> tuple[tuple[SourceDocumentId, OpenAPIVersion], ...]:
     """Return the loaded documents that --read-schema-version-per-document reads by another version than the root's.
 
@@ -4128,7 +4312,7 @@ def _own_versions(
 
 
 def _pristine(
-    parser: TargetApiOpenAPIParser, documents: dict[str, dict[str, YamlValue]]
+    parser: TargetParser, documents: dict[str, dict[str, YamlValue]]
 ) -> tuple[tuple[str, dict[str, YamlValue]], ...]:
     """Return every document the attempt loaded as it was written, by the location it was read from.
 
@@ -4145,7 +4329,7 @@ def _pristine(
     return tuple((location, as_written(document)) for location, document in loaded)
 
 
-def _unnamed(parser: TargetApiOpenAPIParser) -> str:
+def _unnamed(parser: TargetParser) -> str:
     """Return the location of a document read as text, such as the input when its type is detected.
 
     Its references resolve against the parser's base path, as the models' do.
@@ -4156,6 +4340,7 @@ def _unnamed(parser: TargetApiOpenAPIParser) -> str:
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Container, Generator, Iterable, Iterator, Mapping, Sequence
 
+    from datamodel_code_generator._asyncapi_connections import ReadChannel, ReadParameter
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
@@ -4171,9 +4356,13 @@ if TYPE_CHECKING:
         TypeProjectionReason,
         TypeView,
     )
-    from datamodel_code_generator.config import OpenAPIParserConfig
+    from datamodel_code_generator.config import AsyncAPIParserConfig, OpenAPIParserConfig
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.parser.base import ForwarderMap, ModuleContext, ModulePath, ParseConfig, Result
     from datamodel_code_generator.parser.openapi_media import MediaOwner
-    from datamodel_code_generator.parser.openapi_scope import ApiObjectKind, ApiParameterDeclaration
+    from datamodel_code_generator.parser.openapi_scope import (
+        ApiIgnoredDeclaration,
+        ApiObjectKind,
+        ApiParameterDeclaration,
+    )
     from datamodel_code_generator.reference import ModelResolver, _RwDirection

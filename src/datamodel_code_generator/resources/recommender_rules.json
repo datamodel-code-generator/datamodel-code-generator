@@ -562,6 +562,10 @@
       "not_recommended": "style",
       "reason": "Adds a fixed suffix to every class; it avoids clashes with the project's names but disambiguates nothing."
     },
+    "client_asyncapi_perspective": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
     "client_body_arguments": {
       "not_recommended": "platform",
       "reason": "Server and client generation settings; they do not change the models."

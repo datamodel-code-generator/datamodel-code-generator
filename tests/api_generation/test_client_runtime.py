@@ -47,7 +47,7 @@ def test_client_runtime(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPat
     assert_output(client_runtime_report(case, tmp_path), EXPECTED / f"{case}.txt")
 
 
-@pytest.mark.parametrize("case", ["pets", "auth", "streams", "sockets", "ndjson-split"])
+@pytest.mark.parametrize("case", ["pets", "auth", "streams", "sockets", "ndjson-split", "asyncapi-market-v3"])
 def test_client_readme_examples(case: str, tmp_path: Path) -> None:
     """Run the quick start, asynchronous, and error examples of a client README as far as they run without an API.
 

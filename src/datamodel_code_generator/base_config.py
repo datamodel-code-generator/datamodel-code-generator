@@ -35,6 +35,7 @@ from datamodel_code_generator.enums import (
     AllOfClassHierarchy,
     AllOfMergeMode,
     ClassNameAffixScope,
+    ClientAsyncAPIPerspective,
     ClientBodyArguments,
     ClientSignatureStyle,
     ClientType,
@@ -190,6 +191,11 @@ def _schema_validator_base_class_name_error(value: str | None, target: PythonVer
 
 
 _TARGET_REQUIRED: tuple[str, ...] = ("output", "package", "model_package")
+_TARGET_INPUTS: dict[str, tuple[InputFileType, ...]] = {
+    "generate_server": (InputFileType.OpenAPI,),
+    "generate_client": (InputFileType.OpenAPI, InputFileType.AsyncAPI),
+}
+"""The input kinds each target reads operations from, by the field that selects it."""
 
 
 def _selected_target(config: Any) -> tuple[str, str] | None:
@@ -200,8 +206,8 @@ def _selected_target(config: Any) -> tuple[str, str] | None:
 def _target_options_error(config: Any, *, output: bool = True) -> str | None:
     """Return why the target a config selects cannot run with its options, or None when it can.
 
-    A target needs its required options and an input explicitly typed as OpenAPI. Without `output`, the package
-    directory is not required: a run that writes nothing does not use it.
+    A target needs its required options and an input explicitly typed as one it reads: OpenAPI, or AsyncAPI for the
+    client. Without `output`, the package directory is not required: a run that writes nothing does not use it.
     """
     if (selected := _selected_target(config)) is None:
         return None
@@ -209,8 +215,15 @@ def _target_options_error(config: Any, *, output: bool = True) -> str | None:
     required = _TARGET_REQUIRED if output else _TARGET_REQUIRED[1:]
     if missing := [option_flag(field) for name in required if getattr(config, field := f"{prefix}{name}") is None]:
         return f"{option_flag(selector)} requires {english_list(missing, 'and')}"
-    if (input_file_type := InputFileType(config.input_file_type)) is not InputFileType.OpenAPI:
-        return f"{option_flag(selector)} requires --input-file-type openapi, not {input_file_type.value}"
+    readable = _TARGET_INPUTS[selector]
+    if (input_file_type := InputFileType(config.input_file_type)) not in readable:
+        types = english_list([kind.value for kind in readable], "or")
+        return f"{option_flag(selector)} requires --input-file-type {types}, not {input_file_type.value}"
+    asyncapi = input_file_type is InputFileType.AsyncAPI
+    if asyncapi and config.client_protocols is not None:
+        return "--client-protocols cannot be used with --input-file-type asyncapi, whose channels the client opens"
+    if not asyncapi and config.client_asyncapi_perspective is not None:
+        return "--client-asyncapi-perspective requires --input-file-type asyncapi"
     return None
 
 
@@ -241,9 +254,10 @@ def implied_target_settings(config: Any, explicit: AbstractSet[str]) -> dict[str
     """Return the model settings a server or client target needs that a config leaves unset, with the values it implies.
 
     A setting is unset unless `explicit` names it, the fields an option, a configuration key, a `generate()` argument,
-    or a preset set. The target needs the `api` scope, Python 3.11, and its backend's settings: the MISSING sentinel
-    with pydantic 2.14 for Pydantic dataclasses, pydantic 2.14 for any sentinel, and the decodable unions and enums of
-    msgspec. A setting that was set keeps its value, which the target refuses when it cannot use it.
+    or a preset set. The target needs the `api` scope of an input other than AsyncAPI, Python 3.11, and its backend's
+    settings: the MISSING sentinel with pydantic 2.14 for Pydantic dataclasses, pydantic 2.14 for any sentinel, and the
+    decodable unions and enums of msgspec. A setting that was set keeps its value, which the target refuses when it
+    cannot use it.
     """
     from datamodel_code_generator._requirements import REQUIREMENTS, python_target_meets  # noqa: PLC0415
     from datamodel_code_generator.enums import (  # noqa: PLC0415
@@ -255,7 +269,11 @@ def implied_target_settings(config: Any, explicit: AbstractSet[str]) -> dict[str
 
     implied: dict[str, Any] = {}
     scopes = list(config.openapi_scopes or (OpenAPIScope.Schemas,))
-    if "openapi_scopes" not in explicit and OpenAPIScope.Api not in scopes:
+    if (
+        "openapi_scopes" not in explicit
+        and OpenAPIScope.Api not in scopes
+        and InputFileType(config.input_file_type) is not InputFileType.AsyncAPI
+    ):
         implied["openapi_scopes"] = [*scopes, OpenAPIScope.Api]
     if "target_python_version" not in explicit and not python_target_meets(
         "python.strenum", config.target_python_version.version_key
@@ -565,6 +583,7 @@ class BaseGenerateConfig(BaseModel):
     client_default_base_url: str | None = None
     client_server_base_url: str | None = None
     client_deep_object_brackets: bool | None = None
+    client_asyncapi_perspective: ClientAsyncAPIPerspective | None = None
     client_protocols: Mapping[str, Any] | None = None
 
     @field_validator("additional_imports")

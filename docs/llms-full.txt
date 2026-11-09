@@ -12147,7 +12147,7 @@ Use `--schema-version auto` to detect the version from the `asyncapi` field, or 
 
 `--openapi-scopes` does not select what AsyncAPI input generates: the parser generates models from every location listed below. The `api` scope is available for OpenAPI input only, and AsyncAPI input with `api` stops with an error.
 
-datamodel-code-generator generates data models from schema-bearing fields. It does not generate clients, servers, protocol adapters, or runtime message validators.
+datamodel-code-generator generates data models from schema-bearing fields. It does not generate servers, protocol adapters, or runtime message validators; it generates a WebSocket client for the channels of `ws` and `wss` servers (see [Generate a client](#generate-a-client)).
 
 The AsyncAPI parser extracts schemas from:
 
@@ -12209,6 +12209,56 @@ The AsyncAPI input type is for model generation from message payloads, headers, 
 - 📋 [Generate from JSON Schema](jsonschema.md) - JSON Schema input documentation
 - 📘 [Generate from OpenAPI](openapi.md) - OpenAPI schema behavior
 - 🪶 [Generate from Apache Avro Schema](avro.md) - Avro schema input documentation
+
+## Generate a client
+
+!!! warning "Experimental"
+    Client generation from AsyncAPI documents is experimental (`behavior.asyncapi-client`); the channels it opens and
+    the generated package may change.
+
+`--generate-client httpx2` with `--input-file-type asyncapi` generates the models and an HTTPX2 client package whose
+attributes open the WebSocket channels of the document, sync and asyncio:
+
+```bash
+datamodel-codegen --input market.yaml --input-file-type asyncapi --output models.py \
+  --generate-client httpx2 --client-output client --client-package client --client-model-package models
+```
+
+```python
+from client import Client
+from models import Subscribe
+
+with Client() as client, client.market.connect(pair="XBT-USD") as session:
+    session.send(Subscribe(event="subscribe", channels=["trades"]))
+    for message in session:
+        print(message.data)
+```
+
+- Each channel of AsyncAPI 2.x or 3.x that a `ws` or `wss` server serves becomes `client.<channel>`, named after the
+  words of its id (AsyncAPI 3) or its address (AsyncAPI 2). Its `connect(...)` takes the parameters of the address as
+  keyword arguments and returns the session of a [WebSocket helper](python-client-helpers.md): it sends the channel's
+  handshake, a GET of its address on its servers (with `wss` and `ws` sent as `https` and `http`), through the client's
+  call path, and sends and receives typed messages until the block ends.
+- The models are the only codec: a JSON message is encoded and decoded by its payload's model, a payload that is only
+  a `$ref` by the model of the schema it names, a `text/plain` string payload as `str`, and an
+  `application/octet-stream` or binary payload as `bytes`. A direction that carries no message is typed `Never`.
+- [`--client-asyncapi-perspective`](cli-reference/target-generation-options.md#client-asyncapi-perspective) says which
+  side the document describes: `server` (the default), whose sends the client receives, or `client`.
+- `--client-operations` keyed by a channel's reference, such as `/channels/market`, renames its attribute (`resource`)
+  and its parameters (`parameter_names`); `--client-protocols` is refused for AsyncAPI input.
+
+A channel that uses a feature the client does not support is left out with a warning that names the feature, and the
+other channels are generated:
+
+| Feature | Introduced | Client support |
+|---|---|---|
+| Server protocols | AsyncAPI 2.0 | partial: `ws` and `wss` only |
+| Channels without an address | AsyncAPI 3.0 | not supported |
+| WebSocket channel bindings | AsyncAPI 2.0 | partial: GET handshakes without `query` or `headers` |
+| Message content types | AsyncAPI 2.0 | partial: JSON, `text/plain` strings, and `application/octet-stream` payloads of JSON Schema or AsyncAPI schemas |
+| Several messages per direction | AsyncAPI 2.0 | not supported |
+| Operation replies | AsyncAPI 3.0 | not supported |
+| Security requirements | AsyncAPI 2.0 | not supported |
 
 ---
 
@@ -23236,7 +23286,9 @@ as they do with `--generate-server`. Use `--check` in CI to fail when the packag
 
 ### Requirements
 
-Like the server, the client needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python
+The client reads an OpenAPI document, or the WebSocket channels of an AsyncAPI document with
+`--input-file-type asyncapi`, as [AsyncAPI](asyncapi.md#generate-a-client) describes; the rest of this guide describes
+OpenAPI input. Like the server, the client needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python
 version. As for the server, a setting the client needs that you leave unset takes the value it needs, and a value you
 set that it cannot use is refused; see the server's [Requirements](fastapi-server.md#requirements), which also
 describes the notice that shows how to set them and `target.implied`. An unset target Python version is `3.11`; one
@@ -23369,6 +23421,7 @@ Every client setting is an option, a key of `[tool.datamodel-codegen]` in `pypro
 | [`--client-server-base-url`](cli-reference/target-generation-options.md#client-server-base-url) | `client-server-base-url` | `client_server_base_url` | none; see [Base URLs and servers](#base-urls-and-servers) |
 | [`--client-protocols`](cli-reference/target-generation-options.md#client-protocols) | `client-protocols` | `client_protocols` | none; see [Protocol Helpers](python-client-helpers.md) |
 | [`--client-deep-object-brackets`](cli-reference/target-generation-options.md#client-deep-object-brackets) | `client-deep-object-brackets` | `client_deep_object_brackets` | off; see below |
+| [`--client-asyncapi-perspective`](cli-reference/target-generation-options.md#client-asyncapi-perspective) | `client-asyncapi-perspective` | `client_asyncapi_perspective` | `"server"`; see [AsyncAPI](asyncapi.md#generate-a-client) |
 
 `--client-resource-names`, `--client-operations`, and `--client-protocols` take a JSON object, inline or as the path
 of a JSON file, as `--aliases` does; in `pyproject.toml` they are tables, or the path of a JSON file, and in
@@ -23418,9 +23471,9 @@ parameters and members; `--no-client-deep-object-brackets` turns off one that a 
 
 `--generate-client` requires `--client-output`, `--client-package`, and `--client-model-package`, and a `--client-*`
 option given on the command line requires `--generate-client`; both stop with `Error:` and exit code 2.
-`--generate-client` also requires `--input-file-type openapi`: an input type left to detection, `auto`, or any other
-type stops with `Error: --generate-client requires --input-file-type openapi, not auto` (naming the given type) and
-exit code 2 before the input is read.
+`--generate-client` also requires `--input-file-type openapi` or `--input-file-type asyncapi`: an input type left to
+detection, `auto`, or any other type stops with `Error: --generate-client requires --input-file-type openapi or
+asyncapi, not auto` (naming the given type) and exit code 2 before the input is read.
 `--generate-client` cannot be used with `--generate-server`, and one selected on the command line replaces the other
 selected in `pyproject.toml`. Client keys of `pyproject.toml` are validated like model keys, but have no effect while
 no client is selected.
@@ -27333,7 +27386,7 @@ This documentation is auto-generated from test cases.
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 26 | Utilities and meta options |
-| 🚀 [Target Generation Options](target-generation-options.md) | 26 | Server and client generation with the models (experimental) |
+| 🚀 [Target Generation Options](target-generation-options.md) | 27 | Server and client generation with the models (experimental) |
 | 📝 [Utility Options](utility-options.md) | 15 | Help, version, debug options |
 
 ## 🎯 Focused Topics
@@ -27383,6 +27436,7 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--locked`](general-options.md#locked) | Conflicts | Always | [`--update-lock`](general-options.md#update-lock) | - |
 | [`--untrusted-input`](general-options.md#untrusted-input) | Implies | Always | [`--allow-remote-refs`](general-options.md#allow-remote-refs) disabled | - |
 | [`--update-lock`](general-options.md#update-lock) | Conflicts | Always | [`--locked`](general-options.md#locked) | - |
+| [`--client-asyncapi-perspective`](target-generation-options.md#client-asyncapi-perspective) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-asyncapi-perspective` requires `--generate-client httpx2`. |
 | [`--client-body-arguments`](target-generation-options.md#client-body-arguments) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-body-arguments` requires `--generate-client httpx2`. |
 | [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-deep-object-brackets` requires `--generate-client httpx2`. |
 | [`--client-default-base-url`](target-generation-options.md#client-default-base-url) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-default-base-url` requires `--generate-client httpx2`. |
@@ -27397,7 +27451,7 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-output`](target-generation-options.md#client-output) | `--generate-client` requires `--client-output`. |
 | [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-package`](target-generation-options.md#client-package) | `--generate-client` requires `--client-package`. |
 | [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-model-package`](target-generation-options.md#client-model-package) | `--generate-client` requires `--client-model-package`. |
-| [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--input-file-type`](base-options.md#input-file-type) = `openapi` | `--generate-client` requires `--input-file-type openapi`. |
+| [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--input-file-type`](base-options.md#input-file-type) | `--generate-client` requires `--input-file-type openapi` or `--input-file-type asyncapi`. |
 | [`--generate-client`](target-generation-options.md#generate-client) | Conflicts | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--generate-client` can not be used with `--generate-server`. |
 | [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-output`](target-generation-options.md#server-output) | `--generate-server` requires `--server-output`. |
 | [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-package`](target-generation-options.md#server-package) | `--generate-server` requires `--server-package`. |
@@ -27456,6 +27510,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--class-name-affix-scope`](model-customization.md#class-name-affix-scope)
 - [`--class-name-prefix`](model-customization.md#class-name-prefix)
 - [`--class-name-suffix`](model-customization.md#class-name-suffix)
+- [`--client-asyncapi-perspective`](target-generation-options.md#client-asyncapi-perspective)
 - [`--client-body-arguments`](target-generation-options.md#client-body-arguments)
 - [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets)
 - [`--client-default-base-url`](target-generation-options.md#client-default-base-url)
@@ -70139,6 +70194,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/target-gener
 
 | Option | Description |
 |--------|-------------|
+| [`--client-asyncapi-perspective`](#client-asyncapi-perspective) | Read an AsyncAPI document as its server's or its client's (e... |
 | [`--client-body-arguments`](#client-body-arguments) | Choose how operation methods take request bodies (experiment... |
 | [`--client-deep-object-brackets`](#client-deep-object-brackets) | Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (... |
 | [`--client-default-base-url`](#client-default-base-url) | Set the server URL of operations that declare no servers (ex... |
@@ -70165,6 +70221,239 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/target-gener
 | [`--server-parameter-names`](#server-parameter-names) | Name the method arguments of single operations (experimental... |
 | [`--server-primary-responses`](#server-primary-responses) | Choose the response a bare return value of an operation take... |
 | [`--server-router-names`](#server-router-names) | Name router groups (experimental). |
+
+---
+
+## `--client-asyncapi-perspective` {#client-asyncapi-perspective}
+
+Read an AsyncAPI document as its server's or its client's (experimental).
+
+With `--input-file-type asyncapi`, `--generate-client` opens each channel of a `ws` or `wss` server as
+`client.<channel>.connect(...)`, a WebSocket session that sends one message type and receives another. `server` (the
+default) reads the document as the server's, as the AsyncAPI operations define it: the client sends what the server
+receives (AsyncAPI 2 `publish`, AsyncAPI 3 `action: receive`) and receives what it sends (`subscribe`,
+`action: send`). `client` reads the document as the client's and swaps the two. Other input types refuse the
+option.
+
+**Option relationships:**
+
+- **Requires:** [`--generate-client`](target-generation-options.md#generate-client) - `--client-asyncapi-perspective` requires `--generate-client httpx2`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input asyncapi-market-v3.yaml --input-file-type asyncapi --output models.py --target-python-version 3.11 --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-asyncapi-perspective client # (1)!
+    ```
+
+    1. :material-arrow-left: `--client-asyncapi-perspective` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    asyncapi: 3.0.0
+    info:
+      title: Market feed
+      version: 1.0.0
+    servers:
+      production:
+        host: feed.example.com
+        pathname: /ws
+        protocol: wss
+      sandbox:
+        host: '{region}.sandbox.example.com'
+        protocol: ws
+        variables:
+          region:
+            default: eu
+            enum: [eu, us]
+      broker:
+        host: kafka.example.com
+        protocol: kafka
+    channels:
+      market:
+        address: /v1/market/{pair}
+        servers:
+          - $ref: '#/servers/production'
+          - $ref: '#/servers/sandbox'
+        parameters:
+          pair:
+            description: The trading pair.
+        messages:
+          subscribe:
+            $ref: '#/components/messages/subscribe'
+          trade:
+            $ref: '#/components/messages/trade'
+      ticker:
+        address: /v1/ticker
+        servers:
+          - $ref: '#/servers/production'
+        messages:
+          tick:
+            contentType: text/plain
+            payload:
+              type: string
+      audio:
+        address: /v1/audio
+        servers:
+          - $ref: '#/servers/production'
+        messages:
+          frame:
+            contentType: application/octet-stream
+            payload:
+              type: string
+              format: binary
+          status:
+            payload:
+              type: object
+              properties:
+                level:
+                  type: integer
+              required: [level]
+      status:
+        address: /v1/status
+        messages:
+          update:
+            payload:
+              $ref: '#/components/schemas/Status'
+    operations:
+      onSubscribe:
+        action: receive
+        channel:
+          $ref: '#/channels/market'
+        messages:
+          - $ref: '#/channels/market/messages/subscribe'
+      publishTrade:
+        action: send
+        channel:
+          $ref: '#/channels/market'
+        messages:
+          - $ref: '#/channels/market/messages/trade'
+      publishTick:
+        action: send
+        channel:
+          $ref: '#/channels/ticker'
+      onFrame:
+        action: receive
+        channel:
+          $ref: '#/channels/audio'
+        messages:
+          - $ref: '#/channels/audio/messages/frame'
+      publishStatus:
+        action: send
+        channel:
+          $ref: '#/channels/audio'
+        messages:
+          - $ref: '#/channels/audio/messages/status'
+      publishStatusUpdate:
+        action: send
+        channel:
+          $ref: '#/channels/status'
+    components:
+      messages:
+        subscribe:
+          payload:
+            $ref: '#/components/schemas/Subscribe'
+        trade:
+          contentType: application/json
+          payload:
+            $ref: '#/components/schemas/Trade'
+      schemas:
+        Subscribe:
+          type: object
+          properties:
+            event:
+              type: string
+              const: subscribe
+            channels:
+              type: array
+              items:
+                type: string
+          required: [event, channels]
+        Trade:
+          type: object
+          properties:
+            event:
+              type: string
+              const: trade
+            price:
+              type: number
+            volume:
+              type: number
+          required: [event, price]
+        Status:
+          type: object
+          properties:
+            state:
+              type: string
+              enum: [online, maintenance]
+          required: [state]
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  asyncapi.yaml
+
+    """The plans of this package's WebSocket helpers; regenerate them instead of editing."""
+
+    from __future__ import annotations
+
+    from typing import Final, Never
+
+    import models
+
+    from .. import _operations
+    from .._generated import model_bindings
+    from .._runtime.protocols.references import OperationRef
+    from .._runtime.protocols.websocket import ChannelPlan
+
+    SOCKET_0: Final[ChannelPlan[models.Trade, models.Subscribe]] = ChannelPlan(
+        helper_id='market',
+        operation=OperationRef(pointer='/channels/market'),
+        call=_operations.OPERATION_0,
+        fingerprint='cab2f78a5d2490691e4c3dc1aa01e0e9d49f86d7743eb26c4c3c22a5b9f94aac',
+        encoder=model_bindings.codec_1,
+        decoder=model_bindings.codec_2,
+    )
+
+
+    SOCKET_1: Final[ChannelPlan[str, Never]] = ChannelPlan(
+        helper_id='ticker',
+        operation=OperationRef(pointer='/channels/ticker'),
+        call=_operations.OPERATION_1,
+        fingerprint='1f1c1a8a5c1eacfa751f7539271b43e84cfa608417dac548f70b8286076c4316',
+        send_codec='utf8',
+        receive_codec='none',
+    )
+
+
+    SOCKET_2: Final[ChannelPlan[models.AudioStatusPayload, bytes]] = ChannelPlan(
+        helper_id='audio',
+        operation=OperationRef(pointer='/channels/audio'),
+        call=_operations.OPERATION_2,
+        fingerprint='dd024ec23cc2efc79cac6778b3b14563fd39a7973685078a5ef7b1f077563a46',
+        encoder=model_bindings.codec_3,
+        receive_codec='bytes',
+        receive_frame='binary',
+    )
+
+
+    SOCKET_3: Final[ChannelPlan[models.Status, Never]] = ChannelPlan(
+        helper_id='status',
+        operation=OperationRef(pointer='/channels/status'),
+        call=_operations.OPERATION_3,
+        fingerprint='1b8010c9f550b24a09e72e1f84b1fbcbcdf186ad031338a61795437e1469f1b9',
+        encoder=model_bindings.codec_4,
+        receive_codec='none',
+    )
+    ```
+
+    <!-- fmt: on -->
 
 ---
 
@@ -73232,7 +73521,7 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
 - **Requires:** [`--client-output`](target-generation-options.md#client-output) - `--generate-client` requires `--client-output`.
 - **Requires:** [`--client-package`](target-generation-options.md#client-package) - `--generate-client` requires `--client-package`.
 - **Requires:** [`--client-model-package`](target-generation-options.md#client-model-package) - `--generate-client` requires `--client-model-package`.
-- **Requires:** [`--input-file-type`](base-options.md#input-file-type) = `openapi` - `--generate-client` requires `--input-file-type openapi`.
+- **Requires:** [`--input-file-type`](base-options.md#input-file-type) - `--generate-client` requires `--input-file-type openapi` or `--input-file-type asyncapi`.
 - **Conflicts:** [`--generate-server`](target-generation-options.md#generate-server) - `--generate-client` can not be used with `--generate-server`.
 
 !!! tip "Usage"
@@ -76934,6 +77223,7 @@ datamodel-codegen [OPTIONS]
 
 | Option | Description |
 |--------|-------------|
+| [`--client-asyncapi-perspective`](target-generation-options.md#client-asyncapi-perspective) | Read an AsyncAPI document as its server's or its client's (experimental). |
 | [`--client-body-arguments`](target-generation-options.md#client-body-arguments) | Choose how operation methods take request bodies (experimental). |
 | [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) | Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (experimental). |
 | [`--client-default-base-url`](target-generation-options.md#client-default-base-url) | Set the server URL of operations that declare no servers (experimental). |
@@ -77012,6 +77302,7 @@ All options sorted alphabetically:
 - [`--class-name-affix-scope`](model-customization.md#class-name-affix-scope) - Control which classes receive the prefix/suffix.
 - [`--class-name-prefix`](model-customization.md#class-name-prefix) - Add a prefix to all generated class names.
 - [`--class-name-suffix`](model-customization.md#class-name-suffix) - Add a suffix to all generated class names.
+- [`--client-asyncapi-perspective`](target-generation-options.md#client-asyncapi-perspective) - Read an AsyncAPI document as its server's or its client's (e...
 - [`--client-body-arguments`](target-generation-options.md#client-body-arguments) - Choose how operation methods take request bodies (experiment...
 - [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) - Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (...
 - [`--client-default-base-url`](target-generation-options.md#client-default-base-url) - Set the server URL of operations that declare no servers (ex...
@@ -79834,6 +80125,7 @@ This page lists features that are available but still experimental.
 
 | ID | Kind | Target | Since | Tracking |
 |----|------|--------|-------|----------|
+| `behavior.asyncapi-client` | behavior | `--generate-client httpx2 with --input-file-type asyncapi, and --client-asyncapi-perspective` | 0.92.0 | - |
 | `behavior.naming-hint` | behavior | `NamingHintWarning` | 0.86.0 | - |
 | `behavior.batch-generation-jobs` | behavior | `[tool.datamodel-codegen.jobs], --job, --all-jobs` | 0.72.3 | - |
 | `behavior.remote-reference-lock` | behavior | `datamodel-codegen.lock, --lockfile, --update-lock, and --locked` | 0.72.3 | - |
@@ -79856,6 +80148,16 @@ This page lists features that are available but still experimental.
 | `python-api.generate-dynamic-module` | python-api | `generate_dynamic_module(), DynamicModule, and register_module=True` | 0.92.0 | - |
 
 ## Details
+
+### `behavior.asyncapi-client`
+
+- **Kind:** behavior
+- **Target:** `--generate-client httpx2 with --input-file-type asyncapi, and --client-asyncapi-perspective`
+- **Since:** 0.92.0
+
+HTTPX2 client generation from AsyncAPI documents is experimental; the channels it opens and the generated package may change.
+
+Each channel of an AsyncAPI 2 or 3 document that a `ws` or `wss` server serves becomes an attribute of the client, `client.<channel>.connect(...)`, which opens the channel's WebSocket and sends and receives its messages through the generated models. `--client-asyncapi-perspective` says whether the document describes the server (the default), whose sends the client receives, or the client. A channel that uses a feature the client does not support is left out with a warning.
 
 ### `behavior.naming-hint`
 
@@ -82098,8 +82400,8 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 251 | Shared generation options. |
-| `GenerateConfig` | 266 | Public `generate()` configuration. |
+| `BaseGenerateConfig` | 252 | Shared generation options. |
+| `GenerateConfig` | 267 | Public `generate()` configuration. |
 | `ParserConfig` | 207 | Base parser dependency injection and parser options. |
 | `JSONSchemaParserConfig` | 209 | JSON Schema parser options. |
 | `OpenAPIParserConfig` | 220 | OpenAPI-specific parser options. |

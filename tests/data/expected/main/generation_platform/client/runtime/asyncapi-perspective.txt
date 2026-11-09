@@ -1,0 +1,4 @@
+# asyncapi-perspective pydantic_v2.BaseModel
+    trades 1 text Subscribe{'event': 'subscribe', 'channels': ['trades']} raw=b'{"event": "subscribe", "channels": ["trades"]}'
+    server GET /v1/market/XBT-USD [] | closed 1000 'done'
+  closed WebSocketSession(helper_id='trades', state='ended', subprotocol=None)

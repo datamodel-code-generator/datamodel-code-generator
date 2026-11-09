@@ -208,6 +208,11 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "query-free-objects",
         "deep-object-brackets",
         "deep-object-brackets-errors",
+        "asyncapi-market-v3",
+        "asyncapi-market-v2",
+        "asyncapi-perspective",
+        "asyncapi-skips",
+        "asyncapi-skips-v2",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
@@ -397,6 +402,7 @@ def test_client_helper_spellings(first: str, second: str, tmp_path: Path) -> Non
         "pets-unpack",
         "media",
         "templates",
+        "asyncapi-market-v3",
     ],
 )
 def test_client_documentation(case: str, tmp_path: Path) -> None:

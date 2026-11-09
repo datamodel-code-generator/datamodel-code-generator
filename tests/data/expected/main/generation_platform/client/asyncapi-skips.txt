@@ -1,0 +1,30 @@
+# asyncapi-skips
+render pydantic_v2.BaseModel
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'orders', which uses server protocols (AsyncAPI 2.0) that the client does not support: /channels/orders: it is served on no ws or wss server
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'posted', which uses WebSocket channel bindings (AsyncAPI 2.0) that the client does not support: /channels/posted: its WebSocket binding opens it with POST; /channels/posted: its WebSocket binding declares query
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'packed', which uses message content types (AsyncAPI 2.0) that the client does not support: /channels/packed: message /channels/packed/messages/blob has content type application/x-msgpack
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'private', which uses security requirements (AsyncAPI 2.0) that the client does not support: /channels/private: a server it is served on requires security
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'dynamic', which uses channels without an address (AsyncAPI 3.0) that the client does not support: /channels/dynamic: it has no address
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'rpc', which uses operation replies (AsyncAPI 3.0), several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/rpc: an operation on it declares a reply; /channels/rpc: the application sends more than one message on it
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'alerts', which the client cannot generate: /channels/alerts: it references another document
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'notes', which the client cannot generate: /channels/notes: a message of it references another document
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'audited', which uses security requirements (AsyncAPI 2.0) that the client does not support: /channels/audited: an operation on it requires security
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/responses.py
+  client/types/__init__.py
+  models.py

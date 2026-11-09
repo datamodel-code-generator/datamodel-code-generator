@@ -712,6 +712,15 @@ class ClientResource:
 
 
 @dataclass(frozen=True, slots=True)
+class ClientChannel:
+    """A client's attribute that opens an AsyncAPI channel: its name, its WebSocket helper's class, and docstring."""
+
+    name: str
+    class_name: str
+    docstring: str
+
+
+@dataclass(frozen=True, slots=True)
 class Member:
     """A cached attribute of a resource view: another view of its operations, or a child resource."""
 
@@ -966,8 +975,12 @@ def _caches(helpers: Iterable[PaginationSpec | PollingSpec | CacheSpec | UploadS
 
 
 def _named(spec: OperationSpec, key: str) -> dict[str, str]:
-    """Return how a README names an operation, by its resource and method name under `key`, and its route."""
-    return {key: f"{spec.resource}.{spec.name}", "method": spec.contract.method.upper(), "path": spec.contract.path}
+    """Return how a README names an operation, by its resource and method name under `key`, and its route.
+
+    The handshake of an AsyncAPI channel, which has no method of its own, is named by its channel's reference.
+    """
+    name = spec.contract.id.use_site.pointer if spec.contract.id.kind == "channel" else f"{spec.resource}.{spec.name}"
+    return {key: name, "method": spec.contract.method.upper(), "path": spec.contract.path}
 
 
 def _operation_summary(spec: OperationSpec) -> dict[str, object]:
@@ -1000,13 +1013,15 @@ def _stub(name: str, parameters: Iterable[Parameter], returns: str) -> str:
     return "\n".join((f"def {name}(", "    *,", *lines, f") -> {returns}: ..."))
 
 
-def _opened(name: str, keywords: Iterable[str], *, stream: bool) -> tuple[list[str], list[str]]:
+def _opened(name: str, keywords: Iterable[str], *, stream: bool, channel: bool = False) -> tuple[list[str], list[str]]:
     """Return the statements that open a WebSocket or stream helper and read what it receives, without and with await.
 
     A WebSocket helper's `connect` is entered with `with` or `async with`, and a stream helper's `open` returns the
-    stream, which an asynchronous helper awaits before the block enters it.
+    stream, which an asynchronous helper awaits before the block enters it. The helper of an AsyncAPI `channel` is an
+    attribute of the client itself.
     """
-    target = call_text(f"client.protocols.{name}.{'open' if stream else 'connect'}", keywords)
+    owner = "client" if channel else "client.protocols"
+    target = call_text(f"{owner}.{name}.{'open' if stream else 'connect'}", keywords)
     value, item = ("stream", "event") if stream else ("session", "message")
     loop, read = f"for {item} in {value}:", f"        print({item}.data)"
     return (
@@ -1053,7 +1068,12 @@ def exports(spec: OperationSpec) -> tuple[str, ...]:
 
 
 def _response_type(module: TargetModule, spec: OperationSpec) -> str:
-    """Return an operation's response alias as a module spells it, imported from its resource's types package."""
+    """Return an operation's response alias as a module spells it, imported from its resource's types package.
+
+    The handshake of an AsyncAPI channel has no resource and declares no response: its result is None.
+    """
+    if spec.contract.id.kind == "channel":
+        return "None"
     return module.local(f"types.{spec.resource}", response_alias(spec.pascal))
 
 
@@ -1271,12 +1291,15 @@ class _Resources(_Typing):
         helpers: tuple[PaginationSpec | PollingSpec | CacheSpec | UploadSpec, ...] = (),
         streams: tuple[StreamSpec, ...] = (),
         sockets: tuple[SocketSpec, ...] = (),
+        channels: tuple[ClientChannel, ...] = (),
         types: TypeNames,
         raw_body: RawBody = "multipart",
         use_schema_description: bool = False,
         use_single_line_docstring: bool = False,
     ) -> None:
         """Keep the typing context, unpacked methods' TypedDicts, protocol helpers, and the bodies raw calls take.
+
+        `channels` are the client's attributes of the WebSocket helpers of AsyncAPI channels, their classes unprefixed.
 
         An operation method's docstring is its configured description, else, with `use_schema_description`, the
         operation's summary and description, else its route, formatted as the models' docstrings are.
@@ -1286,6 +1309,7 @@ class _Resources(_Typing):
         self.helpers = helpers
         self.streams = streams
         self.sockets = sockets
+        self.channels = channels
         self.raw_body: RawBody = raw_body
         self.use_schema_description = use_schema_description
         self.use_single_line_docstring = use_single_line_docstring
@@ -1423,11 +1447,14 @@ class _Resources(_Typing):
         protocols = f"{prefix}ProtocolHelpers" if self.helpers or self.streams or self.sockets else None
         settings = self._settings(asynchronous=asynchronous) if protocols is not None else ()
         names.update(name for name, _ in settings)
+        helpers_module = f".protocols.{'_async_helpers' if asynchronous else '_helpers'}"
+        channels = [replace(channel, class_name=f"{prefix}{channel.class_name}") for channel in self.channels]
+        names.update(channel.class_name for channel in channels)
         module = TargetModule(self.types, {*names, *(name for _, name, _ in roots)}, level=1)
         lazy = [(name, path) for _, name, path in roots]
-        helpers_module = f".protocols.{'_async_helpers' if asynchronous else '_helpers'}"
         if protocols is not None:
             lazy.extend(((protocols, helpers_module), *settings[1:]))
+        lazy.extend((channel.class_name, helpers_module) for channel in channels)
         core = module.local("_runtime.client.client", f"{prefix}ClientCore")
         client_keywords, view_keywords = self._keywords(module, asynchronous=asynchronous, protocols=bool(protocols))
         credentials = [
@@ -1463,6 +1490,7 @@ class _Resources(_Typing):
                 ClientResource(resource.parts[0], resource.namespace, name, path) for resource, name, path in roots
             ],
             protocols=protocols or "",
+            channels=channels,
             protocols_module=helpers_module,
             helper_settings=settings[0][1] if settings else "",
             imports=module.imports(),
@@ -1481,6 +1509,8 @@ class _Resources(_Typing):
         """
         modules = {resource.namespace: self.resource_module(resource, "") for resource in self.plan.resources}
         for spec in self.plan.operations:
+            if spec.contract.id.kind == "channel":
+                continue
             module = modules[spec.resource]
             overloads, implementation = self.branches(module, spec, asynchronous=False, view="plain")
             required = [item for item in implementation.parameters if item.default == "required"]
@@ -1503,8 +1533,10 @@ class _Resources(_Typing):
         """Return the keywords a README's call of a protocol helper of an operation gives, as `summaries` does.
 
         The helper takes the operation's parameters, and a stream helper, with `body`, also its body, never its fields.
+        The handshake of an AsyncAPI channel has no resource, so its keywords are spelled in the client's module.
         """
-        module = self.resource_module(next(item for item in self.plan.resources if item.namespace == spec.resource), "")
+        resource = next((item for item in self.plan.resources if item.namespace == spec.resource), None)
+        module = TargetModule(self.types, set(), level=1) if resource is None else self.resource_module(resource, "")
         arguments = self.call_shape(module, spec, asynchronous=False, body=body).arguments
         return tuple(
             keyword_argument(item.name, _example(item, spec)) for item in arguments if item.default == "required"
@@ -2377,6 +2409,12 @@ _STREAMS: Final = "_runtime.protocols.streams"
 _CACHE: Final = "_runtime.protocols.cache"
 
 
+def _helper_class(name: str, kind: str, python_version: PythonVersion) -> str:
+    """Return the class of a helper, after those of the namespaces its dotted name opens."""
+    *_, (_, class_name) = helper_classes(name, kind, python_version)
+    return class_name
+
+
 def _helper_noun(kind: str) -> str:
     """Return what the docstrings of a package call one helper of a kind: the kind's label, then `helper`."""
     return f"{HELPER_KINDS[kind].label} helper"
@@ -3112,13 +3150,19 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
 
     def message_types(self, module: TargetModule, spec: SocketSpec) -> tuple[str, str]:
         """Return the types a WebSocket helper sends and receives: a schema's types, str for text, bytes for bytes."""
+        tree = spec.helper.tree
+        return (
+            self.message_type(module, tree["send"]["codec"], spec.send),
+            self.message_type(module, tree["receive"]["codec"], spec.receive),
+        )
+
+    def message_type(self, module: TargetModule, codec: str, use: TypeUseBinding | None) -> str:
+        """Return the type of a WebSocket direction's messages, `Never` where an AsyncAPI channel carries none."""
         from datamodel_code_generator._client.protocols import MESSAGE_CODECS  # noqa: PLC0415
 
-        tree, resources = spec.helper.tree, self.resources
-        return (
-            resources.surface(module, MESSAGE_CODECS[tree["send"]["codec"]].media, spec.send),
-            resources.surface(module, MESSAGE_CODECS[tree["receive"]["codec"]].media, spec.receive),
-        )
+        if codec == "none":
+            return module.name("typing", "Never")
+        return self.resources.surface(module, MESSAGE_CODECS[codec].media, use)
 
     def socket_plan(self, module: TargetModule, index: int, spec: SocketSpec) -> Plan:
         """Return a WebSocket helper's plan: its identity, handshake call, messages, and subprotocols.
@@ -3197,6 +3241,7 @@ class ClientRenderer:
         self.config = config
         self.plan = plan
         self.batch = batch
+        self.channels = batch.channels is not None
         self.wire = wire
         self.codecs = codecs
         self.helpers = helpers
@@ -3247,7 +3292,7 @@ class ClientRenderer:
             retry_statuses=english_list(_RETRY_STATUSES, "and", "serial"),
             public_modules=english_list((*public, "response types"), "and", "serial"),
             reference="_generated_docs/runtime.md",
-            example=self.example([keywords for _, keywords in summaries], resources) if summaries else None,
+            example=self.example([keywords for _, keywords in summaries], resources) if self.plan.operations else None,
             credentials=[CredentialLabel(item.name, _KIND_LABELS[item.scheme.kind]) for item in self.plan.credentials],
             signature_style=config.signature_style,
             body_arguments=config.body_arguments,
@@ -3259,6 +3304,8 @@ class ClientRenderer:
             stream_label=self.stream_label if self.streams else "",
             resumes=any(spec.reopen is not None for spec in self.streams),
             sockets=bool(self.sockets),
+            channels=self.channels,
+            perspective=config.asyncapi_perspective,
             kinds=sorted({spec.helper.kind for spec in self.helpers}),
             compression=json.dumps(accepted, indent=2, ensure_ascii=True)
             if (accepted := self._accepted_encodings())
@@ -3290,9 +3337,11 @@ class ClientRenderer:
             calls, awaited = [f"result = {invocation}"], [f"result = await {invocation}"]
         else:
             name, stream = helper
-            calls, awaited = _opened(name, resources.helper_keywords(spec, body=stream), stream=stream)
+            calls, awaited = _opened(
+                name, resources.helper_keywords(spec, body=stream), stream=stream, channel=self.channels
+            )
         return {
-            "operation": f"{spec.resource}.{spec.name}",
+            "operation": _named(spec, "operation")["operation"],
             "server": server,
             "arguments": arguments,
             "calls": calls,
@@ -3454,6 +3503,7 @@ class ClientRenderer:
             multipart_responses=any(media.kind == "multipart" for media in received),
             extras=self.codecs.extras,
         )
+        assert self.batch.names is not None
         resources = _Resources(
             self.plan,
             self.accessors,
@@ -3461,6 +3511,15 @@ class ClientRenderer:
             helpers=self.helpers,
             streams=self.streams,
             sockets=self.sockets,
+            channels=tuple(
+                ClientChannel(
+                    spec.helper.name,
+                    _helper_class(spec.helper.name, spec.helper.kind, self.batch.names.python_version),
+                    f"The WebSocket channel at {escape_docstring(spec.operation.contract.path)}.",
+                )
+                for spec in self.sockets
+                if self.channels
+            ),
             types=self.types,
             raw_body=capabilities.raw_body,
             use_schema_description=self.use_schema_description,

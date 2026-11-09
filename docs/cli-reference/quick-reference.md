@@ -312,6 +312,7 @@ datamodel-codegen [OPTIONS]
 
 | Option | Description |
 |--------|-------------|
+| [`--client-asyncapi-perspective`](target-generation-options.md#client-asyncapi-perspective) | Read an AsyncAPI document as its server's or its client's (experimental). |
 | [`--client-body-arguments`](target-generation-options.md#client-body-arguments) | Choose how operation methods take request bodies (experimental). |
 | [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) | Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (experimental). |
 | [`--client-default-base-url`](target-generation-options.md#client-default-base-url) | Set the server URL of operations that declare no servers (experimental). |
@@ -390,6 +391,7 @@ All options sorted alphabetically:
 - [`--class-name-affix-scope`](model-customization.md#class-name-affix-scope) - Control which classes receive the prefix/suffix.
 - [`--class-name-prefix`](model-customization.md#class-name-prefix) - Add a prefix to all generated class names.
 - [`--class-name-suffix`](model-customization.md#class-name-suffix) - Add a suffix to all generated class names.
+- [`--client-asyncapi-perspective`](target-generation-options.md#client-asyncapi-perspective) - Read an AsyncAPI document as its server's or its client's (e...
 - [`--client-body-arguments`](target-generation-options.md#client-body-arguments) - Choose how operation methods take request bodies (experiment...
 - [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) - Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (...
 - [`--client-default-base-url`](target-generation-options.md#client-default-base-url) - Set the server URL of operations that declare no servers (ex...

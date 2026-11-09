@@ -1,0 +1,232 @@
+asyncapi: 3.1.0
+info:
+  title: Skipped channels
+  version: 1.0.0
+servers:
+  socket:
+    host: socket.example.com
+    protocol: wss
+  shared:
+    $ref: '#/components/servers/shared'
+  remote:
+    $ref: 'asyncapi-other.yaml#/servers/remote'
+  secured:
+    host: secure.example.com
+    protocol: wss
+    security:
+      - $ref: '#/components/securitySchemes/user'
+  broker:
+    host: kafka.example.com
+    protocol: kafka
+channels:
+  orders:
+    address: orders
+    servers:
+      - $ref: '#/servers/broker'
+    messages:
+      order:
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+  posted:
+    address: /posted
+    servers:
+      - $ref: '#/servers/socket'
+    bindings:
+      ws:
+        method: POST
+        query:
+          type: object
+          properties:
+            token:
+              type: string
+    messages:
+      note:
+        payload:
+          type: string
+  packed:
+    address: /packed
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      blob:
+        contentType: application/x-msgpack
+        payload:
+          type: object
+  private:
+    address: /private
+    servers:
+      - $ref: '#/servers/secured'
+    messages:
+      secret:
+        payload:
+          type: string
+  dynamic:
+    address: null
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      ping:
+        payload:
+          type: string
+  rpc:
+    address: /rpc
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      call:
+        payload:
+          type: object
+          properties:
+            method:
+              type: string
+      result:
+        payload:
+          type: object
+          properties:
+            value:
+              type: number
+      error:
+        payload:
+          type: object
+          properties:
+            code:
+              type: integer
+  alerts:
+    $ref: 'asyncapi-other.yaml#/channels/alerts'
+  notes:
+    address: /notes/{region}
+    servers:
+      - $ref: '#/servers/shared'
+    parameters:
+      region:
+        $ref: 'asyncapi-other.yaml#/components/parameters/region'
+    messages:
+      note:
+        $ref: 'asyncapi-other.yaml#/components/messages/note'
+  documents:
+    address: /documents
+    servers:
+      - $ref: '#/servers/shared'
+    messages:
+      document:
+        payload:
+          schemaFormat: application/schema+json;version=draft-07
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+            required: [title]
+  reports:
+    address: /reports
+    servers:
+      - $ref: '#/servers/shared'
+    messages:
+      report:
+        payload:
+          $ref: 'asyncapi-other.yaml#/components/schemas/Report'
+  audited:
+    address: /audited
+    servers:
+      - $ref: '#/servers/shared'
+    messages:
+      entry:
+        contentType: text/plain
+        payload:
+          type: string
+  echo:
+    address: /echo
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      text:
+        contentType: text/plain
+        payload:
+          type: string
+operations:
+  receiveOrder:
+    action: receive
+    channel:
+      $ref: '#/channels/orders'
+  receiveNote:
+    action: receive
+    channel:
+      $ref: '#/channels/posted'
+  receiveBlob:
+    action: receive
+    channel:
+      $ref: '#/channels/packed'
+  receiveSecret:
+    action: receive
+    channel:
+      $ref: '#/channels/private'
+  receivePing:
+    action: receive
+    channel:
+      $ref: '#/channels/dynamic'
+  call:
+    action: receive
+    channel:
+      $ref: '#/channels/rpc'
+    messages:
+      - $ref: '#/channels/rpc/messages/call'
+    reply:
+      channel:
+        $ref: '#/channels/rpc'
+      messages:
+        - $ref: '#/channels/rpc/messages/result'
+  answer:
+    action: send
+    channel:
+      $ref: '#/channels/rpc'
+    messages:
+      - $ref: '#/channels/rpc/messages/result'
+      - $ref: '#/channels/rpc/messages/error'
+  echo:
+    action: receive
+    channel:
+      $ref: '#/channels/echo'
+  shout:
+    action: send
+    channel:
+      $ref: '#/channels/echo'
+  watchAlerts:
+    $ref: 'asyncapi-other.yaml#/operations/watchAlerts'
+  readNotes:
+    action: receive
+    channel:
+      $ref: '#/channels/notes'
+  publishReports:
+    action: send
+    channel:
+      $ref: '#/channels/reports'
+  readDocuments:
+    action: receive
+    channel:
+      $ref: '#/channels/documents'
+  audit:
+    action: receive
+    channel:
+      $ref: '#/channels/audited'
+    security:
+      - $ref: '#/components/securitySchemes/user'
+  legacy:
+    action: publish
+    channel:
+      $ref: '#/channels/audited'
+  unbound:
+    action: send
+    channel:
+      address: /inline
+components:
+  servers:
+    shared:
+      host: shared.example.com
+      pathname: /v3
+      protocol: ws
+  securitySchemes:
+    user:
+      type: userPassword

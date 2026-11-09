@@ -19,6 +19,7 @@ if TYPE_CHECKING:
         AllOfClassHierarchy,
         AllOfMergeMode,
         ClassNameAffixScope,
+        ClientAsyncAPIPerspective,
         ClientBodyArguments,
         ClientSignatureStyle,
         ClientType,
@@ -312,6 +313,7 @@ class BaseGenerateConfig(TypedDict):
     client_default_base_url: NotRequired[str | None]
     client_server_base_url: NotRequired[str | None]
     client_deep_object_brackets: NotRequired[bool | None]
+    client_asyncapi_perspective: NotRequired[ClientAsyncAPIPerspective | None]
     client_protocols: NotRequired[Mapping[str, Any] | None]
 
 

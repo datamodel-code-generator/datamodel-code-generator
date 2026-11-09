@@ -12,8 +12,9 @@ from warnings import warn
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_generation import TargetRender
-from datamodel_code_generator._api_types import APIGenerationError, NextSteps, error_text
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, NextSteps, error_text
 from datamodel_code_generator._client.caching import plan_caches
+from datamodel_code_generator._client.channels import channel_protocols
 from datamodel_code_generator._client.codec_plan import plan_client_codecs
 from datamodel_code_generator._client.config import OPTION_PREFIX, ClientGenerationConfig, _is_sequence
 from datamodel_code_generator._client.fields import plan_fields
@@ -73,7 +74,7 @@ from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._api_types import Diagnostic, TargetKind
+    from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._client.caching import CacheSpec
     from datamodel_code_generator._client.codec_plan import CodecBackend
     from datamodel_code_generator._client.pagination import PaginationSpec
@@ -85,6 +86,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
     from datamodel_code_generator._target_contract import (
+        ChannelContract,
         GeneratedTypeContractBatch,
         ModelFieldFacts,
         OperationContract,
@@ -124,33 +126,83 @@ class ClientTarget:
         An operation that only its own declarations refuse, and that no enabled helper calls, is left out with a warning
         that names the OpenAPI features it uses that the client does not support, and the others are planned again. A
         refusal stays an error, with the findings of the operations skipped before it, when anything else is refused
-        too, or nothing is left.
+        too, or nothing is left. The channels of an AsyncAPI input are opened as WebSocket helpers instead
+        (`channel_protocols`), and a channel is left out the same way, also for what its document declares.
         """
         config = request.config
         assert isinstance(config, ClientGenerationConfig)
-        protocols = plan_protocols(request, config.protocols, self.protocol_base)
-        called = helper_calls(protocols)
-        skipped: list[tuple[OperationContract, list[Diagnostic]]] = []
+        skipped: list[tuple[str, list[Diagnostic]]] = []
+        if (channels := request.batch.channels) is None:
+            protocols = plan_protocols(request, config.protocols, self.protocol_base)
+            called = helper_calls(protocols)
+            subjects: dict[OperationId, str] = {}
+        else:
+            skipped.extend((_channel(channel), _skips(channel)) for channel in channels if channel.skips)
+            opened = {
+                channel.handshake.id: channel
+                for channel in channels
+                if not channel.skips and channel.handshake is not None
+            }
+            subjects = {identity: _channel(channel) for identity, channel in opened.items()}
+            request = replace(request, operations=tuple(channel.handshake for channel in opened.values()))
+            called = frozenset()
         selected = request.operations
-        while isinstance(rendered := _attempt(request, config, protocols, selected), APIGenerationError):
+        while isinstance(
+            rendered := _attempt(
+                request,
+                config,
+                protocols
+                if channels is None
+                else channel_protocols(request, config, tuple(opened[item.id] for item in request.operations)),
+                selected,
+            ),
+            APIGenerationError,
+        ):
             refused = _refused(rendered, request.operations, called)
             if refused is None or len(refused) == len(request.operations):
                 earlier = (item for _, found in skipped for item in found)
                 diagnostics = (*earlier, *rendered.diagnostics)
                 raise APIGenerationError(diagnostics, option_prefix=rendered.option_prefix) from None
-            skipped.extend(refused.values())
+            skipped.extend(
+                (subjects.get(operation.id) or _operation(operation), found) for operation, found in refused.values()
+            )
             request = replace(request, operations=tuple(item for item in request.operations if item.id not in refused))
         output = shown(config.output, request.shown_root).as_posix()
-        for operation, found in skipped:
-            named = "" if operation.operation_id is None else f" (operationId {stable_repr(operation.operation_id)})"
+        for subject, found in skipped:
             features = ", ".join(dict.fromkeys(feature_label(item.feature) for item in found if item.feature))
             why = (
                 f"which uses {features} that the client does not support"
                 if features
                 else "which the client cannot generate"
             )
-            warn(f"{output}: Skipping {label(operation)}{named}, {why}: {error_text(found)}", stacklevel=2)
+            warn(f"{output}: Skipping {subject}, {why}: {error_text(found)}", stacklevel=2)
         return rendered
+
+
+def _operation(operation: OperationContract) -> str:
+    """Return how a skip warning names an operation: its method and path, and its operationId."""
+    named = "" if operation.operation_id is None else f" (operationId {stable_repr(operation.operation_id)})"
+    return f"{label(operation)}{named}"
+
+
+def _channel(channel: ChannelContract) -> str:
+    """Return how a skip warning names an AsyncAPI channel: by its id or address."""
+    return f"channel {stable_repr(channel.name)}"
+
+
+def _skips(channel: ChannelContract) -> list[Diagnostic]:
+    """Return the findings of what an AsyncAPI channel declares that the client cannot open."""
+    return [
+        Diagnostic(
+            code="E_CLIENT_UNSUPPORTED",
+            severity="error",
+            stage="target",
+            message=skip.message,
+            source_pointer=channel.use_site.pointer,
+            feature=skip.feature,
+        )
+        for skip in channel.skips
+    ]
 
 
 def _attempt(
@@ -239,7 +291,7 @@ def _render(  # ruff: ignore[too-many-locals]
     )
     renderer = ClientRenderer(
         config=config,
-        plan=plan,
+        plan=plan if request.batch.channels is None else replace(plan, resources=()),
         batch=batch,
         wire=wire,
         codecs=codecs,
@@ -256,7 +308,9 @@ def _render(  # ruff: ignore[too-many-locals]
         use_schema_description=request.model_config.use_schema_description,
         use_single_line_docstring=request.model_config.use_single_line_docstring,
     )
-    return TargetRender(files=renderer.files(), dependencies=dependencies, next_steps=_next_steps(config, plan))
+    return TargetRender(
+        files=renderer.files(), dependencies=dependencies, next_steps=_next_steps(config, plan, sockets)
+    )
 
 
 def _refused(
@@ -279,9 +333,17 @@ def _refused(
     return refused
 
 
-def _next_steps(config: ClientGenerationConfig, plan: ClientPlan) -> NextSteps:
-    """Return the README and code that calls the first operation in a client's context."""
-    call = f"client.{spec.resource}.{spec.name}(...)" if (spec := next(iter(plan.operations), None)) else "..."
+def _next_steps(config: ClientGenerationConfig, plan: ClientPlan, sockets: tuple[SocketSpec, ...]) -> NextSteps:
+    """Return the README and code that calls the first operation in a client's context.
+
+    The client of an AsyncAPI input opens its first channel instead.
+    """
+    if (spec := next(iter(plan.operations), None)) is None:
+        call = "..."
+    elif spec.contract.id.kind == "channel":
+        call = f"with client.{sockets[0].helper.name}.connect(...) as session:\n        ..."
+    else:
+        call = f"client.{spec.resource}.{spec.name}(...)"
     return NextSteps(
         readme=Path("README.md"),
         usage=f"from {config.package} import Client\n\nwith Client(base_url=...) as client:\n    {call}",

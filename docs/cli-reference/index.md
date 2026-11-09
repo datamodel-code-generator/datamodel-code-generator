@@ -16,7 +16,7 @@ This documentation is auto-generated from test cases.
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 26 | Utilities and meta options |
-| 🚀 [Target Generation Options](target-generation-options.md) | 26 | Server and client generation with the models (experimental) |
+| 🚀 [Target Generation Options](target-generation-options.md) | 27 | Server and client generation with the models (experimental) |
 | 📝 [Utility Options](utility-options.md) | 15 | Help, version, debug options |
 
 ## 🎯 Focused Topics
@@ -66,6 +66,7 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--locked`](general-options.md#locked) | Conflicts | Always | [`--update-lock`](general-options.md#update-lock) | - |
 | [`--untrusted-input`](general-options.md#untrusted-input) | Implies | Always | [`--allow-remote-refs`](general-options.md#allow-remote-refs) disabled | - |
 | [`--update-lock`](general-options.md#update-lock) | Conflicts | Always | [`--locked`](general-options.md#locked) | - |
+| [`--client-asyncapi-perspective`](target-generation-options.md#client-asyncapi-perspective) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-asyncapi-perspective` requires `--generate-client httpx2`. |
 | [`--client-body-arguments`](target-generation-options.md#client-body-arguments) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-body-arguments` requires `--generate-client httpx2`. |
 | [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-deep-object-brackets` requires `--generate-client httpx2`. |
 | [`--client-default-base-url`](target-generation-options.md#client-default-base-url) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-default-base-url` requires `--generate-client httpx2`. |
@@ -80,7 +81,7 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-output`](target-generation-options.md#client-output) | `--generate-client` requires `--client-output`. |
 | [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-package`](target-generation-options.md#client-package) | `--generate-client` requires `--client-package`. |
 | [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-model-package`](target-generation-options.md#client-model-package) | `--generate-client` requires `--client-model-package`. |
-| [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--input-file-type`](base-options.md#input-file-type) = `openapi` | `--generate-client` requires `--input-file-type openapi`. |
+| [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--input-file-type`](base-options.md#input-file-type) | `--generate-client` requires `--input-file-type openapi` or `--input-file-type asyncapi`. |
 | [`--generate-client`](target-generation-options.md#generate-client) | Conflicts | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--generate-client` can not be used with `--generate-server`. |
 | [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-output`](target-generation-options.md#server-output) | `--generate-server` requires `--server-output`. |
 | [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-package`](target-generation-options.md#server-package) | `--generate-server` requires `--server-package`. |
@@ -139,6 +140,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--class-name-affix-scope`](model-customization.md#class-name-affix-scope)
 - [`--class-name-prefix`](model-customization.md#class-name-prefix)
 - [`--class-name-suffix`](model-customization.md#class-name-suffix)
+- [`--client-asyncapi-perspective`](target-generation-options.md#client-asyncapi-perspective)
 - [`--client-body-arguments`](target-generation-options.md#client-body-arguments)
 - [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets)
 - [`--client-default-base-url`](target-generation-options.md#client-default-base-url)

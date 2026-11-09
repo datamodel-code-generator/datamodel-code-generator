@@ -77,6 +77,7 @@ from datamodel_code_generator.enums import (
     AllOfMergeMode,
     AsyncAPIVersion,
     ClassNameAffixScope,
+    ClientAsyncAPIPerspective,
     ClientBodyArguments,
     ClientSignatureStyle,
     ClientType,
@@ -1495,6 +1496,8 @@ def _build_parser(  # noqa: PLR0911, PLR0913
                 **additional_options,
             }
             parser_config = _create_parser_config(config, asyncapi_additional_options)
+            if parser_factory is not None:
+                return parser_factory(source=source, config=parser_config)
             return AsyncAPIParser(source=source, config=parser_config)
         case InputFileType.XMLSchema:
             from datamodel_code_generator.parser.xmlschema import XMLSchemaParser  # noqa: PLC0415
@@ -3305,6 +3308,7 @@ __all__ = [
     "AllOfMergeMode",
     "AsyncAPIVersion",
     "ClassNameAffixScope",
+    "ClientAsyncAPIPerspective",
     "ClientBodyArguments",
     "ClientSignatureStyle",
     "ClientType",

@@ -108,18 +108,18 @@ _MAX_PING: Final = 125
 class ChannelPlan(Generic[SendT, RecvT]):
     """Everything fixed about one generated WebSocket helper: its identity, handshake call, and messages.
 
-    A message's codec is `json`, decoded or encoded by the message's schema, `utf8` text, or `bytes`; its frame is the
-    kind every message of that direction uses.
+    A message's codec is `json`, decoded or encoded by the message's schema, `utf8` text, `bytes`, or `none` for a
+    direction that carries no message; its frame is the kind every message of that direction uses.
     """
 
     helper_id: str
     operation: OperationRef
     call: OperationPlan[object]
     fingerprint: str
-    send_codec: Literal["json", "utf8", "bytes"] = "json"
+    send_codec: Literal["json", "utf8", "bytes", "none"] = "json"
     send_frame: Literal["text", "binary"] = "text"
     encoder: OutboundModelCodec | None = None
-    receive_codec: Literal["json", "utf8", "bytes"] = "json"
+    receive_codec: Literal["json", "utf8", "bytes", "none"] = "json"
     receive_frame: Literal["text", "binary"] = "text"
     decoder: InboundModelCodec[RecvT] | None = None
     subprotocols: tuple[str, ...] = ()
@@ -230,6 +230,9 @@ def _encoded(plan: ChannelPlan[SendT, RecvT], value: object) -> str | bytes:
             data = value
         case "bytes" if isinstance(value, (bytes, bytearray)):
             data = bytes(value)
+        case "none":
+            msg = "The channel sends no message"
+            raise TypeError(msg)
         case _:
             msg = f"A {plan.send_codec} message cannot carry a {type(value).__name__}"
             raise TypeError(msg)
@@ -410,6 +413,8 @@ class _Sockets(Generic[SendT, RecvT]):
                     raise self._decode_error(data, codec_condition(codec, error), error) from None
             case "utf8":
                 value = cast("TextMessage", event).data
+            case "none":
+                raise self._decode_error(data, "type")
             case _:
                 pass
         return Message(data=cast("RecvT", value), frame=kind, sequence=self._received, raw=data)

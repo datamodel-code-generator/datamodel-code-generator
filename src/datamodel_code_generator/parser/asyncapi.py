@@ -911,13 +911,16 @@ class AsyncAPIParser(OpenAPIParser):
                 self._collect_discriminator_schemas()
                 for schema in self._iter_asyncapi_schemas(specification, path_parts):
                     context_sources[tuple(schema.context.root_parts)] = schema.context
-                    raw_schema = schema.raw_schema
                     path_key = tuple(schema.path)
                     if path_key in parsed_paths:
                         continue
                     parsed_paths.add(path_key)
-                    with self._asyncapi_context(schema.context):
-                        if schema.parse_as_file:
-                            self._parse_file(raw_schema, schema.name, schema.path)
-                        else:
-                            self._parse_raw_at(schema.name, raw_schema, schema.path, schema.location)
+                    self._parse_asyncapi_schema(schema)
+
+    def _parse_asyncapi_schema(self, schema: AsyncAPISchema) -> None:
+        """Parse one schema a document holds, in the document context it is read in, the first time its path is met."""
+        with self._asyncapi_context(schema.context):
+            if schema.parse_as_file:
+                self._parse_file(schema.raw_schema, schema.name, schema.path)
+            else:
+                self._parse_raw_at(schema.name, schema.raw_schema, schema.path, schema.location)

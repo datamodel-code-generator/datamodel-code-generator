@@ -31,6 +31,10 @@ OPTIONS = [
     *("--target-python-version", "3.11", "--openapi-scopes", "schemas", "api"),
     *("--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", "--disable-timestamp"),
 ]
+ASYNCAPI_OPTIONS = [
+    *("--target-python-version", "3.11", "--output-model-type", "pydantic_v2.BaseModel"),
+    *("--formatters", "builtin", "--disable-timestamp"),
+]
 PACKAGES = ["--client-package", "client", "--client-model-package", "models"]
 CLIENT = ["--generate-client", "httpx2", "--client-output", "client", *PACKAGES]
 MISSING = ["--use-missing-sentinel", "--target-pydantic-version", "2.14"]
@@ -517,7 +521,25 @@ def test_client_cli_selector_replaces_pyproject(
         ),
         (
             [*OPTIONS, *CLIENT, "--input-file-type", "jsonschema"],
-            "--generate-client requires --input-file-type openapi, not jsonschema",
+            "--generate-client requires --input-file-type openapi or asyncapi, not jsonschema",
+        ),
+        (
+            [*OPTIONS, *CLIENT, "--client-asyncapi-perspective", "client"],
+            "--client-asyncapi-perspective requires --input-file-type asyncapi",
+        ),
+        (
+            [*OPTIONS, *CLIENT, "--input-file-type", "asyncapi", "--client-protocols", "{}"],
+            "--client-protocols cannot be used with --input-file-type asyncapi, whose channels the client opens",
+        ),
+        (
+            [
+                *OPTIONS,
+                "--input-file-type",
+                "asyncapi",
+                *("--generate-server", "fastapi", "--server-output", "server", "--server-package", "server"),
+                *("--server-model-package", "models"),
+            ],
+            "--generate-server requires --input-file-type openapi, not asyncapi",
         ),
     ],
     ids=[
@@ -528,6 +550,9 @@ def test_client_cli_selector_replaces_pyproject(
         "missing-settings",
         "server-option",
         "input-file-type",
+        "asyncapi-perspective-openapi",
+        "asyncapi-protocols",
+        "asyncapi-server",
     ],
 )
 def test_client_cli_usage(
@@ -1585,6 +1610,38 @@ def test_client_cli_options(
         copy_files=[(CLI / source, tmp_path / source), (CLI / "protocols.json", tmp_path / "protocols.json")],
     )
     assert_file_content(tmp_path / generated, f"cli/options/{expected}")
+
+
+@pytest.mark.cli_doc(
+    options=["--client-asyncapi-perspective"],
+    option_description="""Read an AsyncAPI document as its server's or its client's (experimental).
+
+With `--input-file-type asyncapi`, `--generate-client` opens each channel of a `ws` or `wss` server as
+`client.<channel>.connect(...)`, a WebSocket session that sends one message type and receives another. `server` (the
+default) reads the document as the server's, as the AsyncAPI operations define it: the client sends what the server
+receives (AsyncAPI 2 `publish`, AsyncAPI 3 `action: receive`) and receives what it sends (`subscribe`,
+`action: send`). `client` reads the document as the client's and swaps the two. Other input types refuse the
+option.""",
+    input_schema="generation_platform/client/asyncapi-market-v3.yaml",
+    cli_args=[
+        *("--input-file-type", "asyncapi", "--output", "models.py"),
+        *ASYNCAPI_OPTIONS,
+        *CLIENT,
+        *("--client-asyncapi-perspective", "client"),
+    ],
+    golden_output="api_generation/client_cli/asyncapi_perspective.txt",
+)
+def test_client_cli_asyncapi_perspective(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Swap the messages a client of an AsyncAPI document sends and receives under the client perspective."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("asyncapi.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="asyncapi",
+        extra_args=[*ASYNCAPI_OPTIONS, *CLIENT, "--client-asyncapi-perspective", "client"],
+        copy_files=[(SOURCE / "asyncapi-market-v3.yaml", tmp_path / "asyncapi.yaml")],
+    )
+    assert_output((tmp_path / "client" / "protocols" / "_plans.py").read_text(encoding="utf-8"))
 
 
 @pytest.mark.parametrize(
