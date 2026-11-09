@@ -19,9 +19,11 @@ allowreserved-path-31-shorthand	main/generation_platform/client/runtime/allowres
 allowreserved-path-32	main/generation_platform/client/runtime/allowreserved-path-32.txt
 allowreserved-path-32-unknown	main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel~client_runtime[allowreserved-path-32-unknown]//*.py
 allowreserved-path-32-unknown	main/generation_platform/client/runtime/allowreserved-path-32.txt	= main/generation_platform/client/runtime/allowreserved-path-32~client_runtime[allowreserved-path-32-unknown].txt
+asyncapi-messages	main/generation_platform/client/runtime/asyncapi-messages.txt
 asyncapi-perspective	main/generation_platform/client/runtime/asyncapi-perspective.txt
 asyncapi-serverless	main/generation_platform/client/runtime/asyncapi-serverless.txt
 asyncapi-sockets	main/generation_platform/client/runtime/asyncapi-sockets.txt
+asyncapi-union-sends	main/generation_platform/client/runtime/asyncapi-union-sends.txt
 auth-errors	main/generation_platform/client/runtime/auth-errors.txt
 auth-flows	main/generation_platform/client/runtime/auth-flows.txt
 auth-parameters	main/generation_platform/client/runtime/auth-parameters.txt

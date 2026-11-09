@@ -49,7 +49,8 @@ from .errors import (
 from .options import HelperLimits, StreamOptions, layered, new_session
 from .records import AsyncSteps, SessionState, Steps, plain_copy
 from .resume import require_state, restored, saved_expiry, state_array, state_expiry, state_fields
-from .values import MISSING, Patch, absence, read_expiry, resolve, unfit, written
+from .routes import Unrouted, route
+from .values import MISSING, Patch, absence, read_expiry, resolve, written
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, AsyncIterator, Callable, Generator, Iterator, Mapping
@@ -794,10 +795,12 @@ class _Events(Generic[T]):
         wire: JSONValue | None = None
         key = frame.event_type
         if (selector := plan.discriminator) is not None:
-            wire = self._wire(frame)
-            if (found := resolve(wire, selector.pointer)) is MISSING or not isinstance(found, str):
-                raise self._stamped(self._decode_error(frame.body, unfit(found), location=selector))
-            key = found
+            if isinstance(routed := route(frame.body, selector), Unrouted):
+                location = None if routed.reason == "malformed" else selector
+                raise self._stamped(
+                    self._decode_error(frame.body, routed.reason, location=location, cause=routed.cause)
+                )
+            wire, key = routed
         if (error := self._errors.get(key)) is not None:
             data = self._decoded(error, frame)
             raise self._stamped(ProtocolDataError(reason="error_event", data=data))
@@ -818,14 +821,6 @@ class _Events(Generic[T]):
             sequence=self._sequence,
             raw_data=frame.data,
         )
-
-    def _wire(self, frame: _Frame) -> JSONValue:
-        """Return an event's data parsed as JSON, raising DecodeError for data that does not parse."""
-        data = frame.body
-        try:
-            return json_value(data)
-        except (ValueError, UnicodeDecodeError, RecursionError) as error:
-            raise self._stamped(self._decode_error(data, "malformed", cause=error)) from None
 
     def _decoded(self, codec: InboundModelCodec[U], frame: _Frame) -> U:
         """Return an event's data decoded by its codec, raising DecodeError for data it refuses."""

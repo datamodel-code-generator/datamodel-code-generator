@@ -13,6 +13,7 @@ import os
 import socket
 import threading
 import time
+from collections.abc import Mapping
 from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass, field
 from functools import partial
@@ -51,9 +52,10 @@ from .errors import (
 )
 from .options import HelperLimits, WSOptions, layered, new_session
 from .records import SessionState
+from .routes import Unrouted, route
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Callable, Mapping
+    from collections.abc import AsyncGenerator, Callable
 
     import httpx2
     from httpcore2 import NetworkStream
@@ -64,13 +66,14 @@ if TYPE_CHECKING:
     from ..client.raw import AsyncRawResponse, RawResponse
     from ..client.responses import HeadersView, ResponseInfo
     from .client import AsyncClientCore, ClientCore
-    from .records import ProtocolProgress
+    from .records import BodySelector, ProtocolProgress
     from .references import OperationRef
 
 __all__ = (
     "AsyncWebSocketSession",
     "ChannelPlan",
     "Message",
+    "MessageRoute",
     "PingReceipt",
     "WebSocketSession",
     "aconnect_socket",
@@ -105,11 +108,33 @@ _MAX_PING: Final = 125
 
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
+class MessageRoute:
+    """One message of a direction that carries several: its frame, its codec and model codec, and what tells it apart.
+
+    A received text message among several JSON ones is the one whose body discriminator reads its `tag`. A sent value
+    takes the message whose `type` is its class, else the first whose `type` it is an instance of, a string the `utf8`
+    message and bytes the `bytes` one; then a mapping, such as a TypedDict's, the message whose `tag` it holds under
+    `key`; and any other value the JSON message with neither.
+    """
+
+    frame: Literal["text", "binary"] = "text"
+    codec: Literal["json", "utf8", "bytes"] = "json"
+    encoder: OutboundModelCodec | None = None
+    decoder: InboundModelCodec[object] | None = None
+    tag: str | None = None
+    type: type | None = None
+    key: str | None = None
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
 class ChannelPlan(Generic[SendT, RecvT]):
     """Everything fixed about one generated WebSocket helper: its identity, handshake call, and messages.
 
     A message's codec is `json`, decoded or encoded by the message's schema, `utf8` text, `bytes`, or `none` for a
-    direction that carries no message; its frame is the kind every message of that direction uses.
+    direction that carries no message; its frame is the kind every message of that direction uses. A direction of
+    several messages lists them in its routes instead, and the received text messages among them are told apart by the
+    string `discriminator` reads from their JSON.
     """
 
     helper_id: str
@@ -123,6 +148,9 @@ class ChannelPlan(Generic[SendT, RecvT]):
     receive_frame: Literal["text", "binary"] = "text"
     decoder: InboundModelCodec[RecvT] | None = None
     subprotocols: tuple[str, ...] = ()
+    send_routes: tuple[MessageRoute, ...] = ()
+    receive_routes: tuple[MessageRoute, ...] = ()
+    discriminator: BodySelector | None = None
 
 
 @final
@@ -219,24 +247,68 @@ def _negotiated(offered: tuple[str, ...], info: ResponseInfo) -> None:
         raise APIConnectionError(reason="negotiation_failed")
 
 
-def _encoded(plan: ChannelPlan[SendT, RecvT], value: object) -> str | bytes:
-    """Return a value as the plan's sent message: text for a text frame, else bytes."""
+def _routes(
+    codec: Literal["json", "utf8", "bytes", "none"],
+    frame: Literal["text", "binary"],
+    encoder: OutboundModelCodec | None = None,
+    decoder: InboundModelCodec[object] | None = None,
+) -> tuple[MessageRoute, ...]:
+    """Return the one message of a direction as its route, or none for a direction that carries no message."""
+    if codec == "none":
+        return ()
+    return (MessageRoute(frame=frame, codec=codec, encoder=encoder, decoder=decoder),)
+
+
+def _classes(route: MessageRoute) -> tuple[type, ...]:
+    """Return the classes of the values a sent message carries by class."""
+    match route.codec:
+        case "utf8":
+            return (str,)
+        case "bytes":
+            return (bytes, bytearray)
+        case _:
+            pass
+    return () if route.type is None else (route.type,)
+
+
+def _sent_route(routes: tuple[MessageRoute, ...], value: object) -> MessageRoute:
+    """Return the message a sent value takes: the only one, else as `MessageRoute` tells them apart."""
+    if not routes:
+        msg = "The channel sends no message"
+        raise TypeError(msg)
+    if len(routes) == 1:
+        return routes[0]
+    kind = type(value)
+    classes = [(item, _classes(item)) for item in routes]
+    found = next((item for item, kinds in classes if kind in kinds), None) or next(
+        (item for item, kinds in classes if isinstance(value, kinds)), None
+    )
+    mapping = cast("Mapping[str, object]", value) if isinstance(value, Mapping) else None
+    if found is None and mapping is not None:
+        found = next((item for item in routes if item.key is not None and mapping.get(item.key) == item.tag), None)
+    if found is None:
+        found = next((item for item in routes if item.codec == "json" and item.type is None and item.key is None), None)
+    if found is None:
+        msg = f"No message of the channel carries a {kind.__name__}"
+        raise TypeError(msg)
+    return found
+
+
+def _encoded(route: MessageRoute, value: object) -> str | bytes:
+    """Return a value as a sent message: text for a text frame, else bytes."""
     data: str | bytes
-    match plan.send_codec:
+    match route.codec:
         case "json":
-            assert plan.encoder is not None
-            data = plan.encoder.encode(value)
+            assert route.encoder is not None
+            data = route.encoder.encode(value)
         case "utf8" if isinstance(value, str):
             data = value
         case "bytes" if isinstance(value, (bytes, bytearray)):
             data = bytes(value)
-        case "none":
-            msg = "The channel sends no message"
-            raise TypeError(msg)
         case _:
-            msg = f"A {plan.send_codec} message cannot carry a {type(value).__name__}"
+            msg = f"A {route.codec} message cannot carry a {type(value).__name__}"
             raise TypeError(msg)
-    if plan.send_frame == "text" and isinstance(data, bytes):
+    if route.frame == "text" and isinstance(data, bytes):
         return data.decode("utf-8")
     return data
 
@@ -262,12 +334,14 @@ class _Sockets(Generic[SendT, RecvT]):
     __slots__ = (
         "_call",
         "_closed",
+        "_frames",
         "_info",
         "_limits",
         "_lock",
         "_plan",
         "_received",
         "_receiving",
+        "_sends",
         "_sent",
         "_session",
         "_state",
@@ -283,6 +357,13 @@ class _Sockets(Generic[SendT, RecvT]):
     ) -> None:
         """Start an open session on the connection a 101 handed over."""
         self._plan = plan
+        self._sends = plan.send_routes or _routes(plan.send_codec, plan.send_frame, encoder=plan.encoder)
+        received = plan.receive_routes or _routes(
+            plan.receive_codec, plan.receive_frame, decoder=cast("InboundModelCodec[object] | None", plan.decoder)
+        )
+        self._frames: Mapping[str, tuple[MessageRoute, ...]] = {
+            kind: tuple(item for item in received if item.frame == kind) for kind in ("text", "binary")
+        }
         self._limits = limits
         self._session = session
         self._info = info
@@ -383,29 +464,30 @@ class _Sockets(Generic[SendT, RecvT]):
         return self._close_error()
 
     def _payload(self, value: object) -> str | bytes:
-        """Return a value's message, refusing a value the codec cannot carry."""
-        plan = self._plan
+        """Return a value's message, refusing a value no message's codec carries."""
+        chosen: MessageRoute | None = None
         try:
-            return _encoded(plan, value)
-        except request_errors(plan.encoder) as error:
+            chosen = _sent_route(self._sends, value)
+            return _encoded(chosen, value)
+        except request_errors(None if chosen is None else chosen.encoder) as error:
             raise self._stamped(request_failure(("message",), cause=error)) from None
 
     def _message(self, event: Event) -> Message[RecvT]:
         """Return a received message decoded as declared, raising DecodeError for one that is not."""
         self._received += 1
-        plan = self._plan
         if text := isinstance(event, TextMessage):
             data = event.data.encode("utf-8")
         else:
             binary: BytesMessage = cast("BytesMessage", event)
             data = bytes(binary.data)
         kind: Literal["text", "binary"] = "text" if text else "binary"
-        if kind != plan.receive_frame:
+        if not (members := self._frames[kind]):
             raise self._decode_error(data, "type")
+        chosen = members[0] if len(members) == 1 else self._routed(members, data)
         value: object = data
-        match plan.receive_codec:
+        match chosen.codec:
             case "json":
-                codec = plan.decoder
+                codec = chosen.decoder
                 assert codec is not None
                 try:
                     value = codec.decode(data)
@@ -413,14 +495,26 @@ class _Sockets(Generic[SendT, RecvT]):
                     raise self._decode_error(data, codec_condition(codec, error), error) from None
             case "utf8":
                 value = cast("TextMessage", event).data
-            case "none":
-                raise self._decode_error(data, "type")
             case _:
                 pass
         return Message(data=cast("RecvT", value), frame=kind, sequence=self._received, raw=data)
 
+    def _routed(self, members: tuple[MessageRoute, ...], data: bytes) -> MessageRoute:
+        """Return the JSON message whose tag a received body's discriminator reads, raising DecodeError for none."""
+        selector = self._plan.discriminator
+        assert selector is not None
+        if isinstance(found := route(data, selector), Unrouted):
+            raise self._decode_error(data, found.reason, found.cause)
+        _, key = found
+        if (chosen := next((item for item in members if item.tag == key), None)) is None:
+            raise self._decode_error(data, "value")
+        return chosen
+
     def _decode_error(
-        self, data: bytes, condition: Literal["type", "value", "malformed"], cause: BaseException | None = None
+        self,
+        data: bytes,
+        condition: Literal["missing", "null", "type", "value", "malformed"],
+        cause: BaseException | None = None,
     ) -> DecodeError:
         """Return the decode failure of a message, keeping at most the message limit or 64 KiB of its bytes."""
         body, truncated = bounded_body(data, self._limits.max_message_bytes)

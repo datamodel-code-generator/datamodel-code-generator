@@ -6330,5 +6330,28 @@
       "external_ref_mapping": {"asyncapi-other.yaml": "shared.models"}
     },
     "modules": [["client", "protocols", "_plans.py"], ["models.py"]]
+  },
+  "asyncapi-messages": {
+    "input": "asyncapi-messages.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "modules": {
+      "pydantic_v2.BaseModel": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["client", "protocols", "_helpers.py"], ["models.py"]],
+      "pydantic_v2.dataclass": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]],
+      "dataclasses.dataclass": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]],
+      "typing.TypedDict": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]],
+      "msgspec.Struct": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]]
+    }
+  },
+  "asyncapi-messages-aliases": {
+    "input": "asyncapi-messages.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"], "use_type_alias": true, "read_const_beside_enum": true},
+    "modules": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"]]
   }
 }

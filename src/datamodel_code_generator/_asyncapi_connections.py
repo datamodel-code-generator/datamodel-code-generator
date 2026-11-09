@@ -237,10 +237,6 @@ class _Reader:
             messages = list(self.v2_messages(declaration, channel, skips))
         else:
             messages = list(self.v3_messages(declaration, channel, skips))
-        for action in ("send", "receive"):
-            if len({message.declaration for message in messages if message.action == action}) > 1:
-                verb = "sends" if action == "send" else "receives"
-                skips.append(("several_messages", f"the application {verb} more than one message on it"))
         if not messages and not skips:
             skips.append((None, "no operation sends or receives a message on it"))
         return ReadChannel(

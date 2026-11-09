@@ -81,7 +81,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._client.sockets import SocketSpec
+    from datamodel_code_generator._client.sockets import MessageRoute, SocketSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
@@ -246,7 +246,7 @@ def _render(  # ruff: ignore[too-many-locals]
     events, hooked = webhook_uses(protocols, plan, request)
     received = frozenset(event.use.id for spec in events for event in spec.events)
     streamed, stream_events, stream_problems = stream_uses(protocols, plan, request)
-    opened, messages, socket_problems = socket_uses(protocols, plan, request)
+    opened, messages, socket_problems = socket_uses(protocols, plan, request, facts, backend)
     uses = frozenset(plan_uses(plan)) | received | frozenset(use.id for use in (*stream_events, *messages))
     batch = request.batch
     if parts := (*part_uses(plan), *stream_events, *messages):
@@ -438,15 +438,32 @@ class _HelperDigests:
     def socket(self, spec: SocketSpec, settings: JSONValue) -> str:
         """Return the digest of a WebSocket helper's contract closure: its signature, settings, operation, and schemas.
 
-        Each message use contributes its type and contract, so a changed schema changes the digest.
+        Each message use contributes its type and contract, so a changed schema changes the digest; a direction of
+        several messages contributes each one's codec, type and tag, and the class it sends.
         """
         signature = {
             **self.call(spec.helper, spec.operation, settings),
-            "send": None if spec.send is None else self.type(spec.send),
-            "receive": None if spec.receive is None else self.type(spec.receive),
+            "send": self.messages(spec.sends),
+            "receive": self.messages(spec.receives),
+            **({} if spec.discriminator is None else {"discriminator": spec.discriminator}),
         }
         uses = [self.contract(use) for use in spec.uses]
         return self.digest(spec.helper.kind, signature, spec.operation, list(spec.schemas), uses)
+
+    def messages(self, routes: tuple[MessageRoute, ...]) -> object:
+        """Return the signature of a WebSocket direction: its one message's type, else each message's."""
+        if len(routes) < 2:  # noqa: PLR2004
+            return None if not routes else self.type(routes[0].use)
+        return [
+            [
+                route.codec,
+                self.type(route.use),
+                route.tag,
+                route.key,
+                None if route.type is None else self.spelled(route.type),
+            ]
+            for route in routes
+        ]
 
     def call(self, helper: Helper, operation: OperationSpec, settings: JSONValue) -> dict[str, object]:
         """Return the name, parameters, and settings of a helper's signature for the operation it calls."""

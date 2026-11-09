@@ -17,6 +17,7 @@ from datamodel_code_generator._client.config import OPTION_PREFIX
 from datamodel_code_generator._client.naming import RESERVED_MEMBERS
 from datamodel_code_generator._client.protocol_plan import Protocols, class_clashes
 from datamodel_code_generator._client.protocols import Helper, Link
+from datamodel_code_generator._client.sockets import direction_messages
 from datamodel_code_generator._target_naming import NameScope
 from datamodel_code_generator._target_operations import CLIENT, local, resolve_settings
 from datamodel_code_generator.python_literal import stable_repr
@@ -39,15 +40,33 @@ _SENT: Final = {"server": "receive", "client": "send"}
 """The action of the described application whose messages the client sends, by the side the document describes."""
 
 
-def _message(messages: tuple[MessageContract, ...], action: str, request: TargetRequest) -> dict[str, Any]:
-    """Return the message definition of one direction: the codec of its one message, or `none` without one."""
-    found = next((message for message in messages if message.action == action), None)
-    if found is None:
-        return {"codec": "none", "frame": "text"}
-    definition: dict[str, Any] = {"codec": found.codec, "frame": _FRAMES.get(found.codec, "text")}
-    if found.codec == "json" and (payload := found.payload) is not None:
+def _members(messages: tuple[MessageContract, ...], action: str) -> list[MessageContract]:
+    """Return the messages of one direction, each JSON payload once and each text or bytes codec once.
+
+    Messages of one payload, and text or bytes messages, carry values of one type, so the first stands for the rest.
+    """
+    found: dict[object, MessageContract] = {}
+    for message in messages:
+        if message.action == action:
+            found.setdefault(message.payload if message.codec == "json" else message.codec, message)
+    return list(found.values())
+
+
+def _definition(message: MessageContract, request: TargetRequest) -> dict[str, Any]:
+    """Return the definition of one message: its codec, its frame, and the schema of a JSON message's payload."""
+    definition: dict[str, Any] = {"codec": message.codec, "frame": _FRAMES.get(message.codec, "text")}
+    if message.codec == "json" and (payload := message.payload) is not None:
         definition["schema"] = SchemaRef(pointer=payload.pointer, document=request.documents.pointers[payload.document])
     return definition
+
+
+def _direction(members: list[MessageContract], request: TargetRequest) -> dict[str, Any]:
+    """Return the message definition of one direction: its one message's, `none` without one, else all of them."""
+    if not members:
+        return {"codec": "none", "frame": "text"}
+    if len(members) == 1:
+        return _definition(members[0], request)
+    return {"messages": [_definition(message, request) for message in members]}
 
 
 def _names(request: TargetRequest, config: ClientGenerationConfig, channels: tuple[ChannelContract, ...]) -> list[str]:
@@ -126,24 +145,24 @@ def channel_protocols(
         at = f"operations[{handshake.id.use_site.pointer!r}]"
         reference = OperationRef(pointer=handshake.id.use_site.pointer)
         operations[reference] = handshake
+        members = {"send": _members(channel.messages, sent), "receive": _members(channel.messages, received)}
         tree: dict[str, Any] = {
             "kind": "websocket",
             "enabled": True,
             "operation": reference,
             "subprotocols": [],
-            "send": _message(channel.messages, sent, request),
-            "receive": _message(channel.messages, received, request),
+            **{direction: _direction(found, request) for direction, found in members.items()},
         }
         schemas = []
-        for direction in ("send", "receive"):
-            if (schema := tree[direction].get("schema")) is not None:
-                schemas.append((f"{at}.{direction}.schema", schema))
-                documents[schema] = schema.document
-                message = next(
-                    item for item in channel.messages if item.action == (sent if direction == "send" else received)
-                )
-                assert message.payload is not None
-                locations[schema] = message.payload
+        for direction, found in members.items():
+            for (where, definition), message in zip(
+                direction_messages(f"{at}.{direction}", tree[direction]), found, strict=True
+            ):
+                if (schema := definition.get("schema")) is not None:
+                    schemas.append((f"{where}.schema", schema))
+                    documents[schema] = schema.document
+                    assert message.payload is not None
+                    locations[schema] = message.payload
         helpers.append(
             Helper(
                 name=name,

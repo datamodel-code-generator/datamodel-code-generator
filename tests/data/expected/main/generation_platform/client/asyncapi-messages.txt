@@ -1,0 +1,115 @@
+# asyncapi-messages
+render pydantic_v2.BaseModel
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'logs', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/logs: the client receives text and JSON messages on it, which a text frame cannot tell apart
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/responses.py
+  client/types/__init__.py
+  models.py
+render pydantic_v2.dataclass
+  warning UserWarning: <root>/pydantic_v2_dataclass/client: Skipping channel 'logs', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/logs: the client receives text and JSON messages on it, which a text frame cannot tell apart
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/responses.py
+  client/types/__init__.py
+  models.py
+render dataclasses.dataclass
+  warning UserWarning: <root>/dataclasses_dataclass/client: Skipping channel 'chat', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/chat: the client receives JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/dataclasses_dataclass/client: Skipping channel 'batch', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/batch: the client sends JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/dataclasses_dataclass/client: Skipping channel 'quotes', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/quotes: the client receives JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/dataclasses_dataclass/client: Skipping channel 'logs', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/logs: the client receives text and JSON messages on it, which a text frame cannot tell apart
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/responses.py
+  client/types/__init__.py
+  models.py
+render typing.TypedDict
+  warning UserWarning: <root>/typing_TypedDict/client: Skipping channel 'chat', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/chat: the client receives JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/typing_TypedDict/client: Skipping channel 'orders', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/orders: the client sends JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/typing_TypedDict/client: Skipping channel 'batch', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/batch: the client sends JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/typing_TypedDict/client: Skipping channel 'logs', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/logs: the client receives text and JSON messages on it, which a text frame cannot tell apart
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/responses.py
+  client/types/__init__.py
+  models.py
+render msgspec.Struct
+  warning UserWarning: <root>/msgspec_Struct/client: Skipping channel 'chat', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/chat: the client receives JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/msgspec_Struct/client: Skipping channel 'batch', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/batch: the client sends JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/msgspec_Struct/client: Skipping channel 'quotes', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/quotes: the client receives JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/msgspec_Struct/client: Skipping channel 'logs', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/logs: the client receives text and JSON messages on it, which a text frame cannot tell apart
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/responses.py
+  client/types/__init__.py
+  models.py
