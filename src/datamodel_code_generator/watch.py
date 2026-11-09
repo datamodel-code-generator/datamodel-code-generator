@@ -130,13 +130,20 @@ def _watch_changes(
     condition: threading.Condition,
     state: _WatcherState,
 ) -> None:
-    """Publish filesystem changes from the persistent background watch stream."""
+    """Publish filesystem changes from the persistent background watch stream.
+
+    The stream yields every batch unfiltered: a batch with no event in the dependency graph counts as a poll without
+    changes, as a timeout does. A polling watcher reports a vanished root again on every poll and so never times out
+    while one outside the graph is missing; filtered out inside the stream, its batches would starve the fingerprint
+    check that notices a missing dependency appearing.
+    """
     force_polling = _force_polling()
+    includes_dependency = _watch_filter(context.dependencies, accept_directory_events=True)
     debounce_ms = max(1, int(context.effective_watch_delay * 1000))
     poll_delay_ms = min(300, debounce_ms)
     pending_polling_fallback = False
     try:
-        for changes in _watch_stream(
+        for raw_changes in _watch_stream(
             context.watchfiles,
             watch_roots,
             debounce=debounce_ms,
@@ -146,9 +153,10 @@ def _watch_changes(
             recursive=True,
             rust_timeout=poll_delay_ms if force_polling else 5000,
             stop_event=stop_event,
-            watch_filter=_watch_filter(context.dependencies, accept_directory_events=True),
+            watch_filter=None,
             yield_on_timeout=force_polling,
         ):
+            changes = {(change, path) for change, path in raw_changes if includes_dependency(change, path)}
             if not changes:
                 if not context.dependencies._polling_dependencies_changed():  # noqa: SLF001
                     pending_polling_fallback = False
