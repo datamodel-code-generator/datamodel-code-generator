@@ -1,0 +1,160 @@
+asyncapi: 3.0.0
+info:
+  title: Market events
+  version: 1.0.0
+  description: Prices and activity streamed as server-sent events, and a chat over a WebSocket.
+defaultContentType: application/json
+servers:
+  feed:
+    host: feed.example.com
+    protocol: https
+    security:
+      - $ref: '#/components/securitySchemes/token'
+  socket:
+    host: feed.example.com
+    pathname: /ws
+    protocol: wss
+channels:
+  prices:
+    address: /v1/prices/{symbol}
+    servers:
+      - $ref: '#/servers/feed'
+    parameters:
+      symbol:
+        description: The traded symbol.
+    bindings:
+      http:
+        headers:
+          type: object
+          properties:
+            Accept:
+              type: string
+              const: text/event-stream
+            X-Region:
+              type: string
+              description: The region to read prices of.
+    messages:
+      price:
+        $ref: '#/components/messages/price'
+  activity:
+    address: /v1/activity
+    servers:
+      - $ref: '#/servers/feed'
+    messages:
+      created:
+        $ref: '#/components/messages/created'
+      deleted:
+        $ref: '#/components/messages/deleted'
+  notices:
+    address: /v1/notices
+    servers:
+      - $ref: '#/servers/feed'
+    messages:
+      notice:
+        $ref: '#/components/messages/notice'
+      alert:
+        $ref: '#/components/messages/alert'
+  chat:
+    address: /chat
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        contentType: text/plain
+        payload:
+          type: string
+operations:
+  streamPrices:
+    action: send
+    channel:
+      $ref: '#/channels/prices'
+    bindings:
+      http:
+        method: GET
+        query:
+          type: object
+          properties:
+            depth:
+              type: integer
+              description: How many price levels to stream.
+  streamActivity:
+    action: send
+    channel:
+      $ref: '#/channels/activity'
+  streamNotices:
+    action: send
+    channel:
+      $ref: '#/channels/notices'
+  chatLines:
+    action: send
+    channel:
+      $ref: '#/channels/chat'
+components:
+  securitySchemes:
+    token:
+      type: httpApiKey
+      in: query
+      name: token
+  messageTraits:
+    event:
+      contentType: text/event-stream
+  messages:
+    price:
+      contentType: text/event-stream
+      payload:
+        $ref: '#/components/schemas/Price'
+    created:
+      traits:
+        - $ref: '#/components/messageTraits/event'
+      payload:
+        $ref: '#/components/schemas/Created'
+    deleted:
+      traits:
+        - $ref: '#/components/messageTraits/event'
+      payload:
+        $ref: '#/components/schemas/Deleted'
+    notice:
+      contentType: text/event-stream
+      payload:
+        $ref: '#/components/schemas/Notice'
+    alert:
+      contentType: text/event-stream
+      payload:
+        $ref: '#/components/schemas/Alert'
+  schemas:
+    Price:
+      type: object
+      properties:
+        symbol:
+          type: string
+        price:
+          type: number
+      required: [symbol, price]
+    Created:
+      type: object
+      properties:
+        type:
+          const: created
+        id:
+          type: string
+      required: [type, id]
+    Deleted:
+      type: object
+      properties:
+        type:
+          const: deleted
+        id:
+          type: string
+      required: [type, id]
+    Notice:
+      type: object
+      properties:
+        text:
+          type: string
+      required: [text]
+    Alert:
+      type: object
+      properties:
+        level:
+          type: integer
+      required: [level]

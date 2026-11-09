@@ -1418,8 +1418,9 @@ General options:
 Target generation options (experimental):
   --client-asyncapi-perspective {server,client}
                         Read an AsyncAPI document as the server's (default),
-                        whose sends the client receives, or as the client's
-                        (experimental).
+                        whose sends the client receives, or as the client's,
+                        for its WebSocket channels; the client receives every
+                        message of a server-sent event channel (experimental).
   --client-body-arguments {body,both}
                         Take request bodies as one body argument (default) or
                         also as field arguments (experimental).

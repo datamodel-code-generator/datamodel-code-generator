@@ -26,13 +26,13 @@ SOCKET_0: Final[
     call=_operations.OPERATION_0,
     fingerprint='4bd2ca082482caf7c5169346045f35cba2740772a20ff6fd98dc47b7aa722fc0',
     send_routes=(
-        MessageRoute(encoder=model_bindings.codec_1, tag='subscribe', key='kind'),
-        MessageRoute(encoder=model_bindings.codec_2, tag='order', key='kind'),
+        MessageRoute(encoder=model_bindings.codec_3, tag='subscribe', key='kind'),
+        MessageRoute(encoder=model_bindings.codec_4, tag='order', key='kind'),
     ),
     receive_routes=(
-        MessageRoute(decoder=model_bindings.codec_3, tag='ack'),
-        MessageRoute(decoder=model_bindings.codec_4, tag='quote'),
-        MessageRoute(decoder=model_bindings.codec_5, tag='receipt'),
+        MessageRoute(decoder=model_bindings.codec_5, tag='ack'),
+        MessageRoute(decoder=model_bindings.codec_6, tag='quote'),
+        MessageRoute(decoder=model_bindings.codec_7, tag='receipt'),
     ),
     discriminator=BodySelector(pointer='/kind'),
 )
@@ -44,7 +44,7 @@ SOCKET_1: Final[ChannelPlan[Never, models.QuotePayload]] = ChannelPlan(
     call=_operations.OPERATION_1,
     fingerprint='775494f54b5d18dc083df27d642be50e5d8eefce2ef22ae8a624994ebc41ea67',
     send_codec='none',
-    decoder=model_bindings.codec_6,
+    decoder=model_bindings.codec_8,
 )
 
 
@@ -54,5 +54,38 @@ SOCKET_2: Final[ChannelPlan[Never, models.QuotePayload]] = ChannelPlan(
     call=_operations.OPERATION_2,
     fingerprint='d5bfe97413def5f6ae8b6d3c84cc350831b38d447eaefab45c7dcb655be2b7d1',
     send_codec='none',
-    decoder=model_bindings.codec_7,
+    decoder=model_bindings.codec_9,
+)
+
+
+SOCKET_3: Final[
+    ChannelPlan[Never, models.QuotePayload | models.AckPayload | models.ReceiptPayload]
+] = ChannelPlan(
+    helper_id='v1_mirror',
+    operation=OperationRef(pointer='/channels/mirrored'),
+    call=_operations.OPERATION_3,
+    fingerprint='757b90589106b4e930834f6c6eeb6b9aa9e3784900793bf7e8ea2d93d112801d',
+    send_codec='none',
+    receive_routes=(
+        MessageRoute(decoder=model_bindings.codec_10, tag='quote'),
+        MessageRoute(decoder=model_bindings.codec_11, tag='ack'),
+        MessageRoute(decoder=model_bindings.codec_12, tag='receipt'),
+    ),
+    discriminator=BodySelector(pointer='/kind'),
+)
+
+
+SOCKET_4: Final[ChannelPlan[Never, models.QuotePayload | models.AckPayload]] = (
+    ChannelPlan(
+        helper_id='v1_levels',
+        operation=OperationRef(pointer='/channels/depthFirst'),
+        call=_operations.OPERATION_4,
+        fingerprint='3c2ddc8972192e9daea17cef3b4ccde7879f9ab6b72d25ae45faa835b3240caa',
+        send_codec='none',
+        receive_routes=(
+            MessageRoute(decoder=model_bindings.codec_13, tag='quote'),
+            MessageRoute(decoder=model_bindings.codec_14, tag='ack'),
+        ),
+        discriminator=BodySelector(pointer='/kind'),
+    )
 )

@@ -28,6 +28,7 @@ parameter-name-keys-options1	main/generation_platform/client/configs/parameter-n
 parameter-name-none-key-options2	main/generation_platform/client/configs/parameter-name-none-key.txt
 runtime-keys-options3	main/generation_platform/client/configs/runtime-keys.txt
 [test_client_documentation]
+asyncapi-events	main/generation_platform/client/packages/asyncapi-events/pydantic_v2_BaseModel//*.md
 asyncapi-market-v3	main/generation_platform/client/packages/asyncapi-market-v3/pydantic_v2_BaseModel//*.md	= main/generation_platform/client/packages/asyncapi-market-v3/pydantic_v2_BaseModel~client_documentation[asyncapi-market-v3]//*.md
 auth	main/generation_platform/client/packages/auth/pydantic_v2_BaseModel//*.md
 caching	main/generation_platform/client/packages/caching/pydantic_v2_BaseModel//*.md
@@ -124,6 +125,18 @@ asyncapi-connections	main/generation_platform/client/packages/asyncapi-connectio
 asyncapi-connections	main/generation_platform/client/packages/asyncapi-connections/typing_TypedDict//*.py
 asyncapi-escaped-channel-ref	main/generation_platform/client/asyncapi-escaped-channel-ref.txt
 asyncapi-escaped-channel-ref	main/generation_platform/client/packages/asyncapi-escaped-channel-ref/pydantic_v2_BaseModel//*.py
+asyncapi-events	main/generation_platform/client/asyncapi-events.txt
+asyncapi-events	main/generation_platform/client/packages/asyncapi-events/dataclasses_dataclass//*.py
+asyncapi-events	main/generation_platform/client/packages/asyncapi-events/msgspec_Struct//*.py	= main/generation_platform/client/packages/asyncapi-events/dataclasses_dataclass//*.py
+asyncapi-events	main/generation_platform/client/packages/asyncapi-events/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/asyncapi-events/pydantic_v2_BaseModel~client_render[asyncapi-events]//*.py
+asyncapi-events	main/generation_platform/client/packages/asyncapi-events/pydantic_v2_dataclass//*.py
+asyncapi-events	main/generation_platform/client/packages/asyncapi-events/typing_TypedDict//*.py	= main/generation_platform/client/packages/asyncapi-events/dataclasses_dataclass//*.py
+asyncapi-events-client	main/generation_platform/client/asyncapi-events-client.txt
+asyncapi-events-client	main/generation_platform/client/packages/asyncapi-events-client/pydantic_v2_BaseModel//*.py
+asyncapi-events-skips	main/generation_platform/client/asyncapi-events-skips.txt
+asyncapi-events-skips	main/generation_platform/client/packages/asyncapi-events-skips/pydantic_v2_BaseModel//*.py
+asyncapi-events-v2	main/generation_platform/client/asyncapi-events-v2.txt
+asyncapi-events-v2	main/generation_platform/client/packages/asyncapi-events-v2/pydantic_v2_BaseModel//*.py
 asyncapi-foreign-operations	main/generation_platform/client/asyncapi-foreign-operations.txt
 asyncapi-handshake	main/generation_platform/client/asyncapi-handshake.txt
 asyncapi-handshake	main/generation_platform/client/packages/asyncapi-handshake/msgspec_Struct//*.py
@@ -152,6 +165,10 @@ asyncapi-perspective	main/generation_platform/client/asyncapi-perspective.txt
 asyncapi-perspective	main/generation_platform/client/packages/asyncapi-perspective/pydantic_v2_BaseModel//*.py
 asyncapi-relative-v2	main/generation_platform/client/asyncapi-relative-v2.txt
 asyncapi-relative-v2	main/generation_platform/client/packages/asyncapi-relative-v2/pydantic_v2_BaseModel//*.py
+asyncapi-server-schemes	main/generation_platform/client/asyncapi-server-schemes.txt
+asyncapi-server-schemes	main/generation_platform/client/packages/asyncapi-server-schemes/pydantic_v2_BaseModel//*.py
+asyncapi-server-schemes-v2	main/generation_platform/client/asyncapi-server-schemes-v2.txt
+asyncapi-server-schemes-v2	main/generation_platform/client/packages/asyncapi-server-schemes-v2/pydantic_v2_BaseModel//*.py
 asyncapi-serverless	main/generation_platform/client/asyncapi-serverless.txt
 asyncapi-serverless	main/generation_platform/client/packages/asyncapi-serverless/pydantic_v2_BaseModel//*.py
 asyncapi-setting-errors	main/generation_platform/client/asyncapi-setting-errors.txt

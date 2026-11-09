@@ -226,6 +226,12 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "asyncapi-messages",
         "asyncapi-messages-aliases",
         "asyncapi-connections",
+        "asyncapi-events",
+        "asyncapi-events-v2",
+        "asyncapi-events-skips",
+        "asyncapi-events-client",
+        "asyncapi-server-schemes",
+        "asyncapi-server-schemes-v2",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
@@ -416,6 +422,7 @@ def test_client_helper_spellings(first: str, second: str, tmp_path: Path) -> Non
         "media",
         "templates",
         "asyncapi-market-v3",
+        "asyncapi-events",
     ],
 )
 def test_client_documentation(case: str, tmp_path: Path) -> None:

@@ -72,7 +72,7 @@ Use `--schema-version auto` to detect the version from the `asyncapi` field, or 
 
 `--openapi-scopes` does not select what AsyncAPI input generates: the parser generates models from every location listed below. The `api` scope is available for OpenAPI input only, and AsyncAPI input with `api` stops with an error.
 
-datamodel-code-generator generates data models from schema-bearing fields. It does not generate servers, protocol adapters, or runtime message validators; it generates a WebSocket client for the channels of `ws` and `wss` servers (see [Generate a client](#generate-a-client)).
+datamodel-code-generator generates data models from schema-bearing fields. It does not generate servers, protocol adapters, or runtime message validators; it generates a client for the WebSocket channels of `ws` and `wss` servers and the server-sent event channels of `http`, `https` and `sse` servers (see [Generate a client](#generate-a-client)).
 
 The AsyncAPI parser extracts schemas from:
 
@@ -142,7 +142,7 @@ The AsyncAPI input type is for model generation from message payloads, headers, 
     the generated package may change.
 
 `--generate-client httpx2` with `--input-file-type asyncapi` generates the models and an HTTPX2 client package whose
-attributes open the WebSocket channels of the document, sync and asyncio:
+attributes open the WebSocket and server-sent event channels of the document, sync and asyncio:
 
 ```bash
 datamodel-codegen --input market.yaml --input-file-type asyncapi --output models.py \
@@ -167,10 +167,11 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
   with or without its leading `/`. The channels of a document that declares no servers are opened at
   `--client-default-base-url`, which they need as OpenAPI operations without servers do, or at the `base_url` the
   client is given.
-- Channels at one address on the same servers are one connection: one attribute, named after the words of the address
-  (`root` for `/`), whose `connect(...)` opens the handshake of the first of them and sends and receives the messages
-  of them all, told apart as the messages of one channel are. Their handshakes must take the same parameters, offer
-  the same subprotocols and need the same security (a `description` may differ), or the connection is left out.
+- Channels at one address on the same servers (in any order; a channel that lists none is served on all of them) are
+  one connection: one attribute, named after the words of the address (`root` for `/`), whose `connect(...)` opens the
+  handshake of the first of them and sends and receives the messages of them all, told apart as the messages of one
+  channel are. Their handshakes must take the same parameters, in any order, offer the same subprotocols and need the
+  same security (a `description` may differ), or the connection is left out.
   `--client-operations` keys it by the reference of its first channel.
 - The messages of an AsyncAPI 3 operation's `reply` go the other way on the operation's connection: the client
   receives the replies to what it sends, or sends those to what it receives, among the other messages, and no request
@@ -212,8 +213,33 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
   `openIdConnect` credentials. A call that gives it sends its value, and one that leaves it out sends the credential.
 - A server's URL variables are substituted by their `default`; a channel served on a server whose URL has a variable
   without one is left out. Variables the URL does not name need none.
+- A server's URL is its AsyncAPI 2 `url`, or its AsyncAPI 3 `host` and `pathname`. The client reaches it with TLS
+  when either the scheme the URL is written with or the server's protocol is `wss` or `https`, and without TLS only
+  when one of them is `ws` or `http` and neither says TLS, so neither downgrades the other. A URL written without a
+  scheme on an `sse` server is reached with TLS. A variable the URL starts with gives the URL's scheme when its default
+  is written with one, such as `http://localhost:8090`, as does a variable that is the scheme itself, such as
+  `{protocol}://`.
+- A channel is a server-sent event channel when it carries a `text/event-stream` message, by its own `contentType` or
+  a trait's. A channel that no `ws` or `wss` server serves is one as well when an `sse` server serves it, or when the
+  HTTP binding of the channel or of an operation on it fixes the `Accept` or `Content-Type` header to
+  `text/event-stream` (by its `const`, or an `enum` of that one value). A server-sent event channel is served on the
+  `http`, `https` and `sse` servers that serve it; the others are WebSocket channels, so a channel that lists no
+  servers in a document with `ws` and `sse` servers is a WebSocket channel. Its `open(...)` returns the event stream of
+  an [SSE helper](python-client-helpers.md), as `with client.prices.open(symbol="XBT") as stream:` or `async with
+  await` on `AsyncClient`: it sends a GET of the channel's address, with the parameters of its address, the
+  properties of the `query` and `headers` of the HTTP bindings of the channel and of its AsyncAPI 3 operations as
+  query and header parameters (an `Accept` or `Content-Type` header is not sent), and its security, and yields each
+  event, whose data the payload's model decodes from JSON, until the stream ends; it does not reconnect. Several
+  messages are told apart by their tag, or decoded as one union by Pydantic models, as a WebSocket's received
+  messages are, and an event that does not decode raises `DecodeError`. A stream flows from the server only, so the
+  client receives every message of the channel, whatever its operations' `action` and
+  `--client-asyncapi-perspective` say. A channel with a message that is neither `text/event-stream` nor JSON, or
+  that its HTTP binding opens with another method than GET, is left out with a warning, as is one whose HTTP bindings
+  declare a query or header parameter differently, and one whose AsyncAPI 2 operation's HTTP binding declares `query`
+  or `headers`, which no model types.
 - [`--client-asyncapi-perspective`](cli-reference/target-generation-options.md#client-asyncapi-perspective) says which
-  side the document describes: `server` (the default), whose sends the client receives, or `client`.
+  side the document describes on a WebSocket channel: `server` (the default), whose sends the client receives, or
+  `client`. It does not apply to a server-sent event channel, whose messages the client always receives.
 - `--client-operations` keyed by a channel's reference, such as `/channels/market`, renames its attribute (`resource`,
   one identifier that no other channel takes) and its parameters (`parameter_names`); `--client-protocols` is refused
   for AsyncAPI input.

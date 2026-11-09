@@ -182,6 +182,7 @@ def test_client_typing_uploads(backend: DataModelType, tmp_path: Path) -> None:
         "naming-snake",
         "type-checking-imports-on",
         "asyncapi-market-v3",
+        "asyncapi-events",
     ],
 )
 def test_client_typing_package(case: str, tmp_path: Path) -> None:
@@ -190,7 +191,7 @@ def test_client_typing_package(case: str, tmp_path: Path) -> None:
     The helper target packages write each kind of request target, bindings, positions, and followed URLs.
     The naming packages check methods and arguments named by the model's naming rules, with their suffixes.
     The type-checking import package imports the names its annotations alone use only for type checkers, and the
-    AsyncAPI package opens WebSocket channels, one of which sends no message.
+    AsyncAPI packages open WebSocket channels, one of which sends no message, and server-sent event channels.
     """
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")

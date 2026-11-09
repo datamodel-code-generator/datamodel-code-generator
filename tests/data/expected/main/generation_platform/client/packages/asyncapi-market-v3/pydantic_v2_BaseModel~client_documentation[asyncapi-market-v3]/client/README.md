@@ -72,7 +72,7 @@ Every exception of `client.errors` derives from `SDKError`; the runtime referenc
 ## Protocol helpers
 
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
-Each is the helper of an AsyncAPI channel, which the client also holds as `client.<name>`; generation read the document as its server's (`--client-asyncapi-perspective server`), so the client sends what the server receives and receives what it sends.
+Each is the helper of an AsyncAPI channel, which the client also holds as `client.<name>`; generation read the document as its server's (`--client-asyncapi-perspective server`), so on a WebSocket channel the client sends what the server receives and receives what it sends.
 A WebSocket helper's `connect` sends its operation's handshake in a session of its own once the server answers 101:
 `with client.protocols.<name>.connect(...) as session:` on `Client`, or `async with` on `AsyncClient`, whose session
 lives for its block. The session sends and receives typed messages, and leaving the block, `close()`, or `aclose()`

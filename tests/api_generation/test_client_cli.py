@@ -1620,8 +1620,9 @@ With `--input-file-type asyncapi`, `--generate-client` opens each channel of a `
 `client.<channel>.connect(...)`, a WebSocket session that sends one message type and receives another. `server` (the
 default) reads the document as the server's, as the AsyncAPI operations define it: the client sends what the server
 receives (AsyncAPI 2 `publish`, AsyncAPI 3 `action: receive`) and receives what it sends (`subscribe`,
-`action: send`). `client` reads the document as the client's and swaps the two. Other input types refuse the
-option.""",
+`action: send`). `client` reads the document as the client's and swaps the two. A server-sent event channel, which
+`client.<channel>.open(...)` opens, flows from the server only, so the client receives each of its messages whichever
+the option says. Other input types refuse the option.""",
     input_schema="generation_platform/client/asyncapi-market-v3.yaml",
     cli_args=[
         *("--input-file-type", "asyncapi", "--output", "models.py"),

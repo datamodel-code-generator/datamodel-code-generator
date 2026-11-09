@@ -110,6 +110,59 @@ channels:
     messages:
       order:
         $ref: '#/components/messages/order'
+  mirrored:
+    address: /v1/mirror
+    servers:
+      - $ref: '#/servers/desk'
+      - $ref: '#/servers/backup'
+    messages:
+      quote:
+        $ref: '#/components/messages/quote'
+  reversed:
+    address: /v1/mirror
+    servers:
+      - $ref: '#/servers/backup'
+      - $ref: '#/servers/desk'
+    messages:
+      ack:
+        $ref: '#/components/messages/ack'
+  everywhere:
+    address: /v1/mirror
+    messages:
+      receipt:
+        $ref: '#/components/messages/receipt'
+  depthFirst:
+    address: /v1/levels
+    servers:
+      - $ref: '#/servers/desk'
+    bindings:
+      ws:
+        query:
+          type: object
+          properties:
+            depth:
+              type: integer
+            side:
+              type: string
+    messages:
+      quote:
+        $ref: '#/components/messages/quote'
+  sideFirst:
+    address: /v1/levels
+    servers:
+      - $ref: '#/servers/desk'
+    bindings:
+      ws:
+        query:
+          type: object
+          properties:
+            side:
+              type: string
+            depth:
+              type: integer
+    messages:
+      ack:
+        $ref: '#/components/messages/ack'
 operations:
   takeSubscribe:
     action: receive
@@ -189,6 +242,26 @@ operations:
     reply:
       channel:
         $ref: 'asyncapi-other.yaml#/channels/alerts'
+  publishMirrored:
+    action: send
+    channel:
+      $ref: '#/channels/mirrored'
+  publishReversed:
+    action: send
+    channel:
+      $ref: '#/channels/reversed'
+  publishEverywhere:
+    action: send
+    channel:
+      $ref: '#/channels/everywhere'
+  publishDepthFirst:
+    action: send
+    channel:
+      $ref: '#/channels/depthFirst'
+  publishSideFirst:
+    action: send
+    channel:
+      $ref: '#/channels/sideFirst'
 components:
   replies:
     receipt:

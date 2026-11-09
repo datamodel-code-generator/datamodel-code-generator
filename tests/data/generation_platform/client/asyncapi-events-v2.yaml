@@ -1,0 +1,57 @@
+asyncapi: 2.6.0
+info:
+  title: Ticks
+  version: 1.0.0
+servers:
+  local:
+    url: http://localhost:8080/stream
+    protocol: sse
+channels:
+  /ticks/{market}:
+    parameters:
+      market:
+        schema:
+          type: string
+          enum: [spot, futures]
+    subscribe:
+      bindings:
+        http:
+          type: response
+          method: GET
+      message:
+        $ref: '#/components/messages/tick'
+  /history:
+    subscribe:
+      bindings:
+        http:
+          type: response
+          query:
+            type: object
+            properties:
+              since:
+                type: string
+            required: [since]
+      message:
+        $ref: '#/components/messages/tick'
+  /status:
+    subscribe:
+      message:
+        payload:
+          type: object
+          properties:
+            up:
+              type: boolean
+components:
+  messageTraits:
+    stream:
+      contentType: text/event-stream
+  messages:
+    tick:
+      traits:
+        - $ref: '#/components/messageTraits/stream'
+      payload:
+        type: object
+        properties:
+          price:
+            type: number
+        required: [price]

@@ -14,7 +14,7 @@ from typing_extensions import TypeIs
 from datamodel_code_generator._api_generation import TargetRender
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, NextSteps, error_text
 from datamodel_code_generator._client.caching import plan_caches
-from datamodel_code_generator._client.channels import channel_protocols
+from datamodel_code_generator._client.channels import channel_protocols, directed
 from datamodel_code_generator._client.codec_plan import plan_client_codecs
 from datamodel_code_generator._client.config import OPTION_PREFIX, ClientGenerationConfig, _is_sequence
 from datamodel_code_generator._client.fields import plan_fields
@@ -38,7 +38,7 @@ from datamodel_code_generator._client.protocol_plan import (
 )
 from datamodel_code_generator._client.render import ClientRenderer
 from datamodel_code_generator._client.sockets import DEPENDENCY as WEBSOCKETS
-from datamodel_code_generator._client.sockets import plan_sockets, socket_uses
+from datamodel_code_generator._client.sockets import plan_sockets, routed_streams, socket_uses
 from datamodel_code_generator._client.streams import plan_streams, stream_uses
 from datamodel_code_generator._client.templates import ClientTemplates
 from datamodel_code_generator._client.uploads import plan_uploads
@@ -82,6 +82,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._client.sockets import MessageRoute, SocketSpec
+    from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
@@ -126,9 +127,10 @@ class ClientTarget:
         An operation that only its own declarations refuse, and that no enabled helper calls, is left out with a warning
         that names the OpenAPI features it uses that the client does not support, and the others are planned again. A
         refusal stays an error, with the findings of the operations skipped before it, when anything else is refused
-        too, or nothing is left. The channels of an AsyncAPI input are opened as WebSocket helpers instead
-        (`channel_protocols`), and a channel is left out the same way, also for what its document declares; when every
-        channel is left out so, their findings are the error.
+        too, or nothing is left. The channels of an AsyncAPI input are opened as WebSocket and SSE helpers instead
+        (`channel_protocols`), and a channel is left out the same way, also for what its document declares, and for
+        what its client would send on a server-sent event stream (`directed`); when every channel is left out so, their
+        findings are the error.
         """
         config = request.config
         assert isinstance(config, ClientGenerationConfig)
@@ -140,6 +142,7 @@ class ClientTarget:
             called = helper_calls(protocols)
             subjects: dict[OperationId, str] = {}
         else:
+            channels = directed(channels)
             skipped.extend((_channel(channel), _skips(channel)) for channel in channels if channel.skips)
             opened = {
                 channel.handshake.id: channel
@@ -250,6 +253,8 @@ def _render(  # ruff: ignore[too-many-locals]
     events, hooked = webhook_uses(protocols, plan, request)
     received = frozenset(event.use.id for spec in events for event in spec.events)
     streamed, stream_events, stream_problems = stream_uses(protocols, plan, request)
+    if request.batch.channels is not None:
+        streamed, stream_events = routed_streams(streamed, protocols, plan, request, facts, backend, stream_problems)
     opened, messages, socket_problems = socket_uses(protocols, plan, request, facts, backend)
     uses = frozenset(plan_uses(plan)) | received | frozenset(use.id for use in (*stream_events, *messages))
     batch = request.batch
@@ -320,7 +325,7 @@ def _render(  # ruff: ignore[too-many-locals]
         use_single_line_docstring=request.model_config.use_single_line_docstring,
     )
     return TargetRender(
-        files=renderer.files(), dependencies=dependencies, next_steps=_next_steps(config, plan, sockets)
+        files=renderer.files(), dependencies=dependencies, next_steps=_next_steps(config, plan, sockets, streams)
     )
 
 
@@ -344,15 +349,24 @@ def _refused(
     return refused
 
 
-def _next_steps(config: ClientGenerationConfig, plan: ClientPlan, sockets: tuple[SocketSpec, ...]) -> NextSteps:
+def _next_steps(
+    config: ClientGenerationConfig, plan: ClientPlan, sockets: tuple[SocketSpec, ...], streams: tuple[StreamSpec, ...]
+) -> NextSteps:
     """Return the README and code that calls the first operation in a client's context.
 
-    The client of an AsyncAPI input opens its first channel instead.
+    The client of an AsyncAPI input opens its first channel instead: a WebSocket's session, or an event stream.
     """
     if (spec := next(iter(plan.operations), None)) is None:
         call = "..."
     elif spec.contract.id.kind == "channel":
-        call = f"with client.{sockets[0].helper.name}.connect(...) as session:\n        ..."
+        name, opened = next(
+            (item.helper.name, "connect(...) as session")
+            if item.helper.kind == "websocket"
+            else (item.helper.name, "open(...) as stream")
+            for item in (*sockets, *streams)
+            if item.operation.contract.id == spec.contract.id
+        )
+        call = f"with client.{name}.{opened}:\n        ..."
     else:
         call = f"client.{spec.resource}.{spec.name}(...)"
     return NextSteps(

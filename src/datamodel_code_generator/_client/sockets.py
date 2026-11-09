@@ -10,17 +10,18 @@ its text or JSON message; several JSON messages are told apart by a tag the mode
 string value that every model declares under one wire name, with distinct values. Without a tag, Pydantic models
 decode or encode them as the union of their types, and a sent value of other models takes the message of its class;
 a channel whose messages none of these tells apart is left out, as is one whose client receives text and JSON
-messages, since any JSON is also text.
+messages, since any JSON is also text. The events of a server-sent event channel are told apart the same way, as the
+JSON messages it receives.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, cast
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._client.pagination import _label, _problem  # pyright: ignore[reportPrivateUsage]
-from datamodel_code_generator._client.streams import _Streams  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._client.streams import _Streams, discriminator  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._json_pointer import join_pointer
 from datamodel_code_generator._runtime.model_codecs.media import JSON_MEDIA_TYPE
 from datamodel_code_generator._target_contract import (
@@ -45,10 +46,19 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
+    from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._target_contract import TypeView
     from datamodel_code_generator._target_documents import JSONObject
 
-__all__ = ("DEPENDENCY", "MessageRoute", "SocketSpec", "direction_messages", "plan_sockets", "socket_uses")
+__all__ = (
+    "DEPENDENCY",
+    "MessageRoute",
+    "SocketSpec",
+    "direction_messages",
+    "plan_sockets",
+    "routed_streams",
+    "socket_uses",
+)
 
 DEPENDENCY: Final = "httpx2[ws]>=2.13.0"
 _DIRECTIONS: Final = (("send", "request"), ("receive", "response"))
@@ -314,6 +324,55 @@ def socket_uses(
         return (), (), {}
     sockets = _Sockets(protocols, plan, request, facts, backend)
     return sockets.coded(("websocket",), sockets.socket)
+
+
+def routed_streams(  # noqa: PLR0913, PLR0917
+    specs: tuple[StreamSpec, ...],
+    protocols: Protocols | None,
+    plan: ClientPlan,
+    request: TargetRequest,
+    facts: ModelFacts,
+    backend: CodecBackend,
+    problems: dict[str, list[Diagnostic]],
+) -> tuple[tuple[StreamSpec, ...], tuple[TypeUseBinding, ...]]:
+    """Tell apart the events of each server-sent event channel that receives several, returning the helpers and uses.
+
+    Such a helper maps its events to the tag their models give them (`from: tag`). Its events are routed by that tag,
+    as the received messages of a WebSocket are, else decoded as one union by Pydantic models; a channel neither tells
+    apart is left out with its problem. Each use appears once.
+    """
+    if protocols is None or not specs:
+        return specs, ()
+    sockets = _Sockets(protocols, plan, request, facts, backend)
+    routed: list[StreamSpec] = []
+    for spec in specs:
+        selector = discriminator(spec.helper)
+        if selector is None or selector["from"] != "tag":
+            routed.append(spec)
+            continue
+        members = [MessageRoute(codec="json", frame="text", use=use) for _, use in spec.events]
+        found = sockets.told_apart(spec.operation, "receive", members)
+        if isinstance(found, Diagnostic):
+            problems[spec.helper.name].append(found)
+            continue
+        routes, pointer = found
+        references = list(spec.helper.tree["event_schema"]["mapping"].values())
+        schema: object = (
+            references[0]
+            if pointer is None
+            else {
+                "discriminator": {"from": "body", "pointer": pointer},
+                "mapping": {route.tag: reference for route, reference in zip(routes, references, strict=True)},
+            }
+        )
+        routed.append(
+            replace(
+                spec,
+                helper=replace(spec.helper, tree={**spec.helper.tree, "event_schema": schema}),
+                events=tuple((route.tag, cast("TypeUseBinding", route.use)) for route in routes),
+            )
+        )
+    return tuple(routed), tuple({use.id: use for spec in routed for use in spec.uses}.values())
 
 
 def plan_sockets(specs: tuple[SocketSpec, ...], problems: dict[str, list[Diagnostic]]) -> tuple[SocketSpec, ...]:

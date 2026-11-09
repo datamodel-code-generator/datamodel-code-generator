@@ -70,8 +70,10 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         note=(
             "Each channel of an AsyncAPI 2 or 3 document that a `ws` or `wss` server serves becomes an attribute of "
             "the client, `client.<channel>.connect(...)`, which opens the channel's WebSocket and sends and receives "
-            "its messages through the generated models. `--client-asyncapi-perspective` says whether the document "
-            "describes the server (the default), whose sends the client receives, or the client. A channel that uses "
+            "its messages through the generated models, and each server-sent event channel of an `http`, `https` or "
+            "`sse` server, `client.<channel>.open(...)`, which receives its events. `--client-asyncapi-perspective` "
+            "says whether the document describes the server (the default), whose sends the client receives on a "
+            "WebSocket, or the client. A channel that uses "
             "a feature the client does not support is left out with a warning."
         ),
     ),
