@@ -36,7 +36,9 @@ This page lists deprecations and scheduled breaking changes.
 - **Warning category:** `FutureWarning`
 - **Replacement:** Set formatters explicitly, for example black and isort or builtin.
 
-Default formatters will change to builtin. Set --formatters or --preset explicitly; see --help. Run datamodel-codegen with --recommend-options on one schema to pick a preset and options for it (experimental).
+Default formatters will change to builtin no earlier than three months after 0.92.0. Set --formatters or --preset explicitly; see "Dependency migration notices" in the documentation. Run datamodel-codegen with --recommend-options on one schema to pick a preset and options for it (experimental).
+
+Black and isort stay the default in 0.92.0; the default changes no earlier than three months later.
 
 ### `behavior.pydantic-v2-use-annotated-default`
 
