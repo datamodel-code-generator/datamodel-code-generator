@@ -276,6 +276,15 @@ _flag(
 )
 _toggle(
     base_options,
+    "--untrusted-input",
+    help="Treat the input as a schema from an untrusted source (experimental): read no file or URL but the input, so "
+    "every $ref and XML Schema include must name a location in the input; refuse the schema keywords whose values "
+    "the generated module imports or evaluates as Python code (x-python-type, x-python-import, customTypePath, "
+    "customBasePath), Protocol Buffers input and --validation. Implies --no-allow-remote-refs. "
+    "Pass --no-untrusted-input to override a configuration file that enables it.",
+)
+_toggle(
+    base_options,
     "--allow-private-network",
     help="Allow HTTP(S) schema requests to private, loopback, link-local, or otherwise non-public network hosts. "
     "By default these targets are blocked to reduce server-side request forgery (SSRF) risk. "

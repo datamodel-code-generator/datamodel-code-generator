@@ -619,6 +619,8 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--allow-private-network --no-allow-private-network --http-headers --http-local-ref-path",
         "--http-ignore-tls --http-query-parameters --http-timeout --lockfile",
     ),
+    **_opts(_C.GENERAL, "--untrusted-input", implies=_relations("--allow-remote-refs", value=False)),
+    **_opts(_C.GENERAL, "--no-untrusted-input"),
     **_opts(_C.GENERAL, "--update-lock", conflicts=_relations("--locked")),
     **_opts(_C.GENERAL, "--locked", conflicts=_relations("--update-lock")),
     **_opts(_C.GENERAL, "--ignore-pyproject --generate-cli-command --generate-pyproject-config --recommend-options"),

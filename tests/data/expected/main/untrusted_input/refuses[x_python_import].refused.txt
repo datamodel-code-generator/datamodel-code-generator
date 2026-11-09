@@ -1,0 +1,1 @@
+x-python-import {'module': 'collections', 'name': 'OrderedDict'} is refused under --untrusted-input: the generated module would import or evaluate it as Python code. Remove the keyword from the schema, or generate without --untrusted-input when the schema is trusted.

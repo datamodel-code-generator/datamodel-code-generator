@@ -2386,6 +2386,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if not module or not type_name:
             msg = "x-python-import requires both module and name"
             raise Error(msg)
+        self._refuse_untrusted_code("x-python-import", x_python_import)
         return self._get_emitted_python_type_path(
             _validate_schema_python_import_path(f"{module}.{type_name}", "x-python-import", self.target_python_version)
         )
@@ -2890,6 +2891,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and (expression := self._python_type_expressions.get(x_python_type)) is not None
         ):
             return expression
+        self._refuse_untrusted_code("x-python-type", x_python_type, obj.schema_location)
         from datamodel_code_generator.input_model_result import is_legacy_python_type_token  # noqa: PLC0415
 
         if is_legacy_python_type_token(x_python_type):
@@ -6495,6 +6497,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _custom_type(self, obj: JsonSchemaObject) -> DataType:
         """Return the type of a schema that ``customTypePath`` gives, the class that dotted path names."""
+        self._refuse_untrusted_code("customTypePath", obj.custom_type_path)
         return self.data_type_manager.get_data_type_from_full_path(
             self._get_emitted_python_type_path(
                 _validate_schema_python_import_path(
@@ -8073,8 +8076,34 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
             return frame.built(self.data_type(reference=reference))
 
+    @cached_property
+    def _input_files(self) -> frozenset[Path]:
+        """Return the resolved paths of the files the input names: a file, the input files of a directory, or a list."""
+        match self.source:
+            case Path() as path if path.is_dir():
+                files: Iterable[Path] = (file for file, _ in self._directory_input_files(path))
+            case Path() as path:
+                files = (path,)
+            case list() as paths:
+                files = paths
+            case _:
+                files = ()
+        return frozenset(file.resolve() for file in files)
+
     def _get_ref_body(self, resolved_ref: str) -> dict[str, YamlValue]:
-        """Get the body of a reference from URL or remote file."""
+        """Get the body of a reference from URL or remote file.
+
+        Under --untrusted-input only a document of the input itself is read, a file the input names.
+        """
+        if self.untrusted_input and (
+            is_url(resolved_ref) or (self.base_path / resolved_ref).resolve() not in self._input_files
+        ):
+            msg = (
+                f"Reading the $ref document {redact_reference(resolved_ref)} is refused under --untrusted-input.\n"
+                "Reason: --untrusted-input reads only the input, so a $ref must name a location in the input, not "
+                "another file or a URL."
+            )
+            raise Error(msg)
         if is_url(resolved_ref):
             url_scheme = urlparse(resolved_ref).scheme
             uses_local_http_path = url_scheme in {"http", "https"} and self.http_local_ref_path is not None

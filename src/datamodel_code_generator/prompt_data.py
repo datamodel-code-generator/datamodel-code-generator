@@ -217,6 +217,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--type-overrides": "Replace schema model types with custom Python types via JSON mapping.",
     "--type-overrides-replace-whole-type": "Make every `--type-overrides` value of a field replace the field's whol...",
     "--union-mode": "Union mode for combining anyOf/oneOf schemas (smart or left_to_right).",
+    "--untrusted-input": "Treat the input as a schema from an untrusted source.",
     "--update-lock": "Create or atomically update the selected remote lock after generation (experimental).",
     "--url": "Fetch a schema from a URL with custom HTTP headers.",
     "--use-annotated": "Use typing.Annotated for Field() with constraints.",

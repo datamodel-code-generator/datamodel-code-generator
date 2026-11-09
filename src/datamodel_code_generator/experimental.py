@@ -29,6 +29,7 @@ ExperimentalFeatureId = Literal[
     "cli-option.install-skill",
     "cli-option.recommend-options",
     "cli-option.schema-validator-type",
+    "cli-option.untrusted-input",
     "cli-option.use-missing-sentinel",
     "cli-option.use-type-alias",
     "cli-option.use-type-alias-type",
@@ -237,6 +238,22 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         note=(
             "The only currently implemented backend is 'pydantic-v2', which preserves the existing generated "
             "Pydantic v2 validator behavior."
+        ),
+    ),
+    "cli-option.untrusted-input": ExperimentalFeature(
+        id="cli-option.untrusted-input",
+        kind="cli-option",
+        target="--untrusted-input",
+        message=(
+            "The untrusted input switch is experimental; the references and schema keywords it refuses may grow as "
+            "new ways for a schema to read files or write code are found."
+        ),
+        since_version="0.92.0",
+        note=(
+            "With --untrusted-input (untrusted_input=True in generate() and in the GenerateConfig of the dynamic "
+            "API), dcg reads no file or URL but the input, refuses x-python-type, x-python-import, customTypePath "
+            "and customBasePath, Protocol Buffers input and --validation, and implies --no-allow-remote-refs. It "
+            "does not sandbox the generated code."
         ),
     ),
     "cli-option.use-missing-sentinel": ExperimentalFeature(

@@ -81,6 +81,15 @@
     "tracking_issue": null
   },
   {
+    "id": "cli-option.untrusted-input",
+    "kind": "cli-option",
+    "message": "The untrusted input switch is experimental; the references and schema keywords it refuses may grow as new ways for a schema to read files or write code are found.",
+    "note": "With --untrusted-input (untrusted_input=True in generate() and in the GenerateConfig of the dynamic API), dcg reads no file or URL but the input, refuses x-python-type, x-python-import, customTypePath and customBasePath, Protocol Buffers input and --validation, and implies --no-allow-remote-refs. It does not sandbox the generated code.",
+    "since_version": "0.92.0",
+    "target": "--untrusted-input",
+    "tracking_issue": null
+  },
+  {
     "id": "cli-option.use-missing-sentinel",
     "kind": "cli-option",
     "message": "Pydantic MISSING sentinel output is experimental because it depends on pydantic.experimental.missing_sentinel, or on pydantic.MISSING for a 2.14 target.",

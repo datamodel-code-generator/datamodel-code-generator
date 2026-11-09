@@ -414,6 +414,7 @@ class BaseGenerateConfig(BaseModel):
     allof_class_hierarchy: AllOfClassHierarchy = AllOfClassHierarchy.IfNoConflict
     allow_remote_refs: bool | None = None
     strict_refs: bool = False
+    untrusted_input: bool = False
     allow_private_network: bool = False
     http_backend: HTTPBackend = HTTPBackend.AUTO
     http_headers: Sequence[tuple[str, str]] | None = None

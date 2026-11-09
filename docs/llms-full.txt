@@ -18785,6 +18785,36 @@ class docstring, and without a formatter they stay. Class docstrings come from s
 spaces at the end of a line), gives another `__doc__`, and another `description` in `model_json_schema()`, which
 Pydantic takes from the docstring.
 
+## Untrusted Input
+
+!!! warning "Experimental"
+    The references and schema keywords that `untrusted_input` refuses may grow as new ways for a schema to read
+    files or write code are found.
+
+A schema that comes from a source you do not control, such as an HTTP request or the tool schema of an LLM, can make
+dcg read files and fetch URLs through `$ref`, and make the generated module import other modules through keywords such
+as `x-python-import`. Executing that module runs those imports. Set `untrusted_input` (`--untrusted-input` on the
+command line, `generate(..., untrusted_input=True)`) to keep such a schema to data:
+
+```python
+from datamodel_code_generator import GenerateConfig, generate_dynamic_models
+
+models = generate_dynamic_models(schema, config=GenerateConfig(untrusted_input=True, formatters=[]))
+```
+
+- dcg reads no file or URL but the input: a `$ref` must name a location in the input (a JSON pointer, an anchor, an
+  embedded `$id` resource, or another file of a directory or file-list input), not another file or a URL; an XML
+  Schema includes or imports only files of the input. A reference that would read another document stops generation
+  with an error that names it.
+- The keywords whose values the generated module imports or evaluates as Python code, `x-python-type`,
+  `x-python-import`, `customTypePath` and `customBasePath`, stop generation with an error that names the keyword.
+- Protocol Buffers input, whose imports `protoc` reads by itself, and `--validation` are refused.
+- It implies `allow_remote_refs=False`. A schema that does none of this generates the same classes.
+
+Descriptions, titles, defaults, examples, enum values and property names are written as escaped literals, comments or
+sanitized names, never as code. The switch does not sandbox the generated code, and options you pass yourself, such as
+`custom_template_dir`, `extra_template_data`, `additional_imports` or `custom_formatters`, are trusted.
+
 ## Thread Safety
 
 `generate_dynamic_models()` is thread-safe. Multiple threads can safely call it concurrently:
@@ -27280,7 +27310,7 @@ This documentation is auto-generated from test cases.
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
-| ⚙️ [General Options](general-options.md) | 25 | Utilities and meta options |
+| ⚙️ [General Options](general-options.md) | 26 | Utilities and meta options |
 | 🚀 [Target Generation Options](target-generation-options.md) | 26 | Server and client generation with the models (experimental) |
 | 📝 [Utility Options](utility-options.md) | 15 | Help, version, debug options |
 
@@ -27329,6 +27359,7 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--diff-against`](general-options.md#diff-against) | Conflicts | Always | `--job` | `--diff-against` compares one profile or input and cannot run named jobs. |
 | [`--diff-against`](general-options.md#diff-against) | Conflicts | Always | `--all-jobs` | `--diff-against` compares one profile or input and cannot run named jobs. |
 | [`--locked`](general-options.md#locked) | Conflicts | Always | [`--update-lock`](general-options.md#update-lock) | - |
+| [`--untrusted-input`](general-options.md#untrusted-input) | Implies | Always | [`--allow-remote-refs`](general-options.md#allow-remote-refs) disabled | - |
 | [`--update-lock`](general-options.md#update-lock) | Conflicts | Always | [`--locked`](general-options.md#locked) | - |
 | [`--client-body-arguments`](target-generation-options.md#client-body-arguments) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-body-arguments` requires `--generate-client httpx2`. |
 | [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-deep-object-brackets` requires `--generate-client httpx2`. |
@@ -27653,6 +27684,7 @@ These links are generated from CLI option metadata and summarize options that im
 ### U {#u}
 
 - [`--union-mode`](model-customization.md#union-mode)
+- [`--untrusted-input`](general-options.md#untrusted-input)
 - [`--update-lock`](general-options.md#update-lock)
 - [`--url`](base-options.md#url)
 - [`--use-annotated`](typing-customization.md#use-annotated)
@@ -66879,6 +66911,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/general-opti
 | [`--recommend-options`](#recommend-options) | Recommend options for the input schema on top of the latest ... |
 | [`--shared-module-name`](#shared-module-name) | Customize the name of the shared module for deduplicated mod... |
 | [`--strict-refs`](#strict-refs) | Treat unresolved local `$ref` JSON pointers as errors. |
+| [`--untrusted-input`](#untrusted-input) | Treat the input as a schema from an untrusted source. |
 | [`--update-lock`](#update-lock) | Create or atomically update the selected remote lock after g... |
 | [`--watch`](#watch) | Watch input file(s) for changes and regenerate output automa... |
 | [`--watch-delay`](#watch-delay) | Set debounce delay in seconds for watch mode. |
@@ -69763,6 +69796,79 @@ generation instead. Existing empty schemas remain valid references.
 
     class Model(RootModel[Empty]):
         root: Empty
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--untrusted-input` {#untrusted-input}
+
+Treat the input as a schema from an untrusted source.
+
+Use it when the schema comes from a source the project does not control, such as an HTTP request or a tool schema of
+an LLM, and the generated module is imported or executed. dcg then reads no file or URL but the input: a `$ref` must
+name a location in the input (a JSON pointer, an anchor, an embedded `$id` resource or another file of a directory
+input), not another file or a URL, and an XML Schema includes or imports only files of the input. The schema
+keywords whose values the generated module imports or evaluates as Python code (`x-python-type`, `x-python-import`,
+`customTypePath`, `customBasePath`) are refused, as are Protocol Buffers input, whose imports protoc reads by itself,
+and `--validation`. The option implies `--no-allow-remote-refs`. A schema that does none of this generates the same
+models.
+
+**Option relationships:**
+
+- **Implies:** [`--allow-remote-refs`](general-options.md#allow-remote-refs) disabled
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input local_id_ref.json --untrusted-input # (1)!
+    ```
+
+    1. :material-arrow-left: `--untrusted-input` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "title": "LocalIdRef",
+      "type": "object",
+      "$defs": {
+        "Target": {
+          "$id": "https://example.test/target",
+          "type": "object",
+          "properties": {
+            "name": {"type": "string"}
+          }
+        }
+      },
+      "properties": {
+        "target": {"$ref": "https://example.test/target"}
+      }
+    }
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  local_id_ref.json
+
+    from __future__ import annotations
+
+    from pydantic import BaseModel
+
+
+    class Target(BaseModel):
+        name: str | None = None
+
+
+    class LocalIdRef(BaseModel):
+        target: Target | None = None
     ```
 
     <!-- fmt: on -->
@@ -76682,6 +76788,7 @@ datamodel-codegen [OPTIONS]
 | [`--recommend-options`](general-options.md#recommend-options) | Recommend options for the input schema on top of the latest dated preset (experi... |
 | [`--shared-module-name`](general-options.md#shared-module-name) | Customize the name of the shared module for deduplicated models. |
 | [`--strict-refs`](general-options.md#strict-refs) | Treat unresolved local `$ref` JSON pointers as errors. |
+| [`--untrusted-input`](general-options.md#untrusted-input) | Treat the input as a schema from an untrusted source. |
 | [`--update-lock`](general-options.md#update-lock) | Create or atomically update the selected remote lock after generation (experimen... |
 | [`--watch`](general-options.md#watch) | Watch input file(s) for changes and regenerate output automatically. |
 | [`--watch-delay`](general-options.md#watch-delay) | Set debounce delay in seconds for watch mode. |
@@ -76967,6 +77074,7 @@ All options sorted alphabetically:
 - [`--type-overrides`](typing-customization.md#type-overrides) - Replace schema model types with custom Python types via JSON...
 - [`--type-overrides-replace-whole-type`](typing-customization.md#type-overrides-replace-whole-type) - Make every `--type-overrides` value of a field replace the f...
 - [`--union-mode`](model-customization.md#union-mode) - Union mode for combining anyOf/oneOf schemas (smart or left_...
+- [`--untrusted-input`](general-options.md#untrusted-input) - Treat the input as a schema from an untrusted source.
 - [`--update-lock`](general-options.md#update-lock) - Create or atomically update the selected remote lock after g...
 - [`--url`](base-options.md#url) - Fetch a schema from a URL with custom HTTP headers.
 - [`--use-annotated`](typing-customization.md#use-annotated) - Use typing.Annotated for Field() with constraints.
@@ -79539,6 +79647,7 @@ This page lists features that are available but still experimental.
 | `cli-option.install-skill` | cli-option | `--install-skill, --skill-scope, and --overwrite-skill` | 0.76.0 | - |
 | `cli-option.recommend-options` | cli-option | `--recommend-options, its rule data, its candidate comparison, its JSON payload, and --generate-prompt --recommend-options with the prompt JSON field recommendation` | 0.86.0 | - |
 | `cli-option.schema-validator-type` | cli-option | `--schema-validator-type` | 0.66.1 | - |
+| `cli-option.untrusted-input` | cli-option | `--untrusted-input` | 0.92.0 | - |
 | `cli-option.use-missing-sentinel` | cli-option | `--use-missing-sentinel` | 0.66.1 | - |
 | `cli-option.use-type-alias` | cli-option | `--use-type-alias` | 0.36.0 | - |
 | `cli-option.use-type-alias-type` | cli-option | `--use-type-alias-type` | 0.71.1 | - |
@@ -79642,6 +79751,16 @@ Option recommendations are experimental; the rules, the schema signals they read
 Schema-derived runtime validator backend selection is experimental and may change as validation backends are added.
 
 The only currently implemented backend is 'pydantic-v2', which preserves the existing generated Pydantic v2 validator behavior.
+
+### `cli-option.untrusted-input`
+
+- **Kind:** cli-option
+- **Target:** `--untrusted-input`
+- **Since:** 0.92.0
+
+The untrusted input switch is experimental; the references and schema keywords it refuses may grow as new ways for a schema to read files or write code are found.
+
+With --untrusted-input (untrusted_input=True in generate() and in the GenerateConfig of the dynamic API), dcg reads no file or URL but the input, refuses x-python-type, x-python-import, customTypePath and customBasePath, Protocol Buffers input and --validation, and implies --no-allow-remote-refs. It does not sandbox the generated code.
 
 ### `cli-option.use-missing-sentinel`
 
@@ -81794,16 +81913,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 250 | Shared generation options. |
-| `GenerateConfig` | 265 | Public `generate()` configuration. |
-| `ParserConfig` | 206 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 208 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 219 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 222 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 209 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 209 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 208 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 209 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 251 | Shared generation options. |
+| `GenerateConfig` | 266 | Public `generate()` configuration. |
+| `ParserConfig` | 207 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 209 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 220 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 223 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 210 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 210 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 209 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 210 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
