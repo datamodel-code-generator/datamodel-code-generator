@@ -6316,6 +6316,11 @@
     "references": ["asyncapi-other.yaml"],
     "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]}
   },
+  "asyncapi-escaped-channel-ref": {
+    "input": "asyncapi-escaped-channel-ref.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"], ["models.py"]]
+  },
   "asyncapi-mapped-payloads": {
     "input": "asyncapi-mapped-payloads.yaml",
     "references": ["asyncapi-other.yaml"],
