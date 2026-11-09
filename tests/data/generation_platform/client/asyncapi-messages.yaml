@@ -99,6 +99,25 @@ channels:
       entry:
         payload:
           $ref: '#/components/schemas/Item'
+  edits:
+    address: /v1/edits
+    messages:
+      edit:
+        payload:
+          $ref: '#/components/schemas/Edit'
+      revision:
+        payload:
+          $ref: '#/components/schemas/Revision'
+  drafts:
+    address: /v1/drafts
+    messages:
+      draft:
+        payload:
+          schema:
+            $ref: '#/components/schemas/Item'
+      item:
+        payload:
+          $ref: '#/components/schemas/Item'
 operations:
   onFeed:
     action: receive
@@ -146,6 +165,14 @@ operations:
     action: send
     channel:
       $ref: '#/channels/logs'
+  onEdits:
+    action: receive
+    channel:
+      $ref: '#/channels/edits'
+  onDrafts:
+    action: receive
+    channel:
+      $ref: '#/channels/drafts'
 components:
   messages:
     subscribe:
@@ -245,3 +272,17 @@ components:
         price:
           type: number
       required: [side, price]
+    Edit:
+      type: object
+      properties:
+        text:
+          type: string
+      required: [text]
+    Revision:
+      allOf:
+        - $ref: '#/components/schemas/Edit'
+        - type: object
+          properties:
+            number:
+              type: integer
+          required: [number]

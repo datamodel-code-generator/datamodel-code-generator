@@ -78,6 +78,16 @@ class Ask:
     price: float
 
 
+@dataclass
+class Edit:
+    text: str
+
+
+@dataclass
+class Revision(Edit):
+    number: int
+
+
 SubscribePayload: TypeAlias = Subscribe
 
 
@@ -139,3 +149,15 @@ LogsLinePayload: TypeAlias = str
 
 
 LogsEntryPayload: TypeAlias = Item
+
+
+EditsEditPayload: TypeAlias = Edit
+
+
+EditsRevisionPayload: TypeAlias = Revision
+
+
+DraftsDraftPayload: TypeAlias = Item
+
+
+DraftsItemPayload: TypeAlias = Item

@@ -94,3 +94,16 @@ SOCKET_4: Final[ChannelPlan[Never, models.Bid | models.Ask]] = ChannelPlan(
     ),
     discriminator=BodySelector(pointer='/side'),
 )
+
+
+SOCKET_5: Final[ChannelPlan[models.Edit | models.Revision, Never]] = ChannelPlan(
+    helper_id='edits',
+    operation=OperationRef(pointer='/channels/edits'),
+    call=_operations.OPERATION_5,
+    fingerprint='91ee9153286996617281f64f491183c126fdfc8cf1220284c622f0bdeb75682f',
+    receive_codec='none',
+    send_routes=(
+        MessageRoute(encoder=model_bindings.codec_11, type=models.Edit),
+        MessageRoute(encoder=model_bindings.codec_12, type=models.Revision),
+    ),
+)

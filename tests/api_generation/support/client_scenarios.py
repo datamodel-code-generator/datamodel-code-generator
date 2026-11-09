@@ -18,10 +18,12 @@ import httpx2
 from datamodel_code_generator import Error
 from tests.api_generation.scenarios.client_allowreserved import reserved_paths
 from tests.api_generation.scenarios.client_asyncapi_sockets import (
+    asyncapi_enum_tag_sends,
     asyncapi_messages,
     asyncapi_perspective,
     asyncapi_serverless,
     asyncapi_sockets,
+    asyncapi_subclass_sends,
     asyncapi_union_sends,
 )
 from tests.api_generation.scenarios.client_auth_errors import auth_errors
@@ -988,6 +990,12 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
         asyncapi_messages,
     ),
     "asyncapi-union-sends": ("asyncapi-messages-aliases", ("pydantic_v2.BaseModel",), asyncapi_union_sends),
+    "asyncapi-subclass-sends": (
+        "asyncapi-messages",
+        ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"),
+        asyncapi_subclass_sends,
+    ),
+    "asyncapi-enum-tag-sends": ("asyncapi-messages-enums", ("typing.TypedDict",), asyncapi_enum_tag_sends),
     "protocol-errors": ("pets-protocols", ("pydantic_v2.BaseModel",), protocol_errors),
     "cache": ("caching", ("pydantic_v2.BaseModel",), caching),
     "cache-stores": ("caching-oauth", ("pydantic_v2.BaseModel",), cache_stores),

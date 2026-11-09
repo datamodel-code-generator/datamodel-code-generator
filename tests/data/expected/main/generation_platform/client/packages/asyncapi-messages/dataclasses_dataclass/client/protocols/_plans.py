@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Final
+from typing import Final, Never
 
 import models
 
@@ -52,4 +52,17 @@ SOCKET_1: Final[ChannelPlan[models.Place | models.Cancel, models.OrdersAckPayloa
             MessageRoute(encoder=model_bindings.codec_5, type=models.Cancel),
         ),
     )
+)
+
+
+SOCKET_2: Final[ChannelPlan[models.Edit | models.Revision, Never]] = ChannelPlan(
+    helper_id='edits',
+    operation=OperationRef(pointer='/channels/edits'),
+    call=_operations.OPERATION_2,
+    fingerprint='91ee9153286996617281f64f491183c126fdfc8cf1220284c622f0bdeb75682f',
+    receive_codec='none',
+    send_routes=(
+        MessageRoute(encoder=model_bindings.codec_7, type=models.Edit),
+        MessageRoute(encoder=model_bindings.codec_8, type=models.Revision),
+    ),
 )

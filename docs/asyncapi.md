@@ -176,8 +176,8 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
   and a text frame the text or JSON message; several JSON messages are told apart by a tag, a property that every
   payload model declares as required with one string value of its own (a `const` or a one-value `enum`), and a message
   with an unknown or missing tag raises `DecodeError` and closes the connection with 1002. `send(value)` takes the
-  message of the value's class, a `str` the text message and `bytes` the binary one; TypedDict values take the message
-  whose tag they hold. Pydantic models decode received JSON messages without a tag, and encode sent ones that are not
+  message of the value's class, else of its nearest base class, a `str` the text message and `bytes` the binary one;
+  TypedDict values take the message whose tag they hold. Pydantic models decode received JSON messages without a tag, and encode sent ones that are not
   all classes, as the union of their types; for the other model types such a channel is left out with a warning, as is
   a channel whose client receives both text and JSON messages.
 - [`--client-asyncapi-perspective`](cli-reference/target-generation-options.md#client-asyncapi-perspective) says which

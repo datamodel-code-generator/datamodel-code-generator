@@ -1,4 +1,5 @@
 # asyncapi-messages-aliases pydantic_v2.BaseModel
   warning UserWarning: <root>/asyncapi_messages_aliases_pydantic_v2_basemodel: Skipping channel 'logs', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/logs: the client receives text and JSON messages on it, which a text frame cannot tell apart
+  warning UserWarning: <root>/asyncapi_messages_aliases_pydantic_v2_basemodel: Skipping channel 'drafts', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/drafts: the client sends JSON messages on it, and a message's payload declares no type
     batch server saw '{"name":"a"}', '[{"name":"b"}]', 'note'
     server GET /v1/batch [] | closed 1000 ''

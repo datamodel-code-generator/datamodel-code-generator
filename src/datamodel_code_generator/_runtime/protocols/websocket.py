@@ -16,6 +16,7 @@ import time
 from collections.abc import Mapping
 from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass, field
+from enum import Enum
 from functools import partial
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
@@ -271,6 +272,11 @@ def _classes(route: MessageRoute) -> tuple[type, ...]:
     return () if route.type is None else (route.type,)
 
 
+def _tag_value(value: object) -> object:
+    """Return a sent tag as the JSON value it is written as: an enum member's value, else the value itself."""
+    return value.value if isinstance(value, Enum) else value
+
+
 def _sent_route(routes: tuple[MessageRoute, ...], value: object) -> MessageRoute:
     """Return the message a sent value takes: the only one, else as `MessageRoute` tells them apart."""
     if not routes:
@@ -280,12 +286,12 @@ def _sent_route(routes: tuple[MessageRoute, ...], value: object) -> MessageRoute
         return routes[0]
     kind = type(value)
     classes = [(item, _classes(item)) for item in routes]
-    found = next((item for item, kinds in classes if kind in kinds), None) or next(
-        (item for item, kinds in classes if isinstance(value, kinds)), None
-    )
+    found = next((item for base in kind.__mro__ for item, kinds in classes if base in kinds), None)
     mapping = cast("Mapping[str, object]", value) if isinstance(value, Mapping) else None
     if found is None and mapping is not None:
-        found = next((item for item in routes if item.key is not None and mapping.get(item.key) == item.tag), None)
+        found = next(
+            (item for item in routes if item.key is not None and _tag_value(mapping.get(item.key)) == item.tag), None
+        )
     if found is None:
         found = next((item for item in routes if item.codec == "json" and item.type is None and item.key is None), None)
     if found is None:

@@ -33,3 +33,9 @@ codec_6: Final[MsgspecCodec[models.OrdersAckPayload]] = MsgspecCodec(
     models.OrdersAckPayload
 )
 """Codec of /channels/orders response_body (response application/json)."""
+
+codec_7: Final[MsgspecCodec[models.Edit]] = MsgspecCodec(models.Edit)
+"""Codec of /channels/edits request_body (request application/json)."""
+
+codec_8: Final[MsgspecCodec[models.Revision]] = MsgspecCodec(models.Revision)
+"""Codec of /channels/edits request_body (request application/json)."""

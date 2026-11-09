@@ -242,11 +242,12 @@ class _Sockets(_Streams):
         if typed and self.backend in _PYDANTIC:
             return _replaced(members, [self.union(spec, jsons, types), *(None for _ in jsons[1:])]), None
         verb = "receives" if received else "sends"
-        return self.skip(
-            spec,
-            f"the client {verb} JSON messages on it that neither a tag nor a class tells apart, which only Pydantic "
-            "models code as a union",
+        why = (
+            "on it that neither a tag nor a class tells apart, which only Pydantic models code as a union"
+            if typed
+            else "on it, and a message's payload declares no type"
         )
+        return self.skip(spec, f"the client {verb} JSON messages {why}")
 
     def classes(self, types: list[TypeView]) -> list[TypeView] | None:
         """Return the class each sent type stands for: a model or root model through aliases, else None."""

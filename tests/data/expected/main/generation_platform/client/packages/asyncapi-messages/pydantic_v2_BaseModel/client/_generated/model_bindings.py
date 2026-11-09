@@ -51,3 +51,9 @@ codec_10: Final[PydanticCodec[models.Bid | models.Ask]] = PydanticCodec(
     models.Bid | models.Ask
 )
 """Codec of /channels/quotes response_body (response application/json)."""
+
+codec_11: Final[PydanticCodec[models.Edit]] = PydanticCodec(models.Edit)
+"""Codec of /channels/edits request_body (request application/json)."""
+
+codec_12: Final[PydanticCodec[models.Revision]] = PydanticCodec(models.Revision)
+"""Codec of /channels/edits request_body (request application/json)."""

@@ -265,3 +265,43 @@ def asyncapi_union_sends(package: ModuleType, lines: list[str]) -> None:
         lines.extend((f"    batch server saw {', '.join(seen)}", played.report()))
     finally:
         server.stop()
+
+
+def asyncapi_subclass_sends(package: ModuleType, lines: list[str]) -> None:
+    """Send an edit, a revision and a value of a subclass of the revision, each with its nearest class's encoder."""
+    models = _models(package)
+    server = SocketServer()
+    seen: list[str] = []
+    mine = type("Mine", (models.Revision,), {})
+    try:
+        (played,) = server.play(Play(talk=_collecting(seen, 3)))
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=server.url, http_client=http) as client,
+            client.edits.connect() as session,
+        ):
+            session.send(models.Edit(text="a"))
+            session.send(models.Revision(text="b", number=2))
+            session.send(mine(text="c", number=3))
+        lines.extend((f"    edits server saw {', '.join(seen)}", played.report()))
+    finally:
+        server.stop()
+
+
+def asyncapi_enum_tag_sends(package: ModuleType, lines: list[str]) -> None:
+    """Send dicts on the feed whose tag is a plain enum member, each told apart by the member's value."""
+    models = _models(package)
+    server = SocketServer()
+    seen: list[str] = []
+    try:
+        (played,) = server.play(Play(talk=_collecting(seen, 2)))
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=server.url, http_client=http) as client,
+            client.feed.connect() as session,
+        ):
+            session.send({"op": "subscribe", "channels": ["a"]})
+            session.send({"op": models.Op.unsubscribe, "channels": ["b"]})
+        lines.extend((f"    feed server saw {', '.join(seen)}", played.report()))
+    finally:
+        server.stop()
