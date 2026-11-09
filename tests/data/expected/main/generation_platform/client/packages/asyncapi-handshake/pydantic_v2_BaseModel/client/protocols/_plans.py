@@ -20,7 +20,7 @@ SOCKET_0: Final[ChannelPlan[Never, models.Quote]] = ChannelPlan(
     call=_operations.OPERATION_0,
     fingerprint='3ab89cc6d9cc347a8fbed20940709ea31e020be7d1ee3bd4c5b654485d9ed6fa',
     send_codec='none',
-    decoder=model_bindings.codec_9,
+    decoder=model_bindings.codec_11,
 )
 
 
@@ -29,8 +29,8 @@ SOCKET_1: Final[ChannelPlan[models.Order, models.Order]] = ChannelPlan(
     operation=OperationRef(pointer='/channels/orders'),
     call=_operations.OPERATION_1,
     fingerprint='776f1b4235903a0bf037fbab5f19d89c73802b7decf33a7375ef7047be9a9cc0',
-    encoder=model_bindings.codec_10,
-    decoder=model_bindings.codec_11,
+    encoder=model_bindings.codec_12,
+    decoder=model_bindings.codec_13,
 )
 
 
@@ -40,16 +40,26 @@ SOCKET_2: Final[ChannelPlan[Never, models.Quote]] = ChannelPlan(
     call=_operations.OPERATION_2,
     fingerprint='438fa4cf10de1054077aa03c2f73e34a1eaae7af9935307ce64cf11874cc4abd',
     send_codec='none',
-    decoder=model_bindings.codec_12,
+    decoder=model_bindings.codec_14,
 )
 
 
 SOCKET_3: Final[ChannelPlan[Never, models.Quote]] = ChannelPlan(
+    helper_id='mirrored',
+    operation=OperationRef(pointer='/channels/mirrored'),
+    call=_operations.OPERATION_3,
+    fingerprint='ed1dc003f27997f85f43fbe78ea1cb6b7e8cf047ddb3c8cd9ba76af2d81c2125',
+    send_codec='none',
+    decoder=model_bindings.codec_15,
+)
+
+
+SOCKET_4: Final[ChannelPlan[Never, models.Quote]] = ChannelPlan(
     helper_id='sessions',
     operation=OperationRef(pointer='/channels/sessions'),
-    call=_operations.OPERATION_3,
-    fingerprint='569f093ea536b021008f93cadcd4fcc76a43987d357599dadad51cc5590a8f46',
+    call=_operations.OPERATION_4,
+    fingerprint='3d17adb75edfb15656eb1390b6196bf8e0fc5caff75c3cddf36ed485ed4e0a3c',
     send_codec='none',
-    decoder=model_bindings.codec_13,
+    decoder=model_bindings.codec_16,
     subprotocols=('quotes.v1', 'quotes.bin.v1'),
 )

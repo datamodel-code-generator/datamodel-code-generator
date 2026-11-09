@@ -289,6 +289,30 @@ channels:
         contentType: text/plain
         payload:
           $ref: '#/components/schemas/Line/allOf/0'
+  delegatedAuth:
+    address: /delegated-auth
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        payload:
+          type: string
+  partnered:
+    address: /partnered
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        payload:
+          type: string
+  crowded:
+    address: /crowded
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        payload:
+          type: string
 operations:
   receiveGuarded:
     action: receive
@@ -414,6 +438,146 @@ operations:
     action: send
     channel:
       address: /inline
+  receiveDelegatedAuth:
+    action: receive
+    channel:
+      $ref: '#/channels/delegatedAuth'
+    security:
+      - $ref: '#/components/securitySchemes/partner'
+      - $ref: '#/components/securitySchemes/bearer'
+  receivePartnered:
+    action: receive
+    channel:
+      $ref: '#/channels/partnered'
+    security:
+      - $ref: '#/components/securitySchemes/partner'
+  crowd1:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: &either
+      - $ref: '#/components/securitySchemes/bearer'
+      - $ref: '#/components/securitySchemes/key'
+  crowd2:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd3:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd4:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd5:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd6:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd7:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd8:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd9:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd10:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd11:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd12:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd13:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd14:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd15:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd16:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd17:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd18:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd19:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd20:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd21:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd22:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd23:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd24:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
+  crowd25:
+    action: receive
+    channel:
+      $ref: '#/channels/crowded'
+    security: *either
 components:
   schemas:
     Line:
@@ -435,6 +599,15 @@ components:
     digest:
       type: http
       scheme: digest
+    bearer:
+      type: http
+      scheme: bearer
+    key:
+      type: httpApiKey
+      in: query
+      name: key
+    partner:
+      $ref: 'asyncapi-other.yaml#/components/securitySchemes/partner'
   channelBindings:
     posted:
       ws:

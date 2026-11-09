@@ -4285,7 +4285,7 @@ class _Contracts(_Octets):
         """
         declared = SchemaLocation(use_site.document, parameter.schema)
         self.binder.declaration_types.setdefault(declared, self.property_type(declared))
-        written = as_mapping(self.documents.borrow(declared))
+        written = self._referenced(declared)
         self.parser.schema_records.setdefault(
             declared, _SchemaRecord(_default(written.get("default")), _keywords(written))
         )
@@ -4304,6 +4304,24 @@ class _Contracts(_Octets):
             _facts(facts, _PARAMETER_FACTS, declared),
             self.media_facts((self.use(use, declared),), declared, "parameter", None),
         )
+
+    def _referenced(self, declared: SchemaLocation) -> dict[str, YamlValue]:
+        """Return the keywords a schema says through its reference chain, the nearer schema's first.
+
+        A chain that loops back, or leaves the loaded documents, ends where it does.
+        """
+        found: dict[str, YamlValue] = {}
+        location, seen = declared, {declared}
+        while True:
+            written = as_mapping(self.documents.borrow(location))
+            found = {**written, **found}
+            if (
+                not isinstance(ref := written.get("$ref"), str)
+                or (target := self.loaded_target(location.document, ref)) is None
+                or target in seen
+            ):
+                return found
+            seen.add(location := target)
 
     def property_type(self, declared: SchemaLocation) -> DataType:
         """Return the type of the field the models hold a property of an object schema in.

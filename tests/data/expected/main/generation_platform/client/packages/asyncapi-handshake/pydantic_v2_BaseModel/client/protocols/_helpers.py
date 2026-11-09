@@ -40,6 +40,11 @@ class ProtocolHelpers:
         return PartnersWebsocket(self._core)
 
     @cached_property
+    def mirrored(self) -> MirroredWebsocket:
+        """The mirrored WebSocket helper."""
+        return MirroredWebsocket(self._core)
+
+    @cached_property
     def sessions(self) -> SessionsWebsocket:
         """The sessions WebSocket helper."""
         return SessionsWebsocket(self._core)
@@ -121,6 +126,29 @@ class PartnersWebsocket:
         )
 
 
+class MirroredWebsocket:
+    """The mirrored WebSocket helper of channel /mirrored."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    def connect(
+        self,
+        *,
+        ws_options: WSOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> WebSocketSession[Never, models.Quote]:
+        """Open the WebSocket of channel /mirrored, returning once its handshake got a valid 101."""
+        return connect_socket(
+            self._core,
+            _plans.SOCKET_3,
+            (),
+            ws_options=ws_options,
+            options=options,
+        )
+
+
 class SessionsWebsocket:
     """The sessions WebSocket helper of channel /sessions."""
 
@@ -132,15 +160,17 @@ class SessionsWebsocket:
         self,
         *,
         limit: int = 10,
+        cursor: str = 'latest',
         Authorization: str | UNSET = UNSET,
+        X_Region: str = 'eu',
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
     ) -> WebSocketSession[Never, models.Quote]:
         """Open the WebSocket of channel /sessions, returning once its handshake got a valid 101."""
         return connect_socket(
             self._core,
-            _plans.SOCKET_3,
-            (limit, Authorization),
+            _plans.SOCKET_4,
+            (limit, cursor, Authorization, X_Region),
             ws_options=ws_options,
             options=options,
         )

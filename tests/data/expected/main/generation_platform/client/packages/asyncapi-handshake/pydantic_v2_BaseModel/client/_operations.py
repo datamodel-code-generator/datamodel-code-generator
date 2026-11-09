@@ -20,7 +20,12 @@ _SERVERS_0: Final = (ServerPlan(url='https://stream.example.com/v2'),)
 
 _SERVERS_1: Final = (ServerPlan(url='https://partner.example.com'),)
 
-_SERVERS_2: Final = (ServerPlan(url='https://regional.example.com'),)
+_SERVERS_2: Final = (
+    ServerPlan(url='https://stream.example.com/v2'),
+    ServerPlan(url='https://mirror.example.com'),
+)
+
+_SERVERS_3: Final = (ServerPlan(url='https://regional.example.com'),)
 
 OPERATION_0: Final[OperationPlan[None]] = OperationPlan(
     operation_id=None,
@@ -120,8 +125,17 @@ OPERATION_2: Final[OperationPlan[None]] = OperationPlan(
 OPERATION_3: Final[OperationPlan[None]] = OperationPlan(
     operation_id=None,
     method='GET',
-    path='/sessions',
+    path='/mirrored',
     servers=_SERVERS_2,
+    responses=ResponseDecoder((), ()),
+    security=security.OPERATION_3,
+)
+
+OPERATION_4: Final[OperationPlan[None]] = OperationPlan(
+    operation_id=None,
+    method='GET',
+    path='/sessions',
+    servers=_SERVERS_3,
     responses=ResponseDecoder((), ()),
     parameters=(
         ParameterSpec(
@@ -131,15 +145,41 @@ OPERATION_3: Final[OperationPlan[None]] = OperationPlan(
                 style='form',
                 explode=True,
                 kind='integer',
+                reserved_names=('cursor',),
             ),
             codec=model_bindings.codec_7,
         ),
         ParameterSpec(
             plan=ParameterPlan(
-                location='header', name='Authorization', style='simple', credential=True
+                location='query',
+                name='cursor',
+                style='form',
+                explode=True,
+                reserved_names=('limit',),
             ),
             codec=model_bindings.codec_8,
+            converts=True,
+        ),
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='header',
+                name='Authorization',
+                style='simple',
+                reserved_names=('X-Region',),
+                credential=True,
+            ),
+            codec=model_bindings.codec_9,
+        ),
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='header',
+                name='X-Region',
+                style='simple',
+                reserved_names=('Authorization',),
+            ),
+            codec=model_bindings.codec_10,
+            converts=True,
         ),
     ),
-    security=security.OPERATION_3,
+    security=security.OPERATION_4,
 )

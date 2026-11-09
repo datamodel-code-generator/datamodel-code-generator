@@ -99,5 +99,14 @@ OPERATION_2: Final = SecurityBinding(
 
 OPERATION_3: Final = SecurityBinding(
     schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4),
+    alternatives=(
+        (SecurityRequirement(scheme=_SCHEME_0, required_scopes=()),),
+        (SecurityRequirement(scheme=_SCHEME_1, required_scopes=()),),
+    ),
+)
+
+
+OPERATION_4: Final = SecurityBinding(
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4),
     alternatives=((SecurityRequirement(scheme=_SCHEME_1, required_scopes=()),),),
 )

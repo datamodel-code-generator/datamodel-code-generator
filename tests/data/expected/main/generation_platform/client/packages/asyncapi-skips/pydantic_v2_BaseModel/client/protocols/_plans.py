@@ -72,3 +72,23 @@ SOCKET_5: Final[ChannelPlan[str, Never]] = ChannelPlan(
     send_codec='utf8',
     receive_codec='none',
 )
+
+
+SOCKET_6: Final[ChannelPlan[models.DelegatedAuthLinePayload, Never]] = ChannelPlan(
+    helper_id='delegated_auth',
+    operation=OperationRef(pointer='/channels/delegatedAuth'),
+    call=_operations.OPERATION_6,
+    fingerprint='7fd5ed325606bbfaa65af0b497ea6f8c1e7198eb272d1b4dde3f7bd5275aade0',
+    encoder=model_bindings.codec_2,
+    receive_codec='none',
+)
+
+
+SOCKET_7: Final[ChannelPlan[models.CrowdedLinePayload, Never]] = ChannelPlan(
+    helper_id='crowded',
+    operation=OperationRef(pointer='/channels/crowded'),
+    call=_operations.OPERATION_7,
+    fingerprint='8152513f0c8d00c4ad229c15e2525ac92f998d3afe7b718a4b0af002839807cc',
+    encoder=model_bindings.codec_3,
+    receive_codec='none',
+)

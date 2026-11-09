@@ -183,9 +183,9 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
   a channel whose client receives both text and JSON messages.
 - The properties of the channel's WebSocket binding `query` and `headers` objects are query and header parameters of
   `connect(...)`, typed by the fields the models make of them and required where the object requires them, as OpenAPI
-  query and header parameters are, with the `default` their schema gives. A binding that opens the channel with
-  another method than GET, or whose `query` or `headers` schema says more of the object than its properties, leaves
-  the channel out.
+  query and header parameters are, with the `default` their schema gives, through its `$ref`. A binding that opens the
+  channel with another method than GET, or whose `query` or `headers` schema says more of the object than its
+  properties, leaves the channel out.
 - A `Sec-WebSocket-Protocol` header whose schema fixes its values by `const` or `enum`, each a token, offers them as
   the subprotocols of the handshake, in the order written; the server selects one. Any other header the handshake
   writes itself (`Sec-WebSocket-Protocol` without such values, `Connection`, `Upgrade`, `Host`, `Sec-WebSocket-Key`,
@@ -194,11 +194,12 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
 - The security of the channel's servers and of each operation on it is sent on the handshake with the credentials the
   client is given, as the security of an OpenAPI operation is: `httpApiKey` in the query, a header or a cookie, `http`
   bearer and basic, `oauth2` and `openIdConnect` tokens. The handshake needs one alternative of each server's and each
-  operation's security. An alternative that needs a scheme a handshake cannot send, such as `userPassword`, is left
-  out, as is an AsyncAPI 3 scheme written inline in a `security` list, and a channel with none left is too, as is a
-  channel whose servers require different security. A header parameter takes the place of the credential sent in the
-  header it names: an API key's header, or `Authorization` for `http`, `oauth2` and `openIdConnect` credentials. A call
-  that gives it sends its value, and one that leaves it out sends the credential.
+  operation's security. An alternative that needs a scheme a handshake cannot send, such as `userPassword`, is left out,
+  as is one that needs a scheme of `components/securitySchemes` that references another document, or an AsyncAPI 3
+  scheme written inline in a `security` list, and a channel with none left is too, as is a channel whose servers require
+  different security (the same alternatives in any order are the same security). A header parameter takes the place of
+  the credential sent in the header it names: an API key's header, or `Authorization` for `http`, `oauth2` and
+  `openIdConnect` credentials. A call that gives it sends its value, and one that leaves it out sends the credential.
 - A server's URL variables are substituted by their `default`; a channel served on a server whose URL has a variable
   without one is left out. Variables the URL does not name need none.
 - [`--client-asyncapi-perspective`](cli-reference/target-generation-options.md#client-asyncapi-perspective) says which

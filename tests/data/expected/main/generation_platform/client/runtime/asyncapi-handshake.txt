@@ -17,9 +17,9 @@
     server got /quotes/ETH?depth=1&snapshot=true [authorization: Bearer b-1]
     server got /orders?token=t-2 [cookie: session=s-2, x-api-key: k-2]
     server got /orders?token=t-3 [cookie: session=s-3, x-api-key: from-parameter]
-    server got /sessions?limit=10 [authorization: Bearer b-5, sec-websocket-protocol: quotes.v1, quotes.bin.v1]
-    server got /sessions?limit=3 [authorization: Bearer from-parameter, sec-websocket-protocol: quotes.v1, quotes.bin.v1]
-    server got /sessions?limit=10 [authorization: Bearer from-parameter, sec-websocket-protocol: quotes.v1, quotes.bin.v1]
+    server got /sessions?limit=10&cursor=latest [authorization: Bearer b-5, sec-websocket-protocol: quotes.v1, quotes.bin.v1, x-region: eu]
+    server got /sessions?limit=3&cursor=latest [authorization: Bearer from-parameter, sec-websocket-protocol: quotes.v1, quotes.bin.v1, x-region: eu]
+    server got /sessions?limit=10&cursor=latest [authorization: Bearer from-parameter, sec-websocket-protocol: quotes.v1, quotes.bin.v1, x-region: eu]
     server got /partners [authorization: Bearer o-1]
 # asyncapi-handshake msgspec.Struct
   warning UserWarning: <root>/asyncapi_handshake_msgspec_struct: Skipping channel 'remote', which uses server variables (AsyncAPI 2.0) that the client does not support: /channels/remote: the variable host of server edge has no default; /channels/remote: the URL of server relay uses the variable zone, which the server does not declare
@@ -40,7 +40,7 @@
     server got /quotes/ETH?depth=1&snapshot=true [authorization: Bearer b-1]
     server got /orders?token=t-2 [cookie: session=s-2, x-api-key: k-2]
     server got /orders?token=t-3 [cookie: session=s-3, x-api-key: from-parameter]
-    server got /sessions?limit=10 [authorization: Bearer b-5, sec-websocket-protocol: quotes.v1, quotes.bin.v1]
-    server got /sessions?limit=3 [authorization: Bearer from-parameter, sec-websocket-protocol: quotes.v1, quotes.bin.v1]
-    server got /sessions?limit=10 [authorization: Bearer from-parameter, sec-websocket-protocol: quotes.v1, quotes.bin.v1]
+    server got /sessions?limit=10&cursor=latest [authorization: Bearer b-5, sec-websocket-protocol: quotes.v1, quotes.bin.v1, x-region: eu]
+    server got /sessions?limit=3&cursor=latest [authorization: Bearer from-parameter, sec-websocket-protocol: quotes.v1, quotes.bin.v1, x-region: eu]
+    server got /sessions?limit=10&cursor=latest [authorization: Bearer from-parameter, sec-websocket-protocol: quotes.v1, quotes.bin.v1, x-region: eu]
     server got /partners [authorization: Bearer o-1]

@@ -123,7 +123,7 @@ asyncapi-escaped-channel-ref	main/generation_platform/client/asyncapi-escaped-ch
 asyncapi-escaped-channel-ref	main/generation_platform/client/packages/asyncapi-escaped-channel-ref/pydantic_v2_BaseModel//*.py
 asyncapi-foreign-operations	main/generation_platform/client/asyncapi-foreign-operations.txt
 asyncapi-handshake	main/generation_platform/client/asyncapi-handshake.txt
-asyncapi-handshake	main/generation_platform/client/packages/asyncapi-handshake/msgspec_Struct//*.py	= main/generation_platform/client/packages/asyncapi-handshake/pydantic_v2_BaseModel//*.py
+asyncapi-handshake	main/generation_platform/client/packages/asyncapi-handshake/msgspec_Struct//*.py
 asyncapi-handshake	main/generation_platform/client/packages/asyncapi-handshake/pydantic_v2_BaseModel//*.py
 asyncapi-handshake-v2	main/generation_platform/client/asyncapi-handshake-v2.txt
 asyncapi-handshake-v2	main/generation_platform/client/packages/asyncapi-handshake-v2/pydantic_v2_BaseModel//*.py

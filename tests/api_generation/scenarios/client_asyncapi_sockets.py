@@ -326,7 +326,7 @@ def _handshakes(seen: list[str], *replies: str) -> Callable[[ServerConnection], 
     """Return a talk that keeps the path, query, credentials and headers of the handshake it got, then sends replies."""
 
     def talk(connection: ServerConnection) -> None:
-        request = cast("Request", connection.request)
+        request: Request = cast("Request", connection.request)
         headers = ", ".join(
             f"{name}: {request.headers[name]}" for name in _HANDSHAKE_HEADERS if name in request.headers
         )
@@ -337,7 +337,7 @@ def _handshakes(seen: list[str], *replies: str) -> Callable[[ServerConnection], 
     return talk
 
 
-_HANDSHAKE_HEADERS = ("authorization", "cookie", "sec-websocket-protocol", "x-api-key", "x-trace")
+_HANDSHAKE_HEADERS = ("authorization", "cookie", "sec-websocket-protocol", "x-api-key", "x-region", "x-trace")
 _QUOTE = json.dumps({"symbol": "XBT", "bid": 1.5})
 _ORDER = json.dumps({"id": "o-1", "size": 2.0})
 

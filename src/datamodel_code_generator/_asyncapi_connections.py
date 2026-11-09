@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from itertools import product
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._document_reader import as_mapping, descend
@@ -46,6 +45,8 @@ Tokens: TypeAlias = tuple[str, ...]
 Action: TypeAlias = Literal["send", "receive"]
 Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
 """One alternative of a security requirement: each scheme it needs, by name, with the scopes it needs of it."""
+_Unordered: TypeAlias = frozenset[frozenset[tuple[str, frozenset[str]]]]
+"""A security's alternatives, each the schemes it needs with their scopes, in no order."""
 Skips: TypeAlias = "list[tuple[str | None, str]]"
 _Operation: TypeAlias = "tuple[Tokens, str, Mapping[str, YamlValue]]"
 """An AsyncAPI 3 operation: the pointer of its channel, its own pointer, and the operation as written."""
@@ -82,6 +83,7 @@ _MANAGED_HEADERS: Final = frozenset({
 """The lowercase headers a client's WebSocket handshake writes itself, which the runtime refuses from a call."""
 _SUBPROTOCOL: Final = "sec-websocket-protocol"
 _INLINE: Final = "a scheme written inline"
+_FOREIGN: Final = "a scheme in another document"
 
 
 @dataclass(frozen=True, slots=True)
@@ -255,14 +257,25 @@ def _combined(parts: list[tuple[Requirement, ...] | None]) -> tuple[Requirement,
     present = [part for part in parts if part is not None]
     if not present:
         return None
-    combined: list[Requirement] = []
-    for choice in product(*present):
-        merged: dict[str, dict[str, None]] = {}
-        for alternative in choice:
-            for name, scopes in alternative:
-                merged.setdefault(name, {}).update(dict.fromkeys(scopes))
-        combined.append(tuple((name, tuple(scopes)) for name, scopes in merged.items()))
-    return tuple(dict.fromkeys(combined))
+    combined: tuple[Requirement, ...] = ((),)
+    for part in present:
+        combined = tuple(dict.fromkeys(_merged(chosen, alternative) for chosen in combined for alternative in part))
+    return combined
+
+
+def _merged(chosen: Requirement, alternative: Requirement) -> Requirement:
+    """Return what meeting both requirements needs: every scheme of either, with all the scopes either needs of it."""
+    merged: dict[str, dict[str, None]] = {}
+    for name, scopes in (*chosen, *alternative):
+        merged.setdefault(name, {}).update(dict.fromkeys(scopes))
+    return tuple((name, tuple(scopes)) for name, scopes in merged.items())
+
+
+def _unordered(security: tuple[Requirement, ...] | None) -> _Unordered | None:
+    """Return a security's alternatives as a set, each the set of its schemes with their scopes, in no order."""
+    if security is None:
+        return None
+    return frozenset(frozenset((name, frozenset(scopes)) for name, scopes in alternative) for alternative in security)
 
 
 class _Reader:
@@ -288,11 +301,12 @@ class _Reader:
 
         A handshake is an HTTP request, so it sends an `httpApiKey`, `http`, `oauth2` or `openIdConnect` scheme, whose
         fields OpenAPI spells alike but for the `availableScopes` of an AsyncAPI 3 flow, OpenAPI's `scopes`. A scheme
-        in another document is left out.
+        in another document is one a handshake cannot send, as no plan resolves it.
         """
         schemes: dict[str, ReadScheme | str] = {}
         for key, value in as_mapping(self.document.value(_SCHEMES_POINTER)).items():
             if (found := self.document.resolved(value, (*_SCHEMES_POINTER, name := str(key)))) is None:
+                schemes[name] = _FOREIGN
                 continue
             scheme, declaration = as_mapping(found[0]), found[1]
             if (kind := _SCHEME_TYPES.get(written := str(scheme.get("type")))) is None:
@@ -386,9 +400,11 @@ class _Reader:
         if not servers and self.declares_servers:
             skips.append(("server_protocols", "it is served on no ws or wss server"))
         skips.extend(("server_variables", problem) for server, _ in servers if (problem := _unsubstituted(server)))
-        security = list(
-            dict.fromkeys(self.requirements(written, f"server {server.name}", skips) for server, written in servers)
-        )
+        distinct: dict[_Unordered | None, tuple[Requirement, ...] | None] = {}
+        for server, written in servers:
+            needed = self.requirements(written, f"server {server.name}", skips)
+            distinct.setdefault(_unordered(needed), needed)
+        security = list(distinct.values())
         if len(security) > 1:
             skips.append(("security_requirements", "the servers it is served on require different security"))
         subprotocols: list[str] = []

@@ -10,6 +10,12 @@ servers:
     security:
       - $ref: '#/components/securitySchemes/token'
       - $ref: '#/components/securitySchemes/bearer'
+  mirror:
+    host: mirror.example.com
+    protocol: wss
+    security:
+      - $ref: '#/components/securitySchemes/bearer'
+      - $ref: '#/components/securitySchemes/token'
   partner:
     host: partner.example.com
     protocol: wss
@@ -104,6 +110,14 @@ channels:
     messages:
       quote:
         $ref: '#/components/messages/quote'
+  mirrored:
+    address: /mirrored
+    servers:
+      - $ref: '#/servers/production'
+      - $ref: '#/servers/mirror'
+    messages:
+      quote:
+        $ref: '#/components/messages/quote'
   mixed:
     address: /mixed
     servers:
@@ -124,11 +138,15 @@ channels:
             limit:
               type: integer
               default: 10
+            cursor:
+              $ref: '#/components/schemas/Cursor'
         headers:
           type: object
           properties:
             Authorization:
               type: string
+            X-Region:
+              $ref: '#/components/schemas/Region'
             Sec-WebSocket-Protocol:
               type: string
               enum: [quotes.v1, quotes.bin.v1]
@@ -188,6 +206,10 @@ operations:
     action: send
     channel:
       $ref: '#/channels/devices'
+  sendMirroredQuotes:
+    action: send
+    channel:
+      $ref: '#/channels/mirrored'
   sendMixedQuotes:
     action: send
     channel:
@@ -233,6 +255,13 @@ components:
           items:
             type: string
       required: [depth]
+    Cursor:
+      type: string
+      description: Where the stream starts.
+      default: latest
+    Region:
+      type: string
+      default: eu
     Quote:
       type: object
       properties:

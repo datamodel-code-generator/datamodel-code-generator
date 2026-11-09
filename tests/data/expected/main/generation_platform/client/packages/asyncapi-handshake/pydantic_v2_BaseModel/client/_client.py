@@ -24,6 +24,7 @@ from .responses import RawResponse
 
 if TYPE_CHECKING:
     from ._runtime.protocols.options import HelperOptions
+    from .protocols._helpers import MirroredWebsocket
     from .protocols._helpers import OrdersWebsocket
     from .protocols._helpers import PartnersWebsocket
     from .protocols._helpers import ProtocolHelpers
@@ -36,6 +37,7 @@ _DEFAULTS = ClientDefaults(
         ('quotes', 'websocket'),
         ('orders', 'websocket'),
         ('partners', 'websocket'),
+        ('mirrored', 'websocket'),
         ('sessions', 'websocket'),
     ),
 )
@@ -118,6 +120,11 @@ class ClientView:
     def partners(self) -> PartnersWebsocket:
         """The WebSocket channel at /partners."""
         return self.protocols.partners
+
+    @cached_property
+    def mirrored(self) -> MirroredWebsocket:
+        """The WebSocket channel at /mirrored."""
+        return self.protocols.mirrored
 
     @cached_property
     def sessions(self) -> SessionsWebsocket:
