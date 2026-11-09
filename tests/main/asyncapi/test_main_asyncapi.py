@@ -166,6 +166,17 @@ def test_main_asyncapi_output_model_types(
     )
 
 
+@pytest.mark.parametrize("version", ["v2", "v3"])
+def test_main_asyncapi_string_discriminator(version: str, output_file: Path) -> None:
+    """Read a string discriminator, the AsyncAPI Schema Object's form, as the object naming that property (#6638)."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "string_discriminator" / f"{version}.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=PY310_TARGET_ARGS,
+    )
+
+
 def test_main_asyncapi_auto_inference(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Infer AsyncAPI input type from the asyncapi field."""
     run_main_and_assert(

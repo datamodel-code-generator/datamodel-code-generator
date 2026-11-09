@@ -359,11 +359,14 @@ class _DiscriminatorScan:
     ``string_refs`` (the api scope) takes each string ``$ref`` of an ``allOf`` for a parent, the empty one too, instead
     of each truthy one. ``components_only`` (AsyncAPI) reads the component schemas as ``_iter_asyncapi_schemas`` does,
     where a value that is no object holds no schema, and reads no discriminator at the root and no subtypes.
+    ``string_discriminators`` (AsyncAPI) reads a string ``discriminator``, the AsyncAPI Schema Object's form, as the
+    Discriminator Object that names the same property, ``{"propertyName": <name>}``; OpenAPI requires the object.
     """
 
     canonical_keys: bool = False
     string_refs: bool = False
     components_only: bool = False
+    string_discriminators: bool = False
 
 
 def is_inline_object_body(obj: JsonSchemaObject) -> bool:
@@ -1609,6 +1612,8 @@ class OpenAPIParser(JsonSchemaParser):
         """
         discriminator = schema.get("discriminator")
         if discriminator and not schema.get("oneOf") and not schema.get("anyOf"):
+            if self._discriminator_scan.string_discriminators and isinstance(discriminator, str):
+                discriminator = {"propertyName": discriminator}
             self._discriminator_schemas[self._schema_key(schema, ref, "discriminator")] = discriminator
 
     def _schema_key(self, schema: object, ref: str, keyword: str) -> str:
