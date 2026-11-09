@@ -633,7 +633,7 @@ def _logical_line_replacement(  # noqa: PLR0913
     source_lines = lines[start - 1 : end]
     if (
         len(source_lines) == 1
-        and str_width(line := source_lines[0]) <= line_length
+        and str_width(restore(line := source_lines[0])) <= line_length
         and not _MAGIC_TRAILING_COMMA.search(line)
     ):
         return None

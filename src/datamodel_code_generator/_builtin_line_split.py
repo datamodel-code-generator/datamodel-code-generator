@@ -14,7 +14,7 @@ import keyword
 import re
 import token
 import tokenize
-import unicodedata
+from bisect import bisect_right
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from functools import cache, partial
@@ -167,13 +167,151 @@ def _comma() -> _Leaf:
     return leaf
 
 
+# The ranges black counts as two columns wide: black's WIDTH_TABLE (wcwidth 0.2.14, Unicode 17.0.0). A static
+# table keeps the width, and so the layout, the same on every Python: the running Python's unicodedata is as old as
+# that Python (3.11 calls the then-unassigned U+1E4D0 full width).
+_WIDE_RANGES: tuple[tuple[int, int], ...] = (
+    (4352, 4447),
+    (8986, 8987),
+    (9001, 9002),
+    (9193, 9196),
+    (9200, 9200),
+    (9203, 9203),
+    (9725, 9726),
+    (9748, 9749),
+    (9776, 9783),
+    (9800, 9811),
+    (9855, 9855),
+    (9866, 9871),
+    (9875, 9875),
+    (9889, 9889),
+    (9898, 9899),
+    (9917, 9918),
+    (9924, 9925),
+    (9934, 9934),
+    (9940, 9940),
+    (9962, 9962),
+    (9970, 9971),
+    (9973, 9973),
+    (9978, 9978),
+    (9981, 9981),
+    (9989, 9989),
+    (9994, 9995),
+    (10024, 10024),
+    (10060, 10060),
+    (10062, 10062),
+    (10067, 10069),
+    (10071, 10071),
+    (10133, 10135),
+    (10160, 10160),
+    (10175, 10175),
+    (11035, 11036),
+    (11088, 11088),
+    (11093, 11093),
+    (11904, 11929),
+    (11931, 12019),
+    (12032, 12245),
+    (12272, 12329),
+    (12336, 12350),
+    (12353, 12438),
+    (12443, 12543),
+    (12549, 12591),
+    (12593, 12686),
+    (12688, 12773),
+    (12783, 12830),
+    (12832, 12871),
+    (12880, 42124),
+    (42128, 42182),
+    (43360, 43388),
+    (44032, 55203),
+    (63744, 64255),
+    (65040, 65049),
+    (65072, 65106),
+    (65108, 65126),
+    (65128, 65131),
+    (65281, 65376),
+    (65504, 65510),
+    (94176, 94179),
+    (94194, 94198),
+    (94208, 101589),
+    (101631, 101662),
+    (101760, 101874),
+    (110576, 110579),
+    (110581, 110587),
+    (110589, 110590),
+    (110592, 110882),
+    (110898, 110898),
+    (110928, 110930),
+    (110933, 110933),
+    (110948, 110951),
+    (110960, 111355),
+    (119552, 119638),
+    (119648, 119670),
+    (126980, 126980),
+    (127183, 127183),
+    (127374, 127374),
+    (127377, 127386),
+    (127488, 127490),
+    (127504, 127547),
+    (127552, 127560),
+    (127568, 127569),
+    (127584, 127589),
+    (127744, 127776),
+    (127789, 127797),
+    (127799, 127868),
+    (127870, 127891),
+    (127904, 127946),
+    (127951, 127955),
+    (127968, 127984),
+    (127988, 127988),
+    (127992, 127994),
+    (128000, 128062),
+    (128064, 128064),
+    (128066, 128252),
+    (128255, 128317),
+    (128331, 128334),
+    (128336, 128359),
+    (128378, 128378),
+    (128405, 128406),
+    (128420, 128420),
+    (128507, 128591),
+    (128640, 128709),
+    (128716, 128716),
+    (128720, 128722),
+    (128725, 128728),
+    (128732, 128735),
+    (128747, 128748),
+    (128756, 128764),
+    (128992, 129003),
+    (129008, 129008),
+    (129292, 129338),
+    (129340, 129349),
+    (129351, 129535),
+    (129648, 129660),
+    (129664, 129674),
+    (129678, 129734),
+    (129736, 129736),
+    (129741, 129756),
+    (129759, 129770),
+    (129775, 129784),
+    (131072, 196605),
+    (196608, 262141),
+)
+_WIDE_STARTS = tuple(start for start, _ in _WIDE_RANGES)
+
+
 @cache
 def _char_width(char: str) -> int:
-    return 2 if unicodedata.east_asian_width(char) in {"W", "F"} and not unicodedata.combining(char) else 1
+    index = bisect_right(_WIDE_STARTS, codepoint := ord(char)) - 1
+    return 2 if index >= 0 and codepoint <= _WIDE_RANGES[index][1] else 1
 
 
 def str_width(text: str) -> int:
-    """Return the display width black measures a line with: wide East Asian characters count twice."""
+    """Return the display width black measures a line with: wide East Asian characters count twice.
+
+    Measure text with its lent letters given back (``_Mode.restore``): a lent letter can be wide where the character it
+    stands for is not.
+    """
     return len(text) if text.isascii() else sum(map(_char_width, text))
 
 
@@ -347,7 +485,7 @@ class _Mode:
 
 
 def _is_line_short_enough(line: _Line, mode: _Mode, line_str: str = "") -> bool:
-    return str_width(line_str or str(line)) <= mode.line_length
+    return str_width(mode.restore(line_str or str(line))) <= mode.line_length
 
 
 def _get_leaves_inside_matching_brackets(leaves: Sequence[_Leaf]) -> set[int]:
@@ -719,7 +857,7 @@ def _wrapped_string_lines(line: _Line, mode: _Mode, _features: Collection[_Featu
         and leaves[1].type == token.EQUAL
         and not leaves[1].parameter_default
         and all(leaf.type == token.STRING and leaf.value.lstrip("rRuU")[0] not in "bBfF" for leaf in strings)
-        and str_width(str(line).removesuffix(",")) > mode.line_length
+        and str_width(mode.restore(str(line).removesuffix(","))) > mode.line_length
     ):
         msg = "Not a long keyword string argument"
         raise CannotSplitError(msg)
