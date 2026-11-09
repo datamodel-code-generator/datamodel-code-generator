@@ -24,10 +24,12 @@ from .responses import RawResponse
 
 if TYPE_CHECKING:
     from ._runtime.protocols.options import HelperOptions
-    from .protocols._helpers import AdminWebsocket
-    from .protocols._helpers import ProtocolHelpers
-    from .protocols._helpers import ScopedWebsocket
-    from .protocols._helpers import TicksMarketWebsocket
+    from .protocols._helpers import (
+        AdminWebsocket,
+        ProtocolHelpers,
+        ScopedWebsocket,
+        TicksMarketWebsocket,
+    )
 
 _DEFAULTS = ClientDefaults(
     security_schemes=security.ROOT_SCHEMES,

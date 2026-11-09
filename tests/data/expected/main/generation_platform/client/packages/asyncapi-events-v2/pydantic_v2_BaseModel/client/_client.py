@@ -22,9 +22,7 @@ from .responses import RawResponse
 
 if TYPE_CHECKING:
     from ._runtime.protocols.options import HelperOptions
-    from .protocols._helpers import ProtocolHelpers
-    from .protocols._helpers import StatusSse
-    from .protocols._helpers import TicksMarketSse
+    from .protocols._helpers import ProtocolHelpers, StatusSse, TicksMarketSse
 
 _DEFAULTS = ClientDefaults(
     helpers=(('ticks_market', 'sse'), ('status', 'sse')),

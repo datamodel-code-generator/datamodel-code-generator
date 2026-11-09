@@ -554,7 +554,6 @@ LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/test_format.py::datamodel_code_generator._builtin_formatter",
         "private-import:tests/test_format.py::datamodel_code_generator._format_types",
         "private-import:tests/test_format.py::datamodel_code_generator.format._BUILTIN_FORMATTER_REEXPORTS",
-        "private-import:tests/test_format.py::datamodel_code_generator.format._format_import_node",
         "private-import:tests/test_format.py::datamodel_code_generator.format._format_import_node_without_reordering",
         "private-import:tests/test_format.py::datamodel_code_generator.format._get_builtin_known_first_party",
         "private-import:tests/test_format.py::datamodel_code_generator.format._get_builtin_line_length",

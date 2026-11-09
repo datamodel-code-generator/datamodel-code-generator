@@ -23,12 +23,14 @@ from .responses import RawResponse
 
 if TYPE_CHECKING:
     from ._runtime.protocols.options import HelperOptions
-    from .protocols._helpers import PrimaryWebsocket
-    from .protocols._helpers import ProtocolHelpers
-    from .protocols._helpers import SecondaryWebsocket
-    from .protocols._helpers import V1DeskRegionWebsocket
-    from .protocols._helpers import V1LevelsWebsocket
-    from .protocols._helpers import V1MirrorWebsocket
+    from .protocols._helpers import (
+        PrimaryWebsocket,
+        ProtocolHelpers,
+        SecondaryWebsocket,
+        V1DeskRegionWebsocket,
+        V1LevelsWebsocket,
+        V1MirrorWebsocket,
+    )
 
 _DEFAULTS = ClientDefaults(
     security_schemes=security.ROOT_SCHEMES,

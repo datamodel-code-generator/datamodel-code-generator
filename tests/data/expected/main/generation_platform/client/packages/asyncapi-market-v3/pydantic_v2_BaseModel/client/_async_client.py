@@ -22,11 +22,13 @@ from .responses import AsyncRawResponse
 
 if TYPE_CHECKING:
     from ._runtime.protocols.options import HelperOptions
-    from .protocols._async_helpers import AsyncAudioWebsocket
-    from .protocols._async_helpers import AsyncMarketWebsocket
-    from .protocols._async_helpers import AsyncProtocolHelpers
-    from .protocols._async_helpers import AsyncStatusWebsocket
-    from .protocols._async_helpers import AsyncTickerWebsocket
+    from .protocols._async_helpers import (
+        AsyncAudioWebsocket,
+        AsyncMarketWebsocket,
+        AsyncProtocolHelpers,
+        AsyncStatusWebsocket,
+        AsyncTickerWebsocket,
+    )
 
 _DEFAULTS = ClientDefaults(
     helpers=(

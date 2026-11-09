@@ -210,8 +210,13 @@ def _alias_sort_key(alias: str, names: _ImportNames = _PLAIN_NAMES) -> tuple[_Al
 
 
 def _format_from_import(module: str, aliases: list[str], line_length: int, restore: Callable[[str], str] = str) -> str:
+    """Lay out one ``from`` import as isort does: a star import stays a statement of its own, before the other names."""
+    if "*" in aliases:
+        rest = [alias for alias in aliases if alias != "*"]
+        star = from_import(module, ["*"])
+        return f"{star}\n{_format_from_import(module, rest, line_length, restore)}" if rest else star
     line = from_import(module, aliases)
-    if str_width(restore(line)) <= line_length and "*" not in aliases:
+    if str_width(restore(line)) <= line_length:
         return line
     imports = "\n".join(f"    {alias}," for alias in aliases)
     return f"from {module} import (\n{imports}\n)"
@@ -328,7 +333,8 @@ def _format_import_node_without_reordering(
     names: _ImportNames = _PLAIN_NAMES,
 ) -> tuple[_ImportCategory, str]:
     end_lineno = node.end_lineno or node.lineno
-    raw_import = "\n".join(lines[node.lineno - 1 : end_lineno])
+    indent = _line_indent(lines[node.lineno - 1])
+    raw_import = "\n".join(line.removeprefix(indent) for line in lines[node.lineno - 1 : end_lineno])
     return _import_node_category(node, known_first_party, names), raw_import
 
 
@@ -349,25 +355,6 @@ def _import_node_category(
     raise TypeError(msg)
 
 
-def _format_import_node(
-    node: ast.ImportFrom,
-    line_length: int,
-    known_first_party: frozenset[str] = DEFAULT_KNOWN_FIRST_PARTY,
-    names: _ImportNames = _PLAIN_NAMES,
-) -> tuple[_ImportCategory, str]:
-    category = _import_node_category(node, known_first_party, names)
-    module = "." * node.level + (node.module or "")
-    if any(alias.asname is not None for alias in node.names):
-        lines = [
-            _format_from_import(module, [_format_alias(alias)], line_length, names.restore)
-            for alias in sorted(node.names, key=lambda alias: _alias_sort_key(_format_alias(alias), names))
-        ]
-        return category, "\n".join(lines)
-
-    aliases = sorted((_format_alias(alias) for alias in node.names), key=lambda alias: _alias_sort_key(alias, names))
-    return category, _format_from_import(module, aliases, line_length, names.restore)
-
-
 def _from_import_key(node: ast.ImportFrom) -> tuple[int, str]:
     return node.level, node.module or ""
 
@@ -378,10 +365,6 @@ def _modules_with_aliased_imports(import_nodes: list[ast.Import | ast.ImportFrom
         for node in import_nodes
         if isinstance(node, ast.ImportFrom) and any(alias.asname is not None for alias in node.names)
     }
-
-
-def _can_merge_from_imports(node: ast.ImportFrom, aliased_modules: set[tuple[int, str]]) -> bool:
-    return node.level == 0 and _from_import_key(node) not in aliased_modules
 
 
 def _iter_aliased_from_import_lines(
@@ -439,8 +422,8 @@ def _build_builtin_import_block(
     names: _ImportNames = _PLAIN_NAMES,
 ) -> str:
     categorized_lines: defaultdict[_ImportCategory, list[str]] = defaultdict(list)
-    grouped_from_imports: defaultdict[tuple[_ImportCategory, int, str], list[str]] = defaultdict(list)
-    aliased_from_imports: defaultdict[tuple[_ImportCategory, int, str], list[tuple[int, str, bool]]] = defaultdict(list)
+    grouped_from_imports: defaultdict[tuple[_ImportCategory, str], list[str]] = defaultdict(list)
+    aliased_from_imports: defaultdict[tuple[_ImportCategory, str], list[tuple[int, str, bool]]] = defaultdict(list)
     aliased_modules = _modules_with_aliased_imports(import_nodes)
 
     for node_index, node in enumerate(import_nodes):
@@ -449,33 +432,22 @@ def _build_builtin_import_block(
             categorized_lines[category].append(raw_import)
             continue
 
-        if isinstance(node, ast.ImportFrom) and _from_import_key(node) in aliased_modules:
-            module = "." * node.level + (node.module or "")
-            category = _import_node_category(node, known_first_party, names)
-            for alias in node.names:
-                aliased_from_imports[category, node.level, module].append((
-                    node_index,
-                    _format_alias(alias),
-                    alias.asname is not None,
-                ))
-            continue
-
-        if isinstance(node, ast.ImportFrom) and _can_merge_from_imports(node, aliased_modules):
-            category = _import_node_category(node, known_first_party, names)
-            for alias in node.names:
-                grouped_from_imports[category, node.level, node.module or ""].append(_format_alias(alias))
-            continue
-
         if isinstance(node, ast.Import):
             for alias in node.names:
                 category = _import_category(names.restore(alias.name), 0, known_first_party, names.python_version)
                 categorized_lines[category].append(module_import(_format_alias(alias)))
             continue
 
-        category, import_line = _format_import_node(node, line_length, known_first_party, names)
-        categorized_lines[category].append(import_line)
+        module = "." * node.level + (node.module or "")
+        category = _import_node_category(node, known_first_party, names)
+        if _from_import_key(node) in aliased_modules:
+            aliased_from_imports[category, module].extend(
+                (node_index, _format_alias(alias), alias.asname is not None) for alias in node.names
+            )
+        else:
+            grouped_from_imports[category, module].extend(_format_alias(alias) for alias in node.names)
 
-    for (category, _level, module), aliases in grouped_from_imports.items():
+    for (category, module), aliases in grouped_from_imports.items():
         categorized_lines[category].append(
             _format_from_import(
                 module,
@@ -484,7 +456,7 @@ def _build_builtin_import_block(
                 names.restore,
             )
         )
-    for (category, _level, module), aliases in aliased_from_imports.items():
+    for (category, module), aliases in aliased_from_imports.items():
         for import_line in _iter_aliased_from_import_lines(module, aliases, line_length, names):
             categorized_lines[category].append(import_line)
 
@@ -503,40 +475,84 @@ def _is_name_or_attr(node: ast.AST, name: str) -> bool:
     return isinstance(node, ast.Attribute) and node.attr == name
 
 
-def _is_type_checking_if(node: ast.AST) -> TypeGuard[ast.If]:
-    return isinstance(node, ast.If) and _is_name_or_attr(node.test, "TYPE_CHECKING")
-
-
 def _is_string_constant(node: ast.AST | None) -> TypeGuard[ast.Constant]:
     return isinstance(node, ast.Constant) and isinstance(node.value, str)
-
-
-def _format_type_checking_block(
-    node: ast.If,
-    lines: list[str],
-    line_length: int,
-    known_first_party: frozenset[str],
-    names: _ImportNames = _PLAIN_NAMES,
-) -> str | None:
-    import_nodes = [statement for statement in node.body if isinstance(statement, (ast.Import, ast.ImportFrom))]
-    if not import_nodes or len(import_nodes) != len(node.body):
-        return None
-
-    indent = _line_indent(lines[node.lineno - 1])
-    import_block = _build_builtin_import_block(import_nodes, line_length, lines, known_first_party, names)
-    indented_import_block = "\n".join(
-        f"{indent}    {line}" if line else line for line in _split_python_lines(import_block)
-    )
-    return f"{indent}if TYPE_CHECKING:\n{indented_import_block}"
 
 
 _LineReplacement = tuple[int, int, list[str]]
 _NON_CODE_TOKENS = frozenset({tokenize.NL, tokenize.COMMENT})
 
 
-def _replacement(node: ast.stmt, text: str, end: int | None = None) -> _LineReplacement:
-    """Replace the lines of ``node``, or its lines up to ``end``, with the lines of ``text``."""
-    return node.lineno, end or node.end_lineno or node.lineno, _split_python_lines(text)
+def _takes_own_lines(statement: ast.stmt, lines: list[str]) -> bool:
+    """Return whether ``statement`` alone takes its lines: nothing before it on its first line or after it on its last.
+
+    A statement after a ``;`` or after a compound statement's ``:`` on the same line does not.
+    """
+    end = statement.end_lineno or statement.lineno
+    return statement.col_offset == len(_line_indent(lines[statement.lineno - 1])) and statement.end_col_offset == len(
+        lines[end - 1].encode()
+    )
+
+
+def _nested_bodies(statement: ast.stmt) -> Iterator[list[ast.stmt]]:
+    """Yield the bodies nested in ``statement``: its own, its ``else`` and ``finally``, and those of its clauses."""
+    for name in ("body", "orelse", "finalbody"):
+        if body := getattr(statement, name, None):
+            yield body
+    for clause in (*getattr(statement, "handlers", ()), *getattr(statement, "cases", ())):
+        yield clause.body
+
+
+def _import_runs(
+    body: list[ast.stmt], lines: list[str]
+) -> Iterator[tuple[list[ast.Import | ast.ImportFrom], ast.stmt | None]]:
+    """Yield the runs of imports in ``body`` that isort sorts as one block, each with the statement after it.
+
+    A run holds imports that take their own lines with only blank lines between them; a comment ends it.
+    """
+    run: list[ast.Import | ast.ImportFrom] = []
+    for statement in body:
+        if run and not (
+            isinstance(statement, (ast.Import, ast.ImportFrom))
+            and _takes_own_lines(statement, lines)
+            and not any(line.strip() for line in lines[run[-1].end_lineno or run[-1].lineno : statement.lineno - 1])
+        ):
+            yield run, statement
+            run = []
+        if isinstance(statement, (ast.Import, ast.ImportFrom)) and _takes_own_lines(statement, lines):
+            run.append(statement)
+    if run:
+        yield run, None
+
+
+def _collect_nested_import_replacements(
+    statement: ast.stmt,
+    lines: list[str],
+    line_length: int,
+    known_first_party: frozenset[str],
+    names: _ImportNames = _PLAIN_NAMES,
+) -> Iterator[_LineReplacement]:
+    """Sort the import runs of the bodies nested in ``statement``, at any depth, as isort sorts the module's imports.
+
+    The lines of a run are indented as its first import, and its line length is what that indent leaves. A statement
+    other than an import right after a run gets a blank line before it, as Black puts one after an import.
+    """
+    for body in _nested_bodies(statement):
+        for run, following in _import_runs(body, lines):
+            indent = _line_indent(lines[run[0].lineno - 1])
+            block = _build_builtin_import_block(run, line_length - len(indent), lines, known_first_party, names)
+            end = run[-1].end_lineno or run[-1].lineno
+            blank = following is not None and not isinstance(following, (ast.Import, ast.ImportFrom)) and lines[end]
+            yield (
+                run[0].lineno,
+                end,
+                [
+                    *(f"{indent}{line}" if line else line for line in _split_python_lines(block)),
+                    *([""] if blank else []),
+                ],
+            )
+        for child in body:
+            yield from _collect_nested_import_replacements(child, lines, line_length, known_first_party, names)
 
 
 def _iter_boolean_operand_lines(
@@ -701,9 +717,7 @@ def _statement_replacement(
     end = statement.end_lineno or statement.lineno
     if isinstance(statement, ast.Assign) and _is_name_or_attr(statement.targets[0], PEP695_TYPE_ALIAS_PLACEHOLDER):
         end = _pep695_type_alias_statement_end(lines, statement.lineno - 1) + 1
-    elif statement.col_offset != len(_line_indent(lines[statement.lineno - 1])) or statement.end_col_offset != len(
-        lines[end - 1].encode()
-    ):
+    elif not _takes_own_lines(statement, lines):
         return None
     return _logical_line_replacement(
         lines,
@@ -794,11 +808,7 @@ def _collect_builtin_replacements(  # noqa: PLR0913
                     node, lines, line_length, wrap_string_literal=wrap_string_literal, restore=names.restore
                 )
             )
-        if _is_type_checking_if(node):
-            formatted_type_checking = _format_type_checking_block(node, lines, line_length, known_first_party, names)
-            if formatted_type_checking is not None:
-                replacements.append(_replacement(node, formatted_type_checking))
-            continue
+        replacements.extend(_collect_nested_import_replacements(node, lines, line_length, known_first_party, names))
         if (
             replacement := _statement_replacement(
                 node, lines, line_length, wrap_string_literal=wrap_string_literal, restore=names.restore
@@ -867,9 +877,21 @@ def _iter_module_import_nodes(tree: ast.Module) -> list[ast.Import | ast.ImportF
     return import_nodes
 
 
+def _disjoint_replacements(replacements: list[_LineReplacement]) -> list[_LineReplacement]:
+    """Return the replacements in line order, leaving out each one whose lines another one before it replaces.
+
+    A replacement inside another one, such as the blank lines between two imports of a sorted run, is part of it.
+    """
+    kept: list[_LineReplacement] = []
+    for replacement in sorted(replacements, key=lambda item: (item[0], -item[1])):
+        if not kept or replacement[0] > kept[-1][1]:
+            kept.append(replacement)
+    return kept
+
+
 def _apply_line_replacements(lines: list[str], replacements: list[_LineReplacement], *, offset: int = 0) -> list[str]:
     formatted_lines = list(lines)
-    for start, end, replacement_lines in sorted(replacements, reverse=True):
+    for start, end, replacement_lines in reversed(_disjoint_replacements(replacements)):
         start_index = start - offset - 1
         end_index = end - offset
         if start_index < 0 or end_index > len(formatted_lines):  # pragma: no cover
