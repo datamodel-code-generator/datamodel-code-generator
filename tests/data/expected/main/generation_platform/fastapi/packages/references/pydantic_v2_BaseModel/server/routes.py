@@ -40,7 +40,9 @@ def _add_list_pets(
 
     async def list_pets_principal(
         *,
-        bearer_alias: Annotated[HTTPAuthorizationCredentials | None, Security(security.bearer_alias)],
+        bearer_alias: Annotated[
+            HTTPAuthorizationCredentials | None, Security(security.bearer_alias)
+        ],
     ) -> object:
         return await authenticate(
             ((('bearer_alias', ()),),),
@@ -52,9 +54,13 @@ def _add_list_pets(
     def list_pets(
         *,
         principal: Annotated[object, Depends(list_pets_principal)],
-        limit: Annotated[Annotated[int, Field(ge=1)] | None, Query(alias='limit')] = None,
+        limit: Annotated[
+            Annotated[int, Field(ge=1)] | None, Query(alias='limit')
+        ] = None,
         page: Annotated[Annotated[int, Field(ge=1)] | None, Query(alias='page')] = None,
-        X_Trace: Annotated[str | None, Header(alias='X-Trace', convert_underscores=False)] = None,
+        X_Trace: Annotated[
+            str | None, Header(alias='X-Trace', convert_underscores=False)
+        ] = None,
     ) -> object:
         return dispatch(
             list_pets_handler(
@@ -107,7 +113,9 @@ def _add_create_pet(
     def create_pet(
         *,
         principal: Annotated[object, Depends(create_pet_principal)],
-        X_Trace: Annotated[str | None, Header(alias='X-Trace', convert_underscores=False)] = None,
+        X_Trace: Annotated[
+            str | None, Header(alias='X-Trace', convert_underscores=False)
+        ] = None,
         body: Annotated[models.Pet, Body(media_type='application/json')],
     ) -> object:
         return dispatch(
@@ -160,7 +168,9 @@ def _add_list_owners(
     def list_owners(
         *,
         principal: Annotated[object, Depends(list_owners_principal)],
-        limit: Annotated[Annotated[int, Field(ge=1)] | None, Query(alias='limit')] = None,
+        limit: Annotated[
+            Annotated[int, Field(ge=1)] | None, Query(alias='limit')
+        ] = None,
     ) -> object:
         return dispatch(
             list_owners_handler(

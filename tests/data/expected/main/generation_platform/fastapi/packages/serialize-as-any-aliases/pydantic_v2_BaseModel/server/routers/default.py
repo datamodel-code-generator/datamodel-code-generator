@@ -30,7 +30,9 @@ def _add_list_tags(
 
     def list_tags(
         *,
-        parameters: Annotated[contract.ListTags.Parameters, Depends(contract.ListTags.PARAMETERS)],
+        parameters: Annotated[
+            contract.ListTags.Parameters, Depends(contract.ListTags.PARAMETERS)
+        ],
     ) -> object:
         parameters = accepted(parameters)
         return dispatch(

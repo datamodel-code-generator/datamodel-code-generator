@@ -77,12 +77,14 @@ class AsyncAuthResource:
         """
         Call GET /inherited.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_0,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_0,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def anonymous(
         self,
@@ -93,12 +95,14 @@ class AsyncAuthResource:
         """
         Call GET /anonymous.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_1,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_1,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def empty_security(
         self,
@@ -109,12 +113,14 @@ class AsyncAuthResource:
         """
         Call GET /empty.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_2,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_2,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def optional_auth(
         self,
@@ -125,12 +131,14 @@ class AsyncAuthResource:
         """
         Call GET /optional.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_3,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_3,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def optional_token_first(
         self,
@@ -141,12 +149,14 @@ class AsyncAuthResource:
         """
         Call GET /optional-token-first.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_4,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_4,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def and_auth(
         self,
@@ -157,12 +167,14 @@ class AsyncAuthResource:
         """
         Call GET /and.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_5,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_5,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def or_auth(
         self,
@@ -173,12 +185,14 @@ class AsyncAuthResource:
         """
         Call GET /or.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_6,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_6,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def authorization_or(
         self,
@@ -189,12 +203,14 @@ class AsyncAuthResource:
         """
         Call GET /authorization-or.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_7,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_7,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def api_key_header(
         self,
@@ -205,12 +221,14 @@ class AsyncAuthResource:
         """
         Call GET /api-key/header.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_8,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_8,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def api_key_query(
         self,
@@ -221,12 +239,14 @@ class AsyncAuthResource:
         """
         Call GET /api-key/query.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_9,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_9,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def api_key_cookie(
         self,
@@ -237,12 +257,14 @@ class AsyncAuthResource:
         """
         Call GET /api-key/cookie.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_10,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_10,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def cookie_parameters(
         self,
@@ -257,12 +279,14 @@ class AsyncAuthResource:
         """
         Call GET /api-key/cookie-parameters.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_11,
-            (theme, page, X_Trace, filter),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_11,
+                (theme, page, X_Trace, filter),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def basic(
         self,
@@ -273,12 +297,14 @@ class AsyncAuthResource:
         """
         Call GET /basic.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_12,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_12,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def bearer(
         self,
@@ -289,12 +315,14 @@ class AsyncAuthResource:
         """
         Call GET /bearer.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_13,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_13,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def alias_auth(
         self,
@@ -305,12 +333,14 @@ class AsyncAuthResource:
         """
         Call GET /alias.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_14,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_14,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def oauth_read(
         self,
@@ -321,12 +351,14 @@ class AsyncAuthResource:
         """
         Call GET /oauth/read.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_15,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_15,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def oauth_scopes(
         self,
@@ -337,12 +369,14 @@ class AsyncAuthResource:
         """
         Call GET /oauth/scopes.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_16,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_16,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def oauth_empty(
         self,
@@ -353,12 +387,14 @@ class AsyncAuthResource:
         """
         Call GET /oauth/empty.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_17,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_17,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def openid_read(
         self,
@@ -369,12 +405,14 @@ class AsyncAuthResource:
         """
         Call GET /openid/read.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_18,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_18,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def challenge_less(
         self,
@@ -385,12 +423,14 @@ class AsyncAuthResource:
         """
         Call GET /challenge-less.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_19,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_19,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def unsafe_auth(
         self,
@@ -403,14 +443,16 @@ class AsyncAuthResource:
         """
         Call POST /unsafe.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_20,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_20,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def idempotent_auth(
         self,
@@ -423,14 +465,16 @@ class AsyncAuthResource:
         """
         Call POST /idempotent.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_21,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_21,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def never_auth(
         self,
@@ -441,12 +485,14 @@ class AsyncAuthResource:
         """
         Call GET /never.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_22,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_22,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def vendor_auth(
         self,
@@ -457,12 +503,14 @@ class AsyncAuthResource:
         """
         Call GET /vendor.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_23,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_23,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def signed_body(
         self,
@@ -475,14 +523,16 @@ class AsyncAuthResource:
         """
         Call PUT /signed.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_24,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_24,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def signed_multipart(
         self,
@@ -495,14 +545,16 @@ class AsyncAuthResource:
         """
         Call POST /signed-multipart.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_25,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_25,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
 
 class AsyncAuthWithResponse:

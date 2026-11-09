@@ -525,129 +525,6 @@ def _import_runs(
         yield run, None
 
 
-def _collect_nested_import_replacements(
-    statement: ast.stmt,
-    lines: list[str],
-    line_length: int,
-    known_first_party: frozenset[str],
-    names: _ImportNames = _PLAIN_NAMES,
-) -> Iterator[_LineReplacement]:
-    """Sort the import runs of the bodies nested in ``statement``, at any depth, as isort sorts the module's imports.
-
-    The lines of a run are indented as its first import, and its line length is what that indent leaves. A statement
-    other than an import right after a run gets a blank line before it, as Black puts one after an import.
-    """
-    for body in _nested_bodies(statement):
-        for run, following in _import_runs(body, lines):
-            indent = _line_indent(lines[run[0].lineno - 1])
-            block = _build_builtin_import_block(run, line_length - len(indent), lines, known_first_party, names)
-            end = run[-1].end_lineno or run[-1].lineno
-            blank = following is not None and not isinstance(following, (ast.Import, ast.ImportFrom)) and lines[end]
-            yield (
-                run[0].lineno,
-                end,
-                [
-                    *(f"{indent}{line}" if line else line for line in _split_python_lines(block)),
-                    *([""] if blank else []),
-                ],
-            )
-        for child in body:
-            yield from _collect_nested_import_replacements(child, lines, line_length, known_first_party, names)
-
-
-def _iter_boolean_operand_lines(
-    node: ast.BoolOp, source: bytes, indent: str, line_length: int, restore: Callable[[str], str] = str
-) -> Iterator[str]:
-    """Split boolean operands, wrapping nested groups that exceed the line length."""
-    operator = "and" if isinstance(node.op, ast.And) else "or"
-    operator_bytes = operator.encode()
-    start = node.col_offset
-    last_index = len(node.values) - 1
-    for index, value in enumerate(node.values):
-        # The gap between AST operands contains only their parentheses and this operator.
-        end = (
-            source.index(operator_bytes, value.end_col_offset, node.values[index + 1].col_offset)
-            if index < last_index
-            else node.end_col_offset
-        )
-        operand = source[start:end].decode().strip()
-        start = (end or 0) + len(operator_bytes)
-        operand_prefix = f"{operator} " if index else ""
-        line = f"{indent}{operand_prefix}{operand}"
-        if str_width(restore(line)) > line_length and isinstance(value, ast.BoolOp):
-            yield from _format_boolean_group(value, source, indent, line_length, operand_prefix, restore=restore)
-        else:
-            yield line
-
-
-def _format_boolean_group(  # noqa: PLR0913
-    node: ast.BoolOp,
-    source: bytes,
-    indent: str,
-    line_length: int,
-    prefix: str = "",
-    *,
-    restore: Callable[[str], str] = str,
-) -> list[str]:
-    """Wrap a boolean group and any nested groups exposed by the added indent."""
-    operand_indent = f"{indent}    "
-    single_line = f"{operand_indent}{source[node.col_offset : node.end_col_offset].decode()}"
-    return [
-        f"{indent}{prefix}(",
-        *(
-            (single_line,)
-            if str_width(restore(single_line)) <= line_length
-            else _iter_boolean_operand_lines(node, source, operand_indent, line_length, restore)
-        ),
-        f"{indent})",
-    ]
-
-
-def _collect_function_boolean_replacements(
-    function: ast.FunctionDef | ast.AsyncFunctionDef,
-    lines: list[str],
-    line_length: int,
-    restore: Callable[[str], str] = str,
-) -> list[_LineReplacement]:
-    """Wrap parenthesized boolean groups and guards inside generated methods."""
-    candidates = {
-        number
-        for number in range(function.lineno, (function.end_lineno or function.lineno) + 1)
-        if str_width(restore(line := lines[number - 1])) > line_length and (" and " in line or " or " in line)
-    }
-    if not candidates:
-        return []
-    replacements: list[_LineReplacement] = []
-    for node in ast.walk(function):
-        if not isinstance(node, ast.BoolOp) or node.lineno not in candidates or node.lineno != node.end_lineno:
-            continue
-        line = lines[node.lineno - 1]
-        source = line.encode()
-        before, after = source[: node.col_offset].strip(), source[node.end_col_offset :].strip()
-        indent = _line_indent(line)
-        match before, after:
-            case (b"(", b")") | (b"if not (", _) | (_, b"):") if (
-                before == b"("
-                or (after == b"):" and before.startswith(b"if ") and before.endswith(b"("))
-                or (after.startswith((b") or ", b") and ")) and after.endswith(b":"))
-            ):
-                formatted = _format_boolean_group(
-                    node, source, indent, line_length, before[:-1].decode(), restore=restore
-                )
-                formatted[-1] += after[1:].decode()
-            case b"", b"" if (
-                1 < node.lineno < len(lines)
-                and lines[node.lineno - 2].endswith("(")
-                and lines[node.lineno].lstrip().startswith(")")
-            ):
-                formatted = list(_iter_boolean_operand_lines(node, source, indent, line_length, restore))
-            case _:
-                continue
-        replacements.append((node.lineno, node.lineno, formatted))
-        candidates.discard(node.lineno)
-    return replacements
-
-
 def _statement_start(statement: ast.stmt, lines: list[str]) -> int:
     if not (decorators := getattr(statement, "decorator_list", None)):
         return statement.lineno
@@ -657,8 +534,15 @@ def _statement_start(statement: ast.stmt, lines: list[str]) -> int:
     return start
 
 
-_SIMPLE_STATEMENTS = tuple(
-    getattr(ast, name) for name in ("Assign", "AnnAssign", "AugAssign", "Expr", "TypeAlias") if hasattr(ast, name)
+_ASSIGNMENTS = (ast.Assign, ast.AnnAssign, ast.AugAssign)
+_SIMPLE_STATEMENTS = (
+    *_ASSIGNMENTS,
+    ast.Expr,
+    ast.Return,
+    ast.Delete,
+    ast.Assert,
+    ast.Raise,
+    *(getattr(ast, name) for name in ("TypeAlias",) if hasattr(ast, name)),
 )
 _MAGIC_TRAILING_COMMA = re.compile(r",\s*[)\]}]")
 _JOINED_STRINGS = re.compile(r"""['"]\s+[rRbBuUfF]*['"]""")
@@ -708,7 +592,8 @@ def _statement_replacement(
 ) -> _LineReplacement | None:
     """Lay out a simple statement as black does; docstrings and other bare strings stay as they are.
 
-    A statement that shares its lines with another one, after a ``;`` or a class header's ``:``, stays as it is too.
+    A statement that shares its lines with another one, after a ``;`` or a compound statement's ``:``, stays as it is
+    too.
     """
     if not isinstance(statement, _SIMPLE_STATEMENTS) or (
         isinstance(statement, ast.Expr) and _is_string_constant(statement.value)
@@ -726,68 +611,149 @@ def _statement_replacement(
         line_length,
         wrap_string_literal=wrap_string_literal,
         restore=restore,
-        assignment=not isinstance(statement, ast.Expr),
+        assignment=isinstance(statement, _ASSIGNMENTS),
     )
 
 
-def _collect_definition_header_replacements(
-    node: ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef,
+_DEFINITIONS = (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
+_ClauseStatement: TypeAlias = (
+    ast.ClassDef
+    | ast.FunctionDef
+    | ast.AsyncFunctionDef
+    | ast.If
+    | ast.For
+    | ast.AsyncFor
+    | ast.While
+    | ast.With
+    | ast.AsyncWith
+    | ast.Try
+)
+_CLAUSE_STATEMENTS = (
+    *_DEFINITIONS,
+    ast.If,
+    ast.For,
+    ast.AsyncFor,
+    ast.While,
+    ast.With,
+    ast.AsyncWith,
+    ast.Try,
+    *(getattr(ast, name) for name in ("TryStar",) if hasattr(ast, name)),
+    ast.Match,
+)
+
+
+def _is_stub_body(body: list[ast.stmt], lines: list[str]) -> bool:
+    """Return whether ``body`` is one ``...`` after the header's colon, ending the line, which black keeps there."""
+    if not (
+        len(body) == 1
+        and isinstance(statement := body[0], ast.Expr)
+        and isinstance(statement.value, ast.Constant)
+        and statement.value.value is Ellipsis
+    ):
+        return False
+    line = lines[statement.lineno - 1]
+    return statement.end_col_offset == len(line.encode()) and line.encode()[: statement.col_offset].rstrip().endswith(
+        b":"
+    )
+
+
+def _collect_header_replacements(
+    statement: ast.stmt,
     lines: list[str],
     line_length: int,
     *,
     wrap_string_literal: bool,
     restore: Callable[[str], str] = str,
 ) -> Iterator[_LineReplacement]:
-    """Lay out the decorators and the header line of a class or function definition as black does."""
+    """Lay out the decorators of a definition and the header of each clause of a compound statement as black does.
+
+    A definition's stub body ``...`` on its header line is laid out with the header, as black keeps it there. Another
+    header with its body on the same line stays as it is.
+    """
+    if not isinstance(statement, _CLAUSE_STATEMENTS):
+        return
     lay_out = partial(
         _logical_line_replacement,
         lines,
         line_length=line_length,
         wrap_string_literal=wrap_string_literal,
         restore=restore,
+        assignment=False,
     )
-    for decorator in node.decorator_list:
-        if (
-            replacement := lay_out(decorator.lineno, decorator.end_lineno or decorator.lineno, assignment=False)
-        ) is not None:
+    for decorator in getattr(statement, "decorator_list", ()):
+        if (replacement := lay_out(decorator.lineno, decorator.end_lineno or decorator.lineno)) is not None:
             yield replacement
-    if (
-        node.body[0].lineno > node.lineno
-        and (replacement := lay_out(node.lineno, node.body[0].lineno - 1, assignment=False)) is not None
-    ):
-        yield replacement
+    for start, next_line, body in _clause_headers(statement, lines):
+        if body is not None and _is_stub_body(body, lines):
+            end = body[0].end_lineno or body[0].lineno
+        elif next_line > start:
+            end = next_line - 1
+        else:
+            continue
+        if (replacement := lay_out(start, end)) is not None:
+            yield replacement
 
 
-def _collect_class_replacements(
-    node: ast.ClassDef,
+def _clause_headers(
+    statement: _ClauseStatement | ast.Match, lines: list[str]
+) -> Iterator[tuple[int, int, list[ast.stmt] | None]]:
+    """Yield the first line of each clause header of ``statement``, the line after it starts on and a definition's body.
+
+    A ``match`` statement's header is followed by its first ``case``, whose header starts on its pattern's line.
+    """
+    if isinstance(statement, ast.Match):
+        yield statement.lineno, statement.cases[0].pattern.lineno, None
+        for case in statement.cases:
+            if lines[case.pattern.lineno - 1].lstrip().startswith("case"):
+                yield case.pattern.lineno, case.body[0].lineno, None
+        return
+    yield statement.lineno, statement.body[0].lineno, statement.body if isinstance(statement, _DEFINITIONS) else None
+    for handler in getattr(statement, "handlers", ()):
+        yield handler.lineno, handler.body[0].lineno, None
+
+
+def _collect_statement_replacements(  # noqa: PLR0913
+    statement: ast.stmt,
     lines: list[str],
     line_length: int,
+    known_first_party: frozenset[str],
     *,
     wrap_string_literal: bool,
-    restore: Callable[[str], str] = str,
+    names: _ImportNames = _PLAIN_NAMES,
 ) -> Iterator[_LineReplacement]:
-    """Lay out the decorators, header and simple statements of a class, and of the definitions nested in it."""
-    yield from _collect_definition_header_replacements(
-        node, lines, line_length, wrap_string_literal=wrap_string_literal, restore=restore
+    """Lay out ``statement`` and the statements of the bodies nested in it, at any depth, as black does.
+
+    A simple statement is laid out whole, a compound statement by its headers. The import runs of a nested body are
+    sorted as isort sorts the module's imports: indented as their first import, at the line length that indent leaves,
+    and followed by a blank line before a statement other than an import, as black puts one after an import.
+    """
+    if (
+        replacement := _statement_replacement(
+            statement, lines, line_length, wrap_string_literal=wrap_string_literal, restore=names.restore
+        )
+    ) is not None:
+        yield replacement
+    yield from _collect_header_replacements(
+        statement, lines, line_length, wrap_string_literal=wrap_string_literal, restore=names.restore
     )
-    for statement in node.body:
-        match statement:
-            case ast.ClassDef():
-                yield from _collect_class_replacements(
-                    statement, lines, line_length, wrap_string_literal=wrap_string_literal, restore=restore
-                )
-            case ast.FunctionDef() | ast.AsyncFunctionDef():
-                yield from _collect_function_boolean_replacements(statement, lines, line_length, restore)
-                yield from _collect_definition_header_replacements(
-                    statement, lines, line_length, wrap_string_literal=wrap_string_literal, restore=restore
-                )
-            case _:
-                if (
-                    replacement := _statement_replacement(
-                        statement, lines, line_length, wrap_string_literal=wrap_string_literal, restore=restore
-                    )
-                ) is not None:
-                    yield replacement
+    for body in _nested_bodies(statement):
+        for run, following in _import_runs(body, lines):
+            indent = _line_indent(lines[run[0].lineno - 1])
+            block = _build_builtin_import_block(run, line_length - len(indent), lines, known_first_party, names)
+            end = run[-1].end_lineno or run[-1].lineno
+            blank = following is not None and not isinstance(following, (ast.Import, ast.ImportFrom)) and lines[end]
+            yield (
+                run[0].lineno,
+                end,
+                [
+                    *(f"{indent}{line}" if line else line for line in _split_python_lines(block)),
+                    *([""] if blank else []),
+                ],
+            )
+        for child in body:
+            yield from _collect_statement_replacements(
+                child, lines, line_length, known_first_party, wrap_string_literal=wrap_string_literal, names=names
+            )
 
 
 def _collect_builtin_replacements(  # noqa: PLR0913
@@ -801,27 +767,12 @@ def _collect_builtin_replacements(  # noqa: PLR0913
 ) -> list[_LineReplacement]:
     replacements: list[_LineReplacement] = []
     for node in tree.body:
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            replacements.extend(_collect_function_boolean_replacements(node, lines, line_length, names.restore))
-            replacements.extend(
-                _collect_definition_header_replacements(
-                    node, lines, line_length, wrap_string_literal=wrap_string_literal, restore=names.restore
-                )
+        replacements.extend(
+            _collect_statement_replacements(
+                node, lines, line_length, known_first_party, wrap_string_literal=wrap_string_literal, names=names
             )
-        replacements.extend(_collect_nested_import_replacements(node, lines, line_length, known_first_party, names))
-        if (
-            replacement := _statement_replacement(
-                node, lines, line_length, wrap_string_literal=wrap_string_literal, restore=names.restore
-            )
-        ) is not None:
-            replacements.append(replacement)
-
+        )
         if isinstance(node, ast.ClassDef):
-            replacements.extend(
-                _collect_class_replacements(
-                    node, lines, line_length, wrap_string_literal=wrap_string_literal, restore=names.restore
-                )
-            )
             if len(node.body) > 1 and (docstring_node := _docstring_node(node.body[0])) is not None:
                 docstring_end = docstring_node.end_lineno or docstring_node.lineno
                 next_start = _statement_start(node.body[1], lines)
@@ -908,6 +859,11 @@ def _previous_non_empty_line_index(lines: list[str]) -> int:
 
 
 def _normalize_top_level_blank_lines(code: str) -> str:
+    """Put black's blank lines between top-level statements: two around definitions, none after a decorator.
+
+    A definition right after a function whose body is a stub ``...`` on its header line gets none, as black keeps a
+    run of ``@overload`` stubs together.
+    """
     string_lines: set[int] = set()
     # Multi-line STRING tokens can only come from triple quotes or backslash-continuation.
     if ('"""' in code) or ("'''" in code) or ("\\\n" in code) or ("\\\r\n" in code):
@@ -917,7 +873,7 @@ def _normalize_top_level_blank_lines(code: str) -> str:
 
     lines = _split_python_lines(code)
     formatted_lines: list[str] = []
-    previous_definition = False
+    previous_definition = previous_function = False
     in_decorator = False
     for line_number, line in enumerate(lines, start=1):
         if line and not line.startswith((" ", "\t")) and line_number not in string_lines:
@@ -931,8 +887,11 @@ def _normalize_top_level_blank_lines(code: str) -> str:
                 (
                     starts_definition
                     and not (
-                        formatted_lines[previous_line_index].startswith("#")
-                        and previous_line_index == len(formatted_lines) - 1
+                        previous_line_index == len(formatted_lines) - 1
+                        and (
+                            formatted_lines[previous_line_index].startswith("#")
+                            or (previous_function and formatted_lines[previous_line_index].endswith(": ..."))
+                        )
                     )
                 )
                 or (
@@ -949,6 +908,7 @@ def _normalize_top_level_blank_lines(code: str) -> str:
                 formatted_lines.pop()
             if not continuation:
                 previous_definition = line.startswith(_DEF_PREFIXES)
+                previous_function = line.startswith(_DEF_PREFIXES[1:])
                 in_decorator = line.startswith("@")
         formatted_lines.append(line)
     return "\n".join(formatted_lines)

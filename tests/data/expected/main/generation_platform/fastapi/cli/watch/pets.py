@@ -32,10 +32,18 @@ def _add_list_pets(
 
     def list_pets(
         *,
-        limit: Annotated[int, Field(ge=1, le=100), Query(alias='limit', description='Page size of a listing.')] = 20,
+        limit: Annotated[
+            int,
+            Field(ge=1, le=100),
+            Query(alias='limit', description='Page size of a listing.'),
+        ] = 20,
         tags: Annotated[list[str] | None, Query(alias='tags')] = None,
-        kind: Annotated[models.PetsGetQueryKindParameter | None, Query(alias='kind')] = None,
-        X_Request_Id: Annotated[UUID | None, Header(alias='X-Request-Id', convert_underscores=False)] = None,
+        kind: Annotated[
+            models.PetsGetQueryKindParameter | None, Query(alias='kind')
+        ] = None,
+        X_Request_Id: Annotated[
+            UUID | None, Header(alias='X-Request-Id', convert_underscores=False)
+        ] = None,
         since: Annotated[AwareDatetime | None, Query(alias='since')] = None,
         session: Annotated[str | None, Cookie(alias='session')] = None,
     ) -> object:

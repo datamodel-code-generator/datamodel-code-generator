@@ -89,29 +89,31 @@ It covers the generated-code patterns that matter for model modules:
 - Sorts each run of imports inside function, class and compound statement bodies (such as `if TYPE_CHECKING:`)
   the same way, wraps long ones at the width their indent leaves and puts a blank line after a run, like isort and
   Black. A comment line between two imports ends a run.
-- Lays out module-level and class-level simple statements (assignments, annotated assignments, expression
-  statements, `type` statements), class and function headers and decorators the way Black splits long lines: the
-  right-hand split, splits at commas and operators, optional parentheses around annotations and assigned values,
-  and magic trailing commas.
+- Lays out simple statements at any depth, in classes, function bodies and compound statements (assignments,
+  annotated assignments, expression, `return`, `del`, `assert`, `raise` and `type` statements), decorators and the
+  headers of class and function definitions and of `if`, `elif`, `while`, `for`, `with`, `except`, `match` and
+  `case` clauses (also `async`) the way Black splits long lines: the right-hand split, splits at commas and
+  operators, optional parentheses around annotations, assigned values, returned values, conditions and conditional
+  expressions, and magic trailing commas.
 - Lays out docstrings the way Black does: re-indented, trailing whitespace removed and padded before the closing
   quotes when needed. A docstring with a backslash at a line end stays as it is, as Black leaves it.
-- Keeps two blank lines around top-level `class`, `def`, or `async def` definitions and removes blank lines after
-  a decorator.
+- Keeps two blank lines around top-level `class`, `def`, or `async def` definitions, none after a function whose
+  body is `...` on its header line (a run of `@overload` stubs) and removes blank lines after a decorator.
 - Chooses string quotes as Black does when `--use-double-quotes` is passed or `[tool.black].skip-string-normalization = false`: double quotes unless they need more escapes, without the escapes the chosen quotes make unneeded.
 
 If the generated code cannot be parsed as Python, the built-in formatter only applies whitespace cleanup and returns the code.
 
 Known differences from Black and isort:
 
-- Statements inside function bodies and compound statements (`if`, `for`, `with`, `try`) are not laid out, except
-  long `and`/`or` groups in generated methods.
 - A statement that holds a comment, a multi-line string, a backslash continuation, a slice, a `**` power operator
-  or a `lambda` with parameters is left as it is.
+  or a `lambda` with parameters is left as it is, and so are a statement that shares its line with another one
+  (after a `;` or after a clause header's `:`), `except*` headers and a `del` of several targets (Black's
+  parentheses around them delete the same names but parse as one tuple target, a different syntax tree).
+- A class or function whose body is only `...` on its own line keeps it there; Black moves it onto the header line.
+  Blank lines inside function bodies are kept as written.
 - Spacing inside a line that fits is kept as written (Black also normalizes spaces around operators and removes
-  redundant parentheses: doubled ones, empty ones after a class name and those around a walrus in an `if` header).
-- A conditional expression (`a if b else c`) that is split inside brackets or inside another conditional
-  expression gets no parentheses of its own; Black wraps it in them.
-- Module-level `del`, `assert`, `raise`, `global` and similar statements, and definitions with PEP 695 type
+  redundant parentheses: doubled ones, empty ones after a class name and those around a walrus in an `if` or `while` header).
+- `global`, `nonlocal` and `import` statements outside the import runs above, and definitions with PEP 695 type
   parameters (`def f[T]`), are not laid out.
 - Quote normalization leaves triple-quoted strings and string prefixes as written: Black also drops a `u`/`U` prefix
   (`u'x'` -> `"x"`) and lowercases `F`/`B` (`F'x'` -> `f"x"`).

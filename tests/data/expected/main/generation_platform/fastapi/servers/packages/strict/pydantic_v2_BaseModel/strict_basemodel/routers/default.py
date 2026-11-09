@@ -27,17 +27,41 @@ def _add_get_values(
     get_values_handler = checked(
         default.get_values,
         'The default.get_values method of GET /values/{id}',
-        ('id', 'count', 'bounded', 'score', 'flag', 'name', 'label', 'counts', 'names', 'page', 'size', 'maybe', 'X_Trace', 'X_Tag', 'blob', 'visits'),
+        (
+            'id',
+            'count',
+            'bounded',
+            'score',
+            'flag',
+            'name',
+            'label',
+            'counts',
+            'names',
+            'page',
+            'size',
+            'maybe',
+            'X_Trace',
+            'X_Tag',
+            'blob',
+            'visits',
+        ),
     )
 
     def get_values(
         *,
         name: Annotated[StrictStr | None, Query(alias='name')] = None,
-        label: Annotated[Annotated[str, StringConstraints(min_length=2, strict=True)] | None, Query(alias='label')] = None,
+        label: Annotated[
+            Annotated[str, StringConstraints(min_length=2, strict=True)] | None,
+            Query(alias='label'),
+        ] = None,
         names: Annotated[list[StrictStr] | None, Query(alias='names')] = None,
-        X_Tag: Annotated[StrictStr | None, Header(alias='X-Tag', convert_underscores=False)] = None,
+        X_Tag: Annotated[
+            StrictStr | None, Header(alias='X-Tag', convert_underscores=False)
+        ] = None,
         blob: Annotated[Base64Str | None, Query(alias='blob')] = None,
-        parameters: Annotated[contract.GetValues.Parameters, Depends(contract.GetValues.PARAMETERS)],
+        parameters: Annotated[
+            contract.GetValues.Parameters, Depends(contract.GetValues.PARAMETERS)
+        ],
     ) -> object:
         parameters = accepted(parameters)
         return dispatch(
@@ -123,7 +147,9 @@ def _add_upload(
 
     def upload(
         *,
-        body: Annotated[strict_basemodel_models.UploadsPostRequest, Depends(contract.Upload.BODY)],
+        body: Annotated[
+            strict_basemodel_models.UploadsPostRequest, Depends(contract.Upload.BODY)
+        ],
     ) -> object:
         return dispatch(
             upload_handler(
@@ -158,7 +184,9 @@ def _add_search(
 
     def search(
         *,
-        parameters: Annotated[contract.Search.Parameters, Depends(contract.Search.PARAMETERS)],
+        parameters: Annotated[
+            contract.Search.Parameters, Depends(contract.Search.PARAMETERS)
+        ],
     ) -> object:
         parameters = accepted(parameters)
         return dispatch(

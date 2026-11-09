@@ -68,12 +68,14 @@ class AsyncPetsResource:
         """
         Call GET /pets.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_0,
-            (limit, labels, X_Trace, session),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_0,
+                (limit, labels, X_Trace, session),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     @overload
     async def create_pet(
@@ -104,14 +106,16 @@ class AsyncPetsResource:
         """
         Create a pet "quoted" \\ escaped.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_1,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_1,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     @overload
     async def get_pet(
@@ -147,12 +151,14 @@ class AsyncPetsResource:
         """
         Call GET /pets/{petId}.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_2,
-            (petId,),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_2,
+                (petId,),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def delete_pets_by_pet_id(
         self,
@@ -163,11 +169,13 @@ class AsyncPetsResource:
         """
         Call DELETE /pets/{petId}.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_3,
-            (petId,),
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_3,
+                (petId,),
+                options=options,
+            )
+        ).data
 
     async def head_pet(
         self,
@@ -178,11 +186,13 @@ class AsyncPetsResource:
         """
         Call HEAD /pets/{petId}.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_4,
-            (petId,),
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_4,
+                (petId,),
+                options=options,
+            )
+        ).data
 
     async def attach_files(
         self,
@@ -195,13 +205,15 @@ class AsyncPetsResource:
         """
         Call POST /pets/{petId}/files.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_6,
-            (petId,),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_6,
+                (petId,),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
     async def read_files(
         self,
@@ -213,12 +225,14 @@ class AsyncPetsResource:
         """
         Call GET /pets/{petId}/files.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_7,
-            (petId,),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_7,
+                (petId,),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
 
 class AsyncPetsWithResponse:

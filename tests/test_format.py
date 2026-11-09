@@ -797,6 +797,195 @@ def test_apply_builtin_formatter_keeps_commented_nested_imports_at_their_indent(
     )
 
 
+_LONG_CALL = "foo(aaaaaaaaaaaaaaaa, bbbbbbbbbbbbbbbbbbb, cccccccccccccccccc, dddddddddddddddddd, eeeeeeeeeeeee)"
+_LONG_SET = "{'ProtocolDataError', 'SessionLimitError', 'StreamInterruptedError', 'WebSocketClosedError'}"
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        f"def f():\n    x = {_LONG_CALL}\n",
+        *(
+            f"x = value_aaaaaaaaaaaaaaaaaaaaaaa {operator} collection_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            " if flag_cccccccccccc else False\n"
+            for operator in ("not in", "in", "is not")
+        ),
+        (
+            "def f():\n"
+            "    call(value_aaaaaaaaaaaaaaaaaaa not in collection_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            " if flag else False)\n"
+            "    if value_aaaaaaaaaaaaaaaaaaa not in collection_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            " if flag else False:\n"
+            "        return value_aaaaaaaaaaaaaaaa not in collection_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            " if flag else False\n"
+            "    for item in value_aaaaaaaaaaaaaaaaaaaaaaaaaaa if flag_cccccccccccccccccccccc"
+            " else other_ddddddddddddd:\n"
+            "        pass\n"
+        ),
+        (
+            "async def f(self):\n"
+            "    return (await self._core.execute(_operations.OPERATION_0, (license, zip), options=options)).data\n"
+        ),
+        (
+            "async def f(self):\n"
+            "    return (await self._core.execute(\n"
+            "        _operations.OPERATION_4,\n"
+            "        (id,),\n"
+            "        options=options,\n"
+            "    )).data\n"
+        ),
+        f"def f(name):\n    if name in {_LONG_SET}:\n        pass\n    elif name in {_LONG_SET}:\n        pass\n",
+        f"def f(name):\n    while name not in {_LONG_SET}:\n        name = next_name()\n",
+        (
+            "def f():\n"
+            "    for aaaaaaaaaaaaaaaaaaaa, bbbbbbbbbbbbbbbbbbbbbbbb in some_function_name(argument_one, argument_2):\n"
+            "        pass\n"
+            "    for name in first_collection_with_a_long_name not in second_collection_with_a_long_name_x:\n"
+            "        pass\n"
+        ),
+        (
+            "async def f():\n"
+            "    async for aaaaaaaaaaaaaaaaaaaa in some_function_name(argument_number_one, argument_number_2):\n"
+            "        pass\n"
+            "    async with open_a_connection(some_very_long_host_name_argument) as connection, lock as held:\n"
+            "        pass\n"
+        ),
+        (
+            "def f():\n"
+            "    with open(some_very_long_file_name_variable, encoding='utf-8') as handle, open(other) as other:\n"
+            "        pass\n"
+        ),
+        (
+            "def f():\n"
+            "    try:\n"
+            "        pass\n"
+            "    except (ProtocolDataError, SessionLimitError, StreamInterruptedError, WebSocketClosedError) as e:\n"
+            "        raise SomeVeryLongExceptionName(f'some message {e}', another_argument, yet_another_arg) from e\n"
+        ),
+        (
+            "def f():\n"
+            "    assert isinstance(value_number_one, SomeVeryLongClassName), 'the value must be an instance of it'\n"
+            "    del some_dictionary_with_a_long_name[some_key_with_a_long_name][another_key_with_a_long_name]\n"
+            "    return some_function_name(argument_number_one, argument_two) + another_function_name(argument)\n"
+        ),
+        (
+            "def f(self, *, response_media_type: Literal['application/cbor', 'application/vnd.kubernetes.protobuf', "
+            "'application/yaml']) -> bytes:\n"
+            "    def inner(namespace: Annotated[str, Path(alias='namespace', description='object name and auth scope, "
+            "such as for teams')], limit: int = 10) -> None:\n"
+            "        return dispatch(\n"
+            "            circuits.circuits_circuit_terminations_list,\n"
+            "            ('principal', 'term_side', 'port_speed', 'upstream_speed', 'xconnect_id', 'circuit_id'),\n"
+            "        )\n"
+            "\n"
+            "    def g(self) -> Response[DeleteAutoscalingV1CollectionNamespacedHorizontalPodAutoscalerResponseXXXX]:\n"
+            "        return 1\n"
+            "\n"
+            "    return inner, g\n"
+        ),
+        (
+            "def g():\n"
+            "    if aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa and bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb or cccccccccccccccc:\n"
+            "        # a comment before the body\n"
+            "        return\n"
+            "    if not (aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa and bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb or ccccccccccc):\n"
+            "        return\n"
+            "    self._core = ClientCore.create(\n"
+            "        _DEFAULTS,\n"
+            "        credentials=SchemeCredentials({\n"
+            "            'Bearer': bearer,\n"
+            "        }),\n"
+            "    )\n"
+        ),
+        (
+            "class R:\n"
+            "    @overload\n"
+            "    async def delete(self, *, response_media_type: Literal['application/cbor', "
+            "'application/vnd.kubernetes.protobuf', 'application/yaml'], options: RequestOptions | None = None"
+            ") -> bytes: ...\n"
+            "    @overload\n"
+            "    async def delete_admissionregistration_v1alpha1(self, *, response_media_type: None = None) -> "
+            "DeleteAdmissionregistrationV1alpha1CollectionMutatingAdmissionPolicyResponse: ...\n"
+            "    def short(self) -> None: ...\n"
+            "\n"
+            "\n"
+            "class SomeVeryLongClassNameForTestingPurposes(SomeBaseClassWithALongName, AnotherMixinClassNameX): ...\n"
+        ),
+        (
+            "def f(index, rule):\n"
+            "    return Adapter(\n"
+            "        config={'regex_engine': 'python-re'} if index in rule.get('python_regex_types', ()) else None,\n"
+            "        other=first_value_with_long_name if condition_number_one else second_value if other else third,\n"
+            "    )\n"
+        ),
+        (
+            "def f(name, value):\n"
+            "    match value:\n"
+            "        case ('__json_schema_mapping_additional_values__', tuple() as declared, tuple() as patterns):\n"
+            "            pass\n"
+            "        case SomeClassName(first_attribute=first_value, second_attribute=second_value) if first_value:\n"
+            "            pass\n"
+            "        case first_capture_name if first_capture_name.some_attribute if flag else another_long_value_x:\n"
+            "            pass\n"
+            "    match -some_very_long_subject_expression_name.another_long_subject_expression_name.third_one:\n"
+            "        case -100000000000000000000000000000000000000000000000000000000000000000000000000000000:\n"
+            "            pass\n"
+            "    match (some_very_long_subject_expression_name, another_long_subject_expression_name, third_one):\n"
+            "        case _:\n"
+            "            pass\n"
+        ),
+        (
+            "@overload\n"
+            "def decode_markdown_render_header(info: ResponseInfo, name: Literal['Content-Length']) -> X | UNSET: ...\n"
+            "@overload\n"
+            "def decode_markdown_render_header(info: ResponseInfo, name: str) -> object: ...\n"
+            "def decode_markdown_render_header(info, name):\n"
+            "    return name\n"
+        ),
+        (
+            "def f():\n"
+            "    do_this_first_thing(argument_one, argument_two) if condition_value else do_that_thing(other)\n"
+        ),
+    ],
+)
+def test_apply_builtin_formatter_lays_out_function_bodies_like_black(code: str) -> None:
+    """Lay out the statements of function bodies, clause headers and nested definition headers as Black does."""
+    assert apply_builtin_formatter(code) == black.format_str(
+        code, mode=black.FileMode(string_normalization=False, target_versions={black.TargetVersion.PY310})
+    )
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        f"def f():\n    if aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: return {'b' * 73}\n",
+        "def f():\n    del first_dictionary_with_a_long_name[some_key_name], second_dictionary_with_a_long_name[key]\n",
+        (
+            "def f():\n"
+            "    try:\n"
+            "        pass\n"
+            "    except* (ProtocolDataError, SessionLimitError, StreamInterruptedError, WebSocketClosedError):\n"
+            "        pass\n"
+        ),
+        (
+            "def f(value):\n"
+            "    x = function(value if condition else lambda: default_value_with_a_long_name, another_argument_x)\n"
+            "    match value:\n"
+            "        case \\\n"
+            "                {'first_key_with_a_long_name': first_value, 'second_key_with_a_long_name': second}:\n"
+            "            pass\n"
+        ),
+    ],
+)
+def test_apply_builtin_formatter_keeps_statements_it_does_not_lay_out(code: str) -> None:
+    """Keep statements the port does not lay out as written.
+
+    They are a one-line clause body, a ``del`` of several targets, ``except*``, a lambda in a conditional expression and
+    a ``case`` pattern after a backslash.
+    """
+    assert apply_builtin_formatter(code) == code
+
+
 def test_format_import_node_rejects_unsupported_nodes() -> None:
     """Test direct import node helpers reject unexpected AST nodes."""
     unsupported_node = cast("ast.Import | ast.ImportFrom", ast.parse("pass\n").body[0])

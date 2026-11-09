@@ -132,12 +132,14 @@ class AsyncClient(AsyncClientView):
             auth=auth,
             clock=clock,
             http_client=http_client,
-            credentials=SchemeCredentials({
-                "apiToken": api_token,
-                "remoteQuery": remote_query,
-                "actualHeader": actual_header,
-                "remoteHeader": remote_header,
-            }),
+            credentials=SchemeCredentials(
+                {
+                    "apiToken": api_token,
+                    "remoteQuery": remote_query,
+                    "actualHeader": actual_header,
+                    "remoteHeader": remote_header,
+                }
+            ),
         )
 
     async def aclose(self) -> None:

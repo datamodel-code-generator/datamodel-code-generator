@@ -39,7 +39,9 @@ def _add_post_day(
 
     async def post_day_principal(
         *,
-        bearer: Annotated[HTTPAuthorizationCredentials | None, Security(security.bearer)],
+        bearer: Annotated[
+            HTTPAuthorizationCredentials | None, Security(security.bearer)
+        ],
         basic: Annotated[HTTPBasicCredentials | None, Security(security.basic)],
     ) -> object:
         return await authenticate(
@@ -52,7 +54,9 @@ def _add_post_day(
     def post_day(
         *,
         principal: Annotated[object, Depends(post_day_principal)],
-        body: Annotated[spellings_basemodel_models.Day, Body(media_type='application/json')],
+        body: Annotated[
+            spellings_basemodel_models.Day, Body(media_type='application/json')
+        ],
     ) -> object:
         return dispatch(
             post_day_handler(

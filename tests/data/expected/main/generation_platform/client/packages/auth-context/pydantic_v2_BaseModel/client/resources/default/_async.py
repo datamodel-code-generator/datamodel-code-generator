@@ -55,11 +55,13 @@ class AsyncDefaultResource:
         """
         Call POST /inherited.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_0,
-            (X_Idempotency,),
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_0,
+                (X_Idempotency,),
+                options=options,
+            )
+        ).data
 
     async def explicit(
         self,
@@ -70,11 +72,13 @@ class AsyncDefaultResource:
         """
         Call POST /explicit.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_1,
-            (X_Idempotency,),
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_1,
+                (X_Idempotency,),
+                options=options,
+            )
+        ).data
 
     async def aliased_query(
         self,
@@ -84,11 +88,13 @@ class AsyncDefaultResource:
         """
         Call POST /aliased-query.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_2,
-            (),
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_2,
+                (),
+                options=options,
+            )
+        ).data
 
     async def actual_header(
         self,
@@ -98,11 +104,13 @@ class AsyncDefaultResource:
         """
         Call POST /actual-header.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_3,
-            (),
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_3,
+                (),
+                options=options,
+            )
+        ).data
 
     async def aliased_header(
         self,
@@ -112,11 +120,13 @@ class AsyncDefaultResource:
         """
         Call POST /aliased-header.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_4,
-            (),
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_4,
+                (),
+                options=options,
+            )
+        ).data
 
     async def external_inherited(
         self,
@@ -126,11 +136,13 @@ class AsyncDefaultResource:
         """
         Call POST /external-inherited.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_5,
-            (),
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_5,
+                (),
+                options=options,
+            )
+        ).data
 
     async def external_explicit(
         self,
@@ -140,11 +152,13 @@ class AsyncDefaultResource:
         """
         Call POST /external-explicit.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_6,
-            (),
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_6,
+                (),
+                options=options,
+            )
+        ).data
 
     async def external_query(
         self,
@@ -154,11 +168,13 @@ class AsyncDefaultResource:
         """
         Call POST /external-query.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_7,
-            (),
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_7,
+                (),
+                options=options,
+            )
+        ).data
 
 
 class AsyncDefaultWithResponse:

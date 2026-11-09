@@ -203,9 +203,11 @@ class Client(ClientView):
             clock=clock,
             http_client=http_client,
             protocols=HelperSettings(defaults=helper_defaults),
-            credentials=SchemeCredentials({
-                "oauth": oauth,
-            }),
+            credentials=SchemeCredentials(
+                {
+                    "oauth": oauth,
+                }
+            ),
         )
 
     def close(self) -> None:

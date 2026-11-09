@@ -49,11 +49,13 @@ class AsyncStoreResource:
         """
         Call GET /files/{fileName}.{ext}.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_1,
-            (fileName, ext, class_, two_factor),
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_1,
+                (fileName, ext, class_, two_factor),
+                options=options,
+            )
+        ).data
 
 
 class AsyncStoreWithResponse:

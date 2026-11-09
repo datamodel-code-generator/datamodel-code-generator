@@ -5289,11 +5289,11 @@ conditional-cli-builtin	main/jsonschema/inline_allof_validators/conditional.py
 conditional-cli-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 conditional-cli-external	main/jsonschema/inline_allof_validators/conditional.py
 conditional-cli-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
-core-api-builtin	main/jsonschema/inline_allof_validators/core_builtin.py
+core-api-builtin	main/jsonschema/inline_allof_validators/core_builtin.py	= main/jsonschema/inline_allof_validators/core.py
 core-api-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 core-api-external	main/jsonschema/inline_allof_validators/core.py
 core-api-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
-core-cli-builtin	main/jsonschema/inline_allof_validators/core_builtin.py
+core-cli-builtin	main/jsonschema/inline_allof_validators/core_builtin.py	= main/jsonschema/inline_allof_validators/core.py
 core-cli-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 core-cli-external	main/jsonschema/inline_allof_validators/core.py
 core-cli-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
@@ -14111,7 +14111,7 @@ bundled-cli	main/jsonschema/inline_allof_validators/oneof.py
 legacy-api	main/jsonschema/mapping_schema_validators_legacy_helper.py
 legacy-cli	main/jsonschema/mapping_schema_validators_legacy_helper.py
 [test_schema_validator_mapping_inputs]
-api-builtin	main/jsonschema/mapping_schema_validators_builtin.py
+api-builtin	main/jsonschema/mapping_schema_validators_builtin.py	= main/jsonschema/mapping_schema_validators.py
 api-builtin	payloads/mapping_schema_validators/AdditionalUnique_invalid.txt
 api-builtin	payloads/mapping_schema_validators/AdditionalUnique_valid.txt
 api-builtin	payloads/mapping_schema_validators/Any_invalid.txt	= main/empty_model_metadata_modules.txt
@@ -14159,7 +14159,7 @@ api-external	payloads/mapping_schema_validators/Pattern_valid.txt
 api-external	payloads/mapping_schema_validators/Unique_invalid.txt
 api-external	payloads/mapping_schema_validators/Unique_valid.txt
 api-external	payloads/mapping_schema_validators/native.txt
-cli-builtin	main/jsonschema/mapping_schema_validators_builtin.py
+cli-builtin	main/jsonschema/mapping_schema_validators_builtin.py	= main/jsonschema/mapping_schema_validators.py
 cli-builtin	payloads/mapping_schema_validators/AdditionalUnique_invalid.txt
 cli-builtin	payloads/mapping_schema_validators/AdditionalUnique_valid.txt
 cli-builtin	payloads/mapping_schema_validators/Any_invalid.txt	= main/empty_model_metadata_modules.txt

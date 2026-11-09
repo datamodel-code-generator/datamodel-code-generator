@@ -30,7 +30,9 @@ def _add_list_items(
 
     def list_items(
         *,
-        parameters: Annotated[contract.ListItems.Parameters, Depends(contract.ListItems.PARAMETERS)],
+        parameters: Annotated[
+            contract.ListItems.Parameters, Depends(contract.ListItems.PARAMETERS)
+        ],
     ) -> object:
         parameters = accepted(parameters)
         return dispatch(

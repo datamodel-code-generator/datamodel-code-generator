@@ -48,12 +48,14 @@ class AsyncNestedResource:
         """
         Call GET /nested.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_3,
-            (cursor,),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_3,
+                (cursor,),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
 
 class AsyncNestedWithResponse:

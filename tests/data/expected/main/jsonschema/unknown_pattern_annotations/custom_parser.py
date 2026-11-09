@@ -27,12 +27,8 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
             for key, value in data.items():
                 if key in rule['declared_properties']:
                     continue
-                if any(
-                    re.search(pattern, key) for pattern in rule['rejected_patterns']
-                ):
-                    raise ValueError(
-                        f'Property {key!r} is not allowed by patternProperties'
-                    )
+                if any(re.search(pattern, key) for pattern in rule['rejected_patterns']):
+                    raise ValueError(f'Property {key!r} is not allowed by patternProperties')
                 matched = False
                 for index, (pattern, value_type) in enumerate(
                     rule['pattern_properties'],

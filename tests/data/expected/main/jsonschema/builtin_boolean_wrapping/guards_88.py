@@ -11,13 +11,10 @@ from pydantic import BaseModel
 
 def top_level_boolean(value):
     return (
-        (
-            isinstance(value, dict)
-            or isinstance(value, _collections_abc.Mapping)
-            or isinstance(value, list)
-        )
-        and bool(value)
-    )
+        isinstance(value, dict)
+        or isinstance(value, _collections_abc.Mapping)
+        or isinstance(value, list)
+    ) and bool(value)
 
 
 async def async_boolean(value):
@@ -36,61 +33,46 @@ class Model(BaseModel):
         match expected:
             case dict():
                 return (
-                    (
-                        isinstance(value, dict)
-                        or isinstance(value, _collections_abc.Mapping)
-                    )
-                    and len(value) == len(expected)
-                )
+                    isinstance(value, dict)
+                    or isinstance(value, _collections_abc.Mapping)
+                ) and len(value) == len(expected)
         return False
 
     @staticmethod
     def boolean_groups(value):
         return (
+            isinstance(value, dict)
+            and isinstance(value, _collections_abc.Mapping)
+            and bool(value)
+        ) or (
             (
-                isinstance(value, dict)
-                and isinstance(value, _collections_abc.Mapping)
-                and bool(value)
+                isinstance(value, list)
+                or isinstance(value, tuple)
+                or isinstance(value, frozenset)
             )
-            or (
-                (
-                    isinstance(value, list)
-                    or isinstance(value, tuple)
-                    or isinstance(value, frozenset)
-                )
-                and len(value) > 0
-            )
+            and len(value) > 0
         )
 
     @staticmethod
     def preserve_groups(value):
         return (
-            (
-                ((observed := value) and [observed])
-                or {'or': observed} == {}
-                or (lambda: observed)() is None
-            )
-            and observed is not False
-        )
+            ((observed := value) and [observed])
+            or {'or': observed} == {}
+            or (lambda: observed)() is None
+        ) and observed is not False
 
     @staticmethod
     def nested_groups(value):
         if value is not None:
             return (
+                (isinstance(value, dict) or isinstance(value, _collections_abc.Mapping))
+                and bool(value)
+            ) or (
                 (
-                    (
-                        isinstance(value, dict)
-                        or isinstance(value, _collections_abc.Mapping)
-                    )
-                    and bool(value)
-                )
-                or (
-                    (
-                        bool(value)
-                        and (
-                            isinstance(value, _collections_abc.Mapping)
-                            or isinstance(value, dict)
-                        )
+                    bool(value)
+                    and (
+                        isinstance(value, _collections_abc.Mapping)
+                        or isinstance(value, dict)
                     )
                 )
             )
@@ -98,17 +80,18 @@ class Model(BaseModel):
 
     @staticmethod
     def trailing_guard(value):
-        if not (
-            isinstance(value, dict) or isinstance(value, _collections_abc.Mapping)
-        ) and value is not None:
+        if (
+            not (isinstance(value, dict) or isinstance(value, _collections_abc.Mapping))
+            and value is not None
+        ):
             return False
         return True
 
     @staticmethod
     def multiple_groups_guard(value):
-        if not (isinstance(value, dict) or isinstance(value, _collections_abc.Mapping)) and (
-            value is not None or value is False
-        ):
+        if not (
+            isinstance(value, dict) or isinstance(value, _collections_abc.Mapping)
+        ) and (value is not None or value is False):
             return False
         return True
 
@@ -117,12 +100,9 @@ class Model(BaseModel):
         日本語の長い入力フィールド名, expected
     ) -> "Literal[True, False, ')']":
         return (
-            (
-                isinstance(日本語の長い入力フィールド名, dict)
-                or isinstance(日本語の長い入力フィールド名, _collections_abc.Mapping)
-            )
-            and 日本語の長い入力フィールド名 == expected
-        )
+            isinstance(日本語の長い入力フィールド名, dict)
+            or isinstance(日本語の長い入力フィールド名, _collections_abc.Mapping)
+        ) and 日本語の長い入力フィールド名 == expected
 
     @staticmethod
     def commented(value):

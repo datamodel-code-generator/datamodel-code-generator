@@ -39,7 +39,9 @@ def _add_post_day(
 
     async def post_day_principal(
         *,
-        bearer: Annotated[Optional[HTTPAuthorizationCredentials], Security(security.bearer)],
+        bearer: Annotated[
+            Optional[HTTPAuthorizationCredentials], Security(security.bearer)
+        ],
         basic: Annotated[Optional[HTTPBasicCredentials], Security(security.basic)],
     ) -> object:
         return await authenticate(

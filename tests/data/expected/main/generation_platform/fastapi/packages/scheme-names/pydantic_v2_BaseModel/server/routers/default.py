@@ -45,8 +45,18 @@ def _add_get_keys(
         h___o_n: Annotated[object, Security(security.h___o_n)],
     ) -> object:
         return await authenticate(
-            ((('api-key', ()),), (('api_key', ()),), (('wiring', ()),), (('h"""o\\N', ()),)),
-            {'api-key': api_key, 'api_key': api_key_1, 'wiring': wiring, 'h"""o\\N': h___o_n},
+            (
+                (('api-key', ()),),
+                (('api_key', ()),),
+                (('wiring', ()),),
+                (('h"""o\\N', ()),),
+            ),
+            {
+                'api-key': api_key,
+                'api_key': api_key_1,
+                'wiring': wiring,
+                'h"""o\\N': h___o_n,
+            },
             get_keys_authorize,
             'APIKey, Basic charset="UTF-8"',
         )

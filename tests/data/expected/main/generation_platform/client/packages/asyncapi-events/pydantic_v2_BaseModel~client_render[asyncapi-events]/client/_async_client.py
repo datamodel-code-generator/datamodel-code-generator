@@ -173,9 +173,11 @@ class AsyncClient(AsyncClientView):
             clock=clock,
             http_client=http_client,
             protocols=HelperSettings(defaults=helper_defaults),
-            credentials=SchemeCredentials({
-                "token": token,
-            }),
+            credentials=SchemeCredentials(
+                {
+                    "token": token,
+                }
+            ),
         )
 
     async def aclose(self) -> None:

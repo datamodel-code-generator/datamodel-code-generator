@@ -59,12 +59,14 @@ class AsyncHeadersResource:
         """
         Call POST /parameter.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_0,
-            (X_Request_Key,),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_0,
+                (X_Request_Key,),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def api_key(
         self,
@@ -75,12 +77,14 @@ class AsyncHeadersResource:
         """
         Call POST /api-key.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_1,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_1,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def bearer(
         self,
@@ -91,12 +95,14 @@ class AsyncHeadersResource:
         """
         Call POST /bearer.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_2,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_2,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def oauth(
         self,
@@ -107,12 +113,14 @@ class AsyncHeadersResource:
         """
         Call POST /oauth.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_3,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_3,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def openid(
         self,
@@ -123,12 +131,14 @@ class AsyncHeadersResource:
         """
         Call POST /openid.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_4,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_4,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def cookie(
         self,
@@ -139,12 +149,14 @@ class AsyncHeadersResource:
         """
         Call POST /cookie.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_5,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_5,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def query(
         self,
@@ -155,12 +167,14 @@ class AsyncHeadersResource:
         """
         Call POST /query.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_6,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_6,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def ignored(
         self,
@@ -171,12 +185,14 @@ class AsyncHeadersResource:
         """
         Call POST /ignored.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_7,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_7,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def direction(
         self,
@@ -188,12 +204,14 @@ class AsyncHeadersResource:
         """
         Call POST /direction.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_8,
-            (X_Retry_Control,),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_8,
+                (X_Retry_Control,),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def unused(
         self,
@@ -204,12 +222,14 @@ class AsyncHeadersResource:
         """
         Call POST /unused.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_9,
-            (),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_9,
+                (),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
 
 class AsyncHeadersWithResponse:

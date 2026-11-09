@@ -51,11 +51,13 @@ class AsyncAdminResource:
         """
         Call POST /admin/users.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_4,
-            (),
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_4,
+                (),
+                options=options,
+            )
+        ).data
 
 
 class AsyncAdminWithResponse:

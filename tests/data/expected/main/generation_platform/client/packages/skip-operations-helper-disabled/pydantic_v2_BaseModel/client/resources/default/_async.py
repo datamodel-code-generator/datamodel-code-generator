@@ -45,11 +45,13 @@ class AsyncDefaultResource:
         """
         Call GET /status.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_0,
-            (),
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_0,
+                (),
+                options=options,
+            )
+        ).data
 
 
 class AsyncDefaultWithResponse:

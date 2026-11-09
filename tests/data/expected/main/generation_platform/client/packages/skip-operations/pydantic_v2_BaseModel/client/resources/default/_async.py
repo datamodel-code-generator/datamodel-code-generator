@@ -50,12 +50,14 @@ class AsyncDefaultResource:
         """
         Call GET /pets.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_0,
-            (limit,),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_0,
+                (limit,),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def create_pet(
         self,
@@ -67,13 +69,15 @@ class AsyncDefaultResource:
         """
         Call POST /pets.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_1,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_1,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
 
 class AsyncDefaultWithResponse:
