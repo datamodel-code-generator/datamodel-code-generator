@@ -70,6 +70,10 @@ class Ask(Struct):
     price: float
 
 
+class Cleared(Struct):
+    kind: Literal['cleared']
+
+
 class Edit(Struct):
     text: str
 
@@ -148,3 +152,10 @@ DraftsDraftPayload: TypeAlias = Item
 
 
 DraftsItemPayload: TypeAlias = Item
+
+
+class AlertsRaisedPayload(Struct):
+    kind: Literal['raised']
+
+
+AlertsClearedPayload: TypeAlias = Cleared | None

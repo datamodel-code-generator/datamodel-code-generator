@@ -113,9 +113,9 @@ class MessageRoute:
     """One message of a direction that carries several: its frame, its codec and model codec, and what tells it apart.
 
     A received text message among several JSON ones is the one whose body discriminator reads its `tag`. A sent value
-    takes the message whose `type` is its class, else the first whose `type` it is an instance of, a string the `utf8`
-    message and bytes the `bytes` one; then a mapping, such as a TypedDict's, the message whose `tag` it holds under
-    `key`; and any other value the JSON message with neither.
+    takes the message whose `type` comes first in its class's MRO (its own class, else its nearest base), so a string
+    takes the `utf8` message and bytes the `bytes` one; then a mapping, such as a TypedDict's, the message whose `tag`
+    it holds under `key`; and any other value the JSON message with neither.
     """
 
     frame: Literal["text", "binary"] = "text"

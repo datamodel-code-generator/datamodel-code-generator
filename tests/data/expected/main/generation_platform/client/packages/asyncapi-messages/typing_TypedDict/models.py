@@ -55,6 +55,10 @@ class Ask(TypedDict):
     price: float
 
 
+class Cleared(TypedDict):
+    kind: Literal['cleared']
+
+
 class Edit(TypedDict):
     text: str
 
@@ -133,3 +137,10 @@ DraftsDraftPayload: TypeAlias = Item
 
 
 DraftsItemPayload: TypeAlias = Item
+
+
+class AlertsRaisedPayload(TypedDict):
+    kind: Literal['raised']
+
+
+AlertsClearedPayload: TypeAlias = Cleared | None

@@ -104,3 +104,15 @@ SOCKET_5: Final[ChannelPlan[models.Edit | models.Revision, Never]] = ChannelPlan
         MessageRoute(encoder=model_bindings.codec_12, type=models.Revision),
     ),
 )
+
+
+SOCKET_6: Final[
+    ChannelPlan[Never, models.AlertsRaisedPayload | models.AlertsClearedPayload]
+] = ChannelPlan(
+    helper_id='alerts',
+    operation=OperationRef(pointer='/channels/alerts'),
+    call=_operations.OPERATION_6,
+    fingerprint='4883df08698ef3134940765aa539f446689641ca5ef629672bff85e46981d7fa',
+    send_codec='none',
+    decoder=model_bindings.codec_13,
+)

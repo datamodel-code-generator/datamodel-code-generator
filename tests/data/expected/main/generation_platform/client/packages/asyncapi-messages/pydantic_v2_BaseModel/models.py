@@ -70,6 +70,10 @@ class Ask(BaseModel):
     price: float
 
 
+class Cleared(BaseModel):
+    kind: Literal['cleared']
+
+
 class Edit(BaseModel):
     text: str
 
@@ -168,3 +172,11 @@ class DraftsDraftPayload(RootModel[Item]):
 
 class DraftsItemPayload(RootModel[Item]):
     root: Item
+
+
+class AlertsRaisedPayload(BaseModel):
+    kind: Literal['raised']
+
+
+class AlertsClearedPayload(RootModel[Cleared | None]):
+    root: Cleared | None

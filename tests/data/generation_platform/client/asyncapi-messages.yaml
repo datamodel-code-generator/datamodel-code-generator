@@ -118,6 +118,22 @@ channels:
       item:
         payload:
           $ref: '#/components/schemas/Item'
+  alerts:
+    address: /v1/alerts
+    messages:
+      raised:
+        payload:
+          type: [object, 'null']
+          properties:
+            kind:
+              type: string
+              const: raised
+          required: [kind]
+      cleared:
+        payload:
+          oneOf:
+            - $ref: '#/components/schemas/Cleared'
+            - type: 'null'
 operations:
   onFeed:
     action: receive
@@ -173,6 +189,10 @@ operations:
     action: receive
     channel:
       $ref: '#/channels/drafts'
+  publishAlerts:
+    action: send
+    channel:
+      $ref: '#/channels/alerts'
 components:
   messages:
     subscribe:
@@ -272,6 +292,13 @@ components:
         price:
           type: number
       required: [side, price]
+    Cleared:
+      type: object
+      properties:
+        kind:
+          type: string
+          const: cleared
+      required: [kind]
     Edit:
       type: object
       properties:

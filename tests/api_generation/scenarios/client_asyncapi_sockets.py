@@ -233,6 +233,18 @@ def _orders(package: ModuleType, models: ModuleType, server: SocketServer, lines
     lines.extend((f"    orders server saw {', '.join(seen)}", played.report()))
 
 
+def _alerts(package: ModuleType, server: SocketServer, lines: list[str]) -> None:
+    """Receive a null alert and a raised one, which admit null and so are decoded as their union, not by their tag."""
+    (played,) = server.play(Play(talk=_sending("null", json.dumps({"kind": "raised"}))))
+    with (
+        httpx2.Client(verify=client_context()) as http,
+        package.Client(base_url=server.url, http_client=http) as client,
+        client.alerts.connect() as session,
+    ):
+        lines.extend(f"    alerts {_message(session.receive())}" for _ in range(2))
+    lines.append(played.report())
+
+
 def asyncapi_messages(package: ModuleType, lines: list[str]) -> None:
     """Open each channel of several messages per direction that the package's backend can tell apart."""
     models = _models(package)
@@ -243,6 +255,8 @@ def asyncapi_messages(package: ModuleType, lines: list[str]) -> None:
             _chat(package, server, lines)
         if hasattr(package.Client, "orders"):
             _orders(package, models, server, lines)
+        if hasattr(package.Client, "alerts"):
+            _alerts(package, server, lines)
     finally:
         server.stop()
 

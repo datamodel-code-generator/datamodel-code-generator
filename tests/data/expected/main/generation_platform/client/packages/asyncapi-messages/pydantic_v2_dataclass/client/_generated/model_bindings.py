@@ -70,3 +70,8 @@ codec_11: Final[PydanticDataclassCodec[models.Revision]] = PydanticDataclassCode
     models.Revision
 )
 """Codec of /channels/edits request_body (request application/json)."""
+
+codec_12: Final[
+    PydanticDataclassCodec[models.AlertsRaisedPayload | models.AlertsClearedPayload]
+] = PydanticDataclassCodec(models.AlertsRaisedPayload | models.AlertsClearedPayload)
+"""Codec of /channels/alerts response_body (response application/json)."""

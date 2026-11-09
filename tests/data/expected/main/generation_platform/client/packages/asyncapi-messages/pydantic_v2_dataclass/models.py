@@ -82,6 +82,11 @@ class Ask:
 
 
 @dataclass
+class Cleared:
+    kind: Literal['cleared']
+
+
+@dataclass
 class Edit:
     text: str
 
@@ -164,3 +169,11 @@ DraftsDraftPayload = TypeAliasType("DraftsDraftPayload", Item)
 
 
 DraftsItemPayload = TypeAliasType("DraftsItemPayload", Item)
+
+
+@dataclass
+class AlertsRaisedPayload:
+    kind: Literal['raised']
+
+
+AlertsClearedPayload = TypeAliasType("AlertsClearedPayload", Cleared | None)
