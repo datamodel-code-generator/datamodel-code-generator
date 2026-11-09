@@ -339,3 +339,27 @@ def test_wrap_string_literal_joins_implicitly_concatenated_strings(output_file: 
             "--disable-timestamp",
         ],
     )
+
+
+@pytest.mark.parametrize("formatters", [["black", "isort"], ["builtin"]], ids=["black", "builtin"])
+def test_imported_names_with_digit_runs_sort_naturally(output_dir: Path, formatters: list[str]) -> None:
+    """Sort imported names with digit runs by their numbers, as isort does: ``Schema4`` before ``Schema10``.
+
+    The builtin formatter compared the digits as text and wrote ``Band10, Band6, Schema10, Schema100, Schema3``.
+    """
+    names = ["Schema3", "Schema10", "Schema4", "Schema100", "Band6", "Band10"]
+    (input_path := output_dir.parent / "digit_run_names.json").write_text(
+        json.dumps({
+            "title": "Holder",
+            "type": "object",
+            "properties": {name.lower(): {"$ref": f"#/$defs/bands.{name}"} for name in names},
+            "$defs": {f"bands.{name}": {"type": "object", "properties": {"a": {"type": "string"}}} for name in names},
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--all-exports-scope", "children", "--formatters", *formatters, "--disable-timestamp"],
+    )
