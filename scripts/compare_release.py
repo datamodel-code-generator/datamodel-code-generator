@@ -286,6 +286,17 @@ def _last_line(path: Path) -> str:
     return lines[-1] if lines else "error"
 
 
+def ran_out_of_memory(last_line: str) -> bool:
+    """Tell from the last log line of a failed run under a memory cap whether the cap stopped it.
+
+    Besides the MemoryError, an allocation that fails inside C code can end the run with the SystemError CPython raises
+    for an error returned without an exception set (11-10: such a run was cached, and the next gate run read it back).
+    """
+    return (
+        last_line.partition(":")[0] == "MemoryError" or last_line == "SystemError: error return without exception set"
+    )
+
+
 class Runner:
     """Runs one side of the matrix through per-thread warm workers."""
 
@@ -329,7 +340,7 @@ class Runner:
         if rc != 0 and any(text in log.read_text(encoding="utf-8", errors="replace") for text in MODULAR_OUTPUT_ERRORS):
             job["args"] = [*args, "--output", str(out / "pkg")]
             rc = worker.run(job)
-        if rc > 0 and self.memory_mb and _last_line(log).partition(":")[0] == "MemoryError":
+        if rc > 0 and self.memory_mb and ran_out_of_memory(_last_line(log)):
             rc = OUT_OF_MEMORY
         if rc != 0:
             return Outcome(

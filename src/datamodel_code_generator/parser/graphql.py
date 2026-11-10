@@ -59,7 +59,7 @@ if TYPE_CHECKING:
 # graphql-core >=3.2.7 removed TypeResolvers in favor of TypeFields.kind.
 # Normalize to a single callable for resolving type kinds.
 try:  # graphql-core < 3.2.7
-    graphql_resolver_kind = graphql.type.introspection.TypeResolvers().kind  # ty: ignore[unresolved-attribute]
+    graphql_resolver_kind = graphql.type.introspection.TypeResolvers().kind
 except AttributeError:
     graphql_resolver_kind = graphql.type.introspection.TypeFields.kind
 

@@ -19,7 +19,7 @@ from importlib.machinery import ModuleSpec, PathFinder
 from importlib.util import source_from_cache
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, cast
 from warnings import warn
 from weakref import ReferenceType, WeakKeyDictionary, ref
 
@@ -448,7 +448,8 @@ def black_find_project_root(sources: Sequence[Path]) -> Path:
 
     project_root = _find_project_root(tuple(str(s) for s in sources))
     if isinstance(project_root, tuple):
-        return project_root[0]
+        # Black types the root as optional for sources without a common parent; one source always has one.
+        return cast("Path", project_root[0])
     return project_root  # pragma: no cover
 
 

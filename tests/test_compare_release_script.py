@@ -95,6 +95,18 @@ def test_compare_release(case: str, args: list[str], tmp_path: Path) -> None:
     assert_output("\n".join(outputs), EXPECTED / f"{case}.txt")
 
 
+def test_ran_out_of_memory() -> None:
+    """A failed run under a memory cap counts as stopped by the cap by its last log line."""
+    lines = (
+        "MemoryError",
+        "MemoryError: cannot allocate memory",
+        "SystemError: error return without exception set",
+        "SystemError: another failure",
+        "Error: the schema is invalid",
+    )
+    assert_output("".join(f"{compare_release.ran_out_of_memory(line)}\t{line}\n" for line in lines))
+
+
 def test_compare_release_tracks_referenced_files(tmp_path: Path) -> None:
     """A change to a file referenced from outside the input's directory invalidates the cached base output."""
     schemas = tmp_path / "schemas"

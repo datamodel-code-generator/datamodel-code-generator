@@ -59,6 +59,9 @@ RELEASES = (
                 "}\n"
             ),
             f"{PACKAGE}/cli_options.py": 'OPTIONS = ["--old", "--keep", "--new", "--no-new"]\n',
+            f"{PACKAGE}/preset_names.py": (
+                'PresetName = Literal[\n    "standard-20260101",\n    "standard-20261106",\n]\n'
+            ),
             f"{PACKAGE}/__init__.py": '__all__ = ["generate"]\n__all__ += ["NewName", "not a name"]\n',
         },
     ),

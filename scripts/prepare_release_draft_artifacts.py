@@ -37,7 +37,8 @@ MERGE_SHA = re.compile(r"[0-9a-f]{40}")
 RELEASE_TAG = re.compile(r"(?:[0-9]+\.[0-9]+\.[0-9]+)?")
 FEATURE_ID = re.compile(r"[a-z0-9]+(?:[.-][a-z0-9]+)*")
 OPTION = re.compile(r"(?<![\w-])--[a-z0-9]+(?:-[a-z0-9]+)*(?![\w-])")
-PRESET = re.compile(r'^\s*"([A-Za-z0-9][A-Za-z0-9._-]*)",?\s*$', re.MULTILINE)
+PRESET_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+PRESET = re.compile(rf'^\s*"({PRESET_NAME.pattern})",?\s*$', re.MULTILINE)
 PACKAGE = "src/datamodel_code_generator"
 CHANGED_KINDS = frozenset({"old", "new", "marker"})
 SIGNS = {"old": ("-", "removed line"), "new": ("+", "added line")}
@@ -330,7 +331,7 @@ def _public_names(source: str) -> Names | None:
 REGISTRIES: tuple[tuple[str, str, Callable[[str], Names | None], Callable[[str], bool]], ...] = (
     ("Experimental features", f"{PACKAGE}/experimental.py", _experimental_features, FEATURE_ID.fullmatch),
     ("Command-line options", f"{PACKAGE}/cli_options.py", _options, OPTION.fullmatch),
-    ("Presets", f"{PACKAGE}/preset_names.py", _presets, PRESET.fullmatch),
+    ("Presets", f"{PACKAGE}/preset_names.py", _presets, PRESET_NAME.fullmatch),
     ("Public Python names", f"{PACKAGE}/__init__.py", _public_names, str.isidentifier),
 )
 
