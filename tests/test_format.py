@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import inspect
 import pickle
 import shutil
 import subprocess
@@ -1361,6 +1362,91 @@ def test_apply_builtin_formatter_sorts_template_imports_with_their_comments_like
 def test_apply_builtin_formatter_keeps_statement_after_leading_import_on_its_line(code: str) -> None:
     """Keep an import that shares its line with the statement after it, and that statement, as written."""
     assert apply_builtin_formatter(code) == code
+
+
+def _ast_with_clean_docstrings(code: str) -> str:
+    """Return the AST of ``code`` with each docstring cleaned as ``inspect.cleandoc`` does, as black re-indents them."""
+    tree = ast.parse(code)
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.body
+            and isinstance(first := node.body[0], ast.Expr)
+            and isinstance(first.value, ast.Constant)
+            and isinstance(first.value.value, str)
+        ):
+            first.value.value = inspect.cleandoc(first.value.value)
+    return ast.dump(tree)
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        pytest.param(
+            "class Pet(BaseModel):\n"
+            "  name: str = Field(..., description='The name of the pet, which can be fairly long so that the line"
+            " overflows')\n",
+            id="two-spaces-long-field",
+        ),
+        pytest.param(
+            "class A:\n"
+            '  """Doc.\n'
+            "\n"
+            "  More.\n"
+            '  """\n'
+            "\n"
+            "  x = '''keep\n"
+            "  this\n"
+            "    as is'''\n"
+            "  w = f'''{x}\n"
+            "  line'''\n"
+            "  y = call(\n"
+            "      a,\n"
+            "    b,\n"
+            "  )\n"
+            "  def f(self):\n"
+            "      if self:\n"
+            "          return 1\n"
+            "      else:\n"
+            "        # odd\n"
+            "        return 2\n",
+            id="docstring-string-call-clauses",
+        ),
+        pytest.param(
+            "def f():\n\tif x:\n\t\treturn 1\n\t# tab comment\n\treturn 2\n",
+            id="tabs",
+        ),
+        pytest.param(
+            "class A:\n"
+            "        x = 1\n"
+            "        class B:\n"
+            "                y = 2\n"
+            "                # deep\n"
+            "        # back in A\n",
+            id="eight-spaces",
+        ),
+    ],
+)
+def test_apply_builtin_formatter_indents_by_four_spaces_like_black(code: str) -> None:
+    """Indent each block by four spaces and lay out its lines at that indent, as black does.
+
+    Docstrings are re-indented, other strings keep their lines, and comment lines take the indent of their block.
+    """
+    formatted = apply_builtin_formatter(code)
+    assert formatted == black.format_str(code, mode=black.FileMode(string_normalization=False))
+    assert _ast_with_clean_docstrings(formatted) == _ast_with_clean_docstrings(code)
+    assert apply_builtin_formatter(formatted) == formatted
+
+
+def test_apply_builtin_formatter_moves_continuation_lines_with_their_statement() -> None:
+    """Move the lines that continue a statement the port keeps as written by as much as its first line moves."""
+    code = "class A:\n  y = call(\n      a,  # first\n    b,\n  )\n  z = 1 + \\\n      2\n"
+
+    formatted = apply_builtin_formatter(code)
+
+    assert formatted == "class A:\n    y = call(\n        a,  # first\n      b,\n    )\n    z = 1 + \\\n        2\n"
+    assert ast.dump(ast.parse(formatted)) == ast.dump(ast.parse(code))
+    assert apply_builtin_formatter(formatted) == formatted
 
 
 def test_format_import_node_rejects_unsupported_nodes() -> None:
@@ -3797,7 +3883,6 @@ UNSUPPORTED_LAYOUT_CASES: tuple[tuple[str, int], ...] = (
     ("value = lambda argument: argument + first_value_with_a_long_name_here_more\n", 30),
     ("def function_name[T](argument: T) -> T:\n    pass\n", 20),
     ('x = """unterminated\n', 88),
-    ("class A:\n  value = function_name(first_argument, second_argument)\n", 20),
     ("value = t'{first_value} and {second_value} in a long template string'\n", 30),
     ("@(\n    decorator_name)\ndef f():\n    pass\n", 10),
     ("value = function_name(1 .real, first_argument_value, second_argument_value)\n", 30),
