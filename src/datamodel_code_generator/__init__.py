@@ -2793,6 +2793,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         model_metadata, model_identities = parser.model_metadata, parser.model_metadata_identities
         parser.record_dropped_constraints()
         pydantic_floor = floors.of(parser)
+        refused_bytes_patterns = floors.refused_bytes_patterns_of(parser)
         class_names = parser.generated_class_names
         inline_object_bodies: bool = getattr(parser, "inline_object_bodies", False)
         if repair_modules := parser.invalid_dotted_stdout_repair_modules:
@@ -2852,6 +2853,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                         )
                         retry_parser.record_dropped_constraints()
                         pydantic_floor = floors.of(retry_parser)
+                        refused_bytes_patterns = floors.refused_bytes_patterns_of(retry_parser)
                         class_names = retry_parser.generated_class_names
                         data_model_types = retry_data_model_types
                         defer_formatting = retry_defer_formatting
@@ -2881,6 +2883,10 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
             UserWarning,
             stacklevel=2,
         )
+    if refused_bytes_patterns:
+        from datamodel_code_generator._requirements import refused_bytes_pattern_message  # noqa: PLC0415
+
+        warnings.warn(refused_bytes_pattern_message(refused_bytes_patterns), UserWarning, stacklevel=2)
     return (
         results,
         model_metadata,

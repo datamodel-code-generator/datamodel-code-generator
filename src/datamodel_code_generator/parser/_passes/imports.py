@@ -1400,23 +1400,33 @@ def record_pydantic_floor(parser: FinishHost, contexts: Sequence[ModuleContextVi
 
     Every fact the constructs read is final here, after the last writer before rendering. A model or field owns
     each construct, named with its module when the parse writes more than one. Output that Pydantic does not
-    build has no floor to state.
+    build has no floor to state. The fields that write a ``bytes`` pattern Pydantic 2.14 refuses at import, as no
+    config selects ``python-re`` for it (#6673), are recorded too.
     """
-    if (record := _PYDANTIC_FLOORS.get()) is None or parser.target_pydantic_version is None:
+    if (record := _PYDANTIC_FLOORS.get()) is None:
         return
     if not parser.data_model_type._READ_BY_PYDANTIC:  # noqa: SLF001
-        record.record(parser, None)
+        record.record(parser, None, ())
         return
     used: list[tuple[PydanticConstruct, str]] = []
+    refused: list[str] = []
     for ctx in contexts:
         prefix = f"{module_name}." if len(contexts) > 1 and (module_name := dotted_module(ctx.module)) else ""
         for model in ctx.models:
             owner = f"{prefix}{model.class_name}"
+            names_fields = not model.IS_ROOT_MODEL and not model.IS_ALIAS
             used.extend(
                 (construct, owner if field_name is None else f"{owner}.{field_name}")
                 for construct, field_name in model._pydantic_constructs()  # noqa: SLF001
             )
-    record.record(parser, pydantic_floor(parser.target_pydantic_version, used))
+            if not model._builds_patterns_with_python_engine():  # noqa: SLF001
+                refused.extend(
+                    f"{owner}.{field.name}" if names_fields else owner
+                    for field in model.fields
+                    if field._writes_bytes_pattern_rust_rejects()  # noqa: SLF001
+                )
+    target = parser.target_pydantic_version
+    record.record(parser, None if target is None else pydantic_floor(target, used), tuple(dict.fromkeys(refused)))
 
 
 def warn_about_variant_discriminator_tags(parser: FinishHost) -> None:
