@@ -1186,19 +1186,7 @@ def test_apply_builtin_formatter_puts_blank_lines_around_one_line_bodies() -> No
             id="inline",
         ),
         pytest.param(
-            "#!/usr/bin/env python\n"
-            "#c\n"
-            "#!x\n"
-            "#:x\n"
-            "##x\n"
-            "#'x\n"
-            "#  two\n"
-            "#\n"
-            "x = 1 #type:int\n"
-            "y = [  #a\n"
-            "    1,#b\n"
-            "    #c\n"
-            "]\n",
+            "#!/usr/bin/env python\n#c\n#!x\n#:x\n##x\n#'x\n#  two\n#\nx = 1 #i\ny = [  #a\n    1,#b\n    #c\n]\n",
             id="exceptions-and-brackets",
         ),
         pytest.param(
@@ -1218,6 +1206,11 @@ def test_apply_builtin_formatter_writes_comments_like_black(code: str) -> None:
     assert formatted == black.format_str(code, mode=black.FileMode(string_normalization=False))
     assert ast.dump(ast.parse(formatted)) == ast.dump(ast.parse(code))
     assert apply_builtin_formatter(formatted) == formatted
+
+
+def test_apply_builtin_formatter_spaces_type_comments_like_the_pinned_black() -> None:
+    """Write ``# type: <value>`` for a type comment, as the pinned black does (black 24 keeps ``# type:int``)."""
+    assert apply_builtin_formatter("x = 1 #type:int\n") == "x = 1  # type: int\n"
 
 
 def test_apply_builtin_formatter_keeps_comments_of_code_it_cannot_tokenize() -> None:
