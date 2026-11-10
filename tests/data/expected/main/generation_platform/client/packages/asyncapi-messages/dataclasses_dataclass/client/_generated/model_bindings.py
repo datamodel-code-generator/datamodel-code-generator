@@ -22,6 +22,8 @@ MODELS: Final[dict[type, Model]] = {
     ),
     models.Place: Model((Field('symbol', 'symbol'), Field('size', 'size'))),
     models.Cancel: Model((Field('id', 'id'),)),
+    models.Edit: Model((Field('text', 'text'),)),
+    models.Revision: Model((Field('text', 'text'), Field('number', 'number'))),
     models.OrdersAckPayload: Model((Field('id', 'id'),)),
 }
 
@@ -53,3 +55,11 @@ codec_6: Final[DataclassCodec[models.OrdersAckPayload]] = DataclassCodec(
     models.OrdersAckPayload, MODELS
 )
 """Codec of /channels/orders response_body (response application/json)."""
+
+codec_7: Final[DataclassCodec[models.Edit]] = DataclassCodec(models.Edit, MODELS)
+"""Codec of /channels/edits request_body (request application/json)."""
+
+codec_8: Final[DataclassCodec[models.Revision]] = DataclassCodec(
+    models.Revision, MODELS
+)
+"""Codec of /channels/edits request_body (request application/json)."""

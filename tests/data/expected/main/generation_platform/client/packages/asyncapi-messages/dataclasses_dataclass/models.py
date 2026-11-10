@@ -78,6 +78,21 @@ class Ask:
     price: float
 
 
+@dataclass
+class Cleared:
+    kind: Literal['cleared']
+
+
+@dataclass
+class Edit:
+    text: str
+
+
+@dataclass
+class Revision(Edit):
+    number: int
+
+
 SubscribePayload: TypeAlias = Subscribe
 
 
@@ -139,3 +154,23 @@ LogsLinePayload: TypeAlias = str
 
 
 LogsEntryPayload: TypeAlias = Item
+
+
+EditsEditPayload: TypeAlias = Edit
+
+
+EditsRevisionPayload: TypeAlias = Revision
+
+
+DraftsDraftPayload: TypeAlias = Item
+
+
+DraftsItemPayload: TypeAlias = Item
+
+
+@dataclass
+class AlertsRaisedPayload:
+    kind: Literal['raised']
+
+
+AlertsClearedPayload: TypeAlias = Cleared | None

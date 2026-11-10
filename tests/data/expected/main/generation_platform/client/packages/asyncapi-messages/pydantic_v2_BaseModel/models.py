@@ -70,6 +70,18 @@ class Ask(BaseModel):
     price: float
 
 
+class Cleared(BaseModel):
+    kind: Literal['cleared']
+
+
+class Edit(BaseModel):
+    text: str
+
+
+class Revision(Edit):
+    number: int
+
+
 class SubscribePayload(RootModel[Subscribe]):
     root: Subscribe
 
@@ -144,3 +156,27 @@ class LogsLinePayload(RootModel[str]):
 
 class LogsEntryPayload(RootModel[Item]):
     root: Item
+
+
+class EditsEditPayload(RootModel[Edit]):
+    root: Edit
+
+
+class EditsRevisionPayload(RootModel[Revision]):
+    root: Revision
+
+
+class DraftsDraftPayload(RootModel[Item]):
+    root: Item
+
+
+class DraftsItemPayload(RootModel[Item]):
+    root: Item
+
+
+class AlertsRaisedPayload(BaseModel):
+    kind: Literal['raised']
+
+
+class AlertsClearedPayload(RootModel[Cleared | None]):
+    root: Cleared | None

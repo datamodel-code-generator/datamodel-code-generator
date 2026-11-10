@@ -6353,5 +6353,9 @@
     "input": "asyncapi-messages.yaml",
     "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"], "use_type_alias": true, "read_const_beside_enum": true},
     "modules": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"]]
+  },
+  "asyncapi-messages-enums": {
+    "input": "asyncapi-messages.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"], "enum_field_as_literal": "none", "use_specialized_enum": false}
   }
 }

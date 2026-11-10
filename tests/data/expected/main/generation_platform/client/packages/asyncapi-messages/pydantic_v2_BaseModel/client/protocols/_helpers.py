@@ -49,6 +49,16 @@ class ProtocolHelpers:
         """The quotes WebSocket helper."""
         return QuotesWebsocket(self._core)
 
+    @cached_property
+    def edits(self) -> EditsWebsocket:
+        """The edits WebSocket helper."""
+        return EditsWebsocket(self._core)
+
+    @cached_property
+    def alerts(self) -> AlertsWebsocket:
+        """The alerts WebSocket helper."""
+        return AlertsWebsocket(self._core)
+
 
 class FeedWebsocket:
     """The feed WebSocket helper of channel /v1/feed."""
@@ -162,6 +172,54 @@ class QuotesWebsocket:
         return connect_socket(
             self._core,
             _plans.SOCKET_4,
+            (),
+            ws_options=ws_options,
+            options=options,
+        )
+
+
+class EditsWebsocket:
+    """The edits WebSocket helper of channel /v1/edits."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    def connect(
+        self,
+        *,
+        ws_options: WSOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> WebSocketSession[models.Edit | models.Revision, Never]:
+        """Open the WebSocket of channel /v1/edits, returning once its handshake got a valid 101."""
+        return connect_socket(
+            self._core,
+            _plans.SOCKET_5,
+            (),
+            ws_options=ws_options,
+            options=options,
+        )
+
+
+class AlertsWebsocket:
+    """The alerts WebSocket helper of channel /v1/alerts."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    def connect(
+        self,
+        *,
+        ws_options: WSOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> WebSocketSession[
+        Never, models.AlertsRaisedPayload | models.AlertsClearedPayload
+    ]:
+        """Open the WebSocket of channel /v1/alerts, returning once its handshake got a valid 101."""
+        return connect_socket(
+            self._core,
+            _plans.SOCKET_6,
             (),
             ws_options=ws_options,
             options=options,

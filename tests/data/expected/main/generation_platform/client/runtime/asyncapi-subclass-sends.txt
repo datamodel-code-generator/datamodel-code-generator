@@ -1,0 +1,19 @@
+# asyncapi-messages pydantic_v2.BaseModel
+  warning UserWarning: <root>/asyncapi_messages_pydantic_v2_basemodel: Skipping channel 'logs', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/logs: the client receives text and JSON messages on it, which a text frame cannot tell apart
+  warning UserWarning: <root>/asyncapi_messages_pydantic_v2_basemodel: Skipping channel 'drafts', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/drafts: the client sends JSON messages on it, and a message's payload declares no type
+    edits server saw '{"text":"a"}', '{"text":"b","number":2}', '{"text":"c","number":3}'
+    server GET /v1/edits [] | closed 1000 ''
+# asyncapi-messages pydantic_v2.dataclass
+  warning UserWarning: <root>/asyncapi_messages_pydantic_v2_dataclass: Skipping channel 'logs', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/logs: the client receives text and JSON messages on it, which a text frame cannot tell apart
+  warning UserWarning: <root>/asyncapi_messages_pydantic_v2_dataclass: Skipping channel 'drafts', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/drafts: the client sends JSON messages on it, and a message's payload declares no type
+    edits server saw '{"text":"a"}', '{"text":"b","number":2}', '{"text":"c","number":3}'
+    server GET /v1/edits [] | closed 1000 ''
+# asyncapi-messages msgspec.Struct
+  warning UserWarning: <root>/asyncapi_messages_msgspec_struct: Skipping channel 'chat', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/chat: the client receives JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/asyncapi_messages_msgspec_struct: Skipping channel 'batch', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/batch: the client sends JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/asyncapi_messages_msgspec_struct: Skipping channel 'quotes', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/quotes: the client receives JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/asyncapi_messages_msgspec_struct: Skipping channel 'logs', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/logs: the client receives text and JSON messages on it, which a text frame cannot tell apart
+  warning UserWarning: <root>/asyncapi_messages_msgspec_struct: Skipping channel 'drafts', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/drafts: the client sends JSON messages on it, and a message's payload declares no type
+  warning UserWarning: <root>/asyncapi_messages_msgspec_struct: Skipping channel 'alerts', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/alerts: the client receives JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+    edits server saw '{"text":"a"}', '{"text":"b","number":2}', '{"text":"c","number":3}'
+    server GET /v1/edits [] | closed 1000 ''

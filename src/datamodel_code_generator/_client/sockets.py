@@ -133,8 +133,11 @@ def _tag(facts: ModelFacts, types: list[TypeView]) -> tuple[str, list[ModelField
     """Return the tag of several messages' models: its wire name, each model's field of it, and each one's value.
 
     The tag is the first wire name of the first model's fields that every model declares as a required field of one
-    string value, the values all distinct; None when the models declare none, or a type is no object model.
+    string value, the values all distinct; None when the models declare none, or a type is no object model or admits
+    null, which no tag tells apart.
     """
+    if any("null" in (facts.json_types(value) or ()) for value in types):
+        return None
     models = [facts.model(value) for value in types]
     fields = [{field.wire_name: field for field in facts.fields(model.id)} for model in models if model is not None]
     if len(fields) < len(types):
@@ -242,11 +245,12 @@ class _Sockets(_Streams):
         if typed and self.backend in _PYDANTIC:
             return _replaced(members, [self.union(spec, jsons, types), *(None for _ in jsons[1:])]), None
         verb = "receives" if received else "sends"
-        return self.skip(
-            spec,
-            f"the client {verb} JSON messages on it that neither a tag nor a class tells apart, which only Pydantic "
-            "models code as a union",
+        why = (
+            "on it that neither a tag nor a class tells apart, which only Pydantic models code as a union"
+            if typed
+            else "on it, and a message's payload declares no type"
         )
+        return self.skip(spec, f"the client {verb} JSON messages {why}")
 
     def classes(self, types: list[TypeView]) -> list[TypeView] | None:
         """Return the class each sent type stands for: a model or root model through aliases, else None."""

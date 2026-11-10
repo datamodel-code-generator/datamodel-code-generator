@@ -60,3 +60,18 @@ codec_9: Final[PydanticDataclassCodec[models.Bid | models.Ask]] = (
     PydanticDataclassCodec(models.Bid | models.Ask)
 )
 """Codec of /channels/quotes response_body (response application/json)."""
+
+codec_10: Final[PydanticDataclassCodec[models.Edit]] = PydanticDataclassCodec(
+    models.Edit
+)
+"""Codec of /channels/edits request_body (request application/json)."""
+
+codec_11: Final[PydanticDataclassCodec[models.Revision]] = PydanticDataclassCodec(
+    models.Revision
+)
+"""Codec of /channels/edits request_body (request application/json)."""
+
+codec_12: Final[
+    PydanticDataclassCodec[models.AlertsRaisedPayload | models.AlertsClearedPayload]
+] = PydanticDataclassCodec(models.AlertsRaisedPayload | models.AlertsClearedPayload)
+"""Codec of /channels/alerts response_body (response application/json)."""

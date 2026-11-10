@@ -90,3 +90,28 @@ SOCKET_4: Final[ChannelPlan[Never, models.Bid | models.Ask]] = ChannelPlan(
     send_codec='none',
     decoder=model_bindings.codec_9,
 )
+
+
+SOCKET_5: Final[ChannelPlan[models.Edit | models.Revision, Never]] = ChannelPlan(
+    helper_id='edits',
+    operation=OperationRef(pointer='/channels/edits'),
+    call=_operations.OPERATION_5,
+    fingerprint='91ee9153286996617281f64f491183c126fdfc8cf1220284c622f0bdeb75682f',
+    receive_codec='none',
+    send_routes=(
+        MessageRoute(encoder=model_bindings.codec_10, type=models.Edit),
+        MessageRoute(encoder=model_bindings.codec_11, type=models.Revision),
+    ),
+)
+
+
+SOCKET_6: Final[
+    ChannelPlan[Never, models.AlertsRaisedPayload | models.AlertsClearedPayload]
+] = ChannelPlan(
+    helper_id='alerts',
+    operation=OperationRef(pointer='/channels/alerts'),
+    call=_operations.OPERATION_6,
+    fingerprint='d7a654a6517aad7deef574312fc6e4d6031f2dfe0c180a2f0ebddb0914b91d8e',
+    send_codec='none',
+    decoder=model_bindings.codec_12,
+)

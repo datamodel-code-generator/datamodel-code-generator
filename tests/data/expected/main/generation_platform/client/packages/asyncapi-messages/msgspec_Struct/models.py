@@ -70,6 +70,18 @@ class Ask(Struct):
     price: float
 
 
+class Cleared(Struct):
+    kind: Literal['cleared']
+
+
+class Edit(Struct):
+    text: str
+
+
+class Revision(Edit):
+    number: int
+
+
 SubscribePayload: TypeAlias = Subscribe
 
 
@@ -128,3 +140,22 @@ LogsLinePayload: TypeAlias = str
 
 
 LogsEntryPayload: TypeAlias = Item
+
+
+EditsEditPayload: TypeAlias = Edit
+
+
+EditsRevisionPayload: TypeAlias = Revision
+
+
+DraftsDraftPayload: TypeAlias = Item
+
+
+DraftsItemPayload: TypeAlias = Item
+
+
+class AlertsRaisedPayload(Struct):
+    kind: Literal['raised']
+
+
+AlertsClearedPayload: TypeAlias = Cleared | None

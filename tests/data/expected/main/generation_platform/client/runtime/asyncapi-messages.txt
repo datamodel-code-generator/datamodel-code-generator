@@ -1,5 +1,6 @@
 # asyncapi-messages pydantic_v2.BaseModel
   warning UserWarning: <root>/asyncapi_messages_pydantic_v2_basemodel: Skipping channel 'logs', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/logs: the client receives text and JSON messages on it, which a text frame cannot tell apart
+  warning UserWarning: <root>/asyncapi_messages_pydantic_v2_basemodel: Skipping channel 'drafts', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/drafts: the client sends JSON messages on it, and a message's payload declares no type
   feed int ! DecodeError: DecodeError(status_code=101, reason='unencodable', location='message') [location=('message',), body_bytes=b'', truncated=False, cause=TypeError] unencodable
   feed unknown op ! DecodeError: DecodeError(status_code=101, reason='unencodable', location='message') [location=('message',), body_bytes=b'', truncated=False, cause=TypeError] unencodable
     feed 1 text Trade{'event': 'trade', 'price': 2.5} raw=b'{"event": "trade", "price": 2.5}'
@@ -23,11 +24,16 @@
     orders 1 text OrdersAckPayload{'id': 'o-1'} raw=b'{"id": "o-1"}'
     orders server saw '{"symbol":"XBT","size":1.0}', '{"id":"o-1"}'
     server GET /v1/orders [] | closed 1000 ''
+    alerts 1 text AlertsClearedPayloadNone raw=b'null'
+    alerts 2 text AlertsRaisedPayload{'kind': 'raised'} raw=b'{"kind": "raised"}'
+    server GET /v1/alerts [] | closed 1000 ''
 # asyncapi-messages dataclasses.dataclass
   warning UserWarning: <root>/asyncapi_messages_dataclasses_dataclass: Skipping channel 'chat', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/chat: the client receives JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
   warning UserWarning: <root>/asyncapi_messages_dataclasses_dataclass: Skipping channel 'batch', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/batch: the client sends JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
   warning UserWarning: <root>/asyncapi_messages_dataclasses_dataclass: Skipping channel 'quotes', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/quotes: the client receives JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
   warning UserWarning: <root>/asyncapi_messages_dataclasses_dataclass: Skipping channel 'logs', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/logs: the client receives text and JSON messages on it, which a text frame cannot tell apart
+  warning UserWarning: <root>/asyncapi_messages_dataclasses_dataclass: Skipping channel 'drafts', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/drafts: the client sends JSON messages on it, and a message's payload declares no type
+  warning UserWarning: <root>/asyncapi_messages_dataclasses_dataclass: Skipping channel 'alerts', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/alerts: the client receives JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
   feed int ! DecodeError: DecodeError(status_code=101, reason='unencodable', location='message') [location=('message',), body_bytes=b'', truncated=False, cause=TypeError] unencodable
   feed unknown op ! DecodeError: DecodeError(status_code=101, reason='unencodable', location='message') [location=('message',), body_bytes=b'', truncated=False, cause=TypeError] unencodable
     feed 1 text Trade{'event': 'trade', 'price': 2.5} raw=b'{"event": "trade", "price": 2.5}'
@@ -50,6 +56,9 @@
   warning UserWarning: <root>/asyncapi_messages_typing_typeddict: Skipping channel 'orders', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/orders: the client sends JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
   warning UserWarning: <root>/asyncapi_messages_typing_typeddict: Skipping channel 'batch', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/batch: the client sends JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
   warning UserWarning: <root>/asyncapi_messages_typing_typeddict: Skipping channel 'logs', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/logs: the client receives text and JSON messages on it, which a text frame cannot tell apart
+  warning UserWarning: <root>/asyncapi_messages_typing_typeddict: Skipping channel 'edits', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/edits: the client sends JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/asyncapi_messages_typing_typeddict: Skipping channel 'drafts', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/drafts: the client sends JSON messages on it, and a message's payload declares no type
+  warning UserWarning: <root>/asyncapi_messages_typing_typeddict: Skipping channel 'alerts', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/alerts: the client receives JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
   feed int ! DecodeError: DecodeError(status_code=101, reason='unencodable', location='message') [location=('message',), body_bytes=b'', truncated=False, cause=TypeError] unencodable
   feed unknown op ! DecodeError: DecodeError(status_code=101, reason='unencodable', location='message') [location=('message',), body_bytes=b'', truncated=False, cause=TypeError] unencodable
     feed 1 text dict{'event': 'trade', 'price': 2.5} raw=b'{"event": "trade", "price": 2.5}'

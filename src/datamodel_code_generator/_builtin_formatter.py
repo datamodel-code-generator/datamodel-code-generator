@@ -438,15 +438,15 @@ def _build_builtin_import_block(
     known_first_party: frozenset[str],
     names: _ImportNames = _PLAIN_NAMES,
 ) -> str:
-    categorized_lines: defaultdict[_ImportCategory, set[str]] = defaultdict(set)
-    grouped_from_imports: defaultdict[tuple[_ImportCategory, int, str], set[str]] = defaultdict(set)
+    categorized_lines: defaultdict[_ImportCategory, list[str]] = defaultdict(list)
+    grouped_from_imports: defaultdict[tuple[_ImportCategory, int, str], list[str]] = defaultdict(list)
     aliased_from_imports: defaultdict[tuple[_ImportCategory, int, str], list[tuple[int, str, bool]]] = defaultdict(list)
     aliased_modules = _modules_with_aliased_imports(import_nodes)
 
     for node_index, node in enumerate(import_nodes):
         if _has_inline_comment(lines, node):
             category, raw_import = _format_import_node_without_reordering(node, lines, known_first_party, names)
-            categorized_lines[category].add(raw_import)
+            categorized_lines[category].append(raw_import)
             continue
 
         if isinstance(node, ast.ImportFrom) and _from_import_key(node) in aliased_modules:
@@ -463,28 +463,32 @@ def _build_builtin_import_block(
         if isinstance(node, ast.ImportFrom) and _can_merge_from_imports(node, aliased_modules):
             category = _import_node_category(node, known_first_party, names)
             for alias in node.names:
-                grouped_from_imports[category, node.level, node.module or ""].add(_format_alias(alias))
+                grouped_from_imports[category, node.level, node.module or ""].append(_format_alias(alias))
             continue
 
         if isinstance(node, ast.Import):
             for alias in node.names:
                 category = _import_category(names.restore(alias.name), 0, known_first_party, names.python_version)
-                categorized_lines[category].add(module_import(_format_alias(alias)))
+                categorized_lines[category].append(module_import(_format_alias(alias)))
             continue
 
         category, import_line = _format_import_node(node, line_length, known_first_party, names)
-        categorized_lines[category].add(import_line)
+        categorized_lines[category].append(import_line)
 
     for (category, _level, module), aliases in grouped_from_imports.items():
-        categorized_lines[category].add(
-            _format_from_import(module, sorted(aliases, key=lambda alias: _alias_sort_key(alias, names)), line_length)
+        categorized_lines[category].append(
+            _format_from_import(
+                module, sorted(dict.fromkeys(aliases), key=lambda alias: _alias_sort_key(alias, names)), line_length
+            )
         )
     for (category, _level, module), aliases in aliased_from_imports.items():
         for import_line in _iter_aliased_from_import_lines(module, aliases, line_length, names):
-            categorized_lines[category].add(import_line)
+            categorized_lines[category].append(import_line)
 
     groups = [
-        "\n".join(sorted(categorized_lines[category], key=lambda line: _import_line_sort_key(line, names)))
+        "\n".join(
+            sorted(dict.fromkeys(categorized_lines[category]), key=lambda line: _import_line_sort_key(line, names))
+        )
         for category in sorted(categorized_lines)
     ]
     return "\n\n".join(group for group in groups if group)

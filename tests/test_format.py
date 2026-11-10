@@ -689,6 +689,25 @@ def test_apply_builtin_formatter_sorts_aliased_imports_like_isort() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "imports",
+    [
+        "import foo\nimport Foo\n",
+        "import Foo\nimport foo\n",
+        "from x import foo\nfrom x import fOo\n",
+        "from x import fOo, foo\n",
+        "import os\nfrom x import fOo\nimport OS\nfrom x import foo\n",
+    ],
+)
+def test_apply_builtin_formatter_keeps_case_only_import_ties_in_order_like_isort(imports: str) -> None:
+    """Keep imports and names that differ only in case in the order they first appear, as isort does."""
+    code = f"{imports}\n\nprint(1)\n"
+
+    assert apply_builtin_formatter(code) == black.format_str(
+        isort.code(code, config=isort.Config(profile="black")), mode=black.Mode()
+    )
+
+
 def test_format_import_node_formats_from_import_aliases() -> None:
     """Test direct import node formatting for aliased from-imports."""
     node = ast.parse("from pydantic import Field as PydanticField, BaseModel as Model\n").body[0]

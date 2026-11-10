@@ -81,6 +81,21 @@ class Ask:
     price: float
 
 
+@dataclass
+class Cleared:
+    kind: Literal['cleared']
+
+
+@dataclass
+class Edit:
+    text: str
+
+
+@dataclass
+class Revision(Edit):
+    number: int
+
+
 SubscribePayload = TypeAliasType("SubscribePayload", Subscribe)
 
 
@@ -142,3 +157,23 @@ LogsLinePayload = TypeAliasType("LogsLinePayload", str)
 
 
 LogsEntryPayload = TypeAliasType("LogsEntryPayload", Item)
+
+
+EditsEditPayload = TypeAliasType("EditsEditPayload", Edit)
+
+
+EditsRevisionPayload = TypeAliasType("EditsRevisionPayload", Revision)
+
+
+DraftsDraftPayload = TypeAliasType("DraftsDraftPayload", Item)
+
+
+DraftsItemPayload = TypeAliasType("DraftsItemPayload", Item)
+
+
+@dataclass
+class AlertsRaisedPayload:
+    kind: Literal['raised']
+
+
+AlertsClearedPayload = TypeAliasType("AlertsClearedPayload", Cleared | None)
