@@ -329,7 +329,6 @@ _BUILTIN_FORMATTER_REEXPORTS: tuple[str, ...] = (
     "_collect_builtin_replacements",
     "_module_docstring_node",
     "_docstring_node",
-    "_leading_lines_before_imports",
     "_iter_module_import_nodes",
     "_apply_line_replacements",
     "_previous_non_empty_line_index",

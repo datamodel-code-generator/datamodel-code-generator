@@ -279,7 +279,7 @@ external-api-False-False-anchored_disjoint	main/jsonschema/additional_pattern_in
 external-api-False-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_builtin.py
 external-api-False-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
 external-api-False-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
-external-api-False-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_custom_False_False_external.py
+external-api-False-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_custom_False_False_external.py	= main/jsonschema/additional_pattern_intersections/boolean_custom_False_False_builtin.py
 external-api-False-False-boolean_integer	main/jsonschema/additional_pattern_intersections/boolean_integer_False_False_builtin.py
 external-api-False-False-boolean_integer	main/jsonschema/additional_pattern_intersections/boolean_integer_False_False_runtime.txt
 external-api-False-False-boolean_optional	main/jsonschema/additional_pattern_intersections/boolean_optional_False_False_builtin.py
@@ -290,7 +290,7 @@ external-api-False-False-minimum	main/jsonschema/additional_pattern_intersection
 external-api-False-False-minimum	main/jsonschema/additional_pattern_intersections/minimum_False_False_builtin_black23.py	?
 external-api-False-False-minimum	main/jsonschema/additional_pattern_intersections/minimum_False_False_runtime.txt
 external-api-False-False-minimum_custom	main/jsonschema/additional_pattern_intersections/minimum_False_False_runtime.txt
-external-api-False-False-minimum_custom	main/jsonschema/additional_pattern_intersections/minimum_custom_False_False_external.py	?
+external-api-False-False-minimum_custom	main/jsonschema/additional_pattern_intersections/minimum_custom_False_False_external.py	?	= main/jsonschema/additional_pattern_intersections/minimum_custom_False_False_builtin.py
 external-api-False-False-minimum_custom	main/jsonschema/additional_pattern_intersections/minimum_custom_False_False_external_black22.py	?
 external-api-False-False-minimum_float	main/jsonschema/additional_pattern_intersections/minimum_False_False_runtime.txt
 external-api-False-False-minimum_float	main/jsonschema/additional_pattern_intersections/minimum_float_False_False_builtin.py	?
@@ -314,7 +314,7 @@ external-api-False-False-prefix_suffix	main/jsonschema/additional_pattern_inters
 external-api-False-False-prefix_suffix	main/jsonschema/additional_pattern_intersections/prefix_suffix_False_False_builtin_black23.py	?
 external-api-False-False-prefix_suffix	main/jsonschema/additional_pattern_intersections/prefix_suffix_False_False_runtime.txt
 external-api-False-False-prefix_suffix_custom	main/jsonschema/additional_pattern_intersections/prefix_suffix_False_False_runtime.txt
-external-api-False-False-prefix_suffix_custom	main/jsonschema/additional_pattern_intersections/prefix_suffix_custom_False_False_external.py	?
+external-api-False-False-prefix_suffix_custom	main/jsonschema/additional_pattern_intersections/prefix_suffix_custom_False_False_external.py	?	= main/jsonschema/additional_pattern_intersections/prefix_suffix_custom_False_False_builtin.py
 external-api-False-False-prefix_suffix_custom	main/jsonschema/additional_pattern_intersections/prefix_suffix_custom_False_False_external_black22.py	?
 external-api-False-False-suffix_prefix	main/jsonschema/additional_pattern_intersections/suffix_prefix_False_False_builtin.py	?
 external-api-False-False-suffix_prefix	main/jsonschema/additional_pattern_intersections/suffix_prefix_False_False_builtin_black23.py	?
@@ -359,7 +359,7 @@ external-api-True-False-anchored_disjoint	main/jsonschema/additional_pattern_int
 external-api-True-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_builtin.py
 external-api-True-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
 external-api-True-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
-external-api-True-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_custom_False_False_external.py
+external-api-True-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_custom_False_False_external.py	= main/jsonschema/additional_pattern_intersections/boolean_custom_False_False_builtin.py
 external-api-True-False-boolean_integer	main/jsonschema/additional_pattern_intersections/boolean_integer_False_False_builtin.py
 external-api-True-False-boolean_integer	main/jsonschema/additional_pattern_intersections/boolean_integer_False_False_runtime.txt
 external-api-True-False-boolean_optional	main/jsonschema/additional_pattern_intersections/boolean_optional_False_False_builtin.py
@@ -370,7 +370,7 @@ external-api-True-False-minimum	main/jsonschema/additional_pattern_intersections
 external-api-True-False-minimum	main/jsonschema/additional_pattern_intersections/minimum_False_True_builtin.py	?
 external-api-True-False-minimum	main/jsonschema/additional_pattern_intersections/minimum_False_True_builtin_black23.py	?
 external-api-True-False-minimum_custom	main/jsonschema/additional_pattern_intersections/minimum_False_False_runtime.txt
-external-api-True-False-minimum_custom	main/jsonschema/additional_pattern_intersections/minimum_custom_False_True_external.py	?
+external-api-True-False-minimum_custom	main/jsonschema/additional_pattern_intersections/minimum_custom_False_True_external.py	?	= main/jsonschema/additional_pattern_intersections/minimum_custom_False_True_builtin.py
 external-api-True-False-minimum_custom	main/jsonschema/additional_pattern_intersections/minimum_custom_False_True_external_black22.py	?
 external-api-True-False-minimum_float	main/jsonschema/additional_pattern_intersections/minimum_False_False_runtime.txt
 external-api-True-False-minimum_float	main/jsonschema/additional_pattern_intersections/minimum_float_False_True_builtin.py	?
@@ -394,7 +394,7 @@ external-api-True-False-prefix_suffix	main/jsonschema/additional_pattern_interse
 external-api-True-False-prefix_suffix	main/jsonschema/additional_pattern_intersections/prefix_suffix_False_False_builtin_black23.py	?
 external-api-True-False-prefix_suffix	main/jsonschema/additional_pattern_intersections/prefix_suffix_False_False_runtime.txt
 external-api-True-False-prefix_suffix_custom	main/jsonschema/additional_pattern_intersections/prefix_suffix_False_False_runtime.txt
-external-api-True-False-prefix_suffix_custom	main/jsonschema/additional_pattern_intersections/prefix_suffix_custom_False_False_external.py	?
+external-api-True-False-prefix_suffix_custom	main/jsonschema/additional_pattern_intersections/prefix_suffix_custom_False_False_external.py	?	= main/jsonschema/additional_pattern_intersections/prefix_suffix_custom_False_False_builtin.py
 external-api-True-False-prefix_suffix_custom	main/jsonschema/additional_pattern_intersections/prefix_suffix_custom_False_False_external_black22.py	?
 external-api-True-False-suffix_prefix	main/jsonschema/additional_pattern_intersections/suffix_prefix_False_False_builtin.py	?
 external-api-True-False-suffix_prefix	main/jsonschema/additional_pattern_intersections/suffix_prefix_False_False_builtin_black23.py	?
@@ -439,7 +439,7 @@ external-cli-False-False-anchored_disjoint	main/jsonschema/additional_pattern_in
 external-cli-False-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_builtin.py
 external-cli-False-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
 external-cli-False-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
-external-cli-False-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_custom_False_False_external.py
+external-cli-False-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_custom_False_False_external.py	= main/jsonschema/additional_pattern_intersections/boolean_custom_False_False_builtin.py
 external-cli-False-False-boolean_integer	main/jsonschema/additional_pattern_intersections/boolean_integer_False_False_builtin.py
 external-cli-False-False-boolean_integer	main/jsonschema/additional_pattern_intersections/boolean_integer_False_False_runtime.txt
 external-cli-False-False-boolean_optional	main/jsonschema/additional_pattern_intersections/boolean_optional_False_False_builtin.py
@@ -450,7 +450,7 @@ external-cli-False-False-minimum	main/jsonschema/additional_pattern_intersection
 external-cli-False-False-minimum	main/jsonschema/additional_pattern_intersections/minimum_False_False_builtin_black23.py	?
 external-cli-False-False-minimum	main/jsonschema/additional_pattern_intersections/minimum_False_False_runtime.txt
 external-cli-False-False-minimum_custom	main/jsonschema/additional_pattern_intersections/minimum_False_False_runtime.txt
-external-cli-False-False-minimum_custom	main/jsonschema/additional_pattern_intersections/minimum_custom_False_False_external.py	?
+external-cli-False-False-minimum_custom	main/jsonschema/additional_pattern_intersections/minimum_custom_False_False_external.py	?	= main/jsonschema/additional_pattern_intersections/minimum_custom_False_False_builtin.py
 external-cli-False-False-minimum_custom	main/jsonschema/additional_pattern_intersections/minimum_custom_False_False_external_black22.py	?
 external-cli-False-False-minimum_float	main/jsonschema/additional_pattern_intersections/minimum_False_False_runtime.txt
 external-cli-False-False-minimum_float	main/jsonschema/additional_pattern_intersections/minimum_float_False_False_builtin.py	?
@@ -474,7 +474,7 @@ external-cli-False-False-prefix_suffix	main/jsonschema/additional_pattern_inters
 external-cli-False-False-prefix_suffix	main/jsonschema/additional_pattern_intersections/prefix_suffix_False_False_builtin_black23.py	?
 external-cli-False-False-prefix_suffix	main/jsonschema/additional_pattern_intersections/prefix_suffix_False_False_runtime.txt
 external-cli-False-False-prefix_suffix_custom	main/jsonschema/additional_pattern_intersections/prefix_suffix_False_False_runtime.txt
-external-cli-False-False-prefix_suffix_custom	main/jsonschema/additional_pattern_intersections/prefix_suffix_custom_False_False_external.py	?
+external-cli-False-False-prefix_suffix_custom	main/jsonschema/additional_pattern_intersections/prefix_suffix_custom_False_False_external.py	?	= main/jsonschema/additional_pattern_intersections/prefix_suffix_custom_False_False_builtin.py
 external-cli-False-False-prefix_suffix_custom	main/jsonschema/additional_pattern_intersections/prefix_suffix_custom_False_False_external_black22.py	?
 external-cli-False-False-suffix_prefix	main/jsonschema/additional_pattern_intersections/suffix_prefix_False_False_builtin.py	?
 external-cli-False-False-suffix_prefix	main/jsonschema/additional_pattern_intersections/suffix_prefix_False_False_builtin_black23.py	?
@@ -519,7 +519,7 @@ external-cli-True-False-anchored_disjoint	main/jsonschema/additional_pattern_int
 external-cli-True-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_builtin.py
 external-cli-True-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
 external-cli-True-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
-external-cli-True-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_custom_False_False_external.py
+external-cli-True-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_custom_False_False_external.py	= main/jsonschema/additional_pattern_intersections/boolean_custom_False_False_builtin.py
 external-cli-True-False-boolean_integer	main/jsonschema/additional_pattern_intersections/boolean_integer_False_False_builtin.py
 external-cli-True-False-boolean_integer	main/jsonschema/additional_pattern_intersections/boolean_integer_False_False_runtime.txt
 external-cli-True-False-boolean_optional	main/jsonschema/additional_pattern_intersections/boolean_optional_False_False_builtin.py
@@ -530,7 +530,7 @@ external-cli-True-False-minimum	main/jsonschema/additional_pattern_intersections
 external-cli-True-False-minimum	main/jsonschema/additional_pattern_intersections/minimum_False_True_builtin.py	?
 external-cli-True-False-minimum	main/jsonschema/additional_pattern_intersections/minimum_False_True_builtin_black23.py	?
 external-cli-True-False-minimum_custom	main/jsonschema/additional_pattern_intersections/minimum_False_False_runtime.txt
-external-cli-True-False-minimum_custom	main/jsonschema/additional_pattern_intersections/minimum_custom_False_True_external.py	?
+external-cli-True-False-minimum_custom	main/jsonschema/additional_pattern_intersections/minimum_custom_False_True_external.py	?	= main/jsonschema/additional_pattern_intersections/minimum_custom_False_True_builtin.py
 external-cli-True-False-minimum_custom	main/jsonschema/additional_pattern_intersections/minimum_custom_False_True_external_black22.py	?
 external-cli-True-False-minimum_float	main/jsonschema/additional_pattern_intersections/minimum_False_False_runtime.txt
 external-cli-True-False-minimum_float	main/jsonschema/additional_pattern_intersections/minimum_float_False_True_builtin.py	?
@@ -554,7 +554,7 @@ external-cli-True-False-prefix_suffix	main/jsonschema/additional_pattern_interse
 external-cli-True-False-prefix_suffix	main/jsonschema/additional_pattern_intersections/prefix_suffix_False_False_builtin_black23.py	?
 external-cli-True-False-prefix_suffix	main/jsonschema/additional_pattern_intersections/prefix_suffix_False_False_runtime.txt
 external-cli-True-False-prefix_suffix_custom	main/jsonschema/additional_pattern_intersections/prefix_suffix_False_False_runtime.txt
-external-cli-True-False-prefix_suffix_custom	main/jsonschema/additional_pattern_intersections/prefix_suffix_custom_False_False_external.py	?
+external-cli-True-False-prefix_suffix_custom	main/jsonschema/additional_pattern_intersections/prefix_suffix_custom_False_False_external.py	?	= main/jsonschema/additional_pattern_intersections/prefix_suffix_custom_False_False_builtin.py
 external-cli-True-False-prefix_suffix_custom	main/jsonschema/additional_pattern_intersections/prefix_suffix_custom_False_False_external_black22.py	?
 external-cli-True-False-suffix_prefix	main/jsonschema/additional_pattern_intersections/suffix_prefix_False_False_builtin.py	?
 external-cli-True-False-suffix_prefix	main/jsonschema/additional_pattern_intersections/suffix_prefix_False_False_builtin_black23.py	?
@@ -5621,6 +5621,8 @@ python-3.15	main/jsonschema/builtin_field_names_python_315_builtins_315.py
 python-3.10	main/jsonschema/builtin_formatter_stdlib_imports_310.py
 python-3.14	main/jsonschema/builtin_formatter_stdlib_imports_314.py
 python-3.15	main/jsonschema/builtin_formatter_stdlib_imports_315.py
+[test_main_builtin_formatter_keeps_custom_template_class_body_comments]
+	main/jsonschema/main_jsonschema/main_builtin_formatter_keeps_custom_template_class_body_comments.py
 [test_main_builtin_generated_formatter_fallbacks]
 class-docstring-decorators	main/jsonschema/builtin_class_docstring_decorators.py
 config-dict	main/jsonschema/extra_fields_v2_forbid.py
@@ -12594,7 +12596,7 @@ builtin-api-False-shared	main/jsonschema/pattern_intersections/shared_disabled.p
 builtin-api-False-shared	main/jsonschema/pattern_intersections/shared_disabled_runtime.txt	= main/jsonschema/pattern_intersections/complex_runtime.txt
 builtin-api-False-single	main/jsonschema/pattern_intersections/single_disabled.py
 builtin-api-False-single	main/jsonschema/pattern_intersections/single_disabled_runtime.txt	= main/jsonschema/pattern_intersections/single_runtime.txt
-builtin-api-False-single_custom	main/jsonschema/pattern_intersections/single_custom_disabled_builtin.py
+builtin-api-False-single_custom	main/jsonschema/pattern_intersections/single_custom_disabled_builtin.py	= main/jsonschema/pattern_intersections/single_custom_disabled.py
 builtin-api-False-single_custom	main/jsonschema/pattern_intersections/single_disabled_runtime.txt	= main/jsonschema/pattern_intersections/single_runtime.txt
 builtin-api-False-third_rejected_pattern	main/jsonschema/pattern_intersections/third_rejected_pattern_disabled.py
 builtin-api-False-third_rejected_pattern	main/jsonschema/pattern_intersections/third_rejected_pattern_disabled_runtime.txt
@@ -12658,7 +12660,7 @@ builtin-api-True-shared	main/jsonschema/pattern_intersections/shared.py
 builtin-api-True-shared	main/jsonschema/pattern_intersections/shared_runtime.txt
 builtin-api-True-single	main/jsonschema/pattern_intersections/single.py
 builtin-api-True-single	main/jsonschema/pattern_intersections/single_runtime.txt
-builtin-api-True-single_custom	main/jsonschema/pattern_intersections/single_custom_builtin.py
+builtin-api-True-single_custom	main/jsonschema/pattern_intersections/single_custom_builtin.py	= main/jsonschema/pattern_intersections/single_custom.py
 builtin-api-True-single_custom	main/jsonschema/pattern_intersections/single_runtime.txt
 builtin-api-True-third_rejected_pattern	main/jsonschema/pattern_intersections/third_rejected_pattern.py
 builtin-api-True-third_rejected_pattern	main/jsonschema/pattern_intersections/third_rejected_pattern_runtime.txt	= main/jsonschema/pattern_intersections/closed_objects_runtime.txt
@@ -12722,7 +12724,7 @@ builtin-cli-False-shared	main/jsonschema/pattern_intersections/shared_disabled.p
 builtin-cli-False-shared	main/jsonschema/pattern_intersections/shared_disabled_runtime.txt	= main/jsonschema/pattern_intersections/complex_runtime.txt
 builtin-cli-False-single	main/jsonschema/pattern_intersections/single_disabled.py
 builtin-cli-False-single	main/jsonschema/pattern_intersections/single_disabled_runtime.txt	= main/jsonschema/pattern_intersections/single_runtime.txt
-builtin-cli-False-single_custom	main/jsonschema/pattern_intersections/single_custom_disabled_builtin.py
+builtin-cli-False-single_custom	main/jsonschema/pattern_intersections/single_custom_disabled_builtin.py	= main/jsonschema/pattern_intersections/single_custom_disabled.py
 builtin-cli-False-single_custom	main/jsonschema/pattern_intersections/single_disabled_runtime.txt	= main/jsonschema/pattern_intersections/single_runtime.txt
 builtin-cli-False-third_rejected_pattern	main/jsonschema/pattern_intersections/third_rejected_pattern_disabled.py
 builtin-cli-False-third_rejected_pattern	main/jsonschema/pattern_intersections/third_rejected_pattern_disabled_runtime.txt
@@ -12786,7 +12788,7 @@ builtin-cli-True-shared	main/jsonschema/pattern_intersections/shared.py
 builtin-cli-True-shared	main/jsonschema/pattern_intersections/shared_runtime.txt
 builtin-cli-True-single	main/jsonschema/pattern_intersections/single.py
 builtin-cli-True-single	main/jsonschema/pattern_intersections/single_runtime.txt
-builtin-cli-True-single_custom	main/jsonschema/pattern_intersections/single_custom_builtin.py
+builtin-cli-True-single_custom	main/jsonschema/pattern_intersections/single_custom_builtin.py	= main/jsonschema/pattern_intersections/single_custom.py
 builtin-cli-True-single_custom	main/jsonschema/pattern_intersections/single_runtime.txt
 builtin-cli-True-third_rejected_pattern	main/jsonschema/pattern_intersections/third_rejected_pattern.py
 builtin-cli-True-third_rejected_pattern	main/jsonschema/pattern_intersections/third_rejected_pattern_runtime.txt	= main/jsonschema/pattern_intersections/closed_objects_runtime.txt
@@ -14960,7 +14962,7 @@ external-api-False-base_objects	main/jsonschema/undeclared_required/base_objects
 external-api-False-base_objects	main/jsonschema/undeclared_required/base_objects_False_runtime.txt	= main/jsonschema/undeclared_required/objects_False_runtime.txt
 external-api-False-closed	main/jsonschema/undeclared_required/closed_False_builtin.py
 external-api-False-closed	main/jsonschema/undeclared_required/closed_False_runtime.txt
-external-api-False-custom_objects	main/jsonschema/undeclared_required/custom_objects_False_external.py	?
+external-api-False-custom_objects	main/jsonschema/undeclared_required/custom_objects_False_external.py	?	= main/jsonschema/undeclared_required/custom_objects_False_builtin.py
 external-api-False-custom_objects	main/jsonschema/undeclared_required/custom_objects_False_external_black22.py	?
 external-api-False-custom_objects	main/jsonschema/undeclared_required/custom_objects_False_runtime.txt	= main/jsonschema/undeclared_required/objects_False_runtime.txt
 external-api-False-custom_open	main/jsonschema/undeclared_required/custom_open_False_builtin.py
@@ -15022,7 +15024,7 @@ external-cli-False-base_objects	main/jsonschema/undeclared_required/base_objects
 external-cli-False-base_objects	main/jsonschema/undeclared_required/base_objects_False_runtime.txt	= main/jsonschema/undeclared_required/objects_False_runtime.txt
 external-cli-False-closed	main/jsonschema/undeclared_required/closed_False_builtin.py
 external-cli-False-closed	main/jsonschema/undeclared_required/closed_False_runtime.txt
-external-cli-False-custom_objects	main/jsonschema/undeclared_required/custom_objects_False_external.py	?
+external-cli-False-custom_objects	main/jsonschema/undeclared_required/custom_objects_False_external.py	?	= main/jsonschema/undeclared_required/custom_objects_False_builtin.py
 external-cli-False-custom_objects	main/jsonschema/undeclared_required/custom_objects_False_external_black22.py	?
 external-cli-False-custom_objects	main/jsonschema/undeclared_required/custom_objects_False_runtime.txt	= main/jsonschema/undeclared_required/objects_False_runtime.txt
 external-cli-False-custom_open	main/jsonschema/undeclared_required/custom_open_False_builtin.py

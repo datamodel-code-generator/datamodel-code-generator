@@ -13822,6 +13822,24 @@ def test_main_builtin_generated_formatter_fallbacks(
     )
 
 
+@pytest.mark.isolate_builtin_formatter_config
+def test_main_builtin_formatter_keeps_custom_template_class_body_comments(output_file: Path) -> None:
+    """Keep the comments a custom template writes in a class body, with the blank lines black puts around them."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "simple_string.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--custom-template-dir",
+            str(DATA_PATH / "templates/builtin_class_body_comments"),
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
 @pytest.mark.parametrize("formatter", ["builtin", "external"])
 @pytest.mark.parametrize("operator", ["and", "or"])

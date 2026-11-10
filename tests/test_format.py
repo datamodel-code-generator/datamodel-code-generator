@@ -757,7 +757,8 @@ def test_apply_builtin_formatter_sorts_nested_import_runs_like_isort(code: str) 
 def test_apply_builtin_formatter_keeps_commented_nested_imports_at_their_indent() -> None:
     """Keep a commented import of a nested run as written, at the indent of the run.
 
-    A comment line ends a run, and imports that share a line stay as they are.
+    A comment line ends a run, after the blank line black puts after an import, and imports that share a line stay as
+    they are.
     """
     code = (
         "def g():\n"
@@ -780,6 +781,7 @@ def test_apply_builtin_formatter_keeps_commented_nested_imports_at_their_indent(
     assert apply_builtin_formatter(code) == (
         "def g():\n"
         "    import b\n"
+        "\n"
         "    # a comment ends the run\n"
         "    import a\n"
         "    import a; import b\n"
@@ -999,6 +1001,182 @@ def test_apply_builtin_formatter_keeps_statements_it_does_not_lay_out(code: str)
     assert apply_builtin_formatter(code) == code
 
 
+@pytest.mark.parametrize(
+    "code",
+    [
+        pytest.param(
+            "from pydantic import BaseModel\n"
+            "\n"
+            "\n"
+            "class Pet(BaseModel):\n"
+            '    """A pet."""\n'
+            "\n"
+            "    # Pydantic v2 configuration\n"
+            "    name: str\n"
+            "\n"
+            "    # Custom helpers\n"
+            "    def describe(self) -> str:\n"
+            "        return repr(self)\n",
+            id="class-body-comments",
+        ),
+        pytest.param(
+            "class Pet(BaseModel):\n"
+            "    name: str\n"
+            "    def to_dict(self) -> dict:\n"
+            "        return {}\n"
+            "    @property\n"
+            "    def upper(self) -> str:\n"
+            "        return self.name.upper()\n"
+            "\n"
+            "    class Meta:\n"
+            "        a = 1\n"
+            "\n"
+            "\n"
+            "        b = 2\n",
+            id="class-body-blank-lines",
+        ),
+        pytest.param(
+            "class A:\n"
+            "    def f(self):\n"
+            "        if x:\n"
+            "            y = 1\n"
+            "\n"
+            "\n"
+            "            # stays in the if body\n"
+            "        # in f\n"
+            "      # also in f\n"
+            "    # in A\n"
+            "  # top level\n"
+            "x = 1\n"
+            "def g():\n"
+            "    pass\n"
+            "    # last in g\n",
+            id="comments-closing-blocks",
+        ),
+        pytest.param(
+            "if x:\n"
+            "    def f():\n"
+            "        pass\n"
+            "else:\n"
+            "    pass\n"
+            "try:\n"
+            "    a = 1\n"
+            "\n"
+            "\n"
+            "    # before except\n"
+            "except E:\n"
+            "    pass\n"
+            "# before finally\n"
+            "finally:\n"
+            "    pass\n"
+            "for a in b:\n"
+            "    pass\n"
+            "\n"
+            "# before else\n"
+            "else:\n"
+            "    pass\n"
+            "while x:\n"
+            "    pass\n"
+            "elif_ = 1\n"
+            "if x:\n"
+            "    pass\n"
+            "\n"
+            "\n"
+            "elif y:\n"
+            "    pass\n",
+            id="clause-headers",
+        ),
+        pytest.param(
+            "def f(v):\n"
+            "    match v:\n"
+            "        # first\n"
+            "        case 1:\n"
+            "\n"
+            "            return 1\n"
+            "\n"
+            "\n"
+            "\n"
+            "        case _:\n"
+            "            return 2\n",
+            id="match-cases",
+        ),
+        pytest.param(
+            "import os\n"
+            "# leads A\n"
+            "class A:\n"
+            "    # first in A\n"
+            "    def f(self): ...\n"
+            "    def g(self): ...\n"
+            "    x: int\n"
+            "    # leads h\n"
+            "    @property\n"
+            "    # after the decorator\n"
+            "    def h(self):\n"
+            "        pass\n"
+            "\n"
+            "\n"
+            "# two lines before\n"
+            "\n"
+            "# leads B\n"
+            "@dec\n"
+            "class B:\n"
+            "    pass\n",
+            id="leading-comments",
+        ),
+        pytest.param(
+            "class A:\n"
+            "\n"
+            '    """Doc."""\n'
+            "    x = 1\n"
+            "    def f(self):\n"
+            "\n"
+            '        """Doc."""\n'
+            "        if x:\n"
+            "\n"
+            "            'doc'\n",
+            id="docstrings",
+        ),
+        pytest.param(
+            '"""Module."""\n# comment\n\n\n\nimport os\n\n\n\nx = 1\n',
+            id="module-docstring-and-imports",
+        ),
+        pytest.param(
+            "def f():\n    import os\n    x = 1\n    import sys\n    # after an import\n    y = 2\n",
+            id="imports-in-a-body",
+        ),
+        pytest.param(
+            "# first line\ndef f():\n    pass\n",
+            id="first-line-comment",
+        ),
+    ],
+)
+def test_apply_builtin_formatter_keeps_comments_between_statements_with_black_blank_lines(code: str) -> None:
+    """Keep every comment between statements, in the block black reads it in, and put black's blank lines around it.
+
+    The cases are comments in class bodies and before methods, comments that close blocks at each depth and at the end
+    of the file, comments before clause headers and cases, comment blocks that lead a definition, docstrings, the
+    module docstring before imports and imports in a body.
+    """
+    formatted = apply_builtin_formatter(code)
+    assert formatted == black.format_str(
+        isort.code(code, config=isort.Config(profile="black")), mode=black.FileMode(string_normalization=False)
+    )
+    assert ast.dump(ast.parse(formatted)) == ast.dump(ast.parse(code))
+    assert apply_builtin_formatter(formatted) == formatted
+
+
+def test_apply_builtin_formatter_puts_blank_lines_around_one_line_bodies() -> None:
+    """Put the blank lines black puts once it splits a body off its header, keeping the body on the header's line."""
+    code = "if x: y = 1\nelse: y = 2\n# c\ndef f(): return 1\nclass A: pass\ntry: pass\nfinally: pass\n"
+
+    formatted = apply_builtin_formatter(code)
+
+    assert formatted == (
+        "if x: y = 1\nelse: y = 2\n\n\n# c\ndef f(): return 1\n\n\nclass A: pass\n\n\ntry: pass\nfinally: pass\n"
+    )
+    assert apply_builtin_formatter(formatted) == formatted
+
+
 def test_format_import_node_rejects_unsupported_nodes() -> None:
     """Test direct import node helpers reject unexpected AST nodes."""
     unsupported_node = cast("ast.Import | ast.ImportFrom", ast.parse("pass\n").body[0])
@@ -1141,11 +1319,13 @@ def test_apply_builtin_formatter_wraps_module_subscript_union_element() -> None:
     )
 
 
-def test_apply_builtin_formatter_keeps_one_line_class_annotation_spacing() -> None:
-    """Test post-class annotation spacing ignores one-line classes."""
+def test_apply_builtin_formatter_puts_blank_lines_after_one_line_class() -> None:
+    """Put black's two blank lines after a class whose body stays on its header line."""
     code = "class Model: pass\nModel.__annotations__['__pydantic_extra__'] = Dict[str, int]\n"
 
-    assert apply_builtin_formatter(code) == code
+    assert apply_builtin_formatter(code) == (
+        "class Model: pass\n\n\nModel.__annotations__['__pydantic_extra__'] = Dict[str, int]\n"
+    )
 
 
 def test_apply_builtin_formatter_normalizes_simple_string_quotes() -> None:
