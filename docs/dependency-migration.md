@@ -2,8 +2,7 @@
 
 Black and isort remain the default formatters and required dependencies. All current dependency ranges,
 compatibility code and minimum-version tests remain in place. Generation still continues when formatters are
-omitted. The built-in formatter remains experimental. This page is the migration guide for the planned change of
-the default formatter to `builtin`.
+omitted. This page is the migration guide for the planned change of the default formatter to `builtin`.
 
 ## Timeline
 

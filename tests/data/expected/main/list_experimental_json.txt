@@ -126,15 +126,6 @@
     "tracking_issue": null
   },
   {
-    "id": "formatter.builtin",
-    "kind": "formatter",
-    "message": "The internal formatter is experimental and may change as generated-output coverage is expanded.",
-    "note": "The formatter is designed for generated model modules and is not a general-purpose Python formatter.",
-    "since_version": "0.59.0",
-    "target": "--formatters builtin",
-    "tracking_issue": null
-  },
-  {
     "id": "input-format.asyncapi",
     "kind": "input-format",
     "message": "AsyncAPI input support is experimental and may change as real-world usage is validated.",

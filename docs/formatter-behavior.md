@@ -4,9 +4,10 @@
 
 `datamodel-codegen` formats generated Python code after model generation. The default formatter list is currently `black` and `isort`.
 
-!!! warning "Experimental"
-    The built-in formatter (`--formatters builtin`) is experimental. It matches Black and isort for standard generated
-    code, with the differences listed below, and its output may still change as coverage is expanded.
+!!! note "Stability"
+    The built-in formatter (`--formatters builtin`) matches Black and isort for standard generated code, with the
+    differences listed below. From now on its output changes only to move closer to Black's output, and every such
+    change is announced in the release notes.
 
 This page is the reference for the built-in formatter's exact scope and precedence. For a formatter selection guide,
 see [Code Formatting](formatting.md).

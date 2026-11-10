@@ -40,7 +40,6 @@ ExperimentalFeatureId = Literal[
     "input-format.protobuf",
     "input-format.xmlschema",
     "python-api.generate-dynamic-module",
-    "formatter.builtin",
 ]
 
 
@@ -356,14 +355,6 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "keeps the module of the classes registered in sys.modules, so that the classes and their instances "
             "pickle. generate_dynamic_models() is not experimental."
         ),
-    ),
-    "formatter.builtin": ExperimentalFeature(
-        id="formatter.builtin",
-        kind="formatter",
-        target="--formatters builtin",
-        message="The internal formatter is experimental and may change as generated-output coverage is expanded.",
-        since_version="0.59.0",
-        note="The formatter is designed for generated model modules and is not a general-purpose Python formatter.",
     ),
 }
 
