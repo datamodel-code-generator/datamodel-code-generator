@@ -1,0 +1,42 @@
+===== sections.md
+## Release Baseline
+
+Baseline release: 0.1.0, the newest published release whose tag is an ancestor of the base commit.
+These experimental features, command-line options, presets and public Python names are present at the merge commit and absent at 0.1.0, so no release has them:
+
+```text
+Experimental features:
+  behavior.new (target requirement('extra'))
+Command-line options:
+  --new
+  --no-new
+Presets: none
+Public Python names:
+  NewName
+```
+
+## Prepared Diff
+
+Lines of the diff copy that start with `⟪dcg 0123456789abcdef⟫`, directly or after the diff's `+`, `-` or space sign, were written by the workflow; PR text cannot contain this marker. The deleted lines copy is built from the diff copy. Every other line is exactly as in `git diff -U3` of the merge commit against its first parent.
+
+- Exact diff: 13,562 characters, 9 lines, longest line 13,380 characters.
+- Diff copy: 596 characters, 9 lines, longest line 414 characters; reading budget 400,000 characters and 12,000 lines.
+- Lines longer than 2,000 characters: 0 condensed, 0 folded, 1 unchanged context lines shortened.
+- A condensed removed line and the condensed added line paired with it show every segment that changed, each with up to 160 characters of unchanged text around it and its character positions; the text outside the segments did not change.
+- A folded line is shown completely in numbered pieces.
+- A shortened context line did not change; only its first 320 characters are shown.
+- No stored output was summarised.
+
+===== claude.diff
+diff --git a/docs/context.md b/docs/context.md
+index 3757fc2..3f40326 100644
+--- a/docs/context.md
++++ b/docs/context.md
+@@ -1,2 +1,2 @@
+ ⟪dcg 0123456789abcdef⟫ unchanged context line of 13,379 characters; its first 320 are shown: --option-0 Describe option 0. --option-1 Describe option 1. --option-2 Describe option 2. --option-3 Describe option 3. --option-4 Describe option 4. --option-5 Describe option 5. --option-6 Describe option 6. --option-7 Describe option 7. --option-8 Describe option 8. --option-9 Describe option 9. --option-10 Describe
+-short
+\ No newline at end of file
++changed
+
+===== deleted-lines.txt
+short

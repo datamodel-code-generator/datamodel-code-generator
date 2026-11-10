@@ -1,0 +1,46 @@
+===== sections.md
+## Release Baseline
+
+Baseline release: 0.1.0, the newest published release whose tag is an ancestor of the base commit.
+These experimental features, command-line options, presets and public Python names are present at the merge commit and absent at 0.1.0, so no release has them:
+
+```text
+Experimental features:
+  behavior.new (target requirement('extra'))
+Command-line options:
+  --new
+  --no-new
+Presets: none
+Public Python names:
+  NewName
+```
+
+## Prepared Diff
+
+Lines of the diff copy that start with `⟪dcg 0123456789abcdef⟫`, directly or after the diff's `+`, `-` or space sign, were written by the workflow; PR text cannot contain this marker. The deleted lines copy is built from the diff copy. Every other line is exactly as in `git diff -U3` of the merge commit against its first parent.
+
+- Exact diff: 26,927 characters, 9 lines, longest line 13,384 characters.
+- Diff copy: 1,323 characters, 11 lines, longest line 381 characters; reading budget 400,000 characters and 12,000 lines.
+- Lines longer than 2,000 characters: 2 condensed, 0 folded, 0 unchanged context lines shortened.
+- A condensed removed line and the condensed added line paired with it show every segment that changed, each with up to 160 characters of unchanged text around it and its character positions; the text outside the segments did not change.
+- A folded line is shown completely in numbered pieces.
+- A shortened context line did not change; only its first 320 characters are shown.
+- No stored output was summarised.
+
+===== claude.diff
+diff --git a/docs/bytes.txt b/docs/bytes.txt
+index f16cbde..ca9d637 100644
+--- a/docs/bytes.txt
++++ b/docs/bytes.txt
+@@ -1,2 +1,2 @@
+-short \xff old
+-⟪dcg 0123456789abcdef⟫ condensed removed line of 13,381 characters, paired with the condensed added line of 13,383 characters below; changed segments: 1, each shown with up to 160 characters of unchanged text around it; the rest of both lines is the same and left out
+-⟪dcg 0123456789abcdef⟫ segment 1 of 1, characters 18-337: be option 0. --option-1 Describe option 1. --option-2 Describe option 2. --option-3 Describe option 3. --option-4 Describe option 4. --option-5 Describe option 5. --option-6 Describe option 6. --option-7 Describe option 7. --option-8 Describe option 8. --option-9 Describe option 9. --option-10 Describe option 10. --opt
++short \xff new
++⟪dcg 0123456789abcdef⟫ condensed added line of 13,383 characters, paired with the condensed removed line above; changed segments: 1
++⟪dcg 0123456789abcdef⟫ segment 1 of 1, characters 18-339: be option 0. --option-1 Describe option 1. --option-2 Describe option 2. --option-3 Describe option 3. --option-4 Describe option 4. --option-5 Describe option \xff 5. --option-6 Describe option 6. --option-7 Describe option 7. --option-8 Describe option 8. --option-9 Describe option 9. --option-10 Describe option 10. --opt
+
+===== deleted-lines.txt
+short \xff old
+⟪dcg 0123456789abcdef⟫ condensed removed line of 13,381 characters, paired with the condensed added line of 13,383 characters below; changed segments: 1, each shown with up to 160 characters of unchanged text around it; the rest of both lines is the same and left out
+⟪dcg 0123456789abcdef⟫ segment 1 of 1, characters 18-337: be option 0. --option-1 Describe option 1. --option-2 Describe option 2. --option-3 Describe option 3. --option-4 Describe option 4. --option-5 Describe option 5. --option-6 Describe option 6. --option-7 Describe option 7. --option-8 Describe option 8. --option-9 Describe option 9. --option-10 Describe option 10. --opt
