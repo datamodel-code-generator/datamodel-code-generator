@@ -1136,7 +1136,7 @@ class OpenAPIParser(JsonSchemaParser):
         )
 
     def _operation_enum_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:
-        return bool(site.obj.enum and not self.ignore_enum_constraints and not self._reads_enum_as_const(site.obj))
+        return self._reads_enum_class(site.obj)
 
     def _operation_literal_enum_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:
         """Return whether a body or response enum is a root model of a Literal, as a definition's enum would be.
