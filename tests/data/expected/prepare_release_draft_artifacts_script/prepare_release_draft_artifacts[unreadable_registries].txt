@@ -7,7 +7,8 @@ These experimental features, command-line options, presets and public Python nam
 ```text
 Experimental features: unavailable (the registry cannot be read at one of the two commits, so none is listed)
 Command-line options: unavailable (the registry cannot be read at one of the two commits, so none is listed)
-Presets: none
+Presets:
+  standard-20261106
 Public Python names: unavailable (the registry cannot be read at one of the two commits, so none is listed)
 ```
 

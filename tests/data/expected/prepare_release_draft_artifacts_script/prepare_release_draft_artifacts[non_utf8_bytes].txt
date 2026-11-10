@@ -10,7 +10,8 @@ Experimental features:
 Command-line options:
   --new
   --no-new
-Presets: none
+Presets:
+  standard-20261106
 Public Python names:
   NewName
 ```
