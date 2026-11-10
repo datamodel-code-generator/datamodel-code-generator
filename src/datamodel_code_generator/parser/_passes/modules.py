@@ -91,13 +91,12 @@ from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._model_shapes import REUSE_MODEL
 from datamodel_code_generator.parser._origins import with_field_origin
 from datamodel_code_generator.parser._passes._import_binding import (
+    ModuleImportTarget,
     ReferenceExpressionHost,
     ReimportHost,
     emitting_module_name,
     import_references,
     reimport_module_references,
-    reimport_references,
-    set_reference_expressions,
 )
 from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY, site_constraints, with_unique_items_set
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
@@ -168,6 +167,7 @@ from datamodel_code_generator.parser._passes._shared import (
 from datamodel_code_generator.parser._passes._state import (
     ConfigT,
     ContextT,
+    ModuleImportsView,
     RecursionFacts,
     ResultT,
     _KeptHolder,
@@ -708,25 +708,13 @@ class PlainAliasHost(RuleAliasHost, Protocol):
         """Whether a Pydantic alias whose value is a class that names itself is a plain ``TypeAlias``."""
 
 
-class ModuleStateView(ModuleScopeView, Protocol):
+class ModuleStateView(ModuleScopeView, ModuleImportsView, Protocol):
     """What the module passes read and write of the state of one ``_process_single_module`` call."""
 
     model_list: list[DataModel]
     model_list_before_override_removal: list[DataModel]
     unused_models_start: int
     current_unused_models: Sequence[DataModel]
-
-    @property
-    def imports(self) -> Imports:
-        """The imports of the module."""
-
-    @property
-    def is_init(self) -> bool:
-        """Whether the module is a package ``__init__``."""
-
-    @property
-    def scoped_model_resolver(self) -> ModelResolver:
-        """The resolver of the names the module binds."""
 
     @property
     def unused_models(self) -> list[DataModel]:
@@ -1434,11 +1422,14 @@ def collapse_root_models(  # noqa: PLR0913, PLR0917
             parser,
             models,
             unused_models,
-            imports,
-            scoped_model_resolver,
-            {} if model_path_to_module_name is None else model_path_to_module_name,
-            is_init=is_init,
-            internal_modules=internal_modules or set(),
+            ModuleImportTarget(
+                imports,
+                scoped_model_resolver,
+                {} if model_path_to_module_name is None else model_path_to_module_name,
+                is_init,
+                internal_modules or set(),
+                parser.imports,
+            ),
         )
 
 
@@ -1602,16 +1593,11 @@ def has_other_root_references(parser: CollapseHost, reference: Reference, data_t
     return answer
 
 
-def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
+def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
     parser: CollapseHost,
     models: list[DataModel],
     unused_models: list[DataModel],
-    imports: Imports,
-    scoped_model_resolver: ModelResolver,
-    model_path_to_module_name: dict[str, str],
-    *,
-    is_init: bool,
-    internal_modules: set[ModulePath],
+    module: ModuleImportTarget,
 ) -> None:
     """Collapse the root models that this module's models reference.
 
@@ -1628,6 +1614,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
     alias of an item-count site (``ITEM_COUNTS_SITE_KEY``) is read as the inline array it was up to 0.89.0: a root model
     that names it is inlined as that array was, and its holder names the alias.
     """
+    imports, model_path_to_module_name = module.imports, module.module_names
     generation_store = parser.generation_store
     generation_index = generation_store.index
     graph_builder = parser._graph_builder  # noqa: SLF001
@@ -1852,13 +1839,9 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                 with replacement_context:
                     import_references(
                         parser,
+                        module,
                         model,
                         copied_data_type.all_data_types,
-                        imports,
-                        scoped_model_resolver,
-                        model_path_to_module_name,
-                        init=is_init,
-                        internal_modules=internal_modules,
                         members=None,
                         producer=producer,
                         row="legacy-collapse-internal-module-import",
@@ -1882,17 +1865,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                 ):
                     unused_models.append(root_type_model)
 
-    reimport_module_references(
-        parser,
-        models,
-        redirected_holders,
-        imports,
-        scoped_model_resolver,
-        model_path_to_module_name,
-        init=is_init,
-        internal_modules=internal_modules,
-        row="collapse-root-models",
-    )
+    reimport_module_references(parser, module, models, redirected_holders, row="collapse-root-models")
 
 
 def shared_member_holders(
@@ -2081,7 +2054,13 @@ def settle_kept_parent_roots(parser: CollapseHost, run: ModulesRun) -> None:
                     holder.root_import,
                 ))
         for ctx, redirected_holders in holders_by_module.values():
-            reimport_references(parser, ctx, run, redirected_holders, row="collapse-root-models")
+            reimport_module_references(
+                parser,
+                ModuleImportTarget.of(parser.imports, ctx, run),
+                ctx.models,
+                redirected_holders,
+                row="collapse-root-models",
+            )
         run.unused_models.append(root_model)
 
 
@@ -2939,13 +2918,9 @@ def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) ->
                 producer = ImportProducer("type-dict-keys-by-root-types", model, field)
                 import_references(
                     parser,
+                    ModuleImportTarget.of(parser.imports, state, state),
                     model,
                     root_type.all_data_types,
-                    imports,
-                    state.scoped_model_resolver,
-                    state.model_path_to_module_name,
-                    init=state.is_init,
-                    internal_modules=state.internal_modules,
                     members=None,
                     producer=producer,
                     row="legacy-collapse-internal-module-import",
@@ -3164,10 +3139,10 @@ def name_inner_models_in_rules(parser: CollapseHost, run: ModulesRun) -> None:
         ]
         for _, data_type, inner_reference, _ in rule_users:
             parser._graph_builder.collapse_root_data_type(data_type, inner_reference)  # noqa: SLF001
-        reimport_references(
+        reimport_module_references(
             parser,
-            ctx,
-            run,
+            ModuleImportTarget.of(parser.imports, ctx, run),
+            ctx.models,
             [(model, data_type, root_import) for model, data_type, _, root_import in rule_users],
             row="collapse-root-models",
         )
@@ -3183,29 +3158,25 @@ def change_from_import(parser: ImportFromHost, state: ModuleStateView) -> None:
     models = without_stand_ins(parser, module_members(parser, state.model_list))
     unimported = unimported_model_keys(parser)
     members = keyed_models(models, "module members")
-    imports, scoped_model_resolver = state.imports, state.scoped_model_resolver
-    model_path_to_module_name = state.model_path_to_module_name
+    module = ModuleImportTarget.of(parser.imports, state, state)
+    imports = module.imports
 
     ledger = parser._import_ledger  # noqa: SLF001
     for model in models:
-        ledger.add_name(imports, scoped_model_resolver, [model.path], model.class_name)
+        ledger.add_name(imports, module.resolver, [model.path], model.class_name)
     for model in models:
         producer = ImportProducer("change-from-import", model)
         before_import = model.imports
         ledger.append(imports, before_import, producer)
         if import_references(
             parser,
+            module,
             model,
             (
                 data_type
                 for data_type in _named_data_types(model)
                 if (reference := data_type.reference) is None or model_key_of(reference) not in unimported
             ),
-            imports,
-            scoped_model_resolver,
-            model_path_to_module_name,
-            init=state.is_init,
-            internal_modules=state.internal_modules,
             members=members,
             producer=producer,
         ) and before_import != (after_import := model.imports):
@@ -3391,10 +3362,9 @@ def write_rule_aliases_as_classes(parser: RuleAliasHost, run: ProcessingRun[Any,
         for model in ctx.models:
             if id(model) not in classes:
                 continue
-            set_reference_expressions(
+            import_references(
                 parser,
-                ctx,
-                run,
+                ModuleImportTarget.of(parser.imports, ctx, run),
                 model,
                 (
                     data_type

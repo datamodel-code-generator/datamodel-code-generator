@@ -26,11 +26,12 @@ from datamodel_code_generator.model.enum import Enum
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._import_binding import (
+    ModuleImportTarget,
     ReimportHost,
     generic_base_class_import,
+    import_references,
     register_reference_import,
-    reimport_references,
-    set_reference_expressions,
+    reimport_module_references,
 )
 from datamodel_code_generator.parser._passes._import_edges import generic_base_class_module, inherits_one_of
 from datamodel_code_generator.parser._passes._shared import (
@@ -155,10 +156,9 @@ def _flattener(
         copied = [field for field in model.fields if id(field) not in own_fields]
         ctx = contexts[id(model)]
         ctx.scoped_model_resolver.exclude_names.update(field.name for field in copied if field.name is not None)
-        set_reference_expressions(
+        import_references(
             parser,
-            ctx,
-            run,
+            ModuleImportTarget.of(parser.imports, ctx, run),
             model,
             (data_type for field in copied for data_type in field.data_type.all_data_types),
             members=keyed_models(module_members(parser, ctx.models), "module members"),
@@ -289,6 +289,7 @@ def import_removed_reuse_canonicals(parser: CrossModuleHost, run: CrossModuleRun
         ):
             continue
         members = keyed_models(ctx.models, "module members")
+        module = ModuleImportTarget.of(parser.imports, ctx, run)
         for model in ctx.models:
             for data_type in _named_data_types(model):
                 user, paths = users.get(id(data_type), (None, ()))
@@ -296,10 +297,10 @@ def import_removed_reuse_canonicals(parser: CrossModuleHost, run: CrossModuleRun
                     stale_import := next(filter(None, map(stale_imports.get, paths)), None)
                 ):
                     continue
-                reimport_references(
+                reimport_module_references(
                     parser,
-                    ctx,
-                    run,
+                    module,
+                    ctx.models,
                     [(model, data_type, stale_import)],
                     row="import-removed-reuse-canonicals",
                     members=members,
@@ -352,7 +353,9 @@ def import_renamed_types(parser: CrossModuleHost, run: CrossModuleRun) -> None:
             and keyed_members.key_of(reference) not in keyed_members.models
             and (import_ := _stale_renamed_import(ctx.imports, data_type, renamed_types)) is not None
         ]
-        reimport_references(parser, ctx, run, stale_users, row="import-renamed-types")
+        reimport_module_references(
+            parser, ModuleImportTarget.of(parser.imports, ctx, run), ctx.models, stale_users, row="import-renamed-types"
+        )
 
 
 def _module_qualified_name(reference: Reference, model_path_to_module_name: Mapping[str, str]) -> str:
@@ -380,13 +383,9 @@ def import_enum_member_literal_classes(parser: CrossModuleHost, run: CrossModule
                         reference,
                         _get_model_module_name(model, run.model_path_to_module_name),
                         _module_qualified_name(reference, run.model_path_to_module_name),
-                        ctx.imports,
-                        ctx.scoped_model_resolver,
-                        init=ctx.is_init,
-                        internal_modules=run.internal_modules,
+                        ModuleImportTarget.of(parser.imports, ctx, run),
                         producer=ImportProducer("import-enum-member-literal-classes", model),
                         import_ledger=parser._import_ledger,  # noqa: SLF001
-                        shared_imports=parser.imports,
                     )
                     or reference.short_name
                 )

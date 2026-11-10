@@ -40,7 +40,11 @@ from datamodel_code_generator.model.enum import Enum, Member
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
-from datamodel_code_generator.parser._passes._import_binding import ReferenceExpressionHost, set_reference_expressions
+from datamodel_code_generator.parser._passes._import_binding import (
+    ModuleImportTarget,
+    ReferenceExpressionHost,
+    import_references,
+)
 from datamodel_code_generator.parser._passes._shared import (
     ConstructorInfoHost,
     GenerationStoreHost,
@@ -199,7 +203,7 @@ class InheritedFieldCopies:
 
     contexts: Sequence[ModuleContextView]
     internal_modules: set[ModulePath]
-    model_path_to_module_name: Mapping[str, str]
+    model_path_to_module_name: dict[str, str]
 
 
 def _assigned_key(model: DataModel) -> Callable[[DataModelFieldBase], bool]:
@@ -695,15 +699,15 @@ def copy_inherited_conflicts(  # noqa: PLR0913, PLR0917
     if not inherited.inherited_conflicts:
         return []
     members = keyed_models(module_members(parser, ctx.models), "module members")
+    module = ModuleImportTarget.of(parser.imports, ctx, copies)
     copied_fields: list[DataModelFieldBase] = []
     for field, declaring_model in inherited.inherited_conflicts:
         if id(declaring_model) not in written:
             continue
         copied = parser._copy_model_field(field)  # noqa: SLF001
-        set_reference_expressions(
+        import_references(
             parser,
-            ctx,
-            copies,
+            module,
             model,
             copied.data_type.all_data_types,
             members=members,

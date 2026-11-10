@@ -1,11 +1,11 @@
 """How a module imports a model of another module and writes the expression that names it.
 
 The rule of the import (``reference_import_target``, under an ``ImportPathRow``), the import it adds through the
-module's import ledger (``register_reference_import``), the import of the generated base class
-(``generic_base_class_import``) and the writes of the expression a data type names its model by
-(``set_reference_expression``, ``set_reference_expressions``, ``import_references``), through the generation store, and
-importing again what a module imported under a stale import (``reimport_references``, under a ``ReimportRow``). The
-import path text is ``_module_paths.py``'s (``relative``, ``exact_import``, ``is_ancestor_package_reference``).
+module's import ledger (``register_reference_import``) into a ``ModuleImportTarget``, the import of the generated base
+class (``generic_base_class_import``) and the writes of the expression a data type names its model by
+(``set_reference_expression``, ``import_references``), through the generation store, and importing again what a module
+imported under a stale import (``reimport_module_references``, under a ``ReimportRow``). The import path text is
+``_module_paths.py``'s (``relative``, ``exact_import``, ``is_ancestor_package_reference``).
 """
 
 from __future__ import annotations
@@ -37,14 +37,14 @@ from datamodel_code_generator.parser._passes._shared import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Mapping, Sequence
+    from collections.abc import Collection, Iterable, Sequence
 
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model.base import DataModel
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
-    from datamodel_code_generator.parser._passes._shared import ModuleNamesView, ModuleScopeView
-    from datamodel_code_generator.parser._passes._state import ModuleContextView, ModulePath
+    from datamodel_code_generator.parser._passes._shared import ModuleScopeView
+    from datamodel_code_generator.parser._passes._state import ModuleImportsView, ModulePath
     from datamodel_code_generator.parser.generation import GraphBuilder
     from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataType
@@ -111,6 +111,35 @@ def _is_bound_by_shared_import(shared_imports: Imports | None, name: str) -> boo
 def _is_module_named_like_shared_import(shared_imports: Imports | None, module: str, name: str) -> bool:
     """Return whether ``module``, which is not the ``name`` of the model it holds, is bound by a shared import."""
     return module != name and _is_bound_by_shared_import(shared_imports, module)
+
+
+@final
+@record(eq=False)
+class ModuleImportTarget:
+    """The module that a pass imports models of other modules into, and what of the run it reads for that.
+
+    ``module_names`` gives the module of each model, ``internal_modules`` the ``_internal`` modules of the run and
+    ``shared_imports`` the imports every module writes (``reference_import_target``).
+    """
+
+    imports: Imports
+    resolver: ModelResolver
+    module_names: dict[str, str]
+    init: bool
+    internal_modules: set[ModulePath]
+    shared_imports: Imports
+
+    @classmethod
+    def of(cls, shared_imports: Imports, module: ModuleImportsView, naming: ModuleScopeView) -> ModuleImportTarget:
+        """Return the target of ``module``, with the module names of ``naming`` and the run's ``shared_imports``."""
+        return cls(
+            module.imports,
+            module.scoped_model_resolver,
+            naming.model_path_to_module_name,
+            module.is_init,
+            naming.internal_modules,
+            shared_imports,
+        )
 
 
 def reference_import_target(  # ruff: ignore[too-many-arguments]
@@ -180,40 +209,36 @@ def register_reference_import(  # noqa: PLR0913
     reference: Reference,
     current_module_name: str,
     target_full_name: str,
-    imports: Imports,
-    scoped_model_resolver: ModelResolver,
+    module: ModuleImportTarget,
     *,
-    init: bool,
-    internal_modules: set[tuple[str, ...]],
     base_class: bool = False,
     producer: ImportProducer,
     import_ledger: ModuleImportLedger,
-    shared_imports: Imports,
     row: ImportPathRow = "reference",
     hidden_modules: Collection[tuple[str, ...]] = (),
 ) -> str | None:
-    """Import a reference from another module and return its expression when it is not the class name.
+    """Import a reference from another module into ``module`` and return its expression when it is not the class name.
 
-    A model of the module itself imports nothing and is written by its class name. ``shared_imports`` are the imports
-    every module writes (``reference_import_target``).
+    A model of the module itself imports nothing and is written by its class name.
     """
     name = reference.short_name
+    imports, resolver = module.imports, module.resolver
     target = reference_import_target(
         name,
         current_module_name,
         target_full_name,
         use_exact=imports.use_exact,
-        init=init,
-        internal_modules=internal_modules,
+        init=module.init,
+        internal_modules=module.internal_modules,
         base_class=base_class,
-        shared_imports=shared_imports,
+        shared_imports=module.shared_imports,
         row=row,
         hidden_modules=hidden_modules,
     )
     if target.same_module:
         return None
-    target.reserve_name(scoped_model_resolver)
-    alias = import_ledger.add_name(imports, scoped_model_resolver, target.full_path, target.import_).name
+    target.reserve_name(resolver)
+    alias = import_ledger.add_name(imports, resolver, target.full_path, target.import_).name
     import_ledger.append(
         imports,
         Import(
@@ -266,21 +291,18 @@ class ReferenceExpressionHost(Protocol):
         """Whether dots in schema names make modules."""
 
 
-def set_reference_expression(  # noqa: PLR0913, PLR0917
+def set_reference_expression(  # noqa: PLR0913
     host: ReferenceExpressionHost,
+    module: ModuleImportTarget,
     data_type: DataType,
     current_module_name: str,
     target_full_name: str,
-    imports: Imports,
-    scoped_model_resolver: ModelResolver,
     *,
     same_module: bool,
-    init: bool,
-    internal_modules: set[ModulePath],
     producer: ImportProducer,
     row: ImportPathRow = "reference",
 ) -> bool:
-    """Write how a data type names its reference in the current module, and return whether that changed it.
+    """Write how a data type names its reference in ``module``, and return whether that changed it.
 
     A model the module emits is written by its class name; any other is imported under ``row`` (``ImportPathRow``),
     and written by the expression the import gives when that is not the class name.
@@ -292,14 +314,10 @@ def set_reference_expression(  # noqa: PLR0913, PLR0917
             cast("Reference", data_type.reference),
             current_module_name,
             target_full_name,
-            imports,
-            scoped_model_resolver,
-            init=init,
-            internal_modules=internal_modules,
+            module,
             base_class=isinstance(data_type, BaseClassDataType),
             producer=producer,
             import_ledger=host._import_ledger,  # noqa: SLF001
-            shared_imports=host.imports,
             row=row,
         )
     )
@@ -309,69 +327,34 @@ def set_reference_expression(  # noqa: PLR0913, PLR0917
     return True
 
 
-def set_reference_expressions(  # noqa: PLR0913
+def import_references(  # noqa: PLR0913
     host: ReferenceExpressionHost,
-    ctx: ModuleContextView,
-    naming: ModuleNamesView,
+    module: ModuleImportTarget,
     model: DataModel,
     data_types: Iterable[DataType],
     *,
-    members: KeyedModels | None,
-    producer: ImportProducer,
-) -> None:
-    """Write how each of the ``data_types`` of ``model`` names its reference in the module of ``ctx``.
-
-    A model ``members`` holds is written by its class name, any other is imported (``set_reference_expression``);
-    without ``members`` every one is. ``naming`` gives the module names of ``model`` and of the models named.
-    """
-    import_references(
-        host,
-        model,
-        data_types,
-        ctx.imports,
-        ctx.scoped_model_resolver,
-        naming.model_path_to_module_name,
-        init=ctx.is_init,
-        internal_modules=naming.internal_modules,
-        members=members,
-        producer=producer,
-    )
-
-
-def import_references(  # noqa: PLR0913, PLR0917
-    host: ReferenceExpressionHost,
-    model: DataModel,
-    data_types: Iterable[DataType],
-    imports: Imports,
-    scoped_model_resolver: ModelResolver,
-    model_path_to_module_name: Mapping[str, str],
-    *,
-    init: bool,
-    internal_modules: set[ModulePath],
     members: KeyedModels | None,
     producer: ImportProducer,
     row: ImportPathRow = "reference",
 ) -> bool:
-    """Write how each of the ``data_types`` of ``model`` names its reference in the module of ``imports``.
+    """Write how each of the ``data_types`` of ``model`` names its reference in ``module``, under ``row``.
 
-    ``set_reference_expressions`` with the module's imports, resolver and module names given one by one, under
-    ``row`` (``ImportPathRow``). Return whether an expression changed.
+    A model ``members`` holds is written by its class name, any other is imported (``set_reference_expression``,
+    ``ImportPathRow``); without ``members`` every one is. Return whether an expression changed.
     """
     changed = False
-    current_module_name = _get_model_module_name(model, model_path_to_module_name)
+    module_names = module.module_names
+    current_module_name = _get_model_module_name(model, module_names)
     for data_type in data_types:
         if (reference := data_type.reference) is None:
             continue
         changed |= set_reference_expression(
             host,
+            module,
             data_type,
             current_module_name,
-            _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
-            imports,
-            scoped_model_resolver,
+            _get_data_type_target_full_name(data_type, reference, module_names),
             same_module=members is not None and members.key_of(reference) in members.models,
-            init=init,
-            internal_modules=internal_modules,
             producer=producer,
             row=row,
         )
@@ -379,7 +362,7 @@ def import_references(  # noqa: PLR0913, PLR0917
 
 
 ReimportRow: TypeAlias = Literal["collapse-root-models", "import-renamed-types", "import-removed-reuse-canonicals"]
-"""How a module imports again the models that its data types name under stale imports (``reimport_references``).
+"""How a module imports again the models its data types name under stale imports (``reimport_module_references``).
 
 Each row is the pass that does it, which the imports are recorded under (``ImportProducer``).
 
@@ -432,55 +415,23 @@ def emitting_module_name(
     return _get_model_module_name(model, model_path_to_module_name)
 
 
-def reimport_references(  # noqa: PLR0913
+def reimport_module_references(  # noqa: PLR0913
     host: ReimportHost,
-    ctx: ModuleContextView,
-    naming: ModuleScopeView,
-    stale_users: Sequence[tuple[DataModel, DataType, Import | None]],
-    *,
-    row: ReimportRow,
-    members: KeyedModels | None = None,
-) -> None:
-    """Import again into the module of ``ctx`` what the ``stale_users`` name, under ``row`` (``ReimportRow``).
-
-    ``reimport_module_references`` with the module's models, imports and resolver taken from ``ctx`` and its module
-    names from ``naming``.
-    """
-    reimport_module_references(
-        host,
-        ctx.models,
-        stale_users,
-        ctx.imports,
-        ctx.scoped_model_resolver,
-        naming.model_path_to_module_name,
-        init=ctx.is_init,
-        internal_modules=naming.internal_modules,
-        row=row,
-        members=members,
-    )
-
-
-def reimport_module_references(  # noqa: PLR0913, PLR0917
-    host: ReimportHost,
+    module: ModuleImportTarget,
     models: list[DataModel],
     stale_users: Sequence[tuple[DataModel, DataType, Import | None]],
-    imports: Imports,
-    scoped_model_resolver: ModelResolver,
-    model_path_to_module_name: dict[str, str],
     *,
-    init: bool,
-    internal_modules: set[ModulePath],
     row: ReimportRow,
     members: KeyedModels | None = None,
 ) -> None:
-    """Drop the stale imports of a module, release the names they leave and write how each data type names its model.
+    """Drop the stale imports of ``module``, release the names they leave and write how each data type names its model.
 
     The module's ``models`` give the names its replaced roots leave; ``row`` (``ReimportRow``) says for whom the
     imports are dropped, which names are released and where the models are imported from.
     """
     if not stale_users:
         return
-    ledger = host._import_ledger  # noqa: SLF001
+    ledger, imports, model_path_to_module_name = host._import_ledger, module.imports, module.module_names  # noqa: SLF001
     stale = [(model, stale_import) for model, _, stale_import in stale_users if stale_import is not None]
     if row == "collapse-root-models":
         ledger.remove(imports, [stale_import for _, stale_import in stale], ImportProducer(row))
@@ -493,7 +444,7 @@ def reimport_module_references(  # noqa: PLR0913, PLR0917
             released.difference_update(_iter_import_bindings(imports))
         ledger.release_names(
             imports,
-            scoped_model_resolver,
+            module.resolver,
             released.union(
                 names_left_by_replaced_roots(host, models, keyed_models(module_members(host, models), "module members"))
             ),
@@ -501,18 +452,7 @@ def reimport_module_references(  # noqa: PLR0913, PLR0917
     for model, data_type, _ in stale_users:
         producer = ImportProducer(row, model)
         if row != "collapse-root-models":
-            import_references(
-                host,
-                model,
-                (data_type,),
-                imports,
-                scoped_model_resolver,
-                model_path_to_module_name,
-                init=init,
-                internal_modules=internal_modules,
-                members=members,
-                producer=producer,
-            )
+            import_references(host, module, model, (data_type,), members=members, producer=producer)
             continue
         reference = cast("Reference", data_type.reference)
         holder_module_name = _get_model_module_name(model, model_path_to_module_name)
@@ -523,13 +463,10 @@ def reimport_module_references(  # noqa: PLR0913, PLR0917
         )
         set_reference_expression(
             host,
+            module,
             data_type,
             holder_module_name,
             dotted_name(inner_module_name, reference.short_name),
-            imports,
-            scoped_model_resolver,
             same_module=inner_module_name == holder_module_name,
-            init=init,
-            internal_modules=internal_modules,
             producer=producer,
         )

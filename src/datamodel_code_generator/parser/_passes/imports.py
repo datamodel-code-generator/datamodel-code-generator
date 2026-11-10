@@ -65,6 +65,7 @@ from datamodel_code_generator.model.output import _model_field_name_collisions
 from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._imports_plan import Added, Aliased, ImportProducer, Removed
 from datamodel_code_generator.parser._passes._import_binding import (
+    ModuleImportTarget,
     ReferenceExpressionHost,
     reference_import_target,
     register_reference_import,
@@ -2269,18 +2270,15 @@ def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _Finaliz
             .difference(_iter_import_bindings(parser.imports))
         ):
             ledger.add_name(imports, resolver, get_special_path("import", [name]), name)
+        module = ModuleImportTarget.of(parser.imports, ctx, state)
         for model, data_type, reference, _ in users:
             expression = register_reference_import(
                 reference,
                 _get_model_module_name(model, module_names),
                 _get_data_type_target_full_name(data_type, reference, module_names),
-                imports,
-                resolver,
-                init=ctx.is_init,
-                internal_modules=state.internal_modules,
+                module,
                 producer=ImportProducer(_HIDDEN_SUBMODULES, model),
                 import_ledger=ledger,
-                shared_imports=parser.imports,
                 hidden_modules=modules,
             )
             if data_type.reference is None:
