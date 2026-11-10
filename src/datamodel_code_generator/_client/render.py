@@ -49,7 +49,7 @@ from datamodel_code_generator._client.runtime import (
     declared_helpers,
     declared_security,
 )
-from datamodel_code_generator._client.sockets import SocketSpec
+from datamodel_code_generator._client.sockets import MessageRoute, SocketSpec
 from datamodel_code_generator._client.streams import StreamSpec, discriminator, stream_only
 from datamodel_code_generator._client.uploads import UploadSpec
 from datamodel_code_generator._message_text import english_list, for_count
@@ -3150,19 +3150,26 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
 
     def message_types(self, module: TargetModule, spec: SocketSpec) -> tuple[str, str]:
         """Return the types a WebSocket helper sends and receives: a schema's types, str for text, bytes for bytes."""
-        tree = spec.helper.tree
-        return (
-            self.message_type(module, tree["send"]["codec"], spec.send),
-            self.message_type(module, tree["receive"]["codec"], spec.receive),
-        )
+        return self.message_type(module, spec.sends), self.message_type(module, spec.receives)
 
-    def message_type(self, module: TargetModule, codec: str, use: TypeUseBinding | None) -> str:
-        """Return the type of a WebSocket direction's messages, `Never` where an AsyncAPI channel carries none."""
+    def message_type(self, module: TargetModule, routes: tuple[MessageRoute, ...]) -> str:
+        """Return the type of a WebSocket direction's messages, `Never` where an AsyncAPI channel carries none.
+
+        The type of several messages is the union of theirs, each member once.
+        """
         from datamodel_code_generator._client.protocols import MESSAGE_CODECS  # noqa: PLC0415
 
-        if codec == "none":
+        if not routes:
             return module.name("typing", "Never")
-        return self.resources.surface(module, MESSAGE_CODECS[codec].media, use)
+        if len(routes) == 1:
+            return self.resources.surface(module, MESSAGE_CODECS[routes[0].codec].media, routes[0].use)
+        spelled: list[str] = []
+        for route in routes:
+            if route.use is None or (value := route.use.type) is None:
+                spelled.append(self.resources.surface(module, MESSAGE_CODECS[route.codec].media, route.use))
+            else:
+                spelled.extend(map(module.hint, value.members if isinstance(value, UnionType) else (value,)))
+        return module.union(*spelled)
 
     def socket_plan(self, module: TargetModule, index: int, spec: SocketSpec) -> Plan:
         """Return a WebSocket helper's plan: its identity, handshake call, messages, and subprotocols.
@@ -3177,19 +3184,46 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             *self.linked(module, module.root("_operations"), spec.operation),
             ("fingerprint", stable_repr(self.fingerprints[helper.name])),
         ]
-        for direction, use in (("send", spec.send), ("receive", spec.receive)):
-            message = tree[direction]
-            if message["codec"] != "json":
-                entries.append((f"{direction}_codec", stable_repr(message["codec"])))
-            if message["frame"] != "text":
-                entries.append((f"{direction}_frame", stable_repr(message["frame"])))
+        several = []
+        for direction, routes in (("send", spec.sends), ("receive", spec.receives)):
+            model = "encoder" if direction == "send" else "decoder"
+            if len(routes) > 1:
+                several.append((
+                    f"{direction}_routes",
+                    tuple_display(self.route(module, route, model) for route in routes),
+                ))
+                continue
+            codec, frame, use = (routes[0].codec, routes[0].frame, routes[0].use) if routes else ("none", "text", None)
+            if codec != "json":
+                entries.append((f"{direction}_codec", stable_repr(codec)))
+            if frame != "text":
+                entries.append((f"{direction}_frame", stable_repr(frame)))
             if use is not None:
-                entries.append(("encoder" if direction == "send" else "decoder", self.resources.codec(module, use)))
+                entries.append((model, self.resources.codec(module, use)))
         if subprotocols := tree["subprotocols"]:
             entries.append(("subprotocols", stable_repr(tuple(subprotocols))))
+        entries.extend(several)
+        if (pointer := spec.discriminator) is not None:
+            entries.append(("discriminator", self.selector(module, {"from": "body", "pointer": pointer})))
         sent, received = self.message_types(module, spec)
         annotation = subscript_text(module.name("typing", "Final"), (subscript_text(plan, (sent, received)),))
         return Plan(numbered("SOCKET", index), annotation, plan, _arguments(entries))
+
+    def route(self, module: TargetModule, route: MessageRoute, model: str) -> str:
+        """Return the runtime record of one message of a direction that carries several, naming only what differs."""
+        entries = [
+            (name, stable_repr(value))
+            for name, value, default in (("frame", route.frame, "text"), ("codec", route.codec, "json"))
+            if value != default
+        ]
+        if route.use is not None:
+            entries.append((model, self.resources.codec(module, route.use)))
+        entries.extend(
+            (name, stable_repr(value)) for name, value in (("tag", route.tag), ("key", route.key)) if value is not None
+        )
+        if route.type is not None:
+            entries.append(("type", module.hint(route.type)))
+        return _call(module.local("_runtime.protocols.websocket", "MessageRoute"), entries)
 
     def socket_method(self, module: TargetModule, index: int, spec: SocketSpec, *, asynchronous: bool) -> Function:
         """Return a WebSocket helper's connect method, which takes its operation's parameters and is never awaited."""

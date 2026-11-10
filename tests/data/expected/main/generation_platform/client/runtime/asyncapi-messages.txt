@@ -1,0 +1,66 @@
+# asyncapi-messages pydantic_v2.BaseModel
+  warning UserWarning: <root>/asyncapi_messages_pydantic_v2_basemodel: Skipping channel 'logs', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/logs: the client receives text and JSON messages on it, which a text frame cannot tell apart
+  feed int ! DecodeError: DecodeError(status_code=101, reason='unencodable', location='message') [location=('message',), body_bytes=b'', truncated=False, cause=TypeError] unencodable
+  feed unknown op ! DecodeError: DecodeError(status_code=101, reason='unencodable', location='message') [location=('message',), body_bytes=b'', truncated=False, cause=TypeError] unencodable
+    feed 1 text Trade{'event': 'trade', 'price': 2.5} raw=b'{"event": "trade", "price": 2.5}'
+    feed 2 text Heartbeat{'event': <Event.heartbeat: 'heartbeat'>, 'at': 7} raw=b'{"event": "heartbeat", "at": 7}'
+    feed 3 binary bytesb'\t' raw=b'\t'
+  feed unknown event ! DecodeError: DecodeError(status_code=101, reason='value', location='message.4') [location=('message', 4), body_bytes=b'{"event": "quote"}', truncated=False] value
+  feed missing event ! DecodeError: DecodeError(status_code=101, reason='missing', location='message.1') [location=('message', 1), body_bytes=b'{"price": 1}', truncated=False] missing
+  feed number event ! DecodeError: DecodeError(status_code=101, reason='type', location='message.1') [location=('message', 1), body_bytes=b'{"event": 1}', truncated=False] type
+  feed malformed event ! DecodeError: DecodeError(status_code=101, reason='malformed', location='message.1') [location=('message', 1), body_bytes=b'not json', truncated=False, cause=JSONDecodeError] malformed
+    feed server saw '{"op":"subscribe","channels":["a"]}', '{"op":"unsubscribe","channels":["b"]}', 'ping', b'\x01'
+    server GET /v1/feed [] | closed 1002 ''
+    server GET /v1/feed [] | closed 1002 ''
+    server GET /v1/feed [] | closed 1002 ''
+    server GET /v1/feed [] | closed 1002 ''
+    chat 1 text ChatSayPayload{'text': 'hi'} raw=b'{"text": "hi"}'
+    chat 2 text ChatNotePayload{'level': 2} raw=b'{"level": 2}'
+  chat binary ! DecodeError: DecodeError(status_code=101, reason='type', location='message.3') [location=('message', 3), body_bytes=b'\x00', truncated=False] type
+  chat undecodable ! DecodeError: DecodeError(status_code=101, reason='value', location='message.1') [location=('message', 1), body_bytes=b'{"bogus": 1}', truncated=False, cause=ValidationError] value
+    server GET /v1/chat [] | closed 1002 ''
+    server GET /v1/chat [] | closed 1002 ''
+    orders 1 text OrdersAckPayload{'id': 'o-1'} raw=b'{"id": "o-1"}'
+    orders server saw '{"symbol":"XBT","size":1.0}', '{"id":"o-1"}'
+    server GET /v1/orders [] | closed 1000 ''
+# asyncapi-messages dataclasses.dataclass
+  warning UserWarning: <root>/asyncapi_messages_dataclasses_dataclass: Skipping channel 'chat', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/chat: the client receives JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/asyncapi_messages_dataclasses_dataclass: Skipping channel 'batch', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/batch: the client sends JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/asyncapi_messages_dataclasses_dataclass: Skipping channel 'quotes', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/quotes: the client receives JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/asyncapi_messages_dataclasses_dataclass: Skipping channel 'logs', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/logs: the client receives text and JSON messages on it, which a text frame cannot tell apart
+  feed int ! DecodeError: DecodeError(status_code=101, reason='unencodable', location='message') [location=('message',), body_bytes=b'', truncated=False, cause=TypeError] unencodable
+  feed unknown op ! DecodeError: DecodeError(status_code=101, reason='unencodable', location='message') [location=('message',), body_bytes=b'', truncated=False, cause=TypeError] unencodable
+    feed 1 text Trade{'event': 'trade', 'price': 2.5} raw=b'{"event": "trade", "price": 2.5}'
+    feed 2 text Heartbeat{'event': <Event.heartbeat: 'heartbeat'>, 'at': 7} raw=b'{"event": "heartbeat", "at": 7}'
+    feed 3 binary bytesb'\t' raw=b'\t'
+  feed unknown event ! DecodeError: DecodeError(status_code=101, reason='value', location='message.4') [location=('message', 4), body_bytes=b'{"event": "quote"}', truncated=False] value
+  feed missing event ! DecodeError: DecodeError(status_code=101, reason='missing', location='message.1') [location=('message', 1), body_bytes=b'{"price": 1}', truncated=False] missing
+  feed number event ! DecodeError: DecodeError(status_code=101, reason='type', location='message.1') [location=('message', 1), body_bytes=b'{"event": 1}', truncated=False] type
+  feed malformed event ! DecodeError: DecodeError(status_code=101, reason='malformed', location='message.1') [location=('message', 1), body_bytes=b'not json', truncated=False, cause=JSONDecodeError] malformed
+    feed server saw '{"op":"subscribe","channels":["a"]}', '{"op":"unsubscribe","channels":["b"]}', 'ping', b'\x01'
+    server GET /v1/feed [] | closed 1002 ''
+    server GET /v1/feed [] | closed 1002 ''
+    server GET /v1/feed [] | closed 1002 ''
+    server GET /v1/feed [] | closed 1002 ''
+    orders 1 text OrdersAckPayload{'id': 'o-1'} raw=b'{"id": "o-1"}'
+    orders server saw '{"symbol":"XBT","size":1.0}', '{"id":"o-1"}'
+    server GET /v1/orders [] | closed 1000 ''
+# asyncapi-messages typing.TypedDict
+  warning UserWarning: <root>/asyncapi_messages_typing_typeddict: Skipping channel 'chat', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/chat: the client receives JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/asyncapi_messages_typing_typeddict: Skipping channel 'orders', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/orders: the client sends JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/asyncapi_messages_typing_typeddict: Skipping channel 'batch', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/batch: the client sends JSON messages on it that neither a tag nor a class tells apart, which only Pydantic models code as a union
+  warning UserWarning: <root>/asyncapi_messages_typing_typeddict: Skipping channel 'logs', which uses several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/logs: the client receives text and JSON messages on it, which a text frame cannot tell apart
+  feed int ! DecodeError: DecodeError(status_code=101, reason='unencodable', location='message') [location=('message',), body_bytes=b'', truncated=False, cause=TypeError] unencodable
+  feed unknown op ! DecodeError: DecodeError(status_code=101, reason='unencodable', location='message') [location=('message',), body_bytes=b'', truncated=False, cause=TypeError] unencodable
+    feed 1 text dict{'event': 'trade', 'price': 2.5} raw=b'{"event": "trade", "price": 2.5}'
+    feed 2 text dict{'event': 'heartbeat', 'at': 7} raw=b'{"event": "heartbeat", "at": 7}'
+    feed 3 binary bytesb'\t' raw=b'\t'
+  feed unknown event ! DecodeError: DecodeError(status_code=101, reason='value', location='message.4') [location=('message', 4), body_bytes=b'{"event": "quote"}', truncated=False] value
+  feed missing event ! DecodeError: DecodeError(status_code=101, reason='missing', location='message.1') [location=('message', 1), body_bytes=b'{"price": 1}', truncated=False] missing
+  feed number event ! DecodeError: DecodeError(status_code=101, reason='type', location='message.1') [location=('message', 1), body_bytes=b'{"event": 1}', truncated=False] type
+  feed malformed event ! DecodeError: DecodeError(status_code=101, reason='malformed', location='message.1') [location=('message', 1), body_bytes=b'not json', truncated=False, cause=JSONDecodeError] malformed
+    feed server saw '{"op":"subscribe","channels":["a"]}', '{"op":"unsubscribe","channels":["b"]}', 'ping', b'\x01'
+    server GET /v1/feed [] | closed 1002 ''
+    server GET /v1/feed [] | closed 1002 ''
+    server GET /v1/feed [] | closed 1002 ''
+    server GET /v1/feed [] | closed 1002 ''

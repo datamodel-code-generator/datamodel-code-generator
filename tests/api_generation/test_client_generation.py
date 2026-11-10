@@ -221,6 +221,8 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "asyncapi-foreign-operations",
         "asyncapi-mapped-payloads",
         "asyncapi-escaped-channel-ref",
+        "asyncapi-messages",
+        "asyncapi-messages-aliases",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:

@@ -1,6 +1,6 @@
 # asyncapi-skips-v2
 render pydantic_v2.BaseModel
-  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel '/feed', which uses security requirements (AsyncAPI 2.0), several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/~1feed: its publish operation requires security; /channels/~1feed: the application sends more than one message on it
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel '/feed', which uses security requirements (AsyncAPI 2.0) that the client does not support: /channels/~1feed: its publish operation requires security
   warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel '/avro', which uses message content types (AsyncAPI 2.0) that the client does not support: /channels/~1avro: the payload of message /channels/~1avro/subscribe/message is a application/vnd.apache.avro;version=1.9.0 schema
   warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel '/empty', which uses messages without a payload (AsyncAPI 2.0) that the client does not support: /channels/~1empty: message /channels/~1empty/subscribe/message declares no payload
   warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel '/orders', which uses server protocols (AsyncAPI 2.0) that the client does not support: /channels/~1orders: it is served on no ws or wss server

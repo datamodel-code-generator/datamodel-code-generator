@@ -623,8 +623,10 @@ class AsyncAPIClientFeatures:
     several_messages: bool = _client_feature(
         introduced="AsyncAPI 2.0",
         doc_name="several messages per direction",
-        description="More than one message that an application sends, or receives, on one channel",
-        client_status="not_supported",
+        description="More than one message that an application sends, or receives, on one channel; the client tells "
+        "JSON messages apart by a tag their models declare, else by their class when it sends them, and Pydantic "
+        "models code them as a union; it does not receive text and JSON messages on one channel",
+        client_status="partial",
     )
     operation_replies: bool = _client_feature(
         introduced="AsyncAPI 3.0",

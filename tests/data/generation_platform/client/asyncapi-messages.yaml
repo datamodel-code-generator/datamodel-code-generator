@@ -1,0 +1,247 @@
+asyncapi: 3.0.0
+info:
+  title: Exchange gateway
+  version: 1.0.0
+servers:
+  production:
+    host: gateway.example.com
+    protocol: wss
+channels:
+  feed:
+    address: /v1/feed
+    messages:
+      subscribe:
+        $ref: '#/components/messages/subscribe'
+      unsubscribe:
+        $ref: '#/components/messages/unsubscribe'
+      ping:
+        contentType: text/plain
+        payload:
+          type: string
+      upload:
+        contentType: application/octet-stream
+        payload:
+          type: string
+          format: binary
+      trade:
+        $ref: '#/components/messages/trade'
+      heartbeat:
+        $ref: '#/components/messages/heartbeat'
+      snapshot:
+        contentType: application/octet-stream
+        payload:
+          type: string
+          format: binary
+  chat:
+    address: /v1/chat
+    messages:
+      say:
+        payload:
+          type: object
+          properties:
+            text:
+              type: string
+          required: [text]
+      note:
+        payload:
+          type: object
+          properties:
+            level:
+              type: integer
+          required: [level]
+  orders:
+    address: /v1/orders
+    messages:
+      place:
+        payload:
+          $ref: '#/components/schemas/Place'
+      cancel:
+        payload:
+          $ref: '#/components/schemas/Cancel'
+      ack:
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+          required: [id]
+  batch:
+    address: /v1/batch
+    messages:
+      item:
+        payload:
+          $ref: '#/components/schemas/Item'
+      items:
+        payload:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+      note:
+        contentType: text/plain
+        payload:
+          type: string
+  quotes:
+    address: /v1/quotes
+    messages:
+      bid:
+        payload:
+          $ref: '#/components/schemas/Bid'
+      ask:
+        payload:
+          $ref: '#/components/schemas/Ask'
+  logs:
+    address: /v1/logs
+    messages:
+      line:
+        contentType: text/plain
+        payload:
+          type: string
+      entry:
+        payload:
+          $ref: '#/components/schemas/Item'
+operations:
+  onFeed:
+    action: receive
+    channel:
+      $ref: '#/channels/feed'
+    messages:
+      - $ref: '#/channels/feed/messages/subscribe'
+      - $ref: '#/channels/feed/messages/unsubscribe'
+      - $ref: '#/channels/feed/messages/ping'
+      - $ref: '#/channels/feed/messages/upload'
+  publishFeed:
+    action: send
+    channel:
+      $ref: '#/channels/feed'
+    messages:
+      - $ref: '#/channels/feed/messages/trade'
+      - $ref: '#/channels/feed/messages/heartbeat'
+      - $ref: '#/channels/feed/messages/snapshot'
+  publishChat:
+    action: send
+    channel:
+      $ref: '#/channels/chat'
+  onOrders:
+    action: receive
+    channel:
+      $ref: '#/channels/orders'
+    messages:
+      - $ref: '#/channels/orders/messages/place'
+      - $ref: '#/channels/orders/messages/cancel'
+  publishOrders:
+    action: send
+    channel:
+      $ref: '#/channels/orders'
+    messages:
+      - $ref: '#/channels/orders/messages/ack'
+  onBatch:
+    action: receive
+    channel:
+      $ref: '#/channels/batch'
+  publishQuotes:
+    action: send
+    channel:
+      $ref: '#/channels/quotes'
+  publishLogs:
+    action: send
+    channel:
+      $ref: '#/channels/logs'
+components:
+  messages:
+    subscribe:
+      payload:
+        $ref: '#/components/schemas/Subscribe'
+    unsubscribe:
+      payload:
+        $ref: '#/components/schemas/Unsubscribe'
+    trade:
+      payload:
+        $ref: '#/components/schemas/Trade'
+    heartbeat:
+      payload:
+        $ref: '#/components/schemas/Heartbeat'
+  schemas:
+    Subscribe:
+      type: object
+      properties:
+        op:
+          type: string
+          const: subscribe
+        channels:
+          type: array
+          items:
+            type: string
+      required: [op, channels]
+    Unsubscribe:
+      type: object
+      properties:
+        op:
+          type: string
+          enum: [unsubscribe]
+        channels:
+          type: array
+          items:
+            type: string
+      required: [op, channels]
+    Trade:
+      type: object
+      properties:
+        event:
+          type: string
+          const: trade
+        price:
+          type: number
+      required: [event, price]
+    Heartbeat:
+      type: object
+      properties:
+        event:
+          type: string
+          enum: [heartbeat]
+        at:
+          type: integer
+      required: [event]
+    Place:
+      type: object
+      properties:
+        symbol:
+          type: string
+        size:
+          type: number
+      required: [symbol, size]
+    Cancel:
+      type: object
+      properties:
+        id:
+          type: string
+      required: [id]
+    Item:
+      type: object
+      properties:
+        name:
+          type: string
+      required: [name]
+    BidSide:
+      type: string
+      enum: [bid, ask]
+      const: bid
+    AskSide:
+      type: string
+      enum: [bid, ask]
+      const: ask
+    Bid:
+      type: object
+      properties:
+        side:
+          $ref: '#/components/schemas/BidSide'
+        price:
+          type: number
+      required: [side, price]
+    Ask:
+      type: object
+      properties:
+        side:
+          $ref: '#/components/schemas/AskSide'
+        price:
+          type: number
+      required: [side, price]

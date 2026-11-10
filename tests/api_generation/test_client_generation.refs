@@ -132,6 +132,14 @@ asyncapi-market-v3	main/generation_platform/client/packages/asyncapi-market-v3/m
 asyncapi-market-v3	main/generation_platform/client/packages/asyncapi-market-v3/pydantic_v2_BaseModel//*.py
 asyncapi-market-v3	main/generation_platform/client/packages/asyncapi-market-v3/pydantic_v2_dataclass//*.py
 asyncapi-market-v3	main/generation_platform/client/packages/asyncapi-market-v3/typing_TypedDict//*.py
+asyncapi-messages	main/generation_platform/client/asyncapi-messages.txt
+asyncapi-messages	main/generation_platform/client/packages/asyncapi-messages/dataclasses_dataclass//*.py
+asyncapi-messages	main/generation_platform/client/packages/asyncapi-messages/msgspec_Struct//*.py
+asyncapi-messages	main/generation_platform/client/packages/asyncapi-messages/pydantic_v2_BaseModel//*.py
+asyncapi-messages	main/generation_platform/client/packages/asyncapi-messages/pydantic_v2_dataclass//*.py
+asyncapi-messages	main/generation_platform/client/packages/asyncapi-messages/typing_TypedDict//*.py
+asyncapi-messages-aliases	main/generation_platform/client/asyncapi-messages-aliases.txt
+asyncapi-messages-aliases	main/generation_platform/client/packages/asyncapi-messages-aliases/pydantic_v2_BaseModel//*.py
 asyncapi-perspective	main/generation_platform/client/asyncapi-perspective.txt
 asyncapi-perspective	main/generation_platform/client/packages/asyncapi-perspective/pydantic_v2_BaseModel//*.py
 asyncapi-relative-v2	main/generation_platform/client/asyncapi-relative-v2.txt
