@@ -3905,3 +3905,19 @@ def test_builtin_formatter_lays_out_statements_as_black_does() -> None:
 def test_builtin_formatter_leaves_unsupported_statements_as_they_are(code: str, line_length: int) -> None:
     """Leave a statement whose constructs the line splitter does not lay out as it is."""
     assert apply_builtin_formatter(code, line_length=line_length) == code
+
+
+def test_builtin_formatter_keeps_a_line_not_indented_by_fours_as_it_is() -> None:
+    """Lay out no logical line whose indent is not a multiple of four; the formatter re-indents a module before."""
+    line = "  value = function_name(first_argument, second_argument)"
+    assert (
+        builtin_formatter.format_logical_line(line, line_length=20, wrap_string_literal=False, assignment=True) is None
+    )
+
+
+def test_builtin_formatter_places_blank_lines_after_a_decorator_split_in_a_class() -> None:
+    """Start a decorated method at its ``@`` line when the decorator's expression starts on a later line."""
+    code = "class A:\n    @(\n        d)\n    def f(self):\n        pass\n    x = 1\n"
+    assert (
+        apply_builtin_formatter(code) == "class A:\n    @(\n        d)\n    def f(self):\n        pass\n\n    x = 1\n"
+    )
