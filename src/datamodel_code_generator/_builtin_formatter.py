@@ -10,7 +10,7 @@ from collections import defaultdict
 from enum import IntEnum
 from functools import partial
 from io import StringIO
-from typing import TYPE_CHECKING, Any, NamedTuple, TypeGuard
+from typing import TYPE_CHECKING, Any, NamedTuple, TypeAlias, TypeGuard
 
 from datamodel_code_generator._builtin_line_split import format_logical_line, str_width
 from datamodel_code_generator._constraint_applicability import json_integer
@@ -69,6 +69,14 @@ class _ImportNames(NamedTuple):
 
 
 _PLAIN_NAMES = _ImportNames()
+
+_DIGIT_RUN = re.compile(r"(\d+)")
+_NaturalKey: TypeAlias = "tuple[tuple[str | int, ...], str]"
+
+
+def _natural_key(text: str) -> _NaturalKey:
+    """Order ``text`` like isort's ``naturally``: digit runs compare as numbers, the text itself breaks ties."""
+    return tuple(int(part) if part.isdigit() else part for part in _DIGIT_RUN.split(text)), text
 
 
 _DEF_PREFIXES = ("class ", "def ", "async def ")
@@ -189,7 +197,7 @@ def _alias_imported_name(alias: str) -> str:
     return alias
 
 
-def _alias_sort_key(alias: str, names: _ImportNames = _PLAIN_NAMES) -> tuple[_AliasSortCategory, str]:
+def _alias_sort_key(alias: str, names: _ImportNames = _PLAIN_NAMES) -> tuple[_AliasSortCategory, _NaturalKey]:
     name = names.restore(_alias_imported_name(alias))
     target = names.python_version
     if len(name) > 1 and is_upper(name, target):
@@ -198,7 +206,7 @@ def _alias_sort_key(alias: str, names: _ImportNames = _PLAIN_NAMES) -> tuple[_Al
         category = _AliasSortCategory.CLASS
     else:
         category = _AliasSortCategory.OTHER
-    return category, lower(name, target)
+    return category, _natural_key(lower(name, target))
 
 
 def _format_from_import(module: str, aliases: list[str], line_length: int) -> str:
@@ -406,19 +414,21 @@ def _iter_aliased_from_import_lines(
         yield _format_from_import(module, chunk, line_length)
 
 
-def _import_line_sort_key(line: str, names: _ImportNames = _PLAIN_NAMES) -> tuple[int, int, str, int, str, str]:
+def _import_line_sort_key(
+    line: str, names: _ImportNames = _PLAIN_NAMES
+) -> tuple[int, int, _NaturalKey, int, _NaturalKey, _NaturalKey]:
     line = names.restore(line)
     target = names.python_version
+    line_key = _natural_key(lower(line, target))
     if not line.startswith("from "):
-        return 0, 0, lower(line, target), 0, "", line
+        return 0, 0, line_key, 0, _natural_key(""), line_key
 
     module, _, imported = line.removeprefix("from ").partition(" import ")
     level, relative_module = relative_level(module)
     alias_category, alias_name = _alias_sort_key(imported.removeprefix("(").split(",", 1)[0].strip(), names)
-    line_key = lower(line, target)
     if level:
-        return 1, -level, lower(relative_module, target), int(alias_category), alias_name, line_key
-    return 1, 0, lower(module, target), int(alias_category), alias_name, line_key
+        return 1, -level, _natural_key(lower(relative_module, target)), int(alias_category), alias_name, line_key
+    return 1, 0, _natural_key(lower(module, target)), int(alias_category), alias_name, line_key
 
 
 def _build_builtin_import_block(
