@@ -18,10 +18,7 @@ from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any, TypedDict
 
-try:
-    import tomllib
-except ImportError:
-    import tomli as tomllib
+import tomllib
 
 ROOT_DIR = Path(__file__).parent.parent
 DOCS_DIR = ROOT_DIR / "docs"
