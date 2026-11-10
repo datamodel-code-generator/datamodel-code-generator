@@ -449,7 +449,8 @@ The AsyncAPI features the generated Python client plans itself; a channel that u
 
 | Feature | Introduced | Client | Description |
 |---------|------------|--------|-------------|
-| `server protocols` | AsyncAPI 2.0 | ⚠️ Partial | The protocol of a server; the client opens the channels of `ws` and `wss` servers only |
+| `server protocols` | AsyncAPI 2.0 | ⚠️ Partial | The protocol of a server; the client opens the channels of `ws` and `wss` servers as WebSockets, and the server-sent event channels of `http`, `https` and `sse` servers |
+| `server-sent event channels` | AsyncAPI 2.0 | ⚠️ Partial | A channel that carries `text/event-stream` messages, its own or a trait's, or that no `ws` or `wss` server serves and an `sse` server serves or whose `http` binding fixes `Accept` or `Content-Type` to `text/event-stream`; the client opens it with a GET, whose query and header parameters are those of the `http` bindings of the channel and its operations, and receives the JSON data of each of its messages until the stream ends, without reconnecting; it does not receive other content types on it or open it with another method |
 | `server variables` | AsyncAPI 2.0 | ⚠️ Partial | The variables of a server's URL; the client substitutes each by its `default`, which OpenAPI requires and AsyncAPI does not |
 | `channels without an address` | AsyncAPI 3.0 | ❌ Not Supported | A channel whose `address` is null or absent, which the client cannot open |
 | `WebSocket channel bindings` | AsyncAPI 2.0 | ⚠️ Partial | `bindings.ws` of a channel; the client opens GET handshakes, with the properties of objects `query` and `headers` as parameters, and the values a `Sec-WebSocket-Protocol` header fixes as the subprotocols it offers |

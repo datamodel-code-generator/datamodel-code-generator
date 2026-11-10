@@ -713,7 +713,7 @@ class ClientResource:
 
 @dataclass(frozen=True, slots=True)
 class ClientChannel:
-    """A client's attribute that opens an AsyncAPI channel: its name, its WebSocket helper's class, and docstring."""
+    """A client's attribute that opens an AsyncAPI channel: its name, the class of its helper, and docstring."""
 
     name: str
     class_name: str
@@ -1070,10 +1070,11 @@ def exports(spec: OperationSpec) -> tuple[str, ...]:
 def _response_type(module: TargetModule, spec: OperationSpec) -> str:
     """Return an operation's response alias as a module spells it, imported from its resource's types package.
 
-    The handshake of an AsyncAPI channel has no resource and declares no response: its result is None.
+    The handshake of an AsyncAPI channel has no resource. A WebSocket's declares no response, so its result is None,
+    and the GET of a server-sent event channel answers with the event stream, a text response: its result is str.
     """
     if spec.contract.id.kind == "channel":
-        return "None"
+        return "str" if spec.responses else "None"
     return module.local(f"types.{spec.resource}", response_alias(spec.pascal))
 
 
@@ -1299,7 +1300,8 @@ class _Resources(_Typing):
     ) -> None:
         """Keep the typing context, unpacked methods' TypedDicts, protocol helpers, and the bodies raw calls take.
 
-        `channels` are the client's attributes of the WebSocket helpers of AsyncAPI channels, their classes unprefixed.
+        `channels` are the client's attributes of the WebSocket and SSE helpers of AsyncAPI channels, their classes
+        unprefixed.
 
         An operation method's docstring is its configured description, else, with `use_schema_description`, the
         operation's summary and description, else its route, formatted as the models' docstrings are.
@@ -2406,6 +2408,8 @@ _PAGE_CALLS: Final = ("first_page", "iterate_pages", "following_page", "resume_p
 _POLLING: Final = "_runtime.protocols.polling"
 _UPLOADS: Final = "_runtime.protocols.uploads"
 _STREAMS: Final = "_runtime.protocols.streams"
+_CHANNEL_KINDS: Final = {"websocket": "WebSocket", "sse": "server-sent event"}
+"""How a docstring names an AsyncAPI channel, by the kind of the helper that opens it."""
 _CACHE: Final = "_runtime.protocols.cache"
 
 
@@ -3339,6 +3343,7 @@ class ClientRenderer:
             resumes=any(spec.reopen is not None for spec in self.streams),
             sockets=bool(self.sockets),
             channels=self.channels,
+            stream_channels=self.channels and bool(self.streams),
             perspective=config.asyncapi_perspective,
             kinds=sorted({spec.helper.kind for spec in self.helpers}),
             compression=json.dumps(accepted, indent=2, ensure_ascii=True)
@@ -3549,9 +3554,10 @@ class ClientRenderer:
                 ClientChannel(
                     spec.helper.name,
                     _helper_class(spec.helper.name, spec.helper.kind, self.batch.names.python_version),
-                    f"The WebSocket channel at {escape_docstring(spec.operation.contract.path)}.",
+                    f"The {_CHANNEL_KINDS[spec.helper.kind]} channel at "
+                    f"{escape_docstring(spec.operation.contract.path)}.",
                 )
-                for spec in self.sockets
+                for spec in sorted((*self.sockets, *self.streams), key=lambda spec: spec.operation.contract.order)
                 if self.channels
             ),
             types=self.types,

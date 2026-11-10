@@ -33,8 +33,12 @@ async def main() -> None:
 {% if example.placeholders %}
 Replace each `...` with a value of the type its argument declares{% if not channels %}; [Operations](#operations) lists the arguments of each method{% endif %}.
 {%- endif %}
-{%- if channels %}
+{%- if channels and not stream_channels %}
 Each WebSocket channel of the API is an attribute of the client, such as `{{ example.helper }}`, whose `connect` opens it, as [Protocol helpers](#protocol-helpers) describes.
+{%- elif channels and sockets %}
+Each channel of the API is an attribute of the client, such as `{{ example.helper }}`: a WebSocket channel's `connect` opens it, and a server-sent event channel's `open` returns its event stream, as [Protocol helpers](#protocol-helpers) describes.
+{%- elif channels %}
+Each server-sent event channel of the API is an attribute of the client, such as `{{ example.helper }}`, whose `open` returns its event stream, as [Protocol helpers](#protocol-helpers) describes.
 {%- elif example.helper %}
 No operation of the API is a plain request and response, so the example calls `{{ example.operation }}` through its protocol helper `{{ example.helper }}`, as [Protocol helpers](#protocol-helpers) describes.
 {%- else %}
@@ -56,8 +60,11 @@ See [Authentication]({{ reference }}#authentication) in the runtime reference.
 ## Base URL and servers
 
 Without `base_url`, a call sends to the first server generation resolved for its operation, with the default of each server variable{% if example %}: `{{ example.server }}` for `{{ example.operation }}`{% endif %}.
-{% if channels -%}
+{% if channels and (sockets or not stream_channels) -%}
 A channel's servers are the `ws` and `wss` servers of the AsyncAPI document that serve it, as `http` and `https` URLs, which its handshake is sent to.
+{%- if stream_channels %} A server-sent event channel's are its `http`, `https` and `sse` servers, which the GET that opens its stream is sent to.{% endif %}
+{%- elif channels -%}
+A channel's servers are the `http`, `https` and `sse` servers of the AsyncAPI document that serve it, which the GET that opens its stream is sent to.
 {%- else -%}
 An operation's servers are the OpenAPI `servers` of the operation, its path item, or the document; one without them takes the `--client-default-base-url` of the generation.
 {%- endif %}
@@ -143,7 +150,7 @@ This package has no operations.
 
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
 {%- if channels %}
-Each is the helper of an AsyncAPI channel, which the client also holds as `client.<name>`; generation read the document as its {{ perspective }}'s (`--client-asyncapi-perspective {{ perspective }}`), so the client sends what the {% if perspective == "server" %}server receives and receives what it sends{% else %}document's client sends and receives what it receives{% endif %}.
+Each is the helper of an AsyncAPI channel, which the client also holds as `client.<name>`; {% if sockets %}generation read the document as its {{ perspective }}'s (`--client-asyncapi-perspective {{ perspective }}`), so on a WebSocket channel the client sends what the {% if perspective == "server" %}server receives and receives what it sends{% else %}document's client sends and receives what it receives{% endif %}{% if stream_channels %}, and it receives every message of a server-sent event channel, which flows from the server only{% endif %}{% else %}the client receives every message of a server-sent event channel, which flows from the server only{% endif %}.
 {%- endif %}
 {%- if stream_label %}
 An {{ stream_label }} helper's `open` sends its operation in a session of its own and returns an event stream once the

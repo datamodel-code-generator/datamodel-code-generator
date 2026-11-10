@@ -28,6 +28,7 @@ from tests.api_generation.scenarios.client_asyncapi_sockets import (
     asyncapi_subclass_sends,
     asyncapi_union_sends,
 )
+from tests.api_generation.scenarios.client_asyncapi_streams import asyncapi_event_unions, asyncapi_events
 from tests.api_generation.scenarios.client_auth_errors import auth_errors
 from tests.api_generation.scenarios.client_auth_flows import auth_flows
 from tests.api_generation.scenarios.client_auth_values import auth_parameters, auth_shared_wire, auth_values
@@ -1004,6 +1005,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
         ("pydantic_v2.BaseModel", "typing.TypedDict"),
         asyncapi_connections,
     ),
+    "asyncapi-events": ("asyncapi-events", ("pydantic_v2.BaseModel", "msgspec.Struct"), asyncapi_events),
+    "asyncapi-event-unions": ("asyncapi-events", ("pydantic_v2.BaseModel",), asyncapi_event_unions),
     "protocol-errors": ("pets-protocols", ("pydantic_v2.BaseModel",), protocol_errors),
     "cache": ("caching", ("pydantic_v2.BaseModel",), caching),
     "cache-stores": ("caching-oauth", ("pydantic_v2.BaseModel",), cache_stores),

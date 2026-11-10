@@ -257,6 +257,10 @@ _SEQUENCES: Final = cast(
     {kind: kind.__name__ for kind in (list, tuple, set, frozenset)},
 )
 _SLOT: Final = "\x00"
+_BOUND: Final = {"websocket": "ws", "sse": "http"}
+"""The binding of a channel that gives its handshake inputs, by how a client opens the channel."""
+_STREAM_STATUS: Final = "200"
+_EVENT_STREAM: Final = "text/event-stream"
 _STYLE: Final = ("use_union_operator", "use_standard_collections", "use_generic_container", "python_version")
 _UNCHECKED: Final[frozenset[BackendName | None]] = frozenset({"dataclass", "typeddict"})
 _ALONE: Final[dict[str, object]] = {
@@ -4169,7 +4173,11 @@ class _Contracts(_Octets):
         return None if target is None or target.document not in self.documents.ids else target
 
     def channel(self, document: str, read: ReadChannel, order: int) -> ChannelContract:
-        """Bind one channel: its handshake, a GET of its address on its WebSocket servers, and its messages."""
+        """Bind one channel: its handshake, a GET of its address on its servers, and its messages.
+
+        The handshake of a server-sent event stream declares a 200 response of `text/event-stream`, which its events
+        are read from, as a stream answers the GET that opens it.
+        """
         locate = self.documents.location
         use_site = SchemaLocation(document, read.use_site)
         declaration = SchemaLocation(document, read.declaration)
@@ -4185,7 +4193,7 @@ class _Contracts(_Octets):
         )
         skips = tuple(starmap(ChannelSkip, read.skips))
         if read.address is None:
-            return ChannelContract(locate(use_site, "use"), read.name, None, messages, skips)
+            return ChannelContract(locate(use_site, "use"), read.name, None, messages, skips, kind=read.kind)
         raw = as_mapping(self.documents.borrow(declaration))
         servers: list[YamlValue] = [
             {"url": server.url, **({"variables": variables} if (variables := _used_variables(server)) else {})}
@@ -4219,14 +4227,29 @@ class _Contracts(_Octets):
                     self.address_parameter(identity, use_site, declaration, name, declared.get(name))
                     for name in dict.fromkeys(path_placeholders(read.address))
                 ),
-                *(self.handshake_parameter(identity, use_site, parameter) for parameter in read.handshake),
+                *(
+                    self.handshake_parameter(identity, use_site, parameter, _BOUND[read.kind])
+                    for parameter in read.handshake
+                ),
             ),
             None,
-            (),
+            () if read.kind == "websocket" else (self._stream_response(declaration, use_site),),
             (),
             (),
         )
-        return ChannelContract(locate(use_site, "use"), read.name, handshake, messages, skips, read.subprotocols)
+        return ChannelContract(
+            locate(use_site, "use"), read.name, handshake, messages, skips, read.subprotocols, read.kind
+        )
+
+    def _stream_response(self, declaration: SchemaLocation, use_site: SchemaLocation) -> WireDeclaration:
+        """Return the response of the GET that opens a server-sent event stream: a 200 of `text/event-stream`."""
+        locate = self.documents.location
+        declared = DeclarationId(locate(declaration, "declaration"))
+        response = use_site.child("responses", _STREAM_STATUS)
+        media = WireDeclaration(
+            "media", _EVENT_STREAM, declared, locate(response.child("content", _EVENT_STREAM), "use"), ()
+        )
+        return WireDeclaration("response", _STREAM_STATUS, declared, locate(response, "use"), (), children=(media,))
 
     def payload(self, document: str, tokens: tuple[str, ...], ref: str | None) -> SourceLocation | None:
         """Return the location of the schema a message's payload binds as: that a lone `$ref` names, or its own."""
@@ -4276,12 +4299,13 @@ class _Contracts(_Octets):
         )
 
     def handshake_parameter(
-        self, owner: OperationId, use_site: SchemaLocation, parameter: ReadHandshakeParameter
+        self, owner: OperationId, use_site: SchemaLocation, parameter: ReadHandshakeParameter, binding: str
     ) -> WireDeclaration:
         """Bind a query or header parameter of a channel's handshake, typed as the models type its property.
 
         The binding's object is a model, so each of its properties is a field, whose type is the parameter's, as a
-        model gives an OpenAPI parameter's schema its type, and whose default and keywords are the parameter's.
+        model gives an OpenAPI parameter's schema its type, and whose default and keywords are the parameter's. It is
+        used at the channel's binding of its protocol, `binding`.
         """
         declared = SchemaLocation(use_site.document, parameter.schema)
         self.binder.declaration_types.setdefault(declared, self.property_type(declared))
@@ -4289,7 +4313,7 @@ class _Contracts(_Octets):
         self.parser.schema_records.setdefault(
             declared, _SchemaRecord(_default(written.get("default")), _keywords(written))
         )
-        used = use_site.child("bindings", "ws", parameter.location, parameter.name)
+        used = use_site.child("bindings", binding, parameter.location, parameter.name)
         use = self.use_id(
             owner, "parameter", declared, used, declared, location=parameter.location, name=parameter.name
         )

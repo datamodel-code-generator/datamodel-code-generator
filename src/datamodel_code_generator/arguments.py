@@ -2116,8 +2116,8 @@ target_options.add_argument(
     "--client-asyncapi-perspective",
     choices=_values(ClientAsyncAPIPerspective),
     default=None,
-    help="Read an AsyncAPI document as the server's (default), whose sends the client receives, or as the client's "
-    "(experimental).",
+    help="Read an AsyncAPI document as the server's (default), whose sends the client receives, or as the client's, "
+    "for its WebSocket channels; the client receives every message of a server-sent event channel (experimental).",
 )
 target_options.add_argument(
     "--client-protocols",

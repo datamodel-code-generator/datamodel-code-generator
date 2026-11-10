@@ -13,7 +13,7 @@ import models
 from .._runtime.client.client import ClientCore as ClientCore_1
 from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.websocket import WebSocketSession, connect_socket
-from ..options import RequestOptions
+from ..options import UNSET, RequestOptions
 from . import WSOptions, _plans
 
 
@@ -38,6 +38,16 @@ class ProtocolHelpers:
     def secondary(self) -> SecondaryWebsocket:
         """The secondary WebSocket helper."""
         return SecondaryWebsocket(self._core)
+
+    @cached_property
+    def v1_mirror(self) -> V1MirrorWebsocket:
+        """The v1_mirror WebSocket helper."""
+        return V1MirrorWebsocket(self._core)
+
+    @cached_property
+    def v1_levels(self) -> V1LevelsWebsocket:
+        """The v1_levels WebSocket helper."""
+        return V1LevelsWebsocket(self._core)
 
 
 class V1DeskRegionWebsocket:
@@ -108,6 +118,56 @@ class SecondaryWebsocket:
             self._core,
             _plans.SOCKET_2,
             (),
+            ws_options=ws_options,
+            options=options,
+        )
+
+
+class V1MirrorWebsocket:
+    """The v1_mirror WebSocket helper of channel /v1/mirror."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    def connect(
+        self,
+        *,
+        ws_options: WSOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> WebSocketSession[
+        Never, models.QuotePayload | models.AckPayload | models.ReceiptPayload
+    ]:
+        """Open the WebSocket of channel /v1/mirror, returning once its handshake got a valid 101."""
+        return connect_socket(
+            self._core,
+            _plans.SOCKET_3,
+            (),
+            ws_options=ws_options,
+            options=options,
+        )
+
+
+class V1LevelsWebsocket:
+    """The v1_levels WebSocket helper of channel /v1/levels."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    def connect(
+        self,
+        *,
+        depth: int | UNSET = UNSET,
+        side: str | UNSET = UNSET,
+        ws_options: WSOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> WebSocketSession[Never, models.QuotePayload | models.AckPayload]:
+        """Open the WebSocket of channel /v1/levels, returning once its handshake got a valid 101."""
+        return connect_socket(
+            self._core,
+            _plans.SOCKET_4,
+            (depth, side),
             ws_options=ws_options,
             options=options,
         )

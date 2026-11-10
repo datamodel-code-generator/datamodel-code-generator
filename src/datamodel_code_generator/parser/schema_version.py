@@ -584,7 +584,19 @@ class AsyncAPIClientFeatures:
     server_protocols: bool = _client_feature(
         introduced="AsyncAPI 2.0",
         doc_name="server protocols",
-        description="The protocol of a server; the client opens the channels of `ws` and `wss` servers only",
+        description="The protocol of a server; the client opens the channels of `ws` and `wss` servers as "
+        "WebSockets, and the server-sent event channels of `http`, `https` and `sse` servers",
+        client_status="partial",
+    )
+    server_sent_events: bool = _client_feature(
+        introduced="AsyncAPI 2.0",
+        doc_name="server-sent event channels",
+        description="A channel that carries `text/event-stream` messages, its own or a trait's, or that no `ws` or "
+        "`wss` server serves and an `sse` server serves or whose `http` binding fixes `Accept` or `Content-Type` to "
+        "`text/event-stream`; the client opens it with a GET, whose query and header parameters are those of the "
+        "`http` bindings of the channel and its operations, and receives the JSON data of each of its messages until "
+        "the stream ends, without reconnecting; it does not receive other content types on it or open it with another "
+        "method",
         client_status="partial",
     )
     server_variables: bool = _client_feature(

@@ -6389,5 +6389,43 @@
       "pydantic_v2.BaseModel": [["client", "_client.py"], ["client", "protocols", "_plans.py"], ["client", "protocols", "_helpers.py"]],
       "typing.TypedDict": [["client", "protocols", "_plans.py"]]
     }
+  },
+  "asyncapi-events": {
+    "input": "asyncapi-events.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+    "modules": {
+      "pydantic_v2.BaseModel": true,
+      "pydantic_v2.dataclass": [["client", "protocols", "_plans.py"]],
+      "dataclasses.dataclass": [["client", "protocols", "_plans.py"]],
+      "typing.TypedDict": [["client", "protocols", "_plans.py"]],
+      "msgspec.Struct": [["client", "protocols", "_plans.py"]]
+    }
+  },
+  "asyncapi-events-v2": {
+    "input": "asyncapi-events-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "_client.py"], ["client", "_operations.py"], ["client", "protocols", "_helpers.py"], ["client", "protocols", "_plans.py"]]
+  },
+  "asyncapi-events-skips": {
+    "input": "asyncapi-events-skips.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "_client.py"]]
+  },
+  "asyncapi-events-client": {
+    "input": "asyncapi-events-skips.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "config": {"asyncapi_perspective": "client"},
+    "modules": [["client", "protocols", "_helpers.py"]]
+  },
+  "asyncapi-server-schemes": {
+    "input": "asyncapi-server-schemes.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "_client.py"], ["client", "_operations.py"]]
+  },
+  "asyncapi-server-schemes-v2": {
+    "input": "asyncapi-server-schemes-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "_operations.py"]]
   }
 }

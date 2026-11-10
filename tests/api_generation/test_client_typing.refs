@@ -62,6 +62,7 @@ DataModelType.TypingTypedDict-modelless-bodies	main/generation_platform/client/t
 DataModelType.TypingTypedDict-no-success	main/generation_platform/client/typing/no-success.txt
 DataModelType.TypingTypedDict-no-success-unpack	main/generation_platform/client/typing/no-success.txt
 [test_client_typing_package]
+asyncapi-events	main/generation_platform/client/typing/pydantic_v2-BaseModel-asyncapi-events.txt	= main/generation_platform/client/typing/no-success.txt
 asyncapi-market-v3	main/generation_platform/client/typing/pydantic_v2-BaseModel-asyncapi-market-v3.txt	= main/generation_platform/client/typing/no-success.txt
 naming	main/generation_platform/client/typing/pydantic_v2-BaseModel-naming.txt	= main/generation_platform/client/typing/no-success.txt
 naming-snake	main/generation_platform/client/typing/pydantic_v2-BaseModel-naming-snake.txt	= main/generation_platform/client/typing/no-success.txt

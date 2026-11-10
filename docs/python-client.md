@@ -1440,7 +1440,7 @@ as they do with `--generate-server`. Use `--check` in CI to fail when the packag
 
 ### Requirements
 
-The client reads an OpenAPI document, or the WebSocket channels of an AsyncAPI document with
+The client reads an OpenAPI document, or the WebSocket and server-sent event channels of an AsyncAPI document with
 `--input-file-type asyncapi`, as [AsyncAPI](asyncapi.md#generate-a-client) describes; the rest of this guide describes
 OpenAPI input. Like the server, the client needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python
 version. As for the server, a setting the client needs that you leave unset takes the value it needs, and a value you

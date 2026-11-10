@@ -628,19 +628,19 @@ class MessageContract:
     """One message of an AsyncAPI channel, which the described application sends or receives.
 
     `payload` is the location of the schema its payload binds as: the payload's own, or the schema a payload that is
-    only a `$ref` names. `codec` is how the message travels: `json` coded by the payload's models, `utf8` text, or
-    `bytes`.
+    only a `$ref` names. `codec` is how the message travels: `json` coded by the payload's models, `utf8` text,
+    `bytes`, or `event`, a server-sent event whose data the payload's models decode as JSON.
     """
 
     declaration: SourceLocation
     action: Literal["send", "receive"]
-    codec: Literal["json", "utf8", "bytes"]
+    codec: Literal["json", "utf8", "bytes", "event"]
     payload: SourceLocation | None
 
 
 @dataclass(frozen=True, slots=True)
 class ChannelSkip:
-    """Why a client opens no WebSocket for a channel: the client feature it uses (None for none), and a message."""
+    """Why a client does not open a channel: the client feature it uses (None for none), and a message."""
 
     feature: str | None
     message: str
@@ -648,10 +648,11 @@ class ChannelSkip:
 
 @dataclass(frozen=True, slots=True)
 class ChannelContract:
-    """An AsyncAPI channel, which a client opens as a WebSocket through its handshake, a GET operation.
+    """An AsyncAPI channel, which a client opens through its handshake, a GET operation, as `kind` says.
 
-    `name` is the channel's id (AsyncAPI 3) or address (AsyncAPI 2). `handshake` is None where a skip leaves no
-    address to open. `subprotocols` are those the handshake offers.
+    A `websocket` channel's handshake upgrades to a WebSocket, and an `sse` channel's answers with a server-sent event
+    stream. `name` is the channel's id (AsyncAPI 3) or address (AsyncAPI 2). `handshake` is None where a skip leaves
+    no address to open. `subprotocols` are those the handshake offers.
     """
 
     use_site: SourceLocation
@@ -660,6 +661,7 @@ class ChannelContract:
     messages: tuple[MessageContract, ...]
     skips: tuple[ChannelSkip, ...]
     subprotocols: tuple[str, ...] = ()
+    kind: Literal["websocket", "sse"] = "websocket"
 
 
 @dataclass(frozen=True, slots=True)
