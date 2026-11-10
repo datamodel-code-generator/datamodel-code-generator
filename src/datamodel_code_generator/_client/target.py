@@ -59,6 +59,7 @@ from datamodel_code_generator._target_contract import (
     GenericType,
     UnionType,
     label,
+    request_media,
 )
 from datamodel_code_generator._target_documents import canonical_bytes, sha256, shown
 from datamodel_code_generator._target_module import TargetModule, TypeNames
@@ -125,16 +126,19 @@ class ClientTarget:
         """Plan the selected operations, bind their codecs, and render the package.
 
         An operation that only its own declarations refuse, and that no enabled helper calls, is left out with a warning
-        that names the OpenAPI features it uses that the client does not support, and the others are planned again. A
-        refusal stays an error, with the findings of the operations skipped before it, when anything else is refused
-        too, or nothing is left. The channels of an AsyncAPI input are opened as WebSocket and SSE helpers instead
-        (`channel_protocols`), and a channel is left out the same way, also for what its document declares, and for
-        what its client would send on a server-sent event stream (`directed`); when every channel is left out so, their
-        findings are the error.
+        that names the OpenAPI features it uses that the client does not support, and the others are planned again.
+        When each of its findings lies in a media of its request body and another media remains, only those media are
+        left out instead, with a warning each, and the operation is planned again with the others (`_kept`); the
+        operation skipped later reports their findings with its own. A refusal stays an error, with the findings of the
+        operations skipped before it, when anything else is refused too, or nothing is left. The channels of an
+        AsyncAPI input are opened as WebSocket and SSE helpers instead (`channel_protocols`), and a channel is left out
+        the same way, also for what its document declares, and for what its client would send on a server-sent event
+        stream (`directed`); when every channel is left out so, their findings are the error.
         """
         config = request.config
         assert isinstance(config, ClientGenerationConfig)
         skipped: list[tuple[str, list[Diagnostic]]] = []
+        left_out: dict[OperationId, list[tuple[str, str, list[Diagnostic]]]] = {}
         protocols: Protocols | None = None
         opened: dict[OperationId, ChannelContract] = {}
         if (channels := request.batch.channels) is None:
@@ -169,28 +173,87 @@ class ClientTarget:
             APIGenerationError,
         ):
             refused = _refused(rendered, request.operations, called)
-            if refused is None or len(refused) == len(request.operations):
-                earlier = (item for _, found in skipped for item in found)
-                diagnostics = (*earlier, *rendered.diagnostics)
+            kept = {} if refused is None else {key: _kept(*value) for key, value in refused.items()}
+            if refused is None or (len(refused) == len(request.operations) and not any(kept.values())):
+                diagnostics = (*(item for _, found in skipped for item in found), *rendered.diagnostics)
                 raise APIGenerationError(diagnostics, option_prefix=rendered.option_prefix) from None
-            skipped.extend(
-                (subjects.get(operation.id) or _operation(operation), found) for operation, found in refused.values()
-            )
-            request = replace(request, operations=tuple(item for item in request.operations if item.id not in refused))
-        output = shown(config.output, request.shown_root).as_posix()
-        for subject, found in skipped:
-            features = ", ".join(
-                dict.fromkeys(
-                    feature_label(item.feature, asyncapi=channels is not None) for item in found if item.feature
-                )
-            )
-            why = (
-                f"which uses {features} that the client does not support"
-                if features
-                else "which the client cannot generate"
-            )
-            warn(f"{output}: Skipping {subject}, {why}: {error_text(found)}", stacklevel=2)
+            for identity, (operation, found) in refused.items():
+                subject = subjects.get(identity) or _operation(operation)
+                if (narrowed := kept[identity]) is None:
+                    earlier = [item for _, _, media_found in left_out.pop(identity, ()) for item in media_found]
+                    skipped.append((subject, [*earlier, *found]))
+                else:
+                    left_out.setdefault(identity, []).extend((subject, *media) for media in narrowed[1])
+            request = replace(request, operations=_narrowed(request.operations, kept))
+        _warn(shown(config.output, request.shown_root).as_posix(), skipped, left_out, asyncapi=channels is not None)
         return rendered
+
+
+def _narrowed(
+    operations: tuple[OperationContract, ...],
+    kept: Mapping[OperationId, tuple[OperationContract, list[tuple[str, list[Diagnostic]]]] | None],
+) -> tuple[OperationContract, ...]:
+    """Return the operations without those skipped, each refused one that keeps media in the form `_kept` gives."""
+    narrowed: list[OperationContract] = []
+    for operation in operations:
+        if operation.id not in kept:
+            narrowed.append(operation)
+        elif (found := kept[operation.id]) is not None:
+            narrowed.append(found[0])
+    return tuple(narrowed)
+
+
+def _warn(
+    output: str,
+    skipped: list[tuple[str, list[Diagnostic]]],
+    left_out: Mapping[OperationId, list[tuple[str, str, list[Diagnostic]]]],
+    *,
+    asyncapi: bool,
+) -> None:
+    """Warn of each operation or channel skipped, then of each request body media left out, with its findings."""
+    for subject, found in skipped:
+        warn(f"{output}: Skipping {subject}, {_why(found, asyncapi=asyncapi)}: {error_text(found)}", stacklevel=3)
+    for subject, name, found in (media for operation in left_out.values() for media in operation):
+        why = _why(found, asyncapi=asyncapi)
+        warn(f"{output}: Leaving out the {name} media of {subject}, {why}: {error_text(found)}", stacklevel=3)
+
+
+def _why(found: list[Diagnostic], *, asyncapi: bool) -> str:
+    """Return why a warning leaves something out: the features its findings use that the client does not support."""
+    features = ", ".join(
+        dict.fromkeys(feature_label(item.feature, asyncapi=asyncapi) for item in found if item.feature)
+    )
+    return f"which uses {features} that the client does not support" if features else "which the client cannot generate"
+
+
+def _kept(
+    operation: OperationContract, found: list[Diagnostic]
+) -> tuple[OperationContract, list[tuple[str, list[Diagnostic]]]] | None:
+    """Return an operation without the request body media its findings all lie in, with each one's findings.
+
+    A finding lies in a media when it refuses that media's type use, or is located within its declaration. None when
+    a finding lies in no media of the request body, or no media would remain.
+    """
+    media = request_media(operation)
+    by_name: dict[str, list[Diagnostic]] = {}
+    for item in found:
+        pointer = item.source_pointer or ""
+        name = item.media or next(
+            (
+                child.name
+                for child in media
+                if pointer == (site := child.use_site.pointer) or pointer.startswith(f"{site}/")
+            ),
+            None,
+        )
+        if name is None:
+            return None
+        by_name.setdefault(name, []).append(item)
+    remaining = tuple(child for child in media if child.name not in by_name)
+    if not remaining:
+        return None
+    assert operation.request_body is not None
+    return replace(operation, request_body=replace(operation.request_body, children=remaining)), list(by_name.items())
 
 
 def _operation(operation: OperationContract) -> str:
@@ -384,10 +447,12 @@ def _backend_dependencies(backend: CodecBackend, model_imports: frozenset[str]) 
 def _wire(request: TargetRequest, batch: GeneratedTypeContractBatch, *, brackets: bool) -> WirePlan:
     """Plan the parameters and headers of the selected operations, with the member plans of their forms.
 
-    With `brackets`, a deepObject query parameter or URL-encoded form member is written in the bracket form.
+    The operations are planned as the request holds them, without the request body media left out. With `brackets`, a
+    deepObject query parameter or URL-encoded form member is written in the bracket form.
     """
+    selected = {operation.id: operation for operation in request.operations}
     return plan_wire(
-        batch,
+        replace(batch, operations=tuple(selected.get(operation.id, operation) for operation in batch.operations)),
         [
             *(use for operation in request.operations for use in operation_uses(operation)),
             *encoding_header_uses(request),

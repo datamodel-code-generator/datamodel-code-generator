@@ -5,7 +5,7 @@ The targets keep their own scopes and forms, such as the client's resources and 
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Final, TypeVar
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
@@ -177,10 +177,16 @@ def binding_problem(
 
 
 def raise_selected(diagnostics: Iterable[CodecDiagnostic], selected: Iterable[OperationId]) -> None:
-    """Refuse, at the binding stage, the codec diagnostics of the whole document and of the selected operations."""
+    """Refuse, at the binding stage, the codec diagnostics of the whole document and of the selected operations.
+
+    A diagnostic of a request body's type use names the media it refuses.
+    """
     operations = {None, *selected}
     if problems := tuple(
-        binding_problem(item.code, item.message, item.source, item.operation, item.feature)
+        replace(
+            binding_problem(item.code, item.message, item.source, item.operation, item.feature),
+            media=next((use.media for use in item.uses if use.role.startswith("request")), None),
+        )
         for item in diagnostics
         if item.operation in operations
     ):

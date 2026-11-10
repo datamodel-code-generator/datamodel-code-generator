@@ -23509,6 +23509,20 @@ A security alternative that needs such a scheme is left out instead while the op
 a `bearer` alternative beside a `digest` one: the operation is generated, and a call sends the credentials of an
 alternative the client keeps.
 
+Likewise, a request body media type the client cannot write is left out while the body declares another one, such as an
+`application/x-www-form-urlencoded` media whose schema has object-valued properties beside an `application/json` media
+of the same schema: the operation is generated with the other media types, and a `UserWarning` names each media type
+left out and why:
+
+```text
+app/client: Leaving out the application/x-www-form-urlencoded media of POST /kits (operationId 'postKit'), which uses
+Structured style values (OAS 3.0) that the client does not support: /components/schemas/Kit/properties/allowAddition:
+A parameter value needs one unambiguous scalar kind
+```
+
+When no media type of the body remains, the operation is left out as above, and its warning names the findings of
+every media type.
+
 The generated client has no method, type, or documentation for it. The client package omits only its client code:
 the model files are generated from the whole document, so they can still hold the types the left-out operation used,
 such as the model of its request body or of a parameter's schema. Generation still stops with `Error:` and exit
