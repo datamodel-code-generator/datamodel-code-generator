@@ -96,7 +96,39 @@ paths:
                 data: {type: string, format: binary}
       responses:
         '204': {description: Posted.}
+  /kits:
+    post:
+      operationId: postKit
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Kit'}
+          application/x-www-form-urlencoded:
+            schema: {$ref: '#/components/schemas/Kit'}
+          multipart/related:
+            schema: {$ref: '#/components/schemas/Kit'}
+      responses:
+        '204': {description: Posted.}
+  /bundles:
+    post:
+      operationId: postBundle
+      requestBody:
+        content:
+          multipart/related:
+            schema: {$ref: '#/components/schemas/Kit'}
+          application/x-www-form-urlencoded:
+            schema: {$ref: '#/components/schemas/Kit'}
+      responses:
+        '204': {description: Posted.}
 components:
+  schemas:
+    Kit:
+      type: object
+      properties:
+        allowAddition:
+          type: object
+          properties:
+            value: {type: boolean}
   securitySchemes:
     clientCertificate: {type: mutualTLS}
     digestAuth: {type: http, scheme: digest}

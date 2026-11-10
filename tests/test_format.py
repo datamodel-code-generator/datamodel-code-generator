@@ -1186,23 +1186,11 @@ def test_apply_builtin_formatter_puts_blank_lines_around_one_line_bodies() -> No
             id="inline",
         ),
         pytest.param(
-            "#!/usr/bin/env python\n"
-            "#c\n"
-            "#!x\n"
-            "#:x\n"
-            "##x\n"
-            "#'x\n"
-            "#  two\n"
-            "#\n"
-            "x = 1 #type:int\n"
-            "y = [  #a\n"
-            "    1,#b\n"
-            "    #c\n"
-            "]\n",
+            "#!/usr/bin/env python\n#c\n#!x\n#:x\n##x\n#'x\n#  two\n#\nx = 1 #i\ny = [  #a\n    1,#b\n    #c\n]\n",
             id="exceptions-and-brackets",
         ),
         pytest.param(
-            "x = 1 # fmt: skip\ny = 2  #type: ignore[x]  # noqa\nz = f'{x}' #f\n#\u00a0nbsp\nw = 3 #\u00a0type: int\n",
+            "y = 2  #type: ignore[x]  # noqa\nz = f'{x}' #f\n#\u00a0nbsp\nw = 3 #\u00a0type: int\n",
             id="directives-type-comments-no-break-spaces",
         ),
         pytest.param("def f():\n    #c\n    return 1 #r\n", id="function-body"),
@@ -1212,12 +1200,22 @@ def test_apply_builtin_formatter_writes_comments_like_black(code: str) -> None:
     """Write two spaces before an inline comment and one after the hash, with black's exceptions.
 
     ``#!``, ``#:``, ``##`` and ``#'`` stay, type comments are spelled ``# type: <value>``, a leading no-break space
-    becomes a space, and a comment with a ``fmt`` directive stays as it is.
+    becomes a space.
     """
     formatted = apply_builtin_formatter(code)
     assert formatted == black.format_str(code, mode=black.FileMode(string_normalization=False))
     assert ast.dump(ast.parse(formatted)) == ast.dump(ast.parse(code))
     assert apply_builtin_formatter(formatted) == formatted
+
+
+def test_apply_builtin_formatter_spaces_type_comments_like_the_pinned_black() -> None:
+    """Write ``# type: <value>`` for a type comment, as the pinned black does (black 24 keeps ``# type:int``)."""
+    assert apply_builtin_formatter("x = 1 #type:int\n") == "x = 1  # type: int\n"
+
+
+def test_apply_builtin_formatter_keeps_fmt_skip_lines_like_the_pinned_black() -> None:
+    """Keep a ``# fmt: skip`` line as written, as the pinned black does (black 24 respaces its comment)."""
+    assert apply_builtin_formatter("x = 1 # fmt: skip\n") == "x = 1 # fmt: skip\n"
 
 
 def test_apply_builtin_formatter_keeps_comments_of_code_it_cannot_tokenize() -> None:
@@ -3907,3 +3905,31 @@ def test_builtin_formatter_lays_out_statements_as_black_does() -> None:
 def test_builtin_formatter_leaves_unsupported_statements_as_they_are(code: str, line_length: int) -> None:
     """Leave a statement whose constructs the line splitter does not lay out as it is."""
     assert apply_builtin_formatter(code, line_length=line_length) == code
+
+
+def test_builtin_formatter_keeps_a_line_not_indented_by_fours_as_it_is() -> None:
+    """Lay out no logical line whose indent is not a multiple of four; the formatter re-indents a module before."""
+    line = "  value = function_name(first_argument, second_argument)"
+    assert (
+        builtin_formatter.format_logical_line(line, line_length=20, wrap_string_literal=False, assignment=True) is None
+    )
+
+
+def test_builtin_formatter_keeps_indentation_it_cannot_rewrite_validly() -> None:
+    """Keep the indentation when re-indenting would break the code, as with a backslash-only continuation line."""
+    code = "class A:\n  x = 1\n  \\\n  y = 2\n"
+    assert apply_builtin_formatter(code) == code
+
+
+def test_builtin_formatter_keeps_comments_of_newer_target_code_as_written() -> None:
+    """Keep the comments of code the running Python cannot parse, such as a PEP 701 f-string on Python 3.11."""
+    code = 'x = f"{d["#key"]}"\n'
+    assert apply_builtin_formatter(code, python_version=PythonVersion.PY_312) == code
+
+
+def test_builtin_formatter_places_blank_lines_after_a_decorator_split_in_a_class() -> None:
+    """Start a decorated method at its ``@`` line when the decorator's expression starts on a later line."""
+    code = "class A:\n    @(\n        d)\n    def f(self):\n        pass\n    x = 1\n"
+    assert (
+        apply_builtin_formatter(code) == "class A:\n    @(\n        d)\n    def f(self):\n        pass\n\n    x = 1\n"
+    )

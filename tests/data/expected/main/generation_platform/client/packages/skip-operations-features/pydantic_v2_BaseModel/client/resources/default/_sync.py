@@ -7,12 +7,15 @@ from __future__ import annotations
 
 from contextlib import AbstractContextManager
 from functools import cached_property
+from typing import Literal
+
+import models
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import RequestOptions
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
-from ...types.default import GetHealthResponse, ListSignedResponse
+from ...types.default import GetHealthResponse, ListSignedResponse, PostKitResponse
 
 
 class DefaultResource:
@@ -65,6 +68,24 @@ class DefaultResource:
             options=options,
         ).data
 
+    def post_kit(
+        self,
+        *,
+        body: models.Kit | UNSET = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> PostKitResponse:
+        """
+        Call POST /kits.
+        """
+        return self._core.execute(
+            _operations.OPERATION_2,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        ).data
+
 
 class DefaultWithResponse:
     """The default operations, returning each result with its response metadata."""
@@ -98,6 +119,24 @@ class DefaultWithResponse:
         return self._core.execute(
             _operations.OPERATION_1,
             (),
+            options=options,
+        )
+
+    def post_kit(
+        self,
+        *,
+        body: models.Kit | UNSET = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[PostKitResponse]:
+        """
+        Call POST /kits.
+        """
+        return self._core.execute(
+            _operations.OPERATION_2,
+            (),
+            body=body,
+            media_type=media_type,
             options=options,
         )
 
@@ -137,6 +176,24 @@ class DefaultWithRawResponse:
             options=options,
         )
 
+    def post_kit(
+        self,
+        *,
+        body: models.Kit | UNSET = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """
+        Call POST /kits.
+        """
+        return self._core.execute_raw(
+            _operations.OPERATION_2,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
 
 class DefaultWithStreamingResponse:
     """The default operations, returning blocks that send each call on entry and stream its response."""
@@ -170,5 +227,23 @@ class DefaultWithStreamingResponse:
         return self._core.stream(
             _operations.OPERATION_1,
             (),
+            options=options,
+        )
+
+    def post_kit(
+        self,
+        *,
+        body: models.Kit | UNSET = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """
+        Call POST /kits.
+        """
+        return self._core.stream(
+            _operations.OPERATION_2,
+            (),
+            body=body,
+            media_type=media_type,
             options=options,
         )

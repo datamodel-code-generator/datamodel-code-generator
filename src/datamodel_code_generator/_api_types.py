@@ -73,6 +73,8 @@ class Diagnostic:
     artifact_path: str | None = None
     feature: str | None = None
     """The field of `OpenAPISchemaFeatures` naming the OpenAPI feature that a target does not support here."""
+    media: str | None = None
+    """The content key of the request body media of `operation` whose type use it refuses."""
 
 
 class APIGenerationError(Error):

@@ -1084,7 +1084,7 @@ class _BlankLinePlacer:
             previous_end = self.previous[0]
             if start <= previous_end:
                 self.tracker.add(flags, depth, 0)
-                self.previous = max(previous_end, end), *self.previous[1:]
+                self.previous = max(previous_end, end), self.previous[1], self.previous[2]
                 continue
             line = self.lines[start - 1]
             indent = line[: len(line) - len(line.lstrip(" \t"))]
@@ -1809,7 +1809,8 @@ def _apply_builtin_formatter(  # noqa: PLR0913, PLR0914
     lent: HostIdentifiers | None,
 ) -> str:
     python_version = names.python_version
-    lines = _split_python_lines(_normalize_comments(_strip_line_ends(normalize_newlines(code), line_length)))
+    stripped = _strip_line_ends(normalize_newlines(code), line_length)
+    lines = _split_python_lines(_normalize_comments(stripped))
     start = 0
     while start < len(lines) and not lines[start]:
         start += 1
@@ -1821,12 +1822,16 @@ def _apply_builtin_formatter(  # noqa: PLR0913, PLR0914
 
     tree, source_is_valid = _parse_builtin_code_with_source_validity(code, python_version)
     if tree is None:
-        return f"{code}\n"
+        # Code that does not parse (also newer-target syntax the running Python cannot read) keeps its comments as
+        # written: the tokenizer may read part of a string as a comment.
+        written = "\n".join(_split_python_lines(stripped)).strip("\n")
+        return f"{written}\n"
     if _is_misindented(tree, lines):
-        code = _strip_line_ends(_reindented(code), line_length)
-        lines = _split_python_lines(code)
-        tree, source_is_valid = _parse_builtin_code_with_source_validity(code, python_version)
-        tree = cast("ast.Module", tree)
+        reindented = _strip_line_ends(_reindented(code), line_length)
+        reindented_tree, reindented_is_valid = _parse_builtin_code_with_source_validity(reindented, python_version)
+        if reindented_tree is not None:
+            code, tree, source_is_valid = reindented, reindented_tree, reindented_is_valid
+            lines = _split_python_lines(code)
     if (
         string_normalization
         and (normalized := _normalize_string_quotes_if_needed(code, source_is_valid=source_is_valid)) != code
