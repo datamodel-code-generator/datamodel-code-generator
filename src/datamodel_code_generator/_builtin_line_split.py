@@ -504,10 +504,15 @@ def _is_one_sequence_between(
     leaves: list[_Leaf],
     brackets: tuple[int, int] = (token.LPAR, token.RPAR),
 ) -> bool:
+    """Return whether the brackets hold one element or none, black's ``is_one_sequence_between``.
+
+    ``opening`` is looked up from the end of ``leaves``, where the brackets being appended or split close: a line holds
+    each leaf once, and the search from the start made long lines quadratic.
+    """
     if (opening.type, closing.type) != brackets:
         return False
     depth = closing.bracket_depth + 1
-    opening_index = next(index for index, leaf in enumerate(leaves) if leaf is opening)
+    opening_index = next(index for index in range(len(leaves) - 1, -1, -1) if leaves[index] is opening)
     commas = 0
     for leaf in leaves[opening_index + 1 :]:
         if leaf is closing:
