@@ -1569,6 +1569,83 @@ def _strip_line_ends(code: str, line_length: int) -> str:
     return "".join(pieces)
 
 
+_COMMENT_EXCEPTIONS = " !:#'"
+_FMT_DIRECTIVES = frozenset({
+    "# fmt: off",
+    "# fmt:off",
+    "# yapf: disable",
+    "# fmt: skip",
+    "# fmt:skip",
+    "# fmt: on",
+    "# fmt:on",
+    "# yapf: enable",
+})
+_F_STRING_STARTS = frozenset(
+    getattr(tokenize, name) for name in ("FSTRING_START", "TSTRING_START") if hasattr(tokenize, name)
+)
+_F_STRING_ENDS = frozenset(
+    getattr(tokenize, name) for name in ("FSTRING_END", "TSTRING_END") if hasattr(tokenize, name)
+)
+
+
+def _is_type_comment(text: str) -> bool:
+    return text.startswith("#") and text[1:].lstrip().startswith("type:")
+
+
+def _has_fmt_directive(comment: str) -> bool:
+    """Return whether ``comment`` holds a ``fmt``/``yapf`` directive, alone or among others, as black reads it."""
+    return (
+        comment in _FMT_DIRECTIVES
+        or any(f"# {part.strip()}" in _FMT_DIRECTIVES for part in comment.split("# ")[1:])
+        or any(f"# {part.strip()}" in _FMT_DIRECTIVES for part in comment.strip("# ").split(";"))
+    )
+
+
+def _black_comment(comment: str) -> str:
+    """Return ``comment`` as black writes it: one space after the hash, except before ``!``, ``:``, ``#``, ``'``.
+
+    A type comment is spelled ``# type: <value>`` and a leading no-break space becomes a space.
+    """
+    content = comment[1:]
+    if content[:1] == "\N{NO-BREAK SPACE}" and not _is_type_comment(f"# {content.lstrip()}"):
+        content = f" {content[1:]}"
+    if "\N{NO-BREAK SPACE}" not in content and _is_type_comment(f"#{content}"):
+        type_part, value_part = content.split(":", 1)
+        content = f"{type_part.strip()}: {value_part.strip()}"
+    if content and content[0] not in _COMMENT_EXCEPTIONS:
+        content = f" {content}"
+    return f"#{content}"
+
+
+def _normalize_comments(code: str) -> str:
+    """Write each comment as black does, with two spaces between code and a comment after it.
+
+    A comment in an f-string's replacement field, and the spacing before a comment with a ``fmt`` directive, stay as
+    they are. Code the tokenizer rejects stays as it is.
+    """
+    if "#" not in code:
+        return code
+    lines = code.split("\n")
+    f_string_depth = 0
+    try:
+        for token in tokenize.generate_tokens(StringIO(code).readline):
+            if token.type in _F_STRING_STARTS:
+                f_string_depth += 1
+            elif token.type in _F_STRING_ENDS:
+                f_string_depth -= 1
+            elif token.type == tokenize.COMMENT and not f_string_depth:
+                if _has_fmt_directive(token.string):
+                    continue
+                row, column = token.start
+                line = lines[row - 1]
+                comment = _black_comment(token.string)
+                code_before = line[:column].rstrip()
+                lines[row - 1] = f"{code_before}  {comment}" if code_before else f"{line[:column]}{comment}"
+    except (tokenize.TokenError, SyntaxError):
+        return code
+    return "\n".join(lines)
+
+
 def _strip_ends_before_last(text: str) -> str:
     """Strip the end of every line of ``text`` but the last, which a string literal continues."""
     *complete, last = text.split("\n")
@@ -1586,7 +1663,7 @@ def _apply_builtin_formatter(  # noqa: PLR0913, PLR0914
     lent: HostIdentifiers | None,
 ) -> str:
     python_version = names.python_version
-    lines = _split_python_lines(_strip_line_ends(normalize_newlines(code), line_length))
+    lines = _split_python_lines(_normalize_comments(_strip_line_ends(normalize_newlines(code), line_length)))
     start = 0
     while start < len(lines) and not lines[start]:
         start += 1

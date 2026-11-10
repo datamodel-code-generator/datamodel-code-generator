@@ -1177,6 +1177,61 @@ def test_apply_builtin_formatter_puts_blank_lines_around_one_line_bodies() -> No
     assert apply_builtin_formatter(formatted) == formatted
 
 
+@pytest.mark.parametrize(
+    "code",
+    [
+        pytest.param(
+            "class Pet(BaseModel):\n    name: str #note\n    kind: str | None = None# End of class\n",
+            id="inline",
+        ),
+        pytest.param(
+            "#!/usr/bin/env python\n"
+            "#c\n"
+            "#!x\n"
+            "#:x\n"
+            "##x\n"
+            "#'x\n"
+            "#  two\n"
+            "#\n"
+            "x = 1 #type:int\n"
+            "y = [  #a\n"
+            "    1,#b\n"
+            "    #c\n"
+            "]\n",
+            id="exceptions-and-brackets",
+        ),
+        pytest.param(
+            "x = 1 # fmt: skip\ny = 2  #type: ignore[x]  # noqa\nz = f'{x}' #f\n#\u00a0nbsp\nw = 3 #\u00a0type: int\n",
+            id="directives-type-comments-no-break-spaces",
+        ),
+        pytest.param("def f():\n    #c\n    return 1 #r\n", id="function-body"),
+    ],
+)
+def test_apply_builtin_formatter_writes_comments_like_black(code: str) -> None:
+    """Write two spaces before an inline comment and one after the hash, with black's exceptions.
+
+    ``#!``, ``#:``, ``##`` and ``#'`` stay, type comments are spelled ``# type: <value>``, a leading no-break space
+    becomes a space, and a comment with a ``fmt`` directive stays as it is.
+    """
+    formatted = apply_builtin_formatter(code)
+    assert formatted == black.format_str(code, mode=black.FileMode(string_normalization=False))
+    assert ast.dump(ast.parse(formatted)) == ast.dump(ast.parse(code))
+    assert apply_builtin_formatter(formatted) == formatted
+
+
+def test_apply_builtin_formatter_keeps_comments_of_code_it_cannot_tokenize() -> None:
+    """Keep the comments of code the tokenizer rejects as written, as the code stays as it is."""
+    assert apply_builtin_formatter("x = (\n#c\n") == "x = (\n#c\n"
+
+
+@pytest.mark.skipif(sys.version_info < (3, 12), reason="a comment in an f-string's replacement field needs Python 3.12")
+def test_apply_builtin_formatter_keeps_comments_in_f_string_fields() -> None:
+    """Keep a comment in a multi-line f-string's replacement field as written, as black leaves the f-string."""
+    code = 'x = 1\ny = f"""{x  #c\n}""" #d\n'
+
+    assert apply_builtin_formatter(code) == 'x = 1\ny = f"""{x  #c\n}"""  # d\n'
+
+
 def test_format_import_node_rejects_unsupported_nodes() -> None:
     """Test direct import node helpers reject unexpected AST nodes."""
     unsupported_node = cast("ast.Import | ast.ImportFrom", ast.parse("pass\n").body[0])
