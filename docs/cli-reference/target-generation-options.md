@@ -804,7 +804,6 @@ value does not tell apart stay left out. `--no-client-deep-object-brackets` turn
                     style='deepObject',
                     explode=True,
                     shape='array',
-                    reserved_names=('created', 'limit'),
                     brackets=True,
                 ),
                 codec=model_bindings.codec_1,
@@ -816,7 +815,6 @@ value does not tell apart stay left out. `--no-client-deep-object-brackets` turn
                     style='deepObject',
                     explode=True,
                     kind='integer',
-                    reserved_names=('created', 'expand'),
                     brackets=True,
                 ),
                 codec=model_bindings.codec_2,
@@ -975,17 +973,12 @@ servers keep them.
                     style='form',
                     explode=True,
                     kind='integer',
-                    reserved_names=('cursor',),
                 ),
                 codec=model_bindings.codec_0,
             ),
             ParameterSpec(
                 plan=ParameterPlan(
-                    location='query',
-                    name='cursor',
-                    style='form',
-                    explode=True,
-                    reserved_names=('limit',),
+                    location='query', name='cursor', style='form', explode=True
                 ),
                 codec=model_bindings.codec_1,
             ),
@@ -2978,17 +2971,12 @@ against the document's URL when it is read from one.
                     style='form',
                     explode=True,
                     kind='integer',
-                    reserved_names=('cursor',),
                 ),
                 codec=model_bindings.codec_0,
             ),
             ParameterSpec(
                 plan=ParameterPlan(
-                    location='query',
-                    name='cursor',
-                    style='form',
-                    explode=True,
-                    reserved_names=('limit',),
+                    location='query', name='cursor', style='form', explode=True
                 ),
                 codec=model_bindings.codec_1,
             ),
