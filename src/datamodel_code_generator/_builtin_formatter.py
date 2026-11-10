@@ -209,9 +209,9 @@ def _alias_sort_key(alias: str, names: _ImportNames = _PLAIN_NAMES) -> tuple[_Al
     return category, _natural_key(lower(name, target))
 
 
-def _format_from_import(module: str, aliases: list[str], line_length: int) -> str:
+def _format_from_import(module: str, aliases: list[str], line_length: int, restore: Callable[[str], str] = str) -> str:
     line = from_import(module, aliases)
-    if len(line) <= line_length and "*" not in aliases:
+    if str_width(restore(line)) <= line_length and "*" not in aliases:
         return line
     imports = "\n".join(f"    {alias}," for alias in aliases)
     return f"from {module} import (\n{imports}\n)"
@@ -359,13 +359,13 @@ def _format_import_node(
     module = "." * node.level + (node.module or "")
     if any(alias.asname is not None for alias in node.names):
         lines = [
-            _format_from_import(module, [_format_alias(alias)], line_length)
+            _format_from_import(module, [_format_alias(alias)], line_length, names.restore)
             for alias in sorted(node.names, key=lambda alias: _alias_sort_key(_format_alias(alias), names))
         ]
         return category, "\n".join(lines)
 
     aliases = sorted((_format_alias(alias) for alias in node.names), key=lambda alias: _alias_sort_key(alias, names))
-    return category, _format_from_import(module, aliases, line_length)
+    return category, _format_from_import(module, aliases, line_length, names.restore)
 
 
 def _from_import_key(node: ast.ImportFrom) -> tuple[int, str]:
@@ -398,20 +398,20 @@ def _iter_aliased_from_import_lines(
     for group_index, alias, is_aliased in sorted_aliases:
         if is_aliased or alias in renamed:
             if chunk:
-                yield _format_from_import(module, chunk, line_length)
+                yield _format_from_import(module, chunk, line_length, names.restore)
                 chunk = []
                 chunk_group = None
-            yield _format_from_import(module, [alias], line_length)
+            yield _format_from_import(module, [alias], line_length, names.restore)
             continue
 
         if chunk and chunk_group != group_index:
-            yield _format_from_import(module, chunk, line_length)
+            yield _format_from_import(module, chunk, line_length, names.restore)
             chunk = []
         chunk.append(alias)
         chunk_group = group_index
 
     if chunk:
-        yield _format_from_import(module, chunk, line_length)
+        yield _format_from_import(module, chunk, line_length, names.restore)
 
 
 def _import_line_sort_key(
@@ -478,7 +478,10 @@ def _build_builtin_import_block(
     for (category, _level, module), aliases in grouped_from_imports.items():
         categorized_lines[category].append(
             _format_from_import(
-                module, sorted(dict.fromkeys(aliases), key=lambda alias: _alias_sort_key(alias, names)), line_length
+                module,
+                sorted(dict.fromkeys(aliases), key=lambda alias: _alias_sort_key(alias, names)),
+                line_length,
+                names.restore,
             )
         )
     for (category, _level, module), aliases in aliased_from_imports.items():
@@ -536,7 +539,9 @@ def _replacement(node: ast.stmt, text: str, end: int | None = None) -> _LineRepl
     return node.lineno, end or node.end_lineno or node.lineno, _split_python_lines(text)
 
 
-def _iter_boolean_operand_lines(node: ast.BoolOp, source: bytes, indent: str, line_length: int) -> Iterator[str]:
+def _iter_boolean_operand_lines(
+    node: ast.BoolOp, source: bytes, indent: str, line_length: int, restore: Callable[[str], str] = str
+) -> Iterator[str]:
     """Split boolean operands, wrapping nested groups that exceed the line length."""
     operator = "and" if isinstance(node.op, ast.And) else "or"
     operator_bytes = operator.encode()
@@ -553,14 +558,20 @@ def _iter_boolean_operand_lines(node: ast.BoolOp, source: bytes, indent: str, li
         start = (end or 0) + len(operator_bytes)
         operand_prefix = f"{operator} " if index else ""
         line = f"{indent}{operand_prefix}{operand}"
-        if len(line) > line_length and isinstance(value, ast.BoolOp):
-            yield from _format_boolean_group(value, source, indent, line_length, operand_prefix)
+        if str_width(restore(line)) > line_length and isinstance(value, ast.BoolOp):
+            yield from _format_boolean_group(value, source, indent, line_length, operand_prefix, restore=restore)
         else:
             yield line
 
 
-def _format_boolean_group(
-    node: ast.BoolOp, source: bytes, indent: str, line_length: int, prefix: str = ""
+def _format_boolean_group(  # noqa: PLR0913
+    node: ast.BoolOp,
+    source: bytes,
+    indent: str,
+    line_length: int,
+    prefix: str = "",
+    *,
+    restore: Callable[[str], str] = str,
 ) -> list[str]:
     """Wrap a boolean group and any nested groups exposed by the added indent."""
     operand_indent = f"{indent}    "
@@ -569,8 +580,8 @@ def _format_boolean_group(
         f"{indent}{prefix}(",
         *(
             (single_line,)
-            if len(single_line) <= line_length
-            else _iter_boolean_operand_lines(node, source, operand_indent, line_length)
+            if str_width(restore(single_line)) <= line_length
+            else _iter_boolean_operand_lines(node, source, operand_indent, line_length, restore)
         ),
         f"{indent})",
     ]
@@ -580,12 +591,13 @@ def _collect_function_boolean_replacements(
     function: ast.FunctionDef | ast.AsyncFunctionDef,
     lines: list[str],
     line_length: int,
+    restore: Callable[[str], str] = str,
 ) -> list[_LineReplacement]:
     """Wrap parenthesized boolean groups and guards inside generated methods."""
     candidates = {
         number
         for number in range(function.lineno, (function.end_lineno or function.lineno) + 1)
-        if len(line := lines[number - 1]) > line_length and (" and " in line or " or " in line)
+        if str_width(restore(line := lines[number - 1])) > line_length and (" and " in line or " or " in line)
     }
     if not candidates:
         return []
@@ -603,14 +615,16 @@ def _collect_function_boolean_replacements(
                 or (after == b"):" and before.startswith(b"if ") and before.endswith(b"("))
                 or (after.startswith((b") or ", b") and ")) and after.endswith(b":"))
             ):
-                formatted = _format_boolean_group(node, source, indent, line_length, before[:-1].decode())
+                formatted = _format_boolean_group(
+                    node, source, indent, line_length, before[:-1].decode(), restore=restore
+                )
                 formatted[-1] += after[1:].decode()
             case b"", b"" if (
                 1 < node.lineno < len(lines)
                 and lines[node.lineno - 2].endswith("(")
                 and lines[node.lineno].lstrip().startswith(")")
             ):
-                formatted = list(_iter_boolean_operand_lines(node, source, indent, line_length))
+                formatted = list(_iter_boolean_operand_lines(node, source, indent, line_length, restore))
             case _:
                 continue
         replacements.append((node.lineno, node.lineno, formatted))
@@ -747,7 +761,7 @@ def _collect_class_replacements(
                     statement, lines, line_length, wrap_string_literal=wrap_string_literal, restore=restore
                 )
             case ast.FunctionDef() | ast.AsyncFunctionDef():
-                yield from _collect_function_boolean_replacements(statement, lines, line_length)
+                yield from _collect_function_boolean_replacements(statement, lines, line_length, restore)
                 yield from _collect_definition_header_replacements(
                     statement, lines, line_length, wrap_string_literal=wrap_string_literal, restore=restore
                 )
@@ -772,7 +786,7 @@ def _collect_builtin_replacements(  # noqa: PLR0913
     replacements: list[_LineReplacement] = []
     for node in tree.body:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            replacements.extend(_collect_function_boolean_replacements(node, lines, line_length))
+            replacements.extend(_collect_function_boolean_replacements(node, lines, line_length, names.restore))
             replacements.extend(
                 _collect_definition_header_replacements(
                     node, lines, line_length, wrap_string_literal=wrap_string_literal, restore=names.restore
@@ -1026,7 +1040,7 @@ def _try_apply_builtin_generated_formatter(  # noqa: PLR0911, PLR0913
     for source_line in _split_python_lines(code):
         line = source_line.rstrip()
         if (
-            len(line) > line_length  # noqa: PLR0916
+            str_width(line) > line_length  # noqa: PLR0916
             or "ConfigDict(" in line
             or "TypeAlias" in line
             or "TypedDict(" in line
