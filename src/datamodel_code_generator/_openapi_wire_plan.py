@@ -42,6 +42,7 @@ from datamodel_code_generator._target_contract import (
     WireDeclaration,
     api_key_place,
     children_of,
+    credential_place,
     encoding_headers,
     fact,
     is_required,
@@ -633,15 +634,22 @@ def _header(
     return () if plan is None else ((uses[0], plan),)
 
 
-def auth_names(batch: GeneratedTypeContractBatch, operation: OperationContract) -> list[tuple[object, str]]:
-    """Return the locations and names of the apiKey credentials the operation's security requirements send."""
+def auth_names(
+    batch: GeneratedTypeContractBatch, operation: OperationContract, *, authorization: bool = False
+) -> list[tuple[object, str]]:
+    """Return the locations and names of the apiKey credentials the operation's security requirements send.
+
+    With `authorization`, the Authorization header that an http basic or bearer, an oauth2 or an openIdConnect
+    credential goes in is one of them (`credential_place`).
+    """
     schemes = operation_schemes(scheme_catalogues(batch), operation)
+    place_of = credential_place if authorization else api_key_place
     return list(
         dict.fromkeys(
             place
             for requirement in security_requirements(operation) or ()
             for name, _ in requirement
-            if (scheme := schemes.get(name)) is not None and (place := api_key_place(scheme)) is not None
+            if (scheme := schemes.get(name)) is not None and (place := place_of(scheme)) is not None
         )
     )
 
@@ -681,8 +689,9 @@ def _parameters(
         if (plan := _planned(planner, operation.id, declaration, names, written=planner.writes)) is not None
     ]
     if planner.writes:
+        filled = auth_names(planner.batch, operation, authorization=True)
         planned = [
-            (place, replace(plan, required=False, credential=True) if _credentialed(plan, auth) else plan)
+            (place, replace(plan, required=False, credential=True) if _credentialed(plan, filled) else plan)
             for place, plan in planned
         ]
     plans = [plan for _, plan in planned]
@@ -691,7 +700,7 @@ def _parameters(
 
 
 def _credentialed(plan: ParameterPlan, auth: Sequence[tuple[object, str]]) -> bool:
-    """Return whether a parameter is written whole at the position where an apiKey credential of its operation goes.
+    """Return whether a parameter is written whole at the position where a credential of its operation goes.
 
     The parameter comes first: a call that gives it sends its value, and one that leaves it out sends the credential,
     so the call need not give it, and the two do not collide.

@@ -1,8 +1,9 @@
 """Read the WebSocket channels of an AsyncAPI document, which a client opens through their handshakes.
 
 This module reads one loaded document as written: the servers each channel is served on, its address and parameters,
-the messages its operations carry and whether the described application sends or receives each, and why a client
-cannot open a channel. AsyncAPI 2 names the application's sends `subscribe` and its receives `publish`;
+the query and header parameters its WebSocket binding gives its handshake, the security the handshake needs, the
+messages its operations carry and whether the described application sends or receives each, and why a client cannot
+open a channel. AsyncAPI 2 names the application's sends `subscribe` and its receives `publish`;
 AsyncAPI 3 names them by the operation's `action`. Which of them a client sends is the client's setting.
 
 A channel is opened only when everything a client needs to open it resolves: its operations and their traits, its
@@ -20,16 +21,33 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._document_reader import as_mapping, descend
 from datamodel_code_generator._json_pointer import join_pointer, reference_tokens
+from datamodel_code_generator._runtime.model_codecs.media import is_token
+from datamodel_code_generator._target_naming import path_placeholders
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Mapping
 
     from datamodel_code_generator._source import YamlValue
 
-__all__ = ("ReadChannel", "ReadMessage", "ReadParameter", "ReadServer", "read")
+__all__ = (
+    "ReadChannel",
+    "ReadDocument",
+    "ReadHandshakeParameter",
+    "ReadMessage",
+    "ReadParameter",
+    "ReadScheme",
+    "ReadServer",
+    "Requirement",
+    "read",
+)
 
 Tokens: TypeAlias = tuple[str, ...]
 Action: TypeAlias = Literal["send", "receive"]
+Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
+"""One alternative of a security requirement: each scheme it needs, by name, with the scopes it needs of it."""
+_Unordered: TypeAlias = frozenset[frozenset[tuple[str, frozenset[str]]]]
+"""A security's alternatives, each the schemes it needs with their scopes, in no order."""
+Skips: TypeAlias = "list[tuple[str | None, str]]"
 _Operation: TypeAlias = "tuple[Tokens, str, Mapping[str, YamlValue]]"
 """An AsyncAPI 3 operation: the pointer of its channel, its own pointer, and the operation as written."""
 
@@ -40,6 +58,32 @@ _SCHEME: Final = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://")
 _DEFAULT_MEDIA: Final = "application/json"
 _TRAIT_FIELDS: Final = frozenset(("contentType", "schemaFormat", "security"))
 """The fields a trait gives an operation or a message that the reader decides on."""
+_SCHEME_TYPES: Final = {"httpApiKey": "apiKey", "http": "http", "oauth2": "oauth2", "openIdConnect": "openIdConnect"}
+"""The security scheme types a handshake sends, an HTTP request's, by the type OpenAPI names each."""
+_SCHEME_FIELDS: Final = ("description", "name", "in", "scheme", "bearerFormat", "openIdConnectUrl")
+_HANDSHAKE_INPUTS: Final[tuple[tuple[str, Literal["query", "header"]], ...]] = (
+    ("query", "query"),
+    ("headers", "header"),
+)
+_OBJECT_FIELDS: Final = frozenset(("type", "properties", "required", "additionalProperties", "title", "description"))
+"""The keywords of a binding's `query` or `headers` schema that its properties stand for as parameters."""
+_SCHEMES_POINTER: Final = ("components", "securitySchemes")
+_MANAGED_HEADERS: Final = frozenset({
+    "connection",
+    "content-length",
+    "host",
+    "sec-websocket-accept",
+    "sec-websocket-extensions",
+    "sec-websocket-key",
+    "sec-websocket-protocol",
+    "sec-websocket-version",
+    "transfer-encoding",
+    "upgrade",
+})
+"""The lowercase headers a client's WebSocket handshake writes itself, which the runtime refuses from a call."""
+_SUBPROTOCOL: Final = "sec-websocket-protocol"
+_INLINE: Final = "a scheme written inline"
+_FOREIGN: Final = "a scheme in another document"
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,6 +103,29 @@ class ReadParameter:
     declaration: Tokens
     schema: Tokens | None
     description: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class ReadHandshakeParameter:
+    """A query or header parameter of a channel's handshake: a property of its WebSocket binding's `query` or `headers`.
+
+    `schema` is where the property's schema is written, and `required` whether the object requires the property.
+    """
+
+    name: str
+    location: Literal["query", "header"]
+    schema: Tokens
+    required: bool
+    description: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class ReadScheme:
+    """A security scheme a handshake can send: its name, where it is declared, and its fields as OpenAPI spells them."""
+
+    name: str
+    declaration: Tokens
+    fields: Mapping[str, YamlValue]
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,7 +150,9 @@ class ReadChannel:
     `declaration` is where the channel is written and `use_site` where the document lists it. `name` is the channel's
     id (AsyncAPI 3) or its address (AsyncAPI 2). `address` is the path the channel is at relative to its servers, which
     always starts with `/`, as both versions read an address without one. A channel of a document that declares no
-    servers is served on none, so a client opens it at the base URL it is given.
+    servers is served on none, so a client opens it at the base URL it is given. `security` holds the alternatives
+    of the security its handshake needs, as OpenAPI's requirements list them, and is None where it needs none.
+    `subprotocols` are those its handshake offers, which its binding's `Sec-WebSocket-Protocol` header fixes.
     """
 
     use_site: Tokens
@@ -92,8 +161,19 @@ class ReadChannel:
     address: str | None
     servers: tuple[ReadServer, ...] = ()
     parameters: tuple[ReadParameter, ...] = ()
+    handshake: tuple[ReadHandshakeParameter, ...] = ()
+    security: tuple[Requirement, ...] | None = None
+    subprotocols: tuple[str, ...] = ()
     messages: tuple[ReadMessage, ...] = ()
     skips: tuple[tuple[str | None, str], ...] = field(default=())
+
+
+@dataclass(frozen=True, slots=True)
+class ReadDocument:
+    """The channels of a document, in document order, and the security schemes a handshake can send, by name."""
+
+    channels: tuple[ReadChannel, ...]
+    schemes: tuple[ReadScheme, ...]
 
 
 class _Document:
@@ -134,6 +214,70 @@ def _json(media: str) -> bool:
     return media == _DEFAULT_MEDIA or media.endswith("+json")
 
 
+def _unsubstituted(server: ReadServer) -> str | None:
+    """Return why a server's URL has a variable a client cannot substitute, or None where it has none.
+
+    A client substitutes the `default` of each variable, as OpenAPI requires every variable to declare one; AsyncAPI
+    makes it optional.
+    """
+    variables = as_mapping(server.variables)
+    for name in dict.fromkeys(path_placeholders(server.url)):
+        if name not in variables:
+            return f"the URL of server {server.name} uses the variable {name}, which the server does not declare"
+        if not isinstance(as_mapping(variables[name]).get("default"), str):
+            return f"the variable {name} of server {server.name} has no default"
+    return None
+
+
+def _properties(value: YamlValue) -> tuple[dict[str, YamlValue], list[YamlValue]] | None:
+    """Return the properties of an object schema and the names it requires, or None where it says more of the object.
+
+    Only its type `object`, its titles and the keywords of its properties (`_OBJECT_FIELDS`) and extensions may be
+    beside them, and every name it requires must be one of its properties.
+    """
+    if not isinstance(value, dict) or value.get("type", "object") != "object":
+        return None
+    properties, required = value.get("properties", {}), value.get("required", [])
+    if (
+        not isinstance(properties, dict)
+        or not isinstance(required, list)
+        or not all(isinstance(name, str) and name in properties for name in required)
+        or not _OBJECT_FIELDS.issuperset(key for key in map(str, value) if not key.startswith("x-"))
+    ):
+        return None
+    return properties, required
+
+
+def _combined(parts: list[tuple[Requirement, ...] | None]) -> tuple[Requirement, ...] | None:
+    """Return the alternatives a handshake meets by meeting an alternative of each part that needs security.
+
+    Each is one choice of an alternative per part, needing every scheme the choice needs with all the scopes it needs
+    of it; None is no part needing security.
+    """
+    present = [part for part in parts if part is not None]
+    if not present:
+        return None
+    combined: tuple[Requirement, ...] = ((),)
+    for part in present:
+        combined = tuple(dict.fromkeys(_merged(chosen, alternative) for chosen in combined for alternative in part))
+    return combined
+
+
+def _merged(chosen: Requirement, alternative: Requirement) -> Requirement:
+    """Return what meeting both requirements needs: every scheme of either, with all the scopes either needs of it."""
+    merged: dict[str, dict[str, None]] = {}
+    for name, scopes in (*chosen, *alternative):
+        merged.setdefault(name, {}).update(dict.fromkeys(scopes))
+    return tuple((name, tuple(scopes)) for name, scopes in merged.items())
+
+
+def _unordered(security: tuple[Requirement, ...] | None) -> _Unordered | None:
+    """Return a security's alternatives as a set, each the set of its schemes with their scopes, in no order."""
+    if security is None:
+        return None
+    return frozenset(frozenset((name, frozenset(scopes)) for name, scopes in alternative) for alternative in security)
+
+
 class _Reader:
     """Read the channels of one document by its AsyncAPI version.
 
@@ -147,21 +291,53 @@ class _Reader:
         self.v2 = isinstance(version, str) and version.startswith("2.")
         default = raw.get("defaultContentType")
         self.default_media = default if isinstance(default, str) else _DEFAULT_MEDIA
+        self.schemes = self.read_schemes()
         self.servers = self.read_servers()
         self.declares_servers = bool(as_mapping(self.document.value(("servers",))))
         self.operations, self.foreign = ([], ()) if self.v2 else self.read_operations()
 
-    def read_servers(self) -> dict[str, tuple[ReadServer | None, bool]]:
-        """Return each server by name: its WebSocket form (None for another protocol), and whether it needs security."""
-        servers: dict[str, tuple[ReadServer | None, bool]] = {}
+    def read_schemes(self) -> dict[str, ReadScheme | str]:
+        """Return each security scheme of the document by name: as a handshake sends it, else its AsyncAPI type.
+
+        A handshake is an HTTP request, so it sends an `httpApiKey`, `http`, `oauth2` or `openIdConnect` scheme, whose
+        fields OpenAPI spells alike but for the `availableScopes` of an AsyncAPI 3 flow, OpenAPI's `scopes`. A scheme
+        in another document is one a handshake cannot send, as no plan resolves it.
+        """
+        schemes: dict[str, ReadScheme | str] = {}
+        for key, value in as_mapping(self.document.value(_SCHEMES_POINTER)).items():
+            if (found := self.document.resolved(value, (*_SCHEMES_POINTER, name := str(key)))) is None:
+                schemes[name] = _FOREIGN
+                continue
+            scheme, declaration = as_mapping(found[0]), found[1]
+            if (kind := _SCHEME_TYPES.get(written := str(scheme.get("type")))) is None:
+                schemes[name] = written
+                continue
+            fields: dict[str, YamlValue] = {
+                "type": kind,
+                **{item: scheme[item] for item in _SCHEME_FIELDS if item in scheme},
+            }
+            if isinstance(flows := scheme.get("flows"), dict):
+                fields["flows"] = {
+                    flow: {
+                        "scopes" if entry == "availableScopes" else entry: item
+                        for entry, item in as_mapping(declared).items()
+                    }
+                    for flow, declared in flows.items()
+                }
+            schemes[name] = ReadScheme(name, declaration, fields)
+        return schemes
+
+    def read_servers(self) -> dict[str, tuple[ReadServer | None, YamlValue]]:
+        """Return each server by name: its WebSocket form (None for another protocol), and its security as written."""
+        servers: dict[str, tuple[ReadServer | None, YamlValue]] = {}
         holder = ("servers",)
         for key, value in as_mapping(self.document.value(holder)).items():
             if (found := self.document.resolved(value, (*holder, name := str(key)))) is None:
                 continue
             server = as_mapping(found[0])
-            secured = bool(server.get("security"))
+            security = server.get("security")
             if (scheme := _SCHEMES.get(str(server.get("protocol", "")).lower())) is None:
-                servers[name] = None, secured
+                servers[name] = None, security
                 continue
             if self.v2:
                 written = str(server.get("url", ""))
@@ -171,7 +347,7 @@ class _Reader:
             variables = self.document.resolved(server.get("variables"), ())
             servers[name] = (
                 ReadServer(name, f"{scheme}://{location}", None if variables is None else variables[0]),
-                secured,
+                security,
             )
         return servers
 
@@ -211,32 +387,33 @@ class _Reader:
         key: str,
         channel: Mapping[str, YamlValue],
     ) -> ReadChannel:
-        """Read one channel: its servers, address, parameters and messages, and every reason a client cannot open it."""
-        skips: list[tuple[str | None, str]] = [
-            (None, f"operation {pointer} references another document") for pointer in self.foreign
-        ]
+        """Read one channel: its servers, address, parameters, handshake inputs, security and messages.
+
+        Every reason a client cannot open it is a skip. The handshake needs the security of the servers the channel is
+        served on, which must agree, and that of each operation on it, as a connection carries them all.
+        """
+        skips: Skips = [(None, f"operation {pointer} references another document") for pointer in self.foreign]
         address = key if self.v2 else channel.get("address")
         if not isinstance(address, str):
             skips.append(("channel_addresses", "it has no address"))
-        servers, secured = self.channel_servers(channel)
+        servers = self.channel_servers(channel)
         if not servers and self.declares_servers:
             skips.append(("server_protocols", "it is served on no ws or wss server"))
-        if secured:
-            skips.append(("security_requirements", "a server it is served on requires security"))
-        if (bindings := self.document.resolved(channel.get("bindings"), ())) is None:
-            skips.append((None, "its bindings reference another document"))
-        binding = as_mapping(as_mapping(None if bindings is None else bindings[0]).get("ws"))
-        if str(binding.get("method", "GET")).upper() != "GET":
-            skips.append(("websocket_bindings", f"its WebSocket binding opens it with {binding.get('method')}"))
-        skips.extend(
-            ("websocket_bindings", f"its WebSocket binding declares {name}")
-            for name in ("query", "headers")
-            if name in binding
-        )
+        skips.extend(("server_variables", problem) for server, _ in servers if (problem := _unsubstituted(server)))
+        distinct: dict[_Unordered | None, tuple[Requirement, ...] | None] = {}
+        for server, written in servers:
+            needed = self.requirements(written, f"server {server.name}", skips)
+            distinct.setdefault(_unordered(needed), needed)
+        security = list(distinct.values())
+        if len(security) > 1:
+            skips.append(("security_requirements", "the servers it is served on require different security"))
+        subprotocols: list[str] = []
+        handshake = list(self.handshake((*declaration, "bindings"), channel, skips, subprotocols))
+        securities: list[tuple[Requirement, ...] | None] = security[:1]
         if self.v2:
-            messages = list(self.v2_messages(declaration, channel, skips))
+            messages = list(self.v2_messages(declaration, channel, skips, securities))
         else:
-            messages = list(self.v3_messages(declaration, channel, skips))
+            messages = list(self.v3_messages(declaration, channel, skips, securities))
         if not messages and not skips:
             skips.append((None, "no operation sends or receives a message on it"))
         return ReadChannel(
@@ -244,14 +421,134 @@ class _Reader:
             declaration,
             key,
             f"/{address.removeprefix('/')}" if isinstance(address, str) else None,
-            tuple(servers),
+            tuple(server for server, _ in servers),
             tuple(self.parameters(declaration, channel)),
+            tuple(handshake),
+            _combined(securities),
+            tuple(subprotocols),
             tuple(dict.fromkeys(messages)),
             tuple(dict.fromkeys(skips)),
         )
 
-    def channel_servers(self, channel: Mapping[str, YamlValue]) -> tuple[list[ReadServer], bool]:
-        """Return the WebSocket servers a channel is served on, and whether any of them requires security.
+    def handshake(
+        self, holder: Tokens, channel: Mapping[str, YamlValue], skips: Skips, subprotocols: list[str]
+    ) -> Iterator[ReadHandshakeParameter]:
+        """Yield the query and header parameters of a channel's WebSocket binding, which opens it with a GET.
+
+        Its `query` and `headers` are object schemas, whose properties are the parameters, required where the object
+        requires them. An object constrained otherwise than by its properties (`_OBJECT_FIELDS`) leaves the channel
+        out, as parameters cannot stand for it. A header the handshake writes itself (`_MANAGED_HEADERS`) is no
+        parameter: the tokens a `Sec-WebSocket-Protocol` fixes are the subprotocols the handshake offers, added to
+        `subprotocols`; any other such header is left unsent where it is optional, and leaves the channel out where
+        it is required.
+        """
+        if (bindings := self.document.resolved(channel.get("bindings"), holder)) is None:
+            skips.append((None, "its bindings reference another document"))
+            return
+        found = self.document.resolved(as_mapping(bindings[0]).get("ws"), (*bindings[1], "ws"))
+        if found is None:
+            skips.append((None, "its WebSocket binding references another document"))
+            return
+        binding, written = as_mapping(found[0]), found[1]
+        if str(binding.get("method", "GET")).upper() != "GET":
+            skips.append(("websocket_bindings", f"its WebSocket binding opens it with {binding.get('method')}"))
+        for name, location in _HANDSHAKE_INPUTS:
+            if name not in binding:
+                continue
+            if (target := self.document.resolved(binding[name], (*written, name))) is None:
+                skips.append((None, f"the {name} schema of its WebSocket binding references another document"))
+                continue
+            if (shape := _properties(target[0])) is None:
+                message = f"the {name} schema of its WebSocket binding is not an object of properties"
+                skips.append(("websocket_bindings", message))
+                continue
+            properties, required = shape
+            for key, value in properties.items():
+                if location == "header" and (managed := str(key).lower()) in _MANAGED_HEADERS:
+                    if managed == _SUBPROTOCOL and (offered := self.fixed(value, (*target[1], "properties", str(key)))):
+                        subprotocols.extend(offered)
+                    elif key in required:
+                        message = f"its WebSocket binding sets the header {key}, which the handshake writes itself"
+                        skips.append(("websocket_bindings", message))
+                    continue
+                description = as_mapping(value).get("description")
+                yield ReadHandshakeParameter(
+                    str(key),
+                    location,
+                    (*target[1], "properties", str(key)),
+                    key in required,
+                    description if isinstance(description, str) else None,
+                )
+
+    def fixed(self, value: YamlValue, tokens: Tokens) -> tuple[str, ...]:
+        """Return the subprotocol tokens a header's schema fixes by its `const` or `enum`, in order, else none.
+
+        A client offers each subprotocol it speaks and the server selects one, so every value of an `enum` is offered;
+        a value that is no token offers none.
+        """
+        schema = as_mapping(None if (found := self.document.resolved(value, tokens)) is None else found[0])
+        written = [schema["const"]] if "const" in schema else schema.get("enum")
+        if not isinstance(written, list):
+            return ()
+        offered = [item for item in written if isinstance(item, str) and is_token(item)]
+        return tuple(dict.fromkeys(offered)) if len(offered) == len(written) else ()
+
+    def requirements(self, value: YamlValue, owner: str, skips: Skips) -> tuple[Requirement, ...] | None:
+        """Return the alternatives of a server's or an operation's security, None where it needs none.
+
+        AsyncAPI 2 lists requirement objects, each scheme's name with the scopes it needs, as OpenAPI does; AsyncAPI 3
+        lists the schemes, each an alternative by a reference to one of `components/securitySchemes`, which declares
+        the scopes it needs. An alternative that needs a scheme a handshake cannot send, or an AsyncAPI 3 scheme written
+        inline, which no requirement can name, is left out; with none left, or for a list of anything else, the channel
+        is.
+        """
+        if value is None or value == []:
+            return None
+        found: list[Requirement] = []
+        unsent: dict[str, None] = {}
+        for item in value if isinstance(value, list) else (None,):
+            if not self.v2 and isinstance(item, dict) and "type" in item and "$ref" not in item:
+                unsent[_INLINE] = None
+                continue
+            if (alternative := self.alternative(item)) is None:
+                listed = "requirement objects" if self.v2 else "references to components/securitySchemes"
+                skips.append(("security_requirements", f"the security of {owner} is not a list of {listed}"))
+                return ()
+            if kinds := [kind for name, _ in alternative if isinstance(kind := self.schemes.get(name), str)]:
+                unsent.update(dict.fromkeys(kinds))
+            else:
+                found.append(alternative)
+        if not found:
+            needed = ", ".join(unsent)
+            skips.append((
+                "security_requirements",
+                f"the security of {owner} needs {needed}, which a handshake cannot send",
+            ))
+        return tuple(found)
+
+    def alternative(self, item: YamlValue) -> Requirement | None:
+        """Return the schemes and scopes one item of a security list needs, or None where it is no such item."""
+        if self.v2:
+            if not isinstance(item, dict):
+                return None
+            needed = {
+                str(name): tuple(map(str, scopes))
+                for name, scopes in item.items()
+                if isinstance(scopes, list) and all(isinstance(scope, str) for scope in scopes)
+            }
+            return tuple(needed.items()) if len(needed) == len(item) else None
+        ref = as_mapping(item).get("$ref")
+        tokens = reference_tokens(ref[1:]) if isinstance(ref, str) and ref.startswith("#") else None
+        if tokens is None or len(tokens) != len(_SCHEMES_POINTER) + 1 or tokens[:-1] != _SCHEMES_POINTER:
+            return None
+        scheme = self.schemes.get(name := tokens[-1])
+        scopes = (
+            as_mapping(self.document.value(scheme.declaration)).get("scopes") if isinstance(scheme, ReadScheme) else ()
+        )
+        return ((name, tuple(scope for scope in scopes if isinstance(scope, str)) if isinstance(scopes, list) else ()),)
+
+    def channel_servers(self, channel: Mapping[str, YamlValue]) -> list[tuple[ReadServer, YamlValue]]:
+        """Return the WebSocket servers a channel is served on, each with its security as written.
 
         A channel that lists no servers is served on every server of the document.
         """
@@ -271,9 +568,7 @@ class _Reader:
                 and tokens[0] == "servers"
             ]
         found = [self.servers[name] for name in names if name in self.servers]
-        return [server for server, _ in found if server is not None], any(
-            secured for server, secured in found if server is not None
-        )
+        return [(server, security) for server, security in found if server is not None]
 
     def parameters(self, declaration: Tokens, channel: Mapping[str, YamlValue]) -> Iterator[ReadParameter]:
         """Yield the parameters of a channel's address, with the schema an AsyncAPI 2 parameter declares."""
@@ -287,17 +582,23 @@ class _Reader:
             yield ReadParameter(name, written, schema, description if isinstance(description, str) else None)
 
     def v2_messages(
-        self, declaration: Tokens, channel: Mapping[str, YamlValue], skips: list[tuple[str | None, str]]
+        self,
+        declaration: Tokens,
+        channel: Mapping[str, YamlValue],
+        skips: Skips,
+        securities: list[tuple[Requirement, ...] | None],
     ) -> Iterator[ReadMessage]:
-        """Yield the messages of an AsyncAPI 2 channel's operations, and their alternatives under `oneOf`."""
+        """Yield the messages of an AsyncAPI 2 channel's operations, and their alternatives under `oneOf`.
+
+        The security of each operation is added to `securities`.
+        """
         for name, action in _V2_ACTIONS:
             if not isinstance(written := channel.get(name), dict):
                 continue
             if (operation := self.traited(written)) is None:
                 skips.append((None, f"a trait of its {name} operation references another document"))
                 continue
-            if operation.get("security"):
-                skips.append(("security_requirements", f"its {name} operation requires security"))
+            securities.append(self.requirements(operation.get("security"), f"its {name} operation", skips))
             holder = (*declaration, name, "message")
             if (found := self.document.resolved(operation.get("message"), holder)) is None:
                 skips.append((None, "a message of it references another document"))
@@ -314,9 +615,13 @@ class _Reader:
         self,
         declaration: Tokens,
         channel: Mapping[str, YamlValue],
-        skips: list[tuple[str | None, str]],
+        skips: Skips,
+        securities: list[tuple[Requirement, ...] | None],
     ) -> Iterator[ReadMessage]:
-        """Yield the messages of the AsyncAPI 3 operations on a channel: those an operation lists, else all of them."""
+        """Yield the messages of the AsyncAPI 3 operations on a channel: those an operation lists, else all of them.
+
+        The security of each operation is added to `securities`.
+        """
         holder = (*declaration, "messages")
         own = [(str(key), value) for key, value in as_mapping(channel.get("messages")).items()]
         for target, pointer, written in self.operations:
@@ -328,8 +633,7 @@ class _Reader:
             if (operation := self.traited(written)) is None:
                 skips.append((None, f"a trait of operation {pointer} references another document"))
                 continue
-            if operation.get("security"):
-                skips.append(("security_requirements", "an operation on it requires security"))
+            securities.append(self.requirements(operation.get("security"), f"operation {pointer}", skips))
             if "reply" in operation:
                 skips.append(("operation_replies", "an operation on it declares a reply"))
             listed = operation.get("messages")
@@ -361,9 +665,7 @@ class _Reader:
             merged.update((key, layer[key]) for key in _TRAIT_FIELDS & layer.keys())
         return merged
 
-    def message(
-        self, value: YamlValue, written: Tokens, action: object, skips: list[tuple[str | None, str]]
-    ) -> Iterator[ReadMessage]:
+    def message(self, value: YamlValue, written: Tokens, action: object, skips: Skips) -> Iterator[ReadMessage]:
         """Yield one message as the application sends or receives it, recording why a client cannot code it."""
         if (found := self.document.resolved(value, written)) is None:
             skips.append((None, "a message of it references another document"))
@@ -406,9 +708,12 @@ class _Reader:
         yield ReadMessage(declaration, "send" if action == "send" else "receive", codec, tokens, payload_ref)
 
 
-def read(raw: Mapping[str, YamlValue], loaded: Callable[[str], YamlValue]) -> tuple[ReadChannel, ...]:
-    """Return every channel of a loaded AsyncAPI document, in document order.
+def read(raw: Mapping[str, YamlValue], loaded: Callable[[str], YamlValue]) -> ReadDocument:
+    """Return every channel of a loaded AsyncAPI document, in document order, and the schemes a handshake can send.
 
     `loaded` returns the schema a `$ref` of the document to another one names in the loaded documents, or None.
     """
-    return tuple(_Reader(raw, loaded).channels())
+    reader = _Reader(raw, loaded)
+    return ReadDocument(
+        tuple(reader.channels()), tuple(scheme for scheme in reader.schemes.values() if isinstance(scheme, ReadScheme))
+    )

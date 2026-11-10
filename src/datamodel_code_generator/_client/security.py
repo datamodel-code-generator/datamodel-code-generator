@@ -16,9 +16,8 @@ from datamodel_code_generator._runtime.client.security import (
 )
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_contract import (
-    OAUTH_SCHEMES,
     LiteralScalar,
-    api_key_place,
+    credential_place,
     fact,
     http_scheme,
     label,
@@ -126,16 +125,17 @@ def _scheme(declaration: WireDeclaration) -> SecuritySchemeEntry:
     unavailable = UnavailableSecurityScheme(name=name)
     if unresolved_reference(declaration) is not None:
         return unavailable
-    if (place := api_key_place(declaration)) is not None:
-        location, wire_name = place
-        return SecurityScheme(name=name, kind="api_key", location=location, wire_name=wire_name)
-    if (scheme := http_scheme(declaration)) in {"basic", "bearer"}:
-        return SecurityScheme(
-            name=name, kind="basic" if scheme == "basic" else "bearer", location="header", wire_name="Authorization"
-        )
-    if fact(declaration, "type") in OAUTH_SCHEMES:
-        return SecurityScheme(name=name, kind="bearer", location="header", wire_name="Authorization")
-    return unavailable
+    if (place := credential_place(declaration)) is None:
+        return unavailable
+    location, wire_name = place
+    kind = (
+        "api_key"
+        if fact(declaration, "type") == "apiKey"
+        else "basic"
+        if http_scheme(declaration) == "basic"
+        else "bearer"
+    )
+    return SecurityScheme(name=name, kind=kind, location=location, wire_name=wire_name)
 
 
 def _shared(owners: Iterable[list[SecurityRequirement]]) -> Iterator[tuple[SecurityRequirement, ...]]:

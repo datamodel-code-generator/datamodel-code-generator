@@ -587,6 +587,13 @@ class AsyncAPIClientFeatures:
         description="The protocol of a server; the client opens the channels of `ws` and `wss` servers only",
         client_status="partial",
     )
+    server_variables: bool = _client_feature(
+        introduced="AsyncAPI 2.0",
+        doc_name="server variables",
+        description="The variables of a server's URL; the client substitutes each by its `default`, which OpenAPI "
+        "requires and AsyncAPI does not",
+        client_status="partial",
+    )
     channel_addresses: bool = _client_feature(
         introduced="AsyncAPI 3.0",
         doc_name="channels without an address",
@@ -596,7 +603,9 @@ class AsyncAPIClientFeatures:
     websocket_bindings: bool = _client_feature(
         introduced="AsyncAPI 2.0",
         doc_name="WebSocket channel bindings",
-        description="`bindings.ws` of a channel; the client opens GET handshakes without `query` or `headers`",
+        description="`bindings.ws` of a channel; the client opens GET handshakes, with the properties of objects "
+        "`query` and `headers` as parameters, and the values a `Sec-WebSocket-Protocol` header fixes as the "
+        "subprotocols it offers",
         client_status="partial",
     )
     message_content_types: bool = _client_feature(
@@ -637,22 +646,32 @@ class AsyncAPIClientFeatures:
     security_requirements: bool = _client_feature(
         introduced="AsyncAPI 2.0",
         doc_name="security requirements",
-        description="The security of a server or an operation, its own or a trait's; the client sends no credentials "
-        "on a handshake",
-        client_status="not_supported",
+        description="The security of a server or an operation, its own or a trait's; the client sends `httpApiKey`, "
+        "`http`, `oauth2` and `openIdConnect` credentials on a handshake, and needs every server of a channel to "
+        "require the same",
+        client_status="partial",
     )
 
 
-def feature_label(feature: str) -> str:
+_NEUTRAL_LABELS: Final = {"structured_parameter_values": "structured parameter values"}
+"""The names of the OpenAPI features whose documented name is OpenAPI's own wording, as an AsyncAPI input reads."""
+
+
+def feature_label(feature: str, *, asyncapi: bool = False) -> str:
     """Return how messages name a feature: its documented name and the version that introduced it.
 
-    The feature is a field of `OpenAPISchemaFeatures` or of `AsyncAPIClientFeatures`.
+    The feature is a field of `OpenAPISchemaFeatures` or of `AsyncAPIClientFeatures`. For an AsyncAPI input
+    (`asyncapi`), an OpenAPI feature, which a channel's handshake uses as an HTTP request, is named without OpenAPI's
+    version and wording (`_NEUTRAL_LABELS`).
     """
-    metadata = next(
-        item.metadata
-        for item in (*fields(OpenAPISchemaFeatures), *fields(AsyncAPIClientFeatures))
+    owner, metadata = next(
+        (owner, item.metadata)
+        for owner in (OpenAPISchemaFeatures, AsyncAPIClientFeatures)
+        for item in fields(owner)
         if item.name == feature
     )
+    if asyncapi and owner is OpenAPISchemaFeatures:
+        return _NEUTRAL_LABELS.get(feature, metadata["doc_name"])
     return f"{metadata['doc_name']} ({metadata['introduced']})"
 
 

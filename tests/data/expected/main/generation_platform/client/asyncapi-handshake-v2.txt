@@ -1,0 +1,26 @@
+# asyncapi-handshake-v2
+render pydantic_v2.BaseModel
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel '/malformed', which uses security requirements (AsyncAPI 2.0) that the client does not support: /channels/~1malformed: the security of its subscribe operation is not a list of requirement objects; /channels/~1malformed: the security of its publish operation is not a list of requirement objects
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel '/local', which uses server variables (AsyncAPI 2.0) that the client does not support: /channels/~1local: the variable port of server local has no default
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel '/legacy', which uses security requirements (AsyncAPI 2.0) that the client does not support: /channels/~1legacy: the security of its subscribe operation needs apiKey, which a handshake cannot send
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated/security.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/auth.py
+  client/errors.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/responses.py
+  client/types/__init__.py
+  models.py

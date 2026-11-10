@@ -4128,20 +4128,36 @@ class _Contracts(_Octets):
             ),
         )
 
-    def channels(self) -> tuple[ChannelContract, ...]:
-        """Bind the channels of the input documents of an AsyncAPI attempt, in document order."""
+    def channels(self) -> tuple[tuple[ChannelContract, ...], tuple[WireDeclaration, ...]]:
+        """Bind the channels of the input documents of an AsyncAPI attempt, in document order, and their schemes.
+
+        The security schemes are those of each input document that a handshake can send, as OpenAPI declares them.
+        """
         from datamodel_code_generator._asyncapi_connections import read  # noqa: PLC0415
 
         contracts: list[ChannelContract] = []
+        schemes: list[WireDeclaration] = []
+        locate = self.documents.location
         for document in self.documents.walked:
             if document in self.parser._api_roots:  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+                found = read(self.documents.documents[document], partial(self.loaded_schema, document))
                 contracts.extend(
                     self.channel(document, channel, len(contracts) + index)
-                    for index, channel in enumerate(
-                        read(self.documents.documents[document], partial(self.loaded_schema, document))
-                    )
+                    for index, channel in enumerate(found.channels)
                 )
-        return tuple(contracts)
+                for scheme in found.schemes:
+                    declaration = SchemaLocation(document, scheme.declaration)
+                    use = SchemaLocation(document, ("components", "securitySchemes", scheme.name))
+                    schemes.append(
+                        WireDeclaration(
+                            "security_scheme",
+                            scheme.name,
+                            DeclarationId(locate(declaration, "declaration")),
+                            locate(use, "use"),
+                            _facts(dict(scheme.fields), _METADATA_FACTS["security_scheme"], declaration),
+                        )
+                    )
+        return tuple(contracts), tuple(schemes)
 
     def loaded_schema(self, document: str, ref: str) -> YamlValue:
         """Return the schema a `$ref` of a document names in the loaded documents, or None where none holds it."""
@@ -4172,10 +4188,19 @@ class _Contracts(_Octets):
             return ChannelContract(locate(use_site, "use"), read.name, None, messages, skips)
         raw = as_mapping(self.documents.borrow(declaration))
         servers: list[YamlValue] = [
-            {"url": server.url, **({} if server.variables is None else {"variables": server.variables})}
+            {"url": server.url, **({"variables": variables} if (variables := _used_variables(server)) else {})}
             for server in read.servers
         ]
         declared = {parameter.name: parameter for parameter in read.parameters}
+        security = (
+            ()
+            if read.security is None
+            else _facts(
+                {"security": [{name: list(scopes) for name, scopes in item} for item in read.security]},
+                ("security",),
+                declaration,
+            )
+        )
         handshake = OperationContract(
             identity,
             DeclarationId(locate(declaration, "declaration")),
@@ -4187,17 +4212,21 @@ class _Contracts(_Octets):
             (
                 *_facts(dict(raw), ("summary", "description"), declaration),
                 *_facts({"servers": servers}, ("servers",), declaration),
+                *security,
             ),
-            tuple(
-                self.address_parameter(identity, use_site, declaration, name, declared.get(name))
-                for name in dict.fromkeys(path_placeholders(read.address))
+            (
+                *(
+                    self.address_parameter(identity, use_site, declaration, name, declared.get(name))
+                    for name in dict.fromkeys(path_placeholders(read.address))
+                ),
+                *(self.handshake_parameter(identity, use_site, parameter) for parameter in read.handshake),
             ),
             None,
             (),
             (),
             (),
         )
-        return ChannelContract(locate(use_site, "use"), read.name, handshake, messages, skips)
+        return ChannelContract(locate(use_site, "use"), read.name, handshake, messages, skips, read.subprotocols)
 
     def payload(self, document: str, tokens: tuple[str, ...], ref: str | None) -> SourceLocation | None:
         """Return the location of the schema a message's payload binds as: that a lone `$ref` names, or its own."""
@@ -4246,6 +4275,72 @@ class _Contracts(_Octets):
             schemas,
         )
 
+    def handshake_parameter(
+        self, owner: OperationId, use_site: SchemaLocation, parameter: ReadHandshakeParameter
+    ) -> WireDeclaration:
+        """Bind a query or header parameter of a channel's handshake, typed as the models type its property.
+
+        The binding's object is a model, so each of its properties is a field, whose type is the parameter's, as a
+        model gives an OpenAPI parameter's schema its type, and whose default and keywords are the parameter's.
+        """
+        declared = SchemaLocation(use_site.document, parameter.schema)
+        self.binder.declaration_types.setdefault(declared, self.property_type(declared))
+        written = self._referenced(declared)
+        self.parser.schema_records.setdefault(
+            declared, _SchemaRecord(_default(written.get("default")), _keywords(written))
+        )
+        used = use_site.child("bindings", "ws", parameter.location, parameter.name)
+        use = self.use_id(
+            owner, "parameter", declared, used, declared, location=parameter.location, name=parameter.name
+        )
+        facts: dict[str, YamlValue] = {"name": parameter.name, "in": parameter.location, "required": parameter.required}
+        if parameter.description is not None:
+            facts["description"] = parameter.description
+        return WireDeclaration(
+            "parameter",
+            parameter.name,
+            DeclarationId(self.documents.location(declared, "declaration")),
+            self.documents.location(used, "use"),
+            _facts(facts, _PARAMETER_FACTS, declared),
+            self.media_facts((self.use(use, declared),), declared, "parameter", None),
+        )
+
+    def _referenced(self, declared: SchemaLocation) -> dict[str, YamlValue]:
+        """Return the keywords a schema says through its reference chain, the nearer schema's first.
+
+        A chain that loops back, or leaves the loaded documents, ends where it does.
+        """
+        found: dict[str, YamlValue] = {}
+        location, seen = declared, {declared}
+        while True:
+            written = as_mapping(self.documents.borrow(location))
+            found = {**written, **found}
+            if (
+                not isinstance(ref := written.get("$ref"), str)
+                or (target := self.loaded_target(location.document, ref)) is None
+                or target in seen
+            ):
+                return found
+            seen.add(location := target)
+
+    def property_type(self, declared: SchemaLocation) -> DataType:
+        """Return the type of the field the models hold a property of an object schema in.
+
+        The object's model holds a field for each property, its own or one it inherits, as a model that reuse made
+        holds those of the model it stands for.
+        """
+        node = cast(
+            "Reference", self.bound_node(SchemaLocation(declared.document, declared.tokens[:-2]), "value", "neutral")
+        )
+        symbol = self.binder.symbols[id(cast("Reference", self.binder.final(node)).source)]
+        slots = {
+            member.wire_name: member.slot
+            for member in self.members[symbol]
+            if member.member_kind == "property" and member.slot is not None
+        }
+        slot = slots[declared.tokens[-1]]
+        return self.binder.models[slot.symbol].fields[slot.index].data_type
+
     def security_schemes(self) -> tuple[WireDeclaration, ...]:
         """Bind the security schemes of the documents the walk loaded, loading the documents they reference."""
         declarations: list[WireDeclaration] = []
@@ -4268,6 +4363,12 @@ class BoundAttempt:
     documents: tuple[tuple[str, dict[str, YamlValue]], ...]
 
 
+def _used_variables(server: ReadServer) -> dict[str, YamlValue]:
+    """Return the variables of a WebSocket server that its URL names, the only ones a client substitutes."""
+    named = set(path_placeholders(server.url))
+    return {name: value for name, value in as_mapping(server.variables).items() if name in named}
+
+
 def bind_operations(
     parser: TargetParser,
     results: str | dict[tuple[str, ...], Result],
@@ -4283,7 +4384,7 @@ def bind_operations(
     builder.field_facts(symbols)
     fields = builder.field_bindings(symbols)
     asyncapi = isinstance(parser, TargetAsyncAPIParser)
-    channels = builder.channels() if asyncapi else None
+    channels, security_schemes = builder.channels() if asyncapi else (None, ())
     operations = (
         builder.operations()
         if channels is None
@@ -4293,7 +4394,7 @@ def bind_operations(
     builder.helper_uses()
     builder.extras()
     builder.encodings()
-    security_schemes = () if asyncapi else builder.security_schemes()
+    security_schemes = security_schemes if asyncapi else builder.security_schemes()
     documents = builder.documents
     return BoundAttempt(
         GeneratedTypeContractBatch(
@@ -4365,7 +4466,12 @@ def _unnamed(parser: TargetParser) -> str:
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Container, Generator, Iterable, Iterator, Mapping, Sequence
 
-    from datamodel_code_generator._asyncapi_connections import ReadChannel, ReadParameter
+    from datamodel_code_generator._asyncapi_connections import (
+        ReadChannel,
+        ReadHandshakeParameter,
+        ReadParameter,
+        ReadServer,
+    )
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType

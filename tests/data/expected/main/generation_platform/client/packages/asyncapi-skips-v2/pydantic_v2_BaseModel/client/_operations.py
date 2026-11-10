@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Final
 
+from ._generated import security
 from ._runtime.client.operations import OperationPlan, ResponseDecoder, ServerPlan
 
 _SERVERS_0: Final = (ServerPlan(url='http://socket.example.com/v2'),)
@@ -14,7 +15,25 @@ _SERVERS_0: Final = (ServerPlan(url='http://socket.example.com/v2'),)
 OPERATION_0: Final[OperationPlan[None]] = OperationPlan(
     operation_id=None,
     method='GET',
+    path='/feed',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder((), ()),
+    security=security.OPERATION_0,
+)
+
+OPERATION_1: Final[OperationPlan[None]] = OperationPlan(
+    operation_id=None,
+    method='GET',
     path='/',
     servers=_SERVERS_0,
     responses=ResponseDecoder((), ()),
+)
+
+OPERATION_2: Final[OperationPlan[None]] = OperationPlan(
+    operation_id=None,
+    method='GET',
+    path='/guarded',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder((), ()),
+    security=security.OPERATION_2,
 )

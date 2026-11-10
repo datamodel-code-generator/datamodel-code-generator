@@ -211,6 +211,8 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "asyncapi-market-v3",
         "asyncapi-market-v2",
         "asyncapi-perspective",
+        "asyncapi-handshake",
+        "asyncapi-handshake-v2",
         "asyncapi-skips",
         "asyncapi-skips-v2",
         "asyncapi-relative-v2",

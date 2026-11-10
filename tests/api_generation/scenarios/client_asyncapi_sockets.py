@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib
 import json
-from typing import TYPE_CHECKING, Any, is_typeddict
+from typing import TYPE_CHECKING, Any, cast, is_typeddict
 
 import httpx2
 
@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from types import ModuleType
 
+    from websockets.http11 import Request
     from websockets.sync.server import ServerConnection
 
 
@@ -319,3 +320,92 @@ def asyncapi_enum_tag_sends(package: ModuleType, lines: list[str]) -> None:
         lines.extend((f"    feed server saw {', '.join(seen)}", played.report()))
     finally:
         server.stop()
+
+
+def _handshakes(seen: list[str], *replies: str) -> Callable[[ServerConnection], None]:
+    """Return a talk that keeps the path, query, credentials and headers of the handshake it got, then sends replies."""
+
+    def talk(connection: ServerConnection) -> None:
+        request: Request = cast("Request", connection.request)
+        headers = ", ".join(
+            f"{name}: {request.headers[name]}" for name in _HANDSHAKE_HEADERS if name in request.headers
+        )
+        seen.append(f"    server got {request.path} [{headers}]")
+        for reply in replies:
+            connection.send(reply)
+
+    return talk
+
+
+_HANDSHAKE_HEADERS = ("authorization", "cookie", "sec-websocket-protocol", "x-api-key", "x-region", "x-trace")
+_QUOTE = json.dumps({"symbol": "XBT", "bid": 1.5})
+_ORDER = json.dumps({"id": "o-1", "size": 2.0})
+
+
+def asyncapi_handshake(package: ModuleType, lines: list[str]) -> None:
+    """Send each channel's query and header parameters and the credentials its security asks for on its handshake.
+
+    The server keeps what each handshake carried: the query string, the API key in the query, a header or a cookie,
+    the bearer token, a header parameter that takes the place of the API key or the bearer token whose position it
+    fills, a query parameter's default and the subprotocols a header's enum offers, of which the server selects one.
+    A handshake that no given credential satisfies is refused before it is sent.
+    """
+    models = _models(package)
+    seen: list[str] = []
+    server = SocketServer()
+    try:
+        replies = (_QUOTE, _QUOTE, _ORDER, _ORDER, _QUOTE, _QUOTE)
+        server.play(*(Play(talk=_handshakes(seen, reply)) for reply in replies))
+        server.play(Play(subprotocol="quotes.bin.v1", talk=_handshakes(seen, _QUOTE)))
+        with httpx2.Client(verify=client_context()) as http:
+            with (
+                package.Client(token="t-1", base_url=server.url, http_client=http) as client,
+                client.quotes.connect(symbol="XBT", depth=5, fields=["bid", "ask"], X_Trace="trace-1") as session,
+            ):
+                lines.append(f"    quotes {_message(session.receive())}")
+            with (
+                package.Client(bearer="b-1", base_url=server.url, http_client=http) as client,
+                client.quotes.connect(symbol="ETH", depth=1, snapshot=True) as session,
+            ):
+                lines.append(f"    quotes {_message(session.receive())}")
+            with (
+                package.Client(token="t-2", session="s-2", key="k-2", base_url=server.url, http_client=http) as client,
+                client.orders.connect() as session,
+            ):
+                session.send(_value(models, "Order", id="o-1", size=2.0))
+                lines.append(f"    orders {_message(session.receive())}")
+            with (
+                package.Client(token="t-3", session="s-3", base_url=server.url, http_client=http) as client,
+                client.orders.connect(X_Api_Key="from-parameter") as session,
+            ):
+                lines.append(f"    orders {_message(session.receive())}")
+            with package.Client(token="t-4", key="k-4", base_url=server.url, http_client=http) as client:
+                record(lines, "orders without a session", client.orders.connect)
+            for credentials, arguments in (
+                ({"bearer": "b-5"}, {}),
+                ({}, {"Authorization": "Bearer from-parameter", "limit": 3}),
+                ({"bearer": "b-6"}, {"Authorization": "Bearer from-parameter"}),
+            ):
+                with (
+                    package.Client(**credentials, base_url=server.url, http_client=http) as client,
+                    client.sessions.connect(**arguments) as session,
+                ):
+                    lines.append(f"    sessions {session.subprotocol} {_message(session.receive())}")
+            with package.Client(base_url=server.url, http_client=http) as client:
+                record(lines, "sessions without a bearer token", client.sessions.connect)
+        server.play(Play(talk=_handshakes(seen, _QUOTE)))
+        run(lambda: _async_partners(package, server.url, lines))
+        lines.extend(seen)
+    finally:
+        server.stop()
+
+
+async def _async_partners(package: ModuleType, url: str, lines: list[str]) -> None:
+    """Open the partners channel with an OAuth access token through the asyncio client."""
+    async with (
+        httpx2.AsyncClient(verify=client_context()) as http,
+        package.AsyncClient(oauth="o-1", base_url=url, http_client=http) as client,
+        client.partners.connect() as session,
+    ):
+        message: Any = await session.receive()
+        lines.append(f"    async partners {type(message.data).__name__}{_data(message.data)!r}")

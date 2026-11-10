@@ -6262,6 +6262,28 @@
     },
     "modules": [["client", "protocols", "_plans.py"], ["client", "protocols", "_helpers.py"]]
   },
+  "asyncapi-handshake": {
+    "input": "asyncapi-handshake.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "backends": ["pydantic_v2.BaseModel", "msgspec.Struct"],
+    "modules": [
+      ["client", "_client.py"],
+      ["client", "_operations.py"],
+      ["client", "_generated", "security.py"],
+      ["client", "protocols", "_helpers.py"],
+      ["client", "protocols", "_plans.py"]
+    ]
+  },
+  "asyncapi-handshake-v2": {
+    "input": "asyncapi-handshake-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [
+      ["client", "_client.py"],
+      ["client", "_operations.py"],
+      ["client", "_generated", "security.py"],
+      ["client", "protocols", "_helpers.py"]
+    ]
+  },
   "asyncapi-skips": {
     "input": "asyncapi-skips.yaml",
     "references": ["asyncapi-other.yaml"],

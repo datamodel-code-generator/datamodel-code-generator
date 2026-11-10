@@ -176,7 +176,11 @@ class ClientTarget:
             request = replace(request, operations=tuple(item for item in request.operations if item.id not in refused))
         output = shown(config.output, request.shown_root).as_posix()
         for subject, found in skipped:
-            features = ", ".join(dict.fromkeys(feature_label(item.feature) for item in found if item.feature))
+            features = ", ".join(
+                dict.fromkeys(
+                    feature_label(item.feature, asyncapi=channels is not None) for item in found if item.feature
+                )
+            )
             why = (
                 f"which uses {features} that the client does not support"
                 if features
