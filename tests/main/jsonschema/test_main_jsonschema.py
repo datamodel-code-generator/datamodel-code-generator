@@ -36729,7 +36729,6 @@ def test_msgspec_enum_diagnostics_preserve_supported_representations(
 
     data = JSON_SCHEMA_DATA_PATH / "msgspec_enum_diagnostics"
     expected = f"msgspec_enum_diagnostics/{case['name']}.py"
-    can_execute = sys.version_info[:2] >= tuple(map(int, case["python"].split(".")))
     formatter_options = (
         {"formatters": [Formatter.BUILTIN]}
         if _uses_external_test_default_formatter() and not is_supported_in_black(PythonVersion(case["python"]))
@@ -36751,7 +36750,7 @@ def test_msgspec_enum_diagnostics_preserve_supported_representations(
             ],
             assert_func=assert_file_content,
             expected_file=expected,
-            force_exec_validation=can_execute,
+            force_exec_validation=True,
         )
     else:
         run_generate_file_and_assert(
@@ -36767,8 +36766,6 @@ def test_msgspec_enum_diagnostics_preserve_supported_representations(
             **case["options"],
             **formatter_options,
         )
-    if not can_execute:
-        return
     results = []
     payloads = case.get("payloads", case["schema"])
     with _generated_model(output_file, "generated_msgspec_enum_controls", "Payload") as model:
