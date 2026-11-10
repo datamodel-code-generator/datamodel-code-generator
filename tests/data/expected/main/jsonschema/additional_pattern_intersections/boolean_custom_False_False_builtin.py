@@ -10,5 +10,4 @@ from pydantic import BaseModel
 
 class Root(BaseModel):
 
-
     x: Any | None = None
