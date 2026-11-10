@@ -321,7 +321,9 @@ class AsyncAPIParser(OpenAPIParser):
         return not self.config.name_converted_payloads_by_message
 
     _schema_kind: ClassVar[SchemaKind] = "asyncapi"
-    _discriminator_scan: ClassVar[_DiscriminatorScan] = _DiscriminatorScan(components_only=True)
+    _discriminator_scan: ClassVar[_DiscriminatorScan] = _DiscriminatorScan(
+        components_only=True, string_discriminators=True
+    )
 
     @property
     def schema_features(self) -> OpenAPISchemaFeatures:
@@ -334,6 +336,7 @@ class AsyncAPIParser(OpenAPIParser):
         self._discriminator_documents.clear()
         self._discriminator_schemas.clear()
         self._discriminator_subtypes.clear()
+        self._string_discriminators.clear()
         self._collect_discriminator_document(self.raw_obj)
 
     @override
