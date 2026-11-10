@@ -462,7 +462,8 @@ LeafStep: TypeAlias = Literal["items", "values"]
 class KindAt:
     """The lexical kind of a text leaf by the type bound for it, and where the schema of its values is.
 
-    A leaf whose type has no one kind (``_target_types.lexical_kind``) has None, which is refused at `source`.
+    A leaf whose type has no one kind (``_target_types.TypeTables.lexical_kind``) has None, which is refused at
+    `source`.
     """
 
     source: SourceLocation
