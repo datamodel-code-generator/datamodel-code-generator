@@ -252,3 +252,34 @@ x = f(
 
 [f-string-field-with-own-quote]
 x = f"{data['a"b']} " 'suffix'
+
+[tuple-after-string]
+def f(c, d, rest):
+    yield 'a yielded text that is long enough to be split at its spaces', 7,
+    yield 'a yielded text that is long enough to be split at its spaces', *rest,
+    yield (
+        'a yielded text that is long enough to be split'
+        if c
+        else d
+    ), 7,
+    yield (
+        (
+            'a yielded text that is long enough to be split'
+            ' at its spaces'
+        ),
+        7,
+    )
+    yield (
+        'a yielded text that is long enough to be split at'
+        ' its spaces'
+    ),
+    return (
+        (
+            'a returned text that is long enough to be'
+            ' split at its spaces'
+        ),
+        7,
+    )
+
+
+'a statement text that is long enough to be split at its spaces',

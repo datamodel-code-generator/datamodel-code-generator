@@ -1249,8 +1249,14 @@ def _prefers_paren_wrap(leaves: Sequence[_Leaf]) -> bool:
 
 
 def _string_split(line: _Line, mode: _Mode, _features: Collection[_Feature]) -> Iterator[_Line]:  # noqa: PLR0912, PLR0914, PLR0915
-    """Split a line that is one string, with an operator before it or a comma after it, at spaces (StringSplitter)."""
+    """Split a line that is one string, with an operator before it or a comma after it, at spaces (StringSplitter).
+
+    Only inside brackets: black also splits a statement such as ``"text",``, whose pieces become separate statements.
+    """
     leaves = line.leaves
+    if not line.inside_brackets:
+        msg = "The pieces of a string outside brackets would be separate statements."
+        raise CannotSplitError(msg)
     if _prefers_paren_wrap(leaves):
         msg = "Line needs to be wrapped in parens first."
         raise CannotSplitError(msg)
@@ -1451,17 +1457,40 @@ def _closes_lambda_value(left: Sequence[_Leaf], right: Sequence[_Leaf]) -> bool:
     return left[index - 1].type == token.COLON and _is_name(left[index + 1], "lambda")
 
 
+def _wraps_one_expression(
+    leaves: Sequence[_Leaf], string_idx: int, right: Sequence[_Leaf], *, old_parens: bool, ends_with_comma: bool
+) -> bool:
+    """Return whether the parentheses around the string and the leaves ``right`` after it would hold one expression.
+
+    Black wraps whatever follows the string after ``return`` or ``yield``, and changes meaning where that is not one
+    expression: ``yield "text", 7,`` becomes ``yield ("text", 7),``, a tuple in a one-element tuple. In
+    ``yield "text" if c else d, 7,`` the invisible parentheses around the conditional close before the line ends
+    (black fails there).
+    """
+    if old_parens:
+        return bool(right) and right[-1].opening_bracket is leaves[string_idx - 1]
+    depth = leaves[string_idx].bracket_depth
+    return not ends_with_comma or not any(leaf.type == token.COMMA and leaf.bracket_depth == depth for leaf in right)
+
+
 def _string_paren_wrap(line: _Line, mode: _Mode, _features: Collection[_Feature]) -> Iterator[_Line]:
     """Put a string that ends an assignment, an argument or a dictionary entry on its own line in parentheses.
 
     Black's StringParenWrapper: the parentheses replace any around the string, and the leaves after it go inside
-    them, except a trailing comma.
+    them, except a trailing comma. A line where they would not hold one expression stays unwrapped (see
+    ``_wraps_one_expression``).
     """
     leaves = line.leaves
     if leaves[-1].type in OPENING_BRACKETS or (string_idx := _string_paren_wrap_index(line)) is None:
         msg = "This line does not contain any non-atomic strings."
         raise CannotSplitError(msg)
     string_leaf = leaves[string_idx]
+    ends_with_comma = leaves[-1].type == token.COMMA
+    old_parens = string_idx > 0 and leaves[string_idx - 1].type == token.LPAR
+    right = leaves[string_idx + 1 : len(leaves) - ends_with_comma]
+    if not _wraps_one_expression(leaves, string_idx, right, old_parens=old_parens, ends_with_comma=ends_with_comma):
+        msg = "The parentheses would not hold one expression."
+        raise CannotSplitError(msg)
     if (
         not any(char == " " or char in _SPLIT_SAFE_CHARS for char in string_leaf.value)
         and str_width(mode.restore(string_leaf.value)) > mode.line_length - (line.depth + 1) * 4
@@ -1472,9 +1501,7 @@ def _string_paren_wrap(line: _Line, mode: _Mode, _features: Collection[_Feature]
     _validate_split_string(line, string_idx, mode)
     for leaf in leaves:
         leaf.orphaned = True
-    ends_with_comma = leaves[-1].type == token.COMMA
     left = leaves[:string_idx]
-    old_parens = bool(left) and left[-1].type == token.LPAR
     lpar = _Leaf(token.LPAR, "(")
     lpar.whitespace = (left.pop() if old_parens else string_leaf).whitespace
     head = line.clone()
@@ -1482,7 +1509,6 @@ def _string_paren_wrap(line: _Line, mode: _Mode, _features: Collection[_Feature]
     lpar.prefix = lpar.whitespace if head.leaves else ""
     head.append(lpar)
     yield head
-    right = leaves[string_idx + 1 : len(leaves) - ends_with_comma]
     if old_parens or _closes_lambda_value(left, right):
         right = right[:-1]
     body = _Line(

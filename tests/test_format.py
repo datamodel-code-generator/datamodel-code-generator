@@ -1189,7 +1189,9 @@ def test_builtin_formatter_wrap_string_literal_fixture() -> None:
     r"""Wrap and split strings as black's preview string processing does, for each case at its own line length.
 
     The cases are strings after operators, with trailers, in joined groups black does not merge, in parentheses,
-    dictionary entries and values, list, set and tuple elements, f-strings and ``\\N{...}`` escapes.
+    dictionary entries and values, list, set and tuple elements, f-strings and ``\\N{...}`` escapes. Every case keeps
+    its meaning, also where black's output would not: a tuple after ``yield`` that ends in a comma, and a statement
+    that is a string and a comma.
     """
     formatted_cases: list[str] = []
     corpus = BUILTIN_WRAP_STRING_LITERAL_INPUT_PATH.read_text(encoding="utf-8")
@@ -1197,6 +1199,7 @@ def test_builtin_formatter_wrap_string_literal_fixture() -> None:
         header, source = case.split("\n", 1)
         name, line_length = header.split()
         formatted = apply_builtin_formatter(source, line_length=int(line_length), wrap_string_literal=True)
+        assert formatted == source or ast.dump(ast.parse(formatted)) == ast.dump(ast.parse(source)), name
         formatted_cases.append(f"[{name}]\n{formatted}")
 
     assert_output("\n".join(formatted_cases))
