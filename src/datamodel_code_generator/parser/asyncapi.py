@@ -908,7 +908,7 @@ class AsyncAPIParser(OpenAPIParser):
                 specification = self._index_document(self._load_source_dict(source), path_parts)
                 self.raw_obj = specification
                 _schema_documents.record_document_dialect(
-                    self, specification, self._schema_resource_document(path_parts)
+                    self, specification, _schema_documents.schema_resource_document(self, path_parts)
                 )
                 context_sources[tuple(path_parts)] = self._current_asyncapi_context()
                 self._collect_discriminator_schemas()

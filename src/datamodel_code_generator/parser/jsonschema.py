@@ -1404,11 +1404,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self._read_dialect(self.raw_obj, kind="jsonschema").features.ref_sibling_keywords
 
     @property
-    def _reads_dynamic_anchors_in_document_order(self) -> bool:
-        """Whether --read-dynamic-anchors-in-document-order resolves a $dynamicRef from its document as loaded."""
-        return self.config.read_dynamic_anchors_in_document_order
-
-    @property
     def _inherited_parent_row(self) -> InheritedParentRow:
         """The order the allOf parents of an inherited schema are read in: their class's under the option.
 
@@ -1456,7 +1451,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return None
         location = at.schema_location if isinstance(at, JsonSchemaObject) else at
         parts = [location.document] if location is not None else list(self.model_resolver.current_root)
-        return self._document_dialects.get(self._schema_resource_document(parts)) or self._read_dialect(self.raw_obj)
+        return self._document_dialects.get(
+            _schema_documents.schema_resource_document(self, parts)
+        ) or self._read_dialect(self.raw_obj)
 
     def _features_at(self, at: JsonSchemaObject | SchemaLocation | None) -> JsonSchemaFeatures:
         """Return the schema features that read a schema object, or the schema value at a location.
@@ -3052,7 +3049,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ``document`` names the document as reference paths do.
         """
         path_parts = _ref_path_parts(document)
-        prepared = self._schema_resource_cache.get(name := self._schema_resource_document(path_parts))
+        prepared = self._schema_resource_cache.get(name := _schema_documents.schema_resource_document(self, path_parts))
         with _schema_refs.schema_document_context(self, path_parts):
             if prepared is None:
                 yield
@@ -3134,7 +3131,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     @contextmanager
     def _ref_document_context(self, file_part: str) -> Generator[tuple[str, dict[str, Any]], None, None]:
         """Enter the resolution context of the document that a resolved reference points into."""
-        document = self._schema_resource_document(_ref_path_parts(file_part))
+        document = _schema_documents.schema_resource_document(self, _ref_path_parts(file_part))
         path_parts = self._schema_resource_path_parts.get(document) or _ref_path_parts(file_part)
         with _schema_documents.referenced_document_context(
             self, _schema_refs.schema_document_context(self, path_parts)
@@ -3153,7 +3150,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         remote or piped generic can bind $dynamicRef to an anchor of the schema that referenced it.
         """
         target_document, _, pointer = location.partition("#")
-        if target_document == self._schema_resource_document(list(self.model_resolver.current_root)):
+        if target_document == _schema_documents.schema_resource_document(self, list(self.model_resolver.current_root)):
             yield f"#{pointer}"
             return
         with _schema_refs.schema_document_context(self, []), self.root_id_context({}):
@@ -3187,7 +3184,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         previous = self._dynamic_document, self._dynamic_scope_path, self._dynamic_scope_pointer, self._dynamic_bindings
         self._dynamic_document = (
-            self._schema_resource_document(list(self.model_resolver.current_root)) if document is None else document
+            _schema_documents.schema_resource_document(self, list(self.model_resolver.current_root))
+            if document is None
+            else document
         )
         self._dynamic_scope_path = tuple(path)
         self._dynamic_scope_pointer = (
@@ -8145,29 +8144,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self, self._get_ref_body_from_remote(resolved_ref), [resolved_ref]
         )
 
-    def _lenient_ref(self, ref: str) -> str:
-        """Return a reference of the current document mapped as its lenient resolution maps it, if it has one.
-
-        The model resolver registers anchors only while parsing JSON Schema documents, so plain-name references
-        of any document with implicit schema resources, like OpenAPI, resolve through the resource registry. A
-        reference with an edge maps so in its own document, as part of its key (``_compute_ref_key``).
-        """
-        return _schema_documents.lenient_ref(self, ref)
-
     def _normalize_external_ref(self, ref: str) -> str:
         """Resolve an external anchor before falling back to legacy shorthand pointers."""
         return _schema_documents.normalize_external_ref(self, ref)
-
-    def _plain_name_ref(self, ref: str, pointer: str) -> str:
-        """Return the reference a plain-name fragment of the document parsed now names, written at ``pointer``."""
-        return _schema_documents.plain_name_ref(self, ref, pointer)
-
-    def _note_plain_name(self, document: str, pointer: str, ref: str) -> str | None:
-        """Note a plain-name fragment written at ``pointer`` of a registered document, warning on a duplicate.
-
-        Return the first declaration of a name several schemas declare, under --read-dynamic-anchors-in-document-order.
-        """
-        return _schema_documents.note_plain_name(self, document, pointer, ref)
 
     def _resolve_local_ref_path(self, path: Path, ref: str) -> Path:
         if cached_path := self._local_ref_path_cache.get(path):
@@ -8410,20 +8389,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _seed_document_roles(self, document_roles: DocumentRoles) -> None:
         """Start the roles of each document from those an earlier attempt of the run recorded."""
         self._document_roles = {document: dict.fromkeys(roles) for document, roles in document_roles}
-
-    def _schema_resource_document(self, path_parts: list[str]) -> str:
-        """Identify one physical schema document without changing its public reference names."""
-        return _schema_documents.schema_resource_document(self, path_parts)
-
-    def _iter_schema_resource_children(
-        self, schema: dict[str, Any]
-    ) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any]]]:
-        """Visit schema-valued keywords without inspecting examples, defaults or extensions."""
-        return _schema_documents.iter_schema_resource_children(self, schema)
-
-    def _resolve_schema_resource_ref(self, reference: str, base: str, document: str, *, nested_scope: bool) -> str:
-        """Resolve registered resources before considering a physical document fetch."""
-        return _schema_documents.resolve_schema_resource_ref(self, reference, base, document, nested_scope=nested_scope)
 
     def _index_document(self, raw: dict[str, Any], path_parts: list[str]) -> dict[str, Any]:
         """Return a loaded document as a tree whose JSON objects the schema graph locates (L0).
@@ -9041,7 +9006,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 pointer = reference.path.partition("#")[2]
                 object_paths, reference_paths = _split_json_pointer({}, pointer, names=self._pointer_slash_names)
                 location = SchemaLocation(
-                    self._schema_resource_document(_ref_path_parts(file_part)), tuple(object_paths)
+                    _schema_documents.schema_resource_document(self, _ref_path_parts(file_part)), tuple(object_paths)
                 )
                 self._parse_pointer_target(
                     _located(dict(_schema_refs.UNREAD_MAPPED_SCHEMA), location),
@@ -9165,7 +9130,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     continue
                 if self.current_source_path is not None:
                     self.current_source_path = source.path
-                prepared = self._schema_resource_cache[self._schema_resource_document(path_parts)][1]
+                prepared = self._schema_resource_cache[_schema_documents.schema_resource_document(self, path_parts)][1]
                 with (
                     self.model_resolver.current_base_path_context(source.path.parent),
                     self.model_resolver.current_root_context(path_parts),
@@ -9335,13 +9300,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _is_version_definition_namespace_name(self, name: str) -> bool:  # noqa: PLR6301
         return re.fullmatch(r"v\d+(?:[._-]\d+)*", name, flags=re.IGNORECASE) is not None
 
-    def _iter_schema_definition_entries(
-        self,
-        definitions: dict[str, YamlValue],
-        base_path: list[str],
-    ) -> Iterator[tuple[str, YamlValue, list[str]]]:
-        return _schema_documents.iter_schema_definition_entries(self, definitions, base_path)
-
     def _parse_file(  # noqa: PLR0913
         self,
         raw: dict[str, Any],
@@ -9367,7 +9325,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if self.raw_obj is raw:
                     self.raw_obj = prepared
                 raw = prepared
-                self._schema_resource_path_parts[self._schema_resource_document(path_parts)] = path_parts
+                self._schema_resource_path_parts[_schema_documents.schema_resource_document(self, path_parts)] = (
+                    path_parts
+                )
                 obj_name = self.model_resolver.add(
                     path,
                     obj_name,
@@ -9392,7 +9352,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     _schema_refs.build_anchor_indexes(self, root_obj, path_parts)
                     schema_path, definitions = _schema_documents.first_definitions(self, raw, None)
                     definition_entries = list(
-                        self._iter_schema_definition_entries(definitions, [*path_parts, schema_path])
+                        _schema_documents.iter_schema_definition_entries(self, definitions, [*path_parts, schema_path])
                     )
                     definition_metadata_entries = [
                         *(

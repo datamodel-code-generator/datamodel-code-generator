@@ -37,6 +37,7 @@ from datamodel_code_generator.parser._passes._shared import (
     with_dedupe_request_response_hint,
 )
 from datamodel_code_generator.parser._schema_dispatch import SchemaSite, TypedChild
+from datamodel_code_generator.parser._schema_documents import SchemaResourcesHost, lenient_ref
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import (
     _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY,
@@ -70,7 +71,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._schema_dispatch import DispatchTable
     from datamodel_code_generator.parser._schema_graph import _TargetNode
     from datamodel_code_generator.parser.generation import GraphBuilder
-    from datamodel_code_generator.reference import ModelResolver, Reference
+    from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataType
 
 __all__ = [
@@ -185,7 +186,7 @@ def _get_rw_model_variant_source_path(
     return f"{source_prefix}{separator}{source_name}{suffix}"
 
 
-class RwSplitHost(Protocol):
+class RwSplitHost(SchemaResourcesHost, Protocol):
     """The options, caches and hooks of the parser that the request and response model split reads."""
 
     _DEFINITION_TABLE: ClassVar[DispatchTable[Any, JsonSchemaObject, None]]
@@ -260,10 +261,6 @@ class RwSplitHost(Protocol):
     @property
     def keyword_only(self) -> bool:
         """Whether the models take keyword-only arguments."""
-
-    @property
-    def model_resolver(self) -> ModelResolver:
-        """The resolver of references and class names."""
 
     @property
     def read_only_write_only_model_type(self) -> ReadOnlyWriteOnlyModelType | None:
@@ -429,9 +426,6 @@ class RwSplitHost(Protocol):
 
     def _key_node(self, resolved_ref: str) -> _TargetNode:
         """Return the schema graph node at a reference key, or the key when the graph does not locate its value."""
-
-    def _lenient_ref(self, ref: str) -> str:
-        """Return a reference of the current document mapped as its lenient resolution maps it, if it has one."""
 
     def _linearize_inherited_schema_refs(self, base_classes: list[Reference]) -> tuple[str, ...]:
         """Return raw inherited schemas in the same C3 order as generated models."""
@@ -1294,7 +1288,7 @@ def merged_ref_sibling_schemas(
         return schema, schema
     with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
         if parser._is_ref_circular(  # noqa: SLF001
-            resolved_ref := parser._ref_path(ref := parser._lenient_ref(cast("str", schema.ref)))  # noqa: SLF001
+            resolved_ref := parser._ref_path(ref := lenient_ref(parser, cast("str", schema.ref)))  # noqa: SLF001
         ):
             return schema, schema
         target = parser._schema_object(parser._ref_target_dump(ref, resolved_ref)[0])  # noqa: SLF001
