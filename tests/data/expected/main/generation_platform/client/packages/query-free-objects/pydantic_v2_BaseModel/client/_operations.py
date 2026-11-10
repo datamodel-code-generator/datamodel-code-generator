@@ -35,7 +35,6 @@ OPERATION_0: Final[OperationPlan[ListAppsResponse]] = OperationPlan(
                 style='form',
                 explode=True,
                 kind='integer',
-                reserved_names=('app_type', 'filter', 'sort_by'),
             ),
             codec=model_bindings.codec_0,
         ),

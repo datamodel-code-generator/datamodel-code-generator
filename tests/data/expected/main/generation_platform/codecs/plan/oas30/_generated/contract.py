@@ -49,7 +49,6 @@ class GetItems:
                     style='spaceDelimited',
                     shape='array',
                     kind='boolean',
-                    reserved_names=('limit', 'page', 'q'),
                 ),
                 adapter=TypeAdapter(list[bool]),
             ),

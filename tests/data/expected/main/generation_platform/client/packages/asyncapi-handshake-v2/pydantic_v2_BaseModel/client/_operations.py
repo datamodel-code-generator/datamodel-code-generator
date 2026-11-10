@@ -48,27 +48,17 @@ OPERATION_0: Final[OperationPlan[None]] = OperationPlan(
                 explode=True,
                 required=True,
                 kind='integer',
-                reserved_names=('mode',),
             ),
             codec=model_bindings.codec_1,
         ),
         ParameterSpec(
             plan=ParameterPlan(
-                location='query',
-                name='mode',
-                style='form',
-                explode=True,
-                reserved_names=('interval',),
+                location='query', name='mode', style='form', explode=True
             ),
             codec=model_bindings.codec_2,
         ),
         ParameterSpec(
-            plan=ParameterPlan(
-                location='header',
-                name='X-Client',
-                style='simple',
-                reserved_names=('X-Key',),
-            ),
+            plan=ParameterPlan(location='header', name='X-Client', style='simple'),
             codec=model_bindings.codec_3,
             converts=True,
         ),

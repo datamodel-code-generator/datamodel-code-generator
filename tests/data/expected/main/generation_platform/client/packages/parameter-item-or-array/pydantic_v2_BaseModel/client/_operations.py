@@ -46,19 +46,13 @@ OPERATION_0: Final[OperationPlan[ListAdvisoriesResponse]] = OperationPlan(
                 style='form',
                 explode=True,
                 shape='array',
-                reserved_names=('has',),
                 single=True,
             ),
             codec=model_bindings.codec_1,
         ),
         ParameterSpec(
             plan=ParameterPlan(
-                location='query',
-                name='has',
-                style='form',
-                shape='array',
-                reserved_names=('cwes',),
-                single=True,
+                location='query', name='has', style='form', shape='array', single=True
             ),
             codec=model_bindings.codec_2,
         ),

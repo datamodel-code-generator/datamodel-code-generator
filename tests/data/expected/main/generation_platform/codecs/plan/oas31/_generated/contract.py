@@ -49,7 +49,6 @@ class GetPetsByPetId:
                     explode=True,
                     shape='object',
                     fields=(FieldPlan('kind', 'string'), FieldPlan('size', 'integer')),
-                    reserved_names=('api_key', 'coords', 'ids', 'tags', 'when'),
                 ),
                 adapter=TypeAdapter(plan_oas31_models.Filter),
             ),
@@ -70,7 +69,6 @@ class GetPetsByPetId:
                     style='pipeDelimited',
                     shape='array',
                     kind='integer',
-                    reserved_names=('api_key', 'coords', 'filter', 'tags', 'when'),
                 ),
                 adapter=TypeAdapter(
                     list[plan_oas31_models.PetsPetIdGetQueryIdsParameterEnum]

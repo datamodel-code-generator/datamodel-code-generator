@@ -57,23 +57,13 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse]] = OperationPlan(
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
-                location='query',
-                name='limit',
-                style='form',
-                explode=True,
-                kind='integer',
-                reserved_names=('tags',),
+                location='query', name='limit', style='form', explode=True, kind='integer'
             ),
             codec=model_bindings.codec_0,
         ),
         ParameterSpec(
             plan=ParameterPlan(
-                location='query',
-                name='tags',
-                style='form',
-                explode=True,
-                shape='array',
-                reserved_names=('limit',),
+                location='query', name='tags', style='form', explode=True, shape='array'
             ),
             codec=model_bindings.codec_1,
         ),

@@ -38,17 +38,12 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse]] = OperationPlan(
                 style='form',
                 explode=True,
                 kind='integer',
-                reserved_names=('cursor',),
             ),
             codec=model_bindings.codec_0,
         ),
         ParameterSpec(
             plan=ParameterPlan(
-                location='query',
-                name='cursor',
-                style='form',
-                explode=True,
-                reserved_names=('limit',),
+                location='query', name='cursor', style='form', explode=True
             ),
             codec=model_bindings.codec_1,
         ),

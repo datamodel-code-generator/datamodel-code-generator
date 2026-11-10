@@ -41,21 +41,13 @@ OPERATION_1: Final[OperationPlan[GetFilesByFileNameByExtResponse]] = OperationPl
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
-                location='path',
-                name='fileName',
-                style='simple',
-                required=True,
-                reserved_names=('ext',),
+                location='path', name='fileName', style='simple', required=True
             ),
             codec=model_bindings.codec_0,
         ),
         ParameterSpec(
             plan=ParameterPlan(
-                location='path',
-                name='ext',
-                style='simple',
-                required=True,
-                reserved_names=('fileName',),
+                location='path', name='ext', style='simple', required=True
             ),
             codec=model_bindings.codec_1,
         ),

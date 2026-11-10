@@ -98,33 +98,21 @@ class LiteralModel1:
             ParameterArgument(
                 name='modes',
                 plan=ParameterPlan(
-                    location='query',
-                    name='modes',
-                    style='form',
-                    shape='array',
-                    reserved_names=('listed', 'named'),
+                    location='query', name='modes', style='form', shape='array'
                 ),
                 adapter=TypeAdapter(List[Literal['a']]),
             ),
             ParameterArgument(
                 name='named',
                 plan=ParameterPlan(
-                    location='query',
-                    name='named',
-                    style='form',
-                    explode=True,
-                    reserved_names=('listed', 'modes'),
+                    location='query', name='named', style='form', explode=True
                 ),
                 adapter=TypeAdapter(Annotated_1),
             ),
             ParameterArgument(
                 name='listed',
                 plan=ParameterPlan(
-                    location='query',
-                    name='listed',
-                    style='form',
-                    explode=True,
-                    reserved_names=('modes', 'named'),
+                    location='query', name='listed', style='form', explode=True
                 ),
                 adapter=TypeAdapter(List_1),
             ),
@@ -199,22 +187,7 @@ class GetPet:
             ParameterArgument(
                 name='day',
                 plan=ParameterPlan(
-                    location='query',
-                    name='day',
-                    style='form',
-                    explode=True,
-                    reserved_names=(
-                        'code',
-                        'codes',
-                        'filter',
-                        'label',
-                        'limit',
-                        'pair',
-                        'pet',
-                        'raw',
-                        'step',
-                        'tag',
-                    ),
+                    location='query', name='day', style='form', explode=True
                 ),
                 adapter=TypeAdapter(date),
             ),
@@ -246,22 +219,7 @@ class GetPet:
             ParameterArgument(
                 name='pair',
                 plan=ParameterPlan(
-                    location='query',
-                    name='pair',
-                    style='form',
-                    shape='array',
-                    reserved_names=(
-                        'code',
-                        'codes',
-                        'day',
-                        'filter',
-                        'label',
-                        'limit',
-                        'pet',
-                        'raw',
-                        'step',
-                        'tag',
-                    ),
+                    location='query', name='pair', style='form', shape='array'
                 ),
                 adapter=TypeAdapter(Pair),
             ),
@@ -275,22 +233,7 @@ class GetPet:
             ParameterArgument(
                 name='tag',
                 plan=ParameterPlan(
-                    location='query',
-                    name='tag',
-                    style='form',
-                    explode=True,
-                    reserved_names=(
-                        'code',
-                        'codes',
-                        'day',
-                        'filter',
-                        'label',
-                        'limit',
-                        'pair',
-                        'pet',
-                        'raw',
-                        'step',
-                    ),
+                    location='query', name='tag', style='form', explode=True
                 ),
                 adapter=TypeAdapter(Tag),
             ),
