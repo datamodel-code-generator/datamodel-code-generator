@@ -92,6 +92,7 @@ optional-dependencies.watch = [
 ]
 urls.Homepage = "https://github.com/datamodel-code-generator/datamodel-code-generator"
 urls.Source = "https://github.com/datamodel-code-generator/datamodel-code-generator"
+scripts.datamodel-code-generator = "datamodel_code_generator.__main__:main"
 scripts.datamodel-codegen = "datamodel_code_generator.__main__:main"
 
 [dependency-groups]
