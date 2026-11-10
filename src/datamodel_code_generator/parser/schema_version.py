@@ -577,7 +577,8 @@ class AsyncAPIClientFeatures:
     """The AsyncAPI features the Python client plans itself (`client_status`).
 
     A channel that uses a feature the client does not support, or a part of a partial one it does not, is left out of
-    the client with a warning that names the feature; its models are generated as for any other channel.
+    the client with a warning that names the feature; its models are generated as for any other channel. Message
+    headers are the exception: the client opens their channels and neither sends nor reads them.
     """
 
     server_protocols: bool = _client_feature(
@@ -602,7 +603,21 @@ class AsyncAPIClientFeatures:
         introduced="AsyncAPI 2.0",
         doc_name="message content types",
         description="The payloads of messages; the client codes JSON, `text/plain` strings and "
-        "`application/octet-stream` payloads of JSON Schema or AsyncAPI schemas",
+        "`application/octet-stream` payloads of JSON Schema or AsyncAPI schemas, and no `contentEncoding` string "
+        "outside JSON",
+        client_status="partial",
+    )
+    message_payloads: bool = _client_feature(
+        introduced="AsyncAPI 2.0",
+        doc_name="messages without a payload",
+        description="A message that declares no `payload`, which the client cannot code",
+        client_status="not_supported",
+    )
+    message_headers: bool = _client_feature(
+        introduced="AsyncAPI 2.0",
+        doc_name="message headers",
+        description="The `headers` of a message; the client codes its payload but neither sends nor reads headers, "
+        "which a WebSocket frame does not carry, and opens the channel without a warning",
         client_status="partial",
     )
     several_messages: bool = _client_feature(
@@ -620,7 +635,8 @@ class AsyncAPIClientFeatures:
     security_requirements: bool = _client_feature(
         introduced="AsyncAPI 2.0",
         doc_name="security requirements",
-        description="The security of a server or an operation; the client sends no credentials on a handshake",
+        description="The security of a server or an operation, its own or a trait's; the client sends no credentials "
+        "on a handshake",
         client_status="not_supported",
     )
 

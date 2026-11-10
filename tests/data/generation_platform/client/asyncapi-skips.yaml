@@ -146,7 +146,138 @@ channels:
         contentType: text/plain
         payload:
           type: string
+  framed:
+    address: /framed
+    servers:
+      - $ref: '#/servers/socket'
+    bindings:
+      $ref: '#/components/channelBindings/posted'
+    messages:
+      frame:
+        payload:
+          type: string
+  traited:
+    address: /traited
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        traits:
+          - $ref: '#/components/messageTraits/packed'
+          - contentType: text/plain
+        payload:
+          type: string
+  owned:
+    address: /owned
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        contentType: text/plain
+        traits:
+          - $ref: '#/components/messageTraits/packed'
+        payload:
+          type: string
+  inherited:
+    address: /inherited
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      blob:
+        traits:
+          - $ref: '#/components/messageTraits/packed'
+        payload:
+          type: object
+  foreign:
+    address: /foreign
+    servers:
+      - $ref: '#/servers/socket'
+    bindings:
+      $ref: 'asyncapi-other.yaml#/components/channelBindings/posted'
+    messages:
+      blob:
+        traits:
+          - $ref: 'asyncapi-other.yaml#/components/messageTraits/packed'
+        payload:
+          type: object
+  guarded:
+    address: /guarded
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        contentType: text/plain
+        payload:
+          type: string
+  delegated:
+    address: /delegated
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        contentType: text/plain
+        payload:
+          type: string
+  encoded:
+    address: /encoded
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      chunk:
+        contentType: text/plain
+        payload:
+          type: string
+          contentEncoding: base64
+  listed:
+    address: /listed
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      line:
+        contentType: text/plain
+        payload:
+          $ref: '#/components/schemas/Line/allOf/0'
 operations:
+  receiveGuarded:
+    action: receive
+    channel:
+      $ref: '#/channels/guarded'
+    traits:
+      - $ref: '#/components/operationTraits/secured'
+  receiveDelegated:
+    action: receive
+    channel:
+      $ref: '#/channels/delegated'
+    traits:
+      - $ref: 'asyncapi-other.yaml#/components/operationTraits/audited'
+  receiveEncoded:
+    action: receive
+    channel:
+      $ref: '#/channels/encoded'
+  receiveListed:
+    action: receive
+    channel:
+      $ref: '#/channels/listed'
+  receiveFrame:
+    action: receive
+    channel:
+      $ref: '#/channels/framed'
+  receiveLine:
+    action: receive
+    channel:
+      $ref: '#/channels/traited'
+  receiveOwned:
+    action: receive
+    channel:
+      $ref: '#/channels/owned'
+  receiveInherited:
+    action: receive
+    channel:
+      $ref: '#/channels/inherited'
+  receiveForeign:
+    action: receive
+    channel:
+      $ref: '#/channels/foreign'
   receiveOrder:
     action: receive
     channel:
@@ -193,8 +324,6 @@ operations:
     action: send
     channel:
       $ref: '#/channels/echo'
-  watchAlerts:
-    $ref: 'asyncapi-other.yaml#/operations/watchAlerts'
   readNotes:
     action: receive
     channel:
@@ -222,6 +351,15 @@ operations:
     channel:
       address: /inline
 components:
+  schemas:
+    Line:
+      allOf:
+        - type: string
+          maxLength: 80
+  operationTraits:
+    secured:
+      security:
+        - $ref: '#/components/securitySchemes/user'
   servers:
     shared:
       host: shared.example.com
@@ -230,3 +368,10 @@ components:
   securitySchemes:
     user:
       type: userPassword
+  channelBindings:
+    posted:
+      ws:
+        method: POST
+  messageTraits:
+    packed:
+      contentType: application/x-msgpack

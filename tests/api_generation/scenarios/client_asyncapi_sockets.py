@@ -109,3 +109,38 @@ def asyncapi_perspective(package: ModuleType, lines: list[str]) -> None:
         lines.extend((played.report(), f"  closed {_described(session)}"))
     finally:
         server.stop()
+
+
+def _lobby(connection: ServerConnection) -> None:
+    """Echo a line of a chat room, and close normally."""
+    connection.send(f"echo {connection.recv()}")
+    connection.close(1000, "done")
+
+
+def _notices(connection: ServerConnection) -> None:
+    """Read a notice, and send a frame on the channel the client only sends on."""
+    connection.send(f"read {connection.recv()}")
+
+
+def asyncapi_serverless(package: ModuleType, lines: list[str]) -> None:
+    """Open a channel whose address has no leading slash, of a document without servers, under the given base URL.
+
+    A frame on a channel the client only sends on is a DecodeError, which closes the connection with 1002.
+    """
+    server = SocketServer()
+    try:
+        lobby, notices = server.play(Play(talk=_lobby), Play(talk=_notices))
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=f"{server.url}/ws", http_client=http) as client,
+        ):
+            with client.rooms.connect(room="lobby") as session:
+                session.send("hello")
+                lines.extend(f"    rooms {_message(message)}" for message in session)
+            lines.append(lobby.report())
+            with client.notices.connect() as session:
+                session.send("closing")
+                record(lines, "notices receive", session.receive)
+            lines.append(notices.report())
+    finally:
+        server.stop()

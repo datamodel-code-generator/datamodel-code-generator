@@ -1,9 +1,15 @@
 """Read the WebSocket channels of an AsyncAPI document, which a client opens through their handshakes.
 
-This module reads one loaded document as written and nothing else: the servers each channel is served on, its address
-and parameters, the messages its operations carry and whether the described application sends or receives each, and
-why a client cannot open a channel. AsyncAPI 2 names the application's sends `subscribe` and its receives `publish`;
+This module reads one loaded document as written: the servers each channel is served on, its address and parameters,
+the messages its operations carry and whether the described application sends or receives each, and why a client
+cannot open a channel. AsyncAPI 2 names the application's sends `subscribe` and its receives `publish`;
 AsyncAPI 3 names them by the operation's `action`. Which of them a client sends is the client's setting.
+
+A channel is opened only when everything a client needs to open it resolves: its operations and their traits, its
+messages and their traits, and the schemas of their payloads. Traits are merged as the document's version merges them
+first. The declarations are read from the document itself, so one in another document leaves the channel out, and an
+operation in another document, which may be on any channel, leaves every channel out. A payload schema in another
+document is looked up in the documents the generation loaded (`loaded`), as the models bind it.
 """
 
 from __future__ import annotations
@@ -12,11 +18,11 @@ import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
-from datamodel_code_generator._document_reader import as_mapping
+from datamodel_code_generator._document_reader import as_mapping, descend
 from datamodel_code_generator._json_pointer import join_pointer, reference_tokens
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Callable, Iterator, Mapping
 
     from datamodel_code_generator._source import YamlValue
 
@@ -24,12 +30,16 @@ __all__ = ("ReadChannel", "ReadMessage", "ReadParameter", "ReadServer", "read")
 
 Tokens: TypeAlias = tuple[str, ...]
 Action: TypeAlias = Literal["send", "receive"]
+_Operation: TypeAlias = "tuple[Tokens, str, Mapping[str, YamlValue]]"
+"""An AsyncAPI 3 operation: the pointer of its channel, its own pointer, and the operation as written."""
 
 _SCHEMES: Final = {"ws": "http", "wss": "https"}
 _V2_ACTIONS: Final[tuple[tuple[str, Action], ...]] = (("subscribe", "send"), ("publish", "receive"))
 _JSON_FORMATS: Final = re.compile(r"application/(vnd\.aai\.asyncapi|schema)(\+(json|yaml))?(;.*)?")
 _SCHEME: Final = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://")
 _DEFAULT_MEDIA: Final = "application/json"
+_TRAIT_FIELDS: Final = frozenset(("contentType", "schemaFormat", "security"))
+"""The fields a trait gives an operation or a message that the reader decides on."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,7 +81,9 @@ class ReadChannel:
     """A channel as a client opens it, or the features and reasons that leave it out (`skips`).
 
     `declaration` is where the channel is written and `use_site` where the document lists it. `name` is the channel's
-    id (AsyncAPI 3) or its address (AsyncAPI 2).
+    id (AsyncAPI 3) or its address (AsyncAPI 2). `address` is the path the channel is at relative to its servers, which
+    always starts with `/`, as both versions read an address without one. A channel of a document that declares no
+    servers is served on none, so a client opens it at the base URL it is given.
     """
 
     use_site: Tokens
@@ -91,21 +103,23 @@ class _Document:
         self.raw = raw
 
     def value(self, tokens: Tokens) -> YamlValue:
-        """Return the value at a pointer's tokens through mappings, or None where the document has none."""
-        node: YamlValue = dict(self.raw)
-        for token in tokens:
-            node = as_mapping(node).get(token)
-        return node
+        """Return the value at a pointer's tokens, through mappings and lists, or None where the document has none."""
+        return descend(dict(self.raw), tokens, "canonical")
 
-    def resolved(self, value: YamlValue, tokens: Tokens) -> tuple[YamlValue, Tokens] | None:
+    def resolved(
+        self, value: YamlValue, tokens: Tokens, loaded: Callable[[str], YamlValue] | None = None
+    ) -> tuple[YamlValue, Tokens] | None:
         """Return a value and its pointer, following local references to what they name.
 
-        None is a reference to another document, or one that loops; a local reference to nothing names None.
+        None is a reference that loops, or one to another document; with `loaded`, a reference to another document
+        names what `loaded` finds for it in the loaded documents, at no pointer of this one, and None where it finds
+        nothing. A local reference to nothing names None.
         """
         seen: set[Tokens] = set()
         while isinstance(value, dict) and isinstance(ref := value.get("$ref"), str):
             if not ref.startswith("#") or (target := reference_tokens(ref[1:])) is None or target in seen:
-                return None
+                found = None if loaded is None or ref.startswith("#") else loaded(ref)
+                return None if found is None else (found, ())
             seen.add(target)
             value, tokens = self.value(target), target
         return value, tokens
@@ -121,15 +135,21 @@ def _json(media: str) -> bool:
 
 
 class _Reader:
-    """Read the channels of one document by its AsyncAPI version."""
+    """Read the channels of one document by its AsyncAPI version.
 
-    def __init__(self, raw: Mapping[str, YamlValue]) -> None:
+    `loaded` returns the schema a `$ref` of the document to another one names in the loaded documents, or None.
+    """
+
+    def __init__(self, raw: Mapping[str, YamlValue], loaded: Callable[[str], YamlValue]) -> None:
         self.document = _Document(raw)
+        self.loaded = loaded
         version = raw.get("asyncapi")
         self.v2 = isinstance(version, str) and version.startswith("2.")
         default = raw.get("defaultContentType")
         self.default_media = default if isinstance(default, str) else _DEFAULT_MEDIA
         self.servers = self.read_servers()
+        self.declares_servers = bool(as_mapping(self.document.value(("servers",))))
+        self.operations, self.foreign = ([], ()) if self.v2 else self.read_operations()
 
     def read_servers(self) -> dict[str, tuple[ReadServer | None, bool]]:
         """Return each server by name: its WebSocket form (None for another protocol), and whether it needs security."""
@@ -158,26 +178,31 @@ class _Reader:
     def channels(self) -> Iterator[ReadChannel]:
         """Yield every channel the document lists, in document order."""
         holder = ("channels",)
-        operations = [] if self.v2 else self.operations()
         for key, value in as_mapping(self.document.value(holder)).items():
             use_site = (*holder, name := str(key))
             if (found := self.document.resolved(value, use_site)) is None:
                 yield ReadChannel(use_site, use_site, name, None, skips=((None, "it references another document"),))
                 continue
             channel, declaration = as_mapping(found[0]), found[1]
-            yield self.channel(use_site, declaration, name, channel, operations)
+            yield self.channel(use_site, declaration, name, channel)
 
-    def operations(self) -> list[tuple[Tokens, Mapping[str, YamlValue]]]:
-        """Return each AsyncAPI 3 operation with the pointer of the channel its reference names, through references."""
-        found: list[tuple[Tokens, Mapping[str, YamlValue]]] = []
+    def read_operations(self) -> tuple[list[_Operation], tuple[str, ...]]:
+        """Return each AsyncAPI 3 operation on a channel of the document, and the operations in another document.
+
+        Each operation comes with the pointer of the channel its reference names, through references, and its pointer.
+        An operation in another document may be on any channel, so it leaves every channel out.
+        """
+        found: list[_Operation] = []
+        foreign: list[str] = []
         holder = ("operations",)
         for key, value in as_mapping(self.document.value(holder)).items():
-            if (operation := self.document.resolved(value, (*holder, str(key)))) is None:
+            if (operation := self.document.resolved(value, use_site := (*holder, str(key)))) is None:
+                foreign.append(join_pointer(use_site))
                 continue
             raw = as_mapping(operation[0])
             if (channel := self.document.resolved(raw.get("channel"), ())) is not None and channel[1]:
-                found.append((channel[1], raw))
-        return found
+                found.append((channel[1], join_pointer(operation[1]), raw))
+        return found, tuple(foreign)
 
     def channel(
         self,
@@ -185,19 +210,22 @@ class _Reader:
         declaration: Tokens,
         key: str,
         channel: Mapping[str, YamlValue],
-        operations: list[tuple[Tokens, Mapping[str, YamlValue]]],
     ) -> ReadChannel:
         """Read one channel: its servers, address, parameters and messages, and every reason a client cannot open it."""
-        skips: list[tuple[str | None, str]] = []
+        skips: list[tuple[str | None, str]] = [
+            (None, f"operation {pointer} references another document") for pointer in self.foreign
+        ]
         address = key if self.v2 else channel.get("address")
         if not isinstance(address, str):
             skips.append(("channel_addresses", "it has no address"))
         servers, secured = self.channel_servers(channel)
-        if not servers:
+        if not servers and self.declares_servers:
             skips.append(("server_protocols", "it is served on no ws or wss server"))
         if secured:
             skips.append(("security_requirements", "a server it is served on requires security"))
-        binding = as_mapping(as_mapping(channel.get("bindings")).get("ws"))
+        if (bindings := self.document.resolved(channel.get("bindings"), ())) is None:
+            skips.append((None, "its bindings reference another document"))
+        binding = as_mapping(as_mapping(None if bindings is None else bindings[0]).get("ws"))
         if str(binding.get("method", "GET")).upper() != "GET":
             skips.append(("websocket_bindings", f"its WebSocket binding opens it with {binding.get('method')}"))
         skips.extend(
@@ -208,7 +236,7 @@ class _Reader:
         if self.v2:
             messages = list(self.v2_messages(declaration, channel, skips))
         else:
-            messages = list(self.v3_messages(declaration, channel, operations, skips))
+            messages = list(self.v3_messages(declaration, channel, skips))
         for action in ("send", "receive"):
             if len({message.declaration for message in messages if message.action == action}) > 1:
                 verb = "sends" if action == "send" else "receives"
@@ -219,7 +247,7 @@ class _Reader:
             use_site,
             declaration,
             key,
-            address if isinstance(address, str) else None,
+            f"/{address.removeprefix('/')}" if isinstance(address, str) else None,
             tuple(servers),
             tuple(self.parameters(declaration, channel)),
             tuple(dict.fromkeys(messages)),
@@ -267,7 +295,10 @@ class _Reader:
     ) -> Iterator[ReadMessage]:
         """Yield the messages of an AsyncAPI 2 channel's operations, and their alternatives under `oneOf`."""
         for name, action in _V2_ACTIONS:
-            if not isinstance(operation := channel.get(name), dict):
+            if not isinstance(written := channel.get(name), dict):
+                continue
+            if (operation := self.traited(written)) is None:
+                skips.append((None, f"a trait of its {name} operation references another document"))
                 continue
             if operation.get("security"):
                 skips.append(("security_requirements", f"its {name} operation requires security"))
@@ -287,17 +318,19 @@ class _Reader:
         self,
         declaration: Tokens,
         channel: Mapping[str, YamlValue],
-        operations: list[tuple[Tokens, Mapping[str, YamlValue]]],
         skips: list[tuple[str | None, str]],
     ) -> Iterator[ReadMessage]:
         """Yield the messages of the AsyncAPI 3 operations on a channel: those an operation lists, else all of them."""
         holder = (*declaration, "messages")
         own = [(str(key), value) for key, value in as_mapping(channel.get("messages")).items()]
-        for target, operation in operations:
+        for target, pointer, written in self.operations:
             if target != declaration:
                 continue
-            action = operation.get("action")
+            action = written.get("action")
             if action not in {"send", "receive"}:
+                continue
+            if (operation := self.traited(written)) is None:
+                skips.append((None, f"a trait of operation {pointer} references another document"))
                 continue
             if operation.get("security"):
                 skips.append(("security_requirements", "an operation on it requires security"))
@@ -309,8 +342,28 @@ class _Reader:
                 if isinstance(listed, list)
                 else [(value, (*holder, key)) for key, value in own]
             )
-            for item, written in items:
-                yield from self.message(item, written, action, skips)
+            for item, location in items:
+                yield from self.message(item, location, action, skips)
+
+    def traited(self, written: Mapping[str, YamlValue]) -> Mapping[str, YamlValue] | None:
+        """Return an operation or a message with the fields its traits give it, or None when a trait does not resolve.
+
+        Only the fields the reader decides on are merged (`_TRAIT_FIELDS`), as the document's version merges them.
+        AsyncAPI 2 merges each trait into the object in order, by JSON Merge Patch, so a trait's field wins over the
+        object's; AsyncAPI 3 applies the traits in order and then the object, whose own fields win. A null field, which
+        Merge Patch removes, reads as an absent one.
+        """
+        if not isinstance(traits := written.get("traits"), list):
+            return written
+        layers: list[Mapping[str, YamlValue]] = []
+        for trait in traits:
+            if (found := self.document.resolved(trait, ())) is None:
+                return None
+            layers.append(as_mapping(found[0]))
+        merged = dict(written)
+        for layer in layers if self.v2 else (*layers, written):
+            merged.update((key, layer[key]) for key in _TRAIT_FIELDS & layer.keys())
+        return merged
 
     def message(
         self, value: YamlValue, written: Tokens, action: object, skips: list[tuple[str | None, str]]
@@ -321,6 +374,9 @@ class _Reader:
             return
         message, declaration = as_mapping(found[0]), found[1]
         pointer = join_pointer(declaration)
+        if (message := self.traited(message)) is None:
+            skips.append((None, f"a trait of message {pointer} references another document"))
+            return
         payload = message.get("payload")
         schema_format = message.get("schemaFormat")
         tokens: Tokens = (*declaration, "payload")
@@ -330,26 +386,33 @@ class _Reader:
             skips.append(("message_content_types", f"the payload of message {pointer} is a {schema_format} schema"))
             return
         if payload is None:
-            skips.append(("message_content_types", f"message {pointer} declares no payload"))
+            skips.append(("message_payloads", f"message {pointer} declares no payload"))
             return
         ref = as_mapping(payload).get("$ref")
         payload_ref = ref if isinstance(ref, str) and len(as_mapping(payload)) == 1 else None
+        if (target := self.document.resolved(payload, tokens, self.loaded)) is None:
+            skips.append((None, f"the payload of message {pointer} does not resolve in the loaded documents"))
+            return
         media = _media(message, self.default_media)
-        target = self.document.resolved(payload, tokens)
-        schema = as_mapping(None if target is None else target[0])
-        binary = schema.get("format") == "binary" or "contentEncoding" in schema
+        schema = as_mapping(target[0])
+        encoding = schema.get("contentEncoding")
+        binary = encoding is None and schema.get("format") == "binary"
         if media == "application/octet-stream" or (binary and not _json(media)):
             codec: Literal["json", "utf8", "bytes"] = "bytes"
-        elif media == "text/plain" and schema.get("type") == "string":
+        elif media == "text/plain" and encoding is None and schema.get("type") == "string":
             codec = "utf8"
         elif _json(media):
             codec = "json"
         else:
-            skips.append(("message_content_types", f"message {pointer} has content type {media}"))
+            content = media if encoding is None else f"{media} encoded as {encoding}"
+            skips.append(("message_content_types", f"message {pointer} has content type {content}"))
             return
         yield ReadMessage(declaration, "send" if action == "send" else "receive", codec, tokens, payload_ref)
 
 
-def read(raw: Mapping[str, YamlValue]) -> tuple[ReadChannel, ...]:
-    """Return every channel of a loaded AsyncAPI document, in document order."""
-    return tuple(_Reader(raw).channels())
+def read(raw: Mapping[str, YamlValue], loaded: Callable[[str], YamlValue]) -> tuple[ReadChannel, ...]:
+    """Return every channel of a loaded AsyncAPI document, in document order.
+
+    `loaded` returns the schema a `$ref` of the document to another one names in the loaded documents, or None.
+    """
+    return tuple(_Reader(raw, loaded).channels())

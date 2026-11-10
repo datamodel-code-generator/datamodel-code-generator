@@ -1,0 +1,33 @@
+asyncapi: 3.0.0
+info:
+  title: Payloads in a mapped document
+  version: 1.0.0
+servers:
+  socket:
+    host: socket.example.com
+    protocol: wss
+channels:
+  reports:
+    address: /reports
+    messages:
+      report:
+        payload:
+          $ref: 'asyncapi-other.yaml#/components/schemas/Report'
+  notes:
+    address: /notes
+    messages:
+      note:
+        payload:
+          type: object
+          properties:
+            text:
+              type: string
+operations:
+  publishReports:
+    action: send
+    channel:
+      $ref: '#/channels/reports'
+  readNotes:
+    action: receive
+    channel:
+      $ref: '#/channels/notes'

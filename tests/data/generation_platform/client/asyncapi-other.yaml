@@ -35,3 +35,13 @@ components:
   parameters:
     region:
       description: The region.
+  operationTraits:
+    audited:
+      description: Audited.
+  messageTraits:
+    packed:
+      contentType: application/x-msgpack
+  channelBindings:
+    posted:
+      ws:
+        method: POST

@@ -213,6 +213,13 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "asyncapi-perspective",
         "asyncapi-skips",
         "asyncapi-skips-v2",
+        "asyncapi-relative-v2",
+        "asyncapi-serverless",
+        "asyncapi-unopened",
+        "asyncapi-setting-errors",
+        "asyncapi-class-clash",
+        "asyncapi-foreign-operations",
+        "asyncapi-mapped-payloads",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:

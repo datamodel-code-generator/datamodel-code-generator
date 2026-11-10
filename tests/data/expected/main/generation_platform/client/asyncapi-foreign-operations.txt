@@ -1,0 +1,3 @@
+# asyncapi-foreign-operations
+render pydantic_v2.BaseModel
+  Error: /channels/alerts: operation /operations/watchAlerts references another document

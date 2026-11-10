@@ -17,7 +17,11 @@ import httpx2
 
 from datamodel_code_generator import Error
 from tests.api_generation.scenarios.client_allowreserved import reserved_paths
-from tests.api_generation.scenarios.client_asyncapi_sockets import asyncapi_perspective, asyncapi_sockets
+from tests.api_generation.scenarios.client_asyncapi_sockets import (
+    asyncapi_perspective,
+    asyncapi_serverless,
+    asyncapi_sockets,
+)
 from tests.api_generation.scenarios.client_auth_errors import auth_errors
 from tests.api_generation.scenarios.client_auth_flows import auth_flows
 from tests.api_generation.scenarios.client_auth_values import auth_parameters, auth_shared_wire, auth_values
@@ -975,6 +979,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "sockets": ("sockets", ("pydantic_v2.BaseModel",), sockets),
     "asyncapi-sockets": ("asyncapi-market-v3", ("pydantic_v2.BaseModel", "dataclasses.dataclass"), asyncapi_sockets),
     "asyncapi-perspective": ("asyncapi-perspective", ("pydantic_v2.BaseModel",), asyncapi_perspective),
+    "asyncapi-serverless": ("asyncapi-serverless", ("pydantic_v2.BaseModel",), asyncapi_serverless),
     "protocol-errors": ("pets-protocols", ("pydantic_v2.BaseModel",), protocol_errors),
     "cache": ("caching", ("pydantic_v2.BaseModel",), caching),
     "cache-stores": ("caching-oauth", ("pydantic_v2.BaseModel",), cache_stores),

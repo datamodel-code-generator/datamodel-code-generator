@@ -6273,5 +6273,57 @@
     "references": ["asyncapi-other.yaml"],
     "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
     "modules": [["client", "_operations.py"], ["client", "protocols", "_plans.py"]]
+    },
+  "asyncapi-relative-v2": {
+    "input": "asyncapi-relative-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "_operations.py"]]
+  },
+  "asyncapi-serverless": {
+    "input": "asyncapi-serverless.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "config": {"default_base_url": "https://lobby.example.com/ws"},
+    "modules": [["client", "_operations.py"]]
+  },
+  "asyncapi-unopened": {
+    "input": "asyncapi-unopened.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]}
+  },
+  "asyncapi-setting-errors": {
+    "input": "asyncapi-market-v3.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "config": {
+      "operations": [
+        {"ref": "/channels/market", "resource": "market.feed"},
+        {"ref": "/channels/ticker", "resource": "feed"},
+        {"ref": "/channels/audio", "resource": "feed"},
+        {"ref": "/channels/nope", "resource": "nope"}
+      ]
+    }
+  },
+  "asyncapi-class-clash": {
+    "input": "asyncapi-market-v3.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "config": {
+      "operations": [
+        {"ref": "/channels/market", "resource": "live_feed"},
+        {"ref": "/channels/ticker", "resource": "live__feed"}
+      ]
+    }
+  },
+  "asyncapi-foreign-operations": {
+    "input": "asyncapi-foreign-operations.yaml",
+    "references": ["asyncapi-other.yaml"],
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]}
+  },
+  "asyncapi-mapped-payloads": {
+    "input": "asyncapi-mapped-payloads.yaml",
+    "references": ["asyncapi-other.yaml"],
+    "model": {
+      "input_file_type": "asyncapi",
+      "openapi_scopes": ["schemas"],
+      "external_ref_mapping": {"asyncapi-other.yaml": "shared.models"}
+    },
+    "modules": [["client", "protocols", "_plans.py"], ["models.py"]]
   }
 }

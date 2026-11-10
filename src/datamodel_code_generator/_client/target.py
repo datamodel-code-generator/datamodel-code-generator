@@ -127,11 +127,14 @@ class ClientTarget:
         that names the OpenAPI features it uses that the client does not support, and the others are planned again. A
         refusal stays an error, with the findings of the operations skipped before it, when anything else is refused
         too, or nothing is left. The channels of an AsyncAPI input are opened as WebSocket helpers instead
-        (`channel_protocols`), and a channel is left out the same way, also for what its document declares.
+        (`channel_protocols`), and a channel is left out the same way, also for what its document declares; when every
+        channel is left out so, their findings are the error.
         """
         config = request.config
         assert isinstance(config, ClientGenerationConfig)
         skipped: list[tuple[str, list[Diagnostic]]] = []
+        protocols: Protocols | None = None
+        opened: dict[OperationId, ChannelContract] = {}
         if (channels := request.batch.channels) is None:
             protocols = plan_protocols(request, config.protocols, self.protocol_base)
             called = helper_calls(protocols)
@@ -143,6 +146,10 @@ class ClientTarget:
                 for channel in channels
                 if not channel.skips and channel.handshake is not None
             }
+            if not opened and skipped:
+                raise APIGenerationError(
+                    tuple(item for _, found in skipped for item in found), option_prefix=OPTION_PREFIX
+                )
             subjects = {identity: _channel(channel) for identity, channel in opened.items()}
             request = replace(request, operations=tuple(channel.handshake for channel in opened.values()))
             called = frozenset()

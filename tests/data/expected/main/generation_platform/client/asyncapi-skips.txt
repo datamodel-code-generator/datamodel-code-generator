@@ -9,6 +9,12 @@ render pydantic_v2.BaseModel
   warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'alerts', which the client cannot generate: /channels/alerts: it references another document
   warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'notes', which the client cannot generate: /channels/notes: a message of it references another document
   warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'audited', which uses security requirements (AsyncAPI 2.0) that the client does not support: /channels/audited: an operation on it requires security
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'framed', which uses WebSocket channel bindings (AsyncAPI 2.0) that the client does not support: /channels/framed: its WebSocket binding opens it with POST
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'inherited', which uses message content types (AsyncAPI 2.0) that the client does not support: /channels/inherited: message /channels/inherited/messages/blob has content type application/x-msgpack
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'foreign', which the client cannot generate: /channels/foreign: its bindings reference another document; /channels/foreign: a trait of message /channels/foreign/messages/blob references another document
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'guarded', which uses security requirements (AsyncAPI 2.0) that the client does not support: /channels/guarded: an operation on it requires security
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'delegated', which the client cannot generate: /channels/delegated: a trait of operation /operations/receiveDelegated references another document
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'encoded', which uses message content types (AsyncAPI 2.0) that the client does not support: /channels/encoded: message /channels/encoded/messages/chunk has content type text/plain encoded as base64
   client/README.md
   client/__init__.py
   client/_async_client.py

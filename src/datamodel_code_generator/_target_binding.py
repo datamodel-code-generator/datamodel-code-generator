@@ -13,7 +13,7 @@ from __future__ import annotations
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass, replace
 from decimal import Decimal
-from functools import cached_property
+from functools import cached_property, partial
 from itertools import starmap
 from math import isfinite
 from pathlib import Path
@@ -4119,9 +4119,20 @@ class _Contracts(_Octets):
             if document in self.parser._api_roots:  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
                 contracts.extend(
                     self.channel(document, channel, len(contracts) + index)
-                    for index, channel in enumerate(read(self.documents.documents[document]))
+                    for index, channel in enumerate(
+                        read(self.documents.documents[document], partial(self.loaded_schema, document))
+                    )
                 )
         return tuple(contracts)
+
+    def loaded_schema(self, document: str, ref: str) -> YamlValue:
+        """Return the schema a `$ref` of a document names in the loaded documents, or None where none holds it."""
+        return None if (target := self.loaded_target(document, ref)) is None else self.documents.borrow(target)
+
+    def loaded_target(self, document: str, ref: str) -> SchemaLocation | None:
+        """Return where the schema a `$ref` of a document names is, as the parser resolves it, in a loaded document."""
+        target = self.parser._schema_reference_location(document, ref)  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+        return None if target is None or target.document not in self.documents.ids else target
 
     def channel(self, document: str, read: ReadChannel, order: int) -> ChannelContract:
         """Bind one channel: its handshake, a GET of its address on its WebSocket servers, and its messages."""
@@ -4174,12 +4185,8 @@ class _Contracts(_Octets):
         """Return the location of the schema a message's payload binds as: that a lone `$ref` names, or its own."""
         if ref is None:
             return self.documents.location(SchemaLocation(document, tokens), "schema")
-        target = self.parser._schema_reference_location(document, ref)  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
-        return (
-            None
-            if target is None or target.document not in self.documents.ids
-            else self.documents.location(target, "schema")
-        )
+        target = self.loaded_target(document, ref)
+        return None if target is None else self.documents.location(target, "schema")
 
     def address_parameter(
         self,

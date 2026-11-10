@@ -1,0 +1,3 @@
+# asyncapi-unopened
+render pydantic_v2.BaseModel
+  Error: /channels/orders: it is served on no ws or wss server; /channels/private: a server it is served on requires security
