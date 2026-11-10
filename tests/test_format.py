@@ -2190,7 +2190,7 @@ def test_builtin_formatter_private_edge_helpers(tmp_path: Path) -> None:
     )
     assert _get_builtin_known_first_party(tmp_path) == DEFAULT_KNOWN_FIRST_PARTY
     assert _normalize_string_quotes("a = \"ok\"\nb = 'has \" quote'\nc = 'abc\\\\'\nd = 'ok'\n") == (
-        'a = "ok"\nb = \'has " quote\'\nc = \'abc\\\\\'\nd = "ok"\n'
+        'a = "ok"\nb = \'has " quote\'\nc = "abc\\\\"\nd = "ok"\n'
     )
 
 
