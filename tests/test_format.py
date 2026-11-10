@@ -3915,6 +3915,18 @@ def test_builtin_formatter_keeps_a_line_not_indented_by_fours_as_it_is() -> None
     )
 
 
+def test_builtin_formatter_keeps_indentation_it_cannot_rewrite_validly() -> None:
+    """Keep the indentation when re-indenting would break the code, as with a backslash-only continuation line."""
+    code = "class A:\n  x = 1\n  \\\n  y = 2\n"
+    assert apply_builtin_formatter(code) == code
+
+
+def test_builtin_formatter_keeps_comments_of_newer_target_code_as_written() -> None:
+    """Keep the comments of code the running Python cannot parse, such as a PEP 701 f-string on Python 3.11."""
+    code = 'x = f"{d["#key"]}"\n'
+    assert apply_builtin_formatter(code, python_version=PythonVersion.PY_312) == code
+
+
 def test_builtin_formatter_places_blank_lines_after_a_decorator_split_in_a_class() -> None:
     """Start a decorated method at its ``@`` line when the decorator's expression starts on a later line."""
     code = "class A:\n    @(\n        d)\n    def f(self):\n        pass\n    x = 1\n"

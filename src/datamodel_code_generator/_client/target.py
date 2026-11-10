@@ -175,7 +175,11 @@ class ClientTarget:
             refused = _refused(rendered, request.operations, called)
             kept = {} if refused is None else {key: _kept(*value) for key, value in refused.items()}
             if refused is None or (len(refused) == len(request.operations) and not any(kept.values())):
-                diagnostics = (*(item for _, found in skipped for item in found), *rendered.diagnostics)
+                diagnostics = (
+                    *(item for _, found in skipped for item in found),
+                    *(item for media in left_out.values() for _, _, found in media for item in found),
+                    *rendered.diagnostics,
+                )
                 raise APIGenerationError(diagnostics, option_prefix=rendered.option_prefix) from None
             for identity, (operation, found) in refused.items():
                 subject = subjects.get(identity) or _operation(operation)
@@ -235,6 +239,7 @@ def _kept(
     a finding lies in no media of the request body, or no media would remain.
     """
     media = request_media(operation)
+    names = {child.name for child in media}
     by_name: dict[str, list[Diagnostic]] = {}
     for item in found:
         pointer = item.source_pointer or ""
@@ -246,7 +251,7 @@ def _kept(
             ),
             None,
         )
-        if name is None:
+        if name is None or name not in names:
             return None
         by_name.setdefault(name, []).append(item)
     remaining = tuple(child for child in media if child.name not in by_name)
