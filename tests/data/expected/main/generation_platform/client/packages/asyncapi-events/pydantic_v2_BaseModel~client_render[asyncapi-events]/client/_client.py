@@ -24,12 +24,14 @@ from .responses import RawResponse
 
 if TYPE_CHECKING:
     from ._runtime.protocols.options import HelperOptions
-    from .protocols._helpers import ActivitySse
-    from .protocols._helpers import ChatWebsocket
-    from .protocols._helpers import NoticesSse
-    from .protocols._helpers import PricesSse
-    from .protocols._helpers import ProtocolHelpers
-    from .protocols._helpers import TradesSse
+    from .protocols._helpers import (
+        ActivitySse,
+        ChatWebsocket,
+        NoticesSse,
+        PricesSse,
+        ProtocolHelpers,
+        TradesSse,
+    )
 
 _DEFAULTS = ClientDefaults(
     security_schemes=security.ROOT_SCHEMES,

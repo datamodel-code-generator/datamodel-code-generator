@@ -82,11 +82,13 @@ It covers the generated-code patterns that matter for model modules:
 - Sorts only the leading import block. It stops at the first non-import statement.
 - Splits `import a, b` into separate `import` lines.
 - Groups imports in this order: `__future__`, standard library, third-party, relative imports.
-- Sorts `from ... import ...` names and merges imports from the same module; aliased names get their own lines in
-  name order, like isort.
+- Sorts `from ... import ...` names and merges imports from the same module, relative ones too; aliased names get
+  their own lines in name order, like isort.
 - Wraps long `from ... import ...` statements with parentheses when they exceed the configured line length.
 - Leaves commented import lines in place instead of dropping comments while sorting imports.
-- Sorts imports inside a top-level `if TYPE_CHECKING:` block when that block contains only imports.
+- Sorts each run of imports inside function, class and compound statement bodies (such as `if TYPE_CHECKING:`)
+  the same way, wraps long ones at the width their indent leaves and puts a blank line after a run, like isort and
+  Black. A comment line between two imports ends a run.
 - Lays out module-level and class-level simple statements (assignments, annotated assignments, expression
   statements, `type` statements), class and function headers and decorators the way Black splits long lines: the
   right-hand split, splits at commas and operators, optional parentheses around annotations and assigned values,

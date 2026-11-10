@@ -22,11 +22,13 @@ from .responses import RawResponse
 
 if TYPE_CHECKING:
     from ._runtime.protocols.options import HelperOptions
-    from .protocols._helpers import AudioWebsocket
-    from .protocols._helpers import MarketWebsocket
-    from .protocols._helpers import ProtocolHelpers
-    from .protocols._helpers import StatusWebsocket
-    from .protocols._helpers import TickerWebsocket
+    from .protocols._helpers import (
+        AudioWebsocket,
+        MarketWebsocket,
+        ProtocolHelpers,
+        StatusWebsocket,
+        TickerWebsocket,
+    )
 
 _DEFAULTS = ClientDefaults(
     helpers=(

@@ -28,7 +28,6 @@ CodeFormatter = format_module.CodeFormatter
 Formatter = format_module.Formatter
 PythonVersion = format_module.PythonVersion
 PythonVersionMin = format_module.PythonVersionMin
-_format_import_node = format_module._format_import_node
 _format_import_node_without_reordering = format_module._format_import_node_without_reordering
 _get_builtin_line_length = format_module._get_builtin_line_length
 _get_builtin_known_first_party = format_module._get_builtin_known_first_party
@@ -711,14 +710,90 @@ def test_apply_builtin_formatter_keeps_case_only_import_ties_in_order_like_isort
     )
 
 
-def test_format_import_node_formats_from_import_aliases() -> None:
-    """Test direct import node formatting for aliased from-imports."""
-    node = ast.parse("from pydantic import Field as PydanticField, BaseModel as Model\n").body[0]
+@pytest.mark.parametrize(
+    "code",
+    [
+        "from .b import Y\nfrom .a import X\nfrom . import b\nfrom . import a\n\nprint(X, Y, a, b)\n",
+        (
+            "def f():\n"
+            "    from .resources.detailed_zip_code_information._sync import DetailedZipCodeInformationResource\n"
+            "    return DetailedZipCodeInformationResource\n"
+        ),
+        (
+            "class A:\n"
+            "    def f(self):\n"
+            "        from .b import Y\n"
+            "\n"
+            "        from .a import X\n"
+            "        import sys\n"
+            "\n"
+            "        return X, Y, sys\n"
+        ),
+        (
+            "from typing import TYPE_CHECKING\n"
+            "\n"
+            "if TYPE_CHECKING:\n"
+            "    from .protocols._async_helpers import AsyncRootWebsocket\n"
+            "    from .protocols._async_helpers import AsyncProtocolHelpers\n"
+            "else:\n"
+            "    AsyncRootWebsocket = AsyncProtocolHelpers = None\n"
+        ),
+        "import typing\n\nif typing.TYPE_CHECKING:\n    import b\n    import a\n    VALUE = a.b\n",
+        "class A:\n    import b\n\n\n    import a\n    x = 1\n",
+        "from termios import *\n\nprint(TCSANOW)\n",
+        "def f():\n    from termios import *\n    from os import path\n    return path\n",
+        "from tkinter import *\nfrom tkinter import messagebox\nfrom tkinter import _get_temp_root, _destroy_root\n",
+        "try:\n    from _etree import *\n    from _etree import _set_factories\nexcept ImportError:\n    x = 1\n",
+        "from b import x\nfrom a import *\nfrom a import y as z\nfrom a import w\n",
+    ],
+)
+def test_apply_builtin_formatter_sorts_nested_import_runs_like_isort(code: str) -> None:
+    """Sort, merge and wrap each run of imports in a nested body as isort and Black lay it out."""
+    assert apply_builtin_formatter(code) == black.format_str(
+        isort.code(code, config=isort.Config(profile="black")), mode=black.FileMode(string_normalization=False)
+    )
 
-    assert isinstance(node, ast.ImportFrom)
-    assert _format_import_node(node, line_length=88) == (
-        2,
-        "from pydantic import BaseModel as Model\nfrom pydantic import Field as PydanticField",
+
+def test_apply_builtin_formatter_keeps_commented_nested_imports_at_their_indent() -> None:
+    """Keep a commented import of a nested run as written, at the indent of the run.
+
+    A comment line ends a run, and imports that share a line stay as they are.
+    """
+    code = (
+        "def g():\n"
+        "    import b\n"
+        "    # a comment ends the run\n"
+        "    import a\n"
+        "    import a; import b\n"
+        "\n"
+        "\n"
+        "def f():\n"
+        "    try:\n"
+        "        import b  # noqa: F401\n"
+        "        from .b import (Y,  # first\n"
+        "            Z)\n"
+        "        import a\n"
+        "    except ImportError:\n"
+        "        pass\n"
+    )
+
+    assert apply_builtin_formatter(code) == (
+        "def g():\n"
+        "    import b\n"
+        "    # a comment ends the run\n"
+        "    import a\n"
+        "    import a; import b\n"
+        "\n"
+        "\n"
+        "def f():\n"
+        "    try:\n"
+        "        import b  # noqa: F401\n"
+        "        import a\n"
+        "\n"
+        "        from .b import (Y,  # first\n"
+        "            Z)\n"
+        "    except ImportError:\n"
+        "        pass\n"
     )
 
 
@@ -728,8 +803,6 @@ def test_format_import_node_rejects_unsupported_nodes() -> None:
 
     with pytest.raises(TypeError, match="Unsupported import node: Pass"):
         _format_import_node_without_reordering(unsupported_node, ["pass"])
-    with pytest.raises(TypeError, match="Unsupported import node: Pass"):
-        _format_import_node(unsupported_node, line_length=88)
 
 
 def test_apply_builtin_formatter_adds_blank_after_module_docstring() -> None:

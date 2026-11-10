@@ -22,8 +22,7 @@ from .responses import RawResponse
 
 if TYPE_CHECKING:
     from ._runtime.protocols.options import HelperOptions
-    from .protocols._helpers import OrdersSse
-    from .protocols._helpers import ProtocolHelpers
+    from .protocols._helpers import OrdersSse, ProtocolHelpers
 
 _DEFAULTS = ClientDefaults(
     helpers=(('orders', 'sse'),),

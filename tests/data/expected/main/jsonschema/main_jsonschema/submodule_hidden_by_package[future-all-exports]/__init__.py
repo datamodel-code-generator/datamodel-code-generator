@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from .annotations import Item
 from .annotations import Item, Kind
 from .api import Order
 
