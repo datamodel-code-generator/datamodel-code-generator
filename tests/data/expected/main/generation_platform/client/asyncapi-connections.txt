@@ -1,0 +1,57 @@
+# asyncapi-connections
+render pydantic_v2.BaseModel
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel '/v1/filtered', which uses channels sharing an address (AsyncAPI 2.0) that the client does not support: /channels/filtered: the handshakes of channels filtered and unfiltered at its address differ
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel '/v1/guarded', which uses channels sharing an address (AsyncAPI 2.0) that the client does not support: /channels/guarded: the handshakes of channels guarded and unguarded at its address differ
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'forwarded', which uses operation replies (AsyncAPI 3.0) that the client does not support: /channels/forwarded: the reply of operation /operations/takeForwarded goes to an address given by $message.header#/replyTo
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'routed', which uses operation replies (AsyncAPI 3.0) that the client does not support: /channels/routed: the reply of operation /operations/takeRouted is on channel /channels/outbox, at another address
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'outbox', which the client cannot generate: /channels/outbox: no operation sends or receives a message on it
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'remote', which the client cannot generate: /channels/remote: the reply of operation /operations/takeRemote references another document
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'relayed', which the client cannot generate: /channels/relayed: the reply channel of operation /operations/takeRelayed references another document
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated/security.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/responses.py
+  client/types/__init__.py
+  models.py
+render typing.TypedDict
+  warning UserWarning: <root>/typing_TypedDict/client: Skipping channel '/v1/filtered', which uses channels sharing an address (AsyncAPI 2.0) that the client does not support: /channels/filtered: the handshakes of channels filtered and unfiltered at its address differ
+  warning UserWarning: <root>/typing_TypedDict/client: Skipping channel '/v1/guarded', which uses channels sharing an address (AsyncAPI 2.0) that the client does not support: /channels/guarded: the handshakes of channels guarded and unguarded at its address differ
+  warning UserWarning: <root>/typing_TypedDict/client: Skipping channel 'forwarded', which uses operation replies (AsyncAPI 3.0) that the client does not support: /channels/forwarded: the reply of operation /operations/takeForwarded goes to an address given by $message.header#/replyTo
+  warning UserWarning: <root>/typing_TypedDict/client: Skipping channel 'routed', which uses operation replies (AsyncAPI 3.0) that the client does not support: /channels/routed: the reply of operation /operations/takeRouted is on channel /channels/outbox, at another address
+  warning UserWarning: <root>/typing_TypedDict/client: Skipping channel 'outbox', which the client cannot generate: /channels/outbox: no operation sends or receives a message on it
+  warning UserWarning: <root>/typing_TypedDict/client: Skipping channel 'remote', which the client cannot generate: /channels/remote: the reply of operation /operations/takeRemote references another document
+  warning UserWarning: <root>/typing_TypedDict/client: Skipping channel 'relayed', which the client cannot generate: /channels/relayed: the reply channel of operation /operations/takeRelayed references another document
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated/security.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/responses.py
+  client/types/__init__.py
+  models.py

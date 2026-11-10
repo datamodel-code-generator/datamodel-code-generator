@@ -1,8 +1,9 @@
 """Open the channels of an AsyncAPI input as the client's WebSocket helpers.
 
-Each channel a client can open becomes a WebSocket helper whose entry operation is the channel's handshake, a GET of
-its address on its WebSocket servers, and whose messages are the channel's: so its plans, sessions, limits and errors
-are those of every WebSocket helper. The client exposes each one as an attribute of its own, named after the channel.
+Each channel a client can open, or the channels at one address that it opens as one connection, becomes a WebSocket
+helper whose entry operation is the channel's handshake, a GET of its address on its WebSocket servers, and whose
+messages are the channel's: so its plans, sessions, limits and errors are those of every WebSocket helper. The client
+exposes each one as an attribute of its own, named after the channel.
 `asyncapi_perspective` says which side the document describes: the client of a server's document sends what the
 server receives.
 """

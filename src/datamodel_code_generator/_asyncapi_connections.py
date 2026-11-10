@@ -6,21 +6,23 @@ messages its operations carry and whether the described application sends or rec
 open a channel. AsyncAPI 2 names the application's sends `subscribe` and its receives `publish`;
 AsyncAPI 3 names them by the operation's `action`. Which of them a client sends is the client's setting.
 
-A channel is opened only when everything a client needs to open it resolves: its operations and their traits, its
-messages and their traits, and the schemas of their payloads. Traits are merged as the document's version merges them
-first. The declarations are read from the document itself, so one in another document leaves the channel out, and an
-operation in another document, which may be on any channel, leaves every channel out. A payload schema in another
-document is looked up in the documents the generation loaded (`loaded`), as the models bind it.
+A client opens the channels at one address on the same servers as one connection, which carries the messages of
+them all, the replies of their AsyncAPI 3 operations among them. A connection is opened only when everything a client
+needs to open it resolves: the operations of its channels and their traits, its messages and their traits, and the
+schemas of their payloads. Traits are merged as the document's version merges them first. The declarations are read
+from the document itself, so one in another document leaves the channel out, and an operation in another document,
+which may be on any channel, leaves every channel out. A payload schema in another document is looked up in the
+documents the generation loaded (`loaded`), as the models bind it.
 """
 
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._document_reader import as_mapping, descend
-from datamodel_code_generator._json_pointer import join_pointer, reference_tokens
+from datamodel_code_generator._json_pointer import join_pointer, pointer_tokens, reference_tokens
 from datamodel_code_generator._runtime.model_codecs.media import is_token
 from datamodel_code_generator._target_naming import path_placeholders
 
@@ -145,10 +147,12 @@ class ReadMessage:
 
 @dataclass(frozen=True, slots=True)
 class ReadChannel:
-    """A channel as a client opens it, or the features and reasons that leave it out (`skips`).
+    """A connection as a client opens it, or the features and reasons that leave it out (`skips`).
 
-    `declaration` is where the channel is written and `use_site` where the document lists it. `name` is the channel's
-    id (AsyncAPI 3) or its address (AsyncAPI 2). `address` is the path the channel is at relative to its servers, which
+    A connection is a channel, or the channels at one address on the same servers: it carries the messages of them all,
+    and is otherwise the first of them. `declaration` is where that channel is written and `use_site` where the
+    document lists it. `name` is the channel's id (AsyncAPI 3) or its address (AsyncAPI 2), and the address of a
+    connection of several channels. `address` is the path the channel is at relative to its servers, which
     always starts with `/`, as both versions read an address without one. A channel of a document that declares no
     servers is served on none, so a client opens it at the base URL it is given. `security` holds the alternatives
     of the security its handshake needs, as OpenAPI's requirements list them, and is None where it needs none.
@@ -271,11 +275,37 @@ def _merged(chosen: Requirement, alternative: Requirement) -> Requirement:
     return tuple((name, tuple(scopes)) for name, scopes in merged.items())
 
 
+def _undescribed(value: YamlValue) -> YamlValue:
+    """Return a declaration without its `description`, which documents what it is but changes nothing a client sends."""
+    return {key: item for key, item in value.items() if key != "description"} if isinstance(value, dict) else value
+
+
 def _unordered(security: tuple[Requirement, ...] | None) -> _Unordered | None:
     """Return a security's alternatives as a set, each the set of its schemes with their scopes, in no order."""
     if security is None:
         return None
     return frozenset(frozenset((name, frozenset(scopes)) for name, scopes in alternative) for alternative in security)
+
+
+def _handshake_inputs(document: _Document, channel: ReadChannel) -> tuple[object, ...]:
+    """Return what a channel's handshake sends, as written but for descriptions, to tell whether two agree.
+
+    Those are the parameters of its address, its query and header parameters, its subprotocols and its security.
+    """
+    return (
+        {parameter.name: _undescribed(document.value(parameter.declaration)) for parameter in channel.parameters},
+        [
+            (
+                parameter.name,
+                parameter.location,
+                parameter.required,
+                _undescribed(document.value(parameter.schema)),
+            )
+            for parameter in channel.handshake
+        ],
+        channel.subprotocols,
+        _unordered(channel.security),
+    )
 
 
 class _Reader:
@@ -295,6 +325,8 @@ class _Reader:
         self.servers = self.read_servers()
         self.declares_servers = bool(as_mapping(self.document.value(("servers",))))
         self.operations, self.foreign = ([], ()) if self.v2 else self.read_operations()
+        self.replies: dict[Tokens, list[tuple[str, Tokens]]] = {}
+        """The operations on each channel whose reply is on another channel, each with that channel's declaration."""
 
     def read_schemes(self) -> dict[str, ReadScheme | str]:
         """Return each security scheme of the document by name: as a handshake sends it, else its AsyncAPI type.
@@ -362,6 +394,58 @@ class _Reader:
             channel, declaration = as_mapping(found[0]), found[1]
             yield self.channel(use_site, declaration, name, channel)
 
+    def connections(self) -> Iterator[ReadChannel]:
+        """Yield every connection a client opens, in document order: the channels at one address on the same servers.
+
+        A channel without an address, or served on no WebSocket server of a document that declares servers, is one of
+        its own.
+        """
+        connections: dict[object, list[ReadChannel]] = {}
+        for channel in self.channels():
+            key = (
+                (channel.address, tuple(server.name for server in channel.servers))
+                if channel.address is not None and (channel.servers or not self.declares_servers)
+                else channel.use_site
+            )
+            connections.setdefault(key, []).append(channel)
+        for channels in connections.values():
+            yield self.connection(channels)
+
+    def connection(self, channels: list[ReadChannel]) -> ReadChannel:
+        """Join the channels at one address on the same servers as one connection, which carries all their messages.
+
+        The connection is named after the address when it joins several channels, and opened by the handshake of the
+        first: so the handshakes of the others must take the same parameters, offer the same subprotocols and need the
+        same security, or the connection is left out. It is left out as well where a reply of an operation on it is on
+        a channel it does not join, and where every channel it joins is.
+        """
+        first = channels[0]
+        skips: Skips = [skip for channel in channels for skip in channel.skips]
+        handshake = _handshake_inputs(self.document, first)
+        for channel in channels[1:]:
+            if _handshake_inputs(self.document, channel) != handshake:
+                skips.append((
+                    "shared_addresses",
+                    f"the handshakes of channels {first.name} and {channel.name} at its address differ",
+                ))
+        joined = {channel.declaration for channel in channels}
+        for channel in channels:
+            for pointer, target in self.replies.get(channel.declaration, ()):
+                if target not in joined:
+                    message = (
+                        f"the reply of operation {pointer} is on channel {join_pointer(target)}, at another address"
+                    )
+                    skips.append(("operation_replies", message))
+        messages = tuple(dict.fromkeys(message for channel in channels for message in channel.messages))
+        if not messages and not skips:
+            skips.append((None, "no operation sends or receives a message on it"))
+        return replace(
+            first,
+            name=first.name if len(channels) == 1 else str(first.address),
+            messages=messages,
+            skips=tuple(dict.fromkeys(skips)),
+        )
+
     def read_operations(self) -> tuple[list[_Operation], tuple[str, ...]]:
         """Return each AsyncAPI 3 operation on a channel of the document, and the operations in another document.
 
@@ -414,8 +498,6 @@ class _Reader:
             messages = list(self.v2_messages(declaration, channel, skips, securities))
         else:
             messages = list(self.v3_messages(declaration, channel, skips, securities))
-        if not messages and not skips:
-            skips.append((None, "no operation sends or receives a message on it"))
         return ReadChannel(
             use_site,
             declaration,
@@ -634,16 +716,66 @@ class _Reader:
                 skips.append((None, f"a trait of operation {pointer} references another document"))
                 continue
             securities.append(self.requirements(operation.get("security"), f"operation {pointer}", skips))
+            yield from self.listed(operation.get("messages"), holder, own, action, skips)
             if "reply" in operation:
-                skips.append(("operation_replies", "an operation on it declares a reply"))
-            listed = operation.get("messages")
-            items: list[tuple[YamlValue, Tokens]] = (
-                [(value, ()) for value in listed]
-                if isinstance(listed, list)
-                else [(value, (*holder, key)) for key, value in own]
-            )
-            for item, location in items:
-                yield from self.message(item, location, action, skips)
+                yield from self.reply(declaration, channel, pointer, operation, skips)
+
+    def listed(
+        self,
+        listed: YamlValue,
+        holder: Tokens,
+        own: list[tuple[str, YamlValue]],
+        action: object,
+        skips: Skips,
+    ) -> Iterator[ReadMessage]:
+        """Yield the messages an operation or its reply lists, else every message of its channel, `own` at `holder`."""
+        items: list[tuple[YamlValue, Tokens]] = (
+            [(value, ()) for value in listed]
+            if isinstance(listed, list)
+            else [(value, (*holder, key)) for key, value in own]
+        )
+        for item, location in items:
+            yield from self.message(item, location, action, skips)
+
+    def reply(
+        self,
+        declaration: Tokens,
+        channel: Mapping[str, YamlValue],
+        pointer: str,
+        operation: Mapping[str, YamlValue],
+        skips: Skips,
+    ) -> Iterator[ReadMessage]:
+        """Yield the messages of an AsyncAPI 3 operation's reply, which go the other way on the operation's connection.
+
+        The reply is on the channel it names, else on the operation's own; a reply on another channel is recorded in
+        `replies`, as the connection carries it only where that channel is at the same address on the same servers.
+        Its messages are those it lists, else every message of its channel. A reply sent to an address that a runtime
+        expression gives (`address`) is on no connection a client opens, so it leaves the channel out; no request is
+        correlated with its reply.
+        """
+        if (found := self.document.resolved(operation["reply"], (*pointer_tokens(pointer), "reply"))) is None:
+            skips.append((None, f"the reply of operation {pointer} references another document"))
+            return
+        reply = as_mapping(found[0])
+        if "address" in reply:
+            address = self.document.resolved(reply["address"], ())
+            location = as_mapping(None if address is None else address[0]).get("location")
+            given = f" by {location}" if isinstance(location, str) else ""
+            skips.append(("operation_replies", f"the reply of operation {pointer} goes to an address given{given}"))
+            return
+        target, written = declaration, channel
+        if "channel" in reply:
+            if (named := self.document.resolved(reply["channel"], (*found[1], "channel"))) is None:
+                skips.append((None, f"the reply channel of operation {pointer} references another document"))
+                return
+            target, written = named[1], as_mapping(named[0])
+        if target != declaration:
+            self.replies.setdefault(declaration, []).append((pointer, target))
+        holder = (*target, "messages")
+        own = [(str(key), item) for key, item in as_mapping(written.get("messages")).items()]
+        yield from self.listed(
+            reply.get("messages"), holder, own, "receive" if operation["action"] == "send" else "send", skips
+        )
 
     def traited(self, written: Mapping[str, YamlValue]) -> Mapping[str, YamlValue] | None:
         """Return an operation or a message with the fields its traits give it, or None when a trait does not resolve.
@@ -709,11 +841,12 @@ class _Reader:
 
 
 def read(raw: Mapping[str, YamlValue], loaded: Callable[[str], YamlValue]) -> ReadDocument:
-    """Return every channel of a loaded AsyncAPI document, in document order, and the schemes a handshake can send.
+    """Return every connection of a loaded AsyncAPI document, in document order, and the schemes a handshake can send.
 
     `loaded` returns the schema a `$ref` of the document to another one names in the loaded documents, or None.
     """
     reader = _Reader(raw, loaded)
     return ReadDocument(
-        tuple(reader.channels()), tuple(scheme for scheme in reader.schemes.values() if isinstance(scheme, ReadScheme))
+        tuple(reader.connections()),
+        tuple(scheme for scheme in reader.schemes.values() if isinstance(scheme, ReadScheme)),
     )

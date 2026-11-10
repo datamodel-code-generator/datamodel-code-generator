@@ -457,7 +457,8 @@ The AsyncAPI features the generated Python client plans itself; a channel that u
 | `messages without a payload` | AsyncAPI 2.0 | ❌ Not Supported | A message that declares no `payload`, which the client cannot code |
 | `message headers` | AsyncAPI 2.0 | ⚠️ Partial | The `headers` of a message; the client codes its payload but neither sends nor reads headers, which a WebSocket frame does not carry, and opens the channel without a warning |
 | `several messages per direction` | AsyncAPI 2.0 | ⚠️ Partial | More than one message that an application sends, or receives, on one channel; the client tells JSON messages apart by a tag their models declare, else by their class when it sends them, and Pydantic models code them as a union; it does not receive text and JSON messages on one channel |
-| `operation replies` | AsyncAPI 3.0 | ❌ Not Supported | The `reply` of an operation |
+| `channels sharing an address` | AsyncAPI 2.0 | ⚠️ Partial | Channels at one address on the same servers, which the client opens as one connection that carries the messages of them all; their handshakes must take the same parameters, offer the same subprotocols and need the same security |
+| `operation replies` | AsyncAPI 3.0 | ⚠️ Partial | The `reply` of an operation; the client sends or receives its messages on the operation's connection, without correlating them with a request, and does not open a reply on a channel at another address or sent to an address a runtime expression gives |
 | `security requirements` | AsyncAPI 2.0 | ⚠️ Partial | The security of a server or an operation, its own or a trait's; the client sends `httpApiKey`, `http`, `oauth2` and `openIdConnect` credentials on a handshake, and needs every server of a channel to require the same |
 <!-- END AUTO-GENERATED SUPPORTED FEATURES -->
 

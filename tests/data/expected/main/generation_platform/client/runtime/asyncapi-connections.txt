@@ -1,0 +1,26 @@
+# asyncapi-connections pydantic_v2.BaseModel
+  warning UserWarning: <root>/asyncapi_connections_pydantic_v2_basemodel: Skipping channel '/v1/filtered', which uses channels sharing an address (AsyncAPI 2.0) that the client does not support: /channels/filtered: the handshakes of channels filtered and unfiltered at its address differ
+  warning UserWarning: <root>/asyncapi_connections_pydantic_v2_basemodel: Skipping channel '/v1/guarded', which uses channels sharing an address (AsyncAPI 2.0) that the client does not support: /channels/guarded: the handshakes of channels guarded and unguarded at its address differ
+  warning UserWarning: <root>/asyncapi_connections_pydantic_v2_basemodel: Skipping channel 'forwarded', which uses operation replies (AsyncAPI 3.0) that the client does not support: /channels/forwarded: the reply of operation /operations/takeForwarded goes to an address given by $message.header#/replyTo
+  warning UserWarning: <root>/asyncapi_connections_pydantic_v2_basemodel: Skipping channel 'routed', which uses operation replies (AsyncAPI 3.0) that the client does not support: /channels/routed: the reply of operation /operations/takeRouted is on channel /channels/outbox, at another address
+  warning UserWarning: <root>/asyncapi_connections_pydantic_v2_basemodel: Skipping channel 'outbox', which the client cannot generate: /channels/outbox: no operation sends or receives a message on it
+  warning UserWarning: <root>/asyncapi_connections_pydantic_v2_basemodel: Skipping channel 'remote', which the client cannot generate: /channels/remote: the reply of operation /operations/takeRemote references another document
+  warning UserWarning: <root>/asyncapi_connections_pydantic_v2_basemodel: Skipping channel 'relayed', which the client cannot generate: /channels/relayed: the reply channel of operation /operations/takeRelayed references another document
+    desk 1 text QuotePayload{'kind': 'quote', 'symbol': 'XBT', 'bid': 1.5} raw=b'{"kind": "quote", "symbol": "XBT", "bid": 1.5}'
+    desk 2 text AckPayload{'kind': 'ack', 'symbols': 1} raw=b'{"kind": "ack", "symbols": 1}'
+    desk 3 text ReceiptPayload{'kind': 'receipt', 'id': 'r-1'} raw=b'{"kind": "receipt", "id": "r-1"}'
+    desk server saw '{"kind":"subscribe","symbols":["XBT"]}', '{"kind":"order","symbol":"XBT","size":2.0}'
+    server GET /v1/desk/eu [] | closed 1000 ''
+# asyncapi-connections typing.TypedDict
+  warning UserWarning: <root>/asyncapi_connections_typing_typeddict: Skipping channel '/v1/filtered', which uses channels sharing an address (AsyncAPI 2.0) that the client does not support: /channels/filtered: the handshakes of channels filtered and unfiltered at its address differ
+  warning UserWarning: <root>/asyncapi_connections_typing_typeddict: Skipping channel '/v1/guarded', which uses channels sharing an address (AsyncAPI 2.0) that the client does not support: /channels/guarded: the handshakes of channels guarded and unguarded at its address differ
+  warning UserWarning: <root>/asyncapi_connections_typing_typeddict: Skipping channel 'forwarded', which uses operation replies (AsyncAPI 3.0) that the client does not support: /channels/forwarded: the reply of operation /operations/takeForwarded goes to an address given by $message.header#/replyTo
+  warning UserWarning: <root>/asyncapi_connections_typing_typeddict: Skipping channel 'routed', which uses operation replies (AsyncAPI 3.0) that the client does not support: /channels/routed: the reply of operation /operations/takeRouted is on channel /channels/outbox, at another address
+  warning UserWarning: <root>/asyncapi_connections_typing_typeddict: Skipping channel 'outbox', which the client cannot generate: /channels/outbox: no operation sends or receives a message on it
+  warning UserWarning: <root>/asyncapi_connections_typing_typeddict: Skipping channel 'remote', which the client cannot generate: /channels/remote: the reply of operation /operations/takeRemote references another document
+  warning UserWarning: <root>/asyncapi_connections_typing_typeddict: Skipping channel 'relayed', which the client cannot generate: /channels/relayed: the reply channel of operation /operations/takeRelayed references another document
+    desk 1 text dict{'kind': 'quote', 'symbol': 'XBT', 'bid': 1.5} raw=b'{"kind": "quote", "symbol": "XBT", "bid": 1.5}'
+    desk 2 text dict{'kind': 'ack', 'symbols': 1} raw=b'{"kind": "ack", "symbols": 1}'
+    desk 3 text dict{'kind': 'receipt', 'id': 'r-1'} raw=b'{"kind": "receipt", "id": "r-1"}'
+    desk server saw '{"kind":"subscribe","symbols":["XBT"]}', '{"kind":"order","symbol":"XBT","size":2.0}'
+    server GET /v1/desk/eu [] | closed 1000 ''

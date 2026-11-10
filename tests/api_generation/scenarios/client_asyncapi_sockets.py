@@ -322,6 +322,35 @@ def asyncapi_enum_tag_sends(package: ModuleType, lines: list[str]) -> None:
         server.stop()
 
 
+def asyncapi_connections(package: ModuleType, lines: list[str]) -> None:
+    """Send and receive the messages of three channels at one address, and the replies of two, on one connection.
+
+    The server keeps the messages it got on the one handshake, and answers with a quote, the reply to the subscription
+    that the quotes channel carries and the reply to the order that the receipts channel carries.
+    """
+    models = _models(package)
+    server = SocketServer()
+    seen: list[str] = []
+    replies = (
+        json.dumps({"kind": "quote", "symbol": "XBT", "bid": 1.5}),
+        json.dumps({"kind": "ack", "symbols": 1}),
+        json.dumps({"kind": "receipt", "id": "r-1"}),
+    )
+    try:
+        (played,) = server.play(Play(talk=_collecting(seen, 2, *replies)))
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=server.url, http_client=http) as client,
+            client.v1_desk_region.connect(region="eu") as session,
+        ):
+            session.send(_value(models, "SubscribePayload", kind="subscribe", symbols=["XBT"]))
+            session.send(_value(models, "OrderPayload", kind="order", symbol="XBT", size=2.0))
+            lines.extend(f"    desk {_message(session.receive())}" for _ in replies)
+        lines.extend((f"    desk server saw {', '.join(seen)}", played.report()))
+    finally:
+        server.stop()
+
+
 def _handshakes(seen: list[str], *replies: str) -> Callable[[ServerConnection], None]:
     """Return a talk that keeps the path, query, credentials and headers of the handshake it got, then sends replies."""
 

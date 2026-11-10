@@ -6379,5 +6379,15 @@
   "asyncapi-messages-enums": {
     "input": "asyncapi-messages.yaml",
     "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"], "enum_field_as_literal": "none", "use_specialized_enum": false}
+  },
+  "asyncapi-connections": {
+    "input": "asyncapi-connections.yaml",
+    "references": ["asyncapi-other.yaml"],
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "backends": ["pydantic_v2.BaseModel", "typing.TypedDict"],
+    "modules": {
+      "pydantic_v2.BaseModel": [["client", "_client.py"], ["client", "protocols", "_plans.py"], ["client", "protocols", "_helpers.py"]],
+      "typing.TypedDict": [["client", "protocols", "_plans.py"]]
+    }
   }
 }
