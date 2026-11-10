@@ -12,7 +12,7 @@ from functools import partial
 from io import StringIO
 from typing import TYPE_CHECKING, Any, NamedTuple, TypeAlias, TypeGuard
 
-from datamodel_code_generator._builtin_line_split import format_logical_line, str_width
+from datamodel_code_generator._builtin_line_split import format_logical_line, iter_fexpr_spans, str_width
 from datamodel_code_generator._constraint_applicability import json_integer
 from datamodel_code_generator._format_types import (
     DEFAULT_KNOWN_FIRST_PARTY,
@@ -936,7 +936,6 @@ def _string_tokens(code: str) -> Iterator[tokenize.TokenInfo]:
 
 _ESCAPED_QUOTES = {quote: re.compile(rf"([^\\]|^)\\((?:\\\\)*){quote}") for quote in "'\""}
 _UNESCAPED_QUOTES = {quote: re.compile(rf"(([^\\]|^)(\\\\)*){quote}") for quote in "'\""}
-_F_STRING_FIELD = re.compile(r"(?:(?<!\{)|^)\{([^{].*?)\}(?:(?!\})|$)")
 
 
 def _sub_twice(pattern: re.Pattern[str], replacement: str, text: str) -> str:
@@ -945,7 +944,7 @@ def _sub_twice(pattern: re.Pattern[str], replacement: str, text: str) -> str:
 
 
 def _has_escaped_f_string_field(prefix: str, body: str) -> bool:
-    return "f" in prefix.casefold() and any("\\" in field for field in _F_STRING_FIELD.findall(body))
+    return "f" in prefix.casefold() and any("\\" in body[start:end] for start, end in iter_fexpr_spans(body))
 
 
 def _normalized_string_quotes(prefix: str, quote: str, body: str) -> str:
@@ -1217,11 +1216,11 @@ def _laid_out_docstring(text: str, indent: str, line_length: int) -> str:
     docstring = body[quote_length:-quote_length]
     started_empty = not docstring
     docstring = _fix_multiline_docstring(docstring, indent) if "\n" in text else docstring.strip()
-    trailing_backslash = False
+    trailing_backslash = ends_with_quote = False
     if docstring:
         if docstring[0] == quote_char:
             docstring = f" {docstring}"
-        if docstring[-1] == quote_char:
+        if ends_with_quote := docstring[-1] == quote_char:
             docstring += " "
         if (len(docstring) - len(docstring.rstrip("\\"))) % 2:
             docstring += " "
@@ -1238,7 +1237,7 @@ def _laid_out_docstring(text: str, indent: str, line_length: int) -> str:
         and not trailing_backslash
         and text[-1 - quote_length] != "\n"
     ):
-        return f"{prefix}{quote}{docstring}\n{indent}{quote}"
+        return f"{prefix}{quote}{docstring[:-1] if ends_with_quote else docstring}\n{indent}{quote}"
     return f"{prefix}{quote}{docstring}{quote}"
 
 
@@ -1316,10 +1315,10 @@ def _apply_builtin_formatter(  # noqa: PLR0913, PLR0914
     if (
         string_normalization
         and (normalized := _normalize_string_quotes_if_needed(code, source_is_valid=source_is_valid)) != code
+        and (normalized_tree := _parse_builtin_code_with_source_validity(normalized, python_version)[0]) is not None
     ):
-        code = normalized
+        code, tree = normalized, normalized_tree
         lines = _split_python_lines(code)
-        tree = _parse_builtin_code_with_source_validity(code, python_version)[0] or tree
     if lent is not None:
         _rename_lent_identifiers(tree, lent)
 
