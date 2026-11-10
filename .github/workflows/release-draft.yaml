@@ -139,7 +139,7 @@ jobs:
           claude_context_path="$claude_work_dir/analysis-context.md"
 
           write_pull_request_diff() {
-            gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" > "$diff_path"
+            gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --allow-escape-sequences > "$diff_path"
             awk '/^--- / { next } /^-/ { print substr($0, 2) }' "$diff_path" > "$deleted_lines_path"
             printf '%s lines\n' "$(wc -l < "$diff_path")" > "$diffstat_path"
           }
