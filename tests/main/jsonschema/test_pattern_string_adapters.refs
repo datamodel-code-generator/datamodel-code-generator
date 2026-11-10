@@ -85,18 +85,22 @@ inherited-builtin-api	main/jsonschema/pattern_string_adapters/inherited.py
 inherited-builtin-api	main/jsonschema/pattern_string_adapters/inherited.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 inherited-builtin-api	main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings.txt	?
 inherited-builtin-api	main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings@black26-external-isort8-python3.10.txt
+inherited-builtin-api	main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings@black26-external-isort8-python3.10.txt
 inherited-builtin-cli	main/jsonschema/pattern_string_adapters/inherited.py
 inherited-builtin-cli	main/jsonschema/pattern_string_adapters/inherited.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 inherited-builtin-cli	main/jsonschema/pattern_string_adapters/inherited_minimum_cli_warnings.txt	?	= main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings.txt
 inherited-builtin-cli	main/jsonschema/pattern_string_adapters/inherited_minimum_cli_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings@black26-external-isort8-python3.10.txt
+inherited-builtin-cli	main/jsonschema/pattern_string_adapters/inherited_minimum_cli_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings@black26-external-isort8-python3.10.txt
 inherited-external-api	main/jsonschema/pattern_string_adapters/inherited.py
 inherited-external-api	main/jsonschema/pattern_string_adapters/inherited.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 inherited-external-api	main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings.txt	?
 inherited-external-api	main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings@black26-external-isort8-python3.10.txt
+inherited-external-api	main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings@black26-external-isort8-python3.10.txt
 inherited-external-cli	main/jsonschema/pattern_string_adapters/inherited.py
 inherited-external-cli	main/jsonschema/pattern_string_adapters/inherited.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 inherited-external-cli	main/jsonschema/pattern_string_adapters/inherited_minimum_cli_warnings.txt	?	= main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings.txt
 inherited-external-cli	main/jsonschema/pattern_string_adapters/inherited_minimum_cli_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings@black26-external-isort8-python3.10.txt
+inherited-external-cli	main/jsonschema/pattern_string_adapters/inherited_minimum_cli_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/pattern_string_adapters/inherited_minimum_api_warnings@black26-external-isort8-python3.10.txt
 maximum-builtin-api	main/jsonschema/pattern_string_adapters/maximum.py
 maximum-builtin-api	main/jsonschema/pattern_string_adapters/maximum.runtime.txt
 maximum-builtin-cli	main/jsonschema/pattern_string_adapters/maximum.py

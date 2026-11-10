@@ -4,10 +4,12 @@
 api-builtin-False-array_union	main/jsonschema/allof_root_regressions/array_union_False_builtin.py	= main/jsonschema/allof_root_regressions/array_union_True_builtin.py
 api-builtin-False-array_union	main/jsonschema/allof_root_regressions/array_union_api_False_minimum_warnings.txt	?	= main/jsonschema/allof_root_regressions/array_union_api_True_minimum_warnings.txt
 api-builtin-False-array_union	main/jsonschema/allof_root_regressions/array_union_api_False_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
+api-builtin-False-array_union	main/jsonschema/allof_root_regressions/array_union_api_False_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
 api-builtin-False-array_union	main/jsonschema/allof_root_regressions/array_union_runtime.txt
 api-builtin-False-cycle	main/jsonschema/allof_root_regressions/cycle_False_builtin.py	= main/jsonschema/allof_root_regressions/cycle_True_builtin.py
 api-builtin-False-cycle	main/jsonschema/allof_root_regressions/cycle_api_False_minimum_warnings.txt	?	= main/jsonschema/allof_root_regressions/cycle_api_True_minimum_warnings.txt
 api-builtin-False-cycle	main/jsonschema/allof_root_regressions/cycle_api_False_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
+api-builtin-False-cycle	main/jsonschema/allof_root_regressions/cycle_api_False_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
 api-builtin-False-cycle	main/jsonschema/allof_root_regressions/cycle_runtime.txt
 api-builtin-False-nonfinite	main/jsonschema/allof_root_regressions/nonfinite_False_builtin.py	= main/jsonschema/allof_root_regressions/nonfinite_True_builtin.py
 api-builtin-False-nonfinite	main/jsonschema/allof_root_regressions/nonfinite_runtime.txt
@@ -17,10 +19,12 @@ api-builtin-False-variants	main/jsonschema/allof_root_regressions/variants_runti
 api-builtin-True-array_union	main/jsonschema/allof_root_regressions/array_union_True_builtin.py
 api-builtin-True-array_union	main/jsonschema/allof_root_regressions/array_union_api_True_minimum_warnings.txt	?
 api-builtin-True-array_union	main/jsonschema/allof_root_regressions/array_union_api_True_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
+api-builtin-True-array_union	main/jsonschema/allof_root_regressions/array_union_api_True_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
 api-builtin-True-array_union	main/jsonschema/allof_root_regressions/array_union_runtime.txt
 api-builtin-True-cycle	main/jsonschema/allof_root_regressions/cycle_True_builtin.py
 api-builtin-True-cycle	main/jsonschema/allof_root_regressions/cycle_api_True_minimum_warnings.txt	?
 api-builtin-True-cycle	main/jsonschema/allof_root_regressions/cycle_api_True_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
+api-builtin-True-cycle	main/jsonschema/allof_root_regressions/cycle_api_True_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
 api-builtin-True-cycle	main/jsonschema/allof_root_regressions/cycle_runtime.txt
 api-builtin-True-nonfinite	main/jsonschema/allof_root_regressions/nonfinite_True_builtin.py
 api-builtin-True-nonfinite	main/jsonschema/allof_root_regressions/nonfinite_runtime.txt
@@ -30,10 +34,12 @@ api-builtin-True-variants	main/jsonschema/allof_root_regressions/variants_runtim
 api-external-False-array_union	main/jsonschema/allof_root_regressions/array_union_False_external.py	= main/jsonschema/allof_root_regressions/array_union_True_builtin.py
 api-external-False-array_union	main/jsonschema/allof_root_regressions/array_union_api_False_minimum_warnings.txt	?	= main/jsonschema/allof_root_regressions/array_union_api_True_minimum_warnings.txt
 api-external-False-array_union	main/jsonschema/allof_root_regressions/array_union_api_False_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
+api-external-False-array_union	main/jsonschema/allof_root_regressions/array_union_api_False_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
 api-external-False-array_union	main/jsonschema/allof_root_regressions/array_union_runtime.txt
 api-external-False-cycle	main/jsonschema/allof_root_regressions/cycle_False_external.py	= main/jsonschema/allof_root_regressions/cycle_True_builtin.py
 api-external-False-cycle	main/jsonschema/allof_root_regressions/cycle_api_False_minimum_warnings.txt	?	= main/jsonschema/allof_root_regressions/cycle_api_True_minimum_warnings.txt
 api-external-False-cycle	main/jsonschema/allof_root_regressions/cycle_api_False_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
+api-external-False-cycle	main/jsonschema/allof_root_regressions/cycle_api_False_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
 api-external-False-cycle	main/jsonschema/allof_root_regressions/cycle_runtime.txt
 api-external-False-nonfinite	main/jsonschema/allof_root_regressions/nonfinite_False_external.py	= main/jsonschema/allof_root_regressions/nonfinite_True_builtin.py
 api-external-False-nonfinite	main/jsonschema/allof_root_regressions/nonfinite_runtime.txt
@@ -43,10 +49,12 @@ api-external-False-variants	main/jsonschema/allof_root_regressions/variants_runt
 api-external-True-array_union	main/jsonschema/allof_root_regressions/array_union_True_external.py	= main/jsonschema/allof_root_regressions/array_union_True_builtin.py
 api-external-True-array_union	main/jsonschema/allof_root_regressions/array_union_api_True_minimum_warnings.txt	?
 api-external-True-array_union	main/jsonschema/allof_root_regressions/array_union_api_True_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
+api-external-True-array_union	main/jsonschema/allof_root_regressions/array_union_api_True_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
 api-external-True-array_union	main/jsonschema/allof_root_regressions/array_union_runtime.txt
 api-external-True-cycle	main/jsonschema/allof_root_regressions/cycle_True_external.py	= main/jsonschema/allof_root_regressions/cycle_True_builtin.py
 api-external-True-cycle	main/jsonschema/allof_root_regressions/cycle_api_True_minimum_warnings.txt	?
 api-external-True-cycle	main/jsonschema/allof_root_regressions/cycle_api_True_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
+api-external-True-cycle	main/jsonschema/allof_root_regressions/cycle_api_True_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
 api-external-True-cycle	main/jsonschema/allof_root_regressions/cycle_runtime.txt
 api-external-True-nonfinite	main/jsonschema/allof_root_regressions/nonfinite_True_external.py	= main/jsonschema/allof_root_regressions/nonfinite_True_builtin.py
 api-external-True-nonfinite	main/jsonschema/allof_root_regressions/nonfinite_runtime.txt
@@ -56,10 +64,12 @@ api-external-True-variants	main/jsonschema/allof_root_regressions/variants_runti
 cli-builtin-False-array_union	main/jsonschema/allof_root_regressions/array_union_False_builtin.py	= main/jsonschema/allof_root_regressions/array_union_True_builtin.py
 cli-builtin-False-array_union	main/jsonschema/allof_root_regressions/array_union_cli_False_minimum_warnings.txt	?	= main/jsonschema/allof_root_regressions/array_union_api_True_minimum_warnings.txt
 cli-builtin-False-array_union	main/jsonschema/allof_root_regressions/array_union_cli_False_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
+cli-builtin-False-array_union	main/jsonschema/allof_root_regressions/array_union_cli_False_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
 cli-builtin-False-array_union	main/jsonschema/allof_root_regressions/array_union_runtime.txt
 cli-builtin-False-cycle	main/jsonschema/allof_root_regressions/cycle_False_builtin.py	= main/jsonschema/allof_root_regressions/cycle_True_builtin.py
 cli-builtin-False-cycle	main/jsonschema/allof_root_regressions/cycle_cli_False_minimum_warnings.txt	?	= main/jsonschema/allof_root_regressions/cycle_api_True_minimum_warnings.txt
 cli-builtin-False-cycle	main/jsonschema/allof_root_regressions/cycle_cli_False_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
+cli-builtin-False-cycle	main/jsonschema/allof_root_regressions/cycle_cli_False_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
 cli-builtin-False-cycle	main/jsonschema/allof_root_regressions/cycle_runtime.txt
 cli-builtin-False-nonfinite	main/jsonschema/allof_root_regressions/nonfinite_False_builtin.py	= main/jsonschema/allof_root_regressions/nonfinite_True_builtin.py
 cli-builtin-False-nonfinite	main/jsonschema/allof_root_regressions/nonfinite_runtime.txt
@@ -69,10 +79,12 @@ cli-builtin-False-variants	main/jsonschema/allof_root_regressions/variants_runti
 cli-builtin-True-array_union	main/jsonschema/allof_root_regressions/array_union_True_builtin.py
 cli-builtin-True-array_union	main/jsonschema/allof_root_regressions/array_union_cli_True_minimum_warnings.txt	?	= main/jsonschema/allof_root_regressions/array_union_api_True_minimum_warnings.txt
 cli-builtin-True-array_union	main/jsonschema/allof_root_regressions/array_union_cli_True_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
+cli-builtin-True-array_union	main/jsonschema/allof_root_regressions/array_union_cli_True_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
 cli-builtin-True-array_union	main/jsonschema/allof_root_regressions/array_union_runtime.txt
 cli-builtin-True-cycle	main/jsonschema/allof_root_regressions/cycle_True_builtin.py
 cli-builtin-True-cycle	main/jsonschema/allof_root_regressions/cycle_cli_True_minimum_warnings.txt	?	= main/jsonschema/allof_root_regressions/cycle_api_True_minimum_warnings.txt
 cli-builtin-True-cycle	main/jsonschema/allof_root_regressions/cycle_cli_True_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
+cli-builtin-True-cycle	main/jsonschema/allof_root_regressions/cycle_cli_True_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
 cli-builtin-True-cycle	main/jsonschema/allof_root_regressions/cycle_runtime.txt
 cli-builtin-True-nonfinite	main/jsonschema/allof_root_regressions/nonfinite_True_builtin.py
 cli-builtin-True-nonfinite	main/jsonschema/allof_root_regressions/nonfinite_runtime.txt
@@ -82,10 +94,12 @@ cli-builtin-True-variants	main/jsonschema/allof_root_regressions/variants_runtim
 cli-external-False-array_union	main/jsonschema/allof_root_regressions/array_union_False_external.py	= main/jsonschema/allof_root_regressions/array_union_True_builtin.py
 cli-external-False-array_union	main/jsonschema/allof_root_regressions/array_union_cli_False_minimum_warnings.txt	?	= main/jsonschema/allof_root_regressions/array_union_api_True_minimum_warnings.txt
 cli-external-False-array_union	main/jsonschema/allof_root_regressions/array_union_cli_False_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
+cli-external-False-array_union	main/jsonschema/allof_root_regressions/array_union_cli_False_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
 cli-external-False-array_union	main/jsonschema/allof_root_regressions/array_union_runtime.txt
 cli-external-False-cycle	main/jsonschema/allof_root_regressions/cycle_False_external.py	= main/jsonschema/allof_root_regressions/cycle_True_builtin.py
 cli-external-False-cycle	main/jsonschema/allof_root_regressions/cycle_cli_False_minimum_warnings.txt	?	= main/jsonschema/allof_root_regressions/cycle_api_True_minimum_warnings.txt
 cli-external-False-cycle	main/jsonschema/allof_root_regressions/cycle_cli_False_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
+cli-external-False-cycle	main/jsonschema/allof_root_regressions/cycle_cli_False_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
 cli-external-False-cycle	main/jsonschema/allof_root_regressions/cycle_runtime.txt
 cli-external-False-nonfinite	main/jsonschema/allof_root_regressions/nonfinite_False_external.py	= main/jsonschema/allof_root_regressions/nonfinite_True_builtin.py
 cli-external-False-nonfinite	main/jsonschema/allof_root_regressions/nonfinite_runtime.txt
@@ -95,10 +109,12 @@ cli-external-False-variants	main/jsonschema/allof_root_regressions/variants_runt
 cli-external-True-array_union	main/jsonschema/allof_root_regressions/array_union_True_external.py	= main/jsonschema/allof_root_regressions/array_union_True_builtin.py
 cli-external-True-array_union	main/jsonschema/allof_root_regressions/array_union_cli_True_minimum_warnings.txt	?	= main/jsonschema/allof_root_regressions/array_union_api_True_minimum_warnings.txt
 cli-external-True-array_union	main/jsonschema/allof_root_regressions/array_union_cli_True_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
+cli-external-True-array_union	main/jsonschema/allof_root_regressions/array_union_cli_True_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
 cli-external-True-array_union	main/jsonschema/allof_root_regressions/array_union_runtime.txt
 cli-external-True-cycle	main/jsonschema/allof_root_regressions/cycle_True_external.py	= main/jsonschema/allof_root_regressions/cycle_True_builtin.py
 cli-external-True-cycle	main/jsonschema/allof_root_regressions/cycle_cli_True_minimum_warnings.txt	?	= main/jsonschema/allof_root_regressions/cycle_api_True_minimum_warnings.txt
 cli-external-True-cycle	main/jsonschema/allof_root_regressions/cycle_cli_True_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.10	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
+cli-external-True-cycle	main/jsonschema/allof_root_regressions/cycle_cli_True_minimum_warnings.txt	?	@black=26,formatter=external,isort=8,python=3.11	= main/jsonschema/allof_root_regressions/variants_api_True_minimum_warnings.txt
 cli-external-True-cycle	main/jsonschema/allof_root_regressions/cycle_runtime.txt
 cli-external-True-nonfinite	main/jsonschema/allof_root_regressions/nonfinite_True_external.py	= main/jsonschema/allof_root_regressions/nonfinite_True_builtin.py
 cli-external-True-nonfinite	main/jsonschema/allof_root_regressions/nonfinite_runtime.txt
