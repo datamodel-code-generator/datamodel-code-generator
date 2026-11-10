@@ -306,7 +306,6 @@ checkers point at the implementations to update.
 - **Custom visitors (`--custom-visitor`).** Pass static values with `--extra-template-data`.
 - **`UploadFile`.** A file part is `bytes`. Use `--server-body-mode request` or `--server-body-modes` and read the form
   yourself.
-- **Python 3.10 targets.** A target below 3.11, and running `datamodel-codegen` on 3.10, are refused. Keep fcg for such
-  a project until it moves to 3.11.
+- **Python 3.10 targets.** A target below 3.11 is refused. Keep fcg for such a project until it moves to 3.11.
 - **Backends other than Pydantic v2.** fcg also accepts `dataclasses.dataclass`, `typing.TypedDict`, and
   `msgspec.Struct`; the server target does not, and has no workaround.

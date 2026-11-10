@@ -1023,7 +1023,7 @@ named by its path from the working directory. `--watch` shows them once, after i
 
 - Python 3.11 or later, both to run `datamodel-codegen` and as the target Python version: an unset
   `--target-python-version` is `3.11`. An older one, set yourself or by a preset for Python 3.10, is refused; the
-  message names the preset, so that you pick one for Python 3.11 or later. Running on Python 3.10 is refused too.
+  message names the preset, so that you pick one for Python 3.11 or later.
 - `--openapi-scopes` includes `api`, so that the models cover the parameters, bodies, and responses of the
   operations: unset, it is `schemas api`. Scopes you give without `api` stop the run with
   `Error: --generate-server requires --openapi-scopes to include api`.
