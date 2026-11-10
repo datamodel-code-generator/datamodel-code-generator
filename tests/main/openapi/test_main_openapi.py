@@ -3627,6 +3627,18 @@ def test_validation(mocker: MockerFixture, output_file: Path) -> None:
     mock_prance.assert_called_once()
 
 
+def test_validation_refused_with_no_allow_remote_refs(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Refuse --validation with --no-allow-remote-refs: its validator fetches the references of the document itself."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        expected_exit=Exit.ERROR,
+        extra_args=["--validation", "--no-allow-remote-refs"],
+    )
+    assert_output(capsys.readouterr().err)
+
+
 def test_validation_failed(mocker: MockerFixture, output_file: Path) -> None:
     """Test OpenAPI code generation with validation failure."""
     mock_prance = mocker.patch("prance.BaseParser", side_effect=Exception("error"))

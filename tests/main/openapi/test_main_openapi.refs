@@ -2330,5 +2330,7 @@ cli	main/openapi/type_union_nullable.py
 	main/openapi/use_default.py
 [test_validation]
 	main/openapi/general.py	= main/openapi/custom_file_header_empty.py
+[test_validation_refused_with_no_allow_remote_refs]
+	main/openapi/main_openapi/validation_refused_with_no_allow_remote_refs.txt
 [test_webhooks_ref_with_external_schema]
 	main/openapi/webhooks_ref_with_external_schema.py

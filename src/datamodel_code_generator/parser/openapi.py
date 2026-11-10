@@ -1445,6 +1445,12 @@ class OpenAPIParser(JsonSchemaParser):
                             "document by itself, reading files and URLs that --untrusted-input does not read."
                         )
                         raise Error(msg)
+                    if self.allow_remote_refs is False:
+                        msg = (
+                            "--validation is refused under --no-allow-remote-refs: its validator resolves the $ref of "
+                            "the document by itself and fetches the URLs that --no-allow-remote-refs blocks."
+                        )
+                        raise Error(msg)
                     warn_deprecated("cli.validation", stacklevel=2)
 
                     if source.raw_data is not None and not source.text:
