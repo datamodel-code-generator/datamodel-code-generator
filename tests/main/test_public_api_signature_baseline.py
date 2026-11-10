@@ -48,6 +48,7 @@ from datamodel_code_generator.enums import (
 from datamodel_code_generator.format import PythonVersionMin
 from datamodel_code_generator.model.pydantic_v2 import BaseModel, DataModelField, DataTypeManager, RootModel
 from datamodel_code_generator.parser.base import YamlValue, title_to_class_name
+from tests.conftest import assert_output
 
 if TYPE_CHECKING:
     from collections import defaultdict
@@ -253,8 +254,32 @@ _PUBLIC_MODULE_EXPORTS: dict[str, frozenset[str]] = {
 
 
 _DE_FACTO_PUBLIC_SYMBOLS: dict[str, frozenset[str]] = {
+    "datamodel_code_generator": frozenset({
+        "MAX_VERSION",
+        "MIN_VERSION",
+        "DataModelType",
+        "DatetimeClassType",
+        "DefaultPutDict",
+        "Error",
+        "GenerateConfig",
+        "GraphQLScope",
+        "InputFileType",
+        "InvalidClassNameError",
+        "LiteralType",
+        "OpenAPIScope",
+        "PythonVersion",
+        "chdir",
+        "generate",
+        "get_version",
+        "snooper_to_methods",
+    }),
+    "datamodel_code_generator.config": frozenset({"JSONSchemaParserConfig"}),
+    "datamodel_code_generator.enums": frozenset({"DataModelType", "InputFileType", "StrictTypes"}),
     "datamodel_code_generator.format": frozenset({
+        "DEFAULT_FORMATTERS",
         "CodeFormatter",
+        "CustomCodeFormatter",
+        "DatetimeClassType",
         "Formatter",
         "PythonVersion",
         "PythonVersionMin",
@@ -264,8 +289,25 @@ _DE_FACTO_PUBLIC_SYMBOLS: dict[str, frozenset[str]] = {
         "Import",
         "Imports",
     }),
+    "datamodel_code_generator.model": frozenset({
+        "DataModel",
+        "DataModelFieldBase",
+        "get_data_model_types",
+        "pydantic_v2",
+    }),
+    "datamodel_code_generator.model.pydantic_v2": frozenset({
+        "BaseModel",
+        "DataModelField",
+        "DataTypeManager",
+        "RootModel",
+        "UnionMode",
+        "types",
+    }),
+    "datamodel_code_generator.model.pydantic_v2.types": frozenset({"IMPORT_SECRET_STR"}),
+    "datamodel_code_generator.parser": frozenset({"DefaultPutDict", "LiteralType"}),
     "datamodel_code_generator.parser.base": frozenset({
         "Parser",
+        "Result",
         "SPECIAL_PATH_FORMAT",
         "Source",
         "YamlValue",
@@ -282,7 +324,9 @@ _DE_FACTO_PUBLIC_SYMBOLS: dict[str, frozenset[str]] = {
         "MediaObject",
         "OpenAPIParser",
         "Operation",
+        "ParameterLocation",
         "ParameterObject",
+        "ReferenceObject",
         "RequestBodyObject",
         "ResponseObject",
     }),
@@ -297,6 +341,28 @@ _DE_FACTO_PUBLIC_SYMBOLS: dict[str, frozenset[str]] = {
         "StrictTypes",
         "Types",
     }),
+}
+
+
+_DE_FACTO_PUBLIC_ATTRIBUTES: dict[str, frozenset[str]] = {
+    "datamodel_code_generator.DataModelType": frozenset({
+        "DataclassesDataclass",
+        "PydanticV2BaseModel",
+        "TypingTypedDict",
+    }),
+    "datamodel_code_generator.DatetimeClassType": frozenset({"Awaredatetime", "Datetime"}),
+    "datamodel_code_generator.InputFileType": frozenset({"JsonSchema"}),
+    "datamodel_code_generator.LiteralType": frozenset({"All", "One", "Off"}),
+    "datamodel_code_generator.OpenAPIScope": frozenset({"Parameters", "Paths", "Schemas", "Tags"}),
+    "datamodel_code_generator.PythonVersion": frozenset({"PY_310", "PY_311", "PY_312"}),
+    "datamodel_code_generator.format.CustomCodeFormatter": frozenset({"apply"}),
+    "datamodel_code_generator.imports.Import": frozenset({"from_full_path"}),
+    "datamodel_code_generator.parser.jsonschema.JsonSchemaObject": frozenset({"model_validate"}),
+    "datamodel_code_generator.parser.jsonschema.JsonSchemaParser": frozenset({"parse"}),
+    "datamodel_code_generator.parser.openapi.OpenAPIParser": frozenset({"parse"}),
+    "datamodel_code_generator.parser.openapi.ParameterLocation": frozenset({"cookie", "header", "path", "query"}),
+    "datamodel_code_generator.types.StrictTypes": frozenset({"bool", "bytes", "float", "int", "str"}),
+    "datamodel_code_generator.types.Types": frozenset({"date_time", "uri", "uuid"}),
 }
 
 
@@ -1011,6 +1077,28 @@ def test_de_facto_public_symbols_remain_importable(module_name: str, expected_sy
     missing_symbols = sorted(name for name in expected_symbols if not hasattr(module, name))
 
     assert missing_symbols == [], f"{module_name} no longer exposes de facto public symbols: {missing_symbols}"
+
+
+@pytest.mark.parametrize(("object_path", "expected_attributes"), _DE_FACTO_PUBLIC_ATTRIBUTES.items())
+def test_de_facto_public_attributes_remain_available(object_path: str, expected_attributes: frozenset[str]) -> None:
+    """Pin the attributes downstream code reads from de facto public classes and enums."""
+    module_name, _, name = object_path.rpartition(".")
+    owner = getattr(importlib.import_module(module_name), name)
+    missing_attributes = sorted(attribute for attribute in expected_attributes if not hasattr(owner, attribute))
+
+    assert missing_attributes == [], f"{object_path} no longer exposes de facto public attributes: {missing_attributes}"
+
+
+@pytest.mark.abnormal_path("downstream code assigns this module attribute, so the assignment is the contract pinned")
+def test_import_secret_str_assignment_changes_the_generated_import(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep the module attribute that downstream code assigns to replace the password string type."""
+    from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.model import pydantic_v2
+
+    monkeypatch.setattr(pydantic_v2.types, "IMPORT_SECRET_STR", Import.from_full_path("custom_types.CustomSecretStr"))
+    schema = '{"type": "object", "properties": {"token": {"type": "string", "format": "password"}}}'
+
+    assert_output(generate(schema, output_model_type=DataModelType.PydanticV2BaseModel))
 
 
 def test_data_model_set_tuple_abi_matches_baseline() -> None:
