@@ -645,6 +645,7 @@ _SIMPLE_STATEMENTS = tuple(
     getattr(ast, name) for name in ("Assign", "AnnAssign", "AugAssign", "Expr", "TypeAlias") if hasattr(ast, name)
 )
 _MAGIC_TRAILING_COMMA = re.compile(r",\s*[)\]}]")
+_JOINED_STRINGS = re.compile(r"""['"]\s+[rRbBuUfF]*['"]""")
 
 
 def _logical_line_replacement(  # noqa: PLR0913
@@ -663,6 +664,7 @@ def _logical_line_replacement(  # noqa: PLR0913
         len(source_lines) == 1
         and str_width(restore(line := source_lines[0])) <= line_length
         and not _MAGIC_TRAILING_COMMA.search(line)
+        and not (wrap_string_literal and _JOINED_STRINGS.search(line))
     ):
         return None
     result = format_logical_line(

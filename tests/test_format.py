@@ -66,6 +66,9 @@ BUILTIN_FORMATTER_EXPECTED_PATH = Path(__file__).parent / "data" / "expected" / 
 BUILTIN_STRING_NORMALIZATION_INPUT_PATH = (
     Path(__file__).parent / "data" / "python" / "builtin_formatter_string_normalization.txt"
 )
+BUILTIN_WRAP_STRING_LITERAL_INPUT_PATH = (
+    Path(__file__).parent / "data" / "python" / "builtin_formatter_wrap_string_literal.txt"
+)
 BUILTIN_PEP695_INVALID_INPUT_PATH = Path(__file__).parent / "data" / "python" / "builtin_formatter_pep695_invalid.txt"
 BUILTIN_PEP695_INVALID_EXPECTED_PATH = BUILTIN_FORMATTER_EXPECTED_PATH / (
     "pep695_invalid.txt" if sys.version_info[:2] >= (3, 12) else "pep695_invalid_legacy.txt"
@@ -907,6 +910,23 @@ def test_builtin_formatter_string_normalization_fixture() -> None:
     assert_output("\n".join(formatted_cases))
 
 
+def test_builtin_formatter_wrap_string_literal_fixture() -> None:
+    r"""Wrap and split strings as black's preview string processing does, for each case at its own line length.
+
+    The cases are strings after operators, with trailers, in joined groups black does not merge, in parentheses,
+    dictionary entries and values, list, set and tuple elements, f-strings and ``\\N{...}`` escapes.
+    """
+    formatted_cases: list[str] = []
+    corpus = BUILTIN_WRAP_STRING_LITERAL_INPUT_PATH.read_text(encoding="utf-8")
+    for case in corpus.split("\n---CASE---\n"):
+        header, source = case.split("\n", 1)
+        name, line_length = header.split()
+        formatted = apply_builtin_formatter(source, line_length=int(line_length), wrap_string_literal=True)
+        formatted_cases.append(f"[{name}]\n{formatted}")
+
+    assert_output("\n".join(formatted_cases))
+
+
 def test_builtin_formatter_string_normalization_preserves_pep695_invalid_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -937,8 +957,8 @@ def test_builtin_formatter_keeps_target_identifiers_and_joiners_alike_on_every_p
     """Format code the running Python cannot parse alike on every Python.
 
     Letters the running Python lacks are lent away while formatting and given back, never as a letter the NFKC form
-    of the code uses. Joiners, which Python 3.13 lets identifiers hold, are lent in names and keep their escapes when
-    strings are rewrapped.
+    of the code uses. Joiners, which Python 3.13 lets identifiers hold, are lent in names and stay as written when
+    strings are rewrapped, as black writes them.
     """
     description = "joined\u200dword " * 12
     joiners = (
@@ -1757,7 +1777,7 @@ def test_apply_builtin_formatter_wraps_string_default_with_single_quote() -> Non
 
 
 def test_apply_builtin_formatter_wrap_string_literal_joins_implicitly_concatenated_strings() -> None:
-    """Wrap implicitly joined strings as one, and leave a parameter's default and an f-string's neighbour whole.
+    """Wrap implicitly joined strings as one, as black's string processing does, and leave a parameter's default whole.
 
     The first string of a joined value was wrapped alone, which left the next string after the parentheses.
     """
@@ -1779,8 +1799,10 @@ def test_apply_builtin_formatter_wrap_string_literal_joins_implicitly_concatenat
         "):\n"
         "    x: str = Field(\n"
         "        None,\n"
-        "        description='a generated description text'\n"
-        "        f' {done}',\n"
+        "        description=(\n"
+        "            'a generated description'\n"
+        "            f' text {done}'\n"
+        "        ),\n"
         "    )\n"
         "\n"
         "    def f(\n"
@@ -1791,10 +1813,10 @@ def test_apply_builtin_formatter_wrap_string_literal_joins_implicitly_concatenat
     )
 
 
-def test_apply_builtin_formatter_wrap_string_literal_keeps_bytes_and_f_strings_whole() -> None:
-    """Leave a long bytes literal or f-string argument whole when string literals are wrapped.
+def test_apply_builtin_formatter_wrap_string_literal_splits_bytes_and_f_strings_like_black() -> None:
+    """Split a long bytes literal or f-string argument as black's string processing does, keeping each value.
 
-    Wrapping read a bytes literal back as text, which changed its value, and raised ValueError on an f-string.
+    Wrapping used to read a bytes literal back as text, which changed its value, and raised ValueError on an f-string.
     """
     code = (
         "class Model:\n"
@@ -1806,11 +1828,19 @@ def test_apply_builtin_formatter_wrap_string_literal_keeps_bytes_and_f_strings_w
         "class Model:\n"
         "    x: str = Field(\n"
         "        None,\n"
-        "        description=f'{prefix} a long description text that goes on and on',\n"
+        "        description=(\n"
+        "            f'{prefix} a long'\n"
+        "            ' description text that'\n"
+        "            ' goes on and on'\n"
+        "        ),\n"
         "    )\n"
         "    y: bytes = Field(\n"
         "        None,\n"
-        "        default=b'a long bytes literal text that goes on and on and on',\n"
+        "        default=(\n"
+        "            b'a long bytes literal text'\n"
+        "            b' that goes on and on'\n"
+        "            b' and on'\n"
+        "        ),\n"
         "    )\n"
     )
 

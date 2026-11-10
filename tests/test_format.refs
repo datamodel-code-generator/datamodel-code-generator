@@ -13,5 +13,7 @@
 [test_builtin_formatter_string_normalization_preserves_pep695_invalid_errors]
 	builtin_formatter/pep695_invalid.txt	?
 	builtin_formatter/pep695_invalid_legacy.txt	?
+[test_builtin_formatter_wrap_string_literal_fixture]
+	format/builtin_formatter_wrap_string_literal_fixture.txt
 [test_builtin_generated_formatter_edge_cases]
 	builtin_formatter/generated_edge_cases.txt
