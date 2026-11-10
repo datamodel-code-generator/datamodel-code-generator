@@ -57,3 +57,6 @@ value = 1 +2
 
 [invalid]
 if
+
+[field-after-escaped-braces]
+value = f'{{{"x"}}}\'\''

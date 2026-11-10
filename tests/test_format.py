@@ -946,6 +946,19 @@ _LONG_SET = "{'ProtocolDataError', 'SessionLimitError', 'StreamInterruptedError'
             "def f():\n"
             "    do_this_first_thing(argument_one, argument_two) if condition_value else do_that_thing(other)\n"
         ),
+        (
+            "def f():\n"
+            "    x = case if some_condition_with_a_long_name_here else some_other_value_with_a_long_name\n"
+            "    y = obj.case if some_condition_with_a_long_name_here else some_other_value_with_long_name\n"
+            "    case if some_condition_with_a_long_name_here_and_more else some_other_value_with_long_name\n"
+        ),
+        (
+            "def f():\n"
+            '    """Return the value.\n'
+            "\n"
+            '    Configure the tree column heading by calling this method with columns set to "#0" """\n'
+            "    return 1\n"
+        ),
     ],
 )
 def test_apply_builtin_formatter_lays_out_function_bodies_like_black(code: str) -> None:

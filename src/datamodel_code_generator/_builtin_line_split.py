@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import keyword
 import re
+import string
 import token
 import tokenize
 from bisect import bisect_right
@@ -367,6 +368,8 @@ class _BracketTracker:
 
     def mark(self, leaf: _Leaf) -> None:
         type_ = leaf.type
+        if not self.depth and type_ in CLOSING_BRACKETS and (0, type_) not in self.bracket_match:
+            return
         name = leaf.value if type_ == token.NAME else ""
         if self.for_loop_depths and self.for_loop_depths[-1] == self.depth and name == "in":
             self.depth -= 1
@@ -903,6 +906,8 @@ _MIN_SUBSTR_SIZE: Final = 6
 _STRING_PREFIX_CHARS: Final = "furbFURB"
 _BREAK_MARK: Final = "@@@@@ BLACK BREAKPOINT MARKER @@@@@"
 _EVEN_BACKSLASHES: Final = r"(?:(?<!\\)(?:\\\\)*)"
+_OPEN_OCTAL_ESCAPE: Final = re.compile(rf"{_EVEN_BACKSLASHES}\\[0-7]{{1,2}}$")
+_OCTAL_DIGITS: Final = frozenset(string.octdigits)
 _DEBUG_EXPRESSION: Final = re.compile(r".*[\'\"].*(?<![!:=])={1}(?!=)(?![^\s:])")
 
 
@@ -932,7 +937,7 @@ def _is_empty_par(leaf: _Leaf) -> bool:
     return leaf.type in {token.LPAR, token.RPAR} and not leaf.value
 
 
-def _iter_fexpr_spans(text: str) -> Iterator[tuple[int, int]]:
+def iter_fexpr_spans(text: str) -> Iterator[tuple[int, int]]:
     """Yield the half-open spans of the replacement fields of an f-string (black's ``iter_fexpr_spans``)."""
     stack: list[int] = []
     index = 0
@@ -966,7 +971,7 @@ def _toggle_fexpr_quotes(text: str, old_quote: str) -> str:
     new_quote = "'" if old_quote == '"' else '"'
     parts: list[str] = []
     previous = 0
-    for start, end in _iter_fexpr_spans(text):
+    for start, end in iter_fexpr_spans(text):
         parts.extend((text[previous:start], text[start:end].replace(old_quote, new_quote)))
         previous = end
     parts.append(text[previous:])
@@ -1070,9 +1075,17 @@ def _string_merge(line: _Line, mode: _Mode, _features: Collection[_Feature]) -> 
 
 
 def _has_other_quotes(value: str, prefix: str, quote: str) -> bool:
-    """Return whether ``value`` is an f-string with other quotes than ``quote`` and quotes inside."""
+    """Return whether ``value`` is an f-string whose quotes would change meaning or validity when merged.
+
+    That is an f-string with other quotes than ``quote`` and quotes inside, or one whose replacement field holds its
+    own quote character (Python 3.12+), which toggling the quotes of the fields would turn into a delimiter.
+    """
+    if "f" not in prefix:
+        return False
     body = value[len(prefix) + 1 : -1]
-    return "f" in prefix and value[-1] != quote and ("'" in body or '"' in body)
+    if value[-1] != quote:
+        return "'" in body or '"' in body
+    return any(quote in value[start:end] for start, end in iter_fexpr_spans(value))
 
 
 def _merged_string_group(group: Sequence[_Leaf], mode: _Mode) -> _Leaf | None:
@@ -1090,7 +1103,7 @@ def _merged_string_group(group: Sequence[_Leaf], mode: _Mode) -> _Leaf | None:
 
     def make_naked(text: str, text_prefix: str) -> str:
         if "f" in text_prefix and not any(
-            _DEBUG_EXPRESSION.search(text[start + 1 : end - 1]) for start, end in _iter_fexpr_spans(text)
+            _DEBUG_EXPRESSION.search(text[start + 1 : end - 1]) for start, end in iter_fexpr_spans(text)
         ):
             text = _toggle_fexpr_quotes(text, quote)
         return re.sub(f"({_EVEN_BACKSLASHES}){quote}", rf"\1\\{quote}", text[len(text_prefix) + 1 : -1])
@@ -1101,6 +1114,11 @@ def _merged_string_group(group: Sequence[_Leaf], mode: _Mode) -> _Leaf | None:
     for leaf in group:
         value = leaf.value
         next_prefix = _string_prefix(value).lower()
+        if (
+            _OPEN_OCTAL_ESCAPE.search(naked.replace(_BREAK_MARK, ""))
+            and value[len(next_prefix) + 1 : len(next_prefix) + 2] in _OCTAL_DIGITS
+        ):
+            return None
         if "f" in prefix and "f" not in next_prefix:
             value = re.sub(r"(\{|\})", r"\1\1", value)
         has_prefixes.append(bool(next_prefix))
@@ -1146,12 +1164,11 @@ def _string_paren_strip(line: _Line, _mode: _Mode, _features: Collection[_Featur
             and (lpar := leaves[index - 1]).type == token.LPAR
             and lpar.value
             and not (
-                index >= 2  # noqa: PLR2004
-                and (leaves[index - 2].type in {token.COLON, token.NAME} or leaves[index - 2].type in CLOSING_BRACKETS)
+                (before := leaves[index - 2] if index >= 2 else None) is not None  # noqa: PLR2004
+                and (before.type in {token.COLON, token.NAME} or before.type in CLOSING_BRACKETS)
             )
         ):
             end = _string_trailer_end(leaves, index)
-            before = leaves[index - 2] if index >= 2 else None  # noqa: PLR2004
             if not (
                 before is not None
                 and any(item.type == token.PERCENT for item in leaves[index - 1 : end])
@@ -1258,7 +1275,7 @@ def _string_split(line: _Line, mode: _Mode, _features: Collection[_Feature]) -> 
     string_leaf.orphaned = True
     quote = string_leaf.value[-1]
     prefix = _string_prefix(string_leaf.value).lower()
-    drop_pointless_f_prefix = "f" in prefix and any(_iter_fexpr_spans(string_leaf.value))
+    drop_pointless_f_prefix = "f" in prefix and any(iter_fexpr_spans(string_leaf.value))
     operators = []
     while leaves[len(operators)].type in _STRING_OPERATORS or leaves[len(operators)].type == token.NAME:
         operators.append(leaves[len(operators)])
@@ -1334,7 +1351,7 @@ def _string_split(line: _Line, mode: _Mode, _features: Collection[_Feature]) -> 
 
 def _normalized_f_string(value: str, prefix: str) -> str:
     """Drop the ``f`` prefix of a piece without replacement fields and undouble its braces."""
-    if "f" not in prefix or any(_iter_fexpr_spans(value)):
+    if "f" not in prefix or any(iter_fexpr_spans(value)):
         return value
     body = value[len(prefix) :].replace("{{", "{").replace("}}", "}")
     return f"{prefix.replace('f', '')}{body}"
@@ -1342,7 +1359,7 @@ def _normalized_f_string(value: str, prefix: str) -> str:
 
 def _illegal_split_indices(value: str) -> set[int]:
     r"""Return the indices inside a replacement field or a ``\\N{...}`` escape, where a string must not be split."""
-    spans = list(_iter_fexpr_spans(value)) if "f" in _string_prefix(value).lower() else []
+    spans = list(iter_fexpr_spans(value)) if "f" in _string_prefix(value).lower() else []
     unescaped_backslash = False
     characters = iter(enumerate(value))
     for index, char in characters:
@@ -1387,8 +1404,20 @@ def _break_index(value: str, max_break_idx: int) -> int | None:
 
 
 def _string_paren_wrap_index(line: _Line) -> int | None:
-    """Return the string that black wraps in parentheses on its own line, or None (StringParenWrapper's matches)."""
+    """Return the string that black wraps in parentheses on its own line, or None (StringParenWrapper's matches).
+
+    The matches in black's order: the string after ``return`` or ``yield``, the string that ends an ``assert`` after a
+    comma, the string that ends an assignment or an argument, then a dictionary value and a list element.
+    """
     leaves = line.leaves
+    if _is_name(leaves[0], "return") or _is_name(leaves[0], "yield"):
+        string_idx = 2 if len(leaves) > 1 and _is_empty_par(leaves[1]) else 1
+        if string_idx < len(leaves) and leaves[string_idx].type == token.STRING:
+            return string_idx
+    if _is_name(leaves[0], "assert"):
+        for index, leaf in enumerate(leaves[:-1]):
+            if leaf.type == token.COMMA and (found := _string_ends_line(leaves, index, comma=False)) is not None:
+                return found
     if leaves[0].assign_like:
         for index, leaf in enumerate(leaves):
             if (
@@ -2001,7 +2030,6 @@ _TERNARY_BOUNDARY_NAMES: Final = frozenset({
     "while",
     "with",
     "as",
-    "case",
     "for",
 })
 
@@ -2032,7 +2060,10 @@ def _ternary_span(leaves: list[_Leaf], index: int) -> tuple[int, int]:
             if not depth:
                 break
             depth -= 1
-        elif not depth and _ternary_bound(leaf, before=True):
+        elif not depth and (
+            _ternary_bound(leaf, before=True)
+            or (start == 1 and _is_name(leaf, "case") and leaves[-1].type == token.COLON)
+        ):
             break
         start -= 1
     end, depth = index + 1, 0

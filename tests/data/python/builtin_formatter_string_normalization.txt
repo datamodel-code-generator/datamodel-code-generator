@@ -69,3 +69,7 @@ value = 1+2
 ---CASE---
 invalid
 if
+
+---CASE---
+field-after-escaped-braces
+value = f'{{{"x"}}}\'\''

@@ -83,3 +83,32 @@ x += 'a string that is added to x and goes on'
 ---CASE---
 short-joined 88
 x = 'a joined' ' short string'
+
+---CASE---
+long-annotated-head 79
+class A:
+    nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn: ClassVar[str] = 'datauserdata'
+
+---CASE---
+return-yield-assert 60
+def f(x):
+    return 'a returned text that is long enough to be split at its spaces'
+    yield 'a yielded text that is long enough to be split at its spaces'
+    assert x, 'an assert message that is long enough to be split at its spaces'
+    assert check(x, y), 'a message with {} that is split as well'.format(x)
+    assert check(first_argument, second_argument), message_name_here
+
+---CASE---
+octal-escape-boundary 88
+x = '\1' '23'
+y = b'\12' b'3'
+z = '\1' '' '2'
+w = '\123' '4'
+
+---CASE---
+f-string-other-quotes 40
+x = f(argument, 'a plain start' f"an f-string {a['k']} end")
+
+---CASE---
+f-string-field-with-own-quote 88
+x = f"{data['a"b']} " 'suffix'
