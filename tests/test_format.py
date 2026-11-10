@@ -1190,7 +1190,7 @@ def test_apply_builtin_formatter_puts_blank_lines_around_one_line_bodies() -> No
             id="exceptions-and-brackets",
         ),
         pytest.param(
-            "x = 1 # fmt: skip\ny = 2  #type: ignore[x]  # noqa\nz = f'{x}' #f\n#\u00a0nbsp\nw = 3 #\u00a0type: int\n",
+            "y = 2  #type: ignore[x]  # noqa\nz = f'{x}' #f\n#\u00a0nbsp\nw = 3 #\u00a0type: int\n",
             id="directives-type-comments-no-break-spaces",
         ),
         pytest.param("def f():\n    #c\n    return 1 #r\n", id="function-body"),
@@ -1200,7 +1200,7 @@ def test_apply_builtin_formatter_writes_comments_like_black(code: str) -> None:
     """Write two spaces before an inline comment and one after the hash, with black's exceptions.
 
     ``#!``, ``#:``, ``##`` and ``#'`` stay, type comments are spelled ``# type: <value>``, a leading no-break space
-    becomes a space, and a comment with a ``fmt`` directive stays as it is.
+    becomes a space.
     """
     formatted = apply_builtin_formatter(code)
     assert formatted == black.format_str(code, mode=black.FileMode(string_normalization=False))
@@ -1211,6 +1211,11 @@ def test_apply_builtin_formatter_writes_comments_like_black(code: str) -> None:
 def test_apply_builtin_formatter_spaces_type_comments_like_the_pinned_black() -> None:
     """Write ``# type: <value>`` for a type comment, as the pinned black does (black 24 keeps ``# type:int``)."""
     assert apply_builtin_formatter("x = 1 #type:int\n") == "x = 1  # type: int\n"
+
+
+def test_apply_builtin_formatter_keeps_fmt_skip_lines_like_the_pinned_black() -> None:
+    """Keep a ``# fmt: skip`` line as written, as the pinned black does (black 24 respaces its comment)."""
+    assert apply_builtin_formatter("x = 1 # fmt: skip\n") == "x = 1 # fmt: skip\n"
 
 
 def test_apply_builtin_formatter_keeps_comments_of_code_it_cannot_tokenize() -> None:
