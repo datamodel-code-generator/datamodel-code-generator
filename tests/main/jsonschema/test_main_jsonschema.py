@@ -10540,6 +10540,8 @@ _COLLAPSED_NUMBER_TYPE_OVERRIDES = {
         ("default.py", []),
         ("field_constraints.py", ["--field-constraints"]),
         ("target_pydantic_214.py", ["--field-constraints", "--target-pydantic-version", "2.14"]),
+        ("target_pydantic_214_use_annotated.py", ["--use-annotated", "--target-pydantic-version", "2.14"]),
+        ("target_pydantic_212.py", ["--field-constraints", "--target-pydantic-version", "2.12"]),
         ("use_annotated.py", ["--use-annotated"]),
         ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"]),
         ("collapse.py", ["--field-constraints", "--collapse-root-models"]),
@@ -10574,7 +10576,8 @@ def test_main_number_constraints_on_declared_numbers(
     """Test a number schema keeps a number keyword only where a number value meets it, warns otherwise, and validates.
 
     A type with numbers among its values, a union with a number member and a ``con*`` factory override keep the keyword,
-    as ``timedelta`` keeps ``multipleOf`` for an explicit target of Pydantic 2.14, which checks it. A root model that
+    as ``timedelta`` keeps ``multipleOf`` for an explicit target of Pydantic 2.14, which checks it, in the field forms
+    and beside ``Annotated``, while an explicit target before 2.14 leaves it out with a warning. A root model that
     collapsing inlines into a field, an item, a union member or a mapping value hands its warning to the field; an
     override keeps the constraint of a root that is the field's whole type and drops those of the parts it replaces.
     msgspec decodes a date only from a string, so its runtime check is left to the other outputs, as it is for a target
