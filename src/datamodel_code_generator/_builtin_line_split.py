@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING, Final
 from datamodel_code_generator._python_decorator import string_token_spans
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection, Iterable, Iterator, Sequence
+    from collections.abc import Callable, Collection, Container, Iterable, Iterator, Sequence
 
 COMPREHENSION_PRIORITY: Final = 20
 COMMA_PRIORITY: Final = 18
@@ -356,7 +356,7 @@ def _is_split_before_delimiter(leaf: _Leaf, previous: _Leaf | None) -> int:  # n
     return LOGIC_PRIORITY if leaf.logic else 0
 
 
-@dataclass
+@dataclass(slots=True)
 class _BracketTracker:
     depth: int = 0
     bracket_match: dict[tuple[int, int], _Leaf] = field(default_factory=dict)
@@ -366,23 +366,26 @@ class _BracketTracker:
     lambda_argument_depths: list[int] = field(default_factory=list)
     invisible: list[_Leaf] = field(default_factory=list)
 
-    def mark(self, leaf: _Leaf) -> None:
+    def mark(self, leaf: _Leaf) -> None:  # noqa: PLR0912
         type_ = leaf.type
-        if not self.depth and type_ in CLOSING_BRACKETS and (0, type_) not in self.bracket_match:
-            return
-        name = leaf.value if type_ == token.NAME else ""
-        if self.for_loop_depths and self.for_loop_depths[-1] == self.depth and name == "in":
-            self.depth -= 1
-            self.for_loop_depths.pop()
-        if self.lambda_argument_depths and self.lambda_argument_depths[-1] == self.depth and type_ == token.COLON:
-            self.depth -= 1
-            self.lambda_argument_depths.pop()
-        if type_ in CLOSING_BRACKETS:
-            self.depth -= 1
-            leaf.opening_bracket = self.bracket_match.pop((self.depth, type_))
+        depth = self.depth
+        name = ""
+        if type_ == token.NAME:
+            name = leaf.value
+            if name == "in" and self.for_loop_depths and self.for_loop_depths[-1] == depth:
+                self.depth = depth = depth - 1
+                self.for_loop_depths.pop()
+        elif type_ in CLOSING_BRACKETS:
+            if not depth and (0, type_) not in self.bracket_match:
+                return
+            self.depth = depth = depth - 1
+            leaf.opening_bracket = self.bracket_match.pop((depth, type_))
             if not leaf.value:
                 self.invisible.append(leaf)
-        leaf.bracket_depth = depth = self.depth
+        elif type_ == token.COLON and self.lambda_argument_depths and self.lambda_argument_depths[-1] == depth:
+            self.depth = depth = depth - 1
+            self.lambda_argument_depths.pop()
+        leaf.bracket_depth = depth
         if not depth:
             if (delimiter := _is_split_before_delimiter(leaf, self.previous)) and self.previous is not None:
                 self.delimiters[id(self.previous)] = delimiter
@@ -390,16 +393,16 @@ class _BracketTracker:
                 self.delimiters[id(leaf)] = COMMA_PRIORITY
         if type_ in OPENING_BRACKETS:
             self.bracket_match[depth, BRACKET[type_]] = leaf
-            self.depth += 1
+            self.depth = depth + 1
             if not leaf.value:
                 self.invisible.append(leaf)
-        self.previous = leaf
-        if name == "lambda":
-            self.depth += 1
-            self.lambda_argument_depths.append(self.depth)
+        elif name == "lambda":
+            self.depth = depth = depth + 1
+            self.lambda_argument_depths.append(depth)
         elif name == "for":
-            self.depth += 1
-            self.for_loop_depths.append(self.depth)
+            self.depth = depth = depth + 1
+            self.for_loop_depths.append(depth)
+        self.previous = leaf
 
     def max_delimiter_priority(self, exclude: Collection[int] = ()) -> int:
         return max(priority for leaf_id, priority in self.delimiters.items() if leaf_id not in exclude)
@@ -412,7 +415,7 @@ def _is_name(leaf: _Leaf, value: str) -> bool:
     return leaf.type == token.NAME and leaf.value == value
 
 
-@dataclass
+@dataclass(slots=True)
 class _Line:
     depth: int = 0
     leaves: list[_Leaf] = field(default_factory=list)
@@ -428,6 +431,17 @@ class _Line:
             if leaf.type in CLOSING_BRACKETS and self.has_magic_trailing_comma(leaf):
                 self.magic_trailing_comma = leaf
         self.leaves.append(leaf)
+
+    def extend(self, leaves: Iterable[_Leaf], tracked: Container[int] | None = None) -> None:
+        """Append ``leaves`` as ``append`` appends them, marking those whose ids ``tracked`` holds, or every leaf."""
+        mark = self.bracket_tracker.mark
+        own = self.leaves
+        for leaf in leaves:
+            if tracked is None or id(leaf) in tracked:
+                mark(leaf)
+                if leaf.type in CLOSING_BRACKETS and self.has_magic_trailing_comma(leaf):
+                    self.magic_trailing_comma = leaf
+            own.append(leaf)
 
     @property
     def is_def(self) -> bool:
@@ -475,7 +489,7 @@ class _Line:
         return bool(self.leaves)
 
 
-@dataclass
+@dataclass(slots=True)
 class _RHSResult:
     head: _Line
     body: _Line
@@ -534,7 +548,7 @@ def _get_leaves_inside_matching_brackets(leaves: Sequence[_Leaf]) -> set[int]:
             if not bracket_stack or leaf.type != bracket_stack[-1][0]:
                 break
             _, start = bracket_stack.pop()
-            ids.update(id(leaves[inner]) for inner in range(start, index + 1))
+            ids.update(map(id, leaves[start : index + 1]))
     return ids
 
 
@@ -577,12 +591,14 @@ def _bracket_split_build_line(
         result.depth += 1
         if _ensure_trailing_comma(leaves, original, opening_bracket):
             leaves.append(_comma())
-    leaves_to_track = _get_leaves_inside_matching_brackets(leaves) if component is _Component.HEAD else set()
-    for leaf in leaves:
-        if result.inside_brackets or id(leaf) in leaves_to_track:
-            result.append(leaf, preformatted=True, track_bracket=True)
-        else:
-            result.leaves.append(leaf)
+    result.extend(
+        leaves,
+        None
+        if result.inside_brackets
+        else _get_leaves_inside_matching_brackets(leaves)
+        if component is _Component.HEAD
+        else (),
+    )
     if component is _Component.BODY and _should_split_line(result, opening_bracket):
         result.should_split_rhs = True
     return result
@@ -1619,7 +1635,7 @@ def _read_leaves(tokens: Iterable[tokenize.TokenInfo]) -> tuple[list[_Leaf], int
             raise _Unsupported
         previous_row = item.end[0]
         if type_ == tokenize.OP:
-            type_ = item.exact_type
+            type_ = token.EXACT_TOKEN_TYPES.get(item.string, type_)
         leaf = _Leaf(type_, item.string)
         previous = leaves[-1] if leaves else None
         enclosing = stack[-1] if stack else None
@@ -1677,11 +1693,13 @@ def _read_leaves(tokens: Iterable[tokenize.TokenInfo]) -> tuple[list[_Leaf], int
                     leaf.logic = True
         leaves.append(leaf)
     for index, leaf in enumerate(leaves):
-        if _is_name(leaf, "not"):
+        if leaf.type != token.NAME:
+            continue
+        if leaf.value == "not":
             following = leaves[index + 1] if index + 1 < len(leaves) else None
             leaf.comparator = leaf.comparator and following is not None and _is_name(following, "in")
             leaf.unary = not leaf.comparator
-        if _is_name(leaf, "lambda") and index + 1 < len(leaves) and leaves[index + 1].type != token.COLON:
+        elif leaf.value == "lambda" and index + 1 < len(leaves) and leaves[index + 1].type != token.COLON:
             raise _Unsupported
     if leaves[0].value in _SOFT_KEYWORD_HEADERS and leaves[0].type == token.NAME and leaves[-1].type == token.COLON:
         _read_soft_keyword_header(leaves)
@@ -2197,11 +2215,8 @@ def _wrap_dict_values(leaves: list[_Leaf]) -> list[_Leaf]:
     return result
 
 
-def _joined_token(lines: list[str], span: tuple[tokenize.TokenInfo, tokenize.TokenInfo]) -> tokenize.TokenInfo:
-    """Return the token of ``span``, an f-string from its start token to its end token as one STRING token."""
-    first, last = span
-    if first is last:
-        return first
+def _joined_token(lines: list[str], first: tokenize.TokenInfo, last: tokenize.TokenInfo) -> tokenize.TokenInfo:
+    """Return an f-string from its start token ``first`` to its end token ``last`` as one STRING token."""
     (start_row, start_col), (end_row, end_col) = first.start, last.end
     if start_row != end_row:
         raise _Unsupported
@@ -2210,8 +2225,13 @@ def _joined_token(lines: list[str], span: tuple[tokenize.TokenInfo, tokenize.Tok
 
 def _source_tokens(source: str) -> Iterator[tokenize.TokenInfo]:
     """Return the tokens of the logical line that starts ``source``, each f-string as one STRING token."""
-    tokens = map(partial(_joined_token, source.split("\n")), string_token_spans(source, template_strings=False))
-    return takewhile(lambda item: item.type not in _LINE_END_TOKENS, tokens)
+    lines = source.split("\n")
+    spans = string_token_spans(source, template_strings=False)
+    while True:
+        first, last = next(spans)
+        if (item := first if first is last else _joined_token(lines, first, last)).type in _LINE_END_TOKENS:
+            return
+        yield item
 
 
 def format_logical_line(
@@ -2299,8 +2319,7 @@ def _lay_out_logical_line(
     except (_Unsupported, tokenize.TokenError, SyntaxError):
         return None
     line = _Line(depth=indent // 4)
-    for leaf in leaves:
-        line.append(leaf)
+    line.extend(leaves)
     lines = list(_transform_line(line, _Mode(line_length, wrap_string_literal, restore)))
     same_tokens = tokens == [(leaf.type, leaf.value) for result in lines for leaf in result.leaves if leaf.value]
     return rows, [str(result) for result in lines], same_tokens
