@@ -6,6 +6,7 @@ This page lists features that are available but still experimental.
 
 | ID | Kind | Target | Since | Tracking |
 |----|------|--------|-------|----------|
+| `behavior.asyncapi-client` | behavior | `--generate-client httpx2 with --input-file-type asyncapi, and --client-asyncapi-perspective` | 0.92.0 | - |
 | `behavior.naming-hint` | behavior | `NamingHintWarning` | 0.86.0 | - |
 | `behavior.batch-generation-jobs` | behavior | `[tool.datamodel-codegen.jobs], --job, --all-jobs` | 0.72.3 | - |
 | `behavior.remote-reference-lock` | behavior | `datamodel-codegen.lock, --lockfile, --update-lock, and --locked` | 0.72.3 | - |
@@ -28,6 +29,16 @@ This page lists features that are available but still experimental.
 | `python-api.generate-dynamic-module` | python-api | `generate_dynamic_module(), DynamicModule, and register_module=True` | 0.92.0 | - |
 
 ## Details
+
+### `behavior.asyncapi-client`
+
+- **Kind:** behavior
+- **Target:** `--generate-client httpx2 with --input-file-type asyncapi, and --client-asyncapi-perspective`
+- **Since:** 0.92.0
+
+HTTPX2 client generation from AsyncAPI documents is experimental; the channels it opens and the generated package may change.
+
+Each channel of an AsyncAPI 2 or 3 document that a `ws` or `wss` server serves becomes an attribute of the client, `client.<channel>.connect(...)`, which opens the channel's WebSocket and sends and receives its messages through the generated models. `--client-asyncapi-perspective` says whether the document describes the server (the default), whose sends the client receives, or the client. A channel that uses a feature the client does not support is left out with a warning.
 
 ### `behavior.naming-hint`
 

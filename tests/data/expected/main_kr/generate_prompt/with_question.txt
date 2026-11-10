@@ -376,6 +376,7 @@ How do I convert enums to Literal types?
 - `--watch-delay`: Set debounce delay in seconds for watch mode.
 
 ### Target Generation Options
+- `--client-asyncapi-perspective`: Read an AsyncAPI document as its server's or its client's (experimental).
 - `--client-body-arguments`: Choose how operation methods take request bodies (experimental).
 - `--client-deep-object-brackets`: Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (experimental).
 - `--client-default-base-url`: Set the server URL of operations that declare no servers (experimental).
@@ -1826,6 +1827,10 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   -h, --help            show this help message and exit
 
 [36;1mTarget generation options (experimental)[0m:
+  --client-asyncapi-perspective {server,client}
+                        Read an AsyncAPI document as the server's (default),
+                        whose sends the client receives, or as the client's
+                        (experimental).
   --client-body-arguments {body,both}
                         Take request bodies as one body argument (default) or
                         also as field arguments (experimental).

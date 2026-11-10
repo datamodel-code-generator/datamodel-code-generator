@@ -79,7 +79,7 @@ class OperationId:
     """Identify an operation by its root use site, retaining callback ancestry."""
 
     use_site: SourceLocation
-    kind: Literal["path", "webhook", "callback"]
+    kind: Literal["path", "webhook", "callback", "channel"]
     parent: OperationId | None = None
     callback_expression: SourceLocation | None = None
 
@@ -624,6 +624,44 @@ class OperationContract:
 
 
 @dataclass(frozen=True, slots=True)
+class MessageContract:
+    """One message of an AsyncAPI channel, which the described application sends or receives.
+
+    `payload` is the location of the schema its payload binds as: the payload's own, or the schema a payload that is
+    only a `$ref` names. `codec` is how the message travels: `json` coded by the payload's models, `utf8` text, or
+    `bytes`.
+    """
+
+    declaration: SourceLocation
+    action: Literal["send", "receive"]
+    codec: Literal["json", "utf8", "bytes"]
+    payload: SourceLocation | None
+
+
+@dataclass(frozen=True, slots=True)
+class ChannelSkip:
+    """Why a client opens no WebSocket for a channel: the client feature it uses (None for none), and a message."""
+
+    feature: str | None
+    message: str
+
+
+@dataclass(frozen=True, slots=True)
+class ChannelContract:
+    """An AsyncAPI channel, which a client opens as a WebSocket through its handshake, a GET operation.
+
+    `name` is the channel's id (AsyncAPI 3) or address (AsyncAPI 2). `handshake` is None where a skip leaves no
+    address to open.
+    """
+
+    use_site: SourceLocation
+    name: str
+    handshake: OperationContract | None
+    messages: tuple[MessageContract, ...]
+    skips: tuple[ChannelSkip, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class OpenAPIVersions:
     """The OpenAPI version the parser reads each loaded document by.
 
@@ -653,7 +691,8 @@ class GeneratedTypeContractBatch:
     (`OpenAPIVersions`). `document_facts` are the info, tags and servers the root document declares. `hint_type` is
     the model generator's configured type class, which composes model types as the models spell them, and
     `hint_imports` the names its spellings write as they are. `names` names generated API code with the models'
-    naming options.
+    naming options. `channels` are the channels of an AsyncAPI input, whose handshakes are its operations, and None
+    for an OpenAPI input.
     """
 
     attempt: AttemptId
@@ -672,6 +711,7 @@ class GeneratedTypeContractBatch:
     hint_type: type[DataType] | None = None
     hint_imports: tuple[Import, ...] = ()
     names: TargetNames | None = None
+    channels: tuple[ChannelContract, ...] | None = None
 
     @property
     def versions(self) -> OpenAPIVersions:
@@ -859,7 +899,9 @@ def unresolved_reference(declaration: WireDeclaration) -> SourceReference | None
 
 
 def label(operation: OperationContract) -> str:
-    """Return the method and path that name an operation in messages."""
+    """Return the method and path that name an operation in messages, and the address of a channel's handshake."""
+    if operation.id.kind == "channel":
+        return f"channel {operation.path}"
     return f"{operation.method.upper()} {operation.path}"
 
 

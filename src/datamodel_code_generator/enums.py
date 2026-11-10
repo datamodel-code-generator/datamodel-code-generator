@@ -493,6 +493,13 @@ class ClientBodyArguments(Enum):
     Both = "both"
 
 
+class ClientAsyncAPIPerspective(Enum):
+    """Which side of its channels an AsyncAPI document describes, whose sends a generated client receives."""
+
+    Server = "server"
+    Client = "client"
+
+
 __all__ = [
     "DEFAULT_SHARED_MODULE_NAME",
     "MAX_VERSION",
@@ -504,6 +511,7 @@ __all__ = [
     "AllOfMergeMode",
     "AsyncAPIVersion",
     "ClassNameAffixScope",
+    "ClientAsyncAPIPerspective",
     "ClientBodyArguments",
     "ClientSignatureStyle",
     "ClientType",

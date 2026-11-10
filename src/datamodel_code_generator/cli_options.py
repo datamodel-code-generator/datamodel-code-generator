@@ -674,8 +674,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
             ),
             CLIOptionRelation(
                 "--input-file-type",
-                value=InputFileType.OpenAPI.value,
-                message="`--generate-client` requires `--input-file-type openapi`.",
+                message="`--generate-client` requires `--input-file-type openapi` or `--input-file-type asyncapi`.",
             ),
         ),
         conflicts=_relations(
@@ -688,6 +687,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--client-output --client-package --client-model-package --client-signature-style --client-body-arguments",
         "--client-resource-names --client-operations --client-default-base-url --client-server-base-url",
         "--client-protocols --client-deep-object-brackets --no-client-deep-object-brackets",
+        "--client-asyncapi-perspective",
     ),
 }
 

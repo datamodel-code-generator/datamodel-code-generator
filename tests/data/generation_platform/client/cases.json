@@ -6218,5 +6218,60 @@
     "config": {
       "protocols": "protocols/skip-operations-later.json"
     }
+  },
+  "asyncapi-market-v3": {
+    "input": "asyncapi-market-v3.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "modules": {
+      "pydantic_v2.BaseModel": true,
+      "pydantic_v2.dataclass": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]],
+      "dataclasses.dataclass": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]],
+      "typing.TypedDict": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]],
+      "msgspec.Struct": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]]
+    }
+  },
+  "asyncapi-market-v2": {
+    "input": "asyncapi-market-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [
+      ["client", "_client.py"],
+      ["client", "_operations.py"],
+      ["client", "protocols", "_plans.py"],
+      ["client", "protocols", "_helpers.py"]
+    ]
+  },
+  "asyncapi-perspective": {
+    "input": "asyncapi-market-v3.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "config": {
+      "asyncapi_perspective": "client",
+      "operations": [
+        {
+          "ref": "/channels/market",
+          "resource": "trades",
+          "parameter_names": [{"in_": "path", "name": "pair", "python_name": "symbol"}]
+        }
+      ]
+    },
+    "modules": [["client", "protocols", "_plans.py"], ["client", "protocols", "_helpers.py"]]
+  },
+  "asyncapi-skips": {
+    "input": "asyncapi-skips.yaml",
+    "references": ["asyncapi-other.yaml"],
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"]]
+  },
+  "asyncapi-skips-v2": {
+    "input": "asyncapi-skips-v2.yaml",
+    "references": ["asyncapi-other.yaml"],
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "_operations.py"], ["client", "protocols", "_plans.py"]]
   }
 }

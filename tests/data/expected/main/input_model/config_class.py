@@ -36,6 +36,9 @@ AllOfMergeMode: TypeAlias = Literal['constraints', 'all', 'none']
 ClassNameAffixScope: TypeAlias = Literal['all', 'models', 'enums']
 
 
+ClientAsyncAPIPerspective: TypeAlias = Literal['server', 'client']
+
+
 ClientBodyArguments: TypeAlias = Literal['body', 'both']
 
 
@@ -432,6 +435,7 @@ class BaseGenerateConfig(TypedDict):
     client_default_base_url: NotRequired[str | None]
     client_server_base_url: NotRequired[str | None]
     client_deep_object_brackets: NotRequired[bool | None]
+    client_asyncapi_perspective: NotRequired[ClientAsyncAPIPerspective | None]
     client_protocols: NotRequired[Mapping[str, Any] | None]
 
 

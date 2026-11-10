@@ -1416,6 +1416,10 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   -h, --help            show this help message and exit
 
 [36;1mTarget generation options (experimental)[0m:
+  --client-asyncapi-perspective {server,client}
+                        Read an AsyncAPI document as the server's (default),
+                        whose sends the client receives, or as the client's
+                        (experimental).
   --client-body-arguments {body,both}
                         Take request bodies as one body argument (default) or
                         also as field arguments (experimental).

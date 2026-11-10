@@ -1,0 +1,37 @@
+asyncapi: 3.0.0
+info:
+  title: Shared AsyncAPI components
+  version: 1.0.0
+channels:
+  alerts:
+    address: /alerts
+    messages:
+      alert:
+        payload:
+          type: object
+          properties:
+            level:
+              type: string
+operations:
+  watchAlerts:
+    action: receive
+    channel:
+      $ref: '#/channels/alerts'
+components:
+  schemas:
+    Report:
+      type: object
+      properties:
+        total:
+          type: integer
+      required: [total]
+  messages:
+    note:
+      payload:
+        type: object
+        properties:
+          text:
+            type: string
+  parameters:
+    region:
+      description: The region.

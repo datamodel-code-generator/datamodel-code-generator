@@ -35,6 +35,7 @@ from datamodel_code_generator.enums import (
     AllOfClassHierarchy,
     AllOfMergeMode,
     ClassNameAffixScope,
+    ClientAsyncAPIPerspective,
     ClientBodyArguments,
     ClientSignatureStyle,
     ClientType,
@@ -2110,6 +2111,13 @@ _toggle(
     "array as name[]=value for each item, a scalar as name=value, nested objects as name[key][key]=value, an array of "
     "objects as name[index][key]=value, and a value that may be a scalar or an object as the one a call gives, "
     "instead of leaving its operation out (experimental).",
+)
+target_options.add_argument(
+    "--client-asyncapi-perspective",
+    choices=_values(ClientAsyncAPIPerspective),
+    default=None,
+    help="Read an AsyncAPI document as the server's (default), whose sends the client receives, or as the client's "
+    "(experimental).",
 )
 target_options.add_argument(
     "--client-protocols",

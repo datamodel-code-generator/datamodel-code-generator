@@ -13,7 +13,6 @@ from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, OpenAPIScope, SchemaParseError
 from datamodel_code_generator._document_reader import descend, string_key
-from datamodel_code_generator._json_pointer import reference_tokens
 from datamodel_code_generator._openapi_objects import COMPONENT_ROLES
 from datamodel_code_generator._openapi_paths import (
     PATHS_PARAMETERS,
@@ -386,10 +385,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         The reference resolves by its edge, or, without one, in ``holder``, the document that holds it, as L1 resolves
         it. None is a schema in no loaded document.
         """
-        with self._home_context(holder):
-            document, _, fragment = _schema_refs.ref_key(self, ref).key.partition("#")
-        tokens = reference_tokens(fragment)
-        return SchemaLocation(document, tokens) if document in self._api_documents and tokens is not None else None
+        return self._reference_location(self._api_documents, holder, ref)
 
     def _site_facts(self, location: SchemaLocation) -> SiteFacts:
         """Return the site of a schema object of a loaded document, read once, with its references resolved.

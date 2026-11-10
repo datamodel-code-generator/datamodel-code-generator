@@ -190,7 +190,7 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
         ({**SERVER, "input_file_type": "auto"}, "--generate-server requires --input-file-type openapi, not auto"),
         (
             {**CLIENT, "input_file_type": InputFileType.JsonSchema},
-            "--generate-client requires --input-file-type openapi, not jsonschema",
+            "--generate-client requires --input-file-type openapi or asyncapi, not jsonschema",
         ),
         ({**SERVER, "openapi_scopes": ["schemas"]}, "--generate-server requires --openapi-scopes to include api"),
         (

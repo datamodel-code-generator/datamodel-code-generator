@@ -3,6 +3,7 @@
 [test_client_copied_runtime]
 	main/generation_platform/client/runtime/copied-runtime.txt
 [test_client_readme_examples]
+asyncapi-market-v3	main/generation_platform/client/readme-examples/asyncapi-market-v3.txt
 auth	main/generation_platform/client/readme-examples/auth.txt
 ndjson-split	main/generation_platform/client/readme-examples/ndjson-split.txt
 pets	main/generation_platform/client/readme-examples/pets.txt
@@ -18,6 +19,8 @@ allowreserved-path-31-shorthand	main/generation_platform/client/runtime/allowres
 allowreserved-path-32	main/generation_platform/client/runtime/allowreserved-path-32.txt
 allowreserved-path-32-unknown	main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel~client_runtime[allowreserved-path-32-unknown]//*.py
 allowreserved-path-32-unknown	main/generation_platform/client/runtime/allowreserved-path-32.txt	= main/generation_platform/client/runtime/allowreserved-path-32~client_runtime[allowreserved-path-32-unknown].txt
+asyncapi-perspective	main/generation_platform/client/runtime/asyncapi-perspective.txt
+asyncapi-sockets	main/generation_platform/client/runtime/asyncapi-sockets.txt
 auth-errors	main/generation_platform/client/runtime/auth-errors.txt
 auth-flows	main/generation_platform/client/runtime/auth-flows.txt
 auth-parameters	main/generation_platform/client/runtime/auth-parameters.txt

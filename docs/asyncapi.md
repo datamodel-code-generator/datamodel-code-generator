@@ -72,7 +72,7 @@ Use `--schema-version auto` to detect the version from the `asyncapi` field, or 
 
 `--openapi-scopes` does not select what AsyncAPI input generates: the parser generates models from every location listed below. The `api` scope is available for OpenAPI input only, and AsyncAPI input with `api` stops with an error.
 
-datamodel-code-generator generates data models from schema-bearing fields. It does not generate clients, servers, protocol adapters, or runtime message validators.
+datamodel-code-generator generates data models from schema-bearing fields. It does not generate servers, protocol adapters, or runtime message validators; it generates a WebSocket client for the channels of `ws` and `wss` servers (see [Generate a client](#generate-a-client)).
 
 The AsyncAPI parser extracts schemas from:
 
@@ -134,3 +134,53 @@ The AsyncAPI input type is for model generation from message payloads, headers, 
 - 📋 [Generate from JSON Schema](jsonschema.md) - JSON Schema input documentation
 - 📘 [Generate from OpenAPI](openapi.md) - OpenAPI schema behavior
 - 🪶 [Generate from Apache Avro Schema](avro.md) - Avro schema input documentation
+
+## Generate a client
+
+!!! warning "Experimental"
+    Client generation from AsyncAPI documents is experimental (`behavior.asyncapi-client`); the channels it opens and
+    the generated package may change.
+
+`--generate-client httpx2` with `--input-file-type asyncapi` generates the models and an HTTPX2 client package whose
+attributes open the WebSocket channels of the document, sync and asyncio:
+
+```bash
+datamodel-codegen --input market.yaml --input-file-type asyncapi --output models.py \
+  --generate-client httpx2 --client-output client --client-package client --client-model-package models
+```
+
+```python
+from client import Client
+from models import Subscribe
+
+with Client() as client, client.market.connect(pair="XBT-USD") as session:
+    session.send(Subscribe(event="subscribe", channels=["trades"]))
+    for message in session:
+        print(message.data)
+```
+
+- Each channel of AsyncAPI 2.x or 3.x that a `ws` or `wss` server serves becomes `client.<channel>`, named after the
+  words of its id (AsyncAPI 3) or its address (AsyncAPI 2). Its `connect(...)` takes the parameters of the address as
+  keyword arguments and returns the session of a [WebSocket helper](python-client-helpers.md): it sends the channel's
+  handshake, a GET of its address on its servers (with `wss` and `ws` sent as `https` and `http`), through the client's
+  call path, and sends and receives typed messages until the block ends.
+- The models are the only codec: a JSON message is encoded and decoded by its payload's model, a payload that is only
+  a `$ref` by the model of the schema it names, a `text/plain` string payload as `str`, and an
+  `application/octet-stream` or binary payload as `bytes`. A direction that carries no message is typed `Never`.
+- [`--client-asyncapi-perspective`](cli-reference/target-generation-options.md#client-asyncapi-perspective) says which
+  side the document describes: `server` (the default), whose sends the client receives, or `client`.
+- `--client-operations` keyed by a channel's reference, such as `/channels/market`, renames its attribute (`resource`)
+  and its parameters (`parameter_names`); `--client-protocols` is refused for AsyncAPI input.
+
+A channel that uses a feature the client does not support is left out with a warning that names the feature, and the
+other channels are generated:
+
+| Feature | Introduced | Client support |
+|---|---|---|
+| Server protocols | AsyncAPI 2.0 | partial: `ws` and `wss` only |
+| Channels without an address | AsyncAPI 3.0 | not supported |
+| WebSocket channel bindings | AsyncAPI 2.0 | partial: GET handshakes without `query` or `headers` |
+| Message content types | AsyncAPI 2.0 | partial: JSON, `text/plain` strings, and `application/octet-stream` payloads of JSON Schema or AsyncAPI schemas |
+| Several messages per direction | AsyncAPI 2.0 | not supported |
+| Operation replies | AsyncAPI 3.0 | not supported |
+| Security requirements | AsyncAPI 2.0 | not supported |

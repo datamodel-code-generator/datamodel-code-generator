@@ -1,4 +1,8 @@
 {
+  "client_asyncapi_perspective": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
   "client_body_arguments": {
     "browser_supported": false,
     "unsupported_reason": "Server and client packages are not generated in the browser playground."

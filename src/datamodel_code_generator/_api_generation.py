@@ -66,7 +66,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._target_format import TargetCodeFormatter
     from datamodel_code_generator.config import GenerateConfig
-    from datamodel_code_generator.enums import DataModelType, OpenAPIScope, TargetPydanticVersion
+    from datamodel_code_generator.enums import DataModelType, TargetPydanticVersion
     from datamodel_code_generator.remote_lock import RemoteReferenceLock
 
 _PYTHON_MINIMUM = (3, 11)
@@ -241,7 +241,7 @@ def prepare_target(
             implied="use_missing_sentinel" in implied,
         )
     effective = _prepare_generate_facade_config(model_config)
-    if (requirement := model_requirement(effective.openapi_scopes, generator.selector)) is not None:
+    if (requirement := model_requirement(effective, generator.selector)) is not None:
         raise Error(requirement)
     if (backend := effective.output_model_type) not in generator.backends:
         allowed = english_list(
@@ -349,11 +349,17 @@ def _check_pydantic_target(
         )
 
 
-def model_requirement(scopes: Iterable[OpenAPIScope] | None, selector: str) -> str | None:
-    """Return the "X requires Y" message for the api scope a target needs, or None while the scopes include it."""
-    from datamodel_code_generator.enums import OpenAPIScope  # noqa: PLC0415
+def model_requirement(config: GenerateConfig, selector: str) -> str | None:
+    """Return the "X requires Y" message for the api scope a target needs, or None while the scopes include it.
 
-    if scopes is not None and OpenAPIScope.Api in scopes:
+    An AsyncAPI input, which has no api scope, needs none.
+    """
+    from datamodel_code_generator.enums import InputFileType, OpenAPIScope  # noqa: PLC0415
+
+    scopes = config.openapi_scopes
+    if InputFileType(config.input_file_type) is InputFileType.AsyncAPI or (
+        scopes is not None and OpenAPIScope.Api in scopes
+    ):
         return None
     return f"{selector} requires --openapi-scopes to include api"
 
@@ -697,7 +703,11 @@ class _Planner:
     def project(self) -> GeneratedProject:
         models, config, generator = self.models, self.config, self.generator
         operations = _root_operations(models.product.batch)
-        self.operations = {operation.id.use_site.pointer: operation for operation in operations}
+        handshakes = (channel.handshake for channel in models.product.batch.channels or ())
+        self.operations = {
+            operation.id.use_site.pointer: operation
+            for operation in (*operations, *(handshake for handshake in handshakes if handshake is not None))
+        }
         rendered = generator.render(
             TargetRequest(
                 config=config,

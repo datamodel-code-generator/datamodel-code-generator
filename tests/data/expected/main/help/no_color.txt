@@ -1416,6 +1416,10 @@ General options:
   -h, --help            show this help message and exit
 
 Target generation options (experimental):
+  --client-asyncapi-perspective {server,client}
+                        Read an AsyncAPI document as the server's (default),
+                        whose sends the client receives, or as the client's
+                        (experimental).
   --client-body-arguments {body,both}
                         Take request bodies as one body argument (default) or
                         also as field arguments (experimental).

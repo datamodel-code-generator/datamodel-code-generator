@@ -20,6 +20,7 @@ from datamodel_code_generator.enums import (
     AllOfClassHierarchy,
     AllOfMergeMode,
     ClassNameAffixScope,
+    ClientAsyncAPIPerspective,
     ClientBodyArguments,
     ClientSignatureStyle,
     ClientType,
@@ -83,6 +84,7 @@ _PUBLIC_MODULE_EXPORTS: dict[str, frozenset[str]] = {
         "AliasGenerator",
         "AsyncAPIVersion",
         "ClassNameAffixScope",
+        "ClientAsyncAPIPerspective",
         "ClientBodyArguments",
         "ClientSignatureStyle",
         "ClientType",
@@ -166,6 +168,7 @@ _PUBLIC_MODULE_EXPORTS: dict[str, frozenset[str]] = {
         "AliasGenerator",
         "AsyncAPIVersion",
         "ClassNameAffixScope",
+        "ClientAsyncAPIPerspective",
         "ClientBodyArguments",
         "ClientSignatureStyle",
         "ClientType",
@@ -566,6 +569,7 @@ def _baseline_generate(
     client_default_base_url: str | None = None,
     client_server_base_url: str | None = None,
     client_deep_object_brackets: bool | None = None,
+    client_asyncapi_perspective: ClientAsyncAPIPerspective | None = None,
     client_protocols: Mapping[str, Any] | None = None,
 ) -> str | object | None:
     raise NotImplementedError

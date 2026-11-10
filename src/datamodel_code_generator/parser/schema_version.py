@@ -556,9 +556,85 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
         return cls.from_openapi_version(OpenAPIVersion.V31)
 
 
+def _client_feature(
+    *, introduced: str, doc_name: str, description: str, client_status: Literal["partial", "not_supported"]
+) -> Any:
+    """Return a field of the AsyncAPI client feature table, whose models every status generates."""
+    return field(
+        default=True,
+        metadata=FeatureMetadata(
+            introduced=introduced,
+            doc_name=doc_name,
+            description=description,
+            status="supported",
+            client_status=client_status,
+        ),
+    )
+
+
+@dataclass(frozen=True)
+class AsyncAPIClientFeatures:
+    """The AsyncAPI features the Python client plans itself (`client_status`).
+
+    A channel that uses a feature the client does not support, or a part of a partial one it does not, is left out of
+    the client with a warning that names the feature; its models are generated as for any other channel.
+    """
+
+    server_protocols: bool = _client_feature(
+        introduced="AsyncAPI 2.0",
+        doc_name="server protocols",
+        description="The protocol of a server; the client opens the channels of `ws` and `wss` servers only",
+        client_status="partial",
+    )
+    channel_addresses: bool = _client_feature(
+        introduced="AsyncAPI 3.0",
+        doc_name="channels without an address",
+        description="A channel whose `address` is null or absent, which the client cannot open",
+        client_status="not_supported",
+    )
+    websocket_bindings: bool = _client_feature(
+        introduced="AsyncAPI 2.0",
+        doc_name="WebSocket channel bindings",
+        description="`bindings.ws` of a channel; the client opens GET handshakes without `query` or `headers`",
+        client_status="partial",
+    )
+    message_content_types: bool = _client_feature(
+        introduced="AsyncAPI 2.0",
+        doc_name="message content types",
+        description="The payloads of messages; the client codes JSON, `text/plain` strings and "
+        "`application/octet-stream` payloads of JSON Schema or AsyncAPI schemas",
+        client_status="partial",
+    )
+    several_messages: bool = _client_feature(
+        introduced="AsyncAPI 2.0",
+        doc_name="several messages per direction",
+        description="More than one message that an application sends, or receives, on one channel",
+        client_status="not_supported",
+    )
+    operation_replies: bool = _client_feature(
+        introduced="AsyncAPI 3.0",
+        doc_name="operation replies",
+        description="The `reply` of an operation",
+        client_status="not_supported",
+    )
+    security_requirements: bool = _client_feature(
+        introduced="AsyncAPI 2.0",
+        doc_name="security requirements",
+        description="The security of a server or an operation; the client sends no credentials on a handshake",
+        client_status="not_supported",
+    )
+
+
 def feature_label(feature: str) -> str:
-    """Return how messages name a feature: its documented name and the version that introduced it."""
-    metadata = next(item.metadata for item in fields(OpenAPISchemaFeatures) if item.name == feature)
+    """Return how messages name a feature: its documented name and the version that introduced it.
+
+    The feature is a field of `OpenAPISchemaFeatures` or of `AsyncAPIClientFeatures`.
+    """
+    metadata = next(
+        item.metadata
+        for item in (*fields(OpenAPISchemaFeatures), *fields(AsyncAPIClientFeatures))
+        if item.name == feature
+    )
     return f"{metadata['doc_name']} ({metadata['introduced']})"
 
 

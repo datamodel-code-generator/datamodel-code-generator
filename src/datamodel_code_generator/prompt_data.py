@@ -31,6 +31,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--class-name-affix-scope": "Control which classes receive the prefix/suffix.",
     "--class-name-prefix": "Add a prefix to all generated class names.",
     "--class-name-suffix": "Add a suffix to all generated class names.",
+    "--client-asyncapi-perspective": "Read an AsyncAPI document as its server's or its client's (experimental).",
     "--client-body-arguments": "Choose how operation methods take request bodies (experimental).",
     "--client-deep-object-brackets": "Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (experimental).",
     "--client-default-base-url": "Set the server URL of operations that declare no servers (experimental).",

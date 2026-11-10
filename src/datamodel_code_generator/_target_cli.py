@@ -67,7 +67,7 @@ def run_target(  # noqa: PLR0913, PLR0917
     if config.preset is not None and (problem := python_problem(config, kind)) is not None:
         print(f"Error: --target-python-version: {problem}", file=sys.stderr)  # noqa: T201
         return _ExitCode.ERROR
-    if requirement := model_requirement(config.openapi_scopes, selector):
+    if requirement := model_requirement(config, selector):
         print(f"Error: {requirement}", file=sys.stderr)  # noqa: T201
         return _ExitCode.ERROR
     try:

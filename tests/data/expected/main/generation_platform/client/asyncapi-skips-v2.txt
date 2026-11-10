@@ -1,0 +1,28 @@
+# asyncapi-skips-v2
+render pydantic_v2.BaseModel
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel '/feed', which uses security requirements (AsyncAPI 2.0), several messages per direction (AsyncAPI 2.0) that the client does not support: /channels/~1feed: its publish operation requires security; /channels/~1feed: the application sends more than one message on it
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel '/avro', which uses message content types (AsyncAPI 2.0) that the client does not support: /channels/~1avro: the payload of message /channels/~1avro/subscribe/message is a application/vnd.apache.avro;version=1.9.0 schema
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel '/empty', which uses message content types (AsyncAPI 2.0) that the client does not support: /channels/~1empty: message /channels/~1empty/subscribe/message declares no payload
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel '/orders', which uses server protocols (AsyncAPI 2.0) that the client does not support: /channels/~1orders: it is served on no ws or wss server
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel '/declared', which the client cannot generate: /channels/~1declared: no operation sends or receives a message on it
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel '/notes', which the client cannot generate: /channels/~1notes: a message of it references another document
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel '/rooms/{room}', which uses Binary strings in text media (OAS 3.0) that the client does not support: /channels/~1rooms~1{room}/parameters/room/schema: The path parameter 'room' of channel /rooms/{room} carries a binary string as text; declare it with format: byte for base64 text, optionally with --type-mappings string+byte=binary to keep bytes, or send it as a whole binary body or a file part
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/responses.py
+  client/types/__init__.py
+  models.py

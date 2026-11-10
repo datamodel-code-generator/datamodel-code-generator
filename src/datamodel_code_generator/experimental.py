@@ -20,6 +20,7 @@ ExperimentalFeatureKind = Literal["input-format", "formatter", "cli-option", "py
 ExperimentalFeatureFormat = Literal["table", "json", "markdown"]
 _COLUMNS = ("ID", "Kind", "Target", "Since", "Tracking")
 ExperimentalFeatureId = Literal[
+    "behavior.asyncapi-client",
     "behavior.batch-generation-jobs",
     "behavior.naming-hint",
     "behavior.remote-reference-lock",
@@ -57,6 +58,23 @@ class ExperimentalFeature:
 
 
 EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
+    "behavior.asyncapi-client": ExperimentalFeature(
+        id="behavior.asyncapi-client",
+        kind="behavior",
+        target="--generate-client httpx2 with --input-file-type asyncapi, and --client-asyncapi-perspective",
+        message=(
+            "HTTPX2 client generation from AsyncAPI documents is experimental; the channels it opens and the generated "
+            "package may change."
+        ),
+        since_version="0.92.0",
+        note=(
+            "Each channel of an AsyncAPI 2 or 3 document that a `ws` or `wss` server serves becomes an attribute of "
+            "the client, `client.<channel>.connect(...)`, which opens the channel's WebSocket and sends and receives "
+            "its messages through the generated models. `--client-asyncapi-perspective` says whether the document "
+            "describes the server (the default), whose sends the client receives, or the client. A channel that uses "
+            "a feature the client does not support is left out with a warning."
+        ),
+    ),
     "behavior.batch-generation-jobs": ExperimentalFeature(
         id="behavior.batch-generation-jobs",
         kind="behavior",

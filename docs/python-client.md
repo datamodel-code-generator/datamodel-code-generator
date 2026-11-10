@@ -1440,7 +1440,9 @@ as they do with `--generate-server`. Use `--check` in CI to fail when the packag
 
 ### Requirements
 
-Like the server, the client needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python
+The client reads an OpenAPI document, or the WebSocket channels of an AsyncAPI document with
+`--input-file-type asyncapi`, as [AsyncAPI](asyncapi.md#generate-a-client) describes; the rest of this guide describes
+OpenAPI input. Like the server, the client needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python
 version. As for the server, a setting the client needs that you leave unset takes the value it needs, and a value you
 set that it cannot use is refused; see the server's [Requirements](fastapi-server.md#requirements), which also
 describes the notice that shows how to set them and `target.implied`. An unset target Python version is `3.11`; one
@@ -1573,6 +1575,7 @@ Every client setting is an option, a key of `[tool.datamodel-codegen]` in `pypro
 | [`--client-server-base-url`](cli-reference/target-generation-options.md#client-server-base-url) | `client-server-base-url` | `client_server_base_url` | none; see [Base URLs and servers](#base-urls-and-servers) |
 | [`--client-protocols`](cli-reference/target-generation-options.md#client-protocols) | `client-protocols` | `client_protocols` | none; see [Protocol Helpers](python-client-helpers.md) |
 | [`--client-deep-object-brackets`](cli-reference/target-generation-options.md#client-deep-object-brackets) | `client-deep-object-brackets` | `client_deep_object_brackets` | off; see below |
+| [`--client-asyncapi-perspective`](cli-reference/target-generation-options.md#client-asyncapi-perspective) | `client-asyncapi-perspective` | `client_asyncapi_perspective` | `"server"`; see [AsyncAPI](asyncapi.md#generate-a-client) |
 
 `--client-resource-names`, `--client-operations`, and `--client-protocols` take a JSON object, inline or as the path
 of a JSON file, as `--aliases` does; in `pyproject.toml` they are tables, or the path of a JSON file, and in
@@ -1622,9 +1625,9 @@ parameters and members; `--no-client-deep-object-brackets` turns off one that a 
 
 `--generate-client` requires `--client-output`, `--client-package`, and `--client-model-package`, and a `--client-*`
 option given on the command line requires `--generate-client`; both stop with `Error:` and exit code 2.
-`--generate-client` also requires `--input-file-type openapi`: an input type left to detection, `auto`, or any other
-type stops with `Error: --generate-client requires --input-file-type openapi, not auto` (naming the given type) and
-exit code 2 before the input is read.
+`--generate-client` also requires `--input-file-type openapi` or `--input-file-type asyncapi`: an input type left to
+detection, `auto`, or any other type stops with `Error: --generate-client requires --input-file-type openapi or
+asyncapi, not auto` (naming the given type) and exit code 2 before the input is read.
 `--generate-client` cannot be used with `--generate-server`, and one selected on the command line replaces the other
 selected in `pyproject.toml`. Client keys of `pyproject.toml` are validated like model keys, but have no effect while
 no client is selected.

@@ -483,7 +483,7 @@ from datamodel_code_generator.util import BaseModel, get_yaml_parse_errors  # no
 from datamodel_code_generator.validators import _validate_schema_python_import_path
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Container, Generator, Iterable, Iterator, Mapping, Sequence
     from contextlib import AbstractContextManager
 
     from typing_extensions import TypeIs
@@ -3033,6 +3033,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _discriminator_mapping_ref(self, name: str, value: str, mapping: SchemaLocation | None) -> str:
         """Return a discriminator mapping value as a reference, with the edge of the mapping located at ``mapping``."""
         return _schema_refs.derived_ref(self, value, mapping, name, value)
+
+    def _reference_location(self, documents: Container[str], holder: str, ref: str) -> SchemaLocation | None:
+        """Return the schema a `$ref` or `$dynamicRef` of a loaded schema names, as the parser resolves it.
+
+        The reference resolves by its edge, or, without one, in ``holder``, the document that holds it. None is a schema
+        in none of ``documents``.
+        """
+        with self._home_context(holder):
+            document, _, fragment = _schema_refs.ref_key(self, ref).key.partition("#")
+        tokens = reference_tokens(fragment)
+        return SchemaLocation(document, tokens) if document in documents and tokens is not None else None
 
     @contextmanager
     def _home_context(self, document: str) -> Generator[None, None, None]:
