@@ -8,3 +8,5 @@ import_fails_both-args4	compare_release/import_fails_both.txt
 path_option-args2	compare_release/path_option.txt	= compare_release/directory.txt
 [test_compare_release_tracks_referenced_files]
 	compare_release/referenced_files.txt
+[test_ran_out_of_memory]
+	compare_release_script/ran_out_of_memory.txt
