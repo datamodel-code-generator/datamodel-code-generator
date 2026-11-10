@@ -264,7 +264,7 @@ def _renamed_field_name_refused(name: str) -> bool:
 @final
 @record(eq=False)
 class _StructConversion:
-    """The default factory that converts a default holding Structs: ``lambda: convert({...},  type=Model)``.
+    """The default factory that converts a default holding Structs: ``lambda: convert({...}, type=Model)``.
 
     ``of_list`` converts to a list of ``target``; ``container`` is the type, holding ``target``, that it converts to as
     its hint writes it, a quoted reference named directly. Its text names the models as the module finally names them.
@@ -305,7 +305,7 @@ class _StructConversion:
             type_text = _default_factory_type_name(self.target)
         converted = self._converted
         options = "" if converted is self.default else ", from_attributes=True"
-        return f"lambda: {self.method}({represent_python_value(converted)},  type={type_text}{options})"
+        return f"lambda: {self.method}({represent_python_value(converted)}, type={type_text}{options})"
 
 
 def _meta_call_text(call: CallPlan) -> str:

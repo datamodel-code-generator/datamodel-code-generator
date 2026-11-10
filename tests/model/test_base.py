@@ -1759,8 +1759,8 @@ def test_msgspec_struct_default_render_plan_requires_convert_import() -> None:
         has_default=True,
     )
 
-    assert str(field) == "field(default_factory=lambda: convert({'value': 'Field('},  type=Nested))"
-    assert field._get_field_data() == {"default_factory": "lambda: convert({'value': 'Field('},  type=Nested)"}
+    assert str(field) == "field(default_factory=lambda: convert({'value': 'Field('}, type=Nested))"
+    assert field._get_field_data() == {"default_factory": "lambda: convert({'value': 'Field('}, type=Nested)"}
     assert IMPORT_MSGSPEC_FIELD in field.imports
     assert IMPORT_MSGSPEC_CONVERT in field.imports
 
@@ -1778,7 +1778,7 @@ def test_msgspec_empty_struct_default_uses_conversion_factory() -> None:
     )
     MsgspecStruct(reference=Reference(path="#/Owner", name="Owner"), fields=[field])
 
-    assert str(field) == "field(default_factory=lambda: convert({},  type=Nested))"
+    assert str(field) == "field(default_factory=lambda: convert({}, type=Nested))"
     assert IMPORT_MSGSPEC_FIELD in field.imports
     assert IMPORT_MSGSPEC_CONVERT in field.imports
     assert IMPORT_MSGSPEC_UNSET not in field.imports
