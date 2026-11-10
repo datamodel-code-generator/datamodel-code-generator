@@ -1730,6 +1730,68 @@ def _normalize_comments(code: str) -> str:
     return "\n".join(lines)
 
 
+_INDENT = "    "
+
+
+def _is_misindented(tree: ast.Module, lines: list[str]) -> bool:
+    """Return whether a logical line of ``tree`` is not indented by four spaces for each block it is in."""
+    previous_end = 0
+    for start, end, depth, _ in _logical_lines(tree.body, lines, 0):
+        if start > previous_end and (
+            not (line := lines[start - 1]).startswith(_INDENT * depth) or line[len(_INDENT) * depth] in " \t"
+        ):
+            return True
+        previous_end = max(previous_end, end)
+    return False
+
+
+def _reindented(code: str) -> str:
+    """Indent ``code``, which parses, by four spaces for each block, as black does.
+
+    The lines that continue a statement move with its first line, a comment line between statements takes the indent
+    of the deepest open block it is indented as far as, and the lines inside a string stay as they are.
+    """
+    lines = code.split("\n")
+    columns = [0]
+    first_row = delta = 0
+    string_rows: set[int] = set()
+    f_string_rows: list[int] = []
+    for token in tokenize.generate_tokens(StringIO(code).readline):
+        kind, (row, column) = token.type, token.start
+        if kind == tokenize.INDENT:
+            columns.append(len(token.string))
+        elif kind == tokenize.DEDENT:
+            columns.pop()
+        elif kind in _F_STRING_STARTS:
+            f_string_rows.append(row)
+        elif kind in _F_STRING_ENDS or kind == tokenize.STRING:
+            string_rows.update(range((f_string_rows.pop() if kind in _F_STRING_ENDS else row) + 1, token.end[0] + 1))
+        if kind in _LAYOUT_TOKENS:
+            continue
+        if first_row:
+            if kind == tokenize.NEWLINE:
+                _shift_lines(lines, range(first_row, row), delta, string_rows)
+                first_row = 0
+        elif kind == tokenize.COMMENT:
+            lines[row - 1] = f"{_INDENT * sum(1 for indent in columns[1:] if indent <= column)}{token.string}"
+        else:
+            first_row = row
+            delta = len(_INDENT) * (len(columns) - 1) - column
+            lines[row - 1] = f"{_INDENT * (len(columns) - 1)}{lines[row - 1][column:]}"
+    return "\n".join(lines)
+
+
+_LAYOUT_TOKENS = frozenset({tokenize.INDENT, tokenize.DEDENT, tokenize.NL, tokenize.ENDMARKER})
+
+
+def _shift_lines(lines: list[str], indexes: range, delta: int, string_rows: set[int]) -> None:
+    """Move the lines at ``indexes`` right by ``delta`` columns, but not those a string continues on."""
+    for index in indexes:
+        if index + 1 not in string_rows and (line := lines[index]):
+            lead = len(line) - len(line.lstrip(" \t"))
+            lines[index] = f"{' ' * max(0, lead + delta)}{line[lead:]}"
+
+
 def _strip_ends_before_last(text: str) -> str:
     """Strip the end of every line of ``text`` but the last, which a string literal continues."""
     *complete, last = text.split("\n")
@@ -1760,6 +1822,11 @@ def _apply_builtin_formatter(  # noqa: PLR0913, PLR0914
     tree, source_is_valid = _parse_builtin_code_with_source_validity(code, python_version)
     if tree is None:
         return f"{code}\n"
+    if _is_misindented(tree, lines):
+        code = _strip_line_ends(_reindented(code), line_length)
+        lines = _split_python_lines(code)
+        tree, source_is_valid = _parse_builtin_code_with_source_validity(code, python_version)
+        tree = cast("ast.Module", tree)
     if (
         string_normalization
         and (normalized := _normalize_string_quotes_if_needed(code, source_is_valid=source_is_valid)) != code
