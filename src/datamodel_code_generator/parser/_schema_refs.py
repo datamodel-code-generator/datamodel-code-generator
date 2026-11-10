@@ -44,17 +44,18 @@ from datamodel_code_generator.parser._intersection import concatenating_row
 from datamodel_code_generator.parser._schema_dispatch import SchemaSite
 from datamodel_code_generator.parser._schema_documents import (
     SchemaResourcesHost,
+    current_document,
+    definition_entries,
     first_definitions,
-    iter_schema_definition_entries,
     iter_schema_resource_children,
     lenient_ref,
+    located_document,
     note_plain_name,
     plain_name_ref,
     resolve_schema_resource_ref,
     schema_resource_document,
 )
 from datamodel_code_generator.parser._schema_graph import (
-    DocumentId,
     RefEdge,
     RefKey,
     RefReading,
@@ -534,7 +535,7 @@ def read_as_schema(parser: SchemaRefsHost, raw: YamlValue) -> YamlValue:
         or (location := graph.locations.get(id(raw))) is None
     ):
         return raw
-    document = DocumentId(schema_resource_document(parser, [location.document]))
+    document = located_document(parser, location)
     return graph.read_as_schema(raw, location, document, parser._ref_reading("object"))  # noqa: SLF001
 
 
@@ -620,7 +621,7 @@ def derived_ref(parser: SchemaRefsHost, value: str, source: SchemaLocation | Non
     """
     if source is None or isinstance(value, ResolvedRef):
         return value
-    document = DocumentId(schema_resource_document(parser, [source.document]))
+    document = located_document(parser, source)
     return ResolvedRef(value, RefEdge(source, keyword, document, ref, canonical_ref_spelling(str(ref))))
 
 
@@ -644,7 +645,7 @@ def compute_ref_key(parser: SchemaRefsHost, ref: str, *, embedded: bool, pointer
     if (mapping := parser._resolve_external_ref_mapping(ref)) is not None:  # noqa: SLF001
         return RefKey(parser.model_resolver.resolve_ref(ref), ref, mapping)
     if embedded and parser._has_embedded_schema_resources:  # noqa: SLF001
-        document = schema_resource_document(parser, list(parser.model_resolver.current_root))
+        document = current_document(parser)
         ref = resolve_schema_resource_ref(
             parser,
             ref,
@@ -675,9 +676,7 @@ def ref_path(parser: SchemaRefsHost, ref: str) -> str:
 
 def outside_home(parser: SchemaRefsHost, ref: str) -> bool:
     """Return whether a reference with an edge is read outside the document that holds it, the one parsed now."""
-    return isinstance(ref, ResolvedRef) and ref.edge.document != schema_resource_document(
-        parser, list(parser.model_resolver.current_root)
-    )
+    return isinstance(ref, ResolvedRef) and ref.edge.document != current_document(parser)
 
 
 def is_local_ref(parser: SchemaRefsHost, ref: str) -> bool:
@@ -812,7 +811,7 @@ def current_dynamic_document(parser: SchemaRefsHost) -> str:
     """Return the document of the model root whose dynamic scope is being resolved."""
     if (document := parser._dynamic_document) is not None:  # noqa: SLF001
         return document
-    return schema_resource_document(parser, list(parser.model_resolver.current_root))
+    return current_document(parser)
 
 
 def current_dynamic_scope(parser: SchemaRefsHost) -> dict[str, str]:
@@ -1210,7 +1209,7 @@ def ref_target_dump(parser: SchemaRefsHost, ref: str, resolved_ref: str) -> tupl
     copies. A chain of such aliases is loaded first and merged from its far end, so each merge finds the dump of the
     next alias computed.
     """
-    document = schema_resource_document(parser, list(parser.model_resolver.current_root))
+    document = current_document(parser)
     key = node, _ = parser._key_node(resolved_ref), document  # noqa: SLF001
     chain: list[tuple[str, _TargetNode, dict[str, Any], JsonSchemaObject | None]] = []
     while (node, document) not in parser._ref_target_dumps:  # noqa: SLF001
@@ -1413,13 +1412,9 @@ def document_recursive_anchors(
     anchors = ["#"] if raw.get("$recursiveAnchor") is True else []
     schema_path, definitions = first_definitions(parser, raw, location)
     if definitions:
-        entries = chain(
-            ((str(key), model, [schema_path, str(key)]) for key, model in definitions.items()),
-            iter_schema_definition_entries(parser, definitions, [schema_path]),
-        )
         anchors.extend(
             parser._anchor_ref_path((), path)  # noqa: SLF001
-            for _, model, path in entries
+            for _, model, path in definition_entries(parser, definitions, [schema_path])
             if isinstance(model, dict) and model.get("$recursiveAnchor") is True
         )
     return anchors

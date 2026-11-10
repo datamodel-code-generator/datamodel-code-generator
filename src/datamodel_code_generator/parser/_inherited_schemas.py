@@ -57,7 +57,7 @@ from datamodel_code_generator.parser._intersection import (
 )
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
 from datamodel_code_generator.parser._origins import with_field_origin
-from datamodel_code_generator.parser._schema_documents import DocumentNamesHost, schema_resource_document
+from datamodel_code_generator.parser._schema_documents import DocumentNamesHost, current_document
 from datamodel_code_generator.parser._schema_object import (
     _ANNOTATION_KEYWORDS,
     _MODELED_POSITIONS,
@@ -1596,7 +1596,7 @@ def _read_through_target(parser: InheritedSchemasHost, ref: str, target: JsonSch
     that has a fixed target there names it, as a schema merged from there reads it.
     """
     resolved_ref = parser._ref_path(ref)  # noqa: SLF001
-    document = schema_resource_document(parser, list(parser.model_resolver.current_root))
+    document = current_document(parser)
     if parser._schema_location(resolved_ref).partition("#")[0] == document:  # noqa: SLF001
         return target
     return parser._schema_object(parser._ref_target_dump(ref, resolved_ref)[0])  # noqa: SLF001
