@@ -132,6 +132,7 @@ __all__ = [
     "TagCapabilities",
     "TagPlan",
     "TagPlanHost",
+    "TagReading",
     "UnionSite",
     "UnionTagDecision",
     "UnionView",
@@ -530,15 +531,36 @@ class _ListedVariant:
 
 @final
 @record(eq=False)
+class TagReading:
+    """What the tags of a union's variants are read with besides its names, mapping and field match (``variant_tags``).
+
+    ``inline_variants`` holds the tag fields of the inline variants that may take the tag they inherit,
+    ``union_written`` the variants whose tag fields a union wrote, ``enum_member_tags`` tells that Enum members are
+    written as tags (``--use-enum-values-in-discriminator``) and ``merged_tags`` the tags a variant is read with ahead
+    of its tag fields: those of the variants whose tags are merged (``TagPlan``), or every tag the unions give it where
+    ``TagPlan.merged_variant_tags`` reads it.
+    """
+
+    inline_variants: InlineVariantTags
+    union_written: UnionWrittenTags
+    enum_member_tags: bool
+    merged_tags: MergedVariantTags
+
+    def with_merged(self, merged_tags: MergedVariantTags) -> TagReading:
+        """Return the reading with the variants read with ``merged_tags`` ahead of their tag fields."""
+        return TagReading(self.inline_variants, self.union_written, self.enum_member_tags, merged_tags)
+
+
+@final
+@record(eq=False)
 class _MergeSite:
     """A union site as ``TagPlan.merged_variant_tags`` reads it, with the tags it gives the variants it lists."""
 
     site: UnionSite
     names: SiteNames
     mode: ValidityMode
-    inline_variants: InlineVariantTags
-    union_written: UnionWrittenTags
-    enum_member_tags: bool
+    reading: TagReading
+    """What the variants are read with before any union writes a tag, with no merged tags."""
     listed: tuple[_ListedVariant, ...]
 
     def tag_keys(self, read_tags: MergedVariantTags) -> SiteStatus | list[_VariantTagKeys]:
@@ -550,21 +572,16 @@ class _MergeSite:
             self.site.mapping,
             field_type=type(field_),
             mode=self.mode,
-            inline_variants=self.inline_variants,
-            union_written=self.union_written,
-            enum_member_tags=self.enum_member_tags,
-            merged_tags=read_tags,
+            reading=self.reading.with_merged(read_tags),
         )
 
 
-def _listed_variants(  # noqa: PLR0913
+def _listed_variants(
     site: UnionSite,
     names: SiteNames,
     mode: ValidityMode,
     *,
-    inline_variants: InlineVariantTags,
-    union_written: UnionWrittenTags,
-    enum_member_tags: bool,
+    reading: TagReading,
     collapsed_users: CollapsedReuseUsers,
 ) -> Iterator[_ListedVariant]:
     """Yield the variants a union lists that are no msgspec Struct, with the tags it gives them before any write.
@@ -587,12 +604,9 @@ def _listed_variants(  # noqa: PLR0913
                 variant if removed is None else removed,
                 tag_name,
                 site.mapping,
-                inline_variants=inline_variants,
                 mode=mode,
                 property_name=site.property_name,
-                union_written=union_written,
-                enum_member_tags=enum_member_tags,
-                merged_tags={},
+                reading=reading,
             )
         )
         patterns = _tag_field_patterns(variant, tag_name, mode)
@@ -662,31 +676,22 @@ def tags_of_variant(  # noqa: PLR0913
     field_name: str,
     mapping: dict[str, str],
     *,
-    inline_variants: InlineVariantTags,
     mode: TagFieldMatch,
     property_name: str,
-    union_written: UnionWrittenTags,
-    enum_member_tags: bool,
-    merged_tags: MergedVariantTags,
+    reading: TagReading,
 ) -> list[DiscriminatorValue]:
     """Return the tags of a variant (``variant_tags``) from its tag fields, its bases, the mapping and its schema path.
 
-    ``union_written`` holds the variants whose tag fields for ``property_name`` a union wrote and ``merged_tags`` the
-    tags a variant is read with ahead of its tag fields: those of the variants whose tags are merged (``TagPlan``), or
-    every tag the unions give it where ``TagPlan.merged_variant_tags`` reads it; ``enum_member_tags`` tells that Enum
-    members are written as tags (``--use-enum-values-in-discriminator``).
+    The tag fields for ``property_name`` are read as ``reading`` says (``TagReading``).
     """
     facts = _VariantTagFacts(
         variant,
         field_name,
         mapping,
         mode,
-        inline_variants,
         property_name,
-        union_written,
-        enum_member_tags,
         "legacy-nested-root-model-tag" if source == "nested" else "variant-field",
-        merged_tags,
+        reading,
     )
     return [*variant_tags(source, facts).values]
 
@@ -700,17 +705,14 @@ class _VariantTagFacts:
     field_name: str
     mapping: dict[str, str]
     field_name_mode: TagFieldMatch
-    inline_models: InlineVariantTags
     property_name: str
-    union_written: UnionWrittenTags
-    enum_member_tags: bool
     site: FieldTagSite
     """Where the tag fields are read (``variant-field``, or ``legacy-nested-root-model-tag`` for a nested variant)."""
-    merged: MergedVariantTags
+    reading: TagReading
 
     def merged_tags(self) -> tuple[DiscriminatorValue, ...] | None:
         """Return the tags the variant is read with ahead of its tag fields (``tags_of_variant``), if any."""
-        return self.merged.get((id(self.model), self.property_name))
+        return self.reading.merged_tags.get((id(self.model), self.property_name))
 
     def own_tag(self) -> DiscriminatorValue | None:
         """Return the tag of the variant's own tag field."""
@@ -754,7 +756,7 @@ class _VariantTagFacts:
         The tag field of an ancestor in ``union_written`` holds a tag that union wrote, not what its schema declares.
         """
         for ancestor in linearize_data_models([self.model])[start:]:
-            if (id(ancestor), self.property_name) not in self.union_written:
+            if (id(ancestor), self.property_name) not in self.reading.union_written:
                 yield from self._tag_fields(ancestor.fields)
 
     def _tag_fields(self, fields: Iterable[DataModelFieldBase]) -> Iterator[DataModelFieldBase]:
@@ -763,7 +765,9 @@ class _VariantTagFacts:
 
     def inline_tag(self) -> DiscriminatorValue | None:
         """Return the tag an inline variant inherits as ``TagPlan.inline_variant_tags`` read it, where it takes it."""
-        if (tag_fields := self.inline_models.get(id(self.model))) is None or not _is_special_path(self.path_segment()):
+        if (tag_fields := self.reading.inline_variants.get(id(self.model))) is None or not _is_special_path(
+            self.path_segment()
+        ):
             return None
         return next(
             (
@@ -789,7 +793,7 @@ class _VariantTagFacts:
         if tag_field is None:
             return [*keys]
         enum_source = tag_field.data_type.find_source(Enum)
-        if enum_source is not None and self.enum_member_tags:
+        if enum_source is not None and self.reading.enum_member_tags:
             return [*keys]
         leaves = [leaf for leaf in tag_field.data_type.data_types or [tag_field.data_type] if leaf.type != NONE]
         leaf = leaves[0] if len(leaves) == 1 else None
@@ -823,11 +827,7 @@ class UnionView:
     mapping: dict[str, str]
     mode: TagFieldMatch
     """``python-name`` where the union writes ``discriminator=``, else ``python-or-original-name``."""
-    inline_variants: InlineVariantTags
-    union_written: UnionWrittenTags
-    enum_member_tags: bool
-    merged_tags: MergedVariantTags
-    """The tags a variant is read with ahead of its tag fields (``tags_of_variant``)."""
+    reading: TagReading
 
     def tags(
         self, source: VariantTagSource, variant: DataModel, mapping: dict[str, str] | None = None
@@ -838,12 +838,9 @@ class UnionView:
             variant,
             self.names.field_name,
             self.mapping if mapping is None else mapping,
-            inline_variants=self.inline_variants,
             mode=self.mode,
             property_name=self.names.property_name,
-            union_written=self.union_written,
-            enum_member_tags=self.enum_member_tags,
-            merged_tags=self.merged_tags,
+            reading=self.reading,
         )
 
 
@@ -942,17 +939,15 @@ def _site_tag_keys(  # noqa: PLR0913
     *,
     field_type: type[DataModelFieldBase],
     mode: ValidityMode,
-    inline_variants: InlineVariantTags,
-    union_written: UnionWrittenTags,
-    enum_member_tags: bool,
-    merged_tags: MergedVariantTags,
+    reading: TagReading,
 ) -> SiteStatus | list[_VariantTagKeys]:
     """Return the tag keys of each variant of a union, else why its discriminator is dropped (``site_validity``).
 
-    Each variant is a model that takes a tag and has tags the backend reads as tags (or, with ``enum_member_tags``,
-    that members of the Enum typing its tag field write). The variants' tag fields are found by the names ``mode``
-    gives (``ValidityMode``).
+    Each variant is a model that takes a tag and has tags the backend reads as tags (or, where ``reading`` writes Enum
+    members as tags, that members of the Enum typing its tag field write). The variants' tag fields are found by the
+    names ``mode`` gives (``ValidityMode``).
     """
+    enum_member_tags = reading.enum_member_tags
     if has_any_variant(data_types):  # pragma: no cover
         return "dropped-any"
     use_field_name = mode == "source-name"
@@ -972,12 +967,9 @@ def _site_tag_keys(  # noqa: PLR0913
             variant,
             tag_name,
             mapping,
-            inline_variants=inline_variants,
             mode=mode,
             property_name=names.property_name,
-            union_written=union_written,
-            enum_member_tags=enum_member_tags,
-            merged_tags=merged_tags,
+            reading=reading,
         )
         if not values or not all(
             is_tag_value(value, bool_literals=capabilities.bool_tags)
@@ -1003,10 +995,7 @@ def site_validity(  # noqa: PLR0913
     *,
     field_type: type[DataModelFieldBase],
     mode: ValidityMode,
-    inline_variants: InlineVariantTags,
-    union_written: UnionWrittenTags,
-    enum_member_tags: bool,
-    merged_tags: MergedVariantTags,
+    reading: TagReading,
 ) -> SiteStatus:
     """Return whether a union's variants let it be tagged (``tagged``), else why its discriminator is dropped.
 
@@ -1014,17 +1003,7 @@ def site_validity(  # noqa: PLR0913
     variants share one but those reached through one root model or nested union.
     """
     if isinstance(
-        variants := _site_tag_keys(
-            data_types,
-            names,
-            mapping,
-            field_type=field_type,
-            mode=mode,
-            inline_variants=inline_variants,
-            union_written=union_written,
-            enum_member_tags=enum_member_tags,
-            merged_tags=merged_tags,
-        ),
+        variants := _site_tag_keys(data_types, names, mapping, field_type=field_type, mode=mode, reading=reading),
         str,
     ):
         return variants
@@ -1609,10 +1588,7 @@ class TagPlan:
                     site.mapping,
                     field_type=type(field_),
                     mode=mode,
-                    inline_variants=inline_models,
-                    union_written=self.union_written,
-                    enum_member_tags=enum_member_tags,
-                    merged_tags={},
+                    reading=TagReading(inline_models, self.union_written, enum_member_tags, {}),
                 )
                 == "tagged"
                 for inline_models in ({}, variants)
@@ -1648,23 +1624,18 @@ class TagPlan:
         """
         if (decided := self.merged_variants) is not None:
             return decided
-        inline_variants = self.inline_variant_tags(models, namer, enum_member_tags=enum_member_tags)
+        reading = TagReading(
+            self.inline_variant_tags(models, namer, enum_member_tags=enum_member_tags),
+            self.union_written,
+            enum_member_tags,
+            {},
+        )
         sites: list[_MergeSite] = []
         for site in iter_union_sites(models):
             names = site_names(site.property_name, namer)
             mode = site_mode(writes_argument=tag_capabilities(type(site.model), type(site.field)).writes_argument)
-            listed = _listed_variants(
-                site,
-                names,
-                mode,
-                inline_variants=inline_variants,
-                union_written=self.union_written,
-                enum_member_tags=enum_member_tags,
-                collapsed_users=collapsed_users,
-            )
-            sites.append(
-                _MergeSite(site, names, mode, inline_variants, self.union_written, enum_member_tags, tuple(listed))
-            )
+            listed = _listed_variants(site, names, mode, reading=reading, collapsed_users=collapsed_users)
+            sites.append(_MergeSite(site, names, mode, reading, tuple(listed)))
         self.merged_variants = merged = _merged_tags(sites)
         return merged
 
