@@ -762,14 +762,34 @@ class DataModelField(_PydanticBaseDataModelField):
         ):
             constructs.append("pydantic.compiled_pattern")
         if pattern is not None:
-            string_type = _pattern_data_type(self.data_type, includes_bytes=False)
-            if string_type is None and _pattern_data_type(self.data_type, includes_bytes=True) is not None:
+            if self._constrains_bytes_only():
                 constructs.append("pydantic.bytes_pattern")
-            elif string_type is not None and any(
+            elif _pattern_data_type(self.data_type, includes_bytes=False) is not None and any(
                 member.type in _BYTES_PATTERN_TYPES for member in self.data_type.data_types
             ):
                 constructs.append("pydantic.str_bytes_union_pattern")
         return tuple(constructs)
+
+    def _constrains_bytes_only(self) -> bool:
+        """Return whether a pattern of the field constrains a ``bytes`` type and no string type."""
+        return (
+            _pattern_data_type(self.data_type, includes_bytes=False) is None
+            and _pattern_data_type(self.data_type, includes_bytes=True) is not None
+        )
+
+    @override
+    def _writes_bytes_pattern_rust_rejects(self) -> bool:
+        """Return whether the field writes a string pattern on ``bytes`` whose syntax needs Python's ``re`` (#6673).
+
+        Pydantic compiles it from 2.14 on, with the default engine unless the config selects ``python-re``; the
+        decision is ``pattern_engine``'s, as for a string pattern Pydantic compiles.
+        """
+        data, _ = self._get_field_data_and_default_factory()
+        return (
+            isinstance(pattern := data.get("pattern"), str)
+            and self._constrains_bytes_only()
+            and pattern_engine(pattern, row="model") == "python"
+        )
 
     @property
     @override
@@ -1783,6 +1803,7 @@ class _PydanticV2Model(DataModel):
                     for field in current.fields:
                         field.invalidate_semantic_caches()
 
+    @override
     def _builds_patterns_with_python_engine(self) -> bool:
         """Return whether the config the model applies selects ``python-re``."""
         return self._applied_config_items().get("regex_engine") == '"python-re"'

@@ -843,6 +843,17 @@ pydantic_v2.BaseModel-datetime_pydantic_v2.py-AwareDatetime	main/openapi/datetim
 pydantic_v2.BaseModel-datetime_pydantic_v2_datetime.py-datetime	main/openapi/datetime_pydantic_v2_datetime.py
 pydantic_v2.BaseModel-datetime_pydantic_v2_future_datetime.py-FutureDatetime	main/openapi/datetime_pydantic_v2_future_datetime.py
 pydantic_v2.BaseModel-datetime_pydantic_v2_past_datetime.py-PastDatetime	main/openapi/datetime_pydantic_v2_past_datetime.py
+[test_main_openapi_binary_request_body_pattern_warning]
+accepted	main/openapi/main_openapi/binary_request_body_pattern_warning[accepted].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+accepted	main/openapi/openapi_binary_request_body_pattern_warning.py
+lookaround	main/openapi/main_openapi/binary_request_body_pattern_warning[lookaround].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+lookaround	main/openapi/openapi_binary_request_body_pattern_warning.py	= main/openapi/openapi_binary_request_body_pattern_warning~binary_request_body_pattern_warning[lookaround].py
+refused	main/openapi/main_openapi/binary_request_body_pattern_warning[refused].warnings.txt
+refused	main/openapi/openapi_binary_request_body_pattern_warning.py	= main/openapi/openapi_binary_request_body_pattern_warning~binary_request_body_pattern_warning[refused].py
+refused-target-2.12	main/openapi/main_openapi/binary_request_body_pattern_warning[refused-target-2.12].warnings.txt
+refused-target-2.12	main/openapi/openapi_binary_request_body_pattern_warning.py	= main/openapi/openapi_binary_request_body_pattern_warning~binary_request_body_pattern_warning[refused].py
+refused-target-2.14	main/openapi/main_openapi/binary_request_body_pattern_warning[refused-target-2.14].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+refused-target-2.14	main/openapi/openapi_binary_request_body_pattern_warning.py	= main/openapi/openapi_binary_request_body_pattern_warning~binary_request_body_pattern_warning[refused-target-2.14].py
 [test_main_openapi_body_and_parameters]
 	main/openapi/body_and_parameters/general.py
 [test_main_openapi_body_and_parameters_only_paths]

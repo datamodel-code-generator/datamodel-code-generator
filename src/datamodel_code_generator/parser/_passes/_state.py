@@ -303,24 +303,33 @@ class _StructureState:
 
 @final
 class PydanticFloors:
-    """The Pydantic floor that each parse of a generation records, so that the generation states its kept parse's."""
+    """The Pydantic floor that each parse of a generation records, so that the generation states its kept parse's.
 
-    __slots__ = ("_floors",)
+    Each parse also records the owners of the ``bytes`` patterns that Pydantic 2.14 refuses at import (#6673).
+    """
+
+    __slots__ = ("_floors", "_refused_bytes_patterns")
 
     def __init__(self) -> None:
         """Start with no parse recorded."""
         self._floors: WeakKeyDictionary[object, PydanticFloor] = WeakKeyDictionary()
+        self._refused_bytes_patterns: WeakKeyDictionary[object, tuple[str, ...]] = WeakKeyDictionary()
 
-    def record(self, parser: object, floor: PydanticFloor | None) -> None:
+    def record(self, parser: object, floor: PydanticFloor | None, refused_bytes_patterns: tuple[str, ...]) -> None:
         """Record the floor of the models that ``parser`` emitted, None when they need nothing above the target."""
         if floor is None:
             self._floors.pop(parser, None)
         else:
             self._floors[parser] = floor
+        self._refused_bytes_patterns[parser] = refused_bytes_patterns
 
     def of(self, parser: object) -> PydanticFloor | None:
         """Return the floor that ``parser`` recorded, or None."""
         return self._floors.get(parser)
+
+    def refused_bytes_patterns_of(self, parser: object) -> tuple[str, ...]:
+        """Return the owners of the ``bytes`` patterns Pydantic 2.14 refuses that ``parser`` recorded."""
+        return self._refused_bytes_patterns.get(parser, ())
 
 
 _PYDANTIC_FLOORS: ContextVar[PydanticFloors | None] = ContextVar("pydantic_floors", default=None)

@@ -18903,3 +18903,81 @@ def test_name_allof_union_members_after_branches_beside_a_resolver_that_names_mo
             formatters=[Formatter.BUILTIN],
         ).parse()
     assert_output("".join(f"{record.message}\n" for record in records if record.category is UserWarning) + str(output))
+
+
+@pytest.mark.parametrize(
+    ("pattern", "target_pydantic_version"),
+    [
+        ("^.{1,2097152}", None),
+        ("^.{1,2097152}", "2.12"),
+        ("^.{1,2097152}", "2.14"),
+        ("^.{1,64}", None),
+        ("^(?=.).{1,2097152}", None),
+    ],
+    ids=["refused", "refused-target-2.12", "refused-target-2.14", "accepted", "lookaround"],
+)
+def test_main_openapi_binary_request_body_pattern_warning(
+    pattern: str, target_pydantic_version: str | None, tmp_path: Path, output_file: Path
+) -> None:
+    """Warn where Pydantic 2.14 refuses the pattern of a binary request body at import, keeping the output (#6673).
+
+    An unset or older target keeps the default engine for a ``bytes`` pattern; Rust refuses one that repeats ``.``
+    two million times. Target 2.14 and a lookaround select ``python-re``, and Rust compiles a short repetition.
+    """
+    input_file = tmp_path / "binary_body.yaml"
+    input_file.write_text(
+        yaml.safe_dump({
+            "openapi": "3.0.3",
+            "info": {"title": "t", "version": "1"},
+            "paths": {
+                "/predict": {
+                    "post": {
+                        "operationId": "predict",
+                        "requestBody": {
+                            "content": {
+                                "application/octet-stream": {
+                                    "schema": {
+                                        "type": "string",
+                                        "format": "binary",
+                                        "maxLength": 2097152,
+                                        "pattern": pattern,
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {"200": {"description": "ok"}},
+                    }
+                }
+            },
+        }),
+        encoding="utf-8",
+    )
+    refused = pattern == "^.{1,2097152}" and target_pydantic_version != "2.14"
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=input_file,
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            extra_args=[
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--openapi-scopes",
+                "schemas",
+                "api",
+                "--use-annotated",
+                "--formatters",
+                "builtin",
+                *target_pydantic_args(target_pydantic_version),
+            ],
+            force_exec_validation=True,
+            skip_code_validation=refused or not installed_pydantic_runs_target(target_pydantic_version),
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
+    )

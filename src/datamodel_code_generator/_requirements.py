@@ -31,7 +31,7 @@ from datamodel_code_generator.enums import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Iterable, Mapping, Sequence
 
 Library: TypeAlias = Literal["python", "pydantic"]
 UnsetTarget: TypeAlias = Literal["newest", "unsupported"]
@@ -370,6 +370,18 @@ def pydantic_floor_message(floor: PydanticFloor, *, target_from: str | None = No
     )
 
 
+def refused_bytes_pattern_message(owners: Sequence[str]) -> str:
+    """Say that Pydantic 2.14 refuses the ``bytes`` patterns of ``owners`` at import, and how to avoid it (#6673).
+
+    Lists three owners, then a count.
+    """
+    return (
+        "Pydantic 2.14 compiles patterns on bytes with its Rust regex engine, which rejects the pattern of "
+        f"{listed_with_more(owners[:_LISTED_OWNERS], len(owners))}, so the generated models fail to import on "
+        "Pydantic 2.14; pass --target-pydantic-version 2.14 to select Python's regex engine for it."
+    )
+
+
 def form_path(construct: Construct) -> str:
     """Return the import that ``construct`` writes on a target that has it."""
     return _import_path(REQUIREMENTS[construct].form, construct)
@@ -404,4 +416,5 @@ __all__ = [
     "pydantic_floor_message",
     "pydantic_target_meets",
     "python_target_meets",
+    "refused_bytes_pattern_message",
 ]

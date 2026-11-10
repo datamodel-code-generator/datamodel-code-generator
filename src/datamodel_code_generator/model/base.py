@@ -607,6 +607,9 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             A generation collects them only for a model type that Pydantic reads, whose fields are Pydantic fields.
             """
 
+        def _writes_bytes_pattern_rust_rejects(self) -> bool:
+            """Return whether the field writes a ``bytes`` pattern Pydantic's default engine rejects; Pydantic only."""
+
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         defer_build=True,
@@ -2983,6 +2986,10 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             for position, holder in enumerate(holders)
             if (values := holder.__dict__.get(VALUES_AS_WRITTEN_KEY)) is not None
         )
+
+    def _builds_patterns_with_python_engine(self) -> bool:  # noqa: PLR6301
+        """Return whether the config the model applies selects ``python-re``: a model with no config does not."""
+        return False
 
     def _pydantic_constructs(self) -> Iterator[tuple[PydanticConstruct, str | None]]:
         """Yield the Pydantic constructs that the model's rendering writes, each with the field that writes it.
