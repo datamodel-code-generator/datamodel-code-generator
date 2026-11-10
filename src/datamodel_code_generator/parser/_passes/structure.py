@@ -779,15 +779,6 @@ def _joined_merges(
     return list(joined.values())
 
 
-def module_dependency_cycles(
-    parser: StructureHost,
-    module_models_list: list[tuple[tuple[str, ...], list[DataModel]]],
-    all_exports_scope: AllExportsScope | None = None,
-) -> list[set[tuple[str, ...]]]:
-    """Find the modules to merge into ``_internal`` modules (``_module_merges``)."""
-    return _module_merges(parser, module_models_list, all_exports_scope)[1]
-
-
 def _module_merges(
     parser: StructureHost,
     module_models_list: list[tuple[tuple[str, ...], list[DataModel]]],

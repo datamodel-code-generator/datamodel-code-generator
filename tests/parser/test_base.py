@@ -1651,7 +1651,7 @@ def test_compute_internal_module_path(
 
 
 def test_module_dependency_cycles_with_missing_ref(parser_fixture: C) -> None:
-    """Test module_dependency_cycles when reference path is not in path_to_module."""
+    """Test the merges of import cycles when reference path is not in path_to_module."""
     missing_reference = Reference(path="nonexistent.Model", original_name="Missing", name="Missing")
     model1 = BaseModel(
         fields=[DataModelField(data_type=DataType(reference=missing_reference))],
@@ -1663,7 +1663,7 @@ def test_module_dependency_cycles_with_missing_ref(parser_fixture: C) -> None:
         (("pkg",), [model1]),
     ]
 
-    assert structure.module_dependency_cycles(parser_fixture, module_models_list) == []
+    assert structure._module_merges(parser_fixture, module_models_list, None)[1] == []
 
 
 def test_collapse_root_models_preserves_root_model_used_by_other_modules() -> None:
