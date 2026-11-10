@@ -20,7 +20,7 @@ import tokenize
 from bisect import bisect_right
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from functools import cache, partial
+from functools import cache, lru_cache, partial
 from itertools import accumulate, takewhile
 from typing import TYPE_CHECKING, Final
 
@@ -2228,7 +2228,23 @@ def format_logical_line(
     parentheses after an annotation colon and after each ``=`` (not in a ``type`` statement). ``None`` means the line
     holds a construct this port does not lay out. A changed line is laid out once more, as black formats a changed
     file a second time: a trailing comma the first pass added can make the second split the line elsewhere.
+    Generated modules repeat many lines, so the layouts of lines without lent letters are remembered.
     """
+    lay_out = _remembered_layout if restore is str else partial(_logical_line_layout, restore=restore)
+    if (
+        result := lay_out(
+            source, line_length=line_length, wrap_string_literal=wrap_string_literal, assignment=assignment
+        )
+    ) is None:
+        return None
+    rows, formatted = result
+    return rows, list(formatted)
+
+
+def _logical_line_layout(
+    source: str, *, line_length: int, wrap_string_literal: bool, assignment: bool, restore: Callable[[str], str] = str
+) -> tuple[int, tuple[str, ...]] | None:
+    """Return what ``format_logical_line`` returns, its new lines as a tuple."""
     lay_out = partial(
         _lay_out_logical_line,
         line_length=line_length,
@@ -2241,7 +2257,10 @@ def format_logical_line(
     rows, formatted, same_tokens = result
     if not same_tokens and formatted != source.split("\n")[:rows]:
         formatted = (lay_out("\n".join(formatted)) or result)[1]
-    return rows, formatted
+    return rows, tuple(formatted)
+
+
+_remembered_layout = lru_cache(maxsize=1024)(_logical_line_layout)
 
 
 def _lay_out_logical_line(
