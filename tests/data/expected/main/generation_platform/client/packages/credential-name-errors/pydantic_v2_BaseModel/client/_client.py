@@ -139,19 +139,21 @@ class Client(ClientView):
             auth=auth,
             clock=clock,
             http_client=http_client,
-            credentials=SchemeCredentials({
-                "timeout": timeout_1,
-                "helper_defaults": helper_defaults_1,
-                "api-key": api_key,
-                "api_key": api_key_1,
-                "-": field_,
-                "flowless": flowless,
-                "implicit_only": implicit_only,
-                "relative": relative,
-                "self": self_1,
-                "n1": n1,
-                "n_1": n_1,
-            }),
+            credentials=SchemeCredentials(
+                {
+                    "timeout": timeout_1,
+                    "helper_defaults": helper_defaults_1,
+                    "api-key": api_key,
+                    "api_key": api_key_1,
+                    "-": field_,
+                    "flowless": flowless,
+                    "implicit_only": implicit_only,
+                    "relative": relative,
+                    "self": self_1,
+                    "n1": n1,
+                    "n_1": n_1,
+                }
+            ),
         )
 
     def close(self) -> None:

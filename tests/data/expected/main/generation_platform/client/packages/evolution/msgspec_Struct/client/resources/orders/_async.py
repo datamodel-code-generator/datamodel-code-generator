@@ -51,12 +51,14 @@ class AsyncOrdersResource:
         """
         Call GET /orders/{orderId}.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_0,
-            (orderId, view),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_0,
+                (orderId, view),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
 
 class AsyncOrdersWithResponse:

@@ -127,7 +127,7 @@
      operation_dependencies: OperationDependencies | None = None,
      prefix: str = "",
      source_openapi: bool = True,
-@@ -60,7 +56,6 @@
+@@ -62,7 +58,6 @@
      app.include_router(
          build_router(
              pets=pets,
@@ -168,7 +168,7 @@
  from pydantic import AwareDatetime, Field
  
  from .._generated import contract
-@@ -103,120 +102,11 @@
+@@ -109,120 +108,11 @@
      )
  
  

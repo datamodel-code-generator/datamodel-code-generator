@@ -47,7 +47,9 @@ def _add_authenticate(
         *,
         principal: Annotated[object, Depends(authenticate_principal)],
         security: Annotated[str | None, Query(alias='security')] = None,
-        authenticate_handler: Annotated[str | None, Query(alias='authenticate_handler')] = None,
+        authenticate_handler: Annotated[
+            str | None, Query(alias='authenticate_handler')
+        ] = None,
     ) -> object:
         return dispatch(
             authenticate_handler_1(

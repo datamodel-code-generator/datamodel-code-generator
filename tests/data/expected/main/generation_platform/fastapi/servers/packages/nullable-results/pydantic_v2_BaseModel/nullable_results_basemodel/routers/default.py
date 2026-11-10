@@ -352,7 +352,10 @@ def _add_post_memo(
     def post_memo(
         *,
         case: Annotated[str, Query(alias='case')],
-        body: Annotated[nullable_results_basemodel_models.MemosPostRequest | None, Depends(contract.PostMemo.BODY)],
+        body: Annotated[
+            nullable_results_basemodel_models.MemosPostRequest | None,
+            Depends(contract.PostMemo.BODY),
+        ],
     ) -> object:
         return dispatch(
             post_memo_handler(
@@ -569,7 +572,10 @@ def _add_post_ok(
     def post_ok(
         *,
         case: Annotated[str, Query(alias='case')],
-        body: Annotated[nullable_results_basemodel_models.Ok | None, Body(media_type='application/json')] = None,
+        body: Annotated[
+            nullable_results_basemodel_models.Ok | None,
+            Body(media_type='application/json'),
+        ] = None,
     ) -> object:
         return dispatch(
             post_ok_handler(
@@ -643,7 +649,10 @@ def _add_post_any_alias(
     def post_any_alias(
         *,
         case: Annotated[str, Query(alias='case')],
-        body: Annotated[nullable_results_basemodel_models.AnyAlias | None, Body(media_type='application/json')] = None,
+        body: Annotated[
+            nullable_results_basemodel_models.AnyAlias | None,
+            Body(media_type='application/json'),
+        ] = None,
     ) -> object:
         return dispatch(
             post_any_alias_handler(
@@ -681,7 +690,10 @@ def _add_post_count(
     def post_count(
         *,
         case: Annotated[str, Query(alias='case')],
-        body: Annotated[nullable_results_basemodel_models.Count | None, Body(media_type='application/json')] = None,
+        body: Annotated[
+            nullable_results_basemodel_models.Count | None,
+            Body(media_type='application/json'),
+        ] = None,
     ) -> object:
         return dispatch(
             post_count_handler(

@@ -59,7 +59,12 @@ __all__ = [
 
 def __getattr__(name: str) -> object:
     """Load the protocol helper exceptions only when one of their classes is requested."""
-    if name in {'ProtocolDataError', 'SessionLimitError', 'StreamInterruptedError', 'WebSocketClosedError'}:
+    if name in {
+        'ProtocolDataError',
+        'SessionLimitError',
+        'StreamInterruptedError',
+        'WebSocketClosedError',
+    }:
         from ._runtime.protocols import errors
 
         value = globals()[name] = getattr(errors, name)

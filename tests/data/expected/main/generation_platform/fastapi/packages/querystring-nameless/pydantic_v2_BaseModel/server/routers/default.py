@@ -30,7 +30,9 @@ def _add_search(
 
     def search(
         *,
-        parameters: Annotated[contract.Search.Parameters, Depends(contract.Search.PARAMETERS)],
+        parameters: Annotated[
+            contract.Search.Parameters, Depends(contract.Search.PARAMETERS)
+        ],
     ) -> object:
         parameters = accepted(parameters)
         return dispatch(

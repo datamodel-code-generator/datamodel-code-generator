@@ -77,11 +77,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
         for rule in cls.__json_schema_conditional_required__:
             condition_matches = all(
                 any(
-                    name in data
-                    and (
-                        not expected
-                        or data[name] in expected
-                    )
+                    name in data and (not expected or data[name] in expected)
                     for name in names
                 )
                 for names, expected in rule['condition']

@@ -48,12 +48,14 @@ class AsyncLabelsResource:
         """
         Call GET /labels.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_4,
-            (after,),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_4,
+                (after,),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def list_label_sets(
         self,
@@ -65,12 +67,14 @@ class AsyncLabelsResource:
         """
         Call GET /label-sets.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_5,
-            (after,),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_5,
+                (after,),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
 
 class AsyncLabelsWithResponse:

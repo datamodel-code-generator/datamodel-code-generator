@@ -30,7 +30,9 @@ def _add_get_route(
 
     def get_route(
         *,
-        parameters: Annotated[contract.GetRoute.Parameters, Depends(contract.GetRoute.PARAMETERS)],
+        parameters: Annotated[
+            contract.GetRoute.Parameters, Depends(contract.GetRoute.PARAMETERS)
+        ],
     ) -> object:
         parameters = accepted(parameters)
         return dispatch(

@@ -32,9 +32,15 @@ def _add_search(
 
     def search(
         *,
-        session: Annotated[str, StringConstraints(min_length=2), Cookie(alias='session')],
-        code: Annotated[str, StringConstraints(pattern=r'^[A-Z]+$'), Query(alias='code')] = 'AB',
-        parameters: Annotated[contract.Search.Parameters, Depends(contract.Search.PARAMETERS)],
+        session: Annotated[
+            str, StringConstraints(min_length=2), Cookie(alias='session')
+        ],
+        code: Annotated[
+            str, StringConstraints(pattern=r'^[A-Z]+$'), Query(alias='code')
+        ] = 'AB',
+        parameters: Annotated[
+            contract.Search.Parameters, Depends(contract.Search.PARAMETERS)
+        ],
     ) -> object:
         parameters = accepted(parameters)
         return dispatch(
@@ -77,7 +83,16 @@ def _add_get_ratios(
     def get_ratios(
         *,
         ratios: Annotated[list[float], Query(alias='ratios')],
-        limits: Annotated[list[Annotated[int, Field(ge=1)]], Query(alias='limits', title='Limits', description='Limits.', deprecated=True, examples=[[1]])] = [1, 2],
+        limits: Annotated[
+            list[Annotated[int, Field(ge=1)]],
+            Query(
+                alias='limits',
+                title='Limits',
+                description='Limits.',
+                deprecated=True,
+                examples=[[1]],
+            ),
+        ] = [1, 2],
     ) -> object:
         return dispatch(
             get_ratios_handler(
@@ -156,7 +171,9 @@ def _add_get_codes(
 
     def get_codes(
         *,
-        parameters: Annotated[contract.GetCodes.Parameters, Depends(contract.GetCodes.PARAMETERS)],
+        parameters: Annotated[
+            contract.GetCodes.Parameters, Depends(contract.GetCodes.PARAMETERS)
+        ],
     ) -> object:
         parameters = accepted(parameters)
         return dispatch(
@@ -192,7 +209,9 @@ def _add_repeat(
 
     def repeat(
         *,
-        parameters: Annotated[contract.Repeat.Parameters, Depends(contract.Repeat.PARAMETERS)],
+        parameters: Annotated[
+            contract.Repeat.Parameters, Depends(contract.Repeat.PARAMETERS)
+        ],
     ) -> object:
         parameters = accepted(parameters)
         return dispatch(
@@ -264,7 +283,9 @@ def _add_get_file(
 
     def get_file(
         *,
-        file_name: Annotated[str, StringConstraints(pattern=r'^[a-z]+\.txt$'), Path(alias='dcg_p0')],
+        file_name: Annotated[
+            str, StringConstraints(pattern=r'^[a-z]+\.txt$'), Path(alias='dcg_p0')
+        ],
     ) -> object:
         return dispatch(
             get_file_handler(
@@ -300,10 +321,17 @@ def _add_get_pair(
 
     def get_pair(
         *,
-        pair: Annotated[str, StringConstraints(pattern=r'^[a-z]+$'), Path(alias='dcg_p0')],
+        pair: Annotated[
+            str, StringConstraints(pattern=r'^[a-z]+$'), Path(alias='dcg_p0')
+        ],
         kind: Annotated[int, Field(ge=1), Path(alias='dcg_p1')],
-        X_Rank: Annotated[Annotated[int, Field(ge=1)] | None, Header(alias='X_Rank', convert_underscores=False)] = None,
-        parameters: Annotated[contract.GetPair.Parameters, Depends(contract.GetPair.PARAMETERS)],
+        X_Rank: Annotated[
+            Annotated[int, Field(ge=1)] | None,
+            Header(alias='X_Rank', convert_underscores=False),
+        ] = None,
+        parameters: Annotated[
+            contract.GetPair.Parameters, Depends(contract.GetPair.PARAMETERS)
+        ],
     ) -> object:
         parameters = accepted(parameters)
         return dispatch(
@@ -343,7 +371,9 @@ def _add_get_menu(
 
     def get_menu(
         *,
-        item: Annotated[str, StringConstraints(pattern=r'^[a-z]+$'), Path(alias='item')],
+        item: Annotated[
+            str, StringConstraints(pattern=r'^[a-z]+$'), Path(alias='item')
+        ],
     ) -> object:
         return dispatch(
             get_menu_handler(
@@ -378,8 +408,13 @@ def _add_get_item(
 
     def get_item(
         *,
-        kind: Annotated[parameters_basemodel_models.ItemsLevelGetQueryKindParameter | None, Query(alias='kind')] = None,
-        parameters: Annotated[contract.GetItem.Parameters, Depends(contract.GetItem.PARAMETERS)],
+        kind: Annotated[
+            parameters_basemodel_models.ItemsLevelGetQueryKindParameter | None,
+            Query(alias='kind'),
+        ] = None,
+        parameters: Annotated[
+            contract.GetItem.Parameters, Depends(contract.GetItem.PARAMETERS)
+        ],
     ) -> object:
         parameters = accepted(parameters)
         return dispatch(

@@ -132,12 +132,14 @@ class Client(ClientView):
             auth=auth,
             clock=clock,
             http_client=http_client,
-            credentials=SchemeCredentials({
-                "implicit": implicit,
-                "code": code,
-                "key": key,
-                "key_lower": key_lower,
-            }),
+            credentials=SchemeCredentials(
+                {
+                    "implicit": implicit,
+                    "code": code,
+                    "key": key,
+                    "key_lower": key_lower,
+                }
+            ),
         )
 
     def close(self) -> None:

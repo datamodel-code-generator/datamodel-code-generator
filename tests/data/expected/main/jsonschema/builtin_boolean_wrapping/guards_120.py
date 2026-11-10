@@ -10,16 +10,15 @@ from pydantic import BaseModel
 
 
 def top_level_boolean(value):
-    return (
-        (isinstance(value, dict) or isinstance(value, _collections_abc.Mapping) or isinstance(value, list))
-        and bool(value)
+    return (isinstance(value, dict) or isinstance(value, _collections_abc.Mapping) or isinstance(value, list)) and bool(
+        value
     )
 
 
 async def async_boolean(value):
-    return (
-        isinstance(value, dict) or isinstance(value, _collections_abc.Mapping) or isinstance(value, list)
-    ) and bool(value)
+    return (isinstance(value, dict) or isinstance(value, _collections_abc.Mapping) or isinstance(value, list)) and bool(
+        value
+    )
 
 
 class Model(BaseModel):
@@ -29,37 +28,28 @@ class Model(BaseModel):
     def mapping_equal(value, expected):
         match expected:
             case dict():
-                return (
-                    (isinstance(value, dict) or isinstance(value, _collections_abc.Mapping))
-                    and len(value) == len(expected)
+                return (isinstance(value, dict) or isinstance(value, _collections_abc.Mapping)) and len(value) == len(
+                    expected
                 )
         return False
 
     @staticmethod
     def boolean_groups(value):
-        return (
-            (isinstance(value, dict) and isinstance(value, _collections_abc.Mapping) and bool(value))
-            or (
-                (isinstance(value, list) or isinstance(value, tuple) or isinstance(value, frozenset))
-                and len(value) > 0
-            )
+        return (isinstance(value, dict) and isinstance(value, _collections_abc.Mapping) and bool(value)) or (
+            (isinstance(value, list) or isinstance(value, tuple) or isinstance(value, frozenset)) and len(value) > 0
         )
 
     @staticmethod
     def preserve_groups(value):
         return (
-            (((observed := value) and [observed]) or {'or': observed} == {} or (lambda: observed)() is None)
-            and observed is not False
-        )
+            ((observed := value) and [observed]) or {'or': observed} == {} or (lambda: observed)() is None
+        ) and observed is not False
 
     @staticmethod
     def nested_groups(value):
         if value is not None:
-            return (
-                ((isinstance(value, dict) or isinstance(value, _collections_abc.Mapping)) and bool(value))
-                or (
-                    (bool(value) and (isinstance(value, _collections_abc.Mapping) or isinstance(value, dict)))
-                )
+            return ((isinstance(value, dict) or isinstance(value, _collections_abc.Mapping)) and bool(value)) or (
+                (bool(value) and (isinstance(value, _collections_abc.Mapping) or isinstance(value, dict)))
             )
         return False
 
@@ -82,12 +72,9 @@ class Model(BaseModel):
         日本語の長い入力フィールド名, expected
     ) -> "Literal[True, False, ')']":
         return (
-            (
-                isinstance(日本語の長い入力フィールド名, dict)
-                or isinstance(日本語の長い入力フィールド名, _collections_abc.Mapping)
-            )
-            and 日本語の長い入力フィールド名 == expected
-        )
+            isinstance(日本語の長い入力フィールド名, dict)
+            or isinstance(日本語の長い入力フィールド名, _collections_abc.Mapping)
+        ) and 日本語の長い入力フィールド名 == expected
 
     @staticmethod
     def commented(value):
@@ -125,14 +112,10 @@ class Model(BaseModel):
         }
 
     async def evaluate_async(self):
-        return await (
-            self.evaluate_async_with_a_descriptive_name_for_boolean_formatter_coverage()
-        )
+        return await (self.evaluate_async_with_a_descriptive_name_for_boolean_formatter_coverage())
 
     async def evaluate_async_with_a_descriptive_name_for_boolean_formatter_coverage(self) -> Literal[True, False, ")"]:
-        return await (
-            self.evaluate_async_with_a_descriptive_multiline_annotation_coverage()
-        )
+        return await (self.evaluate_async_with_a_descriptive_multiline_annotation_coverage())
 
     async def evaluate_async_with_a_descriptive_multiline_annotation_coverage(self) -> Literal[True, False, ")"]:
         return await async_boolean(self.value)

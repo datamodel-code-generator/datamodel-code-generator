@@ -112,15 +112,24 @@ class AsyncDefaultResource:
         Call POST /pets.
         """
         KEYWORDS_0.check(kwargs)
-        return (await self._core.execute(
-            _operations.OPERATION_0,
-            (kwargs.get('tag', UNSET),),
-            body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('name', UNSET), kwargs.get('kind', UNSET), kwargs.get('pet_tag', UNSET), kwargs.get('birthDate', UNSET), kwargs.get('owner', UNSET), kwargs.get('secret', UNSET)),
-            media_type=kwargs.get('media_type'),
-            options=kwargs.get('options'),
-            response_media_type=kwargs.get('response_media_type'),
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_0,
+                (kwargs.get('tag', UNSET),),
+                body=kwargs.get('body', UNSET),
+                fields=(
+                    kwargs.get('name', UNSET),
+                    kwargs.get('kind', UNSET),
+                    kwargs.get('pet_tag', UNSET),
+                    kwargs.get('birthDate', UNSET),
+                    kwargs.get('owner', UNSET),
+                    kwargs.get('secret', UNSET),
+                ),
+                media_type=kwargs.get('media_type'),
+                options=kwargs.get('options'),
+                response_media_type=kwargs.get('response_media_type'),
+            )
+        ).data
 
     @overload
     async def update_pet(
@@ -150,14 +159,16 @@ class AsyncDefaultResource:
         Call PATCH /pets/{petId}.
         """
         KEYWORDS_1.check(kwargs)
-        return (await self._core.execute(
-            _operations.OPERATION_1,
-            (kwargs['petId'],),
-            body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
-            media_type=kwargs.get('media_type'),
-            options=kwargs.get('options'),
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_1,
+                (kwargs['petId'],),
+                body=kwargs.get('body', UNSET),
+                fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
+                media_type=kwargs.get('media_type'),
+                options=kwargs.get('options'),
+            )
+        ).data
 
     @overload
     async def log_visit(
@@ -182,14 +193,16 @@ class AsyncDefaultResource:
         Call POST /pets/{petId}/visits.
         """
         KEYWORDS_2.check(kwargs)
-        return (await self._core.execute(
-            _operations.OPERATION_2,
-            (kwargs['petId'],),
-            body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('note', UNSET), kwargs.get('visit_options', UNSET)),
-            media_type=kwargs.get('media_type'),
-            options=kwargs.get('options'),
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_2,
+                (kwargs['petId'],),
+                body=kwargs.get('body', UNSET),
+                fields=(kwargs.get('note', UNSET), kwargs.get('visit_options', UNSET)),
+                media_type=kwargs.get('media_type'),
+                options=kwargs.get('options'),
+            )
+        ).data
 
     async def set_owner(
         self,
@@ -199,13 +212,15 @@ class AsyncDefaultResource:
         Call PUT /pets/{petId}/owner.
         """
         KEYWORDS_3.check(kwargs)
-        return (await self._core.execute(
-            _operations.OPERATION_3,
-            (kwargs['petId'],),
-            body=kwargs.get('body', UNSET),
-            media_type=kwargs.get('media_type'),
-            options=kwargs.get('options'),
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_3,
+                (kwargs['petId'],),
+                body=kwargs.get('body', UNSET),
+                media_type=kwargs.get('media_type'),
+                options=kwargs.get('options'),
+            )
+        ).data
 
     @overload
     async def create_owner(
@@ -225,14 +240,16 @@ class AsyncDefaultResource:
         Call POST /owners.
         """
         KEYWORDS_4.check(kwargs)
-        return (await self._core.execute(
-            _operations.OPERATION_4,
-            (),
-            body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('email', UNSET), kwargs.get('nickName', UNSET)),
-            media_type=kwargs.get('media_type'),
-            options=kwargs.get('options'),
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_4,
+                (),
+                body=kwargs.get('body', UNSET),
+                fields=(kwargs.get('email', UNSET), kwargs.get('nickName', UNSET)),
+                media_type=kwargs.get('media_type'),
+                options=kwargs.get('options'),
+            )
+        ).data
 
     @overload
     async def put_labels(
@@ -252,14 +269,16 @@ class AsyncDefaultResource:
         Call PUT /pets/{petId}/labels.
         """
         KEYWORDS_5.check(kwargs)
-        return (await self._core.execute(
-            _operations.OPERATION_5,
-            (kwargs['petId'],),
-            body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('size', UNSET),),
-            media_type=kwargs.get('media_type'),
-            options=kwargs.get('options'),
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_5,
+                (kwargs['petId'],),
+                body=kwargs.get('body', UNSET),
+                fields=(kwargs.get('size', UNSET),),
+                media_type=kwargs.get('media_type'),
+                options=kwargs.get('options'),
+            )
+        ).data
 
     async def put_photo(
         self,
@@ -269,13 +288,15 @@ class AsyncDefaultResource:
         Call PUT /pets/{petId}/photo.
         """
         KEYWORDS_6.check(kwargs)
-        return (await self._core.execute(
-            _operations.OPERATION_6,
-            (kwargs['petId'],),
-            body=kwargs['body'],
-            media_type=kwargs.get('media_type'),
-            options=kwargs.get('options'),
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_6,
+                (kwargs['petId'],),
+                body=kwargs['body'],
+                media_type=kwargs.get('media_type'),
+                options=kwargs.get('options'),
+            )
+        ).data
 
     @overload
     async def replace_pet(
@@ -295,14 +316,16 @@ class AsyncDefaultResource:
         Call PUT /pets/{petId}/records.
         """
         KEYWORDS_7.check(kwargs)
-        return (await self._core.execute(
-            _operations.OPERATION_7,
-            (kwargs['petId'],),
-            body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
-            media_type=kwargs.get('media_type'),
-            options=kwargs.get('options'),
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_7,
+                (kwargs['petId'],),
+                body=kwargs.get('body', UNSET),
+                fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
+                media_type=kwargs.get('media_type'),
+                options=kwargs.get('options'),
+            )
+        ).data
 
 
 class AsyncDefaultWithResponse:
@@ -344,7 +367,14 @@ class AsyncDefaultWithResponse:
             _operations.OPERATION_0,
             (kwargs.get('tag', UNSET),),
             body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('name', UNSET), kwargs.get('kind', UNSET), kwargs.get('pet_tag', UNSET), kwargs.get('birthDate', UNSET), kwargs.get('owner', UNSET), kwargs.get('secret', UNSET)),
+            fields=(
+                kwargs.get('name', UNSET),
+                kwargs.get('kind', UNSET),
+                kwargs.get('pet_tag', UNSET),
+                kwargs.get('birthDate', UNSET),
+                kwargs.get('owner', UNSET),
+                kwargs.get('secret', UNSET),
+            ),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
@@ -572,7 +602,14 @@ class AsyncDefaultWithRawResponse:
             _operations.OPERATION_0,
             (kwargs.get('tag', UNSET),),
             body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('name', UNSET), kwargs.get('kind', UNSET), kwargs.get('pet_tag', UNSET), kwargs.get('birthDate', UNSET), kwargs.get('owner', UNSET), kwargs.get('secret', UNSET)),
+            fields=(
+                kwargs.get('name', UNSET),
+                kwargs.get('kind', UNSET),
+                kwargs.get('pet_tag', UNSET),
+                kwargs.get('birthDate', UNSET),
+                kwargs.get('owner', UNSET),
+                kwargs.get('secret', UNSET),
+            ),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
@@ -800,7 +837,14 @@ class AsyncDefaultWithStreamingResponse:
             _operations.OPERATION_0,
             (kwargs.get('tag', UNSET),),
             body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('name', UNSET), kwargs.get('kind', UNSET), kwargs.get('pet_tag', UNSET), kwargs.get('birthDate', UNSET), kwargs.get('owner', UNSET), kwargs.get('secret', UNSET)),
+            fields=(
+                kwargs.get('name', UNSET),
+                kwargs.get('kind', UNSET),
+                kwargs.get('pet_tag', UNSET),
+                kwargs.get('birthDate', UNSET),
+                kwargs.get('owner', UNSET),
+                kwargs.get('secret', UNSET),
+            ),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),

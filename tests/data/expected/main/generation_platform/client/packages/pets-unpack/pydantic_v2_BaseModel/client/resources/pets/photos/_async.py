@@ -48,14 +48,16 @@ class AsyncPetsPhotosResource:
         Call PUT /pets/{petId}/photo.
         """
         KEYWORDS_5.check(kwargs)
-        return (await self._core.execute(
-            _operations.OPERATION_5,
-            (kwargs['petId'],),
-            body=kwargs.get('body', UNSET),
-            media_type=kwargs.get('media_type'),
-            options=kwargs.get('options'),
-            response_media_type=kwargs.get('response_media_type'),
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_5,
+                (kwargs['petId'],),
+                body=kwargs.get('body', UNSET),
+                media_type=kwargs.get('media_type'),
+                options=kwargs.get('options'),
+                response_media_type=kwargs.get('response_media_type'),
+            )
+        ).data
 
 
 class AsyncPetsPhotosWithResponse:

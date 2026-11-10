@@ -45,11 +45,13 @@ class AsyncAdminUsersResource:
         """
         Call GET /admin/users.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_3,
-            (),
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_3,
+                (),
+                options=options,
+            )
+        ).data
 
 
 class AsyncAdminUsersWithResponse:

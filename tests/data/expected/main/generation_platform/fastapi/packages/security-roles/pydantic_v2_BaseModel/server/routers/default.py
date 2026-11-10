@@ -39,11 +39,19 @@ def _add_billing(
 
     async def billing_principal(
         *,
-        key: Annotated[str | None, Security(security.key, scopes=['Billing Admin', 'Auditor'])],
-        bearer: Annotated[HTTPAuthorizationCredentials | None, Security(security.bearer, scopes=['Billing Admin'])],
+        key: Annotated[
+            str | None, Security(security.key, scopes=['Billing Admin', 'Auditor'])
+        ],
+        bearer: Annotated[
+            HTTPAuthorizationCredentials | None,
+            Security(security.bearer, scopes=['Billing Admin']),
+        ],
     ) -> object:
         return await authenticate(
-            ((('key', ('Billing Admin', 'Auditor')),), (('bearer', ('Billing Admin',)),)),
+            (
+                (('key', ('Billing Admin', 'Auditor')),),
+                (('bearer', ('Billing Admin',)),),
+            ),
             {'key': key, 'bearer': bearer},
             billing_authorize,
             'APIKey, Bearer',
@@ -88,7 +96,9 @@ def _add_tokens(
 
     async def tokens_principal(
         *,
-        oauth: Annotated[str | None, Security(security.oauth, scopes=['read', 'write:pets'])],
+        oauth: Annotated[
+            str | None, Security(security.oauth, scopes=['read', 'write:pets'])
+        ],
     ) -> object:
         return await authenticate(
             ((('oauth', ('read', 'write:pets')),),),

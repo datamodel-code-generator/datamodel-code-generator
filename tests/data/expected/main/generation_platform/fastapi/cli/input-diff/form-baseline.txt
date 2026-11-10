@@ -9,11 +9,13 @@
  from fastapi.responses import Response
  from pydantic import AwareDatetime, Field
  
-@@ -79,7 +79,7 @@
+@@ -85,9 +85,7 @@
  
      def create_pet(
          *,
--        body: Annotated[models.NewPet, Form(media_type='application/x-www-form-urlencoded')],
+-        body: Annotated[
+-            models.NewPet, Form(media_type='application/x-www-form-urlencoded')
+-        ],
 +        body: Annotated[models.NewPet, Body(media_type='application/json')],
      ) -> object:
          return dispatch(

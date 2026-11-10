@@ -54,7 +54,9 @@ def create_app(
     Validation errors leave out the request's values, unless exception_handlers handles RequestValidationError. The
     application serves the source OpenAPI document of its operations, or FastAPI's own with source_openapi=False.
     """
-    fastapi_kwargs["exception_handlers"] = error_handlers(fastapi_kwargs.get("exception_handlers"))
+    fastapi_kwargs["exception_handlers"] = error_handlers(
+        fastapi_kwargs.get("exception_handlers")
+    )
     app = FastAPI(**{**INFO, **fastapi_kwargs})
     app.include_router(
         build_router(

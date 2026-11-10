@@ -48,12 +48,14 @@ class AsyncArchiveResource:
         """
         Call GET /archive/{cursor}.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_6,
-            (cursor,),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_6,
+                (cursor,),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
 
 class AsyncArchiveWithResponse:

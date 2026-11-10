@@ -146,7 +146,10 @@ def _add_literal(
 
     def literal(
         *,
-        parameters: Annotated[contract.LiteralModel1.Parameters, Depends(contract.LiteralModel1.PARAMETERS)],
+        parameters: Annotated[
+            contract.LiteralModel1.Parameters,
+            Depends(contract.LiteralModel1.PARAMETERS),
+        ],
     ) -> object:
         parameters = accepted(parameters)
         return dispatch(
@@ -185,7 +188,9 @@ def _add_literal_model(
 
     def literal_model(
         *,
-        parameters: Annotated[contract.LiteralModel.Parameters, Depends(contract.LiteralModel.PARAMETERS)],
+        parameters: Annotated[
+            contract.LiteralModel.Parameters, Depends(contract.LiteralModel.PARAMETERS)
+        ],
     ) -> object:
         parameters = accepted(parameters)
         return dispatch(
@@ -217,19 +222,48 @@ def _add_get_pet(
     get_pet_handler = checked(
         pets.get_pet,
         'The pets.get_pet method of GET /pets/{petId}',
-        ('petId', 'limit', 'code', 'codes', 'step', 'raw', 'day', 'filter', 'pair', 'label', 'pet', 'tag'),
+        (
+            'petId',
+            'limit',
+            'code',
+            'codes',
+            'step',
+            'raw',
+            'day',
+            'filter',
+            'pair',
+            'label',
+            'pet',
+            'tag',
+        ),
     )
 
     def get_pet(
         *,
         petId: Annotated[int, Field(ge=1), Path(alias='petId')],
         limit: Annotated[int, Field(ge=1, le=100), Query(alias='limit')] = 10,
-        code: Annotated[Optional[Annotated[str, StringConstraints(min_length=2, max_length=5)]], Query(alias='code')] = None,
-        codes: Annotated[Optional[List[Annotated[str, StringConstraints(min_length=2, max_length=5)]]], Query(alias='codes')] = None,
-        step: Annotated[Optional[Annotated[Decimal, MultipleOf(Decimal('0.5'))]], Query(alias='step')] = None,
+        code: Annotated[
+            Optional[Annotated[str, StringConstraints(min_length=2, max_length=5)]],
+            Query(alias='code'),
+        ] = None,
+        codes: Annotated[
+            Optional[
+                List[Annotated[str, StringConstraints(min_length=2, max_length=5)]]
+            ],
+            Query(alias='codes'),
+        ] = None,
+        step: Annotated[
+            Optional[Annotated[Decimal, MultipleOf(Decimal('0.5'))]],
+            Query(alias='step'),
+        ] = None,
         raw: Annotated[Optional[Base64Str], Query(alias='raw')] = None,
-        label: Annotated[Optional[Annotated[str, StringConstraints(pattern=compile('^(?!x)'))]], Query(alias='label')] = None,
-        parameters: Annotated[contract.GetPet.Parameters, Depends(contract.GetPet.PARAMETERS)],
+        label: Annotated[
+            Optional[Annotated[str, StringConstraints(pattern=compile('^(?!x)'))]],
+            Query(alias='label'),
+        ] = None,
+        parameters: Annotated[
+            contract.GetPet.Parameters, Depends(contract.GetPet.PARAMETERS)
+        ],
     ) -> object:
         parameters = accepted(parameters)
         return dispatch(

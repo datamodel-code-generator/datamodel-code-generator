@@ -49,7 +49,12 @@ class StoreResource:
         KEYWORDS_1.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_1,
-            (kwargs['fileName'], kwargs['ext'], kwargs.get('class_', 'full'), kwargs.get('two_factor', 'off')),
+            (
+                kwargs['fileName'],
+                kwargs['ext'],
+                kwargs.get('class_', 'full'),
+                kwargs.get('two_factor', 'off'),
+            ),
             options=kwargs.get('options'),
         ).data
 
@@ -71,7 +76,12 @@ class StoreWithResponse:
         KEYWORDS_1.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_1,
-            (kwargs['fileName'], kwargs['ext'], kwargs.get('class_', 'full'), kwargs.get('two_factor', 'off')),
+            (
+                kwargs['fileName'],
+                kwargs['ext'],
+                kwargs.get('class_', 'full'),
+                kwargs.get('two_factor', 'off'),
+            ),
             options=kwargs.get('options'),
         )
 
@@ -93,7 +103,12 @@ class StoreWithRawResponse:
         KEYWORDS_1.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_1,
-            (kwargs['fileName'], kwargs['ext'], kwargs.get('class_', 'full'), kwargs.get('two_factor', 'off')),
+            (
+                kwargs['fileName'],
+                kwargs['ext'],
+                kwargs.get('class_', 'full'),
+                kwargs.get('two_factor', 'off'),
+            ),
             options=kwargs.get('options'),
         )
 
@@ -115,6 +130,11 @@ class StoreWithStreamingResponse:
         KEYWORDS_1.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_1,
-            (kwargs['fileName'], kwargs['ext'], kwargs.get('class_', 'full'), kwargs.get('two_factor', 'off')),
+            (
+                kwargs['fileName'],
+                kwargs['ext'],
+                kwargs.get('class_', 'full'),
+                kwargs.get('two_factor', 'off'),
+            ),
             options=kwargs.get('options'),
         )

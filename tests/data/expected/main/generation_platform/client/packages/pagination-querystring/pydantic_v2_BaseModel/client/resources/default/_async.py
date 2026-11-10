@@ -50,12 +50,14 @@ class AsyncDefaultResource:
         """
         Call GET /search.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_0,
-            (criteria,),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_0,
+                (criteria,),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
     async def lookup(
         self,
@@ -67,12 +69,14 @@ class AsyncDefaultResource:
         """
         Call GET /lookup.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_1,
-            (filter,),
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_1,
+                (filter,),
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
 
 class AsyncDefaultWithResponse:

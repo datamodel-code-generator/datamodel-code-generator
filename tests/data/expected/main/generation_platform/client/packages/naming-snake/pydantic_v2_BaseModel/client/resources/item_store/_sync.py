@@ -62,7 +62,20 @@ class ItemStoreResource:
         """
         return self._core.execute(
             _operations.OPERATION_0,
-            (item_id, item_id_1, item_id_2, x_request_id, page_size_, field_2fa, class_, options_1, body_1, self_1, session_id, item_id_1_1),
+            (
+                item_id,
+                item_id_1,
+                item_id_2,
+                x_request_id,
+                page_size_,
+                field_2fa,
+                class_,
+                options_1,
+                body_1,
+                self_1,
+                session_id,
+                item_id_1_1,
+            ),
             options=options,
         ).data
 
@@ -140,7 +153,20 @@ class ItemStoreWithResponse:
         """
         return self._core.execute(
             _operations.OPERATION_0,
-            (item_id, item_id_1, item_id_2, x_request_id, page_size_, field_2fa, class_, options_1, body_1, self_1, session_id, item_id_1_1),
+            (
+                item_id,
+                item_id_1,
+                item_id_2,
+                x_request_id,
+                page_size_,
+                field_2fa,
+                class_,
+                options_1,
+                body_1,
+                self_1,
+                session_id,
+                item_id_1_1,
+            ),
             options=options,
         )
 
@@ -218,7 +244,20 @@ class ItemStoreWithRawResponse:
         """
         return self._core.execute_raw(
             _operations.OPERATION_0,
-            (item_id, item_id_1, item_id_2, x_request_id, page_size_, field_2fa, class_, options_1, body_1, self_1, session_id, item_id_1_1),
+            (
+                item_id,
+                item_id_1,
+                item_id_2,
+                x_request_id,
+                page_size_,
+                field_2fa,
+                class_,
+                options_1,
+                body_1,
+                self_1,
+                session_id,
+                item_id_1_1,
+            ),
             options=options,
         )
 
@@ -296,7 +335,20 @@ class ItemStoreWithStreamingResponse:
         """
         return self._core.stream(
             _operations.OPERATION_0,
-            (item_id, item_id_1, item_id_2, x_request_id, page_size_, field_2fa, class_, options_1, body_1, self_1, session_id, item_id_1_1),
+            (
+                item_id,
+                item_id_1,
+                item_id_2,
+                x_request_id,
+                page_size_,
+                field_2fa,
+                class_,
+                options_1,
+                body_1,
+                self_1,
+                session_id,
+                item_id_1_1,
+            ),
             options=options,
         )
 

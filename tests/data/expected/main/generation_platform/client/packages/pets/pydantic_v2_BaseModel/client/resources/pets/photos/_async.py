@@ -51,14 +51,16 @@ class AsyncPetsPhotosResource:
         """
         Call PUT /pets/{petId}/photo.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_5,
-            (petId,),
-            body=body,
-            media_type=media_type,
-            options=options,
-            response_media_type=response_media_type,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_5,
+                (petId,),
+                body=body,
+                media_type=media_type,
+                options=options,
+                response_media_type=response_media_type,
+            )
+        ).data
 
 
 class AsyncPetsPhotosWithResponse:

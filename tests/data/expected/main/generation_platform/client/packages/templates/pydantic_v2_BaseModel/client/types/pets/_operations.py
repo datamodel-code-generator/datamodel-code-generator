@@ -78,16 +78,12 @@ def decode_list_pets_header(
     *,
     name: Literal['X-Next'],
 ) -> models.PetsGetResponse200XNextHeader | UNSET: ...
-
-
 @overload
 def decode_list_pets_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Rate'],
 ) -> models.PetsGetResponse200XRateHeader: ...
-
-
 def decode_list_pets_header(
     info: ResponseInfo,
     *,

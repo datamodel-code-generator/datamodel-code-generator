@@ -49,13 +49,15 @@ class AsyncDefaultResource:
         """
         Call POST /combos.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_0,
-            (),
-            body=body,
-            media_type=media_type,
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_0,
+                (),
+                body=body,
+                media_type=media_type,
+                options=options,
+            )
+        ).data
 
 
 class AsyncDefaultWithResponse:

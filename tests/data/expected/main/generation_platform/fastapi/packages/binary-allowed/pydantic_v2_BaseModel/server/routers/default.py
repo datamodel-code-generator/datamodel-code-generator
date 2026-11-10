@@ -34,7 +34,9 @@ def _add_store_file(
         *,
         digest: Annotated[Base64Bytes | None, Query(alias='digest')] = None,
         body: Annotated[bytes, Depends(contract.StoreFile.BODY)],
-        parameters: Annotated[contract.StoreFile.Parameters, Depends(contract.StoreFile.PARAMETERS)],
+        parameters: Annotated[
+            contract.StoreFile.Parameters, Depends(contract.StoreFile.PARAMETERS)
+        ],
     ) -> object:
         parameters = accepted(parameters)
         return dispatch(

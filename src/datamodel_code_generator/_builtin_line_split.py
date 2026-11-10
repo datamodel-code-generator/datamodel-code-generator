@@ -1,13 +1,13 @@
 """Lay out one logical line of generated Python as black's line splitting lays it out.
 
-A port of black's right-hand split, delimiter split and optional-parentheses rules for the simple statements dcg
-generates: assignments, annotated assignments, expression statements, class headers and decorators. With
-``wrap_string_literal`` it also ports the string transformers of black's preview string processing (merge, paren
-strip, split, paren wrap) and the parentheses black's ``wrap_long_dict_values_in_parens`` puts around dictionary
-values. The tree facts black reads from its parse tree (what a bracket opens, which operators are unary, which commas
-separate arguments, which leaves a string transformer took out of the tree) are read from the tokens instead. A line
-the port does not cover (comments, multi-line strings, backslash continuations, slices, power operators, lambdas with
-parameters) gives ``None`` and is left as it is.
+A port of black's right-hand split, delimiter split and optional-parentheses rules for the statements dcg generates:
+assignments, annotated assignments, expression, ``return``, ``del``, ``assert`` and ``raise`` statements, decorators
+and the headers of definitions and compound statements. With ``wrap_string_literal`` it also ports the string
+transformers of black's preview string processing (merge, paren strip, split, paren wrap) and the parentheses black's
+``wrap_long_dict_values_in_parens`` puts around dictionary values. The tree facts black reads from its parse tree (what
+a bracket opens, which operators are unary, which commas separate arguments, which leaves a string transformer took out
+of the tree) are read from the tokens instead. A line the port does not cover (comments, multi-line strings, backslash
+continuations, slices, power operators, lambdas with parameters) gives ``None`` and is left as it is.
 """
 
 from __future__ import annotations
@@ -119,6 +119,7 @@ class _Leaf:
         "in_annotation",
         "kind",
         "logic",
+        "loop_in",
         "opening_bracket",
         "orphaned",
         "parameter_default",
@@ -143,6 +144,7 @@ class _Leaf:
         self.unary = False
         self.comparator = False
         self.logic = False
+        self.loop_in = False
         self.priority_name = 0
         self.synthetic = False
         self.parameter_default = False
@@ -165,6 +167,7 @@ class _Leaf:
         leaf.unary = self.unary
         leaf.comparator = self.comparator
         leaf.logic = self.logic
+        leaf.loop_in = self.loop_in
         leaf.priority_name = self.priority_name
         leaf.synthetic = self.synthetic
         leaf.parameter_default = self.parameter_default
@@ -644,7 +647,9 @@ def _can_omit_invisible_parens(rhs: _RHSResult, line_length: int) -> bool:  # no
     if not bracket_tracker.delimiters:
         return True
     max_priority = bracket_tracker.max_delimiter_priority()
-    if bracket_tracker.delimiter_count_with_priority(max_priority) > 1:
+    if (delimiter_count := bracket_tracker.delimiter_count_with_priority(max_priority)) > 1 or (
+        delimiter_count == 1 and max_priority == COMMA_PRIORITY and _is_with_statement(rhs.head)
+    ):
         return False
     if max_priority == DOT_PRIORITY:
         return True
@@ -664,6 +669,15 @@ def _can_omit_invisible_parens(rhs: _RHSResult, line_length: int) -> bool:  # no
         if _can_omit_closing_paren(line, last=last, line_length=line_length):
             return True
     return False
+
+
+def _is_with_statement(line: _Line) -> bool:
+    """Return whether ``line`` starts a ``with`` or ``async with`` statement."""
+    leaves = line.leaves
+    return bool(leaves) and (
+        _is_name(leaves[0], "with")
+        or (_is_name(leaves[0], "async") and len(leaves) > 1 and _is_name(leaves[1], "with"))
+    )
 
 
 def _prefer_split_rhs_oop_over_rhs(rhs_oop: _RHSResult, rhs: _RHSResult, mode: _Mode) -> bool:  # noqa: PLR0911
@@ -1529,6 +1543,7 @@ def _read_leaves(tokens: Iterable[tokenize.TokenInfo]) -> tuple[list[_Leaf], int
     """Turn the tokens of one logical line into leaves with the facts black reads from its tree; give its last row."""
     leaves: list[_Leaf] = []
     stack: list[tuple[_Leaf, list[str]]] = []
+    top_level_seen: list[str] = []
     previous_row = 0
     for item in tokens:
         if item.type in {tokenize.NL, tokenize.INDENT, tokenize.DEDENT}:
@@ -1574,20 +1589,22 @@ def _read_leaves(tokens: Iterable[tokenize.TokenInfo]) -> tuple[list[_Leaf], int
             if enclosing is not None and enclosing[0].type == token.LSQB and enclosing[0].kind is _Kind.TRAILER:
                 raise _Unsupported
         elif type_ == token.NAME:
-            seen = enclosing[1] if enclosing is not None else []
+            seen = enclosing[1] if enclosing is not None else top_level_seen
             match item.string:
-                case "for" if previous is not None and not _is_name(previous, "async"):
-                    leaf.priority_name = COMPREHENSION_PRIORITY
+                case "for":
+                    if previous is not None and not _is_name(previous, "async"):
+                        leaf.priority_name = COMPREHENSION_PRIORITY
                     seen.append("for")
-                case "if" if seen and "for" in seen:
+                case "if" if enclosing is not None and "for" in seen:
                     leaf.priority_name = COMPREHENSION_PRIORITY
-                case "if" | "else":
+                case "if" | "else" if previous is not None:
                     leaf.priority_name = TERNARY_PRIORITY
                 case "in":
                     leaf.comparator = not (seen and seen[-1:] == ["for"]) and not (
                         previous is not None and _is_name(previous, "not")
                     )
                     if seen and seen[-1:] == ["for"]:
+                        leaf.loop_in = True
                         seen.append("in")
                 case "not":
                     leaf.comparator = previous is None or not _is_name(previous, "is")
@@ -1604,6 +1621,8 @@ def _read_leaves(tokens: Iterable[tokenize.TokenInfo]) -> tuple[list[_Leaf], int
             leaf.unary = not leaf.comparator
         if _is_name(leaf, "lambda") and index + 1 < len(leaves) and leaves[index + 1].type != token.COLON:
             raise _Unsupported
+    if leaves[0].value in _SOFT_KEYWORD_HEADERS and leaves[0].type == token.NAME and leaves[-1].type == token.COLON:
+        _read_soft_keyword_header(leaves)
     return leaves, previous_row
 
 
@@ -1688,6 +1707,28 @@ def _mark_element_facts(leaves: list[_Leaf]) -> None:  # noqa: PLR0912
             leaf.dict_entry = True
 
 
+_SOFT_KEYWORD_HEADERS: Final = frozenset({"match", "case"})
+
+
+def _read_soft_keyword_header(leaves: list[_Leaf]) -> None:
+    """Read a ``match`` or ``case`` header as black's tree has it: its keyword is no operand of a bracket or sign.
+
+    The guard ``if`` of a ``case``, its first ``if`` outside brackets, is no conditional expression.
+    """
+    if leaves[1].type in OPENING_BRACKETS:
+        leaves[1].kind = _Kind.ATOM
+    leaves[1].unary = leaves[1].unary or leaves[1].type in _UNARY_CANDIDATES
+    depth = 0
+    for leaf in leaves:
+        if leaf.type in OPENING_BRACKETS:
+            depth += 1
+        elif leaf.type in CLOSING_BRACKETS:
+            depth -= 1
+        elif not depth and _is_name(leaf, "if"):
+            leaf.priority_name = 0
+            return
+
+
 def _set_whitespace(leaves: list[_Leaf]) -> None:
     """Give each leaf the whitespace black puts before it.
 
@@ -1740,6 +1781,76 @@ def _whitespace(leaf: _Leaf, previous: _Leaf | None, enclosing: _Leaf | None) ->
     if previous.unary and previous.type != token.NAME:
         return ""
     return " "
+
+
+_PARENS_AFTER: Final = {
+    "return": frozenset({"return"}),
+    "del": frozenset({"del"}),
+    "assert": frozenset({"assert", ","}),
+    "if": frozenset({"if"}),
+    "elif": frozenset({"elif"}),
+    "while": frozenset({"while"}),
+    "for": frozenset({"for", "in"}),
+    "except": frozenset({"except"}),
+    "with": frozenset({"with"}),
+    "case": frozenset({"case", "if"}),
+}
+
+
+def _opens_keyword_child(leaf: _Leaf, parens_after: frozenset[str], *, first: bool, loop_in: bool) -> bool:
+    """Return whether a span of ``_keyword_children`` starts after ``leaf``, a leaf outside brackets."""
+    return (
+        first
+        or (leaf.type == token.COMMA and "," in parens_after)
+        or (loop_in and _is_name(leaf, "in"))
+        or (_is_name(leaf, "if") and "case" in parens_after and not leaf.priority_name)
+    )
+
+
+def _ends_keyword_child(leaf: _Leaf, parens_after: frozenset[str], *, last: bool) -> bool:
+    """Return whether a span of ``_keyword_children`` ends at ``leaf``: a header's colon or the ``as`` of an except."""
+    return (leaf.type == token.COLON and last) or (_is_name(leaf, "as") and "except" in parens_after)
+
+
+def _keyword_children(leaves: list[_Leaf]) -> list[tuple[int, int]]:
+    """Return the spans black wraps in invisible parentheses in a statement led by a keyword (black's ``parens``).
+
+    A span starts after the keyword that leads the statement, the ``in`` of a ``for`` (its first one outside brackets),
+    the guard ``if`` of a ``case`` or a comma of an ``assert``, and ends at the next of them, at the ``as`` of an
+    ``except``, at the colon that ends a clause header or at the end of the line. The context managers of a ``with``
+    statement are one span, and so is a ``case`` pattern. ``except*`` is not laid out, and neither is a ``del`` of
+    several targets: black's parentheses around them would delete one tuple instead.
+    """
+    first = int(_is_name(leaves[0], "async"))
+    if (parens_after := _PARENS_AFTER.get(leaves[first].value)) is None or (
+        _is_name(leaves[0], "case") and leaves[-1].type != token.COLON
+    ):
+        return []
+    if (_is_name(leaves[first], "except") and len(leaves) > first + 1 and leaves[first + 1].type == token.STAR) or (
+        _is_name(leaves[first], "del") and token.COMMA in _top_level_types(leaves)
+    ):
+        raise _Unsupported
+    spans: list[tuple[int, int]] = []
+    start: int | None = None
+    depth = 0
+    last = len(leaves) - 1
+    loop_in = "in" in parens_after
+    for index, leaf in enumerate(leaves[first:], start=first):
+        if leaf.type in OPENING_BRACKETS:
+            depth += 1
+        elif leaf.type in CLOSING_BRACKETS:
+            depth -= 1
+        elif depth == 0 and (
+            (opens := _opens_keyword_child(leaf, parens_after, first=index == first, loop_in=loop_in))
+            or _ends_keyword_child(leaf, parens_after, last=index == last)
+        ):
+            if start is not None and start < index:
+                spans.append((start, index))
+            start = index + 1 if opens else None
+            loop_in = loop_in and not _is_name(leaf, "in")
+    if start is not None and start <= last:
+        spans.append((start, last + 1))
+    return spans
 
 
 def _statement_children(leaves: list[_Leaf]) -> list[tuple[int, int]]:
@@ -1812,10 +1923,15 @@ def _definition_annotation_spans(leaves: list[_Leaf]) -> list[tuple[int, int]]:
             depth -= 1
         elif depth == 1 and leaf.type == token.COLON:
             annotation_start = index + 1
-        elif depth == 0 and leaf.type == token.RARROW and leaves[-1].type == token.COLON:
-            spans.append((index + 1, len(leaves) - 1))
+        elif depth == 0 and leaf.type == token.RARROW:
+            spans.append((index + 1, _header_colon(leaves)))
             break
     return spans
+
+
+def _header_colon(leaves: list[_Leaf]) -> int:
+    """Return the index of the colon that ends a header line: its last leaf, or the one before a stub body ``...``."""
+    return len(leaves) - 1 if leaves[-1].type == token.COLON else len(leaves) - 2
 
 
 def _top_level_types(leaves: list[_Leaf]) -> set[int]:
@@ -1862,6 +1978,85 @@ def _make_parens_invisible(leaves: list[_Leaf], start: int, end: int) -> None:
         raise _Unsupported
     leaves[start].value = ""
     leaves[end - 1].value = ""
+
+
+_TERNARY_BOUNDARY_TYPES: Final = frozenset({token.COMMA, token.EQUAL, token.COLON, token.COLONEQUAL, token.RARROW})
+_TERNARY_BOUNDARY_NAMES: Final = frozenset({
+    "return",
+    "yield",
+    "else",
+    "assert",
+    "del",
+    "raise",
+    "from",
+    "if",
+    "elif",
+    "while",
+    "with",
+    "as",
+    "case",
+    "for",
+})
+
+
+def _ternary_bound(leaf: _Leaf, *, before: bool) -> bool:
+    """Return whether ``leaf``, outside brackets, bounds a conditional expression before or after it.
+
+    The ``if`` and ``else`` of nested conditional expressions after it belong to it, and so does a ``for`` loop's
+    ``in`` only before it; the ``in`` of a comparison, also of ``not in``, is an operand's operator.
+    """
+    if leaf.type in _TERNARY_BOUNDARY_TYPES or leaf.type in _AUGMENTED_ASSIGNMENTS:
+        return True
+    if leaf.type != token.NAME:
+        return False
+    if before:
+        return leaf.value in _TERNARY_BOUNDARY_NAMES or leaf.loop_in
+    return leaf.priority_name == COMPREHENSION_PRIORITY or leaf.value in {"as", "from"}
+
+
+def _ternary_span(leaves: list[_Leaf], index: int) -> tuple[int, int]:
+    """Return the span of the conditional expression whose ``if`` is ``leaves[index]``."""
+    start, depth = index, 0
+    while start > 0:
+        leaf = leaves[start - 1]
+        if leaf.type in CLOSING_BRACKETS:
+            depth += 1
+        elif leaf.type in OPENING_BRACKETS:
+            if not depth:
+                break
+            depth -= 1
+        elif not depth and _ternary_bound(leaf, before=True):
+            break
+        start -= 1
+    end, depth = index + 1, 0
+    while end < len(leaves):
+        leaf = leaves[end]
+        if leaf.type in OPENING_BRACKETS:
+            depth += 1
+        elif leaf.type in CLOSING_BRACKETS:
+            if not depth:
+                break
+            depth -= 1
+        elif _is_name(leaf, "lambda"):
+            raise _Unsupported
+        elif not depth and _ternary_bound(leaf, before=False):
+            break
+        end += 1
+    return start, end
+
+
+def _wrap_conditional_expressions(leaves: list[_Leaf]) -> list[_Leaf]:
+    """Wrap each conditional expression in invisible parentheses, as black does, unless parentheses enclose it already.
+
+    A lambda in one is not laid out.
+    """
+    for if_leaf in [leaf for leaf in reversed(leaves) if leaf.priority_name == TERNARY_PRIORITY and leaf.value == "if"]:
+        start, end = _ternary_span(leaves, next(index for index, leaf in enumerate(leaves) if leaf is if_leaf))
+        if not (
+            start > 0 and end < len(leaves) and leaves[start - 1].type == token.LPAR and leaves[end].type == token.RPAR
+        ):
+            leaves = _wrap(leaves, start, end)
+    return leaves
 
 
 def _wrap(leaves: list[_Leaf], start: int, end: int) -> list[_Leaf]:
@@ -2003,11 +2198,15 @@ def _lay_out_logical_line(
             if len(leaves) > 2 and leaves[2].type == token.LSQB:  # noqa: PLR2004
                 return None
             leaves = _wrap_spans(leaves, _definition_annotation_spans(leaves))
-        elif assignment and not (_is_name(leaves[0], "type") and len(leaves) > 1 and leaves[1].type == token.NAME):
-            leaves = _wrap_spans(leaves, _statement_children(leaves))
+        elif assignment:
+            is_type_statement = _is_name(leaves[0], "type") and len(leaves) > 1 and leaves[1].type == token.NAME
+            leaves = _wrap_spans(leaves, [] if is_type_statement else _statement_children(leaves))
+        else:
+            leaves = _wrap_spans(leaves, _keyword_children(leaves))
         if wrap_string_literal:
             _mark_element_facts(leaves)
             leaves = _wrap_dict_values(leaves)
+        leaves = _wrap_conditional_expressions(leaves)
     except (_Unsupported, tokenize.TokenError, SyntaxError):
         return None
     line = _Line(depth=indent // 4)

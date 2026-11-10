@@ -45,11 +45,13 @@ class AsyncユーザーResource:
         """
         Call GET /users.
         """
-        return (await self._core.execute(
-            _operations.OPERATION_2,
-            (),
-            options=options,
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_2,
+                (),
+                options=options,
+            )
+        ).data
 
 
 class AsyncユーザーWithResponse:

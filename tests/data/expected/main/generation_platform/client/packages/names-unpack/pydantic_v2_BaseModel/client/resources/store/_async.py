@@ -47,11 +47,18 @@ class AsyncStoreResource:
         Call GET /files/{fileName}.{ext}.
         """
         KEYWORDS_1.check(kwargs)
-        return (await self._core.execute(
-            _operations.OPERATION_1,
-            (kwargs['fileName'], kwargs['ext'], kwargs.get('class_', 'full'), kwargs.get('two_factor', 'off')),
-            options=kwargs.get('options'),
-        )).data
+        return (
+            await self._core.execute(
+                _operations.OPERATION_1,
+                (
+                    kwargs['fileName'],
+                    kwargs['ext'],
+                    kwargs.get('class_', 'full'),
+                    kwargs.get('two_factor', 'off'),
+                ),
+                options=kwargs.get('options'),
+            )
+        ).data
 
 
 class AsyncStoreWithResponse:
@@ -71,7 +78,12 @@ class AsyncStoreWithResponse:
         KEYWORDS_1.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_1,
-            (kwargs['fileName'], kwargs['ext'], kwargs.get('class_', 'full'), kwargs.get('two_factor', 'off')),
+            (
+                kwargs['fileName'],
+                kwargs['ext'],
+                kwargs.get('class_', 'full'),
+                kwargs.get('two_factor', 'off'),
+            ),
             options=kwargs.get('options'),
         )
 
@@ -93,7 +105,12 @@ class AsyncStoreWithRawResponse:
         KEYWORDS_1.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_1,
-            (kwargs['fileName'], kwargs['ext'], kwargs.get('class_', 'full'), kwargs.get('two_factor', 'off')),
+            (
+                kwargs['fileName'],
+                kwargs['ext'],
+                kwargs.get('class_', 'full'),
+                kwargs.get('two_factor', 'off'),
+            ),
             options=kwargs.get('options'),
         )
 
@@ -115,6 +132,11 @@ class AsyncStoreWithStreamingResponse:
         KEYWORDS_1.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_1,
-            (kwargs['fileName'], kwargs['ext'], kwargs.get('class_', 'full'), kwargs.get('two_factor', 'off')),
+            (
+                kwargs['fileName'],
+                kwargs['ext'],
+                kwargs.get('class_', 'full'),
+                kwargs.get('two_factor', 'off'),
+            ),
             options=kwargs.get('options'),
         )
