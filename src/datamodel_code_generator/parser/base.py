@@ -1433,7 +1433,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_bytes_for_content_media_type: bool = config.use_bytes_for_content_media_type
         self._unavailable_imports: dict[tuple[str | None, str], str] = {}
         self._type_override_imports: dict[str, Import] = {
-            key: Import.from_full_path(self._get_emitted_python_type_path(value.strip() or value))
+            key: Import.from_full_path(_type_overrides.get_emitted_python_type_path(self, value.strip() or value))
             for key, value in self.type_overrides.items()
         }
         self._model_type_override_imports: dict[str, Import] = {
@@ -1462,27 +1462,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def _data_model_field_common_kwargs(self) -> dict[str, Any]:
         return self._data_model_field_common_kwargs_cache
-
-    def _get_target_python_type_path(self, path: str) -> str:
-        """Return a user-named type path for the target, naming a newer typing name by its backport.
-
-        A standard-library type that the target lacks is an error, as for ``x-python-type``.
-        """
-        return _type_overrides.get_target_python_type_path(self, path)
-
-    def _get_emitted_python_type_path(self, path: str) -> str:
-        """Return a user-named type path for the target, rejecting a type the target lacks only once output imports it.
-
-        A type that an override replaces or that no model uses emits no import, so it is left alone.
-        """
-        return _type_overrides.get_emitted_python_type_path(self, path)
-
-    def _reject_unavailable_imports(self, contexts: Sequence[ModuleContext]) -> None:
-        """Reject output that imports a type the target lacks, after overrides, unused models and import remapping.
-
-        The first such type in schema order is reported, so the message does not depend on set iteration order.
-        """
-        _type_overrides.reject_unavailable_imports(self, contexts)
 
     def _split_field_alias(  # noqa: PLR6301
         self,
@@ -1889,13 +1868,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def _get_enum_discriminator_literal(enum_source: Enum, value: DiscriminatorValue) -> DiscriminatorValue:
         return enum_discriminator_literal(enum_source, value)
 
-    def _create_set_from_list(self, data_type: DataType) -> DataType:  # noqa: PLR6301
-        """Return the set copy of a list type, which holds its items."""
-        new_data_type = data_type.model_copy(update={"is_list": False, "is_set": True})
-        for data_type_ in new_data_type.data_types:
-            data_type_.parent = new_data_type
-        return new_data_type
-
     def record_dropped_constraints(self) -> None:
         """Record this parse's dropped-constraint warnings as those of the generation that returns its models."""
         if (record := _DROPPED_CONSTRAINTS.get()) is not None:
@@ -1917,18 +1889,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             apply_default_values_for_required_fields=self.apply_default_values_for_required_fields,
         )
 
-    def _resolve_type_import(self, type_name: str) -> Import | None:
-        """Resolve a type through target-stable metadata, never host imports."""
-        return _type_overrides.resolve_type_import(self, type_name)
-
-    def _is_target_python_builtin_type(self, type_name: str) -> bool:
-        """Recognize builtins against the target version, never the host runtime."""
-        return _type_overrides.is_target_python_builtin_type(self, type_name)
-
-    def _resolve_qualified_type_import(self, qualified_name: str) -> Import:
-        """Resolve known stdlib paths against the target without host imports."""
-        return _type_overrides.resolve_qualified_type_import(self, qualified_name)
-
     def _resolve_type_import_from_defs(  # noqa: PLR6301
         self,
         type_name: str,  # noqa: ARG002
@@ -1944,64 +1904,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         incorrectly make the host AST/tokenizer an authority for target syntax.
         """
         return _type_overrides.bind_python_type(self, expression)
-
-    def _override_annotation(self, override_import: Import, *, is_optional: bool = False) -> DataType | None:
-        """Return the type a ``--type-overrides`` value spells as an annotation, or None when it names a class.
-
-        A value with brackets, such as ``typing.Literal[1, 2]``, names no class to import: it is written as
-        ``x-python-type`` writes it, with the imports of its names and the keywords that type takes. A value with
-        brackets that is no annotation is an error, as it has no import to write either.
-        """
-        return _type_overrides.override_annotation(self, override_import, is_optional=is_optional)
-
-    def _apply_override_to_field(self, field: DataModelFieldBase, override_import: Import) -> None:
-        """Apply override to entire field's data_type, keeping type-dependent constraints that the new type takes.
-
-        A value with brackets is an annotation: it drops the arguments of every ``con*`` call the field held and
-        takes the keywords that annotation takes; the field keeps the None its schema admits.
-
-        The arguments of a ``con*`` call stay on an override the generator does not know, which may be a factory such
-        as ``pydantic.conint``; a known class takes none, so they are left out, and so are those of the nested types the
-        override replaces. An output model that writes ``Field()`` arguments warns about the ones it leaves out.
-        """
-        _type_overrides.apply_override_to_field(self, field, override_import)
-
-    def _record_overridden_constraints(self, field: DataModelFieldBase, *, keeps_top_kwargs: bool) -> None:
-        """Remember how many ``con*`` arguments the override of a field drops, to warn about them.
-
-        The ``con*`` call of the field's own type stays where ``keeps_top_kwargs``; those of its nested types leave.
-        """
-        _type_overrides.record_overridden_constraints(self, field, keeps_top_kwargs=keeps_top_kwargs)
-
-    def _decide_overridden_constraints(
-        self, field: DataModelFieldBase, keywords: Callable[..., frozenset[str]]
-    ) -> None:
-        """Keep the constraints that the emitted type decides only when the override type takes them.
-
-        ``keywords`` returns what that type takes, as ``DataTypeManager.type_constraint_keywords`` does for its path.
-
-        An output model that writes constraints as ``Field()`` arguments also decides the number constraints of a
-        declared number and the string constraints the replaced type left out this way, and remembers the ones it
-        leaves out to warn about them. The untaken constraints of the members, items and values that collapsing inlines
-        into the field leave with the type the override replaces.
-        """
-        _type_overrides.decide_overridden_constraints(self, field, keywords)
-
-    def _mark_untaken_constraints(
-        self,
-        field: DataModelFieldBase,
-        untaken: dict[str, Any],
-        keywords_for: Callable[[str], frozenset[str]],
-    ) -> None:
-        """Remember the declared constraints a field leaves out, and the target version that would take each.
-
-        ``keywords_for`` returns the number keywords the field's type takes for an explicit target model version.
-        """
-        _type_overrides.mark_untaken_constraints(self, field, untaken, keywords_for)
-
-    def _apply_override_to_data_type(self, data_type: DataType) -> bool:
-        """Recursively apply model-level overrides to a DataType; a stand-in takes the import it stands for first."""
-        return _type_overrides.apply_override_to_data_type(self, data_type)
 
     @property
     def _result_modules_postprocessor(self) -> Callable[..., dict[tuple[str, ...], Result]]:

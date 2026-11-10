@@ -126,7 +126,6 @@ from datamodel_code_generator.parser._passes._shared import (
     RootModelHost,
     RootModelTypeHost,
     TargetPythonVersionHost,
-    TypeOverrideHost,
     _annotated_reference,
     _annotated_references,
     _assign_module_name,
@@ -203,6 +202,12 @@ from datamodel_code_generator.parser._tag_plan import (
     tag_satisfies_pattern,
     taggable_variant,
     union_site,
+)
+from datamodel_code_generator.parser._type_overrides import (
+    TypeOverridesHost,
+    apply_override_to_data_type,
+    apply_override_to_field,
+    mark_untaken_constraints,
 )
 from datamodel_code_generator.python_literal import runtime_expression_imports, stable_repr
 from datamodel_code_generator.reference import (
@@ -314,7 +319,7 @@ class ModulesHost(
     GenericBaseHost,
     ConstructorInfoHost,
     ReplacedRootsHost,
-    TypeOverrideHost,
+    TypeOverridesHost,
     GenerationStoreHost,
     MergedDuplicatesHost,
     CollapseRootModelsHost,
@@ -337,14 +342,6 @@ class ModulesHost(
     @property
     def _output_model_context(self) -> OutputModelContext:
         """The capabilities of the output model types."""
-
-    def _mark_untaken_constraints(
-        self,
-        field: DataModelFieldBase,
-        untaken: dict[str, Any],
-        keywords_for: Callable[[str], frozenset[str]],
-    ) -> None:
-        """Remember the declared constraints a field leaves out, and the target version that would take each."""
 
     @property
     def _const_narrowed_values(self) -> dict[int, tuple[DataType, _ConstNarrowing]]:
@@ -371,10 +368,6 @@ class ModulesHost(
         """The ledger of the imports each module adds."""
 
     @property
-    def imports(self) -> Imports:
-        """The imports every module shares."""
-
-    @property
     def _type_override_imports(self) -> dict[str, Import]:
         """The imports of the types that override models and fields, by model name or scoped field name."""
 
@@ -385,14 +378,6 @@ class ModulesHost(
     @property
     def builtin_names(self) -> frozenset[str]:
         """The builtin names of the target Python version."""
-
-    @property
-    def data_type(self) -> type[DataType]:
-        """The data type class of the data type manager."""
-
-    @property
-    def data_type_manager(self) -> DataTypeManager:
-        """The data type manager of the output."""
 
     @property
     def keep_model_order(self) -> bool:
@@ -433,15 +418,6 @@ class ModulesHost(
     @property
     def use_unique_items_as_set(self) -> bool:
         """Whether arrays of unique items are written as sets."""
-
-    def _apply_override_to_data_type(self, data_type: DataType) -> bool:
-        """Apply the model-level type overrides to a data type and its nested types; return whether any applied."""
-
-    def _apply_override_to_field(self, field: DataModelFieldBase, override_import: Import) -> None:
-        """Replace a field's type by the type of a type override."""
-
-    def _create_set_from_list(self, data_type: DataType) -> DataType:
-        """Return the set copy of a list type, which holds its items."""
 
     @property
     def _unique_set_defaults(self) -> dict[int, tuple[DataModelFieldBase, Any]]:
@@ -1187,7 +1163,7 @@ def replace_merged_unique_list_to_set(parser: ModulesHost, models: list[DataMode
                 _copy_data_type,
                 model,
                 plan.sets,
-                _unique_set_of(parser),
+                _unique_items_copy,
             )
 
 
@@ -1208,23 +1184,20 @@ def _write_unique_sets(parser: ModulesHost, model_field: DataModelFieldBase, pla
     The field's list default is kept for ``replace_unhashable_unique_set_to_list``.
     """
     builder = parser._graph_builder  # noqa: SLF001
-    as_set = _unique_set_of(parser)
     for list_type in plan.sets:
-        builder.swap_data_type(list_type, as_set(list_type), refresh="deferred")
+        builder.swap_data_type(list_type, _unique_items_copy(list_type), refresh="deferred")
     if plan.default is not None:
         parser._unique_set_defaults[id(model_field)] = (model_field, model_field.default)  # noqa: SLF001
         builder.set_field_default(model_field, plan.default)
     builder.replace_field_type(model_field, model_field.data_type)
 
 
-def _unique_set_of(parser: ModulesHost) -> Callable[[DataType], DataType]:
-    """Return what writes a list as the set --use-unique-items-as-set writes from it, which records that it is one."""
-    return lambda list_type: with_unique_items_set(parser._create_set_from_list(list_type))  # noqa: SLF001
+def _unique_items_copy(data_type: DataType, *, is_set: bool = True) -> DataType:
+    """Return the set --use-unique-items-as-set writes from a list, which records that it is one.
 
-
-def _unique_list_of(set_type: DataType) -> DataType:
-    """Return the list that a set --use-unique-items-as-set wrote turns back into, without the set record."""
-    return with_unique_items_set(container_copy(set_type, is_set=False), wrote=False)
+    With ``is_set`` false, return the list that such a set turns back into, without the set record.
+    """
+    return with_unique_items_set(container_copy(data_type, is_set=is_set), wrote=is_set)
 
 
 def replace_unhashable_unique_set_to_list(parser: ModulesHost, models: list[DataModel]) -> None:
@@ -1255,7 +1228,7 @@ def replace_unhashable_unique_set_to_list(parser: ModulesHost, models: list[Data
                     parser._graph_builder,  # noqa: SLF001
                     _copy_data_type,
                     model_field,
-                    _unique_list_of,
+                    partial(_unique_items_copy, is_set=False),
                     paths=paths,
                 )
                 lists.update(paths)
@@ -1273,7 +1246,7 @@ def replace_unhashable_unique_set_to_list(parser: ModulesHost, models: list[Data
                 _copy_data_type,
                 model,
                 (nodes[path] for path in paths),
-                _unique_list_of,
+                partial(_unique_items_copy, is_set=False),
             )
             reverted.update(paths)
 
@@ -2841,9 +2814,9 @@ def apply_field_type_overrides(parser: ModulesHost, models: list[DataModel]) -> 
             if override_import := (
                 parser._type_override_imports.get(class_field_key(model.class_name, field.name)) or derived_import  # noqa: SLF001
             ):
-                parser._apply_override_to_field(field, override_import)  # noqa: SLF001
+                apply_override_to_field(parser, field, override_import)
             elif parser._model_type_override_imports:  # noqa: SLF001
-                parser._apply_override_to_data_type(field.data_type)  # noqa: SLF001
+                apply_override_to_data_type(parser, field.data_type)
 
 
 def root_key_data_type(parser: ModulesHost, root_model: DataModel) -> DataType | None:
@@ -2871,7 +2844,7 @@ def root_key_data_type(parser: ModulesHost, root_model: DataModel) -> DataType |
         )
     key_type = _copy_data_type(root_type)
     if parser._model_type_override_imports:  # noqa: SLF001
-        parser._apply_override_to_data_type(key_type)  # noqa: SLF001
+        apply_override_to_data_type(parser, key_type)
     return key_type
 
 
@@ -3032,7 +3005,8 @@ def constrain_fields_by_their_reference_sites(parser: ModulesHost, run: ModulesR
                 if in_annotated:
                     builder.write_field_call_in_annotated(field)
                 if untaken := {key: value for key, value in site.items() if key not in counts and key not in takes()}:
-                    parser._mark_untaken_constraints(  # noqa: SLF001
+                    mark_untaken_constraints(
+                        parser,
                         field,
                         {**field.untaken_constraints[0], **untaken},
                         lambda minimum, takes=takes: takes(number_values=True, target_model_version=minimum),
@@ -3109,7 +3083,7 @@ def _replace_bases_by_imports(
     for model in models:
         for base_class in model.base_classes:
             reference = base_class.reference
-            if replaces(reference) and parser._apply_override_to_data_type(base_class):  # noqa: SLF001
+            if replaces(reference) and apply_override_to_data_type(parser, base_class):
                 parser._base_stand_ins[id(base_class)] = reference  # noqa: SLF001
                 for import_ in base_class.all_imports:
                     parser._graph_builder.add_model_import(model, import_)  # noqa: SLF001

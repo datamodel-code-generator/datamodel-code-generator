@@ -19,6 +19,7 @@ from typing_extensions import Protocol
 from datamodel_code_generator._naming_hint import collecting_class_names
 from datamodel_code_generator.model.base import DataModel, _refresh_custom_template_paths
 from datamodel_code_generator.model.type_alias import TypeAliasBase
+from datamodel_code_generator.parser import _type_overrides
 from datamodel_code_generator.parser._facts import Phase
 from datamodel_code_generator.parser._passes import (
     cross_module,
@@ -114,10 +115,6 @@ class PipelineHost(
     """What the tables read of the parser besides the hosts of the passes they call: options, run state and hooks."""
 
     @property
-    def _unavailable_imports(self) -> dict[tuple[str | None, str], str]:
-        """The error of each import the target Python version lacks, by imported module and name."""
-
-    @property
     def _translates_final_name_keys(self) -> bool:
         """Whether the run records the output names keys name (``imports.translate_final_name_keys``)."""
 
@@ -169,9 +166,6 @@ class PipelineHost(
         self, contexts: list[Any], model_imports: dict[DataModel, tuple[Import, ...]]
     ) -> None:
         """Merge the imports that runtime expressions registered into the imports of each module."""
-
-    def _reject_unavailable_imports(self, contexts: Sequence[Any]) -> None:
-        """Reject output that imports a type the target lacks."""
 
     def _set_nested_model_default_factory_metadata(self, contexts: list[Any]) -> None:
         """Publish the nested-factory decision of render preparation on the models of every module."""
@@ -467,7 +461,7 @@ FINALIZE_SEGMENTS: tuple[StepLike[PipelineHost, _FinalizeState[Any]], ...] = (
             ),
             PassSpec(
                 "reject_unavailable_imports",
-                lambda self, s: self._reject_unavailable_imports(s.contexts),
+                lambda self, s: _type_overrides.reject_unavailable_imports(self, s.contexts),
                 when=lambda self, _: bool(self._unavailable_imports),
             ),
         ),
