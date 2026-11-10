@@ -235,6 +235,200 @@
           "args": ["--class-name", "ProgramInputs", "--enum-field-as-literal", "one", "--field-constraints"]
         }
       ]
+    },
+    {
+      "name": "openai-codex",
+      "repo": "openai/codex",
+      "sha": "039d0f27d56c31913ffc0f2055a3432b1bcb0b06",
+      "license": "Apache-2.0",
+      "source": "sdk/python/scripts/update_sdk_artifacts.py generate_v2_all (its schema normalization pre-pass and enum/class-name post-passes are not applied)",
+      "paths": ["codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.v2.schemas.json"],
+      "jobs": [
+        {
+          "name": "v2_all",
+          "input": "codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.v2.schemas.json",
+          "input_file_type": "jsonschema",
+          "output_model_type": "pydantic_v2.BaseModel",
+          "args": [
+            "--target-python-version", "3.10", "--use-standard-collections", "--enum-field-as-literal", "one",
+            "--field-constraints", "--field-extra-keys-without-x-prefix", "x-title", "--use-default-kwarg",
+            "--snake-case-field", "--allow-population-by-field-name", "--use-title-as-name", "--use-annotated",
+            "--use-union-operator", "--disable-timestamp", "--formatters", "ruff-format"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "acp-python-sdk",
+      "repo": "agentclientprotocol/python-sdk",
+      "sha": "6e9f70666c52fe39a950fdd7353c47a07b956af6",
+      "license": "Apache-2.0",
+      "source": "scripts/gen_schema.py generate() call (the model_name_map, validators and type_overrides its semantics modules compute are not applied)",
+      "paths": ["schema/schema.json", "schema/v2/schema.json"],
+      "jobs": [
+        {
+          "name": "v1",
+          "input": "schema/schema.json",
+          "input_file_type": "jsonschema",
+          "output_model_type": "pydantic_v2.BaseModel",
+          "stubs": {"acp/_schema_base.py": "from pydantic import BaseModel as _BaseModel\n\n\nclass BaseModel(_BaseModel):\n    pass\n"},
+          "args": [
+            "--target-python-version", "3.10", "--collapse-root-models", "--skip-root-model", "--base-class",
+            "acp._schema_base.BaseModel", "--no-use-specialized-enum", "--no-use-standard-collections",
+            "--no-use-union-operator", "--additional-imports", "enum.Enum", "--enum-field-as-literal", "all",
+            "--use-one-literal-as-default", "--formatters", "builtin", "--infer-union-variant-names",
+            "--naming-strategy", "primary-first", "--strict-refs", "--schema-version", "2020-12",
+            "--schema-version-mode", "strict", "--type-mappings", "integer+uint16=integer", "integer+uint32=integer",
+            "integer+uint64=integer", "--generate-schema-validators", "--use-annotated", "--field-constraints",
+            "--use-field-description", "--snake-case-field"
+          ]
+        },
+        {
+          "name": "v2",
+          "input": "schema/v2/schema.json",
+          "input_file_type": "jsonschema",
+          "output_model_type": "pydantic_v2.BaseModel",
+          "stubs": {"acp/experimental/v2/_schema_base.py": "from pydantic import BaseModel as _BaseModel\n\n\nclass BaseModel(_BaseModel):\n    pass\n"},
+          "args": [
+            "--target-python-version", "3.10", "--collapse-root-models", "--skip-root-model", "--base-class",
+            "acp.experimental.v2._schema_base.BaseModel", "--no-use-specialized-enum", "--no-use-standard-collections",
+            "--no-use-union-operator", "--additional-imports", "enum.Enum", "--enum-field-as-literal", "all",
+            "--use-one-literal-as-default", "--formatters", "builtin", "--infer-union-variant-names",
+            "--naming-strategy", "primary-first", "--strict-refs", "--schema-version", "2020-12",
+            "--schema-version-mode", "strict", "--type-mappings", "integer+uint16=integer", "integer+uint32=integer",
+            "integer+uint64=integer", "--generate-schema-validators", "--use-annotated", "--field-constraints",
+            "--use-field-description", "--snake-case-field"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "stagehand",
+      "repo": "browserbase/stagehand",
+      "sha": "4b0dc711b33f15ecd42f6f2afd9f59a091eb087f",
+      "license": "MIT",
+      "source": "packages/sdk-python/scripts/generate.py PYDANTIC_CONFIG and TYPED_DICT_CONFIG (builtin_format_line_length 88 is the default; its default-factory post-pass is not applied)",
+      "paths": ["packages/protocol/stagehand.v4.json"],
+      "jobs": [
+        {
+          "name": "models",
+          "input": "packages/protocol/stagehand.v4.json",
+          "input_file_type": "jsonschema",
+          "output_model_type": "pydantic_v2.BaseModel",
+          "stubs": {"stagehand/_validation.py": "from pydantic import BaseModel\n\n\nclass WireModel(BaseModel):\n    pass\n\n\nclass PageScreenshotOptionsValidation(WireModel):\n    pass\n\n\nclass TelemetryConfigValidation(WireModel):\n    pass\n\n\nclass StagehandInitParamsValidation(WireModel):\n    pass\n"},
+          "args": [
+            "--preset", "practical-py311-20260619", "--schema-version", "2020-12", "--target-pydantic-version", "2.12",
+            "--base-class", "stagehand._validation.WireModel", "--no-use-union-operator", "--no-collapse-root-models",
+            "--no-collapse-reuse-models", "--no-reuse-model", "--skip-root-model", "--strict-types", "str", "bytes",
+            "int", "float", "bool", "--type-mappings", "string+byte=string", "string+uuid=string", "--base-class-map",
+            "{\"StagehandInitParams\": \"stagehand._validation.StagehandInitParamsValidation\", \"PageScreenshotOptions\": \"stagehand._validation.PageScreenshotOptionsValidation\", \"TelemetryConfig\": \"stagehand._validation.TelemetryConfigValidation\"}",
+            "--keep-model-order", "--use-double-quotes", "--formatters", "builtin"
+          ]
+        },
+        {
+          "name": "input_types",
+          "input": "packages/protocol/stagehand.v4.json",
+          "input_file_type": "jsonschema",
+          "output_model_type": "typing.TypedDict",
+          "args": [
+            "--schema-version", "2020-12", "--target-python-version", "3.11", "--no-use-closed-typed-dict",
+            "--disable-future-imports", "--use-union-operator", "--use-standard-collections",
+            "--use-standard-primitive-types", "--strict-nullable", "--skip-root-model", "--keep-model-order",
+            "--use-double-quotes", "--formatters", "builtin"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "dynamo",
+      "repo": "ai-dynamo/dynamo",
+      "sha": "6b2b25cddc347e0c8fa803184af26672baa3f047",
+      "license": "Apache-2.0",
+      "source": "scripts/generate_media_protocols.py (its loosen_request_enums pre-pass is not applied)",
+      "paths": ["lib/llm/src/protocols/openai/media_schemas/"],
+      "jobs": [
+        {
+          "name": "audio",
+          "input": "lib/llm/src/protocols/openai/media_schemas/audio.json",
+          "input_file_type": "openapi",
+          "output_model_type": "pydantic_v2.BaseModel",
+          "args": [
+            "--custom-file-header=# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.\n# SPDX-License-Identifier: Apache-2.0\n#\n# Generated from lib/llm/src/protocols/openai/media_schemas/audio.json by\n# scripts/generate_media_protocols.py. Do not edit.",
+            "--target-python-version=3.10", "--enum-field-as-literal=all", "--collapse-root-models",
+            "--strict-nullable", "--strict-types", "int", "float", "bool", "str", "--use-annotated",
+            "--use-field-description", "--use-schema-description", "--disable-timestamp", "--formatters=builtin"
+          ]
+        },
+        {
+          "name": "image",
+          "input": "lib/llm/src/protocols/openai/media_schemas/image.json",
+          "input_file_type": "openapi",
+          "output_model_type": "pydantic_v2.BaseModel",
+          "args": [
+            "--custom-file-header=# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.\n# SPDX-License-Identifier: Apache-2.0\n#\n# Generated from lib/llm/src/protocols/openai/media_schemas/image.json by\n# scripts/generate_media_protocols.py. Do not edit.",
+            "--type-overrides={\"NvCreateImageRequest.input_reference\": \"dynamo.common.protocols.image_references.ImageReferences\"}",
+            "--target-python-version=3.10", "--enum-field-as-literal=all", "--collapse-root-models",
+            "--strict-nullable", "--strict-types", "int", "float", "bool", "str", "--use-annotated",
+            "--use-field-description", "--use-schema-description", "--disable-timestamp", "--formatters=builtin"
+          ],
+          "stubs": {"dynamo/common/protocols/image_references.py": "ImageReferences = list[str]\n"}
+        },
+        {
+          "name": "video",
+          "input": "lib/llm/src/protocols/openai/media_schemas/video.json",
+          "input_file_type": "openapi",
+          "output_model_type": "pydantic_v2.BaseModel",
+          "args": [
+            "--custom-file-header=# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.\n# SPDX-License-Identifier: Apache-2.0\n#\n# Generated from lib/llm/src/protocols/openai/media_schemas/video.json by\n# scripts/generate_media_protocols.py. Do not edit.",
+            "--target-python-version=3.10", "--enum-field-as-literal=all", "--collapse-root-models",
+            "--strict-nullable", "--strict-types", "int", "float", "bool", "str", "--use-annotated",
+            "--use-field-description", "--use-schema-description", "--disable-timestamp", "--formatters=builtin"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "marimo",
+      "repo": "marimo-team/marimo",
+      "sha": "d0495d66839b13d34624a8a4dac16f23637cbb4e",
+      "license": "Apache-2.0",
+      "source": "protocols/host/generate.py generate_models (its extra_template_data and tuple_arrays post-pass are not applied)",
+      "paths": ["protocols/host/openapi.yaml", "protocols/host/templates/"],
+      "jobs": [
+        {
+          "name": "protocol",
+          "input": "protocols/host/openapi.yaml",
+          "input_file_type": "openapi",
+          "output_model_type": "msgspec.Struct",
+          "args": [
+            "--target-python-version", "3.10", "--disable-timestamp", "--use-union-operator",
+            "--use-standard-collections", "--use-standard-primitive-types", "--output-datetime-class", "datetime",
+            "--enum-field-as-literal", "all", "--strict-nullable", "--field-constraints", "--use-annotated",
+            "--custom-template-dir", "{repo}/protocols/host/templates", "--additional-imports",
+            "typing.TYPE_CHECKING,typing.NewType", "--formatters", "builtin"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "iceberg-rest-catalog",
+      "repo": "apache/iceberg",
+      "sha": "4e61757dcf568051a13bb8d4c00ef57c9f248947",
+      "license": "Apache-2.0",
+      "source": "open-api/Makefile (generate)",
+      "paths": ["open-api/rest-catalog-open-api.yaml", "open-api/header.txt"],
+      "jobs": [
+        {
+          "name": "rest-catalog",
+          "input": "open-api/rest-catalog-open-api.yaml",
+          "input_file_type": "openapi",
+          "output_model_type": "pydantic_v2.BaseModel",
+          "args": [
+            "--enum-field-as-literal", "all", "--target-python-version", "3.12", "--use-schema-description",
+            "--field-constraints", "--disable-timestamp", "--custom-file-header-path", "{repo}/open-api/header.txt"
+          ]
+        }
+      ]
     }
   ]
 }
