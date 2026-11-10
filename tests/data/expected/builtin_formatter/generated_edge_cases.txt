@@ -11,7 +11,7 @@
 [invalid-import]
 'from package import )\n'
 [compound-import-line]
-'import package\n'
+'import package; value = 1\n'
 [import-only]
 'import package\n'
 [import-class]

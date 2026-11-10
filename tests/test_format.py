@@ -1232,6 +1232,137 @@ def test_apply_builtin_formatter_keeps_comments_in_f_string_fields() -> None:
     assert apply_builtin_formatter(code) == 'x = 1\ny = f"""{x  #c\n}"""  # d\n'
 
 
+def _statements_and_imported_names(code: str) -> tuple[str, list[tuple[str, int, str, str]]]:
+    """Return the module without its imports, and the names it imports, which isort reorders and merges."""
+    tree = ast.parse(code)
+    imported: set[tuple[str, int, str, str]] = set()
+    for node in ast.walk(tree):
+        for field in ("body", "orelse", "finalbody"):
+            if isinstance(body := getattr(node, field, None), list):
+                imports = [statement for statement in body if isinstance(statement, (ast.Import, ast.ImportFrom))]
+                imported.update(
+                    (
+                        getattr(statement, "module", None) or "",
+                        getattr(statement, "level", 0),
+                        name.name,
+                        name.asname or "",
+                    )
+                    for statement in imports
+                    for name in statement.names
+                )
+                setattr(node, field, [statement for statement in body if statement not in imports])
+    return ast.dump(tree), sorted(imported)
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        pytest.param(
+            "from __future__ import annotations\n"
+            "\n"
+            "# Needed by the validator\n"
+            "import re  # noqa: F401\n"
+            "\n"
+            "from pydantic import BaseModel\n",
+            id="comment-above-import",
+        ),
+        pytest.param(
+            "from enum import Enum\n"
+            "\n"
+            "\n"
+            "class Kind(Enum):\n"
+            "    dog = 'dog'\n"
+            "\n"
+            "\n"
+            "import mypkg.types as ct\n"
+            "from datetime import date\n"
+            "\n"
+            "\n"
+            "class Pet:\n"
+            "    pass\n",
+            id="run-after-first-statement",
+        ),
+        pytest.param(
+            "import sys\n# about os\nimport os\nx = 1\n",
+            id="comment-moves-with-import",
+        ),
+        pytest.param(
+            "from x import b\n# c2\nfrom x import a\n",
+            id="comment-above-merged-import",
+        ),
+        pytest.param(
+            "# c1\nfrom x import b\n\n# c2\n\nfrom x import a\nimport os\n",
+            id="comment-before-blank-moves-below",
+        ),
+        pytest.param(
+            "import os\n\n# trailing in block\n\nimport sys\n",
+            id="comment-between-blank-lines",
+        ),
+        pytest.param(
+            "import zz\n# c\n# d\nimport aa\n",
+            id="comment-run-above-import",
+        ),
+        pytest.param(
+            "import zz\nimport aa  # inline\n# above yy\nimport yy\n",
+            id="comment-after-inline-commented-import",
+        ),
+        pytest.param(
+            "from pydantic import BaseModel\n# typing\nfrom typing import Any\n",
+            id="comment-above-first-of-section",
+        ),
+        pytest.param(
+            "import zz\n# a\n\n\n# b\n\nimport x\n\n\nclass A:\n    pass\n",
+            id="comments-before-blank-lines-and-class",
+        ),
+        pytest.param(
+            "import zz\n# a\n\n# b\n\nimport x\n# c\nx = 1\n",
+            id="comments-before-blank-lines-and-comment",
+        ),
+        pytest.param(
+            "import os\n"
+            "# above sys\n"
+            "import sys as system\n"
+            "from typing import Any as A\n"
+            "# above typing\n"
+            "from typing import Any\n",
+            id="comments-above-aliased-imports",
+        ),
+        pytest.param(
+            "from x import a\n# again\nfrom x import a\n",
+            id="comment-above-duplicate-import",
+        ),
+        pytest.param(
+            "from __future__ import annotations\n# c\nfrom x import a, b\nimport os\n",
+            id="comment-after-future-import",
+        ),
+        pytest.param(
+            "import b, a\n# above c\nimport c\n",
+            id="comment-above-import-of-several-names",
+        ),
+    ],
+)
+def test_apply_builtin_formatter_sorts_template_imports_with_their_comments_like_isort(code: str) -> None:
+    """Sort imports with the comments right above them and move other comments below the import block, as isort does.
+
+    A run of imports after the first statement of the module is sorted too. The module keeps its statements and the
+    names it imports.
+    """
+    formatted = apply_builtin_formatter(code)
+    assert formatted == black.format_str(
+        isort.code(code, config=isort.Config(profile="black")), mode=black.FileMode(string_normalization=False)
+    )
+    assert _statements_and_imported_names(formatted) == _statements_and_imported_names(code)
+    assert apply_builtin_formatter(formatted) == formatted
+
+
+@pytest.mark.parametrize(
+    "code", ["import x; y = 1\nz = 2\n", "import b\nimport a; y = 1\n"], ids=["only-import", "after-imports"]
+)
+def test_apply_builtin_formatter_keeps_statement_after_leading_import_on_its_line(code: str) -> None:
+    """Keep an import that shares its line with the statement after it, and that statement, as written."""
+    assert apply_builtin_formatter(code) == code
+
+
 def test_format_import_node_rejects_unsupported_nodes() -> None:
     """Test direct import node helpers reject unexpected AST nodes."""
     unsupported_node = cast("ast.Import | ast.ImportFrom", ast.parse("pass\n").body[0])

@@ -372,29 +372,31 @@ def _iter_aliased_from_import_lines(
     aliases: list[tuple[int, str, bool]],
     line_length: int,
     names: _ImportNames = _PLAIN_NAMES,
-) -> Iterator[str]:
-    """Keep aliased names, and plain names also imported under an alias, on their own lines like isort."""
+) -> Iterator[tuple[int, str]]:
+    """Keep aliased names, and plain names also imported under an alias, on their own lines like isort.
+
+    Each line comes with the index of the import its names come from.
+    """
     sorted_aliases = sorted(aliases, key=lambda item: _alias_sort_key(item[1], names))
     renamed = {_alias_imported_name(alias) for _, alias, is_aliased in aliases if is_aliased}
     chunk: list[str] = []
-    chunk_group: int | None = None
+    chunk_group = -1
     for group_index, alias, is_aliased in sorted_aliases:
         if is_aliased or alias in renamed:
             if chunk:
-                yield _format_from_import(module, chunk, line_length, names.restore)
+                yield chunk_group, _format_from_import(module, chunk, line_length, names.restore)
                 chunk = []
-                chunk_group = None
-            yield _format_from_import(module, [alias], line_length, names.restore)
+            yield group_index, _format_from_import(module, [alias], line_length, names.restore)
             continue
 
         if chunk and chunk_group != group_index:
-            yield _format_from_import(module, chunk, line_length, names.restore)
+            yield chunk_group, _format_from_import(module, chunk, line_length, names.restore)
             chunk = []
         chunk.append(alias)
         chunk_group = group_index
 
     if chunk:
-        yield _format_from_import(module, chunk, line_length, names.restore)
+        yield chunk_group, _format_from_import(module, chunk, line_length, names.restore)
 
 
 def _import_line_sort_key(
@@ -414,28 +416,42 @@ def _import_line_sort_key(
     return 1, 0, _natural_key(lower(module, target)), int(alias_category), alias_name, line_key
 
 
-def _build_builtin_import_block(
+def _build_builtin_import_block(  # noqa: PLR0913
     import_nodes: list[ast.Import | ast.ImportFrom],
     line_length: int,
     lines: list[str],
     known_first_party: frozenset[str],
     names: _ImportNames = _PLAIN_NAMES,
+    *,
+    comments_above: Mapping[int, list[str]] | None = None,
 ) -> str:
+    """Sort, merge and group the imports as isort does.
+
+    ``comments_above`` maps the index of an import to the comment lines right above it, which stay above the line it
+    becomes, after a blank line when an import comes before it, as black puts one after an import.
+    """
     categorized_lines: defaultdict[_ImportCategory, list[str]] = defaultdict(list)
     grouped_from_imports: defaultdict[tuple[_ImportCategory, str], list[str]] = defaultdict(list)
     aliased_from_imports: defaultdict[tuple[_ImportCategory, str], list[tuple[int, str, bool]]] = defaultdict(list)
     aliased_modules = _modules_with_aliased_imports(import_nodes)
+    line_comments: defaultdict[str, list[str]] = defaultdict(list)
+    module_comments: defaultdict[tuple[_ImportCategory, str], list[str]] = defaultdict(list)
+    comments_above = comments_above or {}
 
     for node_index, node in enumerate(import_nodes):
+        comments = comments_above.get(node_index, ())
         if _has_inline_comment(lines, node):
             category, raw_import = _format_import_node_without_reordering(node, lines, known_first_party, names)
             categorized_lines[category].append(raw_import)
+            line_comments[raw_import].extend(comments)
             continue
 
         if isinstance(node, ast.Import):
             for alias in node.names:
                 category = _import_category(names.restore(alias.name), 0, known_first_party, names.python_version)
-                categorized_lines[category].append(module_import(_format_alias(alias)))
+                categorized_lines[category].append(import_line := module_import(_format_alias(alias)))
+                line_comments[import_line].extend(comments)
+                comments = ()
             continue
 
         module = "." * node.level + (node.module or "")
@@ -446,27 +462,40 @@ def _build_builtin_import_block(
             )
         else:
             grouped_from_imports[category, module].extend(_format_alias(alias) for alias in node.names)
+            module_comments[category, module].extend(comments)
 
     for (category, module), aliases in grouped_from_imports.items():
         categorized_lines[category].append(
-            _format_from_import(
+            import_line := _format_from_import(
                 module,
                 sorted(dict.fromkeys(aliases), key=lambda alias: _alias_sort_key(alias, names)),
                 line_length,
                 names.restore,
             )
         )
+        line_comments[import_line].extend(module_comments[category, module])
     for (category, module), aliases in aliased_from_imports.items():
-        for import_line in _iter_aliased_from_import_lines(module, aliases, line_length, names):
+        commented = set(comments_above)
+        for node_index, import_line in _iter_aliased_from_import_lines(module, aliases, line_length, names):
             categorized_lines[category].append(import_line)
+            if node_index in commented:
+                line_comments[import_line].extend(comments_above[node_index])
+                commented.discard(node_index)
 
-    groups = [
-        "\n".join(
-            sorted(dict.fromkeys(categorized_lines[category]), key=lambda line: _import_line_sort_key(line, names))
-        )
-        for category in sorted(categorized_lines)
-    ]
+    groups = (
+        _import_group(categorized_lines[category], line_comments, names) for category in sorted(categorized_lines)
+    )
     return "\n\n".join(group for group in groups if group)
+
+
+def _import_group(import_lines: list[str], line_comments: Mapping[str, list[str]], names: _ImportNames) -> str:
+    """Sort the import lines of one section, each after its comments, with a blank line before comments after a line."""
+    group: list[str] = []
+    for import_line in sorted(dict.fromkeys(import_lines), key=lambda line: _import_line_sort_key(line, names)):
+        if comments := line_comments.get(import_line):
+            group.extend(("", *comments) if group else comments)
+        group.append(import_line)
+    return "\n".join(group)
 
 
 def _is_name_or_attr(node: ast.AST, name: str) -> bool:
@@ -723,6 +752,31 @@ def _clause_headers(
         yield handler.lineno, _statement_start(handler.body[0], lines), None
 
 
+def _import_run_replacements(  # noqa: PLR0913
+    body: list[ast.stmt],
+    lines: list[str],
+    line_length: int,
+    known_first_party: frozenset[str],
+    names: _ImportNames,
+    *,
+    after: int = 0,
+) -> Iterator[_LineReplacement]:
+    """Sort each run of imports in ``body`` that starts after line ``after`` as isort sorts the module's imports.
+
+    A run is indented as its first import, at the line length that indent leaves.
+    """
+    for run in _import_runs(body, lines):
+        if run[0].lineno <= after:
+            continue
+        indent = _line_indent(lines[run[0].lineno - 1])
+        block = _build_builtin_import_block(run, line_length - len(indent), lines, known_first_party, names)
+        yield (
+            run[0].lineno,
+            run[-1].end_lineno or run[-1].lineno,
+            [f"{indent}{line}" if line else line for line in _split_python_lines(block)],
+        )
+
+
 def _collect_statement_replacements(  # noqa: PLR0913
     statement: ast.stmt,
     lines: list[str],
@@ -747,14 +801,7 @@ def _collect_statement_replacements(  # noqa: PLR0913
         statement, lines, line_length, wrap_string_literal=wrap_string_literal, restore=names.restore
     )
     for body in _nested_bodies(statement):
-        for run in _import_runs(body, lines):
-            indent = _line_indent(lines[run[0].lineno - 1])
-            block = _build_builtin_import_block(run, line_length - len(indent), lines, known_first_party, names)
-            yield (
-                run[0].lineno,
-                run[-1].end_lineno or run[-1].lineno,
-                [f"{indent}{line}" if line else line for line in _split_python_lines(block)],
-            )
+        yield from _import_run_replacements(body, lines, line_length, known_first_party, names)
         for child in body:
             yield from _collect_statement_replacements(
                 child, lines, line_length, known_first_party, wrap_string_literal=wrap_string_literal, names=names
@@ -770,10 +817,12 @@ def _collect_builtin_replacements(  # noqa: PLR0913
     wrap_string_literal: bool,
     names: _ImportNames = _PLAIN_NAMES,
     import_block: tuple[int, int] = (0, 0),
+    moved_comments: list[str] | None = None,
 ) -> list[_LineReplacement]:
     """Lay out every statement as black does and put black's blank lines between them, keeping every comment.
 
-    The lines of ``import_block``, the first and last line of the module's import block, are rebuilt elsewhere.
+    The lines of ``import_block``, the first and last line of the module's import block, are rebuilt elsewhere; the
+    import runs after it are sorted, and ``moved_comments``, the lines isort moves out of the block, come after it.
     """
     replacements: list[_LineReplacement] = []
     for node in tree.body:
@@ -782,7 +831,10 @@ def _collect_builtin_replacements(  # noqa: PLR0913
                 node, lines, line_length, known_first_party, wrap_string_literal=wrap_string_literal, names=names
             )
         )
-    replacements.extend(_BlankLinePlacer(lines, import_block).place(tree))
+    replacements.extend(
+        _import_run_replacements(tree.body, lines, line_length, known_first_party, names, after=import_block[1])
+    )
+    replacements.extend(_BlankLinePlacer(lines, import_block, moved_comments or []).place(tree))
     return replacements
 
 
@@ -1010,14 +1062,16 @@ class _BlankLinePlacer:
 
     A comment between statements belongs to the block a black parse gives it: one after the last statement of a block
     stays in it while it is indented at least as far, else it moves to the enclosing block. The lines between the
-    imports of the module's import block are left as they are; the lines before and after it are always written.
+    imports of the module's import block are left as they are; the lines before and after it are always written,
+    and the lines after it start with ``moved_comments``.
     """
 
-    __slots__ = ("columns", "import_block", "indents", "lines", "previous", "replacements", "tracker")
+    __slots__ = ("columns", "import_block", "indents", "lines", "moved_comments", "previous", "replacements", "tracker")
 
-    def __init__(self, lines: list[str], import_block: tuple[int, int]) -> None:
+    def __init__(self, lines: list[str], import_block: tuple[int, int], moved_comments: list[str]) -> None:
         self.lines = lines
         self.import_block = import_block
+        self.moved_comments = moved_comments
         self.replacements: list[_LineReplacement] = []
         self.tracker = _EmptyLineTracker()
         self.columns: list[int] = []
@@ -1040,7 +1094,7 @@ class _BlankLinePlacer:
             self.columns.append(len(indent))
             self.indents.append(indent)
             self.previous = end, depth, flags
-        if self.previous[0] < len(self.lines):
+        if self.previous[0] < len(self.lines) or self.moved_comments:
             after, comments, _ = self._gap_comments(len(self.lines), 0, "")
             self._replace_gap(len(self.lines), after, comments, 0)
         return self.replacements
@@ -1055,7 +1109,10 @@ class _BlankLinePlacer:
         comments: list[tuple[list[int], str]] = []
         blank = 0
         level = depth if previous_flags & _BODY_BELOW else previous_depth
-        for line in self.lines[previous_end:end]:
+        gap = self.lines[previous_end:end]
+        if previous_end == self.import_block[1] and self.moved_comments:
+            gap = [*self.moved_comments, *gap]
+        for line in gap:
             if not (text := line.lstrip()):
                 blank += 1
                 continue
@@ -1107,9 +1164,36 @@ def _iter_module_import_nodes(tree: ast.Module) -> list[ast.Import | ast.ImportF
     import_nodes: list[ast.Import | ast.ImportFrom] = []
     for node in body_nodes:
         if not isinstance(node, (ast.Import, ast.ImportFrom)):
+            while import_nodes and (import_nodes[-1].end_lineno or import_nodes[-1].lineno) >= node.lineno:
+                import_nodes.pop()
             break
         import_nodes.append(node)
     return import_nodes
+
+
+def _import_block_comments(
+    import_nodes: list[ast.Import | ast.ImportFrom], lines: list[str]
+) -> tuple[dict[int, list[str]], list[str]]:
+    """Split the comment lines between the imports of the module's import block as isort does.
+
+    Return the comment lines right above each import, which move with it, and the lines from each other comment to the
+    blank line that ends it, which isort moves below the block.
+    """
+    comments_above: dict[int, list[str]] = {}
+    moved: list[str] = []
+    for index in range(1, len(import_nodes)):
+        previous = import_nodes[index - 1]
+        gap = lines[previous.end_lineno or previous.lineno : import_nodes[index].lineno - 1]
+        if not any(gap):
+            continue
+        split = len(gap)
+        while split and gap[split - 1]:
+            split -= 1
+        if split < len(gap):
+            comments_above[index] = [line.strip() for line in gap[split:]]
+        if (first := next((line_index for line_index, line in enumerate(gap[:split]) if line), None)) is not None:
+            moved.extend(line.strip() for line in gap[first:split])
+    return comments_above, moved
 
 
 def _disjoint_replacements(replacements: list[_LineReplacement]) -> list[_LineReplacement]:
@@ -1687,6 +1771,7 @@ def _apply_builtin_formatter(  # noqa: PLR0913, PLR0914
         _rename_lent_identifiers(tree, lent)
 
     import_nodes = _iter_module_import_nodes(tree)
+    comments_above, moved_comments = _import_block_comments(import_nodes, lines)
     replacements = _collect_builtin_replacements(
         tree,
         lines,
@@ -1697,6 +1782,7 @@ def _apply_builtin_formatter(  # noqa: PLR0913, PLR0914
         import_block=(import_nodes[0].lineno, import_nodes[-1].end_lineno or import_nodes[-1].lineno)
         if import_nodes
         else (0, 0),
+        moved_comments=moved_comments,
     )
 
     if not import_nodes:
@@ -1715,7 +1801,9 @@ def _apply_builtin_formatter(  # noqa: PLR0913, PLR0914
     )
     body_lines = _apply_line_replacements(lines[last_line:], replacements, offset=last_line)
     body = "\n".join(body_lines).rstrip("\n")
-    import_block = _build_builtin_import_block(import_nodes, line_length, lines, known_first_party, names)
+    import_block = _build_builtin_import_block(
+        import_nodes, line_length, lines, known_first_party, names, comments_above=comments_above
+    )
     formatted_code = f"{leading}\n{import_block}" if leading else import_block
     return _finalize_builtin_code(
         f"{formatted_code}\n{body}" if body else formatted_code,
