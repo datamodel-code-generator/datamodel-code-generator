@@ -747,7 +747,7 @@ class Planner:
             media_type=media_type,
             kind=kind,
             use=use,
-            null=request and json_null(kind, use, self.facts.symbols, self.facts.members),
+            null=request and json_null(kind, use, self.facts.tables),
             fields=fields,
             additional=additional,
             encoded=encoded,
@@ -865,7 +865,7 @@ class Planner:
         specs: list[PartSpec] = []
         for name, member, facts in _members(use):
             part = declared[name]
-            repeated = self.wire.kinds.member(facts.type)[2]
+            repeated = self.wire.kinds.tables.member_kind(facts.type)[2]
             text = not part_json(self.wire.kinds, facts.type, encodings.get(name), self.wire.versions)
             specs.append(
                 PartSpec(
@@ -916,7 +916,7 @@ class Planner:
             additional = None
         elif extras is not None and not (isinstance(declared_extra, PartSchema) and declared_extra.file):
             leaf = (
-                self.wire.kinds.member(declared_extra.value)[1]
+                self.wire.kinds.tables.member_kind(declared_extra.value)[1]
                 if isinstance(declared_extra, PartSchema) and declared_extra.value is not None
                 else extras.leaf
             )
@@ -963,7 +963,7 @@ class Planner:
         bound = (
             TypeUseBinding(body.id, "not_generated", None, None)
             if value is None
-            else TypeUseBinding(body.id, "bound", self.wire.kinds.member(value)[1], None)
+            else TypeUseBinding(body.id, "bound", self.wire.kinds.tables.member_kind(value)[1], None)
         )
         return PartSpec(
             plan=plan, use=_part_use(body, location, name or None, bound), required=required, excluded=excluded
@@ -991,7 +991,7 @@ class Planner:
 
         A member no type is bound for is read as JSON, one part for each item when its schema is an array.
         """
-        kind, _, repeated = (None, None, part.repeated) if value is None else self.wire.kinds.member(value)
+        kind, _, repeated = (None, None, part.repeated) if value is None else self.wire.kinds.tables.member_kind(value)
         return PartPlan(name, kind or "json", repeated=repeated)
 
     def body(

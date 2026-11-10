@@ -21,7 +21,6 @@ from datamodel_code_generator._target_contract import (
     parameter_location,
 )
 from datamodel_code_generator._target_naming import NameScope, explicit_name, operation_basis, path_placeholders
-from datamodel_code_generator._target_types import takes_null
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
@@ -34,19 +33,17 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._target_contract import (
         DeclarationId,
-        FieldUseBinding,
-        FinalModelSymbol,
         OperationContract,
         OperationId,
         SourceDocumentId,
         SourceLocation,
-        SymbolId,
         TypeUseBinding,
         TypeUseId,
         TypeView,
         WireDeclaration,
     )
     from datamodel_code_generator._target_naming import TargetNames
+    from datamodel_code_generator._target_types import TypeTables
 
 SettingT = TypeVar("SettingT")
 
@@ -251,11 +248,10 @@ def declared_media_type(
 def json_null(
     kind: MediaKind,
     use: TypeUseBinding | None,
-    symbols: Mapping[SymbolId, FinalModelSymbol],
-    members: Mapping[SymbolId, Sequence[FieldUseBinding]],
+    tables: TypeTables,
 ) -> bool:
     """Return whether a body or response of a media kind sends None as JSON null: JSON whose type takes null."""
-    return kind == "json" and takes_null(None if use is None else use.type, symbols, members)
+    return kind == "json" and tables.takes_null(None if use is None else use.type)
 
 
 def coded_use(kind: MediaKind, use: TypeUseBinding | None) -> TypeUseBinding | None:
