@@ -40,11 +40,7 @@ OPERATION_0: Final[OperationPlan[ListUsersResponse]] = OperationPlan(
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
-                location='query',
-                name='cursor',
-                style='form',
-                explode=True,
-                reserved_names=('limit',),
+                location='query', name='cursor', style='form', explode=True
             ),
             codec=model_bindings.codec_0,
         ),
@@ -55,7 +51,6 @@ OPERATION_0: Final[OperationPlan[ListUsersResponse]] = OperationPlan(
                 style='form',
                 explode=True,
                 kind='integer',
-                reserved_names=('cursor',),
             ),
             codec=model_bindings.codec_1,
         ),

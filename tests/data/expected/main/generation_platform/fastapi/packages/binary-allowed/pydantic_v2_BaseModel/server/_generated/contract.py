@@ -53,11 +53,7 @@ class StoreFile:
             ParameterArgument(
                 name='short',
                 plan=ParameterPlan(
-                    location='query',
-                    name='short',
-                    style='form',
-                    explode=True,
-                    reserved_names=('digest',),
+                    location='query', name='short', style='form', explode=True
                 ),
                 adapter=TypeAdapter(
                     Annotated[

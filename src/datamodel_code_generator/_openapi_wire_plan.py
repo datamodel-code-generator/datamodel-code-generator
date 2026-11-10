@@ -566,7 +566,7 @@ def _encoding(  # noqa: PLR0914
             kind=kind,
             fields=fields,
             additional=additional,
-            reserved_names=tuple(sorted(other for other in members if other != name)),
+            reserved_names=tuple(sorted(other for other in members if other != name)) if additional is not None else (),
             single=single,
             brackets=bracketed,
         )
@@ -674,7 +674,9 @@ def _reserving(plan: ParameterPlan, plans: list[ParameterPlan]) -> ParameterPlan
         if other is not plan and other.location == plan.location and _spread(other)
         for field in other.fields
     } - set(_claimed([plan], plan.location))
-    return replace(plan, reserved_names=tuple(sorted({*plan.reserved_names, *owned}))) if owned else plan
+    if not owned or plan.additional is None:
+        return plan
+    return replace(plan, reserved_names=tuple(sorted({*plan.reserved_names, *owned})))
 
 
 def _parameters(
@@ -798,7 +800,9 @@ def _parameter(
             kind=kind,
             fields=fields,
             additional=additional,
-            reserved_names=tuple(sorted(other for kind_, other in names if kind_ == location and other != name)),
+            reserved_names=tuple(sorted(other for kind_, other in names if kind_ == location and other != name))
+            if additional is not None
+            else (),
             single=single,
             brackets=bracketed,
         )

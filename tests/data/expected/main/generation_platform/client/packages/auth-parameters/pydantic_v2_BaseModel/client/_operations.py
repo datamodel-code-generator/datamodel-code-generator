@@ -29,11 +29,7 @@ OPERATION_0: Final[OperationPlan[HeaderResponse]] = OperationPlan(
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
-                location='header',
-                name='x-key',
-                style='simple',
-                reserved_names=('X-Key',),
-                credential=True,
+                location='header', name='x-key', style='simple', credential=True
             ),
             codec=model_bindings.codec_0,
         ),

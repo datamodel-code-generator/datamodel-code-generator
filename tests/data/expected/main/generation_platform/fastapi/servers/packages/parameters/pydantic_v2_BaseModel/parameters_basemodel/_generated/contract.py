@@ -61,7 +61,6 @@ class Search:
                     explode=True,
                     shape='object',
                     fields=(FieldPlan('id', 'integer'), FieldPlan('name', 'string')),
-                    reserved_names=('blob', 'code', 'ids', 'note'),
                 ),
                 adapter=TypeAdapter(parameters_basemodel_models.Filter),
             ),
@@ -73,7 +72,6 @@ class Search:
                     style='form',
                     shape='array',
                     kind='integer',
-                    reserved_names=('blob', 'code', 'filter', 'note'),
                 ),
                 adapter=TypeAdapter(list[int]),
             ),
@@ -230,7 +228,6 @@ class GetPair:
                     style='simple',
                     required=True,
                     kind='integer',
-                    reserved_names=('class', 'pair.id'),
                 ),
                 adapter=TypeAdapter(Annotated[int, Field(ge=1)]),
             ),
@@ -296,7 +293,6 @@ class GetItem:
                     style='form',
                     explode=True,
                     kind='integer',
-                    reserved_names=('kind', 'levels', 'ratio', 'tier'),
                 ),
                 adapter=TypeAdapter(
                     parameters_basemodel_models.ItemsLevelGetQueryModeParameter
@@ -310,7 +306,6 @@ class GetItem:
                     style='form',
                     explode=True,
                     kind='number',
-                    reserved_names=('kind', 'levels', 'mode', 'tier'),
                 ),
                 adapter=TypeAdapter(
                     parameters_basemodel_models.ItemsLevelGetQueryRatioParameter
@@ -331,7 +326,6 @@ class GetItem:
                     style='form',
                     explode=True,
                     kind='integer',
-                    reserved_names=('kind', 'levels', 'mode', 'ratio'),
                 ),
                 adapter=TypeAdapter(
                     parameters_basemodel_models.ItemsLevelGetQueryTierParameter1 | None
@@ -346,7 +340,6 @@ class GetItem:
                     explode=True,
                     shape='array',
                     kind='integer',
-                    reserved_names=('kind', 'mode', 'ratio', 'tier'),
                 ),
                 adapter=TypeAdapter(
                     list[

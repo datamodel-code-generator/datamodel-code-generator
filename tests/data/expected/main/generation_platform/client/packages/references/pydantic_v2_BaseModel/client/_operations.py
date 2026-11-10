@@ -38,7 +38,6 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse]] = OperationPlan(
                 style='form',
                 explode=True,
                 kind='integer',
-                reserved_names=('page',),
             ),
             codec=model_bindings.codec_0,
         ),
@@ -49,7 +48,6 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse]] = OperationPlan(
                 style='form',
                 explode=True,
                 kind='integer',
-                reserved_names=('limit',),
             ),
             codec=model_bindings.codec_1,
         ),
@@ -71,12 +69,7 @@ OPERATION_1: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
     ),
     parameters=(
         ParameterSpec(
-            plan=ParameterPlan(
-                location='header',
-                name='X-Trace',
-                style='simple',
-                reserved_names=('X-Library-Key',),
-            ),
+            plan=ParameterPlan(location='header', name='X-Trace', style='simple'),
             codec=model_bindings.codec_5,
         ),
     ),
@@ -108,7 +101,6 @@ OPERATION_2: Final[OperationPlan[ListOwnersResponse]] = OperationPlan(
                 style='form',
                 explode=True,
                 kind='integer',
-                reserved_names=('metadata_key',),
             ),
             codec=model_bindings.codec_8,
         ),
