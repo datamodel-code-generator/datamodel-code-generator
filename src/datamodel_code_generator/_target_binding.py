@@ -2236,6 +2236,25 @@ class _Models:
             tuple(other for other, value in results.items() if value is result and other != key),
         )
 
+    def reference_key(self, location: SchemaLocation) -> str:
+        """Return the key the parser files the reference of a schema location under.
+
+        The join of the location's tokens is the key, except for a resolver that keys a reference by its spelling
+        (row ``legacy-ref-spelling-keys``), which files a `$ref` that escapes a token, such as
+        ``#/channels/a~1b``, under that spelling (``spelled_keys``).
+        """
+        key = _resolver_key(self.parser.model_resolver, location)
+        return key if key in self.parser.model_resolver.references else self.spelled_keys.get(location, key)
+
+    @cached_property
+    def spelled_keys(self) -> dict[SchemaLocation, str]:
+        """Return the key of each reference the parser filed under a JSON pointer, by the location it names."""
+        return {
+            SchemaLocation(key.partition("#")[0], tokens): key
+            for key in self.parser.model_resolver.references
+            if (tokens := _pointer_tokens(key)) is not None
+        }
+
     def lightweight(
         self, declaration: SchemaLocation, direction: Direction = "neutral", *, inline: bool = False
     ) -> TypeProjection:
@@ -2257,8 +2276,7 @@ class _Models:
         if (
             schema.ref is not None
             and (target := parser._schema_reference_location(declaration.document, schema.ref)) is not None  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
-            and (reference := parser.model_resolver.references.get(_resolver_key(parser.model_resolver, target)))
-            is not None
+            and (reference := parser.model_resolver.references.get(self.reference_key(target))) is not None
         ):
             yield reference
             return
@@ -2631,7 +2649,7 @@ class _SchemaUses(_Models):
         parser = self.parser
         engine = parser.acquisitions.get((declaration, projection))
         if engine is None and projection == "value":
-            engine = _resolver_key(parser.model_resolver, declaration)
+            engine = self.reference_key(declaration)
         reference = parser.model_resolver.references.get(engine) if engine is not None else None
         data_type = binder.declaration_types.get(declaration) if projection == "value" else None
         if reference is not None and (

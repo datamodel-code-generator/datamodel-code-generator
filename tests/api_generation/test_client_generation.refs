@@ -119,6 +119,8 @@ allowreserved-path-32	main/generation_platform/client/allowreserved-path-32.txt
 allowreserved-path-32	main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel//*.py
 api-scope-required	main/generation_platform/client/api-scope-required.txt
 asyncapi-class-clash	main/generation_platform/client/asyncapi-class-clash.txt
+asyncapi-escaped-channel-ref	main/generation_platform/client/asyncapi-escaped-channel-ref.txt
+asyncapi-escaped-channel-ref	main/generation_platform/client/packages/asyncapi-escaped-channel-ref/pydantic_v2_BaseModel//*.py
 asyncapi-foreign-operations	main/generation_platform/client/asyncapi-foreign-operations.txt
 asyncapi-mapped-payloads	main/generation_platform/client/asyncapi-mapped-payloads.txt
 asyncapi-mapped-payloads	main/generation_platform/client/packages/asyncapi-mapped-payloads/pydantic_v2_BaseModel//*.py
