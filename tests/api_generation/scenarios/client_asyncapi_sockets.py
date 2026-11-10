@@ -231,7 +231,8 @@ def _orders(package: ModuleType, models: ModuleType, server: SocketServer, lines
         session.send(_value(models, "Place", symbol="XBT", size=1.0))
         session.send(_value(models, "Cancel", id="o-1"))
         lines.append(f"    orders {_message(session.receive())}")
-    lines.extend((f"    orders server saw {', '.join(seen)}", played.report()))
+    report = played.report()
+    lines.extend((f"    orders server saw {', '.join(seen)}", report))
 
 
 def _alerts(package: ModuleType, server: SocketServer, lines: list[str]) -> None:
@@ -277,7 +278,8 @@ def asyncapi_union_sends(package: ModuleType, lines: list[str]) -> None:
             session.send(models.Item(name="a"))
             session.send([models.Item(name="b")])
             session.send("note")
-        lines.extend((f"    batch server saw {', '.join(seen)}", played.report()))
+        report = played.report()
+        lines.extend((f"    batch server saw {', '.join(seen)}", report))
     finally:
         server.stop()
 
@@ -298,7 +300,8 @@ def asyncapi_subclass_sends(package: ModuleType, lines: list[str]) -> None:
             session.send(models.Edit(text="a"))
             session.send(models.Revision(text="b", number=2))
             session.send(mine(text="c", number=3))
-        lines.extend((f"    edits server saw {', '.join(seen)}", played.report()))
+        report = played.report()
+        lines.extend((f"    edits server saw {', '.join(seen)}", report))
     finally:
         server.stop()
 
@@ -317,7 +320,8 @@ def asyncapi_enum_tag_sends(package: ModuleType, lines: list[str]) -> None:
         ):
             session.send({"op": "subscribe", "channels": ["a"]})
             session.send({"op": models.Op.unsubscribe, "channels": ["b"]})
-        lines.extend((f"    feed server saw {', '.join(seen)}", played.report()))
+        report = played.report()
+        lines.extend((f"    feed server saw {', '.join(seen)}", report))
     finally:
         server.stop()
 
@@ -346,7 +350,8 @@ def asyncapi_connections(package: ModuleType, lines: list[str]) -> None:
             session.send(_value(models, "SubscribePayload", kind="subscribe", symbols=["XBT"]))
             session.send(_value(models, "OrderPayload", kind="order", symbol="XBT", size=2.0))
             lines.extend(f"    desk {_message(session.receive())}" for _ in replies)
-        lines.extend((f"    desk server saw {', '.join(seen)}", played.report()))
+        report = played.report()
+        lines.extend((f"    desk server saw {', '.join(seen)}", report))
     finally:
         server.stop()
 
