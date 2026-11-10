@@ -13,6 +13,7 @@ SAFE_EXACT_PATHS = frozenset({
     ".github/workflows/codspeed.yaml",
     ".github/workflows/release-draft.yaml",
     "scripts/prepare_release_draft_analysis.py",
+    "scripts/prepare_release_draft_artifacts.py",
     "scripts/report_release_analysis_failure.py",
     "tox.ini",
 })
@@ -43,6 +44,7 @@ CHANGELOG_SAFE_EXACT_PATHS = frozenset({
     "scripts/measure_generation_memory.py",
     "scripts/measure_startup.py",
     "scripts/prepare_release_draft_analysis.py",
+    "scripts/prepare_release_draft_artifacts.py",
     "scripts/report_release_analysis_failure.py",
     "scripts/select_ci_test_shard.py",
     "scripts/validate_release_draft_analysis.py",

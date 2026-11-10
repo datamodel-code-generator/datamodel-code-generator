@@ -1,0 +1,9 @@
+{
+  "in_process": "The PR diff contains the annotation marker of this run; refusing to prepare it.",
+  "returncode": 1,
+  "stdout": "",
+  "stderr": "The PR diff contains the annotation marker of this run; refusing to prepare it.\n",
+  "written": [
+    "pr.diff"
+  ]
+}

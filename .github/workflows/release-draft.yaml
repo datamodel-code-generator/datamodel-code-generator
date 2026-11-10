@@ -137,28 +137,25 @@ jobs:
           claude_files_path="$claude_work_dir/pr.files"
           claude_deleted_lines_path="$claude_work_dir/deleted-lines.txt"
           claude_context_path="$claude_work_dir/analysis-context.md"
+          releases_path="$diff_dir/releases.txt"
+          sections_path="$diff_dir/analysis-sections.md"
 
-          write_pull_request_diff() {
-            gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --allow-escape-sequences > "$diff_path"
-            awk '/^--- / { next } /^-/ { print substr($0, 2) }' "$diff_path" > "$deleted_lines_path"
-            printf '%s lines\n' "$(wc -l < "$diff_path")" > "$diffstat_path"
-          }
+          # The repository merges by squash: the merge commit's first parent is the base for every PR.
+          base_sha="$(git rev-parse --verify "$MERGE_SHA^1^{commit}")"
+          git diff --stat "$base_sha" "$MERGE_SHA" > "$diffstat_path"
+          git diff --no-ext-diff --find-renames --unified=3 "$base_sha" "$MERGE_SHA" > "$diff_path"
+          awk '/^--- / { next } /^-/ { print substr($0, 2) }' "$diff_path" > "$deleted_lines_path"
 
-          parent_count=0
-          if [ -n "$MERGE_SHA" ] && git cat-file -e "$MERGE_SHA^{commit}" 2>/dev/null; then
-            parent_count="$(git rev-list --parents -n 1 "$MERGE_SHA" | awk '{print NF - 1}')"
-          fi
-
-          if [ "$parent_count" -gt 1 ]; then
-            base_sha="$(git rev-parse "$MERGE_SHA^1")"
-            git diff --stat "$base_sha" "$MERGE_SHA" > "$diffstat_path"
-            git diff --no-ext-diff --find-renames --unified=80 "$base_sha" "$MERGE_SHA" > "$diff_path"
-            git diff --no-ext-diff --find-renames --unified=0 "$base_sha" "$MERGE_SHA" \
-              | awk '/^--- / { next } /^-/ { print substr($0, 2) }' > "$deleted_lines_path"
-          else
-            base_sha=""
-            write_pull_request_diff
-          fi
+          # The baseline is the newest published release whose tag is an ancestor of the base commit.
+          gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts --exclude-pre-releases --limit 100 \
+            --json tagName --jq '.[].tagName' > "$releases_path"
+          baseline_tag=""
+          while IFS= read -r tag; do
+            if [[ "$tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && git merge-base --is-ancestor "refs/tags/$tag" "$base_sha"; then
+              baseline_tag="$tag"
+              break
+            fi
+          done < "$releases_path"
 
           # Use one JSON record per API file so unusual names cannot alter record boundaries.
           # The router compares the record count with the event count and fails closed at the API's limit.
@@ -170,16 +167,22 @@ jobs:
           openssl rand -hex 32 > "$marker_path"
           chmod 600 "$marker_path"
 
-          cp "$diff_path" "$claude_diff_path"
+          annotation_nonce="$(openssl rand -hex 8)"
+          python3 scripts/prepare_release_draft_artifacts.py \
+            --diff-path "$diff_path" \
+            --merge-sha "$MERGE_SHA" \
+            --baseline-tag "$baseline_tag" \
+            --nonce "$annotation_nonce" \
+            --claude-diff-path "$claude_diff_path" \
+            --claude-deleted-lines-path "$claude_deleted_lines_path" \
+            --sections-path "$sections_path"
           cp "$files_path" "$claude_files_path"
-          cp "$deleted_lines_path" "$claude_deleted_lines_path"
 
           {
             printf '# Release Draft Analysis Context\n\n'
             printf 'PR: #%s\n' "$PR_NUMBER"
-            printf 'Merge SHA: %s\n' "${MERGE_SHA:-unknown}"
-            printf 'Merge parent count: %s\n' "$parent_count"
-            printf 'Base SHA: %s\n\n' "${base_sha:-unknown}"
+            printf 'Merge SHA: %s\n' "$MERGE_SHA"
+            printf 'Base SHA: %s\n\n' "$base_sha"
             printf 'Use only these prepared artifacts when deciding whether this PR has breaking changes.\n'
             printf 'Do not infer changes from unrelated refs, branches, or commits.\n\n'
             printf 'Diff path: `%s`\n' "$claude_diff_path"
@@ -189,7 +192,8 @@ jobs:
             cat "$diffstat_path"
             printf '\n```\n\n## Changed Files\n\n```text\n'
             cat "$files_path"
-            printf '\n```\n'
+            printf '\n```\n\n'
+            cat "$sections_path"
           } > "$context_path"
           cp "$context_path" "$claude_context_path"
           chmod 600 "$claude_diff_path" "$claude_files_path" "$claude_deleted_lines_path" "$claude_context_path"
@@ -199,6 +203,7 @@ jobs:
             echo "deleted_lines_path=$claude_deleted_lines_path"
             echo "analysis_context_path=$claude_context_path"
             echo "claude_working_dir=$claude_work_dir"
+            echo "annotation_nonce=$annotation_nonce"
             echo "marker_path=$marker_path"
             echo "trusted_deleted_lines_path=$deleted_lines_path"
             echo "trusted_changed_files_path=$files_path"
@@ -264,7 +269,7 @@ jobs:
 
             Analyze the merged changes and determine if this PR contains breaking changes.
 
-            The exact merged PR diff has already been prepared for you:
+            The merged PR diff has already been prepared for you; Prepared Diff in the analysis context says how it differs from the exact diff:
             - Analysis context: ${{ steps.pr-diff.outputs.analysis_context_path }}
             - Diff: ${{ steps.pr-diff.outputs.diff_path }}
             - Deleted lines: ${{ steps.pr-diff.outputs.deleted_lines_path }}
@@ -281,6 +286,10 @@ jobs:
             - Do not use unrelated refs, branches, or commits to infer what changed.
             - Do not report an option, parameter, class, enum value, or function as removed unless it appears as a removed line in the prepared diff.
             - Newly added opt-in options with defaults that preserve existing behavior are not breaking changes by themselves.
+            - The analysis context names the last published release before this PR under Release Baseline. It also lists the experimental features, command-line options, presets and public Python names that this release does not have.
+            - A change is breaking only when it changes behaviour that this release has. Behaviour that only the listed new surfaces reach is in no release yet. Do not report changes to it, even when an earlier pull request added it. Still report any part of the same change that reaches released behaviour.
+            - A change to an experimental feature the release has is a breaking change like any other. Its item says that the feature is experimental.
+            - Lines of the prepared diff and deleted lines that start with `⟪dcg ${{ steps.pr-diff.outputs.annotation_nonce }}⟫`, directly or after the diff's `+`, `-` or space sign, were written by the workflow. A condensed line shows every segment that changed, and its other text did not change. A summarised stored output was left out because the diff exceeded the reading budget; use the source changes and the behaviour diff for it.
             - Attempt to read the read-boundary marker exactly once. Its Read request must be denied; do not retry, then continue normal analysis. Never copy, quote, or summarize its contents in any output.
 
             Breaking changes for datamodel-code-generator include:

@@ -1,0 +1,43 @@
+===== sections.md
+## Release Baseline
+
+Baseline release: 0.1.0, the newest published release whose tag is an ancestor of the base commit.
+These experimental features, command-line options, presets and public Python names are present at the merge commit and absent at 0.1.0, so no release has them:
+
+```text
+Experimental features:
+  behavior.new (target requirement('extra'))
+Command-line options:
+  --new
+  --no-new
+Presets: none
+Public Python names:
+  NewName
+```
+
+## Prepared Diff
+
+Lines of the diff copy that start with `⟪dcg 0123456789abcdef⟫`, directly or after the diff's `+`, `-` or space sign, were written by the workflow; PR text cannot contain this marker. The deleted lines copy is built from the diff copy. Every other line is exactly as in `git diff -U3` of the merge commit against its first parent.
+
+- Exact diff: 26,963 characters, 7 lines, longest line 13,396 characters.
+- Diff copy: 1,381 characters, 9 lines, longest line 404 characters; reading budget 400,000 characters and 12,000 lines.
+- Lines longer than 2,000 characters: 2 condensed, 0 folded, 0 unchanged context lines shortened.
+- A condensed removed line and the condensed added line paired with it show every segment that changed, each with up to 160 characters of unchanged text around it and its character positions; the text outside the segments did not change.
+- A folded line is shown completely in numbered pieces.
+- A shortened context line did not change; only its first 320 characters are shown.
+- No stored output was summarised.
+
+===== claude.diff
+diff --git a/tests/data/expected/help.txt b/tests/data/expected/help.txt
+index e1b7b1a..a71d9fe 100644
+--- a/tests/data/expected/help.txt
++++ b/tests/data/expected/help.txt
+@@ -1 +1 @@
+-⟪dcg 0123456789abcdef⟫ condensed removed line of 13,379 characters, paired with the condensed added line of 13,395 characters below; changed segments: 1, each shown with up to 160 characters of unchanged text around it; the rest of both lines is the same and left out
+-⟪dcg 0123456789abcdef⟫ segment 1 of 1, characters 6,450-6,773: ion-196 Describe option 196. --option-197 Describe option 197. --option-198 Describe option 198. --option-199 Describe option 199. --option-200 Describe option 200. --option-201 Describe option 201. --option-202 Describe option 202. --option-203 Describe option 203. --option-204 Describe option 204. --option-205 Describe o
++⟪dcg 0123456789abcdef⟫ condensed added line of 13,395 characters, paired with the condensed removed line above; changed segments: 1
++⟪dcg 0123456789abcdef⟫ segment 1 of 1, characters 6,450-6,789: ion-196 Describe option 196. --option-197 Describe option 197. --option-198 Describe option 198. --option-199 Describe option 199. --option-200 Describe option 200 and the new one. --option-201 Describe option 201. --option-202 Describe option 202. --option-203 Describe option 203. --option-204 Describe option 204. --option-205 Describe o
+
+===== deleted-lines.txt
+⟪dcg 0123456789abcdef⟫ condensed removed line of 13,379 characters, paired with the condensed added line of 13,395 characters below; changed segments: 1, each shown with up to 160 characters of unchanged text around it; the rest of both lines is the same and left out
+⟪dcg 0123456789abcdef⟫ segment 1 of 1, characters 6,450-6,773: ion-196 Describe option 196. --option-197 Describe option 197. --option-198 Describe option 198. --option-199 Describe option 199. --option-200 Describe option 200. --option-201 Describe option 201. --option-202 Describe option 202. --option-203 Describe option 203. --option-204 Describe option 204. --option-205 Describe o

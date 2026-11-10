@@ -1,0 +1,1 @@
+argument --baseline-tag: expected a release tag or ''

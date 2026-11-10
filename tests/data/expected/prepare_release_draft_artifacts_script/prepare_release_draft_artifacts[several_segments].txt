@@ -1,0 +1,49 @@
+===== sections.md
+## Release Baseline
+
+Baseline release: 0.1.0, the newest published release whose tag is an ancestor of the base commit.
+These experimental features, command-line options, presets and public Python names are present at the merge commit and absent at 0.1.0, so no release has them:
+
+```text
+Experimental features:
+  behavior.new (target requirement('extra'))
+Command-line options:
+  --new
+  --no-new
+Presets: none
+Public Python names:
+  NewName
+```
+
+## Prepared Diff
+
+Lines of the diff copy that start with `⟪dcg 0123456789abcdef⟫`, directly or after the diff's `+`, `-` or space sign, were written by the workflow; PR text cannot contain this marker. The deleted lines copy is built from the diff copy. Every other line is exactly as in `git diff -U3` of the merge commit against its first parent.
+
+- Exact diff: 26,884 characters, 7 lines, longest line 13,380 characters.
+- Diff copy: 2,680 characters, 13 lines, longest line 452 characters; reading budget 400,000 characters and 12,000 lines.
+- Lines longer than 2,000 characters: 2 condensed, 0 folded, 0 unchanged context lines shortened.
+- A condensed removed line and the condensed added line paired with it show every segment that changed, each with up to 160 characters of unchanged text around it and its character positions; the text outside the segments did not change.
+- A folded line is shown completely in numbered pieces.
+- A shortened context line did not change; only its first 320 characters are shown.
+- No stored output was summarised.
+
+===== claude.diff
+diff --git a/docs/table.md b/docs/table.md
+index e1b7b1a..68c4b63 100644
+--- a/docs/table.md
++++ b/docs/table.md
+@@ -1 +1 @@
+-⟪dcg 0123456789abcdef⟫ condensed removed line of 13,379 characters, paired with the condensed added line of 13,376 characters below; changed segments: 3, each shown with up to 160 characters of unchanged text around it; the rest of both lines is the same and left out
+-⟪dcg 0123456789abcdef⟫ segment 1 of 3, characters 169-555: e option 5. --option-6 Describe option 6. --option-7 Describe option 7. --option-8 Describe option 8. --option-9 Describe option 9. --option-10 Describe option 10. --option-11 Describe option 11. --option-12 Describe option 12. --option-13 Describe option 13. --option-14 Describe option 14. --option-15 Describe option 15. --option-16 Describe option 16. --option-17 Describe option 17.
+-⟪dcg 0123456789abcdef⟫ segment 2 of 3, characters 9,821-10,153: 95 Describe option 295. --option-296 Describe option 296. --option-297 Describe option 297. --option-298 Describe option 298. --option-299 Describe option 299. --option-300 Describe option 300. --option-301 Describe option 301. --option-302 Describe option 302. --option-303 Describe option 303. --option-304 Describe option 304. --o
+-⟪dcg 0123456789abcdef⟫ segment 3 of 3, characters 13,216-13,379: ion-395 Describe option 395. --option-396 Describe option 396. --option-397 Describe option 397. --option-398 Describe option 398. --option-399 Describe option 399.
++⟪dcg 0123456789abcdef⟫ condensed added line of 13,376 characters, paired with the condensed removed line above; changed segments: 3
++⟪dcg 0123456789abcdef⟫ segment 1 of 3, characters 169-560: e option 5. --option-6 Describe option 6. --option-7 Describe option 7. --option-8 Describe option 8. --option-9 Describe option 9. --option-10 Describe option ten. --option-11 Describe option 11. --option-12 Describe option twelve. --option-13 Describe option 13. --option-14 Describe option 14. --option-15 Describe option 15. --option-16 Describe option 16. --option-17 Describe option 17.
++⟪dcg 0123456789abcdef⟫ segment 2 of 3, characters 9,826-10,145: 95 Describe option 295. --option-296 Describe option 296. --option-297 Describe option 297. --option-298 Describe option 298. --option-299 Describe option 299. Describe option 300. --option-301 Describe option 301. --option-302 Describe option 302. --option-303 Describe option 303. --option-304 Describe option 304. --o
++⟪dcg 0123456789abcdef⟫ segment 3 of 3, characters 13,208-13,376: ion-395 Describe option 395. --option-396 Describe option 396. --option-397 Describe option 397. --option-398 Describe option 398. --option-399 Describe option 399 last.
+
+===== deleted-lines.txt
+⟪dcg 0123456789abcdef⟫ condensed removed line of 13,379 characters, paired with the condensed added line of 13,376 characters below; changed segments: 3, each shown with up to 160 characters of unchanged text around it; the rest of both lines is the same and left out
+⟪dcg 0123456789abcdef⟫ segment 1 of 3, characters 169-555: e option 5. --option-6 Describe option 6. --option-7 Describe option 7. --option-8 Describe option 8. --option-9 Describe option 9. --option-10 Describe option 10. --option-11 Describe option 11. --option-12 Describe option 12. --option-13 Describe option 13. --option-14 Describe option 14. --option-15 Describe option 15. --option-16 Describe option 16. --option-17 Describe option 17.
+⟪dcg 0123456789abcdef⟫ segment 2 of 3, characters 9,821-10,153: 95 Describe option 295. --option-296 Describe option 296. --option-297 Describe option 297. --option-298 Describe option 298. --option-299 Describe option 299. --option-300 Describe option 300. --option-301 Describe option 301. --option-302 Describe option 302. --option-303 Describe option 303. --option-304 Describe option 304. --o
+⟪dcg 0123456789abcdef⟫ segment 3 of 3, characters 13,216-13,379: ion-395 Describe option 395. --option-396 Describe option 396. --option-397 Describe option 397. --option-398 Describe option 398. --option-399 Describe option 399.

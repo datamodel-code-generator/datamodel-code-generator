@@ -1,0 +1,28 @@
+===== sections.md
+## Release Baseline
+
+Baseline release: unknown. No published release tag is an ancestor of the base commit, so no surface is listed as new.
+
+## Prepared Diff
+
+Lines of the diff copy that start with `⟪dcg 0123456789abcdef⟫`, directly or after the diff's `+`, `-` or space sign, were written by the workflow; PR text cannot contain this marker. The deleted lines copy is built from the diff copy. Every other line is exactly as in `git diff -U3` of the merge commit against its first parent.
+
+- Exact diff: 147 characters, 7 lines, longest line 42 characters.
+- Diff copy: 147 characters, 7 lines, longest line 42 characters; reading budget 400,000 characters and 12,000 lines.
+- Lines longer than 2,000 characters: 0 condensed, 0 folded, 0 unchanged context lines shortened.
+- A condensed removed line and the condensed added line paired with it show every segment that changed, each with up to 160 characters of unchanged text around it and its character positions; the text outside the segments did not change.
+- A folded line is shown completely in numbered pieces.
+- A shortened context line did not change; only its first 320 characters are shown.
+- No stored output was summarised.
+
+===== claude.diff
+diff --git a/src/module.py b/src/module.py
+index 0a979d4..85ff5e8 100644
+--- a/src/module.py
++++ b/src/module.py
+@@ -1 +1 @@
+-value = 1
++value = 2
+
+===== deleted-lines.txt
+value = 1
