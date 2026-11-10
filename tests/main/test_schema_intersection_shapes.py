@@ -391,7 +391,6 @@ def test_schema_intersection_shape_payloads_with_distribute_option(tmp_path: Pat
 
 
 @EXPERIMENTAL_MISSING_IMPORT_WARNING
-@pytest.mark.skipif(sys.version_info < (3, 11), reason="The merged StrEnum imports only where enum.StrEnum exists")
 @pytest.mark.parametrize("with_options", [True, False], ids=["with-option", "without-option"])
 def test_schema_intersection_str_enum_payloads(tmp_path: Path, *, with_options: bool) -> None:
     """Record what the models accept where an allOf merges a string enum with an enum holding other values.

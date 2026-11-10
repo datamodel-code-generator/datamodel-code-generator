@@ -117,10 +117,7 @@ if sys.version_info >= (3, 14):
 else:
     from typing_extensions import TypeAliasType
 
-if sys.version_info >= (3, 11):
-    from typing import Unpack
-else:
-    from typing_extensions import Unpack
+from typing import Unpack
 
 if TYPE_CHECKING:
     import tempfile
@@ -1872,7 +1869,6 @@ def _prepare_generate_facade_config(config: GenerateConfig) -> GenerateConfig:
     from datamodel_code_generator.deprecations import warn_legacy_dependency  # ruff: ignore[import-outside-top-level]
 
     warn_legacy_dependency("dependency.pydantic-runtime-minimum", PYDANTIC_VERSION, (2, 8, 2))
-    warn_legacy_dependency("dependency.python-310-runtime", ".".join(map(str, sys.version_info[:3])), (3, 11, 0))
     given = set(config.model_fields_set)
     config = _apply_generate_config_preset(config)
     config = _apply_missing_sentinel_config(config)

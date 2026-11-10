@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 import tempfile
 from contextlib import ExitStack, suppress
 from dataclasses import dataclass, replace
@@ -222,12 +221,6 @@ def prepare_target(
     from datamodel_code_generator._target_render import PYDANTIC_TARGET_MINIMUM  # noqa: PLC0415
     from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
 
-    if sys.version_info < _PYTHON_MINIMUM:
-        raise config_error(
-            code="E_PYTHON_UNSUPPORTED",
-            option_path=None,
-            message=f"The {generator.kind} target needs Python {_PYTHON_MINIMUM_TEXT} or later to run",
-        )
     if model_config.output is None:
         raise config_error(
             code="E_CONFIG_VALUE",

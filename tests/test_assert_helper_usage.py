@@ -15,6 +15,7 @@ from types import ModuleType
 from typing import TYPE_CHECKING
 
 import pytest
+import tomllib
 
 import datamodel_code_generator
 from datamodel_code_generator.http import _get_httpx
@@ -37,11 +38,6 @@ from tests.main.conftest import (
     assert_generated_model_json_validation,
     run_main_and_assert,
 )
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sys
 from typing import TYPE_CHECKING, Any
 
 import msgspec
@@ -70,10 +69,7 @@ MODELS_WITHOUT_LENGTH = pytest.mark.filterwarnings(
                 "3.11",
                 "--collapse-root-models",
             ],
-            marks=[
-                pytest.mark.skipif(sys.version_info < (3, 11), reason="StrEnum needs Python 3.11"),
-                MODELS_WITHOUT_LENGTH,
-            ],
+            marks=MODELS_WITHOUT_LENGTH,
         ),
         *(
             pytest.param("union_root_url_keywords", ["--field-constraints", *args], marks=ANYURL_WITHOUT_CONSTRAINTS)

@@ -281,10 +281,6 @@ def test_try_import_generated_output_reraises_subinterpreter_import_errors(
 
 
 @_SKIP_BLACK
-@pytest.mark.skipif(
-    sys.version_info[:2] <= (3, 10),
-    reason="Need runtime > target (3.10) to test force_exec_validation behavior",
-)
 def test_force_exec_with_different_target_version(output_file: Path) -> None:
     """Test that force_exec_validation runs exec even with different target version.
 

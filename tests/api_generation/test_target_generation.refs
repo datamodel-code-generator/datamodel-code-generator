@@ -54,8 +54,6 @@ validation	main/generation_platform/targets/validation.txt
 	main/generation_platform/targets/nested-models-symlink.txt
 [test_target_render_object_document_loaded_by_pointer]
 	api_generation/target_generation/target_render_object_document_loaded_by_pointer.txt
-[test_target_render_python_runtime]
-	main/generation_platform/targets/python-runtime.txt
 [test_target_render_timestamp]
 	main/generation_platform/targets/format.txt
 [test_target_render_untyped_nullable_maps]

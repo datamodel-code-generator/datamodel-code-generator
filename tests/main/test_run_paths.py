@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import sys
 from contextlib import contextmanager
 from itertools import count
 from pathlib import Path
@@ -13,7 +12,7 @@ import pytest
 
 from datamodel_code_generator import Error, InputFileType, generate, load_pyproject_config
 from datamodel_code_generator.__main__ import Exit
-from tests.conftest import TARGET_PYTHON, assert_output
+from tests.conftest import assert_output
 from tests.main.conftest import DATA_PATH, run_main_with_args
 
 if TYPE_CHECKING:
@@ -21,7 +20,6 @@ if TYPE_CHECKING:
 
 PERSON = DATA_PATH / "jsonschema" / "person.json"
 SYMLINKS = pytest.mark.skipif(os.name == "nt", reason="symlink creation requires elevated privileges")
-TARGET_RUN = pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The client target needs Python 3.11 or later")
 
 
 def _rooted(text: str, root: Path) -> str:
@@ -145,7 +143,7 @@ _SPELLED_LOCK_RUNS = {
 @SYMLINKS
 @pytest.mark.parametrize(
     "run",
-    [pytest.param(run, marks=TARGET_RUN) if run == "target" else run for run in (*_SPELLED_LOCK_RUNS, "generate")],
+    [*_SPELLED_LOCK_RUNS, "generate"],
 )
 def test_lockfile_through_a_directory_symlink_and_parent(
     run: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -200,9 +198,7 @@ _MISSING_ROOT_RUNS = {
 
 
 @pytest.mark.abnormal_path("only Windows has a root that does not exist, a missing drive or share")
-@pytest.mark.parametrize(
-    "run", [pytest.param(run, marks=TARGET_RUN) if run == "target" else run for run in _MISSING_ROOT_RUNS]
-)
+@pytest.mark.parametrize("run", [*_MISSING_ROOT_RUNS])
 def test_output_on_a_missing_root(
     run: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:

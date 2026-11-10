@@ -12,13 +12,12 @@ readme.content-type = "text/markdown"
 readme.file = "README.md"
 license = "MIT"
 authors = [ { name = "Koudai Aono", email = "koxudaxi@gmail.com" } ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
   "Development Status :: 4 - Beta",
   "License :: OSI Approved :: MIT License",
   "Natural Language :: English",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -41,7 +40,6 @@ dependencies = [
   "pydantic>=2.12,<3; python_version>='3.14' and python_version<'3.15'",
   "pydantic>=2.14,<3; python_version>='3.15'",
   "pyyaml>=6.0.1",
-  "tomli>=2.2.1,<3; python_version<'3.11'",
   "typing-extensions>=4.16,<5",
 ]
 optional-dependencies.all = [
@@ -136,7 +134,7 @@ type = [
   { include-group = "test" },
 ]
 docs = [
-  "zensical>=0.0.43; python_version>='3.10'",
+  "zensical>=0.0.43",
 ]
 benchmark = [
   "pytest-benchmark",
@@ -147,7 +145,7 @@ black24 = [ "black==24.1; python_version<'3.15'" ]
 blacklatest = [ "black" ]
 client = [
   "httpx2[http2,ws]>=2.13,<3",
-  "websockets>=17.1; python_version>='3.11'",
+  "websockets>=17.1",
 ]
 coverage = [
   "covdefaults>=2.3",
@@ -162,7 +160,7 @@ fastapi = [
 ]
 fix = [ "prek>=0.2.22" ]
 isort6 = [ "isort>=6,<7" ]
-isort7 = [ "isort>=7,<8; python_version>='3.10'" ]
+isort7 = [ "isort>=7,<8" ]
 pkg-meta = [ "check-wheel-contents>=0.6.1", "twine>=7", "uv>=0.13.4" ]
 playground = [
   "t-linter>=0.8",
@@ -202,6 +200,7 @@ conflicts = [
 ]
 
 [tool.ruff]
+target-version = "py310"
 line-length = 120
 extend-exclude = [ "tests/data" ]
 format.preview = true
@@ -277,7 +276,7 @@ skip = ".git,*.lock,tests,docs/cli-reference,CHANGELOG.md,docs/changelog.md,docs
 
 [tool.ty]
 src.include = [ "src" ]
-environment.python-version = "3.10"
+environment.python-version = "3.11"
 rules.deprecated = "warn"
 
 [[tool.ty.overrides]]
@@ -325,7 +324,6 @@ ini_options.filterwarnings = [
   "ignore:^.*unclosed file.*",
   "ignore:^Black/isort will become optional.*:FutureWarning",
   "ignore:^Support for (Black|isort|DCG runtime Pydantic).*will end in a future release.*:FutureWarning",
-  "ignore:^Running datamodel-code-generator on Python 3.10 is deprecated.*:FutureWarning",
 ]
 ini_options.verbosity_assertions = 2
 ini_options.assert_helper_direct_assert_exempt_files = [

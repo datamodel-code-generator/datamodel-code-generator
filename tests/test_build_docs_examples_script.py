@@ -5,24 +5,24 @@ from __future__ import annotations
 import subprocess
 import sys
 from pathlib import Path
-
-import pytest
+from typing import TYPE_CHECKING
 
 from scripts import build_docs_examples
-from tests.conftest import TARGET_PYTHON, assert_output
+from tests.conftest import assert_output
+
+if TYPE_CHECKING:
+    import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "build_docs_examples.py"
 EXPECTED_DOCS_EXAMPLES_PATH = ROOT / "tests" / "data" / "expected" / "docs_examples"
 
 
-@pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
 def test_build_docs_examples_check_is_up_to_date() -> None:
     """Generated docs examples are committed."""
     subprocess.run([sys.executable, str(SCRIPT), "--check"], check=True)
 
 
-@pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
 def test_docs_examples_use_rendered_clients(capsys: pytest.CaptureFixture[str]) -> None:
     """All generated snippets match committed docs, including clients with model-only snapshots."""
     result = build_docs_examples.update_docs_examples(check=True)
@@ -34,7 +34,6 @@ def test_docs_examples_use_rendered_clients(capsys: pytest.CaptureFixture[str]) 
     )
 
 
-@pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
 def test_pagination_docs_example(tmp_path: Path) -> None:
     """Pagination renders its tested client recipe with the exact committed documentation text."""
     example = next(

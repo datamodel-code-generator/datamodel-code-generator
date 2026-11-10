@@ -30,11 +30,7 @@ from dataclasses import dataclass, field
 from keyword import iskeyword
 from typing import TYPE_CHECKING, Any
 
-try:
-    import tomllib
-except ImportError:
-    import tomli as tomllib
-
+import tomllib
 
 if TYPE_CHECKING:
     from pathlib import Path

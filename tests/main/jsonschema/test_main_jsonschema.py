@@ -4392,7 +4392,6 @@ def test_main_jsonschema_builtin_submodule_beside_package_init(
 _ITEM_PAYLOADS = ['{"item": {"sku": "s", "kind": "book"}}', '{"item": {"sku": 1}}']
 _CATALOG_PAYLOADS = ['{"featured": {"sku": "s"}, "parent": {"featured": {"sku": "t"}}}', '{"featured": {"sku": 1}}']
 _DETAIL_PAYLOADS = ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']
-_NEEDS_STR_ENUM = pytest.mark.skipif(sys.version_info < (3, 11), reason="the output imports enum.StrEnum")
 _ANNOTATIONS_DECODED = [("api", "Order", _ITEM_PAYLOADS), ("", "Catalog", _CATALOG_PAYLOADS)]
 _RENAMED_SUBMODULE_DECODED = [
     (
@@ -4442,7 +4441,6 @@ class a later rename moves off its name keeps its name.""",
             [],
             _ANNOTATIONS_DECODED,
             id="future-of-module-msgspec.Struct",
-            marks=_NEEDS_STR_ENUM,
         ),
         pytest.param(
             "module_named_annotations.json",
@@ -4451,7 +4449,6 @@ class a later rename moves off its name keeps its name.""",
             ["--read-const-beside-enum"],
             [*_ANNOTATIONS_DECODED, ("api", "Order", ['{"kind": "book"}', '{"kind": "disc"}'])],
             id="future-enum-member-literal",
-            marks=_NEEDS_STR_ENUM,
         ),
         *(
             pytest.param(
@@ -4471,7 +4468,6 @@ class a later rename moves off its name keeps its name.""",
             ["--read-const-beside-enum", "--set-default-enum-member"],
             [("api", "Order", _LITERAL_PAYLOADS)],
             id="future-of-module-enum-member-literal",
-            marks=_NEEDS_STR_ENUM,
         ),
         pytest.param(
             "module_named_annotations_literal_only.json",
@@ -4489,7 +4485,6 @@ class a later rename moves off its name keeps its name.""",
                 ["--use-enum-values-in-discriminator", *extra_args],
                 [("api", "Pet", ['{"kind": "cat", "meow": "m"}', '{"kind": "dog", "bark": 1}'])],
                 id=f"future-enum-member-discriminator-{output_model_type}",
-                marks=_NEEDS_STR_ENUM,
             )
             for output_model_type, extra_args in (
                 ("pydantic_v2.BaseModel", []),
@@ -4561,7 +4556,6 @@ class a later rename moves off its name keeps its name.""",
                 ("pkg", "Report", ['{"warn": {"count": 1}, "kind": "high"}', '{"kind": "low"}']),
             ],
             id="class-loaded-by-enum-member-literal",
-            marks=_NEEDS_STR_ENUM,
         ),
         pytest.param(
             "module_named_like_package_class_literals.json",
@@ -4573,7 +4567,6 @@ class a later rename moves off its name keeps its name.""",
                 ("pkg", "Report", ['{"warn": {"count": 1}, "kind": "high"}', '{"kind": "low"}']),
             ],
             id="class-enum-member-literals",
-            marks=_NEEDS_STR_ENUM,
         ),
         *(
             pytest.param(
@@ -27048,7 +27041,6 @@ def test_main_rust_unsupported_typed_extra_target_python(
     The module is imported where the running Python parses the atomic group, so a pattern pydantic-core rejects fails
     the test when the engine is not switched.
     """
-    runs = sys.version_info >= (3, 11)
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_typed_extra.json",
         output_path=output_file,
@@ -27065,8 +27057,7 @@ def test_main_rust_unsupported_typed_extra_target_python(
             "--disable-timestamp",
             *collapse_args,
         ],
-        skip_code_validation=not runs,
-        force_exec_validation=runs,
+        force_exec_validation=True,
     )
 
 
@@ -29553,7 +29544,7 @@ def test_x_python_type_builtin_and_enum_helpers_for_target_311(output_file: Path
             "builtin",
             "--disable-timestamp",
         ],
-        force_exec_validation=sys.version_info[:2] >= (3, 11),
+        force_exec_validation=True,
     )
 
 

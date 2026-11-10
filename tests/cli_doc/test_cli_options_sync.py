@@ -12,11 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, TypeVar
 
 import pytest
-
-try:
-    import tomllib
-except ImportError:
-    import tomli as tomllib
+import tomllib
 
 from datamodel_code_generator import cli_options
 from datamodel_code_generator.arguments import arg_parser as argument_parser
