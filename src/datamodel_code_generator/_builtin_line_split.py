@@ -65,6 +65,9 @@ CLOSING_BRACKETS: Final = frozenset(BRACKET.values())
 BRACKETS: Final = OPENING_BRACKETS | CLOSING_BRACKETS
 _UNARY_CANDIDATES: Final = frozenset({token.MINUS, token.PLUS, token.TILDE, token.STAR, token.DOUBLESTAR, token.AT})
 _VALUE_KEYWORDS: Final = frozenset({"True", "False", "None"})
+_SKIPPED_TOKENS: Final = frozenset({tokenize.NL, tokenize.INDENT, tokenize.DEDENT})
+_LEAF_TOKENS: Final = frozenset({tokenize.NAME, tokenize.NUMBER, tokenize.STRING, tokenize.OP})
+_LINE_END_TOKENS: Final = frozenset({tokenize.NEWLINE, tokenize.ENDMARKER})
 _AUGMENTED_ASSIGNMENTS: Final = frozenset({
     token.PLUSEQUAL,
     token.MINEQUAL,
@@ -363,33 +366,35 @@ class _BracketTracker:
     invisible: list[_Leaf] = field(default_factory=list)
 
     def mark(self, leaf: _Leaf) -> None:
-        if self.for_loop_depths and self.for_loop_depths[-1] == self.depth and _is_name(leaf, "in"):
+        type_ = leaf.type
+        name = leaf.value if type_ == token.NAME else ""
+        if self.for_loop_depths and self.for_loop_depths[-1] == self.depth and name == "in":
             self.depth -= 1
             self.for_loop_depths.pop()
-        if self.lambda_argument_depths and self.lambda_argument_depths[-1] == self.depth and leaf.type == token.COLON:
+        if self.lambda_argument_depths and self.lambda_argument_depths[-1] == self.depth and type_ == token.COLON:
             self.depth -= 1
             self.lambda_argument_depths.pop()
-        if leaf.type in CLOSING_BRACKETS:
+        if type_ in CLOSING_BRACKETS:
             self.depth -= 1
-            leaf.opening_bracket = self.bracket_match.pop((self.depth, leaf.type))
+            leaf.opening_bracket = self.bracket_match.pop((self.depth, type_))
             if not leaf.value:
                 self.invisible.append(leaf)
-        leaf.bracket_depth = self.depth
-        if self.depth == 0:
+        leaf.bracket_depth = depth = self.depth
+        if not depth:
             if (delimiter := _is_split_before_delimiter(leaf, self.previous)) and self.previous is not None:
                 self.delimiters[id(self.previous)] = delimiter
-            elif leaf.type == token.COMMA:
+            elif type_ == token.COMMA:
                 self.delimiters[id(leaf)] = COMMA_PRIORITY
-        if leaf.type in OPENING_BRACKETS:
-            self.bracket_match[self.depth, BRACKET[leaf.type]] = leaf
+        if type_ in OPENING_BRACKETS:
+            self.bracket_match[depth, BRACKET[type_]] = leaf
             self.depth += 1
             if not leaf.value:
                 self.invisible.append(leaf)
         self.previous = leaf
-        if _is_name(leaf, "lambda"):
+        if name == "lambda":
             self.depth += 1
             self.lambda_argument_depths.append(self.depth)
-        if _is_name(leaf, "for"):
+        elif name == "for":
             self.depth += 1
             self.for_loop_depths.append(self.depth)
 
@@ -417,7 +422,7 @@ class _Line:
     def append(self, leaf: _Leaf, *, preformatted: bool = False, track_bracket: bool = False) -> None:
         if self.inside_brackets or not preformatted or track_bracket:
             self.bracket_tracker.mark(leaf)
-            if self.has_magic_trailing_comma(leaf):
+            if leaf.type in CLOSING_BRACKETS and self.has_magic_trailing_comma(leaf):
                 self.magic_trailing_comma = leaf
         self.leaves.append(leaf)
 
@@ -461,7 +466,7 @@ class _Line:
 
     def __str__(self) -> str:
         first, *rest = self.leaves
-        return f"{first.prefix}{'    ' * self.depth}{first.value}{''.join(map(str, rest))}"
+        return f"{first.prefix}{'    ' * self.depth}{first.value}{''.join([leaf.prefix + leaf.value for leaf in rest])}"
 
     def __bool__(self) -> bool:
         return bool(self.leaves)
@@ -571,7 +576,10 @@ def _bracket_split_build_line(
             leaves.append(_comma())
     leaves_to_track = _get_leaves_inside_matching_brackets(leaves) if component is _Component.HEAD else set()
     for leaf in leaves:
-        result.append(leaf, preformatted=True, track_bracket=id(leaf) in leaves_to_track)
+        if result.inside_brackets or id(leaf) in leaves_to_track:
+            result.append(leaf, preformatted=True, track_bracket=True)
+        else:
+            result.leaves.append(leaf)
     if component is _Component.BODY and _should_split_line(result, opening_bracket):
         result.should_split_rhs = True
     return result
@@ -1465,8 +1473,10 @@ def _string_paren_wrap(line: _Line, mode: _Mode, _features: Collection[_Feature]
     yield tail
 
 
-def _transform_line(line: _Line, mode: _Mode, features: Collection[_Feature] = ()) -> Iterator[_Line]:
-    line_str = str(line)
+def _transform_line(
+    line: _Line, mode: _Mode, features: Collection[_Feature] = (), line_str: str = ""
+) -> Iterator[_Line]:
+    line_str = line_str or str(line)
     transforms: list[Callable[[_Line, _Mode, Collection[_Feature]], Iterator[_Line]]]
     if not line.should_split_rhs and not line.magic_trailing_comma and _is_line_short_enough(line, mode, line_str):
         if not mode.wrap_string_literal:
@@ -1503,10 +1513,10 @@ def _run_transformer(
     line_str = line_str or str(line)
     result: list[_Line] = []
     for transformed_line in transform(line, mode, features):
-        if str(transformed_line) == line_str:
+        if (transformed_str := str(transformed_line)) == line_str:
             msg = "Line transformer returned an unchanged result"
             raise CannotSplitError(msg)
-        result.extend(_transform_line(transformed_line, mode, features))
+        result.extend(_transform_line(transformed_line, mode, features, transformed_str))
     if (
         _Feature.FORCE_OPTIONAL_PARENTHESES in features  # noqa: PLR0916
         or transform is not _rhs
@@ -1546,18 +1556,15 @@ def _read_leaves(tokens: Iterable[tokenize.TokenInfo]) -> tuple[list[_Leaf], int
     top_level_seen: list[str] = []
     previous_row = 0
     for item in tokens:
-        if item.type in {tokenize.NL, tokenize.INDENT, tokenize.DEDENT}:
+        if (type_ := item.type) in _SKIPPED_TOKENS:
             continue
-        if item.type in {tokenize.COMMENT, tokenize.ERRORTOKEN} or (
-            item.type == tokenize.STRING and "\n" in item.string
-        ):
+        if type_ not in _LEAF_TOKENS or (type_ == tokenize.STRING and "\n" in item.string):
             raise _Unsupported
         if leaves and item.start[0] != previous_row and not stack:
             raise _Unsupported
         previous_row = item.end[0]
-        if item.type not in {tokenize.NAME, tokenize.NUMBER, tokenize.STRING, tokenize.OP}:
-            raise _Unsupported
-        type_ = item.exact_type
+        if type_ == tokenize.OP:
+            type_ = item.exact_type
         leaf = _Leaf(type_, item.string)
         previous = leaves[-1] if leaves else None
         enclosing = stack[-1] if stack else None
@@ -2147,7 +2154,7 @@ def _joined_token(lines: list[str], span: tuple[tokenize.TokenInfo, tokenize.Tok
 def _source_tokens(source: str) -> Iterator[tokenize.TokenInfo]:
     """Return the tokens of the logical line that starts ``source``, each f-string as one STRING token."""
     tokens = map(partial(_joined_token, source.split("\n")), string_token_spans(source, template_strings=False))
-    return takewhile(lambda item: item.type not in {tokenize.NEWLINE, tokenize.ENDMARKER}, tokens)
+    return takewhile(lambda item: item.type not in _LINE_END_TOKENS, tokens)
 
 
 def format_logical_line(
@@ -2174,8 +2181,8 @@ def format_logical_line(
     )
     if (result := lay_out(source)) is None:
         return None
-    rows, formatted = result
-    if formatted != source.split("\n")[:rows]:
+    rows, formatted, same_tokens = result
+    if not same_tokens and formatted != source.split("\n")[:rows]:
         formatted = (lay_out("\n".join(formatted)) or result)[1]
     return rows, formatted
 
@@ -2187,12 +2194,18 @@ def _lay_out_logical_line(
     wrap_string_literal: bool,
     assignment: bool,
     restore: Callable[[str], str],
-) -> tuple[int, list[str]] | None:
+) -> tuple[int, list[str], bool] | None:
+    """Lay out one logical line once; also tell whether the new lines hold the same tokens as ``source``.
+
+    The layout reads only the tokens of a line, not where its line breaks were, so laying out new lines with the same
+    tokens gives the same lines again.
+    """
     indent = len(source) - len(source.lstrip(" "))
     if indent % 4 or source[indent : indent + 1] == "\t":
         return None
     try:
         leaves, rows = _read_leaves(_source_tokens(source[indent:]))
+        tokens = [(leaf.type, leaf.value) for leaf in leaves]
         _set_whitespace(leaves)
         if _Line(leaves=leaves).is_def:
             if len(leaves) > 2 and leaves[2].type == token.LSQB:  # noqa: PLR2004
@@ -2212,4 +2225,6 @@ def _lay_out_logical_line(
     line = _Line(depth=indent // 4)
     for leaf in leaves:
         line.append(leaf)
-    return rows, [str(result) for result in _transform_line(line, _Mode(line_length, wrap_string_literal, restore))]
+    lines = list(_transform_line(line, _Mode(line_length, wrap_string_literal, restore)))
+    same_tokens = tokens == [(leaf.type, leaf.value) for result in lines for leaf in result.leaves if leaf.value]
+    return rows, [str(result) for result in lines], same_tokens
