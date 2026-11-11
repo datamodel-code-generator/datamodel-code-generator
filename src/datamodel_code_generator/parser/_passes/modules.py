@@ -178,6 +178,7 @@ from datamodel_code_generator.parser._tag_plan import (
     KeptTagField,
     MsgspecUnion,
     TagPlanHost,
+    TagReading,
     UnionTagDecision,
     UnionView,
     VariantTagField,
@@ -239,8 +240,6 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator.parser._tag_plan import (
         DiscriminatorTag,
-        InlineVariantTags,
-        MergedVariantTags,
         TagPlan,
     )
     from datamodel_code_generator.parser.generation import GraphBuilder
@@ -1055,24 +1054,27 @@ def _drop_discriminator_tag_patterns(
         field.invalidate_semantic_caches()
 
 
-def inline_variant_models(parser: InlineVariantHost) -> InlineVariantTags:
-    """Return the tag fields of the inline variants that may take the tag they inherit (``inline_variant_tags``)."""
-    return parser._tag_plan.inline_variant_tags(  # noqa: SLF001
-        parser.results,
-        field_namer(parser.model_resolver, parser.field_name_model_type),
-        enum_member_tags=parser.use_enum_values_in_discriminator,
-    )
+def tag_reading(parser: InlineVariantHost) -> TagReading:
+    """Return what the tags of the variants of the unions are read with (``TagReading``).
 
-
-def merged_variant_models(parser: InlineVariantHost) -> MergedVariantTags:
-    """Return the merged tags of the variants unions tag differently, none without ``--merge-shared-variant-tags``."""
-    if not parser.merge_shared_variant_tags:
-        return {}
-    return parser._tag_plan.merged_variant_tags(  # noqa: SLF001
-        parser.results,
-        field_namer(parser.model_resolver, parser.field_name_model_type),
-        enum_member_tags=parser.use_enum_values_in_discriminator,
-        collapsed_users=parser._collapsed_reuse_users,  # noqa: SLF001
+    The inline variants that may take the tag they inherit are asked first (``inline_variant_tags``), then the merged
+    tags of the variants unions tag differently (``merged_variant_tags``), none without ``--merge-shared-variant-tags``.
+    """
+    plan = parser._tag_plan  # noqa: SLF001
+    namer = field_namer(parser.model_resolver, parser.field_name_model_type)
+    enum_member_tags = parser.use_enum_values_in_discriminator
+    return TagReading(
+        plan.inline_variant_tags(parser.results, namer, enum_member_tags=enum_member_tags),
+        plan.union_written,
+        enum_member_tags,
+        plan.merged_variant_tags(
+            parser.results,
+            namer,
+            enum_member_tags=enum_member_tags,
+            collapsed_users=parser._collapsed_reuse_users,  # noqa: SLF001
+        )
+        if parser.merge_shared_variant_tags
+        else {},
     )
 
 
@@ -1778,10 +1780,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                                     else {},
                                     field_type=type(root_type_field),
                                     mode="python-or-original-name",
-                                    inline_variants=inline_variant_models(parser),
-                                    union_written=parser._tag_plan.union_written,  # noqa: SLF001
-                                    enum_member_tags=parser.use_enum_values_in_discriminator,
-                                    merged_tags=merged_variant_models(parser),
+                                    reading=tag_reading(parser),
                                 )
                                 == "tagged"
                             ):
@@ -2168,8 +2167,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
     namer = field_namer(parser.model_resolver, parser.field_name_model_type)
     for site in iter_union_sites(models):
         model, field = site.model, site.field
-        inline_models = inline_variant_models(parser)
-        merged_models = merged_variant_models(parser)
+        reading = tag_reading(parser)
         names = site_names(site.property_name, namer)
         mapping = site.mapping
         discriminator = {**site.discriminator, "propertyName": names.field_name}
@@ -2184,10 +2182,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                 mapping,
                 field_type=type(field),
                 mode=site_mode(writes_argument=writes_argument),
-                inline_variants=inline_models,
-                union_written=plan.union_written,
-                enum_member_tags=parser.use_enum_values_in_discriminator,
-                merged_tags=merged_models,
+                reading=reading,
             ),
         )
         if decision.status != "tagged":
@@ -2208,10 +2203,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
             names,
             mapping,
             "python-name" if writes_argument else "python-or-original-name",
-            inline_models,
-            plan.union_written,
-            parser.use_enum_values_in_discriminator,
-            merged_models,
+            reading,
         )
         field_name = names.field_name
 
