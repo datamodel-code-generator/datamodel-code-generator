@@ -1696,44 +1696,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self._graph_builder.record_widened_values(data_type, widened)
         return data_type
 
-    def _collect_inherited_fields_for_request_response(
-        self,
-        base_classes: list[Reference],
-        active: frozenset[str] = frozenset(),
-    ) -> list[DataModelFieldBase]:
-        """Collect canonical inherited fields in declaration order with C3 winners."""
-        return _rw_split.collect_inherited_fields_for_request_response(self, base_classes, active)
-
-    def _unregister_temporary_field_references(
-        self,
-        fields: Iterable[DataModelFieldBase],
-    ) -> None:
-        """Keep temporary raw fields out of the live reverse-reference graph."""
-        return _rw_split.unregister_temporary_field_references(self, fields)
-
     def _temporary_constraint_values(self, obj: JsonSchemaObject, data_type: DataType | None) -> dict[str, Any]:
         """Return the constraint values ``obj`` writes beside ``data_type``, a type built only to read them."""
         return _rw_split.temporary_constraint_values(self, obj, data_type)
-
-    def _merge_inherited_field_overrides(
-        self,
-        inherited_fields: list[DataModelFieldBase],
-        fields: list[DataModelFieldBase],
-    ) -> list[DataModelFieldBase]:
-        """Overlay declarations on inherited fields while resolving deferred partial types."""
-        return _rw_split.merge_inherited_field_overrides(self, inherited_fields, fields)
-
-    def _prepare_required_inherited_field(
-        self,
-        field: DataModelFieldBase,
-        inherited_field: DataModelFieldBase,
-        *,
-        overriding_field: DataModelFieldBase | None = None,
-    ) -> None:
-        """Remove inherited constructor defaults while retaining explicit child metadata."""
-        return _rw_split.prepare_required_inherited_field(
-            self, field, inherited_field, overriding_field=overriding_field
-        )
 
     def _get_raw_inherited_fields(
         self,
@@ -1832,7 +1797,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if into is None:
             is_key_model = schema is self._load_inherited_schema_object(defining_ref)
             schema, model_schema = map(
-                self._read_false_all_of_values, _rw_split.merged_ref_model_schemas(self, schema, defining_ref)
+                partial(_all_of_values.read_false_all_of_values, self),
+                _rw_split.merged_ref_model_schemas(self, schema, defining_ref),
             )
             into = model_schema
             builds_map = (
@@ -2545,11 +2511,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the type TypedDict writes as extra_items for schema-valued additionalProperties.
 
         It is their lightweight type (``_build_lightweight_type``), which names models and generates none, with the
-        positions that are false written as an allOf read as false (``_read_false_all_of_values``) unless
+        positions that are false written as an allOf read as false (``_all_of_values.read_false_all_of_values``) unless
         ``reads_false_all_of`` is off (row ``legacy-rw-extra-items-as-written`` of the request/response walk).
         """
         if reads_false_all_of:
-            additional_properties = self._read_false_all_of_values(additional_properties, lightweight=True)
+            additional_properties = _all_of_values.read_false_all_of_values(
+                self, additional_properties, lightweight=True
+            )
         return self._build_lightweight_type(additional_properties)
 
     def set_additional_properties(self, path: str, obj: JsonSchemaObject) -> None:
@@ -3293,22 +3261,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             type=ANY, import_=IMPORT_ANY
         )
 
-    def _schema_requires_model_type(
-        self,
-        item: JsonSchemaObject,
-        *,
-        resolve_ref: bool = False,
-        visited_refs: frozenset[_TargetNode] | None = None,
-    ) -> bool:
-        """Return whether a schema describes a model-shaped object."""
-        return _all_of_values.schema_requires_model_type(self, item, resolve_ref=resolve_ref, visited_refs=visited_refs)
-
-    def _schema_has_own_value_keywords(self, schema: JsonSchemaObject) -> bool:
-        return _all_of_values.schema_has_own_value_keywords(self, schema)
-
-    def _without_allof_keywords(self, schema: JsonSchemaObject) -> JsonSchemaObject:
-        return _all_of_values.without_allof_keywords(self, schema)
-
     def _enforced_value_keywords(
         self, schema: JsonSchemaObject
     ) -> tuple[frozenset[str], bool, dict[str, Any], dict[str, Any]]:
@@ -3425,16 +3377,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Avoid applying schema constraints to incompatible Python value types."""
         return _inherited_schemas.drop_incompatible_inherited_constraints(self, child, parent_types)
 
-    def _merge_inherited_type_shape_dict(
-        self,
-        parent: dict[str, Any],
-        child: dict[str, Any],
-        parent_ref: str,
-        active: frozenset[_TargetNode] = frozenset(),
-    ) -> dict[str, Any]:
-        """Fill missing type-shape keywords while keeping child validation precedence."""
-        return _inherited_schemas.merge_inherited_type_shape_dict(self, parent, child, parent_ref, active)
-
     def _inherited_override_row(self, parent: dict[str, Any], child: dict[str, Any]) -> dict[str, Any]:
         """Return ``parser/_intersection.py:inherited_override_row`` under the merge mode of this parse.
 
@@ -3536,12 +3478,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         return _inherited_schemas.parse_inherited_schema_fields(self, reference, schema, parent_refs, parent_fields)
 
-    def _iter_inherited_schema_objects(
-        self, base_classes: list[Reference], visited: frozenset[_TargetNode]
-    ) -> Iterator[tuple[JsonSchemaObject, frozenset[_TargetNode], str]]:
-        """Yield inherited schema objects not visited yet, with the visited schema nodes they add to."""
-        return _inherited_schemas.iter_inherited_schema_objects(self, base_classes, visited)
-
     def _load_inherited_schema_object(self, resolved_ref: str) -> JsonSchemaObject:
         """Load and cache a schema used only for inherited field inspection."""
         return _inherited_schemas.load_inherited_schema_object(self, resolved_ref)
@@ -3560,7 +3496,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if visited is None:
             visited = frozenset()
 
-        for parent_schema, next_visited, parent_ref in self._iter_inherited_schema_objects(base_classes, visited):
+        for parent_schema, next_visited, parent_ref in _inherited_schemas.iter_inherited_schema_objects(
+            self, base_classes, visited
+        ):
             result: DataType | None = None
             if parent_schema.properties:
                 prop_schema = parent_schema.properties.get(prop_name)
@@ -3586,15 +3524,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     return result
 
         return None
-
-    def _merge_all_of_object(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
-        """Merge allOf items when they share object properties to avoid duplicate models.
-
-        Skip merging when there is exactly one $ref (inheritance with property overrides).
-        Continue merging when multiple $refs have conflicting property definitions to avoid MRO issues.
-        Child property overrides (obj.properties) are not considered conflicts.
-        """
-        return _all_of_values.merge_all_of_object(self, obj)
 
     def _merge_all_of_root_validation_keywords(self, merged: dict[str, Any], sources: list[JsonSchemaObject]) -> None:
         """Preserve literal and item intersections while materializing a value reference.
@@ -3643,10 +3572,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 self, cast("list[JsonSchemaObject | bool]", item_schemas)
             )
 
-    def _is_all_of_mapping_item(self, schema: JsonSchemaObject) -> bool:
-        """Return whether an allOf item is an object map, which a mapping-shaped allOf merges into one root map."""
-        return _all_of_values.is_all_of_mapping_item(self, schema)
-
     def _merge_all_of_root_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
         """Unwrap one value schema or merge mapping-shaped allOf items into a root schema."""
         return _all_of_values.merge_all_of_root_schema(self, obj)
@@ -3694,25 +3619,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 _ALL_OF_PARTS,
             )
         return None if unsatisfiable else parts
-
-    def _read_false_all_of_values(self, obj: JsonSchemaObject, *, lightweight: bool = False) -> JsonSchemaObject:
-        """Return the site ``obj`` with the schema that types its values written ``false`` where it is a false allOf.
-
-        That schema is the additionalProperties of a map that types values with it: an object without properties or
-        patternProperties, the keys no pattern matches under --use-single-dict-for-object-maps (``_other_keys_schema``)
-        where no patternProperties validator owns them, and a type array of object under
-        --use-typed-nullable-map-values (``_typed_nullable_map_value_schema``). It is also the items of an array,
-        unless the array is a tuple of no items under --use-tuple-for-fixed-length-arrays
-        (``_value_keywords.get_fixed_length_homogeneous_tuple_length``). Where it is ``false`` written as an allOf
-        (``_is_false_all_of``), the site is read as the same site with ``false``: the map admits no key it types and the
-        array no item past its prefixItems. Where no value is typed with it, it keeps its output. The positions of an
-        array (``_read_false_all_of_array_positions``) and the patternProperties and propertyNames of a map
-        (``_read_false_all_of_map_schemas``) are read the same way. ``lightweight`` reads the array positions as the
-        lightweight type of a TypedDict ``extra_items`` types them (``_build_lightweight_array_type``). A site reads
-        none of them while no loaded document holds an ``allOf`` that lists ``false``
-        (``SchemaGraphBuilder.holds_false_all_of``).
-        """
-        return _all_of_values.read_false_all_of_values(self, obj, lightweight=lightweight)
 
     def _site_schema(self, obj: JsonSchemaObject, *, merge_ref_siblings: bool = False) -> JsonSchemaObject:
         """Return ``obj`` as a site reads it: an array ``allOf`` as one value schema, a false allOf as ``false``.
@@ -3821,8 +3727,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         if (
             "legacy-ref-branch-without-site-parts" in self._legacy_intersection
-            or not self._schema_has_own_value_keywords(site := self._schema_object(outer))
-            or self._schema_requires_model_type(branch, resolve_ref=True)
+            or not _all_of_values.schema_has_own_value_keywords(self, site := self._schema_object(outer))
+            or _all_of_values.schema_requires_model_type(self, branch, resolve_ref=True)
         ):
             return None
         conjunction = site.model_copy(update={"ref": branch.ref})
@@ -4303,8 +4209,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                                 parent_schema = self._load_inherited_schema_object(resolved_ref)
                                 parent_name = parent_schema.python_field_overrides.get(parent_name, parent_name)
                             if collected_inherited_fields is None:
-                                collected_inherited_fields = self._collect_inherited_fields_for_request_response(
-                                    base_classes
+                                collected_inherited_fields = _rw_split.collect_inherited_fields_for_request_response(
+                                    self, base_classes
                                 )
                             parent_field = next(
                                 (
@@ -4328,7 +4234,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         _field_rows.require_field(self, field, inherited=True)
                     if field_name is None or _DEFERRED_INHERITED_TYPE_KEY not in field.__dict__:
                         if inherited_field is not None:
-                            self._prepare_required_inherited_field(
+                            _rw_split.prepare_required_inherited_field(
+                                self,
                                 field,
                                 inherited_field,
                                 overriding_field=field,
@@ -4712,7 +4619,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         default=default,
                     )
                 )
-            self._unregister_temporary_field_references(fields)
+            _rw_split.unregister_temporary_field_references(self, fields)
             return variants[0]
 
         return JsonSchemaParser._create_registered_root_model(
@@ -4936,7 +4843,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
 
             nullable = self._object_nullable(obj)
-            merged_all_of_obj = self._merge_all_of_object(obj)
+            merged_all_of_obj = _all_of_values.merge_all_of_object(self, obj)
             if merged_all_of_obj:
                 return frame.built(
                     self._parse_object_common_part(
@@ -6130,7 +6037,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if len(all_of_items) == 1 and len(all_of_items) != len(item.allOf) and not item.properties:
             return self.parse_item(name, all_of_items[0], path, singular_name=singular_name, parent=site.parent)
         all_of_path = [self.model_resolver.resolve_ref(get_special_path("allOf", path))]
-        if not self._schema_requires_model_type(item) and not _all_of_values.allof_requires_model_type(
+        if not _all_of_values.schema_requires_model_type(self, item) and not _all_of_values.allof_requires_model_type(
             self, item.allOf
         ):
             root_model_name = self.model_resolver.add(
@@ -6225,13 +6132,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Merge the `$ref` of a site with its sibling keywords, in the dynamic scope the merged schema names.
 
         ``read_false_all_of``: the merged schema takes the type of the values a false allOf writes
-        (``_read_false_all_of_values``), as a field's does.
+        (``_all_of_values.read_false_all_of_values``), as a field's does.
         """
         if (merged := self._merge_ref_with_schema(site.obj)) is site.obj:
             return site
         return replace(
             site,
-            obj=self._read_false_all_of_values(merged) if read_false_all_of else merged,
+            obj=_all_of_values.read_false_all_of_values(self, merged) if read_false_all_of else merged,
             scope=_schema_refs.subschema_scope(self, merged),
         )
 
@@ -8927,12 +8834,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             *schema_object_type.__schema_affecting_extras__,
         } - metadata_keys
         return frozenset(keys), frozenset(schema_affecting_keys)
-
-    def _known_schema_object_raw_keys(self) -> frozenset[str]:
-        return _schema_documents.known_schema_object_raw_keys(self)
-
-    def _has_schema_affecting_keywords(self, raw: dict[str, Any]) -> bool:
-        return _schema_documents.has_schema_affecting_keywords(self, raw)
 
     def _is_version_definition_namespace_name(self, name: str) -> bool:  # noqa: PLR6301
         return re.fullmatch(r"v\d+(?:[._-]\d+)*", name, flags=re.IGNORECASE) is not None

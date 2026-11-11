@@ -342,9 +342,6 @@ class AllOfValuesHost(LightweightTypesHost, Protocol):
     def _parse_all_of_root_value(self, name: str, merged_root: JsonSchemaObject, path: list[str]) -> DataType:
         """Keep literal membership alongside the existing scalar or container representation."""
 
-    def _read_false_all_of_values(self, obj: JsonSchemaObject, *, lightweight: bool = False) -> JsonSchemaObject:
-        """Return the site ``obj`` with the schema that types its values written ``false`` where it is a false allOf."""
-
     def _reads_enum_as_const(self, obj: JsonSchemaObject) -> bool:
         """Return whether --use-single-value-enum-as-const reads an enum admitting the const beside it as that const."""
 
@@ -1882,7 +1879,7 @@ def site_schema(
     site = array_all_of_site_schema(parser, obj)
     if merge_ref_siblings:
         site = _with_ref_siblings(parser, site)
-    return parser._read_false_all_of_values(site)  # noqa: SLF001
+    return read_false_all_of_values(parser, site)
 
 
 def ref_member_narrows_literals(

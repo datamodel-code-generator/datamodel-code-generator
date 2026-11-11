@@ -271,14 +271,14 @@ class SchemaResourcesHost(DocumentNamesHost, Protocol):
     def _get_ref_body(self, resolved_ref: str) -> dict[str, YamlValue]:
         """Get the body of a reference from URL or remote file."""
 
-    def _has_schema_affecting_keywords(self, raw: dict[str, Any]) -> bool:
-        """Return whether a raw schema sets a keyword that changes the schema, not only its metadata."""
-
     def _is_version_definition_namespace_name(self, name: str) -> bool:
         """Return whether a name of a definitions namespace is a version, like ``v1`` or ``v2_0``."""
 
-    def _known_schema_object_raw_keys(self) -> frozenset[str]:
-        """Return the keywords, and their aliases, that a schema object of the parser reads."""
+    @staticmethod
+    def _schema_object_raw_key_sets(
+        schema_object_type: type[JsonSchemaObject],
+    ) -> tuple[frozenset[str], frozenset[str]]:
+        """Return the keywords a schema object type reads and those of them that change the schema."""
 
     def _source_path_for_diagnostics(self, source_path: Path | None = None) -> str:
         """Return source context without changing parser path semantics."""
@@ -379,12 +379,6 @@ class SchemaDocumentsHost(SchemaResourcesHost, Protocol):
 
     def _schema_features_for(self, root: dict[str, YamlValue]) -> JsonSchemaFeatures:
         """Get the schema features of a root document based on config or its detected version."""
-
-    @staticmethod
-    def _schema_object_raw_key_sets(
-        schema_object_type: type[JsonSchemaObject],
-    ) -> tuple[frozenset[str], frozenset[str]]:
-        """Return the keywords a schema object type reads and those of them that change the schema."""
 
     def _should_preserve_explicit_root_class_name(self, class_name: str) -> bool:
         """Return whether an explicit root class name with a leading underscore keeps its spelling."""
@@ -1099,11 +1093,11 @@ def reserved_targets(
             yield ReservedTarget(document=document, key=key, node=graph.node(value))
 
 
-def known_schema_object_raw_keys(parser: SchemaDocumentsHost) -> frozenset[str]:
+def known_schema_object_raw_keys(parser: SchemaResourcesHost) -> frozenset[str]:
     return type(parser)._schema_object_raw_key_sets(parser.SCHEMA_OBJECT_TYPE)[0]  # noqa: SLF001
 
 
-def has_schema_affecting_keywords(parser: SchemaDocumentsHost, raw: dict[str, Any]) -> bool:
+def has_schema_affecting_keywords(parser: SchemaResourcesHost, raw: dict[str, Any]) -> bool:
     schema_affecting_keys = type(parser)._schema_object_raw_key_sets(parser.SCHEMA_OBJECT_TYPE)[1]  # noqa: SLF001
     return any(str(key) in schema_affecting_keys for key in raw)
 
@@ -1122,7 +1116,7 @@ def iter_definition_namespace_entries(
     if not include_direct_children:
         return
 
-    known_keys = parser._known_schema_object_raw_keys()  # noqa: SLF001
+    known_keys = known_schema_object_raw_keys(parser)
     for key, value in raw.items():
         key_str = str(key)
         if key_str in known_keys or key_str.startswith("x-") or not isinstance(value, (dict, bool)):
@@ -1136,7 +1130,7 @@ def iter_schema_definition_entry(
     raw: YamlValue,
     path: list[str],
 ) -> Iterator[tuple[str, YamlValue, list[str]]]:
-    if isinstance(raw, dict) and not parser._has_schema_affecting_keywords(raw):  # noqa: SLF001
+    if isinstance(raw, dict) and not has_schema_affecting_keywords(parser, raw):
         entries = list(
             iter_definition_namespace_entries(
                 parser,

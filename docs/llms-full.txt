@@ -86903,7 +86903,7 @@ The location is a fact recorded in L0 and L1:
 - **Copy steps** the location survives, besides those under "Scope on schema objects": L0 unsharing,
   `openapi.py:RawMediaObject` (the media object's own `schema` value is used), lists joined and dicts merged in
   `parser/_intersection.py`: `concatenating_row`, `all_of_member_row`, `inherited_override_row`, and
-  `_merge_inherited_type_shape_dict` (and the
+  `parser/_inherited_schemas.py:merge_inherited_type_shape_dict` (and the
   nested schemas `intersect_keywords` rewrites in their result, copied with the location they had there), combined
   classes in `_parse_object_common_part`, inherited normalizations in `merge_properties_with_parent_constraints`,
   array type-union branches, OpenAPI operation copies for path-level parameters and global `security` (the operation's

@@ -43,7 +43,7 @@ from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.imports import IMPORT_ANY
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model.base import _field_source_name, get_inherited_fields
-from datamodel_code_generator.parser import _schema_refs, _value_keywords
+from datamodel_code_generator.parser import _rw_split, _schema_refs, _value_keywords
 from datamodel_code_generator.parser._all_of_values import holds_union_member
 from datamodel_code_generator.parser._intersection import (
     INHERITED_SCHEMA_KEYWORDS,
@@ -58,6 +58,7 @@ from datamodel_code_generator.parser._intersection import (
 )
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
 from datamodel_code_generator.parser._origins import with_field_origin
+from datamodel_code_generator.parser._rw_split import RwSplitHost
 from datamodel_code_generator.parser._schema_documents import current_document
 from datamodel_code_generator.parser._schema_object import (
     _ANNOTATION_KEYWORDS,
@@ -81,7 +82,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _without_contains_keywords,
 )
 from datamodel_code_generator.parser._schema_refs import mark_conjunction_parts
-from datamodel_code_generator.parser._value_keywords import ValueKeywordsHost, get_effective_array_length
+from datamodel_code_generator.parser._value_keywords import get_effective_array_length
 from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_FIELD_KEY,
     _DEFERRED_INHERITED_TYPE_KEY,
@@ -104,12 +105,9 @@ if TYPE_CHECKING:
     from datamodel_code_generator._user_keys import ClassScope
     from datamodel_code_generator.parser._field_rows import (
         FieldAliasRow,
-        FieldCopyFacts,
         FieldFacts,
-        FieldIdentity,
         FieldRow,
     )
-    from datamodel_code_generator.parser._null_facts import NullMode
     from datamodel_code_generator.parser._schema_graph import _TargetNode
     from datamodel_code_generator.reference import ModelType, SchemaLocation
 
@@ -248,32 +246,12 @@ def _dump_drops_inherited_null(dump: Mapping[str, Any]) -> bool:
     return resolve_null_facts(dump_null_sources(dump), "inherited-child").rule == "inherited-typed-without-null"
 
 
-class InheritedSchemasHost(ValueKeywordsHost, Protocol):
+class InheritedSchemasHost(RwSplitHost, Protocol):
     """The options, caches and hooks of the parser that the inherited schema reading reads."""
-
-    _inherited_parent_property_cache: dict[
-        tuple[str | int, str, frozenset[_TargetNode]],
-        tuple[
-            JsonSchemaObject,
-            tuple[JsonSchemaObject, str, frozenset[_TargetNode]],
-        ],
-    ]
-    _inherited_required_cache: dict[tuple[str, ...], frozenset[str]]
-    _inherited_schema_ancestor_cache: dict[str, frozenset[str]]
-    _inherited_schema_cache: dict[str, JsonSchemaObject]
-    _inherited_schema_linearization_cache: dict[tuple[str, ...], tuple[str, ...]]
-
-    @property
-    def allof_merge_mode(self) -> AllOfMergeMode:
-        """How the constraints of allOf members merge (``--allof-merge-mode``)."""
 
     @property
     def field_name_model_type(self) -> ModelType:
         """The model type that field names are validated for."""
-
-    @property
-    def force_optional_for_required_fields(self) -> bool:
-        """Whether required fields are generated as optional."""
 
     @property
     def results(self) -> list[DataModel]:
@@ -284,20 +262,8 @@ class InheritedSchemasHost(ValueKeywordsHost, Protocol):
         """Whether dotted schema names keep their dots in module names (``--strict-dotted-module-names``)."""
 
     @property
-    def treat_dot_as_module(self) -> bool | None:
-        """Whether dots in schema names make modules."""
-
-    @property
     def _inherited_parent_row(self) -> InheritedParentRow:
         """The order the allOf parents of an inherited schema are read in (``inherited_schema_parents``)."""
-
-    @property
-    def _legacy_rw_variants(self) -> frozenset[str]:
-        """The rows of the request/response split kept: every row without --dedupe-request-response-variants."""
-
-    @property
-    def _null_mode(self) -> NullMode:
-        """The options that change how parse sites read null (``parser/_null_facts.py``)."""
 
     def get_field_extras(self, obj: JsonSchemaObject) -> dict[str, Any]:
         """Extract extra field metadata from a JSON Schema object."""
@@ -313,15 +279,6 @@ class InheritedSchemasHost(ValueKeywordsHost, Protocol):
     ) -> list[DataModelFieldBase]:
         """Parse object properties into a list of data model fields."""
 
-    def _apply_inherited_field_default(
-        self,
-        field: DataModelFieldBase,
-        inherited_field: DataModelFieldBase,
-        *,
-        scope: ClassScope,
-    ) -> None:
-        """Resolve an inherited schema default in the derived class scope."""
-
     def _build_field(
         self,
         row: FieldRow,
@@ -334,46 +291,10 @@ class InheritedSchemasHost(ValueKeywordsHost, Protocol):
     ) -> DataModelFieldBase:
         """Build a field of a model the parser writes, with the configured options its ``row`` takes."""
 
-    def _collect_inherited_fields_for_request_response(
-        self,
-        base_classes: list[Reference],
-        active: frozenset[str] = frozenset(),
-    ) -> list[DataModelFieldBase]:
-        """Collect canonical inherited fields in declaration order with C3 winners."""
-
-    def _copy_model_field(
-        self,
-        field: DataModelFieldBase,
-        *,
-        data_type: DataType | None = None,
-        register_references: bool = True,
-        identity: FieldIdentity | None = None,
-        **facts: Unpack[FieldCopyFacts],
-    ) -> DataModelFieldBase:
-        """Copy a field and its mutable state without copying model references, made with ``identity`` and ``facts``."""
-
     def _get_inherited_field_type(
         self, prop_name: str, base_classes: list[Reference], visited: frozenset[_TargetNode] | None = None
     ) -> DataType | None:
         """Get the data type for an inherited property from parent schemas."""
-
-    def _merge_inherited_type_shape_dict(
-        self,
-        parent: dict[str, Any],
-        child: dict[str, Any],
-        parent_ref: str,
-        active: frozenset[_TargetNode] = frozenset(),
-    ) -> dict[str, Any]:
-        """Fill missing type-shape keywords while keeping child validation precedence."""
-
-    def _prepare_required_inherited_field(
-        self,
-        field: DataModelFieldBase,
-        inherited_field: DataModelFieldBase,
-        *,
-        overriding_field: DataModelFieldBase | None = None,
-    ) -> None:
-        """Remove inherited constructor defaults while retaining explicit child metadata."""
 
     def _take_field_aliases(  # noqa: PLR0913
         self,
@@ -387,12 +308,6 @@ class InheritedSchemasHost(ValueKeywordsHost, Protocol):
         inherits: bool | None = None,
     ) -> None:
         """Give a field built earlier the name ``name`` and the aliases ``_field_aliases`` derives, by ``row``."""
-
-    def _unregister_temporary_field_references(
-        self,
-        fields: Iterable[DataModelFieldBase],
-    ) -> None:
-        """Keep temporary raw fields out of the live reverse-reference graph."""
 
 
 def get_inherited_override_shape(
@@ -949,7 +864,8 @@ def merge_inherited_union_branch(  # noqa: PLR0913
     if excludes_null and "null" in parent_types:
         branch_child["nullable"] = False
     return _located(
-        parser._merge_inherited_type_shape_dict(  # noqa: SLF001
+        merge_inherited_type_shape_dict(
+            parser,
             parent,
             branch_child,
             parent_ref,
@@ -1018,7 +934,8 @@ def merge_inherited_type_shape_dict(  # noqa: PLR0914
         parent_shape.pop("type", None)
         parent_shape["anyOf"] = [
             _located(
-                parser._merge_inherited_type_shape_dict(  # noqa: SLF001
+                merge_inherited_type_shape_dict(
+                    parser,
                     {
                         "type": parent_type,
                         **select_inherited_distributed_shape(
@@ -1065,7 +982,8 @@ def merge_inherited_type_shape_dict(  # noqa: PLR0914
         parent_shape["type"] = next(iter(parent_types))
     merge_value = partial(
         merge_inherited_value,
-        merge_schemas=lambda parent_schema, child_schema: parser._merge_inherited_type_shape_dict(  # noqa: SLF001
+        merge_schemas=lambda parent_schema, child_schema: merge_inherited_type_shape_dict(
+            parser,
             parent_schema,
             child_schema,
             effective_ref,
@@ -1106,7 +1024,7 @@ def inherited_override_schema(
     """Return the schema of a property ``child`` that overrides the inherited property ``parent``.
 
     The row of ``--allof-merge-mode`` decides: ``none`` writes the child's constraints on the inherited type shape
-    (``_merge_inherited_type_shape_dict``) where the child only narrows it, and keeps the child otherwise; ``all``
+    (``merge_inherited_type_shape_dict``) where the child only narrows it, and keeps the child otherwise; ``all``
     and ``constraints`` give the intersection of both (``intersect_keywords``) over their presentation row
     (``parser/_intersection.py:inherited_override_row``). A child without constraints that only narrows the inherited
     property is written on the type shape too, unless ``legacy-type-narrowing-override-deferred`` is kept, where it
@@ -1122,8 +1040,11 @@ def inherited_override_schema(
         if not is_partial_inherited_property(parser, child, effective_parent, (effective_ref, active)):
             return child
         child_dict = child.model_dump(exclude_unset=True, by_alias=True)
-        merged_dict = parser._merge_inherited_type_shape_dict(  # noqa: SLF001
-            parent.model_dump(exclude_unset=True, by_alias=True), child_dict, parent_ref
+        merged_dict = merge_inherited_type_shape_dict(
+            parser,
+            parent.model_dump(exclude_unset=True, by_alias=True),
+            child_dict,
+            parent_ref,
         )
         if merged_dict == child_dict:
             return child
@@ -1988,7 +1909,7 @@ def parse_inherited_schema_fields(
             if not source.properties:
                 continue
             parsed_fields = parse_fields_beside_parents(parser, source, inherited_properties, owner_path, scope)
-            parser._unregister_temporary_field_references(parsed_fields)  # noqa: SLF001
+            _rw_split.unregister_temporary_field_references(parser, parsed_fields)
             fields.extend(parsed_fields)
     if not parser.force_optional_for_required_fields:
         existing_names = {field_name for field in fields if (field_name := _field_source_name(field)) is not None}
@@ -2064,7 +1985,7 @@ def get_inherited_field_map(
     if not deferred_names:
         return inherited_fields
 
-    for field in parser._collect_inherited_fields_for_request_response(base_classes):  # noqa: SLF001
+    for field in _rw_split.collect_inherited_fields_for_request_response(parser, base_classes):
         if (field_name := _field_source_name(field)) in deferred_names:
             inherited_fields[field_name] = field
     return inherited_fields
@@ -2153,7 +2074,7 @@ def build_missing_required_field(  # noqa: PLR0913, PLR0917
             row="required-copy",
             inherits=bool(base_classes),
         )
-        parser._prepare_required_inherited_field(copied_field, inherited_field)  # noqa: SLF001
+        _rw_split.prepare_required_inherited_field(parser, copied_field, inherited_field)
         parser._apply_inherited_field_default(copied_field, inherited_field, scope=scope)  # noqa: SLF001
         return copied_field
 

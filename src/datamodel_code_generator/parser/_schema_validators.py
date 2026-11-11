@@ -38,7 +38,8 @@ from datamodel_code_generator.model.runtime_validation import (
     UniqueItemsRule,
     _is_internal_schema_runtime_validation,
 )
-from datamodel_code_generator.parser import _lightweight_types, _schema_refs
+from datamodel_code_generator.parser import _inherited_schemas, _lightweight_types, _schema_refs
+from datamodel_code_generator.parser._inherited_schemas import InheritedSchemasHost
 from datamodel_code_generator.parser._intersection import (
     INTERSECTED_KEYWORDS,
     bounds_admit_no_value,
@@ -46,7 +47,6 @@ from datamodel_code_generator.parser._intersection import (
     intersect_enum_values,
 )
 from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
-from datamodel_code_generator.parser._lightweight_types import LightweightTypesHost
 from datamodel_code_generator.parser._naming import composed_name
 from datamodel_code_generator.parser._passes._shared import (
     CollapseRootModelsHost,
@@ -65,7 +65,6 @@ from datamodel_code_generator.parser.base import get_special_path
 from datamodel_code_generator.types import DataType, Types
 
 if TYPE_CHECKING:
-    from collections import defaultdict
     from collections.abc import Iterable, Iterator, Mapping, Sequence
 
     from typing_extensions import TypeIs
@@ -74,8 +73,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model import DataModelFieldBase
     from datamodel_code_generator.model.runtime_validation import UniqueItemsPath, UniqueItemsPathStep
     from datamodel_code_generator.parser._schema_graph import _TargetNode
-    from datamodel_code_generator.parser.schema_version import JsonSchemaFeatures
-    from datamodel_code_generator.reference import Reference, SchemaLocation
+    from datamodel_code_generator.reference import Reference
 
 __all__ = [
     "SchemaValidatorsHost",
@@ -128,7 +126,7 @@ __all__ = [
 
 
 class SchemaValidatorsHost(
-    LightweightTypesHost, CollapseRootModelsHost, DataModelTypeHost, TargetPythonVersionHost, Protocol
+    InheritedSchemasHost, CollapseRootModelsHost, DataModelTypeHost, TargetPythonVersionHost, Protocol
 ):
     """The members of ``JsonSchemaParser`` the schema validator rules read: options, state and the methods they call."""
 
@@ -136,18 +134,6 @@ class SchemaValidatorsHost(
     REQUIRED_ONLY_SCHEMA_ALLOWED_FIELDS: ClassVar[frozenset[str]]
     _pattern_validation_document_root: JsonSchemaObject | None
     _root_pattern_string_constraints: JsonSchemaObject | None
-
-    @property
-    def extra_template_data(self) -> defaultdict[str, Any]:
-        """The template data of each reference path, which holds its ``schema_runtime_validation``."""
-
-    @property
-    def force_optional_for_required_fields(self) -> bool:
-        """Whether required fields are generated as optional."""
-
-    @property
-    def _property_count_rule_cache(self) -> dict[int, tuple[JsonSchemaObject, PropertyCountRule | None]]:
-        """The property-count rule of each schema object, cached for this parse."""
 
     def parse_item(
         self,
@@ -205,9 +191,6 @@ class SchemaValidatorsHost(
     ) -> bool:
         """Return whether a generated type can receive an array from raw input."""
 
-    def _features_at(self, at: JsonSchemaObject | SchemaLocation | None) -> JsonSchemaFeatures:
-        """Return the schema features that read a schema object (``parser/jsonschema.py``)."""
-
     def _field_input_names(self, field: DataModelFieldBase) -> tuple[str, ...]:
         """Return Pydantic's ordered raw input names for one declared field."""
 
@@ -248,9 +231,6 @@ class SchemaValidatorsHost(
     ) -> tuple[list[tuple[JsonSchemaObject | bool, tuple[UniqueItemsRule, ...]]], list[UniqueItemsRule]]:
         """Collect ordered uniqueItems rules produced by each union branch."""
 
-    def _has_pattern_properties_validator(self, obj: JsonSchemaObject) -> bool:
-        """Return whether schema runtime validation owns patternProperties dispatch."""
-
     def _has_property_count_validator(self, obj: JsonSchemaObject) -> bool:
         """Return whether an object or its allOf sources constrain property counts."""
 
@@ -261,20 +241,6 @@ class SchemaValidatorsHost(
         allow_empty: bool = False,
     ) -> TypeIs[JsonSchemaObject]:
         """Return whether a combined-schema branch is only a property presence rule."""
-
-    def _iter_inherited_schema_objects(
-        self, base_classes: list[Reference], visited: frozenset[_TargetNode]
-    ) -> Iterator[tuple[JsonSchemaObject, frozenset[_TargetNode], str]]:
-        """Yield inherited schema objects not visited yet, with the visited schema nodes they add to."""
-
-    def _iter_schema_validation_sources(
-        self,
-        obj: JsonSchemaObject,
-        visited_refs: frozenset[_TargetNode] = frozenset(),
-        *,
-        include_references: bool = True,
-    ) -> Iterator[JsonSchemaObject]:
-        """Yield the schema and its allOf sources, without the document each was read from."""
 
     def _iter_union_unique_items_rules(
         self,
@@ -316,11 +282,6 @@ class SchemaValidatorsHost(
     def _plain_pattern_root_annotations(self, obj: JsonSchemaObject, patterns: list[tuple[str, DataType]]) -> bool:
         """Recognize inert root annotations only in the standard generation context."""
 
-    def _ref_siblings_apply_to(
-        self, schema: JsonSchemaObject, *, legacy: Literal["first-read", "parsed-document", "as-written"]
-    ) -> bool:
-        """Return whether the keywords beside the ``$ref`` of ``schema`` apply with it (``parser/jsonschema.py``)."""
-
     def _required_group_input_names(
         self,
         groups: Sequence[Sequence[str]],
@@ -335,9 +296,6 @@ class SchemaValidatorsHost(
         visited_refs: frozenset[_TargetNode],
     ) -> bool:
         """Return whether a schema item can accept one raw JSON container shape."""
-
-    def _schema_literal_values(self, obj: JsonSchemaObject) -> tuple[object, ...] | None:
-        """Return direct const/enum values after their JSON Schema intersection."""
 
     def _schema_runtime_validation(self, reference_path: str) -> SchemaRuntimeValidation:
         """Return the runtime validation rules of ``reference_path``, created on first use."""
@@ -718,7 +676,7 @@ def get_input_names_by_property(
                     names_by_property.setdefault(property_name, parser._field_input_names(field))  # noqa: SLF001
             continue
 
-        for schema, _, _ in parser._iter_inherited_schema_objects([base_class], frozenset()):  # noqa: SLF001
+        for schema, _, _ in _inherited_schemas.iter_inherited_schema_objects(parser, [base_class], frozenset()):
             if not schema.properties:
                 continue
             for property_name in schema.properties:

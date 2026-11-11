@@ -13,8 +13,8 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._regex_syntax import literal_pattern_value
 from datamodel_code_generator._url_redaction import named_location
-from datamodel_code_generator.parser import _lightweight_types
-from datamodel_code_generator.parser._lightweight_types import LightweightTypesHost
+from datamodel_code_generator.parser import _all_of_values, _lightweight_types
+from datamodel_code_generator.parser._all_of_values import AllOfValuesHost
 from datamodel_code_generator.parser._naming import Composed, composed_name
 from datamodel_code_generator.parser._origins import with_field_origin, with_type_origin
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
@@ -56,7 +56,7 @@ __all__ = [
 _ALL_OF_METADATA_FIELDS = ("nullable", "description", "default", "example", "examples", "readOnly", "writeOnly")
 
 
-class ObjectMapsHost(LightweightTypesHost, Protocol):
+class ObjectMapsHost(AllOfValuesHost, Protocol):
     """The options, run state and hooks of the parser that the object maps read and write."""
 
     typed_nullable_maps: bool
@@ -132,16 +132,10 @@ class ObjectMapsHost(LightweightTypesHost, Protocol):
     def _get_x_python_type(self, obj: JsonSchemaObject) -> PythonTypeExpr | None:
         """Return the type expression of the x-python-type of a schema, if any."""
 
-    def _has_pattern_properties_validator(self, obj: JsonSchemaObject) -> bool:
-        """Return whether schema runtime validation owns patternProperties dispatch."""
-
     def _iter_non_object_union_types(
         self, name: str, obj: JsonSchemaObject, type_list: list[str], path: list[str], *, keep_constraints: bool = False
     ) -> Iterator[DataType]:
         """Yield the types of a type array other than object, keeping their constraints with ``keep_constraints``."""
-
-    def _merge_primitive_schemas_for_allof(self, items: list[JsonSchemaObject]) -> JsonSchemaObject | None:
-        """Return the one primitive schema the parts of an allOf merge into, if they merge."""
 
     def _parse_additional_properties_value(
         self,
@@ -163,15 +157,6 @@ class ObjectMapsHost(LightweightTypesHost, Protocol):
         self, name: str, schema: JsonSchemaObject, value_type: DataType, path: list[str]
     ) -> DataType:
         """Return the type alias that writes a patternProperties value with its constraints, else ``value_type``."""
-
-    def _schema_has_own_value_keywords(self, schema: JsonSchemaObject) -> bool:
-        """Return whether a schema has value keywords of its own."""
-
-    def _schema_requires_model_type(self, item: JsonSchemaObject) -> bool:
-        """Return whether a schema needs a model type."""
-
-    def _without_allof_keywords(self, schema: JsonSchemaObject) -> JsonSchemaObject:
-        """Return a schema without its allOf."""
 
 
 def _with_null(data_type: DataType) -> DataType:
@@ -306,8 +291,8 @@ def flatten_additional_properties_all_of(
         if schema.title:
             schema = parser._schema_object(schema.model_dump(exclude={"title"}, exclude_unset=True, by_alias=True))  # noqa: SLF001
         if schema.allOf:
-            own_schema = parser._without_allof_keywords(schema)  # noqa: SLF001
-            if parser._schema_has_own_value_keywords(own_schema):  # noqa: SLF001
+            own_schema = _all_of_values.without_allof_keywords(parser, schema)
+            if _all_of_values.schema_has_own_value_keywords(parser, own_schema):
                 pending.append(own_schema)
             for item in reversed(schema.allOf):
                 match item:
@@ -319,7 +304,7 @@ def flatten_additional_properties_all_of(
                         pending.append(item)
             continue
         if (
-            parser._schema_requires_model_type(schema)  # noqa: SLF001
+            _all_of_values.schema_requires_model_type(parser, schema)
             or any((schema.anyOf, schema.oneOf, schema.enum))
             or "const" in schema.extras
             or isinstance(schema.type, list)
