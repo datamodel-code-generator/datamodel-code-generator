@@ -673,7 +673,6 @@ replace	main/main_general/generate_custom_file_header_line_breaks_end_as_file_li
 	main/import_overrides.py
 [test_generate_in_overlapping_threads_keeps_the_warning_hook]
 	main/main_general/generate_in_overlapping_threads_keeps_the_warning_hook.txt
-	main/main_general/generate_in_overlapping_threads_keeps_the_warning_hook.txt	@formatter=builtin,python=3.10	= main/main_general/generate_in_overlapping_threads_keeps_the_warning_hook@builtin-python3.10.txt
 [test_generate_keeps_existing_path_string_input]
 	main/generate_keeps_existing_path_string_input.py
 [test_generate_keeps_non_path_string_input]
