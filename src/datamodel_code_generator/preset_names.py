@@ -98,5 +98,17 @@ PresetName: TypeAlias = Literal[
     "practical-py313-20261106",
     "practical-py314-20261106",
     "practical-py315-20261106",
+    "standard-py310-20261111",
+    "standard-py311-20261111",
+    "standard-py312-20261111",
+    "standard-py313-20261111",
+    "standard-py314-20261111",
+    "standard-py315-20261111",
+    "practical-py310-20261111",
+    "practical-py311-20261111",
+    "practical-py312-20261111",
+    "practical-py313-20261111",
+    "practical-py314-20261111",
+    "practical-py315-20261111",
 ]
 PRESET_NAMES: Final[tuple[PresetName, ...]] = get_args(PresetName)

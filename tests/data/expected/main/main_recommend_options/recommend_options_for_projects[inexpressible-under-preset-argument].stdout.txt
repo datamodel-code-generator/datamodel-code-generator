@@ -69,7 +69,7 @@ Optional (policy; not in the command)
       rejected
 
 Your configuration
-  --preset practical-py314-20261104: a newer preset is available, practical-py314-20261106
+  --preset practical-py314-20261104: a newer preset is available, practical-py314-20261111
   practical-py314-20261104 sets --infer-union-variant-names to true; no option sets it to false   [unions.name-variants-after-tags]
 
 Notes

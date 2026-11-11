@@ -16,7 +16,7 @@ Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
   integer/number/boolean schemas   0
   root schema                      object model 1, title words 0
 
-Start from  --preset standard-py314-20261106
+Start from  --preset standard-py314-20261111
 
 Add (1 option)
   --class-name BlankUnionTitles   [root.class-name-for-root-object]
@@ -35,11 +35,11 @@ Notes
   - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --class-name BlankUnionTitles --input blank_union_titles.json --preset standard-py314-20261106 --target-python-version 3.14
+  datamodel-codegen --class-name BlankUnionTitles --input blank_union_titles.json --preset standard-py314-20261111 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   class-name = "BlankUnionTitles"
   input = "blank_union_titles.json"
-  preset = "standard-py314-20261106"
+  preset = "standard-py314-20261111"
   target-python-version = "3.14"

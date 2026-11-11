@@ -15,7 +15,7 @@ Schema  OpenAPI 3.2.0 (OpenAPI scopes: api)
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   0
 
-Start from  --preset standard-py314-20261106
+Start from  --preset standard-py314-20261111
 
 Add (1 option)
   --naming-strategy enclosing-model   [naming.qualify-shared-inline-names]
@@ -35,12 +35,12 @@ Notes
   - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --input api_operations.yaml --naming-strategy enclosing-model --openapi-scopes api --preset standard-py314-20261106 --target-python-version 3.14
+  datamodel-codegen --input api_operations.yaml --naming-strategy enclosing-model --openapi-scopes api --preset standard-py314-20261111 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "api_operations.yaml"
   naming-strategy = "enclosing-model"
   openapi-scopes = ["api"]
-  preset = "standard-py314-20261106"
+  preset = "standard-py314-20261111"
   target-python-version = "3.14"

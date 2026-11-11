@@ -1,13 +1,13 @@
 shard 1/1: exit=1
 allowlist: allowlist entry 1 (['tests/data/jsonschema/const.json', 'tests/data/jsonschema/duration.json']) is stale: it accepted no change
 allowlist: allowlist entry 2 (tests/data/jsonschema/boolean_property.json) is stale: it accepted no change
-cells: 66 (tier nightly, shard 1/1)
+cells: 72 (tier nightly, shard 1/1)
 shard 1/3: exit=1
 allowlist: allowlist entry 2 (tests/data/jsonschema/boolean_property.json) is stale: it accepted no change
-cells: 22 (tier nightly, shard 1/3)
+cells: 24 (tier nightly, shard 1/3)
 shard 2/3: exit=0
 cells: 0 (tier nightly, shard 2/3)
 shard 3/3: exit=1
 allowlist: allowlist entry 1 (['tests/data/jsonschema/const.json', 'tests/data/jsonschema/duration.json']) is stale: it accepted no change
-cells: 44 (tier nightly, shard 3/3)
+cells: 48 (tier nightly, shard 3/3)
 shards == unsharded: True
