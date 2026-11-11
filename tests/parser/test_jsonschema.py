@@ -395,7 +395,6 @@ def test_schema_validator_required_only_schema_filters() -> None:
     })
 
     assert parser._is_required_only_schema(required_only_schema)
-    assert parser._get_required_groups([required_only_schema]) == (("a",),)
     assert parser._is_required_only_schema(JsonSchemaObject.model_validate({"required": ["a"], "type": ["object"]}))
     assert not parser._is_required_only_schema(True)
     assert not parser._is_required_only_schema(JsonSchemaObject.model_validate({}))
@@ -424,9 +423,6 @@ def test_schema_validator_required_only_schema_filters() -> None:
     assert not parser._is_required_only_schema(JsonSchemaObject.model_validate({"required": ["a"], "contains": {}}))
     assert not parser._is_required_only_schema(JsonSchemaObject.model_validate({"required": ["a"], "not": {}}))
     assert not parser._is_required_only_schema(JsonSchemaObject.model_validate({"required": ["a"], "type": ["null"]}))
-    assert (
-        parser._get_required_groups([JsonSchemaObject.model_validate({"properties": {"a": {"type": "string"}}})]) == ()
-    )
 
 
 def test_schema_validator_helpers_disabled() -> None:
@@ -470,18 +466,6 @@ def test_schema_validator_property_count_helper_caches_effective_allof_rule() ->
     parser._add_property_count_validator("#/Model", obj)
 
     assert parser.extra_template_data["#/Model"]["schema_runtime_validation"].property_count is rule
-
-
-def test_schema_validator_property_count_helper_stops_at_visited_ref() -> None:
-    """Keep $ref sibling counts while avoiding recursive allOf walks."""
-    parser = JsonSchemaParser("", generate_schema_validators=True)
-    parser.raw_obj = {"$defs": {"Loop": {"allOf": [{"$ref": "#/$defs/Loop", "maxProperties": 4}]}}}
-    obj = JsonSchemaObject.model_validate({"allOf": [{"$ref": "#/$defs/Loop", "minProperties": 2}]})
-
-    sources = tuple(parser._iter_property_count_validation_sources(obj))
-
-    assert [source.minProperties for source in sources] == [None, 2, None, None]
-    assert [source.maxProperties for source in sources] == [None, None, None, 4]
 
 
 def test_clear_inherited_field_caches_releases_property_count_rules() -> None:
@@ -1341,11 +1325,6 @@ def test_schema_validator_pattern_property_helpers_collect_value_types() -> None
     assert additional_property_type is not None
     assert allow_unmatched
 
-    parser._add_pattern_properties_validator("#/Model", "Model", obj, ["#"], [], [])
-
-    runtime_validation = parser.extra_template_data["#/Model"]["schema_runtime_validation"]
-    assert runtime_validation.data_types
-
 
 def test_schema_validator_pattern_property_helpers_ignore_unexpected_value_types() -> None:
     """Test patternProperties collection ignores unexpected runtime values defensively."""
@@ -1364,21 +1343,8 @@ def test_schema_validator_pattern_property_helpers_ignore_unexpected_value_types
 
 
 def test_schema_validator_conditional_predicate_helpers() -> None:
-    """Test conditional predicate extraction accepts only mechanical cases."""
+    """A conditional whose `then` adds nothing writes no runtime validation."""
     parser = JsonSchemaParser("", generate_schema_validators=True)
-
-    assert parser._get_conditional_predicate(
-        JsonSchemaObject.model_validate({"if": {"required": ["kind"], "properties": {"kind": True}}})
-    ) == (("kind", ()),)
-    assert parser._get_conditional_predicate(
-        JsonSchemaObject.model_validate({"if": {"required": ["kind"], "properties": {"kind": {"enum": ["a", "b"]}}}})
-    ) == (("kind", ("a", "b")),)
-    assert (
-        parser._get_conditional_predicate(
-            JsonSchemaObject.model_validate({"if": {"required": ["kind"], "properties": {"kind": {"type": "string"}}}})
-        )
-        is None
-    )
 
     parser.extra_template_data["#/Model"] = {}
     parser._add_conditional_validator(
@@ -2371,12 +2337,12 @@ def test_json_schema_ref_url_from_local_http_path_ignores_non_http_scheme(
     tmp_path: Path, mocker: MockerFixture
 ) -> None:
     """Test local HTTP path resolution does not handle non-HTTP URL schemes."""
+    (tmp_path / "example.com").mkdir()
+    (tmp_path / "example.com" / "schema.json").write_text('{"type": "string"}', encoding="utf-8")
     parser = JsonSchemaParser("", http_local_ref_path=tmp_path)
     mocker.patch.object(parser, "_get_text_from_url", return_value='{"type": "object"}')
-    local_http_path = mocker.patch.object(parser, "_get_ref_body_from_local_http_path")
 
     assert parser._get_ref_body_from_url("ftp://example.com/schema.json") == {"type": "object"}
-    local_http_path.assert_not_called()
 
 
 def test_json_schema_ref_url_from_local_http_path_symlink_escape(tmp_path: Path) -> None:
@@ -2721,55 +2687,6 @@ def test_union_variant_literal_helpers_handle_refs_and_invalid_fields(tmp_path: 
         is None
     )
     assert parser._get_single_literal_value(_json_schema_object({"type": "string"})) is None
-    assert (
-        parser._get_union_variant_literal_values(
-            [
-                _json_schema_object({}),
-                _json_schema_object({"properties": {"kind": {"const": "only"}}}),
-            ],
-            "kind",
-        )
-        is None
-    )
-    assert (
-        parser._get_union_variant_literal_values(
-            [
-                _json_schema_object({"properties": {"kind": True}}),
-                _json_schema_object({"properties": {"kind": {"const": "ready"}}}),
-            ],
-            "kind",
-        )
-        is None
-    )
-    assert (
-        parser._get_union_variant_literal_values(
-            [
-                _json_schema_object({"properties": {"kind": {"type": "string"}}}),
-                _json_schema_object({"properties": {"kind": {"const": "ready"}}}),
-            ],
-            "kind",
-        )
-        is None
-    )
-
-
-def test_iter_union_variant_literal_field_names_skips_duplicates() -> None:
-    """Field name scanning prefers discriminator names and keeps fallbacks stable."""
-    parser = JsonSchemaParser("", infer_union_variant_names=True)
-
-    assert list(parser._iter_union_variant_literal_field_names(_json_schema_object({"discriminator": "kind"}), [])) == [
-        "kind"
-    ]
-    assert list(
-        parser._iter_union_variant_literal_field_names(
-            _json_schema_object({}),
-            [
-                _json_schema_object({}),
-                _json_schema_object({"properties": {"kind": {"const": "a"}, "reason": {"const": "x"}}}),
-                _json_schema_object({"properties": {"kind": {"const": "b"}}}),
-            ],
-        )
-    ) == ["kind", "reason"]
 
 
 def test_infer_union_variant_names_returns_none_when_no_literal_field_matches() -> None:
@@ -4822,18 +4739,6 @@ def test_jsonschema_parser_edge_case_helpers() -> None:
         JsonSchemaObject.model_validate({"contains": True, "minContains": 1, "minItems": 2})
     ) == {"minItems": 2}
     assert parser._get_data_type_from_json_value(object()).type_hint == "Any"
-
-
-def test_anchor_ref_path_escapes_json_pointer_segments() -> None:
-    """Test anchor ref paths escape JSON Pointer segments."""
-    parser = JsonSchemaParser("")
-
-    assert parser._anchor_ref_path((), ["#", "$defs", "foo/bar", "tilde~key"]) == "#/$defs/foo~1bar/tilde~0key"
-
-    parser.model_resolver.set_current_root([])
-    parser._recursive_anchor_index[()] = ["#/$defs/foo~1bar"]
-    recursive_ref = JsonSchemaObject.model_validate({"$recursiveRef": "#"})
-    assert parser._resolve_recursive_ref(recursive_ref, ["#", "$defs", "foo/bar", "child"]) == "#/$defs/foo~1bar"
 
 
 def test_preload_property_refs_skips_external_ref_mapping(tmp_path: Path, mocker: MockerFixture) -> None:

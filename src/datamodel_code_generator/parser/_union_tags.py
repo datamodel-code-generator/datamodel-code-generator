@@ -107,21 +107,6 @@ class UnionTagsHost(Protocol):
     ) -> JsonSchemaLiteral | None:
         """Return the one value a property schema admits as a tag (``get_single_literal_value``)."""
 
-    def _get_union_variant_literal_values(
-        self,
-        combined_schemas: Sequence[JsonSchemaObject],
-        field_name: str,
-        tag_keys: Mapping[int, str] | None = None,
-    ) -> dict[int, JsonSchemaLiteral] | None:
-        """Return each property branch's distinct literal for a field (``get_union_variant_literal_values``)."""
-
-    def _iter_union_variant_literal_field_names(
-        self,
-        obj: JsonSchemaObject,
-        combined_schemas: Sequence[JsonSchemaObject],
-    ) -> Iterator[str]:
-        """Yield the fields that may tag the branches (``iter_union_variant_literal_field_names``)."""
-
     def parse_item(
         self,
         name: str,
@@ -368,10 +353,10 @@ def infer_union_variant_literal_names(  # noqa: PLR0913, PLR0917
     skipped_fields: Container[str] = (),
 ) -> list[str | None] | None:
     """Name the branches after the first field not in `skipped_fields` whose literals give distinct names."""
-    for field_name in parser._iter_union_variant_literal_field_names(obj, combined_schemas):  # noqa: SLF001
+    for field_name in iter_union_variant_literal_field_names(parser, obj, combined_schemas):
         if field_name in skipped_fields:
             continue
-        values = parser._get_union_variant_literal_values(combined_schemas, field_name, tag_keys)  # noqa: SLF001
+        values = get_union_variant_literal_values(parser, combined_schemas, field_name, tag_keys)
         if values is None:
             continue
         variant_names: list[str | None] = [None] * len(combined_schemas)
@@ -430,9 +415,9 @@ def get_tagged_union_field_values(
         parser._load_ref_schema_object(item.ref) if item.ref and parser._is_local_ref(item.ref) else item  # noqa: SLF001
         for item in combined_schemas
     ]
-    for field_name in parser._iter_union_variant_literal_field_names(obj, discriminator_schemas):  # noqa: SLF001
+    for field_name in iter_union_variant_literal_field_names(parser, obj, discriminator_schemas):
         if (
-            literal_values := parser._get_union_variant_literal_values(discriminator_schemas, field_name)  # noqa: SLF001
+            literal_values := get_union_variant_literal_values(parser, discriminator_schemas, field_name)
         ) is not None and (
             tag_values := union_tag_values(
                 literal_values,
