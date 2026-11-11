@@ -5215,6 +5215,34 @@
   "nullable-parameters": {
     "input": "nullable-parameters.yaml"
   },
+  "nullable-required-parameters": {
+    "input": "nullable-required-parameters.yaml",
+    "model": {
+      "strict_nullable": true
+    }
+  },
+  "nullable-required-parameters-unpack": {
+    "input": "nullable-required-parameters.yaml",
+    "model": {
+      "strict_nullable": true
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "client_arguments.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ],
+    "config": {
+      "signature_style": "unpack"
+    }
+  },
   "parameter-kinds": {
     "input": "parameter-kinds.yaml"
   },
