@@ -12,7 +12,7 @@ import math
 import re
 from functools import partial
 from itertools import chain
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, cast
 
 from typing_extensions import Protocol
 
@@ -38,6 +38,7 @@ from datamodel_code_generator.model.runtime_validation import (
     UniqueItemsRule,
     _is_internal_schema_runtime_validation,
 )
+from datamodel_code_generator.parser import _schema_refs
 from datamodel_code_generator.parser._intersection import (
     INTERSECTED_KEYWORDS,
     bounds_admit_no_value,
@@ -59,12 +60,13 @@ from datamodel_code_generator.parser._schema_reading import (
     _json_value_admitted,
     _schema_dump,
 )
+from datamodel_code_generator.parser._schema_refs import SchemaRefsHost
 from datamodel_code_generator.parser.base import get_special_path
 from datamodel_code_generator.types import DataType, Types
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Iterable, Iterator, Mapping, Sequence
 
     from typing_extensions import TypeIs
 
@@ -73,7 +75,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model.runtime_validation import UniqueItemsPath, UniqueItemsPathStep
     from datamodel_code_generator.parser._schema_graph import _TargetNode
     from datamodel_code_generator.parser.schema_version import JsonSchemaFeatures
-    from datamodel_code_generator.reference import ModelResolver, Reference, SchemaLocation
+    from datamodel_code_generator.reference import Reference, SchemaLocation
     from datamodel_code_generator.types import DataTypeManager
 
 __all__ = [
@@ -125,21 +127,16 @@ __all__ = [
     "unique_items_path_container_type",
 ]
 
-_ValidatedT = TypeVar("_ValidatedT")
 
-
-class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPythonVersionHost, Protocol):
+class SchemaValidatorsHost(
+    SchemaRefsHost, CollapseRootModelsHost, DataModelTypeHost, TargetPythonVersionHost, Protocol
+):
     """The members of ``JsonSchemaParser`` the schema validator rules read: options, state and the methods they call."""
 
     CONDITIONAL_SCHEMA_ALLOWED_FIELDS: ClassVar[frozenset[str]]
     REQUIRED_ONLY_SCHEMA_ALLOWED_FIELDS: ClassVar[frozenset[str]]
-    SCHEMA_OBJECT_TYPE: ClassVar[type[JsonSchemaObject]]
     _pattern_validation_document_root: JsonSchemaObject | None
     _root_pattern_string_constraints: JsonSchemaObject | None
-
-    @property
-    def config(self) -> JSONSchemaParserConfig:
-        """The configuration of the parser."""
 
     @property
     def data_type_manager(self) -> DataTypeManager:
@@ -152,14 +149,6 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
     @property
     def force_optional_for_required_fields(self) -> bool:
         """Whether required fields are generated as optional."""
-
-    @property
-    def generate_schema_validators(self) -> bool:
-        """Whether the models validate the schema rules their fields cannot express."""
-
-    @property
-    def model_resolver(self) -> ModelResolver:
-        """The resolver of the references and class names of the parse."""
 
     @property
     def _legacy_object_maps(self) -> frozenset[str]:
@@ -317,12 +306,6 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
     ) -> Iterator[UniqueItemsRule]:
         """Yield compact uniqueItems rules required by all applicable union branches."""
 
-    def _key_node(self, resolved_ref: str) -> _TargetNode:
-        """Return the schema graph node at a reference key, or the key when the graph does not locate its value."""
-
-    def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
-        """Load a JsonSchemaObject from a $ref using standard resolve/load pipeline."""
-
     def _parse_additional_properties_value(
         self,
         name: str,
@@ -347,9 +330,6 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
     ) -> bool:
         """Return whether the keywords beside the ``$ref`` of ``schema`` apply with it (``parser/jsonschema.py``)."""
 
-    def _ref_path(self, ref: str) -> str:
-        """Return the reference key a reference names: its edge's key, or a plain string's ``resolve_ref``."""
-
     def _required_group_input_names(
         self,
         groups: Sequence[Sequence[str]],
@@ -368,14 +348,8 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
     def _schema_literal_values(self, obj: JsonSchemaObject) -> tuple[object, ...] | None:
         """Return direct const/enum values after their JSON Schema intersection."""
 
-    def _schema_object(self, raw: object) -> JsonSchemaObject:
-        """Validate a raw or dumped schema as ``SCHEMA_OBJECT_TYPE`` in the parser's validation context."""
-
     def _schema_runtime_validation(self, reference_path: str) -> SchemaRuntimeValidation:
         """Return the runtime validation rules of ``reference_path``, created on first use."""
-
-    def _shared_object(self, raw: object, kind: type[_ValidatedT], validate: Callable[[], _ValidatedT]) -> _ValidatedT:
-        """Return the ``kind`` object a value of a loaded document validates to, validated once by the schema graph."""
 
     def _unique_items_path_container_type(
         self,
@@ -579,7 +553,7 @@ def get_conditional_schema(
     if isinstance(item, (JsonSchemaObject, bool)):
         return item
     if isinstance(item, dict):
-        return parser._shared_object(item, parser.SCHEMA_OBJECT_TYPE, partial(parser._schema_object, item))  # noqa: SLF001
+        return _schema_refs.shared_object(parser, item, parser.SCHEMA_OBJECT_TYPE, partial(parser._schema_object, item))  # noqa: SLF001
     return None
 
 
@@ -820,8 +794,8 @@ def iter_scoped_schema_validation_sources(
                     )
             if not include_references:
                 continue
-            resolved_ref = parser._ref_path(item.ref)  # noqa: SLF001
-            if (node := parser._key_node(resolved_ref)) in visited_refs:  # noqa: SLF001
+            resolved_ref = _schema_refs.ref_path(parser, item.ref)
+            if (node := _schema_refs.key_node(parser, resolved_ref)) in visited_refs:
                 continue
             file_part = resolved_ref.split("#", 1)[0]
             root_file = parser.model_resolver.resolve_ref("#").split("#", 1)[0]
@@ -873,7 +847,7 @@ def schema_may_accept_container(
     if obj.is_boolean_schema_false:
         return False
     if obj.ref:
-        node = parser._key_node(parser._ref_path(obj.ref))  # noqa: SLF001
+        node = _schema_refs.key_node(parser, _schema_refs.ref_path(parser, obj.ref))
         accepts = node in visited_refs or schema_may_accept_container(
             parser,
             parser._load_ref_schema_object(obj.ref),  # noqa: SLF001

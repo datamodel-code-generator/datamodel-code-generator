@@ -17,6 +17,7 @@ from datamodel_code_generator.parser._naming import Composed, composed_name
 from datamodel_code_generator.parser._origins import with_field_origin, with_type_origin
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _object_map_other_types, _with_ref_siblings
+from datamodel_code_generator.parser._schema_refs import SchemaRefsHost
 from datamodel_code_generator.parser.base import get_special_path
 from datamodel_code_generator.reference import unique_items_of
 from datamodel_code_generator.types import ANY, Types, build_union
@@ -31,7 +32,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model.output import OutputModelContext
     from datamodel_code_generator.parser._naming import Claim, NamingScope
     from datamodel_code_generator.parser._null_facts import NullFacts, NullSite
-    from datamodel_code_generator.reference import ModelResolver, Reference
+    from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataType, DataTypeManager
 
 __all__ = [
@@ -57,7 +58,7 @@ __all__ = [
 _ALL_OF_METADATA_FIELDS = ("nullable", "description", "default", "example", "examples", "readOnly", "writeOnly")
 
 
-class ObjectMapsHost(Protocol):
+class ObjectMapsHost(SchemaRefsHost, Protocol):
     """The options, run state and hooks of the parser that the object maps read and write."""
 
     typed_nullable_maps: bool
@@ -90,10 +91,6 @@ class ObjectMapsHost(Protocol):
     @property
     def field_constraints(self) -> bool:
         """Whether constraints are written on fields (``--field-constraints``)."""
-
-    @property
-    def model_resolver(self) -> ModelResolver:
-        """The resolver of references and class names."""
 
     @property
     def target_pydantic_version(self) -> TargetPydanticVersion | None:
@@ -129,9 +126,6 @@ class ObjectMapsHost(Protocol):
     @staticmethod
     def _property_names_forbids_all_keys(property_names: JsonSchemaObject | bool | None) -> bool:  # noqa: FBT001
         """Return whether a propertyNames schema admits no key."""
-
-    def get_ref_data_type(self, ref: str) -> DataType:
-        """Return the data type a reference names."""
 
     def get_object_field(  # noqa: PLR0913
         self,
@@ -186,14 +180,8 @@ class ObjectMapsHost(Protocol):
     ) -> Iterator[DataType]:
         """Yield the types of a type array other than object, keeping their constraints with ``keep_constraints``."""
 
-    def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
-        """Return the schema object a reference names."""
-
     def _merge_primitive_schemas_for_allof(self, items: list[JsonSchemaObject]) -> JsonSchemaObject | None:
         """Return the one primitive schema the parts of an allOf merge into, if they merge."""
-
-    def _merge_ref_with_schema(self, obj: JsonSchemaObject, where: str | None = None) -> JsonSchemaObject:
-        """Return the schema a ``$ref`` names merged with the sibling keywords of the reference."""
 
     def _null_facts(self, obj: JsonSchemaObject, site: NullSite) -> NullFacts:
         """Return the null facts of a schema at a site."""
@@ -221,9 +209,6 @@ class ObjectMapsHost(Protocol):
 
     def _schema_has_own_value_keywords(self, schema: JsonSchemaObject) -> bool:
         """Return whether a schema has value keywords of its own."""
-
-    def _schema_object(self, raw: object) -> JsonSchemaObject:
-        """Validate a raw schema into a schema object."""
 
     def _schema_requires_model_type(self, item: JsonSchemaObject) -> bool:
         """Return whether a schema needs a model type."""

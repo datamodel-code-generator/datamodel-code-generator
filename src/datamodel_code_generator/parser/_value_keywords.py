@@ -12,7 +12,7 @@ from functools import partial
 from itertools import compress
 from math import isfinite
 from operator import and_
-from typing import TYPE_CHECKING, Any, ClassVar, Final, cast
+from typing import TYPE_CHECKING, Any, Final, cast
 from warnings import warn
 
 from typing_extensions import Protocol
@@ -46,6 +46,7 @@ from datamodel_code_generator.imports import IMPORT_ANY, _import_path
 from datamodel_code_generator.model._decisions.enum_kind import enum_as_literal, is_literal_kind, literal_value_kind
 from datamodel_code_generator.model._decisions.literal_default import const_type
 from datamodel_code_generator.model.base import ConstraintsBase
+from datamodel_code_generator.parser import _schema_refs
 from datamodel_code_generator.parser._intersection import (
     declared_positional_tail,
     declared_types,
@@ -60,6 +61,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _object_map_other_types,
     _schema_dump,
 )
+from datamodel_code_generator.parser._schema_refs import SchemaRefsHost
 from datamodel_code_generator.parser.base import _TYPE_DEPENDENT_CONSTRAINTS_KEY
 from datamodel_code_generator.types import ANY, Types, _is_plain_none, _is_value_literal
 
@@ -76,7 +78,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._null_facts import NullFacts, NullSite
     from datamodel_code_generator.parser._schema_object import JsonSchemaLiteral
     from datamodel_code_generator.parser.generation import GraphBuilder
-    from datamodel_code_generator.reference import ModelResolver
     from datamodel_code_generator.types import DataType, DataTypeManager
 
 __all__ = [
@@ -279,10 +280,8 @@ class ArrayBoundsHost(Protocol):
         """Return array length constraints derived from boolean items."""
 
 
-class ValueKeywordsHost(Protocol):
+class ValueKeywordsHost(SchemaRefsHost, Protocol):
     """The options, run state and hooks of the parser that the value keywords read."""
-
-    SCHEMA_OBJECT_TYPE: ClassVar[type[JsonSchemaObject]]
 
     @property
     def checks_literal_values(self) -> bool:
@@ -311,10 +310,6 @@ class ValueKeywordsHost(Protocol):
     @property
     def field_constraints(self) -> bool:
         """Whether constraints are written on fields (``--field-constraints``)."""
-
-    @property
-    def model_resolver(self) -> ModelResolver:
-        """The resolver of references and class names."""
 
     @property
     def read_const_beside_enum(self) -> bool:
@@ -372,10 +367,6 @@ class ValueKeywordsHost(Protocol):
     def _type_override_imports(self) -> dict[str, Import]:
         """The imports of the scoped type overrides."""
 
-    @classmethod
-    def _get_array_items_constraints(cls, obj: JsonSchemaObject) -> dict[str, int]:
-        """Return array length constraints derived from boolean items."""
-
     @staticmethod
     def _property_names_forbids_all_keys(property_names: JsonSchemaObject | bool | None) -> bool:  # noqa: FBT001
         """Return whether a propertyNames schema rejects every JSON object key."""
@@ -406,14 +397,8 @@ class ValueKeywordsHost(Protocol):
     def _reads_enum(self, obj: JsonSchemaObject) -> bool:
         """Return whether the run reads the enum of a schema: it has one and --ignore-enum-constraints is off."""
 
-    def _ref_path(self, ref: str) -> str:
-        """Return the reference key a reference names: its edge's key, or a plain string's ``resolve_ref``."""
-
     def _ref_schema_exists(self, resolved_ref: str) -> bool:
         """Return whether a resolved JSON pointer identifies a source schema."""
-
-    def _resolve_external_ref_mapping(self, ref: str) -> tuple[str, str] | None:
-        """Return the package and fragment ``--external-ref-mapping`` maps a reference to, if any."""
 
 
 def should_parse_enum_as_literal(
@@ -1194,7 +1179,7 @@ def get_position_validation_keywords(
         target = parser._load_inherited_schema_object(ref)  # noqa: SLF001
         keywords = _validation_keywords(
             False if target.is_boolean_schema_false else target.model_dump(exclude_unset=True, by_alias=True),
-            parser._ref_path,  # noqa: SLF001
+            partial(_schema_refs.ref_path, parser),
         )
     return keywords
 

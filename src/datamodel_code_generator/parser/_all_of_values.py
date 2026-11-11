@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 from functools import partial, reduce
 from itertools import chain, islice
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
 
 from typing_extensions import Protocol
 
@@ -30,6 +30,7 @@ from datamodel_code_generator._regex_syntax import is_portable_pattern
 from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator.model._decisions.enum_kind import holds_inherited_member_value, holds_member_value
 from datamodel_code_generator.model.enum import Enum, enum_value_base
+from datamodel_code_generator.parser import _schema_refs
 from datamodel_code_generator.parser._intersection import (
     BRANCH_COMBINATION_LIMIT,
     all_of_member_row,
@@ -62,6 +63,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _schema_dump,
     _with_ref_siblings,
 )
+from datamodel_code_generator.parser._schema_refs import SchemaRefsHost
 from datamodel_code_generator.reference import Reference, _is_special_path
 
 if TYPE_CHECKING:
@@ -69,21 +71,17 @@ if TYPE_CHECKING:
     from contextlib import AbstractContextManager
 
     from datamodel_code_generator._format_types import PythonVersion
-    from datamodel_code_generator._source import YamlValue
-    from datamodel_code_generator.config import JSONSchemaParserConfig
     from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.model import DataModel, DataModelFieldBase
     from datamodel_code_generator.model.output import OutputModelContext
-    from datamodel_code_generator.parser._intersection import KeywordIntersection
     from datamodel_code_generator.parser._null_facts import NullFacts, NullMode, NullSite, NullSources
-    from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder, _TargetNode
+    from datamodel_code_generator.parser._schema_graph import _TargetNode
     from datamodel_code_generator.parser.schema_version import JsonSchemaFeatures
     from datamodel_code_generator.reference import SchemaLocation
     from datamodel_code_generator.types import DataType, Types
 
 __all__ = [
     "AllOfValuesHost",
-    "SchemaRefReader",
     "all_of_enum_site_schema",
     "all_of_pattern_conjunction",
     "all_of_reference_value_schema",
@@ -235,10 +233,9 @@ _PATTERN_SCAN_SKIPPED_KEYWORDS: Final = INSTANCE_DATA_KEYWORDS | {"patternProper
 """The keywords whose values hold no subschema a type carries; ``patternProperties`` counts by its keys and values."""
 
 
-class AllOfValuesHost(Protocol):
+class AllOfValuesHost(SchemaRefsHost, Protocol):
     """The options, run state and hooks of the parser that the allOf value merging reads."""
 
-    SCHEMA_OBJECT_TYPE: ClassVar[type[JsonSchemaObject]]
     _all_of_root_value_ref_stack: set[tuple[_TargetNode, ...]] | None
 
     @property
@@ -254,10 +251,6 @@ class AllOfValuesHost(Protocol):
         """Whether root models are collapsed into their users."""
 
     @property
-    def config(self) -> JSONSchemaParserConfig:
-        """The configuration of the parser."""
-
-    @property
     def data_model_field_type(self) -> type[DataModelFieldBase]:
         """The field type of the output."""
 
@@ -268,10 +261,6 @@ class AllOfValuesHost(Protocol):
     @property
     def field_constraints(self) -> bool:
         """Whether constraints are written on fields (``--field-constraints``)."""
-
-    @property
-    def generate_schema_validators(self) -> bool:
-        """Whether the models validate the schema rules their fields cannot express."""
 
     @property
     def target_pydantic_version(self) -> TargetPydanticVersion | None:
@@ -290,10 +279,6 @@ class AllOfValuesHost(Protocol):
         """The data format mappings of this parser type."""
 
     @property
-    def _legacy_intersection(self) -> frozenset[str]:
-        """The rows of ``parser/_intersection.py:LEGACY_ROWS`` kept: those of each of its options that is off."""
-
-    @property
     def _null_mode(self) -> NullMode:
         """The options that change how parse sites read null (``parser/_null_facts.py``)."""
 
@@ -304,13 +289,6 @@ class AllOfValuesHost(Protocol):
     @property
     def _root_validates_literals(self) -> bool:
         """Whether the root model class validates the literal values of a root (``add_literal_validation``)."""
-
-    @property
-    def _schema_graph(self) -> SchemaGraphBuilder | None:
-        """The schema graph of the parse, once it is built."""
-
-    def get_ref_data_type(self, ref: str) -> DataType:
-        """Return the data type a reference names."""
 
     def parse_root_type(
         self,
@@ -398,14 +376,8 @@ class AllOfValuesHost(Protocol):
     ) -> Iterator[JsonSchemaObject]:
         """Yield the schema and its allOf sources, without the document each was read from."""
 
-    def _key_node(self, resolved_ref: str) -> _TargetNode:
-        """Return the schema graph node at a reference key, or the key when the graph does not locate its value."""
-
     def _load_inherited_schema_object(self, resolved_ref: str) -> JsonSchemaObject:
         """Load and cache a schema used only for inherited field inspection."""
-
-    def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
-        """Return the schema object a reference names."""
 
     def _merge_all_of_root_validation_keywords(self, merged: dict[str, Any], sources: list[JsonSchemaObject]) -> None:
         """Preserve literal and item intersections while materializing a value reference."""
@@ -415,18 +387,6 @@ class AllOfValuesHost(Protocol):
 
     def _merge_primitive_schemas_for_allof(self, items: list[JsonSchemaObject]) -> JsonSchemaObject | None:
         """Return the one primitive schema the parts of an allOf merge into, if they merge."""
-
-    def _merge_ref_with_schema(self, obj: JsonSchemaObject, where: str | None = None) -> JsonSchemaObject:
-        """Return the schema a ``$ref`` names merged with the sibling keywords of the reference."""
-
-    def _merge_schema_constraints(
-        self,
-        base_dict: dict[str, Any],
-        items: list[JsonSchemaObject],
-        *,
-        intersect: bool,
-    ) -> None:
-        """Merge the constraints of ``items`` into ``base_dict``, intersecting them when ``intersect`` is set."""
 
     def _merge_value_schemas(self, schemas: list[JsonSchemaObject]) -> JsonSchemaObject | None:
         """Merge schemas that constrain one value, unless their types, formats or literals disagree."""
@@ -457,9 +417,6 @@ class AllOfValuesHost(Protocol):
     def _reads_enum_as_const(self, obj: JsonSchemaObject) -> bool:
         """Return whether --use-single-value-enum-as-const reads an enum admitting the const beside it as that const."""
 
-    def _ref_path(self, ref: str) -> str:
-        """Return the reference key a reference names."""
-
     def _ref_siblings_apply_to(
         self, schema: JsonSchemaObject, *, legacy: Literal["first-read", "parsed-document", "as-written"]
     ) -> bool:
@@ -470,9 +427,6 @@ class AllOfValuesHost(Protocol):
 
     def _schema_literal_values(self, obj: JsonSchemaObject) -> tuple[object, ...] | None:
         """Return direct const/enum values after their JSON Schema intersection."""
-
-    def _schema_object(self, raw: object) -> JsonSchemaObject:
-        """Validate a raw schema into a schema object."""
 
     def _temporarily_enable_field_constraints(self) -> AbstractContextManager[None]:
         """Render an internal annotated alias with Field constraints without bypassing parser hooks."""
@@ -487,16 +441,6 @@ class AllOfValuesHost(Protocol):
         self, ref: str, visited_refs: frozenset[_TargetNode]
     ) -> tuple[JsonSchemaObject, frozenset[_TargetNode]] | None:
         """Return the schema ``ref`` names with ``visited_refs`` and its node, or None when its node was visited."""
-
-    def _validate_schema_object(
-        self,
-        raw: dict[str, YamlValue] | YamlValue,
-        path: list[str],
-    ) -> JsonSchemaObject:
-        """Validate raw data as JsonSchemaObject with path context in errors; a too deep nesting stops the parse."""
-
-    def _warn_intersection(self, where: str, intersection: KeywordIntersection, *parts: str) -> None:
-        """Warn about the keywords of an intersection whose parts have no value in common, and its untaken patterns."""
 
 
 def schema_requires_model_type(
@@ -1229,7 +1173,7 @@ def merge_all_of_root_value_nodes(
     if False in nodes:
         return False
     references = tuple(
-        parser._key_node(parser._ref_path(node.ref))  # noqa: SLF001
+        _schema_refs.key_node(parser, _schema_refs.ref_path(parser, node.ref))
         for node in nodes
         if isinstance(node, JsonSchemaObject) and node.ref
     )
@@ -1568,17 +1512,7 @@ def unsatisfiable_value_keywords(parser: AllOfValuesHost, parts: Sequence[JsonSc
     return _intersect_parts(parser, dumps, row).unsatisfiable
 
 
-class SchemaRefReader(Protocol):
-    """The reads of a ``$ref`` that ``holds_union_member`` makes: its reference key and the schema it names."""
-
-    def _ref_path(self, ref: str) -> str:
-        """Return the reference key a reference names."""
-
-    def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
-        """Load the schema a reference names."""
-
-
-def holds_union_member(parser: SchemaRefReader, schema: JsonSchemaObject, seen: frozenset[str] = frozenset()) -> bool:
+def holds_union_member(parser: SchemaRefsHost, schema: JsonSchemaObject, seen: frozenset[str] = frozenset()) -> bool:
     """Return whether an allOf member of ``schema`` holds an ``anyOf`` or ``oneOf``, also through its allOf members.
 
     A ``$ref`` member holds what the schema it names holds; a reference the walk has passed holds nothing.
@@ -1588,7 +1522,7 @@ def holds_union_member(parser: SchemaRefReader, schema: JsonSchemaObject, seen: 
         while isinstance(target, JsonSchemaObject):
             if target.anyOf or target.oneOf or holds_union_member(parser, target, seen):
                 return True
-            if not target.ref or (path := parser._ref_path(target.ref)) in seen:  # noqa: SLF001
+            if not target.ref or (path := _schema_refs.ref_path(parser, target.ref)) in seen:
                 break
             seen |= {path}
             target = parser._load_ref_schema_object(target.ref)  # noqa: SLF001

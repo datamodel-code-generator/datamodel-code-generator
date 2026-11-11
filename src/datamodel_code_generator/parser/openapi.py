@@ -885,8 +885,8 @@ class OpenAPIParser(JsonSchemaParser):
 
     def _validated_target(self, raw: object, object_type: type[BaseModelT]) -> BaseModelT:
         """Return the ``object_type`` a value of a loaded document validates to, validated once and shared."""
-        return self._shared_object(
-            raw, object_type, partial(self._validated_object, raw, object_type, [], self._raw_location(raw))
+        return _schema_refs.shared_object(
+            self, raw, object_type, partial(self._validated_object, raw, object_type, [], self._raw_location(raw))
         )
 
     def _validated_object(

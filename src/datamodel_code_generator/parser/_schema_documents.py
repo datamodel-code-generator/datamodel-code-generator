@@ -243,11 +243,17 @@ class DocumentNamesHost(Protocol):
 class SchemaResourcesHost(DocumentNamesHost, Protocol):
     """What resolving a reference by the schema resources and definitions of loaded documents reads of the parser."""
 
+    SCHEMA_OBJECT_TYPE: ClassVar[type[JsonSchemaObject]]
+    _named_entry_maps: ClassVar[frozenset[str]]
     allow_remote_refs: bool | None
+    raw_obj: dict[str, YamlValue]
+    _document_roles: dict[str, dict[str, None]]
+    _has_embedded_schema_resources: bool
     _implicit_documents: set[str]
     _lenient_documents: dict[str, dict[str, Any]]
     _resource_ref_warnings: set[str]
     _schema_resource_path_parts: dict[str, list[str]]
+    _schema_resource_cache: dict[str, tuple[dict[str, Any], dict[str, Any]]]
     _schema_resource_registry: ResourceRegistry
 
     @property
@@ -257,6 +263,13 @@ class SchemaResourcesHost(DocumentNamesHost, Protocol):
     @property
     def _pointer_slash_names(self) -> SlashNames:
         """How a JSON pointer reads a ``/`` unescaped inside a name (``SlashNames``)."""
+
+    @property
+    def _schema_graph(self) -> SchemaGraphBuilder | None:
+        """The schema graph of the parse, once it is built."""
+
+    def _get_ref_body(self, resolved_ref: str) -> dict[str, YamlValue]:
+        """Get the body of a reference from URL or remote file."""
 
     def _has_schema_affecting_keywords(self, raw: dict[str, Any]) -> bool:
         """Return whether a raw schema sets a keyword that changes the schema, not only its metadata."""
@@ -274,11 +287,9 @@ class SchemaResourcesHost(DocumentNamesHost, Protocol):
 class SchemaDocumentsHost(SchemaResourcesHost, Protocol):
     """The options, caches and hooks of the parser that the document reading reads."""
 
-    SCHEMA_OBJECT_TYPE: ClassVar[type[JsonSchemaObject]]
     _cache_local_sources_during_parse: ClassVar[bool]
     _component_schemas_are_resources: ClassVar[bool]
     _input_file_type: ClassVar[InputFileType]
-    _named_entry_maps: ClassVar[frozenset[str]]
     _non_dict_source_is_invalid: ClassVar[bool]
     class_name: str | None
     current_source_path: Path | None
@@ -287,20 +298,16 @@ class SchemaDocumentsHost(SchemaResourcesHost, Protocol):
     http_headers: Sequence[tuple[str, str]] | None
     http_local_ref_path: Path | None
     http_query_parameters: Sequence[tuple[str, str]] | None
-    raw_obj: dict[str, YamlValue]
     remote_object_cache: DefaultPutDict[str, dict[str, YamlValue]]
     reserved_refs: defaultdict[tuple[str, ...], set[str]]
     source: str | Path | list[Path] | ParseResult | dict[str, YamlValue]
     _cache_local_sources: bool
     _document_dialects: dict[str, DocumentDialect]
     _referring_dialect: DocumentDialect | None
-    _document_roles: dict[str, dict[str, None]]
     _documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]]
-    _has_embedded_schema_resources: bool
     _loads_only_used_references: bool
     _local_source_cache: tuple[Source, ...] | None
     _remote_response_observer: ResponseObserver | None
-    _schema_resource_cache: dict[str, tuple[dict[str, Any], dict[str, Any]]]
     _source_context: ParserSourceContext
 
     @property
@@ -319,16 +326,9 @@ class SchemaDocumentsHost(SchemaResourcesHost, Protocol):
     def use_single_value_enum_as_const(self) -> bool:
         """Whether a single-value enum is read as a const (``--use-single-value-enum-as-const``)."""
 
-    @property
-    def _schema_graph(self) -> SchemaGraphBuilder | None:
-        """The schema graph of the parse, once it is built."""
-
     @classmethod
     def get_url_path_parts(cls, url: ParseResult) -> list[str]:
         """Split URL into scheme/host and path components."""
-
-    def _get_ref_body(self, resolved_ref: str) -> dict[str, YamlValue]:
-        """Get the body of a reference from URL or remote file."""
 
     def _index_document(self, raw: dict[str, Any], path_parts: list[str]) -> dict[str, Any]:
         """Return a loaded document as a tree whose JSON objects the schema graph locates (L0)."""

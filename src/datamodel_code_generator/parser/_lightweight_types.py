@@ -18,6 +18,7 @@ from typing_extensions import Protocol
 from datamodel_code_generator._constraint_applicability import NUMBER_KEYWORD_ORDER
 from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator.imports import IMPORT_ANY
+from datamodel_code_generator.parser import _schema_refs
 from datamodel_code_generator.parser._intersection import (
     intersect_constraint,
     intersect_multiple_of,
@@ -26,6 +27,7 @@ from datamodel_code_generator.parser._intersection import (
 from datamodel_code_generator.parser._origins import with_unique_items
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _numeric_type_domain
+from datamodel_code_generator.parser._schema_refs import SchemaRefsHost
 from datamodel_code_generator.types import ANY, DataType, UnionIntFloat, build_union
 
 if TYPE_CHECKING:
@@ -51,7 +53,7 @@ _ALL_OF_MEMBER_SUFFIX: Final = re.compile(r"/allOf/\d+$")
 """The end of an allOf member's location, which a warning about the site leaves out."""
 
 
-class LightweightTypesHost(Protocol):
+class LightweightTypesHost(SchemaRefsHost, Protocol):
     """The options and hooks of the parser that the lightweight types read."""
 
     @property
@@ -62,9 +64,6 @@ class LightweightTypesHost(Protocol):
     def data_type(self) -> type[DataType]:
         """The data type class of the output."""
 
-    def _schema_object(self, raw: object) -> JsonSchemaObject:
-        """Validate a raw or dumped schema as the parser's schema object type."""
-
     def _conjoined_pattern(self, patterns: Sequence[str], where: str) -> str:
         """Return the conjoined pattern, warning about the patterns it leaves out."""
 
@@ -74,15 +73,6 @@ class LightweightTypesHost(Protocol):
 
     def _merge_primitive_schemas(self, items: list[JsonSchemaObject]) -> JsonSchemaObject:
         """Merge primitive schemas into the intersection of their constraints."""
-
-    def _merge_schema_constraints(
-        self,
-        base_dict: dict[str, Any],
-        items: list[JsonSchemaObject],
-        *,
-        intersect: bool,
-    ) -> None:
-        """Merge the constraints of ``items`` into ``base_dict``, intersecting them when ``intersect`` is set."""
 
     def _get_array_item_schemas(
         self,
@@ -105,15 +95,6 @@ class LightweightTypesHost(Protocol):
 
     def _is_false_schema_item(self, item: JsonSchemaObject | bool) -> bool:  # noqa: FBT001
         """Return whether ``item`` is a false schema."""
-
-    def _ref_path(self, ref: str) -> str:
-        """Return the reference key a reference names."""
-
-    def _key_node(self, resolved_ref: str) -> _TargetNode:
-        """Return the schema graph node at a reference key, or the key when the graph does not locate its value."""
-
-    def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
-        """Load the schema object a reference names."""
 
     def _get_array_union_non_array_types(self, obj: JsonSchemaObject) -> tuple[str, ...]:
         """Return the members of a type list beside ``array`` other than null."""
@@ -282,7 +263,7 @@ def unvisited_ref_target(
     parser: LightweightTypesHost, ref: str, visited_refs: frozenset[_TargetNode]
 ) -> tuple[JsonSchemaObject, frozenset[_TargetNode]] | None:
     """Return the schema ``ref`` names with ``visited_refs`` and its node, or None when its node was visited."""
-    if (node := parser._key_node(parser._ref_path(ref))) in visited_refs:  # noqa: SLF001
+    if (node := _schema_refs.key_node(parser, _schema_refs.ref_path(parser, ref))) in visited_refs:
         return None
     return parser._load_ref_schema_object(ref), visited_refs | {node}  # noqa: SLF001
 

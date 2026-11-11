@@ -44,7 +44,6 @@ from typing import (
     NamedTuple,  # noqa: F401  # Preserve the established parser.jsonschema export.
     Optional,
     TypeAlias,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    TypeVar,
     Union,  # noqa: F401  # Preserve the established parser.jsonschema export.
     cast,
 )
@@ -674,9 +673,6 @@ class _RefSiteRecursionError(RecursionError):
     The `$ref` site that holds it turns it into ``MergedRefSiteRecursionError``: only a chain of such sites nests a
     parse per hop, which --use-one-model-per-ref-site removes.
     """
-
-
-_ValidatedT = TypeVar("_ValidatedT")
 
 
 def _then_parse_refs(build: Callable[[JsonSchemaParser, _Site], object]) -> Callable[[JsonSchemaParser, _Site], None]:
@@ -2983,24 +2979,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the schema graph of the parse."""
         return cast("SchemaGraphBuilder", self._schema_graph)
 
-    def _key_node(self, resolved_ref: str) -> _TargetNode:
-        """Return the schema graph node at a reference key, or the key when the graph does not locate its value.
-
-        The value is read as ``_load_ref_schema_object`` reads it, without validating it.
-        """
-        return _schema_refs.key_node(self, resolved_ref)
-
-    def _shared_schema_object(self, raw: dict[str, YamlValue] | YamlValue, path: list[str]) -> JsonSchemaObject:
-        """Return the schema object a value of a loaded document validates to, validated once and shared by its readers.
-
-        ``path`` names the reference in the error of a value that does not validate.
-        """
-        return _schema_refs.shared_schema_object(self, raw, path)
-
-    def _shared_object(self, raw: object, kind: type[_ValidatedT], validate: Callable[[], _ValidatedT]) -> _ValidatedT:
-        """Return the ``kind`` object a value of a loaded document validates to, validated once by the schema graph."""
-        return _schema_refs.shared_object(self, raw, kind, validate)
-
     def _discriminator_mapping_ref(self, name: str, value: str, mapping: SchemaLocation | None) -> str:
         """Return a discriminator mapping value as a reference, with the edge of the mapping located at ``mapping``."""
         return _schema_refs.derived_ref(self, value, mapping, name, value)
@@ -3058,10 +3036,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self._mapped_references[reference.path] = mapping
         return reference
 
-    def _is_local_ref(self, ref: str) -> bool:
-        """Return whether a reference is a fragment of the document parsed now: written as one there, by its edge."""
-        return _schema_refs.is_local_ref(self, ref)
-
     def _uses_builtin_false_ref_facts(self) -> bool:
         """Return whether cached local false-ref facts preserve parser hooks."""
         if self.SCHEMA_OBJECT_TYPE is not JsonSchemaObject:
@@ -3082,10 +3056,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> bool:
         """Return whether a local ref targets false without repeating default validation."""
         return _schema_refs.is_local_ref_false_schema(self, ref, use_builtin_facts=use_builtin_facts)
-
-    def _schema_location(self, resolved_ref: str) -> str:
-        """Return the registry location of a resolved reference."""
-        return _schema_refs.schema_location(self, resolved_ref)
 
     @contextmanager
     def _ref_document_context(self, file_part: str) -> Generator[tuple[str, dict[str, Any]], None, None]:
@@ -3158,25 +3128,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 self._dynamic_bindings,
             ) = previous
 
-    def _ref_target_dump(self, ref: str, resolved_ref: str) -> tuple[dict[str, Any], str]:
-        """Return a fresh dump of a referenced schema for the current document, and the reference it ends at.
-
-        A $recursiveRef inside a schema from another document is pinned to its target there (``_pin_recursive_refs``),
-        and a referenced schema that is itself a $ref is merged with its own target. The dump depends only on the schema
-        graph node the reference names and the current document, so each parse computes it once per pair and hands out
-        copies. A chain of such aliases is loaded first and merged from its far end, so each merge finds the dump of the
-        next alias computed.
-        """
-        return _schema_refs.ref_target_dump(self, ref, resolved_ref)
-
-    def _intersect_ref_siblings_schema(
-        self, target: dict[str, Any], siblings: dict[str, Any], where: str, *, siblings_are_parts: bool
-    ) -> JsonSchemaObject:
-        """Return the schema of the intersection of a referenced schema's dump and the sibling keywords of its $ref."""
-        return _schema_refs.intersect_ref_siblings_schema(
-            self, target, siblings, where, siblings_are_parts=siblings_are_parts
-        )
-
     def _warn_unsatisfiable(self, where: str, keywords: tuple[str, ...], *parts: str) -> None:
         """Warn once per parse for each schema whose parts have no value in common for some keywords."""
         if not keywords:
@@ -3210,10 +3161,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._warn_untaken_patterns(where, conjunction.pattern, conjunction.untaken)
         return conjunction.pattern
 
-    def _mark_reported_value_conflict(self, schema: JsonSchemaObject, keywords: Sequence[str]) -> None:
-        """Mark a merged schema whose ``enum`` or ``const`` conflict the intersection warning already reports."""
-        return _schema_refs.mark_reported_value_conflict(self, schema, keywords)
-
     def _merge_ref_with_schema(self, obj: JsonSchemaObject, where: str | None = None) -> JsonSchemaObject:
         """Merge $ref schema with current schema's additional keywords.
 
@@ -3226,13 +3173,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         no value meets names ``where``, by default the location of ``obj``.
         """
         return _schema_refs.merge_ref_with_schema(self, obj, where)
-
-    def _is_ref_circular(self, resolved_ref: str) -> bool:
-        """Check if a resolved $ref target contains a circular reference (cached).
-
-        A target whose references reach a document or pointer that cannot be loaded counts as circular.
-        """
-        return _schema_refs.is_ref_circular(self, resolved_ref)
 
     @contextmanager
     def _ref_file_context(self, file_part: str) -> Generator[None, None, None]:
@@ -4921,7 +4861,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if not (
             isinstance(single_obj, JsonSchemaObject)
             and single_obj.ref
-            and self._is_local_ref(single_obj.ref)
+            and _schema_refs.is_local_ref(self, single_obj.ref)
             and not (
                 self._root_validates_literals
                 and self._ref_siblings_apply_to(single_obj, legacy="first-read")

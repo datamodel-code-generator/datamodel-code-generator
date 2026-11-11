@@ -28,6 +28,7 @@ from datamodel_code_generator._graph_links import drop_tree
 from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.model.base import _field_source_name
 from datamodel_code_generator.model.runtime_validation import _is_internal_schema_runtime_validation
+from datamodel_code_generator.parser import _schema_refs
 from datamodel_code_generator.parser._field_rows import require_field
 from datamodel_code_generator.parser._naming import rw_variant_class_name
 from datamodel_code_generator.parser._origins import with_field_origin
@@ -37,13 +38,14 @@ from datamodel_code_generator.parser._passes._shared import (
     with_dedupe_request_response_hint,
 )
 from datamodel_code_generator.parser._schema_dispatch import SchemaSite, TypedChild
-from datamodel_code_generator.parser._schema_documents import SchemaResourcesHost, lenient_ref
+from datamodel_code_generator.parser._schema_documents import lenient_ref
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import (
     _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY,
     _declares_key_keywords,
     _merges_ref_siblings,
 )
+from datamodel_code_generator.parser._schema_refs import SchemaRefsHost
 from datamodel_code_generator.parser.base import _DEFERRED_INHERITED_CLASS_KEY, _DEFERRED_INHERITED_FIELD_KEY
 from datamodel_code_generator.python_literal import _make_referencing_type_expression
 from datamodel_code_generator.reference import (
@@ -59,7 +61,6 @@ from datamodel_code_generator.reference import (
 if TYPE_CHECKING:
     from collections import defaultdict
     from collections.abc import Generator, Iterable, Sequence
-    from contextlib import AbstractContextManager
     from pathlib import Path
 
     from datamodel_code_generator._user_keys import ClassScope
@@ -185,7 +186,7 @@ def _get_rw_model_variant_source_path(
     return f"{source_prefix}{separator}{source_name}{suffix}"
 
 
-class RwSplitHost(SchemaResourcesHost, Protocol):
+class RwSplitHost(SchemaRefsHost, Protocol):
     """The options, caches and hooks of the parser that the request and response model split reads."""
 
     _DEFINITION_TABLE: ClassVar[DispatchTable[Any, JsonSchemaObject, None]]
@@ -203,7 +204,6 @@ class RwSplitHost(SchemaResourcesHost, Protocol):
     _inherited_schema_linearization_cache: dict[tuple[str, ...], tuple[str, ...]]
     _raw_inherited_fields_cache: dict[str, tuple[DataModelFieldBase, ...]]
     _raw_inherited_own_names_cache: dict[str, frozenset[str]]
-    _ref_target_dumps: dict[tuple[_TargetNode, str], tuple[dict[str, Any], str]]
     _request_response_fields: dict[str, tuple[DataModelFieldBase, ...]]
     _rw_model_field_facts_cache: dict[str, tuple[bool, bool, bool, bool]]
     _rw_model_field_facts_in_progress: set[str]
@@ -250,20 +250,12 @@ class RwSplitHost(SchemaResourcesHost, Protocol):
         """Whether required fields are generated as optional."""
 
     @property
-    def generate_schema_validators(self) -> bool:
-        """Whether the models validate the schema rules their fields cannot express."""
-
-    @property
     def keep_defaults_of_inherited_required_fields(self) -> bool:
         """Whether a field only a base requires keeps its default (``--keep-defaults-of-inherited-required-fields``)."""
 
     @property
     def keyword_only(self) -> bool:
         """Whether the models take keyword-only arguments."""
-
-    @property
-    def read_only_write_only_model_type(self) -> ReadOnlyWriteOnlyModelType | None:
-        """The read and write variants the output generates, if any."""
 
     @property
     def treat_dot_as_module(self) -> bool | None:
@@ -405,29 +397,17 @@ class RwSplitHost(SchemaResourcesHost, Protocol):
     ) -> Reference:
         """Create a variant reference, reserving request/response paths for recursive uses."""
 
-    def _inherited_ref_context(self, resolved_ref: str) -> AbstractContextManager[None]:
-        """Resolve nested references relative to the inherited schema's own file and schema resource."""
-
     def _is_all_of_mapping_item(self, schema: JsonSchemaObject) -> bool:
         """Return whether an allOf item is an object map, which a mapping-shaped allOf merges into one root map."""
 
     def _is_base_stand_in(self, reference: Reference) -> bool:
         """Return whether the model of ``reference`` is a stand-in: never written, never split into variants."""
 
-    def _is_ref_circular(self, resolved_ref: str) -> bool:
-        """Check if a resolved $ref target contains a circular reference (cached)."""
-
-    def _key_node(self, resolved_ref: str) -> _TargetNode:
-        """Return the schema graph node at a reference key, or the key when the graph does not locate its value."""
-
     def _linearize_inherited_schema_refs(self, base_classes: list[Reference]) -> tuple[str, ...]:
         """Return raw inherited schemas in the same C3 order as generated models."""
 
     def _load_inherited_schema_object(self, resolved_ref: str) -> JsonSchemaObject:
         """Load and cache a schema used only for inherited field inspection."""
-
-    def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
-        """Return the schema object a reference names."""
 
     def _merge_all_of_object(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
         """Merge allOf items when they share object properties to avoid duplicate models."""
@@ -438,9 +418,6 @@ class RwSplitHost(SchemaResourcesHost, Protocol):
         fields: list[DataModelFieldBase],
     ) -> list[DataModelFieldBase]:
         """Overlay declarations on inherited fields while resolving deferred partial types."""
-
-    def _merge_ref_with_schema(self, obj: JsonSchemaObject, where: str | None = None) -> JsonSchemaObject:
-        """Return the schema a ``$ref`` names merged with the sibling keywords of the reference."""
 
     def _object_nullable(self, obj: JsonSchemaObject) -> bool:
         """Return whether an object model's schema admits null, by its types or by nullable under strict nullability."""
@@ -466,9 +443,6 @@ class RwSplitHost(SchemaResourcesHost, Protocol):
     def _record_schema_object(self, reference: Reference, obj: JsonSchemaObject) -> None:
         """Record the schema object the model of ``reference`` is built from, and take its template data and marks."""
 
-    def _ref_path(self, ref: str) -> str:
-        """Return the reference key a reference names."""
-
     def _ref_schema_exists(self, resolved_ref: str) -> bool:
         """Return whether a resolved JSON pointer identifies a source schema."""
 
@@ -478,9 +452,6 @@ class RwSplitHost(SchemaResourcesHost, Protocol):
         suffix: Literal["Request", "Response"],
     ) -> bool:
         """Check whether a referenced schema generates the requested read/write variant."""
-
-    def _ref_target_dump(self, ref: str, resolved_ref: str) -> tuple[dict[str, Any], str]:
-        """Return a fresh dump of a referenced schema for the current document, and the reference it ends at."""
 
     def _request_response_ref_schema_generates_variant(
         self,
@@ -493,14 +464,8 @@ class RwSplitHost(SchemaResourcesHost, Protocol):
     ) -> str | list[str] | None:
         """Resolve base class(es) with priority: base_class_map (each name of a scope) > customBasePath > base_class."""
 
-    def _resolve_external_ref_mapping(self, ref: str) -> tuple[str, str] | None:
-        """Return the package and fragment ``--external-ref-mapping`` maps a reference to, if any."""
-
     def _resolve_rw_model_reference(self, ref: str, defining_ref: str) -> str | None:
         """Resolve a type-producing ref while keeping configured imports as graph leaves."""
-
-    def _schema_object(self, raw: object) -> JsonSchemaObject:
-        """Validate a raw schema into a schema object."""
 
     def _split_constraint_values(
         self, obj: JsonSchemaObject, data_type: DataType | None = None
@@ -549,7 +514,9 @@ def resolve_field_flags(parser: RwSplitHost, obj: JsonSchemaObject, *, either: b
         with ExitStack() as scope:
             for context in contexts:
                 scope.enter_context(parser._inherited_ref_context(context))  # noqa: SLF001
-            if (node := parser._key_node(resolved_ref := parser._ref_path(schema.ref))) in visited:  # noqa: SLF001
+            if (
+                node := _schema_refs.key_node(parser, resolved_ref := _schema_refs.ref_path(parser, schema.ref))
+            ) in visited:
                 continue
             visited.add(node)
             pending.append((parser._load_ref_schema_object(schema.ref), (*contexts, resolved_ref)))  # noqa: SLF001
@@ -1289,11 +1256,12 @@ def merged_ref_sibling_schemas(
     if not _merges_ref_siblings(schema):
         return schema, schema
     with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
-        if parser._is_ref_circular(  # noqa: SLF001
-            resolved_ref := parser._ref_path(ref := lenient_ref(parser, cast("str", schema.ref)))  # noqa: SLF001
+        if _schema_refs.is_ref_circular(
+            parser,
+            resolved_ref := _schema_refs.ref_path(parser, ref := lenient_ref(parser, cast("str", schema.ref))),
         ):
             return schema, schema
-        target = parser._schema_object(parser._ref_target_dump(ref, resolved_ref)[0])  # noqa: SLF001
+        target = parser._schema_object(_schema_refs.ref_target_dump(parser, ref, resolved_ref)[0])  # noqa: SLF001
         target_builds_map = _has_map_keywords(target) and schema_builds_map_model(parser, target, defining_ref)
         if not (target_builds_map or _has_map_keywords(schema)):
             return schema, schema
@@ -1329,7 +1297,7 @@ def resolve_rw_model_reference(parser: RwSplitHost, ref: str, defining_ref: str)
     with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
         if parser._resolve_external_ref_mapping(ref) is not None:  # noqa: SLF001
             return None
-        return parser._ref_path(ref)  # noqa: SLF001
+        return _schema_refs.ref_path(parser, ref)
 
 
 def get_rw_property_name_sources(

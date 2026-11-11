@@ -85185,7 +85185,7 @@ own, an Avro schema of an AsyncAPI document, names that document as its edges' `
 resource, the normalized spelling and `ModelResolver.resolve_ref`; a new model is named after that spelling
 (`ModelResolver._add_ref_at`). A plain string has no edge and resolves in the context its caller set. A schema copied
 into another (a merged `$ref` target, an inherited property) keeps its references as written: a site that asks whether
-a reference is a fragment of the document parsed now reads its edge (`_is_local_ref`), and only a merged `$recursiveRef`
+a reference is a fragment of the document parsed now reads its edge (`parser/_schema_refs.py:is_local_ref`), and only a merged `$recursiveRef`
 with a fixed target is rewritten, to a `$ref` (`parser/_schema_refs.py:pin_recursive_refs`).
 OpenAPI and AsyncAPI register a schema that declares a discriminator, and a component schema whose `allOf` names one,
 under the key of the reference that names the schema from its own document (`_schema_key`), the key the references to
@@ -85200,8 +85200,8 @@ document by location, one site per location (`ApiOpenAPIParser._site_facts`, see
 reads anew at every read.
 The walks that follow references from a schema (field flags, literal and null checks, inherited properties and
 overrides, validation sources, `uniqueItems` rules, merged `allOf` values) visit each schema graph node once
-(`SchemaNodeId`, the location of the object a reference names: `_key_node`), and a `$ref` target merged with its sibling
-keywords is dumped once per node and document being parsed (`_ref_target_dump`).
+(`SchemaNodeId`, the location of the object a reference names: `parser/_schema_refs.py:key_node`), and a `$ref` target merged with its sibling
+keywords is dumped once per node and document being parsed (`parser/_schema_refs.py:ref_target_dump`).
 A local reference whose model a document has not parsed yet is reserved for that document (`reserved_refs`).
 `_parse_file`, `_resolve_unparsed_json_pointer` and AsyncAPI's `_resolve_asyncapi_unparsed_json_pointer` take the
 targets from one worklist (`_reserved_targets`: a `ReservedTarget` with the document, the key and the node the key names
@@ -86812,7 +86812,11 @@ the module that warning filters match and names the frame past the wrappers that
 functions (`parser/_passes/_warnings.py`, whose `warn_as_module` keeps the module of a parser for the code its concern
 modules `parser/_<concern>.py` took over, and `snooper_to_methods` traces the functions of those modules that take the
 parser as `parser`; the module helpers that two or more of those modules use live in `parser/_schema_reading.py`, below
-them all, so that none of them imports another or the public module), a helper that passes of more than one layer call
+them all; the JSON Schema concern modules import one another only downward, in the order `_schema_documents`,
+`_schema_refs`, `_value_keywords`, `_lightweight_types`, `_all_of_values`, `_object_maps`, `_rw_split`,
+`_inherited_schemas`, `_schema_validators`, `_union_tags`, and none imports the public module: each module's host lists
+the hosts of the lower modules it calls as bases, and a lower module reaches a higher one's function through its own
+host), a helper that passes of more than one layer call
 is a function in `parser/_passes/_shared.py` that takes parser state as arguments or through a narrow `Protocol`, and
 the run state they share lives in `parser/_passes/_state.py` (with `ParseConfig`, `ModuleContext` and `Result`, whose
 module is public, as type parameters), so no pass imports `parser/base.py`. The code of `parser/base.py` that needs
