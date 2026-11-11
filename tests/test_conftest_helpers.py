@@ -954,7 +954,7 @@ def test_format_refs_writes_each_line_once() -> None:
         ("[test_a]\n\tm/a.txt\t?\t?\n", "line 2: unexpected column '?'", units.BROKEN),
         (
             "[test_a]\n\tm/a.txt\t@os=nt\n",
-            "line 2: unknown predicate 'os=nt'; facts are python, formatter, black, isort, platform",
+            "line 2: unknown predicate 'os=nt'; facts are python, formatter, black, isort, platform, pydantic",
             units.BROKEN,
         ),
         (
@@ -1335,7 +1335,14 @@ def test_ledger_applies_foreign_payloads(ledger: LedgerProject, tmp_path: Path) 
         """,
     )
     ledger.run("suite").assert_outcomes(passed=1)
-    facts = {"python": "3.10", "formatter": "external", "black": "22.1.0", "isort": "5.13.2", "platform": "linux"}
+    facts = {
+        "python": "3.10",
+        "formatter": "external",
+        "black": "22.1.0",
+        "isort": "5.13.2",
+        "platform": "linux",
+        "pydantic": "2.14.1",
+    }
     item = "suite/test_m.py::test_a"
     payloads = [
         {
@@ -1826,11 +1833,27 @@ def test_ledger_merge_and_payload_rules() -> None:
 
     The platform joins a predicate only when nothing else tells the environments apart.
     """
-    py310 = {"python": "3.10", "formatter": "builtin", "black": "26.1.0", "isort": "7.0.0", "platform": "linux"}
+    py310 = {
+        "python": "3.10",
+        "formatter": "builtin",
+        "black": "26.1.0",
+        "isort": "7.0.0",
+        "platform": "linux",
+        "pydantic": "2.14.1",
+    }
     py311 = {**py310, "python": "3.11"}
-    black22 = {"python": "3.12", "formatter": "external", "black": "22.1.0", "isort": "7.0.0", "platform": "linux"}
+    black22 = {
+        "python": "3.12",
+        "formatter": "external",
+        "black": "22.1.0",
+        "isort": "7.0.0",
+        "platform": "linux",
+        "pydantic": "2.14.1",
+    }
     windows = {**py310, "platform": "win32"}
+    pydantic20 = {**py311, "formatter": "external", "pydantic": "2.0"}
     assert units._distinguishing([py310], [py311, black22]) == (("python", "3.10"),)
+    assert units._distinguishing([pydantic20], [py310, py311, black22]) == (("pydantic", "2.0"),)
     assert units._distinguishing([py310, py311], [black22]) == (("formatter", "builtin"),)
     assert units._distinguishing([windows], [py310, py311]) == (("platform", "win32"),)
     with pytest.raises(ValueError, match="no predicate separates"):
@@ -1841,10 +1864,12 @@ def test_ledger_merge_and_payload_rules() -> None:
         units._fact_value("black", "26.1a1"),
         units._fact_value("isort", "dev"),
         units._fact_value("python", "3.10"),
+        units._fact_value("pydantic", "2.0.3"),
     ] == [
         "26",
         "dev",
         "3.10",
+        "2.0",
     ]
     with pytest.raises(ValueError, match="run its test here"):
         units.apply_payload(base, [], payload, py310, exists=True)
@@ -1863,6 +1888,8 @@ def test_ledger_merge_and_payload_rules() -> None:
     assert units.facts_fit({**py310, "black": "26.1.0.post1+local.7", "isort": "7.0.0.dev3"})
     assert not units.facts_fit({**py310, "black": "26.1+a/b"})
     assert units.payload_predicate({**py310, "black": "22.1.0"}, py310) == (("black", "22"),)
+    assert units.payload_predicate(pydantic20, py311) == (("pydantic", "2.0"),)
+    assert units.payload_predicate({**py310, "pydantic": "2.14.0"}, py310) is None
     assert units.payload_predicate({**black22, "isort": "5.13.2"}, {**black22, "black": "22.3.0"}) == (("isort", "5"),)
     assert units.payload_predicate(py311, py310) == (("formatter", "builtin"), ("python", "3.11"))
     assert units.payload_predicate(black22, {**black22, "black": "22.3.0", "python": "3.14"}) == (
@@ -2209,7 +2236,14 @@ def test_fix_expected_drops_tests_no_environment_collects(
 
 ONE_TEST = "from tests.conftest import assert_output\n\nOUT = 'x\\n'\n\n\ndef test_a():\n    assert_output(OUT)\n"
 GITHUB = {"CI": "true", "GITHUB_ACTIONS": "true", "GITHUB_RUN_ID": "7"}
-LANE = {"python": "3.10", "formatter": "external", "black": "22.1.0", "isort": "5.13.2", "platform": "linux"}
+LANE = {
+    "python": "3.10",
+    "formatter": "external",
+    "black": "22.1.0",
+    "isort": "5.13.2",
+    "platform": "linux",
+    "pydantic": "2.14.1",
+}
 
 
 def _fix_expected(ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, *arguments: str) -> int:

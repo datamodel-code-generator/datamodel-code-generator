@@ -842,6 +842,7 @@ def expected_environment_facts() -> dict[str, str]:
         "formatter": BUILTIN_FORMATTER_VALUE if builtin else "external",
         **{tool: next((found.version for found in distributions(name=tool)), "") for tool in ("black", "isort")},
         "platform": next((name for name in _PLATFORMS if sys.platform.startswith(name)), sys.platform),
+        "pydantic": next((found.version for found in distributions(name="pydantic")), ""),
     }
 
 
