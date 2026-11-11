@@ -1344,15 +1344,13 @@ def _value_bounds(value: object, obj: JsonSchemaObject) -> dict[str, float]:
     They replace those of ``obj``, so they keep the tighter of each: a ``minimum`` above the value or a ``maximum``
     below it admits nothing, as the schema does.
     """
-    match value:
-        case float() if isfinite(value):
-            declared = _constraint_values(obj, ("minimum", "maximum"), as_numbers=True)
-            return {
-                "minimum": max(value, declared.get("minimum", value)),
-                "maximum": min(value, declared.get("maximum", value)),
-            }
-        case _:
-            return {}
+    if not isinstance(value, float) or not isfinite(value):
+        return {}
+    declared = _constraint_values(obj, ("minimum", "maximum"), as_numbers=True)
+    return {
+        "minimum": max(value, declared.get("minimum", value)),
+        "maximum": min(value, declared.get("maximum", value)),
+    }
 
 
 def partition_enum_values(

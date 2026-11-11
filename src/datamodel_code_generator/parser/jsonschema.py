@@ -1002,6 +1002,8 @@ def _without_x_prefix(key: str) -> str:
 
 
 _DEFAULT_SCHEMA_PATHS = ("#/definitions", "#/$defs")
+_BOOLEAN_BEFORE_DRAFT6_KEYWORDS = frozenset({"additionalProperties", "additionalItems"})
+"""The keywords whose value may be a boolean before boolean schemas (Draft 6): Draft 4 and OpenAPI 3.0 accept it."""
 
 
 def _set_schema_location(reference: Reference, location: SchemaLocation | None) -> None:
@@ -8363,12 +8365,27 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for message in self._version_feature_messages(schema, location, path):
                 warn(message, stacklevel=3)
             if isinstance(schema, dict):
-                children = [child for key, value in schema.items() for _, child in subschema_entries(key, value)]
-                pending.extend(
-                    (child, child_location)
-                    for child in reversed(children)
-                    if (child_location := self._raw_location(child)) is not None
+                pending.extend(reversed(list(self._version_checked_subschemas(schema, location))))
+
+    def _version_checked_subschemas(
+        self, schema: dict[str, YamlValue], location: SchemaLocation | None
+    ) -> Iterator[tuple[YamlValue, SchemaLocation]]:
+        """Yield the subschemas of a loaded document that ``schema`` at ``location`` holds, located, in document order.
+
+        A boolean schema is located below its holder; one where Draft 4 and OpenAPI 3.0 accept a boolean too
+        (``_BOOLEAN_BEFORE_DRAFT6_KEYWORDS``) is left out.
+        """
+        for key, value in schema.items():
+            for entry, child in subschema_entries(key, value, booleans=True):
+                child_location = (
+                    self._raw_location(child)
+                    if isinstance(child, dict)
+                    else None
+                    if location is None or key in _BOOLEAN_BEFORE_DRAFT6_KEYWORDS
+                    else location.child(*map(str, entry))
                 )
+                if child_location is not None:
+                    yield child, child_location
 
     def _check_loaded_schema_versions(self, raw: YamlValue, path: list[str]) -> None:
         """Check a schema value of a loaded document and the subschemas inside it in Strict mode (#4980).

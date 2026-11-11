@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "flag": true,
+    "nested": {"type": "object", "properties": {"inner": false}, "additionalProperties": false},
+    "list": {"type": "array", "items": true, "additionalItems": false}
+  },
+  "additionalProperties": false
+}

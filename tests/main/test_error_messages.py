@@ -1958,6 +1958,15 @@ NESTED_STRICT_FIXTURES = (
     ),
     pytest.param("schema_location_strict_nested_asyncapi3.yaml", "asyncapi", [], id="nested-asyncapi3"),
     pytest.param("schema_location_strict_nested_asyncapi2.yaml", "asyncapi", [], id="nested-asyncapi2"),
+    *(
+        pytest.param(
+            "schema_location_strict_nested_boolean.json",
+            "jsonschema",
+            ["--schema-version", version],
+            id=f"nested-boolean-{version}",
+        )
+        for version in ("draft-04", "draft-07", "2020-12")
+    ),
 )
 
 
@@ -1981,7 +1990,8 @@ def test_schema_version_warnings_name_location(
     """Strict-mode warnings name the document and the JSON Pointer of the schema that uses the feature.
 
     A subschema inside a parsed schema is checked too, once where two ``$ref`` reach it, and an AsyncAPI 2 document
-    reads the exclusive bounds as OpenAPI 3.0 does (#4980).
+    reads the exclusive bounds as OpenAPI 3.0 does (#4980). A boolean subschema warns where its version has no boolean
+    schemas, except where Draft 4 accepts a boolean (``additionalProperties``, ``additionalItems``).
     """
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")
