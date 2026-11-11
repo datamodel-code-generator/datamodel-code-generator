@@ -26,10 +26,12 @@ Left out after the trial (the rules recommend these)
       --use-title-as-name, its title: Root), and full-path prefixes that name onto root-level
       models. The suggested name comes from the input file name; replace it with the name the
       project wants.
-      measured: SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile
-      became TsConfig, names over 40 characters 6 -> 0
-      measured: SchemaStore workflow, docker-compose and package.json schemas: Model became
-      Workflow, Compose and PackageJson
+      measured: SchemaStore tsconfig schema: JsonSchemaForTheTypescriptCompilerSConfigurationFile
+      became Tsconfig, names over 40 characters 6 -> 0
+      measured: SchemaStore github-workflow schema: Model became GithubWorkflow
+      measured: compose spec with --naming-strategy full-path: ComposeSpecification became
+      ComposeSpec
+      measured: SchemaStore package.json schema: JsonSchemaForNpmPackageJsonFiles became Package
       trial: preset -> recommended: classes 3 -> 3, problem names 0 -> 0; 1 of 3 classes matched by
       schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
         Root -> DefinitionsAndDefs   at (root)

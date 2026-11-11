@@ -24,10 +24,12 @@ Add (2 options)
       --use-title-as-name, its title: Integer keys), and full-path prefixes that name onto
       root-level models. The suggested name comes from the input file name; replace it with the name
       the project wants.
-      measured: SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile
-      became TsConfig, names over 40 characters 6 -> 0
-      measured: SchemaStore workflow, docker-compose and package.json schemas: Model became
-      Workflow, Compose and PackageJson
+      measured: SchemaStore tsconfig schema: JsonSchemaForTheTypescriptCompilerSConfigurationFile
+      became Tsconfig, names over 40 characters 6 -> 0
+      measured: SchemaStore github-workflow schema: Model became GithubWorkflow
+      measured: compose spec with --naming-strategy full-path: ComposeSpecification became
+      ComposeSpec
+      measured: SchemaStore package.json schema: JsonSchemaForNpmPackageJsonFiles became Package
   --use-tag-as-union-variant-name   [unions.name-variants-after-tags]
       Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no
       sibling shares: 1; objects with one required key: 0); otherwise they are named after their

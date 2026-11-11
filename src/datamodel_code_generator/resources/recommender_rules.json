@@ -280,8 +280,10 @@
       },
       "reason": "The root schema is an object model. Without --class-name its class is Model (with --use-title-as-name, its title: {root_title}), and full-path prefixes that name onto root-level models. The suggested name comes from the input file name; replace it with the name the project wants.",
       "evidence": [
-        "SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile became TsConfig, names over 40 characters 6 -> 0",
-        "SchemaStore workflow, docker-compose and package.json schemas: Model became Workflow, Compose and PackageJson"
+        "SchemaStore tsconfig schema: JsonSchemaForTheTypescriptCompilerSConfigurationFile became Tsconfig, names over 40 characters 6 -> 0",
+        "SchemaStore github-workflow schema: Model became GithubWorkflow",
+        "compose spec with --naming-strategy full-path: ComposeSpecification became ComposeSpec",
+        "SchemaStore package.json schema: JsonSchemaForNpmPackageJsonFiles became Package"
       ]
     },
     {

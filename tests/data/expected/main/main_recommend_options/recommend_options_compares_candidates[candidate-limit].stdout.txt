@@ -61,10 +61,12 @@ Add (7 options)
       --use-title-as-name, its title: none), and full-path prefixes that name onto root-level
       models. The suggested name comes from the input file name; replace it with the name the
       project wants.
-      measured: SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile
-      became TsConfig, names over 40 characters 6 -> 0
-      measured: SchemaStore workflow, docker-compose and package.json schemas: Model became
-      Workflow, Compose and PackageJson
+      measured: SchemaStore tsconfig schema: JsonSchemaForTheTypescriptCompilerSConfigurationFile
+      became Tsconfig, names over 40 characters 6 -> 0
+      measured: SchemaStore github-workflow schema: Model became GithubWorkflow
+      measured: compose spec with --naming-strategy full-path: ComposeSpecification became
+      ComposeSpec
+      measured: SchemaStore package.json schema: JsonSchemaForNpmPackageJsonFiles became Package
       trial: recommended - root-name -> recommended: classes 10 -> 10, problem names 1 -> 0; 3 of 10
       classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
         Model -> ManyOptions   at (root)
