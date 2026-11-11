@@ -146,6 +146,7 @@ How do I convert enums to Literal types?
 - `--no-omit-redundant-constraints`
 - `--no-read-length-keywords-by-type`
 - `--no-read-msgspec-union-bounds-exactly`
+- `--no-read-object-keywords-by-type`
 - `--no-snake-case-field`
 - `--no-use-bounds-for-float-const`
 - `--no-use-field-description`
@@ -159,6 +160,7 @@ How do I convert enums to Literal types?
 - `--original-field-name-delimiter`: Specify delimiter for original field names when using snake-case conversion.
 - `--read-length-keywords-by-type`: Read the string and the array keywords for their own kind only, as JSON Sche...
 - `--read-msgspec-union-bounds-exactly`: Decide the bounds of the int member of a msgspec union on the bounds th...
+- `--read-object-keywords-by-type`: Read the keywords that constrain objects only beside an `anyOf` or `oneOf` f...
 - `--remove-special-field-name-prefix`: Remove the special prefix from field names.
 - `--serialization-aliases`: Apply custom Pydantic v2 serialization aliases via inline JSON or a JSON file path.
 - `--set-default-enum-member`: Use the legacy flag for deserializing enum defaults.
@@ -552,7 +554,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --output OUTPUT       Output file (default: stdout)
   --output-model-type {pydantic_v2.BaseModel,pydantic_v2.dataclass,dataclasses.dataclass,typing.TypedDict,msgspec.Struct}
                         Output model type (default: pydantic_v2.BaseModel)
-  --preset {standard-py310-20260619,standard-py311-20260619,standard-py312-20260619,standard-py313-20260619,standard-py314-20260619,practical-py310-20260619,practical-py311-20260619,practical-py312-20260619,practical-py313-20260619,practical-py314-20260619,standard-py310-20260826,standard-py311-20260826,standard-py312-20260826,standard-py313-20260826,standard-py314-20260826,practical-py310-20260826,practical-py311-20260826,practical-py312-20260826,practical-py313-20260826,practical-py314-20260826,standard-py310-20260909,standard-py311-20260909,standard-py312-20260909,standard-py313-20260909,standard-py314-20260909,practical-py310-20260909,practical-py311-20260909,practical-py312-20260909,practical-py313-20260909,practical-py314-20260909,standard-py310-20261015,standard-py311-20261015,standard-py312-20261015,standard-py313-20261015,standard-py314-20261015,standard-py315-20261015,practical-py310-20261015,practical-py311-20261015,practical-py312-20261015,practical-py313-20261015,practical-py314-20261015,practical-py315-20261015,standard-py310-20261017,standard-py311-20261017,standard-py312-20261017,standard-py313-20261017,standard-py314-20261017,standard-py315-20261017,practical-py310-20261017,practical-py311-20261017,practical-py312-20261017,practical-py313-20261017,practical-py314-20261017,practical-py315-20261017,standard-py310-20261027,standard-py311-20261027,standard-py312-20261027,standard-py313-20261027,standard-py314-20261027,standard-py315-20261027,practical-py310-20261027,practical-py311-20261027,practical-py312-20261027,practical-py313-20261027,practical-py314-20261027,practical-py315-20261027,standard-py310-20261104,standard-py311-20261104,standard-py312-20261104,standard-py313-20261104,standard-py314-20261104,standard-py315-20261104,practical-py310-20261104,practical-py311-20261104,practical-py312-20261104,practical-py313-20261104,practical-py314-20261104,practical-py315-20261104,standard-py310-20261106,standard-py311-20261106,standard-py312-20261106,standard-py313-20261106,standard-py314-20261106,standard-py315-20261106,practical-py310-20261106,practical-py311-20261106,practical-py312-20261106,practical-py313-20261106,practical-py314-20261106,practical-py315-20261106,standard-py310-20261111,standard-py311-20261111,standard-py312-20261111,standard-py313-20261111,standard-py314-20261111,standard-py315-20261111,practical-py310-20261111,practical-py311-20261111,practical-py312-20261111,practical-py313-20261111,practical-py314-20261111,practical-py315-20261111}
+  --preset {standard-py310-20260619,standard-py311-20260619,standard-py312-20260619,standard-py313-20260619,standard-py314-20260619,practical-py310-20260619,practical-py311-20260619,practical-py312-20260619,practical-py313-20260619,practical-py314-20260619,standard-py310-20260826,standard-py311-20260826,standard-py312-20260826,standard-py313-20260826,standard-py314-20260826,practical-py310-20260826,practical-py311-20260826,practical-py312-20260826,practical-py313-20260826,practical-py314-20260826,standard-py310-20260909,standard-py311-20260909,standard-py312-20260909,standard-py313-20260909,standard-py314-20260909,practical-py310-20260909,practical-py311-20260909,practical-py312-20260909,practical-py313-20260909,practical-py314-20260909,standard-py310-20261015,standard-py311-20261015,standard-py312-20261015,standard-py313-20261015,standard-py314-20261015,standard-py315-20261015,practical-py310-20261015,practical-py311-20261015,practical-py312-20261015,practical-py313-20261015,practical-py314-20261015,practical-py315-20261015,standard-py310-20261017,standard-py311-20261017,standard-py312-20261017,standard-py313-20261017,standard-py314-20261017,standard-py315-20261017,practical-py310-20261017,practical-py311-20261017,practical-py312-20261017,practical-py313-20261017,practical-py314-20261017,practical-py315-20261017,standard-py310-20261027,standard-py311-20261027,standard-py312-20261027,standard-py313-20261027,standard-py314-20261027,standard-py315-20261027,practical-py310-20261027,practical-py311-20261027,practical-py312-20261027,practical-py313-20261027,practical-py314-20261027,practical-py315-20261027,standard-py310-20261104,standard-py311-20261104,standard-py312-20261104,standard-py313-20261104,standard-py314-20261104,standard-py315-20261104,practical-py310-20261104,practical-py311-20261104,practical-py312-20261104,practical-py313-20261104,practical-py314-20261104,practical-py315-20261104,standard-py310-20261106,standard-py311-20261106,standard-py312-20261106,standard-py313-20261106,standard-py314-20261106,standard-py315-20261106,practical-py310-20261106,practical-py311-20261106,practical-py312-20261106,practical-py313-20261106,practical-py314-20261106,practical-py315-20261106,standard-py310-20261111,standard-py311-20261111,standard-py312-20261111,standard-py313-20261111,standard-py314-20261111,standard-py315-20261111,practical-py310-20261111,practical-py311-20261111,practical-py312-20261111,practical-py313-20261111,practical-py314-20261111,practical-py315-20261111,standard-py310-20261112,standard-py311-20261112,standard-py312-20261112,standard-py313-20261112,standard-py314-20261112,standard-py315-20261112,practical-py310-20261112,practical-py311-20261112,practical-py312-20261112,practical-py313-20261112,practical-py314-20261112,practical-py315-20261112}
                         Apply an immutable built-in option preset. Preset
                         names include the target Python version so generated
                         syntax is pinned.
@@ -805,6 +807,18 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         as the float it is written as, so the int member can
                         keep a bound that rejects an integer the number member
                         accepts, as in 0.88.0
+  --read-object-keywords-by-type, --no-read-object-keywords-by-type
+                        Read the keywords that constrain objects only
+                        (properties, patternProperties, additionalProperties,
+                        propertyNames, unevaluatedProperties, required,
+                        minProperties, maxProperties) beside an `anyOf` or
+                        `oneOf` as JSON Schema does: a branch whose `type`
+                        admits no object, such as a string, does not take
+                        them, so it stays that type instead of becoming a map
+                        or a model, and under --generate-schema-validators a
+                        site with such a branch is a union rather than one
+                        object model; without it every branch takes them, as
+                        in 0.93.0
   --read-unevaluated-properties, --no-read-unevaluated-properties
                         Read a schema-valued unevaluatedProperties as
                         additionalProperties where no applicator evaluates the

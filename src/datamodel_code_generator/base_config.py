@@ -471,6 +471,7 @@ class BaseGenerateConfig(BaseModel):
     use_msgspec_meta_for_map_keys: bool = False
     omit_redundant_constraints: bool = False
     read_length_keywords_by_type: bool = False
+    read_object_keywords_by_type: bool = False
     read_msgspec_union_bounds_exactly: bool = False
     read_input_model_dataclass_fields_by_alias: bool = False
     reuse_every_reached_input_model_type: bool = False
