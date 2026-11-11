@@ -6,10 +6,10 @@ from typing import TYPE_CHECKING
 
 import black
 import pytest
+from packaging import version
 
 from datamodel_code_generator import chdir
 from datamodel_code_generator.__main__ import Exit
-from packaging import version
 from tests.conftest import (
     HttpxGetMockFactory,
     MockHttpxResponse,

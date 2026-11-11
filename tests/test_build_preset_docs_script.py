@@ -8,6 +8,7 @@ from pathlib import Path
 
 import black
 import pytest
+from packaging import version
 
 from datamodel_code_generator._format_types import PythonVersion
 from datamodel_code_generator.enums import DataModelType, DefaultValueType, ExtraFields, InputFileType
@@ -21,7 +22,6 @@ from datamodel_code_generator.preset import (
     render_presets,
     resolve_preset_config_updates,
 )
-from packaging import version
 from scripts import build_preset_docs
 from tests.conftest import assert_output
 

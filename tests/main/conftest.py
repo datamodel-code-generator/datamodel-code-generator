@@ -26,6 +26,7 @@ from typing import Any, Literal, get_type_hints
 import black
 import hypothesis
 import pytest
+from packaging import version
 from pydantic import VERSION as PYDANTIC_VERSION
 from pydantic import TypeAdapter, ValidationError
 from pydantic.errors import PydanticUndefinedAnnotation
@@ -41,7 +42,6 @@ from datamodel_code_generator import (
 from datamodel_code_generator.__main__ import Exit, main
 from datamodel_code_generator.arguments import arg_parser
 from datamodel_code_generator.format import Formatter, PythonVersion, PythonVersionMin, is_supported_in_black
-from packaging import version
 from tests.conftest import (
     _CURRENT_ITEMS,
     AssertFileContent,

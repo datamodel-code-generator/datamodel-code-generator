@@ -22,6 +22,7 @@ import pytest
 import yaml
 from jsonschema import Draft202012Validator
 from jsonschema import ValidationError as SchemaValidationError
+from packaging import version
 
 from datamodel_code_generator import (
     MIN_VERSION,
@@ -46,7 +47,6 @@ from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model import base as model_base
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from datamodel_code_generator.reference import get_singular_name
-from packaging import version
 from tests.conftest import (
     HttpxGetMockFactory,
     MockHttpxResponse,

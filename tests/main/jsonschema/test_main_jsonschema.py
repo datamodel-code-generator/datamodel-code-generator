@@ -41,6 +41,7 @@ from jsonschema import Draft7Validator, Draft202012Validator, FormatChecker
 from jsonschema import ValidationError as SchemaValidationError
 from jsonschema.exceptions import SchemaError as JsonSchemaError
 from jsonschema.validators import validator_for
+from packaging import version
 from pydantic import VERSION as PYDANTIC_VERSION
 from pydantic import PydanticUserError, TypeAdapter, ValidationError
 from pydantic_core import SchemaError
@@ -80,7 +81,6 @@ from datamodel_code_generator.model.base import TEMPLATE_DIR, UNDEFINED
 from datamodel_code_generator.model.msgspec import DataModelField as MsgspecDataModelField
 from datamodel_code_generator.model.typed_dict import TypedDict as TypedDictModel
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-from packaging import version
 from tests.conftest import (
     CHECK_SCHEMA_GRAPH_ENV,
     HttpxGetMockFactory,

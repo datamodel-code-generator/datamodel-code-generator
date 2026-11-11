@@ -12,6 +12,7 @@ from typing import Any
 import black
 import pydantic
 import pytest
+from packaging import version
 
 from datamodel_code_generator import DataModelType, OpenAPIScope, OpenAPIVersion, PythonVersionMin
 from datamodel_code_generator.format import Formatter
@@ -27,7 +28,6 @@ from datamodel_code_generator.parser.openapi import (
     RequestBodyObject,
     ResponseObject,
 )
-from packaging import version
 from tests.conftest import (
     assert_generated_runtime_package,
     assert_output,
