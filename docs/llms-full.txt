@@ -78625,7 +78625,7 @@ nullable keyword is deprecated in OpenAPI 3.1, use type: ["string", "null"] inst
 - **Warning category:** `FutureWarning`
 - **Replacement:** Run datamodel-code-generator on Python 3.11 or newer.
 
-Running datamodel-code-generator on Python 3.10 is deprecated and will be removed in 0.85.0; run it on Python 3.11 or newer. --target-python-version 3.10 is unaffected.
+Running datamodel-code-generator on Python 3.10 was removed in 0.93.0; run it on Python 3.11 or newer, for example with `uvx datamodel-code-generator` (uv fetches a supported Python). --target-python-version 3.10 is unaffected.
 
 Generating code for Python 3.10 with --target-python-version 3.10 is unchanged.
 
@@ -78839,6 +78839,13 @@ datamodel-code-generator runs on Python 3.11 or newer since 0.93.0; running it o
 0.84.0, and Python 3.10 reached end of life in October 2026. pip and uv keep a Python 3.10 environment on the last
 release that runs there, 0.92.x. This concerns only the interpreter running DCG: the default target is still
 Python 3.10, and the code generated for Python 3.10, with or without `--target-python-version 3.10`, is unchanged.
+
+Projects that still run on Python 3.10 can keep generating code for it by running DCG on a newer Python, for example
+`uvx datamodel-code-generator --target-python-version 3.10 ...` (uv fetches a supported Python),
+`uvx --from datamodel-code-generator datamodel-codegen ...` (the `datamodel-code-generator` command is new in 0.93.0;
+this form works with every release), or pipx on a newer Python
+(`pipx run --python 3.12 --spec datamodel-code-generator datamodel-codegen ...`). The generated code for Python 3.10 is
+unchanged.
 
 ## Follow-up changes remain separate
 

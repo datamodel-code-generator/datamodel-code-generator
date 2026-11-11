@@ -199,8 +199,9 @@ DEPRECATIONS: dict[DeprecationId, Deprecation] = {
         kind="dependency",
         target="Running datamodel-code-generator on Python 3.10",
         message=(
-            "Running datamodel-code-generator on Python 3.10 is deprecated and will be removed in 0.85.0; "
-            "run it on Python 3.11 or newer. --target-python-version 3.10 is unaffected."
+            "Running datamodel-code-generator on Python 3.10 was removed in 0.93.0; run it on Python 3.11 or newer, "
+            "for example with `uvx datamodel-code-generator` (uv fetches a supported Python). "
+            "--target-python-version 3.10 is unaffected."
         ),
         warning_since="0.84.0",
         removal_version="0.93.0",

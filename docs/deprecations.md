@@ -243,6 +243,6 @@ nullable keyword is deprecated in OpenAPI 3.1, use type: ["string", "null"] inst
 - **Warning category:** `FutureWarning`
 - **Replacement:** Run datamodel-code-generator on Python 3.11 or newer.
 
-Running datamodel-code-generator on Python 3.10 is deprecated and will be removed in 0.85.0; run it on Python 3.11 or newer. --target-python-version 3.10 is unaffected.
+Running datamodel-code-generator on Python 3.10 was removed in 0.93.0; run it on Python 3.11 or newer, for example with `uvx datamodel-code-generator` (uv fetches a supported Python). --target-python-version 3.10 is unaffected.
 
 Generating code for Python 3.10 with --target-python-version 3.10 is unchanged.

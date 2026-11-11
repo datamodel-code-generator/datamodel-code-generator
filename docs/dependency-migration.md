@@ -205,6 +205,13 @@ datamodel-code-generator runs on Python 3.11 or newer since 0.93.0; running it o
 release that runs there, 0.92.x. This concerns only the interpreter running DCG: the default target is still
 Python 3.10, and the code generated for Python 3.10, with or without `--target-python-version 3.10`, is unchanged.
 
+Projects that still run on Python 3.10 can keep generating code for it by running DCG on a newer Python, for example
+`uvx datamodel-code-generator --target-python-version 3.10 ...` (uv fetches a supported Python),
+`uvx --from datamodel-code-generator datamodel-codegen ...` (the `datamodel-code-generator` command is new in 0.93.0;
+this form works with every release), or pipx on a newer Python
+(`pipx run --python 3.12 --spec datamodel-code-generator datamodel-codegen ...`). The generated code for Python 3.10 is
+unchanged.
+
 ## Follow-up changes remain separate
 
 1. Change the implicit default to builtin, retaining explicit Ruff and Black/isort choices.
