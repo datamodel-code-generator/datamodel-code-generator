@@ -86,7 +86,23 @@ class Forwarder:
 ForwarderMap: TypeAlias = dict[ModulePath, Forwarder]
 
 
-class ModuleContextView(Protocol):
+class ModuleImportsView(Protocol):
+    """What naming the models of other modules in a module reads of it: its imports and the names it binds."""
+
+    @property
+    def is_init(self) -> bool:
+        """Whether the module is a package ``__init__``."""
+
+    @property
+    def imports(self) -> Imports:
+        """The imports of the module."""
+
+    @property
+    def scoped_model_resolver(self) -> ModelResolver:
+        """The resolver of the names the module binds."""
+
+
+class ModuleContextView(ModuleImportsView, Protocol):
     """What the passes read of a processed module: ``parser/base.py:ModuleContext``, whose module is public."""
 
     @property
@@ -100,18 +116,6 @@ class ModuleContextView(Protocol):
     @property
     def models(self) -> list[DataModel]:
         """The models the module writes."""
-
-    @property
-    def is_init(self) -> bool:
-        """Whether the module is a package ``__init__``."""
-
-    @property
-    def imports(self) -> Imports:
-        """The imports of the module."""
-
-    @property
-    def scoped_model_resolver(self) -> ModelResolver:
-        """The resolver of the names the module binds."""
 
     def _replace(self, *, module: ModulePath) -> Self:
         """Return the context with another file path."""
