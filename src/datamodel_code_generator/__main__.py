@@ -208,7 +208,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.validators import ModelValidators
     from datamodel_code_generator.watch_dependencies import WatchDependencies
 
-    Config = cast("Any", object)
+    Config: TypeAlias = Any
 
 # Options that should be excluded from pyproject.toml config generation
 EXCLUDED_CONFIG_OPTIONS: frozenset[str] = frozenset({

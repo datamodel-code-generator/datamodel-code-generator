@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 else:
     ValidatorsConfigValue: TypeAlias = Mapping[str, Any]
 
-Config = cast("Any", object)
+Config: TypeAlias = Any
 
 _HttpKeyValuePair: TypeAlias = tuple[str, str]
 _HttpKeyValueInput: TypeAlias = str | _HttpKeyValuePair

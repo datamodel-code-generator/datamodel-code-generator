@@ -484,11 +484,25 @@ class ModuleScopeView(ModuleNamesView, Protocol):
 class InheritedFieldHost(Protocol):
     """The options, store and hooks that resolving inherited placeholder fields reads from the parser."""
 
-    allof_merge_mode: AllOfMergeMode
-    apply_default_values_for_required_fields: bool
-    force_optional_for_required_fields: bool
-    generation_store: GenerationStore
-    model_resolver: ModelResolver
+    @property
+    def allof_merge_mode(self) -> AllOfMergeMode:
+        """How the constraints of allOf members merge (``--allof-merge-mode``)."""
+
+    @property
+    def apply_default_values_for_required_fields(self) -> bool:
+        """Whether required fields keep their schema defaults (``--apply-default-values-for-required-fields``)."""
+
+    @property
+    def force_optional_for_required_fields(self) -> bool:
+        """Whether required fields are made optional."""
+
+    @property
+    def generation_store(self) -> GenerationStore:
+        """The generation store of the parse."""
+
+    @property
+    def model_resolver(self) -> ModelResolver:
+        """The resolver of model and field names."""
 
     def _copy_inherited_field(
         self,
@@ -519,10 +533,16 @@ class InheritedFieldHost(Protocol):
 class RuntimeExpressionFlags(GraphBuilderHost, Protocol):
     """The shared imports and per-run flags that passes creating runtime expressions write on the parser."""
 
-    imports: Imports
     _has_bound_python_types: bool
     _has_runtime_expressions: bool
-    _import_ledger: ModuleImportLedger
+
+    @property
+    def _import_ledger(self) -> ModuleImportLedger:
+        """The ledger of the imports each module adds."""
+
+    @property
+    def imports(self) -> Imports:
+        """The imports every module shares."""
 
 
 def register_runtime_expression(host: RuntimeExpressionFlags) -> None:

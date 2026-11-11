@@ -34,12 +34,13 @@ from datamodel_code_generator.parser._tag_plan import TagPlanHost, field_namer, 
 
 if TYPE_CHECKING:
     from datamodel_code_generator import CollapseRootModelsNameStrategy
+    from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
-    from datamodel_code_generator.parser._passes._state import ModuleModels, StructuredRun
+    from datamodel_code_generator.parser._passes._state import ModuleModels, StructuredRun, _KeptParentRoot
     from datamodel_code_generator.parser._tag_plan import TagCapabilities
     from datamodel_code_generator.reference import ModelType, Reference
-    from datamodel_code_generator.types import DataTypeManager
+    from datamodel_code_generator.types import DataType, DataTypeManager
 
 __all__ = [
     "FlattenHost",
@@ -79,7 +80,7 @@ class PlansHost(RecursionFactsHost, FlattenHost, ReuseOptionsHost, DataModelType
         """The type manager of the output model, whose constraint options the union members are read with."""
 
     @property
-    def _base_stand_ins(self) -> _Clearable:
+    def _base_stand_ins(self) -> dict[int, Reference | None]:
         """The stand-ins of bases that the output cannot import, by base."""
 
     @property
@@ -87,15 +88,15 @@ class PlansHost(RecursionFactsHost, FlattenHost, ReuseOptionsHost, DataModelType
         """The models collapsed reuse removed, by the id of their canonical model."""
 
     @property
-    def _hidden_named_types(self) -> _Clearable:
+    def _hidden_named_types(self) -> dict[tuple[ModelKey, str | None], bool]:
         """Whether a field hides the named type of its model, by model key and field name."""
 
     @property
-    def _hiding_field_names(self) -> _Clearable:
+    def _hiding_field_names(self) -> dict[tuple[ModelKey, str | None], str]:
         """The fields that hide a named type, by model key and field name."""
 
     @property
-    def _kept_parent_roots(self) -> _Clearable:
+    def _kept_parent_roots(self) -> dict[int, _KeptParentRoot]:
         """The roots that the ``parent`` strategy kept for their later holders."""
 
     @property
@@ -107,11 +108,11 @@ class PlansHost(RecursionFactsHost, FlattenHost, ReuseOptionsHost, DataModelType
         """The modules prepared for rendering."""
 
     @property
-    def _removed_reuse_users(self) -> _Clearable:
+    def _removed_reuse_users(self) -> dict[int, tuple[DataType, list[str]]]:
         """The data types whose duplicate reuse removed, with the paths they named."""
 
     @property
-    def _replaced_root_models(self) -> _Clearable:
+    def _replaced_root_models(self) -> dict[int, tuple[DataModel, DataModel]]:
         """The roots that collapse replaced by their inner models."""
 
     @property
