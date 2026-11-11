@@ -158,6 +158,8 @@ from datamodel_code_generator._model_keys import (
     FIELDLESS_SITE_KEY,
     ITEM_COUNTS_SITE_KEY,
     REF_BRANCH_SCHEMA_KEY,
+    is_fieldless_site,
+    is_item_counts_site,
     model_key_of,
 )
 from datamodel_code_generator._module_paths import dotted_name
@@ -320,6 +322,7 @@ from datamodel_code_generator.parser._null_facts import (
 )
 from datamodel_code_generator.parser._object_maps import _schema_assertions, _with_null
 from datamodel_code_generator.parser._origins import (
+    with_binary_content,
     with_enum_literal,
     with_field_origin,
     with_type_origin,
@@ -456,7 +459,7 @@ from datamodel_code_generator.python_literal import (
 )
 from datamodel_code_generator.reference import (
     _ALIAS_RESOLUTION_CLASS_NAME_KEY,
-    BINARY_CONTENT_KEY,
+    BINARY_CONTENT_KEY,  # noqa: F401  # Preserve the established parser.jsonschema export.
     SCHEMA_LOCATION_CONFLICT_KEY,
     SCHEMA_LOCATION_KEY,
     SPECIAL_PATH_MARKER,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -1278,7 +1281,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if types == Types.binary
             else types == Types.string and self._holds_content_media_type_octets(obj, type_)
         ):
-            data_type.__dict__[BINARY_CONTENT_KEY] = True
+            return with_binary_content(data_type)
         return data_type
 
     def _holds_content_media_type_octets(self, obj: JsonSchemaObject, type_: str) -> bool:
@@ -2724,9 +2727,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Record the schema object the model of ``reference`` is built from, and take its template data and marks."""
         self._record_schema_location(reference, obj.schema_location)
         self._record_derived_from(reference, obj)
-        if obj.__dict__.get(FIELDLESS_SITE_KEY):
+        if is_fieldless_site(obj):
             reference.__dict__[FIELDLESS_SITE_KEY] = True
-        if obj.__dict__.get(ITEM_COUNTS_SITE_KEY):
+        if is_item_counts_site(obj):
             reference.__dict__[ITEM_COUNTS_SITE_KEY] = True
         self._set_schema_metadata(reference.path, obj)
         self.set_schema_extensions(reference.path, obj)
@@ -3932,7 +3935,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ):
             return None
         conjunction = site.model_copy(update={"ref": branch.ref})
-        conjunction.__dict__[_CONJUNCTION_PARTS_KEY] = True
+        _schema_refs.mark_conjunction_parts(conjunction)
         merged = self._merge_ref_with_schema(conjunction)
         return None if merged.ref else merged
 

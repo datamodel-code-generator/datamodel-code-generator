@@ -561,11 +561,11 @@ def decide_overridden_constraints(
     type_dependent = field.__dict__.get(_TYPE_DEPENDENT_CONSTRAINTS_KEY) or {}
     constraints = field.constraints
     is_model = isinstance(constraints, ConstraintsBase)
-    values = {
-        key: value
-        for key, value in (constraints.model_dump(by_alias=True) if is_model else constraints or {}).items()
-        if value is not None
-    }
+    values = (
+        constraints.set_values()
+        if is_model
+        else {key: value for key, value in (constraints or {}).items() if value is not None}
+    )
     declared = (
         overridden_declared_constraints(values, type_dependent=type_dependent, untaken=field.pop_untaken_constraints())
         if parser.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS

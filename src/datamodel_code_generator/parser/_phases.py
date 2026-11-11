@@ -190,11 +190,7 @@ class _DecisionWriter:
                 field, rewrite_copied_type(self._store, self._copy, field.data_type, rewrites)
             )
         constraints: Any = field.constraints
-        values = {
-            key: value
-            for key, value in constraints.model_dump(by_alias=True).items()
-            if value is not None and key not in keywords
-        }
+        values = {key: value for key, value in constraints.set_values().items() if key not in keywords}
         self._store.set_field_constraints(field, type(constraints).model_validate(values))
         self._changed[id(model)] = cast("DataModel", model)
 
