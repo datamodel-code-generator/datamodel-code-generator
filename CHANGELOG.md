@@ -5,6 +5,67 @@ This changelog is automatically generated from GitHub Releases.
 
 ---
 
+## [0.93.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.93.0) - 2026-11-11
+
+## Breaking Changes
+
+### Error Handling Changes
+* The deprecated `--validation` option is now rejected when used with `--no-allow-remote-refs` - Passing `--validation` together with `--no-allow-remote-refs` (or `validation=True` with `allow_remote_refs=False` in the Python API) when parsing OpenAPI input used to run the prance validator, which fetched remote `$ref` URLs even though remote refs were turned off. The parser now raises an `Error` instead: "--validation is refused under --no-allow-remote-refs: its validator resolves the $ref of the document by itself and fetches the URLs that --no-allow-remote-refs blocks." The command exits with an error and no code is generated. This works the same way as the existing refusal of `--validation` under `--untrusted-input`. If you use both options, drop `--validation` (it is deprecated) or stop passing `--no-allow-remote-refs`. (#6688)
+
+### Python Version Changes
+* Dropped support for running on Python 3.10 - The package now declares `requires-python = ">=3.11"`. The Python 3.10 classifier is gone, and so is the `tomli` dependency that was only installed below Python 3.11. datamodel-code-generator can no longer be installed or run on Python 3.10, and pip and uv will keep Python 3.10 environments on the 0.92.x release. This completes the deprecation announced in 0.84.0: the `dependency.python-310-runtime` FutureWarning is no longer emitted, and its registry entry, shown by `--list-deprecations`, now records removal in 0.93.0. Only the interpreter running the generator is affected. The default target is still Python 3.10, and code generated for Python 3.10, with or without `--target-python-version 3.10`, is unchanged. Projects still on Python 3.10 can keep generating code by running the tool on a newer Python, for example `uvx datamodel-code-generator --target-python-version 3.10 ...` (#6701)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* Measure builtin line widths in display columns like black by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6659
+* Choose builtin string quotes like black under string normalization by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6660
+* Wrap string literals in the builtin formatter like black by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6661
+* Sort and wrap nested import runs in the builtin formatter like isort by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6662
+* Lay out function bodies and clause headers in the builtin formatter by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6663
+* Speed up the builtin formatter's line layout by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6664
+* Wrap strings in return, assert and long annotated heads like black by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6666
+* Keep comments between statements and place black's blank lines by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6675
+* Write comments with black's spacing in the builtin formatter by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6676
+* Sort template-written imports with their comments like isort by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6677
+* Indent by four spaces per block in the builtin formatter by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6678
+* Leave out request media types the client cannot write, not the operation by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6679
+* Write reserved parameter names only where additional keys read them by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6681
+* Wait for the test server before reading what it saw by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6682
+* Add a datamodel-code-generator command for uvx and pipx run by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6684
+* Add six more downstream projects to the behaviour diff projects tier by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6685
+* Describe the threat model in the security policy by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6687
+* Refuse --validation together with --no-allow-remote-refs by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6688
+* Warn when Pydantic 2.14 refuses a bytes pattern at import by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6691
+* Update locked dependencies to their security fix releases by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6692
+* Remember logical line layouts in the builtin formatter by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6697
+* Mark brackets with less work per leaf in the builtin line split by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6698
+* Find the opening bracket from the line end in the builtin line split by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6699
+* Call the schema resource and definition cores directly by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6702
+* Name the current and located document and definition entries once by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6703
+* Route the enum, key keyword and root split rules to their homes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6704
+* Build the predicted and parameter class scopes in one place by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6705
+* Pass one module import target to the reference import functions by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6706
+* Call the type override functions instead of their Parser forwarders by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6707
+* Drop the test-only module_dependency_cycles forwarder by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6708
+* Read variant tags through one TagReading and msgspec clashes in one walk by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6709
+* Read target types through one TypeTables index per batch by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6710
+* Fold the binder's schema reader into the parser and read others once by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6711
+* Call the lock plan home directly and import partial once by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6712
+* Build scheme catalogues and media encodings once per planner and media by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6713
+* Name the moved helpers in the architecture docs by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6714
+* Remove test-only JsonSchemaParser forwarders of allOf and rw-split homes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6715
+* Remove test-only JsonSchemaParser forwarders of validator and ref homes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6716
+* Remove test-only parser forwarders and parse-end cache clears by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6718
+* Write site marks through their homes and walk recommender paths once by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6719
+* Read live models, package paths and wrapper chains from their homes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6720
+* Stop running datamodel-code-generator on Python 3.10 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6701
+
+
+**Full Changelog**: https://github.com/datamodel-code-generator/datamodel-code-generator/compare/0.92.0...0.93.0
+
+---
+
 ## [0.92.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.92.0) - 2026-11-10
 
 ## Breaking Changes
