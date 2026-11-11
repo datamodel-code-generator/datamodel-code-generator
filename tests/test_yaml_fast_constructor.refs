@@ -391,6 +391,7 @@ openapi/include_path_parameters.yaml	yaml_fast_constructor/parity.txt
 openapi/incomplete_model_defaults.yaml	yaml_fast_constructor/parity.txt
 openapi/incomplete_model_defaults_strip_default_none.yaml	yaml_fast_constructor/parity.txt
 openapi/inheritance.yaml	yaml_fast_constructor/parity.txt
+openapi/inherited_required_names/refsib.yaml	yaml_fast_constructor/parity.txt
 openapi/input_diff/model_name_map_new.yaml	yaml_fast_constructor/parity.txt
 openapi/input_diff/model_name_map_old.yaml	yaml_fast_constructor/parity.txt
 openapi/input_diff/new.yaml	yaml_fast_constructor/parity.txt

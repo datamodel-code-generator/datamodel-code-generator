@@ -1720,6 +1720,7 @@ openapi/incomplete_model_defaults.yaml::components.schemas.Labels	payloads/nativ
 openapi/incomplete_model_defaults.yaml::components.schemas.PodSpec	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/incomplete_model_defaults_strip_default_none.yaml::components.schemas.Spec	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/inheritance.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/inherited_required_names/refsib.yaml::components.schemas.H	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/input_diff/model_name_map_new.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/input_diff/model_name_map_old.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/integer_bounds_beyond_int64.yaml::components.schemas.Seed	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3802,6 +3803,7 @@ openapi/incomplete_model_defaults.yaml::components.schemas.Labels	payloads/nativ
 openapi/incomplete_model_defaults.yaml::components.schemas.PodSpec	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/incomplete_model_defaults_strip_default_none.yaml::components.schemas.Spec	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/inheritance.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/inherited_required_names/refsib.yaml::components.schemas.H	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/input_diff/model_name_map_new.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/input_diff/model_name_map_old.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/integer_bounds_beyond_int64.yaml::components.schemas.Seed	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

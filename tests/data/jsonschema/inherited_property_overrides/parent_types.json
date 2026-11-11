@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Parent": {
+      "type": "object",
+      "properties": {
+        "implicit": {
+          "properties": {
+            "value": {
+              "type": "string"
+            }
+          }
+        },
+        "flag": {
+          "const": true
+        },
+        "ratio": {
+          "enum": [
+            1.5
+          ]
+        },
+        "pair": {
+          "enum": [
+            [
+              "value"
+            ]
+          ]
+        },
+        "entry": {
+          "enum": [
+            {
+              "value": 1
+            }
+          ]
+        },
+        "nothing": {
+          "enum": [
+            null
+          ]
+        },
+        "joined": {
+          "allOf": [
+            true,
+            {},
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Parent"
+        },
+        {
+          "properties": {
+            "implicit": {
+              "type": "object",
+              "minProperties": 1
+            },
+            "flag": {
+              "type": "boolean",
+              "description": "d"
+            },
+            "ratio": {
+              "type": "number",
+              "minimum": 0
+            },
+            "pair": {
+              "type": "array",
+              "minItems": 1
+            },
+            "entry": {
+              "type": "object",
+              "minProperties": 1
+            },
+            "nothing": {
+              "type": "null"
+            },
+            "joined": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    }
+  }
+}

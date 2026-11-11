@@ -1,0 +1,2 @@
+type_shapes.json#/$defs/Parent/properties/p6: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+type_shapes.json#/$defs/Child/allOf/1/properties/p6: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
