@@ -1485,7 +1485,7 @@ class OpenAPIParser(JsonSchemaParser):
                 self.raw_obj = specification = _schema_documents.prepare_schema_resources(
                     self, specification, path_parts
                 )
-                self._specification_documents.add(self._schema_resource_document(path_parts))
+                self._specification_documents.add(_schema_documents.schema_resource_document(self, path_parts))
                 with self.openapi_self_context(specification):
                     self._parse_specification(specification, path_parts)
 

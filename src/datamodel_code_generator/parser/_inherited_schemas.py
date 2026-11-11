@@ -57,6 +57,7 @@ from datamodel_code_generator.parser._intersection import (
 )
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
 from datamodel_code_generator.parser._origins import with_field_origin
+from datamodel_code_generator.parser._schema_documents import DocumentNamesHost, schema_resource_document
 from datamodel_code_generator.parser._schema_object import (
     _ANNOTATION_KEYWORDS,
     _MODELED_POSITIONS,
@@ -112,7 +113,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._intersection import KeywordIntersection
     from datamodel_code_generator.parser._null_facts import NullFacts, NullMode, NullSite, NullSources
     from datamodel_code_generator.parser._schema_graph import _TargetNode
-    from datamodel_code_generator.reference import ModelResolver, ModelType, SchemaLocation
+    from datamodel_code_generator.reference import ModelType, SchemaLocation
 
 __all__ = [
     "InheritedParentRow",
@@ -249,7 +250,7 @@ def _dump_drops_inherited_null(dump: Mapping[str, Any]) -> bool:
     return resolve_null_facts(dump_null_sources(dump), "inherited-child").rule == "inherited-typed-without-null"
 
 
-class InheritedSchemasHost(Protocol):
+class InheritedSchemasHost(DocumentNamesHost, Protocol):
     """The options, caches and hooks of the parser that the inherited schema reading reads."""
 
     _inherited_parent_property_cache: dict[
@@ -280,10 +281,6 @@ class InheritedSchemasHost(Protocol):
     @property
     def force_optional_for_required_fields(self) -> bool:
         """Whether required fields are generated as optional."""
-
-    @property
-    def model_resolver(self) -> ModelResolver:
-        """The resolver of references and class names."""
 
     @property
     def results(self) -> list[DataModel]:
@@ -456,9 +453,6 @@ class InheritedSchemasHost(Protocol):
 
     def _schema_object(self, raw: object) -> JsonSchemaObject:
         """Validate a raw schema into a schema object."""
-
-    def _schema_resource_document(self, path_parts: list[str]) -> str:
-        """Identify one physical schema document without changing its public reference names."""
 
     def _shared_schema_object(self, raw: dict[str, YamlValue] | YamlValue, path: list[str]) -> JsonSchemaObject:
         """Return the schema object a value of a loaded document validates to, shared by its readers."""
@@ -1602,7 +1596,7 @@ def _read_through_target(parser: InheritedSchemasHost, ref: str, target: JsonSch
     that has a fixed target there names it, as a schema merged from there reads it.
     """
     resolved_ref = parser._ref_path(ref)  # noqa: SLF001
-    document = parser._schema_resource_document(list(parser.model_resolver.current_root))  # noqa: SLF001
+    document = schema_resource_document(parser, list(parser.model_resolver.current_root))
     if parser._schema_location(resolved_ref).partition("#")[0] == document:  # noqa: SLF001
         return target
     return parser._schema_object(parser._ref_target_dump(ref, resolved_ref)[0])  # noqa: SLF001
