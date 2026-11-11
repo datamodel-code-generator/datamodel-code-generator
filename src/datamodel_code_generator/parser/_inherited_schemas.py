@@ -5,9 +5,9 @@ required names a schema inherits), merges the properties a schema overrides with
 (``--allof-merge-mode``) and builds the fields a model takes from its parents.
 
 Each function takes the parser through ``InheritedSchemasHost``, which ``JsonSchemaParser`` satisfies structurally. The
-methods that other parts of the parser call stay on the parser as delegators to these functions
-(``parser/jsonschema.py``), and these functions call them through the parser. The context manager
-``_inherited_ref_context`` stays a parser method.
+methods that tests call or that other parts of the parser call stay on the parser as delegators to these functions
+(``parser/jsonschema.py``), and these functions call them through the parser. ``_get_inherited_field_type``, a frame a
+warning names, and the context manager ``_inherited_ref_context`` stay parser methods.
 """
 
 from __future__ import annotations
@@ -391,6 +391,11 @@ class InheritedSchemasHost(DocumentNamesHost, Protocol):
 
     def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
         """Load a JsonSchemaObject from a $ref using standard resolve/load pipeline."""
+
+    def _get_inherited_field_type(
+        self, prop_name: str, base_classes: list[Reference], visited: frozenset[_TargetNode] | None = None
+    ) -> DataType | None:
+        """Get the data type for an inherited property from parent schemas."""
 
     def _get_ref_raw_schema(self, resolved_ref: str) -> dict[str, YamlValue] | YamlValue:
         """Return the value of a loaded document at a reference key, with the references it holds as a schema."""
@@ -2240,7 +2245,10 @@ def build_missing_required_field(  # noqa: PLR0913, PLR0917
     deferred = get_inherited_field_schema(parser, required_field_name, base_classes) is not None
     field = parser._build_field(  # noqa: SLF001
         "legacy-alias-option-only",
-        parser.data_type() if deferred else DataType(type=ANY, import_=IMPORT_ANY),
+        parser.data_type()
+        if deferred
+        else parser._get_inherited_field_type(required_field_name, base_classes)  # noqa: SLF001
+        or DataType(type=ANY, import_=IMPORT_ANY),
         name=field_name,
         alias=alias,
         source_name=required_field_name,

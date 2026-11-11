@@ -3652,6 +3652,47 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Load and cache a schema used only for inherited field inspection."""
         return _inherited_schemas.load_inherited_schema_object(self, resolved_ref)
 
+    def _get_inherited_field_type(
+        self, prop_name: str, base_classes: list[Reference], visited: frozenset[_TargetNode] | None = None
+    ) -> DataType | None:
+        """Get the data type for an inherited property from parent schemas.
+
+        Recursively traverses the inheritance chain when a parent property
+        doesn't have type information but the parent itself inherits from another schema.
+        """
+        if inherited_field := _inherited_schemas.get_inherited_field(self, prop_name, base_classes):
+            return self._copy_model_type(inherited_field.data_type)
+
+        if visited is None:
+            visited = frozenset()
+
+        for parent_schema, next_visited, parent_ref in self._iter_inherited_schema_objects(base_classes, visited):
+            result: DataType | None = None
+            if parent_schema.properties:
+                prop_schema = parent_schema.properties.get(prop_name)
+                if isinstance(prop_schema, JsonSchemaObject):
+                    with self._inherited_ref_context(parent_ref):
+                        result = self._build_lightweight_type(prop_schema)
+            # In case of a missing type, continue searching up the inheritance chain
+            if result is not None and not (
+                result.type == ANY or _lightweight_types.is_list_with_any_item_type(self, result)
+            ):
+                return result
+
+            parent_result: DataType | None = None
+            if parent_schema.allOf:
+                grandparent_refs = [
+                    self.model_resolver.add_ref(self._ref_path(ref), resolved=True)
+                    for ref in _inherited_schemas.iter_allof_refs(self, parent_schema)
+                ]
+                if grandparent_refs:
+                    parent_result = self._get_inherited_field_type(prop_name, grandparent_refs, next_visited)
+                    if parent_result is not None:
+                        return parent_result
+                    return result
+
+        return None
+
     def _merge_all_of_object(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
         """Merge allOf items when they share object properties to avoid duplicate models.
 

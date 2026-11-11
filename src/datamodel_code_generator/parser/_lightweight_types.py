@@ -40,6 +40,7 @@ __all__ = [
     "build_lightweight_array_type",
     "contains_false_schema",
     "is_false_schema_item",
+    "is_list_with_any_item_type",
     "merge_primitive_schemas",
     "merge_primitive_schemas_for_allof",
     "merge_schema_constraints",
@@ -284,3 +285,25 @@ def unvisited_ref_target(
     if (node := parser._key_node(parser._ref_path(ref))) in visited_refs:  # noqa: SLF001
         return None
     return parser._load_ref_schema_object(ref), visited_refs | {node}  # noqa: SLF001
+
+
+def is_list_with_any_item_type(parser: LightweightTypesHost, data_type: DataType | None) -> bool:  # noqa: ARG001
+    """Return True when data_type represents List[Any] (including nested lists)."""
+    if not data_type:  # pragma: no cover
+        return False
+
+    candidate = data_type
+    if candidate._wraps_one_list:  # noqa: SLF001
+        candidate = candidate.data_types[0]
+
+    if not candidate.is_list or len(candidate.data_types) != 1:
+        return False
+
+    item_type = candidate.data_types[0]
+    while len(item_type.data_types) == 1:
+        inner = item_type.data_types[0]
+        if item_type.is_list or item_type._wraps_one_list:  # noqa: SLF001
+            item_type = inner
+        else:
+            break
+    return item_type.type == ANY

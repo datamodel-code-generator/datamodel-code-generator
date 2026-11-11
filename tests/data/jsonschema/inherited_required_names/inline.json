@@ -1,0 +1,5 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema",
+ "$defs":{
+  "C":{"allOf":[{"$ref":"#/$defs/P"}],"required":["x"],"properties":{"y":{"type":"integer"}}},
+  "P":{"allOf":[{"type":"object","properties":{"z":{"type":"string"}}}]}
+ }}

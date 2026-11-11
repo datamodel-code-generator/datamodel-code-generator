@@ -3728,6 +3728,50 @@ def test_resolve_type_import_from_defs_exception_handling() -> None:
     assert result is None
 
 
+@pytest.mark.parametrize("node_count", [100, 200, 400])
+def test_request_response_negative_ring_caches_each_graph_node_once(node_count: int) -> None:
+    """A negative reference ring is traversed once and cached for both variants."""
+
+    class CountingJsonSchemaParser(JsonSchemaParser):
+        graph_node_calls: Counter[str]
+
+        def _get_rw_model_variant_graph_node(self, resolved_ref: str) -> tuple[bool, tuple[str, ...]]:
+            self.graph_node_calls[resolved_ref] += 1
+            return super()._get_rw_model_variant_graph_node(resolved_ref)
+
+    schema: dict[str, Any] = {
+        "$defs": {
+            f"Node{index}": {
+                "type": "object",
+                "properties": {
+                    "next": {
+                        "$ref": f"#/$defs/Node{(index + 1) % node_count}",
+                    },
+                },
+            }
+            for index in range(node_count)
+        },
+    }
+    parser = CountingJsonSchemaParser(
+        json.dumps(schema),
+        read_only_write_only_model_type=ReadOnlyWriteOnlyModelType.RequestResponse,
+    )
+    parser.raw_obj = schema
+    parser.graph_node_calls = Counter()
+
+    assert not parser._ref_schema_generates_variant("#/$defs/Node0", "Request")
+    assert parser.graph_node_calls == Counter({f"#/$defs/Node{index}": 1 for index in range(node_count)})
+    assert parser._rw_model_variant_requirement_cache == {
+        (f"#/$defs/Node{index}", suffix): False for index in range(node_count) for suffix in ("Request", "Response")
+    }
+
+    for index in range(node_count):
+        assert not parser._ref_schema_generates_variant(f"#/$defs/Node{index}", "Request")
+        assert not parser._ref_schema_generates_variant(f"#/$defs/Node{index}", "Response")
+
+    assert sum(parser.graph_node_calls.values()) == node_count
+
+
 def test_request_response_property_names_follows_only_type_contributing_refs() -> None:
     """PropertyNames follows a bare ref but ignores constraints and nested non-key shapes."""
     schema: dict[str, Any] = {
