@@ -223,6 +223,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--url": "Fetch a schema from a URL with custom HTTP headers.",
     "--use-annotated": "Use typing.Annotated for Field() with constraints.",
     "--use-attribute-docstrings": "Generate field descriptions as attribute docstrings instead of Field descriptions.",
+    "--use-bounds-for-float-const": "Type a finite float `const` as a float whose minimum and maximum both equal it.",
     "--use-bytes-for-content-media-type": "Type an OpenAPI string with a `contentMediaType` and no `contentEncoding...",
     "--use-closed-typed-dict": "Generate TypedDict with PEP 728 closed/extra_items (default: enabled).",
     "--use-decimal-for-multiple-of": "Generate Decimal types for fields with multipleOf constraint.",

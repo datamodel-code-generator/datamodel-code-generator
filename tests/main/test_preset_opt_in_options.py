@@ -107,7 +107,7 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
 )
 """The options the 20261106 presets set beyond the 20261104 presets."""
 
-OPT_IN_OPTIONS_20261111: tuple[str, ...] = ()
+OPT_IN_OPTIONS_20261111: tuple[str, ...] = ("--use-bounds-for-float-const",)
 """The options the 20261111 presets set beyond the 20261106 presets."""
 
 PRESET_RELEASES: dict[str, tuple[str, tuple[str, ...]]] = {
@@ -428,7 +428,14 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
 )
 """The inputs each opt-in option of the 20261106 presets changes."""
 
-CASES_20261111: tuple[pytest.ParameterSet, ...] = ()
+CASES_20261111: tuple[pytest.ParameterSet, ...] = (
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "float_const_bounds.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="use-bounds-for-float-const",
+    ),
+)
 """The inputs each opt-in option of the 20261111 presets changes."""
 
 
@@ -682,6 +689,13 @@ def test_preset_sets_opt_in_option(
             "--use-typed-nullable-map-values",
             "--no-use-typed-nullable-map-values",
             id="use-typed-nullable-map-values",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "float_const_bounds.json",
+            [],
+            "--use-bounds-for-float-const",
+            "--no-use-bounds-for-float-const",
+            id="use-bounds-for-float-const",
         ),
     ],
 )

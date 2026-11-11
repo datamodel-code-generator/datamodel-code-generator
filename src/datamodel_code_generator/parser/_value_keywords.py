@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from functools import partial
 from itertools import compress
+from math import isfinite
 from operator import and_
 from typing import TYPE_CHECKING, Any, ClassVar, Final, cast
 from warnings import warn
@@ -82,8 +83,10 @@ __all__ = [
     "ArrayBoundsHost",
     "ValueKeywordsHost",
     "accepts_number_constraints",
+    "bounded_const_type",
     "check_literal_const",
     "combined_values_admitted",
+    "const_bounds",
     "const_is_literal",
     "const_literal_enforces_constraints",
     "const_type_is_exact",
@@ -328,6 +331,10 @@ class ValueKeywordsHost(Protocol):
     @property
     def type_mappings(self) -> dict[tuple[str, str], str]:
         """The ``--type-mappings`` entries."""
+
+    @property
+    def use_bounds_for_float_const(self) -> bool:
+        """Whether a float const is fixed by equal bounds (``--use-bounds-for-float-const``)."""
 
     @property
     def use_single_value_enum_as_const(self) -> bool:
@@ -811,7 +818,10 @@ def get_constraint_values(
 
 
 def split_constraint_values(
-    parser: ValueKeywordsHost, obj: JsonSchemaObject, data_type: DataType | None = None
+    parser: ValueKeywordsHost,
+    obj: JsonSchemaObject,
+    data_type: DataType | None = None,
+    bounds: Mapping[str, float] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Return the constraint values of the type-dependent keywords that a field takes, and those it leaves out.
 
@@ -819,9 +829,10 @@ def split_constraint_values(
     the emitted Python type decides the others. The left-out ones are the declared keywords the type does not
     take, to warn about, ``minItems`` and ``maxItems`` of a declared string as the lengths they are written as.
     Under ``--read-length-keywords-by-type`` each kind holds its own keywords, and the string and array keywords of
-    another kind are left out silently (``other_kind_keywords``).
+    another kind are left out silently (``other_kind_keywords``). ``bounds`` replace the schema's ``minimum`` and
+    ``maximum`` before the type decides them (the bounds of a float const, ``const_bounds``).
     """
-    values = _constraint_values(obj, obj.__constraint_field_order__)
+    values = _constraint_values(obj, obj.__constraint_field_order__) | dict(bounds or {})
     if data_type is not None and (carried := type_enforced_keywords(parser, obj, data_type)):
         values = {key: value for key, value in values.items() if key not in carried}
     if not values:
@@ -1290,6 +1301,58 @@ def get_const_data_type(parser: ValueKeywordsHost, const: object, obj: JsonSchem
             check_literal_const(parser, obj, const)
         return parser.data_type(literals=[const])
     return get_data_type_from_json_value(parser, const)
+
+
+def bounded_const_type(parser: ValueKeywordsHost, const: object, obj: JsonSchemaObject | None) -> DataType | None:
+    """Return the type of a float const of the schema ``obj`` that takes the bounds fixing it, or None.
+
+    Under ``--use-bounds-for-float-const`` without ``--field-constraints`` an output that checks constraints writes
+    them on the type with the other number keywords of ``obj``, as it writes those of a number; with it the field
+    takes them (``JsonSchemaParser._field_const_bounds``). Row ``legacy-float-const-unbounded``: without the option
+    none. The option never changes the type of a field: where the other number keywords would turn the bounded float
+    into another kind, as a ``multipleOf`` under ``--use-decimal-for-multiple-of`` into a decimal, the const stays
+    ``float``, whose parsed values are those written without the option.
+    """
+    if obj is None or obj.enum or not _type_takes_const_bounds(parser) or not (bounds := _value_bounds(const, obj)):
+        return None
+    others = tuple(keyword for keyword in NUMBER_KEYWORD_ORDER if keyword not in bounds)
+    manager = parser.data_type_manager
+    bounded = manager.get_data_type(Types.float, **bounds, **_constraint_values(obj, others, as_numbers=True))
+    return bounded if bounded.type == manager.get_data_type(Types.float, **bounds).type else None
+
+
+def _type_takes_const_bounds(parser: ValueKeywordsHost) -> bool:
+    """Return whether the type of a float const takes its bounds: under the option, where the field does not."""
+    return (
+        parser.use_bounds_for_float_const
+        and not parser.field_constraints
+        and parser._output_model_context.checks_constraints  # noqa: SLF001
+    )
+
+
+def const_bounds(obj: JsonSchemaObject) -> dict[str, float]:
+    """Return the ``minimum`` and ``maximum`` that fix a number to the float const typing a schema without an enum.
+
+    No ``Literal`` holds a float, so its type admits other numbers; the bounds admit the const alone.
+    """
+    return {} if obj.enum else _value_bounds(obj.extras.get("const"), obj)
+
+
+def _value_bounds(value: object, obj: JsonSchemaObject) -> dict[str, float]:
+    """Return the ``minimum`` and ``maximum`` that admit a finite float value alone, or none for another value.
+
+    They replace those of ``obj``, so they keep the tighter of each: a ``minimum`` above the value or a ``maximum``
+    below it admits nothing, as the schema does.
+    """
+    match value:
+        case float() if isfinite(value):
+            declared = _constraint_values(obj, ("minimum", "maximum"), as_numbers=True)
+            return {
+                "minimum": max(value, declared.get("minimum", value)),
+                "maximum": min(value, declared.get("maximum", value)),
+            }
+        case _:
+            return {}
 
 
 def partition_enum_values(

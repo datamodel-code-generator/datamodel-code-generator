@@ -135,6 +135,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.imports import Imports, _ImportKey
     from datamodel_code_generator.model._render_plan import RenderReady
     from datamodel_code_generator.model.base import DataModelFieldBase
+    from datamodel_code_generator.model.output import OutputModelContext
     from datamodel_code_generator.model_metadata import ModelMetadata
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._model_shapes import ReuseGroups
@@ -249,6 +250,14 @@ class FinishHost(ReuseOptionsHost, RootModelHost, OutputOptionsHost, TagPlanHost
     @property
     def _construction_keys(self) -> ConstructionKeys:
         """The class names that the options read while models are built key (``_user_keys.py``)."""
+
+    @property
+    def _output_model_context(self) -> OutputModelContext:
+        """The capabilities of the output model types."""
+
+    @property
+    def use_bounds_for_float_const(self) -> bool:
+        """Whether a float const is fixed by equal bounds (``--use-bounds-for-float-const``)."""
 
     @property
     def generation_store(self) -> GenerationStore:
@@ -1163,17 +1172,20 @@ def warn_about_decimal_defaults(parser: FinishHost) -> None:
     warn_as_parser_base(message, DefaultValueTypeWarning, stacklevel=2)
 
 
-def widened_values_warning(field: DataModelFieldBase) -> str | None:
+def widened_values_warning(parser: FinishHost, field: DataModelFieldBase) -> str | None:
     """Return a warning for the enum or const values a field's type is written in place of, as no Literal holds them.
 
-    The parser keeps them on the type (``record_widened_values``), which admits other values of their types.
+    The parser keeps them on the type (``record_widened_values``), which admits other values of their types, but a
+    value of the field's own type that the bounds of the field fix (``_bounds_fixed_value``) is held exactly.
     """
+    fixed = _bounds_fixed_value(parser, field)
     if not (
         widened := (
             *dict.fromkeys(
                 stable_repr(value)
                 for data_type in field.data_type.all_data_types
                 for value in data_type.__dict__.get(WIDENED_VALUES_KEY, ())
+                if not (data_type is field.data_type and isinstance(value, float) and value == fixed)
             ),
         )
     ):
@@ -1187,6 +1199,22 @@ def widened_values_warning(field: DataModelFieldBase) -> str | None:
     )
 
 
+def _bounds_fixed_value(parser: FinishHost, field: DataModelFieldBase) -> object:
+    """Return the value an output that checks constraints admits alone by the field's equal minimum and maximum.
+
+    Under ``--use-bounds-for-float-const`` a float const takes them on its field under ``--field-constraints``
+    (``const_bounds``); None when they differ or without the option (row ``legacy-float-const-unbounded``).
+    """
+    if (
+        not parser.use_bounds_for_float_const
+        or not parser._output_model_context.checks_constraints  # noqa: SLF001
+        or field.constraints is None
+    ):
+        return None
+    values = field.constraints.set_values()
+    return minimum if (minimum := values.get("minimum")) == values.get("maximum") else None
+
+
 def warn_about_dropped_constraints(parser: FinishHost, contexts: Sequence[ModuleContextView]) -> None:
     """Warn once per field whose constraints the output model leaves out on its type, and keep each warning."""
     fields: set[tuple[ModulePath, str]] = set()
@@ -1198,7 +1226,7 @@ def warn_about_dropped_constraints(parser: FinishHost, contexts: Sequence[Module
                         None,
                         (
                             field.dropped_constraints_warning,
-                            widened_values_warning(field),
+                            widened_values_warning(parser, field),
                             tuple_unique_items_warning(parser, field),
                         ),
                     )

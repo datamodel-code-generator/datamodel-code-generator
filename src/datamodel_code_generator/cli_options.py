@@ -426,6 +426,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--no-read-length-keywords-by-type",
         "--read-msgspec-union-bounds-exactly --no-read-msgspec-union-bounds-exactly",
         "--use-site-models-for-constrained-refs --no-use-site-models-for-constrained-refs",
+        "--use-bounds-for-float-const --no-use-bounds-for-float-const",
         "--use-one-model-per-ref-site --no-use-one-model-per-ref-site --field-extra-keys",
         "--field-extra-keys-without-x-prefix",
         "--field-include-all-keys --extra-fields --use-enum-values-in-discriminator",

@@ -2048,6 +2048,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "read_length_keywords_by_type",
         "read_msgspec_union_bounds_exactly",
         "use_site_models_for_constrained_refs",
+        "use_bounds_for_float_const",
         "use_one_model_per_ref_site",
         "use_annotated",
         "use_serialize_as_any_for_every_subclass",

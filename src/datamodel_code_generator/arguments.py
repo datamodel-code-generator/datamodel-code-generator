@@ -1029,6 +1029,14 @@ _toggle(
 )
 _toggle(
     typing_options,
+    "--use-bounds-for-float-const",
+    help="Type a finite float const, which no Literal holds, as a float whose minimum and maximum both equal it, "
+    "written as the output writes number bounds (confloat, Field() or Annotated for Pydantic, Meta for msgspec), so "
+    "other numbers are rejected; output that checks no bounds, such as dataclasses and TypedDict, keeps float with a "
+    "warning; without it the const is typed float, which accepts any number, as in 0.93.0",
+)
+_toggle(
+    typing_options,
     "--use-one-model-per-ref-site",
     help="Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of "
     "that place shares, and parse such chains without nesting; without it each path that reaches the place gets a "

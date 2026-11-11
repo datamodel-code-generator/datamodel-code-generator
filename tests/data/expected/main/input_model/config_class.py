@@ -393,6 +393,7 @@ class BaseGenerateConfig(TypedDict):
     type_overrides_replace_whole_type: NotRequired[bool]
     use_x_python_type_as_written: NotRequired[bool]
     use_bytes_for_content_media_type: NotRequired[bool]
+    use_bounds_for_float_const: NotRequired[bool]
     read_only_write_only_model_type: NotRequired[ReadOnlyWriteOnlyModelType | None]
     dedupe_request_response_variants: NotRequired[bool]
     dedupe_numbered_request_response_variants: NotRequired[bool]

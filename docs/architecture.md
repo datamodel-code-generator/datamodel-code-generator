@@ -168,16 +168,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 252 | Shared generation options. |
-| `GenerateConfig` | 267 | Public `generate()` configuration. |
-| `ParserConfig` | 207 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 209 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 220 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 223 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 210 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 210 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 209 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 210 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 253 | Shared generation options. |
+| `GenerateConfig` | 268 | Public `generate()` configuration. |
+| `ParserConfig` | 208 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 210 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 221 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 224 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 211 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 211 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 210 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 211 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -1596,6 +1596,7 @@ is a new named row, never an anonymous `if`.
 | `legacy-override-keeps-string-keywords` | `--type-overrides` keeps the string keywords the replaced type took | G03b |
 | `legacy-class-override-keeps-container` | without `--type-overrides-replace-whole-type`, a class path of `--type-overrides` keeps the container of the field's own type node, so an object map is written as a dict of the class (`dict[str, dict]` for `builtins.dict`), and every override keeps the item or property counts of the array or map it replaces whatever its type counts | #5987 |
 | `legacy-content-media-type-string-is-text` | without `--use-bytes-for-content-media-type`, a string of an OpenAPI document that has a `contentMediaType` and no `contentEncoding`, raw binary content the generated clients and servers send as a file, is typed `str` (`JsonSchemaParser._get_schema_type`), where a `format: binary` string is `bytes` | keep |
+| `legacy-float-const-unbounded` | without `--use-bounds-for-float-const`, a finite float `const`, which no `Literal` holds, is typed `float` (`JsonSchemaParser._get_const_data_type`), which admits every other number, with a warning, where Pydantic and msgspec output could fix it by an equal `minimum` and `maximum` | keep |
 | `legacy-spelled-union-takes-schema-type` | without `--use-x-python-type-as-written`, an `x-python-type` union spelled `Optional[...]` or `Union[...]` counts as compatible with every type the schema declares (`JsonSchemaParser._is_compatible_python_type`), so the field takes the schema's type, where the same union spelled `X \| Y` types it | keep |
 | `legacy-x-python-type-container-takes-slot-class` | without `--use-x-python-type-as-written`, an `x-python-type` that names a container class compatible with the schema gives the node only its slot (`JsonSchemaParser._get_python_type_flags`), so the slot's class is written: `list` for a `tuple`, `Sequence` for a `MutableSequence`, `set` for a `MutableSet`, `frozenset` for an `AbstractSet` and `Mapping` for a `MutableMapping`, which `--use-generic-container-types` and `--use-unique-items-as-set` rewrite as they rewrite any other | keep |
 | `legacy-anyurl-keeps-string-keywords` | `AnyUrl` takes every string keyword and Pydantic then drops them all at render | G03b |
