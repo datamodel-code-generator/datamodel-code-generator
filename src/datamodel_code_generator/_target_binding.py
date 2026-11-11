@@ -107,7 +107,7 @@ from datamodel_code_generator._target_contract import (
 )
 from datamodel_code_generator._target_module import TypeComposer
 from datamodel_code_generator._target_naming import TargetNames, path_placeholders
-from datamodel_code_generator._target_types import TypeTables, admits_none, is_none, present, sole_present
+from datamodel_code_generator._target_types import TypeTables, admits_none, is_none, present
 from datamodel_code_generator.enums import DataclassArguments, OpenAPIVersion
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import, _import_path, _stored_import
 from datamodel_code_generator.model import dataclass as dataclass_model
@@ -2649,21 +2649,15 @@ class _SchemaUses(_Models):
         with self.free_type(declaration) as free:
             yield free
 
-    def held(self, value: TypeView | None, seen: frozenset[SymbolId] = frozenset()) -> SymbolId | None:
-        """Return the model a type is, or holds through root models, aliases and a union with None alone, or None."""
-        if isinstance(value, UnionType):
-            value = sole_present(value)
-        symbol = value.symbol if isinstance(value, GeneratedSymbolType) and value.symbol not in seen else None
-        members = () if symbol is None else self.members.get(symbol, ())
-        root = next(
-            (
-                facts.type
-                for member in members
-                if member.member_kind == "root_value" and (facts := member.model_facts) is not None
-            ),
-            None,
-        )
-        return symbol if root is None or symbol is None else self.held(root, seen | {symbol})
+    def held(self, value: TypeView | None) -> SymbolId | None:
+        """Return the model a type is, or holds through root models, aliases and a union with None alone, or None.
+
+        It is the last symbol of ``TypeTables.wrapper_chain``: one that wraps no other type, or a wrapper the batch
+        binds no type to.
+        """
+        value, found = self.tables.wrapper_chain(value)
+        held = found and (value is None or self.symbol_table[found[-1]].kind not in WRAPPER_KINDS)
+        return found[-1] if held else None
 
     def union_members(self, value: TypeView | None, direction: Direction) -> tuple[FieldUseBinding, ...]:
         """Return the properties of a union of models merged by name, the members a multipart body's parts are read by.
