@@ -187,17 +187,6 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
     ) -> None:
         """Register the if/then/else required-property rule of ``obj``, deduplicated by value."""
 
-    def _add_pattern_properties_validator(  # noqa: PLR0913, PLR0917
-        self,
-        reference_path: str,
-        name: str,
-        obj: JsonSchemaObject,
-        path: list[str],
-        fields: Sequence[DataModelFieldBase],
-        base_classes: Sequence[Reference],
-    ) -> None:
-        """Register the patternProperties rule of ``obj`` and its allOf sources."""
-
     def _add_property_count_validator(self, reference_path: str, obj: JsonSchemaObject) -> None:
         """Add raw-object property-count rules from this schema and its allOf sources."""
 
@@ -252,12 +241,6 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
     ) -> set[UniqueItemsPath]:
         """Return paths every branch delegates to an executable validator."""
 
-    def _get_conditional_predicate(
-        self,
-        obj: JsonSchemaObject,
-    ) -> tuple[tuple[str, tuple[object, ...]], ...] | None:
-        """Extract supported required-property predicates without dropping other conditions."""
-
     def _get_executable_unique_items_paths(
         self,
         data_type: DataType,
@@ -275,9 +258,6 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
 
     def _get_property_count_rule(self, obj: JsonSchemaObject) -> PropertyCountRule | None:
         """Aggregate one immutable count rule and cache it for this parse only."""
-
-    def _get_required_groups(self, items: Sequence[JsonSchemaObject | bool]) -> tuple[tuple[str, ...], ...]:
-        """Return the property names each item requires, or nothing unless every item only requires properties."""
 
     def _get_union_unique_items_branch_rules(
         self,
@@ -306,13 +286,6 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
         self, base_classes: list[Reference], visited: frozenset[_TargetNode]
     ) -> Iterator[tuple[JsonSchemaObject, frozenset[_TargetNode], str]]:
         """Yield inherited schema objects not visited yet, with the visited schema nodes they add to."""
-
-    def _iter_property_count_validation_sources(
-        self,
-        obj: JsonSchemaObject,
-        visited_refs: frozenset[_TargetNode] = frozenset(),
-    ) -> Iterator[JsonSchemaObject]:
-        """Yield count constraints from allOf, preserving JSON Schema $ref siblings."""
 
     def _iter_schema_validation_sources(
         self,
@@ -590,8 +563,8 @@ def get_not_required_groups(parser: SchemaValidatorsHost, obj: JsonSchemaObject)
 def has_required_group_validators(parser: SchemaValidatorsHost, obj: JsonSchemaObject) -> bool:
     """Return whether obj has a oneOf, anyOf, or not required-property group."""
     return bool(
-        parser._get_required_groups(obj.oneOf)  # noqa: SLF001
-        or parser._get_required_groups(obj.anyOf)  # noqa: SLF001
+        get_required_groups(parser, obj.oneOf)
+        or get_required_groups(parser, obj.anyOf)
         or get_not_required_groups(parser, obj)
     )
 
@@ -620,7 +593,7 @@ def iter_conditional_branches(parser: SchemaValidatorsHost, obj: JsonSchemaObjec
 
 def has_conditional_validator(parser: SchemaValidatorsHost, obj: JsonSchemaObject) -> bool:
     """Return whether ``obj`` has a supported ``if`` and a ``then`` or ``else`` that requires properties."""
-    return parser._get_conditional_predicate(obj) is not None and any(  # noqa: SLF001
+    return get_conditional_predicate(parser, obj) is not None and any(
         branch.required for branch in iter_conditional_branches(parser, obj)
     )
 
@@ -668,7 +641,7 @@ def get_property_count_rule(parser: SchemaValidatorsHost, obj: JsonSchemaObject)
 
     min_properties: int | None = None
     max_properties: int | None = None
-    for source in parser._iter_property_count_validation_sources(obj):  # noqa: SLF001
+    for source in iter_property_count_validation_sources(parser, obj):
         match source.minProperties:
             case int() as source_minimum if source_minimum > 0:
                 min_properties = source_minimum if min_properties is None else max(min_properties, source_minimum)
@@ -701,12 +674,12 @@ def iter_property_count_validation_sources(
         if not isinstance(item, JsonSchemaObject):
             continue
         if not item.ref:
-            yield from parser._iter_property_count_validation_sources(item, visited_refs)  # noqa: SLF001
+            yield from iter_property_count_validation_sources(parser, item, visited_refs)
             continue
         if parser._ref_siblings_apply_to(item, legacy="as-written"):  # noqa: SLF001
             yield item
         if (target := parser._unvisited_ref_target(item.ref, visited_refs)) is not None:  # noqa: SLF001
-            yield from parser._iter_property_count_validation_sources(*target)  # noqa: SLF001
+            yield from iter_property_count_validation_sources(parser, *target)
 
 
 def should_parse_object_with_schema_validators(parser: SchemaValidatorsHost, obj: JsonSchemaObject) -> bool:
@@ -1665,7 +1638,7 @@ def add_conditional_validator(
     names_by_property: dict[str, tuple[str, ...]],
 ) -> None:
     """Register the if/then/else required-property rule of ``obj``, deduplicated by value."""
-    if (predicate := parser._get_conditional_predicate(obj)) is None:  # noqa: SLF001
+    if (predicate := get_conditional_predicate(parser, obj)) is None:
         return
 
     then_groups, else_groups = (
@@ -1704,7 +1677,7 @@ def add_schema_validators(  # noqa: PLR0913, PLR0917
     if not parser.generate_schema_validators:
         return
 
-    parser._add_pattern_properties_validator(reference_path, name, obj, path, fields, base_classes)  # noqa: SLF001
+    add_pattern_properties_validator(parser, reference_path, name, obj, path, fields, base_classes)
     names_by_property = parser._get_input_names_by_property(fields, base_classes)  # noqa: SLF001
     if (
         not parser.force_optional_for_required_fields
@@ -1749,9 +1722,9 @@ def add_group_validators(
     names_by_property: dict[str, tuple[str, ...]],
 ) -> None:
     """Register the required-property groups of the oneOf, anyOf and not of ``source``, then its if/then/else."""
-    oneof_groups = parser._get_required_groups(source.oneOf)  # noqa: SLF001
+    oneof_groups = get_required_groups(parser, source.oneOf)
     parser._add_required_groups_validator(reference_path, "oneOf", oneof_groups, names_by_property)  # noqa: SLF001
-    anyof_groups = parser._get_required_groups(source.anyOf)  # noqa: SLF001
+    anyof_groups = get_required_groups(parser, source.anyOf)
     parser._add_required_groups_validator(reference_path, "anyOf", anyof_groups, names_by_property)  # noqa: SLF001
     not_groups = get_not_required_groups(parser, source)
     parser._add_required_groups_validator(reference_path, "not", not_groups, names_by_property)  # noqa: SLF001

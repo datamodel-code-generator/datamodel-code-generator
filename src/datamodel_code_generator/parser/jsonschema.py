@@ -2949,23 +2949,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the one value a property schema admits as a tag (``parser/_union_tags.py``)."""
         return _union_tags.get_single_literal_value(self, obj, seen_refs)
 
-    def _get_union_variant_literal_values(
-        self,
-        combined_schemas: Sequence[JsonSchemaObject],
-        field_name: str,
-        tag_keys: Mapping[int, str] | None = None,
-    ) -> dict[int, JsonSchemaLiteral] | None:
-        """Return each property branch's distinct literal for a field (``parser/_union_tags.py``)."""
-        return _union_tags.get_union_variant_literal_values(self, combined_schemas, field_name, tag_keys)
-
-    def _iter_union_variant_literal_field_names(
-        self,
-        obj: JsonSchemaObject,
-        combined_schemas: Sequence[JsonSchemaObject],
-    ) -> Iterator[str]:
-        """Yield the fields that may tag the branches of a union (``parser/_union_tags.py``)."""
-        return _union_tags.iter_union_variant_literal_field_names(self, obj, combined_schemas)
-
     def _infer_union_variant_names(
         self,
         name: str,
@@ -3095,21 +3078,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> bool:
         """Return whether a local ref targets false without repeating default validation."""
         return _schema_refs.is_local_ref_false_schema(self, ref, use_builtin_facts=use_builtin_facts)
-
-    def _anchor_ref_path(self, root_key: tuple[str, ...], path: list[str]) -> str:
-        """Return the local ref path for an anchor under the current root."""
-        return _schema_refs.anchor_ref_path(self, root_key, path)
-
-    def _resolve_recursive_ref(self, item: JsonSchemaObject, path: list[str]) -> str | None:
-        """Resolve $recursiveRef to an equivalent $ref.
-
-        Per JSON Schema 2019-09, $recursiveRef only allows "#" as value.
-        Resolves to the root of the nearest enclosing $id resource when it has no $recursiveAnchor,
-        and otherwise to the nearest enclosing schema with $recursiveAnchor: true.
-        For standalone JSON Schema files, this is the root "#".
-        For OpenAPI, this is the component schema definition path.
-        """
-        return _schema_refs.resolve_recursive_ref(self, item, path)
 
     def _schema_location(self, resolved_ref: str) -> str:
         """Return the registry location of a resolved reference."""
@@ -4324,9 +4292,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return whether a combined-schema branch is only a property presence rule."""
         return _schema_validators.is_required_only_schema(self, item, allow_empty=allow_empty)
 
-    def _get_required_groups(self, items: Sequence[JsonSchemaObject | bool]) -> tuple[tuple[str, ...], ...]:
-        return _schema_validators.get_required_groups(self, items)
-
     def _has_pattern_properties_validator(self, obj: JsonSchemaObject) -> bool:
         return _schema_validators.has_pattern_properties_validator(self, obj)
 
@@ -4335,13 +4300,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _get_property_count_rule(self, obj: JsonSchemaObject) -> PropertyCountRule | None:
         return _schema_validators.get_property_count_rule(self, obj)
-
-    def _iter_property_count_validation_sources(
-        self,
-        obj: JsonSchemaObject,
-        visited_refs: frozenset[_TargetNode] = frozenset(),
-    ) -> Iterator[JsonSchemaObject]:
-        return _schema_validators.iter_property_count_validation_sources(self, obj, visited_refs)
 
     def _should_parse_object_with_schema_validators(self, obj: JsonSchemaObject) -> bool:
         return _schema_validators.should_parse_object_with_schema_validators(self, obj)
@@ -4522,17 +4480,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             (data_type for _, data_type in patterns),
         )
 
-    def _add_pattern_properties_validator(  # noqa: PLR0913, PLR0917
-        self,
-        reference_path: str,
-        name: str,
-        obj: JsonSchemaObject,
-        path: list[str],
-        fields: Sequence[DataModelFieldBase],
-        base_classes: Sequence[Reference],
-    ) -> None:
-        _schema_validators.add_pattern_properties_validator(self, reference_path, name, obj, path, fields, base_classes)
-
     def _add_required_groups_validator(
         self,
         reference_path: str,
@@ -4544,13 +4491,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _add_property_count_validator(self, reference_path: str, obj: JsonSchemaObject) -> None:
         _schema_validators.add_property_count_validator(self, reference_path, obj)
-
-    def _get_conditional_predicate(
-        self,
-        obj: JsonSchemaObject,
-    ) -> tuple[tuple[str, tuple[object, ...]], ...] | None:
-        """Extract supported required-property predicates without dropping other conditions."""
-        return _schema_validators.get_conditional_predicate(self, obj)
 
     def _add_conditional_validator(
         self,
@@ -8095,15 +8035,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         except (json.JSONDecodeError, TypeError, *get_yaml_parse_errors()) as exc:
             raise InvalidFileFormatError(exc, self._input_file_type, source=path) from exc
 
-    def _get_ref_body_from_local_http_path(self, ref: str) -> dict[str, YamlValue]:
-        return _schema_documents.get_ref_body_from_local_http_path(self, ref)
-
     def _get_ref_body_from_url(self, ref: str) -> dict[str, YamlValue]:
         """Get reference body from a URL (HTTP, HTTPS, or file scheme)."""
         if ref.startswith("file://"):
             return self._load_local_ref_document(self._resolve_local_ref_path(file_uri_path(ref), ref), ref)
         if self.http_local_ref_path is not None and urlparse(ref).scheme in {"http", "https"}:
-            return self._get_ref_body_from_local_http_path(ref)
+            return _schema_documents.get_ref_body_from_local_http_path(self, ref)
         return self.remote_object_cache.get_or_put(
             ref,
             default_factory=lambda key: _schema_documents.load_ref_data_from_text(

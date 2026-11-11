@@ -341,9 +341,6 @@ class SchemaRefsHost(SchemaResourcesHost, Protocol):
     def _add_ref(self, ref: str) -> Reference:
         """Return the Reference at the key of a reference's edge, named after the edge's spelling if it is new."""
 
-    def _anchor_ref_path(self, root_key: tuple[str, ...], path: list[str]) -> str:
-        """Return the local ref path for an anchor under the current root."""
-
     def _dynamic_scope_context(
         self,
         path: Sequence[str],
@@ -443,9 +440,6 @@ class SchemaRefsHost(SchemaResourcesHost, Protocol):
 
     def _resolve_external_ref_mapping(self, ref: str) -> tuple[str, str] | None:
         """Return the package and fragment ``--external-ref-mapping`` maps a reference to, if any."""
-
-    def _resolve_recursive_ref(self, item: JsonSchemaObject, path: list[str]) -> str | None:
-        """Resolve $recursiveRef to an equivalent $ref."""
 
     def _schema_location(self, resolved_ref: str) -> str:
         """Return the registry location of a resolved reference."""
@@ -717,7 +711,7 @@ def anchor_ref_path(parser: SchemaRefsHost, root_key: tuple[str, ...], path: lis
 def build_anchor_indexes(parser: SchemaRefsHost, obj: JsonSchemaObject, path: list[str]) -> None:
     """Build $recursiveAnchor and $dynamicAnchor indexes for a schema object."""
     root_key = tuple(parser.model_resolver.current_root)
-    ref_path = parser._anchor_ref_path(root_key, path)  # noqa: SLF001
+    ref_path = anchor_ref_path(parser, root_key, path)
     if obj.recursiveAnchor:
         anchors = parser._recursive_anchor_index.setdefault(root_key, [])  # noqa: SLF001
         if ref_path not in anchors:
@@ -754,7 +748,7 @@ def resolve_recursive_ref(parser: SchemaRefsHost, item: JsonSchemaObject, path: 
     if (resource := enclosing_unanchored_resource_ref(parser)) is not None:
         return resource
     root_key = tuple(parser.model_resolver.current_root)
-    current_ref = parser._anchor_ref_path(root_key, path)  # noqa: SLF001
+    current_ref = anchor_ref_path(parser, root_key, path)
     return _nearest_recursive_anchor(parser._recursive_anchor_index.get(root_key, ()), current_ref)  # noqa: SLF001
 
 
@@ -1133,7 +1127,7 @@ def dynamic_scope_target(parser: SchemaRefsHost, item: JsonSchemaObject, path: l
     Rule DS: a `$recursiveRef`, and a plain-name `$dynamicRef`, resolve against the dynamic scope of the model
     being parsed, not against their own document; every other reference resolves through its edge. A
     `$recursiveRef` names the root of its enclosing `$id` resource without `$recursiveAnchor`, else the innermost
-    `$recursiveAnchor` that encloses it, else `#` (``_resolve_recursive_ref``). A `$dynamicRef` names the
+    `$recursiveAnchor` that encloses it, else `#` (``resolve_recursive_ref``). A `$dynamicRef` names the
     `$dynamicAnchor` the dynamic scope binds its name to (``_bound_dynamic_anchor``), else the first
     `$dynamicAnchor` of its name in the document being parsed (``_resolve_dynamic_ref``; in document order under
     --read-dynamic-anchors-in-document-order, ``document_dynamic_anchor``, where a name several schemas declare, an
@@ -1142,7 +1136,7 @@ def dynamic_scope_target(parser: SchemaRefsHost, item: JsonSchemaObject, path: l
     schemas reached under a different scope are parsed again for it.
     """
     if item.recursiveRef:
-        return _DynamicTarget(parser._resolve_recursive_ref(item, path) or "#")  # noqa: SLF001
+        return _DynamicTarget(resolve_recursive_ref(parser, item, path) or "#")
     if not (dynamic_ref := item.dynamicRef):
         return None
     first = note_plain_name(parser, current_dynamic_document(parser), parser._dynamic_scope_pointer, dynamic_ref)  # noqa: SLF001
@@ -1360,7 +1354,7 @@ def merge_ref_with_schema(parser: SchemaRefsHost, obj: JsonSchemaObject, where: 
 def recursive_ref_target(parser: SchemaRefsHost, defining_ref: str, path: tuple[str | int, ...]) -> str | None:
     """Return the location a $recursiveRef in a schema dumped from another document names there.
 
-    It resolves as it does when that document is parsed, see _resolve_recursive_ref. The outermost
+    It resolves as it does when that document is parsed, see resolve_recursive_ref. The outermost
     $recursiveAnchor of the dynamic scope extends an anchored target, so the reference is left to it
     when the document the schema is merged into declares $recursiveAnchor.
     """
@@ -1413,7 +1407,7 @@ def document_recursive_anchors(
     schema_path, definitions = first_definitions(parser, raw, location)
     if definitions:
         anchors.extend(
-            parser._anchor_ref_path((), path)  # noqa: SLF001
+            anchor_ref_path(parser, (), path)
             for _, model, path in definition_entries(parser, definitions, [schema_path])
             if isinstance(model, dict) and model.get("$recursiveAnchor") is True
         )

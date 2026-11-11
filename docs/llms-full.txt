@@ -82668,7 +82668,7 @@ The `$dynamicRef` analysis
 graph node a reference names, so references that spell one schema differently share its analysis and its specialized
 model. The fallbacks of the dynamic-scope rule still read the anchors L1 has registered so far (`_build_anchor_indexes`
 and `_parse_file`: the root, the definitions and each schema parsed through `_parse_raw_or_validated_obj`):
-`parser/_schema_refs.py:resolve_dynamic_ref`, `_resolve_recursive_ref` and `recursive_ref_target`: a `$recursiveAnchor` below `properties`
+`parser/_schema_refs.py:resolve_dynamic_ref`, `resolve_recursive_ref` and `recursive_ref_target`: a `$recursiveAnchor` below `properties`
 is never registered, and an OpenAPI component's `$dynamicRef` parsed before the component that declares its anchor
 resolves through its edge instead (row `legacy-dynamic-anchor-parse-index`). Under
 `--read-dynamic-anchors-in-document-order` the `$dynamicRef` fallback reads the first `$dynamicAnchor` of its name in
