@@ -1,3 +1,0 @@
-# python-runtime
-check
-  Error: The fastapi target needs Python 3.11 or later to run

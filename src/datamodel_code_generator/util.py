@@ -28,10 +28,7 @@ _T = TypeVar("_T")
 @lru_cache(maxsize=1)
 def _get_toml_loader() -> Callable[[Any], dict[str, Any]]:
     """Get the TOML parser lazily."""
-    try:
-        from tomllib import load as load_toml_data  # noqa: PLC0415  # ty: ignore[unresolved-import]
-    except ImportError:  # pragma: no cover
-        from tomli import load as load_toml_data  # noqa: PLC0415  # ty: ignore[unresolved-import]
+    from tomllib import load as load_toml_data  # noqa: PLC0415
 
     return load_toml_data
 

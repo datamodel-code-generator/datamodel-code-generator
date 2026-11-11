@@ -929,7 +929,6 @@ def test_schema_runtime_validation_module_helper_skips_jinja_in_a_fresh_process(
     )
 
 
-@pytest.mark.skipif(sys.version_info < (3, 11), reason="The Playground runtime targets Pyodide Python 3.14")
 def test_playground_builtin_generation_skips_jinja_and_custom_templates() -> None:
     """The browser runtime uses compiled templates and filters custom template input."""
     result = _run_playground_builtin_template_probe()

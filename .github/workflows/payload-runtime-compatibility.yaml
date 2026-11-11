@@ -47,6 +47,31 @@ jobs:
           DCG_PAYLOAD_MAX_EXAMPLES: "100"
           UV_PYTHON_PREFERENCE: "only-managed"
 
+  generated-target310-import:
+    name: Import Python 3.10 output on Python 3.10
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+          cache-suffix: generated-target310-import
+      - name: Install tox
+        run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
+      - name: Setup the export suite
+        run: tox run -vv --notest --skip-missing-interpreters false -e generated-target310-import
+        env:
+          UV_PYTHON_PREFERENCE: "only-managed"
+      - name: Export the suite's Python 3.10 output and import it on Python 3.10
+        run: tox run --skip-uv-sync --skip-pkg-install -e generated-target310-import
+        env:
+          UV_PYTHON_PREFERENCE: "only-managed"
+
   jsonschema-suite-all-drafts:
     name: JSON-Schema-Test-Suite all drafts
     runs-on: ubuntu-24.04
@@ -84,6 +109,7 @@ jobs:
     needs:
       - payload-runtime
       - jsonschema-suite-all-drafts
+      - generated-target310-import
     runs-on: ubuntu-24.04
     permissions:
       contents: read

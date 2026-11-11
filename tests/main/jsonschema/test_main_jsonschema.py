@@ -4392,7 +4392,6 @@ def test_main_jsonschema_builtin_submodule_beside_package_init(
 _ITEM_PAYLOADS = ['{"item": {"sku": "s", "kind": "book"}}', '{"item": {"sku": 1}}']
 _CATALOG_PAYLOADS = ['{"featured": {"sku": "s"}, "parent": {"featured": {"sku": "t"}}}', '{"featured": {"sku": 1}}']
 _DETAIL_PAYLOADS = ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']
-_NEEDS_STR_ENUM = pytest.mark.skipif(sys.version_info < (3, 11), reason="the output imports enum.StrEnum")
 _ANNOTATIONS_DECODED = [("api", "Order", _ITEM_PAYLOADS), ("", "Catalog", _CATALOG_PAYLOADS)]
 _RENAMED_SUBMODULE_DECODED = [
     (
@@ -4442,7 +4441,6 @@ class a later rename moves off its name keeps its name.""",
             [],
             _ANNOTATIONS_DECODED,
             id="future-of-module-msgspec.Struct",
-            marks=_NEEDS_STR_ENUM,
         ),
         pytest.param(
             "module_named_annotations.json",
@@ -4451,7 +4449,6 @@ class a later rename moves off its name keeps its name.""",
             ["--read-const-beside-enum"],
             [*_ANNOTATIONS_DECODED, ("api", "Order", ['{"kind": "book"}', '{"kind": "disc"}'])],
             id="future-enum-member-literal",
-            marks=_NEEDS_STR_ENUM,
         ),
         *(
             pytest.param(
@@ -4471,7 +4468,6 @@ class a later rename moves off its name keeps its name.""",
             ["--read-const-beside-enum", "--set-default-enum-member"],
             [("api", "Order", _LITERAL_PAYLOADS)],
             id="future-of-module-enum-member-literal",
-            marks=_NEEDS_STR_ENUM,
         ),
         pytest.param(
             "module_named_annotations_literal_only.json",
@@ -4489,7 +4485,6 @@ class a later rename moves off its name keeps its name.""",
                 ["--use-enum-values-in-discriminator", *extra_args],
                 [("api", "Pet", ['{"kind": "cat", "meow": "m"}', '{"kind": "dog", "bark": 1}'])],
                 id=f"future-enum-member-discriminator-{output_model_type}",
-                marks=_NEEDS_STR_ENUM,
             )
             for output_model_type, extra_args in (
                 ("pydantic_v2.BaseModel", []),
@@ -4561,7 +4556,6 @@ class a later rename moves off its name keeps its name.""",
                 ("pkg", "Report", ['{"warn": {"count": 1}, "kind": "high"}', '{"kind": "low"}']),
             ],
             id="class-loaded-by-enum-member-literal",
-            marks=_NEEDS_STR_ENUM,
         ),
         pytest.param(
             "module_named_like_package_class_literals.json",
@@ -4573,7 +4567,6 @@ class a later rename moves off its name keeps its name.""",
                 ("pkg", "Report", ['{"warn": {"count": 1}, "kind": "high"}', '{"kind": "low"}']),
             ],
             id="class-enum-member-literals",
-            marks=_NEEDS_STR_ENUM,
         ),
         *(
             pytest.param(
@@ -26965,6 +26958,11 @@ def test_main_rust_only_syntax(output_file: Path) -> None:
         )
 
 
+_IMPORTS_FROM_PARSING_PYTHON = pytest.mark.imports_from_newer_python(
+    "The pattern needs a newer Python's re than the module targets"
+)
+
+
 @pytest.mark.parametrize(
     ("fixture", "target_python_version", "expected_file", "parses_from"),
     [
@@ -26973,6 +26971,7 @@ def test_main_rust_only_syntax(output_file: Path) -> None:
             "3.10",
             "rust_unsupported_atomic_group_py310.py",
             (3, 11),
+            marks=_IMPORTS_FROM_PARSING_PYTHON,
             id="atomic-group-3.10",
         ),
         pytest.param(
@@ -26987,7 +26986,7 @@ def test_main_rust_only_syntax(output_file: Path) -> None:
             "3.13",
             "rust_unsupported_end_of_string_py313.py",
             (3, 14),
-            marks=BLACK_PY313_SKIP,
+            marks=(BLACK_PY313_SKIP, _IMPORTS_FROM_PARSING_PYTHON),
             id="end-of-string-3.13",
         ),
         pytest.param(
@@ -27030,7 +27029,9 @@ def test_main_rust_unsupported_target_python(
 @pytest.mark.parametrize(
     ("target_python_version", "collapse_args", "expected_file"),
     [
-        pytest.param("3.10", [], "rust_unsupported_typed_extra_py310.py", id="python-3.10"),
+        pytest.param(
+            "3.10", [], "rust_unsupported_typed_extra_py310.py", marks=_IMPORTS_FROM_PARSING_PYTHON, id="python-3.10"
+        ),
         pytest.param("3.11", [], "rust_unsupported_typed_extra_py311.py", id="python-3.11"),
         pytest.param(
             "3.11",
@@ -27048,7 +27049,6 @@ def test_main_rust_unsupported_typed_extra_target_python(
     The module is imported where the running Python parses the atomic group, so a pattern pydantic-core rejects fails
     the test when the engine is not switched.
     """
-    runs = sys.version_info >= (3, 11)
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_typed_extra.json",
         output_path=output_file,
@@ -27065,8 +27065,7 @@ def test_main_rust_unsupported_typed_extra_target_python(
             "--disable-timestamp",
             *collapse_args,
         ],
-        skip_code_validation=not runs,
-        force_exec_validation=runs,
+        force_exec_validation=True,
     )
 
 
@@ -29553,7 +29552,7 @@ def test_x_python_type_builtin_and_enum_helpers_for_target_311(output_file: Path
             "builtin",
             "--disable-timestamp",
         ],
-        force_exec_validation=sys.version_info[:2] >= (3, 11),
+        force_exec_validation=True,
     )
 
 
@@ -36747,7 +36746,6 @@ def test_msgspec_enum_diagnostics_preserve_supported_representations(
 
     data = JSON_SCHEMA_DATA_PATH / "msgspec_enum_diagnostics"
     expected = f"msgspec_enum_diagnostics/{case['name']}.py"
-    can_execute = sys.version_info[:2] >= tuple(map(int, case["python"].split(".")))
     formatter_options = (
         {"formatters": [Formatter.BUILTIN]}
         if _uses_external_test_default_formatter() and not is_supported_in_black(PythonVersion(case["python"]))
@@ -36769,7 +36767,7 @@ def test_msgspec_enum_diagnostics_preserve_supported_representations(
             ],
             assert_func=assert_file_content,
             expected_file=expected,
-            force_exec_validation=can_execute,
+            force_exec_validation=True,
         )
     else:
         run_generate_file_and_assert(
@@ -36785,8 +36783,6 @@ def test_msgspec_enum_diagnostics_preserve_supported_representations(
             **case["options"],
             **formatter_options,
         )
-    if not can_execute:
-        return
     results = []
     payloads = case.get("payloads", case["schema"])
     with _generated_model(output_file, "generated_msgspec_enum_controls", "Payload") as model:

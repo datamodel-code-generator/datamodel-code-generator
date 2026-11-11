@@ -199,11 +199,12 @@ DEPRECATIONS: dict[DeprecationId, Deprecation] = {
         kind="dependency",
         target="Running datamodel-code-generator on Python 3.10",
         message=(
-            "Running datamodel-code-generator on Python 3.10 is deprecated and will be removed in 0.85.0; "
-            "run it on Python 3.11 or newer. --target-python-version 3.10 is unaffected."
+            "Running datamodel-code-generator on Python 3.10 was removed in 0.93.0; run it on Python 3.11 or newer, "
+            "for example with `uvx datamodel-code-generator` (uv fetches a supported Python). "
+            "--target-python-version 3.10 is unaffected."
         ),
         warning_since="0.84.0",
-        removal_version="0.85.0",
+        removal_version="0.93.0",
         replacement="Run datamodel-code-generator on Python 3.11 or newer.",
         warning_category="FutureWarning",
         note="Generating code for Python 3.10 with --target-python-version 3.10 is unchanged.",
@@ -274,7 +275,6 @@ _MIGRATION_WARNINGS = frozenset({
     "dependency.black-minimum",
     "dependency.isort-minimum",
     "dependency.pydantic-runtime-minimum",
-    "dependency.python-310-runtime",
 })
 _CLI_MIGRATION_WARNINGS: ContextVar[set[DeprecationId] | None] = ContextVar("cli_migration_warnings", default=None)
 

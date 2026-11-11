@@ -100,17 +100,6 @@ def test_target_render_object_document_loaded_by_pointer(
     assert_output(target_render_report("roles-after-pointer", tmp_path, monkeypatch, capsys))
 
 
-@pytest.mark.abnormal_path("the running interpreter is never older than the supported minimum")
-def test_target_render_python_runtime(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Refuse to render a target on a Python older than every target supports."""
-    monkeypatch.setattr("datamodel_code_generator._api_generation._PYTHON_MINIMUM", (99, 0))
-    assert_output(
-        target_render_report("python-runtime", tmp_path, monkeypatch, capsys), EXPECTED / "python-runtime.txt"
-    )
-
-
 def test_target_render_timestamp(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:

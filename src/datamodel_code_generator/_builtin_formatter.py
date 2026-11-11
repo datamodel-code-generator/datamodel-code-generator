@@ -263,11 +263,7 @@ def _pep695_type_alias_start(line: str) -> re.Match[str] | None:
 
 
 def _needs_pep695_type_alias_placeholders(python_version: PythonVersion | None) -> bool:
-    return (
-        python_version is not None
-        and python_version.version_key >= (3, 12)
-        and (3, 10) <= sys.version_info[:2] < (3, 12)
-    )
+    return python_version is not None and python_version.version_key >= (3, 12) and sys.version_info[:2] < (3, 12)
 
 
 def _pep695_type_alias_statement_end(lines: list[str], start_index: int) -> int:

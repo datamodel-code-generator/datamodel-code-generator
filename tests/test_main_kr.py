@@ -18,12 +18,8 @@ import black
 import jsonschema
 import pydantic
 import pytest
+import tomllib
 from packaging import version
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
 
 from datamodel_code_generator import MIN_VERSION, Error, Formatter, InputFileType, chdir, generate, inferred_message
 from datamodel_code_generator import __main__ as main_module

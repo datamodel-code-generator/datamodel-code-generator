@@ -22,7 +22,7 @@ import pytest
 
 import datamodel_code_generator
 from datamodel_code_generator.__main__ import Exit
-from tests.conftest import CHILD_COVERAGE_ENV, TARGET_PYTHON, assert_output
+from tests.conftest import CHILD_COVERAGE_ENV, assert_output
 from tests.main.conftest import (
     EXPECTED_MAIN_PATH,
     JSON_SCHEMA_DATA_PATH,
@@ -954,7 +954,6 @@ def test_watch_cli_keeps_watching_beside_an_unreadable_directory(tmp_path: Path)
         unreadable_directory.chmod(0o700)
 
 
-@pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
 def test_watch_cli_regenerates_server_on_change(tmp_path: Path) -> None:
     """Regenerate the models and the server package of a single run whenever its input changes."""
     source = PROJECT_ROOT / "tests/data/generation_platform/fastapi"
@@ -987,7 +986,6 @@ def test_watch_cli_regenerates_server_on_change(tmp_path: Path) -> None:
         _stop_watch_cli(process, stdout_thread, stderr_thread)
 
 
-@pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
 def test_watch_cli_announces_implied_settings_once(tmp_path: Path) -> None:
     """Name the settings a watched server implies on the first generation only, and the next steps after each."""
     source = PROJECT_ROOT / "tests/data/generation_platform/fastapi"
@@ -1067,7 +1065,6 @@ def test_watch_cli_naming_hint(options: list[str], pyproject: str, tmp_path: Pat
         _stop_watch_cli(process, stdout_thread, stderr_thread)
 
 
-@pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
 def test_watch_cli_regenerates_client_job_on_change(tmp_path: Path) -> None:
     """Regenerate a client job of a watched batch whenever its input changes, as a model job is.
 
@@ -2789,7 +2786,6 @@ lockfile = "{lockfile.as_posix()}"
     assert not dependencies.accepts_event(lockfile)
 
 
-@pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
 def test_target_watch_registers_the_remote_lock_like_the_model_run(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

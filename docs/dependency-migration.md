@@ -99,12 +99,10 @@ output. See [Formatter behavior](formatter-behavior.md) for scope and configurat
 | Black/isort optional installation | Black or isort is explicitly selected, including through resolved configuration or a formatter-supplying preset. Not also emitted for an implicit pipeline. |
 | Old Black/isort support | A selected formatter is below its proposed future minimum, whether the pipeline was implicit or explicit. Merely having it installed does not warn. |
 | Old runtime Pydantic support | DCG generates code using Pydantic below 2.8.2 in its own runtime, even when generating dataclasses, TypedDict or msgspec models. |
-| Python 3.10 runtime | DCG itself runs on Python 3.10 and generates code through the CLI or the Python API. `--target-python-version 3.10` alone does not warn. |
 
 Each notice is registered separately as an active `FutureWarning`. The default formatter notice retains its
-original 0.52.0 history; the formatter and dependency-floor notices are recorded for the planned 0.78.0 release,
-and the Python 3.10 runtime notice is recorded since 0.84.0 with removal in 0.85.0. The registry contains the
-[exact short messages](deprecations.md). Migration warnings are deduplicated within one CLI invocation, including
+original 0.52.0 history, and the formatter and dependency-floor notices are recorded for the planned 0.78.0 release.
+The registry contains the [exact short messages](deprecations.md). Migration warnings are deduplicated within one CLI invocation, including
 batch and watch regeneration. Non-generation operations such as help, version and listings do not emit them or
 load dependency modules just to check versions. The Python API respects standard warning filters, including
 `always`, `ignore` and `error`; the CLI continues to support `--disable-warnings`. Warnings do not enter stdout or
@@ -202,10 +200,17 @@ actually be removed. Changing target-version semantics would require a separate,
 
 ## Running on Python 3.10
 
-Running datamodel-code-generator on Python 3.10 is deprecated in 0.84.0 and will be removed in 0.85.0, because
-Python 3.10 reached end of life in October 2026. Generation on Python 3.10 emits a `FutureWarning`; run DCG on
-Python 3.11 or newer to prepare. This concerns only the interpreter running DCG: generating code for Python 3.10
-with `--target-python-version 3.10` is unchanged.
+datamodel-code-generator runs on Python 3.11 or newer since 0.93.0; running it on Python 3.10 was deprecated in
+0.84.0, and Python 3.10 reached end of life in October 2026. pip and uv keep a Python 3.10 environment on the last
+release that runs there, 0.92.x. This concerns only the interpreter running DCG: the default target is still
+Python 3.10, and the code generated for Python 3.10, with or without `--target-python-version 3.10`, is unchanged.
+
+Projects that still run on Python 3.10 can keep generating code for it by running DCG on a newer Python, for example
+`uvx datamodel-code-generator --target-python-version 3.10 ...` (uv fetches a supported Python),
+`uvx --from datamodel-code-generator datamodel-codegen ...` (the `datamodel-code-generator` command is new in 0.93.0;
+this form works with every release), or pipx on a newer Python
+(`pipx run --python 3.12 --spec datamodel-code-generator datamodel-codegen ...`). The generated code for Python 3.10 is
+unchanged.
 
 ## Follow-up changes remain separate
 

@@ -5,7 +5,6 @@ from __future__ import annotations
 import ast
 from functools import lru_cache
 
-from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._python_type_annotation import (
     _LITERAL_VALUE_TYPES,
     PythonTypeEllipsis,
@@ -37,106 +36,11 @@ class _InvalidPythonTypeAnnotationError(ValueError):
     pass
 
 
-_LEGACY_STARRED_SENTINEL_BASE = "__datamodel_code_generator_starred"
-_OPENING_DELIMITERS = {"(": ")", "[": "]", "{": "}"}
-
-
-def _legacy_starred_parse_text(type_str: str) -> tuple[str, str] | None:
-    """Rewrite only version-invariant variadic punctuation for Python 3.10.
-
-    ``generate_tokens`` belongs to the running Python, not the requested output
-    version. It must never be extended here to validate or interpret target
-    grammar; this compatibility pass recognizes only delimiter depth and a
-    prefix ``*`` in the annotation subset shared by supported runtimes.
-    """
-    import tokenize  # noqa: PLC0415  # Import only after AST rejects a variadic annotation.
-    from io import StringIO  # noqa: PLC0415
-
-    try:
-        tokens = list(tokenize.generate_tokens(StringIO(type_str).readline))
-    except tokenize.TokenError as error:
-        raise _InvalidPythonTypeAnnotationError from error
-
-    ignored_token_types = frozenset({
-        tokenize.COMMENT,
-        tokenize.DEDENT,
-        tokenize.ENCODING,
-        tokenize.INDENT,
-        tokenize.NEWLINE,
-        tokenize.NL,
-    })
-    identifiers = {token_info.string for token_info in tokens if token_info.type == tokenize.NAME}
-    sentinel, _ = first_free(_LEGACY_STARRED_SENTINEL_BASE, identifiers.__contains__, "padded")
-
-    result: list[tuple[int, str]] = []
-    delimiter_stack: list[str] = []
-    starred_depths: list[int] = []
-    previous_significant = ""
-    replaced = False
-
-    for token_info in tokens:
-        token_type, lexeme = token_info.type, token_info.string
-        if lexeme in {",", ")", "]", "}"}:
-            while starred_depths and starred_depths[-1] == len(delimiter_stack):
-                result.append((tokenize.OP, ")"))
-                starred_depths.pop()
-
-        # Runtime token streams never decide target syntax. Only the outer,
-        # cross-version variadic marker emitted by this codec is rewritten.
-        is_variadic_star = lexeme == "*" and "]" in delimiter_stack and previous_significant in {"(", "[", ","}
-        if is_variadic_star:
-            result.extend(((tokenize.NAME, sentinel), (tokenize.OP, "(")))
-            starred_depths.append(len(delimiter_stack))
-            replaced = True
-        else:
-            result.append((token_type, lexeme))
-
-        if lexeme in _OPENING_DELIMITERS:
-            delimiter_stack.append(_OPENING_DELIMITERS[lexeme])
-        elif lexeme in {")", "]", "}"} and delimiter_stack and lexeme == delimiter_stack[-1]:
-            delimiter_stack.pop()
-
-        if token_type not in ignored_token_types and token_type != tokenize.ENDMARKER:
-            previous_significant = lexeme
-
-    return (tokenize.untokenize(result), sentinel) if replaced else None
-
-
-class _LegacyStarredRestorer(ast.NodeTransformer):
-    """Restore compatibility-parser sentinel calls to native ``ast.Starred`` nodes."""
-
-    def __init__(self, sentinel: str) -> None:
-        self.sentinel = sentinel
-
-    def visit_Call(self, node: ast.Call) -> ast.AST:
-        """Restore only the exact sentinel call shape emitted by the tokenizer."""
-        if (
-            isinstance(node.func, ast.Name)
-            and node.func.id == self.sentinel
-            and len(node.args) == 1
-            and not node.keywords
-        ):
-            return ast.copy_location(ast.Starred(value=self.visit(node.args[0]), ctx=ast.Load()), node)
-        return self.generic_visit(node)
-
-
 def _parse_python_type_annotation_ast(type_str: str) -> ast.expr:
-    try:
-        # feature_version is a best-effort grammar switch in the running AST
-        # implementation. The strict node codec below, not this call alone,
-        # defines the version-independent annotation subset we accept.
-        return ast.parse(type_str, mode="eval", feature_version=(3, 10)).body
-    except SyntaxError:
-        # Most failures are ordinary invalid input. Avoid importing and running
-        # the runtime tokenizer unless the only fallback we support can apply.
-        if "*" not in type_str or (legacy_parse := _legacy_starred_parse_text(type_str)) is None:
-            raise
-        rewritten, sentinel = legacy_parse
-        expression = ast.parse(rewritten, mode="eval", feature_version=(3, 10)).body
-        restored = _LegacyStarredRestorer(sentinel).visit(expression)
-        if not isinstance(restored, ast.expr):  # pragma: no cover
-            raise _InvalidPythonTypeAnnotationError from None
-        return restored
+    # feature_version is a best-effort grammar switch in the running AST
+    # implementation. The strict node codec below, not this call alone,
+    # defines the version-independent annotation subset we accept.
+    return ast.parse(type_str, mode="eval", feature_version=(3, 10)).body
 
 
 def _python_type_union_from_ast(node: ast.BinOp) -> PythonTypeUnion:

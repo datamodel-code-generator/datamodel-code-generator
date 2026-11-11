@@ -10,14 +10,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
+import tomllib
 from inline_snapshot import snapshot
 
 from tests.conftest import assert_output
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

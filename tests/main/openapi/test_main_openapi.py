@@ -2677,9 +2677,7 @@ def test_main_usable_invalid_dotted_inherited_enum_stdout(capsys: pytest.Capture
         capsys=capsys,
         assert_no_stderr=True,
     )
-    validate_generated_code(
-        stored_expected(expected_path).read_text(), str(expected_path), do_exec=sys.version_info >= (3, 11)
-    )
+    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -2703,9 +2701,7 @@ def test_main_usable_converging_invalid_dotted_models_stdout(capsys: pytest.Capt
         capsys=capsys,
         assert_no_stderr=True,
     )
-    validate_generated_code(
-        stored_expected(expected_path).read_text(), str(expected_path), do_exec=sys.version_info >= (3, 11)
-    )
+    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
