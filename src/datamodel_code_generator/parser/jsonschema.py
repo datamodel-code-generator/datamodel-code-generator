@@ -1793,18 +1793,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         return _rw_split.legacy_rw_variants(self)
 
-    def _get_ref_schema_rw_model_field_facts(
-        self,
-        resolved_ref: str,
-    ) -> tuple[bool, bool, bool, bool] | None:
-        """Return the read/write facts of the effective fields of the raw schema at ``resolved_ref``.
-
-        Properties are read in allOf C3 order with their flags joined per name, and required names without a
-        declaration count as unflagged fields; nothing is parsed. Under ``legacy-rw-parsed-facts`` the facts of a
-        temporary parse, ``None`` where it gives none (``_get_parsed_ref_schema_rw_model_field_facts``).
-        """
-        return _rw_split.get_ref_schema_rw_model_field_facts(self, resolved_ref)
-
     def _ref_schema_generates_variant(
         self,
         resolved_ref: str,
@@ -2031,14 +2019,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             frames.variant(reference, base_reference, suffix)
         return reference
 
-    def _update_data_type_ref_for_variant(
-        self,
-        data_type: DataType,
-        suffix: Literal["Request", "Response"],
-    ) -> None:
-        """Recursively update data type references to point to variant models."""
-        return _rw_split.update_data_type_ref_for_variant(self, data_type, suffix)
-
     def _update_variant_additional_properties_metadata(
         self,
         reference_path: str,
@@ -2053,7 +2033,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             or (additional_type := self._build_lightweight_type(obj.additionalProperties)) is None
         ):
             return
-        self._update_data_type_ref_for_variant(additional_type, suffix)
+        _rw_split.update_data_type_ref_for_variant(self, additional_type, suffix)
         _rw_split.store_extra_items_type(self, metadata, additional_type, reference_classes_required=True)
         _rw_split.unregister_temporary_type(self, additional_type)
 
@@ -2086,7 +2066,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         def retarget(data_type: DataType) -> DataType:
             copied_type = self._copy_model_type(data_type)
-            self._update_data_type_ref_for_variant(copied_type, suffix)
+            _rw_split.update_data_type_ref_for_variant(self, copied_type, suffix)
             return copied_type
 
         pattern_properties: list[PatternPropertiesRule] = [
@@ -3663,10 +3643,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self, child, parent, parent_tail=parent_tail, context=context, schema_map=schema_map
         )
 
-    def _has_inherited_constraints(self, schema: JsonSchemaObject) -> bool:
-        """Return whether a partial schema contains constraints at any container depth."""
-        return _inherited_schemas.has_inherited_constraints(self, schema)
-
     def _mark_inherited_materialized_type_shapes(self, schema: JsonSchemaObject) -> None:
         """Mark synthesized schemas whose container constraints need a root wrapper."""
         return _inherited_schemas.mark_inherited_materialized_type_shapes(self, schema)
@@ -3904,50 +3880,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         return None
 
-    def _get_inherited_field_map(self, base_classes: list[Reference]) -> dict[str, DataModelFieldBase]:
-        """Build the effective generated field map once for a set of direct bases."""
-        return _inherited_schemas.get_inherited_field_map(self, base_classes)
-
     def _get_inherited_field_schema(
         self, prop_name: str, base_classes: list[Reference], visited: frozenset[_TargetNode] | None = None
     ) -> JsonSchemaObject | None:
         """Get the schema for an inherited property from parent schemas."""
         return _inherited_schemas.get_inherited_field_schema(self, prop_name, base_classes, visited)
-
-    def _build_missing_required_field(
-        self,
-        required_field_name: str,
-        excludes: set[str],
-        base_classes: list[Reference],
-        scope: ClassScope,
-        inherited_fields: dict[str, DataModelFieldBase] | None = None,
-    ) -> DataModelFieldBase:
-        """Build a field for a required name that is not declared in properties."""
-        return _inherited_schemas.build_missing_required_field(
-            self, required_field_name, excludes, base_classes, scope, inherited_fields
-        )
-
-    def _is_root_model_schema(self, obj: JsonSchemaObject) -> bool:
-        """Check if schema represents a root model (primitive type with constraints).
-
-        Based on parse_raw_obj() else branch conditions. Returns True when
-        the schema would be processed by parse_root_type().
-        """
-        return _all_of_values.is_root_model_schema(self, obj)
-
-    def _handle_allof_root_model_with_constraints(
-        self,
-        name: str,
-        obj: JsonSchemaObject,
-        path: list[str],
-    ) -> DataType | None:
-        """Handle allOf that combines a root model $ref with additional constraints.
-
-        This handler is for generating a root model from a root model reference.
-        Object inheritance (with properties) is handled by existing _parse_all_of_item() path.
-        Only applies to named schema definitions, not inline properties.
-        """
-        return _all_of_values.handle_allof_root_model_with_constraints(self, name, obj, path)
 
     def _merge_all_of_object(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
         """Merge allOf items when they share object properties to avoid duplicate models.
@@ -4663,7 +4600,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             inherited_required_names: frozenset[str] = frozenset()
             if base_classes:
                 base_classes[:] = _inherited_schemas.sort_inherited_base_classes_for_mro(self, base_classes)
-                inherited_fields = self._get_inherited_field_map(base_classes)
+                inherited_fields = _inherited_schemas.get_inherited_field_map(self, base_classes)
                 inherited_properties = self._get_inherited_property_map(base_classes)
                 inherited_required_names = self._get_inherited_required_names(base_classes)
             python_overrides = obj.python_field_overrides
@@ -4768,7 +4705,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     if field := field_name_to_field.get(required_name):
                         _field_rows.require_field(self, field)
                         continue
-                    field = self._build_missing_required_field(
+                    field = _inherited_schemas.build_missing_required_field(
+                        self,
                         required_name,
                         excludes={field.name for field in fields if field.name},
                         base_classes=base_classes,
@@ -4814,7 +4752,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         for required_field_name in required_names:
             if required_field_name in existing_field_names or required_field_name in declared_property_names:
                 continue
-            field = self._build_missing_required_field(
+            field = _inherited_schemas.build_missing_required_field(
+                self,
                 required_field_name,
                 excludes={field.name for field in fields if field.name},
                 base_classes=base_classes,
@@ -5339,7 +5278,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     )
                 )
 
-            root_model_result = self._handle_allof_root_model_with_constraints(name, obj, path)
+            root_model_result = _all_of_values.handle_allof_root_model_with_constraints(self, name, obj, path)
             if root_model_result is not None:
                 return frame.built(root_model_result)
             reads_values = "legacy-value-union-members-unread" not in self._legacy_intersection
@@ -6086,29 +6025,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _other_keys_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
         """Return the additionalProperties schema typing the keys no pattern matches (``parser/_object_maps.py``)."""
         return _object_maps.other_keys_schema(self, obj)
-
-    def _object_map_key_type(
-        self,
-        property_names: JsonSchemaObject | bool | None,  # ruff: ignore[boolean-type-hint-positional-argument]
-        row: Literal["pattern-map", "property-names-map", "extra-field"],
-        *,
-        pattern: str | None = None,
-        name: str = "",
-        path: Sequence[str] = (),
-    ) -> DataType | None:
-        """Return the key type of the dict of an object map, ``None`` for ``str`` keys.
-
-        Every row reads the key schema it keeps through ``_parse_property_name_key_schema``; the rows differ by the
-        position of the dict:
-
-        - ``pattern-map``, the dict of patternProperties and the root dict a pattern validator checks: propertyNames
-          read as a string schema, its ``$ref`` resolved; ``pattern`` joins it when the map admits only the keys of its
-          patterns, and gives ``str`` keys of that pattern without a propertyNames schema.
-        - ``property-names-map``, the dict of ``parse_property_names``: a ``$ref`` merged with its siblings; an anyOf,
-          oneOf or allOf parsed as a type under ``name`` and ``path`` (``_parse_combined_property_names_key_type``).
-        - ``extra-field``, the typed extra field of a model: only a direct schema that constrains the keys.
-        """
-        return _object_maps.object_map_key_type(self, property_names, row, pattern=pattern, name=name, path=path)
 
     def _is_object_map_schema(self, obj: JsonSchemaObject) -> bool:  # noqa: PLR6301
         """Return whether the keywords of a schema make an object map.
