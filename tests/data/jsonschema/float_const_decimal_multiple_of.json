@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "c": {"type": "number", "const": 0.3, "multipleOf": 0.1}
+  }
+}

@@ -1309,14 +1309,16 @@ def bounded_const_type(parser: ValueKeywordsHost, const: object, obj: JsonSchema
     Under ``--use-bounds-for-float-const`` without ``--field-constraints`` an output that checks constraints writes
     them on the type with the other number keywords of ``obj``, as it writes those of a number; with it the field
     takes them (``JsonSchemaParser._field_const_bounds``). Row ``legacy-float-const-unbounded``: without the option
-    none.
+    none. The option never changes the type of a field: where the other number keywords would turn the bounded float
+    into another kind, as a ``multipleOf`` under ``--use-decimal-for-multiple-of`` into a decimal, the const stays
+    ``float``, whose parsed values are those written without the option.
     """
     if obj is None or obj.enum or not _type_takes_const_bounds(parser) or not (bounds := _value_bounds(const, obj)):
         return None
     others = tuple(keyword for keyword in NUMBER_KEYWORD_ORDER if keyword not in bounds)
-    return parser.data_type_manager.get_data_type(
-        Types.float, **bounds, **_constraint_values(obj, others, as_numbers=True)
-    )
+    manager = parser.data_type_manager
+    bounded = manager.get_data_type(Types.float, **bounds, **_constraint_values(obj, others, as_numbers=True))
+    return bounded if bounded.type == manager.get_data_type(Types.float, **bounds).type else None
 
 
 def _type_takes_const_bounds(parser: ValueKeywordsHost) -> bool:

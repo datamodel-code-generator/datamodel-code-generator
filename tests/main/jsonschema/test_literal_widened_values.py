@@ -127,3 +127,46 @@ def test_float_const_bounds(
             expected_attribute_path=("variant", "__class__", "__name__"),
             expected_attribute_value="B",
         )
+
+
+@pytest.mark.parametrize("option_set", [(), ("--field-constraints",)])
+def test_float_const_bounds_keep_the_float_type_of_decimal_multiple_of(
+    output_file: Path, recwarn: pytest.WarningsRecorder, option_set: tuple[str, ...]
+) -> None:
+    """Keep a float const with a multipleOf a float under --use-decimal-for-multiple-of, as without the bounds (#5090).
+
+    The bounds with that multipleOf would make the type a decimal and the valid value 0.3 a ``Decimal``; the option
+    never changes the type of a field or a parsed value, so the const stays ``float`` with the warning.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "float_const_decimal_multiple_of.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--use-decimal-for-multiple-of",
+            "--use-bounds-for-float-const",
+            *option_set,
+        ],
+    )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(
+                str(warning.message)
+                for warning in recwarn
+                if warning.category is UserWarning and "a Literal of the output model" in str(warning.message)
+            )
+        ),
+        name="warnings",
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="float_const_decimal_multiple_of",
+        model_name="Model",
+        valid_json='{"c": 0.3}',
+        invalid_json='{"c": "x"}',
+        expected_error_type="float_parsing",
+        expected_repr="Model(c=0.3)",
+    )

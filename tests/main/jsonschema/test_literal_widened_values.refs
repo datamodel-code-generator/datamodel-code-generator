@@ -41,6 +41,11 @@ typing.TypedDict-field_constraints	main/jsonschema/literal_widened_values/float_
 typing.TypedDict-field_constraints	main/jsonschema/literal_widened_values/float_const_bounds[typing.TypedDict-field_constraints].warnings.txt	= main/jsonschema/literal_widened_values/float_const_bounds[dataclasses.dataclass-annotated].warnings.txt
 typing.TypedDict-off	main/jsonschema/literal_widened_values/float_const_bounds[typing.TypedDict-off].py	= main/jsonschema/literal_widened_values/float_const_bounds[typing.TypedDict-annotated].py
 typing.TypedDict-off	main/jsonschema/literal_widened_values/float_const_bounds[typing.TypedDict-off].warnings.txt	= main/jsonschema/literal_widened_values/float_const_bounds[dataclasses.dataclass-annotated].warnings.txt
+[test_float_const_bounds_keep_the_float_type_of_decimal_multiple_of]
+option_set0	main/jsonschema/literal_widened_values/float_const_bounds_keep_the_float_type_of_decimal_multiple_of[option_set0].py
+option_set0	main/jsonschema/literal_widened_values/float_const_bounds_keep_the_float_type_of_decimal_multiple_of[option_set0].warnings.txt
+option_set1	main/jsonschema/literal_widened_values/float_const_bounds_keep_the_float_type_of_decimal_multiple_of[option_set1].py
+option_set1	main/jsonschema/literal_widened_values/float_const_bounds_keep_the_float_type_of_decimal_multiple_of[option_set1].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_literal_widened_values]
 dataclasses.dataclass-default	main/jsonschema/literal_widened_values/literal_widened_values[dataclasses.dataclass-default].py
 dataclasses.dataclass-default	main/jsonschema/literal_widened_values/literal_widened_values[dataclasses.dataclass-default].warnings.txt
