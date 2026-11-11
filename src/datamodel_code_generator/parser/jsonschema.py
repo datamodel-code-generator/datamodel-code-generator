@@ -1614,15 +1614,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return _value_keywords.has_effective_constraints(self, obj)
 
     def _split_constraint_values(
-        self, obj: JsonSchemaObject, data_type: DataType | None = None
+        self, obj: JsonSchemaObject, data_type: DataType | None = None, bounds: Mapping[str, float] | None = None
     ) -> tuple[dict[str, Any], dict[str, Any]]:
         """Return the constraint values of the type-dependent keywords that a field takes, and those it leaves out.
 
         The keywords of a kind a declared schema type holds (number, string or array) follow ``_keywords_taken``;
         the emitted Python type decides the others. The left-out ones are the declared keywords the type does not
         take, to warn about, ``minItems`` and ``maxItems`` of a declared string as the lengths they are written as.
+        ``bounds`` replace the schema's ``minimum`` and ``maximum`` (``_field_const_bounds``).
         """
-        return _value_keywords.split_constraint_values(self, obj, data_type)
+        return _value_keywords.split_constraint_values(self, obj, data_type, bounds)
 
     def _is_fixed_length_tuple(self, obj: JsonSchemaObject) -> bool:
         """Check if an array field represents a fixed-length tuple."""
@@ -1722,8 +1723,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return a DataType for a JSON Schema const value: its Literal (``const_type``) or its value's type.
 
         With the schema ``obj``, a Literal const that does not meet the constraints beside it is kept as written, with
-        the unsatisfiable warning. A value type keeps the const it is written in place of (``_widened``).
+        the unsatisfiable warning. A float const takes the bounds that fix it on its type where the type writes them
+        (``bounded_const_type``); another value type keeps the const it is written in place of (``_widened``).
         """
+        if (bounded := _value_keywords.bounded_const_type(self, const, obj)) is not None:
+            return bounded
         return self._widened(_value_keywords.get_const_data_type(self, const, obj), (const,))
 
     def _widened(self, data_type: DataType, values: Sequence[object]) -> DataType:
@@ -2172,7 +2176,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         default_value = effective_default if effective_has_default is not None else field.default
         has_default = effective_has_default if effective_has_default is not None else field.has_default
-        assembled = self._assemble_field_constraints(field, field_type, _PROPERTY_SITE)
+        assembled = self._assemble_field_constraints(field, field_type, _PROPERTY_SITE, required=required)
         constraints = assembled.constraints
         nullable = self._null_facts(field, "field", required=required, has_default=has_default).admits_null
         extras = self.get_field_extras(field)
@@ -7179,7 +7183,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         return self.data_type(reference=reference)
 
-    def _assemble_field_constraints(
+    def _assemble_field_constraints(  # noqa: PLR0913
         self,
         obj: JsonSchemaObject,
         data_type: DataType,
@@ -7187,6 +7191,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         *,
         preserve: bool = False,
         assembled: Any = None,
+        required: bool = False,
     ) -> _AssembledConstraints:
         """Assemble the constraints a field of ``site`` writes from ``obj`` for its ``data_type``.
 
@@ -7194,7 +7199,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         pattern, the property counts of a map, the item counts of an array without the lengths of a fixed tuple (a
         field whose type is no array, such as a string, takes none, and neither does one whose schema declares types
         that admit none, as a ``string`` typed ``datetime.date``); a heterogeneous type list takes none of the
-        keywords and item counts, the property counts follow the map type.
+        keywords and item counts, the property counts follow the map type. The bounds of a float const join them
+        (``_field_const_bounds``, which reads whether a property is ``required``).
         ``preserve`` reads the keywords without ``--field-constraints`` and ``assembled`` (the array builder's
         constraints of a preserved root) replaces the declared ones.
         """
@@ -7211,7 +7217,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if built:
                 constraints = assembled
             elif self.is_constraints_field(obj, data_type) or (site.holds_schema and (field_constraints or preserve)):
-                constraints, untaken = self._split_constraint_values(obj, data_type)
+                constraints, untaken = self._split_constraint_values(
+                    obj, data_type, self._field_const_bounds(obj, required=required)
+                )
                 for key in self._keywords_left_out(obj, data_type, site, reads_declared=field_constraints or preserve):
                     constraints.pop(key, None)
             if constraints is not None and field_constraints and obj.format == "hostname":
@@ -7246,6 +7254,23 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             records,
             type_list_unique,
         )
+
+    def _field_const_bounds(self, obj: JsonSchemaObject, *, required: bool) -> dict[str, float]:
+        """Return the bounds of a float const that its field takes under ``--field-constraints`` (``const_bounds``).
+
+        They replace a ``minimum`` and a ``maximum`` beside the const, of which they keep the tighter. A required field
+        takes none where a ``Field()`` call would be its constructor default
+        (``REQUIRED_ASSIGNMENT_COUNTS_AS_CONSTRUCTOR_DEFAULT``, a Pydantic dataclass without ``--use-annotated``), which
+        would move it in the constructor. Only under ``--use-bounds-for-float-const`` (row
+        ``legacy-float-const-unbounded``).
+        """
+        if not (self.use_bounds_for_float_const and self.field_constraints) or (
+            required
+            and self.data_model_type.REQUIRED_ASSIGNMENT_COUNTS_AS_CONSTRUCTOR_DEFAULT
+            and not self.use_annotated
+        ):
+            return {}
+        return _value_keywords.const_bounds(obj)
 
     def _keywords_left_out(
         self, obj: JsonSchemaObject, data_type: DataType, site: _ConstraintSite, *, reads_declared: bool

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "exact": {"const": 1.5},
+    "typed": {"type": "number", "const": 2.5},
+    "bounded": {"type": "number", "const": 3.5, "minimum": 0},
+    "stepped": {"type": "number", "const": 1.5, "multipleOf": 0.5, "maximum": 10},
+    "items": {"type": "array", "items": {"const": 1.5}},
+    "values": {"type": "object", "additionalProperties": {"const": 1.5}},
+    "either": {"anyOf": [{"const": 4.5}, {"type": "string"}]},
+    "ratio": {"$ref": "#/$defs/Ratio"},
+    "variant": {"oneOf": [{"$ref": "#/$defs/A"}, {"$ref": "#/$defs/B"}]}
+  },
+  "required": ["exact", "variant"],
+  "$defs": {
+    "Ratio": {"type": "number", "const": 0.5},
+    "A": {"type": "object", "properties": {"k": {"const": 1.5}}, "required": ["k"]},
+    "B": {"type": "object", "properties": {"k": {"const": 2.5}}, "required": ["k"]}
+  }
+}

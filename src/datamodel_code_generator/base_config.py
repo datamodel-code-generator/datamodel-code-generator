@@ -541,6 +541,7 @@ class BaseGenerateConfig(BaseModel):
     type_overrides_replace_whole_type: bool = False
     use_x_python_type_as_written: bool = False
     use_bytes_for_content_media_type: bool = False
+    use_bounds_for_float_const: bool = False
     read_only_write_only_model_type: ReadOnlyWriteOnlyModelType | None = None
     dedupe_request_response_variants: bool = False
     dedupe_numbered_request_response_variants: bool = False

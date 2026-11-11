@@ -1215,7 +1215,18 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
-_STANDARD_20261111_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (*_STANDARD_20261106_OPTION_GROUPS,)
+_STANDARD_20261111_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
+    *_STANDARD_20261106_OPTION_GROUPS,
+    PresetOptionGroup(
+        title="Float consts fixed by bounds",
+        config=PresetConfig(use_bounds_for_float_const=True),
+        description=(
+            "Type a finite float const, which no Literal holds, as a float whose minimum and maximum both equal it, "
+            "written as the output writes number bounds, so Pydantic and msgspec reject other numbers instead of "
+            "accepting any float."
+        ),
+    ),
+)
 """The 20261106 groups and the opt-in options of the release after 0.93.0."""
 
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {

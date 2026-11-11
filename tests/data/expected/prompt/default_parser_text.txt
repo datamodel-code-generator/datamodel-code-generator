@@ -143,6 +143,7 @@
 - `--no-read-length-keywords-by-type`
 - `--no-read-msgspec-union-bounds-exactly`
 - `--no-snake-case-field`
+- `--no-use-bounds-for-float-const`
 - `--no-use-field-description`
 - `--no-use-field-description-example`
 - `--no-use-one-model-per-ref-site`
@@ -160,6 +161,7 @@
 - `--snake-case-field`: Convert field names to snake_case format.
 - `--special-field-name-prefix`: Prefix to add to special field names (like reserved keywords).
 - `--use-attribute-docstrings`: Generate field descriptions as attribute docstrings instead of Field descriptions.
+- `--use-bounds-for-float-const`: Type a finite float `const` as a float whose minimum and maximum both equal it.
 - `--use-enum-values-in-discriminator`: Use enum values in discriminator mappings for union types.
 - `--use-field-description`: Include schema descriptions as Field docstrings.
 - `--use-field-description-example`: Add field examples to docstrings.

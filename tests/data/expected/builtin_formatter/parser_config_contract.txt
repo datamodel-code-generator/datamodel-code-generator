@@ -146,6 +146,7 @@ reviewed-safe type_overrides_replace_whole_type
 reviewed-safe untrusted_input
 reviewed-safe use_annotated
 reviewed-safe use_attribute_docstrings
+reviewed-safe use_bounds_for_float_const
 reviewed-safe use_bytes_for_content_media_type
 reviewed-safe use_closed_typed_dict
 reviewed-safe use_decimal_for_multiple_of

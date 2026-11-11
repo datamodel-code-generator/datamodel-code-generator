@@ -149,6 +149,7 @@ What other options should I use?
 - `--no-read-length-keywords-by-type`
 - `--no-read-msgspec-union-bounds-exactly`
 - `--no-snake-case-field`
+- `--no-use-bounds-for-float-const`
 - `--no-use-field-description`
 - `--no-use-field-description-example`
 - `--no-use-one-model-per-ref-site`
@@ -166,6 +167,7 @@ What other options should I use?
 - `--snake-case-field`: Convert field names to snake_case format.
 - `--special-field-name-prefix`: Prefix to add to special field names (like reserved keywords).
 - `--use-attribute-docstrings`: Generate field descriptions as attribute docstrings instead of Field descriptions.
+- `--use-bounds-for-float-const`: Type a finite float `const` as a float whose minimum and maximum both equal it.
 - `--use-enum-values-in-discriminator`: Use enum values in discriminator mappings for union types.
 - `--use-field-description`: Include schema descriptions as Field docstrings.
 - `--use-field-description-example`: Add field examples to docstrings.
@@ -841,6 +843,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Use typing.Annotated for Field(). Also, `--field-
                         constraints` option will be enabled. Will become
                         default for Pydantic v2 in a future version.
+  --use-bounds-for-float-const, --no-use-bounds-for-float-const
+                        Type a finite float const, which no Literal holds, as
+                        a float whose minimum and maximum both equal it,
+                        written as the output writes number bounds (confloat,
+                        Field() or Annotated for Pydantic, Meta for msgspec),
+                        so other numbers are rejected; output that checks no
+                        bounds, such as dataclasses and TypedDict, keeps float
+                        with a warning; without it the const is typed float,
+                        which accepts any number, as in 0.93.0
   --use-bytes-for-content-media-type, --no-use-bytes-for-content-media-type
                         Type a string of an OpenAPI document that has a
                         contentMediaType and no contentEncoding as bytes, as a

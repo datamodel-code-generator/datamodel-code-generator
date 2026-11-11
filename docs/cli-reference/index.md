@@ -10,7 +10,7 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 19 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 55 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 38 | Field naming and docstring behavior |
+| 🏷️ [Field Customization](field-customization.md) | 39 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 72 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
@@ -396,6 +396,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--url`](base-options.md#url)
 - [`--use-annotated`](typing-customization.md#use-annotated)
 - [`--use-attribute-docstrings`](field-customization.md#use-attribute-docstrings)
+- [`--use-bounds-for-float-const`](field-customization.md#use-bounds-for-float-const)
 - [`--use-bytes-for-content-media-type`](typing-customization.md#use-bytes-for-content-media-type)
 - [`--use-closed-typed-dict`](typing-customization.md#use-closed-typed-dict)
 - [`--use-decimal-for-multiple-of`](typing-customization.md#use-decimal-for-multiple-of)

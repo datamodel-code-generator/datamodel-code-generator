@@ -10,6 +10,8 @@ read-const-beside-enum-command-line	main/preset_opt_in_options/preset_option_tur
 read-const-beside-enum-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].py
 read-length-keywords-by-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].py
 read-length-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].py
+use-bounds-for-float-const-command-line	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].py
+use-bounds-for-float-const-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].py
 use-typed-nullable-map-values-command-line	main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-command-line].py
 use-typed-nullable-map-values-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-command-line].py
 [test_preset_sets_opt_in_option]
@@ -113,6 +115,8 @@ tag-msgspec-by-payload-name-practical	main/preset_opt_in_options/preset_sets_opt
 tag-msgspec-by-payload-name-standard	main/preset_opt_in_options/preset_sets_opt_in_option[tag-msgspec-by-payload-name-standard].py	= main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py
 type-overrides-replace-whole-type-practical	main/preset_opt_in_options/preset_sets_opt_in_option[type-overrides-replace-whole-type-practical].py	= main/preset_opt_in_options/preset_sets_opt_in_option[type-overrides-replace-whole-type-standard].py
 type-overrides-replace-whole-type-standard	main/preset_opt_in_options/preset_sets_opt_in_option[type-overrides-replace-whole-type-standard].py
+use-bounds-for-float-const-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-bounds-for-float-const-practical].py
+use-bounds-for-float-const-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-bounds-for-float-const-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-bounds-for-float-const-practical].py
 use-bytes-for-content-media-type-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-bytes-for-content-media-type-practical].py
 use-bytes-for-content-media-type-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-bytes-for-content-media-type-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-bytes-for-content-media-type-practical].py
 use-decimal-in-field-forms-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-decimal-in-field-forms-practical].py
