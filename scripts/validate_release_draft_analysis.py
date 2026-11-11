@@ -210,8 +210,21 @@ def _read_range(tool_use_result: Any, expected_path: str) -> tuple[int, int, int
     return (start_line, end_line, total_lines) if end_line <= total_lines else None
 
 
-def _covers_entire_file(read_ranges: list[tuple[int, int, int]]) -> bool:
-    """Return whether successful Read ranges cover every line in one file."""
+def _empty_final_line(file_path: str) -> int:
+    """Return the number of the empty line Read counts after a trusted artifact's final newline, or 0 without one."""
+    try:
+        data = Path(file_path).read_bytes()
+    except OSError:
+        return 0
+    return data.count(b"\n") + 1 if data.endswith(b"\n") else 0
+
+
+def _covers_entire_file(read_ranges: list[tuple[int, int, int]], *, empty_final_line: int = 0) -> bool:
+    """Return whether successful Read ranges cover every line in one file.
+
+    Read counts the empty text after a final newline as the last line, so a ``totalLines`` equal to
+    ``empty_final_line`` does not require that line, which holds nothing to read.
+    """
     if not read_ranges or len(total_lines := {read_range[2] for read_range in read_ranges}) != 1:
         return False
     total_line_count = total_lines.pop()
@@ -222,7 +235,7 @@ def _covers_entire_file(read_ranges: list[tuple[int, int, int]]) -> bool:
         if start_line > next_line:
             return False
         next_line = max(next_line, end_line + 1)
-    return next_line > total_line_count
+    return next_line > total_line_count - (total_line_count == empty_final_line)
 
 
 def _validate_execution_evidence(
@@ -272,7 +285,10 @@ def _validate_execution_evidence(
             continue
         if read_range := _read_range(tool_use_result, file_path):
             successful_read_ranges[file_path].append(read_range)
-    if all(_covers_entire_file(read_ranges) for read_ranges in successful_read_ranges.values()):
+    if all(
+        _covers_entire_file(read_ranges, empty_final_line=_empty_final_line(path))
+        for path, read_ranges in successful_read_ranges.items()
+    ):
         return
     _fail_closed("Claude did not completely read all prepared artifacts; refusing to update the draft.")
 

@@ -524,6 +524,84 @@ def test_execution_evidence_rejects_incomplete_token_capped_pagination(
         )
 
 
+def _diff_pages_execution_record(
+    tmp_path: Path, diff_content: str, pages: list[tuple[int, int]], total_lines: int
+) -> tuple[list[dict[str, Any]], Path, Path, Path]:
+    """Build an execution record that reads a three-line context whole and the diff in the given pages.
+
+    Both artifacts end with a newline where the content does, and Read reports the empty text after it as a line.
+    """
+    marker_path = tmp_path / "marker.txt"
+    analysis_context_path = tmp_path / "analysis-context.md"
+    diff_path = tmp_path / "pr.diff"
+    marker_path.write_text("read-boundary-marker\n", encoding="utf-8")
+    analysis_context_path.write_text("line\nline\nline\n", encoding="utf-8", newline="\n")
+    diff_path.write_text(diff_content, encoding="utf-8", newline="\n")
+
+    execution_record = _execution_record(marker_path, analysis_context_path, diff_path)
+    execution_record[3]["tool_use_result"] = _file_read_output(analysis_context_path, num_lines=3, total_lines=4)
+    first_start, first_count = pages[0]
+    execution_record[5]["tool_use_result"] = _file_read_output(
+        diff_path, start_line=first_start, num_lines=first_count, total_lines=total_lines
+    )
+    for number, (start_line, num_lines) in enumerate(pages[1:], 2):
+        tool_use_id = f"toolu_read_diff_page_{number}"
+        execution_record[-1:-1] = [
+            {
+                "type": "assistant",
+                "message": {
+                    "content": [
+                        {
+                            "type": "tool_use",
+                            "id": tool_use_id,
+                            "name": "Read",
+                            "input": {"file_path": str(diff_path), "offset": start_line, "limit": num_lines},
+                        },
+                    ],
+                },
+            },
+            {
+                "type": "user",
+                "message": {"content": [{"type": "tool_result", "tool_use_id": tool_use_id}]},
+                "tool_use_result": _file_read_output(
+                    diff_path, start_line=start_line, num_lines=num_lines, total_lines=total_lines
+                ),
+            },
+        ]
+    return execution_record, marker_path, analysis_context_path, diff_path
+
+
+def test_execution_evidence_accepts_reads_that_end_at_the_final_newline(tmp_path: Path) -> None:
+    """Pages that stop at the last line before the final newline read the whole artifact."""
+    execution_record, marker_path, analysis_context_path, diff_path = _diff_pages_execution_record(
+        tmp_path, "diff\n" * 4, [(1, 2), (3, 2)], 5
+    )
+
+    validator._validate_execution_evidence(execution_record, marker_path, analysis_context_path, diff_path)
+
+
+@pytest.mark.parametrize(
+    ("diff_content", "pages", "total_lines"),
+    [
+        ("diff\n" * 4, [(1, 1), (3, 2)], 5),
+        ("diff\n" * 4, [(1, 2), (3, 1)], 5),
+        ("diff\n" * 4 + "diff", [(1, 2), (3, 2)], 5),
+        ("diff\n" * 4, [(1, 2), (3, 3)], 6),
+    ],
+    ids=["gap", "last-line-unread", "no-final-newline", "total-past-the-final-newline"],
+)
+def test_execution_evidence_rejects_reads_that_skip_a_line_before_the_final_newline(
+    diff_content: str, pages: list[tuple[int, int]], total_lines: int, tmp_path: Path
+) -> None:
+    """Only the empty line Read counts after the final newline may stay unread."""
+    execution_record, marker_path, analysis_context_path, diff_path = _diff_pages_execution_record(
+        tmp_path, diff_content, pages, total_lines
+    )
+
+    with pytest.raises(SystemExit):
+        validator._validate_execution_evidence(execution_record, marker_path, analysis_context_path, diff_path)
+
+
 @pytest.mark.parametrize(
     "mutation",
     [
@@ -847,6 +925,9 @@ def test_range_coverage_handles_empty_and_inconsistent_metadata() -> None:
     assert validator._covers_entire_file([(1, 0, 0)]) is True
     assert validator._covers_entire_file([(1, 1, 1), (1, 1, 2)]) is False
     assert validator._covers_entire_file([(2, 2, 2)]) is False
+    assert validator._covers_entire_file([(1, 2, 3)], empty_final_line=3) is True
+    assert validator._covers_entire_file([(1, 1, 3)], empty_final_line=3) is False
+    assert validator._covers_entire_file([(1, 2, 3)], empty_final_line=4) is False
 
 
 @pytest.mark.parametrize(
