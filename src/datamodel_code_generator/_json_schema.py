@@ -110,15 +110,17 @@ def schema_positions(
 
 
 @overload
-def subschema_entries(
+def subschema_entries(  # noqa: D418 - CodeQL flags an ellipsis body.
     keyword: str, value: object, *, booleans: Literal[False] = False
-) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any]]]: ...
+) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any]]]:
+    """Yield the object subschemas ``keyword`` holds."""
 
 
 @overload
-def subschema_entries(
+def subschema_entries(  # noqa: D418
     keyword: str, value: object, *, booleans: Literal[True]
-) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any] | bool]]: ...
+) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any] | bool]]:
+    """Yield the object and boolean subschemas ``keyword`` holds."""
 
 
 def subschema_entries(
