@@ -3150,7 +3150,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         remote or piped generic can bind $dynamicRef to an anchor of the schema that referenced it.
         """
         target_document, _, pointer = location.partition("#")
-        if target_document == _schema_documents.schema_resource_document(self, list(self.model_resolver.current_root)):
+        if target_document == _schema_documents.current_document(self):
             yield f"#{pointer}"
             return
         with _schema_refs.schema_document_context(self, []), self.root_id_context({}):
@@ -3183,11 +3183,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         only for schemas parsed in place of another, such as specialized models and merged $ref targets.
         """
         previous = self._dynamic_document, self._dynamic_scope_path, self._dynamic_scope_pointer, self._dynamic_bindings
-        self._dynamic_document = (
-            _schema_documents.schema_resource_document(self, list(self.model_resolver.current_root))
-            if document is None
-            else document
-        )
+        self._dynamic_document = _schema_documents.current_document(self) if document is None else document
         self._dynamic_scope_path = tuple(path)
         self._dynamic_scope_pointer = (
             unquote(self.model_resolver.join_path(tuple(path)).partition("#")[2]) if pointer is None else pointer
@@ -9351,16 +9347,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     self.parse_id(root_obj, [*path_parts, "#"] if path_parts else ["#"])
                     _schema_refs.build_anchor_indexes(self, root_obj, path_parts)
                     schema_path, definitions = _schema_documents.first_definitions(self, raw, None)
-                    definition_entries = list(
-                        _schema_documents.iter_schema_definition_entries(self, definitions, [*path_parts, schema_path])
+                    definition_metadata_entries = _schema_documents.definition_entries(
+                        self, definitions, [*path_parts, schema_path]
                     )
-                    definition_metadata_entries = [
-                        *(
-                            (str(key), model, [*path_parts, schema_path, str(key)])
-                            for key, model in definitions.items()
-                        ),
-                        *definition_entries,
-                    ]
+                    definition_entries = definition_metadata_entries[len(definitions) :]
                     seen_definition_metadata_paths: set[tuple[str, ...]] = set()
                     validated_definition_objects: dict[tuple[str, ...], JsonSchemaObject] = {}
                     for _key, model, definition_path in definition_metadata_entries:

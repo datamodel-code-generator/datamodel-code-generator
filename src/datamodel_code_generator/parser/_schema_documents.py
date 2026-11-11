@@ -406,11 +406,7 @@ def lenient_ref(parser: SchemaResourcesHost, ref: str) -> str:
     reference with an edge maps so in its own document, as part of its key (``_compute_ref_key``).
     """
     documents = parser._implicit_documents if _is_plain_name_fragment(ref) else parser._lenient_documents  # noqa: SLF001
-    if (
-        not documents
-        or isinstance(ref, ResolvedRef)
-        or (document := schema_resource_document(parser, list(parser.model_resolver.current_root))) not in documents
-    ):
+    if not documents or isinstance(ref, ResolvedRef) or (document := current_document(parser)) not in documents:
         return ref
     return keep_resolved_ref(
         ref,
@@ -554,6 +550,16 @@ def schema_resource_document(parser: DocumentNamesHost, path_parts: list[str]) -
     return location
 
 
+def current_document(parser: DocumentNamesHost) -> str:
+    """Identify the physical schema document of the root being parsed (``schema_resource_document``)."""
+    return schema_resource_document(parser, list(parser.model_resolver.current_root))
+
+
+def located_document(parser: DocumentNamesHost, location: SchemaLocation) -> DocumentId:
+    """Identify the physical schema document that a location of a loaded document is in."""
+    return DocumentId(schema_resource_document(parser, [location.document]))
+
+
 def iter_schema_resource_children(
     parser: SchemaResourcesHost, schema: dict[str, Any]
 ) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any]]]:
@@ -611,7 +617,7 @@ def plain_name_ref(parser: SchemaResourcesHost, ref: str, pointer: str) -> str:
     unless --read-dynamic-anchors-in-document-order names the first (``duplicate_name_location``). A name nothing
     declares stays as written.
     """
-    document = schema_resource_document(parser, list(parser.model_resolver.current_root))
+    document = current_document(parser)
     registry = parser._schema_resource_registry  # noqa: SLF001
     uri = registry.plain_name_uri(document, pointer, ref)
     if (location := duplicate_name_location(parser, uri)) is None and (
@@ -831,7 +837,7 @@ def loading_document_dialect(parser: SchemaDocumentsHost) -> DocumentDialect | N
     It is the version of the document being parsed; in the resolution context of a document no load has recorded
     yet, which a reference entered to load it, that of the document the reference is in.
     """
-    current = schema_resource_document(parser, list(parser.model_resolver.current_root))
+    current = current_document(parser)
     return parser._document_dialects.get(current) or parser._referring_dialect  # noqa: SLF001
 
 
@@ -948,7 +954,7 @@ def mount_converted_schema(
     def mounted_ref(ref: str) -> str:
         return f"#{location.pointer}{ref.partition('#')[2].removeprefix(container)}"
 
-    document = DocumentId(schema_resource_document(parser, [location.document]))
+    document = located_document(parser, location)
     graph.note_converted(location)
     return graph.mount(converted, location, document, parser._ref_reading("object"), ConvertedRefs(mounted_ref, home))  # noqa: SLF001
 
@@ -1153,3 +1159,17 @@ def iter_schema_definition_entries(
     for key, model in definitions.items():
         name = str(key)
         yield from iter_schema_definition_entry(parser, name, model, [*base_path, name])
+
+
+def definition_entries(
+    parser: SchemaResourcesHost, definitions: dict[str, YamlValue], base_path: list[str]
+) -> list[tuple[str, YamlValue, list[str]]]:
+    """Return the name, value and path of each entry of a definitions container, then of the walk of its namespaces.
+
+    The entries of the container come first, one per key, then ``iter_schema_definition_entries``, which yields an
+    entry that is no namespace again.
+    """
+    return [
+        *((str(key), model, [*base_path, str(key)]) for key, model in definitions.items()),
+        *iter_schema_definition_entries(parser, definitions, base_path),
+    ]
