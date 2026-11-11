@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {"child": {"$ref": "#/$defs/Child"}, "override": {"$ref": "#/$defs/Override"}},
+  "$defs": {
+    "Base": {"type": "object", "properties": {"name": {"type": "string"}, "ratio": {"type": "number", "const": 0.5}}},
+    "Child": {"allOf": [{"$ref": "#/$defs/Base"}], "required": ["ratio"]},
+    "RequiredBase": {"type": "object", "properties": {"ratio": {"type": "number"}}, "required": ["ratio"]},
+    "Override": {
+      "allOf": [
+        {"$ref": "#/$defs/RequiredBase"},
+        {"properties": {"name": {"type": "string"}, "ratio": {"type": "number", "const": 0.5}}}
+      ]
+    }
+  }
+}

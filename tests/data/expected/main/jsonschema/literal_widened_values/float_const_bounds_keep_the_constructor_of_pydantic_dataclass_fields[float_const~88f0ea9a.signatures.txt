@@ -1,0 +1,14 @@
+without the option:
+BaseRequest(name, ratio)
+BaseResponse(id, name, ratio)
+ChildRequest(ratio, name)
+ChildResponse(ratio, id, name)
+ModelRequest(child)
+ModelResponse(child)
+with the option:
+BaseRequest(name, ratio)
+BaseResponse(id, name, ratio)
+ChildRequest(ratio, name)
+ChildResponse(ratio, id, name)
+ModelRequest(child)
+ModelResponse(child)

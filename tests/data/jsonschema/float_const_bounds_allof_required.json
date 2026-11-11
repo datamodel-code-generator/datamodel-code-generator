@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "item": {
+      "allOf": [
+        {"type": "object", "properties": {"name": {"type": "string"}, "ratio": {"type": "number", "const": 0.5}}},
+        {"required": ["ratio"]}
+      ]
+    }
+  }
+}

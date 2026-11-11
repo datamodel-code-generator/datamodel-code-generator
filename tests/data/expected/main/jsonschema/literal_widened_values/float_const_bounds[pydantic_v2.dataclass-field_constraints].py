@@ -27,9 +27,9 @@ class B:
 class Model:
     exact: float
     variant: A | B
-    typed: float = Field(None, ge=2.5, le=2.5)
-    bounded: float = Field(None, ge=3.5, le=3.5)
-    stepped: float = Field(None, ge=1.5, le=1.5, multiple_of=0.5)
+    typed: float = None
+    bounded: float = Field(None, ge=0.0)
+    stepped: float = Field(None, le=10.0, multiple_of=0.5)
     items: list[float] | None = None
     values: dict[str, float] | None = None
     either: float | str | None = None

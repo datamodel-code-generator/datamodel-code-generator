@@ -2178,7 +2178,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         default_value = effective_default if effective_has_default is not None else field.default
         has_default = effective_has_default if effective_has_default is not None else field.has_default
-        assembled = self._assemble_field_constraints(field, field_type, _PROPERTY_SITE, required=required)
+        assembled = self._assemble_field_constraints(field, field_type, _PROPERTY_SITE)
         constraints = assembled.constraints
         nullable = self._null_facts(field, "field", required=required, has_default=has_default).admits_null
         extras = self.get_field_extras(field)
@@ -7185,7 +7185,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         return self.data_type(reference=reference)
 
-    def _assemble_field_constraints(  # noqa: PLR0913
+    def _assemble_field_constraints(
         self,
         obj: JsonSchemaObject,
         data_type: DataType,
@@ -7193,7 +7193,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         *,
         preserve: bool = False,
         assembled: Any = None,
-        required: bool = False,
     ) -> _AssembledConstraints:
         """Assemble the constraints a field of ``site`` writes from ``obj`` for its ``data_type``.
 
@@ -7202,7 +7201,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         field whose type is no array, such as a string, takes none, and neither does one whose schema declares types
         that admit none, as a ``string`` typed ``datetime.date``); a heterogeneous type list takes none of the
         keywords and item counts, the property counts follow the map type. The bounds of a float const join them
-        (``_field_const_bounds``, which reads whether a property is ``required``).
+        (``_field_const_bounds``).
         ``preserve`` reads the keywords without ``--field-constraints`` and ``assembled`` (the array builder's
         constraints of a preserved root) replaces the declared ones.
         """
@@ -7220,7 +7219,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 constraints = assembled
             elif self.is_constraints_field(obj, data_type) or (site.holds_schema and (field_constraints or preserve)):
                 constraints, untaken = self._split_constraint_values(
-                    obj, data_type, self._field_const_bounds(obj, required=required)
+                    obj, data_type, self._field_const_bounds(obj, site)
                 )
                 for key in self._keywords_left_out(obj, data_type, site, reads_declared=field_constraints or preserve):
                     constraints.pop(key, None)
@@ -7257,17 +7256,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             type_list_unique,
         )
 
-    def _field_const_bounds(self, obj: JsonSchemaObject, *, required: bool) -> dict[str, float]:
+    def _field_const_bounds(self, obj: JsonSchemaObject, site: _ConstraintSite) -> dict[str, float]:
         """Return the bounds of a float const that its field takes under ``--field-constraints`` (``const_bounds``).
 
-        They replace a ``minimum`` and a ``maximum`` beside the const, of which they keep the tighter. A required field
-        takes none where a ``Field()`` call would be its constructor default
-        (``REQUIRED_ASSIGNMENT_COUNTS_AS_CONSTRUCTOR_DEFAULT``, a Pydantic dataclass without ``--use-annotated``), which
-        would move it in the constructor. Only under ``--use-bounds-for-float-const`` (row
+        They replace a ``minimum`` and a ``maximum`` beside the const, of which they keep the tighter. A property of
+        a Pydantic dataclass without ``--use-annotated`` takes none
+        (``REQUIRED_ASSIGNMENT_COUNTS_AS_CONSTRUCTOR_DEFAULT``): a ``Field()`` call would be a constructor default
+        there and move a field that turns out required in the constructor, which is final only after the field is
+        built; this reads no required state. Only under ``--use-bounds-for-float-const`` (row
         ``legacy-float-const-unbounded``).
         """
         if not (self.use_bounds_for_float_const and self.field_constraints) or (
-            required
+            site is _PROPERTY_SITE
             and self.data_model_type.REQUIRED_ASSIGNMENT_COUNTS_AS_CONSTRUCTOR_DEFAULT
             and not self.use_annotated
         ):
