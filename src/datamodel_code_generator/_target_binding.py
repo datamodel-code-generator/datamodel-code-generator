@@ -107,19 +107,7 @@ from datamodel_code_generator._target_contract import (
 )
 from datamodel_code_generator._target_module import TypeComposer
 from datamodel_code_generator._target_naming import TargetNames, path_placeholders
-from datamodel_code_generator._target_types import (
-    admits_none,
-    contained,
-    is_none,
-    kept_values,
-    lexical_kind,
-    member_kind,
-    present,
-    sole_present,
-    untyped,
-    unwrapped,
-    wrapper_chain,
-)
+from datamodel_code_generator._target_types import TypeTables, admits_none, is_none, present, sole_present
 from datamodel_code_generator.enums import DataclassArguments, OpenAPIVersion
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import, _import_path, _stored_import
 from datamodel_code_generator.model import dataclass as dataclass_model
@@ -2213,6 +2201,7 @@ class _Models:
         self.excluded: dict[tuple[SymbolId, str], DataModelFieldBase] = {}
         self.binaries: dict[tuple[SymbolId, Direction], SchemaLocation | None] = {}
         self.symbol_table: dict[SymbolId, FinalModelSymbol] = {}
+        self.tables = TypeTables(self.symbol_table, self.members)
         self.copies = {
             location
             for old, _, merged in cast("RecordingGenerationStore", parser.generation_store).redirects
@@ -2702,7 +2691,7 @@ class _SchemaUses(_Models):
         object requires it; a name every object leaves out of the direction is left out. An alternative that is no
         model declares none; whether the parts of a name agree is the body's to tell (``_Octets._union_parts``).
         """
-        if not isinstance(unwrapped(value, self.symbol_table, self.members), UnionType):
+        if not isinstance(self.tables.unwrapped(value), UnionType):
             return ()
         objects = [self.members_at(symbol, None, direction) for symbol in self.union_objects(value, frozenset()) or ()]
         declared = [{name: member for name, _, member in property_members(members)} for members in objects]
@@ -2734,7 +2723,7 @@ class _SchemaUses(_Models):
         """
         if (symbol := self.held(value)) is not None:
             return None if self.symbol_table[symbol].kind in _SCALAR_SYMBOLS else [symbol]
-        if not isinstance(found := unwrapped(value, self.symbol_table, self.members), UnionType) or found in seen:
+        if not isinstance(found := self.tables.unwrapped(value), UnionType) or found in seen:
             return None
         objects: list[SymbolId] = []
         for item in present(found):
@@ -2996,7 +2985,7 @@ class _SchemaUses(_Models):
 class _UseFacts(_SchemaUses):
     """Read how a use's value is written as text from the type and members it binds, once every schema use is bound.
 
-    A value is laid out as its type is (``layout``), its kinds are those of its types (``_target_types.lexical_kind``),
+    A value is laid out as its type is (``layout``), its kinds are those of its types (``TypeTables.lexical_kind``),
     and its other properties are what the parser reads the schema of the model it holds to say (``others``).
     """
 
@@ -3006,37 +2995,25 @@ class _UseFacts(_SchemaUses):
         A class model or a mapping is an object, an item container an array, a union of members laid out alike is laid
         out as they are, and any other type is a scalar.
         """
-        found = unwrapped(value, self.symbol_table, self.members)
+        found = self.tables.unwrapped(value)
         if isinstance(found, UnionType):
             layouts = {self.layout(member) for member in present(found)}
             return layouts.pop() if len(layouts) == 1 else "scalar"
         if (
             isinstance(found, GeneratedSymbolType) and self.symbol_table[found.symbol].kind not in _SCALAR_SYMBOLS
-        ) or contained(found, "values", self.symbol_table, self.members) is not None:
+        ) or self.tables.contained(found, "values") is not None:
             return "object"
-        return "array" if self.items(found) is not None else "scalar"
-
-    def kind(self, value: TypeView | None) -> LexicalKind | None:
-        """Return the lexical kind of a text leaf's type (``_target_types.lexical_kind``)."""
-        return lexical_kind(value, self.symbol_table, self.members)
-
-    def items(self, value: TypeView | None) -> TypeView | None:
-        """Return the items type of the item container a type stands for (``_target_types.contained``)."""
-        return contained(value, "items", self.symbol_table, self.members)
-
-    def named_models(self, value: TypeView | None) -> list[SymbolId]:
-        """Return the models a type names, then those the aliases and root models among them stand for, in order.
-
-        A union with None alone names what its other member names (``_target_types.wrapper_chain``).
-        """
-        return wrapper_chain(value, self.symbol_table, self.members)[1]
+        return "array" if self.tables.contained(found, "items") is not None else "scalar"
 
     def holder(self, value: TypeView | None, source: SourceLocation) -> SourceLocation:
-        """Return where the schema of a type's values is: the last named model's (``named_models``), else ``source``."""
+        """Return where the schema of a type's values is: the last model it names, else ``source``.
+
+        The models it names are those of ``TypeTables.wrapper_chain``.
+        """
         location = next(
             (
                 found
-                for symbol in reversed(self.named_models(value))
+                for symbol in reversed(self.tables.wrapper_chain(value)[1])
                 if (found := self.locations.get(symbol)) is not None
             ),
             None,
@@ -3044,11 +3021,11 @@ class _UseFacts(_SchemaUses):
         return source if location is None else self.documents.location(location, "schema")
 
     def object_symbols(self, value: TypeView | None) -> list[SymbolId]:
-        """Return the models a type names (``named_models``), then the bases of the class it holds.
+        """Return the models a type names (``TypeTables.wrapper_chain``), then the bases of the class it holds.
 
         The bases are in method resolution order (``_mro.linearize``).
         """
-        found = self.named_models(value)
+        found = self.tables.wrapper_chain(value)[1]
         if found and self.symbol_table[found[-1]].kind not in WRAPPER_KINDS:
             order = linearize([found[-1]], lambda item: item, lambda item: self.symbol_table[item].bases, rule="python")
             found.extend(base for base in (order or [])[1:] if base not in found)
@@ -3084,7 +3061,7 @@ class _UseFacts(_SchemaUses):
         owner, said = next(
             ((symbol, found.others) for symbol, found in facts if found.others != "absent"), (None, "absent")
         )
-        mapping = contained(value, "values", self.symbol_table, self.members)
+        mapping = self.tables.contained(value, "values")
         if said == "absent" and mapping is not None:
             said = "schema"
         if said != "schema":
@@ -3092,7 +3069,7 @@ class _UseFacts(_SchemaUses):
         if (location := None if owner is None else self.locations.get(owner)) is None:
             return _Others(said, patterns, holder.child("additionalProperties"), mapping)
         declaration = location.child("additionalProperties")
-        kept = next(kept_values(members, self.symbol_table, self.members), None)
+        kept = next(self.tables.kept_values(members), None)
         free = declaration if kept is None and declaration in self.parser.free_schemas else None
         values = (
             kept[1] if kept is not None else None if free is None else self.lightweight(free, direction).value
@@ -3115,9 +3092,11 @@ class _UseFacts(_SchemaUses):
         An item container member of a form repeats, in its items' kind, reported where its items' schema is
         (``repeated``). A member of a parameter value whose values have no one kind has their shape (``bracketed``).
         """
-        if form and (item := self.items(value)) is not None:
-            return MemberShape(name, KindAt(self.repeated(value, source), self.kind(item)), repeated=True)
-        if (kind := self.kind(value)) is not None or form:
+        if form and (item := self.tables.contained(value, "items")) is not None:
+            return MemberShape(
+                name, KindAt(self.repeated(value, source), self.tables.lexical_kind(item)), repeated=True
+            )
+        if (kind := self.tables.lexical_kind(value)) is not None or form:
             return MemberShape(name, KindAt(source, kind))
         return MemberShape(name, KindAt(source, None), value=self.bracketed(value, source, direction, seen))
 
@@ -3135,7 +3114,7 @@ class _UseFacts(_SchemaUses):
 
     def repeated(self, value: TypeView | None, source: SourceLocation) -> SourceLocation:
         """Return where the schema of the items of a form member's values is, its own where it does not repeat."""
-        return source if self.items(value) is None else self.holder(value, source).child("items")
+        return source if self.tables.contained(value, "items") is None else self.holder(value, source).child("items")
 
     def shape(  # noqa: PLR0911, PLR0913
         self,
@@ -3161,16 +3140,16 @@ class _UseFacts(_SchemaUses):
         layout = self.layout(value)
         if layout == "array" and not form:
             site = holder.child("items")
-            if (kind := self.kind(items := self.items(value))) is not None:
+            if (kind := self.tables.lexical_kind(items := self.tables.contained(value, "items"))) is not None:
                 return TextShape("array", KindAt(site, kind))
             return TextShape("array", KindAt(site, None), items=self.bracketed(items, site, direction, seen))
         if not form and (kind := self.single(value)) is not None:
             return TextShape("array", KindAt(holder, kind), single=True)
-        found = unwrapped(value, self.symbol_table, self.members)
+        found = self.tables.unwrapped(value)
         if layout != "object":
             if form:
                 return TextShape("object", problem=(holder, _NOT_OBJECT))
-            if (kind := self.kind(value)) is not None or not isinstance(found, UnionType):
+            if (kind := self.tables.lexical_kind(value)) is not None or not isinstance(found, UnionType):
                 return TextShape("scalar", KindAt(holder, kind))
             choices = tuple(
                 self.shape(item, holder, self.held_members(item, direction), direction, form=False, seen=seen)
@@ -3204,14 +3183,14 @@ class _UseFacts(_SchemaUses):
         Its scalar members and the items of its array members are all of that kind; a member that is an object, or a
         member or items of another kind or of none, leaves it without one.
         """
-        if not isinstance(found := unwrapped(value, self.symbol_table, self.members), UnionType):
+        if not isinstance(found := self.tables.unwrapped(value), UnionType):
             return None
         alternatives = present(found)
         layouts = [self.layout(member) for member in alternatives]
         if set(layouts) != {"scalar", "array"}:
             return None
         kinds = {
-            self.kind(self.items(member) if layout == "array" else member)
+            self.tables.lexical_kind(self.tables.contained(member, "items") if layout == "array" else member)
             for member, layout in zip(alternatives, layouts, strict=True)
         }
         return kinds.pop() if len(kinds) == 1 else None
@@ -3294,11 +3273,8 @@ class _UseFacts(_SchemaUses):
         """
         return (
             value is None
-            or untyped(value, self.symbol_table, self.members)
-            or (
-                self.layout(value) == "object"
-                and not isinstance(unwrapped(value, self.symbol_table, self.members), UnionType)
-            )
+            or self.tables.untyped(value)
+            or (self.layout(value) == "object" and not isinstance(self.tables.unwrapped(value), UnionType))
         )
 
     def encodings(self) -> None:
@@ -3416,14 +3392,14 @@ class _Octets(_UseFacts):
         container.
         """
         leaves = [] if node is None else [leaf for leaf, _ in self.alternatives(node, direction)]
-        if (item := self.items(value)) is not None:
+        if (item := self.tables.contained(value, "items")) is not None:
             leaves = [
                 inner
                 for leaf in leaves
                 if isinstance(leaf, DataType) and leaf in ITEM_CONTAINERS and leaf.data_types
                 for inner, _ in self.alternatives(leaf.data_types[0], direction)
             ]
-        found = unwrapped(value if item is None else item, self.symbol_table, self.members)
+        found = self.tables.unwrapped(value if item is None else item)
         binary = [leaf for leaf in leaves if isinstance(leaf, DataType) and binary_content_of(leaf)]
         types = [self.builtin_types(leaf, direction) for leaf in binary]
         file = (
@@ -3552,7 +3528,7 @@ class _Octets(_UseFacts):
         for name, _, _ in property_members(use.members):
             parts = [item[name] for item in found if name in item]
             shapes = {(part.file, part.repeated, part.structured, part.text) for part in parts}
-            kinds = {member_kind(value, self.symbol_table, self.members)[0] for part in parts if (value := part.value)}
+            kinds = {self.tables.member_kind(value)[0] for part in parts if (value := part.value)}
             whole = {part.value for part in parts if part.repeated or part.structured}
             if len(shapes) > 1 or len(kinds) > 1 or len(whole) > 1:
                 return PartFacts(object=False, members=(), extra=None), None

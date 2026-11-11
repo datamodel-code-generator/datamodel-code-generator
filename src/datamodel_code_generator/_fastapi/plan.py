@@ -73,14 +73,12 @@ from datamodel_code_generator._target_contract import (
     is_required,
     label,
     literal_text,
-    members_by_consumer,
     operation_schemes,
     parameter_place,
     range_start,
     scheme_catalogues,
     scope_problem,
     security_requirements,
-    symbols_by_id,
     type_uses,
     unresolved_reference,
     uses_by_id,
@@ -647,8 +645,9 @@ class Planner:  # noqa: PLR0904
         self.types = types
         self.unspelled: set[TypeUseId] = set()
         self.uses = uses_by_id(request.batch)
-        self.symbols = symbols_by_id(request.batch)
-        self.members = members_by_consumer(request.batch)
+        self.tables = wire.kinds.tables
+        self.symbols = self.tables.symbols
+        self.members = self.tables.members
         self.extras = extras_symbols(self.symbols, self.members)
         self.parameter_plans = parameter_plans(wire)
         self.scheme_catalogues = scheme_catalogues(request.batch)
@@ -1293,7 +1292,7 @@ class Planner:  # noqa: PLR0904
                         member.name in json_members
                         or part_json(self.wire.kinds, member.type, encodings.get(member.name), self.wire.versions)
                     ),
-                    untyped=multipart and self.wire.kinds.untyped(member.leaf),
+                    untyped=multipart and self.wire.kinds.tables.untyped(member.leaf),
                 ),
             )
             for member in members
@@ -1319,7 +1318,7 @@ class Planner:  # noqa: PLR0904
                 media,
                 extras,
                 json=multipart and part_json(self.wire.kinds, extras.type, None, self.wire.versions),
-                untyped=multipart and self.wire.kinds.untyped(extras.leaf),
+                untyped=multipart and self.wire.kinds.tables.untyped(extras.leaf),
             )
         elif multipart and (media.use.parts is None or media.use.parts.extra is None):
             additional = JsonPartSpec("", BuiltinType("object"), untyped=True)
@@ -1403,7 +1402,7 @@ class Planner:  # noqa: PLR0904
             and all(
                 (facts := member.model_facts) is not None
                 and self.kind(facts.type) is not None
-                and not (self.textless(facts.type) and self.wire.kinds.member(facts.type)[0] != "string")
+                and not (self.textless(facts.type) and self.wire.kinds.tables.member_kind(facts.type)[0] != "string")
                 for member in self.members.get(value.symbol, ())
             )
         )
@@ -1431,7 +1430,7 @@ class Planner:  # noqa: PLR0904
 
     def json_null(self, media: MediaSpec | None) -> bool:
         """Return whether a media is JSON of a type that accepts null, so its response sends None as `null`."""
-        return media is not None and json_null(media.kind, media.use, self.symbols, self.members)
+        return media is not None and json_null(media.kind, media.use, self.tables)
 
     def primary(self, operation: OperationContract, responses: tuple[ResponseSpec, ...]) -> PrimarySpec | None:
         """Choose the primary response and decide whether FastAPI's response_model sends bare values.

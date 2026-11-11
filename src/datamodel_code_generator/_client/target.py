@@ -312,7 +312,7 @@ def _render(  # ruff: ignore[too-many-locals]
     """Plan the request's operations, bind their codecs, and render the package."""
     backend = _BACKENDS[request.model_config.output_model_type]
     wire = _wire(request, request.batch, brackets=config.deep_object_brackets)
-    facts = ModelFacts(request.batch)
+    facts = ModelFacts(wire.kinds.tables)
     helping = helper_operations(protocols)
     try:
         plan = Planner(request, config, wire, facts, helping, selected=selected).plan()

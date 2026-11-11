@@ -27,11 +27,15 @@ from datamodel_code_generator._target_contract import (
     LiteralType,
     NoneType,
     UnionType,
-    members_by_consumer,
-    symbols_by_id,
     wrapped_type,
 )
-from datamodel_code_generator._target_types import CONSTRAINED_SCALARS, container_slot, sole_present, without_none
+from datamodel_code_generator._target_types import (
+    CONSTRAINED_SCALARS,
+    TypeTables,
+    container_slot,
+    sole_present,
+    without_none,
+)
 from datamodel_code_generator.imports import _import_path
 
 if TYPE_CHECKING:
@@ -40,7 +44,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import (
         FieldUseBinding,
         FinalModelSymbol,
-        GeneratedTypeContractBatch,
         ModelFieldFacts,
         SymbolId,
         TypeView,
@@ -148,10 +151,11 @@ def _required(consumer: FinalModelSymbol, owner: FinalModelSymbol, facts: ModelF
 class ModelFacts:
     """The generated models of a batch: their symbols, their fields by consumer, and the types they stand for."""
 
-    def __init__(self, batch: GeneratedTypeContractBatch) -> None:
-        """Index the batch's symbols by identity and its field bindings by consuming symbol."""
-        self.symbols = symbols_by_id(batch)
-        self.members = members_by_consumer(batch)
+    def __init__(self, tables: TypeTables) -> None:
+        """Read the batch's symbols by identity and its field bindings by consuming symbol from its tables."""
+        self.tables = tables
+        self.symbols = tables.symbols
+        self.members = tables.members
         self.planned: dict[SymbolId, tuple[ModelField, ...]] = {}
 
     def symbol(self, value: TypeView) -> FinalModelSymbol | None:
