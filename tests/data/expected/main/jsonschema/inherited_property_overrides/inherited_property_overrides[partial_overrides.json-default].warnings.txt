@@ -1,0 +1,2 @@
+partial_overrides.json#/$defs/NestedParent/properties/pair: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+partial_overrides.json#/$defs/NestedChild/allOf/1/properties/pair: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.

@@ -1,0 +1,277 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Nested": {
+      "type": "string",
+      "maxLength": 9
+    },
+    "Parent": {
+      "type": "object",
+      "properties": {
+        "p0": {
+          "additionalProperties": false
+        },
+        "p1": {
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "p2": {
+          "additionalProperties": true
+        },
+        "p3": {
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "p4": {
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "p5": {
+          "items": [
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "p6": {
+          "prefixItems": [
+            {
+              "type": "string"
+            }
+          ],
+          "items": {
+            "type": "integer"
+          }
+        },
+        "p7": {
+          "properties": {
+            "nested": {
+              "type": "string"
+            }
+          }
+        },
+        "p8": {
+          "properties": {
+            "nested": {
+              "minimum": 1
+            }
+          }
+        },
+        "p9": {
+          "type": "object",
+          "additionalProperties": false
+        },
+        "p10": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "p11": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "p12": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "p13": {
+          "type": "array",
+          "items": [
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "p14": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "p15": {
+          "allOf": [
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "p16": {
+          "enum": [
+            "value"
+          ]
+        },
+        "p17": {
+          "type": [
+            "null"
+          ]
+        },
+        "p18": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "p19": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "p20": {
+          "type": "string"
+        },
+        "u0": {
+          "anyOf": [
+            {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "p21": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Parent"
+        },
+        {
+          "properties": {
+            "p0": {
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "p1": {
+              "additionalProperties": false
+            },
+            "p2": {
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "p3": {
+              "additionalProperties": true
+            },
+            "p4": {
+              "additionalProperties": {
+                "maxLength": 3
+              }
+            },
+            "p5": {
+              "items": {
+                "minLength": 1
+              }
+            },
+            "p6": {
+              "prefixItems": [
+                {
+                  "maxLength": 3
+                },
+                {
+                  "minimum": 0
+                }
+              ]
+            },
+            "p7": {
+              "properties": {
+                "nested": {
+                  "$ref": "#/$defs/Nested"
+                }
+              }
+            },
+            "p8": {
+              "properties": {
+                "nested": {
+                  "maximum": 2
+                }
+              }
+            },
+            "p9": {
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "p10": {
+              "additionalProperties": false
+            },
+            "p11": {
+              "additionalProperties": true
+            },
+            "p12": {
+              "additionalProperties": {
+                "minLength": 1
+              }
+            },
+            "p13": {
+              "items": {
+                "minLength": 1
+              }
+            },
+            "p14": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "p15": {
+              "minLength": 1
+            },
+            "p16": {
+              "minLength": 1
+            },
+            "p17": {
+              "type": "null"
+            },
+            "p18": {
+              "description": "x"
+            },
+            "p19": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "p20": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "u0": {
+              "minLength": 1,
+              "type": [
+                "string",
+                "integer"
+              ]
+            },
+            "p21": {
+              "minProperties": 1,
+              "additionalProperties": true
+            }
+          }
+        }
+      ]
+    }
+  }
+}

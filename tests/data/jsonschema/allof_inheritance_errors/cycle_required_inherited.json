@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "A": {
+      "allOf": [{"$ref": "#/$defs/B"}],
+      "properties": {"a": {"type": "string"}}
+    },
+    "B": {
+      "allOf": [{"$ref": "#/$defs/A"}],
+      "properties": {"b": {"type": "string"}}
+    },
+    "Child": {
+      "allOf": [{"$ref": "#/$defs/A"}],
+      "required": ["missing"],
+      "properties": {"c": {"type": "string"}}
+    }
+  }
+}

@@ -3522,19 +3522,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         return None
 
-    def _is_list_with_any_item_type(self, data_type: DataType | None) -> bool:
-        """Return True when data_type represents List[Any], nested lists included (``parser/_lightweight_types.py``)."""
-        return _lightweight_types.is_list_with_any_item_type(self, data_type)
-
-    def _get_inherited_schema_types(
-        self,
-        schema: JsonSchemaObject,
-        parent_ref: str,
-        active: frozenset[_TargetNode] = frozenset(),
-    ) -> frozenset[str]:
-        """Infer JSON instance types accepted by an inherited schema."""
-        return _inherited_schemas.get_inherited_schema_types(self, schema, parent_ref, active)
-
     def _select_inherited_distributed_shape(
         self,
         child: dict[str, Any],
@@ -3544,14 +3531,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Select child keywords that apply to one inherited JSON type branch."""
         return _inherited_schemas.select_inherited_distributed_shape(self, child, distributed_fields, parent_types)
 
-    def _remove_inherited_distributed_shape(
-        self,
-        child: dict[str, Any],
-        distributed_fields: frozenset[str],
-    ) -> dict[str, Any]:
-        """Remove distributed keywords while preserving unrelated extension values."""
-        return _inherited_schemas.remove_inherited_distributed_shape(self, child, distributed_fields)
-
     def _drop_incompatible_inherited_constraints(
         self,
         child: dict[str, Any],
@@ -3559,87 +3538,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> dict[str, Any]:
         """Avoid applying schema constraints to incompatible Python value types."""
         return _inherited_schemas.drop_incompatible_inherited_constraints(self, child, parent_types)
-
-    def _is_unconstrained_inherited_schema(self, schema: object) -> bool:
-        """Return whether a raw subschema adds no validation to an inherited type."""
-        return _inherited_schemas.is_unconstrained_inherited_schema(self, schema)
-
-    def _remove_unconstrained_compositions(self, schema_dict: dict[str, Any]) -> dict[str, Any]:
-        """Remove composition branches that make an inherited override universally valid."""
-        return _inherited_schemas.remove_unconstrained_compositions(self, schema_dict)
-
-    def _get_flattenable_inherited_constraint_items(
-        self,
-        keyword: str,
-        raw_items: list[Any],
-    ) -> list[dict[str, Any]] | None:
-        """Return normalized constraint-only branches when composition flattening is equivalent."""
-        return _inherited_schemas.get_flattenable_inherited_constraint_items(self, keyword, raw_items)
-
-    def _normalize_inherited_constraint_compositions(self, schema: JsonSchemaObject) -> JsonSchemaObject:
-        """Flatten constraint-only compositions before resolving their inherited type."""
-        return _inherited_schemas.normalize_inherited_constraint_compositions(self, schema)
-
-    def _is_inherited_type_narrowing(
-        self,
-        child_types: frozenset[str],
-        parent_types: frozenset[str],
-    ) -> bool:
-        """Return whether explicit child JSON types are contained by the inherited types."""
-        return _inherited_schemas.is_inherited_type_narrowing(self, child_types, parent_types)
-
-    def _is_partial_inherited_property(
-        self,
-        child: JsonSchemaObject,
-        parent: JsonSchemaObject,
-        context: tuple[str, frozenset[_TargetNode]] = ("", frozenset()),
-    ) -> bool:
-        """Return whether a child schema only narrows metadata/constraints of its inherited type."""
-        return _inherited_schemas.is_partial_inherited_property(self, child, parent, context)
-
-    def _is_partial_inherited_nested_value(
-        self,
-        child: object,
-        parent: object,
-        *,
-        parent_tail: object = True,
-        context: tuple[str, frozenset[_TargetNode]] = ("", frozenset()),
-        schema_map: bool = False,
-    ) -> bool:
-        """Compare one nested schema keyword using JSON Schema intersection semantics."""
-        return _inherited_schemas.is_partial_inherited_nested_value(
-            self, child, parent, parent_tail=parent_tail, context=context, schema_map=schema_map
-        )
-
-    def _mark_inherited_materialized_type_shapes(self, schema: JsonSchemaObject) -> None:
-        """Mark synthesized schemas whose container constraints need a root wrapper."""
-        return _inherited_schemas.mark_inherited_materialized_type_shapes(self, schema)
-
-    def _resolve_inherited_parent_property(
-        self,
-        schema: JsonSchemaObject,
-        parent_ref: str,
-        active: frozenset[_TargetNode] = frozenset(),
-    ) -> tuple[JsonSchemaObject, str, frozenset[_TargetNode]]:
-        """Resolve pure property references before comparing nested override shapes.
-
-        A reference is cached by the key it resolves to, which its edge gives wherever the schema is read.
-        """
-        return _inherited_schemas.resolve_inherited_parent_property(self, schema, parent_ref, active)
-
-    def _merge_inherited_union_branch(
-        self,
-        parent: object,
-        child: dict[str, Any],
-        distributed_fields: frozenset[str],
-        context: tuple[str, frozenset[_TargetNode]],
-        *,
-        excludes_null: bool,
-    ) -> object:
-        """Apply type-specific child keywords to one compatible inherited branch."""
-        return _inherited_schemas.merge_inherited_union_branch(
-            self, parent, child, distributed_fields, context, excludes_null=excludes_null
-        )
 
     def _merge_inherited_type_shape_dict(
         self,
@@ -3658,53 +3556,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         own ``type`` and ``nullable`` (``parser/_null_facts.py:dump_null_sources``).
         """
         return _inherited_schemas.override_row(self, parent, child)
-
-    def _inherited_override_schema(
-        self, parent: JsonSchemaObject, child: JsonSchemaObject, parent_ref: str, where: str
-    ) -> JsonSchemaObject:
-        """Return the schema of a property ``child`` that overrides the inherited property ``parent``.
-
-        The row of ``--allof-merge-mode`` decides: ``none`` writes the child's constraints on the inherited type shape
-        (``_merge_inherited_type_shape_dict``) where the child only narrows it, and keeps the child otherwise; ``all``
-        and ``constraints`` give the intersection of both (``intersect_keywords``) over their presentation row
-        (``parser/_intersection.py:inherited_override_row``).
-        """
-        return _inherited_schemas.inherited_override_schema(self, parent, child, parent_ref, where)
-
-    def _get_deferred_inherited_property_names(
-        self,
-        source_obj: JsonSchemaObject,
-        parent_properties: dict[str, tuple[JsonSchemaObject | bool, str]],
-    ) -> frozenset[str]:
-        """Find partial properties that need canonical generated-type resolution."""
-        return _inherited_schemas.get_deferred_inherited_property_names(self, source_obj, parent_properties)
-
-    def _get_deferred_inherited_parse_object(
-        self,
-        source_obj: JsonSchemaObject,
-        deferred_property_names: frozenset[str],
-    ) -> JsonSchemaObject:
-        """Strip nested type work that late canonical inheritance will replace."""
-        return _inherited_schemas.get_deferred_inherited_parse_object(self, source_obj, deferred_property_names)
-
-    def _sanitize_untyped_boolean_inherited_property(
-        self,
-        child: JsonSchemaObject,
-    ) -> JsonSchemaObject | None:
-        """Drop type-specific constraints when a boolean parent supplies no usable type."""
-        return _inherited_schemas.sanitize_untyped_boolean_inherited_property(self, child)
-
-    def _merge_properties_with_parent_constraints(
-        self,
-        child_obj: JsonSchemaObject,
-        base_classes: list[Reference],
-        parent_properties: dict[str, tuple[JsonSchemaObject | bool, str]] | None = None,
-        deferred_property_names: frozenset[str] | None = None,
-    ) -> JsonSchemaObject:
-        """Merge child properties with parent property constraints for allOf inheritance."""
-        return _inherited_schemas.merge_properties_with_parent_constraints(
-            self, child_obj, base_classes, parent_properties, deferred_property_names
-        )
 
     @contextmanager
     def _inherited_ref_context(self, resolved_ref: str) -> Generator[None, None, None]:
@@ -3808,51 +3659,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _load_inherited_schema_object(self, resolved_ref: str) -> JsonSchemaObject:
         """Load and cache a schema used only for inherited field inspection."""
         return _inherited_schemas.load_inherited_schema_object(self, resolved_ref)
-
-    def _get_inherited_field_type(
-        self, prop_name: str, base_classes: list[Reference], visited: frozenset[_TargetNode] | None = None
-    ) -> DataType | None:
-        """Get the data type for an inherited property from parent schemas.
-
-        Recursively traverses the inheritance chain when a parent property
-        doesn't have type information but the parent itself inherits from another schema.
-        """
-        if inherited_field := _inherited_schemas.get_inherited_field(self, prop_name, base_classes):
-            return self._copy_model_type(inherited_field.data_type)
-
-        if visited is None:
-            visited = frozenset()
-
-        for parent_schema, next_visited, parent_ref in self._iter_inherited_schema_objects(base_classes, visited):
-            result: DataType | None = None
-            if parent_schema.properties:
-                prop_schema = parent_schema.properties.get(prop_name)
-                if isinstance(prop_schema, JsonSchemaObject):
-                    with self._inherited_ref_context(parent_ref):
-                        result = self._build_lightweight_type(prop_schema)
-            # In case of a missing type, continue searching up the inheritance chain
-            if result is not None and not (result.type == ANY or self._is_list_with_any_item_type(result)):
-                return result
-
-            parent_result: DataType | None = None
-            if parent_schema.allOf:
-                grandparent_refs = [
-                    self.model_resolver.add_ref(self._ref_path(ref), resolved=True)
-                    for ref in _inherited_schemas.iter_allof_refs(self, parent_schema)
-                ]
-                if grandparent_refs:
-                    parent_result = self._get_inherited_field_type(prop_name, grandparent_refs, next_visited)
-                    if parent_result is not None:
-                        return parent_result
-                    return result
-
-        return None
-
-    def _get_inherited_field_schema(
-        self, prop_name: str, base_classes: list[Reference], visited: frozenset[_TargetNode] | None = None
-    ) -> JsonSchemaObject | None:
-        """Get the schema for an inherited property from parent schemas."""
-        return _inherited_schemas.get_inherited_field_schema(self, prop_name, base_classes, visited)
 
     def _merge_all_of_object(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
         """Merge allOf items when they share object properties to avoid duplicate models.
@@ -4552,9 +4358,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             scope = self._predicted_scope(name, path)
             if obj.properties:
                 fields.extend(
-                    _inherited_schemas.parse_fields_beside_parents(
-                        self, obj, base_classes, inherited_properties, path, scope
-                    )
+                    _inherited_schemas.parse_fields_beside_parents(self, obj, inherited_properties, path, scope)
                 )
             if base_classes:
                 reserved_names = {field.name for field in fields if field.name}
@@ -4760,7 +4564,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 object_fields = _inherited_schemas.parse_fields_beside_parents(
                     self,
                     _inherited_schemas.with_conjoined_properties(all_of_item, conjunctions, written),
-                    parent_refs,
                     parent_properties,
                     path,
                     scope,
@@ -5492,7 +5295,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 fields = _inherited_schemas.parse_fields_beside_parents(
                     self,
                     self._schema_object({"properties": {key: declared for key, (declared, _) in added.items()}}),
-                    list(bases),
                     self._get_inherited_property_map(list(bases)),
                     path,
                     self._predicted_scope(name, path),

@@ -32341,6 +32341,24 @@ def test_main_allof_inheritance_cycle_with_multiple_bases(
     )
 
 
+def test_main_allof_inheritance_cycle_with_inherited_required_name(
+    output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Reject the cycle while the lookup of a required name no class declares walks its parents once each."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "cycle_required_inherited.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "Generated model inheritance cycle: A (cycle_required_inherited.json#/$defs/A) -> "
+            "B (cycle_required_inherited.json#/$defs/B) -> A (cycle_required_inherited.json#/$defs/A)\n"
+        ),
+        output_should_not_exist=True,
+    )
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [

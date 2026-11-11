@@ -1380,9 +1380,6 @@ def merge_all_of_root_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> 
             return None
         mapping_schemas.append(schema)
 
-    if not mapping_schemas:
-        return None
-
     merged: dict[str, Any] = {}
     for schema in mapping_schemas:
         merged = parser._inherited_override_row(merged, schema.model_dump(exclude_unset=True, by_alias=True))  # noqa: SLF001
