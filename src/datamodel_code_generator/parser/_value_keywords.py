@@ -376,9 +376,6 @@ class ValueKeywordsHost(SchemaRefsHost, Protocol):
     ) -> tuple[bool, ...] | None:
         """Return whether the field keeps each value (``kept``), None when it keeps all."""
 
-    def _get_fixed_length_homogeneous_tuple_length(self, obj: JsonSchemaObject) -> int | None:
-        """Return the length of an opted-in homogeneous fixed-length tuple."""
-
     def _get_type_with_mappings(self, type_: str, format_: str | None = None) -> Types:
         """Get the Types enum for a given type and format, applying custom type mappings."""
 
@@ -391,8 +388,16 @@ class ValueKeywordsHost(SchemaRefsHost, Protocol):
     def _load_inherited_schema_object(self, resolved_ref: str) -> JsonSchemaObject:
         """Load and cache a schema used only for inherited field inspection."""
 
-    def _null_facts(self, obj: JsonSchemaObject, site: NullSite, *, has_default: bool = False) -> NullFacts:
-        """Return the null facts of a schema at a site."""
+    def _null_facts(
+        self,
+        obj: JsonSchemaObject,
+        site: NullSite,
+        *,
+        required: bool = False,
+        has_default: bool = False,
+        parts: Sequence[NullSources] = (),
+    ) -> NullFacts:
+        """Return what ``site`` reads from where the null of ``obj`` comes from (``parts``: of its typed parts)."""
 
     def _reads_enum(self, obj: JsonSchemaObject) -> bool:
         """Return whether the run reads the enum of a schema: it has one and --ignore-enum-constraints is off."""
@@ -551,7 +556,7 @@ def literal_written(
     """Return the keywords a literal check leaves to the field of a schema's values, as the field writes them.
 
     A field that writes Field() arguments (``writes`` at its site) writes beside the ``Literal`` of the values the
-    keywords ``_split_constraint_values`` gives it, which Pydantic checks on the ``Literal``; under
+    keywords ``split_constraint_values`` gives it, which Pydantic checks on the ``Literal``; under
     ``--omit-redundant-constraints`` the literal check decides them all and the field writes none of them.
     """
     if not (
@@ -887,7 +892,7 @@ def is_fixed_length_tuple(parser: ValueKeywordsHost, obj: JsonSchemaObject) -> b
     """Check if an array field represents a fixed-length tuple."""
     return (
         get_fixed_positional_items(parser, obj) is not None
-        or parser._get_fixed_length_homogeneous_tuple_length(obj) is not None  # noqa: SLF001
+        or get_fixed_length_homogeneous_tuple_length(parser, obj) is not None
     )
 
 
@@ -939,7 +944,7 @@ def get_array_item_schemas(
         return fixed_items, True, True, None
     if (
         isinstance(item_schema := obj.items, JsonSchemaObject)
-        and (tuple_item_count := parser._get_fixed_length_homogeneous_tuple_length(obj)) is not None  # noqa: SLF001
+        and (tuple_item_count := get_fixed_length_homogeneous_tuple_length(parser, obj)) is not None
     ):
         return [item_schema] if tuple_item_count else [], True, True, tuple_item_count
     return (

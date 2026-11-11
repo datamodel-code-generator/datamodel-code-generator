@@ -43,7 +43,7 @@ from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.imports import IMPORT_ANY
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model.base import _field_source_name, get_inherited_fields
-from datamodel_code_generator.parser import _schema_refs
+from datamodel_code_generator.parser import _schema_refs, _value_keywords
 from datamodel_code_generator.parser._all_of_values import holds_union_member
 from datamodel_code_generator.parser._intersection import (
     INHERITED_SCHEMA_KEYWORDS,
@@ -80,8 +80,8 @@ from datamodel_code_generator.parser._schema_reading import (
     _schema_dump,
     _without_contains_keywords,
 )
-from datamodel_code_generator.parser._schema_refs import SchemaRefsHost, mark_conjunction_parts
-from datamodel_code_generator.parser._value_keywords import get_effective_array_length
+from datamodel_code_generator.parser._schema_refs import mark_conjunction_parts
+from datamodel_code_generator.parser._value_keywords import ValueKeywordsHost, get_effective_array_length
 from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_FIELD_KEY,
     _DEFERRED_INHERITED_TYPE_KEY,
@@ -101,7 +101,6 @@ if TYPE_CHECKING:
 
     from typing_extensions import Unpack
 
-    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._user_keys import ClassScope
     from datamodel_code_generator.parser._field_rows import (
         FieldAliasRow,
@@ -110,7 +109,7 @@ if TYPE_CHECKING:
         FieldIdentity,
         FieldRow,
     )
-    from datamodel_code_generator.parser._null_facts import NullFacts, NullMode, NullSite, NullSources
+    from datamodel_code_generator.parser._null_facts import NullMode
     from datamodel_code_generator.parser._schema_graph import _TargetNode
     from datamodel_code_generator.reference import ModelType, SchemaLocation
 
@@ -249,7 +248,7 @@ def _dump_drops_inherited_null(dump: Mapping[str, Any]) -> bool:
     return resolve_null_facts(dump_null_sources(dump), "inherited-child").rule == "inherited-typed-without-null"
 
 
-class InheritedSchemasHost(SchemaRefsHost, Protocol):
+class InheritedSchemasHost(ValueKeywordsHost, Protocol):
     """The options, caches and hooks of the parser that the inherited schema reading reads."""
 
     _inherited_parent_property_cache: dict[
@@ -269,10 +268,6 @@ class InheritedSchemasHost(SchemaRefsHost, Protocol):
         """How the constraints of allOf members merge (``--allof-merge-mode``)."""
 
     @property
-    def data_type(self) -> type[DataType]:
-        """The data type class of the type manager."""
-
-    @property
     def field_name_model_type(self) -> ModelType:
         """The model type that field names are validated for."""
 
@@ -289,16 +284,8 @@ class InheritedSchemasHost(SchemaRefsHost, Protocol):
         """Whether dotted schema names keep their dots in module names (``--strict-dotted-module-names``)."""
 
     @property
-    def target_python_version(self) -> PythonVersion:
-        """The Python version the output targets."""
-
-    @property
     def treat_dot_as_module(self) -> bool | None:
         """Whether dots in schema names make modules."""
-
-    @property
-    def use_tuple_for_closed_arrays(self) -> bool:
-        """Whether closed arrays are written as tuples (``--use-tuple-for-closed-arrays``)."""
 
     @property
     def _inherited_parent_row(self) -> InheritedParentRow:
@@ -365,13 +352,6 @@ class InheritedSchemasHost(SchemaRefsHost, Protocol):
     ) -> DataModelFieldBase:
         """Copy a field and its mutable state without copying model references, made with ``identity`` and ``facts``."""
 
-    def _get_fixed_positional_items(
-        self,
-        obj: JsonSchemaObject,
-        canonical_ref: Callable[[str], str] | None = None,
-    ) -> list[JsonSchemaObject | bool] | None:
-        """Return the positions of a positional array written as a tuple, or None when it is written as a list."""
-
     def _get_inherited_field_type(
         self, prop_name: str, base_classes: list[Reference], visited: frozenset[_TargetNode] | None = None
     ) -> DataType | None:
@@ -385,17 +365,6 @@ class InheritedSchemasHost(SchemaRefsHost, Protocol):
         active: frozenset[_TargetNode] = frozenset(),
     ) -> dict[str, Any]:
         """Fill missing type-shape keywords while keeping child validation precedence."""
-
-    def _null_facts(
-        self,
-        obj: JsonSchemaObject,
-        site: NullSite,
-        *,
-        required: bool = False,
-        has_default: bool = False,
-        parts: Sequence[NullSources] = (),
-    ) -> NullFacts:
-        """Return what ``site`` reads from where the null of ``obj`` comes from (``parts``: of its typed parts)."""
 
     def _prepare_required_inherited_field(
         self,
@@ -464,7 +433,7 @@ def get_inherited_type_shape(
         shape["maxItems"] = schema.maxItems
     elif (
         parser.use_tuple_for_closed_arrays
-        and (fixed_items := parser._get_fixed_positional_items(schema, canonical_ref)) is not None  # noqa: SLF001
+        and (fixed_items := _value_keywords.get_fixed_positional_items(parser, schema, canonical_ref)) is not None
     ):
         shape["minItems"] = shape["maxItems"] = len(fixed_items)
     elif (

@@ -30,7 +30,7 @@ from datamodel_code_generator._regex_syntax import is_portable_pattern
 from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator.model._decisions.enum_kind import holds_inherited_member_value, holds_member_value
 from datamodel_code_generator.model.enum import Enum, enum_value_base
-from datamodel_code_generator.parser import _schema_refs
+from datamodel_code_generator.parser import _lightweight_types, _schema_refs, _value_keywords
 from datamodel_code_generator.parser._intersection import (
     BRANCH_COMBINATION_LIMIT,
     all_of_member_row,
@@ -42,6 +42,7 @@ from datamodel_code_generator.parser._intersection import (
     intersects_all_of_constraints,
 )
 from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
+from datamodel_code_generator.parser._lightweight_types import LightweightTypesHost
 from datamodel_code_generator.parser._null_facts import dump_null_sources, null_schema
 from datamodel_code_generator.parser._schema_object import (
     _MODELED_POSITIONS,
@@ -63,19 +64,16 @@ from datamodel_code_generator.parser._schema_reading import (
     _schema_dump,
     _with_ref_siblings,
 )
-from datamodel_code_generator.parser._schema_refs import SchemaRefsHost
 from datamodel_code_generator.reference import Reference, _is_special_path
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
     from contextlib import AbstractContextManager
 
-    from datamodel_code_generator._format_types import PythonVersion
-    from datamodel_code_generator.enums import TargetPydanticVersion
-    from datamodel_code_generator.model import DataModel, DataModelFieldBase
-    from datamodel_code_generator.model.output import OutputModelContext
-    from datamodel_code_generator.parser._null_facts import NullFacts, NullMode, NullSite, NullSources
+    from datamodel_code_generator.model import DataModel
+    from datamodel_code_generator.parser._null_facts import NullMode
     from datamodel_code_generator.parser._schema_graph import _TargetNode
+    from datamodel_code_generator.parser._schema_refs import SchemaRefsHost
     from datamodel_code_generator.parser.schema_version import JsonSchemaFeatures
     from datamodel_code_generator.reference import SchemaLocation
     from datamodel_code_generator.types import DataType, Types
@@ -233,7 +231,7 @@ _PATTERN_SCAN_SKIPPED_KEYWORDS: Final = INSTANCE_DATA_KEYWORDS | {"patternProper
 """The keywords whose values hold no subschema a type carries; ``patternProperties`` counts by its keys and values."""
 
 
-class AllOfValuesHost(SchemaRefsHost, Protocol):
+class AllOfValuesHost(LightweightTypesHost, Protocol):
     """The options, run state and hooks of the parser that the allOf value merging reads."""
 
     _all_of_root_value_ref_stack: set[tuple[_TargetNode, ...]] | None
@@ -243,48 +241,16 @@ class AllOfValuesHost(SchemaRefsHost, Protocol):
         """How allOf members become base classes (``--allof-class-hierarchy``)."""
 
     @property
-    def allof_merge_mode(self) -> AllOfMergeMode:
-        """How the constraints of allOf members merge (``--allof-merge-mode``)."""
-
-    @property
     def collapse_root_models(self) -> bool:
         """Whether root models are collapsed into their users."""
-
-    @property
-    def data_model_field_type(self) -> type[DataModelFieldBase]:
-        """The field type of the output."""
 
     @property
     def data_model_root_type(self) -> type[DataModel]:
         """The root model type of the output."""
 
     @property
-    def field_constraints(self) -> bool:
-        """Whether constraints are written on fields (``--field-constraints``)."""
-
-    @property
-    def target_pydantic_version(self) -> TargetPydanticVersion | None:
-        """The Pydantic version the output targets, if configured."""
-
-    @property
-    def target_python_version(self) -> PythonVersion:
-        """The Python version the output targets."""
-
-    @property
-    def type_mappings(self) -> dict[tuple[str, str], str]:
-        """The ``--type-mappings`` entries."""
-
-    @property
-    def _data_formats(self) -> dict[str, dict[str, Types]]:
-        """The data format mappings of this parser type."""
-
-    @property
     def _null_mode(self) -> NullMode:
         """The options that change how parse sites read null (``parser/_null_facts.py``)."""
-
-    @property
-    def _output_model_context(self) -> OutputModelContext:
-        """The capabilities of the output model types."""
 
     @property
     def _root_validates_literals(self) -> bool:
@@ -306,9 +272,6 @@ class AllOfValuesHost(SchemaRefsHost, Protocol):
     ) -> bool:
         """Determine if an enum should be parsed as a literal type (``enum_as_literal``)."""
 
-    def _conjoined_pattern(self, patterns: Sequence[str], where: str) -> str:
-        """Return the conjoined pattern, warning about the patterns it leaves out."""
-
     def _drop_incompatible_inherited_constraints(
         self,
         child: dict[str, Any],
@@ -324,23 +287,11 @@ class AllOfValuesHost(SchemaRefsHost, Protocol):
     def _features_at(self, at: JsonSchemaObject | SchemaLocation | None) -> JsonSchemaFeatures:
         """Return the schema features that read a schema object (``parser/jsonschema.py``)."""
 
-    def _get_array_item_schemas(
-        self,
-        obj: JsonSchemaObject,
-        *,
-        include_true_tail_schema: bool = False,
-        force_prefix_items: bool = False,
-    ) -> tuple[list[JsonSchemaObject | bool], bool, bool, int | None]:
-        """Return item schemas plus tuple/constraint flags and homogeneous tuple length."""
-
     def _get_enum_model_class(self, type_: Types | None, enum_values: list[Any]) -> tuple[type[Enum], Types | None]:
         """Return the enum model class and the schema type whose value type it also subclasses, else None."""
 
     def _get_enum_type(self, obj: JsonSchemaObject) -> Types | None:
         """Return the type an enum class of the schema may specialize or subclass."""
-
-    def _get_fixed_length_homogeneous_tuple_length(self, obj: JsonSchemaObject) -> int | None:
-        """Return the length of an opted-in homogeneous fixed-length tuple."""
 
     def _get_inherited_property_map(
         self,
@@ -376,31 +327,14 @@ class AllOfValuesHost(SchemaRefsHost, Protocol):
     ) -> Iterator[JsonSchemaObject]:
         """Yield the schema and its allOf sources, without the document each was read from."""
 
-    def _load_inherited_schema_object(self, resolved_ref: str) -> JsonSchemaObject:
-        """Load and cache a schema used only for inherited field inspection."""
-
     def _merge_all_of_root_validation_keywords(self, merged: dict[str, Any], sources: list[JsonSchemaObject]) -> None:
         """Preserve literal and item intersections while materializing a value reference."""
-
-    def _merge_primitive_schemas(self, items: list[JsonSchemaObject]) -> JsonSchemaObject:
-        """Merge primitive schemas into the intersection of their constraints."""
 
     def _merge_primitive_schemas_for_allof(self, items: list[JsonSchemaObject]) -> JsonSchemaObject | None:
         """Return the one primitive schema the parts of an allOf merge into, if they merge."""
 
     def _merge_value_schemas(self, schemas: list[JsonSchemaObject]) -> JsonSchemaObject | None:
         """Merge schemas that constrain one value, unless their types, formats or literals disagree."""
-
-    def _null_facts(
-        self,
-        obj: JsonSchemaObject,
-        site: NullSite,
-        *,
-        required: bool = False,
-        has_default: bool = False,
-        parts: Sequence[NullSources] = (),
-    ) -> NullFacts:
-        """Return what ``site`` reads from where the null of ``obj`` comes from (``parts``: of its typed parts)."""
 
     def _other_keys_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
         """Return the additionalProperties schema typing the keys no pattern matches (``parser/_object_maps.py``)."""
@@ -410,9 +344,6 @@ class AllOfValuesHost(SchemaRefsHost, Protocol):
 
     def _read_false_all_of_values(self, obj: JsonSchemaObject, *, lightweight: bool = False) -> JsonSchemaObject:
         """Return the site ``obj`` with the schema that types its values written ``false`` where it is a false allOf."""
-
-    def _reads_enum(self, obj: JsonSchemaObject) -> bool:
-        """Return whether the run reads the enum of a schema: it has one and --ignore-enum-constraints is off."""
 
     def _reads_enum_as_const(self, obj: JsonSchemaObject) -> bool:
         """Return whether --use-single-value-enum-as-const reads an enum admitting the const beside it as that const."""
@@ -437,11 +368,6 @@ class AllOfValuesHost(SchemaRefsHost, Protocol):
     def _typed_nullable_map_value_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
         """Return the value schema of a nullable map when this run types its values (``parser/_object_maps.py``)."""
 
-    def _unvisited_ref_target(
-        self, ref: str, visited_refs: frozenset[_TargetNode]
-    ) -> tuple[JsonSchemaObject, frozenset[_TargetNode]] | None:
-        """Return the schema ``ref`` names with ``visited_refs`` and its node, or None when its node was visited."""
-
 
 def schema_requires_model_type(
     parser: AllOfValuesHost,
@@ -452,7 +378,11 @@ def schema_requires_model_type(
 ) -> bool:
     """Return whether a schema describes a model-shaped object."""
     if item.ref:
-        if not resolve_ref or (target := parser._unvisited_ref_target(item.ref, visited_refs or frozenset())) is None:  # noqa: SLF001
+        if (
+            not resolve_ref
+            or (target := _lightweight_types.unvisited_ref_target(parser, item.ref, visited_refs or frozenset()))
+            is None
+        ):
             return True
         return schema_requires_model_type(parser, target[0], resolve_ref=True, visited_refs=target[1])
     return bool(
@@ -572,7 +502,7 @@ def all_of_value_row(parser: AllOfValuesHost, obj: JsonSchemaObject) -> dict[str
         )
     ) is None or not groups.primitives:
         return {}
-    return parser._merge_primitive_schemas([*groups.primitives, *groups.constraint_only]).model_dump(  # noqa: SLF001
+    return _lightweight_types.merge_primitive_schemas(parser, [*groups.primitives, *groups.constraint_only]).model_dump(
         exclude_unset=True, by_alias=True
     )
 
@@ -665,7 +595,7 @@ def intersect_typed_value_parts(
     return intersect_all_of_value_parts(
         parser,
         parts,
-        parser._merge_primitive_schemas(parts).model_dump(exclude_unset=True, by_alias=True),  # noqa: SLF001
+        _lightweight_types.merge_primitive_schemas(parser, parts).model_dump(exclude_unset=True, by_alias=True),
         where,
     )
 
@@ -1841,7 +1771,7 @@ def read_false_all_of_values(
     where no patternProperties validator owns them, and a type array of object under
     --use-typed-nullable-map-values (``_typed_nullable_map_value_schema``). It is also the items of an array,
     unless the array is a tuple of no items under --use-tuple-for-fixed-length-arrays
-    (``_get_fixed_length_homogeneous_tuple_length``). Where it is ``false`` written as an allOf
+    (``_value_keywords.get_fixed_length_homogeneous_tuple_length``). Where it is ``false`` written as an allOf
     (``_is_false_all_of``), the site is read as the same site with ``false``: the map admits no key it types and the
     array no item past its prefixItems. Where no value is typed with it, it keeps its output. The positions of an
     array (``_read_false_all_of_array_positions``) and the patternProperties and propertyNames of a map
@@ -1863,7 +1793,7 @@ def read_false_all_of_values(
         )
     ):
         update["additionalProperties"] = False
-    if _is_false_all_of(obj.items) and parser._get_fixed_length_homogeneous_tuple_length(obj) != 0:  # noqa: SLF001
+    if _is_false_all_of(obj.items) and _value_keywords.get_fixed_length_homogeneous_tuple_length(parser, obj) != 0:
         update["items"] = False
     update |= read_false_all_of_array_positions(parser, obj, lightweight=lightweight) | read_false_all_of_map_schemas(
         parser, obj
@@ -1876,9 +1806,9 @@ def read_false_all_of_array_positions(
 ) -> dict[str, object]:
     """Return the array keywords of ``obj`` whose false allOf the array parse types, with ``false`` in its place.
 
-    Those are the entries of a tuple ``items`` and of ``prefixItems`` that array parsing types, the schemas before
-    the first false (``_get_array_item_schemas``), and the ``additionalItems`` or ``unevaluatedItems`` that types
-    the items past them. A position it leaves untyped keeps its output. The lightweight type of ``lightweight``
+    Those are the entries of a tuple ``items`` and of ``prefixItems`` that array parsing types, the schemas before the
+    first false (``_value_keywords.get_array_item_schemas``), and the ``additionalItems`` or ``unevaluatedItems`` that
+    types the items past them. A position it leaves untyped keeps its output. The lightweight type of ``lightweight``
     types the prefixItems and the true tail as well.
     """
     if not obj.is_array or obj.ref:
@@ -1889,8 +1819,11 @@ def read_false_all_of_array_positions(
         return {}
     typed = {
         id(item)
-        for item in parser._get_array_item_schemas(  # noqa: SLF001
-            obj, include_true_tail_schema=lightweight, force_prefix_items=lightweight
+        for item in _value_keywords.get_array_item_schemas(
+            parser,
+            obj,
+            include_true_tail_schema=lightweight,
+            force_prefix_items=lightweight,
         )[0]
     }
 

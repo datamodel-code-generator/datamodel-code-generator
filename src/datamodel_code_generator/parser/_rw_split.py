@@ -28,7 +28,7 @@ from datamodel_code_generator._graph_links import drop_tree
 from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.model.base import _field_source_name
 from datamodel_code_generator.model.runtime_validation import _is_internal_schema_runtime_validation
-from datamodel_code_generator.parser import _schema_refs
+from datamodel_code_generator.parser import _schema_refs, _value_keywords
 from datamodel_code_generator.parser._field_rows import require_field
 from datamodel_code_generator.parser._naming import rw_variant_class_name
 from datamodel_code_generator.parser._origins import with_field_origin
@@ -45,7 +45,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _declares_key_keywords,
     _merges_ref_siblings,
 )
-from datamodel_code_generator.parser._schema_refs import SchemaRefsHost
+from datamodel_code_generator.parser._value_keywords import ValueKeywordsHost
 from datamodel_code_generator.parser.base import _DEFERRED_INHERITED_CLASS_KEY, _DEFERRED_INHERITED_FIELD_KEY
 from datamodel_code_generator.python_literal import _make_referencing_type_expression
 from datamodel_code_generator.reference import (
@@ -66,12 +66,10 @@ if TYPE_CHECKING:
     from datamodel_code_generator._user_keys import ClassScope
     from datamodel_code_generator.enums import DataclassArguments
     from datamodel_code_generator.model import DataModelFieldBase
-    from datamodel_code_generator.model.output import OutputModelContext
     from datamodel_code_generator.model.runtime_validation import PropertyCountRule
     from datamodel_code_generator.parser._field_rows import FieldIdentity
     from datamodel_code_generator.parser._schema_dispatch import DispatchTable
     from datamodel_code_generator.parser._schema_graph import _TargetNode
-    from datamodel_code_generator.parser.generation import GraphBuilder
     from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataType
 
@@ -186,7 +184,7 @@ def _get_rw_model_variant_source_path(
     return f"{source_prefix}{separator}{source_name}{suffix}"
 
 
-class RwSplitHost(SchemaRefsHost, Protocol):
+class RwSplitHost(ValueKeywordsHost, Protocol):
     """The options, caches and hooks of the parser that the request and response model split reads."""
 
     _DEFINITION_TABLE: ClassVar[DispatchTable[Any, JsonSchemaObject, None]]
@@ -270,16 +268,8 @@ class RwSplitHost(SchemaRefsHost, Protocol):
         """Whether a schema's description becomes its model's docstring."""
 
     @property
-    def _graph_builder(self) -> GraphBuilder:
-        """The capability through which the passes change the graph of the generation store."""
-
-    @property
     def _legacy_rw_variants(self) -> frozenset[str]:
         """The rows of the request/response split kept: every row without --dedupe-request-response-variants."""
-
-    @property
-    def _output_model_context(self) -> OutputModelContext:
-        """The capabilities of the output model types."""
 
     @property
     def _property_count_rule_cache(self) -> dict[int, tuple[JsonSchemaObject, PropertyCountRule | None]]:
@@ -406,9 +396,6 @@ class RwSplitHost(SchemaRefsHost, Protocol):
     def _linearize_inherited_schema_refs(self, base_classes: list[Reference]) -> tuple[str, ...]:
         """Return raw inherited schemas in the same C3 order as generated models."""
 
-    def _load_inherited_schema_object(self, resolved_ref: str) -> JsonSchemaObject:
-        """Load and cache a schema used only for inherited field inspection."""
-
     def _merge_all_of_object(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
         """Merge allOf items when they share object properties to avoid duplicate models."""
 
@@ -443,9 +430,6 @@ class RwSplitHost(SchemaRefsHost, Protocol):
     def _record_schema_object(self, reference: Reference, obj: JsonSchemaObject) -> None:
         """Record the schema object the model of ``reference`` is built from, and take its template data and marks."""
 
-    def _ref_schema_exists(self, resolved_ref: str) -> bool:
-        """Return whether a resolved JSON pointer identifies a source schema."""
-
     def _ref_schema_generates_variant(
         self,
         resolved_ref: str,
@@ -466,11 +450,6 @@ class RwSplitHost(SchemaRefsHost, Protocol):
 
     def _resolve_rw_model_reference(self, ref: str, defining_ref: str) -> str | None:
         """Resolve a type-producing ref while keeping configured imports as graph leaves."""
-
-    def _split_constraint_values(
-        self, obj: JsonSchemaObject, data_type: DataType | None = None
-    ) -> tuple[dict[str, Any], dict[str, Any]]:
-        """Return the constraint values of the type-dependent keywords that a field takes, and those it leaves out."""
 
     def _unregister_temporary_field_references(
         self,
@@ -581,7 +560,7 @@ def temporary_constraint_values(
     parser: RwSplitHost, obj: JsonSchemaObject, data_type: DataType | None
 ) -> dict[str, Any]:
     """Return the constraint values ``obj`` writes beside ``data_type``, a type built only to read them."""
-    constraints = parser._split_constraint_values(obj, data_type)[0]  # noqa: SLF001
+    constraints = _value_keywords.split_constraint_values(parser, obj, data_type)[0]
     unregister_temporary_type(parser, data_type)
     return constraints
 

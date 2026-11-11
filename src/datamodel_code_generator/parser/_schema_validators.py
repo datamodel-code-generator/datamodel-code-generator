@@ -38,7 +38,7 @@ from datamodel_code_generator.model.runtime_validation import (
     UniqueItemsRule,
     _is_internal_schema_runtime_validation,
 )
-from datamodel_code_generator.parser import _schema_refs
+from datamodel_code_generator.parser import _lightweight_types, _schema_refs
 from datamodel_code_generator.parser._intersection import (
     INTERSECTED_KEYWORDS,
     bounds_admit_no_value,
@@ -46,6 +46,7 @@ from datamodel_code_generator.parser._intersection import (
     intersect_enum_values,
 )
 from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
+from datamodel_code_generator.parser._lightweight_types import LightweightTypesHost
 from datamodel_code_generator.parser._naming import composed_name
 from datamodel_code_generator.parser._passes._shared import (
     CollapseRootModelsHost,
@@ -60,7 +61,6 @@ from datamodel_code_generator.parser._schema_reading import (
     _json_value_admitted,
     _schema_dump,
 )
-from datamodel_code_generator.parser._schema_refs import SchemaRefsHost
 from datamodel_code_generator.parser.base import get_special_path
 from datamodel_code_generator.types import DataType, Types
 
@@ -76,7 +76,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._schema_graph import _TargetNode
     from datamodel_code_generator.parser.schema_version import JsonSchemaFeatures
     from datamodel_code_generator.reference import Reference, SchemaLocation
-    from datamodel_code_generator.types import DataTypeManager
 
 __all__ = [
     "SchemaValidatorsHost",
@@ -129,7 +128,7 @@ __all__ = [
 
 
 class SchemaValidatorsHost(
-    SchemaRefsHost, CollapseRootModelsHost, DataModelTypeHost, TargetPythonVersionHost, Protocol
+    LightweightTypesHost, CollapseRootModelsHost, DataModelTypeHost, TargetPythonVersionHost, Protocol
 ):
     """The members of ``JsonSchemaParser`` the schema validator rules read: options, state and the methods they call."""
 
@@ -139,20 +138,12 @@ class SchemaValidatorsHost(
     _root_pattern_string_constraints: JsonSchemaObject | None
 
     @property
-    def data_type_manager(self) -> DataTypeManager:
-        """The type manager of the output."""
-
-    @property
     def extra_template_data(self) -> defaultdict[str, Any]:
         """The template data of each reference path, which holds its ``schema_runtime_validation``."""
 
     @property
     def force_optional_for_required_fields(self) -> bool:
         """Whether required fields are generated as optional."""
-
-    @property
-    def _legacy_object_maps(self) -> frozenset[str]:
-        """The rows of 0.86.0 object maps kept."""
 
     @property
     def _property_count_rule_cache(self) -> dict[int, tuple[JsonSchemaObject, PropertyCountRule | None]]:
@@ -356,11 +347,6 @@ class SchemaValidatorsHost(
         path: UniqueItemsPath,
     ) -> Literal["array", "object"]:
         """Return the raw container shape needed for one relative uniqueItems path: an array for an item step."""
-
-    def _unvisited_ref_target(
-        self, ref: str, visited_refs: frozenset[_TargetNode]
-    ) -> tuple[JsonSchemaObject, frozenset[_TargetNode]] | None:
-        """Return the schema ``ref`` names with ``visited_refs`` and its node, or None when its node was visited."""
 
 
 _IMPLIED_SUBSCHEMA_KEYWORDS = frozenset({"items", "propertyNames"})
@@ -652,7 +638,7 @@ def iter_property_count_validation_sources(
             continue
         if parser._ref_siblings_apply_to(item, legacy="as-written"):  # noqa: SLF001
             yield item
-        if (target := parser._unvisited_ref_target(item.ref, visited_refs)) is not None:  # noqa: SLF001
+        if (target := _lightweight_types.unvisited_ref_target(parser, item.ref, visited_refs)) is not None:
             yield from iter_property_count_validation_sources(parser, *target)
 
 
@@ -915,7 +901,7 @@ def get_union_unique_items_branch_rules(
         if (
             branch.ref
             and not parser.collapse_root_models
-            and (target := parser._unvisited_ref_target(branch.ref, visited_refs))  # noqa: SLF001
+            and (target := _lightweight_types.unvisited_ref_target(parser, branch.ref, visited_refs))
         ):
             rules = (
                 *rules,
@@ -1082,7 +1068,9 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
 ) -> Iterator[UniqueItemsRule]:
     """Yield compact uniqueItems rules required by all applicable union branches."""
     if obj.ref:
-        if parser.collapse_root_models and (target := parser._unvisited_ref_target(obj.ref, visited_refs)):  # noqa: SLF001
+        if parser.collapse_root_models and (
+            target := _lightweight_types.unvisited_ref_target(parser, obj.ref, visited_refs)
+        ):
             yield from parser._iter_unique_items_rules(  # noqa: SLF001
                 target[0], path, target[1], property_input_names, include_properties=include_properties
             )
@@ -1101,7 +1089,7 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
             property_input_names,
             include_properties=include_properties,
         )
-        if item.ref and (target := parser._unvisited_ref_target(item.ref, visited_refs)):  # noqa: SLF001
+        if item.ref and (target := _lightweight_types.unvisited_ref_target(parser, item.ref, visited_refs)):
             yield from parser._iter_unique_items_rules(  # noqa: SLF001
                 target[0], path, target[1], property_input_names, include_properties=include_properties
             )

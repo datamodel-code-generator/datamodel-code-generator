@@ -18,7 +18,7 @@ from typing_extensions import Protocol
 from datamodel_code_generator._constraint_applicability import NUMBER_KEYWORD_ORDER
 from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator.imports import IMPORT_ANY
-from datamodel_code_generator.parser import _schema_refs
+from datamodel_code_generator.parser import _schema_refs, _value_keywords
 from datamodel_code_generator.parser._intersection import (
     intersect_constraint,
     intersect_multiple_of,
@@ -27,14 +27,13 @@ from datamodel_code_generator.parser._intersection import (
 from datamodel_code_generator.parser._origins import with_unique_items
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _numeric_type_domain
-from datamodel_code_generator.parser._schema_refs import SchemaRefsHost
+from datamodel_code_generator.parser._value_keywords import ValueKeywordsHost
 from datamodel_code_generator.types import ANY, DataType, UnionIntFloat, build_union
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
     from datamodel_code_generator.enums import AllOfMergeMode
-    from datamodel_code_generator.parser._null_facts import NullFacts, NullSite
     from datamodel_code_generator.parser._schema_graph import _TargetNode
 
 __all__ = [
@@ -53,16 +52,12 @@ _ALL_OF_MEMBER_SUFFIX: Final = re.compile(r"/allOf/\d+$")
 """The end of an allOf member's location, which a warning about the site leaves out."""
 
 
-class LightweightTypesHost(SchemaRefsHost, Protocol):
+class LightweightTypesHost(ValueKeywordsHost, Protocol):
     """The options and hooks of the parser that the lightweight types read."""
 
     @property
     def allof_merge_mode(self) -> AllOfMergeMode:
         """How the constraints of allOf members merge (``--allof-merge-mode``)."""
-
-    @property
-    def data_type(self) -> type[DataType]:
-        """The data type class of the output."""
 
     def _conjoined_pattern(self, patterns: Sequence[str], where: str) -> str:
         """Return the conjoined pattern, warning about the patterns it leaves out."""
@@ -70,18 +65,6 @@ class LightweightTypesHost(SchemaRefsHost, Protocol):
     @staticmethod
     def _first_typed_schema_dict(items: list[JsonSchemaObject]) -> dict[str, Any]:
         """Return the dump of the first typed member, its type narrowed to the numeric types the members share."""
-
-    def _merge_primitive_schemas(self, items: list[JsonSchemaObject]) -> JsonSchemaObject:
-        """Merge primitive schemas into the intersection of their constraints."""
-
-    def _get_array_item_schemas(
-        self,
-        obj: JsonSchemaObject,
-        *,
-        include_true_tail_schema: bool = False,
-        force_prefix_items: bool = False,
-    ) -> tuple[list[JsonSchemaObject | bool], bool, bool, int | None]:
-        """Return item schemas plus tuple/constraint flags and homogeneous tuple length."""
 
     def _build_lightweight_item_type(
         self,
@@ -93,17 +76,11 @@ class LightweightTypesHost(SchemaRefsHost, Protocol):
     ) -> DataType | None:
         """Return the lightweight type of an array item schema."""
 
-    def _is_false_schema_item(self, item: JsonSchemaObject | bool) -> bool:  # noqa: FBT001
-        """Return whether ``item`` is a false schema."""
-
     def _get_array_union_non_array_types(self, obj: JsonSchemaObject) -> tuple[str, ...]:
         """Return the members of a type list beside ``array`` other than null."""
 
     def _get_format_data_type(self, obj: JsonSchemaObject, type_: str) -> DataType:
         """Map a type and the format of ``obj`` without constraints."""
-
-    def _null_facts(self, obj: JsonSchemaObject, site: NullSite) -> NullFacts:
-        """Return what ``site`` reads from where the null of ``obj`` comes from."""
 
 
 def merge_primitive_schemas(parser: LightweightTypesHost, items: list[JsonSchemaObject]) -> JsonSchemaObject:
@@ -129,7 +106,7 @@ def merge_primitive_schemas_for_allof(
         return None
 
     if intersects_all_of_constraints(parser.allof_merge_mode.value):
-        base_dict = parser._merge_primitive_schemas(items).model_dump(exclude_unset=True, by_alias=True)  # noqa: SLF001
+        base_dict = merge_primitive_schemas(parser, items).model_dump(exclude_unset=True, by_alias=True)
     else:
         base_dict = type(parser)._first_typed_schema_dict(items)  # noqa: SLF001
         parser._merge_schema_constraints(base_dict, items, intersect=False)  # noqa: SLF001
@@ -207,7 +184,8 @@ def build_lightweight_array_type(  # noqa: PLR0913, PLR0917
     The members beside ``array`` and null are their types and formats without constraints, ordered as the field of
     the schema orders them (``legacy-non-array-first``), and the union admits null where the field does.
     """
-    item_schemas, _, _, tuple_item_count = parser._get_array_item_schemas(  # noqa: SLF001
+    item_schemas, _, _, tuple_item_count = _value_keywords.get_array_item_schemas(
+        parser,
         schema,
         include_true_tail_schema=True,
         force_prefix_items=True,
@@ -256,7 +234,7 @@ def is_false_schema_item(parser: LightweightTypesHost, item: JsonSchemaObject | 
 
 
 def contains_false_schema(parser: LightweightTypesHost, items: Iterable[JsonSchemaObject | bool]) -> bool:
-    return any(parser._is_false_schema_item(item) for item in items)  # noqa: SLF001
+    return any(is_false_schema_item(parser, item) for item in items)
 
 
 def unvisited_ref_target(
