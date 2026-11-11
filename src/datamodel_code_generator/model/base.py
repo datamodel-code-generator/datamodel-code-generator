@@ -488,12 +488,16 @@ class ConstraintsBase(_BaseModel):
     @cached_property
     def has_constraints(self) -> bool:
         """Check if any constraint values are set."""
-        return any(v is not None for v in self.model_dump().values())
+        return bool(self.set_values())
 
     @cached_property
     def _exclude_unset_dump(self) -> dict[str, Any]:
         """Cached model_dump(exclude_unset=True); constraints are immutable after creation. Read-only."""
         return self.model_dump(exclude_unset=True)
+
+    def set_values(self, *, exclude: set[str] | None = None) -> dict[str, Any]:
+        """Return the constraint values set (not None), by their keywords, without the fields named in ``exclude``."""
+        return self.model_dump(by_alias=True, exclude_none=True, exclude=exclude)
 
     @staticmethod
     def merge_constraints(a: ConstraintsBaseT | None, b: ConstraintsBaseT | None) -> ConstraintsBaseT | None:
@@ -522,8 +526,7 @@ def _overlay_constraints(
         key: value
         for constraints in (base, overriding)
         if isinstance(constraints, ConstraintsBase)
-        for key, value in constraints.model_dump(by_alias=True).items()
-        if value is not None
+        for key, value in constraints.set_values().items()
     }
     return constraints_class.model_validate(values) if issubclass(constraints_class, ConstraintsBase) else None
 
@@ -3998,7 +4001,7 @@ def _root_constraint_keywords(root_field: DataModelFieldBase) -> dict[str, Any]:
     """Return the constraints other than ``unique_items`` that a root field sets, by their keywords."""
     if not isinstance(constraints := root_field.constraints, ConstraintsBase):
         return {}
-    return constraints.model_dump(by_alias=True, exclude_none=True, exclude={"unique_items"})
+    return constraints.set_values(exclude={"unique_items"})
 
 
 def _named_field(field: DataModelFieldBase) -> str | None:

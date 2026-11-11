@@ -676,7 +676,7 @@ def union_sibling_constraints(obj: JsonSchemaObject, constraints: object) -> dic
     """
     if not is_union_schema(obj) or not isinstance(constraints, ConstraintsBase):
         return None
-    return constraints.model_dump(by_alias=True, exclude_none=True) or None
+    return constraints.set_values() or None
 
 
 def _field_holds_literal(parser: ValueKeywordsHost, data_type: DataType | None) -> bool:

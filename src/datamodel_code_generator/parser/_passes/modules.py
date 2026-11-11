@@ -39,8 +39,8 @@ from datamodel_code_generator._container_kinds import (
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._internal_utils import get_most_of_parent
 from datamodel_code_generator._model_keys import (
-    FIELDLESS_SITE_KEY,
     ModelKey,
+    is_fieldless_site,
     is_item_counts_site,
     model_key_of,
     names_by_path,
@@ -1457,7 +1457,7 @@ def _site_needs_model_regex_engine(model: DataModel) -> bool:
 
     The engine is one in the config of the model that holds the pattern.
     """
-    return bool(model.reference.__dict__.get(FIELDLESS_SITE_KEY)) and (
+    return is_fieldless_site(model.reference) and (
         (needs_engine := model.fields[0].NEEDS_MODEL_REGEX_ENGINE) is not None and needs_engine(model.fields)
     )
 
@@ -1604,7 +1604,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
     redirected_holders: list[tuple[DataModel, DataType, Import | None]] = []
 
     for model in models:  # noqa: PLR1702
-        if model.reference.__dict__.get(FIELDLESS_SITE_KEY):
+        if is_fieldless_site(model.reference):
             continue
         for model_field in model.fields:
             for data_type in model_field.data_type.all_data_types:
@@ -2981,7 +2981,7 @@ def constrain_fields_by_their_reference_sites(parser: ModulesHost, run: ModulesR
                 taken = {key: value for key, value in site.items() if key in counts or key in takes()}
                 constraints_class = _field_constraints_class(type(field))
                 if isinstance(alias, TypeAliasBase) and not layers and (root := alias.fields[0].constraints):
-                    written = root.model_dump(by_alias=True, exclude_none=True)
+                    written = root.set_values()
                     taken = {key: value for key, value in taken.items() if key not in written}
                 in_annotated = (
                     bool(taken)

@@ -65,6 +65,11 @@ def ref_branch_schema_of(reference: object) -> object | None:
     return reference.__dict__.get(REF_BRANCH_SCHEMA_KEY)
 
 
+def is_fieldless_site(reference: object) -> bool:
+    """Return whether ``reference`` names a site that earlier releases wrote as a model without fields."""
+    return bool(reference.__dict__.get(FIELDLESS_SITE_KEY))
+
+
 def is_item_counts_site(reference: object) -> bool:
     """Return whether ``reference`` names the type alias of an item-count site (``ITEM_COUNTS_SITE_KEY``)."""
     return bool(reference.__dict__.get(ITEM_COUNTS_SITE_KEY))

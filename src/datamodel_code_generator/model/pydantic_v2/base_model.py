@@ -29,7 +29,11 @@ from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._graph import reach, reaching
 from datamodel_code_generator._graph_links import clear_parents, drop_tree
 from datamodel_code_generator._message_text import for_count
-from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
+from datamodel_code_generator._model_keys import (
+    FIELDLESS_SITE_KEY,  # noqa: F401  # Preserve the established model.pydantic_v2.base_model export.
+    is_fieldless_site,
+    model_key_of,
+)
 from datamodel_code_generator._python_syntax import call_text, holds_lone_surrogate
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._regex_syntax import (
@@ -1463,9 +1467,7 @@ def _pattern_models_followed(fields: Iterable[DataModelFieldBase]) -> Iterator[D
     """
     for reference in _field_references(fields):
         source = reference.source
-        if reference.__dict__.get(FIELDLESS_SITE_KEY) and model_target_meets(
-            cast("DataModel", source), "pydantic.compiled_pattern"
-        ):
+        if is_fieldless_site(reference) and model_target_meets(cast("DataModel", source), "pydantic.compiled_pattern"):
             continue
         if getattr(source, "fields", None) is not None:
             yield cast("DataModel", source)
