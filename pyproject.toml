@@ -294,7 +294,10 @@ ini_options.markers = [
   "abnormal_path(reason): marks tests and report helpers that mock an abnormal path an e2e test cannot reproduce",
   "allow_direct_assert(reason): marks guarded tests where direct assert statements are intentionally allowed",
   "benchmark: marks tests as benchmark tests",
-  "imports_from_newer_python(reason): marks tests whose output for an older target imports only on a newer Python, so the import check on the target's Python compiles it only",
+  """\
+  imports_from_newer_python(reason): marks tests whose output for an older target imports only on a newer Python, so \
+  the import check on the target's Python compiles it only\
+  """,
   "isolate_builtin_formatter_config: marks tests that must not inherit repository formatter config",
   "perf: marks tests as performance tests (excluded from CI benchmarks)",
 ]
