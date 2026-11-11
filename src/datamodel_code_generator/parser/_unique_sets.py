@@ -44,7 +44,7 @@ from datamodel_code_generator.parser._passes._shared import (
     additional_properties_holder,
     plan_unique_sets,
 )
-from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter
+from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter, live_models_by_key
 from datamodel_code_generator.types import _takes_json_scalar
 
 if TYPE_CHECKING:
@@ -98,7 +98,7 @@ class _ByValue:
     )
 
     def __init__(self, facts: FinalFacts) -> None:
-        self.live: dict[ModelKey, ModelView] = {model_key_of(model.reference): model for model in facts.live_models}
+        self.live: dict[ModelKey, ModelView] = live_models_by_key(facts)
         self.class_hash: dict[ModelKey, SetItemHash] = {
             key: model.set_item_hash(user_imports=facts.options.user_imports) for key, model in self.live.items()
         }

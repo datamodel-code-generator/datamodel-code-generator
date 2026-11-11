@@ -14,12 +14,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
-from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator.parser._passes._shared import required_fields_a_default_lacks
-from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter
+from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter, live_model_of
 
 if TYPE_CHECKING:
-    from datamodel_code_generator.model._views import FieldView, ModelView, ReferenceView
+    from datamodel_code_generator.model._views import FieldView, ModelView
     from datamodel_code_generator.parser._phases import FinalFacts
 
 __all__ = ["OMIT_INCOMPLETE_MODEL_DEFAULTS", "IncompleteDefaultsWriter"]
@@ -38,11 +37,7 @@ def _omit_incomplete_model_defaults(facts: FinalFacts, writer: IncompleteDefault
     The models a reference names are the live models, by model key. A write changes the default and the nullability
     of the field it writes, and the reading of another field reads neither, so the order of the writes does not matter.
     """
-    models = {model_key_of(model.reference): model for model in facts.live_models}
-
-    def model_of(reference: ReferenceView) -> ModelView | None:
-        return models.get(model_key_of(reference))
-
+    model_of = live_model_of(facts)
     for model in facts.live_models:
         for field in model.fields:
             if required_fields_a_default_lacks(field, model_of):

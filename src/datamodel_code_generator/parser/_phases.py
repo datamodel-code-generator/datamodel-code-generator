@@ -17,11 +17,13 @@ from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar, cast
 
 from typing_extensions import ReadOnly, TypedDict, final
 
+from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 
+    from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView, ReferenceView
     from datamodel_code_generator.model.base import DataModel
 
@@ -35,6 +37,8 @@ __all__ = [
     "FinalFacts",
     "ModuleFacts",
     "container_copy",
+    "live_model_of",
+    "live_models_by_key",
     "rewrite_additional_properties",
     "rewrite_copied_type",
     "rewrite_field_copy",
@@ -120,6 +124,21 @@ class FinalFacts:
     member_keywords: Callable[[DataTypeView, Callable[[ReferenceView], ModelView | None]], frozenset[str] | None]
     constrained_member: Callable[[DataTypeView, Mapping[str, object]], object | None]
     options: DecisionOptions = DecisionOptions()
+
+
+def live_models_by_key(facts: FinalFacts) -> dict[ModelKey, ModelView]:
+    """Return the live models of ``facts`` by model key: the models a reference names."""
+    return {model_key_of(model.reference): model for model in facts.live_models}
+
+
+def live_model_of(facts: FinalFacts) -> Callable[[ReferenceView], ModelView | None]:
+    """Return the live model of ``facts`` a reference names, or None when it names no live model."""
+    models = live_models_by_key(facts)
+
+    def model_of(reference: ReferenceView) -> ModelView | None:
+        return models.get(model_key_of(reference))
+
+    return model_of
 
 
 @final
