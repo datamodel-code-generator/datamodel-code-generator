@@ -90,7 +90,7 @@ from datamodel_code_generator._target_render import (
     runtime_record,
 )
 from datamodel_code_generator._target_templates import roles, templated
-from datamodel_code_generator._target_types import is_none
+from datamodel_code_generator._target_types import admits_none, opened, without_none
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
@@ -1154,16 +1154,6 @@ def _core_call(
     )
 
 
-def _nested_members(value: TypeView) -> tuple[TypeView, ...]:
-    """Return the members of a union with the unions among them opened, or the type itself when it is no union.
-
-    An argument that stands for a root model of a nullable type is a union of that union and None.
-    """
-    if not isinstance(value, UnionType):
-        return (value,)
-    return tuple(leaf for member in value.members for leaf in _nested_members(member))
-
-
 class _Typing:
     """Spell the payload types of a planned client: model types, or schema-less surfaces."""
 
@@ -1221,12 +1211,10 @@ class _Typing:
         if (
             parameter.required
             and not parameter.plan.content_media_type
-            and (argument := parameter.argument) is not None
-            and (members := _nested_members(argument))
-            and any(map(is_none, members))
+            and parameter.argument is not None
+            and admits_none(argument := opened(parameter.argument))
         ):
-            present = tuple(member for member in members if not is_none(member))
-            key = _Model(present[0] if len(present) == 1 else replace(argument, members=present, hint=None))
+            key = _Model(without_none(argument))
         elif isinstance(key, _Model) and use is not None and use.argument is not None:
             key = _Model(use.argument)
         surface = self.spell(module, key)

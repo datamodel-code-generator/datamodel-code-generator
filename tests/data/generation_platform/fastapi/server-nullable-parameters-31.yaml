@@ -1,0 +1,37 @@
+openapi: 3.1.0
+info: {title: Server required nullable parameters 3.1, version: "1.0"}
+paths:
+  /items/{id}/{label}:
+    get:
+      operationId: getItem
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: [string, "null"]}}
+        - {name: label, in: path, required: true, schema: {$ref: "#/components/schemas/Label"}}
+        - {name: q, in: query, required: true, schema: {type: [string, "null"]}}
+        - {name: kind, in: query, required: true, schema: {$ref: "#/components/schemas/Kind"}}
+        - {name: ids, in: query, required: true, schema: {$ref: "#/components/schemas/Ids"}}
+        - {name: tags, in: query, required: true, schema: {type: [array, "null"], items: {type: integer}}}
+        - {name: weights, in: query, required: true, style: deepObject, explode: true, schema: {$ref: "#/components/schemas/Weights"}}
+        - {name: X-Trace, in: header, required: true, schema: {type: [integer, "null"]}}
+        - {name: session, in: cookie, required: true, schema: {type: [string, "null"]}}
+        - name: blob
+          in: query
+          required: true
+          content: {application/json: {schema: {type: [integer, "null"]}}}
+        - {name: cap, in: query, schema: {type: [integer, "null"]}}
+        - {name: mode, in: query, schema: {type: [string, "null"], default: fast}}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Kind:
+      type: [string, "null"]
+      enum: [a, b, null]
+    Label:
+      type: [string, "null"]
+    Ids:
+      type: [array, "null"]
+      items: {type: integer}
+    Weights:
+      type: [object, "null"]
+      additionalProperties: {type: integer}

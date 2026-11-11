@@ -86,6 +86,8 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "template-invalid",
         "text-bound-types-errors",
         "parts-bound-types-errors",
+        "nullable-parameters",
+        "nullable-parameters-31",
     ],
 )
 def test_fastapi_render(case: str, tmp_path: Path) -> None:
