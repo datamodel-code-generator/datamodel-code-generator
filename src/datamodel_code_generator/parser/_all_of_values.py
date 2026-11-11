@@ -370,8 +370,8 @@ class AllOfValuesHost(Protocol):
     ) -> dict[str, tuple[JsonSchemaObject | bool, str]]:
         """Build the effective raw property map once in inherited C3 order."""
 
-    def _get_type_with_mappings(self, type_: str, format_: str | None = None) -> Types:
-        """Get the Types enum for a given type and format, applying custom type mappings."""
+    def _get_schema_type(self, obj: JsonSchemaObject, type_: str, format_: str) -> Types:
+        """Get the Types enum for a type and format of ``obj``, applying custom type mappings."""
 
     def _group_allof_items(
         self,
@@ -1075,7 +1075,7 @@ def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
                 and (
                     kinds := all_of_root_keyword_kinds(
                         schema_type,
-                        parser._get_type_with_mappings(schema_type, format_).name,  # noqa: SLF001
+                        parser._get_schema_type(merged_schema, schema_type, format_).name,  # noqa: SLF001
                     )
                 )
                 is not None

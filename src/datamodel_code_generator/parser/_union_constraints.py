@@ -18,8 +18,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol
 
 from datamodel_code_generator._container_kinds import CONTAINERS
-from datamodel_code_generator._model_keys import model_key_of
-from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter
+from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter, live_model_of
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
@@ -120,11 +119,7 @@ def _omit_untaken_union_constraints(facts: FinalFacts, writer: UnionConstraintsW
     string written in place, which then holds the keywords it loses (``O | constr(max_length=3)``, #6053); otherwise
     the field keeps them all, and its output stays as it was.
     """
-    models = {model_key_of(model.reference): model for model in facts.live_models}
-
-    def model_of(reference: ReferenceView) -> ModelView | None:
-        return models.get(model_key_of(reference))
-
+    model_of = live_model_of(facts)
     for model in facts.live_models:
         for field in model.fields:
             if not (siblings := field.union_sibling_constraints):

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
 from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._container_kinds import MAPPINGS
@@ -224,31 +224,29 @@ class ModelFacts:
                 pass
         return value
 
+    def _aliased(self, symbol: FinalModelSymbol) -> bool:
+        """Return whether a symbol is an alias the batch binds a type to."""
+        return symbol.kind == "alias" and self.root(symbol.id) is not None
+
+    def _stepped(self, symbol: FinalModelSymbol) -> bool:
+        """Return whether a symbol is such an alias, or a root model its backend declares and the batch binds."""
+        return self._aliased(symbol) or (
+            symbol.kind == "root" and symbol.facts is not None and self.root(symbol.id) is not None
+        )
+
     def plain(self, value: TypeView) -> TypeView:
         """Return the type an alias stands for, through aliases of aliases, or any other type itself."""
-        while (
-            isinstance(value, GeneratedSymbolType)
-            and self.symbols[value.symbol].kind == "alias"
-            and (aliased := self.root(value.symbol)) is not None
-        ):
-            value = aliased
-        return value
+        return cast("TypeView", self.tables.wrapper_chain(value, through=self._aliased, nullable=False)[0])
 
     def unwrapped(self, value: TypeView, steps: list[ItemStep]) -> TypeView:
         """Return the type a root model or a union of one type and None stands for, adding each root step taken."""
-        while True:
-            value = self.plain(value)
-            if (member := sole_present(value)) is not None:
-                value = member
-            elif (
-                (symbol := self.symbol(value)) is not None
-                and symbol.kind == "root"
-                and (root := self.root(symbol.id)) is not None
-            ):
-                steps.append(ItemStep("root", "root"))
-                value = root
-            else:
-                return value
+        found, named = self.tables.wrapper_chain(value, through=self._stepped)
+        steps.extend(
+            ItemStep("root", "root")
+            for symbol in map(self.symbols.__getitem__, named)
+            if symbol.kind == "root" and self._stepped(symbol)
+        )
+        return cast("TypeView", found)
 
     def model(self, value: TypeView) -> FinalModelSymbol | None:
         """Return the object model a body stands for, alone or with null, or None when it is anything else.

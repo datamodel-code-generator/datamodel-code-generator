@@ -34,7 +34,7 @@ from datamodel_code_generator.model._decisions.nullability import imported_name_
 from datamodel_code_generator.model._decisions.tag_value import PYDANTIC_SCALAR_KINDS
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 
     from datamodel_code_generator._container_kinds import ContainerKind, ContainerSlot
     from datamodel_code_generator._runtime.model_codecs.media import LexicalKind
@@ -76,6 +76,11 @@ _LEXICAL_KINDS: Final[dict[tuple[str | None, str], LexicalKind | None]] = {
 _INTEGER_NUMBER: Final = frozenset({"integer", "number"})
 _ANY: Final = frozenset({("typing", "Any"), ("typing_extensions", "Any")})
 _ARGUMENTS: Final[dict[LeafStep, tuple[int, ContainerKind]]] = {"items": (1, ITEM_CONTAINERS), "values": (2, MAPPINGS)}
+
+
+def _wraps(symbol: FinalModelSymbol) -> bool:
+    """Return whether a symbol only stands for another type, as an alias or a root model does."""
+    return symbol.kind in WRAPPER_KINDS
 
 
 def is_none(value: TypeView) -> bool:
@@ -179,20 +184,27 @@ class TypeTables:
                 pass
         return null
 
-    def wrapper_chain(self, value: TypeView | None) -> tuple[TypeView | None, list[SymbolId]]:
+    def wrapper_chain(
+        self,
+        value: TypeView | None,
+        *,
+        through: Callable[[FinalModelSymbol], bool] = _wraps,
+        nullable: bool = True,
+    ) -> tuple[TypeView | None, list[SymbolId]]:
         """Return the type a type stands for, through aliases, root models and a union with None alone, and the symbols.
 
         The symbols are the aliases and root models it steps through, in order, then the symbol it stands for; an alias
         or root model it reaches again ends the walk where it is reached, and one the batch binds no type to ends it at
-        None.
+        None. ``through`` says which symbols it steps through, aliases and root models unless given, and without
+        ``nullable`` a union with None ends it.
         """
         named: list[SymbolId] = []
         while True:
-            if (member := sole_present(value)) is not None:
+            if nullable and (member := sole_present(value)) is not None:
                 value = member
             elif isinstance(value, GeneratedSymbolType) and value.symbol not in named:
                 named.append(value.symbol)
-                if self.symbols[value.symbol].kind not in WRAPPER_KINDS:
+                if not through(self.symbols[value.symbol]):
                     return value, named
                 value = wrapped_type(self.members, value.symbol)
             else:

@@ -32,6 +32,7 @@ from datamodel_code_generator.parser._field_rows import require_field
 from datamodel_code_generator.parser._naming import rw_variant_class_name
 from datamodel_code_generator.parser._origins import with_field_origin
 from datamodel_code_generator.parser._passes._shared import (
+    _detach_deferred_inherited_field_parents,
     inherited_default_source,
     with_dedupe_request_response_hint,
 )
@@ -75,6 +76,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "RwSplitHost",
+    "clear_inherited_field_caches",
     "collect_all_fields_for_request_response",
     "collect_inherited_fields_for_request_response",
     "copy_unregistered_fields",
@@ -625,13 +627,32 @@ def copy_unregistered_fields(
     return [parser._copy_model_field(field, register_references=False) for field in fields]  # noqa: SLF001
 
 
-def unregister_temporary_inherited_fields(parser: RwSplitHost) -> None:
-    """Take the temporary fields of the inheritance work out of the live reverse-reference graph after parsing."""
+def clear_inherited_field_caches(parser: RwSplitHost) -> None:
+    """Release temporary inheritance state after parsing."""
     for cached_fields in chain(
         parser._raw_inherited_fields_cache.values(),  # noqa: SLF001
         parser._request_response_fields.values(),  # noqa: SLF001
     ):
         parser._unregister_temporary_field_references(cached_fields)  # noqa: SLF001
+        for field in cached_fields:
+            _detach_deferred_inherited_field_parents(field)
+    parser._raw_inherited_fields_cache.clear()  # noqa: SLF001
+    parser._raw_inherited_own_names_cache.clear()  # noqa: SLF001
+    parser._request_response_fields.clear()  # noqa: SLF001
+    parser._rw_model_field_facts_cache.clear()  # noqa: SLF001
+    parser._rw_model_references_cache.clear()  # noqa: SLF001
+    parser._rw_model_variant_requirement_cache.clear()  # noqa: SLF001
+    parser._rw_model_variant_references.clear()  # noqa: SLF001
+    parser._inherited_schema_cache.clear()  # noqa: SLF001
+    parser._inherited_schema_ancestor_cache.clear()  # noqa: SLF001
+    parser._inherited_schema_linearization_cache.clear()  # noqa: SLF001
+    parser._inherited_required_cache.clear()  # noqa: SLF001
+    parser._inherited_parent_property_cache.clear()  # noqa: SLF001
+    parser._ref_target_dumps.clear()  # noqa: SLF001
+    parser._unsatisfiable_schemas.clear()  # noqa: SLF001
+    parser._untaken_pattern_schemas.clear()  # noqa: SLF001
+    if parser.generate_schema_validators:
+        parser._property_count_rule_cache.clear()  # noqa: SLF001
 
 
 def merge_inherited_field_overrides(
