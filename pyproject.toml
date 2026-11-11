@@ -127,7 +127,7 @@ type = [
   "ty==0.0.99",
   "types-jinja2",
   "types-pyyaml",
-  "types-setuptools>=67.6.0.5,<84",
+  "types-setuptools>=67.6.0.5,<85",
   "types-toml",
   { include-group = "client" },
   { include-group = "fastapi" },

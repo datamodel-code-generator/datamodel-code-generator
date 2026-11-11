@@ -904,7 +904,7 @@ dev = [
     { name = "ty", specifier = "==0.0.99" },
     { name = "types-jinja2" },
     { name = "types-pyyaml" },
-    { name = "types-setuptools", specifier = ">=67.6.0.5,<84" },
+    { name = "types-setuptools", specifier = ">=67.6.0.5,<85" },
     { name = "types-toml" },
     { name = "uv", specifier = ">=0.13.4" },
     { name = "uvicorn", specifier = ">=0.54" },
@@ -980,7 +980,7 @@ type = [
     { name = "ty", specifier = "==0.0.99" },
     { name = "types-jinja2" },
     { name = "types-pyyaml" },
-    { name = "types-setuptools", specifier = ">=67.6.0.5,<84" },
+    { name = "types-setuptools", specifier = ">=67.6.0.5,<85" },
     { name = "types-toml" },
     { name = "uvicorn", specifier = ">=0.54" },
     { name = "watchfiles", specifier = ">=1.1" },
@@ -3289,11 +3289,11 @@ wheels = [
 
 [[package]]
 name = "types-setuptools"
-version = "69.5.0.20240522"
+version = "84.2.0.20261104"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/45/dd/dc7fdc8086cb19f081fdc76476a8707c515d0f81abef94b7845b604ceedd/types-setuptools-69.5.0.20240522.tar.gz", hash = "sha256:c5a97601b2d040d3b9fcd0633730f0a8c86ebef208552525c97301427f261549", size = 38273, upload-time = "2024-05-22T02:22:17.63Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d9/08/fe21d9b3e02c6a612ef01ee0212ef82619aec8d2373d74d69c4144ac2934/types_setuptools-84.2.0.20261104.tar.gz", hash = "sha256:1ec758bbeddf88d52f963fe663beabc2117b6aae73cf3d2902d7dd0df81bd76e", size = 46708, upload-time = "2026-11-04T08:14:06.537Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/75/6d/17e28bda9953e0aa4553fe4b5685a509d2f9ff8fe37dbafdd7a5cde37fbb/types_setuptools-69.5.0.20240522-py3-none-any.whl", hash = "sha256:e27231cbc80648cfaee4921d2f1150107fdf8d33666958abf2aba0191a82688b", size = 62183, upload-time = "2024-05-22T02:22:16.062Z" },
+    { url = "https://files.pythonhosted.org/packages/bd/50/84d3ea21646c5039660e9fa08d9fb180ac43a8cb93a8f45e045d312c7e2d/types_setuptools-84.2.0.20261104-py3-none-any.whl", hash = "sha256:23e9bf876adca8df2285a68f76c355128b1e679b27cfec4854faf350cd7999e5", size = 70377, upload-time = "2026-11-04T08:14:05.067Z" },
 ]
 
 [[package]]
