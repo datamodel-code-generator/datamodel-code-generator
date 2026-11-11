@@ -131,7 +131,6 @@ def _run(  # noqa: PLR0913, PLR0917
         _publish_or_error,  # pyright: ignore[reportPrivateUsage]
         _single_job_plan,  # pyright: ignore[reportPrivateUsage]
         _stage_job_plans,  # pyright: ignore[reportPrivateUsage]
-        _target_lockfile,  # pyright: ignore[reportPrivateUsage, reportUnknownVariableType]
         _target_settings,  # pyright: ignore[reportPrivateUsage, reportUnknownVariableType]
         _write_comparison_output,  # pyright: ignore[reportPrivateUsage]
     )
@@ -140,10 +139,11 @@ def _run(  # noqa: PLR0913, PLR0917
         plan_target,
         prepare_target,
     )
+    from datamodel_code_generator._lock_plan import models_lockfile  # noqa: PLC0415
     from datamodel_code_generator._target_selection import target_of  # noqa: PLC0415
     from datamodel_code_generator.reference import unmatched_model_name_keys_unreported  # ruff: ignore[import-outside-top-level]
 
-    lockfile = _target_lockfile(config, pyproject_path)
+    lockfile = models_lockfile(config, pyproject_path)
     generator, target = target_of(config, partial(_base, config, namespace, pyproject_path))
     effective = _target_settings(config, args, lockfile)
     if batch is not None:

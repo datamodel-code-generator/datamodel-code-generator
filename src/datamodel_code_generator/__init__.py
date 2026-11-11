@@ -15,6 +15,7 @@ import warnings
 from collections import defaultdict
 from collections.abc import Callable, Generator, Iterable, Mapping
 from functools import lru_cache as _lru_cache
+from functools import partial as _partial
 from pathlib import Path
 from typing import (
     IO,
@@ -1995,9 +1996,7 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
     jsonschema_version, openapi_version, asyncapi_version, xmlschema_version, protobuf_version = schema_versions
     build_parser = _build_parser
     if parser_factory is not None:
-        from functools import partial  # noqa: PLC0415
-
-        build_parser = partial(_build_parser, parser_factory=parser_factory)
+        build_parser = _partial(_build_parser, parser_factory=parser_factory)
     with _warn_on_input_string_path_failure(input_):
         parser = build_parser(
             input_file_type,
@@ -2559,9 +2558,7 @@ def _parse_generation(  # noqa: PLR0913, PLR0917
     are translated to the models that run names (``_user_keys.translate_class_keys``); a run without them that fails
     leaves the keys as written.
     """
-    from functools import partial  # noqa: PLC0415
-
-    run = partial(
+    run = _partial(
         _parse_generation_run,
         input_,
         input_text,
@@ -2662,7 +2659,6 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
     the parse before it.
     """
     from dataclasses import replace  # noqa: PLC0415
-    from functools import partial  # noqa: PLC0415
 
     from datamodel_code_generator.parser.base import (  # noqa: PLC0415
         ParserRunContext,
@@ -2690,7 +2686,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         python_type_expressions=python_type_expressions,
         parser_factory=parser_factory,
     )
-    parse_again = partial(
+    parse_again = _partial(
         _parse_again,
         input_,
         input_text,
@@ -2922,9 +2918,7 @@ def _emit_generation(  # noqa: PLR0913
         metadata = metadata_path, _model_metadata_text(model_metadata, config.encoding)
     emit_results = _emit_results
     if allow_empty_api:
-        from functools import partial  # noqa: PLC0415
-
-        emit_results = partial(_emit_results, allow_empty_api=True)
+        emit_results = _partial(_emit_results, allow_empty_api=True)
     generated = emit_results(
         results,
         input_,
@@ -3085,9 +3079,7 @@ def _parse_run(  # noqa: PLR0913, PLR0914
     allow_empty_api = input_file_type is InputFileType.OpenAPI and OpenAPIScope.Api in (config.openapi_scopes or ())
     parse_generation = _parse_generation
     if capture is not None and (parser_factory := capture.parser_factory(input_file_type)) is not None:
-        from functools import partial  # noqa: PLC0415
-
-        parse_generation = partial(_parse_generation, parser_factory=parser_factory)
+        parse_generation = _partial(_parse_generation, parser_factory=parser_factory)
         allow_empty_api = allow_empty_api and getattr(parser_factory, "_supports_api_scope", False) is True
     results, model_metadata, model_identities, data_model_types, defer_formatting, inline_object_bodies = (
         parse_generation(

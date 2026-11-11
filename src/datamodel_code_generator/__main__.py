@@ -126,6 +126,7 @@ from datamodel_code_generator._config_fields import JSON_FIELDS, TARGET_SELECTOR
 from datamodel_code_generator._format_types import Formatter, PythonVersion
 from datamodel_code_generator._generation_timestamp import current_timestamp
 from datamodel_code_generator._json_output import OUTPUT_HEAD, json_schema_text, write_streamed_json
+from datamodel_code_generator._lock_plan import remote_lock_plan as _remote_lock_plan
 from datamodel_code_generator._option_names import (
     CONFIG_TABLE,
     GENERATE_FIELD_NAMES,
@@ -418,13 +419,6 @@ class _StagedJobPlan(NamedTuple):
     def output(self) -> Path | None:
         """Return the output that the job publishes from its staging."""
         return None if self.staging is None or self.staging.output is None else self.staging.output.target
-
-
-def _remote_lock_plan(config: Config, pyproject_path: Path | None) -> _RemoteLockPlan:
-    """Resolve the project-relative default lock path without importing lock machinery."""
-    from datamodel_code_generator._lock_plan import remote_lock_plan  # noqa: PLC0415
-
-    return remote_lock_plan(config, pyproject_path)
 
 
 def _watch_remote_lock_setup(
@@ -1722,17 +1716,6 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
     if config.input_model and (selected := _selected_target(config)) is not None:
         return [f"{option_flag(selected[0])} cannot be used with --input-model"]
     return [] if (problem := _target_options_error(config)) is None else [problem]
-
-
-def _target_lockfile(config: Config, pyproject_path: Path | None) -> Path | None:
-    """Return the remote lock file a generation target's models read or update, or None while no lock applies.
-
-    The default lock file sits next to pyproject.toml or in the working directory, so it reaches the target only
-    while a policy uses it: an update, a locked run, or an existing file to verify.
-    """
-    from datamodel_code_generator._lock_plan import models_lockfile  # noqa: PLC0415
-
-    return models_lockfile(config, pyproject_path)
 
 
 def _target_settings(config: Config, args: Sequence[str], lockfile: Path | None) -> GenerateConfig:
