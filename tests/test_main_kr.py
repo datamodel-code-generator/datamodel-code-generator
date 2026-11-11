@@ -19,7 +19,6 @@ import jsonschema
 import pydantic
 import pytest
 import tomllib
-from packaging import version
 
 from datamodel_code_generator import MIN_VERSION, Error, Formatter, InputFileType, chdir, generate, inferred_message
 from datamodel_code_generator import __main__ as main_module
@@ -38,6 +37,7 @@ from datamodel_code_generator.__main__ import (
     generate_pyproject_config,
 )
 from datamodel_code_generator.arguments import arg_parser
+from packaging import version
 from tests.conftest import (
     HttpxGetMockFactory,
     MockHttpxResponse,

@@ -25,7 +25,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, cast
 import black
 import pytest
 from inline_snapshot import snapshot
-from packaging import version
 
 import datamodel_code_generator
 from datamodel_code_generator import (
@@ -65,6 +64,7 @@ from datamodel_code_generator.model.pydantic_v2 import UnionMode
 from datamodel_code_generator.parser import LiteralType
 from datamodel_code_generator.parser.mcp import convert_mcp_tools_to_jsonschema
 from datamodel_code_generator.parser.openapi import OpenAPIParser
+from packaging import version
 from tests.conftest import (
     CHECK_FACT_FINALITY_ENV,
     CHECK_MODEL_GRAPH_ENV,
