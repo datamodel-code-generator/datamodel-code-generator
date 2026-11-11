@@ -106,7 +106,7 @@ class Environment:
 ENVIRONMENTS = {
     **{
         f"py3{minor}": Environment(f"py3{minor}-nocov-parallel", builtin=True)
-        for minor in ("10", "11", "12", "13", "14", "15")
+        for minor in ("11", "12", "13", "14", "15")
     },
     "py314-external": Environment("py314-nocov-parallel"),
     "py312-blacklatest": Environment("py312-blacklatest-nocov-parallel", {PARITY: "1"}),
