@@ -1750,10 +1750,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the constraint values ``obj`` writes beside ``data_type``, a type built only to read them."""
         return _rw_split.temporary_constraint_values(self, obj, data_type)
 
-    def _clear_inherited_field_caches(self) -> None:
-        """Release temporary inheritance state after parsing."""
-        return _rw_split.clear_inherited_field_caches(self)
-
     def _merge_inherited_field_overrides(
         self,
         inherited_fields: list[DataModelFieldBase],
@@ -1998,10 +1994,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> tuple[tuple[str, ...], tuple[JsonSchemaObject, ...]]:
         """Mirror propertyNames key parsing without following ignored nested shapes."""
         return _rw_split.get_rw_property_name_sources(self, property_names=property_names, defining_ref=defining_ref)
-
-    def _preload_property_refs_for_rw_models(self, obj: JsonSchemaObject) -> None:
-        """Preload property refs needed for readOnly/writeOnly model splitting."""
-        return _rw_split.preload_property_refs_for_rw_models(self, obj)
 
     def _get_rw_model_variant_reference(
         self,
@@ -4340,7 +4332,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         with self._model_frame() as frame:  # noqa: PLR1702
             if self.generate_schema_validators:
                 obj = self._merge_conditional_properties(obj)
-            self._preload_property_refs_for_rw_models(obj)
             inherited_fields: dict[str, DataModelFieldBase] = {}
             inherited_properties: dict[str, tuple[JsonSchemaObject | bool, str]] = {}
             inherited_required_names: frozenset[str] = frozenset()
@@ -5692,7 +5683,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             class_name = class_key("reference-name", reference)
             self.set_title(reference.path, obj)
             self.set_schema_id(reference.path, obj)
-            self._preload_property_refs_for_rw_models(obj)
             fields = self.parse_object_fields(
                 obj,
                 path,
@@ -8738,7 +8728,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     @contextmanager
     def _parsing_session(self, resolve: Callable[[], None] | None = None) -> Generator[None, None, None]:
-        """Parse in the block, then the targets it leaves (``resolve``), end the schema parsing and clear the caches."""
+        """Parse in the block, then the targets it leaves (``resolve``), end the schema parsing and release its state.
+
+        The temporary fields of the inheritance work leave the reverse-reference graph and the local source cache is
+        reset.
+        """
         try:
             yield
             _schema_refs.parse_ref_sites(self)
@@ -8746,7 +8740,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             _schema_refs.parse_ref_sites(self)
             self._end_schema_parsing()
         finally:
-            self._clear_inherited_field_caches()
+            _rw_split.unregister_temporary_inherited_fields(self)
             self._reset_local_source_cache()
 
     @override

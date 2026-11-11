@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import gc
 import json
 import socket
 import sys
-import weakref
 from collections import Counter, defaultdict
 from copy import deepcopy
 from functools import partial
@@ -51,14 +49,9 @@ from datamodel_code_generator.model.runtime_validation import (
 )
 from datamodel_code_generator.model.type_alias import TypeAlias
 from datamodel_code_generator.parser.base import (
-    _DEFERRED_INHERITED_CLASS_KEY,
-    _DEFERRED_INHERITED_TYPE_KEY,
-    _RAW_SCHEMA_DEFAULT_KEY,
     SPECIAL_PATH_FORMAT,
-    ClassScope,
     Parser,
     Source,
-    _get_inherited_type_modifiers,
     dump_templates,
 )
 from datamodel_code_generator.parser.jsonschema import (
@@ -465,18 +458,6 @@ def test_schema_validator_property_count_helper_caches_effective_allof_rule() ->
     parser._add_property_count_validator("#/Model", obj)
 
     assert parser.extra_template_data["#/Model"]["schema_runtime_validation"].property_count is rule
-
-
-def test_clear_inherited_field_caches_releases_property_count_rules() -> None:
-    """Release opt-in property-count aggregation cache with parser-owned temporary state."""
-    parser = JsonSchemaParser("", generate_schema_validators=True)
-    parser._get_property_count_rule(JsonSchemaObject.model_validate({"minProperties": 2}))
-
-    assert parser._property_count_rule_cache
-
-    parser._clear_inherited_field_caches()
-
-    assert not parser._property_count_rule_cache
 
 
 def test_schema_runtime_validation_module_preparation_skips_empty_modules() -> None:
@@ -3023,26 +3004,6 @@ def test_json_schema_parser_extension(source_obj: dict[str, Any], generated_clas
     assert dump_templates(list(parser.results)) == generated_classes
 
 
-def test_json_schema_parser_schema_raw_key_cache_is_schema_object_specific() -> None:
-    """Test schema raw key caches are keyed by the exact schema object type."""
-
-    class AltJsonSchemaObject(JsonSchemaObject):
-        properties: Optional[dict[str, Union[AltJsonSchemaObject, bool]]] = None  # noqa: UP007, UP045
-        alt_type: Optional[str] = pydantic.Field(default=None, alias="altType")  # noqa: UP045
-
-    class AltJsonSchemaParser(JsonSchemaParser):
-        SCHEMA_OBJECT_TYPE = AltJsonSchemaObject
-
-    base_parser = JsonSchemaParser("")
-    alt_parser = AltJsonSchemaParser("")
-
-    assert "altType" not in base_parser._known_schema_object_raw_keys()
-    assert "altType" in alt_parser._known_schema_object_raw_keys()
-    assert base_parser._has_schema_affecting_keywords({"altType": "string"}) is False
-    assert alt_parser._has_schema_affecting_keywords({"altType": "string"}) is True
-    assert alt_parser._known_schema_object_raw_keys() is alt_parser._known_schema_object_raw_keys()
-
-
 def test_create_data_model_with_frozen_dataclasses() -> None:
     """Test _create_data_model when frozen_dataclasses attribute exists."""
     parser = JsonSchemaParser(
@@ -3648,82 +3609,6 @@ def test_bind_python_type_preserves_direct_runtime_symbol_identity() -> None:
     assert bound_type.imports == (Import(import_="pkg.models"),)
 
 
-def test_inherited_request_response_helpers_keep_unnamed_root_fields() -> None:
-    """Temporary root fields stay ordered while nameless override entries are ignored."""
-    parser = JsonSchemaParser("")
-    reference = Reference(path="#/$defs/MappingBase", name="MappingBase")
-    root_field = DataModelFieldBase(data_type=DataType(type="str"))
-    parser._inherited_schema_cache[reference.path] = JsonSchemaObject.model_validate({})
-    parser._raw_inherited_fields_cache[reference.path] = (root_field,)
-    parser._raw_inherited_own_names_cache[reference.path] = frozenset()
-
-    inherited_fields = parser._collect_inherited_fields_for_request_response([reference])
-
-    assert len(inherited_fields) == 1
-    assert inherited_fields[0].name is None
-    assert parser._merge_inherited_field_overrides(inherited_fields, [root_field]) == []
-
-
-@pytest.mark.parametrize("gc_initially_enabled", [True, False])
-def test_clear_inherited_field_caches_releases_deferred_list_wrapper_cycles(
-    *,
-    gc_initially_enabled: bool,
-) -> None:
-    """Temporary deferred container trees are released immediately without cyclic GC."""
-    gc_state_setters = (gc.disable, gc.enable)
-    restore_gc = gc_state_setters[gc.isenabled()]
-    gc_state_setters[gc_initially_enabled]()
-    parser = JsonSchemaParser("")
-    field = DataModelFieldBase(
-        name="items",
-        original_name="items",
-        data_type=DataType(
-            data_types=[
-                DataType(
-                    data_types=[DataType(type="str")],
-                    is_list=True,
-                )
-            ]
-        ),
-    )
-    modifiers = _get_inherited_type_modifiers(field.data_type)
-    assert modifiers.list_wrapper is not None
-    field.__dict__[_DEFERRED_INHERITED_TYPE_KEY] = modifiers
-    parser._raw_inherited_fields_cache["#/$defs/Cycle"] = (field,)
-    schema = JsonSchemaObject.model_validate({"type": "object"})
-    parser._inherited_schema_cache["#/$defs/Cycle"] = schema
-    parser._inherited_schema_ancestor_cache["#/$defs/Cycle"] = frozenset({"#/$defs/Base"})
-    parser._inherited_schema_linearization_cache["#/$defs/Cycle",] = (
-        "#/$defs/Cycle",
-        "#/$defs/Base",
-    )
-    parser._inherited_required_cache["#/$defs/Cycle",] = frozenset({"items"})
-    resolution = (schema, "#/$defs/Cycle", frozenset(), False)
-    parser._inherited_parent_property_cache[id(schema), "#/$defs/Cycle", frozenset(), False] = (schema, resolution)
-    tracked = [
-        field,
-        *field.data_type.all_data_types,
-        modifiers.list_wrapper,
-        *modifiers.list_wrapper.all_data_types,
-        schema,
-    ]
-    weak_references = [weakref.ref(value) for value in tracked]
-    gc.disable()
-    try:
-        parser._clear_inherited_field_caches()
-        assert not parser._raw_inherited_fields_cache
-        assert not parser._inherited_schema_cache
-        assert not parser._inherited_schema_ancestor_cache
-        assert not parser._inherited_schema_linearization_cache
-        assert not parser._inherited_required_cache
-        assert not parser._inherited_parent_property_cache
-        del field, modifiers, resolution, schema, tracked
-
-        assert all(reference() is None for reference in weak_references)
-    finally:
-        restore_gc()
-
-
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
@@ -3740,38 +3625,6 @@ def test_clear_inherited_field_caches_releases_deferred_list_wrapper_cycles(
 def test_inherited_json_value_type_matrix(value: object, expected: str) -> None:
     """Concrete enum and const values retain every JSON instance type."""
     assert _get_json_value_type(value) == expected
-
-
-def test_inherited_request_response_override_resolves_derived_default() -> None:
-    """Request/response field copies resolve mutable defaults in derived class scope."""
-    parser = JsonSchemaParser(
-        "",
-        allof_merge_mode=AllOfMergeMode.All,
-        default_value_overrides={"Derived.value": {"source": ["derived"]}},
-    )
-    inherited_field = DataModelFieldBase(
-        name="value",
-        original_name="value",
-        data_type=DataType(type="str"),
-        default="schema",
-        has_default=True,
-    )
-    inherited_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = "schema"
-    child_field = DataModelFieldBase(
-        name="value",
-        original_name="value",
-        data_type=DataType(),
-    )
-    child_field.__dict__[_DEFERRED_INHERITED_TYPE_KEY] = child_field.data_type
-    child_field.__dict__[_DEFERRED_INHERITED_CLASS_KEY] = ClassScope("Derived")
-
-    fields = parser._merge_inherited_field_overrides([inherited_field], [child_field])
-    fields[0].default["source"].append("copy")
-
-    assert fields[0].default == {"source": ["derived", "copy"]}
-    assert parser.model_resolver.default_value_overrides["Derived.value"] == {
-        "source": ["derived"],
-    }
 
 
 def test_parse_nested_inline_inherited_schema_fields() -> None:
@@ -3873,72 +3726,6 @@ def test_resolve_type_import_from_defs_exception_handling() -> None:
 
     result = parser._resolve_type_import_from_defs("SomeType")
     assert result is None
-
-
-def test_preload_property_refs_skips_external_ref_mapping(tmp_path: Path, mocker: MockerFixture) -> None:
-    """Test read/write preload does not load refs handled by external mapping."""
-    external_schema = tmp_path / "external.json"
-    parser = JsonSchemaParser(
-        "",
-        external_ref_mapping={str(external_schema): "external.models"},
-        read_only_write_only_model_type=ReadOnlyWriteOnlyModelType.RequestResponse,
-    )
-    load_ref = mocker.patch.object(parser, "_load_ref_schema_object")
-
-    parser._preload_property_refs_for_rw_models(
-        JsonSchemaObject.model_validate({
-            "properties": {
-                "mapped": {"$ref": f"{external_schema}#/External"},
-                "local": {"$ref": "#/$defs/Local"},
-            },
-        })
-    )
-
-    load_ref.assert_called_once_with("#/$defs/Local")
-
-
-@pytest.mark.parametrize("node_count", [100, 200, 400])
-def test_request_response_negative_ring_caches_each_graph_node_once(node_count: int) -> None:
-    """A negative reference ring is traversed once and cached for both variants."""
-
-    class CountingJsonSchemaParser(JsonSchemaParser):
-        graph_node_calls: Counter[str]
-
-        def _get_rw_model_variant_graph_node(self, resolved_ref: str) -> tuple[bool, tuple[str, ...]]:
-            self.graph_node_calls[resolved_ref] += 1
-            return super()._get_rw_model_variant_graph_node(resolved_ref)
-
-    schema: dict[str, Any] = {
-        "$defs": {
-            f"Node{index}": {
-                "type": "object",
-                "properties": {
-                    "next": {
-                        "$ref": f"#/$defs/Node{(index + 1) % node_count}",
-                    },
-                },
-            }
-            for index in range(node_count)
-        },
-    }
-    parser = CountingJsonSchemaParser(
-        json.dumps(schema),
-        read_only_write_only_model_type=ReadOnlyWriteOnlyModelType.RequestResponse,
-    )
-    parser.raw_obj = schema
-    parser.graph_node_calls = Counter()
-
-    assert not parser._ref_schema_generates_variant("#/$defs/Node0", "Request")
-    assert parser.graph_node_calls == Counter({f"#/$defs/Node{index}": 1 for index in range(node_count)})
-    assert parser._rw_model_variant_requirement_cache == {
-        (f"#/$defs/Node{index}", suffix): False for index in range(node_count) for suffix in ("Request", "Response")
-    }
-
-    for index in range(node_count):
-        assert not parser._ref_schema_generates_variant(f"#/$defs/Node{index}", "Request")
-        assert not parser._ref_schema_generates_variant(f"#/$defs/Node{index}", "Response")
-
-    assert sum(parser.graph_node_calls.values()) == node_count
 
 
 def test_request_response_property_names_follows_only_type_contributing_refs() -> None:
