@@ -773,7 +773,13 @@ def _field_union_row(
         return bool(getattr(site.obj, keyword))
 
     def build(parser: JsonSchemaParser, site: _Site) -> DataType:
-        if combined_const_enum := parser._parse_combined_item_const_enum(site, getattr(site.obj, keyword)):  # noqa: SLF001
+        if combined_const_enum := parser._parse_combined_const_enum(  # noqa: SLF001
+            site.name,
+            site.obj,
+            getattr(site.obj, keyword),
+            get_special_path("enum", site.path),
+            singular_name=site.singular_name,
+        ):
             return combined_const_enum
         parse_members = parser.parse_any_of if keyword == "anyOf" else parser.parse_one_of
         return build_union(parser.data_type, parse_members(site.name, site.obj, get_special_path(keyword, site.path)))
@@ -5063,15 +5069,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 is_root_model=True,
             )
         data_model_root_type = self._get_runtime_validation_root_model_type(data_model_root_type, reference.path)
-        splits = (
-            self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse
-            and not self._is_base_stand_in(reference)
-            and (
-                _rw_split.fields_reference_rw_model_variant(self, fields, "Request")
-                or _rw_split.rw_model_writes_variant_beside_fields(self, reference.path)
-            )
-        )
-        if splits:
+        if _rw_split.splits_root_model(self, reference, fields):
             self._request_response_fields[reference.path] = tuple(_rw_split.copy_unregistered_fields(self, fields))
             if "legacy-rw-parsed-facts" in self._legacy_rw_variants:
                 self._rw_model_field_facts_cache[reference.path] = _rw_split.get_rw_model_field_facts(self, fields)
@@ -6513,15 +6511,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             is_custom_type=True,
         )
 
-    def _parse_combined_item_const_enum(self, site: _Site, items: list[JsonSchemaObject | bool]) -> DataType | None:
-        return self._parse_combined_const_enum(
-            site.name,
-            site.obj,
-            items,
-            get_special_path("enum", site.path),
-            singular_name=site.singular_name,
-        )
-
     def _record_site_constraints(self, obj: JsonSchemaObject, data_type: DataType) -> DataType:
         """Keep on ``data_type`` the constraints the allOf site ``obj`` adds to the target of its first ``$ref``.
 
@@ -6544,10 +6533,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         all_of_items = [sub_item for sub_item in item.allOf if isinstance(sub_item, JsonSchemaObject)]
         if len(all_of_items) == 1 and len(all_of_items) != len(item.allOf) and not item.properties:
             return self.parse_item(name, all_of_items[0], path, singular_name=singular_name, parent=site.parent)
+        all_of_path = [self.model_resolver.resolve_ref(get_special_path("allOf", path))]
         if not self._schema_requires_model_type(item) and not _all_of_values.allof_requires_model_type(
             self, item.allOf
         ):
-            all_of_path = [self.model_resolver.resolve_ref(get_special_path("allOf", path))]
             root_model_name = self.model_resolver.add(
                 all_of_path, name, singular_name=singular_name, class_name=True
             ).name
@@ -6562,7 +6551,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             single_item = item.allOf[0]
             if isinstance(single_item, JsonSchemaObject) and single_item.ref:
                 if (reference_site := _all_of_values.reference_site_schema(self, item)) is not None:
-                    all_of_path = [self.model_resolver.resolve_ref(get_special_path("allOf", path))]
                     with self.model_resolver.yielding_new_references():
                         site_type = self._parse_all_of_merged_root(
                             self.model_resolver.add(
@@ -6577,7 +6565,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     self._get_inline_required_names(item), partial(self._ref_required_names, single_item.ref)
                 ):
                     return self._record_site_constraints(item, self.get_ref_data_type(single_item.ref))
-        all_of_path = [self.model_resolver.resolve_ref(get_special_path("allOf", path))]
         with (
             self.model_resolver.yielding_new_references()
             if self.config.use_site_models_for_constrained_refs

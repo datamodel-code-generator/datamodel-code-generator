@@ -72,6 +72,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _ARRAY_ITEMS_CONSTRAINT_FIELDS,
     _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS,
     _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY,
+    _declares_key_keywords,
     _get_json_value_type,
     _intersect_dumps,
     _intersect_parts,
@@ -547,12 +548,7 @@ def get_inherited_schema_types(
         frozenset(("array",))
         if schema.is_array
         else frozenset(("object",))
-        if (
-            schema.is_object
-            or schema.additionalProperties is not None
-            or schema.patternProperties
-            or schema.propertyNames is not None
-        )
+        if (schema.is_object or schema.additionalProperties is not None or _declares_key_keywords(schema))
         else frozenset()
     )
     if structural_types:

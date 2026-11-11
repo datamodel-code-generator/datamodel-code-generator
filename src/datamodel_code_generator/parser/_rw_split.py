@@ -886,6 +886,22 @@ def get_separate_model_fields(
     return all_fields
 
 
+def splits_root_model(parser: RwSplitHost, reference: Reference, fields: list[DataModelFieldBase]) -> bool:
+    """Return whether a root model splits into Request and Response variants, only under request-response.
+
+    It splits where its field references a model with variants or where a type it writes beside its field names one;
+    a stand-in never splits.
+    """
+    return (
+        parser.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse
+        and not parser._is_base_stand_in(reference)  # noqa: SLF001
+        and (
+            fields_reference_rw_model_variant(parser, fields, "Request")
+            or rw_model_writes_variant_beside_fields(parser, reference.path)
+        )
+    )
+
+
 def rw_model_fields_split(parser: RwSplitHost, fields: list[DataModelFieldBase]) -> bool:
     """Return whether fields split their model: one is flagged or, under request-response, references variants."""
     return any(field.read_only or field.write_only for field in fields) or (
