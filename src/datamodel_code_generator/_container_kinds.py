@@ -251,8 +251,8 @@ LegacyKindRow: TypeAlias = Literal[
 """
 
 _LEFT_OUT: Final[Mapping[LegacyKindRow, frozenset[ContainerSlot]]] = MappingProxyType({
-    "legacy-abstract-containers-as-unions": frozenset(("sequence", "mapping")),
-    "legacy-collapse-beside-lists-and-dicts": frozenset(("frozen_set", "set", "sequence", "mapping", "tuple")),
+    "legacy-abstract-containers-as-unions": frozenset({"sequence", "mapping"}),
+    "legacy-collapse-beside-lists-and-dicts": frozenset({"frozen_set", "set", "sequence", "mapping", "tuple"}),
 })
 """The slots each legacy row leaves out of the kind its decision names."""
 

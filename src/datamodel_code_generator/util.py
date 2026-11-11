@@ -448,7 +448,7 @@ YamlBackend = Literal["ryaml", "pyyaml"]
 def get_yaml_backend() -> YamlBackend:
     """Detect the available YAML backend ('ryaml' or 'pyyaml')."""
     try:
-        import ryaml  # noqa: PLC0415, F401  # ty: ignore[unresolved-import]
+        import ryaml  # noqa: PLC0415, F401  # ty: ignore[import-not-found]
     except ImportError:
         return "pyyaml"
     else:
@@ -462,7 +462,7 @@ def get_yaml_parse_errors() -> tuple[type[Exception], ...]:
 
     errors: list[type[Exception]] = [yaml.YAMLError]
     try:
-        import ryaml  # noqa: PLC0415  # ty: ignore[unresolved-import]
+        import ryaml  # noqa: PLC0415  # ty: ignore[import-not-found]
 
         errors.append(ryaml.InvalidYamlError)
     except ImportError:

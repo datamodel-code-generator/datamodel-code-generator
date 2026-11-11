@@ -163,7 +163,7 @@ def load_yaml(stream: str | TextIO) -> YamlValue:
     reject_unsupported_yaml_tags(text)
 
     if get_yaml_backend() == "ryaml":
-        import ryaml  # noqa: PLC0415  # ty: ignore[unresolved-import]
+        import ryaml  # noqa: PLC0415  # ty: ignore[import-not-found]
 
         from datamodel_code_generator.util import warn_yaml_deprecated_bool_values  # noqa: PLC0415
 
