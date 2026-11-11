@@ -1,0 +1,27 @@
+asyncapi: 3.0.0
+info:
+  title: Nested version-specific features
+  version: '1.0'
+channels:
+  user/signup:
+    address: user/signup
+    messages:
+      UserSignedUp:
+        payload:
+          type: object
+          properties:
+            age:
+              type: integer
+              minimum: 0
+              exclusiveMinimum: true
+            user:
+              $ref: '#/components/schemas/User'
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        score:
+          type: number
+          maximum: 10
+          exclusiveMaximum: true

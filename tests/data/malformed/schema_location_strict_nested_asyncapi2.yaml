@@ -1,0 +1,18 @@
+asyncapi: 2.6.0
+info:
+  title: Nested version-specific features
+  version: '1.0'
+channels:
+  user/signup:
+    subscribe:
+      message:
+        payload:
+          type: object
+          properties:
+            boolean_bound:
+              type: number
+              maximum: 10
+              exclusiveMaximum: true
+            numeric_bound:
+              type: number
+              exclusiveMaximum: 10

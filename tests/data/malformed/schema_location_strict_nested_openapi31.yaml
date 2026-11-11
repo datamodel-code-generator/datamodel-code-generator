@@ -1,0 +1,44 @@
+openapi: 3.1.0
+info:
+  title: Nested version-specific features
+  version: '1.0'
+paths:
+  /pets:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                limit:
+                  type: integer
+                  maximum: 10
+                  exclusiveMaximum: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        age:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+        tags:
+          type: array
+          items:
+            type: number
+            maximum: 5
+            exclusiveMaximum: true
+    Owner:
+      type: object
+      properties:
+        pet:
+          $ref: '#/components/schemas/Pet'

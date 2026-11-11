@@ -1,0 +1,2 @@
+exclusiveMinimum as boolean is Draft 4 style, but schema version uses numeric style. Schema path: schema_location_strict_nested_openapi31.yaml#/components/schemas/Pet/properties/age
+exclusiveMaximum as boolean is Draft 4 style, but schema version uses numeric style. Schema path: schema_location_strict_nested_openapi31.yaml#/components/schemas/Pet/properties/tags/items
