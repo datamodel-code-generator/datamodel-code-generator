@@ -14,7 +14,7 @@ from __future__ import annotations
 from collections.abc import Collection, Iterable, Iterator, Mapping
 from copy import deepcopy
 from types import MappingProxyType
-from typing import Any, Final, Literal, NamedTuple, TypeAlias
+from typing import Any, Final, Literal, NamedTuple, TypeAlias, overload
 
 from datamodel_code_generator._json_pointer import unescape_token
 
@@ -109,22 +109,40 @@ def schema_positions(
     )
 
 
-def subschema_entries(keyword: str, value: object) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any]]]:
+@overload
+def subschema_entries(  # noqa: D418 - CodeQL flags an ellipsis body.
+    keyword: str, value: object, *, booleans: Literal[False] = False
+) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any]]]:
+    """Yield the object subschemas ``keyword`` holds."""
+
+
+@overload
+def subschema_entries(  # noqa: D418
+    keyword: str, value: object, *, booleans: Literal[True]
+) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any] | bool]]:
+    """Yield the object and boolean subschemas ``keyword`` holds."""
+
+
+def subschema_entries(
+    keyword: str, value: object, *, booleans: bool = False
+) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any] | bool]]:
     """Yield each subschema that ``keyword`` holds in its value, by the keyword's shape, with its path in the schema.
 
     The path is ``(keyword, name)`` in a map (the name as text), ``(keyword, index)`` in a list and ``(keyword,)`` for
     one subschema, in document order; a member that is no JSON object, and a value of another shape, hold none.
+    ``booleans`` also yields the boolean schemas.
     """
+    kinds = (dict, bool) if booleans else dict
     match SCHEMA_SHAPES.get(keyword), value:
         case "map", dict():
             for name, child in value.items():
-                if isinstance(child, dict):
+                if isinstance(child, kinds):
                     yield (keyword, str(name)), child
         case "sequence" | "single-or-sequence", list():
             for index, child in enumerate(value):
-                if isinstance(child, dict):
+                if isinstance(child, kinds):
                     yield (keyword, index), child
-        case "single" | "single-or-sequence", dict():
+        case "single" | "single-or-sequence", dict() | bool() if isinstance(value, kinds):
             yield (keyword,), value
 
 

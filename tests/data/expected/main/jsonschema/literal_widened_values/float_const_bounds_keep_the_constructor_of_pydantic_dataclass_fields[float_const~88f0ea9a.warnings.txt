@@ -1,0 +1,4 @@
+a Literal of the output model cannot hold the value 0.5, so it is written as its type, which admits other values; BaseRequest.ratio is generated without this constraint.
+a Literal of the output model cannot hold the value 0.5, so it is written as its type, which admits other values; BaseResponse.ratio is generated without this constraint.
+a Literal of the output model cannot hold the value 0.5, so it is written as its type, which admits other values; ChildRequest.ratio is generated without this constraint.
+a Literal of the output model cannot hold the value 0.5, so it is written as its type, which admits other values; ChildResponse.ratio is generated without this constraint.

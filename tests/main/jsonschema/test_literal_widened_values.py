@@ -2,15 +2,21 @@
 
 from __future__ import annotations
 
+import dataclasses
+import importlib.util
+import inspect
+import sys
 from typing import TYPE_CHECKING
 
 import pytest
 
+from datamodel_code_generator.__main__ import main
 from tests.conftest import assert_output
 from tests.main.conftest import JSON_SCHEMA_DATA_PATH, assert_generated_model_json_validation, run_main_and_assert
 
 if TYPE_CHECKING:
     from pathlib import Path
+    from types import ModuleType
 
 OUTPUT_MODEL_TYPES = ("pydantic_v2.BaseModel", "msgspec.Struct", "dataclasses.dataclass", "typing.TypedDict")
 OPTION_SETS = {
@@ -72,8 +78,8 @@ numbers are rejected and the members of a `oneOf` that differ by such consts acc
 `maximum` beside the const the tighter bound is kept, and the other number keywords stay, so a const the schema rejects
 stays rejected. Output that checks no bounds, such as dataclasses and TypedDict, keeps `float` with the warning, and so
 do the items, map values and union members where the bounds are written on the field (`--field-constraints`, msgspec), a
-required field of a Pydantic dataclass without `--use-annotated`, where `Field()` would move it in the constructor, and
-a const beside an `enum`.""",
+field of a Pydantic dataclass with `--field-constraints` and without `--use-annotated`, where `Field()` could move it in
+the constructor, and a const beside an `enum`.""",
     input_schema="jsonschema/float_const_bounds.json",
     cli_args=["--use-bounds-for-float-const"],
     golden_output="main/jsonschema/literal_widened_values/float_const_bounds[pydantic_v2.BaseModel-default].py",
@@ -89,9 +95,9 @@ def test_float_const_bounds(
     Without the option every float const is ``float`` with the warning. With it Pydantic writes the bounds on the type
     without --field-constraints, also on items, values and union members, and on the field with it, as msgspec does;
     they keep the tighter of the const and a minimum or maximum beside it, and a multipleOf stays. A field's bounds do
-    not reach items, values or union members, nor does a dataclass or TypedDict write them, nor a required field of a
-    Pydantic dataclass without --use-annotated, so those keep the warning. Members of a oneOf that differ by their float
-    consts accept only their own.
+    not reach items, values or union members, nor does a dataclass or TypedDict write them, nor a field of a
+    Pydantic dataclass with --field-constraints and without --use-annotated, so those keep the warning. Members of a
+    oneOf that differ by their float consts accept only their own.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "float_const_bounds.json",
@@ -169,4 +175,79 @@ def test_float_const_bounds_keep_the_float_type_of_decimal_multiple_of(
         invalid_json='{"c": "x"}',
         expected_error_type="float_parsing",
         expected_repr="Model(c=0.3)",
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        ("float_const_bounds_allof_required", ()),
+        ("float_const_bounds_allof_promoted_beside_default", ()),
+        ("float_const_bounds_inherited_required", ()),
+        ("float_const_bounds_rw_required", ("--read-only-write-only-model-type", "request-response")),
+    ],
+)
+def test_float_const_bounds_keep_the_constructor_of_pydantic_dataclass_fields(
+    tmp_path: Path,
+    output_file: Path,
+    recwarn: pytest.WarningsRecorder,
+    input_name: str,
+    extra_args: tuple[str, ...],
+) -> None:
+    """Write no bounds where a ``Field()`` call could move a Pydantic dataclass field in the constructor (#5090).
+
+    ``--field-constraints`` without ``--use-annotated`` writes the bounds as ``Field(..., ge=c, le=c)``, a constructor
+    default for a field that turns out required (through an allOf, an inherited required or a request-response
+    variant), which are final only after the field is built. The const stays ``float`` with the warning, so every
+    constructor takes its arguments in the order it takes them without the option.
+    """
+    args = [
+        "--input",
+        str(JSON_SCHEMA_DATA_PATH / f"{input_name}.json"),
+        "--input-file-type",
+        "jsonschema",
+        "--output-model-type",
+        "pydantic_v2.dataclass",
+        "--formatters",
+        "builtin",
+        "--field-constraints",
+        *extra_args,
+    ]
+    off_file = tmp_path / "off.py"
+    main([*args, "--output", str(off_file)])
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{input_name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*args[4:], "--use-bounds-for-float-const"],
+    )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(
+                str(warning.message)
+                for warning in recwarn
+                if warning.category is UserWarning and "a Literal of the output model" in str(warning.message)
+            )
+        ),
+        name="warnings",
+    )
+    modules = {}
+    for label, path in (("off", off_file), ("on", output_file)):
+        spec = importlib.util.spec_from_file_location(f"{input_name}_{label}", path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        modules[label] = module
+
+    def signatures(module: ModuleType) -> str:
+        return "".join(
+            f"{name}({', '.join(inspect.signature(cls).parameters)})\n"
+            for name, cls in vars(module).items()
+            if dataclasses.is_dataclass(cls) and cls.__module__ == module.__name__
+        )
+
+    assert_output(
+        f"without the option:\n{signatures(modules['off'])}with the option:\n{signatures(modules['on'])}",
+        name="signatures",
     )

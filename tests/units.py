@@ -98,7 +98,7 @@ REFS_HEADER = (
     "(see AGENTS.md).\n"
 )
 """The first lines of every sidecar pytest writes; the parser skips the ``#`` lines a sidecar starts with."""
-FACTS = ("python", "formatter", "black", "isort", "platform")
+FACTS = ("python", "formatter", "black", "isort", "platform", "pydantic")
 _TOOL_VERSION = re.compile(r"(?:\d[0-9A-Za-z.+-]*)?")
 _FACT_SHAPES = {
     "python": re.compile(r"\d+\.\d+"),
@@ -106,6 +106,7 @@ _FACT_SHAPES = {
     "black": _TOOL_VERSION,
     "isort": _TOOL_VERSION,
     "platform": re.compile(r"linux|darwin|win32"),
+    "pydantic": _TOOL_VERSION,
 }
 _NAME_BYTES = 255
 PAYLOAD_DECODED_LIMIT = 4 * 1024 * 1024
@@ -1551,9 +1552,15 @@ def deduplicate(
 
 
 def _fact_value(fact: str, value: str) -> str:
-    """Return the value a predicate keys on: the major version of a tool (``26`` for ``26.1a1``), else the value."""
+    """Return the value a predicate keys on: the release series of a tool, else the value.
+
+    A formatter's series is its major version (``26`` for ``26.1a1``); Pydantic changes output within a major version,
+    so its series is the minor version (``2.0`` for ``2.0.3``).
+    """
     if fact in {"black", "isort"} and (major := re.match(r"\d+", value)):
         return major.group()
+    if fact == "pydantic" and (minor := re.match(r"\d+\.\d+", value)):
+        return minor.group()
     return value
 
 
@@ -1578,15 +1585,15 @@ def _distinguishing(
 def payload_predicate(facts: Mapping[str, str], local: Mapping[str, str]) -> tuple[tuple[str, str], ...] | None:
     """Return the predicate of a foreign environment's override, or None when no predicate tells it apart from here.
 
-    A tool pinned to another major version than here (``black=22``) names its lane alone. Otherwise the predicate
-    is the lane's formatter and Python, and its tools when the formatter is external: Python and formatter alone are
-    shared by several lanes, which would pick the override up and then disagree with it. The platform joins the
-    predicate only when it is what tells the lane apart from here. Predicates key on major versions, so a lane that
-    differs from here only in minor tool versions is this environment.
+    A tool pinned to another release series than here (``black=22``, ``pydantic=2.0``) names its lane alone. Otherwise
+    the predicate is the lane's formatter and Python, and its tools when the formatter is external: Python and formatter
+    alone are shared by several lanes, which would pick the override up and then disagree with it. The platform joins
+    the predicate only when it is what tells the lane apart from here. Predicates key on release series, so a lane that
+    differs from here only within a tool's series is this environment.
     """
-    for tool in ("black", "isort"):
-        if (major := _fact_value(tool, facts[tool])) and major != _fact_value(tool, local[tool]):
-            return ((tool, major),)
+    for tool in ("black", "isort", "pydantic"):
+        if (series := _fact_value(tool, facts[tool])) and series != _fact_value(tool, local[tool]):
+            return ((tool, series),)
     chosen = ("formatter", "python", "black", "isort") if facts["formatter"] == "external" else ("formatter", "python")
     predicate = tuple(sorted((fact, _fact_value(fact, facts[fact])) for fact in chosen if facts[fact]))
     if predicate_matches(predicate, local) and facts["platform"] != local["platform"]:

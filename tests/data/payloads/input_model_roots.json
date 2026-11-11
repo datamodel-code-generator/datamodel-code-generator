@@ -3,136 +3,76 @@
     "name": "ScalarRoot",
     "strategy": "regenerate-all",
     "valid": 3,
-    "invalid": "bad",
-    "expected": {
-      "module": "ScalarRoot_reuse-all.py",
-      "file": "ScalarRoot_reuse-all.py",
-      "runtime": "ScalarRoot_reuse-all.txt"
-    }
+    "invalid": "bad"
   },
   {
     "name": "ScalarRoot",
     "strategy": "reuse-all",
     "valid": 3,
-    "invalid": "bad",
-    "expected": {
-      "module": "ScalarRoot_reuse-all.py",
-      "file": "ScalarRoot_reuse-all.py",
-      "runtime": "ScalarRoot_reuse-all.txt"
-    }
+    "invalid": "bad"
   },
   {
     "name": "ScalarRoot",
     "strategy": "reuse-foreign",
     "valid": 3,
-    "invalid": "bad",
-    "expected": {
-      "module": "ScalarRoot_reuse-all.py",
-      "file": "ScalarRoot_reuse-all.py",
-      "runtime": "ScalarRoot_reuse-all.txt"
-    }
+    "invalid": "bad"
   },
   {
     "name": "ScalarChild",
     "strategy": "regenerate-all",
     "valid": 3,
-    "invalid": "bad",
-    "expected": {
-      "module": "ScalarChild_reuse-all.py",
-      "file": "ScalarChild_reuse-all.py",
-      "runtime": "ScalarRoot_reuse-all.txt"
-    }
+    "invalid": "bad"
   },
   {
     "name": "ScalarChild",
     "strategy": "reuse-all",
     "valid": 3,
-    "invalid": "bad",
-    "expected": {
-      "module": "ScalarChild_reuse-all.py",
-      "file": "ScalarChild_reuse-all.py",
-      "runtime": "ScalarRoot_reuse-all.txt"
-    }
+    "invalid": "bad"
   },
   {
     "name": "ScalarChild",
     "strategy": "reuse-foreign",
     "valid": 3,
-    "invalid": "bad",
-    "expected": {
-      "module": "ScalarChild_reuse-all.py",
-      "file": "ScalarChild_reuse-all.py",
-      "runtime": "ScalarRoot_reuse-all.txt"
-    }
+    "invalid": "bad"
   },
   {
     "name": "BoundedRoot",
     "strategy": "regenerate-all",
     "valid": 3,
-    "invalid": 1,
-    "expected": {
-      "module": "BoundedRoot_reuse-all.py",
-      "file": "BoundedRoot_reuse-all.py",
-      "runtime": "ScalarRoot_reuse-all.txt"
-    }
+    "invalid": 1
   },
   {
     "name": "BoundedRoot",
     "strategy": "reuse-all",
     "valid": 3,
-    "invalid": 1,
-    "expected": {
-      "module": "BoundedRoot_reuse-all.py",
-      "file": "BoundedRoot_reuse-all.py",
-      "runtime": "ScalarRoot_reuse-all.txt"
-    }
+    "invalid": 1
   },
   {
     "name": "BoundedRoot",
     "strategy": "reuse-foreign",
     "valid": 3,
-    "invalid": 1,
-    "expected": {
-      "module": "BoundedRoot_reuse-all.py",
-      "file": "BoundedRoot_reuse-all.py",
-      "runtime": "ScalarRoot_reuse-all.txt"
-    }
+    "invalid": 1
   },
   {
     "name": "DefaultRoot",
     "strategy": "regenerate-all",
     "valid": 4,
     "invalid": "bad",
-    "default": 3,
-    "expected": {
-      "module": "DefaultRoot_reuse-all.py",
-      "file": "DefaultRoot_reuse-all.py",
-      "runtime": "DefaultRoot_reuse-all.txt"
-    }
+    "default": 3
   },
   {
     "name": "DefaultRoot",
     "strategy": "reuse-all",
     "valid": 4,
     "invalid": "bad",
-    "default": 3,
-    "expected": {
-      "module": "DefaultRoot_reuse-all.py",
-      "file": "DefaultRoot_reuse-all.py",
-      "runtime": "DefaultRoot_reuse-all.txt"
-    }
+    "default": 3
   },
   {
     "name": "DefaultRoot",
     "strategy": "reuse-foreign",
     "valid": 4,
     "invalid": "bad",
-    "default": 3,
-    "expected": {
-      "module": "DefaultRoot_reuse-all.py",
-      "file": "DefaultRoot_reuse-all.py",
-      "runtime": "DefaultRoot_reuse-all.txt"
-    }
+    "default": 3
   },
   {
     "name": "ListRoot",
@@ -141,12 +81,7 @@
       2,
       1
     ],
-    "invalid": "bad",
-    "expected": {
-      "module": "ListRoot_reuse-all.py",
-      "file": "ListRoot_reuse-all.py",
-      "runtime": "ListRoot_reuse-all.txt"
-    }
+    "invalid": "bad"
   },
   {
     "name": "ListRoot",
@@ -155,12 +90,7 @@
       2,
       1
     ],
-    "invalid": "bad",
-    "expected": {
-      "module": "ListRoot_reuse-all.py",
-      "file": "ListRoot_reuse-all.py",
-      "runtime": "ListRoot_reuse-all.txt"
-    }
+    "invalid": "bad"
   },
   {
     "name": "ListRoot",
@@ -169,12 +99,7 @@
       2,
       1
     ],
-    "invalid": "bad",
-    "expected": {
-      "module": "ListRoot_reuse-all.py",
-      "file": "ListRoot_reuse-all.py",
-      "runtime": "ListRoot_reuse-all.txt"
-    }
+    "invalid": "bad"
   },
   {
     "name": "BoundedList",
@@ -183,12 +108,7 @@
       2,
       1
     ],
-    "invalid": [],
-    "expected": {
-      "module": "BoundedList_reuse-all.py",
-      "file": "BoundedList_reuse-all.py",
-      "runtime": "ListRoot_reuse-all.txt"
-    }
+    "invalid": []
   },
   {
     "name": "BoundedList",
@@ -197,12 +117,7 @@
       2,
       1
     ],
-    "invalid": [],
-    "expected": {
-      "module": "BoundedList_reuse-all.py",
-      "file": "BoundedList_reuse-all.py",
-      "runtime": "ListRoot_reuse-all.txt"
-    }
+    "invalid": []
   },
   {
     "name": "BoundedList",
@@ -211,12 +126,7 @@
       2,
       1
     ],
-    "invalid": [],
-    "expected": {
-      "module": "BoundedList_reuse-all.py",
-      "file": "BoundedList_reuse-all.py",
-      "runtime": "ListRoot_reuse-all.txt"
-    }
+    "invalid": []
   },
   {
     "name": "ListDefault",
@@ -229,12 +139,7 @@
     "default": [
       2,
       1
-    ],
-    "expected": {
-      "module": "ListDefault_reuse-all.py",
-      "file": "ListDefault_reuse-all.py",
-      "runtime": "ListDefault_reuse-all.txt"
-    }
+    ]
   },
   {
     "name": "ListDefault",
@@ -247,12 +152,7 @@
     "default": [
       2,
       1
-    ],
-    "expected": {
-      "module": "ListDefault_reuse-all.py",
-      "file": "ListDefault_reuse-all.py",
-      "runtime": "ListDefault_reuse-all.txt"
-    }
+    ]
   },
   {
     "name": "ListDefault",
@@ -265,45 +165,25 @@
     "default": [
       2,
       1
-    ],
-    "expected": {
-      "module": "ListDefault_reuse-all.py",
-      "file": "ListDefault_reuse-all.py",
-      "runtime": "ListDefault_reuse-all.txt"
-    }
+    ]
   },
   {
     "name": "NullableRoot",
     "strategy": "regenerate-all",
     "valid": null,
-    "invalid": "bad",
-    "expected": {
-      "module": "NullableRoot_reuse-all.py",
-      "file": "NullableRoot_reuse-all.py",
-      "runtime": "NullableRoot_reuse-all.txt"
-    }
+    "invalid": "bad"
   },
   {
     "name": "NullableRoot",
     "strategy": "reuse-all",
     "valid": null,
-    "invalid": "bad",
-    "expected": {
-      "module": "NullableRoot_reuse-all.py",
-      "file": "NullableRoot_reuse-all.py",
-      "runtime": "NullableRoot_reuse-all.txt"
-    }
+    "invalid": "bad"
   },
   {
     "name": "NullableRoot",
     "strategy": "reuse-foreign",
     "valid": null,
-    "invalid": "bad",
-    "expected": {
-      "module": "NullableRoot_reuse-all.py",
-      "file": "NullableRoot_reuse-all.py",
-      "runtime": "NullableRoot_reuse-all.txt"
-    }
+    "invalid": "bad"
   },
   {
     "name": "ObjectRoot",
@@ -313,11 +193,6 @@
     },
     "invalid": {
       "first": "bad"
-    },
-    "expected": {
-      "module": "ObjectRoot_regenerate-all.py",
-      "file": "ObjectRoot_regenerate-all.py",
-      "runtime": "ObjectRoot_reuse-all.txt"
     }
   },
   {
@@ -328,11 +203,6 @@
     },
     "invalid": {
       "first": "bad"
-    },
-    "expected": {
-      "module": "ObjectRoot_reuse-all.py",
-      "file": "ObjectRoot_reuse-all_file.py",
-      "runtime": "ObjectRoot_reuse-all.txt"
     }
   },
   {
@@ -343,11 +213,6 @@
     },
     "invalid": {
       "first": "bad"
-    },
-    "expected": {
-      "module": "ObjectRoot_reuse-all.py",
-      "file": "ObjectRoot_reuse-all_file.py",
-      "runtime": "ObjectRoot_reuse-all.txt"
     }
   },
   {
@@ -362,12 +227,7 @@
       {
         "first": "bad"
       }
-    ],
-    "expected": {
-      "module": "ObjectList_regenerate-all.py",
-      "file": "ObjectList_regenerate-all.py",
-      "runtime": "ObjectList_reuse-all.txt"
-    }
+    ]
   },
   {
     "name": "ObjectList",
@@ -381,12 +241,7 @@
       {
         "first": "bad"
       }
-    ],
-    "expected": {
-      "module": "ObjectList_reuse-all.py",
-      "file": "ObjectList_reuse-all_file.py",
-      "runtime": "ObjectList_reuse-all.txt"
-    }
+    ]
   },
   {
     "name": "ObjectList",
@@ -400,12 +255,7 @@
       {
         "first": "bad"
       }
-    ],
-    "expected": {
-      "module": "ObjectList_reuse-all.py",
-      "file": "ObjectList_reuse-all_file.py",
-      "runtime": "ObjectList_reuse-all.txt"
-    }
+    ]
   },
   {
     "name": "OrdinaryChild",
@@ -415,11 +265,6 @@
     },
     "invalid": {
       "first": "bad"
-    },
-    "expected": {
-      "module": "OrdinaryChild_reuse-all.py",
-      "file": "OrdinaryChild_reuse-all.py",
-      "runtime": "OrdinaryChild_reuse-all.txt"
     }
   },
   {
@@ -430,11 +275,6 @@
     },
     "invalid": {
       "first": "bad"
-    },
-    "expected": {
-      "module": "OrdinaryChild_reuse-all.py",
-      "file": "OrdinaryChild_reuse-all.py",
-      "runtime": "OrdinaryChild_reuse-all.txt"
     }
   },
   {
@@ -445,11 +285,6 @@
     },
     "invalid": {
       "first": "bad"
-    },
-    "expected": {
-      "module": "OrdinaryChild_reuse-all.py",
-      "file": "OrdinaryChild_reuse-all.py",
-      "runtime": "OrdinaryChild_reuse-all.txt"
     }
   },
   {
@@ -460,11 +295,6 @@
     },
     "invalid": {
       "payload": "bad"
-    },
-    "expected": {
-      "module": "NestedRoot_regenerate-all.py",
-      "file": "NestedRoot_regenerate-all.py",
-      "runtime": "NestedRoot_reuse-all.txt"
     }
   },
   {
@@ -475,11 +305,6 @@
     },
     "invalid": {
       "payload": "bad"
-    },
-    "expected": {
-      "module": "NestedRoot_reuse-all.py",
-      "file": "NestedRoot_reuse-all_file.py",
-      "runtime": "NestedRoot_reuse-all.txt"
     }
   },
   {
@@ -490,11 +315,6 @@
     },
     "invalid": {
       "payload": "bad"
-    },
-    "expected": {
-      "module": "NestedRoot_reuse-all.py",
-      "file": "NestedRoot_reuse-all_file.py",
-      "runtime": "NestedRoot_reuse-all.txt"
     }
   }
 ]

@@ -21,7 +21,7 @@ sys.path[:0] = [str(ROOT), str(ROOT / "src")]
 DOCS = ROOT / "docs"
 TEST_DATA = ROOT / "tests" / "data"
 EXPECTED_MAIN = TEST_DATA / "expected" / "main"
-EXPECTED_INPUT_MODEL = EXPECTED_MAIN / "input_model"
+EXPECTED_INPUT_MODEL = TEST_DATA / "expected" / "input_model"
 EXPECTED_JSON_SCHEMA = EXPECTED_MAIN / "jsonschema"
 EXPECTED_OPENAPI = EXPECTED_MAIN / "openapi"
 INPUT_MODEL_DATA = TEST_DATA / "python" / "input_model"
@@ -733,7 +733,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
                 MarkdownCodeBlock(
                     "Output",
                     "python",
-                    path=EXPECTED_INPUT_MODEL / "typeddict.py",
+                    path=EXPECTED_INPUT_MODEL / "typeddict.txt",
                     strip_python_header=True,
                 ),
             ),

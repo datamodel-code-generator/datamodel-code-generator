@@ -4467,8 +4467,8 @@ numbers are rejected and the members of a `oneOf` that differ by such consts acc
 `maximum` beside the const the tighter bound is kept, and the other number keywords stay, so a const the schema rejects
 stays rejected. Output that checks no bounds, such as dataclasses and TypedDict, keeps `float` with the warning, and so
 do the items, map values and union members where the bounds are written on the field (`--field-constraints`, msgspec), a
-required field of a Pydantic dataclass without `--use-annotated`, where `Field()` would move it in the constructor, and
-a const beside an `enum`.
+field of a Pydantic dataclass with `--field-constraints` and without `--use-annotated`, where `Field()` could move it in
+the constructor, and a const beside an `enum`.
 
 !!! tip "Usage"
 

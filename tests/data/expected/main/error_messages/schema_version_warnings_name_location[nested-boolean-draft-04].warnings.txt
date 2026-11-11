@@ -1,0 +1,3 @@
+Boolean schemas are not supported in Draft 4. Schema path: schema_location_strict_nested_boolean.json#/properties/flag
+Boolean schemas are not supported in Draft 4. Schema path: schema_location_strict_nested_boolean.json#/properties/nested/properties/inner
+Boolean schemas are not supported in Draft 4. Schema path: schema_location_strict_nested_boolean.json#/properties/list/items
