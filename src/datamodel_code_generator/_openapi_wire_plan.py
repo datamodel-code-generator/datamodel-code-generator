@@ -70,6 +70,7 @@ if TYPE_CHECKING:
         FieldSlot,
         FieldUseBinding,
         MemberShape,
+        SourceDocumentId,
         TypeUseBinding,
         TypeView,
     )
@@ -140,6 +141,7 @@ class _WirePlanner:
         self.versions = batch.versions
         self.uses = uses_by_id(batch)
         self.order = {use: index for index, use in enumerate(self.uses)}
+        self.schemes = scheme_catalogues(batch)
 
 
 def declared_media(name: str) -> tuple[str, str | None]:
@@ -624,14 +626,17 @@ def _header(
 
 
 def auth_names(
-    batch: GeneratedTypeContractBatch, operation: OperationContract, *, authorization: bool = False
+    catalogues: Mapping[SourceDocumentId, Mapping[str, WireDeclaration]],
+    operation: OperationContract,
+    *,
+    authorization: bool = False,
 ) -> list[tuple[object, str]]:
     """Return the locations and names of the apiKey credentials the operation's security requirements send.
 
     With `authorization`, the Authorization header that an http basic or bearer, an oauth2 or an openIdConnect
-    credential goes in is one of them (`credential_place`).
+    credential goes in is one of them (`credential_place`). `catalogues` are the batch's (``scheme_catalogues``).
     """
-    schemes = operation_schemes(scheme_catalogues(batch), operation)
+    schemes = operation_schemes(catalogues, operation)
     place_of = credential_place if authorization else api_key_place
     return list(
         dict.fromkeys(
@@ -672,7 +677,7 @@ def _parameters(
     planner: _WirePlanner, operation: OperationContract
 ) -> tuple[tuple[tuple[ParameterLocation, str], ParameterPlan], ...]:
     declarations = operation.parameters
-    auth = auth_names(planner.batch, operation)
+    auth = auth_names(planner.schemes, operation)
     names = [*(parameter_place(item) for item in declarations), *auth]
     planned = [
         (parameter_place(declaration), plan)
@@ -680,7 +685,7 @@ def _parameters(
         if (plan := _planned(planner, operation.id, declaration, names, written=planner.writes)) is not None
     ]
     if planner.writes:
-        filled = auth_names(planner.batch, operation, authorization=True)
+        filled = auth_names(planner.schemes, operation, authorization=True)
         planned = [
             (place, replace(plan, required=False, credential=True) if _credentialed(plan, filled) else plan)
             for place, plan in planned

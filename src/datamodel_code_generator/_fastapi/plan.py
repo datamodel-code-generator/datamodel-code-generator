@@ -264,7 +264,8 @@ class MediaSpec:
     properties the form's schema types without declaring them, when that is not as the text they come as, which any
     other member is, and `checked` is their type when they are text that the model keeps without one, as a dataclass
     does. `extras` says JSON whose type reaches a Pydantic dataclass that allows extra members, which a response writes
-    through the runtime's serializer, as Pydantic's own writes none.
+    through the runtime's serializer, as Pydantic's own writes none. `encodings` are those the media declares for the
+    members its model has in the request (`media_encodings`).
     """
 
     media_type: str
@@ -278,6 +279,7 @@ class MediaSpec:
     checked: TypeView | None = None
     encoded: tuple[ParameterPlan, ...] = ()
     extras: bool = False
+    encodings: tuple[WireDeclaration, ...] = ()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -528,11 +530,6 @@ def _part_text(encoding: WireDeclaration) -> bool:
     )
 
 
-def _encodings(media: MediaSpec) -> Iterator[WireDeclaration]:
-    """Return the encodings a media declares for the members its model has in the request (`member_encodings`)."""
-    return media_encodings(media.use, media.declaration)
-
-
 def _files(media: MediaSpec) -> frozenset[str]:
     parts = None if media.use is None else media.use.parts
     return frozenset(() if parts is None else (name for name, part in parts.members if part.file))
@@ -550,7 +547,7 @@ def _json_members(media: MediaSpec, versions: OpenAPIVersions) -> frozenset[str 
     texts = {name for name, part in parts.members if not part.file}
     return frozenset(
         child.name
-        for child in _encodings(media)
+        for child in media.encodings
         if child.name in texts and _json_type(child) and not form_styled(child, versions, multipart=True)
     )
 
@@ -566,7 +563,7 @@ def _typed_members(media: MediaSpec, kinds: LexicalKinds, versions: OpenAPIVersi
     scalars = {member.name for member in form_members(kinds, media.use) if member.kind is not None}
     return _json_members(media, versions) | {
         child.name
-        for child in _encodings(media)
+        for child in media.encodings
         if (
             (child.name in files and content_types(child) is not None)
             or (child.name in scalars and child.name not in files and _part_text(child))
@@ -587,7 +584,7 @@ def _encoded(media: MediaSpec, kinds: LexicalKinds, versions: OpenAPIVersions) -
     return next(
         (
             child
-            for child in _encodings(media)
+            for child in media.encodings
             if child.children
             or (child.name in files if form_styled(child, versions, multipart=True) else _untyped(child, typed))
         ),
@@ -1223,6 +1220,7 @@ class Planner:  # noqa: PLR0904
             kind=kind,
             use=use,
             declaration=declaration,
+            encodings=tuple(media_encodings(use, declaration)),
             extras=kind == "json"
             and use is not None
             and use.type is not None
@@ -1270,7 +1268,7 @@ class Planner:  # noqa: PLR0904
         members = tuple(form_members(self.wire.kinds, media.use))
         encoded = self.encoded(media, members)
         json_members = _json_members(media, self.wire.versions)
-        encodings = {encoding.name or "": encoding for encoding in _encodings(media)}
+        encodings = {encoding.name or "": encoding for encoding in media.encodings}
         multipart = media.kind == "multipart"
         parts = media.use.parts if multipart else None
         files = {
@@ -1359,7 +1357,7 @@ class Planner:  # noqa: PLR0904
         textless = frozenset(member.name for member in members if member.kind is None)
         multipart = media.kind == "multipart"
         encodings = tuple(
-            child for child in _encodings(media) if _planned(child, self.wire.versions, textless, multipart=multipart)
+            child for child in media.encodings if _planned(child, self.wire.versions, textless, multipart=multipart)
         )
         if not encodings:
             return {}
