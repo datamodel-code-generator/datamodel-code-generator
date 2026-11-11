@@ -152,12 +152,12 @@ jobs:
           VERSION: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          alias=packaging/datamodel-codegen/pyproject.toml
+          alias=pypi-alias/datamodel-codegen/pyproject.toml
           sed -i -e "s/^version = \"0\.0\.0\"$/version = \"${VERSION}\"/" \
             -e "s/\"datamodel-code-generator\" \]$/\"datamodel-code-generator==${VERSION}\" ]/" "$alias"
           grep -qx "version = \"${VERSION}\"" "$alias"
           grep -qF "\"datamodel-code-generator==${VERSION}\" ]" "$alias"
-          uv build --python 3.13 --python-preference only-managed --sdist --wheel packaging/datamodel-codegen --out-dir dist-alias
+          uv build --python 3.13 --python-preference only-managed --sdist --wheel pypi-alias/datamodel-codegen --out-dir dist-alias
       - name: Store the alias packages
         if: ${{ !contains(github.ref_name, '+') }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
