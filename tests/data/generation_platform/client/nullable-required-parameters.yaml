@@ -17,6 +17,9 @@ paths:
           in: query
           required: true
           content: {application/json: {schema: {type: integer, nullable: true}}}
+        - {name: ids, in: query, required: true, schema: {$ref: "#/components/schemas/Ids"}}
+        - {name: labels, in: query, required: true, schema: {$ref: "#/components/schemas/Labels"}}
+        - {name: weights, in: query, required: true, schema: {$ref: "#/components/schemas/Weights"}}
         - {name: cap, in: query, schema: {type: integer, nullable: true}}
         - {name: levels, in: query, required: true, schema: {type: array, items: {type: integer, nullable: true}}}
       responses:
@@ -30,3 +33,15 @@ components:
     Label:
       type: string
       nullable: true
+    Ids:
+      type: array
+      nullable: true
+      items: {type: integer}
+    Labels:
+      type: array
+      nullable: true
+      items: {$ref: "#/components/schemas/Label"}
+    Weights:
+      type: object
+      nullable: true
+      additionalProperties: {type: integer}

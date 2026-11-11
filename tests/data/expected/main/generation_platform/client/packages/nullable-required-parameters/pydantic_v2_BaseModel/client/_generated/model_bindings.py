@@ -47,12 +47,25 @@ codec_7: Final[PydanticCodec[models.ItemsIdGetQueryBlobParameter]] = PydanticCod
 )
 """Codec of /paths/~1items~1{id}/get parameter (request query blob application/json)."""
 
-codec_8: Final[PydanticCodec[models.ItemsIdGetQueryCapParameter]] = PydanticCodec(
+codec_8: Final[PydanticCodec[models.Ids | None]] = PydanticCodec(models.Ids | None)
+"""Codec of /paths/~1items~1{id}/get parameter (request query ids)."""
+
+codec_9: Final[PydanticCodec[models.Labels | None]] = PydanticCodec(
+    models.Labels | None
+)
+"""Codec of /paths/~1items~1{id}/get parameter (request query labels)."""
+
+codec_10: Final[PydanticCodec[models.Weights | None]] = PydanticCodec(
+    models.Weights | None
+)
+"""Codec of /paths/~1items~1{id}/get parameter (request query weights)."""
+
+codec_11: Final[PydanticCodec[models.ItemsIdGetQueryCapParameter]] = PydanticCodec(
     models.ItemsIdGetQueryCapParameter
 )
 """Codec of /paths/~1items~1{id}/get parameter (request query cap)."""
 
-codec_9: Final[PydanticCodec[models.ItemsIdGetQueryLevelsParameter]] = PydanticCodec(
+codec_12: Final[PydanticCodec[models.ItemsIdGetQueryLevelsParameter]] = PydanticCodec(
     models.ItemsIdGetQueryLevelsParameter
 )
 """Codec of /paths/~1items~1{id}/get parameter (request query levels)."""

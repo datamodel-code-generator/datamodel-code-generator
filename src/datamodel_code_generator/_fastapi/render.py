@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import RenderedFile, implementation_text, runtime_files
 from datamodel_code_generator._api_types import Implementation, NextSteps
-from datamodel_code_generator._container_kinds import CONTAINER_FLAGS, MAPPINGS
 from datamodel_code_generator._fastapi._compiled_templates import application as application_template
 from datamodel_code_generator._fastapi._compiled_templates import authorize as authorize_template
 from datamodel_code_generator._fastapi._compiled_templates import contract as contract_template
@@ -73,7 +72,7 @@ from datamodel_code_generator._target_render import (
     parameter_plan,
 )
 from datamodel_code_generator._target_templates import roles, templated
-from datamodel_code_generator._target_types import admits_none, container_slot
+from datamodel_code_generator._target_types import admits_none
 from datamodel_code_generator._target_unicode import casefold
 from datamodel_code_generator.model.pydantic_v2._annotated_types import annotated_constraint_metadata
 from datamodel_code_generator.python_literal import stable_repr
@@ -287,13 +286,7 @@ class Module(TargetModule):
         spell = self.static if static else self.validating
         if isinstance(value, UnionType):
             return self.union(*map(spell, value.members))
-        arguments = [spell(item) for item in value.arguments]
-        if (slot := container_slot(value)) is None:
-            return subscript_text(self.hint(value.base), arguments)
-        flag = CONTAINER_FLAGS[slot]
-        if flag in MAPPINGS.flags:
-            return self.container(flag, arguments[-1], key=arguments[0], given=value.given)
-        return self.container(flag, arguments[0], given=value.given)
+        return self.generic(value, [spell(item) for item in value.arguments])
 
     def constraints(self, value: ConstructorType, base: BuiltinType | ImportedType) -> tuple[str, ...]:
         """Return the metadata of a constrained scalar's keywords, split as the model generator splits them."""

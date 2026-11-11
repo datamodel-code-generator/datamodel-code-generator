@@ -5221,6 +5221,9 @@
       "strict_nullable": true
     }
   },
+  "nullable-required-parameters-31": {
+    "input": "nullable-required-parameters-31.yaml"
+  },
   "nullable-required-parameters-unpack": {
     "input": "nullable-required-parameters.yaml",
     "model": {

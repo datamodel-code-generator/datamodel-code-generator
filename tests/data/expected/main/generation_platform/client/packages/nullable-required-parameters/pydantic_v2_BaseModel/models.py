@@ -23,6 +23,18 @@ class Label(RootModel[str | None]):
     root: str | None = None
 
 
+class Ids(RootModel[list[int] | None]):
+    root: list[int] | None = Field(...)
+
+
+class Labels(RootModel[list[Label | None] | None]):
+    root: list[Label | None] | None = Field(...)
+
+
+class Weights(RootModel[dict[str, int]]):
+    root: dict[str, int]
+
+
 ItemsIdGetPathIdParameter = TypeAliasType("ItemsIdGetPathIdParameter", str | None)
 
 

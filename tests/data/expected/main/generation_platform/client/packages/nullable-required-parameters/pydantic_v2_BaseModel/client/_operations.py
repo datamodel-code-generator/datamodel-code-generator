@@ -15,6 +15,7 @@ from ._runtime.client.operations import (
     ServerPlan,
     empty_branch,
 )
+from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.default import GetItemResponse
 
@@ -96,9 +97,58 @@ OPERATION_0: Final[OperationPlan[GetItemResponse]] = OperationPlan(
         ),
         ParameterSpec(
             plan=ParameterPlan(
-                location='query', name='cap', style='form', explode=True, kind='integer'
+                location='query',
+                name='ids',
+                style='form',
+                explode=True,
+                required=True,
+                shape='array',
+                kind='integer',
             ),
             codec=model_bindings.codec_8,
+            converts=True,
+        ),
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query',
+                name='labels',
+                style='form',
+                explode=True,
+                required=True,
+                shape='array',
+            ),
+            codec=model_bindings.codec_9,
+            converts=True,
+        ),
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query',
+                name='weights',
+                style='form',
+                explode=True,
+                required=True,
+                shape='object',
+                additional=FieldPlan('', 'integer'),
+                reserved_names=(
+                    'blob',
+                    'cap',
+                    'ids',
+                    'kind',
+                    'label',
+                    'labels',
+                    'levels',
+                    'q',
+                    'tags',
+                ),
+            ),
+            codec=model_bindings.codec_10,
+            converts=True,
+        ),
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query', name='cap', style='form', explode=True, kind='integer'
+            ),
+            codec=model_bindings.codec_11,
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -110,7 +160,7 @@ OPERATION_0: Final[OperationPlan[GetItemResponse]] = OperationPlan(
                 shape='array',
                 kind='integer',
             ),
-            codec=model_bindings.codec_9,
+            codec=model_bindings.codec_12,
         ),
     ),
 )

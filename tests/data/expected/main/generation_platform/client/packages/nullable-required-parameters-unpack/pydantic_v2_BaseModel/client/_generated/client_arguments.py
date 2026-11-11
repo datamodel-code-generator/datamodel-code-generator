@@ -25,6 +25,9 @@ class Operation0Arguments(TypedDict):
     X_Trace: str
     session: str
     blob: int | None
+    ids: list[int]
+    labels: list[str | None]
+    weights: dict[str, int]
     cap: NotRequired[int | None | UNSET]
     levels: list[int | None]
     options: NotRequired[RequestOptions | None]
@@ -41,9 +44,25 @@ KEYWORDS_0: Final = Keywords(
         'X_Trace',
         'session',
         'blob',
+        'ids',
+        'labels',
+        'weights',
         'cap',
         'levels',
         'options',
     ),
-    ('id', 'q', 'kind', 'label', 'tags', 'X_Trace', 'session', 'blob', 'levels'),
+    (
+        'id',
+        'q',
+        'kind',
+        'label',
+        'tags',
+        'X_Trace',
+        'session',
+        'blob',
+        'ids',
+        'labels',
+        'weights',
+        'levels',
+    ),
 )

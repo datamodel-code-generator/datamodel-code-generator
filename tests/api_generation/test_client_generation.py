@@ -136,6 +136,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "merged-nullable-forms",
         "merged-nullable-kept",
         "nullable-required-parameters",
+        "nullable-required-parameters-31",
         "nullable-required-parameters-unpack",
         "type-spellings-cycle",
         "type-spellings-bound",

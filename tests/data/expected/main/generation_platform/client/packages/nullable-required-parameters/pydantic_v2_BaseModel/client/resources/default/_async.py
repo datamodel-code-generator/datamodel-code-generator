@@ -50,6 +50,9 @@ class AsyncDefaultResource:
         X_Trace: str,
         session: str,
         blob: int | None,
+        ids: list[int],
+        labels: list[str | None],
+        weights: dict[str, int],
         cap: int | None | UNSET = UNSET,
         levels: list[int | None],
         options: RequestOptions | None = None,
@@ -60,7 +63,21 @@ class AsyncDefaultResource:
         return (
             await self._core.execute(
                 _operations.OPERATION_0,
-                (id, q, kind, label, tags, X_Trace, session, blob, cap, levels),
+                (
+                    id,
+                    q,
+                    kind,
+                    label,
+                    tags,
+                    X_Trace,
+                    session,
+                    blob,
+                    ids,
+                    labels,
+                    weights,
+                    cap,
+                    levels,
+                ),
                 options=options,
             )
         ).data
@@ -84,6 +101,9 @@ class AsyncDefaultWithResponse:
         X_Trace: str,
         session: str,
         blob: int | None,
+        ids: list[int],
+        labels: list[str | None],
+        weights: dict[str, int],
         cap: int | None | UNSET = UNSET,
         levels: list[int | None],
         options: RequestOptions | None = None,
@@ -93,7 +113,21 @@ class AsyncDefaultWithResponse:
         """
         return await self._core.execute(
             _operations.OPERATION_0,
-            (id, q, kind, label, tags, X_Trace, session, blob, cap, levels),
+            (
+                id,
+                q,
+                kind,
+                label,
+                tags,
+                X_Trace,
+                session,
+                blob,
+                ids,
+                labels,
+                weights,
+                cap,
+                levels,
+            ),
             options=options,
         )
 
@@ -116,6 +150,9 @@ class AsyncDefaultWithRawResponse:
         X_Trace: str,
         session: str,
         blob: int | None,
+        ids: list[int],
+        labels: list[str | None],
+        weights: dict[str, int],
         cap: int | None | UNSET = UNSET,
         levels: list[int | None],
         options: RequestOptions | None = None,
@@ -125,7 +162,21 @@ class AsyncDefaultWithRawResponse:
         """
         return await self._core.execute_raw(
             _operations.OPERATION_0,
-            (id, q, kind, label, tags, X_Trace, session, blob, cap, levels),
+            (
+                id,
+                q,
+                kind,
+                label,
+                tags,
+                X_Trace,
+                session,
+                blob,
+                ids,
+                labels,
+                weights,
+                cap,
+                levels,
+            ),
             options=options,
         )
 
@@ -148,6 +199,9 @@ class AsyncDefaultWithStreamingResponse:
         X_Trace: str,
         session: str,
         blob: int | None,
+        ids: list[int],
+        labels: list[str | None],
+        weights: dict[str, int],
         cap: int | None | UNSET = UNSET,
         levels: list[int | None],
         options: RequestOptions | None = None,
@@ -157,6 +211,20 @@ class AsyncDefaultWithStreamingResponse:
         """
         return self._core.stream(
             _operations.OPERATION_0,
-            (id, q, kind, label, tags, X_Trace, session, blob, cap, levels),
+            (
+                id,
+                q,
+                kind,
+                label,
+                tags,
+                X_Trace,
+                session,
+                blob,
+                ids,
+                labels,
+                weights,
+                cap,
+                levels,
+            ),
             options=options,
         )

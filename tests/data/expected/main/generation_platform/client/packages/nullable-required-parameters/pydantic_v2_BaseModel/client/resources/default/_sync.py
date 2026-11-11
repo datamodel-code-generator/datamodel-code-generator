@@ -50,6 +50,9 @@ class DefaultResource:
         X_Trace: str,
         session: str,
         blob: int | None,
+        ids: list[int],
+        labels: list[str | None],
+        weights: dict[str, int],
         cap: int | None | UNSET = UNSET,
         levels: list[int | None],
         options: RequestOptions | None = None,
@@ -59,7 +62,21 @@ class DefaultResource:
         """
         return self._core.execute(
             _operations.OPERATION_0,
-            (id, q, kind, label, tags, X_Trace, session, blob, cap, levels),
+            (
+                id,
+                q,
+                kind,
+                label,
+                tags,
+                X_Trace,
+                session,
+                blob,
+                ids,
+                labels,
+                weights,
+                cap,
+                levels,
+            ),
             options=options,
         ).data
 
@@ -82,6 +99,9 @@ class DefaultWithResponse:
         X_Trace: str,
         session: str,
         blob: int | None,
+        ids: list[int],
+        labels: list[str | None],
+        weights: dict[str, int],
         cap: int | None | UNSET = UNSET,
         levels: list[int | None],
         options: RequestOptions | None = None,
@@ -91,7 +111,21 @@ class DefaultWithResponse:
         """
         return self._core.execute(
             _operations.OPERATION_0,
-            (id, q, kind, label, tags, X_Trace, session, blob, cap, levels),
+            (
+                id,
+                q,
+                kind,
+                label,
+                tags,
+                X_Trace,
+                session,
+                blob,
+                ids,
+                labels,
+                weights,
+                cap,
+                levels,
+            ),
             options=options,
         )
 
@@ -114,6 +148,9 @@ class DefaultWithRawResponse:
         X_Trace: str,
         session: str,
         blob: int | None,
+        ids: list[int],
+        labels: list[str | None],
+        weights: dict[str, int],
         cap: int | None | UNSET = UNSET,
         levels: list[int | None],
         options: RequestOptions | None = None,
@@ -123,7 +160,21 @@ class DefaultWithRawResponse:
         """
         return self._core.execute_raw(
             _operations.OPERATION_0,
-            (id, q, kind, label, tags, X_Trace, session, blob, cap, levels),
+            (
+                id,
+                q,
+                kind,
+                label,
+                tags,
+                X_Trace,
+                session,
+                blob,
+                ids,
+                labels,
+                weights,
+                cap,
+                levels,
+            ),
             options=options,
         )
 
@@ -146,6 +197,9 @@ class DefaultWithStreamingResponse:
         X_Trace: str,
         session: str,
         blob: int | None,
+        ids: list[int],
+        labels: list[str | None],
+        weights: dict[str, int],
         cap: int | None | UNSET = UNSET,
         levels: list[int | None],
         options: RequestOptions | None = None,
@@ -155,6 +209,20 @@ class DefaultWithStreamingResponse:
         """
         return self._core.stream(
             _operations.OPERATION_0,
-            (id, q, kind, label, tags, X_Trace, session, blob, cap, levels),
+            (
+                id,
+                q,
+                kind,
+                label,
+                tags,
+                X_Trace,
+                session,
+                blob,
+                ids,
+                labels,
+                weights,
+                cap,
+                levels,
+            ),
             options=options,
         )
