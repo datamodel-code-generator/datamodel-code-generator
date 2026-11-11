@@ -136,7 +136,7 @@ Changes from the current configuration (current -> recommended - naming-strategy
     Invoice -> BillingInvoice   at components/schemas/billing.Invoice
 
 Your configuration
-  --preset standard-py314-20261027: a newer preset is available, standard-py314-20261106
+  --preset standard-py314-20261027: a newer preset is available, standard-py314-20261111
 
 Notes
   - The rules were calibrated on the 20261017 presets.

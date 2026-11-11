@@ -63,7 +63,7 @@ Optional (policy; not in the command)
       rejected
 
 Your configuration
-  --preset standard-py314-20261017: a newer preset is available, standard-py314-20261106
+  --preset standard-py314-20261017: a newer preset is available, standard-py314-20261111
 
 Command
   datamodel-codegen --input paths_bodies_object_map.yaml --openapi-as-definitions paths-bodies ref-components --openapi-scopes paths --preset standard-py314-20261017

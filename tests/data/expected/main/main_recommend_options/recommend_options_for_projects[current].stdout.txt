@@ -44,7 +44,7 @@ Not recommended
       from keys renamed 0.0% of locations
 
 Your configuration
-  --preset standard-py314-20261027: a newer preset is available, standard-py314-20261106
+  --preset standard-py314-20261027: a newer preset is available, standard-py314-20261111
   --naming-strategy is set to "full-path"; the rules suggest "enclosing-model"   [naming.qualify-shared-inline-names]
 
 Notes

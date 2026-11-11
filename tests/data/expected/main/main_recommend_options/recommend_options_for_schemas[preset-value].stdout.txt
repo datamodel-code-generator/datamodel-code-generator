@@ -81,7 +81,7 @@ Optional (policy; not in the command)
       rejected
 
 Your configuration
-  --preset practical-py314-20261017: a newer preset is available, practical-py314-20261106
+  --preset practical-py314-20261017: a newer preset is available, practical-py314-20261111
 
 Command
   datamodel-codegen --enum-field-as-literal all --input api.yaml --naming-strategy enclosing-model --preset practical-py314-20261017 --no-treat-dot-as-module --use-tag-as-union-variant-name --no-use-title-as-name

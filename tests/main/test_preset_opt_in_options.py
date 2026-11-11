@@ -1,7 +1,8 @@
 """The dated presets equal the presets before them plus every opt-in option of their release.
 
 The 20261027 presets add the opt-in options of 0.87.0 to the 20261017 presets, the 20261104 presets add those of
-0.90.0 to the 20261027 presets, and the 20261106 presets add those of the next release to the 20261104 presets.
+0.90.0 to the 20261027 presets, the 20261106 presets add those of 0.91.0 to the 20261104 presets, and the 20261111
+presets add those of the next release to the 20261106 presets.
 """
 
 from __future__ import annotations
@@ -106,10 +107,14 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
 )
 """The options the 20261106 presets set beyond the 20261104 presets."""
 
+OPT_IN_OPTIONS_20261111: tuple[str, ...] = ()
+"""The options the 20261111 presets set beyond the 20261106 presets."""
+
 PRESET_RELEASES: dict[str, tuple[str, tuple[str, ...]]] = {
     "20261027": ("20261017", OPT_IN_OPTIONS),
     "20261104": ("20261027", OPT_IN_OPTIONS_20261104),
     "20261106": ("20261104", OPT_IN_OPTIONS_20261106),
+    "20261111": ("20261106", OPT_IN_OPTIONS_20261111),
 }
 """The preset before each dated preset and the options it adds to it."""
 
@@ -423,11 +428,15 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
 )
 """The inputs each opt-in option of the 20261106 presets changes."""
 
+CASES_20261111: tuple[pytest.ParameterSet, ...] = ()
+"""The inputs each opt-in option of the 20261111 presets changes."""
+
 
 @pytest.mark.parametrize("family", ["standard", "practical"])
 @pytest.mark.parametrize(
     ("release", "input_path", "input_file_type", "extra_args"),
     [
+        *(pytest.param("20261111", *case.values, id=case.id, marks=case.marks) for case in CASES_20261111),
         *(pytest.param("20261106", *case.values, id=case.id, marks=case.marks) for case in CASES_20261106),
         *(pytest.param("20261104", *case.values, id=case.id, marks=case.marks) for case in CASES_20261104),
         pytest.param(
@@ -679,15 +688,15 @@ def test_preset_sets_opt_in_option(
 def test_preset_option_turned_off(
     input_path: Path, extra_args: list[str], option: str, off: str, source: str, tmp_path: Path
 ) -> None:
-    """Turn off one option of a 20261106 preset: the output is that of the preset without the option.
+    """Turn off one option of a 20261111 preset: the output is that of the preset without the option.
 
     The --no- form on the command line, or false for the option in the pyproject.toml that selects the preset, gives
-    the output of the 20261017 preset plus every option the 20261027, 20261104 and 20261106 presets add but that one;
-    an alias of the option has a --no- form and a key too.
+    the output of the 20261017 preset plus every option the 20261027, 20261104, 20261106 and 20261111 presets add but
+    that one; an alias of the option has a --no- form and a key too.
     """
     project = tmp_path / "project"
     project.mkdir()
-    preset = "standard-py312-20261106"
+    preset = "standard-py312-20261111"
     preset_args = ["--preset", preset, off]
     if source == "pyproject":
         (project / "pyproject.toml").write_text(
@@ -704,7 +713,11 @@ def test_preset_option_turned_off(
             extra_args=[*preset_args, *common],
             skip_code_validation=sys.version_info < (3, 12),
         )
-    options = [item for item in (*OPT_IN_OPTIONS, *OPT_IN_OPTIONS_20261104, *OPT_IN_OPTIONS_20261106) if item != option]
+    options = [
+        item
+        for item in (*OPT_IN_OPTIONS, *OPT_IN_OPTIONS_20261104, *OPT_IN_OPTIONS_20261106, *OPT_IN_OPTIONS_20261111)
+        if item != option
+    ]
     run_main_and_assert(
         input_path=input_path,
         output_path=tmp_path / "options.py",
