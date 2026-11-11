@@ -2390,8 +2390,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             msg = "x-python-import requires both module and name"
             raise Error(msg)
         self._refuse_untrusted_code("x-python-import", x_python_import)
-        return self._get_emitted_python_type_path(
-            _validate_schema_python_import_path(f"{module}.{type_name}", "x-python-import", self.target_python_version)
+        return _type_overrides.get_emitted_python_type_path(
+            self,
+            _validate_schema_python_import_path(f"{module}.{type_name}", "x-python-import", self.target_python_version),
         )
 
     def _runtime_symbol(self, module: str, qualname: str, keyword: str) -> PythonTypeRuntimeSymbol:
@@ -2411,7 +2412,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         The type the target must have is therefore checked here rather than in the emitted imports.
         """
         symbol = self._runtime_symbol(module, qualname, keyword)
-        self._get_target_python_type_path(f"{module}.{symbol.qualname_parts[0]}")
+        _type_overrides.get_target_python_type_path(self, f"{module}.{symbol.qualname_parts[0]}")
         return symbol
 
     def _get_x_python_runtime_symbol(self, x_python_import: dict[str, Any]) -> PythonTypeRuntimeSymbol | None:
@@ -6507,10 +6508,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the type of a schema that ``customTypePath`` gives, the class that dotted path names."""
         self._refuse_untrusted_code("customTypePath", obj.custom_type_path)
         return self.data_type_manager.get_data_type_from_full_path(
-            self._get_emitted_python_type_path(
+            _type_overrides.get_emitted_python_type_path(
+                self,
                 _validate_schema_python_import_path(
                     cast("str", obj.custom_type_path), "customTypePath", self.target_python_version
-                )
+                ),
             ),
             is_custom_type=True,
         )
@@ -7581,7 +7583,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if (siblings := _value_keywords.union_sibling_constraints(obj, field.constraints)) is not None:
                 self._graph_builder.set_field_constraints(field, field.constraints, union_siblings=siblings)
         dropped_counts = assembled.dropped_counts
-        self._mark_untaken_constraints(
+        _type_overrides.mark_untaken_constraints(
+            self,
             field,
             assembled.untaken,
             lambda minimum: (

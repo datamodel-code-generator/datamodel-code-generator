@@ -290,6 +290,7 @@ _PARSER_PASS_IMPORTS: Final = frozenset({
     "datamodel_code_generator.parser._pipeline",
     "datamodel_code_generator.parser._python_type_imports",
     "datamodel_code_generator.parser._tag_plan",
+    "datamodel_code_generator.parser._type_overrides",
     "datamodel_code_generator.parser.generation",
 })
 """The parser modules a pass module may import: none imports ``parser/base.py``, so no pass closes a cycle."""
