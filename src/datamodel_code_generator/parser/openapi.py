@@ -895,8 +895,12 @@ class OpenAPIParser(JsonSchemaParser):
         """Validate ``raw``, an OpenAPI object at ``location`` (``path`` when unknown), as ``object_type``.
 
         One that does not validate is an error at the first schema in it that is no schema object, with the message of
-        such a schema in ``components/schemas``, or else at the object itself.
+        such a schema in ``components/schemas``, or else at the object itself. Under --schema-version-mode strict, the
+        schemas it holds are checked first (``_check_loaded_schema_versions``).
         """
+        if self.config.schema_version_mode == VersionMode.Strict:
+            for holder, key, tokens in _held_schemas(raw, _MODEL_ROLES.get(object_type, "")):
+                self._check_loaded_schema_versions(holder[key], [*path, *tokens])
         try:
             return object_type.model_validate(raw, context=self._schema_validation_context)
         except ValidationError as error:

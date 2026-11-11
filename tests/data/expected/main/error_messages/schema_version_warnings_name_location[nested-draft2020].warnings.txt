@@ -1,0 +1,5 @@
+exclusiveMinimum as boolean is Draft 4 style, but schema version uses numeric style. Schema path: schema_location_strict_nested_draft2020.json#
+exclusiveMinimum as boolean is Draft 4 style, but schema version uses numeric style. Schema path: schema_location_strict_nested_draft2020.json#/properties/age
+exclusiveMaximum as boolean is Draft 4 style, but schema version uses numeric style. Schema path: schema_location_strict_nested_draft2020.json#/properties/scores/items
+exclusiveMaximum as boolean is Draft 4 style, but schema version uses numeric style. Schema path: schema_location_strict_nested_draft2020.json#/properties/size/allOf/1/properties/depth
+exclusiveMinimum as boolean is Draft 4 style, but schema version uses numeric style. Schema path: schema_location_strict_nested_draft2020.json#/$defs/Size/properties/width

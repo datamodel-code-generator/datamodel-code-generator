@@ -35,7 +35,13 @@ from datamodel_code_generator.parser.base import Source, dump_templates
 from datamodel_code_generator.parser.graphql import GraphQLParser
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.parser.openapi import OpenAPIParser
-from tests.conftest import assert_output, assert_warnings_contain, create_assert_file_content, stored_expected
+from tests.conftest import (
+    assert_output,
+    assert_warnings_contain,
+    assert_warnings_do_not_contain,
+    create_assert_file_content,
+    stored_expected,
+)
 from tests.main.conftest import (
     DATA_PATH,
     OPEN_API_DATA_PATH,
@@ -1941,6 +1947,20 @@ def test_schema_validation_error_details_name_the_model(output_file: Path, capsy
     )
 
 
+NESTED_STRICT_FIXTURES = (
+    pytest.param("schema_location_strict_nested_draft2020.json", "jsonschema", [], id="nested-draft2020"),
+    pytest.param("schema_location_strict_nested_openapi31.yaml", "openapi", [], id="nested-openapi31"),
+    pytest.param(
+        "schema_location_strict_nested_openapi31.yaml",
+        "openapi",
+        ["--openapi-scopes", "schemas", "paths"],
+        id="nested-openapi31-paths",
+    ),
+    pytest.param("schema_location_strict_nested_asyncapi3.yaml", "asyncapi", [], id="nested-asyncapi3"),
+    pytest.param("schema_location_strict_nested_asyncapi2.yaml", "asyncapi", [], id="nested-asyncapi2"),
+)
+
+
 @pytest.mark.parametrize(
     ("fixture_name", "input_file_type", "extra_args"),
     [
@@ -1949,6 +1969,7 @@ def test_schema_validation_error_details_name_the_model(output_file: Path, capsy
         pytest.param("schema_location_strict_openapi.yaml", "openapi", [], id="openapi"),
         pytest.param("schema_location_strict_openapi.yaml", "openapi", ["--openapi-scopes", "api"], id="openapi-api"),
         pytest.param("schema_location_strict_asyncapi.yaml", "asyncapi", [], id="asyncapi"),
+        *NESTED_STRICT_FIXTURES,
     ],
 )
 def test_schema_version_warnings_name_location(
@@ -1957,7 +1978,11 @@ def test_schema_version_warnings_name_location(
     extra_args: list[str],
     output_file: Path,
 ) -> None:
-    """Strict-mode warnings name the document and the JSON Pointer of the schema that uses the feature."""
+    """Strict-mode warnings name the document and the JSON Pointer of the schema that uses the feature.
+
+    A subschema inside a parsed schema is checked too, once where two ``$ref`` reach it, and an AsyncAPI 2 document
+    reads the exclusive bounds as OpenAPI 3.0 does (#4980).
+    """
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")
         run_main_and_assert(
@@ -1973,8 +1998,27 @@ def test_schema_version_warnings_name_location(
                 *extra_args,
             ],
         )
-    messages = dict.fromkeys(str(record.message) for record in recorded if "Schema path:" in str(record.message))
+    messages = [str(record.message) for record in recorded if "Schema path:" in str(record.message)]
     assert_output("".join(f"{message}\n" for message in messages), name="warnings")
+
+
+@pytest.mark.parametrize(("fixture_name", "input_file_type", "extra_args"), NESTED_STRICT_FIXTURES)
+def test_schema_version_lenient_mode_names_no_nested_location(
+    fixture_name: str,
+    input_file_type: InputFileTypeLiteral,
+    extra_args: list[str],
+    output_file: Path,
+) -> None:
+    """Lenient mode warns about no version-specific feature of a subschema (#4980)."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=MALFORMED_DATA_PATH / fixture_name,
+            output_path=output_file,
+            input_file_type=input_file_type,
+            extra_args=["--disable-timestamp", "--formatters", "builtin", *extra_args],
+        )
+    assert_warnings_do_not_contain(recorded, "Schema path:")
 
 
 @pytest.mark.parametrize(

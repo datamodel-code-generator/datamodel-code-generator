@@ -276,6 +276,12 @@ dynamic-ref-in-id-defs	main/malformed/request_response_dedupe_generates_legacy_s
 recursive-discriminator	main/malformed/request_response_dedupe_generates_legacy_stops.py	= main/malformed/request_response_dedupe_generates_legacy_stops~request_response_dedupe_generates_legacy_stops[recursive-discriminator].py
 [test_request_response_dynamic_ref_to_its_resource_anchor]
 	main/error_messages/request_response_dynamic_ref_to_its_resource_anchor.py	= main/malformed/request_response_dedupe_generates_legacy_stops~request_response_dedupe_generates_legacy_stops[dynamic-ref-in-id-defs].py
+[test_schema_version_lenient_mode_names_no_nested_location]
+nested-asyncapi2	main/error_messages/schema_version_lenient_mode_names_no_nested_location[nested-asyncapi2].py
+nested-asyncapi3	main/error_messages/schema_version_lenient_mode_names_no_nested_location[nested-asyncapi3].py
+nested-draft2020	main/error_messages/schema_version_lenient_mode_names_no_nested_location[nested-draft2020].py
+nested-openapi31	main/error_messages/schema_version_lenient_mode_names_no_nested_location[nested-openapi31].py
+nested-openapi31-paths	main/error_messages/schema_version_lenient_mode_names_no_nested_location[nested-openapi31-paths].py
 [test_schema_version_warnings_name_location]
 asyncapi	main/error_messages/schema_version_warnings_name_location[asyncapi].py
 asyncapi	main/error_messages/schema_version_warnings_name_location[asyncapi].warnings.txt
@@ -283,6 +289,16 @@ draft2020	main/error_messages/schema_version_warnings_name_location[draft2020].p
 draft2020	main/error_messages/schema_version_warnings_name_location[draft2020].warnings.txt
 draft4	main/error_messages/schema_version_warnings_name_location[draft4].py
 draft4	main/error_messages/schema_version_warnings_name_location[draft4].warnings.txt
+nested-asyncapi2	main/error_messages/schema_version_warnings_name_location[nested-asyncapi2].py	= main/error_messages/schema_version_lenient_mode_names_no_nested_location[nested-asyncapi2].py
+nested-asyncapi2	main/error_messages/schema_version_warnings_name_location[nested-asyncapi2].warnings.txt
+nested-asyncapi3	main/error_messages/schema_version_warnings_name_location[nested-asyncapi3].py	= main/error_messages/schema_version_lenient_mode_names_no_nested_location[nested-asyncapi3].py
+nested-asyncapi3	main/error_messages/schema_version_warnings_name_location[nested-asyncapi3].warnings.txt
+nested-draft2020	main/error_messages/schema_version_warnings_name_location[nested-draft2020].py	= main/error_messages/schema_version_lenient_mode_names_no_nested_location[nested-draft2020].py
+nested-draft2020	main/error_messages/schema_version_warnings_name_location[nested-draft2020].warnings.txt
+nested-openapi31	main/error_messages/schema_version_warnings_name_location[nested-openapi31].py	= main/error_messages/schema_version_lenient_mode_names_no_nested_location[nested-openapi31].py
+nested-openapi31	main/error_messages/schema_version_warnings_name_location[nested-openapi31].warnings.txt
+nested-openapi31-paths	main/error_messages/schema_version_warnings_name_location[nested-openapi31-paths].py	= main/error_messages/schema_version_lenient_mode_names_no_nested_location[nested-openapi31-paths].py
+nested-openapi31-paths	main/error_messages/schema_version_warnings_name_location[nested-openapi31-paths].warnings.txt
 openapi	main/error_messages/schema_version_warnings_name_location[openapi].py
 openapi	main/error_messages/schema_version_warnings_name_location[openapi].warnings.txt
 openapi-api	main/error_messages/schema_version_warnings_name_location[openapi-api].py	= main/error_messages/schema_version_warnings_name_location[openapi].py

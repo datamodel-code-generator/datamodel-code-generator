@@ -152,6 +152,7 @@ from datamodel_code_generator._json_schema import (
     definition_ref,
     non_null_types,
     schema_positions,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    subschema_entries,
 )
 from datamodel_code_generator._message_text import english_list, for_count
 from datamodel_code_generator._model_keys import (
@@ -1112,6 +1113,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._unescaped_slash_pointers: dict[tuple[str, str], str] = {}
         """Under --read-escaped-ref-pointers, the pointer of the key a dangling reference's unescaped ``/`` splits."""
         self._empty_enum_locations: set[SchemaLocation] = set()
+        self._version_checked_locations: set[SchemaLocation] = set()
+        """The schema locations --schema-version-mode strict has checked, each warned about once."""
         self._unread_patterns: dict[SchemaLocation, str] = {}
         self._documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]] = {}
         self._held_value: tuple[YamlValue, SchemaLocation] | None = None
@@ -8145,6 +8148,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return self.SCHEMA_OBJECT_TYPE()
         if raw is False:
             return self.SCHEMA_OBJECT_TYPE(is_boolean_schema_false=True)
+        self._check_loaded_schema_versions(raw, path)
         try:
             return self._schema_object(raw)
         except (SchemaParseError, RecursionError):
@@ -8315,34 +8319,60 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         raw: dict[str, YamlValue] | YamlValue,
         path: list[str],
     ) -> None:
-        """Check for version-specific features and warn in Strict mode.
+        """Check a schema and the subschemas inside it for version-specific features and warn in Strict mode.
 
         This method checks the raw schema data before Pydantic validation
         to detect features that may not be valid for the declared version.
+        The schema objects of a loaded document inside it are checked too, in document order (#4980): each location
+        once, whichever schema or ``$ref`` reaches it first.
         """
         if self.config.schema_version_mode != VersionMode.Strict:
             return
-        location = self._schema_value_location(raw)
+        pending = [(raw, self._schema_value_location(raw))]
+        while pending:
+            schema, location = pending.pop()
+            if location is not None:
+                if location in self._version_checked_locations:
+                    continue
+                self._version_checked_locations.add(location)
+            for message in self._version_feature_messages(schema, location, path):
+                warn(message, stacklevel=3)
+            if isinstance(schema, dict):
+                children = [child for key, value in schema.items() for _, child in subschema_entries(key, value)]
+                pending.extend(
+                    (child, child_location)
+                    for child in reversed(children)
+                    if (child_location := self._raw_location(child)) is not None
+                )
+
+    def _check_loaded_schema_versions(self, raw: YamlValue, path: list[str]) -> None:
+        """Check a schema value of a loaded document and the subschemas inside it in Strict mode (#4980).
+
+        A value no loaded document holds, such as a schema built from others, is left out.
+        """
+        if self.config.schema_version_mode == VersionMode.Strict and self._raw_location(raw) is not None:
+            self._check_version_specific_features(raw, path)
+
+    def _version_feature_messages(
+        self, raw: dict[str, YamlValue] | YamlValue, location: SchemaLocation | None, path: list[str]
+    ) -> Iterator[str]:
+        """Yield the warnings about the version-specific features of one schema at ``location`` (``path`` without)."""
         schema_path = redact_path(_named_path(location, path))
 
         # Check boolean schemas (Draft 6+)
         if isinstance(raw, bool):
             if not self._features_at(location).boolean_schemas:
                 version_name = "Draft 4" if self._features_at(location).id_field == "id" else "this version"
-                warn(
-                    f"Boolean schemas are not supported in {version_name}. Schema path: {schema_path}",
-                    stacklevel=3,
-                )
+                yield f"Boolean schemas are not supported in {version_name}. Schema path: {schema_path}"
             return
 
         raw = cast("dict[str, YamlValue]", raw)
         # Check null in type array (JSON Schema / OpenAPI 3.1+)
         type_value = raw.get("type")
         if isinstance(type_value, list) and "null" in type_value and not self._features_at(location).null_in_type_array:
-            warn(
+            yield (
                 'null in type array (e.g., type: ["string", "null"]) is not supported '
-                f"in this schema version. Use nullable: true instead. Schema path: {schema_path}",
-                stacklevel=3,
+                f"in this schema version. Use nullable: true instead. Schema path: {schema_path}"
             )
 
         # Check exclusive min/max format (Draft 4 uses boolean, Draft 6+ uses number)
@@ -8355,14 +8385,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if as_number
                 else "as number is Draft 6+ style, but schema version is Draft 4"
             )
-            warn(f"{keyword} {style}. Schema path: {schema_path}", stacklevel=3)
+            yield f"{keyword} {style}. Schema path: {schema_path}"
 
         for keyword in ("readOnly", "writeOnly"):
             if not self._features_at(location).read_only_write_only and raw.get(keyword) is True:
-                warn(
-                    f"{keyword} is not supported in this schema version (Draft 7+ only). Schema path: {schema_path}",
-                    stacklevel=3,
-                )
+                yield f"{keyword} is not supported in this schema version (Draft 7+ only). Schema path: {schema_path}"
 
     def _check_array_version_features(
         self,
