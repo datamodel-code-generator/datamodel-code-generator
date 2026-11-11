@@ -26958,6 +26958,11 @@ def test_main_rust_only_syntax(output_file: Path) -> None:
         )
 
 
+_IMPORTS_FROM_PARSING_PYTHON = pytest.mark.imports_from_newer_python(
+    "The pattern needs a newer Python's re than the module targets"
+)
+
+
 @pytest.mark.parametrize(
     ("fixture", "target_python_version", "expected_file", "parses_from"),
     [
@@ -26966,6 +26971,7 @@ def test_main_rust_only_syntax(output_file: Path) -> None:
             "3.10",
             "rust_unsupported_atomic_group_py310.py",
             (3, 11),
+            marks=_IMPORTS_FROM_PARSING_PYTHON,
             id="atomic-group-3.10",
         ),
         pytest.param(
@@ -26980,7 +26986,7 @@ def test_main_rust_only_syntax(output_file: Path) -> None:
             "3.13",
             "rust_unsupported_end_of_string_py313.py",
             (3, 14),
-            marks=BLACK_PY313_SKIP,
+            marks=(BLACK_PY313_SKIP, _IMPORTS_FROM_PARSING_PYTHON),
             id="end-of-string-3.13",
         ),
         pytest.param(
@@ -27023,7 +27029,9 @@ def test_main_rust_unsupported_target_python(
 @pytest.mark.parametrize(
     ("target_python_version", "collapse_args", "expected_file"),
     [
-        pytest.param("3.10", [], "rust_unsupported_typed_extra_py310.py", id="python-3.10"),
+        pytest.param(
+            "3.10", [], "rust_unsupported_typed_extra_py310.py", marks=_IMPORTS_FROM_PARSING_PYTHON, id="python-3.10"
+        ),
         pytest.param("3.11", [], "rust_unsupported_typed_extra_py311.py", id="python-3.11"),
         pytest.param(
             "3.11",

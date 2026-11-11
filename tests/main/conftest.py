@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib
 import importlib.util
 import inspect
@@ -40,8 +41,9 @@ from datamodel_code_generator import (
 )
 from datamodel_code_generator.__main__ import Exit, main
 from datamodel_code_generator.arguments import arg_parser
-from datamodel_code_generator.format import Formatter, PythonVersion, is_supported_in_black
+from datamodel_code_generator.format import Formatter, PythonVersion, PythonVersionMin, is_supported_in_black
 from tests.conftest import (
+    _CURRENT_ITEMS,
     AssertFileContent,
     _compare_derived,
     _compare_expected,
@@ -115,6 +117,7 @@ _pin_hypothesis_without_local_constants()
 
 _TEST_DEFAULT_FORMATTER_ENV = "DATAMODEL_CODE_GENERATOR_TEST_DEFAULT_FORMATTER"
 _BUILTIN_FORMATTER_VALUE = "builtin"
+_EXPORT_OLDER_TARGET_OUTPUTS = "DATAMODEL_CODE_GENERATOR_EXPORT_OLDER_TARGET_OUTPUTS"
 _BUILTIN_FORMATTER_LINE_LENGTH = 88
 _BUILTIN_FORMATTER_CONFIG = "[tool.datamodel-codegen]\nbuiltin-format-line-length = 88\n"
 _CLI_FORMATTER_RELATED_OPTIONS = frozenset({
@@ -1320,7 +1323,9 @@ def _should_skip_compile(extra_arguments: Sequence[str] | None) -> bool:
     return target_version > sys.version_info[:2]
 
 
-def _should_skip_exec(extra_arguments: Sequence[str] | None, *, force_exec: bool = False) -> bool:
+def _should_skip_exec(
+    extra_arguments: Sequence[str] | None, *, force_exec: bool = False, runtime: tuple[int, int] | None = None
+) -> bool:
     """Check if exec should be skipped based on model type and Python version.
 
     Args:
@@ -1328,8 +1333,9 @@ def _should_skip_exec(extra_arguments: Sequence[str] | None, *, force_exec: bool
         force_exec: If True, import the output whenever the target is not newer than the runtime.
             An unset target is the generator's default, the oldest supported version.
             When target > runtime, compile will be skipped entirely regardless of this flag.
+        runtime: The Python that would run the output, by default this one.
     """
-    if not force_exec and _parse_target_version(extra_arguments) != sys.version_info[:2]:
+    if not force_exec and _parse_target_version(extra_arguments) != (runtime or sys.version_info[:2]):
         return True
     return _get_argument_value(extra_arguments, "--base-class") is not None
 
@@ -1354,6 +1360,7 @@ def _validate_output_files(
         return
     should_exec = not _should_skip_exec(extra_arguments, force_exec=force_exec_validation)
     if output_path.is_file() and output_path.suffix == ".py":
+        _export_older_target_output(output_path, [output_path], extra_arguments, force_exec=force_exec_validation)
         validate_generated_code(
             output_path.read_text(encoding="utf-8"),
             str(output_path),
@@ -1365,21 +1372,53 @@ def _validate_output_files(
 
     if not output_path.is_dir():  # pragma: no cover
         return
-    for python_file in output_path.rglob("*.py"):
+    python_files = sorted(output_path.rglob("*.py"))
+    _export_older_target_output(output_path, python_files, extra_arguments, force_exec=force_exec_validation)
+    for python_file in python_files:
         validate_generated_code(python_file.read_text(encoding="utf-8"), str(python_file), do_exec=False)
     if should_exec:
         _import_generated_output(output_path)
 
 
-def _generated_output_import_code(output_path: Path) -> str:
-    return textwrap.dedent(
-        f"""
+def _export_older_target_output(
+    output_path: Path, python_files: Sequence[Path], extra_arguments: Sequence[str] | None, *, force_exec: bool
+) -> None:
+    """Copy an output for a Python older than this one, for ``scripts/import_exported_outputs.py`` on that Python.
+
+    With ``DATAMODEL_CODE_GENERATOR_EXPORT_OLDER_TARGET_OUTPUTS`` naming a directory, each output whose target (the
+    generator's default when unset) is older than the runtime goes to a folder named by its contents, with the
+    modules beside it that it can import and a ``case.json``: the test, the target, the target Pydantic version, and
+    whether a run on the target's Python imports the output or only compiles it.
+    """
+    if (export_root := os.environ.get(_EXPORT_OLDER_TARGET_OUTPUTS)) is None:
+        return
+    target = _parse_target_version(extra_arguments) or PythonVersionMin.version_key
+    if target >= sys.version_info[:2]:
+        return
+    item = _CURRENT_ITEMS[-1]
+    imports = item.get_closest_marker("imports_from_newer_python") is None and not _should_skip_exec(
+        extra_arguments, force_exec=force_exec, runtime=target
+    )
+    pydantic = _get_argument_value(extra_arguments, "--target-pydantic-version") or UNSET_TARGET_PYDANTIC_VERSION
+    files = [*python_files, *(path for path in output_path.parent.glob("*.py") if path != output_path)]
+    digest = hashlib.sha256(repr((target, imports, pydantic)).encode())
+    for python_file in files:
+        digest.update(python_file.relative_to(output_path.parent).as_posix().encode() + python_file.read_bytes())
+    case = Path(export_root) / digest.hexdigest()[:20]
+    for python_file in files:
+        (copy := case / python_file.relative_to(output_path.parent)).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(python_file, copy)
+    case_data = {"node": item.nodeid, "target": target, "imports": imports, "pydantic": pydantic}
+    (case / "case.json").write_text(json.dumps({**case_data, "output": output_path.name}), encoding="utf-8")
+    (Path(export_root) / "import_code.py").write_text(_GENERATED_OUTPUT_IMPORT_CODE, encoding="utf-8")
+
+
+_GENERATED_OUTPUT_IMPORT_CODE = textwrap.dedent(
+    """
         import importlib.util
         import sys
         import warnings
         from pathlib import Path
-
-        imported_packages = []
 
 
         def _import_file(path, module_name):
@@ -1388,7 +1427,7 @@ def _generated_output_import_code(output_path: Path) -> str:
             try:
                 spec = importlib.util.spec_from_file_location(module_name, path)
                 if spec is None or spec.loader is None:
-                    raise ImportError(f"Unable to load generated module from {{path}}")
+                    raise ImportError(f"Unable to load generated module from {path}")
                 module = importlib.util.module_from_spec(spec)
                 sys.modules[module_name] = module
                 spec.loader.exec_module(module)
@@ -1401,8 +1440,6 @@ def _generated_output_import_code(output_path: Path) -> str:
         def _import_package(parent_directory, package_name):
             package_path = parent_directory / package_name
             parent_directory_value = str(parent_directory)
-            imported_modules = []
-            imported_packages.append(package_name)
             sys.path.insert(0, parent_directory_value)
             try:
                 spec = importlib.util.spec_from_file_location(
@@ -1411,32 +1448,29 @@ def _generated_output_import_code(output_path: Path) -> str:
                     submodule_search_locations=[str(package_path)],
                 )
                 if spec is None or spec.loader is None:
-                    raise ImportError(f"Unable to load generated package {{package_path}}")
+                    raise ImportError(f"Unable to load generated package {package_path}")
                 module = importlib.util.module_from_spec(spec)
                 sys.modules[package_name] = module
-                imported_modules.append(package_name)
                 spec.loader.exec_module(module)
 
                 for python_file in package_path.rglob("*.py"):
                     if python_file.name == "__init__.py":
                         continue
                     relative_path = python_file.relative_to(package_path)
-                    module_name = f"{{package_name}}.{{'.'.join(relative_path.with_suffix('').parts)}}"
+                    module_name = f"{package_name}.{'.'.join(relative_path.with_suffix('').parts)}"
                     submodule_spec = importlib.util.spec_from_file_location(module_name, python_file)
                     if submodule_spec is None or submodule_spec.loader is None:
-                        raise ImportError(f"Unable to load generated module from {{python_file}}")
+                        raise ImportError(f"Unable to load generated module from {python_file}")
                     submodule = importlib.util.module_from_spec(submodule_spec)
                     sys.modules[module_name] = submodule
-                    imported_modules.append(module_name)
                     submodule_spec.loader.exec_module(submodule)
             finally:
                 if parent_directory_value in sys.path:
                     sys.path.remove(parent_directory_value)
-                for module_name in reversed(imported_modules):
-                    sys.modules.pop(module_name, None)
+                for module_name in [name for name in sys.modules if name.partition(".")[0] == package_name]:
+                    sys.modules.pop(module_name)
 
 
-        output_path = Path({str(output_path.absolute())!r})
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", "Field name .* shadows an attribute in parent", UserWarning)
             warnings.filterwarnings("ignore", "Field .* conflicts with protected namespace", UserWarning)
@@ -1450,7 +1484,13 @@ def _generated_output_import_code(output_path: Path) -> str:
                     if directory.is_dir() and (directory / "__init__.py").exists():
                         _import_package(output_path, directory.name)
         """
-    )
+)
+"""Code that imports the generated file or packages at ``output_path``, a name the namespace running it defines."""
+
+
+def _generated_output_import_code(output_path: Path) -> str:
+    prefix = f"from pathlib import Path\noutput_path = Path({str(output_path.absolute())!r})\n"
+    return prefix + _GENERATED_OUTPUT_IMPORT_CODE
 
 
 def _get_concurrent_interpreters_module() -> Any | None:
@@ -1506,12 +1546,7 @@ def _import_generated_output(output_path: Path) -> None:
     start_time = time.perf_counter()
     try:
         if not _try_import_generated_output_in_subinterpreter(output_path):
-            namespace: dict[str, Any] = {}
-            try:
-                exec(_generated_output_import_code(output_path), namespace)
-            finally:
-                for package_name in namespace.get("imported_packages", ()):
-                    _forget_generated_package(package_name)
+            exec(_generated_output_import_code(output_path), {})
         _validation_stats.record_exec(time.perf_counter() - start_time)
     except Exception as exception:  # pragma: no cover
         _validation_stats.record_error(str(output_path), f"{type(exception).__name__}: {exception}")

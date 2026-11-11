@@ -8,6 +8,7 @@ See: _should_skip_exec() in conftest.py for the skip logic that these tests bypa
 
 from __future__ import annotations
 
+import json
 import shutil
 import sys
 from pathlib import Path
@@ -15,6 +16,7 @@ from pathlib import Path
 import pytest
 
 from datamodel_code_generator.format import PythonVersion, is_supported_in_black
+from tests.conftest import assert_output
 
 from . import conftest as main_conftest
 from .conftest import (
@@ -298,6 +300,42 @@ def test_force_exec_with_different_target_version(output_file: Path) -> None:
         skip_code_validation=False,
         force_exec_validation=True,
     )
+
+
+@_SKIP_BLACK
+def test_older_target_outputs_are_exported_for_their_python(
+    output_file: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Outputs for a target older than this Python are copied for the import check on the target's Python.
+
+    The default target and an explicit older one are exported with the modules beside the output and with what a run
+    on the target's Python does: it imports the explicit target's output and only compiles the default one's. The
+    output for this Python is not exported.
+    """
+    export = tmp_path / "export"
+    monkeypatch.setenv(main_conftest._EXPORT_OLDER_TARGET_OUTPUTS, str(export))
+    (tmp_path / "helper.py").write_text("VALUE = 1\n", encoding="utf-8")
+    for extra_args in (
+        [],
+        ["--target-python-version", "3.10", "--target-pydantic-version", "2"],
+        get_current_version_args(),
+    ):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "person.json", output_path=output_file, extra_args=extra_args
+        )
+    cases = sorted(
+        (
+            {
+                **json.loads((case / "case.json").read_text(encoding="utf-8")),
+                "files": sorted(path.name for path in case.iterdir()),
+            }
+            for case in export.iterdir()
+            if case.is_dir()
+        ),
+        key=json.dumps,
+    )
+    files = sorted(path.name for path in export.iterdir() if path.is_file())
+    assert_output(json.dumps({"cases": cases, "files": files}, indent=2))
 
 
 @pytest.mark.allow_direct_assert
