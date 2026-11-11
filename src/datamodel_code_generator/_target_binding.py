@@ -570,7 +570,6 @@ class TargetApiOpenAPIParser(_TargetRecording, ApiOpenAPIParser):
         self._visits: list[_WalkedHolder] = []
         self._callback_origin: SchemaLocation | None = None
         super().__init__(source, config=config)
-        self._reader = _Reader(self._site_facts, siblings=self._reads_ref_siblings_at)
 
     def _reads_ref_siblings_at(self, location: SchemaLocation) -> bool:
         """Return whether the models read the keywords beside a ``$ref`` at a location with the schema it names.
@@ -579,6 +578,32 @@ class TargetApiOpenAPIParser(_TargetRecording, ApiOpenAPIParser):
         version of the location ignores them (``reads_ref_alone``).
         """
         return not self._ignores_ref_siblings_at(location)
+
+    def _ref_annotations(self, declaration: SchemaLocation) -> dict[str, YamlValue]:
+        """Return the documentation keywords and default a schema gives its values, through its reference chain.
+
+        The schema a chain leads to gives its own, and the keywords beside each reference that the models read add
+        theirs, the nearer one's first (``_reads_ref_siblings_at``). A chain that loops back leads to no schema: the
+        keywords beside its references are all it gives. Each location is read by its site (``_site_facts``).
+        """
+        location, site = declaration, self._site_facts(declaration)
+        seen = {declaration}
+        found: dict[str, YamlValue] = {}
+        while (target := site.ref) is not None:
+            if self._reads_ref_siblings_at(location):
+                found = {**site.annotations, **found}
+            if target in seen:
+                return found
+            seen.add(target)
+            location, site = target, self._site_facts(target)
+        return {**site.annotations, **found}
+
+    def _schema_record(self, declaration: SchemaLocation, role: TypeUseRole) -> _SchemaRecord:
+        """Record what an acquired parameter schema says that its model types do not: its default and keywords."""
+        if role != "parameter":
+            return _UNRECORDED
+        annotations = self._ref_annotations(declaration)
+        return _SchemaRecord(_default(annotations.get("default")), _keywords(annotations))
 
     def _resolve_local_ref_path(self, path: Path, ref: str) -> Path:
         """Refuse a local file that a served source document would publish, before reading it.
@@ -716,7 +741,7 @@ class TargetApiOpenAPIParser(_TargetRecording, ApiOpenAPIParser):
             visited.schemas.setdefault(declaration, ("value",))
         super()._acquire_schema(name, raw, path, declaration=declaration, role=role)
         if declaration not in self.schema_records:
-            self.schema_records[declaration] = self._reader.record(declaration, role)
+            self.schema_records[declaration] = self._schema_record(declaration, role)
         if declaration not in self._declaration_types:
             self._free(declaration, "value", raw, path)
 
@@ -1195,16 +1220,14 @@ class _Binder:
         return identity
 
     @staticmethod
-    def reuse_origin(reference: Reference) -> Reference | None:
-        """Return the reference of the model reuse replaced with this one's model, or None if reuse did not make it.
+    def source(reference: Reference) -> str:
+        """Return the path of the schema a model is generated from, through read and write variants and reuse.
 
-        It is the model's `reused_reference`, wherever a later step moved either model.
+        A model reuse made is generated from the schema of the model it replaced, its `reused_reference`, wherever a
+        later step moved either model.
         """
-        return model.reused_reference if isinstance(model := reference.source, DataModel) else None
-
-    def source(self, reference: Reference) -> str:
-        """Return the path of the schema a model is generated from, through read and write variants and reuse."""
-        return _source_path((self.reuse_origin(reference) or reference).path)
+        origin = model.reused_reference if isinstance(model := reference.source, DataModel) else None
+        return _source_path((origin or reference).path)
 
     @staticmethod
     def reused(model: DataModel) -> DataModel | None:
@@ -2097,46 +2120,6 @@ def _rebased(location: SchemaLocation, origin: SchemaLocation, schema: SchemaLoc
 
 def _wire_name(field: DataModelFieldBase) -> str:
     return field_source_name(name=field.name, original_name=field.original_name, alias=field.alias) or ""
-
-
-class _Reader:
-    """Read the loaded API documents by declaration while the walk reads them, recording what the models do not say.
-
-    It reads the site of each location (``ApiOpenAPIParser._site_facts``), and the keywords beside a reference at a
-    location with the schema it names where the models do (``siblings``, the parser's ``_reads_ref_siblings_at``).
-    """
-
-    def __init__(
-        self, site: Callable[[SchemaLocation], SiteFacts], *, siblings: Callable[[SchemaLocation], bool]
-    ) -> None:
-        self.site = site
-        self.siblings = siblings
-
-    def annotations(self, declaration: SchemaLocation) -> dict[str, YamlValue]:
-        """Return the documentation keywords and default a schema gives its values, through its reference chain.
-
-        The schema a chain leads to gives its own, and the keywords beside each reference that the models read add
-        theirs, the nearer one's first. A chain that loops back leads to no schema: the keywords beside its references
-        are all it gives.
-        """
-        location, site = declaration, self.site(declaration)
-        seen = {declaration}
-        found: dict[str, YamlValue] = {}
-        while (target := site.ref) is not None:
-            if self.siblings(location):
-                found = {**site.annotations, **found}
-            if target in seen:
-                return found
-            seen.add(target)
-            location, site = target, self.site(target)
-        return {**site.annotations, **found}
-
-    def record(self, declaration: SchemaLocation, role: TypeUseRole) -> _SchemaRecord:
-        """Record what an acquired parameter schema says that its model types do not: its default and keywords."""
-        if role != "parameter":
-            return _UNRECORDED
-        annotations = self.annotations(declaration)
-        return _SchemaRecord(_default(annotations.get("default")), _keywords(annotations))
 
 
 class _Documents:
@@ -3125,10 +3108,12 @@ class _UseFacts(_SchemaUses):
         *,
         form: bool,
         seen: frozenset[SourceLocation] = frozenset(),
+        others: _Others | None = None,
     ) -> TextShape:
         """Return how a type's values are written as one parameter value, or as the members of a URL-encoded form.
 
-        `source` is where the use's schema is, and `members` those of the model the type holds. An array has its
+        `source` is where the use's schema is, and `members` those of the model the type holds; `others` is what
+        that model says of its other properties when the caller has read it (``use_others``). An array has its
         items' kind and a scalar its own, and a union of items and arrays of them is an array of their one kind that
         takes an item alone (``single``); an object has the model's members, then its other properties
         (``others``): none when it allows none, those of its typed values' kind, else any string. A form that is no
@@ -3158,7 +3143,8 @@ class _UseFacts(_SchemaUses):
             return TextShape("scalar", KindAt(holder, None), choices=choices)
         if isinstance(found, UnionType):
             return self.union_shape(present(found), source, direction, form=form, seen=seen)
-        others = self.others(value, members, holder, direction)
+        if others is None:
+            others = self.others(value, members, holder, direction)
         if others.patterns:
             return TextShape("object", problem=(holder, _PATTERNS))
         additional = (
@@ -3245,13 +3231,13 @@ class _UseFacts(_SchemaUses):
         source = use.schema or use.id.schema_site
         extras: tuple[SourceLocation, TypeView] | None = None
         declared = False
-        if members and (others := self.use_others(use)) is not None:
+        if (others := self.use_others(use) if members else None) is not None:
             declared = others.said in {"allowed", "schema"}
             if others.source is not None and others.values is not None:
                 extras = self.repeated(others.values, others.source), others.values
         return EncodingFacts(
-            self.shape(value, source, use.members, direction, form=False),
-            self.shape(value, source, use.members, direction, form=True),
+            self.shape(value, source, use.members, direction, form=False, others=others),
+            self.shape(value, source, use.members, direction, form=True, others=others),
             tuple(
                 (name, self.shape(facts.type, schema, self.held_members(facts.type, direction), direction, form=False))
                 for name, schema, facts in _typed(use.members)
@@ -4476,7 +4462,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator._runtime.model_codecs.media import LexicalKind, MediaKind
-    from datamodel_code_generator._site_facts import Projection, SiteFacts, TypeUseRole
+    from datamodel_code_generator._site_facts import Projection, TypeUseRole
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._target_contract import (
         BackendName,
