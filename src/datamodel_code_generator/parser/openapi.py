@@ -1279,6 +1279,7 @@ class OpenAPIParser(JsonSchemaParser):
         seen_parameter_names: set[str] = set()
         reference = self.model_resolver.add(path, name, class_name=True, unique=True)
         output_names = self.model_resolver.output_names(reference.path)
+        scope = ClassScope(class_key("reference-name", reference), output_names)
         for parameter_ in parameters:
             parameter = self.resolve_object(parameter_, ParameterObject, "parameter")
             match parameter.in_:
@@ -1332,7 +1333,7 @@ class OpenAPIParser(JsonSchemaParser):
                 field_schema.default if field_schema else None,
                 has_default=field_schema.has_default if field_schema else False,
                 required=parameter.required,
-                scope=ClassScope(class_key("reference-name", reference), output_names),
+                scope=scope,
             )
             fields.append(
                 self.get_object_field(
@@ -1345,7 +1346,7 @@ class OpenAPIParser(JsonSchemaParser):
                     effective_default=effective_default,
                     effective_has_default=effective_has_default,
                     use_default_with_required=use_default_with_required,
-                    class_name=class_key("reference-name", reference),
+                    class_name=scope.name,
                     output_names=output_names,
                 )
             )

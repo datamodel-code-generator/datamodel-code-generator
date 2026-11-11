@@ -4637,6 +4637,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self, reference_path, name, obj, path, fields, base_classes, include_property_count=include_property_count
         )
 
+    def _predicted_scope(self, name: str, path: list[str]) -> ClassScope:
+        """Return the scope of the model at ``path`` by the name the parser adds it under (row ``predicted``)."""
+        return self.model_resolver.class_scope("predicted", name, self.model_resolver.join_path(tuple(path)))
+
     def _parse_object_common_part(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         self,
         name: str,
@@ -4667,7 +4671,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     key: value for key, value in inherited_properties.items() if key not in python_overrides
                 }
                 inherited_required_names = inherited_required_names.difference(python_overrides)
-            scope = self.model_resolver.class_scope("predicted", name, self.model_resolver.join_path(tuple(path)))
+            scope = self._predicted_scope(name, path)
             if obj.properties:
                 fields.extend(
                     _inherited_schemas.parse_fields_beside_parents(
@@ -4872,7 +4876,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         base_classes.append(ref)
                         self.extra_template_data[ref.path]["is_base_class"] = True
             else:
-                scope = self.model_resolver.class_scope("predicted", name, self.model_resolver.join_path(tuple(path)))
+                scope = self._predicted_scope(name, path)
                 object_fields = _inherited_schemas.parse_fields_beside_parents(
                     self,
                     _inherited_schemas.with_conjoined_properties(all_of_item, conjunctions, written),
@@ -5611,7 +5615,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     list(bases),
                     self._get_inherited_property_map(list(bases)),
                     path,
-                    self.model_resolver.class_scope("predicted", name, self.model_resolver.join_path(tuple(path))),
+                    self._predicted_scope(name, path),
                 )
         data_type = self._parse_object_common_part(
             name,
