@@ -8772,11 +8772,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     @contextmanager
     def _parsing_session(self, resolve: Callable[[], None] | None = None) -> Generator[None, None, None]:
-        """Parse in the block, then the targets it leaves (``resolve``), end the schema parsing and release its state.
-
-        The temporary fields of the inheritance work leave the reverse-reference graph and the local source cache is
-        reset.
-        """
+        """Parse in the block, then the targets it leaves (``resolve``), end the schema parsing and clear the caches."""
         try:
             yield
             _schema_refs.parse_ref_sites(self)
@@ -8784,7 +8780,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             _schema_refs.parse_ref_sites(self)
             self._end_schema_parsing()
         finally:
-            _rw_split.unregister_temporary_inherited_fields(self)
+            _rw_split.clear_inherited_field_caches(self)
             self._reset_local_source_cache()
 
     @override
