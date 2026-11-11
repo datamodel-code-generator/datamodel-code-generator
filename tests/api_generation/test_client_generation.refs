@@ -340,6 +340,12 @@ naming-snake	main/generation_platform/client/naming-snake.txt
 naming-snake	main/generation_platform/client/packages/naming-snake/pydantic_v2_BaseModel//*.py
 ndjson	main/generation_platform/client/ndjson.txt
 ndjson	main/generation_platform/client/packages/ndjson/pydantic_v2_BaseModel//*.py
+nullable-required-parameters	main/generation_platform/client/nullable-required-parameters.txt
+nullable-required-parameters	main/generation_platform/client/packages/nullable-required-parameters/pydantic_v2_BaseModel//*.py
+nullable-required-parameters-31	main/generation_platform/client/nullable-required-parameters-31.txt
+nullable-required-parameters-31	main/generation_platform/client/packages/nullable-required-parameters-31/pydantic_v2_BaseModel//*.py
+nullable-required-parameters-unpack	main/generation_platform/client/nullable-required-parameters-unpack.txt
+nullable-required-parameters-unpack	main/generation_platform/client/packages/nullable-required-parameters-unpack/pydantic_v2_BaseModel//*.py
 pagination	main/generation_platform/client/packages/pagination/pydantic_v2_BaseModel//*.py
 pagination	main/generation_platform/client/pagination.txt
 pagination-counts	main/generation_platform/client/packages/pagination-counts/pydantic_v2_BaseModel//*.py
