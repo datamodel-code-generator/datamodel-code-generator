@@ -74,6 +74,7 @@ from datamodel_code_generator.parser._passes._import_binding import (
 from datamodel_code_generator.parser._passes._import_edges import (
     GenericBaseClassPlacement,
     _written_package,
+    _written_package_init,
     failing_import_reads,
     import_cycle_seeds,
     import_plan,
@@ -2463,7 +2464,7 @@ def _package_bindings(
     """
     bindings: list[tuple[ModulePath, ModuleContextView, tuple[str, ...]]] = []
     for ctx in contexts:
-        if not is_package_init((path := written_path(ctx.module, treat_dot_as_module=treat_dot_as_module))[-1]):
+        if (path := _written_package_init(ctx, treat_dot_as_module=treat_dot_as_module)) is None:
             continue
         if ctx.models:
             bindings.append((path, ctx, tuple(model.class_name for model in ctx.models)))

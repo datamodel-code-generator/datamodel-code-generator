@@ -150,14 +150,19 @@ NO_IMPORT_CYCLE_SEEDS: Final = ImportCycleSeeds()
 """The seeds of a first attempt, which lays out nothing otherwise."""
 
 
-def _written_package(ctx: ModuleContextView, *, treat_dot_as_module: bool | None) -> ModulePath | None:
-    """Return the package whose ``__init__.py`` the module writes, by its written path, or None for another module.
+def _written_package_init(ctx: ModuleContextView, *, treat_dot_as_module: bool | None) -> ModulePath | None:
+    """Return the written path of the package ``__init__.py`` the module writes, or None for another module.
 
     The module writes it whatever the input that holds it was named: ``ctx.is_init`` is the module's place in the
     import paths, which the root package and the models of an input ``__init__.json`` do not take.
     """
     path = written_path(ctx.module, treat_dot_as_module=treat_dot_as_module)
-    return path[:-1] if is_package_init(path[-1]) else None
+    return path if is_package_init(path[-1]) else None
+
+
+def _written_package(ctx: ModuleContextView, *, treat_dot_as_module: bool | None) -> ModulePath | None:
+    """Return the package whose ``__init__.py`` the module writes, by its written path (``_written_package_init``)."""
+    return None if (path := _written_package_init(ctx, treat_dot_as_module=treat_dot_as_module)) is None else path[:-1]
 
 
 def relative_import_targets(importer: str, imports: Imports, *, is_init: bool) -> Iterator[tuple[str, str, list[str]]]:
