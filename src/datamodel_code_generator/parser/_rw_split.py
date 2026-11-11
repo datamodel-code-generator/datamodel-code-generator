@@ -388,12 +388,6 @@ class RwSplitHost(SchemaResourcesHost, Protocol):
     ) -> list[DataModelFieldBase]:
         """Recursively materialize one raw schema's effective fields without live reverse edges."""
 
-    def _get_ref_schema_rw_model_field_facts(
-        self,
-        resolved_ref: str,
-    ) -> tuple[bool, bool, bool, bool] | None:
-        """Return the read/write facts of the effective fields of the raw schema at ``resolved_ref``."""
-
     def _get_ref_schema_rw_model_reference_facts(
         self,
         resolved_ref: str,
@@ -519,13 +513,6 @@ class RwSplitHost(SchemaResourcesHost, Protocol):
         fields: Iterable[DataModelFieldBase],
     ) -> None:
         """Keep temporary raw fields out of the live reverse-reference graph."""
-
-    def _update_data_type_ref_for_variant(
-        self,
-        data_type: DataType,
-        suffix: Literal["Request", "Response"],
-    ) -> None:
-        """Recursively update data type references to point to variant models."""
 
     def _update_variant_additional_properties_metadata(
         self,
@@ -1049,7 +1036,7 @@ def ref_schema_has_rw_model_facts(parser: RwSplitHost, resolved_ref: str) -> boo
     """Return whether inheriting the schema at ``resolved_ref`` can bring read/write facts into a model."""
     if parser.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
         return parser._ref_schema_generates_variant(resolved_ref, "Request")  # noqa: SLF001
-    facts = parser._get_ref_schema_rw_model_field_facts(resolved_ref)  # noqa: SLF001
+    facts = get_ref_schema_rw_model_field_facts(parser, resolved_ref)
     return facts is not None and (facts[0] or facts[1])
 
 
@@ -1066,7 +1053,7 @@ def ref_schema_generates_variant(
         return False
     if parser.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
         return parser._request_response_ref_schema_generates_variant(resolved_ref)  # noqa: SLF001
-    if (facts := parser._get_ref_schema_rw_model_field_facts(resolved_ref)) is None:  # noqa: SLF001
+    if (facts := get_ref_schema_rw_model_field_facts(parser, resolved_ref)) is None:
         return False
     result = _rw_facts_need_variant(facts, suffix)
     parser._rw_model_variant_requirement_cache[cache_key] = result  # noqa: SLF001
@@ -1126,7 +1113,7 @@ def get_rw_model_variant_graph_node(parser: RwSplitHost, resolved_ref: str) -> t
     """
     if "legacy-rw-parsed-facts" not in parser._legacy_rw_variants:  # noqa: SLF001
         return parser._get_ref_schema_rw_model_reference_facts(resolved_ref)  # noqa: SLF001
-    facts = parser._get_ref_schema_rw_model_field_facts(resolved_ref)  # noqa: SLF001
+    facts = get_ref_schema_rw_model_field_facts(parser, resolved_ref)
     fields = parser._raw_inherited_fields_cache.get(resolved_ref)  # noqa: SLF001
     if fields is None:
         fields = parser._request_response_fields.get(resolved_ref, ())  # noqa: SLF001
@@ -1461,7 +1448,7 @@ def update_field_refs_for_variant(
     if parser.read_only_write_only_model_type != ReadOnlyWriteOnlyModelType.RequestResponse:
         return model_fields
     for field in model_fields:
-        parser._update_data_type_ref_for_variant(field.data_type, suffix)  # noqa: SLF001
+        update_data_type_ref_for_variant(parser, field.data_type, suffix)
     return model_fields
 
 

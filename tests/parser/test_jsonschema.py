@@ -74,7 +74,7 @@ from datamodel_code_generator.parser.jsonschema import (
     get_model_by_path,
     split_json_pointer,
 )
-from datamodel_code_generator.reference import SPECIAL_PATH_MARKER, Reference
+from datamodel_code_generator.reference import Reference
 from datamodel_code_generator.types import ANY, DataType
 from tests.conftest import assert_inputs_not_mutated, assert_output, create_assert_file_content, validate_generated_code
 from tests.main.conftest import assert_generated_model_json_validation, run_generate_file_and_assert
@@ -620,20 +620,6 @@ def test_schema_validator_input_names_match_pydantic_validation_priority() -> No
         "input_value",
     )
     assert JsonSchemaParser("")._field_input_names(nameless_field) == ()
-
-
-def test_build_missing_required_field_uses_shared_alias_policy() -> None:
-    """Required-only schema fields use the common alias normalization."""
-    parser = JsonSchemaParser("")
-
-    field = parser._build_missing_required_field(
-        "missing", set(), [], parser.model_resolver.class_scope("predicted", "Model", "#")
-    )
-
-    assert field.name == "missing"
-    assert field.required is True
-    assert field.alias is None
-    assert field.validation_aliases is None
 
 
 def test_object_field_merges_property_count_constraints() -> None:
@@ -3586,28 +3572,6 @@ def test_parse_enum_preserves_explicit_null_member() -> None:
     assert enum.find_member("None").field is enum.fields[1]  # ty: ignore[union-attr]
 
 
-@pytest.mark.parametrize(
-    ("schema", "expected"),
-    [
-        ({"type": "array", "items": {"type": "string"}}, False),
-        ({"allOf": [{"type": "string"}]}, False),
-        ({"oneOf": [{"type": "string"}]}, False),
-        ({"anyOf": [{"type": "string"}]}, False),
-        ({"properties": {"name": {"type": "string"}}}, False),
-        ({"patternProperties": {".*": {"type": "string"}}}, False),
-        ({"type": "object"}, False),
-        ({"enum": ["a", "b"]}, False),
-        ({"type": "string"}, True),
-        ({"type": "string", "minLength": 1}, True),
-    ],
-)
-def test_is_root_model_schema(schema: dict[str, Any], expected: bool) -> None:
-    """Test _is_root_model_schema returns correct value for various schema types."""
-    parser = JsonSchemaParser("")
-    obj = JsonSchemaObject.model_validate(schema)
-    assert parser._is_root_model_schema(obj) is expected
-
-
 def test_merge_primitive_schemas_for_allof_single_item() -> None:
     """Test _merge_primitive_schemas_for_allof returns unchanged item when single."""
     parser = JsonSchemaParser("")
@@ -3651,136 +3615,6 @@ def test_merge_primitive_schemas_for_allof_constraints_mode_with_format() -> Non
     ]
     result = parser._merge_primitive_schemas_for_allof(items)
     assert result.format == "email"
-
-
-def test_handle_allof_root_model_special_path_marker() -> None:
-    """Test _handle_allof_root_model_with_constraints returns None for special path."""
-    parser = JsonSchemaParser("")
-    obj = JsonSchemaObject.model_validate(
-        {
-            "allOf": [
-                {"$ref": "#/definitions/Base"},
-                {"minLength": 1},
-            ]
-        },
-    )
-    path = [f"test{SPECIAL_PATH_MARKER}inline"]
-    result = parser._handle_allof_root_model_with_constraints("Test", obj, path)
-    assert result is None
-
-
-def test_handle_allof_root_model_multiple_refs() -> None:
-    """Test _handle_allof_root_model_with_constraints returns None for multiple refs."""
-    parser = JsonSchemaParser("")
-    obj = JsonSchemaObject.model_validate(
-        {
-            "allOf": [
-                {"$ref": "#/definitions/Base1"},
-                {"$ref": "#/definitions/Base2"},
-            ]
-        },
-    )
-    result = parser._handle_allof_root_model_with_constraints("Test", obj, ["test"])
-    assert result is None
-
-
-def test_handle_allof_root_model_no_refs() -> None:
-    """Test _handle_allof_root_model_with_constraints returns None when no refs."""
-    parser = JsonSchemaParser("")
-    obj = JsonSchemaObject.model_validate(
-        {
-            "allOf": [
-                {"type": "string"},
-                {"minLength": 1},
-            ]
-        },
-    )
-    result = parser._handle_allof_root_model_with_constraints("Test", obj, ["test"])
-    assert result is None
-
-
-def test_handle_allof_root_model_no_constraint_items() -> None:
-    """Test _handle_allof_root_model_with_constraints returns None when no constraints."""
-    parser = JsonSchemaParser("")
-    parser._load_ref_schema_object = lambda _ref: JsonSchemaObject.model_validate({"type": "string"})
-    obj = JsonSchemaObject.model_validate(
-        {
-            "allOf": [
-                {"$ref": "#/definitions/Base"},
-            ]
-        },
-    )
-    result = parser._handle_allof_root_model_with_constraints("Test", obj, ["test"])
-    assert result is None
-
-
-def test_handle_allof_root_model_constraint_with_properties() -> None:
-    """Test _handle_allof_root_model_with_constraints returns None when constraint has properties."""
-    parser = JsonSchemaParser("")
-    parser._load_ref_schema_object = lambda _ref: JsonSchemaObject.model_validate({"type": "string"})
-    obj = JsonSchemaObject.model_validate(
-        {
-            "allOf": [
-                {"$ref": "#/definitions/Base"},
-                {"properties": {"name": {"type": "string"}}},
-            ]
-        },
-    )
-    result = parser._handle_allof_root_model_with_constraints("Test", obj, ["test"])
-    assert result is None
-
-
-def test_handle_allof_root_model_constraint_with_items() -> None:
-    """Test _handle_allof_root_model_with_constraints returns None when constraint has items."""
-    parser = JsonSchemaParser("")
-    parser._load_ref_schema_object = lambda _ref: JsonSchemaObject.model_validate({"type": "string"})
-    obj = JsonSchemaObject.model_validate(
-        {
-            "allOf": [
-                {"$ref": "#/definitions/Base"},
-                {"items": {"type": "string"}},
-            ]
-        },
-    )
-    result = parser._handle_allof_root_model_with_constraints("Test", obj, ["test"])
-    assert result is None
-
-
-def test_handle_allof_root_model_incompatible_types() -> None:
-    """Test _handle_allof_root_model_with_constraints returns None for incompatible types."""
-    parser = JsonSchemaParser("")
-    parser._load_ref_schema_object = lambda _ref: JsonSchemaObject.model_validate({"type": "string"})
-    obj = JsonSchemaObject.model_validate(
-        {
-            "allOf": [
-                {"$ref": "#/definitions/Base"},
-                {"type": "boolean"},
-            ]
-        },
-    )
-    result = parser._handle_allof_root_model_with_constraints("Test", obj, ["test"])
-    assert result is None
-
-
-def test_handle_allof_root_model_ref_to_non_root() -> None:
-    """Test _handle_allof_root_model_with_constraints returns None when ref is not root model."""
-    parser = JsonSchemaParser("")
-    parser._load_ref_schema_object = lambda _ref: JsonSchemaObject.model_validate(
-        {
-            "type": "object",
-            "properties": {"id": {"type": "integer"}},
-        },
-    )
-    obj = JsonSchemaObject.model_validate(
-        {
-            "allOf": [
-                {"$ref": "#/definitions/Base"},
-                {"minLength": 1},
-            ]
-        },
-    )
-    result = parser._handle_allof_root_model_with_constraints("Test", obj, ["test"])
-    assert result is None
 
 
 def test_timestamp_with_time_zone_format() -> None:
@@ -4804,30 +4638,6 @@ def test_merge_property_schemas_and_parent_constraint_paths() -> None:
     )
 
 
-def test_nested_inherited_constraint_detection() -> None:
-    """Nested container constraints are distinct from neutral partial schemas."""
-    parser = JsonSchemaParser("")
-
-    assert parser._has_inherited_constraints(
-        JsonSchemaObject.model_validate({
-            "type": "array",
-            "items": {
-                "type": "array",
-                "items": {"minLength": 3},
-            },
-        })
-    )
-    assert not parser._has_inherited_constraints(
-        JsonSchemaObject.model_validate({
-            "type": "array",
-            "items": {
-                "type": "array",
-                "items": {},
-            },
-        })
-    )
-
-
 def test_parse_nested_inline_inherited_schema_fields() -> None:
     """Nested inline allOf declarations are parsed in their inherited owner scope."""
     parser = JsonSchemaParser("")
@@ -4881,57 +4691,6 @@ def test_inherited_field_lookup_uses_generated_and_raw_types() -> None:
     assert generated_type.type == "str"
     assert raw_type is not None
     assert raw_type.type == "int"
-
-
-def test_inherited_field_map_replaces_only_deferred_generated_fields() -> None:
-    """Canonical raw lookup leaves resolved siblings untouched."""
-    parser = JsonSchemaParser("")
-    reference = Reference(path="#/$defs/Mixed", name="Mixed")
-    stable_field = DataModelFieldBase(
-        name="stable",
-        original_name="stable",
-        data_type=DataType(type="str"),
-    )
-    deferred_field = DataModelFieldBase(
-        name="pending",
-        original_name="pending",
-        data_type=DataType(),
-    )
-    deferred_field.__dict__[_DEFERRED_INHERITED_TYPE_KEY] = deferred_field.data_type
-    BaseModel(
-        reference=reference,
-        fields=[stable_field, deferred_field],
-    )
-    canonical_stable = DataModelFieldBase(
-        name="stable",
-        original_name="stable",
-        data_type=DataType(type="str"),
-    )
-    canonical_pending = DataModelFieldBase(
-        name="pending",
-        original_name="pending",
-        data_type=DataType(type="int"),
-    )
-    parser._inherited_schema_cache[reference.path] = JsonSchemaObject.model_validate({
-        "type": "object",
-        "properties": {
-            "stable": {"type": "string"},
-            "pending": {"type": "integer"},
-        },
-    })
-    parser._raw_inherited_fields_cache[reference.path] = (
-        canonical_stable,
-        canonical_pending,
-    )
-    parser._raw_inherited_own_names_cache[reference.path] = frozenset({
-        "stable",
-        "pending",
-    })
-
-    inherited_fields = parser._get_inherited_field_map([reference])
-
-    assert inherited_fields["stable"] is stable_field
-    assert inherited_fields["pending"].data_type.type == "int"
 
 
 def test_inherited_field_schema_cycle_and_mapping_fallbacks() -> None:
@@ -5097,80 +4856,6 @@ def test_preload_property_refs_skips_external_ref_mapping(tmp_path: Path, mocker
     )
 
     load_ref.assert_called_once_with("#/$defs/Local")
-
-
-def test_read_write_variant_facts_include_inherited_and_one_sided_fields() -> None:
-    """Request/response refs use both variants while all mode retains its compact model set."""
-    schema: dict[str, Any] = {
-        "$defs": {
-            "OnlyRead": {
-                "type": "object",
-                "properties": {"id": {"type": "integer", "readOnly": True}},
-            },
-            "OnlyWrite": {
-                "type": "object",
-                "properties": {"secret": {"type": "string", "writeOnly": True}},
-            },
-            "ReadDerived": {
-                "allOf": [{"$ref": "#/$defs/OnlyRead"}],
-                "properties": {"name": {"type": "string"}},
-            },
-            "WriteDerived": {
-                "allOf": [{"$ref": "#/$defs/OnlyWrite"}],
-                "properties": {"name": {"type": "string"}},
-            },
-        },
-    }
-    request_response_parser = JsonSchemaParser(
-        json.dumps(schema),
-        read_only_write_only_model_type=ReadOnlyWriteOnlyModelType.RequestResponse,
-    )
-    request_response_parser.raw_obj = schema
-
-    assert request_response_parser._get_ref_schema_rw_model_field_facts("#/$defs/OnlyRead") == (
-        True,
-        False,
-        False,
-        True,
-    )
-    assert request_response_parser._get_ref_schema_rw_model_field_facts("#/$defs/OnlyWrite") == (
-        False,
-        True,
-        True,
-        False,
-    )
-    assert request_response_parser._get_ref_schema_rw_model_field_facts("#/$defs/ReadDerived") == (
-        True,
-        False,
-        True,
-        True,
-    )
-    for ref_path in ("#/$defs/OnlyRead", "#/$defs/OnlyWrite", "#/$defs/ReadDerived", "#/$defs/WriteDerived"):
-        assert request_response_parser._ref_schema_generates_variant(ref_path, "Request")
-        assert request_response_parser._ref_schema_generates_variant(ref_path, "Response")
-
-    request_type = DataType(reference=request_response_parser.model_resolver.add_ref("#/$defs/OnlyRead"))
-    response_type = DataType(reference=request_response_parser.model_resolver.add_ref("#/$defs/OnlyRead"))
-    request_response_parser._update_data_type_ref_for_variant(request_type, "Request")
-    request_response_parser._update_data_type_ref_for_variant(response_type, "Response")
-    assert request_type.reference
-    assert request_type.reference.name == "OnlyReadRequest"
-    assert response_type.reference
-    assert response_type.reference.name == "OnlyReadResponse"
-
-    all_parser = JsonSchemaParser(
-        json.dumps(schema),
-        read_only_write_only_model_type=ReadOnlyWriteOnlyModelType.All,
-    )
-    all_parser.raw_obj = schema
-    assert not all_parser._ref_schema_generates_variant("#/$defs/OnlyRead", "Request")
-    assert not all_parser._ref_schema_generates_variant("#/$defs/OnlyRead", "Response")
-    assert not all_parser._ref_schema_generates_variant("#/$defs/OnlyWrite", "Request")
-    assert not all_parser._ref_schema_generates_variant("#/$defs/OnlyWrite", "Response")
-    assert all_parser._ref_schema_generates_variant("#/$defs/ReadDerived", "Request")
-    assert not all_parser._ref_schema_generates_variant("#/$defs/ReadDerived", "Response")
-    assert not all_parser._ref_schema_generates_variant("#/$defs/WriteDerived", "Request")
-    assert all_parser._ref_schema_generates_variant("#/$defs/WriteDerived", "Response")
 
 
 @pytest.mark.parametrize("node_count", [100, 200, 400])

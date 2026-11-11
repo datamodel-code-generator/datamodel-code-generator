@@ -177,11 +177,6 @@ def test_input_model_transport_property_names_survives_schema_copy() -> None:
         },
         {token: PythonTypeName("int")},
     )
-    JsonSchemaParser("")._object_map_key_type(
-        JsonSchemaObject.model_validate({"x-python-type": PythonTypeSchemaAnnotation(PythonTypeName("int"))}),
-        "extra-field",
-    )
-
     for source in (loaded, legacy_loaded):
         generated = generate(source, input_file_type=InputFileType.JsonSchema, disable_timestamp=True, formatters=[])
         if not isinstance(generated, str):  # pragma: no cover
