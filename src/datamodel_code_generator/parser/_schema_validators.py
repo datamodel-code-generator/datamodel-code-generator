@@ -596,8 +596,20 @@ def iter_property_count_validation_sources(
             continue
         if parser._ref_siblings_apply_to(item, legacy="as-written"):  # noqa: SLF001
             yield item
-        if (target := _lightweight_types.unvisited_ref_target(parser, item.ref, visited_refs)) is not None:
+        if (target := unmapped_ref_target(parser, item.ref, visited_refs)) is not None:
             yield from iter_property_count_validation_sources(parser, *target)
+
+
+def unmapped_ref_target(
+    parser: SchemaValidatorsHost, ref: str, visited_refs: frozenset[_TargetNode]
+) -> tuple[JsonSchemaObject, frozenset[_TargetNode]] | None:
+    """Return the schema ``ref`` names, or None when it was visited or ``--external-ref-mapping`` maps it.
+
+    A mapped reference is the class its mapping imports and has no document to read, so it adds no rule.
+    """
+    if parser._resolve_external_ref_mapping(ref) is not None:  # noqa: SLF001
+        return None
+    return _lightweight_types.unvisited_ref_target(parser, ref, visited_refs)
 
 
 def should_parse_object_with_schema_validators(parser: SchemaValidatorsHost, obj: JsonSchemaObject) -> bool:
@@ -736,7 +748,7 @@ def iter_scoped_schema_validation_sources(
                     yield from iter_scoped_schema_validation_sources(
                         parser, item.model_copy(update={"ref": None}), visited_refs, scope, include_references=False
                     )
-            if not include_references:
+            if not include_references or parser._resolve_external_ref_mapping(item.ref) is not None:  # noqa: SLF001
                 continue
             resolved_ref = _schema_refs.ref_path(parser, item.ref)
             if (node := _schema_refs.key_node(parser, resolved_ref)) in visited_refs:
@@ -791,13 +803,16 @@ def schema_may_accept_container(
     if obj.is_boolean_schema_false:
         return False
     if obj.ref:
-        node = _schema_refs.key_node(parser, _schema_refs.ref_path(parser, obj.ref))
-        accepts = node in visited_refs or schema_may_accept_container(
-            parser,
-            parser._load_ref_schema_object(obj.ref),  # noqa: SLF001
-            container_type,
-            visited_refs | {node},
-        )
+        if parser._resolve_external_ref_mapping(obj.ref) is not None:  # noqa: SLF001
+            accepts = True  # the mapped class is not read, so it may accept either container shape
+        else:
+            node = _schema_refs.key_node(parser, _schema_refs.ref_path(parser, obj.ref))
+            accepts = node in visited_refs or schema_may_accept_container(
+                parser,
+                parser._load_ref_schema_object(obj.ref),  # noqa: SLF001
+                container_type,
+                visited_refs | {node},
+            )
         if not (accepts and parser._ref_siblings_apply_to(obj, legacy="first-read")):  # noqa: SLF001
             return accepts
     if (values := parser._schema_literal_values(obj)) is not None and not any(  # noqa: SLF001
@@ -859,7 +874,7 @@ def get_union_unique_items_branch_rules(
         if (
             branch.ref
             and not parser.collapse_root_models
-            and (target := _lightweight_types.unvisited_ref_target(parser, branch.ref, visited_refs))
+            and (target := unmapped_ref_target(parser, branch.ref, visited_refs))
         ):
             rules = (
                 *rules,
@@ -1026,9 +1041,7 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
 ) -> Iterator[UniqueItemsRule]:
     """Yield compact uniqueItems rules required by all applicable union branches."""
     if obj.ref:
-        if parser.collapse_root_models and (
-            target := _lightweight_types.unvisited_ref_target(parser, obj.ref, visited_refs)
-        ):
+        if parser.collapse_root_models and (target := unmapped_ref_target(parser, obj.ref, visited_refs)):
             yield from parser._iter_unique_items_rules(  # noqa: SLF001
                 target[0], path, target[1], property_input_names, include_properties=include_properties
             )
@@ -1047,7 +1060,7 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
             property_input_names,
             include_properties=include_properties,
         )
-        if item.ref and (target := _lightweight_types.unvisited_ref_target(parser, item.ref, visited_refs)):
+        if item.ref and (target := unmapped_ref_target(parser, item.ref, visited_refs)):
             yield from parser._iter_unique_items_rules(  # noqa: SLF001
                 target[0], path, target[1], property_input_names, include_properties=include_properties
             )
