@@ -45,6 +45,7 @@ from tests.api_generation.scenarios.client_deadline_streams import deadline_stre
 from tests.api_generation.scenarios.client_fields import fields, optional_models
 from tests.api_generation.scenarios.client_headers import headers, native_boundaries
 from tests.api_generation.scenarios.client_hooks import hooks
+from tests.api_generation.scenarios.client_item_streams import item_streams
 from tests.api_generation.scenarios.client_missing_sentinel import missing_members
 from tests.api_generation.scenarios.client_mock_transport import mock_transport
 from tests.api_generation.scenarios.client_multipart import (
@@ -983,6 +984,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "ndjson-backends": ("ndjson", BACKENDS, ndjson_backends),
     "stream-resume": ("stream-resume", ("pydantic_v2.BaseModel",), stream_resume),
     "ndjson-split": ("ndjson-split", STRUCTURAL, ndjson_split),
+    "item-streams": ("item-streams", ("pydantic_v2.BaseModel", "dataclasses.dataclass"), item_streams),
     "sockets": ("sockets", ("pydantic_v2.BaseModel",), sockets),
     "asyncapi-sockets": ("asyncapi-market-v3", ("pydantic_v2.BaseModel", "dataclasses.dataclass"), asyncapi_sockets),
     "asyncapi-perspective": ("asyncapi-perspective", ("pydantic_v2.BaseModel",), asyncapi_perspective),

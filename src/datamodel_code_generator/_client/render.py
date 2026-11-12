@@ -3046,8 +3046,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
     def stream_plan(self, module: TargetModule, index: int, spec: StreamSpec) -> Plan:
         """Return a stream helper's plan: its identity, operation, media type, event and error decoders, and end.
 
-        An NDJSON plan also names its kind, and its final line when the body may end without a line end, and a plan of
-        a helper declaring resumption how it reopens its stream.
+        An NDJSON plan also names its kind, and its final line when the body may end without a line end, a plan of
+        a helper declaring resumption how it reopens its stream, and that of an itemSchema event stream its fields.
         """
         helper, codec = spec.helper, self.resources.codec
         tree = helper.tree
@@ -3084,6 +3084,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 entries.append(("final_line", stable_repr(final)))
         if (reopen := spec.reopen) is not None:
             entries.append(("resume", self.resumption(module, spec, reopen)))
+        if spec.fields:
+            entries.append(("fields", "True"))
         annotation = subscript_text(
             module.name("typing", "Final"), (subscript_text(plan, (self.event_type(module, spec),)),)
         )

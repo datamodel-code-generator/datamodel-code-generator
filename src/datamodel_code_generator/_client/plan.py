@@ -126,6 +126,19 @@ _problem: Final = CLIENT.problem
 Role: TypeAlias = Literal["success", "error"]
 
 _FORM_DATA: Final = "multipart/form-data"
+STREAM_MEDIA: Final = {
+    "sse": ("text/event-stream",),
+    "ndjson": (
+        "application/jsonl",
+        "application/jsonlines",
+        "application/ndjson",
+        "application/x-jsonl",
+        "application/x-jsonlines",
+        "application/x-ndjson",
+    ),
+}
+"""The media types a stream helper reads, by its kind: an event stream for SSE, JSON lines for NDJSON."""
+STREAMED: Final = frozenset(media for kinds in STREAM_MEDIA.values() for media in kinds)
 _NULL: Final = frozenset({"null"})
 _UNDECLARED: Final = PartFacts(object=True, members=(), extra=None)
 _DEFAULTS: Final = {"bool": ("bool",), "int": ("int",), "float": ("int", "float"), "str": ("str",)}
@@ -154,11 +167,14 @@ class MediaSpec:
     One sent or read whole has `parts`: of a response, how each member is read, and of a body, the members it
     writes as JSON. Its `additional_part` plans any other part: of a response, how it is read, and of a body, that
     it is written as JSON. A sent JSON body is `null` when its schema admits JSON null, as its model types it.
+    A response of a media a stream helper reads whose `itemSchema` the models type has that use as `item`, and is
+    read whole without a use, as its raw text or bytes: the schema types each item, not the body.
     """
 
     media_type: str
     kind: MediaKind
     use: TypeUseBinding | None
+    item: TypeUseBinding | None = None
     null: bool = False
     fields: tuple[FieldPlan, ...] = ()
     additional: FieldPlan | None = None
@@ -688,7 +704,15 @@ class Planner:
     ) -> MediaSpec:
         """Return one media declaration with its normalized type, kind, type use, and form member plans."""
         media_type = declared_media_type(CLIENT, operation, declaration, self.problems)
-        use = self.use(declaration.schemas)
+        use = item = self.use(declaration.schemas)
+        if (
+            request
+            or essence(media_type) not in STREAMED
+            or all(schema.projection != "item_stream_array" for schema in declaration.schemas)
+        ):
+            item = None
+        else:
+            use = None
         kind = body_kind(media_type, use)
         bare = essence(media_type)
         if (reason := _unsupported(kind, bare, use, request=request)) is not None:
@@ -750,6 +774,7 @@ class Planner:
             media_type=media_type,
             kind=kind,
             use=use,
+            item=item,
             null=request and json_null(kind, use, self.facts.tables),
             fields=fields,
             additional=additional,

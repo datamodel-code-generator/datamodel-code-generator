@@ -1,0 +1,3 @@
+# item-streams-collision
+render pydantic_v2.BaseModel
+  Error: --client-protocols['default']: The helper name 'default' collides with 'default.watch_events', the stream helper of an itemSchema response; --client-protocols['default']: The helper name 'default' collides with 'default.tail_logs', the stream helper of an itemSchema response; --client-protocols['default']: The helper name 'default' collides with 'default.get_excerpt', the stream helper of an itemSchema response

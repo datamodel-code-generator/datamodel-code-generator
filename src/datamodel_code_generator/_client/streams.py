@@ -12,7 +12,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Final, cast
 
-from datamodel_code_generator._api_types import Diagnostic
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
+from datamodel_code_generator._client.config import OPTION_PREFIX
 from datamodel_code_generator._client.naming import HELPER_KINDS
 from datamodel_code_generator._client.pagination import (  # pyright: ignore[reportPrivateUsage]
     _label,
@@ -20,41 +21,30 @@ from datamodel_code_generator._client.pagination import (  # pyright: ignore[rep
     _problem,
     _target_key,
 )
-from datamodel_code_generator._client.plan import schema_use, success_media
+from datamodel_code_generator._client.plan import STREAM_MEDIA, STREAMED, schema_use, success_media
 from datamodel_code_generator._client.polling import _Polls, _Source  # pyright: ignore[reportPrivateUsage]
-from datamodel_code_generator._client.protocol_plan import HelperPlanner, missing_schema
+from datamodel_code_generator._client.protocol_plan import HelperPlanner, Protocols, missing_schema
+from datamodel_code_generator._client.protocols import Helper, Link, _collides  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._runtime.model_codecs.media import essence
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_contract import DeclarationId, TypeUseBinding, TypeUseId
+from datamodel_code_generator._target_naming import fold_key
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterable, Iterator, Mapping
 
     from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._api_types import SchemaRef
     from datamodel_code_generator._client.model_facts import ModelFacts
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ResponseSpec
-    from datamodel_code_generator._client.protocol_plan import Protocols
-    from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._target_contract import Direction, SourceLocation
 
-__all__ = ("StreamSpec", "discriminator", "plan_streams", "stream_only", "stream_uses")
+__all__ = ("StreamSpec", "discriminator", "item_protocols", "plan_streams", "stream_only", "stream_uses")
 
-_MEDIA: Final = {
-    "sse": ("text/event-stream",),
-    "ndjson": (
-        "application/jsonl",
-        "application/jsonlines",
-        "application/ndjson",
-        "application/x-jsonl",
-        "application/x-jsonlines",
-        "application/x-ndjson",
-    ),
-}
-_STREAMED: Final = frozenset(media for kinds in _MEDIA.values() for media in kinds)
 _TARGETS: Final = {"body": "the request body", "querystring": "a querystring"}
+_NEWLINE_ENDED: Final = frozenset(("application/ndjson", "application/x-ndjson"))
+"""The NDJSON media types whose every record, the last too, ends with a line feed, as NDJSON requires."""
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -63,7 +53,8 @@ class StreamSpec:
 
     `media` is the event stream or NDJSON media type the operation declares in `response`, which the helper requests.
     An event's key is its discriminator value, None for a helper with one event schema. A helper declaring resumption
-    reopens its stream with `reopen`, requesting the `reopen_media` its `reopen_response` declares.
+    reopens its stream with `reopen`, requesting the `reopen_media` its `reopen_response` declares. An SSE helper of
+    an `itemSchema` decodes each event's `fields`, its parsed fields as one JSON object, instead of its data.
     """
 
     helper: Helper
@@ -75,6 +66,7 @@ class StreamSpec:
     reopen: OperationSpec | None = None
     reopen_response: ResponseSpec | None = None
     reopen_media: str | None = None
+    fields: bool = False
 
     @property
     def own(self) -> bool:
@@ -90,6 +82,112 @@ class StreamSpec:
     def keeps_unknown(self) -> bool:
         """Return whether the helper gives an event of a type its mapping lacks as an UnknownEvent, not an error."""
         return self.helper.tree["unknown"] == "raw"
+
+
+def _item_helper(
+    spec: OperationSpec, media: str, item: TypeUseBinding, request: TargetRequest
+) -> tuple[Helper, str, SourceLocation]:
+    """Return the stream helper of an operation's media whose `itemSchema` types `item`, its document, and its place.
+
+    A JSON Lines body may end without a line feed, which NDJSON requires after its last record too.
+    """
+    kind = "sse" if essence(media) in STREAM_MEDIA["sse"] else "ndjson"
+    location = item.id.schema_site
+    document = request.documents.pointers[location.document]
+    schema = SchemaRef(pointer=location.pointer, document=document)
+    reference = OperationRef(pointer=spec.contract.id.use_site.pointer)
+    at = f"operations[{reference.pointer!r}]"
+    ended = essence(media) in _NEWLINE_ENDED
+    final = {} if kind == "sse" else {"final_line": "require_newline" if ended else "allow_eof"}
+    tree = {
+        "kind": kind,
+        "enabled": True,
+        "operation": reference,
+        "media": media,
+        "event_schema": schema,
+        "completion": {"kind": "eof"},
+        **final,
+        "unknown": "error",
+        "error_events": {},
+        "resume": {"enabled": False},
+        "fields": kind == "sse",
+    }
+    helper = Helper(
+        name=f"{spec.resource}.{spec.name}",
+        kind=kind,
+        enabled=True,
+        at=at,
+        tree=tree,
+        links=(Link(at=f"{at}.operation", ref=reference),),
+        schemas=((f"{at}.event_schema", schema),),
+    )
+    return helper, document, location
+
+
+def item_protocols(protocols: Protocols | None, plan: ClientPlan, request: TargetRequest) -> Protocols | None:
+    """Return the helpers with a stream helper of each operation whose response streams its `itemSchema`'s items.
+
+    An operation's first success response media that a stream helper reads and whose item schema the models type
+    (`MediaSpec.item`) gives an SSE or NDJSON helper of that media, as an AsyncAPI channel gives one: it decodes each
+    item by that schema until the body ends, an SSE event as its parsed fields (OpenAPI 3.2 types the event, whose
+    data is a string), and is named after the operation's method, `<resource>.<method>`. An operation that a declared
+    SSE or NDJSON helper names keeps only the declared ones, and a declared helper whose name another helper's
+    contains, or that contains another's, is refused.
+    """
+    declared = () if protocols is None else protocols.helpers
+    streamed = {
+        protocols.operations[helper.links[0].ref].id
+        for helper in declared
+        if protocols is not None and helper.kind in STREAM_MEDIA
+    }
+    helpers: list[Helper] = []
+    operations = {} if protocols is None else dict(protocols.operations)
+    documents = {} if protocols is None else dict(protocols.documents)
+    locations = {} if protocols is None else dict(protocols.locations)
+    for spec in plan.operations:
+        found = next(
+            (
+                (media.media_type, media.item)
+                for response in spec.responses
+                if response.success
+                for media in response.media
+                if media.item is not None
+            ),
+            None,
+        )
+        if found is None or spec.contract.id in streamed:
+            continue
+        media, item = found
+        helper, document, location = _item_helper(spec, media, item, request)
+        schema = helper.schemas[0][1]
+        operations[helper.links[0].ref], documents[schema], locations[schema] = spec.contract, document, location
+        helpers.append(helper)
+    if not helpers:
+        return protocols
+    version = request.model_config.target_python_version
+    if refused := [
+        Diagnostic(
+            code="E_NAME_COLLISION",
+            severity="error",
+            stage="config",
+            message=(
+                f"The helper name {stable_repr(helper.name)} collides with {stable_repr(item.name)}, the stream helper "
+                "of an itemSchema response"
+            ),
+            option_path=helper.at,
+        )
+        for helper in declared
+        for item in helpers
+        if _collides(fold_key(helper.name, version), fold_key(item.name, version))
+    ]:
+        raise APIGenerationError(tuple(refused), option_prefix=OPTION_PREFIX)
+    return Protocols(
+        helpers=(*declared, *helpers),
+        operations=operations,
+        documents=documents,
+        locations=locations,
+        python_version=version,
+    )
 
 
 def discriminator(helper: Helper) -> Mapping[str, Any] | None:
@@ -116,7 +214,7 @@ def _errors(helper: Helper) -> Iterator[tuple[str, str, SchemaRef]]:
 
 def stream_only(spec: OperationSpec) -> bool:
     """Return whether every success body of an operation is an event stream or NDJSON, which a stream helper reads."""
-    return bool(media := success_media(spec.responses)) and all(essence(item) in _STREAMED for item in media)
+    return bool(media := success_media(spec.responses)) and all(essence(item) in STREAMED for item in media)
 
 
 def _stream_response(spec: OperationSpec, bare: str) -> ResponseSpec | None:
@@ -133,7 +231,7 @@ def _stream_response(spec: OperationSpec, bare: str) -> ResponseSpec | None:
 
 def _media_problem(helper: Helper) -> str | None:
     """Return why a helper's media type does not fit its kind, an event stream for SSE and JSON lines for NDJSON."""
-    media, accepted = helper.tree["media"], _MEDIA[helper.kind]
+    media, accepted = helper.tree["media"], STREAM_MEDIA[helper.kind]
     if essence(media) in accepted:
         return None
     expected = accepted[0] if len(accepted) == 1 else f"one of {english_list(accepted, 'or', 'serial')}"
@@ -232,6 +330,7 @@ class _Streams(HelperPlanner):
             else next(item.media_type for item in reopened.media if essence(item.media_type) == bare),
             events=tuple((key, bound[where]) for where, key, _ in _events(helper)),
             errors=tuple((key, bound[where]) for where, key, _ in _errors(helper)),
+            fields=tree.get("fields", False),
         ), problems
 
     @staticmethod
@@ -261,7 +360,7 @@ def stream_uses(
     if protocols is None:
         return (), (), {}
     streams = _Streams(protocols, plan, request)
-    return streams.coded(_MEDIA, streams.helper)
+    return streams.coded(STREAM_MEDIA, streams.helper)
 
 
 def plan_streams(  # noqa: PLR0913, PLR0917

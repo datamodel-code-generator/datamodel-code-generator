@@ -282,6 +282,12 @@ helpers	main/generation_platform/client/helpers.txt
 helpers	main/generation_platform/client/packages/helpers/pydantic_v2_BaseModel//*.py
 implicit-server	main/generation_platform/client/implicit-server.txt
 implicit-server	main/generation_platform/client/packages/implicit-server/pydantic_v2_BaseModel//*.py
+item-streams	main/generation_platform/client/item-streams.txt
+item-streams	main/generation_platform/client/packages/item-streams/dataclasses_dataclass//*.py
+item-streams	main/generation_platform/client/packages/item-streams/pydantic_v2_BaseModel//*.py
+item-streams-collision	main/generation_platform/client/item-streams-collision.txt
+item-streams-declared	main/generation_platform/client/item-streams-declared.txt
+item-streams-declared	main/generation_platform/client/packages/item-streams-declared/pydantic_v2_BaseModel//*.py
 media	main/generation_platform/client/media.txt
 media	main/generation_platform/client/packages/media/pydantic_v2_BaseModel//*.py
 media	main/generation_platform/client/packages/media/typing_TypedDict//*.py

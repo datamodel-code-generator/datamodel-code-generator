@@ -878,6 +878,39 @@
       "dataclasses.dataclass"
     ]
   },
+  "item-streams": {
+    "input": "item-streams.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ]
+  },
+  "item-streams-declared": {
+    "input": "item-streams.yaml",
+    "references": [
+      "protocols/item-streams.json"
+    ],
+    "config": {
+      "protocols": "protocols/item-streams.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "item-streams-collision": {
+    "input": "item-streams.yaml",
+    "references": [
+      "protocols/item-streams-collision.json"
+    ],
+    "config": {
+      "protocols": "protocols/item-streams-collision.json"
+    },
+    "modules": false
+  },
   "binary-allowed": {
     "input": "binary-allowed.yaml",
     "backends": [
