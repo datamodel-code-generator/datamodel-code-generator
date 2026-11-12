@@ -16,12 +16,12 @@ modules import from it. The module reads data types and references through the p
 from __future__ import annotations
 
 import ast
-from dataclasses import dataclass
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeVar
 
 from datamodel_code_generator._container_kinds import container_shape
 from datamodel_code_generator._internal_utils import to_hashable
+from datamodel_code_generator._records import mutable_record
 from datamodel_code_generator._target_unicode import lent_text
 from datamodel_code_generator.imports import IMPORT_ANNOTATED, IMPORT_ANY, IMPORT_OPTIONAL, IMPORT_UNION, Import
 from datamodel_code_generator.model._decisions.nullability import field_renders_none, takes_member_null
@@ -43,7 +43,7 @@ _TYPING_IMPORT_NAMES: frozenset[str] = frozenset({
 })
 
 
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class _TypingImportNames:
     """The typing imports a field's type hint needs, collected over its type tree into one value."""
 

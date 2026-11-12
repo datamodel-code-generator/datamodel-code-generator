@@ -1947,6 +1947,9 @@ generated runtime) are declared with `@record` from `_records.py`: a slotted dat
 every assignment to a field is a type error, while the run time adds no `__setattr__` guard to each `__init__`
 (hash and equality stay by value). A record whose tests expect the run time to reject an assignment
 (`PythonTypeAnnotation`, the schema feature sets of `parser/schema_version.py`) keeps `dataclass(frozen=True)`.
+The internal state that a run fills in as it goes (`_PipelineRun`, `TagPlan`, `GenerationFacts`, ...) is declared
+with `@mutable_record`, which builds the class that `dataclass` without `frozen` builds (assignable, unhashable with
+`eq`) the same way.
 
 ## Rendering And Formatting
 

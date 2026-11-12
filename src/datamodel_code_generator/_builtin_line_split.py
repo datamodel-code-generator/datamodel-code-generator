@@ -25,6 +25,7 @@ from itertools import accumulate, takewhile
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._python_decorator import string_token_spans
+from datamodel_code_generator._records import mutable_record
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Container, Iterable, Iterator, Sequence
@@ -356,8 +357,10 @@ def _is_split_before_delimiter(leaf: _Leaf, previous: _Leaf | None) -> int:  # n
     return LOGIC_PRIORITY if leaf.logic else 0
 
 
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class _BracketTracker:
+    """Track the bracket depth of a line's leaves and the delimiters between them."""
+
     depth: int = 0
     bracket_match: dict[tuple[int, int], _Leaf] = field(default_factory=dict)
     delimiters: dict[int, int] = field(default_factory=dict)
@@ -415,8 +418,10 @@ def _is_name(leaf: _Leaf, value: str) -> bool:
     return leaf.type == token.NAME and leaf.value == value
 
 
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class _Line:
+    """One logical line being split: its leaves at an indentation depth and their brackets."""
+
     depth: int = 0
     leaves: list[_Leaf] = field(default_factory=list)
     bracket_tracker: _BracketTracker = field(default_factory=_BracketTracker)
@@ -489,8 +494,10 @@ class _Line:
         return bool(self.leaves)
 
 
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class _RHSResult:
+    """A line split at its last opening bracket: head, body and tail, and the brackets around the body."""
+
     head: _Line
     body: _Line
     tail: _Line

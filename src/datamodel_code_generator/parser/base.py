@@ -17,7 +17,6 @@ from collections import (
 )
 from contextvars import ContextVar
 from copy import deepcopy  # noqa: F401  # Preserve the established parser.base export.
-from dataclasses import dataclass
 from functools import partial
 from itertools import chain
 from pathlib import Path
@@ -82,7 +81,7 @@ from datamodel_code_generator._python_syntax import (
     normalize_newlines,  # noqa: F401  # Preserve the established parser.base export.
 )
 from datamodel_code_generator._python_target_names import target_builtin_names
-from datamodel_code_generator._records import record
+from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator._reference_graph import (
     EdgeKind,
     GraphSnapshot,
@@ -359,7 +358,7 @@ DocumentRoles: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
 """The OpenAPI object roles that references held each document's root as, by document (``hold_document_root``)."""
 
 
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class DroppedConstraints:
     """The dropped-constraint warnings of the parse whose models a generation returns, each with its module."""
 

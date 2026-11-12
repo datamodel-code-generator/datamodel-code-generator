@@ -9,7 +9,6 @@ from __future__ import annotations
 import contextlib
 import dataclasses
 from contextvars import ContextVar
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Generic, NamedTuple, TypeAlias
 from weakref import WeakKeyDictionary
 
@@ -17,7 +16,7 @@ from typing_extensions import Protocol, ReadOnly, Self, TypedDict, TypeVar, fina
 
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._model_keys import ModelKey, keyed_or_path, model_key_of
-from datamodel_code_generator._records import record
+from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator._warning_control import shown_once
 from datamodel_code_generator.model.base import DataModel
 from datamodel_code_generator.parser._phases import DecisionOutcome
@@ -291,7 +290,7 @@ class StructuredRun(SettleRun[ConfigT], Protocol[ConfigT]):
 
 
 @final
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class _StructureState:
     """The state of one ``_build_module_structure`` call."""
 
@@ -351,7 +350,7 @@ def pydantic_floors_recorded() -> Generator[PydanticFloors]:
 
 
 @final
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class _SettleDiagnostics:
     """Whether a parse of the generation run reported the settle diagnostics, and the warnings of its L0 and L1.
 
@@ -416,7 +415,7 @@ _NO_DECISIONS: Final = DecisionOutcome(())
 
 
 @final
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class _PipelineRun(Generic[ConfigT, ContextT, ResultT]):
     """The state of one ``Parser.parse()`` call, filled segment by segment; a value read before it is set raises.
 
@@ -467,7 +466,7 @@ class FinishRun(ProcessingRun[ConfigT, ContextT, ResultT], Protocol[ConfigT, Con
 
 
 @final
-@dataclass(slots=True, kw_only=True)
+@mutable_record(slots=True, kw_only=True)
 class _ModuleState(Generic[ConfigT]):
     """The state of one ``_process_single_module`` call.
 
@@ -491,7 +490,7 @@ class _ModuleState(Generic[ConfigT]):
 
 
 @final
-@dataclass(slots=True, kw_only=True)
+@mutable_record(slots=True, kw_only=True)
 class _PreparedModule(Generic[ConfigT]):
     """One output module as ``_process_single_module`` left it, for its render preparation after the decision phase.
 
@@ -518,7 +517,7 @@ class _PreparedModule(Generic[ConfigT]):
 
 
 @final
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class _FinalizeState(Generic[ContextT]):
     """The state of one ``_finalize_modules`` call.
 
