@@ -39,6 +39,13 @@ off	main/jsonschema/object_maps/object_keywords_by_type[off].py
 on	main/jsonschema/object_maps/object_keywords_by_type[on].py
 validators-off	main/jsonschema/object_maps/object_keywords_by_type[validators-off].py
 validators-on	main/jsonschema/object_maps/object_keywords_by_type[validators-on].py
+[test_object_keywords_by_type_mapped_ref_branch]
+off	main/jsonschema/object_maps/object_keywords_by_type_mapped_ref_branch[off].py
+on	main/jsonschema/object_maps/object_keywords_by_type_mapped_ref_branch[on].py
+[test_object_keywords_by_type_referenced_branch_beside_value_keywords]
+distribute-off	main/jsonschema/object_maps/object_keywords_by_type_referenced_branch_beside_value_keywords[distribute-off].py
+distribute-on	main/jsonschema/object_maps/object_keywords_by_type_referenced_branch_beside_value_keywords[distribute-on].py
+preset	main/jsonschema/object_maps/object_keywords_by_type_referenced_branch_beside_value_keywords[preset].py
 [test_object_map_bodies]
 dataclasses.dataclass	main/jsonschema/object_maps/object_map_bodies[dataclasses.dataclass].payloads.txt	= main/jsonschema/object_maps/object_map_bodies[typing.TypedDict].payloads.txt
 dataclasses.dataclass	main/jsonschema/object_maps/object_map_bodies[dataclasses.dataclass].py

@@ -13,6 +13,9 @@ config.yaml-non-lowercase-bool              active     config      YAML bool val
 dependency.black-minimum                    active     dependency  Black <24.3.0                                            0.78.0  TBD      Upgrade Black to >=24.3.0 before the later support change.
 dependency.external-formatters-optional     active     dependency  Black/isort installation                                 0.78.0  TBD      Declare the black/isort extras for the external formatters you select.
 dependency.pydantic-runtime-minimum         active     dependency  DCG runtime Pydantic <2.8.2                              0.78.0  TBD      Upgrade DCG runtime Pydantic to >=2.8.2; generated-code targets are unchanged.
+dependency.genson-optional                  active     dependency  Genson installation                                      0.95.0  TBD      Declare the genson extra if you generate from JSON, YAML, CSV or dict data.
+dependency.jinja2-optional                  active     dependency  Jinja2 installation                                      0.95.0  TBD      Declare the jinja2 extra if you use custom templates.
+dependency.argcomplete-optional             scheduled  dependency  argcomplete installation                                 0.95.0  TBD      Declare the argcomplete extra if you use shell completion.
 dependency.isort-minimum                    active     dependency  isort <6                                                 0.78.0  TBD      Upgrade isort to >=6,<9 before the later support change.
 python-api.python-version-has-type-alias    active     python-api  PythonVersion.has_type_alias                             0.52.1  TBD      -
 schema.jsonschema-items-array               active     schema      JSON Schema Draft 2020-12 items array tuple validation   0.53.0  TBD      Use prefixItems.

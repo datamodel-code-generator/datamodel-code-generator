@@ -1308,3 +1308,76 @@ def test_object_keywords_by_type(output_file: Path, option_set: str) -> None:
             invalid_json=invalid_json,
             expected_error_type=error_type,
         )
+
+
+@pytest.mark.parametrize(
+    "option_set",
+    {
+        "distribute-off": ("--distribute-allof-over-unions",),
+        "distribute-on": ("--distribute-allof-over-unions", "--read-object-keywords-by-type"),
+        "preset": ("--preset", "standard-py313-20261112"),
+    }.items(),
+    ids=operator.itemgetter(0),
+)
+def test_object_keywords_by_type_referenced_branch_beside_value_keywords(
+    output_file: Path, option_set: tuple[str, tuple[str, ...]]
+) -> None:
+    """Keep a ``$ref`` string branch a string beside value and object keywords where allOf is distributed (#6736).
+
+    The branch is read with the ``minLength`` beside the ``anyOf``, which makes it an inline branch; without
+    --read-object-keywords-by-type it also takes the ``patternProperties`` and becomes a map, so ``"hello"`` is
+    rejected. With it, also through the 20261112 preset, the string branch takes the ``minLength`` only.
+    """
+    name, args = option_set
+    run_main_and_assert(
+        input_path=OBJECT_MAPS / "referenced_string_branch_beside_value_keywords.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *args],
+    )
+    if name == "distribute-off":
+        assert_generated_model_json_invalid(
+            output_file,
+            module_name="referenced_string_branch",
+            model_name="Labels",
+            invalid_json='{"label": "hello"}',
+            expected_error_type="dict_type",
+        )
+        return
+    for valid_json, invalid_json, error_type in (
+        ('{"label": "hello"}', '{"label": "a"}', "string_too_short"),
+        ('{"label": {"x-a": 1}}', '{"label": {"x-a": "b"}}', "string_type"),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="referenced_string_branch",
+            model_name="Labels",
+            valid_json=valid_json,
+            invalid_json=invalid_json,
+            expected_error_type=error_type,
+        )
+
+
+@pytest.mark.parametrize("option_set", ["off", "on"])
+def test_object_keywords_by_type_mapped_ref_branch(output_file: Path, option_set: str) -> None:
+    """Type a ``$ref`` branch that --external-ref-mapping maps by its import, without reading its document (#6736).
+
+    The mapped document does not exist and --strict-refs rejects a missing document that is read: the option reads
+    the type of a ``$ref`` branch to leave the object keywords out of it, and a mapped one is not read, so it keeps
+    them as it does without the option.
+    """
+    run_main_and_assert(
+        input_path=OBJECT_MAPS / "mapped_ref_branch_beside_object_keywords.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--strict-refs",
+            "--external-ref-mapping",
+            f"{OBJECT_MAPS / 'absent_names.json'}=external.names",
+            *OBJECT_KEYWORDS_BY_TYPE_OPTION_SETS[option_set],
+        ],
+    )

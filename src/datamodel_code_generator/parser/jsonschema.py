@@ -737,12 +737,17 @@ def _branch_excludes_objects(
     branch: JsonSchemaObject | bool,  # noqa: FBT001
     visited: frozenset[_TargetNode] = frozenset(),
 ) -> bool:
-    """Return whether a branch declares a ``type`` that admits no object, a ``$ref`` the type of the schema it names."""
+    """Return whether a branch declares a ``type`` that admits no object, a ``$ref`` the type of the schema it names.
+
+    A reference ``--external-ref-mapping`` maps is typed by the import without its document, so it is not read and not
+    known to admit no object.
+    """
     if isinstance(branch, JsonSchemaObject) and (types := _declared_value_types(branch)):
         return "object" not in types
     return bool(
         isinstance(branch, JsonSchemaObject)
         and branch.ref
+        and parser._resolve_external_ref_mapping(branch.ref) is None  # noqa: SLF001
         and (target := _lightweight_types.unvisited_ref_target(parser, branch.ref, visited)) is not None
         and _branch_excludes_objects(parser, *target)
     )
@@ -3712,7 +3717,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if _merges_ref_siblings(target_attribute):
                     member = self._merge_ref_with_schema(target_attribute)
                     _inherited_schemas.preserve_inherited_materialized_type_shape(self, target_attribute, member)
-                if member.ref and (beside := self._value_ref_branch_with_site(base_object, member)) is not None:
+                if (
+                    member.ref
+                    and (
+                        beside := self._value_ref_branch_with_site(
+                            self._combined_branch_outer(base_object, member), member
+                        )
+                    )
+                    is not None
+                ):
                     member = beside
                 if member.ref:
                     combined_schemas.append(member)
@@ -3745,13 +3758,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return combined_schemas, refs
 
     def _combined_branch_outer(self, outer: dict[str, Any], branch: JsonSchemaObject) -> dict[str, Any]:
-        """Return the keywords beside an ``anyOf`` or ``oneOf`` that an inline ``branch`` is read with.
+        """Return the keywords beside an ``anyOf`` or ``oneOf`` that a ``branch`` is read with.
 
-        Under --read-object-keywords-by-type a branch whose ``type`` admits no object is read without the keywords that
-        constrain objects only (``_OBJECT_KEYWORDS``), as JSON Schema applies them to objects alone; otherwise every
-        branch is read with all of them.
+        Under --read-object-keywords-by-type a branch whose ``type`` admits no object, or a ``$ref`` branch naming
+        such a schema (``_branch_excludes_objects``), is read without the keywords that constrain objects only
+        (``_OBJECT_KEYWORDS``), as JSON Schema applies them to objects alone; otherwise every branch is read with all
+        of them.
         """
-        if self.config.read_object_keywords_by_type and _types_exclude(("object",), branch):
+        if self.config.read_object_keywords_by_type and (
+            _types_exclude(("object",), branch) or (branch.ref is not None and _branch_excludes_objects(self, branch))
+        ):
             return {keyword: value for keyword, value in outer.items() if keyword not in _OBJECT_KEYWORDS}
         return outer
 

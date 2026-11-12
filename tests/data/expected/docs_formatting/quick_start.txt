@@ -97,7 +97,9 @@ The current default remains Black/isort, which are still required dependencies. 
 normal generation. The future builtin default is intended to reduce required installation dependencies and version
 constraints; Ruff will still be recommended for projects that use Ruff. Formatters are never selected automatically
 based on installed packages or Ruff configuration. The new `[black]` and `[isort]` extras prepare for later
-optional installation; their ranges and environment markers match the current required dependencies.
+optional installation; their ranges and environment markers match the current required dependencies. The
+`[jinja2]` (custom templates), `[genson]` (JSON, YAML, CSV and dict data input) and `[argcomplete]` (shell
+completion) extras do the same for those dependencies.
 Selecting only a formatter preserves your other generation settings; a preset also supplies model-generation options.
 Explicit formatter selection does not pin formatter versions or guarantee byte-for-byte output stability.
 

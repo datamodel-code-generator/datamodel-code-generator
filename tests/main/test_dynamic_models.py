@@ -5,6 +5,7 @@ from __future__ import annotations
 import gc
 import importlib
 import importlib.util
+import inspect
 import json
 import os
 import pickle
@@ -1998,7 +1999,8 @@ def test_dynamic_generation_formats_only_where_the_config_selects_formatters(
             else generate_dynamic_models(TRAILING_SPACES_SCHEMA, config=config, cache_size=0)
         )
 
-    assert generated["Described"].__doc__ == (
-        "\nfirst line\nsecond line\n" if formatted else "\nfirst line  \nsecond line\n"
+    # Python 3.13 and later strip the docstring's indentation when compiling; cleandoc reads both forms the same.
+    assert inspect.cleandoc(generated["Described"].__doc__ or "") == (
+        "first line\nsecond line" if formatted else "first line  \nsecond line"
     )
     assert any("Default formatters will change" in str(warning.message) for warning in caught) is default_formatters

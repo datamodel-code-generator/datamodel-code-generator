@@ -716,7 +716,9 @@ The current default remains Black/isort, which are still required dependencies. 
 normal generation. The future builtin default is intended to reduce required installation dependencies and version
 constraints; Ruff will still be recommended for projects that use Ruff. Formatters are never selected automatically
 based on installed packages or Ruff configuration. The new `[black]` and `[isort]` extras prepare for later
-optional installation; their ranges and environment markers match the current required dependencies.
+optional installation; their ranges and environment markers match the current required dependencies. The
+`[jinja2]` (custom templates), `[genson]` (JSON, YAML, CSV and dict data input) and `[argcomplete]` (shell
+completion) extras do the same for those dependencies.
 Selecting only a formatter preserves your other generation settings; a preset also supplies model-generation options.
 Explicit formatter selection does not pin formatter versions or guarantee byte-for-byte output stability.
 
@@ -23809,8 +23811,8 @@ To check documents against the schema as closely as possible, see [Matching the 
 
 The `inputSchema` and `outputSchema` of an MCP tool, and the `parameters` of a function-calling tool, are JSON Schema
 documents. Turn each into a model once, validate what the language model sends, and read the typed result. dcg handles
-what hand-written converters often lose: `$defs` and `$ref`, a `description` beside a `$ref`, nested inline objects,
-enums and tuples. These schemas come from servers you do not control, so pass `untrusted_input=True`. See
+what hand-written converters often lose: `$defs` and `$ref`, a `description` beside a `$ref`, nested inline objects
+and enums; tuples keep a type per position with `use_tuple_for_closed_arrays=True` (see the table below). These schemas come from servers you do not control, so pass `untrusted_input=True`. See
 [Schemas That Arrive at Runtime](#schemas-that-arrive-at-runtime).
 
 ### Validating the Arguments of a Tool Call
@@ -23847,10 +23849,9 @@ call = CreateTicketInput.model_validate_json(raw_arguments)
 assert call.priority.value == "high"
 assert call.assignee is None
 assert call.reporter_id == 7
-assert call.model_dump(mode="json", by_alias=True, exclude_none=True) == {
+assert call.model_dump(mode="json", by_alias=True, exclude_unset=True) == {
     "title": "Login fails",
     "priority": "high",
-    "labels": [],
     "reporter-id": 7,
 }
 
@@ -23872,8 +23873,8 @@ Use `module.root_class` for the class of the schema itself: it is the right clas
 `class_name` names it; without `class_name`, the `title` does, and without both, it is `Model`.
 
 The errors name the property and the rule, so you can send them back to the language model as the result of a failed
-tool call. Without `"additionalProperties": False` in the schema, a property the schema does not list is ignored.
-`extra_fields="forbid"` in the config rejects it for schemas that do not say so.
+tool call. Where the schema has no `additionalProperties`, a property the schema does not list is ignored, and
+`extra_fields="forbid"` in the config rejects it; `"additionalProperties": true` keeps it in the model and in its dump.
 
 An optional property is nullable in the model, as the next sections show: `assignee` above is `None` when left out,
 and so is `contact`.
@@ -24080,13 +24081,15 @@ assert text.model_validate("short").root == "short"
 ```
 
 A string schema with `enum` gives an `Enum` class, not a `RootModel`: call it, `root_class("a")`, instead of
-`model_validate`. `generate_dynamic_models()` returns the same classes by name.
+`model_validate`. `generate_dynamic_models()` returns classes of the same names and shapes; they are other class
+objects (each API has its own cache entries), so do not mix their instances in `isinstance` checks.
 
 ### Speed
 
 Dynamic generation does not format the code unless you select formatters, and a schema that arrives again is served
 from the cache. Keep `cache_size` above `0` (the default is `128`), so a tool list that you convert on every request
-generates its models once. On one machine, a first call (`cache_size=0`) for the tool schema of the first example took
+is usually generated once; a config with a callable such as `custom_class_name_generator` is not cached, and old
+entries leave a full cache, so keep the models you need instead of generating them again. On one machine, a first call (`cache_size=0`) for the tool schema of the first example took
 8.2 ms (median of 15 runs on a loaded machine; your numbers differ), against 19 ms with Black and isort selected.
 
 ## Formatting
@@ -83895,6 +83898,9 @@ This page lists deprecations and scheduled breaking changes.
 | `dependency.black-minimum` | active | dependency | `Black <24.3.0` | 0.78.0 | TBD | Upgrade Black to >=24.3.0 before the later support change. |
 | `dependency.external-formatters-optional` | active | dependency | `Black/isort installation` | 0.78.0 | TBD | Declare the black/isort extras for the external formatters you select. |
 | `dependency.pydantic-runtime-minimum` | active | dependency | `DCG runtime Pydantic <2.8.2` | 0.78.0 | TBD | Upgrade DCG runtime Pydantic to >=2.8.2; generated-code targets are unchanged. |
+| `dependency.genson-optional` | active | dependency | `Genson installation` | 0.95.0 | TBD | Declare the genson extra if you generate from JSON, YAML, CSV or dict data. |
+| `dependency.jinja2-optional` | active | dependency | `Jinja2 installation` | 0.95.0 | TBD | Declare the jinja2 extra if you use custom templates. |
+| `dependency.argcomplete-optional` | scheduled | dependency | `argcomplete installation` | 0.95.0 | TBD | Declare the argcomplete extra if you use shell completion. |
 | `dependency.isort-minimum` | active | dependency | `isort <6` | 0.78.0 | TBD | Upgrade isort to >=6,<9 before the later support change. |
 | `python-api.python-version-has-type-alias` | active | python-api | `PythonVersion.has_type_alias` | 0.52.1 | TBD | - |
 | `schema.jsonschema-items-array` | active | schema | `JSON Schema Draft 2020-12 items array tuple validation` | 0.53.0 | TBD | Use prefixItems. |
@@ -84059,6 +84065,48 @@ Support for DCG runtime Pydantic <2.8.2 will end in a future release.
 
 This is advance notice only. Current dependency ranges and compatibility remain unchanged.
 
+### `dependency.genson-optional`
+
+- **Status:** active
+- **Kind:** dependency
+- **Target:** `Genson installation`
+- **Since:** 0.95.0
+- **Planned removal:** TBD
+- **Warning category:** `FutureWarning`
+- **Replacement:** Declare the genson extra if you generate from JSON, YAML, CSV or dict data.
+
+Genson will become optional. Declare the genson extra for JSON, YAML, CSV and dict input; see --help.
+
+This is advance notice only. Current dependency ranges and compatibility remain unchanged.
+
+### `dependency.jinja2-optional`
+
+- **Status:** active
+- **Kind:** dependency
+- **Target:** `Jinja2 installation`
+- **Since:** 0.95.0
+- **Planned removal:** TBD
+- **Warning category:** `FutureWarning`
+- **Replacement:** Declare the jinja2 extra if you use custom templates.
+
+Jinja2 will become optional. Declare the jinja2 extra for --custom-template-dir; see --help.
+
+This is advance notice only. Current dependency ranges and compatibility remain unchanged.
+
+### `dependency.argcomplete-optional`
+
+- **Status:** scheduled
+- **Kind:** dependency
+- **Target:** `argcomplete installation`
+- **Since:** 0.95.0
+- **Planned removal:** TBD
+- **Warning category:** `FutureWarning`
+- **Replacement:** Declare the argcomplete extra if you use shell completion.
+
+argcomplete will become optional. Declare the argcomplete extra for shell completion; see "Dependency migration notices" in the documentation.
+
+This is advance notice only, registered without a runtime warning: a shell discards the error output of completion, and a warning turned into an error would break it. Current dependency ranges and compatibility remain unchanged.
+
 ### `dependency.isort-minimum`
 
 - **Status:** active
@@ -84132,9 +84180,14 @@ Source: https://datamodel-code-generator.koxudaxi.dev/dependency-migration/
 
 Black and isort remain the default formatters and required dependencies. All current dependency ranges,
 compatibility code and minimum-version tests remain in place. Generation still continues when formatters are
-omitted. This page is the migration guide for the planned change of the default formatter to `builtin`.
+omitted. This page is the migration guide for the planned change of the default formatter to `builtin`, which also
+makes Jinja2, Genson and argcomplete optional.
 
 ## Timeline
+
+- 0.95.0 announces that `jinja2`, `genson` and `argcomplete` become optional together with Black and isort, so you
+  migrate once. The release that changes the default formatter makes all five optional; it comes no earlier than
+  three months after 0.95.0 and is announced in the release notes of the release before it.
 
 - Black and isort stay the default in 0.92.0, which starts a transition period of at least three months.
 - The default changes no earlier than three months after 0.92.0 is released. The release notes announce the
@@ -84227,10 +84280,13 @@ output. See [Formatter behavior](formatter-behavior.md) for scope and configurat
 | --- | --- |
 | Default formatter change | Effective formatters are unspecified, including older presets and custom formatters added to the implicit pipeline. |
 | Black/isort optional installation | Black or isort is explicitly selected, including through resolved configuration or a formatter-supplying preset. Not also emitted for an implicit pipeline. |
+| Jinja2 optional installation | A custom template directory is set (`--custom-template-dir`, `custom-template-dir`, `custom_template_dir`), however it is set. |
+| Genson optional installation | The input type is JSON, YAML, CSV or a dict, whose schema Genson infers. Schema inputs (JSON Schema, OpenAPI, GraphQL and the others) do not warn. |
+| argcomplete optional installation | Registered without a runtime warning: a shell discards the error output of completion, and a warning promoted to an error would break it. This page, the registry and the release notes carry it. |
 | Old Black/isort support | A selected formatter is below its proposed future minimum, whether the pipeline was implicit or explicit. Merely having it installed does not warn. |
 | Old runtime Pydantic support | DCG generates code using Pydantic below 2.8.2 in its own runtime, even when generating dataclasses, TypedDict or msgspec models. |
 
-Each notice is registered separately as an active `FutureWarning`. The default formatter notice retains its
+Each notice is registered separately as a `FutureWarning`, except the argcomplete one, which is `scheduled`. The default formatter notice retains its
 original 0.52.0 history, and the formatter and dependency-floor notices are recorded for the planned 0.78.0 release.
 The registry contains the [exact short messages](deprecations.md). Migration warnings are deduplicated within one CLI invocation, including
 batch and watch regeneration. Non-generation operations such as help, version and listings do not emit them or
@@ -84257,6 +84313,26 @@ For a Python API or shared environment, declare `datamodel-code-generator[black,
 dependencies and pass `formatters=[Formatter.BLACK, Formatter.ISORT]`. Declare only the extras you actually use.
 `uvx` can isolate the CLI's dependencies from application dependencies. Shared environments and API use remain
 supported migration scenarios; application constraints alone do not imply a fixed long transition period.
+
+## Prepare for optional Jinja2, Genson and argcomplete installation
+
+Default generation imports none of the three: Jinja2 is needed only for custom templates, Genson only to infer a
+schema from JSON, YAML, CSV or dict data, and argcomplete only for shell completion. The new `[jinja2]`, `[genson]`
+and `[argcomplete]` extras currently repeat the mandatory dependency ranges; `[all]` includes them. Declare the ones
+you use, as for Black and isort:
+
+```bash
+uvx --from 'datamodel-code-generator[jinja2,genson,argcomplete]' datamodel-codegen --help
+```
+
+| You use | Declare |
+| --- | --- |
+| `--custom-template-dir` | `datamodel-code-generator[jinja2]` |
+| `--input-file-type json`, `yaml` or `csv`, or `generate()` with a dict | `datamodel-code-generator[genson]` |
+| Shell completion (`register-python-argcomplete`) | `datamodel-code-generator[argcomplete]` |
+
+`inflect`, `pyyaml`, `pydantic` and `typing-extensions` stay mandatory dependencies. When the extras become optional,
+a feature whose extra is missing reports an installation error naming the extra.
 
 ## Proposed future dependency floors
 
@@ -84345,7 +84421,8 @@ unchanged.
 ## Follow-up changes remain separate
 
 1. Change the implicit default to builtin, retaining explicit Ruff and Black/isort choices.
-2. Remove Black/isort from mandatory dependencies, retaining the extras and explicit dependency errors.
+2. Remove Black/isort, Jinja2, Genson and argcomplete from mandatory dependencies, retaining the extras and explicit
+   dependency errors.
 3. Raise the runtime dependency floors and reassess compatibility code and producer/consumer tests.
 
 None of these three changes is performed yet. The first one follows the [timeline](#timeline) above.
