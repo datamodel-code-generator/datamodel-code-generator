@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Settings",
+  "type": "object",
+  "properties": {
+    "generate": {"$ref": "#/$defs/Generate"},
+    "manifest": {"$ref": "#/$defs/Manifest"},
+    "event": {"$ref": "#/$defs/Event"},
+    "upload": {"$ref": "#/$defs/Upload"},
+    "strict_event": {"$ref": "#/$defs/StrictEvent"},
+    "retired": {"$ref": "#/$defs/Retired"},
+    "unconditional": {"$ref": "#/$defs/Unconditional"},
+    "person": {"$ref": "#/$defs/Person"},
+    "node": {"$ref": "#/$defs/Node"},
+    "closed_parent": {"$ref": "#/$defs/ClosedParent"},
+    "job": {"$ref": "#/$defs/Job"},
+    "headers": {"$ref": "#/$defs/Headers"},
+    "pattern_guard": {"$ref": "#/$defs/PatternGuard"},
+    "empty_guard": {"$ref": "#/$defs/EmptyGuard"}
+  },
+  "$defs": {
+    "Generate": {
+      "type": "object",
+      "properties": {"version": {"type": "string", "enum": ["v2", "v1"]}},
+      "if": {"properties": {"version": {"enum": ["v1"]}}},
+      "then": {
+        "required": ["version", "plugins"],
+        "additionalProperties": false,
+        "properties": {
+          "version": {},
+          "plugins": {"type": "array", "items": {"type": "object", "properties": {"plugin": {"type": "string"}}, "additionalProperties": false}}
+        }
+      },
+      "else": {
+        "required": ["plugins"],
+        "additionalProperties": false,
+        "properties": {
+          "version": {},
+          "plugins": {"type": "array", "items": {"type": "object", "properties": {"local": {"type": "string"}}, "additionalProperties": false}}
+        }
+      }
+    },
+    "Manifest": {
+      "type": "object",
+      "required": ["manifest_version"],
+      "properties": {"manifest_version": {"type": "integer", "enum": [2, 3]}},
+      "if": {"properties": {"manifest_version": {"const": 3}}},
+      "then": {"properties": {"web_accessible_resources": {"type": "array", "items": {"type": "object", "properties": {"resources": {"type": "array", "items": {"type": "string"}}}}}}},
+      "else": {"properties": {"web_accessible_resources": {"type": "array", "items": {"type": "string"}}}}
+    },
+    "Event": {
+      "type": "object",
+      "properties": {"kind": {"type": "string"}},
+      "required": ["kind"],
+      "if": {"properties": {"kind": {"const": "metric"}}, "required": ["kind"]},
+      "then": {"properties": {"metric": {"type": "integer"}, "code": {"type": "string", "pattern": "^(?!x)[a-z]+$"}}, "required": ["metric"]}
+    },
+    "Upload": {
+      "type": "object",
+      "properties": {"mode": {"type": "string"}},
+      "if": {"properties": {"mode": {"const": "file"}}, "required": ["mode"]},
+      "then": {"properties": {"path": {"type": "string", "maxLength": 8}}},
+      "else": {"properties": {"mode": {}, "url": {"type": "string"}, "path": false}, "additionalProperties": false}
+    },
+    "StrictEvent": {
+      "type": "object",
+      "properties": {"kind": {"type": "string"}},
+      "if": {"properties": {"kind": {"const": "metric"}}, "required": ["kind"]},
+      "then": {"properties": {"metric": {"type": "integer"}}},
+      "unevaluatedProperties": false
+    },
+    "Retired": {
+      "type": "object",
+      "properties": {"version": {"type": "integer"}},
+      "if": {"properties": {"version": {"const": 1}}, "required": ["version"]},
+      "then": {"properties": {"version": {}, "legacy": false}, "additionalProperties": false},
+      "else": {"properties": {"version": {}}, "additionalProperties": false}
+    },
+    "Unconditional": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}},
+      "then": {"properties": {"alias": {"type": "string"}}, "required": ["alias"]},
+      "else": {"required": ["name"]}
+    },
+    "Person": {
+      "type": "object",
+      "properties": {"first-name": {"type": "string"}, "role": {"type": "string"}},
+      "if": {"properties": {"role": {"const": "admin"}}, "required": ["role"]},
+      "then": {"properties": {"first-name": {"type": "string", "minLength": 2}, "badge": {"$ref": "#/$defs/Badge"}, "note": {}}},
+      "else": {"properties": {"badge": {"type": "string"}}}
+    },
+    "Badge": {
+      "type": "object",
+      "properties": {"id": {"type": "integer"}},
+      "required": ["id"]
+    },
+    "Node": {
+      "type": "object",
+      "properties": {"leaf": {"type": "boolean"}},
+      "if": {"properties": {"leaf": {"const": false}}, "required": ["leaf"]},
+      "then": {"properties": {"child": {"$ref": "#/$defs/Node"}}, "required": ["child"]},
+      "else": {"properties": {"child": {"type": "null"}}}
+    },
+    "ClosedParent": {
+      "type": "object",
+      "properties": {"kind": {"type": "string"}, "size": {"type": "integer"}},
+      "additionalProperties": false,
+      "if": {"properties": {"kind": {"const": "big"}}, "required": ["kind"]},
+      "then": {"properties": {"size": {"type": "integer", "minimum": 10}, "extra": {"type": "string"}}}
+    },
+    "Job": {
+      "type": "object",
+      "properties": {"kind": {"type": "string", "enum": ["http", "cmd"]}},
+      "required": ["kind"],
+      "if": {"properties": {"kind": {"const": "http"}}},
+      "then": {"properties": {"kind": {"const": "http"}, "request": {"type": "object", "properties": {"url": {"type": "string"}}, "required": ["url"]}}}
+    },
+    "Headers": {
+      "type": "object",
+      "additionalProperties": {"type": "string"},
+      "if": {"properties": {"Mode": {"const": "signed"}}, "required": ["Mode"]},
+      "then": {"required": ["Signature"]}
+    },
+    "PatternGuard": {
+      "type": "object",
+      "properties": {"code": {"type": "string"}},
+      "if": {"properties": {"code": {"pattern": "^x"}}},
+      "then": {"properties": {"detail": {"type": "string"}}}
+    },
+    "EmptyGuard": {
+      "type": "object",
+      "properties": {"code": {"type": "string"}},
+      "if": {"properties": {"code": true}},
+      "then": {"properties": {"detail": {"type": "integer"}}}
+    }
+  }
+}

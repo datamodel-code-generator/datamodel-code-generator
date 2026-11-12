@@ -697,5 +697,34 @@
       }
     ],
     "error": "value_error"
+  },
+  "schema_validators_conditional_closed_branch": {
+    "model": "ClosedBranches",
+    "valid": [
+      {
+        "version": 1
+      },
+      {
+        "version": 2
+      },
+      {},
+      {
+        "version": 1.0
+      }
+    ],
+    "invalid": [
+      {
+        "version": 1,
+        "legacy": true
+      },
+      {
+        "version": 2,
+        "x": 1
+      },
+      {
+        "x": 1
+      }
+    ],
+    "error": "value_error"
   }
 }

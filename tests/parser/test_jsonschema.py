@@ -1097,8 +1097,8 @@ def test_schema_validator_unique_items_branch_coverage() -> None:
         "if": {"required": ["kind"], "properties": {"kind": {"const": "metric"}}},
         "then": {"required": ["value"]},
     })
-    parser._add_conditional_validator("#/Model", conditional, {})
-    parser._add_conditional_validator("#/Model", conditional, {})
+    parser._add_conditional_validator("#/Model", conditional, {}, ["#", "Model"], "0")
+    parser._add_conditional_validator("#/Model", conditional, {}, ["#", "Model"], "0")
     runtime_validation = parser.extra_template_data["#/Model"]["schema_runtime_validation"]
 
     assert_output(
@@ -1334,6 +1334,8 @@ def test_schema_validator_conditional_predicate_helpers() -> None:
             "then": {},
         }),
         {"kind": ("kind",)},
+        ["#", "Model"],
+        "0",
     )
 
     assert parser.extra_template_data["#/Model"] == {}

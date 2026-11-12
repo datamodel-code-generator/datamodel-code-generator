@@ -878,7 +878,7 @@ def quote_forward_rule_types(model: DataModel, model_index: Mapping[str, int], i
     the validator helper resolves the string in the module when it validates. The rules get quoted copies, so
     another holder of the rules or their types keeps them.
     """
-    if not (runtime_validation := model.schema_runtime_validation) or not runtime_validation.pattern_properties:
+    if not (runtime_validation := model.schema_runtime_validation) or not runtime_validation.data_types:
         return
 
     def quoted(data_type: DataType) -> DataType:
@@ -904,15 +904,32 @@ def quote_forward_rule_types(model: DataModel, model_index: Mapping[str, int], i
         )
         for rule in runtime_validation.pattern_properties
     ]
+    conditional_rules = [
+        dataclasses.replace(
+            rule,
+            then_checks=dataclasses.replace(
+                rule.then_checks,
+                properties=tuple((names, quoted(data_type)) for names, data_type in rule.then_checks.properties),
+            ),
+            else_checks=dataclasses.replace(
+                rule.else_checks,
+                properties=tuple((names, quoted(data_type)) for names, data_type in rule.else_checks.properties),
+            ),
+        )
+        for rule in runtime_validation.conditional_required
+    ]
     if all(
         new_type is old_type
-        for rule, old_rule in zip(rules, runtime_validation.pattern_properties, strict=True)
-        for new_type, old_type in zip(rule.data_types, old_rule.data_types, strict=True)
+        for new_type, old_type in zip(
+            (data_type for rule in (*rules, *conditional_rules) for data_type in rule.data_types),
+            runtime_validation.data_types,
+            strict=True,
+        )
     ):
         return
     model._set_internal_template_data(  # noqa: SLF001
         "schema_runtime_validation",
-        runtime_validation._replace_pattern_properties(rules),  # noqa: SLF001
+        runtime_validation._replace_rule_types(rules, conditional_rules),  # noqa: SLF001
     )
 
 

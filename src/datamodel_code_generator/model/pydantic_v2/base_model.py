@@ -1522,8 +1522,23 @@ def _helper_template_facts(runtime_validations: list[SchemaRuntimeValidation]) -
             conditional_value_uses_json_equality(value)
             for runtime_validation in runtime_validations
             for rule in runtime_validation.conditional_required
-            for _names, expected in rule.condition
+            for _names, expected in (*rule.condition, *rule.absent_or_condition)
             for value in expected
+        ),
+        "has_conditional_absent_or": any(
+            rule.absent_or_condition
+            for runtime_validation in runtime_validations
+            for rule in runtime_validation.conditional_required
+        ),
+        "has_conditional_checks": any(
+            rule.then_checks or rule.else_checks
+            for runtime_validation in runtime_validations
+            for rule in runtime_validation.conditional_required
+        ),
+        "has_conditional_properties": any(
+            rule.data_types
+            for runtime_validation in runtime_validations
+            for rule in runtime_validation.conditional_required
         ),
         "has_unique_items": any(runtime_validation.unique_items for runtime_validation in runtime_validations),
         "has_unique_items_regex_paths": any(
@@ -1544,6 +1559,13 @@ def _helper_template_facts(runtime_validations: list[SchemaRuntimeValidation]) -
         facts["has_pattern_property_intersections"] = True
     if any(rule.python_regex_types for validation in runtime_validations for rule in validation.pattern_properties):
         facts["has_python_regex_types"] = True
+    if any(
+        checks.python_regex_types
+        for validation in runtime_validations
+        for rule in validation.conditional_required
+        for _, checks in rule.outcome_checks
+    ):
+        facts["has_conditional_python_regex_types"] = True
     return facts
 
 
@@ -2145,8 +2167,13 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         The helper writes ``regex_engine`` in the config of the adapter of a rule's type (``python_regex_types``).
         """
         yield from super()._pydantic_constructs()
-        if (validation := self.schema_runtime_validation) is not None and any(
-            rule.python_regex_types for rule in validation.pattern_properties
+        if (validation := self.schema_runtime_validation) is not None and (
+            any(rule.python_regex_types for rule in validation.pattern_properties)
+            or any(
+                checks.python_regex_types
+                for rule in validation.conditional_required
+                for _, checks in rule.outcome_checks
+            )
         ):
             yield from _config_constructs((("regex_engine", '"python-re"'),))
 
@@ -2204,6 +2231,8 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
                 if facts["has_pattern_properties"]
                 else (Import(import_="re"),)
             )
+        if has_local_core_helper and facts["has_conditional_properties"]:
+            helper_imports += (IMPORT_TYPE_ADAPTER,)
         for import_ in helper_imports:
             if import_ not in additional_imports:
                 additional_imports.append(import_)
@@ -2421,6 +2450,13 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
                 msg = (
                     "Custom schema runtime validation helper overrides do not yet support generated presence-only "
                     "conditions or not-required groups. Remove the helper override or disable schema validators."
+                )
+                raise Error(msg)
+            if context["has_conditional_absent_or"] or context["has_conditional_checks"]:
+                msg = (
+                    f"Custom schema runtime validation helper {custom_template_path} overrides do not yet support "
+                    "generated if/then/else outcome checks or conditions on optional properties. Remove the helper "
+                    "override or disable schema validators."
                 )
                 raise Error(msg)
             if context["has_unique_items"]:

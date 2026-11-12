@@ -63,8 +63,9 @@ cli-option.generate-client:
   models; one left unset takes that value, as with `--generate-server`.
 cli-option.generate-schema-validators:
   The option currently targets Pydantic v2 BaseModel output and covers selected object-level rules
-  such as patternProperties, required-only oneOf/anyOf/not groups, and simple if/then/else
-  required-property conditions.
+  such as patternProperties, required-only oneOf/anyOf/not groups, and if/then/else conditions on
+  the presence and const or enum values of properties, where the branch of the outcome that applies
+  checks the properties it requires and declares.
 cli-option.generate-server:
   `--generate-server fastapi` generates the models at `--output` and a server package at
   `--server-output`, whose `main.py` serves the application with the implementations in the

@@ -495,6 +495,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr, PythonTypeRuntimeSymbol
     from datamodel_code_generator._types import JSONSchemaParserConfigDict
     from datamodel_code_generator.config import JSONSchemaParserConfig
+    from datamodel_code_generator.model.runtime_validation import ConditionalOutcome
     from datamodel_code_generator.parser._inherited_schemas import InheritedParentRow, ModelDeclarations
     from datamodel_code_generator.parser._naming import Claim
     from datamodel_code_generator.parser._rw_split import _Site
@@ -1181,6 +1182,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._tag_key_variants: dict[SchemaLocation | None, tuple[str, str]] = {}
         if self.generate_schema_validators:
             self._property_count_rule_cache: dict[int, tuple[JsonSchemaObject, PropertyCountRule | None]] = {}
+            self._conditional_outcome_members: dict[tuple[tuple[str, ...], str], tuple[DataType, ...]] = {}
         self.field_keys: set[str] = {
             *DEFAULT_FIELD_KEYS,
             *self.field_extra_keys,
@@ -2048,14 +2050,29 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
             if groups:
                 required_groups.append(RequiredGroupsRule(keyword=rule.keyword, groups=groups))
+
+        def retarget_checks(checks: ConditionalOutcome) -> ConditionalOutcome:
+            return type(checks)(
+                properties=tuple(
+                    (input_names, retarget(data_type))
+                    for input_names, data_type in checks.properties
+                    if keep_names(input_names)
+                ),
+                rejected=tuple(input_names for input_names in checks.rejected if keep_names(input_names)),
+                allowed=checks.allowed,
+            )
+
         conditional_required = [
             ConditionalRequiredRule(
                 condition=rule.condition,
                 then_groups=filter_groups(rule.then_groups),
                 else_groups=filter_groups(rule.else_groups),
+                absent_or_condition=rule.absent_or_condition,
+                then_checks=retarget_checks(rule.then_checks),
+                else_checks=retarget_checks(rule.else_checks),
             )
             for rule in source.conditional_required
-            if all(keep_names(input_names) for input_names, _ in rule.condition)
+            if all(keep_names(input_names) for input_names, _ in (*rule.condition, *rule.absent_or_condition))
         ]
 
         target = _make_internal_schema_runtime_validation(
@@ -4209,8 +4226,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         reference_path: str,
         obj: JsonSchemaObject,
         names_by_property: dict[str, tuple[str, ...]],
+        path: list[str],
+        source: str,
     ) -> None:
-        _schema_validators.add_conditional_validator(self, reference_path, obj, names_by_property)
+        _schema_validators.add_conditional_validator(self, reference_path, obj, names_by_property, path, source)
 
     def _add_schema_validators(  # noqa: PLR0913, PLR0917
         self,
@@ -5306,11 +5325,25 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 fields.append(with_field_origin(boolean_field, "property", declaration))
                 continue
 
+            outcome_union = _schema_validators.CONDITIONAL_OUTCOME_UNION_KEY in field.__dict__
             field = self._site_schema(field, merge_ref_siblings=True)  # noqa: PLW2901
 
             if original_field_name == variant_key:
                 self.model_resolver.name_past_parent([*path, field_name])
-            field_type = self.parse_item(modular_name, field, [*path, field_name])
+            if outcome_union:
+                members = _union_tags.parse_combined_schema_items(
+                    self,
+                    modular_name,
+                    field,
+                    get_special_path("anyOf", [*path, field_name]),
+                    cast("list[JsonSchemaObject]", field.anyOf),
+                    None,
+                    {},
+                )
+                self._conditional_outcome_members[tuple(path), original_field_name] = tuple(members)
+                field_type = build_union(self.data_type, members)
+            else:
+                field_type = self.parse_item(modular_name, field, [*path, field_name])
 
             effective_default, effective_has_default, use_default_with_required = self._effective_default_state(
                 original_field_name,
@@ -5439,7 +5472,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return value_schema, preserve_root_model
 
     def _pattern_value_alias(
-        self, name: str, schema: JsonSchemaObject, value_type: DataType, path: list[str]
+        self,
+        name: str,
+        schema: JsonSchemaObject,
+        value_type: DataType,
+        path: list[str],
+        role: Literal["pattern-property", "conditional-property"] = "pattern-property",
     ) -> DataType:
         """Return the type alias that writes a patternProperties value with the constraints its type leaves out.
 
@@ -5450,7 +5488,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         the item counts of an array (``_writes_item_counts_on_alias``). The value keeps its type, so every model it
         builds keeps its name; a type that names a model, an x-python-type and a merged enum take none, and the value
         is written as ``value_type`` itself. The alias gives way to the name of every other model
-        (``yielding_new_references``).
+        (``yielding_new_references``). A property that the outcome of an ``if`` checks (``role``
+        ``conditional-property``) takes ``<name>ConditionalProperty``.
         """
         if value_type.reference is not None or not self._output_model_context.supports_internal_annotated_constraints:
             return value_type
@@ -5465,7 +5504,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         with self.model_resolver.yielding_new_references():
             return JsonSchemaParser._parse_annotated_root(
                 self,
-                composed_name(name, "pattern-property"),
+                composed_name(name, role),
                 value_schema,
                 get_special_path("patternProperty", path),
                 root_class=self._nested_constrained_model_type,

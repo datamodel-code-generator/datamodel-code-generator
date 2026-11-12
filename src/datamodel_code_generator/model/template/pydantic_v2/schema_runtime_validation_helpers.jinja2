@@ -12,6 +12,9 @@ class {{ schema_runtime_validation_base_class_name }}(BaseModel):
 {%- if has_conditional_required %}
     __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = ()
 {%- endif %}
+{%- if has_conditional_properties %}
+    __json_schema_conditional_adapters__: ClassVar[dict[Any, Any]] = {}
+{%- endif %}
 {%- if has_unique_items %}
     __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ()
 {%- endif %}
@@ -202,6 +205,24 @@ class {{ schema_runtime_validation_base_class_name }}(BaseModel):
 {%- endif %}
                 for names, expected in rule['condition']
             )
+{%- if has_conditional_absent_or %}
+            condition_matches = condition_matches and all(
+                not any(name in data for name in names)
+                or any(
+                    name in data
+{%- if has_conditional_json_equality %}
+                    and any(
+                        cls._json_schema_conditional_equal(data[name], value)
+                        for value in expected
+                    )
+{%- else %}
+                    and data[name] in expected
+{%- endif %}
+                    for name in names
+                )
+                for names, expected in rule.get('absent_or_condition', ())
+            )
+{%- endif %}
             required_groups = (
                 rule['then_required_groups']
                 if condition_matches
@@ -211,6 +232,42 @@ class {{ schema_runtime_validation_base_class_name }}(BaseModel):
                 if all(any(name in data for name in names) for names in group):
                     continue
                 raise ValueError('Conditional required properties are missing')
+{%- if has_conditional_checks %}
+            outcome = 'then' if condition_matches else 'else'
+            for names in rule.get(f'{outcome}_rejected', ()):
+                if any(name in data for name in names):
+                    raise ValueError(
+                        f'Property {names[0]!r} is not allowed when the {outcome} branch applies'
+                    )
+            if (allowed := rule.get(f'{outcome}_allowed')) is not None:
+                for key in data:
+                    if key not in allowed:
+                        raise ValueError(
+                            f'Unexpected property {key!r} when the {outcome} branch applies'
+                        )
+{%- if has_conditional_properties %}
+            for index, (names, value_type) in enumerate(
+                rule.get(f'{outcome}_properties', ())
+            ):
+                for name in names:
+                    if name not in data:
+                        continue
+                    adapters = cls.__json_schema_conditional_adapters__
+                    if (adapter := adapters.get((id(rule), outcome, index))) is None:
+{%- if has_conditional_python_regex_types %}
+                        adapter = adapters[(id(rule), outcome, index)] = TypeAdapter(
+                            value_type,
+                            config={'regex_engine': 'python-re'} if index in rule.get(f'{outcome}_python_regex_types', ()) else None,
+                        )
+{%- else %}
+                        adapter = adapters[(id(rule), outcome, index)] = TypeAdapter(
+                            value_type
+                        )
+{%- endif %}
+                    adapter.validate_python(data[name])
+                    break
+{%- endif %}
+{%- endif %}
         return data
 {%- endif %}
 {%- if has_conditional_json_equality %}

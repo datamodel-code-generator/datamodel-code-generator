@@ -154,7 +154,12 @@ class ObjectMapsHost(AllOfValuesHost, Protocol):
         """Build the key type of an anyOf, oneOf or allOf propertyNames schema, parsing it only when needed."""
 
     def _pattern_value_alias(
-        self, name: str, schema: JsonSchemaObject, value_type: DataType, path: list[str]
+        self,
+        name: str,
+        schema: JsonSchemaObject,
+        value_type: DataType,
+        path: list[str],
+        role: Literal["pattern-property", "conditional-property"] = "pattern-property",
     ) -> DataType:
         """Return the type alias that writes a patternProperties value with its constraints, else ``value_type``."""
 

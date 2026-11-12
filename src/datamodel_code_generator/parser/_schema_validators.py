@@ -12,7 +12,7 @@ import math
 import re
 from functools import partial
 from itertools import chain
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, cast
 
 from typing_extensions import Protocol
 
@@ -28,6 +28,7 @@ from datamodel_code_generator.model.runtime_validation import (
     UNIQUE_ITEMS_MAPPING_ADDITIONAL_VALUES_PATH_STEP,
     UNIQUE_ITEMS_MAPPING_PATTERN_VALUES_PATH_STEP,
     UNIQUE_ITEMS_MAPPING_VALUES_PATH_STEP,
+    ConditionalOutcome,
     ConditionalRequiredRule,
     IndependentDeclaredPatternPropertiesRule,
     IndependentModelPatternPropertiesRule,
@@ -65,13 +66,13 @@ from datamodel_code_generator.parser.base import get_special_path
 from datamodel_code_generator.types import DataType, Types
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 
     from typing_extensions import TypeIs
 
     from datamodel_code_generator.config import JSONSchemaParserConfig
     from datamodel_code_generator.model import DataModelFieldBase
-    from datamodel_code_generator.model.runtime_validation import UniqueItemsPath, UniqueItemsPathStep
+    from datamodel_code_generator.model.runtime_validation import Condition, UniqueItemsPath, UniqueItemsPathStep
     from datamodel_code_generator.parser._schema_graph import _TargetNode
     from datamodel_code_generator.reference import Reference
 
@@ -132,6 +133,7 @@ class SchemaValidatorsHost(
 
     CONDITIONAL_SCHEMA_ALLOWED_FIELDS: ClassVar[frozenset[str]]
     REQUIRED_ONLY_SCHEMA_ALLOWED_FIELDS: ClassVar[frozenset[str]]
+    _conditional_outcome_members: dict[tuple[tuple[str, ...], str], tuple[DataType, ...]]
     _pattern_validation_document_root: JsonSchemaObject | None
     _root_pattern_string_constraints: JsonSchemaObject | None
 
@@ -145,13 +147,19 @@ class SchemaValidatorsHost(
     ) -> DataType:
         """Parse a schema into the data type of a field or a value."""
 
+    @property
+    def _copy_model_type(self) -> Callable[[DataType], DataType]:
+        """The function that copies a data type tree without detaching its model references."""
+
     def _add_conditional_validator(
         self,
         reference_path: str,
         obj: JsonSchemaObject,
         names_by_property: dict[str, tuple[str, ...]],
+        path: list[str],
+        source: str,
     ) -> None:
-        """Register the if/then/else required-property rule of ``obj``, deduplicated by value."""
+        """Register the if/then/else rule of ``obj``, the allOf source ``source`` of the model at ``path``."""
 
     def _add_property_count_validator(self, reference_path: str, obj: JsonSchemaObject) -> None:
         """Add raw-object property-count rules from this schema and its allOf sources."""
@@ -275,7 +283,12 @@ class SchemaValidatorsHost(
         """Parse a mapping value schema while preserving supported Annotated constraints."""
 
     def _pattern_value_alias(
-        self, name: str, schema: JsonSchemaObject, value_type: DataType, path: list[str]
+        self,
+        name: str,
+        schema: JsonSchemaObject,
+        value_type: DataType,
+        path: list[str],
+        role: Literal["pattern-property", "conditional-property"] = "pattern-property",
     ) -> DataType:
         """Return the type alias that writes a patternProperties value with its constraints, else ``value_type``."""
 
@@ -510,9 +523,13 @@ def iter_conditional_branches(parser: SchemaValidatorsHost, obj: JsonSchemaObjec
 
 
 def has_conditional_validator(parser: SchemaValidatorsHost, obj: JsonSchemaObject) -> bool:
-    """Return whether ``obj`` has a supported ``if`` and a ``then`` or ``else`` that requires properties."""
+    """Return whether ``obj`` has a supported ``if`` and a ``then`` or ``else`` that requires or declares properties.
+
+    A branch that admits only the keys it declares (``_closes_other_keys``) counts too.
+    """
     return get_conditional_predicate(parser, obj) is not None and any(
-        branch.required for branch in iter_conditional_branches(parser, obj)
+        branch.required or branch.properties or _closes_other_keys(branch)
+        for branch in iter_conditional_branches(parser, obj)
     )
 
 
@@ -1551,13 +1568,174 @@ def add_property_count_validator(parser: SchemaValidatorsHost, reference_path: s
     parser._schema_runtime_validation(reference_path).property_count = property_count_rule  # noqa: SLF001
 
 
-def add_conditional_validator(
+def _closes_other_keys(schema: JsonSchemaObject) -> bool:
+    """Return whether ``schema`` rejects every key it declares no schema for.
+
+    That is ``additionalProperties: false``, or ``unevaluatedProperties: false`` without an additionalProperties, both
+    without patternProperties, which may admit the key.
+    """
+    return not schema.patternProperties and (
+        schema.additionalProperties is False
+        or (schema.additionalProperties is None and schema.unevaluatedProperties is False)
+    )
+
+
+def _parent_closes(obj: JsonSchemaObject) -> bool:
+    """Return whether ``obj`` rejects the keys only a conditional branch declares where that branch does not apply."""
+    return obj.additionalProperties is None and _closes_other_keys(obj)
+
+
+def _outcome_property_schemas(
+    branch: JsonSchemaObject | bool | None,  # noqa: FBT001
+    key: str,
+    *,
+    parent_closes: bool,
+) -> tuple[Any, ...] | None:
+    """Return the schemas the outcome of a conditional ``branch`` admits for ``key``, None where it leaves the key open.
+
+    A branch that declares the key gives its schema, and one that rejects the key or whose parent rejects the keys no
+    applicator evaluates (``parent_closes``) gives none; otherwise the key is left to the rules of the keys the object
+    declares no schema for.
+    """
+    match branch:
+        case JsonSchemaObject() if branch.properties and key in branch.properties:
+            value = branch.properties[key]
+            if value is True or (isinstance(value, JsonSchemaObject) and _is_empty_property_schema(value)):
+                return None
+            return () if value is False else (_schema_dump(value),)
+        case JsonSchemaObject() if _closes_other_keys(branch):
+            return ()
+    return () if parent_closes else None
+
+
+def _conditional_outcome_properties(
+    parser: SchemaValidatorsHost, obj: JsonSchemaObject, own: Collection[str]
+) -> dict[str, tuple[Any, ...]]:
+    """Return the schemas the outcomes of ``if`` admit for each property ``then`` or ``else`` declares beyond ``own``.
+
+    Each outcome, ``then`` where ``if`` passes and ``else`` where it fails, gives the key the schemas it admits
+    (``_outcome_property_schemas``); without ``if`` neither branch applies, which is the one outcome. A key that some
+    outcome leaves open also admits any value (``{}``, last, so that a value one of the schemas admits keeps its type),
+    and a key no outcome admits a value for gets nothing. An object that admits no key it declares no schema for gets
+    nothing either.
+    """
+    if obj.additionalProperties is False and not obj.patternProperties:
+        return {}
+    branches = [get_conditional_schema(parser, obj, keyword) for keyword in ("then", "else")]
+    outcomes = branches if get_conditional_schema(parser, obj, "if") is not None else [None]
+    parent_closes = _parent_closes(obj)
+    keys = dict.fromkeys(
+        key
+        for branch in branches
+        if isinstance(branch, JsonSchemaObject) and branch.properties
+        for key in branch.properties
+        if key not in own
+    )
+    properties: dict[str, tuple[Any, ...]] = {}
+    for key in keys:
+        schemas: list[Any] = []
+        open_outcome = False
+        for branch in outcomes:
+            if (admitted := _outcome_property_schemas(branch, key, parent_closes=parent_closes)) is None:
+                open_outcome = True
+                continue
+            schemas.extend(schema for schema in admitted if schema not in schemas)
+        if open_outcome:
+            schemas.append({})
+        if schemas:
+            properties[key] = tuple(schemas)
+    return properties
+
+
+def _outcome_property_type(  # noqa: PLR0913, PLR0917
+    parser: SchemaValidatorsHost,
+    key: str,
+    schema: JsonSchemaObject,
+    members: tuple[Any, ...],
+    path: list[str],
+    value_path: list[str],
+) -> DataType | None:
+    """Return the type that checks ``schema``, what a branch declares for ``key``, None where the field checks it.
+
+    ``members`` are the schemas the field of the key holds: the field checks a schema that is the only one; a member of
+    a union is checked with a copy of the type the field holds for it (``_conditional_outcome_members``), any other
+    schema with the type ``parse_item`` builds for it at ``value_path``.
+    """
+    if members == (dump := _schema_dump(schema),):
+        return None
+    if (
+        len(members) > 1
+        and dump in members
+        and (parsed := parser._conditional_outcome_members.get((tuple(path), key))) is not None  # noqa: SLF001
+    ):
+        return parser._copy_model_type(parsed[members.index(dump)])  # noqa: SLF001
+    value_type = parser.parse_item(key, schema, value_path)
+    return parser._pattern_value_alias(key, schema, value_type, value_path, "conditional-property")  # noqa: SLF001
+
+
+def _outcome_checks(  # noqa: PLR0913, PLR0917
+    parser: SchemaValidatorsHost,
+    obj: JsonSchemaObject,
+    keyword: Literal["then", "else"],
+    names_by_property: Mapping[str, tuple[str, ...]],
+    path: list[str],
+    source: str,
+) -> ConditionalOutcome:
+    """Return what the ``then`` or ``else`` branch of ``obj`` checks beyond its required groups when it applies.
+
+    A property it declares with a schema that asserts something is checked with the type of that schema
+    (``_outcome_property_type``), built under ``schemaValidators/conditional/<source>/<keyword>/<key>`` where needed. A
+    ``false`` property is rejected; a closed branch admits only the keys it declares; a branch of an object that
+    rejects unevaluated keys rejects the keys only the other branch declares.
+    """
+    branch = get_conditional_schema(parser, obj, keyword)
+    declared_own = obj.properties or {}
+    own = {key: declared_own[key] for key in obj.__dict__.get(_CONDITIONAL_OWN_KEYS_KEY, declared_own)}
+    other = get_conditional_schema(parser, obj, "else" if keyword == "then" else "then")
+    other_keys = (
+        [key for key in other.properties or {} if key not in own] if isinstance(other, JsonSchemaObject) else []
+    )
+    parent_closes = _parent_closes(obj)
+    if not isinstance(branch, JsonSchemaObject):
+        if branch is None and parent_closes:
+            return ConditionalOutcome(rejected=tuple(_input_names(names_by_property, key) for key in other_keys))
+        return ConditionalOutcome()
+    outcome_properties = _conditional_outcome_properties(parser, obj, own)
+    parent_rejects_branch_keys = obj.additionalProperties is False and not obj.patternProperties
+    properties: list[tuple[tuple[str, ...], DataType]] = []
+    rejected: list[tuple[str, ...]] = []
+    declared = branch.properties or {}
+    for key, schema in declared.items():
+        if schema is False:
+            rejected.append(_input_names(names_by_property, key))
+            continue
+        if schema is True or _is_empty_property_schema(schema) or (key not in own and parent_rejects_branch_keys):
+            continue
+        members = (_schema_dump(own[key]),) if key in own else outcome_properties.get(key, ())
+        value_path = get_special_path(f"schemaValidators/conditional/{source}/{keyword}/{key}", path)
+        if (value_type := _outcome_property_type(parser, key, schema, members, path, value_path)) is not None:
+            properties.append((_input_names(names_by_property, key), value_type))
+    allowed = None
+    if _closes_other_keys(branch):
+        allowed = tuple(name for key in declared for name in _input_names(names_by_property, key))
+    elif parent_closes:
+        rejected.extend(_input_names(names_by_property, key) for key in other_keys if key not in declared)
+    return ConditionalOutcome(properties=tuple(properties), rejected=tuple(rejected), allowed=allowed)
+
+
+def add_conditional_validator(  # noqa: PLR0913, PLR0917
     parser: SchemaValidatorsHost,
     reference_path: str,
     obj: JsonSchemaObject,
     names_by_property: dict[str, tuple[str, ...]],
+    path: list[str],
+    source: str,
 ) -> None:
-    """Register the if/then/else required-property rule of ``obj``, deduplicated by value."""
+    """Register the if/then/else rule of ``obj``, the allOf source ``source`` of the model at ``path``.
+
+    The rule holds the required groups of each branch and what the branch of the outcome that applies checks beyond
+    them (``_outcome_checks``); rules are deduplicated by value.
+    """
     if (predicate := get_conditional_predicate(parser, obj)) is None:
         return
 
@@ -1565,17 +1743,27 @@ def add_conditional_validator(
         (tuple(schema.required),) if isinstance(schema, JsonSchemaObject) and schema.required else ()
         for schema in (get_conditional_schema(parser, obj, "then"), get_conditional_schema(parser, obj, "else"))
     )
-    if not then_groups and not else_groups:
+    then_checks, else_checks = (
+        _outcome_checks(parser, obj, keyword, names_by_property, path, source) for keyword in ("then", "else")
+    )
+    if not (then_groups or else_groups or then_checks or else_checks):
         return
 
-    condition = tuple(
-        (names_by_property.get(property_name, (property_name,)), expected_values)
-        for property_name, expected_values in predicate
-    )
+    required, absent_or = predicate
+
+    def condition(predicates: tuple[tuple[str, tuple[object, ...]], ...]) -> Condition:
+        return tuple(
+            (names_by_property.get(property_name, (property_name,)), expected_values)
+            for property_name, expected_values in predicates
+        )
+
     rule = ConditionalRequiredRule(
-        condition=condition,
+        condition=condition(required),
         then_groups=parser._required_group_input_names(then_groups, names_by_property),  # noqa: SLF001
         else_groups=parser._required_group_input_names(else_groups, names_by_property),  # noqa: SLF001
+        absent_or_condition=condition(absent_or),
+        then_checks=then_checks,
+        else_checks=else_checks,
     )
     runtime_validation = parser._schema_runtime_validation(reference_path)  # noqa: SLF001
     if rule not in runtime_validation.conditional_required:
@@ -1606,7 +1794,7 @@ def add_schema_validators(  # noqa: PLR0913, PLR0917
         and (missing_required := [name for name in obj.required if name not in names_by_property])
     ):
         parser._add_required_groups_validator(reference_path, "anyOf", [missing_required], names_by_property)  # noqa: SLF001
-    add_group_validators(parser, reference_path, obj, names_by_property)
+    add_group_validators(parser, reference_path, obj, names_by_property, path, "0")
     if include_property_count:
         parser._add_property_count_validator(reference_path, obj)  # noqa: SLF001
     parser._add_unique_items_validator(  # noqa: SLF001
@@ -1620,6 +1808,7 @@ def add_schema_validators(  # noqa: PLR0913, PLR0917
         return
     # Inline rules belong to this model even when it has no other runtime rules.
     # Once it defines core rules, also merge those shadowed on referenced bases.
+    visited: list[JsonSchemaObject] = [obj]
     for include_references in (False, True):
         runtime_validation = parser.extra_template_data[reference_path].get("schema_runtime_validation")
         has_core_rules = _is_internal_schema_runtime_validation(runtime_validation) and has_core_schema_runtime_rules(
@@ -1630,25 +1819,34 @@ def add_schema_validators(  # noqa: PLR0913, PLR0917
                 return
         elif has_core_rules:
             continue
-        for source in parser._iter_schema_validation_sources(obj, include_references=include_references):  # noqa: SLF001
-            if source is not obj:
-                add_group_validators(parser, reference_path, source, names_by_property)
+        sources = parser._iter_schema_validation_sources(obj, include_references=include_references)  # noqa: SLF001
+        for index, source in enumerate(sources):
+            if any(source is seen for seen in visited):
+                continue
+            visited.append(source)
+            source_key = f"references/{index}" if include_references else str(index)
+            add_group_validators(parser, reference_path, source, names_by_property, path, source_key)
 
 
-def add_group_validators(
+def add_group_validators(  # noqa: PLR0913, PLR0917
     parser: SchemaValidatorsHost,
     reference_path: str,
     source: JsonSchemaObject,
     names_by_property: dict[str, tuple[str, ...]],
+    path: list[str],
+    source_key: str,
 ) -> None:
-    """Register the required-property groups of the oneOf, anyOf and not of ``source``, then its if/then/else."""
+    """Register the required-property groups of the oneOf, anyOf and not of ``source``, then its if/then/else.
+
+    ``source_key`` names the allOf source of the model at ``path`` that ``source`` is.
+    """
     oneof_groups = get_required_groups(parser, source.oneOf)
     parser._add_required_groups_validator(reference_path, "oneOf", oneof_groups, names_by_property)  # noqa: SLF001
     anyof_groups = get_required_groups(parser, source.anyOf)
     parser._add_required_groups_validator(reference_path, "anyOf", anyof_groups, names_by_property)  # noqa: SLF001
     not_groups = get_not_required_groups(parser, source)
     parser._add_required_groups_validator(reference_path, "not", not_groups, names_by_property)  # noqa: SLF001
-    parser._add_conditional_validator(reference_path, source, names_by_property)  # noqa: SLF001
+    parser._add_conditional_validator(reference_path, source, names_by_property, path, source_key)  # noqa: SLF001
 
 
 def is_required_only_schema(
@@ -1668,24 +1866,42 @@ def is_required_only_schema(
     )
 
 
+_CONDITIONAL_OWN_KEYS_KEY: Final = "_conditional_own_keys"
+"""The ``__dict__`` key of an object with merged conditional properties that holds the keys it declares itself."""
+CONDITIONAL_OUTCOME_UNION_KEY: Final = "_conditional_outcome_union"
+"""The ``__dict__`` key that marks a merged property whose anyOf holds the schemas of the outcomes of ``if``."""
+
+
 def merge_conditional_properties(parser: SchemaValidatorsHost, obj: JsonSchemaObject) -> JsonSchemaObject:
+    """Return ``obj`` with the properties its ``then`` and ``else`` declare, under --generate-schema-validators.
+
+    A property gets what the outcomes of ``if`` admit for it (``_conditional_outcome_properties``): one schema, or the
+    anyOf of several, which is marked (``CONDITIONAL_OUTCOME_UNION_KEY``) so that the field records the type of each
+    (``_conditional_outcome_members``); the object records its own keys (``_CONDITIONAL_OWN_KEYS_KEY``) and keeps the
+    ``if``, ``then`` and ``else`` of ``obj`` as they are, so that the branches stay the schema objects of the document,
+    with their locations, for the models their checks build.
+    """
     if not parser.generate_schema_validators:
         return obj
 
-    merged_properties: dict[str, Any] = {key: _schema_dump(value) for key, value in (obj.properties or {}).items()}
-    for branch in iter_conditional_branches(parser, obj):
-        if not branch.properties:
-            continue
-        for key, value in branch.properties.items():
-            if key not in merged_properties:
-                merged_properties[key] = _schema_dump(value)
-
-    if not merged_properties or set(merged_properties) == set(obj.properties or {}):
+    own = obj.properties or {}
+    if not (outcome_properties := _conditional_outcome_properties(parser, obj, own)):
         return obj
 
+    properties: dict[str, Any] = {key: _schema_dump(value) for key, value in own.items()}
+    for key, schemas in outcome_properties.items():
+        if len(schemas) == 1:
+            properties[key] = schemas[0]
+            continue
+        union = parser._schema_object({"anyOf": list(schemas)})  # noqa: SLF001
+        union.__dict__[CONDITIONAL_OUTCOME_UNION_KEY] = True
+        properties[key] = union
     schema_dict = obj.model_dump(exclude_unset=True, by_alias=True)
-    schema_dict["properties"] = merged_properties
-    return parser._schema_object(schema_dict)  # noqa: SLF001
+    schema_dict["properties"] = properties
+    merged = parser._schema_object(schema_dict)  # noqa: SLF001
+    merged.extras.update({keyword: obj.extras[keyword] for keyword in ("if", "then", "else") if keyword in obj.extras})
+    merged.__dict__[_CONDITIONAL_OWN_KEYS_KEY] = tuple(own)
+    return merged
 
 
 def collect_pattern_property_validators(
@@ -1773,10 +1989,14 @@ def pattern_checks_declared_key(
 def get_conditional_predicate(
     parser: SchemaValidatorsHost,
     obj: JsonSchemaObject,
-) -> tuple[tuple[str, tuple[object, ...]], ...] | None:
-    """Extract supported required-property predicates without dropping other conditions."""
+) -> tuple[tuple[tuple[str, tuple[object, ...]], ...], tuple[tuple[str, tuple[object, ...]], ...]] | None:
+    """Return the predicates of ``if``, None where it asserts something they cannot hold.
+
+    The first holds the properties ``if`` requires with their literals (none for a presence check), the second the
+    properties it does not require with the literals of their ``const`` or ``enum``, which pass when absent too.
+    """
     if_schema = get_conditional_schema(parser, obj, "if")
-    if not isinstance(if_schema, JsonSchemaObject) or not if_schema.required:
+    if not isinstance(if_schema, JsonSchemaObject) or not (if_schema.required or if_schema.properties):
         return None
     if not _is_object_only_type(if_schema.type) or not _is_empty_property_schema(
         if_schema, allowed_keywords=parser.CONDITIONAL_SCHEMA_ALLOWED_FIELDS
@@ -1784,16 +2004,22 @@ def get_conditional_predicate(
         return None
 
     properties = if_schema.properties or {}
-    if any(
-        property_name not in if_schema.required
-        and property_schema is not True
-        and not (isinstance(property_schema, JsonSchemaObject) and _is_empty_property_schema(property_schema))
-        for property_name, property_schema in properties.items()
-    ):
-        return None
+    absent_or: list[tuple[str, tuple[object, ...]]] = []
+    for property_name, property_schema in properties.items():
+        if (
+            property_name in if_schema.required
+            or property_schema is True
+            or (isinstance(property_schema, JsonSchemaObject) and _is_empty_property_schema(property_schema))
+        ):
+            continue
+        if not (values := _get_conditional_property_values(property_schema)):
+            return None
+        absent_or.append((property_name, values))
     predicates: list[tuple[str, tuple[object, ...]]] = []
     for property_name in if_schema.required:
         if (values := _get_conditional_property_values(properties.get(property_name))) is None:
             return None
         predicates.append((property_name, values))
-    return tuple(predicates)
+    if not predicates and not absent_or:
+        return None
+    return tuple(predicates), tuple(absent_or)

@@ -3063,9 +3063,16 @@ Generate experimental Pydantic v2 model validators for JSON Schema runtime rules
 The `--generate-schema-validators` option emits schema-derived model validators
 for object constraints that cannot be represented as type hints alone, including
 minProperties/maxProperties on named object models, patternProperties on
-composed object models, required-only oneOf/anyOf groups, simple
-if/then/else required-property conditions, and uniqueItems array validation.
+composed object models, required-only oneOf/anyOf groups, if/then/else
+conditions on the presence and `const` or `enum` values of properties, and
+uniqueItems array validation.
 This feature is experimental and may change as JSON Schema coverage is expanded.
+
+For if/then/else, the branch of the outcome that applies checks the properties
+it requires and declares, rejects its `false` properties, and admits only its
+keys where it closes the object. A property that a branch declares beyond the
+object's own takes the union of what each outcome admits for it, `Any` last
+where an outcome leaves it open, so a value either outcome accepts parses.
 
 With standard models and templates, required names absent from generated fields
 are checked against the raw object input. This also preserves required names
@@ -3074,9 +3081,9 @@ patterns. `--force-optional` retains its existing behavior. Custom base classes,
 custom templates, and extra template data retain their previous handling of
 undeclared required names.
 
-When generating uniqueItems validation, do not override
-`pydantic_v2/schema_runtime_validation_helpers.jinja2`; custom helper overrides
-are unsupported and generation fails fast.
+When generating uniqueItems validation or if/then/else branch checks, do not
+override `pydantic_v2/schema_runtime_validation_helpers.jinja2`; custom helper
+overrides are unsupported and generation fails fast.
 
 !!! tip "Usage"
 
@@ -3280,6 +3287,7 @@ are unsupported and generation fails fast.
         __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = ()
         __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = ()
         __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = ()
+        __json_schema_conditional_adapters__: ClassVar[dict[Any, Any]] = {}
 
         @model_validator(mode='before')
         @classmethod
@@ -3392,6 +3400,31 @@ are unsupported and generation fails fast.
                     if all(any(name in data for name in names) for names in group):
                         continue
                     raise ValueError('Conditional required properties are missing')
+                outcome = 'then' if condition_matches else 'else'
+                for names in rule.get(f'{outcome}_rejected', ()):
+                    if any(name in data for name in names):
+                        raise ValueError(
+                            f'Property {names[0]!r} is not allowed when the {outcome} branch applies'
+                        )
+                if (allowed := rule.get(f'{outcome}_allowed')) is not None:
+                    for key in data:
+                        if key not in allowed:
+                            raise ValueError(
+                                f'Unexpected property {key!r} when the {outcome} branch applies'
+                            )
+                for index, (names, value_type) in enumerate(
+                    rule.get(f'{outcome}_properties', ())
+                ):
+                    for name in names:
+                        if name not in data:
+                            continue
+                        adapters = cls.__json_schema_conditional_adapters__
+                        if (adapter := adapters.get((id(rule), outcome, index))) is None:
+                            adapter = adapters[(id(rule), outcome, index)] = TypeAdapter(
+                                value_type
+                            )
+                        adapter.validate_python(data[name])
+                        break
             return data
 
 
@@ -3507,12 +3540,14 @@ are unsupported and generation fails fast.
                 'condition': ((('kind',), ('metric',)),),
                 'then_required_groups': ((('metric',),),),
                 'else_required_groups': ((('note',),),),
+                'then_properties': ((('metric',), int),),
+                'else_properties': ((('note',), str),),
             },
         )
 
         kind: str | None = None
-        metric: int | None = None
-        note: str | None = None
+        metric: int | Any | None = None
+        note: str | Any | None = None
 
 
     class RequiredOnlyGuard1(BaseModel):
@@ -4532,6 +4567,7 @@ additional validator backends without adding them in this release.
         __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = ()
         __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = ()
         __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = ()
+        __json_schema_conditional_adapters__: ClassVar[dict[Any, Any]] = {}
 
         @model_validator(mode='before')
         @classmethod
@@ -4644,6 +4680,31 @@ additional validator backends without adding them in this release.
                     if all(any(name in data for name in names) for names in group):
                         continue
                     raise ValueError('Conditional required properties are missing')
+                outcome = 'then' if condition_matches else 'else'
+                for names in rule.get(f'{outcome}_rejected', ()):
+                    if any(name in data for name in names):
+                        raise ValueError(
+                            f'Property {names[0]!r} is not allowed when the {outcome} branch applies'
+                        )
+                if (allowed := rule.get(f'{outcome}_allowed')) is not None:
+                    for key in data:
+                        if key not in allowed:
+                            raise ValueError(
+                                f'Unexpected property {key!r} when the {outcome} branch applies'
+                            )
+                for index, (names, value_type) in enumerate(
+                    rule.get(f'{outcome}_properties', ())
+                ):
+                    for name in names:
+                        if name not in data:
+                            continue
+                        adapters = cls.__json_schema_conditional_adapters__
+                        if (adapter := adapters.get((id(rule), outcome, index))) is None:
+                            adapter = adapters[(id(rule), outcome, index)] = TypeAdapter(
+                                value_type
+                            )
+                        adapter.validate_python(data[name])
+                        break
             return data
 
 
@@ -4759,12 +4820,14 @@ additional validator backends without adding them in this release.
                 'condition': ((('kind',), ('metric',)),),
                 'then_required_groups': ((('metric',),),),
                 'else_required_groups': ((('note',),),),
+                'then_properties': ((('metric',), int),),
+                'else_properties': ((('note',), str),),
             },
         )
 
         kind: str | None = None
-        metric: int | None = None
-        note: str | None = None
+        metric: int | Any | None = None
+        note: str | Any | None = None
 
 
     class RequiredOnlyGuard1(BaseModel):

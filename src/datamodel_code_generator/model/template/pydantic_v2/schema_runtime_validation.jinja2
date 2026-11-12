@@ -47,6 +47,27 @@
             'condition': {{ rule.condition|repr }},
             'then_required_groups': {{ rule.then_groups|repr }},
             'else_required_groups': {{ rule.else_groups|repr }},
+{%- if rule.absent_or_condition %}
+            'absent_or_condition': {{ rule.absent_or_condition|repr }},
+{%- endif %}
+{%- for outcome, check in rule.outcome_checks %}
+{%- if check.properties %}
+            '{{ outcome }}_properties': (
+{%- for input_names, data_type in check.properties %}
+                ({{ input_names|repr }}, {{ data_type.type_hint }}),
+{%- endfor %}
+            ),
+{%- if check.python_regex_types %}
+            '{{ outcome }}_python_regex_types': {{ check.python_regex_types|repr }},
+{%- endif %}
+{%- endif %}
+{%- if check.rejected %}
+            '{{ outcome }}_rejected': {{ check.rejected|repr }},
+{%- endif %}
+{%- if check.allowed is not none %}
+            '{{ outcome }}_allowed': {{ check.allowed|repr }},
+{%- endif %}
+{%- endfor %}
         },
 {%- endfor %}
     )

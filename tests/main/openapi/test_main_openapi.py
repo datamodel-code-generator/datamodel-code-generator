@@ -14029,6 +14029,16 @@ def test_main_openapi_read_only_write_only_variant_graph_schema_validators(
         expected_attribute_path=("payload", "metricLeaf", "id"),
         expected_attribute_value=1,
     )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="read_only_write_only_variant_graph_validator_response_else_ref",
+        model_name="ApiConditionalForwardWrapperResponseModel",
+        valid_json='{"payload":{"kind":"note","noteLeaf":{"id":2}}}',
+        invalid_json='{"payload":{"kind":"note","noteLeaf":{"id":"bad"}}}',
+        expected_error_type="int_parsing",
+        expected_attribute_path=("payload", "noteLeaf", "id"),
+        expected_attribute_value=2,
+    )
     assert_generated_model_json_invalid(
         output_file,
         module_name="read_only_write_only_variant_graph_validator_response_property_count",

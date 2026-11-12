@@ -4,7 +4,69 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from collections.abc import Mapping as _Mapping
+from typing import Any, ClassVar
+
+from pydantic import BaseModel, Field, TypeAdapter, model_validator
+
+
+class _JsonSchemaRuntimeValidationBase(BaseModel):
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = ()
+    __json_schema_conditional_adapters__: ClassVar[dict[Any, Any]] = {}
+
+    @model_validator(mode='before')
+    @classmethod
+    def _validate_json_schema_runtime_rules(cls, data: Any) -> Any:
+        data = cls._validate_json_schema_conditional_required(data)
+        return data
+
+    @classmethod
+    def _validate_json_schema_conditional_required(cls, data: Any) -> Any:
+        if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+            return data
+        for rule in cls.__json_schema_conditional_required__:
+            condition_matches = all(
+                any(
+                    name in data and (not expected or data[name] in expected)
+                    for name in names
+                )
+                for names, expected in rule['condition']
+            )
+            required_groups = (
+                rule['then_required_groups']
+                if condition_matches
+                else rule['else_required_groups']
+            )
+            for group in required_groups:
+                if all(any(name in data for name in names) for names in group):
+                    continue
+                raise ValueError('Conditional required properties are missing')
+            outcome = 'then' if condition_matches else 'else'
+            for names in rule.get(f'{outcome}_rejected', ()):
+                if any(name in data for name in names):
+                    raise ValueError(
+                        f'Property {names[0]!r} is not allowed when the {outcome} branch applies'
+                    )
+            if (allowed := rule.get(f'{outcome}_allowed')) is not None:
+                for key in data:
+                    if key not in allowed:
+                        raise ValueError(
+                            f'Unexpected property {key!r} when the {outcome} branch applies'
+                        )
+            for index, (names, value_type) in enumerate(
+                rule.get(f'{outcome}_properties', ())
+            ):
+                for name in names:
+                    if name not in data:
+                        continue
+                    adapters = cls.__json_schema_conditional_adapters__
+                    if (adapter := adapters.get((id(rule), outcome, index))) is None:
+                        adapter = adapters[(id(rule), outcome, index)] = TypeAdapter(
+                            value_type
+                        )
+                    adapter.validate_python(data[name])
+                    break
+        return data
 
 
 class Node(BaseModel):
@@ -15,11 +77,20 @@ class Branch(BaseModel):
     children: list[Tree] | None = None
 
 
-class Tree(BaseModel):
+class Tree(_JsonSchemaRuntimeValidationBase):
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('value',), ()),),
+            'then_required_groups': (),
+            'else_required_groups': (),
+            'then_properties': ((('label',), str),),
+        },
+    )
+
     value: int | None = None
     node: Node | None = Field(None, title='Node')
     branch: Branch | None = Field(None, title='Branch')
-    label: str | None = None
+    label: str | Any | None = None
 
 
 class Holder(BaseModel):

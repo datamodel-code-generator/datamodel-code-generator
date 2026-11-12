@@ -6,11 +6,12 @@ from __future__ import annotations
 from collections.abc import Mapping as _Mapping
 from typing import Any, ClassVar
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, TypeAdapter, model_validator
 
 
 class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
     __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = ()
+    __json_schema_conditional_adapters__: ClassVar[dict[Any, Any]] = {}
 
     @model_validator(mode='before')
     @classmethod
@@ -36,6 +37,31 @@ class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
                 if all(any(name in data for name in names) for names in group):
                     continue
                 raise ValueError('Conditional required properties are missing')
+            outcome = 'then' if condition_matches else 'else'
+            for names in rule.get(f'{outcome}_rejected', ()):
+                if any(name in data for name in names):
+                    raise ValueError(
+                        f'Property {names[0]!r} is not allowed when the {outcome} branch applies'
+                    )
+            if (allowed := rule.get(f'{outcome}_allowed')) is not None:
+                for key in data:
+                    if key not in allowed:
+                        raise ValueError(
+                            f'Unexpected property {key!r} when the {outcome} branch applies'
+                        )
+            for index, (names, value_type) in enumerate(
+                rule.get(f'{outcome}_properties', ())
+            ):
+                for name in names:
+                    if name not in data:
+                        continue
+                    adapters = cls.__json_schema_conditional_adapters__
+                    if (adapter := adapters.get((id(rule), outcome, index))) is None:
+                        adapter = adapters[(id(rule), outcome, index)] = TypeAdapter(
+                            value_type
+                        )
+                    adapter.validate_python(data[name])
+                    break
         return data
 
 
@@ -74,12 +100,14 @@ class ApiConditionalEnvelopeRequestModel(_JsonSchemaRuntimeValidationBase):
             'condition': ((('kind',), ('metric',)),),
             'then_required_groups': ((('metricLeaf',),),),
             'else_required_groups': ((('noteLeaf',),),),
+            'then_properties': ((('metricLeaf',), ApiReadOnlyLeafRequestModel),),
+            'else_properties': ((('noteLeaf',), ApiReadOnlyLeafRequestModel),),
         },
     )
 
     kind: str
-    metricLeaf: ApiReadOnlyLeafRequestModel | None = None
-    noteLeaf: ApiReadOnlyLeafRequestModel | None = None
+    metricLeaf: ApiReadOnlyLeafRequestModel | Any | None = None
+    noteLeaf: ApiReadOnlyLeafRequestModel | Any | None = None
 
 
 class ApiConditionalEnvelopeResponseModel(_JsonSchemaRuntimeValidationBase):
@@ -90,12 +118,14 @@ class ApiConditionalEnvelopeResponseModel(_JsonSchemaRuntimeValidationBase):
             'condition': ((('kind',), ('metric',)),),
             'then_required_groups': ((('metricLeaf',),),),
             'else_required_groups': ((('noteLeaf',),),),
+            'then_properties': ((('metricLeaf',), ApiReadOnlyLeafResponseModel),),
+            'else_properties': ((('noteLeaf',), ApiReadOnlyLeafResponseModel),),
         },
     )
 
     kind: str
-    metricLeaf: ApiReadOnlyLeafResponseModel | None = None
-    noteLeaf: ApiReadOnlyLeafResponseModel | None = None
+    metricLeaf: ApiReadOnlyLeafResponseModel | Any | None = None
+    noteLeaf: ApiReadOnlyLeafResponseModel | Any | None = None
 
 
 class ApiConditionalForwardWrapperRequestModel(BaseModel):

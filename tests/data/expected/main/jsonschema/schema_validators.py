@@ -15,6 +15,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
     __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = ()
     __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = ()
     __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = ()
+    __json_schema_conditional_adapters__: ClassVar[dict[Any, Any]] = {}
 
     @model_validator(mode='before')
     @classmethod
@@ -127,6 +128,31 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
                 if all(any(name in data for name in names) for names in group):
                     continue
                 raise ValueError('Conditional required properties are missing')
+            outcome = 'then' if condition_matches else 'else'
+            for names in rule.get(f'{outcome}_rejected', ()):
+                if any(name in data for name in names):
+                    raise ValueError(
+                        f'Property {names[0]!r} is not allowed when the {outcome} branch applies'
+                    )
+            if (allowed := rule.get(f'{outcome}_allowed')) is not None:
+                for key in data:
+                    if key not in allowed:
+                        raise ValueError(
+                            f'Unexpected property {key!r} when the {outcome} branch applies'
+                        )
+            for index, (names, value_type) in enumerate(
+                rule.get(f'{outcome}_properties', ())
+            ):
+                for name in names:
+                    if name not in data:
+                        continue
+                    adapters = cls.__json_schema_conditional_adapters__
+                    if (adapter := adapters.get((id(rule), outcome, index))) is None:
+                        adapter = adapters[(id(rule), outcome, index)] = TypeAdapter(
+                            value_type
+                        )
+                    adapter.validate_python(data[name])
+                    break
         return data
 
 
@@ -242,12 +268,14 @@ class ConditionalPayload(_JsonSchemaRuntimeValidationBase):
             'condition': ((('kind',), ('metric',)),),
             'then_required_groups': ((('metric',),),),
             'else_required_groups': ((('note',),),),
+            'then_properties': ((('metric',), int),),
+            'else_properties': ((('note',), str),),
         },
     )
 
     kind: str | None = None
-    metric: int | None = None
-    note: str | None = None
+    metric: int | Any | None = None
+    note: str | Any | None = None
 
 
 class RequiredOnlyGuard1(BaseModel):

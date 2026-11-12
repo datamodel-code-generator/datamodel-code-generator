@@ -29931,9 +29931,16 @@ def test_field_validators_inline_json(output_file: Path) -> None:
 The `--generate-schema-validators` option emits schema-derived model validators
 for object constraints that cannot be represented as type hints alone, including
 minProperties/maxProperties on named object models, patternProperties on
-composed object models, required-only oneOf/anyOf groups, simple
-if/then/else required-property conditions, and uniqueItems array validation.
+composed object models, required-only oneOf/anyOf groups, if/then/else
+conditions on the presence and `const` or `enum` values of properties, and
+uniqueItems array validation.
 This feature is experimental and may change as JSON Schema coverage is expanded.
+
+For if/then/else, the branch of the outcome that applies checks the properties
+it requires and declares, rejects its `false` properties, and admits only its
+keys where it closes the object. A property that a branch declares beyond the
+object's own takes the union of what each outcome admits for it, `Any` last
+where an outcome leaves it open, so a value either outcome accepts parses.
 
 With standard models and templates, required names absent from generated fields
 are checked against the raw object input. This also preserves required names
@@ -29942,9 +29949,9 @@ patterns. `--force-optional` retains its existing behavior. Custom base classes,
 custom templates, and extra template data retain their previous handling of
 undeclared required names.
 
-When generating uniqueItems validation, do not override
-`pydantic_v2/schema_runtime_validation_helpers.jinja2`; custom helper overrides
-are unsupported and generation fails fast.""",
+When generating uniqueItems validation or if/then/else branch checks, do not
+override `pydantic_v2/schema_runtime_validation_helpers.jinja2`; custom helper
+overrides are unsupported and generation fails fast.""",
     input_schema="jsonschema/schema_validators.json",
     cli_args=[
         "--generate-schema-validators",
@@ -30051,6 +30058,20 @@ def test_main_jsonschema_generate_schema_validators(output_file: Path) -> None:
         expected_attribute_path=("note",),
         expected_attribute_value="ok",
     )
+    for valid_json, invalid_json, error_type, attribute_path, attribute_value in (
+        ('{"kind":"metric","metric":7,"note":5}', '{"kind":"metric","metric":"x"}', "int_parsing", ("note",), 5),
+        ('{"kind":"note","note":"ok","metric":"x"}', '{"kind":"note","note":5}', "string_type", ("metric",), "x"),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="output",
+            model_name="ConditionalPayload",
+            valid_json=valid_json,
+            invalid_json=invalid_json,
+            expected_error_type=error_type,
+            expected_attribute_path=attribute_path,
+            expected_attribute_value=attribute_value,
+        )
 
 
 def test_main_jsonschema_unique_items_schema_validators_with_the_builtin_template_directory(

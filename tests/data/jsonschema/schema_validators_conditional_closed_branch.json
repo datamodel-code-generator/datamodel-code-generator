@@ -1,0 +1,29 @@
+{
+  "title": "ClosedBranches",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer"
+    }
+  },
+  "if": {
+    "properties": {
+      "version": {
+        "const": 1
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "version": {},
+      "legacy": false
+    },
+    "additionalProperties": false
+  },
+  "else": {
+    "properties": {
+      "version": {}
+    },
+    "additionalProperties": false
+  }
+}

@@ -162,13 +162,79 @@ class RequiredGroupsRule:
     groups: RequiredGroups
 
 
+ConditionalProperties: TypeAlias = tuple[tuple[InputNames, "DataType"], ...]
+
+
+@record(slots=False)
+class ConditionalOutcome:
+    """What the branch of one outcome of ``if`` checks beyond its required groups when that outcome applies.
+
+    The type of each property the branch declares (``properties``), the properties it rejects (``rejected``) and,
+    for a branch that admits only the keys it declares, those keys (``allowed``).
+    """
+
+    properties: ConditionalProperties = ()
+    rejected: InputNameGroups = ()
+    allowed: InputNames | None = None
+
+    def __bool__(self) -> bool:
+        """Return whether the outcome checks anything."""
+        return bool(self.properties or self.rejected or self.allowed is not None)
+
+    @property
+    def python_regex_types(self) -> tuple[int, ...]:
+        """Return the positions in ``properties`` whose patterns need the ``python-re`` engine of an adapter.
+
+        The helper checks each property with an adapter of its type, as a patternProperties rule does
+        (``PatternPropertiesRule.python_regex_types``).
+        """
+        return tuple(
+            index
+            for index, (_, data_type) in enumerate(self.properties)
+            if selects_python_engine(_adapter_pattern_engines(data_type, set()))
+        )
+
+    def written_form(self) -> tuple[object, ...]:
+        """Return what the outcome writes, hashable."""
+        return (
+            tuple((names, data_type.type_hint) for names, data_type in self.properties),
+            self.rejected,
+            self.allowed,
+        )
+
+
 @record(slots=False)
 class ConditionalRequiredRule:
-    """Runtime rule for if/then/else required-property conditions."""
+    """Runtime rule for if/then/else conditions: the required groups and the checks of the outcome that applies.
+
+    ``condition`` holds the properties ``if`` requires with their literals; ``absent_or_condition`` those it admits
+    absent or with one of their literals.
+    """
 
     condition: Condition
     then_groups: RequiredGroups
     else_groups: RequiredGroups
+    absent_or_condition: Condition = ()
+    then_checks: ConditionalOutcome = ConditionalOutcome()
+    else_checks: ConditionalOutcome = ConditionalOutcome()
+
+    @property
+    def outcome_checks(self) -> tuple[tuple[Literal["then", "else"], ConditionalOutcome], ...]:
+        """Return the checks of each outcome with its keyword."""
+        return (("then", self.then_checks), ("else", self.else_checks))
+
+    @property
+    def data_types(self) -> tuple[DataType, ...]:
+        """Return the generated data types the checks of the outcomes name."""
+        return tuple(data_type for _, checks in self.outcome_checks for _, data_type in checks.properties)
+
+    def written_form(self) -> tuple[object, ...]:
+        """Return what the rule writes, hashable."""
+        return (
+            stable_repr((self.condition, self.then_groups, self.else_groups, self.absent_or_condition)),
+            self.then_checks.written_form(),
+            self.else_checks.written_form(),
+        )
 
 
 def conditional_value_uses_json_equality(value: object) -> bool:
@@ -236,7 +302,11 @@ class SchemaRuntimeValidation:
     @property
     def data_types(self) -> tuple[DataType, ...]:
         """Return all generated data types referenced by runtime rules."""
-        return tuple(data_type for rule in self.pattern_properties for data_type in rule.data_types)
+        return tuple(
+            data_type
+            for rule in (*self.pattern_properties, *self.conditional_required)
+            for data_type in rule.data_types
+        )
 
     def _written_form(self) -> tuple[object, ...]:
         """Return what the rules write, hashable, so that two holders of rules compare by the rules they write."""
@@ -253,16 +323,21 @@ class SchemaRuntimeValidation:
                 for rule in self.pattern_properties
             ),
             stable_repr(self.required_groups),
-            stable_repr(self.conditional_required),
+            tuple(rule.written_form() for rule in self.conditional_required),
             stable_repr(self.property_count),
             stable_repr(self.unique_items),
             self.replace_unique_items,
         )
 
-    def _replace_pattern_properties(self, pattern_properties: list[PatternPropertiesRule]) -> SchemaRuntimeValidation:
-        """Return a copy that holds ``pattern_properties``, so another holder of this value keeps its rules."""
+    def _replace_rule_types(
+        self,
+        pattern_properties: list[PatternPropertiesRule],
+        conditional_required: list[ConditionalRequiredRule],
+    ) -> SchemaRuntimeValidation:
+        """Return a copy that holds these rules, which name types, so another holder of this value keeps its rules."""
         replaced = copy(self)
         replaced.pattern_properties = pattern_properties
+        replaced.conditional_required = conditional_required
         return replaced
 
 

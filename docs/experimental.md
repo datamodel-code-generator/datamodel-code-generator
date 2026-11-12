@@ -88,7 +88,7 @@ HTTPX2 client generation from the CLI is experimental; its options and generated
 
 Schema-derived runtime validators are experimental and may change as JSON Schema coverage is expanded.
 
-The option currently targets Pydantic v2 BaseModel output and covers selected object-level rules such as patternProperties, required-only oneOf/anyOf/not groups, and simple if/then/else required-property conditions.
+The option currently targets Pydantic v2 BaseModel output and covers selected object-level rules such as patternProperties, required-only oneOf/anyOf/not groups, and if/then/else conditions on the presence and const or enum values of properties, where the branch of the outcome that applies checks the properties it requires and declares.
 
 ### `cli-option.generate-server`
 
