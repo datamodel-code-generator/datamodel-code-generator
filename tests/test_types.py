@@ -27,6 +27,7 @@ from datamodel_code_generator.python_literal import (
 from datamodel_code_generator.reference import Reference
 from datamodel_code_generator.types import (
     DataType,
+    Types,
     UnionIntFloat,
     _contains_decimal,
     _remove_none_from_union,
@@ -589,6 +590,23 @@ def test_external_datatype_subclass_keeps_legacy_rendering_contract() -> None:
 
     assert data_type.type_hint == "Annotated[Union[custom_constr(limit=1), int], Field(discriminator='kind')]"
     assert data_type.base_type_hint == "Union[bytes, int]"
+
+
+def test_type_map_factory_validates_external_datatype_subclass() -> None:
+    """Type maps built from an external DataType subclass run its validators on every entry."""
+    from pydantic import field_validator
+
+    from datamodel_code_generator.model.pydantic_v2 import types as pydantic_v2_types
+
+    class ExternalDataType(DataType):
+        @field_validator("type")
+        @classmethod
+        def _prefix(cls, value: str | None) -> str | None:
+            return value and f"external_{value}"
+
+    type_map = pydantic_v2_types.type_map_factory(ExternalDataType, (), "pattern", False)
+
+    assert (type_map[Types.integer].type, type_map[Types.password].type) == ("external_int", "external_SecretStr")
 
 
 def test_datatype_type_hint_uses_dict_key_render_selector() -> None:

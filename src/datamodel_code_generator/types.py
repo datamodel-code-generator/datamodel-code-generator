@@ -1023,26 +1023,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """Initialize DataType with validation and reference setup."""
         if not TYPE_CHECKING:  # pragma: no cover
             super().__init__(**values)
-
-        if len(self.data_types) > 1:
-            union = _union_core()
-            plan = union.assemble_union(
-                tuple(union.MemberFacts(is_any=type_.type == ANY, null=type_.is_optional) for type_ in self.data_types),
-                union.CONSTRUCTED,
-            )
-            if plan.rule == "optional-any-to-null":
-                self.is_optional = True
-                self.data_types = [self.data_types[index] for index in plan.members]
-
-        for data_type in self.data_types:
-            if data_type.reference or data_type.data_types:
-                data_type.parent = self
-
-        if self.dict_key and (self.dict_key.reference or self.dict_key.data_types):
-            self.dict_key.parent = self
-
-        if self.reference:
-            add_child(self.reference, self)
+        _link_parts(self)
 
     def _get_wrapped_reference_type_hint(self, type_: str) -> str:  # noqa: PLR6301
         """Wrap reference type name if needed (override in subclasses, e.g., for SerializeAsAny).
@@ -1724,6 +1705,111 @@ class Types(Enum):
     any = auto()
 
 
+_object_new = object.__new__
+_object_setattr = object.__setattr__
+_LINKED_FIELDS: Final[frozenset[str]] = frozenset({"data_types", "dict_key", "reference"})
+_ValidLayout: TypeAlias = "tuple[dict[str, Any], tuple[tuple[str, Callable[[], Any]], ...], bool, bool]"
+_CONTEXT_LAYOUTS: dict[type[DataType], _ValidLayout] = {}
+"""The default state, default factories and extra/private kinds of each context class over ``DataType``."""
+
+
+def _valid_layout(context_data_type: type[DataType]) -> _ValidLayout:
+    """Return the state of a validated default object of a context class and its default factories."""
+    prototype = context_data_type()
+    factories = tuple(
+        (name, cast("Callable[[], Any]", field.default_factory))
+        for name, field in context_data_type.model_fields.items()
+        if field.default_factory is not None
+    )
+    return (
+        prototype.__dict__,
+        factories,
+        prototype.__pydantic_extra__ is not None,
+        prototype.__pydantic_private__ is not None,
+    )
+
+
+def _build_valid(cls: type[DataTypeT], layout: _ValidLayout, values: dict[str, Any]) -> DataTypeT:
+    """Build ``cls(**values)`` from values with their validated types, leaving the parts unlinked."""
+    defaults, factories, has_extra, has_private = layout
+    state = defaults.copy()
+    for name, factory in factories:
+        state[name] = factory()
+    state.update(values)
+    data_type = _object_new(cls)
+    _object_setattr(data_type, "__dict__", state)
+    _object_setattr(data_type, "__pydantic_fields_set__", set(values))
+    _object_setattr(data_type, "__pydantic_extra__", {} if has_extra else None)
+    _object_setattr(data_type, "__pydantic_private__", {} if has_private else None)
+    return data_type
+
+
+def _link_parts(data_type: DataType) -> None:
+    """Fold an optional ``Any`` union member of ``data_type`` into ``is_optional`` and link its parts to it."""
+    if len(data_type.data_types) > 1:
+        union = _union_core()
+        plan = union.assemble_union(
+            tuple(
+                union.MemberFacts(is_any=type_.type == ANY, null=type_.is_optional) for type_ in data_type.data_types
+            ),
+            union.CONSTRUCTED,
+        )
+        if plan.rule == "optional-any-to-null":
+            data_type.is_optional = True
+            data_type.data_types = [data_type.data_types[index] for index in plan.members]
+
+    for member in data_type.data_types:
+        if member.reference or member.data_types:
+            member.parent = data_type
+
+    if data_type.dict_key and (data_type.dict_key.reference or data_type.dict_key.data_types):
+        data_type.dict_key.parent = data_type
+
+    if data_type.reference:
+        add_child(data_type.reference, data_type)
+
+
+def _valid_data_type(cls: type[DataTypeT], **values: Any) -> DataTypeT:
+    """Return what ``cls(**values)`` returns, without validating values that already have their validated types.
+
+    Each call builds a fresh object; classes other than the context classes over ``DataType`` validate as usual.
+    """
+    if (layout := _CONTEXT_LAYOUTS.get(cls)) is None:
+        return cls(**values)
+    data_type = _build_valid(cls, layout, values)
+    if not _LINKED_FIELDS.isdisjoint(values):
+        _link_parts(data_type)
+    return data_type
+
+
+def _valid_import_type(
+    cls: type[DataTypeT],
+    import_: Import,
+    *,
+    strict: bool = False,
+    kwargs: dict[str, Any] | None = None,
+) -> DataTypeT:
+    """Return what ``cls.from_import`` returns for these arguments, without validating valid arguments again."""
+    if (layout := _CONTEXT_LAYOUTS.get(cls)) is None:
+        return cls.from_import(import_, strict=strict, kwargs=kwargs)
+    return _build_valid(
+        cls,
+        layout,
+        {
+            "type": import_.import_,
+            "import_": import_,
+            "is_optional": False,
+            "is_dict": False,
+            "is_list": False,
+            "is_set": False,
+            "is_func": bool(kwargs),
+            "is_custom_type": False,
+            "strict": strict,
+            "kwargs": kwargs,
+        },
+    )
+
+
 @cache
 def _create_context_data_type(  # noqa: PLR0913, PLR0917
     model_name: str,
@@ -1753,6 +1839,8 @@ def _create_context_data_type(  # noqa: PLR0913, PLR0917
     from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace  # noqa: PLC0415
 
     _rebuild_model_with_datamodel_namespace(context_data_type)
+    if base is DataType:
+        _CONTEXT_LAYOUTS[context_data_type] = _valid_layout(context_data_type)
     return context_data_type
 
 

@@ -94,6 +94,7 @@ from datamodel_code_generator.types import (
     _create_context_data_type,
     _float_constraint,
     _non_finite_as_written,
+    _valid_import_type,
     normalize_integer_constraints,
 )
 from datamodel_code_generator.types import DataTypeManager as _DataTypeManagerBase
@@ -130,21 +131,22 @@ def type_map_factory(
         if types is Types.timedelta:
             result[Types.path] = path
     result.update({
-        Types.time: data_type.from_import(IMPORT_TIME),
-        Types.date: data_type.from_import(IMPORT_DATE),
-        Types.date_time: data_type.from_import(IMPORT_DATETIME),
-        Types.date_time_local: data_type.from_import(IMPORT_DATETIME),
-        Types.time_local: data_type.from_import(IMPORT_TIME),
-        Types.password: data_type.from_import(IMPORT_SECRET_STR),
-        Types.email: data_type.from_import(IMPORT_EMAIL_STR),
-        Types.uuid1: data_type.from_import(IMPORT_UUID1),
-        Types.uuid2: data_type.from_import(IMPORT_UUID),
-        Types.uuid3: data_type.from_import(IMPORT_UUID3),
-        Types.uuid4: data_type.from_import(IMPORT_UUID4),
-        Types.uuid5: data_type.from_import(IMPORT_UUID5),
-        Types.ulid: data_type.from_import(IMPORT_ULID),
-        Types.uri: data_type.from_import(IMPORT_ANYURL),
-        Types.hostname: data_type.from_import(
+        Types.time: _valid_import_type(data_type, IMPORT_TIME),
+        Types.date: _valid_import_type(data_type, IMPORT_DATE),
+        Types.date_time: _valid_import_type(data_type, IMPORT_DATETIME),
+        Types.date_time_local: _valid_import_type(data_type, IMPORT_DATETIME),
+        Types.time_local: _valid_import_type(data_type, IMPORT_TIME),
+        Types.password: _valid_import_type(data_type, IMPORT_SECRET_STR),
+        Types.email: _valid_import_type(data_type, IMPORT_EMAIL_STR),
+        Types.uuid1: _valid_import_type(data_type, IMPORT_UUID1),
+        Types.uuid2: _valid_import_type(data_type, IMPORT_UUID),
+        Types.uuid3: _valid_import_type(data_type, IMPORT_UUID3),
+        Types.uuid4: _valid_import_type(data_type, IMPORT_UUID4),
+        Types.uuid5: _valid_import_type(data_type, IMPORT_UUID5),
+        Types.ulid: _valid_import_type(data_type, IMPORT_ULID),
+        Types.uri: _valid_import_type(data_type, IMPORT_ANYURL),
+        Types.hostname: _valid_import_type(
+            data_type,
             IMPORT_CONSTR,
             strict=StrictTypes.str in strict_types,
             kwargs={
@@ -154,10 +156,10 @@ def type_map_factory(
         ),
     })
     if use_pendulum:
-        result[Types.date] = data_type.from_import(IMPORT_PENDULUM_DATE)
-        result[Types.date_time] = data_type.from_import(IMPORT_PENDULUM_DATETIME)
-        result[Types.time] = data_type.from_import(IMPORT_PENDULUM_TIME)
-        result[Types.timedelta] = data_type.from_import(IMPORT_PENDULUM_DURATION)
+        result[Types.date] = _valid_import_type(data_type, IMPORT_PENDULUM_DATE)
+        result[Types.date_time] = _valid_import_type(data_type, IMPORT_PENDULUM_DATETIME)
+        result[Types.time] = _valid_import_type(data_type, IMPORT_PENDULUM_TIME)
+        result[Types.timedelta] = _valid_import_type(data_type, IMPORT_PENDULUM_DURATION)
 
     return result
 
@@ -165,11 +167,11 @@ def type_map_factory(
 def strict_type_map_factory(data_type: type[DataType]) -> dict[StrictTypes, DataType]:
     """Create a mapping of strict types to Pydantic strict data types."""
     return {
-        StrictTypes.int: data_type.from_import(IMPORT_STRICT_INT, strict=True),
-        StrictTypes.float: data_type.from_import(IMPORT_STRICT_FLOAT, strict=True),
-        StrictTypes.bytes: data_type.from_import(IMPORT_STRICT_BYTES, strict=True),
-        StrictTypes.bool: data_type.from_import(IMPORT_STRICT_BOOL, strict=True),
-        StrictTypes.str: data_type.from_import(IMPORT_STRICT_STR, strict=True),
+        StrictTypes.int: _valid_import_type(data_type, IMPORT_STRICT_INT, strict=True),
+        StrictTypes.float: _valid_import_type(data_type, IMPORT_STRICT_FLOAT, strict=True),
+        StrictTypes.bytes: _valid_import_type(data_type, IMPORT_STRICT_BYTES, strict=True),
+        StrictTypes.bool: _valid_import_type(data_type, IMPORT_STRICT_BOOL, strict=True),
+        StrictTypes.str: _valid_import_type(data_type, IMPORT_STRICT_STR, strict=True),
     }
 
 
@@ -316,24 +318,25 @@ class DataTypeManager(_DataTypeManagerBase):
             **type_map_factory(
                 data_type, strict_types, pattern_key, self.use_pendulum, use_object_type or self.use_object_type
             ),
-            Types.byte: self.data_type.from_import(
+            Types.byte: _valid_import_type(
+                self.data_type,
                 IMPORT_BASE64STR,
                 strict=StrictTypes.str in strict_types,
             ),
-            Types.date_time_local: data_type.from_import(IMPORT_NAIVE_DATETIME),
+            Types.date_time_local: _valid_import_type(data_type, IMPORT_NAIVE_DATETIME),
         }
         if target_datetime_class == DatetimeClassType.Awaredatetime:
-            result[Types.date_time] = data_type.from_import(IMPORT_AWARE_DATETIME)
+            result[Types.date_time] = _valid_import_type(data_type, IMPORT_AWARE_DATETIME)
         elif target_datetime_class == DatetimeClassType.Naivedatetime:
-            result[Types.date_time] = data_type.from_import(IMPORT_NAIVE_DATETIME)
+            result[Types.date_time] = _valid_import_type(data_type, IMPORT_NAIVE_DATETIME)
         elif target_datetime_class == DatetimeClassType.Pastdatetime:
-            result[Types.date_time] = data_type.from_import(IMPORT_PAST_DATETIME)
+            result[Types.date_time] = _valid_import_type(data_type, IMPORT_PAST_DATETIME)
         elif target_datetime_class == DatetimeClassType.Futuredatetime:
-            result[Types.date_time] = data_type.from_import(IMPORT_FUTURE_DATETIME)
+            result[Types.date_time] = _valid_import_type(data_type, IMPORT_FUTURE_DATETIME)
         if effective_date_class == DateClassType.Pastdate:
-            result[Types.date] = data_type.from_import(IMPORT_PAST_DATE)
+            result[Types.date] = _valid_import_type(data_type, IMPORT_PAST_DATE)
         elif effective_date_class == DateClassType.Futuredate:
-            result[Types.date] = data_type.from_import(IMPORT_FUTURE_DATE)
+            result[Types.date] = _valid_import_type(data_type, IMPORT_FUTURE_DATE)
         return result
 
     def transform_kwargs(self, kwargs: dict[str, Any], filter_: Collection[str]) -> dict[str, Any]:
