@@ -381,16 +381,14 @@ def test_mapped_union_branch_document_not_read_for_validators(tmp_path: Path, ou
     """
     input_path = tmp_path / "order.json"
     input_path.write_text(
-        json.dumps(
-            {
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "title": "Order",
-                "type": "object",
-                "properties": {
-                    "customer": {"anyOf": [{"$ref": "shared.json#/$defs/Customer"}, {"type": "null"}]},
-                },
-            }
-        ),
+        json.dumps({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Order",
+            "type": "object",
+            "properties": {
+                "customer": {"anyOf": [{"$ref": "shared.json#/$defs/Customer"}, {"type": "null"}]},
+            },
+        }),
         encoding="utf-8",
     )
     run_main_and_assert(
