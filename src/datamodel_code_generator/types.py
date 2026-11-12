@@ -75,7 +75,7 @@ from datamodel_code_generator._format_types import (
 from datamodel_code_generator._graph_links import add_child, drop_child, link_members
 from datamodel_code_generator._model_keys import NodeKey
 from datamodel_code_generator._module_paths import dotted_name
-from datamodel_code_generator._parse_memo import PARSE_MEMO, rendering_memo
+from datamodel_code_generator._parse_memo import PARSE_MEMO, bump_node, rendering_memo
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
 from datamodel_code_generator._records import record
 from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
@@ -1259,6 +1259,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         that L3 collects (row ``legacy-l3-import-nullability``) write nullability; rendering and import collection
         write none.
         """
+        previous_null = self.is_optional, self._type_null
         null: NullSource | None = None
         match write:
             case "reference-null":
@@ -1272,15 +1273,17 @@ class DataType(_BaseModel):  # noqa: PLR0904
                 null = "member"
             case "null-moved-to-union":
                 self.is_optional = False
-                return
             case "empty-union":
                 self.import_ = self.import_ or IMPORT_ANY
                 return
             case _:  # pragma: no cover
                 assert_never(write)
-        self.is_optional = True
-        if null == "reference":
-            self._update_type_null(reference_written=True)
+        if null is not None:
+            self.is_optional = True
+            if null == "reference":
+                self._update_type_null(reference_written=True)
+        if previous_null != (self.is_optional, self._type_null):
+            bump_node(self)
 
     def _strip_null(self, *, own: bool) -> None:
         """Drop the None of the type, for good when it is the type's own rather than its nullable model's.

@@ -3675,22 +3675,17 @@ def test_render_memos_record_the_stale_values_legacy_rows_keep(
     assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
-def test_render_memo_report_of_issue_6490_records_the_stale_plan_of_a_cyclic_type(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """Issue 6490: a memoized msgspec field plan of a cyclic model differs in ``is_optional`` when computed again.
-
-    The report records the finding and never raises; it changes when 6490 is fixed.
-    """
-    report_path = tmp_path / "checks.jsonl"
-    monkeypatch.setenv(CHECK_RENDER_MEMOS_ENV, f"report:{report_path}")
-    generate(
+def test_render_memo_of_issue_6490_matches_recomputed_plan(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Issue 6490: a memoized msgspec field plan matches recomputation after nullability is written."""
+    monkeypatch.setenv(CHECK_RENDER_MEMOS_ENV, "1")
+    output = tmp_path / "model.py"
+    result = generate(
         JSON_SCHEMA_DATA_PATH / "type_union_constraints" / "modeled_root.json",
-        output=tmp_path / "model.py",
+        output=output,
         output_model_type=DataModelType.MsgspecStruct,
         formatters=[Formatter.BUILTIN],
     )
-    assert_output(report_path.read_text(encoding="utf-8"), name="report")
+    assert_generate_wrote_file(result, output)
 
 
 _FIELD_TYPE_SCHEMA = (

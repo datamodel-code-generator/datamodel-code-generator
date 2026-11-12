@@ -203,9 +203,6 @@ MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
         "msgspec collapses an object that carries the string keyword minLength, which its type cannot take, to a "
         "dict that rejects the declared property"
     ),
-    "jsonschema/type_union_constraints/modeled_root.json": (
-        "#6490: the render memo check finds a field render plan that differs from the one computed anew"
-    ),
     **dict.fromkeys(
         (
             "jsonschema/allof_outer_constraints/integer_date_time_bounds.json",
