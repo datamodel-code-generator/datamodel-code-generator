@@ -1173,6 +1173,10 @@
       "not_recommended": "preset",
       "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
+    "read_object_keywords_by_type": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261112 presets; the recommendation starts from a preset."
+    },
     "read_only_write_only_model_type": {
       "not_recommended": "style",
       "reason": "Whether request and response models are split; the project decides which models it needs."

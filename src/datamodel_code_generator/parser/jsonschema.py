@@ -273,6 +273,7 @@ from datamodel_code_generator.parser._all_of_values import (
     _ALL_OF_PARTS,
     _ALL_OF_VALUE_ITEM_KEYWORDS,
     _DERIVED_FROM_REF_KEY,
+    _OBJECT_KEYWORDS,
     _SITE_CONSTRAINTS_SCHEMA_KEY,
 )
 from datamodel_code_generator.parser._field_rows import uses_default_with_required  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -716,9 +717,34 @@ def _ref_siblings_applies(parser: JsonSchemaParser, site: _Site) -> bool:  # noq
 
 
 def _schema_validator_object_applies(parser: JsonSchemaParser, site: _Site) -> bool:
-    """Return whether the schema of a site is parsed as an object model for its schema validators."""
+    """Return whether the schema of a site is parsed as an object model for its schema validators.
+
+    Under --read-object-keywords-by-type a site whose ``anyOf`` or ``oneOf`` has a branch that admits no object
+    (``_branch_excludes_objects``) admits other values too, so its union rows take it.
+    """
     return bool(
-        parser.generate_schema_validators and parser._should_parse_object_with_schema_validators(site.obj)  # noqa: SLF001
+        parser.generate_schema_validators
+        and parser._should_parse_object_with_schema_validators(site.obj)  # noqa: SLF001
+        and not (
+            parser.config.read_object_keywords_by_type
+            and any(_branch_excludes_objects(parser, branch) for branch in (*site.obj.anyOf, *site.obj.oneOf))
+        )
+    )
+
+
+def _branch_excludes_objects(
+    parser: JsonSchemaParser,
+    branch: JsonSchemaObject | bool,  # noqa: FBT001
+    visited: frozenset[_TargetNode] = frozenset(),
+) -> bool:
+    """Return whether a branch declares a ``type`` that admits no object, a ``$ref`` the type of the schema it names."""
+    if isinstance(branch, JsonSchemaObject) and (types := _declared_value_types(branch)):
+        return "object" not in types
+    return bool(
+        isinstance(branch, JsonSchemaObject)
+        and branch.ref
+        and (target := _lightweight_types.unvisited_ref_target(parser, branch.ref, visited)) is not None
+        and _branch_excludes_objects(parser, *target)
     )
 
 
@@ -3700,7 +3726,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                             target_attribute,
                             self._schema_object(
                                 self._combined_branch_row(
-                                    outers.get(id(target_attribute)) or base_object,
+                                    self._combined_branch_outer(
+                                        outers.get(id(target_attribute)) or base_object, member
+                                    ),
                                     member.model_dump(exclude_unset=True, by_alias=True),
                                     named_location(target_attribute.schema_location, target_attribute_name),
                                     target_attribute_name,
@@ -3715,6 +3743,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
             )
         return combined_schemas, refs
+
+    def _combined_branch_outer(self, outer: dict[str, Any], branch: JsonSchemaObject) -> dict[str, Any]:
+        """Return the keywords beside an ``anyOf`` or ``oneOf`` that an inline ``branch`` is read with.
+
+        Under --read-object-keywords-by-type a branch whose ``type`` admits no object is read without the keywords that
+        constrain objects only (``_OBJECT_KEYWORDS``), as JSON Schema applies them to objects alone; otherwise every
+        branch is read with all of them.
+        """
+        if self.config.read_object_keywords_by_type and _types_exclude(("object",), branch):
+            return {keyword: value for keyword, value in outer.items() if keyword not in _OBJECT_KEYWORDS}
+        return outer
 
     def _value_ref_branch_with_site(self, outer: dict[str, Any], branch: JsonSchemaObject) -> JsonSchemaObject | None:
         """Return a ``$ref`` branch read with the keywords beside its ``anyOf`` or ``oneOf``, where they are its parts.
@@ -3844,7 +3883,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         for i, d in enumerate(parsed_schemas):
             branch = combined_schemas[i]
             location = branch.schema_location
-            if i in refs and d.reference:
+            if i in refs and d.reference and not self._ref_branch_takes_no_site_parts(obj, branch):
                 data_types.append(
                     with_type_origin(
                         self._parse_ref_branch_model(
@@ -3885,6 +3924,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 data_types.append(d)
                 position += 1
         return data_types
+
+    def _ref_branch_takes_no_site_parts(self, obj: JsonSchemaObject, branch: JsonSchemaObject) -> bool:
+        """Return whether a ``$ref`` branch of ``obj`` is the type it names, without the parts of the site.
+
+        Under --read-object-keywords-by-type a branch naming a schema whose ``type`` admits no object takes none of the
+        keywords that constrain objects only beside the ``anyOf`` or ``oneOf`` (``_parse_ref_branch_model``), where the
+        site has some and no ``allOf``.
+        """
+        return bool(
+            self.config.read_object_keywords_by_type
+            and not obj.allOf
+            and _OBJECT_KEYWORDS.intersection(obj.model_fields_set)
+            and _branch_excludes_objects(self, branch)
+        )
 
     def _parse_ref_branch_model(
         self, name: str, obj: JsonSchemaObject, path: list[str], branch: JsonSchemaObject, reference: Reference

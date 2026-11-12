@@ -27,6 +27,8 @@ from tests.main.conftest import (
     OPEN_API_DATA_PATH,
     _generated_model,
     _generated_package_module,
+    assert_generated_model_json_invalid,
+    assert_generated_model_json_validation,
     run_main_and_assert,
 )
 
@@ -1235,3 +1237,74 @@ def test_paths_bodies_inline_hint(output_file: Path, capsys: pytest.CaptureFixtu
             "typed inline, and --openapi-as-definitions paths-bodies gives them the models their schema definitions get"
         ),
     )
+
+
+OBJECT_KEYWORDS_BY_TYPE_OPTION_SETS = {
+    "off": (),
+    "on": ("--read-object-keywords-by-type",),
+    "validators-off": ("--generate-schema-validators",),
+    "validators-on": ("--generate-schema-validators", "--read-object-keywords-by-type"),
+}
+
+
+@pytest.mark.cli_doc(
+    options=["--read-object-keywords-by-type"],
+    option_description="""Read the keywords that constrain objects only beside an `anyOf` or `oneOf` for its objects.
+
+`properties`, `patternProperties`, `additionalProperties`, `propertyNames`, `unevaluatedProperties`, `required`,
+`minProperties` and `maxProperties` apply to objects only. Without this option every branch of an `anyOf` or `oneOf`
+is read with those beside it, so a `{"type": "string"}` branch beside `patternProperties` becomes a map, which merges
+with the object branch and leaves the string out: `"icons/star.png"` is rejected. With it a branch whose `type` admits
+no object, or a `$ref` branch naming such a schema, is read without them and keeps its type, while the object
+branches still take them. Under `--generate-schema-validators` such a site is the union of its branches instead of one
+validated object model.""",
+    input_schema="jsonschema/object_maps/string_branches_beside_object_keywords.json",
+    cli_args=["--read-object-keywords-by-type"],
+    golden_output="main/jsonschema/object_maps/object_keywords_by_type[on].py",
+    comparison_output="main/jsonschema/object_maps/object_keywords_by_type[off].py",
+)
+@pytest.mark.parametrize("option_set", OBJECT_KEYWORDS_BY_TYPE_OPTION_SETS)
+def test_object_keywords_by_type(output_file: Path, option_set: str) -> None:
+    """Read the object keywords beside an anyOf or oneOf for its object branches only under the option (#6736).
+
+    Without it the string branch of an icon beside patternProperties becomes a map and only objects validate, a string
+    branch beside properties is a model, and with validators the whole site is one object model. With it the string,
+    the string or null of a type list and a ``$ref`` to a string stay themselves beside the map or model of the object
+    branch, which keeps the keywords, as a union also with validators.
+    """
+    run_main_and_assert(
+        input_path=OBJECT_MAPS / "string_branches_beside_object_keywords.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            *OBJECT_KEYWORDS_BY_TYPE_OPTION_SETS[option_set],
+        ],
+    )
+    if not option_set.endswith("on"):
+        assert_generated_model_json_invalid(
+            output_file,
+            module_name="object_keywords_by_type",
+            model_name="Manifest",
+            invalid_json='{"default_icon": "icons/star.png"}',
+            expected_error_type="dict_type" if option_set == "off" else "model_type",
+        )
+        return
+    for valid_json, invalid_json, error_type in (
+        ('{"default_icon": "icons/star.png"}', '{"default_icon": 3}', "string_type"),
+        ('{"default_icon": {"16": "a.png"}}', '{"default_icon": {"16": 5}}', "string_type"),
+        ('{"page_icon": "a.png", "action_icon": "b.png"}', '{"page_icon": 3}', "string_type"),
+        ('{"theme": null, "sidebar_theme": "dark"}', '{"theme": {"dark": "b"}}', "string_type"),
+        ('{"theme": "dark", "sidebar_theme": {"light": "a"}}', '{"sidebar_theme": 4}', "string_type"),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="object_keywords_by_type",
+            model_name="Manifest",
+            valid_json=valid_json,
+            invalid_json=invalid_json,
+            expected_error_type=error_type,
+        )

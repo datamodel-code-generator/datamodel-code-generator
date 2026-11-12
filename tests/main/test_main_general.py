@@ -2046,6 +2046,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "read_allof_parents_in_mro_order",
         "omit_redundant_constraints",
         "read_length_keywords_by_type",
+        "read_object_keywords_by_type",
         "read_msgspec_union_bounds_exactly",
         "use_site_models_for_constrained_refs",
         "use_bounds_for_float_const",
@@ -8377,6 +8378,7 @@ def test_all_exports_includes_generate_config() -> None:
             ("20261104", ("310", "311", "312", "313", "314", "315")),
             ("20261106", ("310", "311", "312", "313", "314", "315")),
             ("20261111", ("310", "311", "312", "313", "314", "315")),
+            ("20261112", ("310", "311", "312", "313", "314", "315")),
         )
         for family in ("standard", "practical")
         for target in targets

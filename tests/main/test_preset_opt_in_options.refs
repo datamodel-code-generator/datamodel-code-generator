@@ -10,6 +10,8 @@ read-const-beside-enum-command-line	main/preset_opt_in_options/preset_option_tur
 read-const-beside-enum-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].py
 read-length-keywords-by-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].py
 read-length-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].py
+read-object-keywords-by-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-command-line].py
+read-object-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-command-line].py
 use-bounds-for-float-const-command-line	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].py
 use-bounds-for-float-const-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].py
 use-typed-nullable-map-values-command-line	main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-command-line].py
@@ -99,6 +101,8 @@ read-msgspec-union-bounds-exactly-practical	main/preset_opt_in_options/preset_se
 read-msgspec-union-bounds-exactly-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-msgspec-union-bounds-exactly-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-msgspec-union-bounds-exactly-practical].py
 read-nullable-beside-type-list-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-nullable-beside-type-list-practical].py
 read-nullable-beside-type-list-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-nullable-beside-type-list-standard].py
+read-object-keywords-by-type-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-object-keywords-by-type-practical].py
+read-object-keywords-by-type-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-object-keywords-by-type-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-object-keywords-by-type-practical].py
 read-schema-version-per-document-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-practical]/
 read-schema-version-per-document-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-standard]/	= main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-practical]/
 read-unevaluated-properties-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-practical].py

@@ -34,6 +34,11 @@ pydantic_v2.dataclass	main/jsonschema/object_maps/nullable_object_maps_without_s
 pydantic_v2.dataclass	main/jsonschema/object_maps/nullable_object_maps_without_single_dict[pydantic_v2.dataclass].py	= main/openapi/redundant_reference_null/object_maps[pydantic_v2.dataclass].py
 typing.TypedDict	main/jsonschema/object_maps/nullable_object_maps_without_single_dict[typing.TypedDict].payloads.txt	= main/jsonschema/object_maps/nullable_object_maps_without_single_dict[dataclasses.dataclass].payloads.txt
 typing.TypedDict	main/jsonschema/object_maps/nullable_object_maps_without_single_dict[typing.TypedDict].py
+[test_object_keywords_by_type]
+off	main/jsonschema/object_maps/object_keywords_by_type[off].py
+on	main/jsonschema/object_maps/object_keywords_by_type[on].py
+validators-off	main/jsonschema/object_maps/object_keywords_by_type[validators-off].py
+validators-on	main/jsonschema/object_maps/object_keywords_by_type[validators-on].py
 [test_object_map_bodies]
 dataclasses.dataclass	main/jsonschema/object_maps/object_map_bodies[dataclasses.dataclass].payloads.txt	= main/jsonschema/object_maps/object_map_bodies[typing.TypedDict].payloads.txt
 dataclasses.dataclass	main/jsonschema/object_maps/object_map_bodies[dataclasses.dataclass].py

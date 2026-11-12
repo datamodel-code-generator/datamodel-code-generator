@@ -18,7 +18,7 @@
   "signals": {},
   "facts": {},
   "baseline": {
-    "preset": "standard-py314-20261111",
+    "preset": "standard-py314-20261112",
     "family": "standard",
     "configured": false,
     "covers": []

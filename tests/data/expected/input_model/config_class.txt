@@ -321,6 +321,7 @@ class BaseGenerateConfig(TypedDict):
     use_msgspec_meta_for_map_keys: NotRequired[bool]
     omit_redundant_constraints: NotRequired[bool]
     read_length_keywords_by_type: NotRequired[bool]
+    read_object_keywords_by_type: NotRequired[bool]
     read_msgspec_union_bounds_exactly: NotRequired[bool]
     read_input_model_dataclass_fields_by_alias: NotRequired[bool]
     reuse_every_reached_input_model_type: NotRequired[bool]

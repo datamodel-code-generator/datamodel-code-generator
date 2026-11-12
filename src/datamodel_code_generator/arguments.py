@@ -1016,6 +1016,15 @@ _toggle(
 )
 _toggle(
     typing_options,
+    "--read-object-keywords-by-type",
+    help="Read the keywords that constrain objects only (properties, patternProperties, additionalProperties, "
+    "propertyNames, unevaluatedProperties, required, minProperties, maxProperties) beside an `anyOf` or `oneOf` as "
+    "JSON Schema does: a branch whose `type` admits no object, such as a string, does not take them, so it stays "
+    "that type instead of becoming a map or a model, and under --generate-schema-validators a site with such a "
+    "branch is a union rather than one object model; without it every branch takes them, as in 0.93.0",
+)
+_toggle(
+    typing_options,
     "--read-msgspec-union-bounds-exactly",
     help="msgspec.Struct output only: decide whether the int member of a union with a number member drops its Meta "
     "bounds on the bounds the schema writes, exactly; without it a number member's bound past 2**53 is read as the "

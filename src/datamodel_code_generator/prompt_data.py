@@ -170,6 +170,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--read-length-keywords-by-type": "Read the string and the array keywords for their own kind only, as JSON Sche...",
     "--read-msgspec-union-bounds-exactly": "Decide the bounds of the int member of a msgspec union on the bounds th...",
     "--read-nullable-beside-type-list": "Write the null that `nullable: true` declares beside a `type` list into th...",
+    "--read-object-keywords-by-type": "Read the keywords that constrain objects only beside an `anyOf` or `oneOf` f...",
     "--read-only-write-only-model-type": "Generate separate request and response models for readOnly/writeOnly fields.",
     "--read-schema-version-per-document": "Read each document by the schema version it declares.",
     "--read-unevaluated-properties": "Read a schema-valued `unevaluatedProperties` as `additionalProperties`.",

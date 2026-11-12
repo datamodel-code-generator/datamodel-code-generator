@@ -316,6 +316,7 @@ class ParserConfig(BaseModel):
     use_msgspec_meta_for_map_keys: bool = False
     omit_redundant_constraints: bool = False
     read_length_keywords_by_type: bool = False
+    read_object_keywords_by_type: bool = False
     read_msgspec_union_bounds_exactly: bool = False
     use_site_models_for_constrained_refs: bool = False
     use_one_model_per_ref_site: bool = False
