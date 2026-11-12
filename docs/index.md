@@ -21,8 +21,8 @@
 ## ✨ What it does
 
 <!-- Source of truth: docs/assets/diagrams/hero.mmd — regenerate with `tox run -e diagrams` -->
-![Schema files, raw data, and existing Python models flow through datamodel-code-generator into Python model output types](assets/diagrams/hero-light.svg#only-light){ align=center }
-![Schema files, raw data, and existing Python models flow through datamodel-code-generator into Python model output types](assets/diagrams/hero-dark.svg#only-dark){ align=center }
+![Schema files, raw data, and existing Python models flow through datamodel-code-generator into Python model output types and experimental HTTPX2 client and FastAPI server packages](assets/diagrams/hero-light.svg#only-light){ align=center }
+![Schema files, raw data, and existing Python models flow through datamodel-code-generator into Python model output types and experimental HTTPX2 client and FastAPI server packages](assets/diagrams/hero-dark.svg#only-dark){ align=center }
 
 Pick any one of the supported inputs and pick the Python model style you want as output.
 `--input-model path/to/file.py:ClassName` can even retarget an existing Pydantic, dataclass, or TypedDict class defined
@@ -31,6 +31,7 @@ in another Python file to a different output type.
 - 📄 Converts **OpenAPI 3**, **AsyncAPI**, **JSON Schema**, **Apache Avro**, **XML Schema**, **Protocol Buffers/gRPC**, **GraphQL**, **MCP tool schemas**, and raw data (JSON/YAML/CSV) into Python models
 - 🐍 Generates from **existing Python types** (Pydantic, dataclass, TypedDict) via `--input-model`
 - 🎯 Generates **Pydantic v2**, **Pydantic v2 dataclass**, **dataclasses**, **TypedDict**, or **msgspec** output
+- 🌐 Generates a typed **HTTPX2 client** (`--generate-client httpx2`, from OpenAPI and AsyncAPI) or a **FastAPI server** (`--generate-server fastapi`, from OpenAPI) together with the models (experimental)
 - 🔗 Handles complex schemas: `$ref`, `allOf`, `oneOf`, `anyOf`, enums, and nested types
 - ✅ Produces type-safe, validated code ready for your IDE and type checker
 

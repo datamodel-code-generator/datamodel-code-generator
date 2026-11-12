@@ -59,8 +59,8 @@ HASH_MARKER = "datamodel-codegen:source-sha256:"
 HASH_RE = re.compile(rf"<!-- {re.escape(HASH_MARKER)}([0-9a-f]{{64}}) -->")
 SVG_NS = "http://www.w3.org/2000/svg"
 XLINK_NS = "http://www.w3.org/1999/xlink"
-INPUT_SECTION_HEADINGS = {"Schemas", "Raw data", "Python objects"}
-INPUT_SECTION_HEADING_ATTRS = {
+SECTION_HEADINGS = {"Schemas", "Raw data", "Python objects", "Models", "Client · Server"}
+SECTION_HEADING_ATTRS = {
     "fill": "#0288d1",
     "font-weight": "800",
 }
@@ -144,9 +144,9 @@ def adjust_svg(markup: str) -> str:
         original_tspans = row.findall(f"./{{{SVG_NS}}}tspan")
         inner_tspans = merge_row_tspans(row, "".join(tspan.text or "" for tspan in original_tspans).strip())
         match row_text := "".join(tspan.text or "" for tspan in inner_tspans).strip():
-            case _ if row_text in INPUT_SECTION_HEADINGS:
+            case _ if row_text in SECTION_HEADINGS:
                 for tspan in inner_tspans:
-                    for attr, value in INPUT_SECTION_HEADING_ATTRS.items():
+                    for attr, value in SECTION_HEADING_ATTRS.items():
                         tspan.set(attr, value)
     for marker in root.findall(f".//{{{SVG_NS}}}marker"):
         if "pointEnd__" in marker.get("id", ""):

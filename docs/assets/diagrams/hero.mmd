@@ -6,7 +6,7 @@ flowchart LR
     CONVERTER(["datamodel-code-generator"])
 
     subgraph RIGHT["Output type"]
-        OUTPUT["pydantic_v2.BaseModel<br/>pydantic_v2.dataclass<br/>msgspec.Struct<br/>dataclasses.dataclass<br/>typing.TypedDict"]
+        OUTPUT["Models<br/>pydantic_v2.BaseModel<br/>pydantic_v2.dataclass<br/>msgspec.Struct<br/>dataclasses.dataclass<br/>typing.TypedDict<br/>────────────────<br/>Client · Server<br/>HTTPX2 client<br/>FastAPI server<br/>(experimental)"]
     end
 
     INPUT --> CONVERTER
