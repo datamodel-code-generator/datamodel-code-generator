@@ -2604,7 +2604,7 @@ class _SchemaUses(_Models):
         that can carry null, takes the null its schema admits; a form or multipart body has no null to send.
         """
         projector = self.binder.projector(direction, inline=inline)
-        match self.bound_node(declaration, projection, direction):
+        match self.bound_node(declaration, projection):
             case Reference() as reference:
                 return projector.declaration(reference, nullable=nullable)
             case DataType() as data_type:
@@ -2613,35 +2613,29 @@ class _SchemaUses(_Models):
                 pass
         return self.lightweight(declaration, direction, inline=inline)
 
-    def bound_node(
-        self, declaration: SchemaLocation, projection: Projection, direction: Direction
-    ) -> Reference | DataType | None:
-        """Return what a use of a declaration binds: its emitted model's reference, or the declaration's own type.
+    def bound_node(self, declaration: SchemaLocation, projection: Projection) -> Reference | DataType | None:
+        """Return what a use of a declaration binds: the declaration's own type, or its emitted model's reference.
 
-        None is a declaration the parser emitted nothing for, which binds its schema's model-free type
-        (``free_type``).
+        The declaration's own type (``declaration_types``, the model its schema names, which plain ``schema`` media
+        bind by) wins over a model another reference emitted at the declaration's location, such as the one the
+        ``itemSchema`` stream-array projection makes. None is a declaration the parser emitted nothing for, which binds
+        its schema's model-free type (``free_type``).
         """
         binder = self.binder
         parser = self.parser
+        if projection == "value" and (data_type := binder.declaration_types.get(declaration)) is not None:
+            return data_type
         engine = parser.acquisitions.get((declaration, projection))
         if engine is None and projection == "value":
             engine = self.reference_key(declaration)
-        reference = parser.model_resolver.references.get(engine) if engine is not None else None
-        data_type = binder.declaration_types.get(declaration) if projection == "value" else None
-        if reference is not None and (
-            data_type is None
-            or binder.final(reference, direction) is not None
-            or binder.unwrapped(reference) is not None
-        ):
-            return reference
-        return data_type
+        return parser.model_resolver.references.get(engine) if engine is not None else None
 
     @contextmanager
     def bound(
-        self, declaration: SchemaLocation, projection: Projection, direction: Direction
+        self, declaration: SchemaLocation, projection: Projection
     ) -> Generator[Reference | DataType | None, None, None]:
         """Yield what a use of a declaration binds (``bound_node``), its schema's model-free type when nothing else."""
-        if (found := self.bound_node(declaration, projection, direction)) is not None or (
+        if (found := self.bound_node(declaration, projection)) is not None or (
             declaration not in self.parser.free_schemas
         ):
             yield found
@@ -3793,7 +3787,7 @@ class _Contracts(_Octets):
             binding = self.uses[use]
             if text or kind in _FORMS:
                 self.texts[use] = kind in _FORMS
-            with self.bound(schema, use.projection, use.direction) as node:
+            with self.bound(schema, use.projection) as node:
                 parts, refused = self.parts(binding, node, schema) if multipart else (None, None)
                 octets, partly, checked, read = (
                     self.whole(node, use.direction, kind)
@@ -4309,9 +4303,8 @@ class _Contracts(_Octets):
         The object's model holds a field for each property, its own or one it inherits, as a model that reuse made
         holds those of the model it stands for.
         """
-        node = cast(
-            "Reference", self.bound_node(SchemaLocation(declared.document, declared.tokens[:-2]), "value", "neutral")
-        )
+        node = self.bound_node(SchemaLocation(declared.document, declared.tokens[:-2]), "value")
+        node = cast("Reference", node.reference if isinstance(node, DataType) else node)
         symbol = self.binder.symbols[id(cast("Reference", self.binder.final(node)).source)]
         slots = {
             member.wire_name: member.slot

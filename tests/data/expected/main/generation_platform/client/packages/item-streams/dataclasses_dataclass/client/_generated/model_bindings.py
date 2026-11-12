@@ -40,20 +40,20 @@ codec_1: Final[DataclassCodec[models.ExcerptGetResponse]] = DataclassCodec(
 )
 """Codec of /paths/~1excerpt/get response_body (response 200 application/json)."""
 
-codec_2: Final[DataclassCodec[models.ItemSchema]] = DataclassCodec(models.Event, MODELS)
+codec_2: Final[DataclassCodec[models.Event]] = DataclassCodec(models.Event, MODELS)
 """Codec of /paths/~1events/get response_body (response 200 text/event-stream)."""
 
-codec_3: Final[DataclassCodec[models.ItemSchemaModel]] = DataclassCodec(
+codec_3: Final[DataclassCodec[models.LogEntry]] = DataclassCodec(
     models.LogEntry, MODELS
 )
 """Codec of /paths/~1logs/get response_body (response 200 application/jsonl)."""
 
-codec_4: Final[DataclassCodec[models.ItemSchemaModel]] = DataclassCodec(
+codec_4: Final[DataclassCodec[models.LogEntry]] = DataclassCodec(
     models.LogEntry, MODELS
 )
 """Codec of /paths/~1records/get response_body (response 200 application/x-ndjson)."""
 
-codec_5: Final[DataclassCodec[models.ItemSchemaModel]] = DataclassCodec(
+codec_5: Final[DataclassCodec[models.LogEntry]] = DataclassCodec(
     models.LogEntry, MODELS
 )
 """Codec of /paths/~1excerpt/get response_body (response 200 application/jsonl)."""

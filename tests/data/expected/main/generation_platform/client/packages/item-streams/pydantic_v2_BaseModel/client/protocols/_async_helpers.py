@@ -70,7 +70,7 @@ class AsyncDefaultWatchEventsSse:
         topic: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-    ) -> AsyncEventStream[models.ItemSchema]:
+    ) -> AsyncEventStream[models.Event]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -93,7 +93,7 @@ class AsyncDefaultTailLogsNdjson:
         *,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-    ) -> AsyncEventStream[models.ItemSchemaModel]:
+    ) -> AsyncEventStream[models.LogEntry]:
         """Open the NDJSON stream of GET /logs, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -116,7 +116,7 @@ class AsyncDefaultStreamRecordsNdjson:
         *,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-    ) -> AsyncEventStream[models.ItemSchemaModel]:
+    ) -> AsyncEventStream[models.LogEntry]:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
@@ -139,7 +139,7 @@ class AsyncDefaultGetExcerptNdjson:
         *,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-    ) -> AsyncEventStream[models.ItemSchemaModel]:
+    ) -> AsyncEventStream[models.LogEntry]:
         """Open the NDJSON stream of GET /excerpt, returning once its response is a declared success."""
         return await aopen_events(
             self._core,

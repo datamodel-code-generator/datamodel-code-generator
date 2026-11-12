@@ -21,20 +21,14 @@ codec_1: Final[PydanticCodec[models.ExcerptGetResponse]] = PydanticCodec(
 )
 """Codec of /paths/~1excerpt/get response_body (response 200 application/json)."""
 
-codec_2: Final[PydanticCodec[models.ItemSchema]] = PydanticCodec(models.ItemSchema)
+codec_2: Final[PydanticCodec[models.Event]] = PydanticCodec(models.Event)
 """Codec of /paths/~1events/get response_body (response 200 text/event-stream)."""
 
-codec_3: Final[PydanticCodec[models.ItemSchemaModel]] = PydanticCodec(
-    models.ItemSchemaModel
-)
+codec_3: Final[PydanticCodec[models.LogEntry]] = PydanticCodec(models.LogEntry)
 """Codec of /paths/~1logs/get response_body (response 200 application/jsonl)."""
 
-codec_4: Final[PydanticCodec[models.ItemSchemaModel]] = PydanticCodec(
-    models.ItemSchemaModel
-)
+codec_4: Final[PydanticCodec[models.LogEntry]] = PydanticCodec(models.LogEntry)
 """Codec of /paths/~1records/get response_body (response 200 application/x-ndjson)."""
 
-codec_5: Final[PydanticCodec[models.ItemSchemaModel]] = PydanticCodec(
-    models.ItemSchemaModel
-)
+codec_5: Final[PydanticCodec[models.LogEntry]] = PydanticCodec(models.LogEntry)
 """Codec of /paths/~1excerpt/get response_body (response 200 application/jsonl)."""
