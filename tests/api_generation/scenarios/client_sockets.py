@@ -29,7 +29,7 @@ from tests.api_generation.support.client_runtime import argument, describe, run
 from tests.api_generation.support.fixture_websocket import Play, RawPeer, SocketServer, TunnelProxy, client_context
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
+    from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
     from types import ModuleType
 
     from websockets.sync.server import ServerConnection
@@ -170,7 +170,7 @@ class _Harness:
         return {"base_url": url or self.server.url, "retry": retry, **settings}
 
     @contextmanager
-    def api(self, url: str | None = None, *, native: Any = None, **settings: Any) -> Iterator[Any]:
+    def api(self, url: str | None = None, *, native: Any = None, **settings: Any) -> Generator[Any, None, None]:
         """Yield a client reaching a server without retry delays over an HTTP client trusting the fixture's TLS."""
         with (
             httpx2.Client(verify=client_context(), **native or {}) as http,
@@ -179,7 +179,7 @@ class _Harness:
             yield api
 
     @asynccontextmanager
-    async def async_api(self, url: str | None = None, **settings: Any) -> AsyncIterator[Any]:
+    async def async_api(self, url: str | None = None, **settings: Any) -> AsyncGenerator[Any, None]:
         """Yield an asyncio client reaching a server over an HTTP client trusting the fixture's TLS."""
         async with (
             httpx2.AsyncClient(verify=client_context()) as http,
@@ -719,7 +719,7 @@ def _logged(harness: _Harness) -> None:
 
 
 @contextmanager
-def _trusted() -> Iterator[None]:
+def _trusted() -> Generator[None, None, None]:
     """Let an HTTP client the SDK creates trust the fixture through the environment HTTPX2 reads, without proxies."""
     with pytest.MonkeyPatch.context() as environment, TemporaryDirectory() as directory:
         for key in tuple(os.environ):
@@ -736,7 +736,7 @@ def _trusted() -> Iterator[None]:
 
 
 @contextmanager
-def _refusing_url() -> Iterator[str]:
+def _refusing_url() -> Generator[str, None, None]:
     """Yield a URL whose port no socket listens on, held by a connected socket so no other server takes it meanwhile.
 
     A port held by a socket bound without listening is no refusal on macOS, which drops the SYN until the connect

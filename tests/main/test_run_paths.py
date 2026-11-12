@@ -16,7 +16,7 @@ from tests.conftest import assert_output
 from tests.main.conftest import DATA_PATH, run_main_with_args
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
 
 PERSON = DATA_PATH / "jsonschema" / "person.json"
 SYMLINKS = pytest.mark.skipif(os.name == "nt", reason="symlink creation requires elevated privileges")
@@ -70,7 +70,7 @@ def test_lockfile_symlink_loop(
 
 
 @contextmanager
-def _stdin_pipe(data: bytes) -> Iterator[None]:
+def _stdin_pipe(data: bytes) -> Generator[None, None, None]:
     """Make the process's standard input a pipe that holds ``data``, as a shell pipeline does."""
     read_end, write_end = os.pipe()
     os.write(write_end, data)
