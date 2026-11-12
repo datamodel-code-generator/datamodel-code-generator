@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tags",
+  "type": "object",
+  "properties": {
+    "tag": {
+      "anyOf": [{"$ref": "absent_names.json#/$defs/Name"}, {"type": "string"}, {"type": "object"}],
+      "properties": {"id": {"type": "integer"}}
+    }
+  }
+}
