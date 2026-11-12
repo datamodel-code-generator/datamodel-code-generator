@@ -35,7 +35,7 @@ from urllib.parse import ParseResult, unquote, urljoin, urlparse
 from typing_extensions import Protocol
 
 from datamodel_code_generator import Error, InvalidClassNameError, InvalidFileFormatError, JsonSchemaVersion
-from datamodel_code_generator._document_reader import member_key
+from datamodel_code_generator._document_reader import member_key, refuse_oversized_document
 from datamodel_code_generator._json_pointer import escape_token, is_pointer_fragment
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, subschema_entries
 from datamodel_code_generator._openapi_objects import held_schemas
@@ -301,6 +301,7 @@ class SchemaDocumentsHost(SchemaResourcesHost, Protocol):
     remote_object_cache: DefaultPutDict[str, dict[str, YamlValue]]
     reserved_refs: defaultdict[tuple[str, ...], set[str]]
     source: str | Path | list[Path] | ParseResult | dict[str, YamlValue]
+    untrusted_input: bool
     _cache_local_sources: bool
     _document_dialects: dict[str, DocumentDialect]
     _referring_dialect: DocumentDialect | None
@@ -448,8 +449,11 @@ def read_document(
     version of the document (an input document, without ``root``, read by itself, another one by its own version or
     that of the document that loads it); without the option (row ``legacy-first-read-dialect``) under the draft-04
     schema features the parser already uses, or else those of its root document. The document as written is kept
-    beside a rewritten one for the targets that serve it.
+    beside a rewritten one for the targets that serve it. Under --untrusted-input a document past the size limits is
+    refused first (``refuse_oversized_document``), before anything reads it.
     """
+    if parser.untrusted_input:
+        refuse_oversized_document(document)
     if not parser.use_single_value_enum_as_const:
         return document
     if parser._reads_schema_version_per_document:  # noqa: SLF001
@@ -1072,6 +1076,8 @@ def parse_converted_sources(parser: SchemaDocumentsHost, make_converter: Callabl
     with parser._parsing_session():  # noqa: SLF001
         for source, path_parts in get_context_source_path_parts(parser):
             raw_obj = source.raw_data = make_converter().convert(source)
+            if parser.untrusted_input:
+                refuse_oversized_document(raw_obj)
             note_converted_document(parser, path_parts)
             parse_source(parser, source, raw_obj, path_parts)
 

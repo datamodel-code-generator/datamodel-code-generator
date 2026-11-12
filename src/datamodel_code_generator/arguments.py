@@ -281,7 +281,8 @@ _toggle(
     help="Treat the input as a schema from an untrusted source (experimental): read no file or URL but the input, so "
     "every $ref and XML Schema include must name a location in the input; refuse the schema keywords whose values "
     "the generated module imports or evaluates as Python code (x-python-type, x-python-import, customTypePath, "
-    "customBasePath), Protocol Buffers input and --validation. Implies --no-allow-remote-refs. "
+    "customBasePath), Protocol Buffers input, --validation and a schema nested more than 100 levels deep or "
+    "holding more than 2,000,000 objects and arrays. Implies --no-allow-remote-refs. "
     "Pass --no-untrusted-input to override a configuration file that enables it.",
 )
 _toggle(

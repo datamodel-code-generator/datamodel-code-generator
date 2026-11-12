@@ -21716,6 +21716,10 @@ models = generate_dynamic_models(schema, config=GenerateConfig(untrusted_input=T
 - The keywords whose values the generated module imports or evaluates as Python code, `x-python-type`,
   `x-python-import`, `customTypePath` and `customBasePath`, stop generation with an error that names the keyword.
 - Protocol Buffers input, whose imports `protoc` reads by itself, and `--validation` are refused.
+- A schema that nests objects and arrays more than 100 levels deep, or holds more than 2,000,000 of them (a YAML alias
+  counts at each use), is refused before anything reads it, with an error that names the limit and how far the schema
+  went. Real schemas stay far below both: the deepest of thousands of public OpenAPI and JSON Schema documents nest 33
+  levels, the largest holds about 520,000.
 - It implies `allow_remote_refs=False`. A schema that does none of this generates the same classes.
 
 Descriptions, titles, defaults, examples, enum values and property names are written as escaped literals, comments or
@@ -72933,8 +72937,9 @@ name a location in the input (a JSON pointer, an anchor, an embedded `$id` resou
 input), not another file or a URL, and an XML Schema includes or imports only files of the input. The schema
 keywords whose values the generated module imports or evaluates as Python code (`x-python-type`, `x-python-import`,
 `customTypePath`, `customBasePath`) are refused, as are Protocol Buffers input, whose imports protoc reads by itself,
-and `--validation`. The option implies `--no-allow-remote-refs`. A schema that does none of this generates the same
-models.
+`--validation`, and a schema that nests objects and arrays more than 100 levels deep or holds more than 2,000,000 of
+them (a YAML alias counts at each use). The option implies `--no-allow-remote-refs`. A schema that does none of this
+generates the same models.
 
 **Option relationships:**
 
@@ -83291,7 +83296,7 @@ The only currently implemented backend is 'pydantic-v2', which preserves the exi
 
 The untrusted input switch is experimental; the references and schema keywords it refuses may grow as new ways for a schema to read files or write code are found.
 
-With --untrusted-input (untrusted_input=True in generate() and in the GenerateConfig of the dynamic API), dcg reads no file or URL but the input, refuses x-python-type, x-python-import, customTypePath and customBasePath, Protocol Buffers input and --validation, and implies --no-allow-remote-refs. It does not sandbox the generated code.
+With --untrusted-input (untrusted_input=True in generate() and in the GenerateConfig of the dynamic API), dcg reads no file or URL but the input, refuses x-python-type, x-python-import, customTypePath and customBasePath, Protocol Buffers input, --validation and a schema nested more than 100 levels deep or holding more than 2,000,000 objects and arrays, and implies --no-allow-remote-refs. It does not sandbox the generated code.
 
 ### `cli-option.use-missing-sentinel`
 

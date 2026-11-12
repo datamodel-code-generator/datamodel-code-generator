@@ -2927,8 +2927,9 @@ name a location in the input (a JSON pointer, an anchor, an embedded `$id` resou
 input), not another file or a URL, and an XML Schema includes or imports only files of the input. The schema
 keywords whose values the generated module imports or evaluates as Python code (`x-python-type`, `x-python-import`,
 `customTypePath`, `customBasePath`) are refused, as are Protocol Buffers input, whose imports protoc reads by itself,
-and `--validation`. The option implies `--no-allow-remote-refs`. A schema that does none of this generates the same
-models.
+`--validation`, and a schema that nests objects and arrays more than 100 levels deep or holds more than 2,000,000 of
+them (a YAML alias counts at each use). The option implies `--no-allow-remote-refs`. A schema that does none of this
+generates the same models.
 
 **Option relationships:**
 

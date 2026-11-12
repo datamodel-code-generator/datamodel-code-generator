@@ -814,6 +814,10 @@ models = generate_dynamic_models(schema, config=GenerateConfig(untrusted_input=T
 - The keywords whose values the generated module imports or evaluates as Python code, `x-python-type`,
   `x-python-import`, `customTypePath` and `customBasePath`, stop generation with an error that names the keyword.
 - Protocol Buffers input, whose imports `protoc` reads by itself, and `--validation` are refused.
+- A schema that nests objects and arrays more than 100 levels deep, or holds more than 2,000,000 of them (a YAML alias
+  counts at each use), is refused before anything reads it, with an error that names the limit and how far the schema
+  went. Real schemas stay far below both: the deepest of thousands of public OpenAPI and JSON Schema documents nest 33
+  levels, the largest holds about 520,000.
 - It implies `allow_remote_refs=False`. A schema that does none of this generates the same classes.
 
 Descriptions, titles, defaults, examples, enum values and property names are written as escaped literals, comments or

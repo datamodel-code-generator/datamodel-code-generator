@@ -36,6 +36,7 @@ from datamodel_code_generator import (
     is_asyncapi,
     is_openapi,
 )
+from datamodel_code_generator._document_reader import refuse_oversized_document
 from datamodel_code_generator._graph import stable_toposort
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._module_paths import dotted_module, is_package_init, module_parts
@@ -400,10 +401,14 @@ def _make_cache_key(schema: Mapping[str, Any], config: GenerateConfig, module_na
     """Create cache key from schema and config.
 
     The values of set-valued settings are sorted, because a set has no order, so the key does not depend on the hash
-    seed. Returns None if the schema or the config is not JSON-serializable.
+    seed. Returns None if the schema or the config is not JSON-serializable. Under untrusted_input a schema past the
+    size limits is refused first (``refuse_oversized_document``), as serializing it would overflow the stack.
     """
+    document = dict(schema)
+    if config.untrusted_input:
+        refuse_oversized_document(document)
     try:
-        schema_json = json.dumps(dict(schema), separators=(",", ":"))
+        schema_json = json.dumps(document, separators=(",", ":"))
         config_json = json.dumps(
             {
                 name: sorted(value) if isinstance(getattr(config, name), (set, frozenset)) else value

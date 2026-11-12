@@ -627,10 +627,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         in the input; refuse the schema keywords whose values
                         the generated module imports or evaluates as Python
                         code (x-python-type, x-python-import, customTypePath,
-                        customBasePath), Protocol Buffers input and
-                        --validation. Implies --no-allow-remote-refs. Pass
-                        --no-untrusted-input to override a configuration file
-                        that enables it.
+                        customBasePath), Protocol Buffers input, --validation
+                        and a schema nested more than 100 levels deep or
+                        holding more than 2,000,000 objects and arrays.
+                        Implies --no-allow-remote-refs. Pass --no-untrusted-
+                        input to override a configuration file that enables
+                        it.
   --update-lock         Create or atomically update the selected remote lock
                         after generation (experimental).
   --url URL             Input file URL. `--input` is ignored when `--url` is
