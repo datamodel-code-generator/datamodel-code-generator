@@ -79,6 +79,8 @@ assert_docs_file = create_assert_file_content(EXPECTED_DOCS_PROJECTS)
         "nullable-3-0-strict",
         "nullable-alias",
         "nullable-force-optional",
+        "nullable-parameters",
+        "nullable-parameters-31",
         "results",
         "nullable-results",
         "nullable-results-3-0",

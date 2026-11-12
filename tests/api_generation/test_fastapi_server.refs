@@ -108,6 +108,10 @@ nullable-alias	main/generation_platform/fastapi/servers/nullable-alias.txt
 nullable-alias	main/generation_platform/fastapi/servers/packages/nullable-alias/
 nullable-force-optional	main/generation_platform/fastapi/servers/nullable-force-optional.txt
 nullable-force-optional	main/generation_platform/fastapi/servers/packages/nullable-force-optional/
+nullable-parameters	main/generation_platform/fastapi/servers/nullable-parameters.txt
+nullable-parameters	main/generation_platform/fastapi/servers/packages/nullable-parameters/
+nullable-parameters-31	main/generation_platform/fastapi/servers/nullable-parameters-31.txt
+nullable-parameters-31	main/generation_platform/fastapi/servers/packages/nullable-parameters-31/
 nullable-results	main/generation_platform/fastapi/servers/nullable-results.txt
 nullable-results	main/generation_platform/fastapi/servers/packages/nullable-results/
 nullable-results-3-0	main/generation_platform/fastapi/servers/nullable-results-3-0.txt

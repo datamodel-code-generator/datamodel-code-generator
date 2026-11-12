@@ -1,0 +1,55 @@
+# nullable-parameters
+serve pydantic_v2.BaseModel
+service DefaultService: get_item
+service DefaultService without its methods: TypeError
+> GET /items/x/y?q=a&kind=a&ids=1&ids=2&tags=3&weights%5Bw%5D=1&blob=null
+  get_item(id='x', label=Label(root='y'), q='a', kind=Kind(root=<KindEnum.a: 'a'>), ids=Ids(root=[1, 2]), tags=[3], weights=Weights(root={'w': 1}), X_Trace=5, session='s', blob=None, cap=None, mode='fast')
+< 204 - b''
+> GET /items/x/y?q=a&kind=b&ids=1&tags=3&weights%5Bw%5D=1&blob=7&cap=2&mode=slow
+  get_item(id='x', label=Label(root='y'), q='a', kind=Kind(root=<KindEnum.b: 'b'>), ids=Ids(root=[1]), tags=[3], weights=Weights(root={'w': 1}), X_Trace=5, session='s', blob=7, cap=2, mode='slow')
+< 204 - b''
+> GET /items/x/y?kind=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null
+< 422 application/json [{"type": "missing", "loc": ["query", "q"]}]
+> GET /items/x/y?q=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null
+< 422 application/json [{"type": "missing", "loc": ["query", "kind"]}]
+> GET /items/x/y?q=a&kind=a&tags=3&weights%5Bw%5D=1&blob=null
+< 422 application/json [{"type": "missing", "loc": ["query", "ids"]}]
+> GET /items/x/y?q=a&kind=a&ids=1&weights%5Bw%5D=1&blob=null
+< 422 application/json [{"type": "missing", "loc": ["query", "tags"]}]
+> GET /items/x/y?q=a&kind=a&ids=1&tags=3&blob=null
+< 422 application/json [{"type": "missing", "loc": ["query", "weights"]}]
+> GET /items/x/y?q=a&kind=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null
+< 422 application/json [{"type": "missing", "loc": ["header", "X-Trace"]}]
+> GET /items/x/y?q=a&kind=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null
+< 422 application/json [{"type": "int_parsing", "loc": ["header", "X-Trace"]}]
+> GET /items/x/y?q=a&kind=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null
+< 422 application/json [{"type": "missing", "loc": ["cookie", "session"]}]
+> GET /items/x/y?q=a&kind=a&ids=1&tags=3&weights%5Bw%5D=1
+< 422 application/json [{"type": "missing", "loc": ["query", "blob"]}]
+serve pydantic_v2.dataclass
+service DefaultService: get_item
+service DefaultService without its methods: TypeError
+> GET /items/x/y?q=a&kind=a&ids=1&ids=2&tags=3&weights%5Bw%5D=1&blob=null
+  get_item(id='x', label='y', q='a', kind=<KindEnum.a: 'a'>, ids=[1, 2], tags=[3], weights={'w': 1}, X_Trace=5, session='s', blob=None, cap=None, mode='fast')
+< 204 - b''
+> GET /items/x/y?q=a&kind=b&ids=1&tags=3&weights%5Bw%5D=1&blob=7&cap=2&mode=slow
+  get_item(id='x', label='y', q='a', kind=<KindEnum.b: 'b'>, ids=[1], tags=[3], weights={'w': 1}, X_Trace=5, session='s', blob=7, cap=2, mode='slow')
+< 204 - b''
+> GET /items/x/y?kind=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null
+< 422 application/json [{"type": "missing", "loc": ["query", "q"]}]
+> GET /items/x/y?q=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null
+< 422 application/json [{"type": "missing", "loc": ["query", "kind"]}]
+> GET /items/x/y?q=a&kind=a&tags=3&weights%5Bw%5D=1&blob=null
+< 422 application/json [{"type": "missing", "loc": ["query", "ids"]}]
+> GET /items/x/y?q=a&kind=a&ids=1&weights%5Bw%5D=1&blob=null
+< 422 application/json [{"type": "missing", "loc": ["query", "tags"]}]
+> GET /items/x/y?q=a&kind=a&ids=1&tags=3&blob=null
+< 422 application/json [{"type": "missing", "loc": ["query", "weights"]}]
+> GET /items/x/y?q=a&kind=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null
+< 422 application/json [{"type": "missing", "loc": ["header", "X-Trace"]}]
+> GET /items/x/y?q=a&kind=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null
+< 422 application/json [{"type": "int_parsing", "loc": ["header", "X-Trace"]}]
+> GET /items/x/y?q=a&kind=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null
+< 422 application/json [{"type": "missing", "loc": ["cookie", "session"]}]
+> GET /items/x/y?q=a&kind=a&ids=1&tags=3&weights%5Bw%5D=1
+< 422 application/json [{"type": "missing", "loc": ["query", "blob"]}]

@@ -54,6 +54,7 @@ __all__ = [
     "admits_none",
     "container_slot",
     "is_none",
+    "opened",
     "present",
     "sole_present",
     "type_identity",
@@ -100,6 +101,24 @@ def admits_none(value: TypeView | None) -> bool:
 def present(value: TypeView) -> tuple[TypeView, ...]:
     """Return the members of a union besides None, or the type itself when it is neither a union nor None."""
     return tuple(member for member in _members(value) if not is_none(member))
+
+
+def _leaves(value: TypeView) -> Iterator[TypeView]:
+    if isinstance(value, UnionType):
+        for member in value.members:
+            yield from _leaves(member)
+    else:
+        yield value
+
+
+def opened(value: TypeView) -> TypeView:
+    """Return a union with the unions among its members opened and no hint, or any other type itself.
+
+    A root model of a nullable type that a target reads through is a union of that union and None.
+    """
+    if not isinstance(value, UnionType) or not any(isinstance(member, UnionType) for member in value.members):
+        return value
+    return replace(value, members=tuple(_leaves(value)), hint=None)
 
 
 def sole_present(value: TypeView | None) -> TypeView | None:
