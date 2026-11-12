@@ -377,8 +377,7 @@ def schema_requires_model_type(
     if item.ref:
         if (
             not resolve_ref
-            or (target := _lightweight_types.unvisited_ref_target(parser, item.ref, visited_refs or frozenset()))
-            is None
+            or (target := _schema_refs.unvisited_ref_target(parser, item.ref, visited_refs or frozenset())) is None
         ):
             return True
         return schema_requires_model_type(parser, target[0], resolve_ref=True, visited_refs=target[1])

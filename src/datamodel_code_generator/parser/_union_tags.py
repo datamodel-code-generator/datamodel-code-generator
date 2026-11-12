@@ -86,7 +86,7 @@ class UnionTagsHost(SchemaRefsHost, Protocol):
     def _get_single_literal_value(
         self,
         obj: JsonSchemaObject,
-        seen_refs: set[_TargetNode] | None = None,
+        seen_refs: frozenset[_TargetNode] = frozenset(),
     ) -> JsonSchemaLiteral | None:
         """Return the one value a property schema admits as a tag (``get_single_literal_value``)."""
 
@@ -118,7 +118,7 @@ class _SchemaTagFacts:
 
     parser: UnionTagsHost
     obj: JsonSchemaObject
-    seen_refs: set[_TargetNode] | None
+    seen_refs: frozenset[_TargetNode]
 
     def has_const(self) -> bool:
         """Return whether the schema has a ``const``, null included."""
@@ -173,7 +173,7 @@ def union_variant_tag(name: str, variant_name: str) -> str | None:
 def get_single_literal_value(
     parser: UnionTagsHost,
     obj: JsonSchemaObject,
-    seen_refs: set[_TargetNode] | None = None,
+    seen_refs: frozenset[_TargetNode] = frozenset(),
 ) -> JsonSchemaLiteral | None:
     """Return the one value a property schema admits as a tag (``field_tag`` at ``schema``)."""
     tag = field_tag("schema", _SchemaTagFacts(parser, obj, seen_refs))
@@ -181,20 +181,12 @@ def get_single_literal_value(
 
 
 def get_referenced_single_literal_value(
-    parser: UnionTagsHost, obj: JsonSchemaObject, seen_refs: set[_TargetNode] | None
+    parser: UnionTagsHost, obj: JsonSchemaObject, seen_refs: frozenset[_TargetNode]
 ) -> JsonSchemaLiteral | None:
     """Return the one value the schema a ``$ref`` names admits as a tag, reading each schema node once."""
-    if not obj.ref:
+    if not obj.ref or (target := _schema_refs.unmapped_ref_target(parser, obj.ref, seen_refs)) is None:
         return None
-    seen_refs = seen_refs or set()
-    resolved_ref = _schema_refs.ref_path(parser, obj.ref)
-    if (
-        parser._resolve_external_ref_mapping(obj.ref)  # noqa: SLF001
-        or (node := _schema_refs.key_node(parser, resolved_ref)) in seen_refs
-    ):
-        return None
-    seen_refs.add(node)
-    return parser._get_single_literal_value(parser._load_ref_schema_object(obj.ref), seen_refs)  # noqa: SLF001
+    return parser._get_single_literal_value(*target)  # noqa: SLF001
 
 
 def get_union_variant_literal_values(
@@ -248,22 +240,14 @@ def iter_union_variant_literal_field_names(
 
 
 def is_null_only_schema(
-    parser: UnionTagsHost, obj: JsonSchemaObject, seen_refs: set[_TargetNode] | None = None
+    parser: UnionTagsHost, obj: JsonSchemaObject, seen_refs: frozenset[_TargetNode] = frozenset()
 ) -> bool:
     """Return whether a schema, or the schema its `$ref` chain reaches, admits only null by type, const, or enum."""
     if obj.type in ("null", ["null"]) or obj.enum == [None] or ("const" in obj.extras and obj.extras["const"] is None):
         return True
-    if not obj.ref:
+    if not obj.ref or (target := _schema_refs.unmapped_ref_target(parser, obj.ref, seen_refs)) is None:
         return False
-    seen_refs = seen_refs or set()
-    resolved_ref = _schema_refs.ref_path(parser, obj.ref)
-    if (
-        parser._resolve_external_ref_mapping(obj.ref)  # noqa: SLF001
-        or (node := _schema_refs.key_node(parser, resolved_ref)) in seen_refs
-    ):
-        return False
-    seen_refs.add(node)
-    return is_null_only_schema(parser, parser._load_ref_schema_object(obj.ref), seen_refs)  # noqa: SLF001
+    return is_null_only_schema(parser, *target)
 
 
 def is_single_literal_schema(parser: UnionTagsHost, obj: JsonSchemaObject | bool | None) -> bool:  # noqa: FBT001

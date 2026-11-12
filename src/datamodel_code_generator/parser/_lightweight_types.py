@@ -18,7 +18,7 @@ from typing_extensions import Protocol
 from datamodel_code_generator._constraint_applicability import NUMBER_KEYWORD_ORDER
 from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator.imports import IMPORT_ANY
-from datamodel_code_generator.parser import _schema_refs, _value_keywords
+from datamodel_code_generator.parser import _value_keywords
 from datamodel_code_generator.parser._intersection import (
     intersect_constraint,
     intersect_multiple_of,
@@ -34,7 +34,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
     from datamodel_code_generator.enums import AllOfMergeMode
-    from datamodel_code_generator.parser._schema_graph import _TargetNode
 
 __all__ = [
     "LightweightTypesHost",
@@ -45,7 +44,6 @@ __all__ = [
     "merge_primitive_schemas",
     "merge_primitive_schemas_for_allof",
     "merge_schema_constraints",
-    "unvisited_ref_target",
 ]
 
 _ALL_OF_MEMBER_SUFFIX: Final = re.compile(r"/allOf/\d+$")
@@ -235,15 +233,6 @@ def is_false_schema_item(parser: LightweightTypesHost, item: JsonSchemaObject | 
 
 def contains_false_schema(parser: LightweightTypesHost, items: Iterable[JsonSchemaObject | bool]) -> bool:
     return any(is_false_schema_item(parser, item) for item in items)
-
-
-def unvisited_ref_target(
-    parser: LightweightTypesHost, ref: str, visited_refs: frozenset[_TargetNode]
-) -> tuple[JsonSchemaObject, frozenset[_TargetNode]] | None:
-    """Return the schema ``ref`` names with ``visited_refs`` and its node, or None when its node was visited."""
-    if (node := _schema_refs.key_node(parser, _schema_refs.ref_path(parser, ref))) in visited_refs:
-        return None
-    return parser._load_ref_schema_object(ref), visited_refs | {node}  # noqa: SLF001
 
 
 def is_list_with_any_item_type(parser: LightweightTypesHost, data_type: DataType | None) -> bool:  # noqa: ARG001
