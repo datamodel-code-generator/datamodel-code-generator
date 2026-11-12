@@ -70,7 +70,7 @@ class DefaultWatchEventsSse:
         topic: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-    ) -> EventStream[models.ItemSchema]:
+    ) -> EventStream[models.Event]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return open_events(
             self._core,
@@ -93,7 +93,7 @@ class DefaultTailLogsNdjson:
         *,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-    ) -> EventStream[models.ItemSchemaModel]:
+    ) -> EventStream[models.LogEntry]:
         """Open the NDJSON stream of GET /logs, returning once its response is a declared success."""
         return open_events(
             self._core,
@@ -116,7 +116,7 @@ class DefaultStreamRecordsNdjson:
         *,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-    ) -> EventStream[models.ItemSchemaModel]:
+    ) -> EventStream[models.LogEntry]:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return open_events(
             self._core,
@@ -139,7 +139,7 @@ class DefaultGetExcerptNdjson:
         *,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-    ) -> EventStream[models.ItemSchemaModel]:
+    ) -> EventStream[models.LogEntry]:
         """Open the NDJSON stream of GET /excerpt, returning once its response is a declared success."""
         return open_events(
             self._core,

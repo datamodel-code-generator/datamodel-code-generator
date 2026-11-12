@@ -14,7 +14,7 @@ from .._generated import model_bindings
 from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.streams import EventPlan
 
-STREAM_0: Final[EventPlan[models.ItemSchema]] = EventPlan(
+STREAM_0: Final[EventPlan[models.Event]] = EventPlan(
     helper_id='default.watch_events',
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_0,
@@ -24,7 +24,7 @@ STREAM_0: Final[EventPlan[models.ItemSchema]] = EventPlan(
 )
 
 
-STREAM_1: Final[EventPlan[models.ItemSchemaModel]] = EventPlan(
+STREAM_1: Final[EventPlan[models.LogEntry]] = EventPlan(
     helper_id='default.tail_logs',
     operation=OperationRef(pointer='/paths/~1logs/get'),
     call=_operations.OPERATION_1,
@@ -35,7 +35,7 @@ STREAM_1: Final[EventPlan[models.ItemSchemaModel]] = EventPlan(
 )
 
 
-STREAM_2: Final[EventPlan[models.ItemSchemaModel]] = EventPlan(
+STREAM_2: Final[EventPlan[models.LogEntry]] = EventPlan(
     helper_id='default.stream_records',
     operation=OperationRef(pointer='/paths/~1records/get'),
     call=_operations.OPERATION_2,
@@ -45,7 +45,7 @@ STREAM_2: Final[EventPlan[models.ItemSchemaModel]] = EventPlan(
 )
 
 
-STREAM_3: Final[EventPlan[models.ItemSchemaModel]] = EventPlan(
+STREAM_3: Final[EventPlan[models.LogEntry]] = EventPlan(
     helper_id='default.get_excerpt',
     operation=OperationRef(pointer='/paths/~1excerpt/get'),
     call=_operations.OPERATION_3,
