@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 import pytest
@@ -58,8 +59,9 @@ name a location in the input (a JSON pointer, an anchor, an embedded `$id` resou
 input), not another file or a URL, and an XML Schema includes or imports only files of the input. The schema
 keywords whose values the generated module imports or evaluates as Python code (`x-python-type`, `x-python-import`,
 `customTypePath`, `customBasePath`) are refused, as are Protocol Buffers input, whose imports protoc reads by itself,
-and `--validation`. The option implies `--no-allow-remote-refs`. A schema that does none of this generates the same
-models.""",
+`--validation`, and a schema that nests objects and arrays more than 100 levels deep or holds more than 2,000,000 of
+them (a YAML alias counts at each use). The option implies `--no-allow-remote-refs`. A schema that does none of this
+generates the same models.""",
     input_schema="jsonschema/local_id_ref.json",
     cli_args=["--untrusted-input"],
     golden_output="main/jsonschema/local_id_ref.py",
@@ -195,3 +197,107 @@ def test_untrusted_input_refuses_merged_trait_headers() -> None:
     with pytest.raises(Error) as refused:
         generate(document, input_file_type="asyncapi", untrusted_input=True, **options)
     assert_output(str(refused.value), name="refused")
+
+
+SIZE_LIMIT_DEPTH = 100
+"""The most levels of nested objects and arrays a schema may have under --untrusted-input."""
+SIZE_LIMIT_NODES = 2_000_000
+"""The most objects and arrays a schema may hold under --untrusted-input, a YAML alias counted at each use."""
+
+
+def _nested_array_schema(depth: int) -> dict[str, object]:
+    """Return a schema of arrays of arrays whose objects nest ``depth`` levels deep."""
+    schema: dict[str, object] = {"type": "string"}
+    for _ in range(depth - 1):
+        schema = {"type": "array", "items": schema}
+    return schema
+
+
+def _nested_extension_schema(depth: int) -> dict[str, object]:
+    """Return a string schema whose extension holds lists of lists, so the document nests ``depth`` levels deep.
+
+    The limit counts every object and array of the document; an extension reaches it without nesting schemas, which
+    Pydantic's own recursion bound refuses at a platform-dependent depth (on Windows below 100 schema levels).
+    """
+    nested: list[object] = []
+    for _ in range(depth - 2):
+        nested = [nested]
+    return {"type": "string", "x-data": nested}
+
+
+def _shared_lists_schema(nodes: int) -> dict[str, object]:
+    """Return a schema of ``nodes`` objects and arrays, most of them one list held many times in an extension."""
+    empty: list[object] = []
+    row = [empty] * 999
+    rows = [row] * 1999
+    return {
+        "type": "object",
+        "properties": {"a": {"type": "string"}},
+        "x-data": [rows, *[empty] * (nodes - 5 - 1999 * 1000)],
+    }
+
+
+def _shared_lists_yaml(nodes: int) -> str:
+    """Return ``_shared_lists_schema(nodes)`` as YAML text whose shared lists are aliases."""
+    lines = [
+        "type: object",
+        "properties:",
+        "  a:",
+        "    type: string",
+        "x-data:",
+        "  - &rows",
+        "    - &row",
+        "      - &e []",
+    ]
+    lines += ["      - *e"] * 998 + ["    - *row"] * 1998 + ["  - *e"] * (nodes - 5 - 1999 * 1000)
+    return "\n".join(lines) + "\n"
+
+
+SIZE_LIMITS = {"depth": SIZE_LIMIT_DEPTH, "nodes": SIZE_LIMIT_NODES}
+
+
+@pytest.mark.parametrize("limit", SIZE_LIMITS)
+def test_untrusted_input_size_limits(tmp_path: Path, capsys: pytest.CaptureFixture[str], limit: str) -> None:
+    """Generate a schema at the nesting or node limit of --untrusted-input, and refuse one a level or a node past it.
+
+    Arrays of arrays nest one level per array; the node count counts a YAML alias at each use, so a short file can
+    hold millions of nodes.
+    """
+    for name, size in (("at_limit", SIZE_LIMITS[limit]), ("past_limit", SIZE_LIMITS[limit] + 1)):
+        input_path = tmp_path / f"{name}.yaml"
+        input_path.write_text(
+            json.dumps(_nested_extension_schema(size)) if limit == "depth" else _shared_lists_yaml(size),
+            encoding="utf-8",
+        )
+        run_main_and_assert(
+            input_path=input_path,
+            output_path=tmp_path / f"{name}.py",
+            input_file_type="jsonschema",
+            extra_args=[*COMMON_ARGS, "--untrusted-input"],
+            expected_exit=Exit.OK if name == "at_limit" else Exit.ERROR,
+        )
+    assert_output(capsys.readouterr().err, name="refused")
+
+
+@pytest.mark.parametrize("limit", SIZE_LIMITS)
+def test_untrusted_input_dynamic_size_limits(limit: str) -> None:
+    """Generate classes from a schema at the nesting or node limit, and refuse one past it before hashing it.
+
+    Hashing the schema for the cache would overflow the stack on a schema nested thousands of levels deep.
+    """
+    schema = _nested_extension_schema if limit == "depth" else _shared_lists_schema
+    config = GenerateConfig(formatters=[], untrusted_input=True)
+    models = generate_dynamic_models(schema(SIZE_LIMITS[limit]), config=config, cache_size=0)
+    assert_output("".join(f"{name}\n" for name in sorted(models)), name="models")
+    with pytest.raises(Error) as refused:
+        generate_dynamic_models(schema(SIZE_LIMITS[limit] + 1), config=config, cache_size=0)
+    assert_output(str(refused.value), name="refused")
+
+
+def test_untrusted_input_dynamic_refuses_deep_schema_before_hashing() -> None:
+    """Refuse a schema nested 20,000 levels deep with an error, not the RecursionError hashing it would raise."""
+    with pytest.raises(Error) as refused:
+        generate_dynamic_models(
+            _nested_array_schema(20_000), config=GenerateConfig(formatters=[], untrusted_input=True), cache_size=0
+        )
+    assert_output(str(refused.value))

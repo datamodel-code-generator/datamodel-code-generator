@@ -571,5 +571,20 @@
   },
   "parts-bound-types-errors": {
     "input": "parts-bound-types-errors.yaml"
+  },
+  "nullable-parameters": {
+    "input": "server-nullable-parameters.yaml",
+    "model": {
+      "strict_nullable": true
+    },
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "nullable-parameters-31": {
+    "input": "server-nullable-parameters-31.yaml",
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
   }
 }

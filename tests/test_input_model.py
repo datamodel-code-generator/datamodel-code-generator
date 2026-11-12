@@ -51,7 +51,7 @@ from tests.main.conftest import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
+    from collections.abc import Generator, Sequence
 
 TIMESTAMP = "1985-10-26T01:21:00-07:00"
 _MISSING_SYS_MODULE = object()
@@ -81,7 +81,7 @@ def _assert_sys_modules_with_prefix(module_prefix: str, expected_modules: set[st
 
 
 @contextmanager
-def _without_sys_module(module_name: str) -> Iterator[None]:
+def _without_sys_module(module_name: str) -> Generator[None, None, None]:
     """Temporarily remove a sys.modules entry and restore the previous state."""
     previous_module = sys.modules.pop(module_name, _MISSING_SYS_MODULE)
     try:

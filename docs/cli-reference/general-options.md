@@ -2647,7 +2647,7 @@ reported when the rules suggest another value. Add `--output-format json` for a 
       formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
       integer/number/boolean schemas   5
 
-    Start from  --preset standard-py310-20261111
+    Start from  --preset standard-py310-20261112
 
     Add (5 options)
       --enum-field-as-literal all   [enums.inline-value-sets-as-literal]
@@ -2775,7 +2775,7 @@ reported when the rules suggest another value. Add `--output-format json` for a 
       - The rules were calibrated on the 20261017 presets.
 
     Command
-      datamodel-codegen --collapse-reuse-models --enum-field-as-literal all --input api.yaml --input-file-type openapi --preset standard-py310-20261111 --reuse-model --no-treat-dot-as-module --use-tag-as-union-variant-name
+      datamodel-codegen --collapse-reuse-models --enum-field-as-literal all --input api.yaml --input-file-type openapi --preset standard-py310-20261112 --reuse-model --no-treat-dot-as-module --use-tag-as-union-variant-name
 
     pyproject.toml
       [tool.datamodel-codegen]
@@ -2783,7 +2783,7 @@ reported when the rules suggest another value. Add `--output-format json` for a 
       enum-field-as-literal = "all"
       input = "api.yaml"
       input-file-type = "openapi"
-      preset = "standard-py310-20261111"
+      preset = "standard-py310-20261112"
       reuse-model = true
       treat-dot-as-module = false
       use-tag-as-union-variant-name = true
@@ -2927,8 +2927,9 @@ name a location in the input (a JSON pointer, an anchor, an embedded `$id` resou
 input), not another file or a URL, and an XML Schema includes or imports only files of the input. The schema
 keywords whose values the generated module imports or evaluates as Python code (`x-python-type`, `x-python-import`,
 `customTypePath`, `customBasePath`) are refused, as are Protocol Buffers input, whose imports protoc reads by itself,
-and `--validation`. The option implies `--no-allow-remote-refs`. A schema that does none of this generates the same
-models.
+`--validation`, and a schema that nests objects and arrays more than 100 levels deep or holds more than 2,000,000 of
+them (a YAML alias counts at each use). The option implies `--no-allow-remote-refs`. A schema that does none of this
+generates the same models.
 
 **Option relationships:**
 

@@ -15,7 +15,7 @@ from tests.api_generation.scenarios.client_streams import _event, _Feed, _Harnes
 from tests.api_generation.support.client_runtime import arecord, argument, describe, record, run
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Iterable, Iterator, Mapping
+    from collections.abc import AsyncGenerator, Callable, Generator, Iterable, Mapping
     from types import ModuleType
 
 _NDJSON: Final = "application/x-ndjson"
@@ -97,14 +97,16 @@ class _Resumes:
         self.feed.replies.append(self.harness.reply(chunks, **settings))
 
     @contextmanager
-    def client(self, settings: Mapping[str, Any] | None = None, **credentials: str) -> Iterator[Any]:
+    def client(self, settings: Mapping[str, Any] | None = None, **credentials: str) -> Generator[Any, None, None]:
         """Yield a client of the package, configured by the keywords given, sending through the reporting transport."""
         package = self.harness.package
         with self.feed.client() as http, package.Client(http_client=http, **settings or {}, **credentials) as api:
             yield api
 
     @asynccontextmanager
-    async def async_client(self, settings: Mapping[str, Any] | None = None, **credentials: str) -> AsyncIterator[Any]:
+    async def async_client(
+        self, settings: Mapping[str, Any] | None = None, **credentials: str
+    ) -> AsyncGenerator[Any, None]:
         """Yield an asyncio client of the package, configured by the keywords given, sending through the transport."""
         async with (
             self.feed.async_client() as http,

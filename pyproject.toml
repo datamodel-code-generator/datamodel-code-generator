@@ -43,15 +43,21 @@ dependencies = [
   "typing-extensions>=4.16,<5",
 ]
 optional-dependencies.all = [
+  "datamodel-code-generator[argcomplete]",
   "datamodel-code-generator[black]",
   "datamodel-code-generator[debug]",
+  "datamodel-code-generator[genson]",
   "datamodel-code-generator[graphql]",
   "datamodel-code-generator[http]",
   "datamodel-code-generator[isort]",
+  "datamodel-code-generator[jinja2]",
   "datamodel-code-generator[protobuf]",
   "datamodel-code-generator[ruff]",
   "datamodel-code-generator[validation]",
   "datamodel-code-generator[watch]",
+]
+optional-dependencies.argcomplete = [
+  "argcomplete>=2.10.1,<4",
 ]
 optional-dependencies.black = [
   "black>=19.10b0; python_version<'3.15' and sys_platform!='emscripten'",
@@ -59,6 +65,9 @@ optional-dependencies.black = [
 ]
 optional-dependencies.debug = [
   "pysnooper>=0.4.1,<2",
+]
+optional-dependencies.genson = [
+  "genson>=1.2.1,<2",
 ]
 optional-dependencies.graphql = [
   "graphql-core>=3.2.3",
@@ -71,6 +80,9 @@ optional-dependencies.httpx2 = [
   "httpx2>=2,<3",
 ]
 optional-dependencies.isort = [ "isort>=4.3.21,<9; sys_platform!='emscripten'" ]
+optional-dependencies.jinja2 = [
+  "jinja2>=2.10.1,<4",
+]
 optional-dependencies.protobuf = [
   "grpcio-tools>=1.62,<2",
 ]
@@ -209,27 +221,27 @@ lint.select = [
   "ALL",
 ]
 lint.ignore = [
-  "ANN401", # Any as type annotation is allowed
-  "C901",   # complex structure
-  "COM812", # Conflict with formatter
-  "CPY",    # No copyright statements
-  "D203",   # one-blank-line-before-class (conflicts with D211)
-  "D212",   # multi-line-summary-first-line (conflicts with D213)
-  "DOC",    # limited documentation
-  "FIX002", # line contains to do
-  "ISC001", # Conflict with formatter
-  "S101",   # can use assert
-  "TD002",  # missing to do author
-  "TD003",  # missing to do link
-  "TD004",  # missing colon in to do
+  "any-type",                                  # Any as type annotation is allowed
+  "assert",                                    # can use assert
+  "complex-structure",                         # complex structure
+  "CPY",                                       # No copyright statements
+  "DOC",                                       # limited documentation
+  "incorrect-blank-line-before-class",         # one-blank-line-before-class (conflicts with D211)
+  "line-contains-todo",                        # line contains to do
+  "missing-todo-author",                       # missing to do author
+  "missing-todo-colon",                        # missing colon in to do
+  "missing-todo-link",                         # missing to do link
+  "missing-trailing-comma",                    # Conflict with formatter
+  "multi-line-summary-first-line",             # multi-line-summary-first-line (conflicts with D213)
+  "single-line-implicit-string-concatenation", # Conflict with formatter
 ]
 lint.per-file-ignores."scripts/*.py" = [
-  "INP001",  # no implicit namespace
-  "PLR0912", # too many branches
-  "PLR0914", # too many local variables
-  "PLR0915", # too many statements
-  "S",       # subprocess security is fine for build scripts
-  "T201",    # print is fine for CLI scripts
+  "implicit-namespace-package", # no implicit namespace
+  "print",                      # print is fine for CLI scripts
+  "S",                          # subprocess security is fine for build scripts
+  "too-many-branches",          # too many branches
+  "too-many-locals",            # too many local variables
+  "too-many-statements",        # too many statements
 ]
 lint.per-file-ignores."src/datamodel_code_generator/_client/_compiled_templates/*.py" = [
   "ALL", # Generated sources are checked by compile_builtin_templates.py.
@@ -238,29 +250,29 @@ lint.per-file-ignores."src/datamodel_code_generator/_fastapi/_compiled_templates
   "ALL", # Generated sources are checked by compile_builtin_templates.py.
 ]
 lint.per-file-ignores."src/datamodel_code_generator/_runtime/client/*.py" = [
-  "TID252", # Generated packages copy the runtime, so the client runtime imports its sibling runtime relatively.
+  "relative-imports", # Generated packages copy the runtime, so the client runtime imports its sibling runtime relatively.
 ]
-lint.per-file-ignores."src/datamodel_code_generator/_runtime/protocols/*.py" = [ "TID252" ]
+lint.per-file-ignores."src/datamodel_code_generator/_runtime/protocols/*.py" = [ "relative-imports" ]
 lint.per-file-ignores."src/datamodel_code_generator/_runtime/server/*.py" = [
-  "TID252", # Generated packages copy the runtime, so the server runtime imports its sibling runtime relatively.
+  "relative-imports", # Generated packages copy the runtime, so the server runtime imports its sibling runtime relatively.
 ]
 lint.per-file-ignores."src/datamodel_code_generator/model/_compiled_templates/*.py" = [
   "ALL", # Generated sources are checked by compile_builtin_templates.py.
 ]
 lint.per-file-ignores."tests/**/*.py" = [
-  "FBT",     # don't care about booleans as positional arguments in tests
-  "INP001",  # no implicit namespace
-  "N806",    # variable names for model classes can be uppercase
-  "PLC0415", # local imports in tests are fine
-  "PLC2701", # private import is fine
-  "PLR0904", # too many public methods in test classes is fine
-  "PLR0913", # as many arguments as want
-  "PLR0915", # can have longer test methods
-  "PLR0917", # as many arguments as want
-  "PLR2004", # Magic value used in comparison, consider replacing with a constant variable
-  "PLR6301", # test methods don't need to use self
-  "S",       # no safety concerns
-  "SLF001",  # can test private methods
+  "FBT",                                # don't care about booleans as positional arguments in tests
+  "implicit-namespace-package",         # no implicit namespace
+  "import-outside-top-level",           # local imports in tests are fine
+  "import-private-name",                # private import is fine
+  "magic-value-comparison",             # Magic value used in comparison, consider replacing with a constant variable
+  "no-self-use",                        # test methods don't need to use self
+  "non-lowercase-variable-in-function", # variable names for model classes can be uppercase
+  "private-member-access",              # can test private methods
+  "S",                                  # no safety concerns
+  "too-many-arguments",                 # as many arguments as want
+  "too-many-positional-arguments",      # as many arguments as want
+  "too-many-public-methods",            # too many public methods in test classes is fine
+  "too-many-statements",                # can have longer test methods
 ]
 lint.isort = { known-first-party = [
   "datamodel_code_generator",
@@ -327,6 +339,7 @@ ini_options.filterwarnings = [
   "ignore:^.*Pydantic v2 with --use-annotated is recommended.*:DeprecationWarning",
   "ignore:^.*unclosed file.*",
   "ignore:^Black/isort will become optional.*:FutureWarning",
+  "ignore:^(Jinja2|Genson) will become optional.*:FutureWarning",
   "ignore:^Support for (Black|isort|DCG runtime Pydantic).*will end in a future release.*:FutureWarning",
 ]
 ini_options.verbosity_assertions = 2

@@ -35,7 +35,7 @@ from urllib.parse import ParseResult, unquote, urljoin, urlparse
 from typing_extensions import Protocol
 
 from datamodel_code_generator import Error, InvalidClassNameError, InvalidFileFormatError, JsonSchemaVersion
-from datamodel_code_generator._document_reader import member_key
+from datamodel_code_generator._document_reader import member_key, refuse_oversized_document
 from datamodel_code_generator._json_pointer import escape_token, is_pointer_fragment
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, subschema_entries
 from datamodel_code_generator._openapi_objects import held_schemas
@@ -243,11 +243,17 @@ class DocumentNamesHost(Protocol):
 class SchemaResourcesHost(DocumentNamesHost, Protocol):
     """What resolving a reference by the schema resources and definitions of loaded documents reads of the parser."""
 
+    SCHEMA_OBJECT_TYPE: ClassVar[type[JsonSchemaObject]]
+    _named_entry_maps: ClassVar[frozenset[str]]
     allow_remote_refs: bool | None
+    raw_obj: dict[str, YamlValue]
+    _document_roles: dict[str, dict[str, None]]
+    _has_embedded_schema_resources: bool
     _implicit_documents: set[str]
     _lenient_documents: dict[str, dict[str, Any]]
     _resource_ref_warnings: set[str]
     _schema_resource_path_parts: dict[str, list[str]]
+    _schema_resource_cache: dict[str, tuple[dict[str, Any], dict[str, Any]]]
     _schema_resource_registry: ResourceRegistry
 
     @property
@@ -258,14 +264,21 @@ class SchemaResourcesHost(DocumentNamesHost, Protocol):
     def _pointer_slash_names(self) -> SlashNames:
         """How a JSON pointer reads a ``/`` unescaped inside a name (``SlashNames``)."""
 
-    def _has_schema_affecting_keywords(self, raw: dict[str, Any]) -> bool:
-        """Return whether a raw schema sets a keyword that changes the schema, not only its metadata."""
+    @property
+    def _schema_graph(self) -> SchemaGraphBuilder | None:
+        """The schema graph of the parse, once it is built."""
+
+    def _get_ref_body(self, resolved_ref: str) -> dict[str, YamlValue]:
+        """Get the body of a reference from URL or remote file."""
 
     def _is_version_definition_namespace_name(self, name: str) -> bool:
         """Return whether a name of a definitions namespace is a version, like ``v1`` or ``v2_0``."""
 
-    def _known_schema_object_raw_keys(self) -> frozenset[str]:
-        """Return the keywords, and their aliases, that a schema object of the parser reads."""
+    @staticmethod
+    def _schema_object_raw_key_sets(
+        schema_object_type: type[JsonSchemaObject],
+    ) -> tuple[frozenset[str], frozenset[str]]:
+        """Return the keywords a schema object type reads and those of them that change the schema."""
 
     def _source_path_for_diagnostics(self, source_path: Path | None = None) -> str:
         """Return source context without changing parser path semantics."""
@@ -274,11 +287,9 @@ class SchemaResourcesHost(DocumentNamesHost, Protocol):
 class SchemaDocumentsHost(SchemaResourcesHost, Protocol):
     """The options, caches and hooks of the parser that the document reading reads."""
 
-    SCHEMA_OBJECT_TYPE: ClassVar[type[JsonSchemaObject]]
     _cache_local_sources_during_parse: ClassVar[bool]
     _component_schemas_are_resources: ClassVar[bool]
     _input_file_type: ClassVar[InputFileType]
-    _named_entry_maps: ClassVar[frozenset[str]]
     _non_dict_source_is_invalid: ClassVar[bool]
     class_name: str | None
     current_source_path: Path | None
@@ -287,20 +298,17 @@ class SchemaDocumentsHost(SchemaResourcesHost, Protocol):
     http_headers: Sequence[tuple[str, str]] | None
     http_local_ref_path: Path | None
     http_query_parameters: Sequence[tuple[str, str]] | None
-    raw_obj: dict[str, YamlValue]
     remote_object_cache: DefaultPutDict[str, dict[str, YamlValue]]
     reserved_refs: defaultdict[tuple[str, ...], set[str]]
     source: str | Path | list[Path] | ParseResult | dict[str, YamlValue]
+    untrusted_input: bool
     _cache_local_sources: bool
     _document_dialects: dict[str, DocumentDialect]
     _referring_dialect: DocumentDialect | None
-    _document_roles: dict[str, dict[str, None]]
     _documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]]
-    _has_embedded_schema_resources: bool
     _loads_only_used_references: bool
     _local_source_cache: tuple[Source, ...] | None
     _remote_response_observer: ResponseObserver | None
-    _schema_resource_cache: dict[str, tuple[dict[str, Any], dict[str, Any]]]
     _source_context: ParserSourceContext
 
     @property
@@ -319,16 +327,9 @@ class SchemaDocumentsHost(SchemaResourcesHost, Protocol):
     def use_single_value_enum_as_const(self) -> bool:
         """Whether a single-value enum is read as a const (``--use-single-value-enum-as-const``)."""
 
-    @property
-    def _schema_graph(self) -> SchemaGraphBuilder | None:
-        """The schema graph of the parse, once it is built."""
-
     @classmethod
     def get_url_path_parts(cls, url: ParseResult) -> list[str]:
         """Split URL into scheme/host and path components."""
-
-    def _get_ref_body(self, resolved_ref: str) -> dict[str, YamlValue]:
-        """Get the body of a reference from URL or remote file."""
 
     def _index_document(self, raw: dict[str, Any], path_parts: list[str]) -> dict[str, Any]:
         """Return a loaded document as a tree whose JSON objects the schema graph locates (L0)."""
@@ -379,12 +380,6 @@ class SchemaDocumentsHost(SchemaResourcesHost, Protocol):
 
     def _schema_features_for(self, root: dict[str, YamlValue]) -> JsonSchemaFeatures:
         """Get the schema features of a root document based on config or its detected version."""
-
-    @staticmethod
-    def _schema_object_raw_key_sets(
-        schema_object_type: type[JsonSchemaObject],
-    ) -> tuple[frozenset[str], frozenset[str]]:
-        """Return the keywords a schema object type reads and those of them that change the schema."""
 
     def _should_preserve_explicit_root_class_name(self, class_name: str) -> bool:
         """Return whether an explicit root class name with a leading underscore keeps its spelling."""
@@ -454,8 +449,11 @@ def read_document(
     version of the document (an input document, without ``root``, read by itself, another one by its own version or
     that of the document that loads it); without the option (row ``legacy-first-read-dialect``) under the draft-04
     schema features the parser already uses, or else those of its root document. The document as written is kept
-    beside a rewritten one for the targets that serve it.
+    beside a rewritten one for the targets that serve it. Under --untrusted-input a document past the size limits is
+    refused first (``refuse_oversized_document``), before anything reads it.
     """
+    if parser.untrusted_input:
+        refuse_oversized_document(document)
     if not parser.use_single_value_enum_as_const:
         return document
     if parser._reads_schema_version_per_document:  # noqa: SLF001
@@ -1078,6 +1076,8 @@ def parse_converted_sources(parser: SchemaDocumentsHost, make_converter: Callabl
     with parser._parsing_session():  # noqa: SLF001
         for source, path_parts in get_context_source_path_parts(parser):
             raw_obj = source.raw_data = make_converter().convert(source)
+            if parser.untrusted_input:
+                refuse_oversized_document(raw_obj)
             note_converted_document(parser, path_parts)
             parse_source(parser, source, raw_obj, path_parts)
 
@@ -1099,11 +1099,11 @@ def reserved_targets(
             yield ReservedTarget(document=document, key=key, node=graph.node(value))
 
 
-def known_schema_object_raw_keys(parser: SchemaDocumentsHost) -> frozenset[str]:
+def known_schema_object_raw_keys(parser: SchemaResourcesHost) -> frozenset[str]:
     return type(parser)._schema_object_raw_key_sets(parser.SCHEMA_OBJECT_TYPE)[0]  # noqa: SLF001
 
 
-def has_schema_affecting_keywords(parser: SchemaDocumentsHost, raw: dict[str, Any]) -> bool:
+def has_schema_affecting_keywords(parser: SchemaResourcesHost, raw: dict[str, Any]) -> bool:
     schema_affecting_keys = type(parser)._schema_object_raw_key_sets(parser.SCHEMA_OBJECT_TYPE)[1]  # noqa: SLF001
     return any(str(key) in schema_affecting_keys for key in raw)
 
@@ -1122,7 +1122,7 @@ def iter_definition_namespace_entries(
     if not include_direct_children:
         return
 
-    known_keys = parser._known_schema_object_raw_keys()  # noqa: SLF001
+    known_keys = known_schema_object_raw_keys(parser)
     for key, value in raw.items():
         key_str = str(key)
         if key_str in known_keys or key_str.startswith("x-") or not isinstance(value, (dict, bool)):
@@ -1136,7 +1136,7 @@ def iter_schema_definition_entry(
     raw: YamlValue,
     path: list[str],
 ) -> Iterator[tuple[str, YamlValue, list[str]]]:
-    if isinstance(raw, dict) and not parser._has_schema_affecting_keywords(raw):  # noqa: SLF001
+    if isinstance(raw, dict) and not has_schema_affecting_keywords(parser, raw):
         entries = list(
             iter_definition_namespace_entries(
                 parser,

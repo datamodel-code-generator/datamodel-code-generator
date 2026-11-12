@@ -127,11 +127,11 @@ datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261111 \
+  --preset standard-py312-20261112 \
   --output model.py
 ```
 
-This quick start uses `standard-py312-20261111` as the modern Python 3.12 baseline.
+This quick start uses `standard-py312-20261112` as the modern Python 3.12 baseline.
 Preset names include the target Python version: `py312` means Python 3.12.
 
 See [CLI Reference](https://datamodel-code-generator.koxudaxi.dev/cli-reference/) for all options. See [Presets](https://datamodel-code-generator.koxudaxi.dev/presets/),
@@ -139,7 +139,7 @@ See [CLI Reference](https://datamodel-code-generator.koxudaxi.dev/cli-reference/
 [`--output-model-type`](https://datamodel-code-generator.koxudaxi.dev/cli-reference/model-customization/#output-model-type) for this command.
 
 For more schema-aware output that preserves schema-authored names, reuses models, and embeds generated
-documentation, use [`practical-py312-20261111`](https://datamodel-code-generator.koxudaxi.dev/presets/#practical-py312-20261111).
+documentation, use [`practical-py312-20261112`](https://datamodel-code-generator.koxudaxi.dev/presets/#practical-py312-20261112).
 
 **Not sure which options fit your schema?** Add `--recommend-options` to the command above (experimental). It
 analyses the schema and prints the options to add on top of the latest preset with the reason for each, and a ready
@@ -230,7 +230,9 @@ The current default remains Black/isort, which are still required dependencies. 
 normal generation. The future builtin default is intended to reduce required installation dependencies and version
 constraints; Ruff will still be recommended for projects that use Ruff. Formatters are never selected automatically
 based on installed packages or Ruff configuration. The new `[black]` and `[isort]` extras prepare for later
-optional installation; their ranges and environment markers match the current required dependencies.
+optional installation; their ranges and environment markers match the current required dependencies. The
+`[jinja2]` (custom templates), `[genson]` (JSON, YAML, CSV and dict data input) and `[argcomplete]` (shell
+completion) extras do the same for those dependencies.
 Selecting only a formatter preserves your other generation settings; a preset also supplies model-generation options.
 Explicit formatter selection does not pin formatter versions or guarantee byte-for-byte output stability.
 
@@ -365,7 +367,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261111 \
+  --preset standard-py312-20261112 \
   --output app/models.py \
   --generate-server fastapi \
   --server-output app/server \
@@ -378,7 +380,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261111 \
+  --preset standard-py312-20261112 \
   --output app/models.py \
   --generate-client httpx2 \
   --client-output app/client \

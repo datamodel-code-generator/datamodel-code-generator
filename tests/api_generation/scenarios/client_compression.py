@@ -24,7 +24,7 @@ from tests.api_generation.support.client_runtime import (
 from tests.api_generation.support.fixture_native import NativeFixture
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Generator, Iterator
+    from collections.abc import AsyncGenerator, AsyncIterator, Generator
     from types import ModuleType
 
 
@@ -44,7 +44,7 @@ class _Harness:
         return {"max_retries": 1, "retry": self.options.RetryOptions(initial_delay=0), **options}
 
     @contextmanager
-    def client(self, **options: Any) -> Iterator[Any]:
+    def client(self, **options: Any) -> Generator[Any, None, None]:
         """Yield a client that borrows a native client of the exchange, closing both afterwards."""
         with (
             self.exchange.client() as native,
@@ -53,7 +53,7 @@ class _Harness:
             yield api
 
     @asynccontextmanager
-    async def async_client(self, **options: Any) -> AsyncIterator[Any]:
+    async def async_client(self, **options: Any) -> AsyncGenerator[Any, None]:
         """Yield an async client that borrows a native client of the exchange, closing both afterwards."""
         async with (
             self.exchange.async_client() as native,

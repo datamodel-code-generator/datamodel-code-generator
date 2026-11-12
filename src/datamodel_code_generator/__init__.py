@@ -1212,6 +1212,13 @@ def _resolve_schema_versions(input_file_type: InputFileType, schema_version: str
             return _parse_schema_version(JsonSchemaVersion, schema_version, "JSON Schema"), None, None, None, None
 
 
+def _warn_genson_optional() -> None:
+    """Announce that Genson, which infers a schema from raw data, becomes optional."""
+    from datamodel_code_generator.deprecations import warn_deprecated  # noqa: PLC0415
+
+    warn_deprecated("dependency.genson-optional", stacklevel=3)
+
+
 def _normalize_raw_input(  # noqa: PLR0912
     input_: _GenerationInput,
     input_text: str | None,
@@ -1224,6 +1231,7 @@ def _normalize_raw_input(  # noqa: PLR0912
 
     import json  # noqa: PLC0415
 
+    _warn_genson_optional()
     try:
         if isinstance(input_, Path) and input_.is_dir():  # pragma: no cover
             msg = f"Input must be a file for {input_file_type}"
@@ -1867,9 +1875,14 @@ def _prepare_generate_facade_config(config: GenerateConfig) -> GenerateConfig:
     from pydantic import VERSION as PYDANTIC_VERSION  # ruff: ignore[import-outside-top-level]
 
     from datamodel_code_generator.base_config import implied_model_settings  # ruff: ignore[import-outside-top-level]
-    from datamodel_code_generator.deprecations import warn_legacy_dependency  # ruff: ignore[import-outside-top-level]
+    from datamodel_code_generator.deprecations import (  # ruff: ignore[import-outside-top-level]
+        warn_deprecated,
+        warn_legacy_dependency,
+    )
 
     warn_legacy_dependency("dependency.pydantic-runtime-minimum", PYDANTIC_VERSION, (2, 8, 2))
+    if config.custom_template_dir:
+        warn_deprecated("dependency.jinja2-optional", stacklevel=2)
     given = set(config.model_fields_set)
     config = _apply_generate_config_preset(config)
     config = _apply_missing_sentinel_config(config)
@@ -2079,12 +2092,12 @@ def _resolve_generation_remote_lock(
     if config.remote_lock_resolved:
         lockfile = getattr(remote_lock, "path", None)
     else:
-        from datamodel_code_generator._lock_plan import remote_lock_plan  # noqa: PLC0415
+        from datamodel_code_generator._lock_plan import active_remote_lock_plan  # noqa: PLC0415
 
-        plan = remote_lock_plan(config, config._pyproject_path, caller_cwd)  # noqa: SLF001
-        lockfile = plan.canonical_path if plan.active else None
+        plan = active_remote_lock_plan(config, config._pyproject_path, caller_cwd)  # noqa: SLF001
+        lockfile = None if plan is None else plan.canonical_path
     _refuse_written_path_conflicts(input_, config.output, config.emit_model_metadata, lockfile, caller_cwd)
-    if plan is not None and plan.active:
+    if plan is not None:
         config = config.model_copy()
         from datamodel_code_generator.remote_lock import RemoteReferenceLock  # noqa: PLC0415
 

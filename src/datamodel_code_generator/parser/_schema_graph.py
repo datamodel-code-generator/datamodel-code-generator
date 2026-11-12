@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from contextvars import ContextVar
 from copy import copy
-from dataclasses import dataclass, field
+from dataclasses import field
 from operator import is_not
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, NewType, Protocol, TypeAlias, TypeVar, cast
@@ -30,7 +30,7 @@ from urllib.parse import urljoin
 from typing_extensions import ReadOnly, Self, TypedDict, final, override
 
 from datamodel_code_generator._json_pointer import is_pointer_fragment, join_pointer, pointer_opening, pointer_tokens
-from datamodel_code_generator._records import record
+from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator.reference import SchemaLocation
 
 if TYPE_CHECKING:
@@ -385,7 +385,7 @@ def _document_position(raw: Any, pointer: str) -> tuple[int, ...]:
 
 
 @final
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class ResourceRegistry:
     """The registry dicts L1 resolves references through, keyed by document; filled from the schema graph."""
 

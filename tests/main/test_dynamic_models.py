@@ -5,6 +5,7 @@ from __future__ import annotations
 import gc
 import importlib
 import importlib.util
+import inspect
 import json
 import os
 import pickle
@@ -13,6 +14,7 @@ import subprocess
 import sys
 import threading
 import types
+import warnings
 import weakref
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -1957,3 +1959,48 @@ def test_register_module_leaves_nothing_registered_when_the_code_fails(
             REGISTERED_SCHEMA, config=config, module_name="runtime_registered", register_module=True
         )
     assert [name for name in sys.modules if name.startswith("runtime_registered")] == []
+
+
+TRAILING_SPACES_SCHEMA = {
+    "title": "Described",
+    "description": "first line  \nsecond line",
+    "type": "object",
+    "properties": {"name": {"type": "string"}},
+}
+
+
+@pytest.mark.parametrize(
+    ("options", "formatted", "default_formatters"),
+    [
+        pytest.param({}, False, False, id="default"),
+        pytest.param({"preset": "standard-py313-20260619"}, False, False, id="preset_without_formatters"),
+        pytest.param({"formatters": [Formatter.BUILTIN]}, True, False, id="formatters"),
+        pytest.param({"preset": "standard-py313-20261111"}, True, False, id="preset_with_formatters"),
+        pytest.param(
+            {"custom_formatters": ["tests.data.python.custom_formatters.add_comment"]},
+            True,
+            True,
+            id="custom_formatters",
+        ),
+    ],
+)
+@pytest.mark.parametrize("generate_module", [False, True], ids=["models", "module"])
+def test_dynamic_generation_formats_only_where_the_config_selects_formatters(
+    options: dict[str, Any], *, formatted: bool, default_formatters: bool, generate_module: bool
+) -> None:
+    """Skip formatting without selected formatters; formatters, custom formatters and presets keep it."""
+    config = GenerateConfig(use_schema_description=True, **options)
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        generated = (
+            generate_dynamic_module(TRAILING_SPACES_SCHEMA, config=config, cache_size=0).models
+            if generate_module
+            else generate_dynamic_models(TRAILING_SPACES_SCHEMA, config=config, cache_size=0)
+        )
+
+    # Python 3.13 and later strip the docstring's indentation when compiling; cleandoc reads both forms the same.
+    assert inspect.cleandoc(generated["Described"].__doc__ or "") == (
+        "first line\nsecond line" if formatted else "first line  \nsecond line"
+    )
+    assert any("Default formatters will change" in str(warning.message) for warning in caught) is default_formatters

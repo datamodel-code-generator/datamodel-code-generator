@@ -271,8 +271,9 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         note=(
             "With --untrusted-input (untrusted_input=True in generate() and in the GenerateConfig of the dynamic "
             "API), dcg reads no file or URL but the input, refuses x-python-type, x-python-import, customTypePath "
-            "and customBasePath, Protocol Buffers input and --validation, and implies --no-allow-remote-refs. It "
-            "does not sandbox the generated code."
+            "and customBasePath, Protocol Buffers input, --validation and a schema nested more than 100 levels deep "
+            "or holding more than 2,000,000 objects and arrays, and implies --no-allow-remote-refs. It does not "
+            "sandbox the generated code."
         ),
     ),
     "cli-option.use-missing-sentinel": ExperimentalFeature(

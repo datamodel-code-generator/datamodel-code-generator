@@ -24,8 +24,10 @@ from datamodel_code_generator.model._decisions.tag_value import (
     union_tag_values,
 )
 from datamodel_code_generator.model.base import sanitize_module_name
+from datamodel_code_generator.parser import _schema_refs
 from datamodel_code_generator.parser._naming import Ordinal, Tag, composed_name
 from datamodel_code_generator.parser._schema_object import Discriminator, JsonSchemaObject
+from datamodel_code_generator.parser._schema_refs import SchemaRefsHost
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterable, Iterator, Mapping, Sequence
@@ -33,7 +35,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._naming import Claim, NamingScope
     from datamodel_code_generator.parser._schema_graph import _TargetNode
     from datamodel_code_generator.parser._schema_object import JsonSchemaLiteral
-    from datamodel_code_generator.reference import ModelResolver, SchemaLocation
+    from datamodel_code_generator.reference import SchemaLocation
     from datamodel_code_generator.types import DataType
 
 __all__ = [
@@ -61,12 +63,8 @@ TaggedUnionValue = Union[int, str]  # noqa: UP007
 _MIN_UNION_VARIANT_LITERAL_VALUES = 2
 
 
-class UnionTagsHost(Protocol):
+class UnionTagsHost(SchemaRefsHost, Protocol):
     """The options, run state and hooks of the parser that the union tags read and write."""
-
-    @property
-    def model_resolver(self) -> ModelResolver:
-        """The resolver of references and class names."""
 
     @property
     def use_tag_as_union_variant_name(self) -> bool:
@@ -79,26 +77,11 @@ class UnionTagsHost(Protocol):
     def _tag_key_variants(self) -> dict[SchemaLocation | None, tuple[str, str]]:
         """The key and the name of each branch named after its key, by the location of the branch schema."""
 
-    def _ref_path(self, ref: str) -> str:
-        """Return the reference key a reference names."""
-
     def _raw_location(self, raw: object) -> SchemaLocation | None:
         """Return the location of a JSON container of a loaded document."""
 
     def _discriminator_mapping_ref(self, name: str, value: str, mapping: SchemaLocation | None) -> str:
         """Return a discriminator mapping value as a reference, with the edge of the mapping located at ``mapping``."""
-
-    def _resolve_external_ref_mapping(self, ref: str) -> tuple[str, str] | None:
-        """Return the package and fragment ``--external-ref-mapping`` maps a reference to, if any."""
-
-    def _key_node(self, resolved_ref: str) -> _TargetNode:
-        """Return the schema graph node at a reference key, or the key when the graph does not locate its value."""
-
-    def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
-        """Load the schema object a reference names."""
-
-    def _is_local_ref(self, ref: str) -> bool:
-        """Return whether a reference is a fragment of the document parsed now."""
 
     def _get_single_literal_value(
         self,
@@ -204,8 +187,11 @@ def get_referenced_single_literal_value(
     if not obj.ref:
         return None
     seen_refs = seen_refs or set()
-    resolved_ref = parser._ref_path(obj.ref)  # noqa: SLF001
-    if parser._resolve_external_ref_mapping(obj.ref) or (node := parser._key_node(resolved_ref)) in seen_refs:  # noqa: SLF001
+    resolved_ref = _schema_refs.ref_path(parser, obj.ref)
+    if (
+        parser._resolve_external_ref_mapping(obj.ref)  # noqa: SLF001
+        or (node := _schema_refs.key_node(parser, resolved_ref)) in seen_refs
+    ):
         return None
     seen_refs.add(node)
     return parser._get_single_literal_value(parser._load_ref_schema_object(obj.ref), seen_refs)  # noqa: SLF001
@@ -270,8 +256,11 @@ def is_null_only_schema(
     if not obj.ref:
         return False
     seen_refs = seen_refs or set()
-    resolved_ref = parser._ref_path(obj.ref)  # noqa: SLF001
-    if parser._resolve_external_ref_mapping(obj.ref) or (node := parser._key_node(resolved_ref)) in seen_refs:  # noqa: SLF001
+    resolved_ref = _schema_refs.ref_path(parser, obj.ref)
+    if (
+        parser._resolve_external_ref_mapping(obj.ref)  # noqa: SLF001
+        or (node := _schema_refs.key_node(parser, resolved_ref)) in seen_refs
+    ):
         return False
     seen_refs.add(node)
     return is_null_only_schema(parser, parser._load_ref_schema_object(obj.ref), seen_refs)  # noqa: SLF001
@@ -412,7 +401,7 @@ def get_tagged_union_field_values(
 ) -> tuple[str, dict[int, TaggedUnionValue]] | None:
     """Return the shared required literal field and the msgspec tags of the branches (``union_tag_values``)."""
     discriminator_schemas = [
-        parser._load_ref_schema_object(item.ref) if item.ref and parser._is_local_ref(item.ref) else item  # noqa: SLF001
+        parser._load_ref_schema_object(item.ref) if item.ref and _schema_refs.is_local_ref(parser, item.ref) else item  # noqa: SLF001
         for item in combined_schemas
     ]
     for field_name in iter_union_variant_literal_field_names(parser, obj, discriminator_schemas):
@@ -455,7 +444,9 @@ def located_mapping_paths(
     JSON pointer, has one (``_names_local_file``); a path that resolves to a URL has none.
     """
     return {
-        tag: MappingPath(path, key if _names_local_file(path) and not is_url(key := parser._ref_path(ref)) else None)  # noqa: SLF001
+        tag: MappingPath(
+            path, key if _names_local_file(path) and not is_url(key := _schema_refs.ref_path(parser, ref)) else None
+        )
         for tag, ref in refs.items()
         for path in (paths[tag],)
     }

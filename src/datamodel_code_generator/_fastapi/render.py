@@ -72,7 +72,7 @@ from datamodel_code_generator._target_render import (
     parameter_plan,
 )
 from datamodel_code_generator._target_templates import roles, templated
-from datamodel_code_generator._target_types import admits_none
+from datamodel_code_generator._target_types import admits_none, opened, without_none
 from datamodel_code_generator._target_unicode import casefold
 from datamodel_code_generator.model.pydantic_v2._annotated_types import annotated_constraint_metadata
 from datamodel_code_generator.python_literal import stable_repr
@@ -1255,7 +1255,7 @@ def _native(module: Module, name: str, field: NativeField) -> Parameter:
         parts: tuple[str, ...] = (_none(module, module.annotation(field.type), field.type),)
         default = "None"
     else:
-        base, metadata = module.parts(field.type)
+        base, metadata = module.parts(_written(field.type) if field.default is Default.REQUIRED else field.type)
         parts = (base, *metadata)
         default = _default_value(module, field.default) or ""
     declaration = call_text(module.name("fastapi", field.api), keywords)
@@ -1317,11 +1317,23 @@ def _default_value(module: Module, default: ParameterDefault) -> str | None:
     return None
 
 
+def _written(value: TypeView) -> TypeView:
+    """Return the type of a required parameter written by its style, without None.
+
+    A query string, header, cookie or path has no spelling for None, so such a parameter never receives it.
+    """
+    return without_none(members) if admits_none(members := opened(value)) else value
+
+
 def _parameter_type(module: Module, parameter: ParameterSpec | None) -> str:
-    """Return the type a method receives for a parameter: the model's type, or Any without one, with None if absent."""
+    """Return the type a method receives for a parameter: the model's type, or Any without one, with None if absent.
+
+    A required parameter written by its style receives its type without None.
+    """
     assert parameter is not None
     if parameter.type is not None:
-        text = module.static(parameter.type)
+        styled = parameter.required and parameter.plan is not None and parameter.plan.content_media_type is None
+        text = module.static(_written(parameter.type) if styled else parameter.type)
     elif parameter.plan is not None and media_kind(parameter.plan.content_media_type or "text/plain") == "text":
         text = "str"
     else:

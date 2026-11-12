@@ -168,16 +168,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 253 | Shared generation options. |
-| `GenerateConfig` | 268 | Public `generate()` configuration. |
-| `ParserConfig` | 208 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 210 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 221 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 224 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 211 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 211 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 210 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 211 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 254 | Shared generation options. |
+| `GenerateConfig` | 269 | Public `generate()` configuration. |
+| `ParserConfig` | 209 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 211 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 222 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 225 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 212 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 212 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 211 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 212 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -292,7 +292,7 @@ own, an Avro schema of an AsyncAPI document, names that document as its edges' `
 resource, the normalized spelling and `ModelResolver.resolve_ref`; a new model is named after that spelling
 (`ModelResolver._add_ref_at`). A plain string has no edge and resolves in the context its caller set. A schema copied
 into another (a merged `$ref` target, an inherited property) keeps its references as written: a site that asks whether
-a reference is a fragment of the document parsed now reads its edge (`_is_local_ref`), and only a merged `$recursiveRef`
+a reference is a fragment of the document parsed now reads its edge (`parser/_schema_refs.py:is_local_ref`), and only a merged `$recursiveRef`
 with a fixed target is rewritten, to a `$ref` (`parser/_schema_refs.py:pin_recursive_refs`).
 OpenAPI and AsyncAPI register a schema that declares a discriminator, and a component schema whose `allOf` names one,
 under the key of the reference that names the schema from its own document (`_schema_key`), the key the references to
@@ -307,8 +307,8 @@ document by location, one site per location (`ApiOpenAPIParser._site_facts`, see
 reads anew at every read.
 The walks that follow references from a schema (field flags, literal and null checks, inherited properties and
 overrides, validation sources, `uniqueItems` rules, merged `allOf` values) visit each schema graph node once
-(`SchemaNodeId`, the location of the object a reference names: `_key_node`), and a `$ref` target merged with its sibling
-keywords is dumped once per node and document being parsed (`_ref_target_dump`).
+(`SchemaNodeId`, the location of the object a reference names: `parser/_schema_refs.py:key_node`), and a `$ref` target merged with its sibling
+keywords is dumped once per node and document being parsed (`parser/_schema_refs.py:ref_target_dump`).
 A local reference whose model a document has not parsed yet is reserved for that document (`reserved_refs`).
 `_parse_file`, `_resolve_unparsed_json_pointer` and AsyncAPI's `_resolve_asyncapi_unparsed_json_pointer` take the
 targets from one worklist (`_reserved_targets`: a `ReservedTarget` with the document, the key and the node the key names
@@ -1919,7 +1919,11 @@ the module that warning filters match and names the frame past the wrappers that
 functions (`parser/_passes/_warnings.py`, whose `warn_as_module` keeps the module of a parser for the code its concern
 modules `parser/_<concern>.py` took over, and `snooper_to_methods` traces the functions of those modules that take the
 parser as `parser`; the module helpers that two or more of those modules use live in `parser/_schema_reading.py`, below
-them all, so that none of them imports another or the public module), a helper that passes of more than one layer call
+them all; the JSON Schema concern modules import one another only downward, in the order `_schema_documents`,
+`_schema_refs`, `_value_keywords`, `_lightweight_types`, `_all_of_values`, `_object_maps`, `_rw_split`,
+`_inherited_schemas`, `_schema_validators`, `_union_tags`, and none imports the public module: each module's host lists
+the hosts of the lower modules it calls as bases, and a lower module reaches a higher one's function through its own
+host), a helper that passes of more than one layer call
 is a function in `parser/_passes/_shared.py` that takes parser state as arguments or through a narrow `Protocol`, and
 the run state they share lives in `parser/_passes/_state.py` (with `ParseConfig`, `ModuleContext` and `Result`, whose
 module is public, as type parameters), so no pass imports `parser/base.py`. The code of `parser/base.py` that needs
@@ -1943,6 +1947,9 @@ generated runtime) are declared with `@record` from `_records.py`: a slotted dat
 every assignment to a field is a type error, while the run time adds no `__setattr__` guard to each `__init__`
 (hash and equality stay by value). A record whose tests expect the run time to reject an assignment
 (`PythonTypeAnnotation`, the schema feature sets of `parser/schema_version.py`) keeps `dataclass(frozen=True)`.
+The internal state that a run fills in as it goes (`_PipelineRun`, `TagPlan`, `GenerationFacts`, ...) is declared
+with `@mutable_record`, which builds the class that `dataclass` without `frozen` builds (assignable, unhashable with
+`eq`) the same way.
 
 ## Rendering And Formatting
 
@@ -2006,7 +2013,7 @@ The location is a fact recorded in L0 and L1:
 - **Copy steps** the location survives, besides those under "Scope on schema objects": L0 unsharing,
   `openapi.py:RawMediaObject` (the media object's own `schema` value is used), lists joined and dicts merged in
   `parser/_intersection.py`: `concatenating_row`, `all_of_member_row`, `inherited_override_row`, and
-  `_merge_inherited_type_shape_dict` (and the
+  `parser/_inherited_schemas.py:merge_inherited_type_shape_dict` (and the
   nested schemas `intersect_keywords` rewrites in their result, copied with the location they had there), combined
   classes in `_parse_object_common_part`, inherited normalizations in `merge_properties_with_parent_constraints`,
   array type-union branches, OpenAPI operation copies for path-level parameters and global `security` (the operation's

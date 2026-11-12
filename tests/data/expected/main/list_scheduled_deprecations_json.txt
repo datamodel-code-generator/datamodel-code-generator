@@ -156,6 +156,42 @@
     "warning_since": "0.78.0"
   },
   {
+    "id": "dependency.genson-optional",
+    "kind": "dependency",
+    "message": "Genson will become optional. Declare the genson extra for JSON, YAML, CSV and dict input; see --help.",
+    "note": "This is advance notice only. Current dependency ranges and compatibility remain unchanged.",
+    "removal_version": null,
+    "replacement": "Declare the genson extra if you generate from JSON, YAML, CSV or dict data.",
+    "status": "active",
+    "target": "Genson installation",
+    "warning_category": "FutureWarning",
+    "warning_since": "0.95.0"
+  },
+  {
+    "id": "dependency.jinja2-optional",
+    "kind": "dependency",
+    "message": "Jinja2 will become optional. Declare the jinja2 extra for --custom-template-dir; see --help.",
+    "note": "This is advance notice only. Current dependency ranges and compatibility remain unchanged.",
+    "removal_version": null,
+    "replacement": "Declare the jinja2 extra if you use custom templates.",
+    "status": "active",
+    "target": "Jinja2 installation",
+    "warning_category": "FutureWarning",
+    "warning_since": "0.95.0"
+  },
+  {
+    "id": "dependency.argcomplete-optional",
+    "kind": "dependency",
+    "message": "argcomplete will become optional. Declare the argcomplete extra for shell completion; see \"Dependency migration notices\" in the documentation.",
+    "note": "This is advance notice only, registered without a runtime warning: a shell discards the error output of completion, and a warning turned into an error would break it. Current dependency ranges and compatibility remain unchanged.",
+    "removal_version": null,
+    "replacement": "Declare the argcomplete extra if you use shell completion.",
+    "status": "scheduled",
+    "target": "argcomplete installation",
+    "warning_category": "FutureWarning",
+    "warning_since": "0.95.0"
+  },
+  {
     "id": "dependency.isort-minimum",
     "kind": "dependency",
     "message": "Support for isort <6 will end in a future release.",

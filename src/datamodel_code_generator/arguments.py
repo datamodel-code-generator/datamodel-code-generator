@@ -281,7 +281,8 @@ _toggle(
     help="Treat the input as a schema from an untrusted source (experimental): read no file or URL but the input, so "
     "every $ref and XML Schema include must name a location in the input; refuse the schema keywords whose values "
     "the generated module imports or evaluates as Python code (x-python-type, x-python-import, customTypePath, "
-    "customBasePath), Protocol Buffers input and --validation. Implies --no-allow-remote-refs. "
+    "customBasePath), Protocol Buffers input, --validation and a schema nested more than 100 levels deep or "
+    "holding more than 2,000,000 objects and arrays. Implies --no-allow-remote-refs. "
     "Pass --no-untrusted-input to override a configuration file that enables it.",
 )
 _toggle(
@@ -360,7 +361,8 @@ base_options.add_argument(
         "Input file type (default: auto). "
         "Use 'jsonschema', 'openapi', 'asyncapi', 'graphql', 'mcp-tools', 'xmlschema', 'protobuf', or 'avro' "
         "for schema definitions. "
-        "Use 'json', 'yaml', or 'csv' for raw sample data to infer a schema automatically."
+        "Use 'json', 'yaml', or 'csv' for raw sample data to infer a schema automatically; "
+        "Genson infers it and will become optional: declare the genson extra."
     ),
     choices=_values(InputFileType),
 )
@@ -1015,6 +1017,15 @@ _toggle(
 )
 _toggle(
     typing_options,
+    "--read-object-keywords-by-type",
+    help="Read the keywords that constrain objects only (properties, patternProperties, additionalProperties, "
+    "propertyNames, unevaluatedProperties, required, minProperties, maxProperties) beside an `anyOf` or `oneOf` as "
+    "JSON Schema does: a branch whose `type` admits no object, such as a string, does not take them, so it stays "
+    "that type instead of becoming a map or a model, and under --generate-schema-validators a site with such a "
+    "branch is a union rather than one object model; without it every branch takes them, as in 0.93.0",
+)
+_toggle(
+    typing_options,
     "--read-msgspec-union-bounds-exactly",
     help="msgspec.Struct output only: decide whether the int member of a union with a number member drops its Meta "
     "bounds on the bounds the schema writes, exactly; without it a number member's bound past 2**53 is read as the "
@@ -1549,7 +1560,8 @@ template_options.add_argument(
 )
 template_options.add_argument(
     "--custom-template-dir",
-    help="Custom template directory",
+    help="Custom template directory. Jinja2 renders custom templates and will become optional: "
+    "declare the jinja2 extra.",
     type=str,
 )
 template_options.add_argument(

@@ -59,8 +59,7 @@ def remote_lock_plan(
     resolved form of the literal one. The policy is an update, a locked run, a verification of the file that exists, or
     inactive.
     """
-    default_parent = default_lock_parent(pyproject_path, cwd)
-    literal = lexical(config.lockfile or default_parent / LOCKFILE_NAME, cwd)
+    literal = _literal_lockfile(config, pyproject_path, cwd)
     canonical = resolved(literal)
     policy: LockPolicy
     if config.update_lock:
@@ -72,6 +71,24 @@ def remote_lock_plan(
     else:
         policy = "inactive"
     return RemoteLockPlan(canonical, literal, policy)
+
+
+def active_remote_lock_plan(
+    config: BaseGenerateConfig, pyproject_path: Path | None, cwd: Path | None = None
+) -> RemoteLockPlan | None:
+    """Return ``remote_lock_plan`` where its policy is active, else None, without resolving an inactive lockfile.
+
+    The literal path is lexical, with no ``..`` left to follow after a symlink, so it names an existing file exactly
+    when its resolved form does: a run that neither updates nor locks and finds no file there is inactive.
+    """
+    if not (config.update_lock or config.locked) and not _literal_lockfile(config, pyproject_path, cwd).is_file():
+        return None
+    return remote_lock_plan(config, pyproject_path, cwd)
+
+
+def _literal_lockfile(config: BaseGenerateConfig, pyproject_path: Path | None, cwd: Path | None) -> Path:
+    """Return the lexical form of the lockfile a config names, or of the default one, from ``cwd``."""
+    return lexical(config.lockfile or default_lock_parent(pyproject_path, cwd) / LOCKFILE_NAME, cwd)
 
 
 def owns_lock_update(config: BaseGenerateConfig) -> bool:

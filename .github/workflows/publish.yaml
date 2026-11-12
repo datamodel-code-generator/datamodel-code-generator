@@ -183,9 +183,14 @@ jobs:
 
   release:
     name: Publish package to PyPI
-    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.alias_only) }}
+    # Needs both builds, as release_alias does, so that both jobs wait for the pypi environment at the same time and one
+    # approval starts both. A failed alias build does not stop the release.
+    if: >-
+      ${{ !cancelled() && needs.build.result == 'success' &&
+      !(github.event_name == 'workflow_dispatch' && inputs.alias_only) }}
     needs:
       - build
+      - build_alias
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -205,13 +210,12 @@ jobs:
 
   release_alias:
     name: Publish the datamodel-codegen alias to PyPI
-    # After the release it pins, so that installing the alias always finds it; a failure here leaves the release as is.
-    if: >-
-      ${{ !cancelled() && needs.build_alias.result == 'success' &&
-      (needs.release.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.alias_only)) }}
+    # Starts with release, so that one approval of the pypi environment starts both; it uploads only after pip finds the
+    # release it pins, so that installing the alias always finds it. A failure here leaves the release as is.
+    if: ${{ !cancelled() && needs.build.result == 'success' && needs.build_alias.result == 'success' }}
     needs:
+      - build
       - build_alias
-      - release
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -265,7 +269,8 @@ jobs:
 
   push_to_registry:
     name: Push Docker image to Docker Hub
-    if: "success() && startsWith(github.ref, 'refs/tags/')"
+    # Reads release's result directly, so that a failed or skipped alias build never skips the image.
+    if: ${{ !cancelled() && needs.release.result == 'success' && startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-24.04
     needs: release
     permissions:

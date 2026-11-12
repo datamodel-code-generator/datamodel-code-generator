@@ -7010,5 +7010,202 @@
       }
     ],
     "package_snapshots": []
+  },
+  "nullable-parameters": {
+    "input": "server-nullable-parameters.yaml",
+    "services": "parameters",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "package_snapshots": [],
+    "model": {
+      "strict_nullable": true
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&kind=a&ids=1&ids=2&tags=3&weights%5Bw%5D=1&blob=null",
+        "headers": {
+          "X-Trace": "5",
+          "Cookie": "session=s"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&kind=b&ids=1&tags=3&weights%5Bw%5D=1&blob=7&cap=2&mode=slow",
+        "headers": {
+          "X-Trace": "5",
+          "Cookie": "session=s"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?kind=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null",
+        "headers": {
+          "X-Trace": "5",
+          "Cookie": "session=s"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null",
+        "headers": {
+          "X-Trace": "5",
+          "Cookie": "session=s"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&kind=a&tags=3&weights%5Bw%5D=1&blob=null",
+        "headers": {
+          "X-Trace": "5",
+          "Cookie": "session=s"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&kind=a&ids=1&weights%5Bw%5D=1&blob=null",
+        "headers": {
+          "X-Trace": "5",
+          "Cookie": "session=s"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&kind=a&ids=1&tags=3&blob=null",
+        "headers": {
+          "X-Trace": "5",
+          "Cookie": "session=s"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&kind=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null",
+        "headers": {
+          "Cookie": "session=s"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&kind=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null",
+        "headers": {
+          "X-Trace": "null",
+          "Cookie": "session=s"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&kind=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null",
+        "headers": {
+          "X-Trace": "5"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&kind=a&ids=1&tags=3&weights%5Bw%5D=1",
+        "headers": {
+          "X-Trace": "5",
+          "Cookie": "session=s"
+        }
+      }
+    ]
+  },
+  "nullable-parameters-31": {
+    "input": "server-nullable-parameters-31.yaml",
+    "services": "parameters",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "package_snapshots": [],
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&kind=a&ids=1&ids=2&tags=3&weights%5Bw%5D=1&blob=null",
+        "headers": {
+          "X-Trace": "5",
+          "Cookie": "session=s"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&kind=b&ids=1&tags=3&weights%5Bw%5D=1&blob=7&cap=2&mode=slow",
+        "headers": {
+          "X-Trace": "5",
+          "Cookie": "session=s"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?kind=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null",
+        "headers": {
+          "X-Trace": "5",
+          "Cookie": "session=s"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null",
+        "headers": {
+          "X-Trace": "5",
+          "Cookie": "session=s"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&kind=a&tags=3&weights%5Bw%5D=1&blob=null",
+        "headers": {
+          "X-Trace": "5",
+          "Cookie": "session=s"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&kind=a&ids=1&weights%5Bw%5D=1&blob=null",
+        "headers": {
+          "X-Trace": "5",
+          "Cookie": "session=s"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&kind=a&ids=1&tags=3&blob=null",
+        "headers": {
+          "X-Trace": "5",
+          "Cookie": "session=s"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&kind=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null",
+        "headers": {
+          "Cookie": "session=s"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&kind=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null",
+        "headers": {
+          "X-Trace": "null",
+          "Cookie": "session=s"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&kind=a&ids=1&tags=3&weights%5Bw%5D=1&blob=null",
+        "headers": {
+          "X-Trace": "5"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/x/y?q=a&kind=a&ids=1&tags=3&weights%5Bw%5D=1",
+        "headers": {
+          "X-Trace": "5",
+          "Cookie": "session=s"
+        }
+      }
+    ]
   }
 }

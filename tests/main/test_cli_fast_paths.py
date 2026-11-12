@@ -356,6 +356,61 @@ def _run_no_formatter_generation_probe() -> dict[str, Any]:
     )
 
 
+OPTIONAL_DEPENDENCY_SCENARIOS = {
+    "openapi": (
+        "generate(Path('tests/data/openapi/api.yaml'), input_file_type=InputFileType.OpenAPI, disable_timestamp=True)"
+    ),
+    "jsonschema": (
+        "generate(Path('tests/data/jsonschema/person.json'), input_file_type=InputFileType.JsonSchema, "
+        "disable_timestamp=True)"
+    ),
+    "cli": (
+        "main(['--input', 'tests/data/openapi/api.yaml', '--input-file-type', 'openapi', "
+        "'--output', os.devnull, '--disable-timestamp'])"
+    ),
+    "dynamic": (
+        "generate_dynamic_models(json.loads(Path('tests/data/jsonschema/person.json').read_text(encoding='utf-8')))"
+    ),
+    "json-data": (
+        "generate(Path('tests/data/json/pet.json'), input_file_type=InputFileType.Json, disable_timestamp=True)"
+    ),
+    "custom-template": (
+        "generate(Path('tests/data/jsonschema/person.json'), input_file_type=InputFileType.JsonSchema, "
+        "custom_template_dir=Path('tests/data/jsonschema'), disable_timestamp=True)"
+    ),
+    "completion": "os.environ.update(_ARGCOMPLETE='1'); sys.modules['argcomplete'] = completion; main(['--help'])",
+}
+
+
+def _run_optional_dependency_probe(scenario: str) -> dict[str, Any]:
+    return _run_probe(
+        textwrap.dedent(
+            f"""
+            import contextlib
+            import io
+            import json
+            import os
+            import sys
+            import types
+            import warnings
+            from pathlib import Path
+
+            from datamodel_code_generator import InputFileType, generate, generate_dynamic_models
+            from datamodel_code_generator.__main__ import main
+
+            completion = types.ModuleType("argcomplete")
+            completion.autocomplete = lambda parser: None
+            warnings.simplefilter("ignore")
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.suppress(SystemExit):
+                {OPTIONAL_DEPENDENCY_SCENARIOS[scenario]}
+            print(json.dumps({{
+                name: name in sys.modules for name in ("argcomplete", "genson", "jinja2")
+            }}, indent=2, sort_keys=True))
+            """
+        )
+    )
+
+
 def _run_custom_template_include_probe() -> dict[str, Any]:
     return _run_probe(
         textwrap.dedent(
@@ -917,6 +972,12 @@ def test_custom_template_include_uses_jinja_in_a_fresh_process() -> None:
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
         ROOT / "tests/data/expected/main/cli_fast_paths/custom_template_include.txt",
     )
+
+
+@pytest.mark.parametrize("scenario", OPTIONAL_DEPENDENCY_SCENARIOS)
+def test_optional_dependencies_are_imported_only_where_they_are_used(scenario: str) -> None:
+    """Default generation, the CLI and dynamic models load none of jinja2, genson and argcomplete."""
+    assert_output(json.dumps(_run_optional_dependency_probe(scenario), indent=2, sort_keys=True) + "\n")
 
 
 def test_schema_runtime_validation_module_helper_skips_jinja_in_a_fresh_process() -> None:

@@ -29,12 +29,14 @@ from pydantic import BaseModel
 
 from datamodel_code_generator import (
     Error,
+    _apply_generate_config_preset,
     _prepare_generate_facade_config,
     _run_generation_with_metadata,
     generate,
     is_asyncapi,
     is_openapi,
 )
+from datamodel_code_generator._document_reader import refuse_oversized_document
 from datamodel_code_generator._graph import stable_toposort
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._module_paths import dotted_module, is_package_init, module_parts
@@ -399,10 +401,14 @@ def _make_cache_key(schema: Mapping[str, Any], config: GenerateConfig, module_na
     """Create cache key from schema and config.
 
     The values of set-valued settings are sorted, because a set has no order, so the key does not depend on the hash
-    seed. Returns None if the schema or the config is not JSON-serializable.
+    seed. Returns None if the schema or the config is not JSON-serializable. Under untrusted_input a schema past the
+    size limits is refused first (``refuse_oversized_document``), as serializing it would overflow the stack.
     """
+    document = dict(schema)
+    if config.untrusted_input:
+        refuse_oversized_document(document)
     try:
-        schema_json = json.dumps(dict(schema), separators=(",", ":"))
+        schema_json = json.dumps(document, separators=(",", ":"))
         config_json = json.dumps(
             {
                 name: sorted(value) if isinstance(getattr(config, name), (set, frozenset)) else value
@@ -497,13 +503,29 @@ def _refuse_unregistrable_name(
         raise Error(msg)
 
 
+def _without_default_formatting(config: GenerateConfig) -> GenerateConfig:
+    """Return ``config`` selecting no formatter where neither it nor its preset selects formatters.
+
+    The module is executed, never read, so formatting it only costs time. ``formatters``, ``custom_formatters`` and a
+    preset that sets either keep the formatting generate() gives them.
+    """
+    if config.formatters is not None or config.custom_formatters is not None:
+        return config
+    resolved = _apply_generate_config_preset(config)
+    if resolved.formatters is not None or resolved.custom_formatters is not None:
+        return config
+    return config.model_copy(update={"formatters": []})
+
+
 def _generate_code(
     input_: Mapping[str, Any], config: GenerateConfig, *, collect_model_metadata: bool
 ) -> _GeneratedCode:
     """Return the code generate() writes for ``config``, beside the model metadata and identity paths of the run.
 
-    The metadata are collected only with ``collect_model_metadata``; otherwise they are None and empty.
+    The code is not formatted unless the config or its preset selects formatters. The metadata are collected only
+    with ``collect_model_metadata``; otherwise they are None and empty.
     """
+    config = _without_default_formatting(config)
     if not collect_model_metadata:
         return generate(input_=input_, config=config), None, ()
     config = _prepare_generate_facade_config(config)
@@ -692,6 +714,7 @@ def generate_dynamic_models(
         - Not pickle-able (use model_dump() to serialize instances, or generate_dynamic_module() with register_module)
         - Cached by schema + config + module_name hash with FIFO eviction when cache_size is exceeded
         - Supports both single-module and multi-module output
+        - Formats the code only where ``config`` or its preset selects formatters; it is executed, never read
         - generate_dynamic_module() also gives the root class and the class of each schema location
 
     Example:

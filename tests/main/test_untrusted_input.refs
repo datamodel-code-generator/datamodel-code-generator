@@ -13,6 +13,13 @@ untrusted	main/untrusted_input/directory[untrusted]/	= main/untrusted_input/dire
 [test_untrusted_input_dynamic_models]
 	main/untrusted_input/dynamic_models.models.txt
 	main/untrusted_input/dynamic_models.refused.txt
+[test_untrusted_input_dynamic_refuses_deep_schema_before_hashing]
+	main/untrusted_input/dynamic_refuses_deep_schema_before_hashing.txt	= main/untrusted_input/dynamic_size_limits[depth].refused.txt
+[test_untrusted_input_dynamic_size_limits]
+depth	main/untrusted_input/dynamic_size_limits[depth].models.txt
+depth	main/untrusted_input/dynamic_size_limits[depth].refused.txt
+nodes	main/untrusted_input/dynamic_size_limits[nodes].models.txt	= main/untrusted_input/dynamic_size_limits[depth].models.txt
+nodes	main/untrusted_input/dynamic_size_limits[nodes].refused.txt
 [test_untrusted_input_file_list]
 False	main/untrusted_input/file_list[False].txt
 True	main/untrusted_input/file_list[True].txt	= main/untrusted_input/file_list[False].txt
@@ -44,6 +51,11 @@ xml_schema_missing_include	main/untrusted_input/refuses[xml_schema_missing_inclu
 	main/untrusted_input/refuses_merged_trait_headers.refused.txt
 [test_untrusted_input_refuses_validation]
 	main/untrusted_input/refuses_validation.txt
+[test_untrusted_input_size_limits]
+depth	main/untrusted_input/size_limits[depth].py
+depth	main/untrusted_input/size_limits[depth].refused.txt
+nodes	main/untrusted_input/size_limits[nodes].py
+nodes	main/untrusted_input/size_limits[nodes].refused.txt
 [test_untrusted_input_xml_schema_directory]
 released	main/untrusted_input/xml_schema_directory[released]/
 untrusted	main/untrusted_input/xml_schema_directory[untrusted]/	= main/untrusted_input/xml_schema_directory[released]/

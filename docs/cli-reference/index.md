@@ -10,7 +10,7 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 19 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 55 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 39 | Field naming and docstring behavior |
+| 🏷️ [Field Customization](field-customization.md) | 40 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 72 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
@@ -333,6 +333,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--read-length-keywords-by-type`](field-customization.md#read-length-keywords-by-type)
 - [`--read-msgspec-union-bounds-exactly`](field-customization.md#read-msgspec-union-bounds-exactly)
 - [`--read-nullable-beside-type-list`](model-customization.md#read-nullable-beside-type-list)
+- [`--read-object-keywords-by-type`](field-customization.md#read-object-keywords-by-type)
 - [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type)
 - [`--read-schema-version-per-document`](base-options.md#read-schema-version-per-document)
 - [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties)

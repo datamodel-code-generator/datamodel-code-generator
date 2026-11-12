@@ -12,7 +12,7 @@ import math
 import re
 from functools import partial
 from itertools import chain
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, cast
 
 from typing_extensions import Protocol
 
@@ -38,6 +38,8 @@ from datamodel_code_generator.model.runtime_validation import (
     UniqueItemsRule,
     _is_internal_schema_runtime_validation,
 )
+from datamodel_code_generator.parser import _inherited_schemas, _lightweight_types, _schema_refs
+from datamodel_code_generator.parser._inherited_schemas import InheritedSchemasHost
 from datamodel_code_generator.parser._intersection import (
     INTERSECTED_KEYWORDS,
     bounds_admit_no_value,
@@ -63,8 +65,7 @@ from datamodel_code_generator.parser.base import get_special_path
 from datamodel_code_generator.types import DataType, Types
 
 if TYPE_CHECKING:
-    from collections import defaultdict
-    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Iterable, Iterator, Mapping, Sequence
 
     from typing_extensions import TypeIs
 
@@ -72,9 +73,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model import DataModelFieldBase
     from datamodel_code_generator.model.runtime_validation import UniqueItemsPath, UniqueItemsPathStep
     from datamodel_code_generator.parser._schema_graph import _TargetNode
-    from datamodel_code_generator.parser.schema_version import JsonSchemaFeatures
-    from datamodel_code_generator.reference import ModelResolver, Reference, SchemaLocation
-    from datamodel_code_generator.types import DataTypeManager
+    from datamodel_code_generator.reference import Reference
 
 __all__ = [
     "SchemaValidatorsHost",
@@ -125,49 +124,16 @@ __all__ = [
     "unique_items_path_container_type",
 ]
 
-_ValidatedT = TypeVar("_ValidatedT")
 
-
-class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPythonVersionHost, Protocol):
+class SchemaValidatorsHost(
+    InheritedSchemasHost, CollapseRootModelsHost, DataModelTypeHost, TargetPythonVersionHost, Protocol
+):
     """The members of ``JsonSchemaParser`` the schema validator rules read: options, state and the methods they call."""
 
     CONDITIONAL_SCHEMA_ALLOWED_FIELDS: ClassVar[frozenset[str]]
     REQUIRED_ONLY_SCHEMA_ALLOWED_FIELDS: ClassVar[frozenset[str]]
-    SCHEMA_OBJECT_TYPE: ClassVar[type[JsonSchemaObject]]
     _pattern_validation_document_root: JsonSchemaObject | None
     _root_pattern_string_constraints: JsonSchemaObject | None
-
-    @property
-    def config(self) -> JSONSchemaParserConfig:
-        """The configuration of the parser."""
-
-    @property
-    def data_type_manager(self) -> DataTypeManager:
-        """The type manager of the output."""
-
-    @property
-    def extra_template_data(self) -> defaultdict[str, Any]:
-        """The template data of each reference path, which holds its ``schema_runtime_validation``."""
-
-    @property
-    def force_optional_for_required_fields(self) -> bool:
-        """Whether required fields are generated as optional."""
-
-    @property
-    def generate_schema_validators(self) -> bool:
-        """Whether the models validate the schema rules their fields cannot express."""
-
-    @property
-    def model_resolver(self) -> ModelResolver:
-        """The resolver of the references and class names of the parse."""
-
-    @property
-    def _legacy_object_maps(self) -> frozenset[str]:
-        """The rows of 0.86.0 object maps kept."""
-
-    @property
-    def _property_count_rule_cache(self) -> dict[int, tuple[JsonSchemaObject, PropertyCountRule | None]]:
-        """The property-count rule of each schema object, cached for this parse."""
 
     def parse_item(
         self,
@@ -225,9 +191,6 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
     ) -> bool:
         """Return whether a generated type can receive an array from raw input."""
 
-    def _features_at(self, at: JsonSchemaObject | SchemaLocation | None) -> JsonSchemaFeatures:
-        """Return the schema features that read a schema object (``parser/jsonschema.py``)."""
-
     def _field_input_names(self, field: DataModelFieldBase) -> tuple[str, ...]:
         """Return Pydantic's ordered raw input names for one declared field."""
 
@@ -268,9 +231,6 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
     ) -> tuple[list[tuple[JsonSchemaObject | bool, tuple[UniqueItemsRule, ...]]], list[UniqueItemsRule]]:
         """Collect ordered uniqueItems rules produced by each union branch."""
 
-    def _has_pattern_properties_validator(self, obj: JsonSchemaObject) -> bool:
-        """Return whether schema runtime validation owns patternProperties dispatch."""
-
     def _has_property_count_validator(self, obj: JsonSchemaObject) -> bool:
         """Return whether an object or its allOf sources constrain property counts."""
 
@@ -281,20 +241,6 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
         allow_empty: bool = False,
     ) -> TypeIs[JsonSchemaObject]:
         """Return whether a combined-schema branch is only a property presence rule."""
-
-    def _iter_inherited_schema_objects(
-        self, base_classes: list[Reference], visited: frozenset[_TargetNode]
-    ) -> Iterator[tuple[JsonSchemaObject, frozenset[_TargetNode], str]]:
-        """Yield inherited schema objects not visited yet, with the visited schema nodes they add to."""
-
-    def _iter_schema_validation_sources(
-        self,
-        obj: JsonSchemaObject,
-        visited_refs: frozenset[_TargetNode] = frozenset(),
-        *,
-        include_references: bool = True,
-    ) -> Iterator[JsonSchemaObject]:
-        """Yield the schema and its allOf sources, without the document each was read from."""
 
     def _iter_union_unique_items_rules(
         self,
@@ -317,12 +263,6 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
     ) -> Iterator[UniqueItemsRule]:
         """Yield compact uniqueItems rules required by all applicable union branches."""
 
-    def _key_node(self, resolved_ref: str) -> _TargetNode:
-        """Return the schema graph node at a reference key, or the key when the graph does not locate its value."""
-
-    def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
-        """Load a JsonSchemaObject from a $ref using standard resolve/load pipeline."""
-
     def _parse_additional_properties_value(
         self,
         name: str,
@@ -342,14 +282,6 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
     def _plain_pattern_root_annotations(self, obj: JsonSchemaObject, patterns: list[tuple[str, DataType]]) -> bool:
         """Recognize inert root annotations only in the standard generation context."""
 
-    def _ref_siblings_apply_to(
-        self, schema: JsonSchemaObject, *, legacy: Literal["first-read", "parsed-document", "as-written"]
-    ) -> bool:
-        """Return whether the keywords beside the ``$ref`` of ``schema`` apply with it (``parser/jsonschema.py``)."""
-
-    def _ref_path(self, ref: str) -> str:
-        """Return the reference key a reference names: its edge's key, or a plain string's ``resolve_ref``."""
-
     def _required_group_input_names(
         self,
         groups: Sequence[Sequence[str]],
@@ -365,28 +297,14 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
     ) -> bool:
         """Return whether a schema item can accept one raw JSON container shape."""
 
-    def _schema_literal_values(self, obj: JsonSchemaObject) -> tuple[object, ...] | None:
-        """Return direct const/enum values after their JSON Schema intersection."""
-
-    def _schema_object(self, raw: object) -> JsonSchemaObject:
-        """Validate a raw or dumped schema as ``SCHEMA_OBJECT_TYPE`` in the parser's validation context."""
-
     def _schema_runtime_validation(self, reference_path: str) -> SchemaRuntimeValidation:
         """Return the runtime validation rules of ``reference_path``, created on first use."""
-
-    def _shared_object(self, raw: object, kind: type[_ValidatedT], validate: Callable[[], _ValidatedT]) -> _ValidatedT:
-        """Return the ``kind`` object a value of a loaded document validates to, validated once by the schema graph."""
 
     def _unique_items_path_container_type(
         self,
         path: UniqueItemsPath,
     ) -> Literal["array", "object"]:
         """Return the raw container shape needed for one relative uniqueItems path: an array for an item step."""
-
-    def _unvisited_ref_target(
-        self, ref: str, visited_refs: frozenset[_TargetNode]
-    ) -> tuple[JsonSchemaObject, frozenset[_TargetNode]] | None:
-        """Return the schema ``ref`` names with ``visited_refs`` and its node, or None when its node was visited."""
 
 
 _IMPLIED_SUBSCHEMA_KEYWORDS = frozenset({"items", "propertyNames"})
@@ -579,7 +497,7 @@ def get_conditional_schema(
     if isinstance(item, (JsonSchemaObject, bool)):
         return item
     if isinstance(item, dict):
-        return parser._shared_object(item, parser.SCHEMA_OBJECT_TYPE, partial(parser._schema_object, item))  # noqa: SLF001
+        return _schema_refs.shared_object(parser, item, parser.SCHEMA_OBJECT_TYPE, partial(parser._schema_object, item))  # noqa: SLF001
     return None
 
 
@@ -678,8 +596,20 @@ def iter_property_count_validation_sources(
             continue
         if parser._ref_siblings_apply_to(item, legacy="as-written"):  # noqa: SLF001
             yield item
-        if (target := parser._unvisited_ref_target(item.ref, visited_refs)) is not None:  # noqa: SLF001
+        if (target := unmapped_ref_target(parser, item.ref, visited_refs)) is not None:
             yield from iter_property_count_validation_sources(parser, *target)
+
+
+def unmapped_ref_target(
+    parser: SchemaValidatorsHost, ref: str, visited_refs: frozenset[_TargetNode]
+) -> tuple[JsonSchemaObject, frozenset[_TargetNode]] | None:
+    """Return the schema ``ref`` names, or None when it was visited or ``--external-ref-mapping`` maps it.
+
+    A mapped reference is the class its mapping imports and has no document to read, so it adds no rule.
+    """
+    if parser._resolve_external_ref_mapping(ref) is not None:  # noqa: SLF001
+        return None
+    return _lightweight_types.unvisited_ref_target(parser, ref, visited_refs)
 
 
 def should_parse_object_with_schema_validators(parser: SchemaValidatorsHost, obj: JsonSchemaObject) -> bool:
@@ -758,7 +688,7 @@ def get_input_names_by_property(
                     names_by_property.setdefault(property_name, parser._field_input_names(field))  # noqa: SLF001
             continue
 
-        for schema, _, _ in parser._iter_inherited_schema_objects([base_class], frozenset()):  # noqa: SLF001
+        for schema, _, _ in _inherited_schemas.iter_inherited_schema_objects(parser, [base_class], frozenset()):
             if not schema.properties:
                 continue
             for property_name in schema.properties:
@@ -818,10 +748,10 @@ def iter_scoped_schema_validation_sources(
                     yield from iter_scoped_schema_validation_sources(
                         parser, item.model_copy(update={"ref": None}), visited_refs, scope, include_references=False
                     )
-            if not include_references:
+            if not include_references or parser._resolve_external_ref_mapping(item.ref) is not None:  # noqa: SLF001
                 continue
-            resolved_ref = parser._ref_path(item.ref)  # noqa: SLF001
-            if (node := parser._key_node(resolved_ref)) in visited_refs:  # noqa: SLF001
+            resolved_ref = _schema_refs.ref_path(parser, item.ref)
+            if (node := _schema_refs.key_node(parser, resolved_ref)) in visited_refs:
                 continue
             file_part = resolved_ref.split("#", 1)[0]
             root_file = parser.model_resolver.resolve_ref("#").split("#", 1)[0]
@@ -873,13 +803,16 @@ def schema_may_accept_container(
     if obj.is_boolean_schema_false:
         return False
     if obj.ref:
-        node = parser._key_node(parser._ref_path(obj.ref))  # noqa: SLF001
-        accepts = node in visited_refs or schema_may_accept_container(
-            parser,
-            parser._load_ref_schema_object(obj.ref),  # noqa: SLF001
-            container_type,
-            visited_refs | {node},
-        )
+        if parser._resolve_external_ref_mapping(obj.ref) is not None:  # noqa: SLF001
+            accepts = True  # the mapped class is not read, so it may accept either container shape
+        else:
+            node = _schema_refs.key_node(parser, _schema_refs.ref_path(parser, obj.ref))
+            accepts = node in visited_refs or schema_may_accept_container(
+                parser,
+                parser._load_ref_schema_object(obj.ref),  # noqa: SLF001
+                container_type,
+                visited_refs | {node},
+            )
         if not (accepts and parser._ref_siblings_apply_to(obj, legacy="first-read")):  # noqa: SLF001
             return accepts
     if (values := parser._schema_literal_values(obj)) is not None and not any(  # noqa: SLF001
@@ -941,7 +874,7 @@ def get_union_unique_items_branch_rules(
         if (
             branch.ref
             and not parser.collapse_root_models
-            and (target := parser._unvisited_ref_target(branch.ref, visited_refs))  # noqa: SLF001
+            and (target := unmapped_ref_target(parser, branch.ref, visited_refs))
         ):
             rules = (
                 *rules,
@@ -1108,7 +1041,7 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
 ) -> Iterator[UniqueItemsRule]:
     """Yield compact uniqueItems rules required by all applicable union branches."""
     if obj.ref:
-        if parser.collapse_root_models and (target := parser._unvisited_ref_target(obj.ref, visited_refs)):  # noqa: SLF001
+        if parser.collapse_root_models and (target := unmapped_ref_target(parser, obj.ref, visited_refs)):
             yield from parser._iter_unique_items_rules(  # noqa: SLF001
                 target[0], path, target[1], property_input_names, include_properties=include_properties
             )
@@ -1127,7 +1060,7 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
             property_input_names,
             include_properties=include_properties,
         )
-        if item.ref and (target := parser._unvisited_ref_target(item.ref, visited_refs)):  # noqa: SLF001
+        if item.ref and (target := unmapped_ref_target(parser, item.ref, visited_refs)):
             yield from parser._iter_unique_items_rules(  # noqa: SLF001
                 target[0], path, target[1], property_input_names, include_properties=include_properties
             )

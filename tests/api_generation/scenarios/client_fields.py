@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import importlib
 from typing import TYPE_CHECKING, Any
 
@@ -62,7 +62,7 @@ class _Fields:
 
     def birth(self) -> object:
         """Return a birth date as the backend's field takes it: a date for Pydantic, its string otherwise."""
-        return datetime.date(2020, 1, 2) if hasattr(self.models.NewPet, "__pydantic_fields__") else "2020-01-02"
+        return dt.date(2020, 1, 2) if hasattr(self.models.NewPet, "__pydantic_fields__") else "2020-01-02"
 
 
 def fields(package: ModuleType, lines: list[str]) -> None:

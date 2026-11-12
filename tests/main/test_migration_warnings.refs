@@ -251,3 +251,14 @@ pyproject-old-preset	main/migration_warnings/pydantic.txt	?
 pyproject-ruff	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 pyproject-ruff	main/migration_warnings/model.py
 pyproject-ruff	main/migration_warnings/pydantic.txt	?
+[test_optional_dependency_notices_deduplicated_in_one_cli_invocation]
+	main/migration_warnings/optional_dependency_notices_deduplicated_in_one_cli_invocation.notices.txt
+[test_optional_dependency_notices_real_generation]
+api-csv	main/migration_warnings/optional_dependency_notices_real_generation[api-csv].notices.txt
+api-custom-template	main/migration_warnings/optional_dependency_notices_real_generation[api-custom-template].notices.txt
+api-json	main/migration_warnings/optional_dependency_notices_real_generation[api-json].notices.txt	= main/migration_warnings/optional_dependency_notices_real_generation[api-csv].notices.txt
+api-schema	main/migration_warnings/optional_dependency_notices_real_generation[api-schema].notices.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+cli-csv	main/migration_warnings/optional_dependency_notices_real_generation[cli-csv].notices.txt	= main/migration_warnings/optional_dependency_notices_real_generation[api-csv].notices.txt
+cli-custom-template	main/migration_warnings/optional_dependency_notices_real_generation[cli-custom-template].notices.txt	= main/migration_warnings/optional_dependency_notices_real_generation[api-custom-template].notices.txt
+cli-json	main/migration_warnings/optional_dependency_notices_real_generation[cli-json].notices.txt	= main/migration_warnings/optional_dependency_notices_real_generation[api-csv].notices.txt
+cli-schema	main/migration_warnings/optional_dependency_notices_real_generation[cli-schema].notices.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt

@@ -57,10 +57,10 @@ after names are final):
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import field
 from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, TypeVar
 
-from datamodel_code_generator._records import record
+from datamodel_code_generator._records import mutable_record, record
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -281,7 +281,7 @@ def class_name_keys(model_name_map: Mapping[str, str] | None) -> dict[str, str]:
     return {key: value for key, value in (model_name_map or {}).items() if _PATH_KEY_MARKER not in key}
 
 
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class ModelNameRecord:
     """What a run without the class-name keys of ``--model-name-map`` named, by schema path, for the translation."""
 

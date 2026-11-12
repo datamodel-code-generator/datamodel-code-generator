@@ -18,6 +18,9 @@ This page lists deprecations and scheduled breaking changes.
 | `dependency.black-minimum` | active | dependency | `Black <24.3.0` | 0.78.0 | TBD | Upgrade Black to >=24.3.0 before the later support change. |
 | `dependency.external-formatters-optional` | active | dependency | `Black/isort installation` | 0.78.0 | TBD | Declare the black/isort extras for the external formatters you select. |
 | `dependency.pydantic-runtime-minimum` | active | dependency | `DCG runtime Pydantic <2.8.2` | 0.78.0 | TBD | Upgrade DCG runtime Pydantic to >=2.8.2; generated-code targets are unchanged. |
+| `dependency.genson-optional` | active | dependency | `Genson installation` | 0.95.0 | TBD | Declare the genson extra if you generate from JSON, YAML, CSV or dict data. |
+| `dependency.jinja2-optional` | active | dependency | `Jinja2 installation` | 0.95.0 | TBD | Declare the jinja2 extra if you use custom templates. |
+| `dependency.argcomplete-optional` | scheduled | dependency | `argcomplete installation` | 0.95.0 | TBD | Declare the argcomplete extra if you use shell completion. |
 | `dependency.isort-minimum` | active | dependency | `isort <6` | 0.78.0 | TBD | Upgrade isort to >=6,<9 before the later support change. |
 | `python-api.python-version-has-type-alias` | active | python-api | `PythonVersion.has_type_alias` | 0.52.1 | TBD | - |
 | `schema.jsonschema-items-array` | active | schema | `JSON Schema Draft 2020-12 items array tuple validation` | 0.53.0 | TBD | Use prefixItems. |
@@ -181,6 +184,48 @@ This is advance notice only. Current dependency ranges and compatibility remain 
 Support for DCG runtime Pydantic <2.8.2 will end in a future release.
 
 This is advance notice only. Current dependency ranges and compatibility remain unchanged.
+
+### `dependency.genson-optional`
+
+- **Status:** active
+- **Kind:** dependency
+- **Target:** `Genson installation`
+- **Since:** 0.95.0
+- **Planned removal:** TBD
+- **Warning category:** `FutureWarning`
+- **Replacement:** Declare the genson extra if you generate from JSON, YAML, CSV or dict data.
+
+Genson will become optional. Declare the genson extra for JSON, YAML, CSV and dict input; see --help.
+
+This is advance notice only. Current dependency ranges and compatibility remain unchanged.
+
+### `dependency.jinja2-optional`
+
+- **Status:** active
+- **Kind:** dependency
+- **Target:** `Jinja2 installation`
+- **Since:** 0.95.0
+- **Planned removal:** TBD
+- **Warning category:** `FutureWarning`
+- **Replacement:** Declare the jinja2 extra if you use custom templates.
+
+Jinja2 will become optional. Declare the jinja2 extra for --custom-template-dir; see --help.
+
+This is advance notice only. Current dependency ranges and compatibility remain unchanged.
+
+### `dependency.argcomplete-optional`
+
+- **Status:** scheduled
+- **Kind:** dependency
+- **Target:** `argcomplete installation`
+- **Since:** 0.95.0
+- **Planned removal:** TBD
+- **Warning category:** `FutureWarning`
+- **Replacement:** Declare the argcomplete extra if you use shell completion.
+
+argcomplete will become optional. Declare the argcomplete extra for shell completion; see "Dependency migration notices" in the documentation.
+
+This is advance notice only, registered without a runtime warning: a shell discards the error output of completion, and a warning turned into an error would break it. Current dependency ranges and compatibility remain unchanged.
 
 ### `dependency.isort-minimum`
 
