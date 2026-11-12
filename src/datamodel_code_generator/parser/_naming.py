@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from collections import Counter
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import field
 from string import digits
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, cast
 
@@ -31,7 +31,7 @@ from typing_extensions import Protocol, final
 
 from datamodel_code_generator._free_names import first_free, is_numbered, numbered_class
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
-from datamodel_code_generator._records import record
+from datamodel_code_generator._records import mutable_record, record
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
@@ -196,7 +196,7 @@ Claim: TypeAlias = Composed | Ordinal | Tag | AllOfPart
 
 
 @final
-@dataclass(slots=True, eq=False)
+@mutable_record(slots=True, eq=False)
 class BuildFrame:
     """A model builder, or a naming decision with its ``claim``, that runs while L1 parses.
 

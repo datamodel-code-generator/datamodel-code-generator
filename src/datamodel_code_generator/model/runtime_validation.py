@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 from copy import copy
-from dataclasses import dataclass, field
+from dataclasses import field
 from functools import partial
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
 
 from typing_extensions import Sentinel
 
 from datamodel_code_generator._python_syntax import holds_lone_surrogate
-from datamodel_code_generator._records import record
+from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator._regex_syntax import pattern_engine, selects_python_engine
 from datamodel_code_generator._requirements import pydantic_target_meets
 from datamodel_code_generator.python_literal import stable_repr
@@ -211,7 +211,7 @@ def unique_items_path_uses_regex(path: UniqueItemsPath) -> bool:
     return False
 
 
-@dataclass
+@mutable_record
 class SchemaRuntimeValidation:
     """Schema-derived runtime validation rules for a generated model."""
 

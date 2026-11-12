@@ -28,12 +28,12 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeVar, final
 
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._graph_links import nearest_field
+from datamodel_code_generator._records import mutable_record
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Hashable, Iterable
@@ -78,7 +78,7 @@ class MemoTable(Enum):
 
 
 @final
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class _Slot:
     """The values one owner has in one table, computed at one epoch."""
 
@@ -88,7 +88,7 @@ class _Slot:
 
 
 @final
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class _Derived:
     """A derived value of a field, with the revisions it read (`ParseMemo.derived`)."""
 

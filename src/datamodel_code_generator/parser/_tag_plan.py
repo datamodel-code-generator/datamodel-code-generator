@@ -40,7 +40,7 @@ from __future__ import annotations
 import re
 from collections import defaultdict, deque
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import field
 from functools import cache
 from itertools import chain, islice
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, final
@@ -50,7 +50,7 @@ from typing_extensions import Protocol
 from datamodel_code_generator import Error
 from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAKEN_KEYWORD
 from datamodel_code_generator._model_keys import model_key_of, ref_branch_schema_of
-from datamodel_code_generator._records import record
+from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator.model._decisions.enum_kind import values_no_literal_holds
 from datamodel_code_generator.model._decisions.tag_value import (
@@ -1200,7 +1200,7 @@ def _has_related_instance_field(
     )
 
 
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class UnionTagDecision:
     """What L5 decided at a union site: its names, whether it keeps its discriminator and its msgspec struct tags."""
 
@@ -1373,7 +1373,7 @@ def iter_root_default_unions(field_: DataModelFieldBase) -> Iterator[DataType]:
             yield nested
 
 
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class VariantTags:
     """The tags a variant keeps from the first union that tagged it, and the other tags unions map it to."""
 
@@ -1501,7 +1501,7 @@ def iter_struct_tag_decisions(models: Sequence[DataModel]) -> Iterator[StructTag
 
 
 @final
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class TagPlan:
     """What the tag passes of one parse recorded, by the ids of the models and fields they read.
 

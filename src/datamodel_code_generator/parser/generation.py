@@ -43,7 +43,7 @@ from __future__ import annotations
 from bisect import insort
 from collections import defaultdict
 from contextlib import contextmanager
-from dataclasses import dataclass, field, replace
+from dataclasses import field, replace
 from itertools import chain
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, SupportsIndex, TypeAlias, TypeVar, final, overload
@@ -68,7 +68,7 @@ from datamodel_code_generator._graph_links import (
 )
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, NodeKey, model_key_of
 from datamodel_code_generator._parse_memo import ParseMemo, bump_field, bump_model, bump_node
-from datamodel_code_generator._records import record
+from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator._reference_graph import EdgeKind, reference_graph
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, MemberFacts, UnionPolicy, assemble_union
 from datamodel_code_generator.parser._facts import Phase
@@ -346,7 +346,7 @@ class DataTypeFact:
 
 
 @final
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class GenerationFacts:
     """A complete snapshot of derived generation facts.
 
@@ -1174,7 +1174,7 @@ class GenerationIndex:
         return wrappers, direct_refs
 
 
-@dataclass(slots=True)
+@mutable_record(slots=True)
 class _RootCollapseReferenceScope:
     """Lazy reference counts for one root-collapse mutation scope."""
 
