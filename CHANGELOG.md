@@ -46,6 +46,30 @@ This changelog is automatically generated from GitHub Releases.
 
 ---
 
+## [0.94.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.94.0) - 2026-11-12
+
+## Breaking Changes
+
+### Code Generation Changes
+* Generated client methods no longer accept None for required nullable parameters - For a required query, path, header or cookie parameter serialized by its style rather than by a `content` media type, whose schema is nullable (for example `type: string, nullable: true` with `--strict-nullable`, or `type: [string, "null"]` in OpenAPI 3.1, directly or through a root model or type alias), the generated client now types the keyword argument without None, such as `q: str` instead of `q: str | None` and `ids: list[int]` instead of a nullable `list[int]` for a root model of a nullable array; the fields of the `Operation0Arguments`-style `TypedDict` used by the `unpack` signature style change the same way. Code that passes None or an optional-typed value to these arguments now fails type checking after regeneration, while parameters sent through `content`, optional parameters, and nullable items inside arrays such as `list[str | None]` keep None (#6726)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* Quote the names the root-name rule suggests in its evidence by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6725
+* Leave None out of client signatures of required style parameters by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6726
+* Check nested subschemas under --schema-version-mode strict by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6728
+* Add the 20261111 presets by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6729
+* Fix a float const by equal bounds under --use-bounds-for-float-const by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6730
+* Let pytest name the stored outputs of the input-model tests by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6731
+* Publish a datamodel-codegen alias package with each release by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6732
+* Update ty, types-setuptools, pip, pinned actions and three hooks by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6734
+
+
+**Full Changelog**: https://github.com/datamodel-code-generator/datamodel-code-generator/compare/0.93.0...0.94.0
+
+---
+
 ## [0.93.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.93.0) - 2026-11-11
 
 ## Breaking Changes
