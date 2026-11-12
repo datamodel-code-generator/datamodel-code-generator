@@ -7,7 +7,8 @@ does not pay the ``__setattr__`` guard that ``@dataclass(frozen=True)`` adds to 
 ``dataclass`` generates and compiles the source of every method of every class. A record of plain fields is built
 without it: declared under ``from __future__ import annotations``, each field with a hashable default, only a
 ``field(default_factory=...)`` or neither, and no base record, ``ClassVar``, ``__post_init__``, own ``__init__``,
-``__eq__`` or ``__hash__`` or method that calls ``super()``. It gets one ``__init__`` from a small template, and
+``__eq__`` or ``__hash__`` or method that calls ``super()``. It gets one ``__init__`` from a small template, compiled
+once per sequence of required, defaulted and factory fields and renamed to the record's fields, and
 ``__repr__``, ``__eq__`` and ``__hash__`` from closures over the names of its fields, which compare and hash the tuple
 of fields that ``dataclass`` hashes, so hash values stay the same; its fields are ``dataclasses.Field`` objects marked
 as fields (the private ``dataclasses._FIELD``), which ``fields``, ``replace`` and ``asdict`` read, and its
@@ -20,9 +21,11 @@ from __future__ import annotations
 import dataclasses
 import re
 from dataclasses import MISSING, Field, dataclass, field
+from functools import cache
 from operator import attrgetter
 from reprlib import recursive_repr
-from typing import TYPE_CHECKING, Any, Final, TypeVar, overload
+from types import CodeType, FunctionType
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, overload
 
 from typing_extensions import dataclass_transform
 
@@ -30,6 +33,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 _T = TypeVar("_T")
+_FieldKind: TypeAlias = Literal["required", "default", "factory"]
 
 _FIELD: Final = dataclasses._FIELD  # noqa: SLF001 # ty: ignore[unresolved-attribute]
 _PSEUDO_FIELD: Final = re.compile(r"\s*(?:typing\.|dataclasses\.)?(?:ClassVar|InitVar|KW_ONLY)\b")
@@ -101,27 +105,57 @@ def _plain(cls: type[Any]) -> bool:
     )
 
 
-def _init(qualname: str, specs: tuple[Field[Any], ...]) -> Callable[..., None]:
-    """Return the ``__init__`` of the fields ``specs``, as ``dataclass`` writes it for a class that is not frozen."""
+@cache
+def _init_template(kinds: tuple[_FieldKind, ...]) -> CodeType:
+    """Return the code of the ``__init__`` of fields of ``kinds``, its parameters and attributes named ``_p<index>``.
+
+    Records share the compiled code of one shape; ``_init`` gives each its own names with ``CodeType.replace``.
+    """
     namespace: dict[str, Any] = {"_HAS_FACTORY": _HAS_FACTORY}
     parameters: list[str] = []
     body: list[str] = []
-    for index, spec in enumerate(specs):
-        name, default = spec.name, f"_d{index}"
-        match spec.default is not MISSING, spec.default_factory is not MISSING:
-            case True, _:
-                namespace[default] = spec.default
+    for index, kind in enumerate(kinds):
+        name, default = f"_p{index}", f"_d{index}"
+        match kind:
+            case "default":
+                namespace[default] = None
                 parameters.append(f"{name}={default}")
                 body.append(f" self.{name} = {name}")
-            case _, True:
-                namespace[default] = spec.default_factory
+            case "factory":
                 parameters.append(f"{name}=_HAS_FACTORY")
                 body.append(f" self.{name} = {default}() if {name} is _HAS_FACTORY else {name}")
             case _:
                 parameters.append(name)
                 body.append(f" self.{name} = {name}")
     exec(f"def __init__(self, {', '.join(parameters)}):\n" + "\n".join(body), namespace)  # noqa: S102
-    init = namespace["__init__"]
+    return namespace["__init__"].__code__
+
+
+def _kind(spec: Field[Any]) -> _FieldKind:
+    """Return whether the field ``spec`` is required, has a default or has a default factory."""
+    if spec.default is not MISSING:
+        return "default"
+    return "factory" if spec.default_factory is not MISSING else "required"
+
+
+def _init(qualname: str, specs: tuple[Field[Any], ...]) -> Callable[..., None]:
+    """Return the ``__init__`` of the fields ``specs``, as ``dataclass`` writes it for a class that is not frozen."""
+    kinds = tuple(map(_kind, specs))
+    template = _init_template(kinds)
+    names = {f"_p{index}": spec.name for index, spec in enumerate(specs)}
+    namespace: dict[str, Any] = {"_HAS_FACTORY": _HAS_FACTORY}
+    defaults: list[object] = []
+    for index, (spec, kind) in enumerate(zip(specs, kinds, strict=True)):
+        match kind:
+            case "default":
+                defaults.append(spec.default)
+            case "factory":
+                namespace[f"_d{index}"] = spec.default_factory
+                defaults.append(_HAS_FACTORY)
+    code = template.replace(
+        co_varnames=("self", *names.values()), co_names=tuple(names.get(name, name) for name in template.co_names)
+    )
+    init = FunctionType(code, namespace, "__init__", tuple(defaults) or None)
     init.__qualname__ = f"{qualname}.__init__"
     init.__annotations__ = {**{spec.name: spec.type for spec in specs}, "return": None}
     return init
