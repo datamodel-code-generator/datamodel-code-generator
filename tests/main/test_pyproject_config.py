@@ -86,3 +86,20 @@ def test_cli_reads_pyproject_json_files_from_working_directory(project: Path) ->
             assert_func=create_assert_file_content(EXPECTED_PATH),
             transform=str.rstrip,
         )
+
+
+@pytest.mark.parametrize("cli_flag", [True, False])
+def test_cli_flag_implying_another_option_beside_project_table(
+    cli_flag: bool, output_file: Path, tmp_path: Path
+) -> None:
+    """A flag on the command line takes effect, with the option it implies, beside an unrelated project table."""
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.datamodel-codegen]\noutput-model-type = "pydantic_v2.BaseModel"\n', encoding="utf-8"
+    )
+    with chdir(tmp_path):
+        run_main_and_assert(
+            input_path=Path(__file__).parents[1] / "data" / "jsonschema" / "one_of_required_groups_cli_flag.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--disable-timestamp", *(["--generate-schema-validators"] if cli_flag else [])],
+        )
