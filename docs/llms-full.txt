@@ -30412,7 +30412,8 @@ with Client() as client, client.protocols.default.watch_events.open(topic="a") a
         print(event.sequence, event.data)
 ```
 
-`T` is the type the models give the `itemSchema`. The helper ends at the end of the body (`completion: eof`), keeps no
+`T` is the type the models give the `itemSchema`: the model a bare `$ref` names, or the model generated for an inline
+schema. The helper ends at the end of the body (`completion: eof`), keeps no
 unknown or error events, and declares no resumption; its limits, sessions, and errors are those of every stream helper:
 an item its type refuses raises `DecodeError` with the `location` `("event", sequence)`, and a connection that breaks
 while the body is read raises `StreamInterruptedError`.
