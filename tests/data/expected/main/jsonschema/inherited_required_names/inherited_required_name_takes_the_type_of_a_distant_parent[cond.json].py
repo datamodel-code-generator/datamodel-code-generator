@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Mapping as _Mapping
 from typing import Any, ClassVar
 
-from pydantic import BaseModel, RootModel, TypeAdapter, model_validator
+from pydantic import BaseModel, Field, RootModel, TypeAdapter, model_validator
 
 
 class _JsonSchemaRuntimeValidationBase(BaseModel):
@@ -87,7 +87,7 @@ class G(_JsonSchemaRuntimeValidationBase):
     )
 
     k: str | None = None
-    x: int | Any | None = None
+    x: int | Any | None = Field(None, union_mode='left_to_right')
 
 
 class P(G):

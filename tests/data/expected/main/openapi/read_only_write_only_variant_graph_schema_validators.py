@@ -6,7 +6,7 @@ from __future__ import annotations
 from collections.abc import Mapping as _Mapping
 from typing import Any, ClassVar
 
-from pydantic import BaseModel, TypeAdapter, model_validator
+from pydantic import BaseModel, Field, TypeAdapter, model_validator
 
 
 class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
@@ -106,8 +106,12 @@ class ApiConditionalEnvelopeRequestModel(_JsonSchemaRuntimeValidationBase):
     )
 
     kind: str
-    metricLeaf: ApiReadOnlyLeafRequestModel | Any | None = None
-    noteLeaf: ApiReadOnlyLeafRequestModel | Any | None = None
+    metricLeaf: ApiReadOnlyLeafRequestModel | Any | None = Field(
+        None, union_mode='left_to_right'
+    )
+    noteLeaf: ApiReadOnlyLeafRequestModel | Any | None = Field(
+        None, union_mode='left_to_right'
+    )
 
 
 class ApiConditionalEnvelopeResponseModel(_JsonSchemaRuntimeValidationBase):
@@ -124,8 +128,12 @@ class ApiConditionalEnvelopeResponseModel(_JsonSchemaRuntimeValidationBase):
     )
 
     kind: str
-    metricLeaf: ApiReadOnlyLeafResponseModel | Any | None = None
-    noteLeaf: ApiReadOnlyLeafResponseModel | Any | None = None
+    metricLeaf: ApiReadOnlyLeafResponseModel | Any | None = Field(
+        None, union_mode='left_to_right'
+    )
+    noteLeaf: ApiReadOnlyLeafResponseModel | Any | None = Field(
+        None, union_mode='left_to_right'
+    )
 
 
 class ApiConditionalForwardWrapperRequestModel(BaseModel):

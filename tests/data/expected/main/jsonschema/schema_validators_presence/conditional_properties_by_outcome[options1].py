@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping as _Mapping
 from enum import Enum, IntEnum
+from re import compile
 from typing import Annotated, Any, ClassVar, Literal
 
 from pydantic import (
@@ -156,7 +157,9 @@ class Generate(_JsonSchemaRuntimeValidationBase):
     )
 
     version: Version | None = None
-    plugins: list[Plugin] | list[Plugin1] | None = None
+    plugins: list[Plugin] | list[Plugin1] | None = Field(
+        None, union_mode='left_to_right'
+    )
 
 
 class ManifestVersion(IntEnum):
@@ -183,14 +186,14 @@ class Manifest(_JsonSchemaRuntimeValidationBase):
     )
 
     manifest_version: ManifestVersion
-    web_accessible_resources: list[WebAccessibleResource] | list[str] | None = None
-
-
-class Code(RootModel[str]):
-    model_config = ConfigDict(
-        regex_engine="python-re",
+    web_accessible_resources: list[WebAccessibleResource] | list[str] | None = Field(
+        None, union_mode='left_to_right'
     )
-    root: str = Field(..., pattern='^(?!x)[a-z]+$')
+
+
+CodeConditionalProperty = TypeAliasType(
+    "CodeConditionalProperty", Annotated[str, Field(pattern=compile('^(?!x)[a-z]+$'))]
+)
 
 
 class Event(_JsonSchemaRuntimeValidationBase):
@@ -201,14 +204,14 @@ class Event(_JsonSchemaRuntimeValidationBase):
             'else_required_groups': (),
             'then_properties': (
                 (('metric',), int),
-                (('code',), Code),
+                (('code',), CodeConditionalProperty),
             ),
         },
     )
 
     kind: str
-    metric: int | Any | None = None
-    code: Code | Any | None = None
+    metric: int | Any | None = Field(None, union_mode='left_to_right')
+    code: str | Any | None = Field(None, union_mode='left_to_right')
 
 
 class Upload(_JsonSchemaRuntimeValidationBase):
@@ -225,7 +228,7 @@ class Upload(_JsonSchemaRuntimeValidationBase):
 
     mode: str | None = None
     path: str | None = Field(None, max_length=8)
-    url: str | Any | None = None
+    url: str | Any | None = Field(None, union_mode='left_to_right')
 
 
 class StrictEvent(_JsonSchemaRuntimeValidationBase):
@@ -259,6 +262,20 @@ class Retired(_JsonSchemaRuntimeValidationBase):
     )
 
     version: int | None = None
+
+
+class Deprecated(_JsonSchemaRuntimeValidationBase):
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('version',), (1,)),),
+            'then_required_groups': (),
+            'else_required_groups': (),
+            'then_rejected': (('legacy',),),
+        },
+    )
+
+    version: int | None = None
+    legacy: Any | None = None
 
 
 class Unconditional(BaseModel):
@@ -337,7 +354,7 @@ class Job(_JsonSchemaRuntimeValidationBase):
     )
 
     kind: Kind
-    request: Request | Any | None = None
+    request: Request | Any | None = Field(None, union_mode='left_to_right')
 
 
 class Headers(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, str]]):
@@ -354,12 +371,12 @@ class Headers(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, str]]):
 
 class PatternGuard(BaseModel):
     code: str | None = None
-    detail: str | Any | None = None
+    detail: str | Any | None = Field(None, union_mode='left_to_right')
 
 
 class EmptyGuard(BaseModel):
     code: str | None = None
-    detail: int | Any | None = None
+    detail: int | Any | None = Field(None, union_mode='left_to_right')
 
 
 class Person(_JsonSchemaRuntimeValidationBase):
@@ -378,7 +395,7 @@ class Person(_JsonSchemaRuntimeValidationBase):
 
     first_name: str | None = Field(None, alias='first-name')
     role: str | None = None
-    badge: Badge | str | None = None
+    badge: Badge | str | None = Field(None, union_mode='left_to_right')
     note: Any | None = None
 
 
@@ -389,6 +406,7 @@ class Settings(BaseModel):
     upload: Upload | None = None
     strict_event: StrictEvent | None = None
     retired: Retired | None = None
+    deprecated: Deprecated | None = None
     unconditional: Unconditional | None = None
     person: Person | None = None
     node: Node | None = None

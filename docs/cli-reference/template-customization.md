@@ -3072,7 +3072,9 @@ For if/then/else, the branch of the outcome that applies checks the properties
 it requires and declares, rejects its `false` properties, and admits only its
 keys where it closes the object. A property that a branch declares beyond the
 object's own takes the union of what each outcome admits for it, `Any` last
-where an outcome leaves it open, so a value either outcome accepts parses.
+where an outcome leaves it open, validated left to right
+(`Field(union_mode='left_to_right')`, Pydantic 2.2 or later), so a value parses
+as the first schema that admits it.
 
 With standard models and templates, required names absent from generated fields
 are checked against the raw object input. This also preserves required names
@@ -3277,9 +3279,16 @@ overrides are unsupported and generation fails fast.
 
     import re
     from collections.abc import Mapping as _Mapping
-    from typing import Any, ClassVar
+    from typing import Annotated, Any, ClassVar
 
-    from pydantic import BaseModel, ConfigDict, RootModel, TypeAdapter, model_validator
+    from pydantic import (
+        BaseModel,
+        ConfigDict,
+        Field,
+        RootModel,
+        TypeAdapter,
+        model_validator,
+    )
 
 
     class _JsonSchemaRuntimeValidationBase(BaseModel):
@@ -3546,8 +3555,8 @@ overrides are unsupported and generation fails fast.
         )
 
         kind: str | None = None
-        metric: int | Any | None = None
-        note: str | Any | None = None
+        metric: Annotated[int | Any | None, Field(union_mode='left_to_right')] = None
+        note: Annotated[str | Any | None, Field(union_mode='left_to_right')] = None
 
 
     class RequiredOnlyGuard1(BaseModel):
@@ -4557,9 +4566,16 @@ additional validator backends without adding them in this release.
 
     import re
     from collections.abc import Mapping as _Mapping
-    from typing import Any, ClassVar
+    from typing import Annotated, Any, ClassVar
 
-    from pydantic import BaseModel, ConfigDict, RootModel, TypeAdapter, model_validator
+    from pydantic import (
+        BaseModel,
+        ConfigDict,
+        Field,
+        RootModel,
+        TypeAdapter,
+        model_validator,
+    )
 
 
     class _JsonSchemaRuntimeValidationBase(BaseModel):
@@ -4826,8 +4842,8 @@ additional validator backends without adding them in this release.
         )
 
         kind: str | None = None
-        metric: int | Any | None = None
-        note: str | Any | None = None
+        metric: Annotated[int | Any | None, Field(union_mode='left_to_right')] = None
+        note: Annotated[str | Any | None, Field(union_mode='left_to_right')] = None
 
 
     class RequiredOnlyGuard1(BaseModel):

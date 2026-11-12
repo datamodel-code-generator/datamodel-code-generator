@@ -9,6 +9,7 @@
     "upload": {"$ref": "#/$defs/Upload"},
     "strict_event": {"$ref": "#/$defs/StrictEvent"},
     "retired": {"$ref": "#/$defs/Retired"},
+    "deprecated": {"$ref": "#/$defs/Deprecated"},
     "unconditional": {"$ref": "#/$defs/Unconditional"},
     "person": {"$ref": "#/$defs/Person"},
     "node": {"$ref": "#/$defs/Node"},
@@ -75,6 +76,12 @@
       "if": {"properties": {"version": {"const": 1}}, "required": ["version"]},
       "then": {"properties": {"version": {}, "legacy": false}, "additionalProperties": false},
       "else": {"properties": {"version": {}}, "additionalProperties": false}
+    },
+    "Deprecated": {
+      "type": "object",
+      "properties": {"version": {"type": "integer"}},
+      "if": {"properties": {"version": {"const": 1}}, "required": ["version"]},
+      "then": {"properties": {"legacy": false}}
     },
     "Unconditional": {
       "type": "object",

@@ -90,7 +90,7 @@ class Tree(_JsonSchemaRuntimeValidationBase):
     value: int | None = None
     node: Node | None = Field(None, title='Node')
     branch: Branch | None = Field(None, title='Branch')
-    label: str | Any | None = None
+    label: str | Any | None = Field(None, union_mode='left_to_right')
 
 
 class Holder(BaseModel):

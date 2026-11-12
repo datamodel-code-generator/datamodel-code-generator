@@ -5269,7 +5269,7 @@ legacy-option-custom-template	main/jsonschema/structured_enum_values.py
 	main/jsonschema/custom_template_refresh/first.py
 	main/jsonschema/custom_template_refresh/second.py
 [test_generate_schema_validator_type_public_api]
-	main/jsonschema/schema_validators.py
+	main/jsonschema/schema_validators.py	= main/jsonschema/schema_validators~generate_schema_validator_type_public_api.py
 [test_generate_strict_dotted_custom_generator_nested]
 	main/jsonschema/strict_dotted_custom_generator_nested//*.py
 [test_inline_allof_validators]
@@ -7069,7 +7069,7 @@ pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/forwarded_class_beside_loa
 [test_main_jsonschema_generate_schema_validators_custom_base_class_name]
 	main/jsonschema/schema_validators_custom_base_class_name.py
 [test_main_jsonschema_generate_schema_validators_extra_template_collision]
-	main/jsonschema/schema_validators.py
+	main/jsonschema/schema_validators.py	= main/jsonschema/schema_validators~generate_schema_validator_type_public_api.py
 [test_main_jsonschema_generate_schema_validators_parser_branch_runtime]
 	main/jsonschema/main_jsonschema/generate_schema_validators_parser_branch_runtime.2.py
 	main/jsonschema/main_jsonschema/generate_schema_validators_parser_branch_runtime.py

@@ -117,6 +117,13 @@ _CONDITIONAL_OUTCOME_CASES = (
     ),
     ('{"retired": {"version": 1}}', '{"retired": {"version": 2, "x": 1}}', "value_error", (), None),
     (
+        '{"deprecated": {"version": 2, "legacy": 5}}',
+        '{"deprecated": {"version": 1, "legacy": 5}}',
+        "value_error",
+        ("deprecated", "legacy"),
+        5,
+    ),
+    (
         '{"unconditional": {"name": "a", "alias": 5}}',
         '{"unconditional": {"name": 5}}',
         "string_type",

@@ -1182,7 +1182,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._tag_key_variants: dict[SchemaLocation | None, tuple[str, str]] = {}
         if self.generate_schema_validators:
             self._property_count_rule_cache: dict[int, tuple[JsonSchemaObject, PropertyCountRule | None]] = {}
-            self._conditional_outcome_members: dict[tuple[tuple[str, ...], str], tuple[DataType, ...]] = {}
+            self._conditional_outcome_members: dict[tuple[tuple[str, ...], str], tuple[DataType | None, ...]] = {}
         self.field_keys: set[str] = {
             *DEFAULT_FIELD_KEYS,
             *self.field_extra_keys,
@@ -1248,6 +1248,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             }
         if self.default_field_extras:
             extras.update(self.default_field_extras)
+        extras.update(_schema_validators.conditional_outcome_field_extras(obj))
         if (default_factory := extras.get("default_factory", UNDEFINED)) is not UNDEFINED:
             extras["default_factory"] = _validate_default_factory(default_factory)
         return extras
@@ -5331,17 +5332,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if original_field_name == variant_key:
                 self.model_resolver.name_past_parent([*path, field_name])
             if outcome_union:
-                members = _union_tags.parse_combined_schema_items(
-                    self,
-                    modular_name,
-                    field,
-                    get_special_path("anyOf", [*path, field_name]),
-                    cast("list[JsonSchemaObject]", field.anyOf),
-                    None,
-                    {},
+                field_type = self._parse_conditional_outcome_union(
+                    modular_name, field, [*path, field_name], (tuple(path), original_field_name)
                 )
-                self._conditional_outcome_members[tuple(path), original_field_name] = tuple(members)
-                field_type = build_union(self.data_type, members)
             else:
                 field_type = self.parse_item(modular_name, field, [*path, field_name])
 
@@ -5470,6 +5463,33 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if not self._has_effective_constraints(value_schema):
             return None
         return value_schema, preserve_root_model
+
+    def _parse_conditional_outcome_union(
+        self, name: str, obj: JsonSchemaObject, path: list[str], key: tuple[tuple[str, ...], str]
+    ) -> DataType:
+        """Parse the field type of a property that the outcomes of ``if`` type by the members of ``obj``'s anyOf.
+
+        Each member is parsed as the field of that one schema parses it, the first at the field's own path, so the type
+        and the models it builds are the ones the property takes with only the first schema; the field writes no
+        constraint of a member. A null member makes the union admit None, and members that write the same type are one,
+        so a union of one type validates as that type. The rule checks a member with its type where that type holds
+        every constraint of the member, and records None for it otherwise (``_conditional_outcome_members`` at
+        ``key``), so the rule builds the type that holds them.
+        """
+        members: dict[str, DataType] = {}
+        checks: list[DataType | None] = []
+        nullable = False
+        for index, member in enumerate(cast("list[JsonSchemaObject]", obj.anyOf)):
+            member_path = path if index == 0 else get_special_path(f"conditionalOutcome/{index}", path)
+            member_type = self.parse_item(name, member, member_path)
+            if member.type == "null":
+                nullable = True
+            else:
+                members.setdefault(member_type.type_hint, member_type)
+            writes_constraints = self._assemble_field_constraints(member, member_type, _PROPERTY_SITE).constraints
+            checks.append(None if writes_constraints else member_type)
+        self._conditional_outcome_members[key] = tuple(checks)
+        return build_union(self.data_type, list(members.values()), nullable=nullable)
 
     def _pattern_value_alias(
         self,

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping as _Mapping
 from enum import Enum, IntEnum
+from re import compile
 from typing import Annotated, Any, ClassVar, Literal
 
 from pydantic import (
@@ -156,7 +157,9 @@ class Generate(_JsonSchemaRuntimeValidationBase):
     )
 
     version: Version | None = None
-    plugins: list[Plugin] | list[Plugin1] | None = None
+    plugins: Annotated[
+        list[Plugin] | list[Plugin1] | None, Field(union_mode='left_to_right')
+    ] = None
 
 
 class ManifestVersion(IntEnum):
@@ -183,14 +186,15 @@ class Manifest(_JsonSchemaRuntimeValidationBase):
     )
 
     manifest_version: ManifestVersion
-    web_accessible_resources: list[WebAccessibleResource] | list[str] | None = None
+    web_accessible_resources: Annotated[
+        list[WebAccessibleResource] | list[str] | None,
+        Field(union_mode='left_to_right'),
+    ] = None
 
 
-class Code(RootModel[str]):
-    model_config = ConfigDict(
-        regex_engine="python-re",
-    )
-    root: Annotated[str, Field(pattern='^(?!x)[a-z]+$')]
+CodeConditionalProperty = TypeAliasType(
+    "CodeConditionalProperty", Annotated[str, Field(pattern=compile('^(?!x)[a-z]+$'))]
+)
 
 
 class Event(_JsonSchemaRuntimeValidationBase):
@@ -201,14 +205,14 @@ class Event(_JsonSchemaRuntimeValidationBase):
             'else_required_groups': (),
             'then_properties': (
                 (('metric',), int),
-                (('code',), Code),
+                (('code',), CodeConditionalProperty),
             ),
         },
     )
 
     kind: str
-    metric: int | Any | None = None
-    code: Code | Any | None = None
+    metric: Annotated[int | Any | None, Field(union_mode='left_to_right')] = None
+    code: Annotated[str | Any | None, Field(union_mode='left_to_right')] = None
 
 
 class Upload(_JsonSchemaRuntimeValidationBase):
@@ -225,7 +229,7 @@ class Upload(_JsonSchemaRuntimeValidationBase):
 
     mode: str | None = None
     path: Annotated[str | None, Field(max_length=8)] = None
-    url: str | Any | None = None
+    url: Annotated[str | Any | None, Field(union_mode='left_to_right')] = None
 
 
 class StrictEvent(_JsonSchemaRuntimeValidationBase):
@@ -259,6 +263,20 @@ class Retired(_JsonSchemaRuntimeValidationBase):
     )
 
     version: int | None = None
+
+
+class Deprecated(_JsonSchemaRuntimeValidationBase):
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('version',), (1,)),),
+            'then_required_groups': (),
+            'else_required_groups': (),
+            'then_rejected': (('legacy',),),
+        },
+    )
+
+    version: int | None = None
+    legacy: Any | None = None
 
 
 class Unconditional(BaseModel):
@@ -337,7 +355,7 @@ class Job(_JsonSchemaRuntimeValidationBase):
     )
 
     kind: Kind
-    request: Request | Any | None = None
+    request: Annotated[Request | Any | None, Field(union_mode='left_to_right')] = None
 
 
 class Headers(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, str]]):
@@ -354,12 +372,12 @@ class Headers(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, str]]):
 
 class PatternGuard(BaseModel):
     code: str | None = None
-    detail: str | Any | None = None
+    detail: Annotated[str | Any | None, Field(union_mode='left_to_right')] = None
 
 
 class EmptyGuard(BaseModel):
     code: str | None = None
-    detail: int | Any | None = None
+    detail: Annotated[int | Any | None, Field(union_mode='left_to_right')] = None
 
 
 class Person(_JsonSchemaRuntimeValidationBase):
@@ -378,7 +396,7 @@ class Person(_JsonSchemaRuntimeValidationBase):
 
     first_name: Annotated[str | None, Field(alias='first-name')] = None
     role: str | None = None
-    badge: Badge | str | None = None
+    badge: Annotated[Badge | str | None, Field(union_mode='left_to_right')] = None
     note: Any | None = None
 
 
@@ -389,6 +407,7 @@ class Settings(BaseModel):
     upload: Upload | None = None
     strict_event: StrictEvent | None = None
     retired: Retired | None = None
+    deprecated: Deprecated | None = None
     unconditional: Unconditional | None = None
     person: Person | None = None
     node: Node | None = None

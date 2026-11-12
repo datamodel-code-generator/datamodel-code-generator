@@ -5,9 +5,16 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping as _Mapping
-from typing import Any, ClassVar
+from typing import Annotated, Any, ClassVar
 
-from pydantic import BaseModel, ConfigDict, RootModel, TypeAdapter, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    RootModel,
+    TypeAdapter,
+    model_validator,
+)
 
 
 class _JsonSchemaRuntimeValidationBase(BaseModel):
@@ -274,8 +281,8 @@ class ConditionalPayload(_JsonSchemaRuntimeValidationBase):
     )
 
     kind: str | None = None
-    metric: int | Any | None = None
-    note: str | Any | None = None
+    metric: Annotated[int | Any | None, Field(union_mode='left_to_right')] = None
+    note: Annotated[str | Any | None, Field(union_mode='left_to_right')] = None
 
 
 class RequiredOnlyGuard1(BaseModel):

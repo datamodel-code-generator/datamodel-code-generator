@@ -20,7 +20,7 @@ from datamodel_code_generator._alias_generators import generate_alias
 from datamodel_code_generator._constraint_applicability import constrained_type_keyword_order
 from datamodel_code_generator._container_kinds import ARRAYS, ITEM_CONTAINERS, MAPPINGS
 from datamodel_code_generator._json_schema import MODELED_SCHEMA_MAPS, SCHEMA_MAP_KEYS, admitted_types, schema_positions
-from datamodel_code_generator.enums import AliasGenerator
+from datamodel_code_generator.enums import AliasGenerator, UnionMode
 from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.model.base import _field_source_name
 from datamodel_code_generator.model.runtime_validation import (
@@ -133,7 +133,7 @@ class SchemaValidatorsHost(
 
     CONDITIONAL_SCHEMA_ALLOWED_FIELDS: ClassVar[frozenset[str]]
     REQUIRED_ONLY_SCHEMA_ALLOWED_FIELDS: ClassVar[frozenset[str]]
-    _conditional_outcome_members: dict[tuple[tuple[str, ...], str], tuple[DataType, ...]]
+    _conditional_outcome_members: dict[tuple[tuple[str, ...], str], tuple[DataType | None, ...]]
     _pattern_validation_document_root: JsonSchemaObject | None
     _root_pattern_string_constraints: JsonSchemaObject | None
 
@@ -1658,8 +1658,8 @@ def _outcome_property_type(  # noqa: PLR0913, PLR0917
     """Return the type that checks ``schema``, what a branch declares for ``key``, None where the field checks it.
 
     ``members`` are the schemas the field of the key holds: the field checks a schema that is the only one; a member of
-    a union is checked with a copy of the type the field holds for it (``_conditional_outcome_members``), any other
-    schema with the type ``parse_item`` builds for it at ``value_path``.
+    a union is checked with a copy of the type the field holds for it where that type holds the member's constraints
+    (``_conditional_outcome_members``), any other schema with the type ``parse_item`` builds for it at ``value_path``.
     """
     if members == (dump := _schema_dump(schema),):
         return None
@@ -1667,8 +1667,9 @@ def _outcome_property_type(  # noqa: PLR0913, PLR0917
         len(members) > 1
         and dump in members
         and (parsed := parser._conditional_outcome_members.get((tuple(path), key))) is not None  # noqa: SLF001
+        and (member := parsed[members.index(dump)]) is not None
     ):
-        return parser._copy_model_type(parsed[members.index(dump)])  # noqa: SLF001
+        return parser._copy_model_type(member)  # noqa: SLF001
     value_type = parser.parse_item(key, schema, value_path)
     return parser._pattern_value_alias(key, schema, value_type, value_path, "conditional-property")  # noqa: SLF001
 
@@ -1870,6 +1871,17 @@ _CONDITIONAL_OWN_KEYS_KEY: Final = "_conditional_own_keys"
 """The ``__dict__`` key of an object with merged conditional properties that holds the keys it declares itself."""
 CONDITIONAL_OUTCOME_UNION_KEY: Final = "_conditional_outcome_union"
 """The ``__dict__`` key that marks a merged property whose anyOf holds the schemas of the outcomes of ``if``."""
+
+
+def conditional_outcome_field_extras(obj: JsonSchemaObject) -> dict[str, Any]:
+    """Return the field arguments of a property typed by the outcomes of ``if`` (``CONDITIONAL_OUTCOME_UNION_KEY``).
+
+    Its union is validated left to right, so a value takes the type of the first schema that admits it, as the field
+    of that schema alone parses it, and ``Any``, last, only where no schema does; smart mode would keep a value that a
+    schema converts (an enum member, a date, a model) as it was written, since ``Any`` matches it exactly. A field whose
+    type is no union leaves the mode out, as it does for --union-mode.
+    """
+    return {"union_mode": UnionMode.left_to_right} if CONDITIONAL_OUTCOME_UNION_KEY in obj.__dict__ else {}
 
 
 def merge_conditional_properties(parser: SchemaValidatorsHost, obj: JsonSchemaObject) -> JsonSchemaObject:
