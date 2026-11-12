@@ -5,6 +5,47 @@ This changelog is automatically generated from GitHub Releases.
 
 ---
 
+## [0.95.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.95.0) - 2026-11-12
+
+## Breaking Changes
+
+### Code Generation Changes
+* Required nullable parameters in generated FastAPI servers are now typed without None - A required query, path, header or cookie parameter can have a nullable schema, such as OpenAPI 3.0 `nullable: true` or 3.1 `type: [string, "null"]`, and not be described by `content`. For such a parameter, the generated router endpoint now writes the plain type, for example `Annotated[str, Query(alias='q')]` instead of `Annotated[str | None, Query(alias='q')]`. The generated service Protocol method now takes it as `q: str` instead of `q: str | None`. This also covers a nullable type that the target reads through a root model or alias. Optional parameters and parameters with a `content` media type keep `| None`. Implementations that still declare `X | None` keep type-checking, because such a parameter can never receive None. After regenerating, though, code that calls service methods with None for these parameters, or that relies on the old signatures, gets type errors. FastAPI's own OpenAPI document, served with `source_openapi=False`, also no longer marks these parameters nullable. (#6737)
+* Schema validators no longer read references mapped by `--external-ref-mapping` - With `--generate-schema-validators`, a `$ref` that `--external-ref-mapping` maps to an imported class is no longer loaded when runtime validation rules are collected. Before, if the mapped document could be read, its rules went into the generated validators. These were `minProperties`/`maxProperties` and scoped object rules such as `patternProperties` reached through `allOf`/`anyOf`/`oneOf` items, and the `uniqueItems` rules of union branches. Now the mapped reference adds no rules, and it is treated as possibly accepting both object and array data. Generated models can therefore lose validation checks they had before, for example the `uniqueItems` check on an array branch next to a mapped object branch, and accept data they used to reject. Schemas that used to fail because the mapped document was missing or refused by `--strict-refs` now generate. (#6762)
+
+### Default Behavior Changes
+* Dynamic model generation no longer formats generated code by default - `generate_dynamic_models()` and `generate_dynamic_module()` now skip formatting when none of `formatters`, `custom_formatters` or the config's `preset` selects formatters. Before, they formatted the code with Black and isort, as `generate()` does. Black and isort are no longer imported in that case, and the "Default formatters will change to builtin" `FutureWarning` is no longer emitted. Presets that do not set formatters, such as `standard-py313-20260619`, now also give unformatted code. Formatting stripped spaces and tabs from the ends of lines in class docstrings. So with `use_schema_description=True`, a schema description whose lines end with spaces or tabs (for example a Markdown hard break) now keeps that trailing whitespace in the class `__doc__` and in the `description` that Pydantic's `model_json_schema()` reports. Set `formatters` (for example `formatters=[Formatter.BUILTIN]`) to bring back formatting and the stripped docstrings. `generate()` and the CLI are unchanged. (#6750)
+* New FutureWarning when custom templates are used - Generation with a custom template directory (`--custom-template-dir`, `custom-template-dir` in pyproject.toml, or `custom_template_dir` in the `generate()` config) now emits the `dependency.jinja2-optional` FutureWarning "Jinja2 will become optional. Declare the jinja2 extra for --custom-template-dir; see --help." It is shown once per CLI invocation and on each `generate()` call. Python shows FutureWarning by default, so this is new stderr output for existing users. Setups that turn warnings into errors (`-W error`, `PYTHONWARNINGS=error`, pytest `filterwarnings = error`) now fail until the warning is filtered. Jinja2 is still a required dependency; declare the new `jinja2` extra to prepare for it becoming optional. (#6755)
+* New FutureWarning when generating from raw data input - Generating from JSON, YAML, CSV or dict sample data (`--input-file-type json`, `yaml` or `csv`, or `generate()` with a dict) now emits the `dependency.genson-optional` FutureWarning "Genson will become optional. Declare the genson extra for JSON, YAML, CSV and dict input; see --help." Schema inputs such as JSON Schema and OpenAPI do not warn. Setups that turn warnings into errors now fail for these inputs until the warning is filtered. Genson is still a required dependency; declare the new `genson` extra to prepare for it becoming optional. (#6755)
+
+### Error Handling Changes
+* Experimental `--untrusted-input` now refuses deeply nested or very large schemas - With the experimental `--untrusted-input` option (`untrusted_input=True` in `generate()` and in the `GenerateConfig` of the dynamic API), a schema whose objects and arrays nest more than 100 levels deep, or that holds more than 2,000,000 objects and arrays, now stops generation with an error. A YAML alias counts each time it is used. The check runs before the document is parsed: on each input document, on converted sources, and in `generate_dynamic_models` before the schema is hashed for the cache. These schemas could generate under `--untrusted-input` in 0.94.0. The error names the limit and how deep or large the schema is. To process such a schema, flatten or split it, or generate without `--untrusted-input` if the schema is trusted. Behaviour without the option does not change. (#6752)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* Leave None out of server signatures of required style parameters by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6737
+* Call the JSON Schema concern homes directly, not through the parser by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6738
+* Skip unread Pydantic floor work and the lockfile path resolution by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6740
+* Ask for one PyPI approval per release by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6745
+* Build type-map entries without validating their values again by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6746
+* Document runtime schemas in dynamic model generation by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6747
+* Skip formatting dynamic models unless formatters are selected by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6750
+* Document LLM tool and MCP schemas in dynamic model generation by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6751
+* Refuse untrusted schemas past a nesting depth or node count by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6752
+* Apply options a command-line flag implies beside a pyproject table by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6753
+* Read object keywords beside anyOf for object branches under an option by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6754
+* Announce that jinja2, genson and argcomplete become optional by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6755
+* Compile a record's __init__ once per shape of its fields by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6759
+* Update ruff to 0.17.4 and follow its lint rules by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6760
+* Leave a mapped $ref unread by the schema validators by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6762
+* Build private mutable dataclasses without generating their methods by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/6764
+
+
+**Full Changelog**: https://github.com/datamodel-code-generator/datamodel-code-generator/compare/0.94.0...0.95.0
+
+---
+
 ## [0.93.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.93.0) - 2026-11-11
 
 ## Breaking Changes
