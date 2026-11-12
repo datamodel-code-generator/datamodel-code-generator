@@ -2,14 +2,14 @@
   > GET https://api.example.com/events?topic=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   event fields
-    1 'add' {'data': 'first\nsecond', 'event': <Event1.add: 'add'>, 'id': '7', 'retry': 1500}
-    2 'message' {'data': '{"plain": true}', 'event': <Event1.message: 'message'>, 'id': '7', 'retry': None}
-    3 'done' {'data': 'last', 'event': <Event1.done: 'done'>, 'id': None, 'retry': None}
+    1 add id='7' retry=1500 data=ItemSchema{'data': 'first\nsecond', 'event': <Event1.add: 'add'>, 'id': '7', 'retry': 1500} raw='first\nsecond'
+    2 message id='7' retry=1500 data=ItemSchema{'data': '{"plain": true}', 'event': <Event1.message: 'message'>, 'id': '7', 'retry': None} raw='{"plain": true}'
+    3 done id=None retry=1500 data=ItemSchema{'data': 'last', 'event': <Event1.done: 'done'>, 'id': None, 'retry': None} raw='last'
     end
   > GET https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   event its item schema refuses
-    1 'message' {'data': 'kept', 'event': <Event1.message: 'message'>, 'id': None, 'retry': None}
+    1 message id=None retry=None data=ItemSchema{'data': 'kept', 'event': <Event1.message: 'message'>, 'id': None, 'retry': None} raw='kept'
     ! DecodeError: DecodeError(status_code=200, operation_id='watchEvents', reason='value', location='event.2') [operation_id='watchEvents', location=('event', 2), body_bytes=b'{"data":"refused","event":"other"}', truncated=False, cause=1 validation error for ItemSchema
 event
   Input should be 'message', 'add' or 'done' [type=enum, input_value='other', input_type=str]
@@ -17,18 +17,19 @@ event
   > GET https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   event stream cut
-    1 'message' {'data': 'kept', 'event': <Event1.message: 'message'>, 'id': None, 'retry': None}
+    1 message id=None retry=None data=ItemSchema{'data': 'kept', 'event': <Event1.message: 'message'>, 'id': None, 'retry': None} raw='kept'
+  < closed
     ! StreamInterruptedError: StreamInterruptedError(operation_id='watchEvents', reason='transport', sequence=1) [operation_id='watchEvents', sequence=1, cause=APIConnectionError()] transport
   > GET https://api.example.com/logs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/jsonl] b''
   JSON Lines without a final line feed
-    1 '' {'message': 'hi', 'level': 1}
-    2 '' {'message': 'bye', 'level': None}
+    1  id=None retry=None data=ItemSchemaModel{'message': 'hi', 'level': 1} raw='{"message": "hi", "level": 1}'
+    2  id=None retry=None data=ItemSchemaModel{'message': 'bye', 'level': None} raw='{"message": "bye"}'
     end
   > GET https://api.example.com/logs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/jsonl] b''
   invalid line
-    1 '' {'message': 'a', 'level': None}
+    1  id=None retry=None data=ItemSchemaModel{'message': 'a', 'level': None} raw='{"message": "a"}'
     ! DecodeError: DecodeError(status_code=200, operation_id='tailLogs', reason='value', location='event.2') [operation_id='tailLogs', location=('event', 2), body_bytes=b'{"level": "high"}', truncated=False, cause=2 validation errors for ItemSchemaModel
 level
   Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='high', input_type=str]
@@ -39,19 +40,19 @@ message
   > GET https://api.example.com/records
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-ndjson] b''
   NDJSON cut line
-    1 '' {'message': 'a', 'level': None}
+    1  id=None retry=None data=ItemSchemaModel{'message': 'a', 'level': None} raw='{"message": "a"}'
     ! StreamInterruptedError: StreamInterruptedError(operation_id='streamRecords', reason='eof', sequence=1) [operation_id='streamRecords', sequence=1] eof
   > GET https://api.example.com/records
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-ndjson] b''
   NDJSON
-    1 '' {'message': 'hi', 'level': 1}
-    2 '' {'message': 'bye', 'level': None}
+    1  id=None retry=None data=ItemSchemaModel{'message': 'hi', 'level': 1} raw='{"message": "hi", "level": 1}'
+    2  id=None retry=None data=ItemSchemaModel{'message': 'bye', 'level': None} raw='{"message": "bye"}'
     end
   > GET https://api.example.com/excerpt
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/jsonl] b''
   JSON Lines beside JSON
-    1 '' {'message': 'hi', 'level': 1}
-    2 '' {'message': 'bye', 'level': None}
+    1  id=None retry=None data=ItemSchemaModel{'message': 'hi', 'level': 1} raw='{"message": "hi", "level": 1}'
+    2  id=None retry=None data=ItemSchemaModel{'message': 'bye', 'level': None} raw='{"message": "bye"}'
     end
   > GET https://api.example.com/excerpt
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, application/jsonl] b''
@@ -65,66 +66,68 @@ message
   > GET https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   async event fields
-    1 'add' {'data': 'first\nsecond', 'event': <Event1.add: 'add'>, 'id': '7', 'retry': 1500}
-    2 'message' {'data': '{"plain": true}', 'event': <Event1.message: 'message'>, 'id': '7', 'retry': None}
-    3 'done' {'data': 'last', 'event': <Event1.done: 'done'>, 'id': None, 'retry': None}
+    1 add id='7' retry=1500 data=ItemSchema{'data': 'first\nsecond', 'event': <Event1.add: 'add'>, 'id': '7', 'retry': 1500} raw='first\nsecond'
+    2 message id='7' retry=1500 data=ItemSchema{'data': '{"plain": true}', 'event': <Event1.message: 'message'>, 'id': '7', 'retry': None} raw='{"plain": true}'
+    3 done id=None retry=1500 data=ItemSchema{'data': 'last', 'event': <Event1.done: 'done'>, 'id': None, 'retry': None} raw='last'
     end
   > GET https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   async event stream cut
-    1 'message' {'data': 'kept', 'event': <Event1.message: 'message'>, 'id': None, 'retry': None}
+    1 message id=None retry=None data=ItemSchema{'data': 'kept', 'event': <Event1.message: 'message'>, 'id': None, 'retry': None} raw='kept'
+  < closed
     ! StreamInterruptedError: StreamInterruptedError(operation_id='watchEvents', reason='transport', sequence=1) [operation_id='watchEvents', sequence=1, cause=APIConnectionError()] transport
   > GET https://api.example.com/logs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/jsonl] b''
   async JSON Lines
-    1 '' {'message': 'hi', 'level': 1}
-    2 '' {'message': 'bye', 'level': None}
+    1  id=None retry=None data=ItemSchemaModel{'message': 'hi', 'level': 1} raw='{"message": "hi", "level": 1}'
+    2  id=None retry=None data=ItemSchemaModel{'message': 'bye', 'level': None} raw='{"message": "bye"}'
     end
 # item-streams dataclasses.dataclass
   > GET https://api.example.com/events?topic=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   event fields
-    1 'add' {'data': 'first\nsecond', 'event': <Event1.add: 'add'>, 'id': '7', 'retry': 1500}
-    2 'message' {'data': '{"plain": true}', 'event': <Event1.message: 'message'>, 'id': '7', 'retry': None}
-    3 'done' {'data': 'last', 'event': <Event1.done: 'done'>, 'id': None, 'retry': None}
+    1 add id='7' retry=1500 data=Event{'data': 'first\nsecond', 'event': <Event1.add: 'add'>, 'id': '7', 'retry': 1500} raw='first\nsecond'
+    2 message id='7' retry=1500 data=Event{'data': '{"plain": true}', 'event': <Event1.message: 'message'>, 'id': '7', 'retry': None} raw='{"plain": true}'
+    3 done id=None retry=1500 data=Event{'data': 'last', 'event': <Event1.done: 'done'>, 'id': None, 'retry': None} raw='last'
     end
   > GET https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   event its item schema refuses
-    1 'message' {'data': 'kept', 'event': <Event1.message: 'message'>, 'id': None, 'retry': None}
+    1 message id=None retry=None data=Event{'data': 'kept', 'event': <Event1.message: 'message'>, 'id': None, 'retry': None} raw='kept'
     ! DecodeError: DecodeError(status_code=200, operation_id='watchEvents', reason='value', location='event.2') [operation_id='watchEvents', location=('event', 2), body_bytes=b'{"data":"refused","event":"other"}', truncated=False, cause=ValueError("'other' is not a valid Event1")] value
   > GET https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   event stream cut
-    1 'message' {'data': 'kept', 'event': <Event1.message: 'message'>, 'id': None, 'retry': None}
+    1 message id=None retry=None data=Event{'data': 'kept', 'event': <Event1.message: 'message'>, 'id': None, 'retry': None} raw='kept'
+  < closed
     ! StreamInterruptedError: StreamInterruptedError(operation_id='watchEvents', reason='transport', sequence=1) [operation_id='watchEvents', sequence=1, cause=APIConnectionError()] transport
   > GET https://api.example.com/logs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/jsonl] b''
   JSON Lines without a final line feed
-    1 '' {'message': 'hi', 'level': 1}
-    2 '' {'message': 'bye', 'level': None}
+    1  id=None retry=None data=LogEntry{'message': 'hi', 'level': 1} raw='{"message": "hi", "level": 1}'
+    2  id=None retry=None data=LogEntry{'message': 'bye', 'level': None} raw='{"message": "bye"}'
     end
   > GET https://api.example.com/logs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/jsonl] b''
   invalid line
-    1 '' {'message': 'a', 'level': None}
+    1  id=None retry=None data=LogEntry{'message': 'a', 'level': None} raw='{"message": "a"}'
     ! DecodeError: DecodeError(status_code=200, operation_id='tailLogs', reason='value', location='event.2') [operation_id='tailLogs', location=('event', 2), body_bytes=b'{"level": "high"}', truncated=False, cause=TypeError("LogEntry.__init__() missing 1 required positional argument: 'message'")] value
   > GET https://api.example.com/records
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-ndjson] b''
   NDJSON cut line
-    1 '' {'message': 'a', 'level': None}
+    1  id=None retry=None data=LogEntry{'message': 'a', 'level': None} raw='{"message": "a"}'
     ! StreamInterruptedError: StreamInterruptedError(operation_id='streamRecords', reason='eof', sequence=1) [operation_id='streamRecords', sequence=1] eof
   > GET https://api.example.com/records
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-ndjson] b''
   NDJSON
-    1 '' {'message': 'hi', 'level': 1}
-    2 '' {'message': 'bye', 'level': None}
+    1  id=None retry=None data=LogEntry{'message': 'hi', 'level': 1} raw='{"message": "hi", "level": 1}'
+    2  id=None retry=None data=LogEntry{'message': 'bye', 'level': None} raw='{"message": "bye"}'
     end
   > GET https://api.example.com/excerpt
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/jsonl] b''
   JSON Lines beside JSON
-    1 '' {'message': 'hi', 'level': 1}
-    2 '' {'message': 'bye', 'level': None}
+    1  id=None retry=None data=LogEntry{'message': 'hi', 'level': 1} raw='{"message": "hi", "level": 1}'
+    2  id=None retry=None data=LogEntry{'message': 'bye', 'level': None} raw='{"message": "bye"}'
     end
   > GET https://api.example.com/excerpt
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, application/jsonl] b''
@@ -138,18 +141,19 @@ message
   > GET https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   async event fields
-    1 'add' {'data': 'first\nsecond', 'event': <Event1.add: 'add'>, 'id': '7', 'retry': 1500}
-    2 'message' {'data': '{"plain": true}', 'event': <Event1.message: 'message'>, 'id': '7', 'retry': None}
-    3 'done' {'data': 'last', 'event': <Event1.done: 'done'>, 'id': None, 'retry': None}
+    1 add id='7' retry=1500 data=Event{'data': 'first\nsecond', 'event': <Event1.add: 'add'>, 'id': '7', 'retry': 1500} raw='first\nsecond'
+    2 message id='7' retry=1500 data=Event{'data': '{"plain": true}', 'event': <Event1.message: 'message'>, 'id': '7', 'retry': None} raw='{"plain": true}'
+    3 done id=None retry=1500 data=Event{'data': 'last', 'event': <Event1.done: 'done'>, 'id': None, 'retry': None} raw='last'
     end
   > GET https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   async event stream cut
-    1 'message' {'data': 'kept', 'event': <Event1.message: 'message'>, 'id': None, 'retry': None}
+    1 message id=None retry=None data=Event{'data': 'kept', 'event': <Event1.message: 'message'>, 'id': None, 'retry': None} raw='kept'
+  < closed
     ! StreamInterruptedError: StreamInterruptedError(operation_id='watchEvents', reason='transport', sequence=1) [operation_id='watchEvents', sequence=1, cause=APIConnectionError()] transport
   > GET https://api.example.com/logs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/jsonl] b''
   async JSON Lines
-    1 '' {'message': 'hi', 'level': 1}
-    2 '' {'message': 'bye', 'level': None}
+    1  id=None retry=None data=LogEntry{'message': 'hi', 'level': 1} raw='{"message": "hi", "level": 1}'
+    2  id=None retry=None data=LogEntry{'message': 'bye', 'level': None} raw='{"message": "bye"}'
     end

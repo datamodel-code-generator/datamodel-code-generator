@@ -8,7 +8,9 @@
 Many APIs repeat one pattern across their operations: a list split into pages, a job you start and then poll, a file
 sent in chunks, or a stream of events. A *protocol helper* is generated code for one such pattern. You describe the
 pattern once, in a JSON *helper file* that names the operations it uses, and generation adds an object at
-`client.protocols.<name>` that runs the whole exchange, such as a pager that fetches every page.
+`client.protocols.<name>` that runs the whole exchange, such as a pager that fetches every page. A response that an
+OpenAPI 3.2 document streams with `itemSchema` gets a stream helper without a helper file, as
+[item stream helpers](#item-stream-helpers) describes.
 
 This page covers the helper file first, then each helper kind: [pagination](#pagination-helpers),
 [polling](#polling-helpers), [resumable uploads](#upload-helpers), [SSE](#sse-stream-helpers) and
@@ -1176,15 +1178,15 @@ borrowed native client retains its caller's lifetime.
 ### Framing and events
 
 HTTPX2's `EventSource` parses the body as the WHATWG event-stream interpretation reads it: CR, LF, and CRLF end lines,
-including a CRLF split between reads, lines starting with `:` are comments, `data` lines join with LF, `event` names
-the type, an `id` containing NUL is ignored, and a blank line dispatches an event. The body is decoded as UTF-8 without
-a leading byte order mark, whatever charset it declares, and invalid UTF-8 decodes to replacement characters. An event
+including a CRLF split between reads, lines starting with `:` are comments, `data` lines join with LF, `event` names the
+type, an `id` containing NUL is ignored, and a blank line dispatches an event. The body is decoded as UTF-8 without a
+leading byte order mark, whatever charset it declares, and invalid UTF-8 decodes to replacement characters. An event
 without data is not delivered, though its `id` and `retry` still count; a `retry` that is negative or of more than 18
 digits is ignored. An event over HTTPX2's event size limit, 1 MiB, raises `ProtocolDataError` with the reason
 `too_large` and HTTPX2's `SSEError` as its `cause`. Each event's data is JSON converted to its schema's type through its
-converter; data that is not JSON, or that the type refuses, raises `DecodeError` with the `location`
-`("event", sequence)`, or `("event", sequence, pointer)` where a member is at fault, and at most 64 KiB of the data as
-`body_bytes`.
+converter, except in an [item stream helper](#item-stream-helpers), which converts the event's parsed fields; data that
+is not JSON, or that the type refuses, raises `DecodeError` with the `location` `("event", sequence)`, or `("event",
+sequence, pointer)` where a member is at fault, and at most 64 KiB of the data as `body_bytes`.
 
 An event schema mapping is chosen by the event's SSE type with `discriminator: {from: event_type}`, or by the string a
 body pointer reads from the JSON data with `{from: body, pointer}`; a missing, null, or non-string body discriminator,
@@ -1475,6 +1477,48 @@ The helper's `media` must be `application/x-ndjson`, `application/ndjson`, `appl
 `application/jsonlines`, or `application/x-jsonlines`, compared without case and with any parameters allowed, and a
 success response of its operation must declare that media type, which the helper then requests as declared. The schema
 and resumption checks are those of SSE helpers, and an NDJSON cursor is always a body pointer.
+
+## Item stream helpers
+
+OpenAPI 3.2 describes a streamed response with the media type's `itemSchema`, which applies to each item of the stream
+on its own. For each selected operation, the first success response media that has an `itemSchema` and is
+`text/event-stream` or a JSON Lines or NDJSON type (`application/jsonl`, `application/jsonlines`, `application/ndjson`,
+`application/x-jsonl`, `application/x-jsonlines`, `application/x-ndjson`) gives an SSE or NDJSON helper with no helper
+file. It is named after the operation's method: `client.default.watch_events(...)` streams as
+`client.protocols.default.watch_events.open(...)`, which takes the operation's parameters, `stream_options`, and
+`options`, and returns the same `EventStream[T]`, or with one `await` an `AsyncEventStream[T]`, as a declared helper:
+
+```python
+from app.client import Client
+
+with Client() as client, client.protocols.default.watch_events.open(topic="a") as stream:
+    for event in stream:
+        print(event.sequence, event.data)
+```
+
+`T` is the type the models give the `itemSchema`. The helper ends at the end of the body (`completion: eof`), keeps no
+unknown or error events, and declares no resumption; its limits, sessions, and errors are those of every stream helper:
+an item its type refuses raises `DecodeError` with the `location` `("event", sequence)`, and a connection that breaks
+while the body is read raises `StreamInterruptedError`.
+
+- An event stream's item is the event after the event-stream interpretation parses it, as OpenAPI 3.2 §4.14.4
+  specifies: the JSON object of its `data`, `event`, `id`, and `retry` fields, which the item's type converts. `data`
+  stays a string, whatever it holds: a schema describes JSON inside it with `contentMediaType` and `contentSchema`,
+  which the client does not decode. `event` is the event's type, `message` when it names none; `id` is the last event
+  ID the stream set, left out when it set none or an empty one; `retry` is the event's own valid `retry`, left out
+  otherwise.
+- A JSON Lines or NDJSON stream's item is each line's JSON value. A JSON Lines body may end without a final line feed;
+  an NDJSON body may not, as NDJSON requires one after every record, so a cut last line raises
+  `StreamInterruptedError` with the reason `eof`.
+
+An operation that a helper of the helper file names as an `sse` or `ndjson` helper keeps only the declared helpers: the
+declared one wins, for every media type of that operation. A declared helper whose name contains a derived helper's
+name, or is contained in it, such as `default` beside `default.watch_events`, is refused with `E_NAME_COLLISION`.
+
+The operation's own method still reads the whole body, as the raw text of an event stream (`str`) or the raw bytes of a
+JSON Lines or NDJSON body (`bytes`), since the `itemSchema` types each item, not the body. These are not streamed yet,
+and their methods read them as before: `application/json-seq` and other `+json-seq` media, `multipart/mixed`, a media
+that has both `schema` and `itemSchema` (the models type its `schema`), and request bodies with `itemSchema`.
 
 ## WebSocket helpers
 

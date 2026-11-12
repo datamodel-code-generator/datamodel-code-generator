@@ -749,12 +749,14 @@ refused with a `DecodeError` whose reason is `unencodable`, unless the media it 
 
 ### Responses
 
-A method returns the decoded body. A response is declared under a status from `100` to `599`, a range from `1XX` to
-`5XX`, or `default`; any other key of `responses`, such as an extension `x-note` or an empty key, declares no response.
-A `1XX` response carries no content, so no model reads it. When a response declares several media types with one
-essence, such as `application/json;profile=v1` and `application/json`, a received `Content-Type` selects its own
-declaration, else the one without parameters, as the generated server reads a request body. Each resource also has three
-*response views*, the same methods returning more:
+A method returns the decoded body, except a response media that an OpenAPI 3.2 `itemSchema` streams as server-sent
+events or JSON Lines, which it returns raw, as `str` or `bytes`, and whose items an [item stream
+helper](python-client-helpers.md#item-stream-helpers) yields as they arrive. A response is declared under a status from
+`100` to `599`, a range from `1XX` to `5XX`, or `default`; any other key of `responses`, such as an extension `x-note`
+or an empty key, declares no response. A `1XX` response carries no content, so no model reads it. When a response
+declares several media types with one essence, such as `application/json;profile=v1` and `application/json`, a received
+`Content-Type` selects its own declaration, else the one without parameters, as the generated server reads a request
+body. Each resource also has three *response views*, the same methods returning more:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.howto.responses -->
 <!-- fmt: off -->
