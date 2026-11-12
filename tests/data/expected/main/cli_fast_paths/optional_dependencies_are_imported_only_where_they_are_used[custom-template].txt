@@ -1,0 +1,5 @@
+{
+  "argcomplete": false,
+  "genson": false,
+  "jinja2": true
+}
