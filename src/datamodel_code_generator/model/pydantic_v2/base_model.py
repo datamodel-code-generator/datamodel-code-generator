@@ -788,12 +788,10 @@ class DataModelField(_PydanticBaseDataModelField):
         Pydantic compiles it from 2.14 on, with the default engine unless the config selects ``python-re``; the
         decision is ``pattern_engine``'s, as for a string pattern Pydantic compiles.
         """
+        if not self._constrains_bytes_only():
+            return False
         data, _ = self._get_field_data_and_default_factory()
-        return (
-            isinstance(pattern := data.get("pattern"), str)
-            and self._constrains_bytes_only()
-            and pattern_engine(pattern, row="model") == "python"
-        )
+        return isinstance(pattern := data.get("pattern"), str) and pattern_engine(pattern, row="model") == "python"
 
     @property
     @override

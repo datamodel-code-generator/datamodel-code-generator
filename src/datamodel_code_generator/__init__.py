@@ -2079,12 +2079,12 @@ def _resolve_generation_remote_lock(
     if config.remote_lock_resolved:
         lockfile = getattr(remote_lock, "path", None)
     else:
-        from datamodel_code_generator._lock_plan import remote_lock_plan  # noqa: PLC0415
+        from datamodel_code_generator._lock_plan import active_remote_lock_plan  # noqa: PLC0415
 
-        plan = remote_lock_plan(config, config._pyproject_path, caller_cwd)  # noqa: SLF001
-        lockfile = plan.canonical_path if plan.active else None
+        plan = active_remote_lock_plan(config, config._pyproject_path, caller_cwd)  # noqa: SLF001
+        lockfile = None if plan is None else plan.canonical_path
     _refuse_written_path_conflicts(input_, config.output, config.emit_model_metadata, lockfile, caller_cwd)
-    if plan is not None and plan.active:
+    if plan is not None:
         config = config.model_copy()
         from datamodel_code_generator.remote_lock import RemoteReferenceLock  # noqa: PLC0415
 
