@@ -791,10 +791,10 @@ def schema_may_accept_container(
     if obj.is_boolean_schema_false:
         return False
     if obj.ref:
-        node = _schema_refs.key_node(parser, _schema_refs.ref_path(parser, obj.ref))
+        target, node = _schema_refs.ref_target_for_shape(parser, obj.ref)
         accepts = node in visited_refs or schema_may_accept_container(
             parser,
-            parser._load_ref_schema_object(obj.ref),  # noqa: SLF001
+            target,
             container_type,
             visited_refs | {node},
         )

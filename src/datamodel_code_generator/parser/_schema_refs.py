@@ -140,6 +140,7 @@ __all__ = [
     "ref_path",
     "ref_site_reference",
     "ref_target_dump",
+    "ref_target_for_shape",
     "resolve_dynamic_ref",
     "resolve_recursive_ref",
     "resolve_ref_callback",
@@ -543,6 +544,19 @@ def load_ref_schema_object(parser: SchemaRefsHost, ref: str) -> JsonSchemaObject
     """Load a JsonSchemaObject from a $ref using standard resolve/load pipeline."""
     resolved_ref = ref_path(parser, ref)
     return shared_schema_object(parser, parser._get_ref_raw_schema(resolved_ref), [resolved_ref])  # noqa: SLF001
+
+
+def ref_target_for_shape(parser: SchemaRefsHost, ref: str) -> tuple[JsonSchemaObject, _TargetNode]:
+    """Return the schema object a ``$ref`` names for a shape question, with the node to mark visited.
+
+    The document ``--external-ref-mapping`` maps is not read: a mapped reference types by its import and its
+    document need not exist, so it reads as an object without properties (``UNREAD_MAPPED_SCHEMA``) and its node
+    is the reference key. Without the mapping this is ``key_node`` and ``load_ref_schema_object`` as before.
+    """
+    resolved_ref = ref_path(parser, ref)
+    if parser._resolve_external_ref_mapping(ref) is not None:  # noqa: SLF001
+        return shared_schema_object(parser, dict(UNREAD_MAPPED_SCHEMA), [resolved_ref]), resolved_ref
+    return load_ref_schema_object(parser, ref), key_node(parser, resolved_ref)
 
 
 def key_node(parser: SchemaRefsHost, resolved_ref: str) -> _TargetNode:

@@ -240,10 +240,15 @@ def contains_false_schema(parser: LightweightTypesHost, items: Iterable[JsonSche
 def unvisited_ref_target(
     parser: LightweightTypesHost, ref: str, visited_refs: frozenset[_TargetNode]
 ) -> tuple[JsonSchemaObject, frozenset[_TargetNode]] | None:
-    """Return the schema ``ref`` names with ``visited_refs`` and its node, or None when its node was visited."""
-    if (node := _schema_refs.key_node(parser, _schema_refs.ref_path(parser, ref))) in visited_refs:
+    """Return the schema ``ref`` names with ``visited_refs`` and its node, or None when its node was visited.
+
+    The document ``--external-ref-mapping`` maps is not read: the mapped schema reads as an object without
+    properties, and its node is the reference key.
+    """
+    target, node = _schema_refs.ref_target_for_shape(parser, ref)
+    if node in visited_refs:
         return None
-    return parser._load_ref_schema_object(ref), visited_refs | {node}  # noqa: SLF001
+    return target, visited_refs | {node}
 
 
 def is_list_with_any_item_type(parser: LightweightTypesHost, data_type: DataType | None) -> bool:  # noqa: ARG001
