@@ -479,6 +479,290 @@ Payload = models["Payload"]
 
 To check documents against the schema as closely as possible, see [Matching the Schema Closely](#matching-the-schema-closely).
 
+## LLM Tool and MCP Schemas
+
+The `inputSchema` and `outputSchema` of an MCP tool, and the `parameters` of a function-calling tool, are JSON Schema
+documents. Turn each into a model once, validate what the language model sends, and read the typed result. dcg handles
+what hand-written converters often lose: `$defs` and `$ref`, a `description` beside a `$ref`, nested inline objects,
+enums and tuples. These schemas come from servers you do not control, so pass `untrusted_input=True`. See
+[Schemas That Arrive at Runtime](#schemas-that-arrive-at-runtime).
+
+### Validating the Arguments of a Tool Call
+
+```python
+from pydantic import ValidationError
+
+from datamodel_code_generator import GenerateConfig, generate_dynamic_module
+
+input_schema = {
+    "type": "object",
+    "properties": {
+        "title": {"type": "string", "description": "Short summary", "minLength": 1, "maxLength": 80},
+        "priority": {"$ref": "#/$defs/Priority", "description": "How urgent the ticket is"},
+        "assignee": {"type": ["string", "null"], "description": "User to assign"},
+        "labels": {"type": "array", "items": {"type": "string"}, "default": []},
+        "reporter-id": {"type": "integer", "minimum": 1},
+        "contact": {"$ref": "#/$defs/Contact"},
+    },
+    "required": ["title", "priority"],
+    "additionalProperties": False,
+    "$defs": {
+        "Priority": {"type": "string", "enum": ["low", "high"]},
+        "Contact": {"type": "object", "properties": {"email": {"type": "string"}}, "required": ["email"]},
+    },
+}
+
+config = GenerateConfig(class_name="CreateTicketInput", untrusted_input=True)
+module = generate_dynamic_module(input_schema, config=config)
+CreateTicketInput = module.root_class
+
+raw_arguments = '{"title": "Login fails", "priority": "high", "reporter-id": 7}'
+call = CreateTicketInput.model_validate_json(raw_arguments)
+assert call.priority.value == "high"
+assert call.assignee is None
+assert call.reporter_id == 7
+assert call.model_dump(mode="json", by_alias=True, exclude_none=True) == {
+    "title": "Login fails",
+    "priority": "high",
+    "labels": [],
+    "reporter-id": 7,
+}
+
+for arguments, location, kind in [
+    ({"title": "", "priority": "high"}, ("title",), "string_too_short"),
+    ({"title": "x", "priority": "urgent"}, ("priority",), "enum"),
+    ({"title": "x", "priority": "low", "contact": {}}, ("contact", "email"), "missing"),
+    ({"title": "x", "priority": "low", "colour": "red"}, ("colour",), "extra_forbidden"),
+]:
+    try:
+        CreateTicketInput.model_validate(arguments)
+    except ValidationError as error:
+        assert [(e["loc"], e["type"]) for e in error.errors()] == [(location, kind)]
+    else:
+        raise AssertionError(arguments)
+```
+
+Use `module.root_class` for the class of the schema itself: it is the right class whatever the schema's `title` is.
+`class_name` names it; without `class_name`, the `title` does, and without both, it is `Model`.
+
+The errors name the property and the rule, so you can send them back to the language model as the result of a failed
+tool call. Without `"additionalProperties": False` in the schema, a property the schema does not list is ignored.
+`extra_fields="forbid"` in the config rejects it for schemas that do not say so.
+
+An optional property is nullable in the model, as the next sections show: `assignee` above is `None` when left out,
+and so is `contact`.
+
+### Class Names Follow the Schema
+
+The root class is named by `class_name`, else by the `title`. A `$defs` key, a property that holds an inline object or
+an enum, and a `title` give the other classes. The names reach the language model when you send
+`model_json_schema()` back, because `$defs` there is keyed by class name:
+
+```python
+from datamodel_code_generator import GenerateConfig, generate_dynamic_module
+
+schema = {
+    "title": "Create Ticket",
+    "type": "object",
+    "properties": {
+        "priority": {"$ref": "#/$defs/priority-level"},
+        "contact": {"type": "object", "title": "Contact Info", "properties": {"email": {"type": "string"}}},
+        "kind": {"type": "string", "enum": ["bug", "task"]},
+    },
+    "$defs": {"priority-level": {"type": "string", "enum": ["low", "high"]}},
+}
+
+module = generate_dynamic_module(schema, config=GenerateConfig(untrusted_input=True))
+assert sorted(module.models) == ["Contact", "CreateTicket", "Kind", "PriorityLevel"]
+assert sorted(module.root_class.model_json_schema()["$defs"]) == ["Contact", "Kind", "PriorityLevel"]
+
+config = GenerateConfig(untrusted_input=True, use_title_as_name=True)
+module = generate_dynamic_module(schema, config=config)
+assert sorted(module.models) == ["ContactInfo", "CreateTicket", "Kind", "PriorityLevel"]
+```
+
+- A `$defs` key that is not an identifier is made into one: `priority-level` becomes `PriorityLevel`.
+- The `title` of an inline object is not used by default, so the object is named after its property (`Contact`).
+  `use_title_as_name=True` uses it (`ContactInfo`).
+- A `title` on a `$defs` entry is not used as a name by default either: the key is.
+
+`custom_class_name_generator` takes a function of the name dcg derived from the schema, the `title`, `$defs` key or
+property name as written (`Create Ticket`, `priority-level`, `contact`), and returns the class name, which must be a
+valid identifier:
+
+```python
+import re
+
+from datamodel_code_generator import GenerateConfig, generate_dynamic_module
+
+schema = {
+    "title": "Create Ticket",
+    "type": "object",
+    "properties": {"priority": {"$ref": "#/$defs/priority-level"}},
+    "$defs": {"priority-level": {"type": "string", "enum": ["low", "high"]}},
+}
+
+
+def tool_name(name: str) -> str:
+    return "Tool" + "".join(part[:1].upper() + part[1:] for part in re.split(r"[^0-9A-Za-z]+", name))
+
+
+config = GenerateConfig(untrusted_input=True, custom_class_name_generator=tool_name)
+module = generate_dynamic_module(schema, config=config)
+assert sorted(module.models) == ["ToolCreateTicket", "ToolPriorityLevel"]
+assert module.root_class.__name__ == "ToolCreateTicket"
+```
+
+A config with `custom_class_name_generator` can register a module only under a `module_name` you give. See [Picklable Models](#picklable-models-registered-modules).
+
+### Property Names That Are Not Identifiers
+
+A property such as `reporter-id` or `class` becomes a field with a valid name, `reporter_id` or `class_`, and keeps
+the schema's name as its alias. The alias is the wire name, which the language model uses:
+
+```python
+from datamodel_code_generator import GenerateConfig, generate_dynamic_models
+
+schema = {"type": "object", "properties": {"reporter-id": {"type": "integer"}, "class": {"type": "string"}}}
+
+Plain = generate_dynamic_models(schema, config=GenerateConfig(class_name="Args", untrusted_input=True))["Args"]
+assert {name: field.alias for name, field in Plain.model_fields.items()} == {
+    "reporter_id": "reporter-id",
+    "class_": "class",
+}
+
+arguments = Plain.model_validate({"reporter-id": 7, "class": "bug"})
+assert arguments.reporter_id == 7 and arguments.class_ == "bug"
+assert arguments.model_dump(by_alias=True) == {"reporter-id": 7, "class": "bug"}
+assert arguments.model_dump() == {"reporter_id": 7, "class_": "bug"}
+
+# The field name is not accepted: the property is left out, not rejected.
+assert Plain.model_validate({"reporter_id": 7}).reporter_id is None
+```
+
+Validate with the wire name and dump with `by_alias=True` for what you send back or onward to a tool. `model_json_schema()`
+lists the wire names. To accept the field name too, set `allow_population_by_field_name=True`, which sets Pydantic's
+`populate_by_name`:
+
+```python
+from datamodel_code_generator import GenerateConfig, generate_dynamic_models
+
+schema = {"type": "object", "properties": {"reporter-id": {"type": "integer"}}}
+config = GenerateConfig(class_name="Args", untrusted_input=True, allow_population_by_field_name=True)
+Both = generate_dynamic_models(schema, config=config)["Args"]
+assert Both.model_validate({"reporter-id": 7}).reporter_id == 7
+assert Both.model_validate({"reporter_id": 7}).reporter_id == 7
+```
+
+Without the option, a model neither rejects nor reports the field name of a schema that does not forbid extra
+properties, so a language model that sends `reporter_id` loses the value silently. Use `extra_fields="forbid"` or
+`allow_population_by_field_name=True` according to which you want.
+
+### What `model_json_schema()` Gives Back
+
+Sending the schema of the model to a language model, or comparing it with the original, does not give the original
+back. These results are measured for the models of this page, with `untrusted_input=True` and no other option, with
+Pydantic 2.14. Do not rely on a round trip in general: keep the original schema where the
+exact document matters.
+
+| Schema | `model_json_schema()` |
+|--------|-----------------------|
+| `description` and `title` of a property | Kept |
+| `description` (and `title`) beside a `$ref` | Kept on the property, beside the `$ref` |
+| `enum`, `const`, and `type` lists with `"null"` | Kept. An enum is a `$defs` entry named after its property |
+| `minLength`, `maxLength`, `pattern`, `minimum`, `maximum`, `multipleOf`, `exclusiveMinimum`, `exclusiveMaximum`, `minItems`, `maxItems` | Kept. An exclusive bound `0` reads `0.0` |
+| `format`, `examples`, `deprecated` | Kept. `format: uri` also gains `minLength: 1` |
+| `default` of an optional property | Kept |
+| `required` | Kept. A required property with a `default` loses the `default` |
+| `additionalProperties` (`true`, `false`, a schema) | Kept; absent stays absent |
+| `$defs` names | Class names: `Foo-Bar` is `FooBar`. A title on a `$defs` entry is not kept |
+| Inline objects and enums | Moved into `$defs`, named after the property |
+| Optional property that is not nullable | Gains `anyOf` with `{"type": "null"}` and `default: null` |
+| `description` of the document, of a `$defs` entry or of an enum | Dropped, unless `use_schema_description=True` |
+| `title` of the document | The class name |
+| `uniqueItems` | Not kept, unless `use_unique_items_as_set=True` (a `set`, which writes `uniqueItems: true`) |
+| `readOnly` and other keywords Pydantic has no field for | Not kept, unless `field_include_all_keys=True` (kept in `json_schema_extra`) |
+| `nullable` | Not kept: it is an OpenAPI keyword; in JSON Schema use `"type": ["string", "null"]` |
+| `prefixItems`, and `items` as a list (draft-07 tuples) | Not kept: a list, with a warning. An open `prefixItems` reads `items: {}`; a closed one and a draft-07 tuple read `items: {"anyOf": [...]}`. With `use_tuple_for_closed_arrays=True`, an array that no other item can follow and whose length bounds fix its length (for example `items: false` with `minItems`) is a `tuple` and keeps `prefixItems` |
+
+```python
+from datamodel_code_generator import GenerateConfig, generate_dynamic_module
+
+schema = {
+    "type": "object",
+    "description": "Create a ticket",
+    "properties": {
+        "title": {"type": "string", "description": "Short summary", "maxLength": 80},
+        "priority": {"$ref": "#/$defs/Priority", "description": "How urgent the ticket is"},
+        "note": {"type": "string"},
+    },
+    "required": ["title", "priority"],
+    "additionalProperties": False,
+    "$defs": {"Priority": {"type": "string", "enum": ["low", "high"], "description": "Urgency"}},
+}
+
+kept = generate_dynamic_module(schema, config=GenerateConfig(class_name="Tool", untrusted_input=True))
+result = kept.root_class.model_json_schema()
+assert result["properties"]["title"] == {
+    "description": "Short summary",
+    "maxLength": 80,
+    "title": "Title",
+    "type": "string",
+}
+assert result["properties"]["priority"] == {"$ref": "#/$defs/Priority", "description": "How urgent the ticket is"}
+assert result["$defs"]["Priority"]["enum"] == ["low", "high"]
+assert result["additionalProperties"] is False and result["required"] == ["title", "priority"]
+assert result["properties"]["note"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
+assert "description" not in result and "description" not in result["$defs"]["Priority"]
+
+config = GenerateConfig(class_name="Tool", untrusted_input=True, use_schema_description=True)
+described = generate_dynamic_module(schema, config=config).root_class.model_json_schema()
+assert described["description"] == "Create a ticket"
+assert described["$defs"]["Priority"]["description"] == "Urgency"
+```
+
+### Tool Outputs That Are Not Objects
+
+An `outputSchema` can describe an array or a scalar. `generate_dynamic_module()` gives the class of the document as
+`root_class`, a `RootModel` for an array or a scalar, so validate with it and read `.root`:
+
+```python
+from pydantic import ValidationError
+
+from datamodel_code_generator import GenerateConfig, generate_dynamic_module
+
+output_schema = {
+    "type": "array",
+    "items": {"$ref": "#/$defs/Hit"},
+    "$defs": {"Hit": {"type": "object", "properties": {"id": {"type": "integer"}}, "required": ["id"]}},
+}
+config = GenerateConfig(class_name="SearchOutput", untrusted_input=True)
+module = generate_dynamic_module(output_schema, config=config)
+assert sorted(module.models) == ["Hit", "SearchOutput"]
+
+result = module.root_class.model_validate([{"id": 1}, {"id": 2}])
+assert [hit.id for hit in result.root] == [1, 2]
+assert result.model_dump() == [{"id": 1}, {"id": 2}]
+
+try:
+    module.root_class.model_validate([{"name": "no id"}])
+except ValidationError as error:
+    assert error.errors()[0]["loc"] == (0, "id")
+
+text = generate_dynamic_module({"type": "string", "maxLength": 10}, config=config).root_class
+assert text.model_validate("short").root == "short"
+```
+
+A string schema with `enum` gives an `Enum` class, not a `RootModel`: call it, `root_class("a")`, instead of
+`model_validate`. `generate_dynamic_models()` returns the same classes by name.
+
+### Speed
+
+Dynamic generation does not format the code unless you select formatters, and a schema that arrives again is served
+from the cache. Keep `cache_size` above `0` (the default is `128`), so a tool list that you convert on every request
+generates its models once. On one machine, a first call (`cache_size=0`) for the tool schema of the first example took
+8.2 ms (median of 15 runs on a loaded machine; your numbers differ), against 19 ms with Black and isort selected.
+
 ## Formatting
 
 Dynamic generation does not format the code when the config selects no formatter: `generate_dynamic_models()` and
