@@ -457,7 +457,8 @@ A schema that comes from a user, the network or a database is input you do not c
 - Pass `untrusted_input=True`, so the schema cannot make dcg read files or fetch URLs, or make the generated module
   import other modules. See [Untrusted Input](#untrusted-input). The default is unchanged: without it, dcg reads
   file and URL `$ref`s and honors `x-python-type`, `customTypePath` and `x-python-import`.
-- Pass `formatters=[]`, because nobody reads the code. See [Formatting](#formatting).
+- Leave `formatters` unset: nobody reads the code, so dynamic generation does not format it unless you ask. See
+  [Formatting](#formatting).
 - Keep `cache_size` above `0`, so a schema that arrives again is not generated again. See [Caching](#caching).
 - Catch `datamodel_code_generator.Error`, which a refused or invalid schema raises. A schema nested thousands of levels
   deep can raise `RecursionError` instead, so catch it too where any client can send a schema.
@@ -465,7 +466,7 @@ A schema that comes from a user, the network or a database is input you do not c
 ```python
 from datamodel_code_generator import Error, GenerateConfig, generate_dynamic_models
 
-config = GenerateConfig(class_name="Payload", untrusted_input=True, formatters=[])
+config = GenerateConfig(class_name="Payload", untrusted_input=True)
 
 try:
     models = generate_dynamic_models({"$ref": "other.json#/$defs/X"}, config=config)
@@ -480,24 +481,30 @@ To check documents against the schema as closely as possible, see [Matching the 
 
 ## Formatting
 
-Dynamic generation formats the code with the formatters of the config, as `generate()` does: Black and isort unless
-`formatters`, `custom_formatters` or a preset selects others. Formatting takes about half to two thirds of the time of
-a call: on one machine, a call took 8 ms with the default formatters and 3 ms without for a schema of 5 properties, and
-45 ms and 20 ms for a schema of 32 properties with `$defs` and `oneOf` (medians of 15 interleaved runs, `cache_size=0`;
-your numbers differ). Nobody reads the code, so you can pass `formatters=[]`:
+Dynamic generation does not format the code when the config selects no formatter: `generate_dynamic_models()` and
+`generate_dynamic_module()` execute the code and never show it, and formatting takes between half and three quarters of
+the time of a call. On one machine, a call took 8.1 ms with Black and isort and 2.2 ms without for a schema of 5
+properties, and 29 ms and 12 ms for a schema of 32 properties with `$defs` and `oneOf` (medians of 45 interleaved
+runs, `cache_size=0`; your numbers differ).
+Black and isort are not imported and the "Default formatters will change to builtin" `FutureWarning` is not shown.
+
+The config selects formatters when `formatters` or `custom_formatters` is set, or when its `preset` sets them (presets
+dated 20260909 or later select `builtin`). Then the code is formatted as `generate()` formats it:
 
 ```python
-from datamodel_code_generator import GenerateConfig, generate_dynamic_models
+from datamodel_code_generator import Formatter, GenerateConfig, generate_dynamic_models
 
-models = generate_dynamic_models(schema, config=GenerateConfig(formatters=[]))
+models = generate_dynamic_models(schema, config=GenerateConfig(formatters=[Formatter.BUILTIN]))
 ```
 
-Then Black and isort are not imported, and the "Default formatters will change to builtin" `FutureWarning` is not
-shown. The classes are the same but for one thing: formatters strip the spaces and tabs at the ends of the lines of a
-class docstring, and without a formatter they stay. Class docstrings come from schema descriptions under
-`use_schema_description`, so a description whose lines end with spaces or tabs, such as a Markdown hard break (two
-spaces at the end of a line), gives another `__doc__`, and another `description` in `model_json_schema()`, which
-Pydantic takes from the docstring.
+To read the source, call `generate()`, which returns it. `generate()` and the command line are unchanged: they format
+with Black and isort unless told otherwise.
+
+The classes are the same with and without formatting but for one thing: formatters strip the spaces and tabs at the
+ends of the lines of a class docstring, and without a formatter they stay. Class docstrings come from schema
+descriptions under `use_schema_description`, so a description whose lines end with spaces or tabs, such as a Markdown
+hard break (two spaces at the end of a line), gives another `__doc__`, and another `description` in
+`model_json_schema()`, which Pydantic takes from the docstring. Set `formatters` to get the stripped docstring.
 
 ## Untrusted Input
 
@@ -513,7 +520,7 @@ command line, `generate(..., untrusted_input=True)`) to keep such a schema to da
 ```python
 from datamodel_code_generator import GenerateConfig, generate_dynamic_models
 
-models = generate_dynamic_models(schema, config=GenerateConfig(untrusted_input=True, formatters=[]))
+models = generate_dynamic_models(schema, config=GenerateConfig(untrusted_input=True))
 ```
 
 - dcg reads no file or URL but the input: a `$ref` must name a location in the input (a JSON pointer, an anchor, an
