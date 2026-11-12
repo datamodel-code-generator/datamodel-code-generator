@@ -213,6 +213,18 @@ def _nested_array_schema(depth: int) -> dict[str, object]:
     return schema
 
 
+def _nested_extension_schema(depth: int) -> dict[str, object]:
+    """Return a string schema whose extension holds lists of lists, so the document nests ``depth`` levels deep.
+
+    The limit counts every object and array of the document; an extension reaches it without nesting schemas, which
+    Pydantic's own recursion bound refuses at a platform-dependent depth (on Windows below 100 schema levels).
+    """
+    nested: list[object] = []
+    for _ in range(depth - 2):
+        nested = [nested]
+    return {"type": "string", "x-data": nested}
+
+
 def _shared_lists_schema(nodes: int) -> dict[str, object]:
     """Return a schema of ``nodes`` objects and arrays, most of them one list held many times in an extension."""
     empty: list[object] = []
@@ -254,7 +266,8 @@ def test_untrusted_input_size_limits(tmp_path: Path, capsys: pytest.CaptureFixtu
     for name, size in (("at_limit", SIZE_LIMITS[limit]), ("past_limit", SIZE_LIMITS[limit] + 1)):
         input_path = tmp_path / f"{name}.yaml"
         input_path.write_text(
-            json.dumps(_nested_array_schema(size)) if limit == "depth" else _shared_lists_yaml(size), encoding="utf-8"
+            json.dumps(_nested_extension_schema(size)) if limit == "depth" else _shared_lists_yaml(size),
+            encoding="utf-8",
         )
         run_main_and_assert(
             input_path=input_path,
@@ -272,7 +285,7 @@ def test_untrusted_input_dynamic_size_limits(limit: str) -> None:
 
     Hashing the schema for the cache would overflow the stack on a schema nested thousands of levels deep.
     """
-    schema = _nested_array_schema if limit == "depth" else _shared_lists_schema
+    schema = _nested_extension_schema if limit == "depth" else _shared_lists_schema
     config = GenerateConfig(formatters=[], untrusted_input=True)
     models = generate_dynamic_models(schema(SIZE_LIMITS[limit]), config=config, cache_size=0)
     assert_output("".join(f"{name}\n" for name in sorted(models)), name="models")
