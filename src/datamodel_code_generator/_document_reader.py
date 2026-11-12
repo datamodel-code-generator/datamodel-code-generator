@@ -6,8 +6,9 @@ must give each response once as text; otherwise it is a schema error. Each reade
 path its error names, which only the reader can locate, as a function called when the error is raised. The walk of
 JSON pointer tokens through a loaded document is here too, with the rows that say how each reader reads one member,
 the fields of an AsyncAPI channel that each hold an operation, the value that wraps an AsyncAPI schema in a format
-(``is_multi_format_schema_object``), the reference a discriminator mapping value names (``discriminator_mapping_ref``)
-and the error a read of nested schemas ends in when it exceeds the Python recursion limit (``nesting_limit``).
+(``is_multi_format_schema_object``), the reference a discriminator mapping value names (``discriminator_mapping_ref``),
+the error a read of nested schemas ends in when it exceeds the Python recursion limit (``nesting_limit``) and the size
+limits of a document under --untrusted-input (``refuse_oversized_document``).
 """
 
 from __future__ import annotations
@@ -31,6 +32,8 @@ if TYPE_CHECKING:
 __all__ = [
     "CHANNEL_OPERATIONS",
     "MISSING",
+    "UNTRUSTED_MAX_DEPTH",
+    "UNTRUSTED_MAX_NODES",
     "ArrayIndexOutOfRangeError",
     "MemberRow",
     "MergedRefSiteRecursionError",
@@ -42,6 +45,7 @@ __all__ = [
     "member",
     "member_key",
     "nesting_limit",
+    "refuse_oversized_document",
     "schema_format_media_type",
     "string_key",
     "string_keyed",
@@ -52,6 +56,10 @@ MISSING: Final = cast("YamlValue", Sentinel("MISSING"))
 CHANNEL_OPERATIONS: Final = ("publish", "subscribe")
 """The fields of an AsyncAPI 2 channel that each hold an operation, in the order generation and the recommender read
 them (the public ``parser.asyncapi.OPERATION_NAMES``)."""
+UNTRUSTED_MAX_DEPTH: Final = 100
+"""The most levels of nested objects and arrays a document may have under --untrusted-input (the root is level 1)."""
+UNTRUSTED_MAX_NODES: Final = 2_000_000
+"""The most objects and arrays a document may hold under --untrusted-input, a YAML alias counted at each use."""
 _T = TypeVar("_T")
 
 MemberRow: TypeAlias = Literal["canonical", "refusing"]
@@ -166,6 +174,40 @@ def nesting_limit() -> Generator[None]:
                 "--use-one-model-per-ref-site parses it without nesting."
             )
         raise Error(msg) from None
+
+
+def refuse_oversized_document(document: dict[Any, Any]) -> None:
+    """Refuse, under --untrusted-input, a document past ``UNTRUSTED_MAX_DEPTH`` levels or ``UNTRUSTED_MAX_NODES`` nodes.
+
+    The nodes are the objects and arrays of the document (dicts, lists and tuples), visited without recursion as
+    often as the document holds them, as its readers visit them: a YAML alias counts at each use, and the walk stops
+    at the node limit, so an alias cycle ends there too. Otherwise it reads the whole document, so the error names how
+    deep it went.
+    """
+    deepest = nodes = 0
+    pending: list[tuple[Any, int]] = [(document, 1)]
+    while pending:
+        node, depth = pending.pop()
+        if (nodes := nodes + 1) > UNTRUSTED_MAX_NODES:
+            msg = (
+                f"The schema holds more than {UNTRUSTED_MAX_NODES:,} objects and arrays (a YAML alias counts at each "
+                f"use) and is refused under --untrusted-input, which reads at most {UNTRUSTED_MAX_NODES:,}. Split the "
+                "schema, or generate without --untrusted-input when the schema is trusted."
+            )
+            raise Error(msg)
+        deepest = max(deepest, depth)
+        pending.extend(
+            (child, depth + 1)
+            for child in (node.values() if isinstance(node, dict) else node)
+            if isinstance(child, (dict, list, tuple))
+        )
+    if deepest > UNTRUSTED_MAX_DEPTH:
+        msg = (
+            f"The schema nests objects and arrays {deepest} levels deep and is refused under --untrusted-input, which "
+            f"reads at most {UNTRUSTED_MAX_DEPTH} levels. Flatten the schema, or generate without --untrusted-input "
+            "when the schema is trusted."
+        )
+        raise Error(msg)
 
 
 def string_key(key: object, kind: str, error_path: Callable[[object], list[str]]) -> str:
