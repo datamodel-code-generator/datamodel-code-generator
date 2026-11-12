@@ -361,7 +361,8 @@ base_options.add_argument(
         "Input file type (default: auto). "
         "Use 'jsonschema', 'openapi', 'asyncapi', 'graphql', 'mcp-tools', 'xmlschema', 'protobuf', or 'avro' "
         "for schema definitions. "
-        "Use 'json', 'yaml', or 'csv' for raw sample data to infer a schema automatically."
+        "Use 'json', 'yaml', or 'csv' for raw sample data to infer a schema automatically; "
+        "Genson infers it and will become optional: declare the genson extra."
     ),
     choices=_values(InputFileType),
 )
@@ -1559,7 +1560,8 @@ template_options.add_argument(
 )
 template_options.add_argument(
     "--custom-template-dir",
-    help="Custom template directory",
+    help="Custom template directory. Jinja2 renders custom templates and will become optional: "
+    "declare the jinja2 extra.",
     type=str,
 )
 template_options.add_argument(

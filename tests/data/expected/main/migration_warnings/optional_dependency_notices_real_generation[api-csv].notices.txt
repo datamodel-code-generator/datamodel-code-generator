@@ -1,0 +1,1 @@
+Genson will become optional. Declare the genson extra for JSON, YAML, CSV and dict input; see --help.

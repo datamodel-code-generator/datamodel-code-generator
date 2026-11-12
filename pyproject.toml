@@ -43,15 +43,21 @@ dependencies = [
   "typing-extensions>=4.16,<5",
 ]
 optional-dependencies.all = [
+  "datamodel-code-generator[argcomplete]",
   "datamodel-code-generator[black]",
   "datamodel-code-generator[debug]",
+  "datamodel-code-generator[genson]",
   "datamodel-code-generator[graphql]",
   "datamodel-code-generator[http]",
   "datamodel-code-generator[isort]",
+  "datamodel-code-generator[jinja2]",
   "datamodel-code-generator[protobuf]",
   "datamodel-code-generator[ruff]",
   "datamodel-code-generator[validation]",
   "datamodel-code-generator[watch]",
+]
+optional-dependencies.argcomplete = [
+  "argcomplete>=2.10.1,<4",
 ]
 optional-dependencies.black = [
   "black>=19.10b0; python_version<'3.15' and sys_platform!='emscripten'",
@@ -59,6 +65,9 @@ optional-dependencies.black = [
 ]
 optional-dependencies.debug = [
   "pysnooper>=0.4.1,<2",
+]
+optional-dependencies.genson = [
+  "genson>=1.2.1,<2",
 ]
 optional-dependencies.graphql = [
   "graphql-core>=3.2.3",
@@ -71,6 +80,9 @@ optional-dependencies.httpx2 = [
   "httpx2>=2,<3",
 ]
 optional-dependencies.isort = [ "isort>=4.3.21,<9; sys_platform!='emscripten'" ]
+optional-dependencies.jinja2 = [
+  "jinja2>=2.10.1,<4",
+]
 optional-dependencies.protobuf = [
   "grpcio-tools>=1.62,<2",
 ]
@@ -327,6 +339,7 @@ ini_options.filterwarnings = [
   "ignore:^.*Pydantic v2 with --use-annotated is recommended.*:DeprecationWarning",
   "ignore:^.*unclosed file.*",
   "ignore:^Black/isort will become optional.*:FutureWarning",
+  "ignore:^(Jinja2|Genson) will become optional.*:FutureWarning",
   "ignore:^Support for (Black|isort|DCG runtime Pydantic).*will end in a future release.*:FutureWarning",
 ]
 ini_options.verbosity_assertions = 2

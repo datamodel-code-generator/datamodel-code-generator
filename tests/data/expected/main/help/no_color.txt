@@ -108,7 +108,9 @@ Options:
                         'openapi', 'asyncapi', 'graphql', 'mcp-tools',
                         'xmlschema', 'protobuf', or 'avro' for schema
                         definitions. Use 'json', 'yaml', or 'csv' for raw
-                        sample data to infer a schema automatically.
+                        sample data to infer a schema automatically; Genson
+                        infers it and will become optional: declare the genson
+                        extra.
   --input-model MODULE_OR_PATH:NAME
                         Python import path or file path to a Pydantic v2 model
                         or schema dict (e.g., 'mypackage.module:ClassName',
@@ -1216,7 +1218,9 @@ Template customization:
                         Custom formatter kwargs as inline JSON or a JSON file
                         path.
   --custom-template-dir CUSTOM_TEMPLATE_DIR
-                        Custom template directory
+                        Custom template directory. Jinja2 renders custom
+                        templates and will become optional: declare the jinja2
+                        extra.
   --default-values DEFAULT_VALUES
                         Default value overrides as inline JSON or a JSON file
                         path. Supports hierarchical formats: Flat: {'field':

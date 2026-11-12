@@ -15,7 +15,7 @@ Input sources, output paths, and schema version handling.
 
 - `--http-backend`: Select the HTTP client backend. 'auto' (default) selects stable HTTPX when its client module is installed and only selects experimental HTTPX2 when that module is absent. 'httpx' and 'httpx2' require that exact backend. Explicit selections and paired dependency errors do not fall back. Choices: `auto`, `httpx`, `httpx2`.
 - `--input`: Input file/directory (default: stdin)
-- `--input-file-type`: Input file type (default: auto). Use 'jsonschema', 'openapi', 'asyncapi', 'graphql', 'mcp-tools', 'xmlschema', 'protobuf', or 'avro' for schema definitions. Use 'json', 'yaml', or 'csv' for raw sample data to infer a schema automatically. Choices: `auto`, `openapi`, `asyncapi`, `jsonschema`, `mcp-tools`, `xmlschema`, `protobuf`, `avro`, `json`, `yaml`, `dict`, `csv`, `graphql`.
+- `--input-file-type`: Input file type (default: auto). Use 'jsonschema', 'openapi', 'asyncapi', 'graphql', 'mcp-tools', 'xmlschema', 'protobuf', or 'avro' for schema definitions. Use 'json', 'yaml', or 'csv' for raw sample data to infer a schema automatically; Genson infers it and will become optional: declare the genson extra. Choices: `auto`, `openapi`, `asyncapi`, `jsonschema`, `mcp-tools`, `xmlschema`, `protobuf`, `avro`, `json`, `yaml`, `dict`, `csv`, `graphql`.
 - `--external-ref-mapping`: Map external $ref file paths to Python import packages instead of generating duplicate classes. Accepts one or more mappings after a single flag. Format: "path/to/schema.yaml=mypackage.models". When a $ref points to a mapped file, an import statement is generated instead of a class definition.
 - `--output`: Output file (default: stdout)
 - `--emit-model-metadata`: Write a separate JSON map from generated models and fields to the JSON Pointer locations of their source schemas; module and class name identify a model.
@@ -319,7 +319,7 @@ Formatting, custom templates, and generated file headers.
 - `--custom-file-header`: Custom file header
 - `--custom-file-header-path`: Custom file header file path
 - `--custom-file-header-mode`: How to combine a custom file header with the generated header (default: replace) Choices: `replace`, `prepend`.
-- `--custom-template-dir`: Custom template directory
+- `--custom-template-dir`: Custom template directory. Jinja2 renders custom templates and will become optional: declare the jinja2 extra.
 - `--extra-template-data`: Extra template data for output models as inline JSON or a JSON file path. For OpenAPI and Jsonschema the keys are the spec path of the object, or the name of the object if you want to apply the template data to multiple objects with the same name. If you are using another input file type (e.g. GraphQL), the key is the name of the object. The value is a dictionary of the template data to add.
 - `--validators`: Validators configuration as inline JSON or a JSON file path. Defines field validators for Pydantic v2 models. Keys are model names, values contain validator definitions with field, function, and mode.
 - `--generate-schema-validators`: Generate Pydantic v2 model validators for JSON Schema rules that cannot be represented as type hints (experimental).

@@ -36,6 +36,9 @@ DeprecationId = Literal[
     "config.yaml-non-lowercase-bool",
     "config.json-config-strict-validation",
     "dependency.external-formatters-optional",
+    "dependency.jinja2-optional",
+    "dependency.genson-optional",
+    "dependency.argcomplete-optional",
     "dependency.black-minimum",
     "dependency.isort-minimum",
     "dependency.pydantic-runtime-minimum",
@@ -161,6 +164,49 @@ DEPRECATIONS: dict[DeprecationId, Deprecation] = {
         warning_category="FutureWarning",
         note="This is advance notice only. Current dependency ranges and compatibility remain unchanged.",
     ),
+    "dependency.jinja2-optional": Deprecation(
+        id="dependency.jinja2-optional",
+        kind="dependency",
+        target="Jinja2 installation",
+        message="Jinja2 will become optional. Declare the jinja2 extra for --custom-template-dir; see --help.",
+        warning_since="0.95.0",
+        removal_version=None,
+        replacement="Declare the jinja2 extra if you use custom templates.",
+        warning_category="FutureWarning",
+        note="This is advance notice only. Current dependency ranges and compatibility remain unchanged.",
+    ),
+    "dependency.genson-optional": Deprecation(
+        id="dependency.genson-optional",
+        kind="dependency",
+        target="Genson installation",
+        message=(
+            "Genson will become optional. Declare the genson extra for JSON, YAML, CSV and dict input; see --help."
+        ),
+        warning_since="0.95.0",
+        removal_version=None,
+        replacement="Declare the genson extra if you generate from JSON, YAML, CSV or dict data.",
+        warning_category="FutureWarning",
+        note="This is advance notice only. Current dependency ranges and compatibility remain unchanged.",
+    ),
+    "dependency.argcomplete-optional": Deprecation(
+        id="dependency.argcomplete-optional",
+        kind="dependency",
+        target="argcomplete installation",
+        message=(
+            "argcomplete will become optional. Declare the argcomplete extra for shell completion; "
+            'see "Dependency migration notices" in the documentation.'
+        ),
+        warning_since="0.95.0",
+        removal_version=None,
+        replacement="Declare the argcomplete extra if you use shell completion.",
+        status="scheduled",
+        warning_category="FutureWarning",
+        note=(
+            "This is advance notice only, registered without a runtime warning: a shell discards the error output of "
+            "completion, and a warning turned into an error would break it. "
+            "Current dependency ranges and compatibility remain unchanged."
+        ),
+    ),
     "dependency.black-minimum": Deprecation(
         id="dependency.black-minimum",
         kind="dependency",
@@ -272,6 +318,8 @@ _WARNING_CATEGORIES: dict[str, type[Warning]] = {
 _MIGRATION_WARNINGS = frozenset({
     "format.default-formatters",
     "dependency.external-formatters-optional",
+    "dependency.jinja2-optional",
+    "dependency.genson-optional",
     "dependency.black-minimum",
     "dependency.isort-minimum",
     "dependency.pydantic-runtime-minimum",

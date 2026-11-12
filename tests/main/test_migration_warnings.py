@@ -146,3 +146,63 @@ def test_migration_error_filter_is_not_consumed_by_cli_scope(tmp_path: Path) -> 
                     ),
                 )
     assert_output(str((tmp_path / "output.py").exists()), EXPECTED / "file-error.txt")
+
+
+def _optional_dependency_notices(recorded: list[warnings.WarningMessage]) -> str:
+    return "\n".join(
+        str(item.message) for item in recorded if str(item.message).startswith(("Jinja2", "Genson", "argcomplete"))
+    )
+
+
+@pytest.mark.parametrize("kind", ["schema", "json", "csv", "custom-template"])
+@pytest.mark.parametrize("entry", ["api", "cli"])
+def test_optional_dependency_notices_real_generation(kind: str, entry: str, tmp_path: Path) -> None:
+    """Jinja2 and Genson notices show only when custom templates or data inputs need them."""
+    schema, input_file_type = {
+        "schema": (DATA_PATH / "jsonschema" / "migration_notice.json", "jsonschema"),
+        "json": (DATA_PATH / "json" / "pet.json", "json"),
+        "csv": (DATA_PATH / "csv" / "simple.csv", "csv"),
+        "custom-template": (DATA_PATH / "jsonschema" / "migration_notice.json", "jsonschema"),
+    }[kind]
+    template_dir = DATA_PATH / "templates" if kind == "custom-template" else None
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", FutureWarning)
+        if entry == "api":
+            generate(
+                schema,
+                config=GenerateConfig(
+                    input_file_type=input_file_type,
+                    formatters=["builtin"],
+                    custom_template_dir=template_dir,
+                    output=tmp_path / "output.py",
+                    disable_timestamp=True,
+                ),
+            )
+        else:
+            run_main_with_args(
+                [
+                    *("--input", str(schema), "--input-file-type", input_file_type),
+                    *("--output", str(tmp_path / "output.py"), "--disable-timestamp", "--formatters", "builtin"),
+                    *(("--custom-template-dir", str(template_dir)) if template_dir else ()),
+                ],
+                use_builtin_default_formatter=False,
+            )
+    assert_output(_optional_dependency_notices(recorded), name="notices")
+
+
+def test_optional_dependency_notices_deduplicated_in_one_cli_invocation(tmp_path: Path) -> None:
+    """One CLI invocation reports each optional dependency once even when several jobs need it."""
+    shutil.copyfile(DATA_PATH / "json" / "pet.json", tmp_path / "pet.json")
+    job = (
+        f'input = "pet.json"\ninput-file-type = "json"\nformatters = ["builtin"]\ndisable-timestamp = true\n'
+        f'custom-template-dir = "{(DATA_PATH / "templates").as_posix()}"\n'
+    )
+    (tmp_path / "pyproject.toml").write_text(
+        f'[tool.datamodel-codegen.jobs.first]\n{job}output = "first.py"\n'
+        f'[tool.datamodel-codegen.jobs.second]\n{job}output = "second.py"\n',
+        encoding="utf-8",
+    )
+    with chdir(tmp_path), warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", FutureWarning)
+        run_main_with_args(["--all-jobs"], use_builtin_default_formatter=False)
+    assert_output(_optional_dependency_notices(recorded), name="notices")

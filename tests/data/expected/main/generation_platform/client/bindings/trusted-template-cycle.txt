@@ -1,4 +1,5 @@
 # trusted-template-cycle
 render msgspec.Struct default
+  warning FutureWarning: Jinja2 will become optional. Declare the jinja2 extra for --custom-template-dir; see --help.
   models.py
   model_bindings.py msgspec_Struct/default
