@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Task",
+  "type": "object",
+  "$defs": {
+    "Detail": {"type": "object", "properties": {"id": {"type": "string"}}},
+    "Status": {"enum": ["open", "closed"]}
+  },
+  "properties": {
+    "result": {
+      "allOf": [{"anyOf": [{"$ref": "#/$defs/Detail"}, {"enum": ["pending", "done"]}]}],
+      "required": ["id"]
+    },
+    "progress": {
+      "allOf": [{"anyOf": [{"$ref": "#/$defs/Detail"}, {"$ref": "#/$defs/Status"}]}],
+      "properties": {"note": {"type": "string"}}
+    },
+    "state": {
+      "allOf": [{"$ref": "#/$defs/Status"}, {"properties": {"note": {"type": "string"}}}]
+    }
+  }
+}

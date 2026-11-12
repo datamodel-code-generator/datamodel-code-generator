@@ -1255,8 +1255,6 @@ def replace_unhashable_unique_set_to_list(parser: ModulesHost, models: list[Data
 
 def extract_inherited_enum(models: list[DataModel]) -> None:
     for model in models.copy():
-        if model.fields:
-            continue
         enums: list[Enum] = []
         for base_model in model.base_classes:
             if not base_model.reference:
@@ -1284,7 +1282,11 @@ def extract_inherited_enum(models: list[DataModel]) -> None:
 
 
 def extract_module_inherited_enums(parser: ModulesHost, state: ModuleStateView) -> None:
-    """Merge the enums that empty subclasses inherit, each merged enum taking the store place of its subclass."""
+    """Merge the enums that subclasses inherit, each merged enum taking the store place of its subclass.
+
+    A class with an Enum base is written as the merged enum whether or not it has fields of its own: an enum with
+    members cannot be extended, so such a class fails on import, and object keywords constrain no enum member.
+    """
     models = state.model_list.copy()
     extract_inherited_enum(state.model_list)
     for model, merged_enum in zip(models, state.model_list, strict=True):
