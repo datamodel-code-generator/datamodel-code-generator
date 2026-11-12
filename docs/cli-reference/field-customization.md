@@ -3765,10 +3765,10 @@ Read the keywords that constrain objects only beside an `anyOf` or `oneOf` for i
 `properties`, `patternProperties`, `additionalProperties`, `propertyNames`, `unevaluatedProperties`, `required`,
 `minProperties` and `maxProperties` apply to objects only. Without this option every branch of an `anyOf` or `oneOf`
 is read with those beside it, so a `{"type": "string"}` branch beside `patternProperties` becomes a map, which merges
-with the object branch and leaves the string out: `"icons/star.png"` is rejected. With it a branch whose `type` admits
-no object, or a `$ref` branch naming such a schema, is read without them and keeps its type, while the object
-branches still take them. Under `--generate-schema-validators` such a site is the union of its branches instead of one
-validated object model.
+with the object branch and leaves the string out: `"icons/star.png"` is rejected. With it a branch that admits no
+object, such as a string `type`, a `const`, an `enum`, an `allOf` of such parts or a `$ref` naming such a schema, is
+read without them and keeps its type, while the object branches still take them. Under
+`--generate-schema-validators` such a site is the union of its branches instead of one validated object model.
 
 !!! tip "Usage"
 

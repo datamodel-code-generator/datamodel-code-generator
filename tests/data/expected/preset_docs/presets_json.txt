@@ -27283,7 +27283,7 @@
         "title": "Float consts fixed by bounds"
       },
       {
-        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string.",
+        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself.",
         "options": [
           "--read-object-keywords-by-type"
         ],
@@ -27845,7 +27845,7 @@
         "title": "Float consts fixed by bounds"
       },
       {
-        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string.",
+        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself.",
         "options": [
           "--read-object-keywords-by-type"
         ],
@@ -28407,7 +28407,7 @@
         "title": "Float consts fixed by bounds"
       },
       {
-        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string.",
+        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself.",
         "options": [
           "--read-object-keywords-by-type"
         ],
@@ -28969,7 +28969,7 @@
         "title": "Float consts fixed by bounds"
       },
       {
-        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string.",
+        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself.",
         "options": [
           "--read-object-keywords-by-type"
         ],
@@ -29531,7 +29531,7 @@
         "title": "Float consts fixed by bounds"
       },
       {
-        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string.",
+        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself.",
         "options": [
           "--read-object-keywords-by-type"
         ],
@@ -30093,7 +30093,7 @@
         "title": "Float consts fixed by bounds"
       },
       {
-        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string.",
+        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself.",
         "options": [
           "--read-object-keywords-by-type"
         ],
@@ -30648,7 +30648,7 @@
         "title": "Float consts fixed by bounds"
       },
       {
-        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string.",
+        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself.",
         "options": [
           "--read-object-keywords-by-type"
         ],
@@ -31239,7 +31239,7 @@
         "title": "Float consts fixed by bounds"
       },
       {
-        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string.",
+        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself.",
         "options": [
           "--read-object-keywords-by-type"
         ],
@@ -31830,7 +31830,7 @@
         "title": "Float consts fixed by bounds"
       },
       {
-        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string.",
+        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself.",
         "options": [
           "--read-object-keywords-by-type"
         ],
@@ -32421,7 +32421,7 @@
         "title": "Float consts fixed by bounds"
       },
       {
-        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string.",
+        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself.",
         "options": [
           "--read-object-keywords-by-type"
         ],
@@ -33012,7 +33012,7 @@
         "title": "Float consts fixed by bounds"
       },
       {
-        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string.",
+        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself.",
         "options": [
           "--read-object-keywords-by-type"
         ],
@@ -33603,7 +33603,7 @@
         "title": "Float consts fixed by bounds"
       },
       {
-        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string.",
+        "description": "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself.",
         "options": [
           "--read-object-keywords-by-type"
         ],

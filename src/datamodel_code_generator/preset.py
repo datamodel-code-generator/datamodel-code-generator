@@ -1249,8 +1249,8 @@ _STANDARD_20261112_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         title="Object keywords by type",
         config=PresetConfig(read_object_keywords_by_type=True),
         description=(
-            "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type "
-            "admits objects, so a string branch beside patternProperties stays a string."
+            "Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit "
+            "objects, so a string, const or enum branch beside patternProperties stays itself."
         ),
     ),
 )

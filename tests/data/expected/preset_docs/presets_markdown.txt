@@ -117,7 +117,7 @@ The 20261111 presets keep the 20261106 options and add:
 
 The 20261112 presets keep the 20261111 options and add:
 
-- Object keywords by type (`--read-object-keywords-by-type`): Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string.
+- Object keywords by type (`--read-object-keywords-by-type`): Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself.
 
 ## Override Preset Options
 
@@ -11620,7 +11620,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Incomplete model defaults omitted | `--omit-incomplete-model-defaults` | Write a property whose object default lacks required fields of its model, such as default: {}, without that default, so input that leaves the property out is valid instead of failing on the default. |
 | AsyncAPI message trait headers merged | `--merge-message-trait-headers` | Give an AsyncAPI message the headers of all its traits, merged in order as JSON Merge Patches, inline and referenced traits alike, and then its own headers, which win. |
 | Float consts fixed by bounds | `--use-bounds-for-float-const` | Type a finite float const, which no Literal holds, as a float whose minimum and maximum both equal it, written as the output writes number bounds, so Pydantic and msgspec reject other numbers instead of accepting any float. |
-| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string. |
+| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself. |
 
 ### `standard-py311-20261112`
 
@@ -11815,7 +11815,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Incomplete model defaults omitted | `--omit-incomplete-model-defaults` | Write a property whose object default lacks required fields of its model, such as default: {}, without that default, so input that leaves the property out is valid instead of failing on the default. |
 | AsyncAPI message trait headers merged | `--merge-message-trait-headers` | Give an AsyncAPI message the headers of all its traits, merged in order as JSON Merge Patches, inline and referenced traits alike, and then its own headers, which win. |
 | Float consts fixed by bounds | `--use-bounds-for-float-const` | Type a finite float const, which no Literal holds, as a float whose minimum and maximum both equal it, written as the output writes number bounds, so Pydantic and msgspec reject other numbers instead of accepting any float. |
-| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string. |
+| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself. |
 
 ### `standard-py312-20261112`
 
@@ -12010,7 +12010,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Incomplete model defaults omitted | `--omit-incomplete-model-defaults` | Write a property whose object default lacks required fields of its model, such as default: {}, without that default, so input that leaves the property out is valid instead of failing on the default. |
 | AsyncAPI message trait headers merged | `--merge-message-trait-headers` | Give an AsyncAPI message the headers of all its traits, merged in order as JSON Merge Patches, inline and referenced traits alike, and then its own headers, which win. |
 | Float consts fixed by bounds | `--use-bounds-for-float-const` | Type a finite float const, which no Literal holds, as a float whose minimum and maximum both equal it, written as the output writes number bounds, so Pydantic and msgspec reject other numbers instead of accepting any float. |
-| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string. |
+| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself. |
 
 ### `standard-py313-20261112`
 
@@ -12205,7 +12205,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Incomplete model defaults omitted | `--omit-incomplete-model-defaults` | Write a property whose object default lacks required fields of its model, such as default: {}, without that default, so input that leaves the property out is valid instead of failing on the default. |
 | AsyncAPI message trait headers merged | `--merge-message-trait-headers` | Give an AsyncAPI message the headers of all its traits, merged in order as JSON Merge Patches, inline and referenced traits alike, and then its own headers, which win. |
 | Float consts fixed by bounds | `--use-bounds-for-float-const` | Type a finite float const, which no Literal holds, as a float whose minimum and maximum both equal it, written as the output writes number bounds, so Pydantic and msgspec reject other numbers instead of accepting any float. |
-| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string. |
+| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself. |
 
 ### `standard-py314-20261112`
 
@@ -12400,7 +12400,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Incomplete model defaults omitted | `--omit-incomplete-model-defaults` | Write a property whose object default lacks required fields of its model, such as default: {}, without that default, so input that leaves the property out is valid instead of failing on the default. |
 | AsyncAPI message trait headers merged | `--merge-message-trait-headers` | Give an AsyncAPI message the headers of all its traits, merged in order as JSON Merge Patches, inline and referenced traits alike, and then its own headers, which win. |
 | Float consts fixed by bounds | `--use-bounds-for-float-const` | Type a finite float const, which no Literal holds, as a float whose minimum and maximum both equal it, written as the output writes number bounds, so Pydantic and msgspec reject other numbers instead of accepting any float. |
-| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string. |
+| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself. |
 
 ### `standard-py315-20261112`
 
@@ -12595,7 +12595,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Incomplete model defaults omitted | `--omit-incomplete-model-defaults` | Write a property whose object default lacks required fields of its model, such as default: {}, without that default, so input that leaves the property out is valid instead of failing on the default. |
 | AsyncAPI message trait headers merged | `--merge-message-trait-headers` | Give an AsyncAPI message the headers of all its traits, merged in order as JSON Merge Patches, inline and referenced traits alike, and then its own headers, which win. |
 | Float consts fixed by bounds | `--use-bounds-for-float-const` | Type a finite float const, which no Literal holds, as a float whose minimum and maximum both equal it, written as the output writes number bounds, so Pydantic and msgspec reject other numbers instead of accepting any float. |
-| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string. |
+| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself. |
 
 ### `practical-py310-20261112`
 
@@ -12799,7 +12799,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Incomplete model defaults omitted | `--omit-incomplete-model-defaults` | Write a property whose object default lacks required fields of its model, such as default: {}, without that default, so input that leaves the property out is valid instead of failing on the default. |
 | AsyncAPI message trait headers merged | `--merge-message-trait-headers` | Give an AsyncAPI message the headers of all its traits, merged in order as JSON Merge Patches, inline and referenced traits alike, and then its own headers, which win. |
 | Float consts fixed by bounds | `--use-bounds-for-float-const` | Type a finite float const, which no Literal holds, as a float whose minimum and maximum both equal it, written as the output writes number bounds, so Pydantic and msgspec reject other numbers instead of accepting any float. |
-| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string. |
+| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -13008,7 +13008,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Incomplete model defaults omitted | `--omit-incomplete-model-defaults` | Write a property whose object default lacks required fields of its model, such as default: {}, without that default, so input that leaves the property out is valid instead of failing on the default. |
 | AsyncAPI message trait headers merged | `--merge-message-trait-headers` | Give an AsyncAPI message the headers of all its traits, merged in order as JSON Merge Patches, inline and referenced traits alike, and then its own headers, which win. |
 | Float consts fixed by bounds | `--use-bounds-for-float-const` | Type a finite float const, which no Literal holds, as a float whose minimum and maximum both equal it, written as the output writes number bounds, so Pydantic and msgspec reject other numbers instead of accepting any float. |
-| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string. |
+| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -13217,7 +13217,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Incomplete model defaults omitted | `--omit-incomplete-model-defaults` | Write a property whose object default lacks required fields of its model, such as default: {}, without that default, so input that leaves the property out is valid instead of failing on the default. |
 | AsyncAPI message trait headers merged | `--merge-message-trait-headers` | Give an AsyncAPI message the headers of all its traits, merged in order as JSON Merge Patches, inline and referenced traits alike, and then its own headers, which win. |
 | Float consts fixed by bounds | `--use-bounds-for-float-const` | Type a finite float const, which no Literal holds, as a float whose minimum and maximum both equal it, written as the output writes number bounds, so Pydantic and msgspec reject other numbers instead of accepting any float. |
-| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string. |
+| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -13426,7 +13426,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Incomplete model defaults omitted | `--omit-incomplete-model-defaults` | Write a property whose object default lacks required fields of its model, such as default: {}, without that default, so input that leaves the property out is valid instead of failing on the default. |
 | AsyncAPI message trait headers merged | `--merge-message-trait-headers` | Give an AsyncAPI message the headers of all its traits, merged in order as JSON Merge Patches, inline and referenced traits alike, and then its own headers, which win. |
 | Float consts fixed by bounds | `--use-bounds-for-float-const` | Type a finite float const, which no Literal holds, as a float whose minimum and maximum both equal it, written as the output writes number bounds, so Pydantic and msgspec reject other numbers instead of accepting any float. |
-| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string. |
+| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -13635,7 +13635,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Incomplete model defaults omitted | `--omit-incomplete-model-defaults` | Write a property whose object default lacks required fields of its model, such as default: {}, without that default, so input that leaves the property out is valid instead of failing on the default. |
 | AsyncAPI message trait headers merged | `--merge-message-trait-headers` | Give an AsyncAPI message the headers of all its traits, merged in order as JSON Merge Patches, inline and referenced traits alike, and then its own headers, which win. |
 | Float consts fixed by bounds | `--use-bounds-for-float-const` | Type a finite float const, which no Literal holds, as a float whose minimum and maximum both equal it, written as the output writes number bounds, so Pydantic and msgspec reject other numbers instead of accepting any float. |
-| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string. |
+| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -13844,7 +13844,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Incomplete model defaults omitted | `--omit-incomplete-model-defaults` | Write a property whose object default lacks required fields of its model, such as default: {}, without that default, so input that leaves the property out is valid instead of failing on the default. |
 | AsyncAPI message trait headers merged | `--merge-message-trait-headers` | Give an AsyncAPI message the headers of all its traits, merged in order as JSON Merge Patches, inline and referenced traits alike, and then its own headers, which win. |
 | Float consts fixed by bounds | `--use-bounds-for-float-const` | Type a finite float const, which no Literal holds, as a float whose minimum and maximum both equal it, written as the output writes number bounds, so Pydantic and msgspec reject other numbers instead of accepting any float. |
-| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches whose type admits objects, so a string branch beside patternProperties stays a string. |
+| Object keywords by type | `--read-object-keywords-by-type` | Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |

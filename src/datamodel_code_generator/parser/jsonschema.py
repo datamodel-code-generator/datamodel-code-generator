@@ -732,24 +732,14 @@ def _schema_validator_object_applies(parser: JsonSchemaParser, site: _Site) -> b
     )
 
 
-def _branch_excludes_objects(
-    parser: JsonSchemaParser,
-    branch: JsonSchemaObject | bool,  # noqa: FBT001
-    visited: frozenset[_TargetNode] = frozenset(),
-) -> bool:
-    """Return whether a branch declares a ``type`` that admits no object, a ``$ref`` the type of the schema it names.
+def _branch_excludes_objects(parser: JsonSchemaParser, branch: JsonSchemaObject | bool) -> bool:  # noqa: FBT001
+    """Return whether a branch admits no object (``schema_item_may_accept_container``).
 
-    A reference ``--external-ref-mapping`` maps is typed by the import without its document, so it is not read and not
-    known to admit no object.
+    It reads the branch's ``type``, ``const`` and ``enum``, its ``allOf``, ``anyOf`` and ``oneOf`` parts, a false schema
+    and the schema a ``$ref`` names with the keywords beside it. A reference ``--external-ref-mapping`` maps is typed
+    by the import without its document, so it is not read and may admit objects.
     """
-    if isinstance(branch, JsonSchemaObject) and (types := _declared_value_types(branch)):
-        return "object" not in types
-    return bool(
-        isinstance(branch, JsonSchemaObject)
-        and branch.ref
-        and (target := _schema_refs.unmapped_ref_target(parser, branch.ref, visited)) is not None
-        and _branch_excludes_objects(parser, *target)
-    )
+    return not parser._schema_item_may_accept_container(branch, "object", frozenset())  # noqa: SLF001
 
 
 def _parse_root_type_site(parser: JsonSchemaParser, site: _Site) -> DataType:
@@ -3759,10 +3749,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _combined_branch_outer(self, outer: dict[str, Any], branch: JsonSchemaObject) -> dict[str, Any]:
         """Return the keywords beside an ``anyOf`` or ``oneOf`` that a ``branch`` is read with.
 
-        Under --read-object-keywords-by-type a branch whose ``type`` admits no object, or a ``$ref`` branch naming
-        such a schema (``_branch_excludes_objects``), is read without the keywords that constrain objects only
-        (``_OBJECT_KEYWORDS``), as JSON Schema applies them to objects alone; otherwise every branch is read with all
-        of them.
+        Under --read-object-keywords-by-type a branch that admits no object (``_branch_excludes_objects``), such as a
+        string, a ``const``, an ``enum`` or a ``$ref`` naming such a schema, is read without the keywords that
+        constrain objects only (``_OBJECT_KEYWORDS``), as JSON Schema applies them to objects alone; otherwise every
+        branch is read with all of them.
         """
         if self.config.read_object_keywords_by_type and _branch_excludes_objects(self, branch):
             return {keyword: value for keyword, value in outer.items() if keyword not in _OBJECT_KEYWORDS}
@@ -3941,7 +3931,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _ref_branch_takes_no_site_parts(self, obj: JsonSchemaObject, branch: JsonSchemaObject) -> bool:
         """Return whether a ``$ref`` branch of ``obj`` is the type it names, without the parts of the site.
 
-        Under --read-object-keywords-by-type a branch naming a schema whose ``type`` admits no object takes none of the
+        Under --read-object-keywords-by-type a branch naming a schema that admits no object takes none of the
         keywords that constrain objects only beside the ``anyOf`` or ``oneOf`` (``_parse_ref_branch_model``), where the
         site has some and no ``allOf``.
         """
