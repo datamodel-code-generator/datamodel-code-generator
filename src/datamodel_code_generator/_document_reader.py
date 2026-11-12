@@ -180,34 +180,34 @@ def refuse_oversized_document(document: dict[Any, Any]) -> None:
     """Refuse, under --untrusted-input, a document past ``UNTRUSTED_MAX_DEPTH`` levels or ``UNTRUSTED_MAX_NODES`` nodes.
 
     The nodes are the objects and arrays of the document (dicts, lists and tuples), visited without recursion as
-    often as the document holds them, as its readers visit them: a YAML alias counts at each use, and the walk stops
-    at the node limit, so an alias cycle ends there too. Otherwise it reads the whole document, so the error names how
-    deep it went.
+    often as the document holds them, as its readers visit them: a YAML alias counts at each use. A node is counted
+    when it is queued and the depth is checked when it is reached, so the queue never holds more than the node limit
+    and an alias cycle stops at the first limit it passes.
     """
-    deepest = nodes = 0
+    nodes = 1
     pending: list[tuple[Any, int]] = [(document, 1)]
     while pending:
         node, depth = pending.pop()
-        if (nodes := nodes + 1) > UNTRUSTED_MAX_NODES:
+        if depth > UNTRUSTED_MAX_DEPTH:
+            msg = (
+                f"The schema nests objects and arrays more than {UNTRUSTED_MAX_DEPTH} levels deep and is refused "
+                f"under --untrusted-input, which reads at most {UNTRUSTED_MAX_DEPTH} levels. Flatten the schema, or "
+                "generate without --untrusted-input when the schema is trusted."
+            )
+            raise Error(msg)
+        children = [
+            child
+            for child in (node.values() if isinstance(node, dict) else node)
+            if isinstance(child, (dict, list, tuple))
+        ]
+        if (nodes := nodes + len(children)) > UNTRUSTED_MAX_NODES:
             msg = (
                 f"The schema holds more than {UNTRUSTED_MAX_NODES:,} objects and arrays (a YAML alias counts at each "
                 f"use) and is refused under --untrusted-input, which reads at most {UNTRUSTED_MAX_NODES:,}. Split the "
                 "schema, or generate without --untrusted-input when the schema is trusted."
             )
             raise Error(msg)
-        deepest = max(deepest, depth)
-        pending.extend(
-            (child, depth + 1)
-            for child in (node.values() if isinstance(node, dict) else node)
-            if isinstance(child, (dict, list, tuple))
-        )
-    if deepest > UNTRUSTED_MAX_DEPTH:
-        msg = (
-            f"The schema nests objects and arrays {deepest} levels deep and is refused under --untrusted-input, which "
-            f"reads at most {UNTRUSTED_MAX_DEPTH} levels. Flatten the schema, or generate without --untrusted-input "
-            "when the schema is trusted."
-        )
-        raise Error(msg)
+        pending.extend((child, depth + 1) for child in children)
 
 
 def string_key(key: object, kind: str, error_path: Callable[[object], list[str]]) -> str:

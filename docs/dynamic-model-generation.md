@@ -483,8 +483,8 @@ To check documents against the schema as closely as possible, see [Matching the 
 
 The `inputSchema` and `outputSchema` of an MCP tool, and the `parameters` of a function-calling tool, are JSON Schema
 documents. Turn each into a model once, validate what the language model sends, and read the typed result. dcg handles
-what hand-written converters often lose: `$defs` and `$ref`, a `description` beside a `$ref`, nested inline objects,
-enums and tuples. These schemas come from servers you do not control, so pass `untrusted_input=True`. See
+what hand-written converters often lose: `$defs` and `$ref`, a `description` beside a `$ref`, nested inline objects
+and enums; tuples keep a type per position with `use_tuple_for_closed_arrays=True` (see the table below). These schemas come from servers you do not control, so pass `untrusted_input=True`. See
 [Schemas That Arrive at Runtime](#schemas-that-arrive-at-runtime).
 
 ### Validating the Arguments of a Tool Call
@@ -521,10 +521,9 @@ call = CreateTicketInput.model_validate_json(raw_arguments)
 assert call.priority.value == "high"
 assert call.assignee is None
 assert call.reporter_id == 7
-assert call.model_dump(mode="json", by_alias=True, exclude_none=True) == {
+assert call.model_dump(mode="json", by_alias=True, exclude_unset=True) == {
     "title": "Login fails",
     "priority": "high",
-    "labels": [],
     "reporter-id": 7,
 }
 
@@ -546,8 +545,8 @@ Use `module.root_class` for the class of the schema itself: it is the right clas
 `class_name` names it; without `class_name`, the `title` does, and without both, it is `Model`.
 
 The errors name the property and the rule, so you can send them back to the language model as the result of a failed
-tool call. Without `"additionalProperties": False` in the schema, a property the schema does not list is ignored.
-`extra_fields="forbid"` in the config rejects it for schemas that do not say so.
+tool call. Where the schema has no `additionalProperties`, a property the schema does not list is ignored, and
+`extra_fields="forbid"` in the config rejects it; `"additionalProperties": true` keeps it in the model and in its dump.
 
 An optional property is nullable in the model, as the next sections show: `assignee` above is `None` when left out,
 and so is `contact`.
@@ -754,13 +753,15 @@ assert text.model_validate("short").root == "short"
 ```
 
 A string schema with `enum` gives an `Enum` class, not a `RootModel`: call it, `root_class("a")`, instead of
-`model_validate`. `generate_dynamic_models()` returns the same classes by name.
+`model_validate`. `generate_dynamic_models()` returns classes of the same names and shapes; they are other class
+objects (each API has its own cache entries), so do not mix their instances in `isinstance` checks.
 
 ### Speed
 
 Dynamic generation does not format the code unless you select formatters, and a schema that arrives again is served
 from the cache. Keep `cache_size` above `0` (the default is `128`), so a tool list that you convert on every request
-generates its models once. On one machine, a first call (`cache_size=0`) for the tool schema of the first example took
+is usually generated once; a config with a callable such as `custom_class_name_generator` is not cached, and old
+entries leave a full cache, so keep the models you need instead of generating them again. On one machine, a first call (`cache_size=0`) for the tool schema of the first example took
 8.2 ms (median of 15 runs on a loaded machine; your numbers differ), against 19 ms with Black and isort selected.
 
 ## Formatting
