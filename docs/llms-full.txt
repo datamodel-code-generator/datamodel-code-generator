@@ -21352,11 +21352,41 @@ print(f"Cleared {cleared} cached schemas")
 own: its `models` is not the dictionary `generate_dynamic_models()` returns for the same arguments, and holds other
 classes.
 
+## Schemas That Arrive at Runtime
+
+A schema that comes from a user, the network or a database is input you do not control. For such schemas:
+
+- Pass `untrusted_input=True`, so the schema cannot make dcg read files or fetch URLs, or make the generated module
+  import other modules. See [Untrusted Input](#untrusted-input). The default is unchanged: without it, dcg reads
+  file and URL `$ref`s and honors `x-python-type`, `customTypePath` and `x-python-import`.
+- Pass `formatters=[]`, because nobody reads the code. See [Formatting](#formatting).
+- Keep `cache_size` above `0`, so a schema that arrives again is not generated again. See [Caching](#caching).
+- Catch `datamodel_code_generator.Error`, which a refused or invalid schema raises. A schema nested thousands of levels
+  deep can raise `RecursionError` instead, so catch it too where any client can send a schema.
+
+```python
+from datamodel_code_generator import Error, GenerateConfig, generate_dynamic_models
+
+config = GenerateConfig(class_name="Payload", untrusted_input=True, formatters=[])
+
+try:
+    models = generate_dynamic_models({"$ref": "other.json#/$defs/X"}, config=config)
+except (Error, RecursionError) as error:
+    print(error)  # Reading the $ref document other.json is refused under --untrusted-input. ...
+
+models = generate_dynamic_models({"type": "object", "properties": {"a": {"type": "string"}}}, config=config)
+Payload = models["Payload"]
+```
+
+To check documents against the schema as closely as possible, see [Matching the Schema Closely](#matching-the-schema-closely).
+
 ## Formatting
 
 Dynamic generation formats the code with the formatters of the config, as `generate()` does: Black and isort unless
 `formatters`, `custom_formatters` or a preset selects others. Formatting takes about half to two thirds of the time of
-a call. Nobody reads the code, so you can pass `formatters=[]`:
+a call: on one machine, a call took 8 ms with the default formatters and 3 ms without for a schema of 5 properties, and
+45 ms and 20 ms for a schema of 32 properties with `$defs` and `oneOf` (medians of 15 interleaved runs, `cache_size=0`;
+your numbers differ). Nobody reads the code, so you can pass `formatters=[]`:
 
 ```python
 from datamodel_code_generator import GenerateConfig, generate_dynamic_models
@@ -21400,6 +21430,58 @@ models = generate_dynamic_models(schema, config=GenerateConfig(untrusted_input=T
 Descriptions, titles, defaults, examples, enum values and property names are written as escaped literals, comments or
 sanitized names, never as code. The switch does not sandbox the generated code, and options you pass yourself, such as
 `custom_template_dir`, `extra_template_data`, `additional_imports` or `custom_formatters`, are trusted.
+
+## Matching the Schema Closely
+
+By default, a model accepts some documents the schema rejects. To reject more of them, use a dated
+[preset](presets.md), `generate_schema_validators=True` and `use_missing_sentinel=True`. Name the preset for the Python
+that runs the models.
+
+```python
+from pydantic import ValidationError
+
+from datamodel_code_generator import GenerateConfig, generate_dynamic_models
+
+schema = {
+    "type": "object",
+    "properties": {
+        "count": {"type": "integer"},
+        "tags": {"type": "array", "items": {"type": "string"}, "uniqueItems": True},
+    },
+    "minProperties": 1,
+}
+
+
+def build(**options):
+    config = GenerateConfig(class_name="Item", formatters=[], preset="standard-py313-20261111", **options)
+    return generate_dynamic_models(schema, config=config)["Item"]
+
+
+def accepts(model, document):
+    try:
+        model.model_validate(document)
+    except ValidationError:
+        return False
+    return True
+
+
+plain = build()
+close = build(generate_schema_validators=True, use_missing_sentinel=True)
+
+assert accepts(plain, {"count": None}) and not accepts(close, {"count": None})
+assert accepts(plain, {}) and not accepts(close, {})
+assert accepts(plain, {"tags": ["a", "a"]}) and not accepts(close, {"tags": ["a", "a"]})
+assert close.model_validate({"count": 3}).model_dump() == {"count": 3}
+```
+
+- `generate_schema_validators` checks rules that a type cannot express, such as `minProperties`, `uniqueItems` and
+  required-only `oneOf` groups (see [`--generate-schema-validators`](cli-reference/template-customization.md#generate-schema-validators)).
+- `use_missing_sentinel` types an optional property that is not nullable as `T | MISSING`, so `null` is rejected and a
+  property left out stays out of `model_dump()`. Without it, such a property is `T | None = None` and takes `null`.
+- Do not add `strict_types` for this. It rejects JSON `1.0` for an integer, which the schema accepts.
+
+Both options are experimental, and `use_missing_sentinel` needs Pydantic 2.12 or later. See
+[Experimental Features](experimental.md).
 
 ## Thread Safety
 
