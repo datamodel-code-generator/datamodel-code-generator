@@ -12,7 +12,7 @@ from functools import partial
 from itertools import compress
 from math import isfinite
 from operator import and_
-from typing import TYPE_CHECKING, Any, ClassVar, Final, cast
+from typing import TYPE_CHECKING, Any, Final, cast
 from warnings import warn
 
 from typing_extensions import Protocol
@@ -46,6 +46,7 @@ from datamodel_code_generator.imports import IMPORT_ANY, _import_path
 from datamodel_code_generator.model._decisions.enum_kind import enum_as_literal, is_literal_kind, literal_value_kind
 from datamodel_code_generator.model._decisions.literal_default import const_type
 from datamodel_code_generator.model.base import ConstraintsBase
+from datamodel_code_generator.parser import _schema_refs
 from datamodel_code_generator.parser._intersection import (
     declared_positional_tail,
     declared_types,
@@ -60,6 +61,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _object_map_other_types,
     _schema_dump,
 )
+from datamodel_code_generator.parser._schema_refs import SchemaRefsHost
 from datamodel_code_generator.parser.base import _TYPE_DEPENDENT_CONSTRAINTS_KEY
 from datamodel_code_generator.types import ANY, Types, _is_plain_none, _is_value_literal
 
@@ -76,7 +78,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._null_facts import NullFacts, NullSite
     from datamodel_code_generator.parser._schema_object import JsonSchemaLiteral
     from datamodel_code_generator.parser.generation import GraphBuilder
-    from datamodel_code_generator.reference import ModelResolver
     from datamodel_code_generator.types import DataType, DataTypeManager
 
 __all__ = [
@@ -279,10 +280,8 @@ class ArrayBoundsHost(Protocol):
         """Return array length constraints derived from boolean items."""
 
 
-class ValueKeywordsHost(Protocol):
+class ValueKeywordsHost(SchemaRefsHost, Protocol):
     """The options, run state and hooks of the parser that the value keywords read."""
-
-    SCHEMA_OBJECT_TYPE: ClassVar[type[JsonSchemaObject]]
 
     @property
     def checks_literal_values(self) -> bool:
@@ -311,10 +310,6 @@ class ValueKeywordsHost(Protocol):
     @property
     def field_constraints(self) -> bool:
         """Whether constraints are written on fields (``--field-constraints``)."""
-
-    @property
-    def model_resolver(self) -> ModelResolver:
-        """The resolver of references and class names."""
 
     @property
     def read_const_beside_enum(self) -> bool:
@@ -372,10 +367,6 @@ class ValueKeywordsHost(Protocol):
     def _type_override_imports(self) -> dict[str, Import]:
         """The imports of the scoped type overrides."""
 
-    @classmethod
-    def _get_array_items_constraints(cls, obj: JsonSchemaObject) -> dict[str, int]:
-        """Return array length constraints derived from boolean items."""
-
     @staticmethod
     def _property_names_forbids_all_keys(property_names: JsonSchemaObject | bool | None) -> bool:  # noqa: FBT001
         """Return whether a propertyNames schema rejects every JSON object key."""
@@ -384,9 +375,6 @@ class ValueKeywordsHost(Protocol):
         self, obj: JsonSchemaObject, met: tuple[bool, ...], kept: tuple[bool, ...], keywords: tuple[str, ...]
     ) -> tuple[bool, ...] | None:
         """Return whether the field keeps each value (``kept``), None when it keeps all."""
-
-    def _get_fixed_length_homogeneous_tuple_length(self, obj: JsonSchemaObject) -> int | None:
-        """Return the length of an opted-in homogeneous fixed-length tuple."""
 
     def _get_type_with_mappings(self, type_: str, format_: str | None = None) -> Types:
         """Get the Types enum for a given type and format, applying custom type mappings."""
@@ -400,20 +388,22 @@ class ValueKeywordsHost(Protocol):
     def _load_inherited_schema_object(self, resolved_ref: str) -> JsonSchemaObject:
         """Load and cache a schema used only for inherited field inspection."""
 
-    def _null_facts(self, obj: JsonSchemaObject, site: NullSite, *, has_default: bool = False) -> NullFacts:
-        """Return the null facts of a schema at a site."""
+    def _null_facts(
+        self,
+        obj: JsonSchemaObject,
+        site: NullSite,
+        *,
+        required: bool = False,
+        has_default: bool = False,
+        parts: Sequence[NullSources] = (),
+    ) -> NullFacts:
+        """Return what ``site`` reads from where the null of ``obj`` comes from (``parts``: of its typed parts)."""
 
     def _reads_enum(self, obj: JsonSchemaObject) -> bool:
         """Return whether the run reads the enum of a schema: it has one and --ignore-enum-constraints is off."""
 
-    def _ref_path(self, ref: str) -> str:
-        """Return the reference key a reference names: its edge's key, or a plain string's ``resolve_ref``."""
-
     def _ref_schema_exists(self, resolved_ref: str) -> bool:
         """Return whether a resolved JSON pointer identifies a source schema."""
-
-    def _resolve_external_ref_mapping(self, ref: str) -> tuple[str, str] | None:
-        """Return the package and fragment ``--external-ref-mapping`` maps a reference to, if any."""
 
 
 def should_parse_enum_as_literal(
@@ -566,7 +556,7 @@ def literal_written(
     """Return the keywords a literal check leaves to the field of a schema's values, as the field writes them.
 
     A field that writes Field() arguments (``writes`` at its site) writes beside the ``Literal`` of the values the
-    keywords ``_split_constraint_values`` gives it, which Pydantic checks on the ``Literal``; under
+    keywords ``split_constraint_values`` gives it, which Pydantic checks on the ``Literal``; under
     ``--omit-redundant-constraints`` the literal check decides them all and the field writes none of them.
     """
     if not (
@@ -902,7 +892,7 @@ def is_fixed_length_tuple(parser: ValueKeywordsHost, obj: JsonSchemaObject) -> b
     """Check if an array field represents a fixed-length tuple."""
     return (
         get_fixed_positional_items(parser, obj) is not None
-        or parser._get_fixed_length_homogeneous_tuple_length(obj) is not None  # noqa: SLF001
+        or get_fixed_length_homogeneous_tuple_length(parser, obj) is not None
     )
 
 
@@ -954,7 +944,7 @@ def get_array_item_schemas(
         return fixed_items, True, True, None
     if (
         isinstance(item_schema := obj.items, JsonSchemaObject)
-        and (tuple_item_count := parser._get_fixed_length_homogeneous_tuple_length(obj)) is not None  # noqa: SLF001
+        and (tuple_item_count := get_fixed_length_homogeneous_tuple_length(parser, obj)) is not None
     ):
         return [item_schema] if tuple_item_count else [], True, True, tuple_item_count
     return (
@@ -1194,7 +1184,7 @@ def get_position_validation_keywords(
         target = parser._load_inherited_schema_object(ref)  # noqa: SLF001
         keywords = _validation_keywords(
             False if target.is_boolean_schema_false else target.model_dump(exclude_unset=True, by_alias=True),
-            parser._ref_path,  # noqa: SLF001
+            partial(_schema_refs.ref_path, parser),
         )
     return keywords
 
