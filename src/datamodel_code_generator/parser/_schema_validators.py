@@ -804,7 +804,7 @@ def schema_may_accept_container(
         return False
     if obj.ref:
         if parser._resolve_external_ref_mapping(obj.ref) is not None:  # noqa: SLF001
-            accepts = container_type == "object"
+            accepts = True  # the mapped class is not read, so it may accept either container shape
         else:
             node = _schema_refs.key_node(parser, _schema_refs.ref_path(parser, obj.ref))
             accepts = node in visited_refs or schema_may_accept_container(
