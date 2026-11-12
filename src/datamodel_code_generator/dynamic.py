@@ -29,6 +29,7 @@ from pydantic import BaseModel
 
 from datamodel_code_generator import (
     Error,
+    _apply_generate_config_preset,
     _prepare_generate_facade_config,
     _run_generation_with_metadata,
     generate,
@@ -497,13 +498,29 @@ def _refuse_unregistrable_name(
         raise Error(msg)
 
 
+def _without_default_formatting(config: GenerateConfig) -> GenerateConfig:
+    """Return ``config`` selecting no formatter where neither it nor its preset selects formatters.
+
+    The module is executed, never read, so formatting it only costs time. ``formatters``, ``custom_formatters`` and a
+    preset that sets either keep the formatting generate() gives them.
+    """
+    if config.formatters is not None or config.custom_formatters is not None:
+        return config
+    resolved = _apply_generate_config_preset(config)
+    if resolved.formatters is not None or resolved.custom_formatters is not None:
+        return config
+    return config.model_copy(update={"formatters": []})
+
+
 def _generate_code(
     input_: Mapping[str, Any], config: GenerateConfig, *, collect_model_metadata: bool
 ) -> _GeneratedCode:
     """Return the code generate() writes for ``config``, beside the model metadata and identity paths of the run.
 
-    The metadata are collected only with ``collect_model_metadata``; otherwise they are None and empty.
+    The code is not formatted unless the config or its preset selects formatters. The metadata are collected only
+    with ``collect_model_metadata``; otherwise they are None and empty.
     """
+    config = _without_default_formatting(config)
     if not collect_model_metadata:
         return generate(input_=input_, config=config), None, ()
     config = _prepare_generate_facade_config(config)
@@ -692,6 +709,7 @@ def generate_dynamic_models(
         - Not pickle-able (use model_dump() to serialize instances, or generate_dynamic_module() with register_module)
         - Cached by schema + config + module_name hash with FIFO eviction when cache_size is exceeded
         - Supports both single-module and multi-module output
+        - Formats the code only where ``config`` or its preset selects formatters; it is executed, never read
         - generate_dynamic_module() also gives the root class and the class of each schema location
 
     Example:
