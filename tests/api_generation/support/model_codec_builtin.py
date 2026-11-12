@@ -25,7 +25,7 @@ from tests.api_generation.support.fastapi_generation import server_options
 from tests.api_generation.support.generated_packages import generated_root, import_generated, import_generated_codecs
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
     from pathlib import Path
 
 CLIENT = {"default_base_url": "https://codecs.invalid"}
@@ -156,7 +156,7 @@ class GeneratedCodecs:
 
 
 @contextmanager
-def imported(root: Path, name: str) -> Iterator[GeneratedCodecs]:
+def imported(root: Path, name: str) -> Generator[GeneratedCodecs, None, None]:
     """Import a package generated under a root, removing it and its models from the module cache afterwards."""
     with generated_root(root, name):
         yield GeneratedCodecs(name, root)

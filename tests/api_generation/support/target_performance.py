@@ -15,7 +15,7 @@ from tests.api_generation.support.client_generation import client_render_call, g
 from tests.api_generation.support.generated_packages import generated_root, import_generated
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Generator
 
 DATA = Path(__file__).parents[2] / "data"
 SMALL = DATA / "generation_platform" / "client" / "publication" / "minimal.json"
@@ -52,7 +52,7 @@ def target_render_call(target: str, size: str, root: Path) -> Callable[[], objec
 
 
 @contextmanager
-def generated_client_calls(root: Path) -> Iterator[dict[str, Callable[[], Any]]]:
+def generated_client_calls(root: Path) -> Generator[dict[str, Callable[[], Any]], None, None]:
     """Keep one copied-runtime package, native clients, payload and event loop outside measured calls."""
     import httpx2
 
