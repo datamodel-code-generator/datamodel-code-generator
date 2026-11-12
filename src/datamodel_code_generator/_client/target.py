@@ -39,7 +39,7 @@ from datamodel_code_generator._client.protocol_plan import (
 from datamodel_code_generator._client.render import ClientRenderer
 from datamodel_code_generator._client.sockets import DEPENDENCY as WEBSOCKETS
 from datamodel_code_generator._client.sockets import plan_sockets, routed_streams, socket_uses
-from datamodel_code_generator._client.streams import plan_streams, stream_uses
+from datamodel_code_generator._client.streams import item_protocols, plan_streams, stream_uses
 from datamodel_code_generator._client.templates import ClientTemplates
 from datamodel_code_generator._client.uploads import plan_uploads
 from datamodel_code_generator._client.webhooks import (
@@ -316,6 +316,10 @@ def _render(  # ruff: ignore[too-many-locals]
     helping = helper_operations(protocols)
     try:
         plan = Planner(request, config, wire, facts, helping, selected=selected).plan()
+        protocols = item_protocols(protocols, plan, request)
+        if not (called := helper_operations(protocols)) <= helping:
+            helping = called
+            plan = Planner(request, config, wire, facts, helping, selected=selected).plan()
     except PlanError as error:
         raise APIGenerationError(error.diagnostics, option_prefix=OPTION_PREFIX) from None
     events, hooked = webhook_uses(protocols, plan, request)

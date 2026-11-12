@@ -35,7 +35,7 @@ from ..client.operations import codec_condition
 from ..client.options import RequestOptions
 from ..client.raw import AsyncClosing, Closing, afinished, aheld, checked, finished, held, native_request
 from ..model_codecs.errors import ParameterEncodingError
-from ..model_codecs.media import NO_CONTENT, json_value
+from ..model_codecs.media import NO_CONTENT, json_text, json_value
 from ..model_codecs.unset import UNSET
 from .errors import (
     HELPER_ERRORS,
@@ -185,6 +185,8 @@ class EventPlan(Generic[T]):
     events, by the same discriminator. A `sentinel` completion ends at the raw data `terminal` and an `event_type` one
     at that SSE type; neither terminal event is decoded or delivered. An NDJSON body's bytes after its last line end
     are a record only when `final_line` is `allow_eof`. `resume` is how a helper declaring resumption reopens it.
+    With `fields`, `event` decodes each SSE event's parsed fields as one JSON object instead of its data: its data and
+    type, its event ID when one is set, and its own valid `retry` (the OpenAPI 3.2 item of an event stream).
     """
 
     helper_id: str
@@ -201,6 +203,7 @@ class EventPlan(Generic[T]):
     kind: Literal["sse", "ndjson"] = "sse"
     final_line: Literal["require_newline", "allow_eof"] = "require_newline"
     resume: StreamResumePlan | None = None
+    fields: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -208,7 +211,7 @@ class _Frame:
     """A dispatched event: its joined data, its type, the last event ID, and the reconnection time.
 
     An NDJSON record is a frame of its line, without a type, an event ID, or a reconnection time, that keeps the line's
-    bytes as `raw`, which its data was decoded from.
+    bytes as `raw`, which its data was decoded from. An event of a plan decoding `fields` keeps their JSON as `raw`.
     """
 
     data: str
@@ -219,7 +222,7 @@ class _Frame:
 
     @property
     def body(self) -> bytes:
-        """Return the bytes of the data: the line's own, or the data encoded as UTF-8."""
+        """Return the bytes a codec decodes: the line's own or the fields' JSON, else the data encoded as UTF-8."""
         return self.data.encode() if self.raw is None else self.raw
 
 
@@ -583,14 +586,21 @@ class _Events(Generic[T]):
         more than 18 digits is ignored. Until a response sets an event ID, its events keep the one the stream reopened
         after.
         """
-        if (retry := event.retry) is not None and 0 <= retry < _MAX_RETRY:
+        if retried := (retry := event.retry) is not None and 0 <= retry < _MAX_RETRY:
             self._retry = retry
         if event.id:
             self._identified = True
         if not event.data:
             return None
         event_id = event.id or (None if self._identified else self._carried)
-        return _Frame(event.data, event.event, event_id, self._retry)
+        if not self._plan.fields:
+            return _Frame(event.data, event.event, event_id, self._retry)
+        item: dict[str, object] = {"data": event.data, "event": event.event}
+        if event_id:
+            item["id"] = event_id
+        if retried:
+            item["retry"] = retry
+        return _Frame(event.data, event.event, event_id, self._retry, json_text(item).encode())
 
     def _record(self, line: bytes) -> _Frame:
         """Return the record of an NDJSON line, without the CR of a CRLF, refusing one that is not UTF-8.

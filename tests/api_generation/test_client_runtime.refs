@@ -63,6 +63,7 @@ fields-unpack	main/generation_platform/client/runtime/fields-unpack.txt
 headers	main/generation_platform/client/runtime/headers.txt
 hooks	main/generation_platform/client/runtime/hooks.txt
 item-or-array	main/generation_platform/client/runtime/item-or-array.txt
+item-streams	main/generation_platform/client/runtime/item-streams.txt
 json-decode-errors-ndjson	main/generation_platform/client/runtime/json-decode-errors-ndjson.txt
 json-decode-errors-sse	main/generation_platform/client/runtime/json-decode-errors-sse.txt
 keywords	main/generation_platform/client/runtime/keywords.txt
