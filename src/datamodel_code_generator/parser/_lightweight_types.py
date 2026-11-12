@@ -242,8 +242,8 @@ def unvisited_ref_target(
 ) -> tuple[JsonSchemaObject, frozenset[_TargetNode]] | None:
     """Return the schema ``ref`` names with ``visited_refs`` and its node, or None when its node was visited.
 
-    The document ``--external-ref-mapping`` maps is not read: the mapped schema reads as an object without
-    properties, and its node is the reference key.
+    The document ``--external-ref-mapping`` maps is not read: the mapped schema reads as a schema of unknown
+    container type, and its node is the reference key.
     """
     target, node = _schema_refs.ref_target_for_shape(parser, ref)
     if node in visited_refs:

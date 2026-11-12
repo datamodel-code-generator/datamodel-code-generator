@@ -514,6 +514,9 @@ def ref_schema_exists(parser: SchemaRefsHost, resolved_ref: str) -> bool:
 UNREAD_MAPPED_SCHEMA: Final = MappingProxyType({"type": "object"})
 """The schema of a class ``--external-ref-mapping`` maps whose document does not exist: an object, no property known."""
 
+UNREAD_MAPPED_SHAPE_SCHEMA: Final = MappingProxyType({})
+"""The schema a shape question reads for that class: its container type is unknown, so no shape excludes it."""
+
 
 class RefDocumentNotFoundError(Error):
     """The local document a reference names does not exist."""
@@ -550,12 +553,13 @@ def ref_target_for_shape(parser: SchemaRefsHost, ref: str) -> tuple[JsonSchemaOb
     """Return the schema object a ``$ref`` names for a shape question, with the node to mark visited.
 
     The document ``--external-ref-mapping`` maps is not read: a mapped reference types by its import and its
-    document need not exist, so it reads as an object without properties (``UNREAD_MAPPED_SCHEMA``) and its node
-    is the reference key. Without the mapping this is ``key_node`` and ``load_ref_schema_object`` as before.
+    document need not exist, so it reads as a schema of unknown container type (``UNREAD_MAPPED_SHAPE_SCHEMA``)
+    and its node is the reference key. Without the mapping this is ``key_node`` and ``load_ref_schema_object``
+    as before.
     """
     resolved_ref = ref_path(parser, ref)
     if parser._resolve_external_ref_mapping(ref) is not None:  # noqa: SLF001
-        return shared_schema_object(parser, dict(UNREAD_MAPPED_SCHEMA), [resolved_ref]), resolved_ref
+        return shared_schema_object(parser, dict(UNREAD_MAPPED_SHAPE_SCHEMA), [resolved_ref]), resolved_ref
     return load_ref_schema_object(parser, ref), key_node(parser, resolved_ref)
 
 
