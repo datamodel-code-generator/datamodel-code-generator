@@ -21361,7 +21361,8 @@ A schema that comes from a user, the network or a database is input you do not c
   file and URL `$ref`s and honors `x-python-type`, `customTypePath` and `x-python-import`.
 - Pass `formatters=[]`, because nobody reads the code. See [Formatting](#formatting).
 - Keep `cache_size` above `0`, so a schema that arrives again is not generated again. See [Caching](#caching).
-- Catch `datamodel_code_generator.Error`, which a refused or invalid schema raises.
+- Catch `datamodel_code_generator.Error`, which a refused or invalid schema raises. A schema nested thousands of levels
+  deep can raise `RecursionError` instead, so catch it too where any client can send a schema.
 
 ```python
 from datamodel_code_generator import Error, GenerateConfig, generate_dynamic_models
@@ -21370,7 +21371,7 @@ config = GenerateConfig(class_name="Payload", untrusted_input=True, formatters=[
 
 try:
     models = generate_dynamic_models({"$ref": "other.json#/$defs/X"}, config=config)
-except Error as error:
+except (Error, RecursionError) as error:
     print(error)  # Reading the $ref document other.json is refused under --untrusted-input. ...
 
 models = generate_dynamic_models({"type": "object", "properties": {"a": {"type": "string"}}}, config=config)
