@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A",
+  "type": "object",
+  "properties": {
+    "code": {"allOf": [{"$ref": "../mapped_ref_all_of_value_keywords/shared.json#/$defs/Code"}, {"description": "The code."}]},
+    "tagged": {"allOf": [{"$ref": "../mapped_ref_all_of_value_keywords/shared.json#/$defs/Code"}, {"properties": {"tag": {"type": "string"}}}]}
+  }
+}

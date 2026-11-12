@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Order",
+  "type": "object",
+  "properties": {
+    "code": {"allOf": [{"$ref": "absent_shared.json#/$defs/Code"}, {"maxLength": 5}]},
+    "label": {"allOf": [{"$ref": "absent_shared.json#/$defs/Label"}, {"description": "The label."}]}
+  },
+  "required": ["code"]
+}

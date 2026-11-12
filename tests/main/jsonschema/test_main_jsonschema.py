@@ -25321,6 +25321,65 @@ def test_main_jsonschema_external_ref_mapping_whole_document_in_input_directory(
     )
 
 
+MAPPED_REF_ALL_OF_VALUE_KEYWORDS = JSON_SCHEMA_DATA_PATH / "mapped_ref_all_of_value_keywords"
+MAPPED_REF_ALL_OF_VALUE_KEYWORDS_ARGS = [
+    "--output-model-type",
+    "pydantic_v2.BaseModel",
+    "--external-ref-mapping",
+    f"{MAPPED_REF_ALL_OF_VALUE_KEYWORDS / 'shared.json'}=mycompany.shared",
+    f"{MAPPED_REF_ALL_OF_VALUE_KEYWORDS / 'absent_shared.json'}=mycompany.shared",
+    "--disable-timestamp",
+    "--formatters",
+    "builtin",
+]
+
+
+def test_main_jsonschema_external_ref_mapping_all_of_value_keywords(output_file: Path) -> None:
+    """Type an ``allOf`` of a mapped $ref and value keywords by the import, as an ``allOf`` of the $ref alone is.
+
+    The value keywords (``maxLength``, ``description``) are left out as beside a local $ref, and the mapped document
+    is not needed. Up to 0.95.0 the run failed with "A Parser can not resolve classes".
+    """
+    run_main_and_assert(
+        input_path=MAPPED_REF_ALL_OF_VALUE_KEYWORDS / "order.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=MAPPED_REF_ALL_OF_VALUE_KEYWORDS_ARGS,
+    )
+
+
+def test_main_jsonschema_external_ref_mapping_all_of_value_keywords_missing_document(output_file: Path) -> None:
+    """Type an ``allOf`` of a mapped $ref and value keywords by the import where the mapped document does not exist.
+
+    The run warns that the document does not exist, as for an ``allOf`` of the $ref alone. Up to 0.95.0 it failed with
+    "A Parser can not resolve classes".
+    """
+    with pytest.warns(
+        DanglingRefWarning, match=r"absent_shared\.json' that --external-ref-mapping maps does not exist"
+    ):
+        run_main_and_assert(
+            input_path=MAPPED_REF_ALL_OF_VALUE_KEYWORDS / "order_absent.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=MAPPED_REF_ALL_OF_VALUE_KEYWORDS_ARGS,
+        )
+
+
+def test_main_jsonschema_external_ref_mapping_all_of_value_keywords_modules(output_dir: Path) -> None:
+    """Import the class an ``allOf`` of a mapped $ref and value keywords names only in the module that uses it.
+
+    ``a.json`` types ``code`` by the mapped import; ``b.json`` names no mapped class, so ``b.py`` imports nothing from
+    the mapped package, as before the ``allOf`` was typed by the import. The mapped document sits outside the input
+    directory, so the run allows that local reference.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "mapped_ref_all_of_modules",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*MAPPED_REF_ALL_OF_VALUE_KEYWORDS_ARGS, "--allow-remote-refs"],
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--use-one-model-per-ref-site"],
     option_description="""Give an object `$ref` with sibling keywords one model per place it is written.

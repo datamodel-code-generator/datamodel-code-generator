@@ -2291,6 +2291,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         mapped = self._resolve_external_ref_mapping(ref)
         if mapped is None or (import_ := self._external_ref_mapping_import(*mapped)) is None:
             return None
+        return self._imported_mapped_type(import_)
+
+    def _imported_mapped_type(self, import_: Import) -> DataType:
+        """Return the type of a class that ``--external-ref-mapping`` imports, recording its import."""
         self._import_ledger.append(self.imports, import_, _EXTERNAL_REF_MAPPING_IMPORT)
         return self.data_type.from_import(import_)
 
@@ -4327,6 +4331,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if not self._adds_required_names([*required, *obj.required], inherited_required_names):
                     with self.model_resolver.current_base_path_context(self.model_resolver._base_path):  # noqa: SLF001
                         self.model_resolver.delete(path)
+                        if (mapped := self._mapped_references.get(base_classes[0].path)) is not None and (
+                            import_ := self._external_ref_mapping_import(*mapped)
+                        ) is not None:
+                            return frame.built(self.data_type.from_import(import_))
                         return frame.built(self.data_type(reference=base_classes[0]))
                 nullable = nullable or (
                     not any(
@@ -8410,12 +8418,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         The users in a field, a type or a dict key first, then those in the typed additional properties of each model,
         whose other referenced classes stay.
         """
-
-        def imported_type() -> DataType:
-            self._import_ledger.append(self.imports, import_, _EXTERNAL_REF_MAPPING_IMPORT)
-            return self.data_type.from_import(import_)
-
-        type_reference_users(self, reference, imported_type)
+        type_reference_users(self, reference, partial(self._imported_mapped_type, import_))
         for model in self.results:
             if reference.path in (classes := model.additional_properties_reference_classes):
                 type_additional_properties_users(
