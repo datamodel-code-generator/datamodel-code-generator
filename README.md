@@ -25,7 +25,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/diagrams/hero-dark.svg">
-    <img alt="Schema files, raw data, and existing Python models flow through datamodel-code-generator into Python model output types" src="docs/assets/diagrams/hero-light.svg" width="760">
+    <img alt="Schema files, raw data, and existing Python models flow through datamodel-code-generator into Python model output types and experimental HTTPX2 client and FastAPI server packages" src="docs/assets/diagrams/hero-light.svg" width="760">
   </picture>
 </p>
 
