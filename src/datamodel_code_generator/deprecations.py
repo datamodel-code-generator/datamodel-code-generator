@@ -402,8 +402,9 @@ def warn_deprecated(
 
     The warning names the code that called the package (``_stacklevel_at_caller``), or the frame ``stacklevel`` gives
     as ``warnings.warn`` counts it when a caller passes one. In a CLI invocation (``cli_migration_warning_scope``) it
-    names the package's call site: the console script runs as ``__main__``, and Python's default filters show a
-    ``DeprecationWarning`` raised from ``__main__`` that they hide when it is raised from the package.
+    names this function in the package: the console script and the ``__main__.py`` of ``python -m`` both run as
+    ``__main__``, and Python's default filters show a ``DeprecationWarning`` raised from ``__main__`` that they hide
+    when it is raised from the package.
     """
     if (deprecation := get_deprecation(deprecation_id)).status == "scheduled":
         return
@@ -413,7 +414,7 @@ def warn_deprecated(
         return
     message = deprecation.message if details is None else f"{deprecation.message} {details}"
     if stacklevel is None:
-        stacklevel = 2 if cli_seen is not None else _stacklevel_at_caller()
+        stacklevel = 1 if cli_seen is not None else _stacklevel_at_caller()
     warnings.warn(message, _WARNING_CATEGORIES[deprecation.warning_category], stacklevel=stacklevel)
     if seen is not None:
         seen.add(deprecation_id)
