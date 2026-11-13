@@ -232,8 +232,8 @@ jobs:
               printf 'Cells of the behaviour diff gate (PR tier, default options) whose output is not identical to the last release.\n'
               printf 'accepted and violation cells change default-output behaviour; crash-fix, no-behaviour and opt-in cells do not.\n\n'
               printf '```text\n'
-              jq -c 'select(.class != "same") | {input, type, options, class, notes: .notes[:4]}' \
-                "$report_dir/behaviour-diff-pr.jsonl" | head -n 300 | cut -c 1-600
+              jq -c -n 'limit(300; inputs | select(.class != "same") | {input, type, options, class, notes: .notes[:4]})' \
+                "$report_dir/behaviour-diff-pr.jsonl" | cut -c 1-600
               printf '```\n'
             else
               printf 'The behaviour diff gate did not run on this PR.\n'
