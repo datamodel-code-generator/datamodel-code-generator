@@ -3764,9 +3764,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         (``_OBJECT_KEYWORDS``), as JSON Schema applies them to objects alone; otherwise every branch is read with all
         of them.
         """
-        if self.config.read_object_keywords_by_type and (
-            _types_exclude(("object",), branch) or (branch.ref is not None and _branch_excludes_objects(self, branch))
-        ):
+        if self.config.read_object_keywords_by_type and _branch_excludes_objects(self, branch):
             return {keyword: value for keyword, value in outer.items() if keyword not in _OBJECT_KEYWORDS}
         return outer
 
