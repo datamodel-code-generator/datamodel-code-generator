@@ -145,7 +145,7 @@ EnumValueBaseRow: TypeAlias = Literal["value-base", "legacy-merged-enum-speciali
 * ``value-base``: the class of an ``IntEnum`` or a ``StrEnum``, whose members are ``int`` and ``str``, else the first
   base that is a value type, the ``str``, ``int``, ``float`` or ``bytes`` that ``--use-subclass-enum`` writes before
   ``Enum`` (``Enum.value_base``).
-* ``legacy-merged-enum-specialized-only``: the class alone, so where the first of the enums that a field-less model
+* ``legacy-merged-enum-specialized-only``: the class alone, so where the first of the enums that a model
   inherits is a ``(T, Enum)``, the merged enum keeps the members ``T`` cannot hold, as it does for a plain ``Enum``
   (``parser/_passes/modules.py:extract_inherited_enum``, row ``legacy-inherited-first-base-class`` of
   ``decide_enum_kind``; ``parser/_all_of_values.py:merged_enum_fails`` predicts it).

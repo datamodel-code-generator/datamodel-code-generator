@@ -11735,6 +11735,32 @@ def test_main_jsonschema_allof_enum_no_external_ref(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct", "dataclasses.dataclass"])
+def test_main_jsonschema_allof_any_of_enum_branch_object_keywords(output_model: str, output_file: Path) -> None:
+    """Write a class that inherits an enum as the merged enum when object keywords give it fields of its own.
+
+    The enum branch of an allOf's anyOf, inline or a ``$ref``, and an allOf of an enum ``$ref`` take no fields from
+    the site's ``required`` and ``properties``: an enum with members cannot be extended, and through 0.90.0 such a
+    class failed on import.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_any_of_enum_branch_object_keywords.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model, "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    if output_model == "pydantic_v2.BaseModel":
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="allof_any_of_enum_branch_object_keywords",
+            model_name="Task",
+            valid_json='{"result": "pending", "progress": "open", "state": "closed"}',
+            invalid_json='{"state": "other"}',
+            expected_error_type="enum",
+        )
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "22",
     reason="Installed black doesn't support the old style",

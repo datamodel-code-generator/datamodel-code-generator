@@ -45,7 +45,7 @@ __all__ = [
 
 EnumOrigin: TypeAlias = Literal["schema", "graphql", "merged"]
 """Where an enum comes from: a schema ``enum`` (JSON Schema, OpenAPI, AsyncAPI and the converted formats), a GraphQL
-enum type, or the enums an ``allOf`` lists, merged into one that replaces the field-less model of the ``allOf``.
+enum type, or the enums an ``allOf`` lists, merged into one that replaces the model of the ``allOf``.
 Schema and GraphQL enums follow the same rows."""
 
 EnumBase: TypeAlias = Literal["Enum", "IntEnum", "StrEnum"]
