@@ -1212,8 +1212,41 @@ def _resolve_schema_versions(input_file_type: InputFileType, schema_version: str
             return _parse_schema_version(JsonSchemaVersion, schema_version, "JSON Schema"), None, None, None, None
 
 
+@_lru_cache(maxsize=1)
+def _genson_kept_by_dependent() -> bool:
+    """Return whether another installed distribution keeps Genson installed once it becomes optional.
+
+    It does when it requires ``genson``, or dcg with the ``genson`` or ``all`` extra, outside its own extras.
+    The installer records no extras requested directly, so only dependents can show the extra is declared.
+    """
+    import re  # noqa: PLC0415
+    from importlib.metadata import distributions  # noqa: PLC0415
+
+    def canonical(name: str) -> str:
+        return re.sub(r"[-_.]+", "-", name).lower()
+
+    head = re.compile(r"\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[([^\]]*)\])?")
+    for distribution in distributions():
+        if canonical(distribution.metadata["Name"] or "") == "datamodel-code-generator":
+            continue
+        for requirement in distribution.requires or ():
+            spec, _, marker = requirement.partition(";")
+            if re.search(r"\bextra\s*==", marker) or (match := head.match(spec)) is None:
+                continue
+            name = canonical(match[1])
+            extras = {canonical(extra.strip()) for extra in (match[2] or "").split(",")}
+            if name == "genson" or (name == "datamodel-code-generator" and extras & {"genson", "all"}):
+                return True
+    return False
+
+
 def _warn_genson_optional() -> None:
-    """Announce that Genson, which infers a schema from raw data, becomes optional."""
+    """Announce that Genson, which infers a schema from raw data, becomes optional.
+
+    Skipped when an installed dependent keeps Genson installed: it already declares the extra.
+    """
+    if _genson_kept_by_dependent():
+        return
     from datamodel_code_generator.deprecations import warn_deprecated  # noqa: PLC0415
 
     warn_deprecated("dependency.genson-optional", stacklevel=3)
