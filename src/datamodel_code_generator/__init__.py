@@ -1214,9 +1214,9 @@ def _resolve_schema_versions(input_file_type: InputFileType, schema_version: str
 
 def _warn_genson_optional() -> None:
     """Announce that Genson, which infers a schema from raw data, becomes optional."""
-    from datamodel_code_generator.deprecations import warn_deprecated  # noqa: PLC0415
+    from datamodel_code_generator.deprecations import warn_undeclared_extra  # noqa: PLC0415
 
-    warn_deprecated("dependency.genson-optional", stacklevel=3)
+    warn_undeclared_extra("dependency.genson-optional", "genson", stacklevel=3)
 
 
 def _normalize_raw_input(  # noqa: PLR0912
