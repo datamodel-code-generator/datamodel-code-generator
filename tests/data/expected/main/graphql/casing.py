@@ -37,11 +37,19 @@ class Conflict(BaseModel):
     bar: String
     typename__: Literal['Conflict'] | None = Field('Conflict', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Conflict'] | None:
+        return self.typename__
+
 
 class ConflictModel(BaseModel):
     Foo: Int
     foo: String
     typename__: Literal['conflict'] | None = Field('conflict', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['conflict'] | None:
+        return self.typename__
 
 
 class Lowercasetype(BaseModel):
@@ -50,6 +58,10 @@ class Lowercasetype(BaseModel):
         'lowercasetype', alias='__typename'
     )
 
+    @property
+    def __typename(self) -> Literal['lowercasetype'] | None:
+        return self.typename__
+
 
 class Ref(BaseModel):
     bar: Lowercase
@@ -57,3 +69,7 @@ class Ref(BaseModel):
     eggs: Conflict
     spam: ConflictModel
     typename__: Literal['Ref'] | None = Field('Ref', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Ref'] | None:
+        return self.typename__

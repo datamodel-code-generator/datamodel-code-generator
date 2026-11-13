@@ -26,3 +26,7 @@ class A(BaseModel):
     listField: list[String]
     listListField: list[list[String]]
     typename__: Literal['A'] | None = Field('A', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['A'] | None:
+        return self.typename__

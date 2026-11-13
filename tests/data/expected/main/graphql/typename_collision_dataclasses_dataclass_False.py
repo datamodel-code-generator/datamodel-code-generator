@@ -44,6 +44,10 @@ class Cross(Base):
     typename__: String = field()
     typename___1: Literal['Cross'] | None = 'Cross'
 
+    @property
+    def __typename(self) -> Literal['Cross'] | None:
+        return self.typename___1
+
 
 @dataclass
 class Item(ZNode):
@@ -52,11 +56,19 @@ class Item(ZNode):
     typename___1: Int = field()
     typename___2: Literal['Item'] | None = 'Item'
 
+    @property
+    def __typename(self) -> Literal['Item'] | None:
+        return self.typename___2
+
 
 @dataclass
 class Ordinary(Base):
     value: Int
     typename__: Literal['Ordinary'] | None = 'Ordinary'
+
+    @property
+    def __typename(self) -> Literal['Ordinary'] | None:
+        return self.typename__
 
 
 @dataclass
@@ -66,11 +78,19 @@ class Second(ZNode):
     typename___1: Int = field()
     typename___2: Literal['Second'] | None = 'Second'
 
+    @property
+    def __typename(self) -> Literal['Second'] | None:
+        return self.typename___2
+
 
 @dataclass
 class Solo:
     typename__: String
     typename___1: Literal['Solo'] | None = 'Solo'
+
+    @property
+    def __typename(self) -> Literal['Solo'] | None:
+        return self.typename___1
 
 
 @dataclass

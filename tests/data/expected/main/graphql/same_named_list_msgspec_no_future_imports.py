@@ -27,6 +27,10 @@ class Bar(Struct):
     x: Int | None | UnsetType = UNSET
     typename__: Literal['Bar'] | UnsetType = field(name='__typename', default='Bar')
 
+    @property
+    def __typename(self) -> Literal['Bar'] | UnsetType:
+        return self.typename__
+
 
 class Holder(Struct):
     required: List["Bar"]
@@ -35,3 +39,7 @@ class Holder(Struct):
     typename__: Union[Literal['Holder'], UnsetType] = field(
         name='__typename', default='Holder'
     )
+
+    @property
+    def __typename(self) -> Union[Literal['Holder'], UnsetType]:
+        return self.typename__

@@ -85,12 +85,20 @@ class Author(BaseModel):
     name: String | None = None
     typename__: Literal["Author"] | None = Field("Author", alias="__typename")
 
+    @property
+    def __typename(self) -> Literal["Author"] | None:
+        return self.typename__
+
 
 class Book(BaseModel):
     author: Author | None = None
     id: ID
     title: String | None = None
     typename__: Literal["Book"] | None = Field("Book", alias="__typename")
+
+    @property
+    def __typename(self) -> Literal["Book"] | None:
+        return self.typename__
 
 
 class AuthorBooksInput(BaseModel):
@@ -102,6 +110,8 @@ class BooksInput(BaseModel):
     ids: list[ID]
     typename__: Literal["BooksInput"] | None = Field("BooksInput", alias="__typename")
 ```
+
+Each model of an object type (`Author`, `Book`) also gets a read-only `__typename` property that returns `typename__`, so graphql-core's default type resolver resolves unions and interfaces from model instances without a `resolve_type` function (input and interface types, `typing.TypedDict` output and custom model templates do not get it).
 
 ---
 
@@ -234,6 +244,10 @@ class Book(BaseModel):
     id: ID
     title: String | None = None
     typename__: Literal["Book"] | None = Field("Book", alias="__typename")
+
+    @property
+    def __typename(self) -> Literal["Book"] | None:
+        return self.typename__
 ```
 
 **After (with --graphql-no-typename):**

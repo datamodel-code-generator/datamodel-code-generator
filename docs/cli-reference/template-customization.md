@@ -138,6 +138,10 @@ is useful when using custom types defined in external modules (e.g.,
         b: DateTime
         c: MyCustomClass
         typename__: Literal['A'] | None = Field('A', alias='__typename')
+
+        @property
+        def __typename(self) -> Literal['A'] | None:
+            return self.typename__
     ```
 
     <!-- fmt: on -->
@@ -1030,6 +1034,10 @@ formatting rules beyond what black/isort provide.
         duration: Long
         id: ID
         typename__: Literal['A'] | None = Field('A', alias='__typename')
+
+        @property
+        def __typename(self) -> Literal['A'] | None:
+            return self.typename__
     ```
 
     <!-- fmt: on -->

@@ -30,6 +30,10 @@ class Query(BaseModel):
     label: String | None = None
     typename__: Literal['Query'] | None = Field('Query', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Query'] | None:
+        return self.typename__
+
 
 class Payload(BaseModel):
     mutationRoot: Any | None = None
@@ -37,3 +41,7 @@ class Payload(BaseModel):
     queryRoot: Any | None = None
     subscriptionRoot: Any | None = None
     typename__: Literal['Payload'] | None = Field('Payload', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Payload'] | None:
+        return self.typename__

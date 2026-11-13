@@ -23,3 +23,7 @@ class Thing(Struct):
     longs: Annotated[List[Long], Meta(min_length=1)]
     long: Union[Annotated[Long, Meta(min_length=1)], None, UnsetType] = UNSET
     typename__: Union[Literal['Thing'], UnsetType] = field(name='__typename', default='Thing')
+
+    @property
+    def __typename(self) -> Union[Literal['Thing'], UnsetType]:
+        return self.typename__

@@ -53,6 +53,10 @@ class FooFilm(BaseModel):
     vehicles_ids: list[FooID]
     typename__: Literal['Film'] | None = Field('Film', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Film'] | None:
+        return self.typename__
+
 
 class FooPerson(BaseModel):
     birth_year: FooString | None = None
@@ -76,6 +80,10 @@ class FooPerson(BaseModel):
     vehicles_ids: list[FooID]
     typename__: Literal['Person'] | None = Field('Person', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Person'] | None:
+        return self.typename__
+
 
 class FooPlanet(BaseModel):
     climate: FooString | None = None
@@ -94,6 +102,10 @@ class FooPlanet(BaseModel):
     terrain: FooString | None = None
     typename__: Literal['Planet'] | None = Field('Planet', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Planet'] | None:
+        return self.typename__
+
 
 class FooSpecies(BaseModel):
     average_height: FooString | None = None
@@ -111,6 +123,10 @@ class FooSpecies(BaseModel):
     people_ids: list[FooID]
     skin_colors: FooString | None = None
     typename__: Literal['Species'] | None = Field('Species', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Species'] | None:
+        return self.typename__
 
 
 class FooStarship(BaseModel):
@@ -134,6 +150,10 @@ class FooStarship(BaseModel):
     starship_class: FooString | None = None
     typename__: Literal['Starship'] | None = Field('Starship', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Starship'] | None:
+        return self.typename__
+
 
 class FooVehicle(BaseModel):
     cargo_capacity: FooString | None = None
@@ -153,6 +173,10 @@ class FooVehicle(BaseModel):
     pilots_ids: list[FooID]
     vehicle_class: FooString | None = None
     typename__: Literal['Vehicle'] | None = Field('Vehicle', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Vehicle'] | None:
+        return self.typename__
 
 
 FooFilm.model_rebuild()

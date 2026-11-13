@@ -52,6 +52,10 @@ class Film:
     producer: String | None = None
     typename__: Literal['Film'] | None = 'Film'
 
+    @property
+    def __typename(self) -> Literal['Film'] | None:
+        return self.typename__
+
 
 @dataclass
 class Person:
@@ -76,6 +80,10 @@ class Person:
     skin_color: String | None = None
     typename__: Literal['Person'] | None = 'Person'
 
+    @property
+    def __typename(self) -> Literal['Person'] | None:
+        return self.typename__
+
 
 @dataclass
 class Planet:
@@ -95,6 +103,10 @@ class Planet:
     terrain: String | None = None
     typename__: Literal['Planet'] | None = 'Planet'
 
+    @property
+    def __typename(self) -> Literal['Planet'] | None:
+        return self.typename__
+
 
 @dataclass
 class Species:
@@ -113,6 +125,10 @@ class Species:
     language: String | None = None
     skin_colors: String | None = None
     typename__: Literal['Species'] | None = 'Species'
+
+    @property
+    def __typename(self) -> Literal['Species'] | None:
+        return self.typename__
 
 
 @dataclass
@@ -137,6 +153,10 @@ class Starship:
     starship_class: String | None = None
     typename__: Literal['Starship'] | None = 'Starship'
 
+    @property
+    def __typename(self) -> Literal['Starship'] | None:
+        return self.typename__
+
 
 @dataclass
 class Vehicle:
@@ -157,3 +177,7 @@ class Vehicle:
     passengers: String | None = None
     vehicle_class: String | None = None
     typename__: Literal['Vehicle'] | None = 'Vehicle'
+
+    @property
+    def __typename(self) -> Literal['Vehicle'] | None:
+        return self.typename__

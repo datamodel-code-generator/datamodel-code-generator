@@ -63,12 +63,20 @@ class Item(Mid, Base):
     typename___1: Int = Field(..., alias='spare')
     typename___2: Literal['Item'] | None = Field('Item', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Item'] | None:
+        return self.typename___2
+
 
 class Multi(OtherBase, Side, Common):
     spare: Int
     value: Int
     typename__: Int = Field(..., alias='spare')
     typename___1: Literal['Multi'] | None = Field('Multi', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Multi'] | None:
+        return self.typename___1
 
 
 class MultiOrdinary(OtherBase, Common):
@@ -77,11 +85,19 @@ class MultiOrdinary(OtherBase, Common):
         'MultiOrdinary', alias='__typename'
     )
 
+    @property
+    def __typename(self) -> Literal['MultiOrdinary'] | None:
+        return self.typename__
+
 
 class Ordinary(Base):
     label: String
     value: Int
     typename___1: Literal['Ordinary'] | None = Field('Ordinary', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Ordinary'] | None:
+        return self.typename___1
 
 
 class Terminal(Mid, Base):
@@ -90,3 +106,7 @@ class Terminal(Mid, Base):
     value: Int
     typename___1: Int = Field(..., alias='spare')
     typename___3: Literal['Terminal'] | None = Field('Terminal', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Terminal'] | None:
+        return self.typename___3

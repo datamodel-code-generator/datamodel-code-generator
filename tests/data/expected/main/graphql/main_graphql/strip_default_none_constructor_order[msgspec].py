@@ -31,3 +31,7 @@ class Film(Struct):
     title: String
     director: String | None | UnsetType = UNSET
     typename__: Literal['Film'] | UnsetType = field(name='__typename', default='Film')
+
+    @property
+    def __typename(self) -> Literal['Film'] | UnsetType:
+        return self.typename__

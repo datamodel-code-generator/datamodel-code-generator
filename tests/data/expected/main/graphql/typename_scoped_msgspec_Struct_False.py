@@ -66,6 +66,10 @@ class Item(Mid, Base, kw_only=True):
     typename___1: Int = field(name='spare')
     typename___2: Literal['Item'] | UnsetType = field(name='__typename', default='Item')
 
+    @property
+    def __typename(self) -> Literal['Item'] | UnsetType:
+        return self.typename___2
+
 
 class Multi(OtherBase, Side, Common, kw_only=True):
     spare: Int
@@ -75,12 +79,20 @@ class Multi(OtherBase, Side, Common, kw_only=True):
         name='__typename', default='Multi'
     )
 
+    @property
+    def __typename(self) -> Literal['Multi'] | UnsetType:
+        return self.typename___1
+
 
 class MultiOrdinary(OtherBase, Common):
     value: Int
     typename__: Literal['MultiOrdinary'] | UnsetType = field(
         name='__typename', default='MultiOrdinary'
     )
+
+    @property
+    def __typename(self) -> Literal['MultiOrdinary'] | UnsetType:
+        return self.typename__
 
 
 class Ordinary(Base, kw_only=True):
@@ -89,6 +101,10 @@ class Ordinary(Base, kw_only=True):
     typename___1: Literal['Ordinary'] | UnsetType = field(
         name='__typename', default='Ordinary'
     )
+
+    @property
+    def __typename(self) -> Literal['Ordinary'] | UnsetType:
+        return self.typename___1
 
 
 class Terminal(Mid, Base):
@@ -99,3 +115,7 @@ class Terminal(Mid, Base):
     typename___3: Literal['Terminal'] | UnsetType = field(
         name='__typename', default='Terminal'
     )
+
+    @property
+    def __typename(self) -> Literal['Terminal'] | UnsetType:
+        return self.typename___3

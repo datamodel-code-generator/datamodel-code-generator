@@ -52,6 +52,10 @@ class Film(BaseModel):
     vehicles_ids: list[ID]
     typename__: Literal['Film'] | None = Field('Film', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Film'] | None:
+        return self.typename__
+
 
 class Person(BaseModel):
     birth_year: String | None = None
@@ -75,6 +79,10 @@ class Person(BaseModel):
     vehicles_ids: list[ID]
     typename__: Literal['Person'] | None = Field('Person', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Person'] | None:
+        return self.typename__
+
 
 class Planet(BaseModel):
     climate: String | None = None
@@ -93,6 +101,10 @@ class Planet(BaseModel):
     terrain: String | None = None
     typename__: Literal['Planet'] | None = Field('Planet', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Planet'] | None:
+        return self.typename__
+
 
 class Species(BaseModel):
     average_height: String | None = None
@@ -110,6 +122,10 @@ class Species(BaseModel):
     people_ids: list[ID]
     skin_colors: String | None = None
     typename__: Literal['Species'] | None = Field('Species', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Species'] | None:
+        return self.typename__
 
 
 class Starship(BaseModel):
@@ -133,6 +149,10 @@ class Starship(BaseModel):
     starship_class: String | None = None
     typename__: Literal['Starship'] | None = Field('Starship', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Starship'] | None:
+        return self.typename__
+
 
 class Vehicle(BaseModel):
     cargo_capacity: String | None = None
@@ -152,6 +172,10 @@ class Vehicle(BaseModel):
     pilots_ids: list[ID]
     vehicle_class: String | None = None
     typename__: Literal['Vehicle'] | None = Field('Vehicle', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Vehicle'] | None:
+        return self.typename__
 
 
 Film.model_rebuild()

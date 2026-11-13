@@ -25,6 +25,10 @@ class Other(BaseModel):
     value: String
     typename__: Literal['Other'] | None = Field('Other', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Other'] | None:
+        return self.typename__
+
 
 class Subscription(BaseModel):
     self: Subscription | None = None
@@ -32,6 +36,10 @@ class Subscription(BaseModel):
     typename__: Literal['Subscription'] | None = Field(
         'Subscription', alias='__typename'
     )
+
+    @property
+    def __typename(self) -> Literal['Subscription'] | None:
+        return self.typename__
 
 
 Choice = TypeAliasType(
@@ -48,6 +56,10 @@ class Holder(BaseModel):
     query: Any | None = None
     subscription: Subscription | None = None
     typename__: Literal['Holder'] | None = Field('Holder', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Holder'] | None:
+        return self.typename__
 
 
 Subscription.model_rebuild()

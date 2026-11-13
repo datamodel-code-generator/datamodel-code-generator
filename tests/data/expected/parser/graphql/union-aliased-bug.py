@@ -27,12 +27,20 @@ class GroupMetadata(BaseModel):
         'GroupMetadata', alias='__typename'
     )
 
+    @property
+    def __typename(self) -> Literal['GroupMetadata'] | None:
+        return self.typename__
+
 
 class UserMetadata(BaseModel):
     name: String
     typename__: Literal['UserMetadata'] | None = Field(
         'UserMetadata', alias='__typename'
     )
+
+    @property
+    def __typename(self) -> Literal['UserMetadata'] | None:
+        return self.typename__
 
 
 Metadata = TypeAliasType(
@@ -47,3 +55,7 @@ Metadata = TypeAliasType(
 class Resource(BaseModel):
     metadata: UserMetadata
     typename__: Literal['Resource'] | None = Field('Resource', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Resource'] | None:
+        return self.typename__

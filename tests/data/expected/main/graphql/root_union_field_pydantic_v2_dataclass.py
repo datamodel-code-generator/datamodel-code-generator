@@ -29,11 +29,19 @@ class Holder:
     subscription: Any | None = None
     typename__: Literal['Holder'] | None = Field('Holder', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Holder'] | None:
+        return self.typename__
+
 
 @dataclass
 class Other:
     value: String
     typename__: Literal['Other'] | None = Field('Other', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Other'] | None:
+        return self.typename__
 
 
 @dataclass
@@ -41,6 +49,10 @@ class Query:
     value: String
     self: Query | None = None
     typename__: Literal['Query'] | None = Field('Query', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Query'] | None:
+        return self.typename__
 
 
 Choice = TypeAliasType(

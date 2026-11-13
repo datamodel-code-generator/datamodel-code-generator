@@ -30,3 +30,7 @@ class Model(BaseModel):
     levels: list[Literal[HTTPStatus.OK, HTTPStatus.CREATED]] | None = None
     mode: Literal[0.5, 1.5]
     typename__: Literal['Model'] | None = Field('Model', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Model'] | None:
+        return self.typename__

@@ -35,11 +35,19 @@ class Person(BaseModel):
     name: String
     typename__: Literal['Person'] | None = Field('Person', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Person'] | None:
+        return self.typename__
+
 
 class Pet(BaseModel):
     name: String
     type: String
     typename__: Literal['Pet'] | None = Field('Pet', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Pet'] | None:
+        return self.typename__
 
 
 UnionType = TypeAliasType(
@@ -58,3 +66,7 @@ class ModelWithTypeAliasField(BaseModel):
     typename__: Literal['ModelWithTypeAliasField'] | None = Field(
         'ModelWithTypeAliasField', alias='__typename'
     )
+
+    @property
+    def __typename(self) -> Literal['ModelWithTypeAliasField'] | None:
+        return self.typename__

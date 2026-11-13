@@ -93,6 +93,10 @@ class CustomerNeedNotification(Entity, Notification, Node):
         Literal['CustomerNeedNotification'] | None, Field(alias='__typename')
     ] = 'CustomerNeedNotification'
 
+    @property
+    def __typename(self) -> Literal['CustomerNeedNotification'] | None:
+        return self.typename__
+
 
 class DiamondType(LeftBranch, RightBranch, BaseInterface):
     base_field: Annotated[String | None, Field(alias='baseField')] = None
@@ -102,6 +106,10 @@ class DiamondType(LeftBranch, RightBranch, BaseInterface):
     typename__: Annotated[Literal['DiamondType'] | None, Field(alias='__typename')] = (
         'DiamondType'
     )
+
+    @property
+    def __typename(self) -> Literal['DiamondType'] | None:
+        return self.typename__
 
 
 class Child(Parent, GrandParent):
@@ -119,3 +127,7 @@ class LeafType(Child, Parent, GrandParent):
     typename__: Annotated[Literal['LeafType'] | None, Field(alias='__typename')] = (
         'LeafType'
     )
+
+    @property
+    def __typename(self) -> Literal['LeafType'] | None:
+        return self.typename__

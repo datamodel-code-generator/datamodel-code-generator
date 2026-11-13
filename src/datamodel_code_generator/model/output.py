@@ -96,7 +96,11 @@ def prepare_output_model_config(  # noqa: PLR0913, PLR0912
 
 
 def _model_field_name_collisions(model: DataModel, rendered: str | None, import_names: Collection[str]) -> set[str]:
-    """Find imported names hidden by assignments in the emitted model body, ``rendered`` or rendered now."""
+    """Find imported names hidden by assignments in the emitted model body, ``rendered`` or rendered now.
+
+    A field annotation loads its names wherever it stands; a default and a method decorator load the names of the
+    fields assigned before them.
+    """
     field_names = {field.name for field in model.fields if field.name is not None}
     candidates = field_names.intersection(import_names)
     if not candidates:
@@ -117,11 +121,19 @@ def _model_field_name_collisions(model: DataModel, rendered: str | None, import_
     candidates.intersection_update(assigned_names)
     collisions: set[str] = set()
     previous_names: set[str] = set()
-    for name, node in fields:
-        collisions.update(candidates.intersection(_expression_names(node.annotation, restore_name)))
-        if node.value is not None:
-            collisions.update(candidates.intersection(previous_names, _expression_names(node.value, restore_name)))
-            previous_names.add(name)
+    for node in class_body:
+        if isinstance(node, ast.FunctionDef):
+            collisions.update(
+                candidates.intersection(
+                    previous_names,
+                    {name for decorator in node.decorator_list for name in _expression_names(decorator, restore_name)},
+                )
+            )
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            collisions.update(candidates.intersection(_expression_names(node.annotation, restore_name)))
+            if node.value is not None:
+                collisions.update(candidates.intersection(previous_names, _expression_names(node.value, restore_name)))
+                previous_names.add(restore_name(node.target.id))
     return collisions
 
 

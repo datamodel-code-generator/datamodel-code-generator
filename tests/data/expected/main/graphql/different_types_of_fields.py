@@ -38,3 +38,7 @@ class A(BaseModel):
         None
     )
     typename__: Literal['A'] | None = Field('A', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['A'] | None:
+        return self.typename__

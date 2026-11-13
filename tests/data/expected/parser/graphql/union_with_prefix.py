@@ -43,12 +43,20 @@ class FooCar(FooIResource):
     passengerCapacity: FooInt
     typename__: Literal['Car'] | None = Field('Car', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Car'] | None:
+        return self.typename__
+
 
 class FooEmployee(FooIResource):
     firstName: FooString | None = None
     id: FooID
     lastName: FooString | None = None
     typename__: Literal['Employee'] | None = Field('Employee', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Employee'] | None:
+        return self.typename__
 
 
 FooResource = TypeAliasType(
