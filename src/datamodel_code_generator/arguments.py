@@ -1020,9 +1020,10 @@ _toggle(
     "--read-object-keywords-by-type",
     help="Read the keywords that constrain objects only (properties, patternProperties, additionalProperties, "
     "propertyNames, unevaluatedProperties, required, minProperties, maxProperties) beside an `anyOf` or `oneOf` as "
-    "JSON Schema does: a branch whose `type` admits no object, such as a string, does not take them, so it stays "
-    "that type instead of becoming a map or a model, and under --generate-schema-validators a site with such a "
-    "branch is a union rather than one object model; without it every branch takes them, as in 0.93.0",
+    "JSON Schema does: a branch that admits no object, such as a string `type`, a `const`, an `enum` or an `allOf` "
+    "of such parts, does not take them, so it stays that type instead of becoming a map or a model, and under "
+    "--generate-schema-validators a site with such a branch is a union rather than one object model; without it "
+    "every branch takes them, as in 0.93.0",
 )
 _toggle(
     typing_options,

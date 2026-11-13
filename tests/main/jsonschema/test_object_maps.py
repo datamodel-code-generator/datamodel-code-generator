@@ -1254,10 +1254,10 @@ OBJECT_KEYWORDS_BY_TYPE_OPTION_SETS = {
 `properties`, `patternProperties`, `additionalProperties`, `propertyNames`, `unevaluatedProperties`, `required`,
 `minProperties` and `maxProperties` apply to objects only. Without this option every branch of an `anyOf` or `oneOf`
 is read with those beside it, so a `{"type": "string"}` branch beside `patternProperties` becomes a map, which merges
-with the object branch and leaves the string out: `"icons/star.png"` is rejected. With it a branch whose `type` admits
-no object, or a `$ref` branch naming such a schema, is read without them and keeps its type, while the object
-branches still take them. Under `--generate-schema-validators` such a site is the union of its branches instead of one
-validated object model.""",
+with the object branch and leaves the string out: `"icons/star.png"` is rejected. With it a branch that admits no
+object, such as a string `type`, a `const`, an `enum`, an `allOf` of such parts or a `$ref` naming such a schema, is
+read without them and keeps its type, while the object branches still take them. Under
+`--generate-schema-validators` such a site is the union of its branches instead of one validated object model.""",
     input_schema="jsonschema/object_maps/string_branches_beside_object_keywords.json",
     cli_args=["--read-object-keywords-by-type"],
     golden_output="main/jsonschema/object_maps/object_keywords_by_type[on].py",
@@ -1355,6 +1355,50 @@ def test_object_keywords_by_type_referenced_branch_beside_value_keywords(
             valid_json=valid_json,
             invalid_json=invalid_json,
             expected_error_type=error_type,
+        )
+
+
+@pytest.mark.parametrize("option_set", ["off", "on", "validators-on"])
+def test_object_keywords_by_type_const_enum_branches(output_file: Path, option_set: str) -> None:
+    """Keep a ``const`` and an ``enum`` branch beside the object keywords of an anyOf themselves (#6774).
+
+    They have no ``type`` but admit no object, so with --read-object-keywords-by-type, also with validators, they take
+    none of the ``properties`` and ``required`` beside the anyOf and ``"none"`` and ``"system"`` validate beside the
+    model of the object branch; without it they merge into that model and only objects validate.
+    """
+    run_main_and_assert(
+        input_path=OBJECT_MAPS / "const_enum_branches_beside_object_keywords.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            *OBJECT_KEYWORDS_BY_TYPE_OPTION_SETS[option_set],
+        ],
+    )
+    if option_set == "off":
+        assert_generated_model_json_invalid(
+            output_file,
+            module_name="const_enum_branches",
+            model_name="Account",
+            invalid_json='{"owner": "none"}',
+            expected_error_type="model_type",
+        )
+        return
+    for valid_json, invalid_json in (
+        ('{"owner": "none"}', '{"owner": {}}'),
+        ('{"owner": "system"}', '{"owner": 5}'),
+        ('{"owner": {"id": "u1"}}', '{"owner": "x"}'),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="const_enum_branches",
+            model_name="Account",
+            valid_json=valid_json,
+            invalid_json=invalid_json,
+            expected_error_type="literal_error",
         )
 
 
