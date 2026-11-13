@@ -1,0 +1,3 @@
+notice_caller.py:3: Genson will become optional
+notice_caller.py:3: Default formatters will change to builtin no earlier than three months after 0.92.0
+left by a module filter for the caller: 0

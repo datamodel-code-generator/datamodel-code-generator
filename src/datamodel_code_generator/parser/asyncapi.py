@@ -903,7 +903,7 @@ class AsyncAPIParser(OpenAPIParser):
         with self._parsing_session(lambda: self._resolve_asyncapi_unparsed_json_pointer(context_sources)):
             for source, path_parts in _schema_documents.get_context_source_path_parts(self):
                 if self.validation:
-                    warn_deprecated("cli.validation", stacklevel=2)
+                    warn_deprecated("cli.validation")
 
                 specification = self._index_document(self._load_source_dict(source), path_parts)
                 self.raw_obj = specification

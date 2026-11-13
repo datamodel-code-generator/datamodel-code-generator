@@ -266,7 +266,7 @@ def _get_config_class() -> type[Config]:
             """Migrate deprecated --parent-scoped-naming to --naming-strategy."""
             if values.get("parent_scoped_naming") and not values.get("naming_strategy"):
                 values["naming_strategy"] = NamingStrategy.ParentPrefixed
-                warn_deprecated("cli.parent-scoped-naming", stacklevel=2)
+                warn_deprecated("cli.parent-scoped-naming")
             return values
 
         @model_validator(mode="before")
@@ -275,7 +275,7 @@ def _get_config_class() -> type[Config]:
             """Migrate deprecated --allow-extra-fields to --extra-fields."""
             if values.get("allow_extra_fields") and not values.get("extra_fields"):
                 values["extra_fields"] = "allow"
-                warn_deprecated("cli.allow-extra-fields", stacklevel=2)
+                warn_deprecated("cli.allow-extra-fields")
             return values
 
         @model_validator(mode="before")

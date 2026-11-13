@@ -70,7 +70,7 @@ class PythonVersion(Enum):
         """
         from datamodel_code_generator.deprecations import warn_deprecated  # noqa: PLC0415
 
-        warn_deprecated("python-api.python-version-has-type-alias", stacklevel=2)
+        warn_deprecated("python-api.python-version-has-type-alias")
         return self._meets("python.type_alias_annotation")
 
     @property

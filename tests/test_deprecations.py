@@ -140,8 +140,8 @@ def _emit_deprecation_warning() -> None:
     warn_deprecated("cli.parent-scoped-naming")
 
 
-def test_warn_deprecated_default_stacklevel_points_to_caller() -> None:
-    """The default stacklevel keeps warnings attributed to the call site."""
+def test_warn_deprecated_points_to_caller() -> None:
+    """A notice names the code that called into the package."""
     with warnings.catch_warnings(record=True) as recorded_warnings:
         warnings.simplefilter("always")
         _emit_deprecation_warning()

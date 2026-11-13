@@ -755,7 +755,7 @@ class OpenAPIParser(JsonSchemaParser):
             and not self._features_at(obj).nullable_keyword
             and (self.config.schema_version_mode == VersionMode.Strict)
         ):
-            warn_deprecated("schema.openapi-nullable", stacklevel=2)
+            warn_deprecated("schema.openapi-nullable")
         return super()._get_data_type(obj, localize_constraints=localize_constraints)
 
     def _normalize_discriminator(self, discriminator: dict[str, Any]) -> dict[str, Any]:
@@ -1455,7 +1455,7 @@ class OpenAPIParser(JsonSchemaParser):
                             "the document by itself and fetches the URLs that --no-allow-remote-refs blocks."
                         )
                         raise Error(msg)
-                    warn_deprecated("cli.validation", stacklevel=2)
+                    warn_deprecated("cli.validation")
 
                     if source.raw_data is not None and not source.text:
                         warn(

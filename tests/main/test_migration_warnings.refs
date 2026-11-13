@@ -27,6 +27,8 @@ new-preset	main/migration_warnings/batch-new-preset-old-pydantic-old-black-old-i
 new-preset	main/migration_warnings/batch-new-preset-pydantic-black-isort.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 new-preset	main/migration_warnings/batch-new-preset-pydantic-old-black-isort.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 new-preset	main/migration_warnings/model.py
+[test_migration_notices_name_the_code_that_called_generate]
+	main/migration_warnings/migration_notices_name_the_code_that_called_generate.txt
 [test_migration_notices_real_generation]
 api-black	main/migration_warnings/black.py
 api-black	main/migration_warnings/black.txt	?

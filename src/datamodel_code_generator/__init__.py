@@ -1216,7 +1216,7 @@ def _warn_genson_optional() -> None:
     """Announce that Genson, which infers a schema from raw data, becomes optional."""
     from datamodel_code_generator.deprecations import warn_undeclared_extra  # noqa: PLC0415
 
-    warn_undeclared_extra("dependency.genson-optional", "genson", stacklevel=3)
+    warn_undeclared_extra("dependency.genson-optional", "genson")
 
 
 def _normalize_raw_input(  # noqa: PLR0912
@@ -1882,7 +1882,7 @@ def _prepare_generate_facade_config(config: GenerateConfig) -> GenerateConfig:
 
     warn_legacy_dependency("dependency.pydantic-runtime-minimum", PYDANTIC_VERSION, (2, 8, 2))
     if config.custom_template_dir:
-        warn_deprecated("dependency.jinja2-optional", stacklevel=2)
+        warn_deprecated("dependency.jinja2-optional")
     given = set(config.model_fields_set)
     config = _apply_generate_config_preset(config)
     config = _apply_missing_sentinel_config(config)

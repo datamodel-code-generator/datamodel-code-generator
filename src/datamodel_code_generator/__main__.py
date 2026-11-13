@@ -1765,7 +1765,6 @@ def _apply_model_run_options(config: Config, namespace: Namespace, pyproject_con
                 "The current default (use_annotated=False) generates constrained types like "
                 "'conint(ge=1, le=365)' which are discouraged in Pydantic v2."
             ),
-            stacklevel=1,
         )
 
     if config.reuse_scope == ReuseScope.Tree and not config.reuse_model:

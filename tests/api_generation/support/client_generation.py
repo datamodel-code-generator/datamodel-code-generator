@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeAlias
 
 from datamodel_code_generator import DataModelType, Error, GenerateConfig, InvalidFileFormatError, chdir, generate
+from datamodel_code_generator.deprecations import DEPRECATIONS
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
 from tests.api_generation.support.backends import backend_settings
@@ -33,13 +34,19 @@ Modules: TypeAlias = dict[tuple[str, ...], str]
 
 FORMATTER_FAILURE = "Ruff command failed"
 GENERATOR = Path(str(files("datamodel_code_generator")))
+NOTICES = tuple(item.message for item in DEPRECATIONS.values())
+"""The registry's notices, which name the code that called the generator rather than a file of it."""
 
 
 def generator_warnings(caught: list[warnings.WarningMessage]) -> list[str]:
-    """Return the generator's own warnings as report lines, and warn again of any other warning."""
+    """Return the generator's own warnings and notices as report lines, and warn again of any other warning."""
     lines: list[str] = []
     for item in caught:
-        if item.category.__module__.startswith(GENERATOR.name) or Path(item.filename).is_relative_to(GENERATOR):
+        if (
+            item.category.__module__.startswith(GENERATOR.name)
+            or Path(item.filename).is_relative_to(GENERATOR)
+            or str(item.message).startswith(NOTICES)
+        ):
             lines.append(f"warning {item.category.__name__}: {item.message}")
         else:
             warnings.warn_explicit(item.message, item.category, item.filename, item.lineno, source=item.source)

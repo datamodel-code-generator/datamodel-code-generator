@@ -42,7 +42,7 @@ import warnings
 
 from datamodel_code_generator import infer_input_type
 
-warnings.filterwarnings("ignore", category=DeprecationWarning, module="datamodel_code_generator")
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 try:
     outcome = infer_input_type({text!r}).value

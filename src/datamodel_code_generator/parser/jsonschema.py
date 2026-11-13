@@ -7712,7 +7712,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                             "schemas, or --no-allow-remote-refs to block HTTP(S) $ref fetching. Internal network "
                             "targets also require --allow-private-network."
                         ),
-                        stacklevel=2,
                     )
             return _schema_documents.prepare_schema_resources(
                 self, self._get_ref_body_from_url(resolved_ref), [resolved_ref]
@@ -7742,7 +7741,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             "external local file reference without a warning, or pass --no-allow-remote-refs to block it."
         )
         if self.allow_remote_refs is None:
-            warn_deprecated("behavior.remote-ref-default", details=details, stacklevel=3)
+            warn_deprecated("behavior.remote-ref-default", details=details)
             return resolved_path
 
         msg = (
@@ -8325,7 +8324,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             warn_deprecated(
                 "schema.jsonschema-items-array",
                 details=f"Schema path: {schema_path}",
-                stacklevel=4,
             )
 
     def _definition_entry_prefixes(self) -> tuple[tuple[str, ...], ...]:

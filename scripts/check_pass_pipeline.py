@@ -133,7 +133,6 @@ DEEP_WARNINGS = {
     "parser/jsonschema.py:_check_array_version_features": "the parser method that checked the array (L1)",
     "parser/jsonschema.py:_check_version_specific_features": "the parser method that checked the schema (L1)",
     "parser/jsonschema.py:_report_parse_diagnostics": "the caller of Parser.parse() (stacklevel_at_parse_caller)",
-    "parser/jsonschema.py:_resolve_local_ref_path": "the parser method that resolved the reference (L0)",
     "parser/protobuf.py:_effective_version": "the parser method that read the syntax (L1)",
 }
 """Each ``warn()`` with a ``stacklevel`` above 2, by ``file:function``, with the frame its location names."""

@@ -489,13 +489,10 @@ class CodeFormatter:
     ) -> None:
         """Initialize code formatter with configuration for black, isort, ruff, and custom formatters."""
         if formatters is None:
-            warn_deprecated(
-                "format.default-formatters",
-                stacklevel=2,
-            )
+            warn_deprecated("format.default-formatters")
             formatters = list(DEFAULT_FORMATTERS)
         elif Formatter.BLACK in formatters or Formatter.ISORT in formatters:
-            warn_deprecated("dependency.external-formatters-optional", stacklevel=2)
+            warn_deprecated("dependency.external-formatters-optional")
 
         if not settings_path:
             settings_path = Path.cwd()
