@@ -26,16 +26,18 @@ from typing import TYPE_CHECKING, Final
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-QUOTE_AND_CONTROL_ESCAPES = {
-    "'": r"\'",
+CONTROL_ESCAPES = {
     "\b": r"\b",
     "\f": r"\f",
     "\n": r"\n",
     "\r": r"\r",
     "\t": r"\t",
 }
-"""The escapes the text of any single-quoted literal needs: the quote and the control characters. The text of a raw
-literal (a Pydantic pattern) needs these only, as it reads a backslash as itself."""
+"""The escapes of the control characters. The text of a raw literal (a Pydantic pattern) needs these only, as it reads
+a backslash as itself and takes a quote its text does not hold."""
+
+QUOTE_AND_CONTROL_ESCAPES = {"'": r"\'", **CONTROL_ESCAPES}
+"""The escapes the text of any single-quoted literal that is not raw needs: the quote and the control characters."""
 
 _SURROGATES: Final = range(0xD800, 0xE000)
 """The code points of the lone surrogates, which UTF-8 cannot encode, so a module cannot hold them as they are."""
@@ -53,28 +55,34 @@ hold."""
 _SURROGATE_REPLACEMENTS: Final = dict.fromkeys(_SURROGATES, "\ufffd")
 """Each lone surrogate replaced by U+FFFD, as ``str.translate`` reads it, for the text of a docstring or a comment."""
 
-RAW_SINGLE_QUOTED_ESCAPES = str.maketrans(QUOTE_AND_CONTROL_ESCAPES)
-"""The escapes of the text of a raw single-quoted literal (a Pydantic pattern), as ``str.translate`` reads them."""
+RAW_LITERAL_ESCAPES = str.maketrans(CONTROL_ESCAPES)
+"""The escapes of the text of a raw literal (a Pydantic pattern), as ``str.translate`` reads them."""
 
 _LONE_SURROGATE: Final = re.compile(r"[\ud800-\udfff]")
 """A lone surrogate (``_SURROGATES``)."""
 
-_RAW_LITERAL_TEXT: Final = re.compile(r"(?:[^\\'\x00\ud800-\udfff]|\\[^\x00\ud800-\udfff])*")
-"""The escaped text a raw single-quoted literal holds: each character is a plain one or follows a backslash."""
+_RAW_LITERAL_TEXT: Final = re.compile(r"(?:[^\\\x00\ud800-\udfff]|\\[^\x00\ud800-\udfff])*")
+"""The escaped text a raw literal holds: each character is a plain one or follows a backslash."""
+
+_RAW_LITERAL_QUOTES: Final = ("'", '"')
+"""The quotes a raw literal may take, in the order it tries them."""
 
 
-def raw_single_quoted(text: str, /) -> str | None:
-    r"""Return the raw single-quoted literal that holds ``text`` with its quote and control characters escaped.
+def raw_literal(text: str, /) -> str | None:
+    r"""Return the raw literal that holds ``text`` with its control characters escaped.
 
-    A raw literal reads a backslash as itself, so it holds the text only when its closing quote stays the first one a
-    reader meets: no backslash left alone at the end or in front of the escaped quote, and no null byte or lone
-    surrogate, which a module cannot hold and a raw literal has no escape for. Any other text has no raw literal
-    (None); the caller writes it as a literal that is not raw. The result does not depend on the Python that runs.
+    A raw literal reads a backslash as itself and cannot escape its own quote (``r'\''`` keeps the backslash), so it
+    takes the first quote the text does not hold, and it holds the text only when its closing quote stays the first one
+    a reader meets: no backslash left alone at the end, and no null byte or lone surrogate, which a module cannot hold
+    and a raw literal has no escape for. Any other text, also one holding both quotes, has no raw literal (None); the
+    caller writes it as a literal that is not raw. The result does not depend on the Python that runs.
     A regex reads the escape of a control character in a raw literal as its own syntax (``\b`` is a word boundary), so
     the caller of a pattern asks ``_regex_syntax.control_escapes_keep_meaning`` first.
     """
-    escaped = text.translate(RAW_SINGLE_QUOTED_ESCAPES)
-    return f"r'{escaped}'" if _RAW_LITERAL_TEXT.fullmatch(escaped) else None
+    escaped = text.translate(RAW_LITERAL_ESCAPES)
+    if not _RAW_LITERAL_TEXT.fullmatch(escaped):
+        return None
+    return next((f"r{quote}{escaped}{quote}" for quote in _RAW_LITERAL_QUOTES if quote not in escaped), None)
 
 
 def call_text(head: str, arguments: Iterable[str], /) -> str:
