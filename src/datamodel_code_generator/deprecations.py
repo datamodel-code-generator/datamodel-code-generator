@@ -395,8 +395,14 @@ def get_deprecation(deprecation_id: DeprecationId) -> Deprecation:
     return DEPRECATIONS[deprecation_id]
 
 
-def warn_deprecated(deprecation_id: DeprecationId, *, details: str | None = None) -> None:
-    """Emit a warning from the central registry, naming the code that called the package (``_stacklevel_at_caller``)."""
+def warn_deprecated(
+    deprecation_id: DeprecationId, *, stacklevel: int | None = None, details: str | None = None
+) -> None:
+    """Emit a warning from the central registry.
+
+    The warning names the code that called the package (``_stacklevel_at_caller``), or the frame ``stacklevel`` gives
+    as ``warnings.warn`` counts it when a caller passes one.
+    """
     if (deprecation := get_deprecation(deprecation_id)).status == "scheduled":
         return
     seen = _CLI_MIGRATION_WARNINGS.get() if deprecation_id in _MIGRATION_WARNINGS else None
@@ -406,7 +412,7 @@ def warn_deprecated(deprecation_id: DeprecationId, *, details: str | None = None
     warnings.warn(
         message,
         _WARNING_CATEGORIES[deprecation.warning_category],
-        stacklevel=_stacklevel_at_caller(),
+        stacklevel=_stacklevel_at_caller() if stacklevel is None else stacklevel,
     )
     if seen is not None:
         seen.add(deprecation_id)

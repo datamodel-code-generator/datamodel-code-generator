@@ -150,6 +150,16 @@ def test_warn_deprecated_points_to_caller() -> None:
     assert Path(recorded_warnings[0].filename).name == "test_deprecations.py"
 
 
+def test_warn_deprecated_takes_an_explicit_stacklevel() -> None:
+    """A caller that passes ``stacklevel`` gets the frame it names, as before notices named the caller."""
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        warn_deprecated("cli.parent-scoped-naming", stacklevel=1)
+
+    assert len(recorded_warnings) == 1
+    assert Path(recorded_warnings[0].filename).name == "deprecations.py"
+
+
 def test_dependency_notice_release_comparisons() -> None:
     """Numeric boundaries include prereleases without changing local/postrelease ordering."""
     from datamodel_code_generator.deprecations import _dependency_version_is_legacy
