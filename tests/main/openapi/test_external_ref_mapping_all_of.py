@@ -535,3 +535,41 @@ def test_python_import_all_of_value_keywords(output_file: Path) -> None:
         input_file_type="jsonschema",
         extra_args=[*COMMON_ARGS],
     )
+
+
+@pytest.mark.cli_doc(
+    options=["--use-x-python-import-for-every-ref"],
+    option_description="""Type every reference to a schema with `x-python-import` by the class it imports.
+
+A `$ref` to a schema with `x-python-import` at a field is typed by the class it imports. Without this option an allOf
+of such a schema and keywords that add no field, such as a `description`, is typed by the model of the schema where a
+JSON pointer into another document (`shared.json#/$defs/Amount`), a pointer into the input outside its definitions
+(`#/other/Code`) or a whole-document `$ref` (`tally.json`) names it, as in 0.96.0; with it the import types that
+allOf as it types the `$ref`, and the model stays written only where it has fields or a root type. Under
+`--read-only-write-only-model-type request-response` the option also leaves the readOnly and writeOnly properties of
+such a schema out of the request/response split: a model whose field the import types does not split for them, nor
+does a model whose allOf bases reach them through such a field.""",
+    input_schema="jsonschema/python_import_all_of_keywords_pointer_targets/order.json",
+    cli_args=["--use-x-python-import-for-every-ref"],
+    golden_output="main/openapi/external_ref_mapping_all_of/python_import_all_of_value_keywords_pointer_targets[on].py",
+    comparison_output=(
+        "main/openapi/external_ref_mapping_all_of/python_import_all_of_value_keywords_pointer_targets[off].py"
+    ),
+)
+@pytest.mark.parametrize("option_set", ["off", "on"])
+def test_python_import_all_of_value_keywords_pointer_targets(output_file: Path, option_set: str) -> None:
+    """Type an allOf of an x-python-import schema outside the input's definitions by its import, opt-in (#6797).
+
+    With --use-x-python-import-for-every-ref a definition of another document (``Amount``), the root of a document a
+    ``$ref`` names (``tally.json``, and ``ledger.json`` through ``#`` inside it) and a schema at a JSON pointer of the
+    input (``Code``) type the allOf of them and keywords that add no field as a field naming them is (``plain``), as a
+    definition of the input does. The model of each stays written where it has a root type, and the empty one leaves.
+    Without it the allOf is typed by that model, as in 0.96.0.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "python_import_all_of_keywords_pointer_targets" / "order.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*COMMON_ARGS, *(("--use-x-python-import-for-every-ref",) if option_set == "on" else ())],
+        force_exec_validation=True,
+    )

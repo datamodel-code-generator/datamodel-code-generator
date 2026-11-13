@@ -1317,6 +1317,15 @@ _toggle(
 )
 _toggle(
     typing_options,
+    "--use-x-python-import-for-every-ref",
+    help="Type every reference to a schema with x-python-import by the class it imports, as a $ref to it at a field "
+    "is: also an allOf of it beside keywords that add no field where a JSON pointer into another document or a "
+    "whole-document $ref names it, and under --read-only-write-only-model-type request-response a model does not "
+    "split for the readOnly or writeOnly properties of such a schema, nor for those its allOf bases reach through one; "
+    "without it such a reference keeps the model of its schema and those models split, as in 0.96.0",
+)
+_toggle(
+    typing_options,
     "--use-bytes-for-content-media-type",
     help="Type a string of an OpenAPI document that has a contentMediaType and no contentEncoding as bytes, as a "
     "format: binary string is: OpenAPI 3.1 writes raw binary content so, and the generated clients and servers "

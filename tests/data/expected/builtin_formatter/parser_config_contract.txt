@@ -204,6 +204,7 @@ reviewed-safe use_typed_nullable_map_values
 reviewed-safe use_union_operator
 reviewed-safe use_unique_items_as_set
 reviewed-safe use_unique_items_as_set_by_value
+reviewed-safe use_x_python_import_for_every_ref
 reviewed-safe use_x_python_type_as_written
 reviewed-safe validation
 guarded validators

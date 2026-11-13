@@ -240,6 +240,19 @@ class PresetName(str, Enum):
     PracticalPy31420261112 = "practical-py314-20261112"
     PracticalPy31520261112 = "practical-py315-20261112"
 
+    StandardPy31020261113 = "standard-py310-20261113"
+    StandardPy31120261113 = "standard-py311-20261113"
+    StandardPy31220261113 = "standard-py312-20261113"
+    StandardPy31320261113 = "standard-py313-20261113"
+    StandardPy31420261113 = "standard-py314-20261113"
+    StandardPy31520261113 = "standard-py315-20261113"
+    PracticalPy31020261113 = "practical-py310-20261113"
+    PracticalPy31120261113 = "practical-py311-20261113"
+    PracticalPy31220261113 = "practical-py312-20261113"
+    PracticalPy31320261113 = "practical-py313-20261113"
+    PracticalPy31420261113 = "practical-py314-20261113"
+    PracticalPy31520261113 = "practical-py315-20261113"
+
 
 @dataclass(frozen=True, slots=True)
 class PresetContext:
@@ -609,6 +622,7 @@ _PRACTICAL_EXTRA_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]]
     "20261106": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
     "20261111": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
     "20261112": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
+    "20261113": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
 }
 """The practical extras of the dates whose extras are not those of 20260619."""
 
@@ -1256,6 +1270,20 @@ _STANDARD_20261112_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
 )
 """The 20261111 groups and the opt-in options added after them."""
 
+_STANDARD_20261113_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
+    *_STANDARD_20261112_OPTION_GROUPS,
+    PresetOptionGroup(
+        title="x-python-import for every reference",
+        config=PresetConfig(use_x_python_import_for_every_ref=True),
+        description=(
+            "Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in "
+            "another document, and split no request/response model for the readOnly or writeOnly properties of such "
+            "a schema."
+        ),
+    ),
+)
+"""The 20261112 groups and the opt-in options added after them."""
+
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20260619": _STANDARD_20260619_OPTION_GROUPS,
     "20260826": _STANDARD_20260826_OPTION_GROUPS,
@@ -1267,6 +1295,7 @@ _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20261106": _STANDARD_20261106_OPTION_GROUPS,
     "20261111": _STANDARD_20261111_OPTION_GROUPS,
     "20261112": _STANDARD_20261112_OPTION_GROUPS,
+    "20261113": _STANDARD_20261113_OPTION_GROUPS,
 }
 
 

@@ -252,6 +252,7 @@ class ParserConfigDict(TypedDict):
     type_overrides: NotRequired[dict[str, str] | None]
     type_overrides_replace_whole_type: NotRequired[bool]
     use_x_python_type_as_written: NotRequired[bool]
+    use_x_python_import_for_every_ref: NotRequired[bool]
     use_bytes_for_content_media_type: NotRequired[bool]
     use_bounds_for_float_const: NotRequired[bool]
     read_only_write_only_model_type: NotRequired[ReadOnlyWriteOnlyModelType | None]

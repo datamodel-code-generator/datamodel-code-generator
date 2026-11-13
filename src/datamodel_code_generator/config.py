@@ -407,6 +407,7 @@ class ParserConfig(BaseModel):
     type_overrides: dict[str, str] | None = None
     type_overrides_replace_whole_type: bool = False
     use_x_python_type_as_written: bool = False
+    use_x_python_import_for_every_ref: bool = False
     use_bytes_for_content_media_type: bool = False
     use_bounds_for_float_const: bool = False
     read_only_write_only_model_type: ReadOnlyWriteOnlyModelType | None = None
