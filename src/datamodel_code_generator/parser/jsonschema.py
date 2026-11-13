@@ -747,8 +747,7 @@ def _branch_excludes_objects(
     return bool(
         isinstance(branch, JsonSchemaObject)
         and branch.ref
-        and parser._resolve_external_ref_mapping(branch.ref) is None  # noqa: SLF001
-        and (target := _lightweight_types.unvisited_ref_target(parser, branch.ref, visited)) is not None
+        and (target := _schema_refs.unmapped_ref_target(parser, branch.ref, visited)) is not None
         and _branch_excludes_objects(parser, *target)
     )
 
@@ -2901,7 +2900,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _get_single_literal_value(
         self,
         obj: JsonSchemaObject,
-        seen_refs: set[_TargetNode] | None = None,
+        seen_refs: frozenset[_TargetNode] = frozenset(),
     ) -> JsonSchemaLiteral | None:
         """Return the one value a property schema admits as a tag (``parser/_union_tags.py``)."""
         return _union_tags.get_single_literal_value(self, obj, seen_refs)

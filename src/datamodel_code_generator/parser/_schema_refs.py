@@ -149,6 +149,8 @@ __all__ = [
     "shared_schema_object",
     "subschema_scope",
     "traverse_schema_objects",
+    "unmapped_ref_target",
+    "unvisited_ref_target",
 ]
 
 _MERGED_REF_TARGET_KEY = "_merged_ref_target"
@@ -552,6 +554,29 @@ def key_node(parser: SchemaRefsHost, resolved_ref: str) -> _TargetNode:
     """
     node = parser._graph.node(read_ref_value(parser, resolved_ref))  # noqa: SLF001
     return resolved_ref if node is None else node
+
+
+def unvisited_ref_target(
+    parser: SchemaRefsHost, ref: str, visited_refs: frozenset[_TargetNode]
+) -> tuple[JsonSchemaObject, frozenset[_TargetNode]] | None:
+    """Return the schema ``ref`` names with ``visited_refs`` and its node, or None when its node was visited."""
+    if (node := key_node(parser, ref_path(parser, ref))) in visited_refs:
+        return None
+    return parser._load_ref_schema_object(ref), visited_refs | {node}  # noqa: SLF001
+
+
+def unmapped_ref_target(
+    parser: SchemaRefsHost, ref: str, visited_refs: frozenset[_TargetNode]
+) -> tuple[JsonSchemaObject, frozenset[_TargetNode]] | None:
+    """Return the schema a fact walk reads at ``ref`` (``unvisited_ref_target``), or None where it reads none.
+
+    It reads none where the node of ``ref`` was visited or ``--external-ref-mapping`` maps ``ref``: a mapped reference
+    is the class its mapping imports and has no document to read, so a fact of the referring schema reads it as an
+    opaque class, as a visited node.
+    """
+    if parser._resolve_external_ref_mapping(ref) is not None:  # noqa: SLF001
+        return None
+    return unvisited_ref_target(parser, ref, visited_refs)
 
 
 def shared_schema_object(
