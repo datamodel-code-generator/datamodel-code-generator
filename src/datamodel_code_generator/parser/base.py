@@ -2552,11 +2552,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         forwarder_map: ForwarderMap,
         require_update: Collection[ModelKey],
         future_imports_str: str,
+        shared_imports_str: str,
     ) -> Result | None:
         """Generate output for a single module.
 
         Its header names the input file of its first model, which a module that --rename-submodules-hidden-by-classes
-        renamed keeps (``_renamed_module_inputs``).
+        renamed keeps (``_renamed_module_inputs``). ``shared_imports_str`` is what every module writes of the imports
+        all modules share (``ModuleImportLedger.rendered``).
         """
         result: list[str] = []
         export_imports: Imports | None = None
@@ -2580,7 +2582,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 module_imports = self._import_ledger.rendered(ctx.imports)
                 self._reject_unimportable_imports(ctx.module, module_imports, is_init=ctx.is_init)
                 self._record_written_imports(ctx.module, module_imports)
-                import_parts = [s for s in [module_future_imports_str, str(self.imports), str(module_imports)] if s]
+                import_parts = [s for s in [module_future_imports_str, shared_imports_str, str(module_imports)] if s]
                 result += [*import_parts, "\n"]
 
             if export_imports:
@@ -2658,6 +2660,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         contexts: list[ModuleContext],
         config: ParseConfig,
         future_imports_str: str,
+        shared_imports_str: str,
     ) -> None:
         """Generate exports for empty __init__.py files."""
         if (scope := config.all_exports_scope) is None:  # pragma: no cover
@@ -2670,7 +2673,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 continue
             self._reject_unimportable_imports(init_module, export_imports, is_init=True)
             self._record_written_imports(init_module, export_imports)
-            import_parts = [s for s in [future_imports_str, str(self.imports)] if s] if config.with_import else []
+            import_parts = [s for s in [future_imports_str, shared_imports_str] if s] if config.with_import else []
             parts = import_parts + (["\n"] if import_parts else [])
             parts += [str(export_imports), "", export_imports.dump_all(multiline=True)]
             results[init_module] = Result(

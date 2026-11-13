@@ -526,10 +526,11 @@ class _TargetRecording(OpenAPIParser):
         forwarder_map: ForwarderMap,
         require_update: Collection[ModelKey],
         future_imports_str: str,
+        shared_imports_str: str,
     ) -> Result | None:
         """Record the module's final models and the imports the parser finalized for it once its output exists."""
         result = super()._generate_module_output(
-            ctx, config, contexts, forwarder_map, require_update, future_imports_str
+            ctx, config, contexts, forwarder_map, require_update, future_imports_str, shared_imports_str
         )
         if result is not None:
             self.module_outputs.append((ctx.module, tuple(ctx.models), result))

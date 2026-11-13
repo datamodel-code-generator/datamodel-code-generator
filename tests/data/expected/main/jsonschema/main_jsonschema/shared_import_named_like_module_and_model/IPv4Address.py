@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-from collections import OrderedDict
 from ipaddress import IPv4Address
 
 from pydantic import BaseModel

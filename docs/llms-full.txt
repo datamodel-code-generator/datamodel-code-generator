@@ -88700,7 +88700,10 @@ longer applies the generic base class.
 **Module imports.** The passes from L1 to L7 write the imports of a module (`ModuleContext.imports`) and the imports
 all modules share (`Parser.imports`) only through `parser/_imports_plan.py:ModuleImportLedger`, which applies each write to
 the live `Imports` at once and keeps it as an entry with its producer: the pass (`ImportPass`), and the model and
-field it wrote for. The live `Imports` is the replay of its entries (`replay`). `imports.py` reads every import the
+field it wrote for. The live `Imports` is the replay of its entries (`replay`). A module writes what
+`ModuleImportLedger.rendered` leaves of it: the shared imports of the class an `--external-ref-mapping` `$ref` or an
+`x-python-import` names keep their names in every module, but only a module whose model names the class writes the
+import, from the imports of that model (`_NAME_KEEPING_PASSES`, #6787). `imports.py` reads every import the
 same way: by its module and name (`_import_key`, the key every alias map uses), a stored `X as Y` split into the name and
 the alias kept apart (`_stored_import`), the module `--import-overrides` moves a name to (`_override_module`, never a
 `__future__` name), whether an `Imports` holds an import or drops every count of it (`_holds`, `_remove_all`),
