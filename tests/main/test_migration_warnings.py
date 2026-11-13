@@ -316,5 +316,7 @@ def test_cli_notices_name_the_package(tmp_path: Path) -> None:
     }
     assert_output(
         f"notice of the CLI run names: {Path(notice.filename).resolve().relative_to(package.resolve()).as_posix()}\n"
-        + "".join(f"DeprecationWarning lines, {name}: {text.count('DeprecationWarning')}\n" for name, text in stderr.items())
+        + "".join(
+            f"DeprecationWarning lines, {name}: {text.count('DeprecationWarning')}\n" for name, text in stderr.items()
+        )
     )
