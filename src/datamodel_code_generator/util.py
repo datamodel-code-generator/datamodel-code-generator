@@ -188,7 +188,6 @@ def _construct_yaml_bool_with_warning(loader: Any, node: Any) -> bool:
                 f"YAML bool {stable_repr(value)} is deprecated. In a future version, only lowercase booleans will be "
                 "recognized."
             ),
-            stacklevel=6,
         )
     return value in {"true", "True", "TRUE"}
 

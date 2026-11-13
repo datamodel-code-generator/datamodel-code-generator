@@ -333,7 +333,6 @@ class JsonConfigSpec:
                 "but a future release will fail when the value does not match the documented JSON Schema. "
                 f"First validation issue: {format_validation_error(strict_error)}"
             ),
-            stacklevel=4,
         )
         return result
 

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import asdict, dataclass
 from functools import lru_cache
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from datamodel_code_generator._context_scope import context_values
@@ -22,6 +24,7 @@ from datamodel_code_generator._registry_render import (
 
 if TYPE_CHECKING:
     from collections.abc import Generator
+    from types import FrameType
 
 DeprecationKind = Literal["cli-option", "python-api", "config", "behavior", "schema", "dependency"]
 DeprecationStatus = Literal["active", "scheduled"]
@@ -309,6 +312,7 @@ DEPRECATIONS: dict[DeprecationId, Deprecation] = {
     ),
 }
 
+_PACKAGE_DIR = f"{Path(__file__).parent}{os.sep}"
 _WARNING_CATEGORIES: dict[str, type[Warning]] = {
     "DeprecationWarning": DeprecationWarning,
     "FutureWarning": FutureWarning,
@@ -350,7 +354,7 @@ def _dependency_version_is_legacy(version: str, minimum: tuple[int, int, int]) -
 def warn_legacy_dependency(deprecation_id: DeprecationId, version: str, minimum: tuple[int, int, int]) -> None:
     """Warn only when the dependency actually used is below its future runtime floor."""
     if _dependency_version_is_legacy(version, minimum):
-        warn_deprecated(deprecation_id, stacklevel=2)
+        warn_deprecated(deprecation_id)
 
 
 @lru_cache(maxsize=1)
@@ -375,10 +379,10 @@ def _declared_extras(path: tuple[str, ...]) -> frozenset[str]:
     return frozenset(extras)
 
 
-def warn_undeclared_extra(deprecation_id: DeprecationId, extra: str, *, stacklevel: int = 2) -> None:
+def warn_undeclared_extra(deprecation_id: DeprecationId, extra: str) -> None:
     """Warn unless an installed package already requires the ``extra`` (or ``all``) extra the notice asks for."""
     if _declared_extras(tuple(sys.path)).isdisjoint({extra, "all"}):
-        warn_deprecated(deprecation_id, stacklevel=stacklevel + 1)
+        warn_deprecated(deprecation_id)
 
 
 def iter_deprecations() -> tuple[Deprecation, ...]:
@@ -391,8 +395,8 @@ def get_deprecation(deprecation_id: DeprecationId) -> Deprecation:
     return DEPRECATIONS[deprecation_id]
 
 
-def warn_deprecated(deprecation_id: DeprecationId, *, stacklevel: int = 2, details: str | None = None) -> None:
-    """Emit a warning from the central registry."""
+def warn_deprecated(deprecation_id: DeprecationId, *, details: str | None = None) -> None:
+    """Emit a warning from the central registry, naming the code that called the package (``_stacklevel_at_caller``)."""
     if (deprecation := get_deprecation(deprecation_id)).status == "scheduled":
         return
     seen = _CLI_MIGRATION_WARNINGS.get() if deprecation_id in _MIGRATION_WARNINGS else None
@@ -402,10 +406,35 @@ def warn_deprecated(deprecation_id: DeprecationId, *, stacklevel: int = 2, detai
     warnings.warn(
         message,
         _WARNING_CATEGORIES[deprecation.warning_category],
-        stacklevel=stacklevel,
+        stacklevel=_stacklevel_at_caller(),
     )
     if seen is not None:
         seen.add(deprecation_id)
+
+
+def _stacklevel_at_caller() -> int:
+    """Return the ``stacklevel`` that makes a ``warn()`` in the calling function name the caller of the package.
+
+    That caller is the frame that called the outermost frame of a file of the package: the code that called the
+    library however deep in it, past the third-party code the package calls back through (a Pydantic validator, a YAML
+    constructor), so a ``module=`` filter matches the caller's module. In the CLI it is the console script, or the
+    ``runpy`` frame of ``python -m``. Frames are counted as ``warn()`` counts them, past the import machinery's own.
+    """
+    frame: FrameType | None = sys._getframe(1)  # noqa: SLF001
+    level = outermost = 1
+    while frame is not None:
+        if frame.f_code.co_filename.startswith(_PACKAGE_DIR):
+            outermost = level
+        frame = frame.f_back
+        while frame is not None and _is_import_machinery(frame):
+            frame = frame.f_back
+        level += 1
+    return outermost + 1
+
+
+def _is_import_machinery(frame: FrameType) -> bool:
+    """Return whether ``frame`` runs in the import machinery, which ``warn()`` skips as it counts a stacklevel."""
+    return "importlib" in (filename := frame.f_code.co_filename) and "_bootstrap" in filename
 
 
 def deprecation_message(deprecation_id: DeprecationId) -> str:

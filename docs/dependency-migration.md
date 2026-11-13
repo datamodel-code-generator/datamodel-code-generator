@@ -114,7 +114,8 @@ The registry contains the [exact short messages](deprecations.md). Migration war
 batch and watch regeneration. Non-generation operations such as help, version and listings do not emit them or
 load dependency modules just to check versions. The Python API respects standard warning filters, including
 `always`, `ignore` and `error`; the CLI continues to support `--disable-warnings`. Warnings do not enter stdout or
-generated code.
+generated code. A notice names the code that called the Python API, not a line inside DCG, so a filter can target the
+calling module, for example `warnings.filterwarnings("ignore", category=FutureWarning, module="mypackage.models")`.
 
 ## Prepare for optional Black/isort installation
 
