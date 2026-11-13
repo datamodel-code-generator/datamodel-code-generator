@@ -1213,29 +1213,19 @@ def _resolve_schema_versions(input_file_type: InputFileType, schema_version: str
 
 
 @_lru_cache(maxsize=1)
-def _genson_kept_by_dependent() -> bool:
-    """Return whether another installed distribution keeps Genson installed once it becomes optional.
+def _genson_extra_declared(path: tuple[str, ...]) -> bool:
+    """Return whether a package on ``path`` requires dcg's genson or all extra.
 
-    It does when it requires ``genson``, or dcg with the ``genson`` or ``all`` extra, outside its own extras.
-    The installer records no extras requested directly, so only dependents can show the extra is declared.
+    A requirement inside one of the package's own extras doesn't count, including dcg's ``all`` extra itself.
     """
     import re  # noqa: PLC0415
     from importlib.metadata import distributions  # noqa: PLC0415
 
-    def canonical(name: str) -> str:
-        return re.sub(r"[-_.]+", "-", name).lower()
-
-    head = re.compile(r"\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[([^\]]*)\])?")
-    for distribution in distributions():
-        if canonical(distribution.metadata["Name"] or "") == "datamodel-code-generator":
-            continue
+    declared = re.compile(r"datamodel[-_.]code[-_.]generator\s*\[[^\]]*\b(?:genson|all)\b", re.IGNORECASE)
+    for distribution in distributions(path=list(path)):
         for requirement in distribution.requires or ():
             spec, _, marker = requirement.partition(";")
-            if re.search(r"\bextra\s*==", marker) or (match := head.match(spec)) is None:
-                continue
-            name = canonical(match[1])
-            extras = {canonical(extra.strip()) for extra in (match[2] or "").split(",")}
-            if name == "genson" or (name == "datamodel-code-generator" and extras & {"genson", "all"}):
+            if declared.match(spec) and "extra" not in marker:
                 return True
     return False
 
@@ -1243,9 +1233,9 @@ def _genson_kept_by_dependent() -> bool:
 def _warn_genson_optional() -> None:
     """Announce that Genson, which infers a schema from raw data, becomes optional.
 
-    Skipped when an installed dependent keeps Genson installed: it already declares the extra.
+    Skipped once an installed package declares the genson extra: it has done what the notice asks.
     """
-    if _genson_kept_by_dependent():
+    if _genson_extra_declared(tuple(sys.path)):
         return
     from datamodel_code_generator.deprecations import warn_deprecated  # noqa: PLC0415
 

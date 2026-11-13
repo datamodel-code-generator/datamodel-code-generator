@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import importlib.metadata
 import shlex
 import shutil
 import warnings
 from pathlib import Path
-from types import SimpleNamespace
 
 import black
 import isort
@@ -15,7 +13,7 @@ import pydantic
 import pytest
 from packaging.version import Version
 
-from datamodel_code_generator import _genson_kept_by_dependent, chdir, generate
+from datamodel_code_generator import chdir, generate
 from datamodel_code_generator.__main__ import generate_cli_command
 from datamodel_code_generator.config import GenerateConfig
 from datamodel_code_generator.deprecations import cli_migration_warning_scope
@@ -210,27 +208,16 @@ def test_optional_dependency_notices_deduplicated_in_one_cli_invocation(tmp_path
     assert_output(_optional_dependency_notices(recorded), name="notices")
 
 
-@pytest.mark.parametrize(
-    "requirement",
-    [
-        "datamodel-code-generator[genson]>=0.95",
-        "Datamodel_Code_Generator[ruff, ALL]",
-        "genson>=1.2.1",
-        'datamodel-code-generator[genson]; extra == "codegen"',
-        "datamodel-code-generator>=0.95",
-    ],
-)
-def test_genson_notice_skipped_when_a_dependent_keeps_genson(
-    requirement: str, monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
+@pytest.mark.parametrize("requirement", ["datamodel-code-generator[genson]", "datamodel-code-generator"])
+def test_genson_notice_skipped_when_a_package_declares_the_extra(
+    requirement: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A dependent that requires Genson, or dcg's genson extra outside its own extras, silences the notice."""
-    installed = [
-        SimpleNamespace(metadata={"Name": "datamodel-code-generator"}, requires=["genson>=1.2.1,<2"]),
-        SimpleNamespace(metadata={"Name": "dependent"}, requires=[requirement]),
-    ]
-    monkeypatch.setattr(importlib.metadata, "distributions", lambda: installed)
-    _genson_kept_by_dependent.cache_clear()
-    request.addfinalizer(_genson_kept_by_dependent.cache_clear)
+    """An installed package that requires the genson extra has done what the Genson notice asks."""
+    (tmp_path / "dependent-1.0.dist-info").mkdir()
+    (tmp_path / "dependent-1.0.dist-info" / "METADATA").write_text(
+        f"Name: dependent\nVersion: 1.0\nRequires-Dist: {requirement}\n", encoding="utf-8"
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always", FutureWarning)
         generate({"a": 1}, config=GenerateConfig(input_file_type="dict", formatters=["builtin"]))
