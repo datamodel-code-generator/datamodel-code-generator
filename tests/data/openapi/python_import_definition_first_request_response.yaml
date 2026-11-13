@@ -1,0 +1,20 @@
+openapi: 3.1.0
+info: {title: shelter, version: "1"}
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name: {type: string}
+      x-python-import: {module: pets, name: Pet}
+    Visit:
+      type: object
+      properties:
+        kennel: {$ref: '#/components/schemas/Kennel'}
+        nick: {type: string, writeOnly: true}
+    Kennel:
+      type: object
+      properties:
+        pet:
+          allOf: [{$ref: '#/components/schemas/Pet'}, {description: The pet.}]

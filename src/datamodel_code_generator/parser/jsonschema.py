@@ -1169,6 +1169,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._rw_model_field_facts_in_progress: set[str] = set()
         self._rw_model_references_cache: dict[str, tuple[bool, tuple[str, ...]]] = {}
         self._rw_model_variant_requirement_cache: dict[tuple[str, str], bool] = {}
+        self._rw_model_base_refs: dict[str, tuple[str, ...]] = {}
+        """The keys each walked key names as its allOf bases."""
+        self._rw_imported_field_caches: tuple[
+            dict[str, tuple[bool, tuple[str, ...]]], dict[tuple[str, str], bool], dict[str, tuple[str, ...]]
+        ] = ({}, {}, {})
+        """The walk facts of the reading not in use (``_rw_split.imported_field_reading``)."""
+        self._rw_walk_reads_imported_fields = False
         self._rw_model_variant_references: dict[tuple[str, str], Reference] = {}
         self._local_ref_path_cache: dict[Path, Path] = {}
         self._tag_key_variants: dict[SchemaLocation | None, tuple[str, str]] = {}
@@ -1739,11 +1746,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ``legacy-python-import-modelled-targets``: the import types the sites that name a schema with
         ``x-python-import`` as their one class only where the schema got no model, read as the class it imports by
         the definitions of its document; a schema that a JSON pointer or a whole-document ``$ref`` parsed into a model
-        keeps that model at those sites.
+        keeps that model at those sites. ``legacy-rw-base-reads-imported-fields``: under request-response an allOf base
+        splits the model that inherits it where it reaches a readOnly or writeOnly property through a field that an
+        import types (``_rw_split.reads_bases_with_imported_fields``).
         """
         if self.config.use_x_python_import_for_every_ref:
             return frozenset()
-        return frozenset({"legacy-python-import-modelled-targets"})
+        return frozenset({"legacy-python-import-modelled-targets", "legacy-rw-base-reads-imported-fields"})
 
     @cached_property
     def _legacy_rw_variants(self) -> frozenset[str]:
@@ -4698,6 +4707,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     self, reference, suffix, fields, obj, source_fields=fields, is_root_model=True
                 )
                 self._rw_model_variant_requirement_cache[reference.path, suffix] = True
+                self._rw_imported_field_caches[1][reference.path, suffix] = True
                 variant_root_model_type = self._get_runtime_validation_root_model_type(
                     requested_root_model_type,
                     variant_reference.path,
@@ -6128,9 +6138,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         item, name, path, singular_name = site.obj, site.name, site.path, site.singular_name
         if _lightweight_types.contains_false_schema(self, item.allOf):
             _all_of_values.raise_unsatisfiable_schema(self, item, get_special_path("allOf", path), "allOf")
-        all_of_items = [sub_item for sub_item in item.allOf if isinstance(sub_item, JsonSchemaObject)]
-        if len(all_of_items) == 1 and len(all_of_items) != len(item.allOf) and not item.properties:
-            return self.parse_item(name, all_of_items[0], path, singular_name=singular_name, parent=site.parent)
+        if (member := self._all_of_lone_member(item)) is not None:
+            return self.parse_item(name, member, path, singular_name=singular_name, parent=site.parent)
         all_of_path = [self.model_resolver.resolve_ref(get_special_path("allOf", path))]
         if not _all_of_values.schema_requires_model_type(self, item) and not _all_of_values.allof_requires_model_type(
             self, item.allOf
@@ -6145,24 +6154,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     root_model_name, value_union.with_schema_location(item.schema_location), all_of_path
                 )
             return self.parse_root_type(root_model_name, item, all_of_path)
-        if len(item.allOf) == 1 and not item.properties:
-            single_item = item.allOf[0]
-            if isinstance(single_item, JsonSchemaObject) and single_item.ref:
-                if (reference_site := _all_of_values.reference_site_schema(self, item)) is not None:
-                    with self.model_resolver.yielding_new_references():
-                        site_type = self._parse_all_of_merged_root(
-                            self.model_resolver.add(
-                                all_of_path, name, singular_name=singular_name, class_name=True
-                            ).name,
-                            reference_site.with_schema_location(item.schema_location),
-                            all_of_path,
-                        )
-                    self._site_model_keys.add(model_key_of(site_type.reference))
-                    return site_type
-                if not self._adds_required_names(
-                    self._get_inline_required_names(item), partial(self._ref_required_names, single_item.ref)
-                ):
-                    return self._record_site_constraints(item, self.get_ref_data_type(single_item.ref))
+        if (ref := self._all_of_member_ref(item)) is not None:
+            reference_site = self._all_of_ref_site_form(item, ref)
+            if isinstance(reference_site, JsonSchemaObject):
+                with self.model_resolver.yielding_new_references():
+                    site_type = self._parse_all_of_merged_root(
+                        self.model_resolver.add(all_of_path, name, singular_name=singular_name, class_name=True).name,
+                        reference_site.with_schema_location(item.schema_location),
+                        all_of_path,
+                    )
+                self._site_model_keys.add(model_key_of(site_type.reference))
+                return site_type
+            if reference_site:
+                return self._record_site_constraints(item, self.get_ref_data_type(ref))
         with (
             self.model_resolver.yielding_new_references()
             if self.config.use_site_models_for_constrained_refs
@@ -6336,6 +6340,97 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Type no child and name no model: the site is typed by its customTypePath."""
         yield from ()
 
+    def _types_ref_site(self, site: _Site) -> Iterable[TypedChild[JsonSchemaObject]]:
+        """Type the model a ``$ref`` site names, or nothing where ``get_ref_data_type`` types it by an import."""
+        if self._import_types_ref(cast("str", site.obj.ref), site.path[0]):
+            return ()
+        return self._types_site_model(site)
+
+    def _types_all_of_site(self, site: _Site) -> Iterable[TypedChild[JsonSchemaObject]]:
+        """Type what an allOf site parses into, or nothing where it names an imported class as its one class.
+
+        A site parsed as its one schema member (``_all_of_lone_member``) types what that member types. A site of one
+        ``$ref`` member types nothing where ``get_ref_data_type`` types it as that member (``_all_of_ref_site_form``)
+        by an import. Beside other members, the site's one ``$ref`` member (``_all_of_class_ref``) types it as
+        ``_type_imported_references_without_model`` types the reference the site parses into.
+        """
+        obj, defining_ref = site.obj, site.path[0]
+        if (member := self._all_of_lone_member(obj)) is not None:
+            return _rw_split.typed_field_site(self, member, defining_ref, parent=site.parent)
+        if (ref := self._all_of_member_ref(obj)) is not None:
+            if self._import_types_ref(ref, defining_ref):
+                with self._inherited_ref_context(defining_ref):
+                    if self._all_of_ref_site_form(obj, ref) is True:
+                        return ()
+        elif (ref := self._all_of_class_ref(obj)) is not None and self._import_types_ref(
+            ref, defining_ref, one_class=True
+        ):
+            return ()
+        return self._types_site_model(site)
+
+    def _all_of_lone_member(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:  # noqa: PLR6301
+        """Return the one schema member an allOf site is parsed as in its place, beside boolean members only.
+
+        A site that writes ``properties`` has none.
+        """
+        members = [member for member in obj.allOf if isinstance(member, JsonSchemaObject)]
+        return members[0] if len(members) == 1 and len(members) != len(obj.allOf) and not obj.properties else None
+
+    def _all_of_member_ref(self, obj: JsonSchemaObject) -> str | None:  # noqa: PLR6301
+        """Return the ``$ref`` of an allOf site's one member, where the site writes no ``properties``, else None."""
+        if len(obj.allOf) != 1 or obj.properties or not isinstance(member := obj.allOf[0], JsonSchemaObject):
+            return None
+        return member.ref
+
+    def _all_of_ref_site_form(self, obj: JsonSchemaObject, ref: str) -> JsonSchemaObject | bool:
+        """Return the form of an allOf site whose one member is the ``$ref`` ``ref`` (``_all_of_member_ref``).
+
+        The schema of the root model the site leaves that reference for (``reference_site_schema``); else True where
+        ``get_ref_data_type`` types the site as the reference, and False where the site requires a name the model the
+        reference names does not, so ``parse_all_of`` builds a model of it.
+        """
+        if (reference_site := _all_of_values.reference_site_schema(self, obj)) is not None:
+            return reference_site
+        return not self._adds_required_names(
+            self._get_inline_required_names(obj), partial(self._ref_required_names, ref)
+        )
+
+    def _all_of_class_ref(self, obj: JsonSchemaObject) -> str | None:
+        """Return the ``$ref`` an allOf site names as its one class, or ``None`` where the site may build a model.
+
+        It is the site's one member with a ``$ref``, written with metadata and ``nullable`` only, beside members and
+        site keywords that are metadata and ``nullable`` only too, where no schema validator rule keeps the site a
+        model of its own.
+        """
+        if obj._writes_schema_keywords_besides({"allOf", "nullable"}) or self._keeps_schema_validator_model(obj):  # noqa: SLF001
+            return None
+        refs: list[str] = []
+        for item in obj.allOf:
+            if not isinstance(item, JsonSchemaObject) or item._writes_schema_keywords_besides({"ref", "nullable"}):  # noqa: SLF001
+                return None
+            if item.ref:
+                refs.append(item.ref)
+        return refs[0] if len(refs) == 1 else None
+
+    def _import_types_ref(self, ref: str, defining_ref: str, *, one_class: bool = False) -> bool:
+        """Return whether an import types the ``$ref`` ``ref`` of a site in the schema at ``defining_ref``.
+
+        At a site ``get_ref_data_type`` types, the import is the class ``--external-ref-mapping`` maps the reference to
+        where its fragment names one, else the type the ``x-python-import`` of the schema it names makes
+        (``_ref_python_import``), the root of an input document's too. At a site that parses into the reference as its
+        ``one_class``, the import types the reference where ``_imports_type_reference`` says so; a mapped one keeps the
+        form it has. In the reading of 0.96.0 (``_rw_split.imported_field_reading``) no import types a site.
+        """
+        if self._rw_walk_reads_imported_fields:
+            return False
+        with self._inherited_ref_context(defining_ref):
+            if (mapped := self._resolve_external_ref_mapping(ref)) is not None:
+                return not one_class and self._external_ref_mapping_import(*mapped) is not None
+            resolved = _schema_refs.ref_path(self, ref)
+        if one_class:
+            return self._imports_type_reference(resolved)
+        return self._python_import_type_maker(self._ref_python_import(resolved), resolved) is not None
+
     def _types_constrained_item(self, site: _Site) -> tuple[TypedChild[JsonSchemaObject]]:
         """Type the root model that holds the constraints of an item, built from its schema merged with its $ref."""
         return (TypedChild("root", self._merge_field_ref(site).obj),)
@@ -6362,9 +6457,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 "ref-nullable-only",
                 _field_ref_nullable_only_applies,
                 _parse_ref_nullable_only_item,
+                typed=_types_ref_site,
                 keywords=frozenset({"ref"}),
             ),
-            Row("ref", _ref_applies, _get_ref_data_type_site, keywords=frozenset({"ref"})),
+            Row("ref", _ref_applies, _get_ref_data_type_site, typed=_types_ref_site, keywords=frozenset({"ref"})),
             Row("custom-type", _field_custom_type_applies, _parse_custom_type_item, typed=_types_nothing),
             Row(
                 "constrained-type-union",
@@ -6397,7 +6493,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             ),
             _field_union_row("any-of", "anyOf"),
             _field_union_row("one-of", "oneOf"),
-            Row("all-of", _all_of_applies, _parse_all_of_field_item, keywords=frozenset({"allOf"})),
+            Row(
+                "all-of",
+                _all_of_applies,
+                _parse_all_of_field_item,
+                typed=_types_all_of_site,
+                keywords=frozenset({"allOf"}),
+            ),
             Row("ref-site", _field_ref_site_applies, _build_field_ref_site, keywords=frozenset({"properties"})),
             Row("object", _field_object_applies, _parse_object_item),
             Row("enum", _field_enum_applies, _parse_enum_item, keywords=frozenset({"enum"})),

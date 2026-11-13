@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Visit",
+  "type": "object",
+  "properties": {
+    "kennel": {"$ref": "#/$defs/Kennel"},
+    "pen": {"$ref": "#/$defs/Pen"}
+  },
+  "$defs": {
+    "Kennel": {
+      "type": "object",
+      "properties": {
+        "animal": {"$ref": "animal.json"},
+        "resident": {"allOf": [{"$ref": "animal.json"}]}
+      }
+    },
+    "Pen": {
+      "type": "object",
+      "properties": {
+        "animal": {"allOf": [{"$ref": "animal.json"}, {"description": "The penned animal."}]}
+      }
+    }
+  }
+}

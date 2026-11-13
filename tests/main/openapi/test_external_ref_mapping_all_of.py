@@ -672,6 +672,27 @@ def test_python_import_back_reference_request_response(
         pytest.param(("--dedupe-request-response-variants",), id="dedupe"),
     ],
 )
+def test_python_import_definition_first_request_response(options: tuple[str, ...], output_file: Path) -> None:
+    """Type an allOf of an x-python-import definition by the import where the definition comes first.
+
+    The definitions read ``Pet`` as the class it imports before ``Visit``, which splits, names ``Kennel``, so the
+    import types the allOf of ``Pet`` and a description in ``Kennel``, which does not split (#6799).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "python_import_definition_first_request_response.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--read-only-write-only-model-type", "request-response", *options, *COMMON_ARGS],
+    )
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        pytest.param((), id="request-response"),
+        pytest.param(("--dedupe-request-response-variants",), id="dedupe"),
+    ],
+)
 def test_python_import_input_document_root_request_response(options: tuple[str, ...], output_dir: Path) -> None:
     """Keep the variants of the root of an input document with x-python-import under request-response.
 
@@ -737,6 +758,108 @@ def test_python_import_all_of_parse_order_request_response(options: tuple[str, .
     """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "python_import_order_request_response" / "api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--read-only-write-only-model-type", "request-response", *options, *COMMON_ARGS],
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "options"),
+    [
+        pytest.param("python_import_nested_request_response.yaml", (), id="request-response"),
+        pytest.param(
+            "python_import_nested_request_response.yaml", ("--dedupe-request-response-variants",), id="dedupe"
+        ),
+        pytest.param("python_import_nested_nullable_request_response.yaml", (), id="nullable-request-response"),
+        pytest.param(
+            "python_import_nested_nullable_request_response.yaml",
+            ("--dedupe-request-response-variants",),
+            id="nullable-dedupe",
+        ),
+        pytest.param(
+            "python_import_nested_nullable_request_response.yaml",
+            ("--intersect-combined-schema-keywords",),
+            id="nullable-intersect-combined-schema-keywords",
+        ),
+    ],
+)
+def test_python_import_nested_request_response(input_name: str, options: tuple[str, ...], output_file: Path) -> None:
+    """Leave out the variants of models that only a field an import types would split, under request-response.
+
+    ``Kennel`` names ``Animal``, whose x-python-import types it, by a plain ``$ref``, an allOf of it alone, with a
+    description, ``true`` or a member that is only ``nullable``, or beside ``minProperties``, ``type: object`` or
+    ``nullable``, by a ``$ref`` with a description, and a ``Tag`` that ``--external-ref-mapping`` maps by a plain
+    ``$ref``: the imports type the plain ``$ref`` and the forms the split does not name the variants of. ``Animal``
+    comes after ``Kennel``, so it is not read when the allOf of it and a description or a ``nullable`` member names its
+    variants, and ``Kennel`` splits, with the ``Ward`` that names it and the ``Visit`` that names both; the root model
+    ``Alias`` of a plain ``$ref`` writes no variants. A base (``Dog``), also by an allOf of it alone or beside
+    ``minProperties``, an inline allOf with properties and a ``$ref`` with ``minProperties`` still split ``Yard``. In
+    OpenAPI 3.0, ``Room`` names ``Patient`` the same way: the allOf of it and a ``nullable`` member names its variants,
+    the other forms are typed by the import. Under ``--intersect-combined-schema-keywords`` the allOf beside the
+    ``required`` name ``Patient`` lacks is a model of its own, which splits ``Room``. Up to 0.96.0 generation failed
+    with "A Parser can not resolve classes" (#6800).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / input_name,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--read-only-write-only-model-type",
+            "request-response",
+            *options,
+            "--external-ref-mapping",
+            "python_import_nested_request_response_tags.yaml=shelter.tags",
+            *COMMON_ARGS,
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        pytest.param((), id="request-response"),
+        pytest.param(("--dedupe-request-response-variants",), id="dedupe"),
+    ],
+)
+def test_python_import_nested_input_root_request_response(options: tuple[str, ...], output_dir: Path) -> None:
+    """Leave out the variants of a model whose fields an import types by an input document's root, nested.
+
+    ``Kennel`` names the root of ``animal.json``, which has x-python-import, by a plain ``$ref`` and by an allOf of it
+    alone: the import types both, so ``Kennel`` writes no variants. The allOf of it and a description in ``Pen`` names
+    the variants of the root's model, which keeps its model, as up to 0.96.0. Up to 0.96.0 generation failed with "A
+    Parser can not resolve classes" (#6800).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "python_import_nested_input_root_request_response",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--read-only-write-only-model-type", "request-response", *options, *COMMON_ARGS],
+    )
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        pytest.param((), id="request-response"),
+        pytest.param(("--dedupe-request-response-variants",), id="dedupe"),
+        pytest.param(("--use-x-python-import-for-every-ref",), id="request-response-every-ref"),
+        pytest.param(
+            ("--dedupe-request-response-variants", "--use-x-python-import-for-every-ref"), id="dedupe-every-ref"
+        ),
+    ],
+)
+def test_python_import_inherited_request_response(options: tuple[str, ...], output_file: Path) -> None:
+    """Split a model for a base whose field an import types only without the option, under request-response.
+
+    ``Wrapper`` names ``Pet``, whose x-python-import types the field, so ``Wrapper`` does not split and ``Visit``,
+    which names it, writes no variants. ``Owner`` inherits ``Wrapper``: without --use-x-python-import-for-every-ref
+    the readOnly property of ``Pet`` still splits it and ``Holder``, which names it, as in 0.96.0; with it ``Owner``
+    is a subclass of ``Wrapper`` and ``Holder`` writes no variants. Up to 0.96.0 ``Visit`` failed with "A Parser can
+    not resolve classes" (#6800).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "python_import_inherited_request_response.yaml",
         output_path=output_file,
         input_file_type="openapi",
         extra_args=["--read-only-write-only-model-type", "request-response", *options, *COMMON_ARGS],
