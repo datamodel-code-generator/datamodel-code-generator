@@ -366,7 +366,12 @@ class RenderHost(
         """Return the metadata of the models the modules write, with the identity of each."""
 
     def _generate_empty_init_exports(
-        self, results: dict[ModulePath, ResultT], contexts: list[ContextT], config: ConfigT, future_imports_str: str
+        self,
+        results: dict[ModulePath, ResultT],
+        contexts: list[ContextT],
+        config: ConfigT,
+        future_imports_str: str,
+        shared_imports_str: str,
     ) -> None:
         """Write the exports of the package ``__init__.py`` files that no module writes."""
 
@@ -378,6 +383,7 @@ class RenderHost(
         forwarder_map: ForwarderMap,
         require_update: Collection[ModelKey],
         future_imports_str: str,
+        shared_imports_str: str,
     ) -> ResultT | None:
         """Return the result of one module, or None when it writes nothing."""
 
@@ -2723,6 +2729,7 @@ def render_modules(  # noqa: PLR0913
     """
     future_imports = parser._import_ledger.extract_future(parser.imports, _FUTURE_IMPORTS)  # noqa: SLF001
     future_imports_str = str(future_imports)
+    shared_imports_str = str(parser._import_ledger.rendered(parser.imports))  # noqa: SLF001
     merges = forwarder_map
     if forwarder_map:
         forwarder_map = _forward_defined_models(contexts, _released_name_imports(parser, contexts, forwarder_map))
@@ -2739,13 +2746,13 @@ def render_modules(  # noqa: PLR0913
     reject_class_named_like_submodule(parser, contexts, forwarder_map, all_exports_scope=config.all_exports_scope)
     for ctx in contexts:
         result = parser._generate_module_output(  # noqa: SLF001
-            ctx, config, contexts, forwarder_map, require_update, future_imports_str
+            ctx, config, contexts, forwarder_map, require_update, future_imports_str, shared_imports_str
         )
         if result is not None:
             results[ctx.module] = result
 
     if config.all_exports_scope is not None and not parser.treat_dot_as_module:
-        parser._generate_empty_init_exports(results, contexts, config, future_imports_str)  # noqa: SLF001
+        parser._generate_empty_init_exports(results, contexts, config, future_imports_str, shared_imports_str)  # noqa: SLF001
 
     parser._inspect_invalid_dotted_stdout(contexts, sorted_data_models, config, results)  # noqa: SLF001
 
@@ -2767,7 +2774,7 @@ def render_modules(  # noqa: PLR0913
     if parser.treat_dot_as_module:
         results = parser._result_modules_postprocessor(results, empty_init=config.all_exports_scope is not None)  # noqa: SLF001
         if config.all_exports_scope is not None:
-            parser._generate_empty_init_exports(results, contexts, config, future_imports_str)  # noqa: SLF001
+            parser._generate_empty_init_exports(results, contexts, config, future_imports_str, shared_imports_str)  # noqa: SLF001
     check_import_reads(
         parser, results, contexts, merges, written, use_deferred_annotations=config.use_deferred_annotations
     )

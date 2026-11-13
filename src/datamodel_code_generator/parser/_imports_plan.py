@@ -6,8 +6,9 @@ once, so a pass reads what it read before, and keeps it as an entry together wit
 for it, and the model and field it was asked for. The live ``Imports`` is the materialization of its entries, which
 ``replay`` rebuilds. The imports a module writes can be fewer than the names it binds: ``ModuleImportLedger.rendered``
 subtracts from a copy of the live ``Imports`` what the entries wrote of their models' unrendered imports
-(``DataModel._unrendered_imports``), counted as the difference between the replay of the entries and their replay
-without those imports. The copy keeps the order of the module lines and the imports written outside the ledger, which a
+(``DataModel._unrendered_imports``) and of the imports that only keep their names in every module
+(``_NAME_KEEPING_PASSES``), counted as the difference between the replay of the entries and their replay without
+those imports. The copy keeps the order of the module lines and the imports written outside the ledger, which a
 replay of some entries only would reorder or lose.
 
 Code that the parser hands the live ``Imports`` (``DataModel.resolve_module_import_conflicts``) runs inside
@@ -108,7 +109,8 @@ ImportPass: TypeAlias = Literal[
 * ``additional-imports``: ``_append_additional_imports``, ``--additional-imports`` into the shared imports.
 * ``external-ref-mapping``, ``x-python-import``: ``parser/jsonschema.py:JsonSchemaParser._check_external_ref_mapping``
   (``--external-ref-mapping``) and ``get_ref_data_type`` (``x-python-import``), the Python type a reference names,
-  into the shared imports (L1).
+  into the shared imports (L1), where its name is kept in every module; only a module whose model names the type
+  writes the import, from the imports of that model (``_NAME_KEEPING_PASSES``).
 * ``deferred-annotations``: ``from __future__ import annotations``, shared by ``_prepare_parse_config`` and per module
   by ``_get_module_future_imports`` (L7).
 * ``change-from-import``: ``change_from_import`` (L5 prepare), the imports of each model and the models of other
@@ -315,10 +317,18 @@ class _KeyState:
 
 _storage_key = Imports._storage_key  # ruff: ignore[private-member-access]
 
+_NAME_KEEPING_PASSES: frozenset[ImportPass] = frozenset({"external-ref-mapping", "x-python-import"})
+"""The passes whose shared imports keep their names in every module and that no module writes from there (#6787)."""
+
 
 def _without_unrendered(entry: LedgerEntry) -> LedgerEntry:
-    """Return the entry without the unrendered imports of its model, or the entry itself when its model has none."""
+    """Return the entry without the unrendered imports of its model, or the entry itself when its model has none.
+
+    The entry of a pass that only keeps names in every module (``_NAME_KEEPING_PASSES``) renders none of its imports.
+    """
     operation, model = entry.operation, entry.producer.model
+    if entry.producer.pass_ in _NAME_KEEPING_PASSES and isinstance(operation, Added):
+        return LedgerEntry(Added(()), entry.producer)
     if model is None or not isinstance(operation, Added | Removed):
         return entry
     if not (unrendered := model._unrendered_imports()):  # ruff: ignore[private-member-access]

@@ -25343,6 +25343,26 @@ def test_main_jsonschema_external_ref_mapping_whole_document_unused(output_file:
     )
 
 
+def test_main_jsonschema_external_ref_mapping_modules(output_dir: Path) -> None:
+    """Import a mapped class and an ``x-python-import`` class only in the module whose model names it.
+
+    Up to 0.95.0 every module of a directory input imported both, also ``product.py`` that names neither (#6787).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "external_ref_mapping_modules",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--external-ref-mapping",
+            "../external_ref_mapping_all_of_keywords/shared.json=mycompany.shared",
+            "--allow-remote-refs",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
 def test_main_jsonschema_external_ref_mapping_whole_document_in_input_directory(output_dir: Path) -> None:
     """Type a $ref to the whole mapped document by its generated root model where the document is an input too."""
     run_main_and_assert(
@@ -42188,9 +42208,10 @@ def test_main_jsonschema_shared_import_named_like_module_and_model(output_dir: P
     """Import a model from its module under an alias where a shared import binds the model's name too.
 
     ``--additional-imports ipaddress.IPv4Address`` makes every module import the model ``OrderedDict`` from its module
-    ``IPv4Address``, and ``--external-ref-mapping common.json=collections`` makes every module write
-    ``from collections import OrderedDict``. The model keeps the name of the mapped type: it was bound after the import
-    of ``collections`` and gave the field typed by the mapped type the model.
+    ``IPv4Address``, and ``--external-ref-mapping common.json=collections`` keeps the name ``OrderedDict`` for
+    ``from collections import OrderedDict`` in every module, which only the module of the field typed by the mapped type
+    writes (#6787). The model keeps the name of the mapped type: it was bound after the import of ``collections`` and
+    gave the field typed by the mapped type the model.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "shared_import_named_like_model" / "api.json",
