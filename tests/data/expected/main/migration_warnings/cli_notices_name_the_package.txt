@@ -1,0 +1,2 @@
+notice of the CLI run names: __main__.py
+DeprecationWarning lines in the console's stderr: 0

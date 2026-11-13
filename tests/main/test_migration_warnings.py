@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import importlib
+import os
 import shlex
 import shutil
+import subprocess
 import sys
 import warnings
 from pathlib import Path
@@ -15,6 +17,7 @@ import pydantic
 import pytest
 from packaging.version import Version
 
+import datamodel_code_generator
 from datamodel_code_generator import chdir, generate
 from datamodel_code_generator.__main__ import generate_cli_command
 from datamodel_code_generator.config import GenerateConfig
@@ -274,4 +277,43 @@ def test_migration_notices_name_the_code_that_called_generate(monkeypatch: pytes
             for item in notices()
         )
         + f"left by a module filter for the caller: {len(left)}\n"
+    )
+
+
+def test_cli_notices_name_the_package(tmp_path: Path) -> None:
+    """A notice of a CLI invocation names the code in the package that raised it, not the code that called ``main()``.
+
+    The console script runs as ``__main__``, and Python's default filters show a ``DeprecationWarning`` raised from
+    ``__main__``, so the CLI shows the notices it showed before they named the caller.
+    """
+    (schema := tmp_path / "schema.json").write_text('{"type": "object", "properties": {"a": {"type": "string"}}}')
+    args = ["--input", str(schema), "--input-file-type", "jsonschema", "--output-model-type", "pydantic_v2.BaseModel"]
+    with chdir(tmp_path), warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_with_args([*args, "--output", str(tmp_path / "models.py")])
+    package = Path(datamodel_code_generator.__file__).parent
+    notice = next(item for item in recorded if "--use-annotated is recommended" in str(item.message))
+
+    console = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys; from datamodel_code_generator.__main__ import main; sys.exit(main(sys.argv[1:]))",
+            *args,
+            "--formatters",
+            "builtin",
+        ],
+        capture_output=True,
+        check=True,
+        cwd=tmp_path,
+        env={
+            **{key: value for key, value in os.environ.items() if key != "PYTHONWARNINGS"},
+            "PYTHONPATH": str(Path(datamodel_code_generator.__file__).parents[1]),
+        },
+        text=True,
+        timeout=120,
+    )
+    assert_output(
+        f"notice of the CLI run names: {Path(notice.filename).resolve().relative_to(package.resolve()).as_posix()}\n"
+        f"DeprecationWarning lines in the console's stderr: {console.stderr.count('DeprecationWarning')}\n"
     )
