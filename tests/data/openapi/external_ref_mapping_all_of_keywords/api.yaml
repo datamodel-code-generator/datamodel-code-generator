@@ -1,0 +1,53 @@
+openapi: 3.1.0
+info:
+  title: allOf of a mapped schema and keywords that add no field
+  version: '1'
+paths:
+  /orders/{code}:
+    put:
+      operationId: putOrder
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            allOf:
+              - $ref: 'shared.yaml#/components/schemas/Code'
+              - maxLength: 5
+        - name: label
+          in: query
+          schema:
+            allOf:
+              - $ref: 'shared.yaml#/components/schemas/Code'
+              - description: The code printed on the label.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: 'shared.yaml#/components/schemas/Base'
+                - description: The order to store.
+      responses:
+        '200':
+          description: The codes of the order.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: 'shared.yaml#/components/schemas/Code'
+                    - maxLength: 5
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        code:
+          allOf:
+            - $ref: 'shared.yaml#/components/schemas/Code'
+            - maxLength: 5
+        base:
+          allOf:
+            - $ref: 'shared.yaml#/components/schemas/Base'
+            - description: The base of the order.

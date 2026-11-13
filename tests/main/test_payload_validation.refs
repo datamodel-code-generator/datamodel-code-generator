@@ -382,6 +382,8 @@ jsonschema/external_files_in_directory/definitions/food.json	payloads/native_num
 jsonschema/external_files_in_directory/definitions/relative/animal/fur.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/external_ref_errors/child.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/external_ref_errors/directory/placeholder.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/external_ref_mapping_all_of_keywords/shared.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/external_ref_mapping_all_of_keywords_modules/other.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/external_ref_mapping_whole_document/common.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/external_root_refs/tree.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/extra_fields.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1684,6 +1686,8 @@ openapi/external_ref_mapping_all_of/shared.yaml::components.schemas.Bud	payloads
 openapi/external_ref_mapping_all_of/shared.yaml::components.schemas.Unused	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/external_ref_mapping_all_of_grandchild/shared.yaml::components.schemas.Leaf	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/external_ref_mapping_all_of_grandchild/sub/shared.yaml::components.schemas.Leaf	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of_keywords/shared.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of_keywords/shared.yaml::components.schemas.Code	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/external_ref_mapping_all_of_modules/d.yaml::components.schemas.Leafy	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/external_ref_mapping_all_of_union/api.yaml::components.schemas.Plot	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/false_all_of_keywords.yaml::components.schemas.Names	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2477,6 +2481,8 @@ jsonschema/external_files_in_directory/definitions/food.json	payloads/native_num
 jsonschema/external_files_in_directory/definitions/relative/animal/fur.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/external_ref_errors/child.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/external_ref_errors/directory/placeholder.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/external_ref_mapping_all_of_keywords/shared.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/external_ref_mapping_all_of_keywords_modules/other.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/external_ref_mapping_whole_document/common.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/external_root_refs/tree.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/extra_fields.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3769,6 +3775,8 @@ openapi/external_ref_mapping_all_of/shared.yaml::components.schemas.Bud	payloads
 openapi/external_ref_mapping_all_of/shared.yaml::components.schemas.Unused	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/external_ref_mapping_all_of_grandchild/shared.yaml::components.schemas.Leaf	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/external_ref_mapping_all_of_grandchild/sub/shared.yaml::components.schemas.Leaf	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of_keywords/shared.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of_keywords/shared.yaml::components.schemas.Code	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/external_ref_mapping_all_of_modules/d.yaml::components.schemas.Leafy	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/external_ref_mapping_all_of_union/api.yaml::components.schemas.Plot	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/false_all_of_keywords.yaml::components.schemas.Names	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

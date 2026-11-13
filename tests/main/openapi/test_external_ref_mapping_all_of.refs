@@ -56,6 +56,15 @@ typing.TypedDict	main/openapi/external_ref_mapping_all_of/missing_document[typin
 [test_external_ref_mapping_all_of_unmapped_extra_items]
 	main/openapi/external_ref_mapping_all_of/unmapped_extra_items.extra_items.txt
 	main/openapi/external_ref_mapping_all_of/unmapped_extra_items.py
+[test_external_ref_mapping_all_of_value_keywords]
+missing	main/openapi/external_ref_mapping_all_of/value_keywords[missing].py
+present	main/openapi/external_ref_mapping_all_of/value_keywords[present].py	= main/openapi/external_ref_mapping_all_of/value_keywords[missing].py
+[test_external_ref_mapping_all_of_value_keywords_modules]
+	main/openapi/external_ref_mapping_all_of/value_keywords_modules/
+[test_external_ref_mapping_all_of_value_keywords_openapi]
+	main/openapi/external_ref_mapping_all_of/value_keywords_openapi.py
+[test_external_ref_mapping_all_of_value_keywords_union]
+	main/openapi/external_ref_mapping_all_of/value_keywords_union.py
 [test_python_import_all_of_alias_base]
 	main/openapi/external_ref_mapping_all_of/python_import_all_of_alias_base.py
 [test_python_import_all_of_base]
@@ -72,3 +81,5 @@ typing.TypedDict	main/openapi/external_ref_mapping_all_of/python_import_all_of_b
 [test_python_import_all_of_grandchild_modules]
 	main/openapi/external_ref_mapping_all_of/python_import_all_of_grandchild_modules.payloads.txt	= main/openapi/external_ref_mapping_all_of/grandchild_modules[dataclasses.dataclass-beside].payloads.txt
 	main/openapi/external_ref_mapping_all_of/python_import_all_of_grandchild_modules/
+[test_python_import_all_of_value_keywords]
+	main/openapi/external_ref_mapping_all_of/python_import_all_of_value_keywords.py
