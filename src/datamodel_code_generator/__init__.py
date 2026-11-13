@@ -1212,34 +1212,11 @@ def _resolve_schema_versions(input_file_type: InputFileType, schema_version: str
             return _parse_schema_version(JsonSchemaVersion, schema_version, "JSON Schema"), None, None, None, None
 
 
-@_lru_cache(maxsize=1)
-def _genson_extra_declared(path: tuple[str, ...]) -> bool:
-    """Return whether a package on ``path`` requires dcg's genson or all extra.
-
-    A requirement inside one of the package's own extras doesn't count, including dcg's ``all`` extra itself.
-    """
-    import re  # noqa: PLC0415
-    from importlib.metadata import distributions  # noqa: PLC0415
-
-    declared = re.compile(r"datamodel[-_.]code[-_.]generator\s*\[[^\]]*\b(?:genson|all)\b", re.IGNORECASE)
-    for distribution in distributions(path=list(path)):
-        for requirement in distribution.requires or ():
-            spec, _, marker = requirement.partition(";")
-            if declared.match(spec) and "extra" not in marker:
-                return True
-    return False
-
-
 def _warn_genson_optional() -> None:
-    """Announce that Genson, which infers a schema from raw data, becomes optional.
+    """Announce that Genson, which infers a schema from raw data, becomes optional."""
+    from datamodel_code_generator.deprecations import warn_undeclared_extra  # noqa: PLC0415
 
-    Skipped once an installed package declares the genson extra: it has done what the notice asks.
-    """
-    if _genson_extra_declared(tuple(sys.path)):
-        return
-    from datamodel_code_generator.deprecations import warn_deprecated  # noqa: PLC0415
-
-    warn_deprecated("dependency.genson-optional", stacklevel=3)
+    warn_undeclared_extra("dependency.genson-optional", "genson", stacklevel=3)
 
 
 def _normalize_raw_input(  # noqa: PLR0912

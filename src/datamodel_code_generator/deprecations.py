@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 import warnings
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -350,6 +351,34 @@ def warn_legacy_dependency(deprecation_id: DeprecationId, version: str, minimum:
     """Warn only when the dependency actually used is below its future runtime floor."""
     if _dependency_version_is_legacy(version, minimum):
         warn_deprecated(deprecation_id, stacklevel=2)
+
+
+@lru_cache(maxsize=1)
+def _declared_extras(path: tuple[str, ...]) -> frozenset[str]:
+    """Return the dcg extras that packages on ``path`` require without an environment marker.
+
+    Evaluating a marker needs ``packaging``, so a requirement with one, including one limited to the package's own
+    extra, never hides a notice. A package whose metadata can't be read is skipped.
+    """
+    import re  # ruff: ignore[import-outside-top-level]
+    from importlib.metadata import distributions  # ruff: ignore[import-outside-top-level]
+
+    requirement = re.compile(r"datamodel[-_.]+code[-_.]+generator\s*\[([^\]]*)\][^;]*$", re.IGNORECASE)
+    extras: set[str] = set()
+    for distribution in distributions(path=list(path)):
+        try:
+            requires = distribution.requires or ()
+        except OSError:  # Python 3.15 raises for a .dist-info directory without METADATA
+            continue
+        for match in filter(None, map(requirement.match, requires)):
+            extras.update(re.sub(r"[-_.]+", "-", extra.strip()).lower() for extra in match[1].split(","))
+    return frozenset(extras)
+
+
+def warn_undeclared_extra(deprecation_id: DeprecationId, extra: str, *, stacklevel: int = 2) -> None:
+    """Warn unless an installed package already requires the ``extra`` (or ``all``) extra the notice asks for."""
+    if _declared_extras(tuple(sys.path)).isdisjoint({extra, "all"}):
+        warn_deprecated(deprecation_id, stacklevel=stacklevel + 1)
 
 
 def iter_deprecations() -> tuple[Deprecation, ...]:
