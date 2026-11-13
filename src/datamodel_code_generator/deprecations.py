@@ -358,7 +358,7 @@ def _declared_extras(path: tuple[str, ...]) -> frozenset[str]:
     """Return the dcg extras that packages on ``path`` require without an environment marker.
 
     Evaluating a marker needs ``packaging``, so a requirement with one, including one limited to the package's own
-    extra, never hides a notice. A package whose metadata can't be read is skipped.
+    extra, never hides a notice. A package whose metadata can't be read or decoded is skipped.
     """
     import re  # ruff: ignore[import-outside-top-level]
     from importlib.metadata import distributions  # ruff: ignore[import-outside-top-level]
@@ -368,7 +368,7 @@ def _declared_extras(path: tuple[str, ...]) -> frozenset[str]:
     for distribution in distributions(path=list(path)):
         try:
             requires = distribution.requires or ()
-        except OSError:  # Python 3.15 raises for a .dist-info directory without METADATA
+        except (OSError, ValueError):
             continue
         for match in filter(None, map(requirement.match, requires)):
             extras.update(re.sub(r"[-_.]+", "-", extra.strip()).lower() for extra in match[1].split(","))
