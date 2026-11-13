@@ -30,3 +30,7 @@ class A(BaseModel):
     optionalListField: list[String] | None = None
     optionalListOptionalField: list[String | None] | None = None
     typename__: Annotated[Literal['A'] | None, Field(alias='__typename')] = 'A'
+
+    @property
+    def __typename(self) -> Literal['A'] | None:
+        return self.typename__

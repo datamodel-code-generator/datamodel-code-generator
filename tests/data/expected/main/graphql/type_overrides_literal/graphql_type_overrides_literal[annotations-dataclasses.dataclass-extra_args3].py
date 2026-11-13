@@ -28,3 +28,7 @@ class Model:
     code: Optional[Code] | None = None
     levels: list[Literal[1, 2]] | None = None
     typename__: Literal['Model'] | None = 'Model'
+
+    @property
+    def __typename(self) -> Literal['Model'] | None:
+        return self.typename__

@@ -6,12 +6,15 @@ import ast
 import json
 import sys
 import warnings
+from contextlib import nullcontext
 from typing import TYPE_CHECKING
 
 import black
 import msgspec
 import pytest
+from graphql import build_schema, graphql_sync
 
+from datamodel_code_generator import DataModelType
 from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_output
 from tests.main.conftest import (
@@ -661,6 +664,66 @@ def test_main_graphql_union(output_file: Path) -> None:
         input_file_type="graphql",
         assert_func=assert_file_content,
         expected_file="union.py",
+    )
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    [
+        DataModelType.PydanticV2BaseModel,
+        DataModelType.PydanticV2Dataclass,
+        DataModelType.DataclassesDataclass,
+        DataModelType.MsgspecStruct,
+    ],
+)
+def test_main_graphql_typename_property(output_model_type: DataModelType, output_file: Path) -> None:
+    """graphql-core resolves unions and interfaces from the ``__typename`` property of each object type (#6768).
+
+    The field ``property`` hides the builtin in its class body, so the decorator takes the module's alias of it.
+    """
+    input_path = GRAPHQL_DATA_PATH / "typename_property.graphql"
+    with (
+        pytest.warns(UserWarning, match="msgspec cannot decode the union SearchResult")
+        if output_model_type == DataModelType.MsgspecStruct
+        else nullcontext()
+    ):
+        run_main_and_assert(
+            input_path=input_path,
+            output_path=output_file,
+            input_file_type="graphql",
+            assert_func=assert_file_content,
+            extra_args=["--output-model-type", output_model_type.value, "--target-python-version", "3.11"],
+        )
+    query = "{ search { __typename ... on TextMatch { property } ... on Repository { name } } node { __typename id } }"
+    with _generated_model(output_file, "graphql_typename_property", "TextMatch") as text_match:
+        repository = sys.modules[text_match.__module__].Repository
+        result = graphql_sync(
+            build_schema(input_path.read_text()),
+            query,
+            root_value={
+                "search": [text_match(id="1", fragment="f", property="p"), repository(id="2", name="dcg")],
+                "node": repository(id="3", name="node"),
+            },
+        )
+    assert_output(
+        f"{json.dumps({'errors': [str(error) for error in result.errors or ()], 'data': result.data}, indent=2)}\n",
+        name="graphql",
+    )
+
+
+def test_main_graphql_typename_property_custom_template(output_file: Path) -> None:
+    """A custom model template writes the class body itself, so the class gets no ``__typename`` property."""
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "union.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            "dataclasses.dataclass",
+            "--custom-template-dir",
+            str(DATA_PATH / "templates_docstring_escaping"),
+        ],
     )
 
 

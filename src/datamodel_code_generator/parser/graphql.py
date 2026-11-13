@@ -29,7 +29,7 @@ from datamodel_code_generator._user_keys import ClassScope
 from datamodel_code_generator._user_keys import class_scope as _class_scope_of
 from datamodel_code_generator.model._decisions.enum_kind import decide_enum_kind, enum_as_literal
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, UnionPolicy, assemble_union
-from datamodel_code_generator.model.base import _find_base_classes, get_inherited_fields
+from datamodel_code_generator.model.base import TYPENAME_PROPERTY_KEY, _find_base_classes, get_inherited_fields
 from datamodel_code_generator.model.enum import SUBCLASS_BASE_CLASSES, EnumMemberValue, _enum_class
 from datamodel_code_generator.parser._null_facts import NullMode, NullSources, resolve_null_facts
 from datamodel_code_generator.parser.base import (
@@ -458,6 +458,8 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             treat_dot_as_module=self.treat_dot_as_module,
             dataclass_arguments=self.dataclass_arguments,
         )
+        if not self.config.graphql_no_typename and isinstance(obj, graphql.GraphQLObjectType):
+            data_model_type._set_internal_template_data(TYPENAME_PROPERTY_KEY, value=True)  # noqa: SLF001
         self._graph_builder.register_model(data_model_type)
 
     def parse_interface(self, interface_graphql_object: graphql.GraphQLInterfaceType) -> None:

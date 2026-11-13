@@ -470,6 +470,10 @@ providing fine-grained control over generated names independent of schema defini
             typename__: Literal['DateTimePeriod'] | None = Field(
                 'DateTimePeriod', alias='__typename'
             )
+
+            @property
+            def __typename(self) -> Literal['DateTimePeriod'] | None:
+                return self.typename__
         ```
 
         <!-- fmt: on -->
@@ -1190,6 +1194,10 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
         vehicles_ids: list[ID]
         typename__: Literal['Film'] | None = Field('Film', alias='__typename')
 
+        @property
+        def __typename(self) -> Literal['Film'] | None:
+            return self.typename__
+
 
     class Person(BaseModel):
         model_config = ConfigDict(
@@ -1216,6 +1224,10 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
         vehicles_ids: list[ID]
         typename__: Literal['Person'] | None = Field('Person', alias='__typename')
 
+        @property
+        def __typename(self) -> Literal['Person'] | None:
+            return self.typename__
+
 
     class Planet(BaseModel):
         model_config = ConfigDict(
@@ -1237,6 +1249,10 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
         terrain: String | None = None
         typename__: Literal['Planet'] | None = Field('Planet', alias='__typename')
 
+        @property
+        def __typename(self) -> Literal['Planet'] | None:
+            return self.typename__
+
 
     class Species(BaseModel):
         model_config = ConfigDict(
@@ -1257,6 +1273,10 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
         people_ids: list[ID]
         skin_colors: String | None = None
         typename__: Literal['Species'] | None = Field('Species', alias='__typename')
+
+        @property
+        def __typename(self) -> Literal['Species'] | None:
+            return self.typename__
 
 
     class Starship(BaseModel):
@@ -1283,6 +1303,10 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
         starship_class: String | None = None
         typename__: Literal['Starship'] | None = Field('Starship', alias='__typename')
 
+        @property
+        def __typename(self) -> Literal['Starship'] | None:
+            return self.typename__
+
 
     class Vehicle(BaseModel):
         model_config = ConfigDict(
@@ -1305,6 +1329,10 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
         pilots_ids: list[ID]
         vehicle_class: String | None = None
         typename__: Literal['Vehicle'] | None = Field('Vehicle', alias='__typename')
+
+        @property
+        def __typename(self) -> Literal['Vehicle'] | None:
+            return self.typename__
 
 
     Film.model_rebuild()

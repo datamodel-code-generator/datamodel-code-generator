@@ -26,10 +26,18 @@ class EventOps(BaseModel):
     value: String
     typename__: Literal['EventOps'] | None = Field('EventOps', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['EventOps'] | None:
+        return self.typename__
+
 
 class Other(BaseModel):
     value: String
     typename__: Literal['Other'] | None = Field('Other', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Other'] | None:
+        return self.typename__
 
 
 class Query(BaseModel):
@@ -37,11 +45,19 @@ class Query(BaseModel):
     value: String
     typename__: Literal['Query'] | None = Field('Query', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Query'] | None:
+        return self.typename__
+
 
 class WriteOps(BaseModel):
     self: WriteOps | None = None
     value: String
     typename__: Literal['WriteOps'] | None = Field('WriteOps', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['WriteOps'] | None:
+        return self.typename__
 
 
 Choice = TypeAliasType(
@@ -61,12 +77,20 @@ class RootOps(BaseModel):
     value: String
     typename__: Literal['RootOps'] | None = Field('RootOps', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['RootOps'] | None:
+        return self.typename__
+
 
 class Holder(BaseModel):
     mutation: WriteOps | None = None
     query: RootOps | None = None
     subscription: EventOps | None = None
     typename__: Literal['Holder'] | None = Field('Holder', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Holder'] | None:
+        return self.typename__
 
 
 EventOps.model_rebuild()

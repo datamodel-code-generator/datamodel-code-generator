@@ -24,11 +24,19 @@ class A:
     id: String | None = None
     typename__: Literal['A'] | None = 'A'
 
+    @property
+    def __typename(self) -> Literal['A'] | None:
+        return self.typename__
+
 
 @dataclass
 class B:
     id: String | None = None
     typename__: Literal['B'] | None = 'B'
+
+    @property
+    def __typename(self) -> Literal['B'] | None:
+        return self.typename__
 
 
 # safe

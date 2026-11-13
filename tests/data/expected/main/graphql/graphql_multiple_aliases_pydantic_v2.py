@@ -33,3 +33,7 @@ class Event(BaseModel):
         ..., validation_alias=AliasChoices('startDate', 'start_date')
     )
     typename__: Literal['Event'] | None = Field('Event', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Event'] | None:
+        return self.typename__

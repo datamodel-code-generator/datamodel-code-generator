@@ -39,3 +39,7 @@ class SkillGraphPet(BaseModel):
     typename__: Literal['SkillGraphPet'] | None = Field(
         'SkillGraphPet', alias='__typename'
     )
+
+    @property
+    def __typename(self) -> Literal['SkillGraphPet'] | None:
+        return self.typename__

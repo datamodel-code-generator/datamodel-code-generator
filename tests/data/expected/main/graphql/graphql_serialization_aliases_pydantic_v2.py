@@ -37,3 +37,7 @@ class Event(BaseModel):
     typename__: Literal['Event'] | None = Field(
         'Event', alias='__typename', serialization_alias='__typename'
     )
+
+    @property
+    def __typename(self) -> Literal['Event'] | None:
+        return self.typename__

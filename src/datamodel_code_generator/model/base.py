@@ -567,6 +567,8 @@ def _normalized_constraint_kwargs(  # noqa: PLR0913
 
 NULLABLE_WITHOUT_DEFAULT_KEY: Final = "_nullable_without_default"
 """The ``nullable`` a property field reads without its default, where it differs (``nullable_without_default``)."""
+TYPENAME_PROPERTY_KEY: Final = "typename_property"
+"""The internal template data key marking a GraphQL object type, whose class also writes a ``__typename`` property."""
 
 
 class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
@@ -2339,6 +2341,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     """Whether the output decodes an Enum whose values are not all str or all int (msgspec does not)."""
     _DECODES_VALUE_UNIONS: ClassVar[bool] = True
     """Whether the output decodes a union of any value types (msgspec decodes unions of some kinds only)."""
+    _HOLDS_PROPERTIES: ClassVar[bool] = True
+    """Whether the class can define a property (a TypedDict cannot)."""
     _READ_BY_PYDANTIC: ClassVar[bool] = False
     """Whether Pydantic builds the output, so that a run states the Pydantic release its constructs need."""
     _READ_BY_MSGSPEC: ClassVar[bool] = False
@@ -3138,11 +3142,26 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         The aliases are those of the builtins a submodule hides and of the imports a field name hides, which the module
         binds only under the alias, so every model of the module writes them.
         """
-        rendered = self._render_template(*args, **kwargs)
+        rendered = self._render_template(*args, **kwargs) + self._typename_property()
         field_loads = {} if self._field_name_bindings is None else self._field_name_bindings.loads
         if not (bindings := {**field_loads, **(self._builtin_name_bindings or {})}):
             return rendered
         return _bind_bare_loads(rendered, bindings)
+
+    def _typename_property(self) -> str:
+        """Return the ``__typename`` property of a GraphQL object type, which returns its ``__typename`` field.
+
+        graphql-core resolves the object type of a union or interface value from its name-mangled
+        ``_<Class>__typename`` attribute. A custom template writes the class body itself.
+        """
+        if not (
+            self._HOLDS_PROPERTIES
+            and self._internal_template_data.get(TYPENAME_PROPERTY_KEY)
+            and not self._uses_custom_root_template
+        ):
+            return ""
+        field = next(field for field in self.fields if field.alias == "__typename")
+        return f"\n\n    @property\n    def __typename(self) -> {field.type_hint}:\n        return self.{field.name}"
 
     def _render_template(self, *args: Any, **kwargs: Any) -> str:
         """Render project-owned built-ins without loading Jinja."""

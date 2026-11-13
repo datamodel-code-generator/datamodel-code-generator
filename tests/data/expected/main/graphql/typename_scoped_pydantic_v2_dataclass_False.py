@@ -70,6 +70,10 @@ class Item(Mid, Base):
     typename___1: Int = Field(..., alias='spare')
     typename___2: Literal['Item'] | None = Field('Item', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Item'] | None:
+        return self.typename___2
+
 
 @dataclass
 class Multi(OtherBase, Side, Common):
@@ -77,6 +81,10 @@ class Multi(OtherBase, Side, Common):
     spare: Int = Field(..., kw_only=True)
     typename__: Int = Field(..., alias='spare')
     typename___1: Literal['Multi'] | None = Field('Multi', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Multi'] | None:
+        return self.typename___1
 
 
 @dataclass
@@ -86,12 +94,20 @@ class MultiOrdinary(OtherBase, Common):
         'MultiOrdinary', alias='__typename'
     )
 
+    @property
+    def __typename(self) -> Literal['MultiOrdinary'] | None:
+        return self.typename__
+
 
 @dataclass
 class Ordinary(Base):
     value: Int
     label: String = Field(..., kw_only=True)
     typename___1: Literal['Ordinary'] | None = Field('Ordinary', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Ordinary'] | None:
+        return self.typename___1
 
 
 @dataclass
@@ -101,3 +117,7 @@ class Terminal(Mid, Base):
     typename___2: Int = Field(..., alias='spare')
     typename___1: Int = Field(..., alias='spare')
     typename___3: Literal['Terminal'] | None = Field('Terminal', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Terminal'] | None:
+        return self.typename___3

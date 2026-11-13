@@ -101,6 +101,17 @@ pydantic-dataclass	main/graphql/main_graphql/strip_default_none_constructor_orde
 	main/graphql/type_alias.py
 [test_main_graphql_type_alias_py312]
 	main/graphql/type_alias_py312.py
+[test_main_graphql_typename_property]
+DataModelType.DataclassesDataclass	main/graphql/graphql_typename_property.py
+DataModelType.DataclassesDataclass	main/graphql/main_graphql/typename_property[DataModelType.DataclassesDataclass].graphql.txt
+DataModelType.MsgspecStruct	main/graphql/graphql_typename_property.py	= main/graphql/graphql_typename_property~typename_property[DataModelType.MsgspecStruct].py
+DataModelType.MsgspecStruct	main/graphql/main_graphql/typename_property[DataModelType.MsgspecStruct].graphql.txt	= main/graphql/main_graphql/typename_property[DataModelType.DataclassesDataclass].graphql.txt
+DataModelType.PydanticV2BaseModel	main/graphql/graphql_typename_property.py	= main/graphql/graphql_typename_property~typename_property[DataModelType.PydanticV2BaseModel].py
+DataModelType.PydanticV2BaseModel	main/graphql/main_graphql/typename_property[DataModelType.PydanticV2BaseModel].graphql.txt	= main/graphql/main_graphql/typename_property[DataModelType.DataclassesDataclass].graphql.txt
+DataModelType.PydanticV2Dataclass	main/graphql/graphql_typename_property.py	= main/graphql/graphql_typename_property~typename_property[DataModelType.PydanticV2Dataclass].py
+DataModelType.PydanticV2Dataclass	main/graphql/main_graphql/typename_property[DataModelType.PydanticV2Dataclass].graphql.txt	= main/graphql/main_graphql/typename_property[DataModelType.DataclassesDataclass].graphql.txt
+[test_main_graphql_typename_property_custom_template]
+	main/graphql/graphql_typename_property_custom_template.py
 [test_main_graphql_union]
 	main/graphql/union.py
 [test_main_graphql_union_class_name_prefix]

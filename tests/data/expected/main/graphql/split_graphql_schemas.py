@@ -31,17 +31,29 @@ class Baz(BaseModel):
     quux: Int
     typename__: Literal['Baz'] | None = Field('Baz', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Baz'] | None:
+        return self.typename__
+
 
 class Bar(BaseModel):
     eggs: String
     foo: Foo
     typename__: Literal['Bar'] | None = Field('Bar', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Bar'] | None:
+        return self.typename__
+
 
 class Foo(BaseModel):
     baz: Bar
     id: Int
     typename__: Literal['Foo'] | None = Field('Foo', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Foo'] | None:
+        return self.typename__
 
 
 Bar.model_rebuild()

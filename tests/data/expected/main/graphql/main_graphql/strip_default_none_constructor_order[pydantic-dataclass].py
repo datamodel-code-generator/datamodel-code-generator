@@ -34,3 +34,7 @@ class Film:
     title: String
     director: String | None = None
     typename__: Literal['Film'] | None = Field('Film', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Film'] | None:
+        return self.typename__

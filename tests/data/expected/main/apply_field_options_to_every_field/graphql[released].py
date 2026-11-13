@@ -24,8 +24,16 @@ class Address(BaseModel):
     city: String | None = None
     typename__: Literal['Address'] | None = Field('Address', alias='__typename')
 
+    @property
+    def __typename(self) -> Literal['Address'] | None:
+        return self.typename__
+
 
 class Owner(BaseModel):
     address: Address | None = None
     name: String | None = None
     typename__: Literal['Owner'] | None = Field('Owner', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['Owner'] | None:
+        return self.typename__

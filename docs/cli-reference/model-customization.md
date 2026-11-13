@@ -2621,6 +2621,10 @@ control over dataclass generation.
         producer: String | None = None
         typename__: Literal['Film'] | None = 'Film'
 
+        @property
+        def __typename(self) -> Literal['Film'] | None:
+            return self.typename__
+
 
     @dataclass(order=True, slots=True)
     class Person:
@@ -2645,6 +2649,10 @@ control over dataclass generation.
         skin_color: String | None = None
         typename__: Literal['Person'] | None = 'Person'
 
+        @property
+        def __typename(self) -> Literal['Person'] | None:
+            return self.typename__
+
 
     @dataclass(order=True, slots=True)
     class Planet:
@@ -2664,6 +2672,10 @@ control over dataclass generation.
         terrain: String | None = None
         typename__: Literal['Planet'] | None = 'Planet'
 
+        @property
+        def __typename(self) -> Literal['Planet'] | None:
+            return self.typename__
+
 
     @dataclass(order=True, slots=True)
     class Species:
@@ -2682,6 +2694,10 @@ control over dataclass generation.
         language: String | None = None
         skin_colors: String | None = None
         typename__: Literal['Species'] | None = 'Species'
+
+        @property
+        def __typename(self) -> Literal['Species'] | None:
+            return self.typename__
 
 
     @dataclass(order=True, slots=True)
@@ -2706,6 +2722,10 @@ control over dataclass generation.
         starship_class: String | None = None
         typename__: Literal['Starship'] | None = 'Starship'
 
+        @property
+        def __typename(self) -> Literal['Starship'] | None:
+            return self.typename__
+
 
     @dataclass(order=True, slots=True)
     class Vehicle:
@@ -2726,6 +2746,10 @@ control over dataclass generation.
         passengers: String | None = None
         vehicle_class: String | None = None
         typename__: Literal['Vehicle'] | None = 'Vehicle'
+
+        @property
+        def __typename(self) -> Literal['Vehicle'] | None:
+            return self.typename__
     ```
 
     <!-- fmt: on -->
@@ -5176,6 +5200,10 @@ positional argument errors.
             producer: String | None = None
             typename__: Literal['Film'] | None = 'Film'
 
+            @property
+            def __typename(self) -> Literal['Film'] | None:
+                return self.typename__
+
 
         @dataclass(frozen=True, kw_only=True)
         class Person:
@@ -5200,6 +5228,10 @@ positional argument errors.
             skin_color: String | None = None
             typename__: Literal['Person'] | None = 'Person'
 
+            @property
+            def __typename(self) -> Literal['Person'] | None:
+                return self.typename__
+
 
         @dataclass(frozen=True, kw_only=True)
         class Planet:
@@ -5219,6 +5251,10 @@ positional argument errors.
             terrain: String | None = None
             typename__: Literal['Planet'] | None = 'Planet'
 
+            @property
+            def __typename(self) -> Literal['Planet'] | None:
+                return self.typename__
+
 
         @dataclass(frozen=True, kw_only=True)
         class Species:
@@ -5237,6 +5273,10 @@ positional argument errors.
             language: String | None = None
             skin_colors: String | None = None
             typename__: Literal['Species'] | None = 'Species'
+
+            @property
+            def __typename(self) -> Literal['Species'] | None:
+                return self.typename__
 
 
         @dataclass(frozen=True, kw_only=True)
@@ -5261,6 +5301,10 @@ positional argument errors.
             starship_class: String | None = None
             typename__: Literal['Starship'] | None = 'Starship'
 
+            @property
+            def __typename(self) -> Literal['Starship'] | None:
+                return self.typename__
+
 
         @dataclass(frozen=True, kw_only=True)
         class Vehicle:
@@ -5281,6 +5325,10 @@ positional argument errors.
             passengers: String | None = None
             vehicle_class: String | None = None
             typename__: Literal['Vehicle'] | None = 'Vehicle'
+
+            @property
+            def __typename(self) -> Literal['Vehicle'] | None:
+                return self.typename__
         ```
 
         <!-- fmt: on -->
@@ -7438,6 +7486,10 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 vehicles_ids: list[ID]
                 typename__: Literal['Film'] | None = Field('Film', alias='__typename')
 
+                @property
+                def __typename(self) -> Literal['Film'] | None:
+                    return self.typename__
+
 
             class Person(BaseModel):
                 birth_year: String | None = None
@@ -7461,6 +7513,10 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 vehicles_ids: list[ID]
                 typename__: Literal['Person'] | None = Field('Person', alias='__typename')
 
+                @property
+                def __typename(self) -> Literal['Person'] | None:
+                    return self.typename__
+
 
             class Planet(BaseModel):
                 climate: String | None = None
@@ -7479,6 +7535,10 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 terrain: String | None = None
                 typename__: Literal['Planet'] | None = Field('Planet', alias='__typename')
 
+                @property
+                def __typename(self) -> Literal['Planet'] | None:
+                    return self.typename__
+
 
             class Species(BaseModel):
                 average_height: String | None = None
@@ -7496,6 +7556,10 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 people_ids: list[ID]
                 skin_colors: String | None = None
                 typename__: Literal['Species'] | None = Field('Species', alias='__typename')
+
+                @property
+                def __typename(self) -> Literal['Species'] | None:
+                    return self.typename__
 
 
             class Starship(BaseModel):
@@ -7519,6 +7583,10 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 starship_class: String | None = None
                 typename__: Literal['Starship'] | None = Field('Starship', alias='__typename')
 
+                @property
+                def __typename(self) -> Literal['Starship'] | None:
+                    return self.typename__
+
 
             class Vehicle(BaseModel):
                 cargo_capacity: String | None = None
@@ -7538,6 +7606,10 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 pilots_ids: list[ID]
                 vehicle_class: String | None = None
                 typename__: Literal['Vehicle'] | None = Field('Vehicle', alias='__typename')
+
+                @property
+                def __typename(self) -> Literal['Vehicle'] | None:
+                    return self.typename__
 
 
             Film.model_rebuild()
@@ -7605,6 +7677,10 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 producer: String | None = None
                 typename__: Literal['Film'] | None = 'Film'
 
+                @property
+                def __typename(self) -> Literal['Film'] | None:
+                    return self.typename__
+
 
             @dataclass
             class Person:
@@ -7629,6 +7705,10 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 skin_color: String | None = None
                 typename__: Literal['Person'] | None = 'Person'
 
+                @property
+                def __typename(self) -> Literal['Person'] | None:
+                    return self.typename__
+
 
             @dataclass
             class Planet:
@@ -7648,6 +7728,10 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 terrain: String | None = None
                 typename__: Literal['Planet'] | None = 'Planet'
 
+                @property
+                def __typename(self) -> Literal['Planet'] | None:
+                    return self.typename__
+
 
             @dataclass
             class Species:
@@ -7666,6 +7750,10 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 language: String | None = None
                 skin_colors: String | None = None
                 typename__: Literal['Species'] | None = 'Species'
+
+                @property
+                def __typename(self) -> Literal['Species'] | None:
+                    return self.typename__
 
 
             @dataclass
@@ -7690,6 +7778,10 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 starship_class: String | None = None
                 typename__: Literal['Starship'] | None = 'Starship'
 
+                @property
+                def __typename(self) -> Literal['Starship'] | None:
+                    return self.typename__
+
 
             @dataclass
             class Vehicle:
@@ -7710,6 +7802,10 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 passengers: String | None = None
                 vehicle_class: String | None = None
                 typename__: Literal['Vehicle'] | None = 'Vehicle'
+
+                @property
+                def __typename(self) -> Literal['Vehicle'] | None:
+                    return self.typename__
             ```
 
             <!-- fmt: on -->
@@ -9963,6 +10059,10 @@ default values.
         optionalListField: list[String] | None = None
         optionalListOptionalField: list[String | None] | None = None
         typename__: Literal['A'] | None = Field(default='A', alias='__typename')
+
+        @property
+        def __typename(self) -> Literal['A'] | None:
+            return self.typename__
     ```
 
     <!-- fmt: on -->

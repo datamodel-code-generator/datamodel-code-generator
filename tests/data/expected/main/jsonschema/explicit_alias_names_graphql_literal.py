@@ -35,3 +35,7 @@ class AliasNames(BaseModel):
     count: Int = Field(..., alias='b')
     status: Status | None = None
     typename__: Literal['AliasNames'] | None = Field('AliasNames', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['AliasNames'] | None:
+        return self.typename__

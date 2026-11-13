@@ -134,6 +134,7 @@ class TypedDict(DataModel):
     WRITES_CLOSED_ADDITIONAL_PROPERTIES: ClassVar[bool] = True
     SUPPORTS_DESERIALIZED_DEFAULT_VALUES: ClassVar[bool] = False
     _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = True
+    _HOLDS_PROPERTIES: ClassVar[bool] = False
     _PYTHON_CHECKS_BASES: ClassVar[bool] = False
     _BASE_FIELDS: ClassVar[MemberRule] = "nearest"
     _KEEPS_INHERITED_FIELD_TYPES: ClassVar[bool] = True

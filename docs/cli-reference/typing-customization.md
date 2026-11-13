@@ -5217,6 +5217,10 @@ generated type to enforce uniqueness for array schemas.
             optionalListField: list[String] | None = None
             optionalListOptionalField: list[String | None] | None = None
             typename__: Annotated[Literal['A'] | None, Field(alias='__typename')] = 'A'
+
+            @property
+            def __typename(self) -> Literal['A'] | None:
+                return self.typename__
         ```
 
         <!-- fmt: on -->
@@ -8507,11 +8511,19 @@ syntax. This feature is experimental.
             name: String
             typename__: Literal['Person'] | None = Field('Person', alias='__typename')
 
+            @property
+            def __typename(self) -> Literal['Person'] | None:
+                return self.typename__
+
 
         class Pet(BaseModel):
             name: String
             type: String
             typename__: Literal['Pet'] | None = Field('Pet', alias='__typename')
+
+            @property
+            def __typename(self) -> Literal['Pet'] | None:
+                return self.typename__
 
 
         UnionType = TypeAliasType(
@@ -8530,6 +8542,10 @@ syntax. This feature is experimental.
             typename__: Literal['ModelWithTypeAliasField'] | None = Field(
                 'ModelWithTypeAliasField', alias='__typename'
             )
+
+            @property
+            def __typename(self) -> Literal['ModelWithTypeAliasField'] | None:
+                return self.typename__
         ```
 
         <!-- fmt: on -->
@@ -9155,6 +9171,10 @@ This is the default behavior.
         optionalListField: list[String] | None = None
         optionalListOptionalField: list[String | None] | None = None
         typename__: Annotated[Literal['A'] | None, Field(alias='__typename')] = 'A'
+
+        @property
+        def __typename(self) -> Literal['A'] | None:
+            return self.typename__
     ```
 
     <!-- fmt: on -->

@@ -32,3 +32,7 @@ class User(BaseModel):
     name: String = 'default_user'
     status: String = 'active'
     typename__: Literal['User'] | None = Field('User', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['User'] | None:
+        return self.typename__

@@ -45,6 +45,10 @@ class FooCar(FooIResource):
     passenger_capacity: Annotated[FooInt, Field(alias='passengerCapacity')]
     typename__: Annotated[Literal['Car'] | None, Field(alias='__typename')] = 'Car'
 
+    @property
+    def __typename(self) -> Literal['Car'] | None:
+        return self.typename__
+
 
 class FooEmployee(FooIResource):
     first_name: Annotated[FooString | None, Field(alias='firstName')] = None
@@ -53,6 +57,10 @@ class FooEmployee(FooIResource):
     typename__: Annotated[Literal['Employee'] | None, Field(alias='__typename')] = (
         'Employee'
     )
+
+    @property
+    def __typename(self) -> Literal['Employee'] | None:
+        return self.typename__
 
 
 FooResource = TypeAliasType(

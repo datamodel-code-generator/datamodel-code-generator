@@ -23,10 +23,18 @@ class Cat(Struct):
     name: String | None | UnsetType = UNSET
     typename__: Literal['Cat'] | UnsetType = field(name='__typename', default='Cat')
 
+    @property
+    def __typename(self) -> Literal['Cat'] | UnsetType:
+        return self.typename__
+
 
 class Dog(Struct):
     bark: Boolean | None | UnsetType = UNSET
     typename__: Literal['Dog'] | UnsetType = field(name='__typename', default='Dog')
+
+    @property
+    def __typename(self) -> Literal['Dog'] | UnsetType:
+        return self.typename__
 
 
 Lone: TypeAlias = Cat

@@ -34,3 +34,7 @@ class A(BaseModel):
     duration: Long
     id: ID
     typename__: Literal['A'] | None = Field('A', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['A'] | None:
+        return self.typename__

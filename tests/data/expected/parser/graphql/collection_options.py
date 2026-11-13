@@ -19,3 +19,7 @@ The `String` scalar type represents textual data, represented as UTF-8 character
 class User(BaseModel):
     tags: list[String | None] | None = None
     typename__: Literal['User'] | None = Field('User', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['User'] | None:
+        return self.typename__
