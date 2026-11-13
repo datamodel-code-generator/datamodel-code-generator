@@ -2291,7 +2291,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         mapped = self._resolve_external_ref_mapping(ref)
         if mapped is None or (import_ := self._external_ref_mapping_import(*mapped)) is None:
             return None
-        self._import_ledger.append(self.imports, import_, _EXTERNAL_REF_MAPPING_IMPORT)
         return self.data_type.from_import(import_)
 
     def _external_ref_mapping_import(self, python_package: str, fragment: str) -> Import | None:
@@ -8419,12 +8418,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _type_users_by_import(self, reference: Reference, import_: Import) -> None:
         """Type each user of ``reference`` by ``import_``, as a mapped ``$ref`` is."""
-
-        def imported_type() -> DataType:
-            self._import_ledger.append(self.imports, import_, _EXTERNAL_REF_MAPPING_IMPORT)
-            return self.data_type.from_import(import_)
-
-        self._type_users_by(reference, imported_type, partial(self.data_type.from_import, import_))
+        imported_type = partial(self.data_type.from_import, import_)
+        self._type_users_by(reference, imported_type, imported_type)
 
     def _type_users_by(
         self,

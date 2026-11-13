@@ -25361,6 +25361,61 @@ def test_main_jsonschema_external_ref_mapping_whole_document_in_input_directory(
     )
 
 
+def test_main_jsonschema_external_ref_mapping_directory_input_only_imports_used_classes(
+    tmp_path: Path, output_dir: Path
+) -> None:
+    """Do not import mapped external $ref classes into modules that do not use them."""
+    shared_json = tmp_path / "shared.json"
+    shared_json.write_text(
+        json.dumps({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$defs": {"Customer": {"type": "object", "properties": {"id": {"type": "string"}}}},
+        }),
+        encoding="utf-8",
+    )
+
+    schemas_dir = tmp_path / "schemas"
+    schemas_dir.mkdir()
+    (schemas_dir / "order.json").write_text(
+        json.dumps({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Order",
+            "type": "object",
+            "properties": {"customer": {"$ref": "../shared.json#/$defs/Customer"}},
+        }),
+        encoding="utf-8",
+    )
+
+    (schemas_dir / "product.json").write_text(
+        json.dumps({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Product",
+            "type": "object",
+            "properties": {"name": {"type": "string"}},
+        }),
+        encoding="utf-8",
+    )
+
+    generate(
+        input_=schemas_dir,
+        input_file_type=InputFileType.JsonSchema,
+        output=output_dir,
+        output_model_type="pydantic_v2.BaseModel",
+        external_ref_mapping={str(shared_json.resolve()): "mycompany.shared"},
+        allow_remote_refs=True,
+        disable_timestamp=True,
+    )
+
+    order_py = (output_dir / "order.py").read_text(encoding="utf-8")
+    product_py = (output_dir / "product.py").read_text(encoding="utf-8")
+
+    assert "from mycompany.shared import Customer" in order_py
+    assert "class Order(BaseModel):" in order_py
+    assert "Customer" not in product_py
+    assert "mycompany.shared" not in product_py
+    assert "class Product(BaseModel):" in product_py
+
+
 @pytest.mark.cli_doc(
     options=["--use-one-model-per-ref-site"],
     option_description="""Give an object `$ref` with sibling keywords one model per place it is written.
