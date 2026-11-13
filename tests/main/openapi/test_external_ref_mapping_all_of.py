@@ -4,11 +4,13 @@ Up to 0.86.0 such a member failed with "A Parser can not resolve classes". The m
 ``--external-ref-mapping`` or ``x-python-import`` imports, as a field that names the schema is typed by it. What the
 generator writes for the model reads the schema of that class as it reads a generated base: the fields a model
 requires or narrows, the keyword-only fields of dataclasses and msgspec Structs, and the models nested in the schema,
-which are written as a generated base gives them.
+which are written as a generated base gives them. An allOf of such a schema and keywords that add no field is typed by
+the import, as a field that names the schema is.
 """
 
 from __future__ import annotations
 
+import contextlib
 import json
 import sys
 from typing import TYPE_CHECKING, Any
@@ -21,6 +23,7 @@ from datamodel_code_generator import DanglingRefWarning
 from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_output
 from tests.main.conftest import (
+    JSON_SCHEMA_DATA_PATH,
     OPEN_API_DATA_PATH,
     _generated_model,
     _generated_package_module,
@@ -446,3 +449,89 @@ def test_python_import_all_of_grandchild_modules(
         with _generated_package_module(output_dir, module_path) as module:
             verdicts.append(f"{module_path}:\n{_verdicts(module, 'pydantic_v2.BaseModel', GRANDCHILD_PAYLOADS)}")
     assert_output("".join(verdicts), name="payloads")
+
+
+VALUE_KEYWORDS_PATH = JSON_SCHEMA_DATA_PATH / "external_ref_mapping_all_of_keywords"
+
+
+@pytest.mark.parametrize("document", ["present", "missing"])
+def test_external_ref_mapping_all_of_value_keywords(document: str, output_file: Path, tmp_path: Path) -> None:
+    """Type an allOf of a mapped schema and keywords that add no field by the class the mapping imports (#6772).
+
+    A field, an array item and the additional properties are typed as a field naming the schema directly is
+    (``plain``), whether the mapped document exists or not; the other keywords, ``maxLength`` and ``description``,
+    leave with the reference, as they leave with a local one. Up to 0.95.0 generation failed with "A Parser can not
+    resolve classes".
+    """
+    input_path = VALUE_KEYWORDS_PATH / "order.json"
+    if document == "missing":
+        (input_path := tmp_path / "input" / "order.json").parent.mkdir()
+        input_path.write_text((VALUE_KEYWORDS_PATH / "order.json").read_text(encoding="utf-8"), encoding="utf-8")
+    with pytest.warns(DanglingRefWarning) if document == "missing" else contextlib.nullcontext():
+        run_main_and_assert(
+            input_path=input_path,
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--external-ref-mapping", "shared.json=mycompany.shared", *COMMON_ARGS],
+        )
+
+
+def test_external_ref_mapping_all_of_value_keywords_modules(output_dir: Path) -> None:
+    """Import the mapped class only in the module whose field the allOf of the mapped schema types (#6772)."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "external_ref_mapping_all_of_keywords_modules",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--external-ref-mapping",
+            "../external_ref_mapping_all_of_keywords/shared.json=mycompany.shared",
+            "--allow-remote-refs",
+            *COMMON_ARGS,
+        ],
+    )
+
+
+def test_external_ref_mapping_all_of_value_keywords_union(output_file: Path) -> None:
+    """Keep the union of an allOf of a mapped schema, an anyOf of objects and a keyword: each branch inherits both."""
+    run_main_and_assert(
+        input_path=VALUE_KEYWORDS_PATH / "union.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--external-ref-mapping", "shared.json=mycompany.shared", *COMMON_ARGS],
+    )
+
+
+def test_external_ref_mapping_all_of_value_keywords_openapi(output_file: Path) -> None:
+    """Type parameters, a response and properties by the mapped class where an allOf adds keywords to it (#6772).
+
+    The request body of the allOf of a mapped object is a model that inherits the class, as a component is.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "external_ref_mapping_all_of_keywords" / "api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--external-ref-mapping",
+            "shared.yaml=mycompany.shared",
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "parameters",
+            *COMMON_ARGS,
+        ],
+    )
+
+
+def test_python_import_all_of_value_keywords(output_file: Path) -> None:
+    """Type an allOf of an x-python-import definition and keywords that add no field by its import (#6786).
+
+    The class it imports (``Amount``) and the type expression in its place (``Price``, ``qualname``) type the field, the
+    array item and the additional properties as a field naming the definition is; the definition an allOf base names
+    (``Counts``) is still the base of ``Tally``, and an unused definition (``Unused``) imports nothing.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "python_import_all_of_keywords.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*COMMON_ARGS],
+    )

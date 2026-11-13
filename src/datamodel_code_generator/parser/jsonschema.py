@@ -2501,12 +2501,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if (facts := self._ref_data_type_facts.get(resolved_ref)) is None:
             facts = self._store_ref_data_type_facts(resolved_ref, self._load_ref_schema_object(ref))
         x_python_import, is_optional = facts
-        if isinstance(x_python_import, dict) and (full_path := self._get_x_python_import_path(x_python_import)):
-            if runtime_symbol := self._get_x_python_import_expression(x_python_import, resolved_ref):
-                return _type_overrides.python_type_data_type(self, runtime_symbol)
-            import_ = self._get_x_python_import(full_path)
-            self._import_ledger.append(self.imports, import_, _X_PYTHON_IMPORT)
-            return self.data_type(type=import_.import_, import_=import_, alias=import_.alias)
+        if (python_import_type := self._python_import_type_maker(x_python_import, resolved_ref)) is not None:
+            return python_import_type()
         if not self._schema_resource_registry.dynamic_anchors or (
             (reference := _schema_refs.dynamic_specialization_reference(self, ref, resolved_ref)) is None
         ):
@@ -2515,6 +2511,23 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if is_optional and self.omit_redundant_reference_null:
             self._graph_builder.mark_target_null(data_type)
         return data_type
+
+    def _python_import_type_maker(self, x_python_import: YamlValue, resolved_ref: str) -> Callable[[], DataType] | None:
+        """Return what builds the type of a schema with ``x-python-import``, or ``None`` when it names no import.
+
+        The type is the class it imports, or the type expression in its place; each call builds a type of its own.
+        """
+        if not isinstance(x_python_import, dict) or not (full_path := self._get_x_python_import_path(x_python_import)):
+            return None
+        if runtime_symbol := self._get_x_python_import_expression(x_python_import, resolved_ref):
+            return partial(_type_overrides.python_type_data_type, self, runtime_symbol)
+
+        def imported_type() -> DataType:
+            import_ = self._get_x_python_import(full_path)
+            self._import_ledger.append(self.imports, import_, _X_PYTHON_IMPORT)
+            return self.data_type(type=import_.import_, import_=import_, alias=import_.alias)
+
+        return imported_type
 
     def _model_additional_properties(self, obj: JsonSchemaObject) -> JsonSchemaObject | bool | None:
         """Return the additionalProperties of the model built from ``obj``.
@@ -8405,26 +8418,49 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self.parse_ref(site.obj, site.path)
 
     def _type_users_by_import(self, reference: Reference, import_: Import) -> None:
-        """Type each user of ``reference`` by ``import_``, as a mapped ``$ref`` is.
-
-        The users in a field, a type or a dict key first, then those in the typed additional properties of each model,
-        whose other referenced classes stay.
-        """
+        """Type each user of ``reference`` by ``import_``, as a mapped ``$ref`` is."""
 
         def imported_type() -> DataType:
             self._import_ledger.append(self.imports, import_, _EXTERNAL_REF_MAPPING_IMPORT)
             return self.data_type.from_import(import_)
 
-        type_reference_users(self, reference, imported_type)
+        self._type_users_by(reference, imported_type, partial(self.data_type.from_import, import_))
+
+    def _type_users_by(
+        self,
+        reference: Reference,
+        new_type: Callable[[], DataType],
+        additional_properties_type: Callable[[], DataType],
+    ) -> None:
+        """Type each user of ``reference`` by its own ``new_type()``.
+
+        The users in a field, a type or a dict key first, then by ``additional_properties_type()`` those in the typed
+        additional properties of each model, whose other referenced classes stay.
+        """
+        type_reference_users(self, reference, new_type)
         for model in self.results:
             if reference.path in (classes := model.additional_properties_reference_classes):
                 type_additional_properties_users(
                     self,
                     model,
                     reference,
-                    partial(self.data_type.from_import, import_),
+                    additional_properties_type,
                     {path for path in classes if path != reference.path},
                 )
+
+    def _has_reference_users(
+        self, reference: Reference, typed_additional_properties: Container[str] | None = None
+    ) -> bool:
+        """Return whether a field, a type, a dict key or a model's typed additional properties name ``reference``.
+
+        ``typed_additional_properties``, the paths that every model's typed additional properties name, read once by
+        the caller, spares a loop over many references a scan of every model per reference.
+        """
+        if self.generation_store.index.has_data_type_references(reference):
+            return True
+        if typed_additional_properties is not None:
+            return reference.path in typed_additional_properties
+        return any(reference.path in model.additional_properties_reference_classes for model in self.results)
 
     def _type_references_to_definitions_without_model(self) -> None:
         """Redirect the users of a definition parsed as its ``$ref`` alone to the reference that ``$ref`` names.
@@ -8455,10 +8491,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if (import_ := self._mapped_definition_imports.get(target.path)) is not None:
                 self._type_users_by_import(reference, import_)
             else:
-                if target.path in seen and (
-                    self.generation_store.index.has_data_type_references(reference)
-                    or any(key in model.additional_properties_reference_classes for model in self.results)
-                ):
+                if target.path in seen and self._has_reference_users(reference):
                     cycle = " -> ".join(redact_reference(path) for path in (*seen, target.path))
                     msg = f"its $ref chain loops back without reaching a schema to type it by: {cycle}"
                     raise SchemaParseError(msg, path=[key])
@@ -8474,31 +8507,54 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 self._folded_ref_chains[target.path] = tuple((references[path].name, path) for path in seen)
             self._graph_builder.redirect_reference_users(reference, target)
 
-    def _reject_mapped_references_without_schema(self) -> None:
-        """Stop with an error at a model that uses a mapped reference whose fragment names no schema.
+    def _type_imported_references_without_model(self) -> None:
+        """Type the users of each reference that got no model by the type a field naming it gets from an import.
 
-        Such a reference, one to the whole document for example, names no class that ``--external-ref-mapping`` could
-        import. A reference that no model uses, and one that got a model, such as the root of an input document, keep
-        their output.
+        Such a reference, to a schema of a document that ``--external-ref-mapping`` maps or to a definition with
+        ``x-python-import``, is one that a site names as its one class, as an allOf of it and keywords that add no
+        field does; the import types it as it types a ``$ref`` to it at a field, and the site's other keywords leave
+        with the reference, as they leave with a local one. The imports every module shares stay: a model that names
+        the import imports it itself. A mapped reference whose fragment names no schema, one to the whole document for
+        example, names no class that ``--external-ref-mapping`` could import: a model that uses it stops with an
+        error. A reference that got a model, such as the root of an input document or a stand-in, keeps its output.
         """
-        if not self._mapped_references:
+        if not self._mapped_references and not self._python_import_values:
             return
         modelled = {model.reference.path for model in self.results}
+        typed = {path for model in self.results for path in model.additional_properties_reference_classes}
         index = self.generation_store.index
-        for path, (python_package, fragment) in self._mapped_references.items():
-            if (
-                path in modelled
-                or self._external_ref_mapping_import(python_package, fragment) is not None
-                or not (facts := index.data_type_facts_for_reference(self.model_resolver.references[path]))
-            ):
-                continue
-            owner = cast("DataModel", index.owner_model_for_data_type(facts[0].data_type))
-            raise SchemaParseError(
-                message=f"$ref {stable_repr(redact_reference(path))} names no schema of the document that "
-                f"--external-ref-mapping maps to {stable_repr(python_package)}; a mapped $ref needs a fragment that "
-                "names a schema of that document",
-                path=_named_path(location_of(owner.reference), [owner.reference.path]),
-            )
+        with self._unshared_imports():
+            for path, x_python_import in self._python_import_values.items():
+                if (
+                    path not in modelled
+                    and self._has_reference_users(reference := self.model_resolver.references[path], typed)
+                    and (python_import_type := self._python_import_type_maker(x_python_import, path)) is not None
+                ):
+                    self._type_users_by(reference, python_import_type, python_import_type)
+            for path, (python_package, fragment) in self._mapped_references.items():
+                if path in modelled:
+                    continue
+                reference = self.model_resolver.references[path]
+                import_ = self._external_ref_mapping_import(python_package, fragment)
+                if import_ is not None and self._has_reference_users(reference, typed):
+                    self._type_users_by_import(reference, import_)
+                elif import_ is None and (facts := index.data_type_facts_for_reference(reference)):
+                    owner = cast("DataModel", index.owner_model_for_data_type(facts[0].data_type))
+                    raise SchemaParseError(
+                        message=f"$ref {stable_repr(redact_reference(path))} names no schema of the document that "
+                        f"--external-ref-mapping maps to {stable_repr(python_package)}; a mapped $ref needs a fragment "
+                        "that names a schema of that document",
+                        path=_named_path(location_of(owner.reference), [owner.reference.path]),
+                    )
+
+    @contextmanager
+    def _unshared_imports(self) -> Generator[None, None, None]:
+        """Give the block imports of its own in place of the imports every module shares, which stay as they are."""
+        shared_imports, self.imports = self.imports, Imports(self.use_exact_imports)
+        try:
+            yield
+        finally:
+            self.imports = shared_imports
 
     def _is_base_stand_in(self, reference: Reference) -> bool:
         """Return whether the model of ``reference`` is a stand-in: never written, never split into variants."""
@@ -8563,8 +8619,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if not (targets := self._base_stand_in_targets()):
             return
         stand_ins: list[tuple[Reference, Import]] = []
-        shared_imports, self.imports = self.imports, Imports(self.use_exact_imports)
-        try:
+        with self._unshared_imports():
             while targets:
                 for reference, import_, file_path in targets.values():
                     self._base_stand_in_imports[key := model_key_of(reference)] = import_
@@ -8576,8 +8631,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 targets = self._base_stand_in_targets()
             for reference, import_ in stand_ins:
                 self._type_users_by_import(reference, import_)
-        finally:
-            self.imports = shared_imports
         self._reuse_optimization_context = replace(
             self._reuse_optimization_context, base_stand_in_keys=frozenset(self._base_stand_in_imports)
         )
@@ -8619,10 +8672,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self.current_source_path = source_path
 
     def _end_schema_parsing(self) -> None:
-        """Settle definition references, parse stand-ins, reject mapped references that name no schema, run the hook."""
+        """Settle definition references, parse stand-ins, type imported references without a model, run the hook."""
         self._type_references_to_definitions_without_model()
         self._parse_base_stand_ins()
-        self._reject_mapped_references_without_schema()
+        self._type_imported_references_without_model()
         self._generate_forced_base_models()
 
     def _build_definition_array(self, site: _Site) -> object:

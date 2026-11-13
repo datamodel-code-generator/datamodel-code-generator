@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "item": {
+      "allOf": [
+        {"$ref": "shared.json#/$defs/Base"},
+        {
+          "anyOf": [
+            {"type": "object", "properties": {"a": {"type": "string"}}},
+            {"type": "object", "properties": {"b": {"type": "integer"}}}
+          ]
+        },
+        {"maxProperties": 5}
+      ]
+    }
+  }
+}

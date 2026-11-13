@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Order",
+  "type": "object",
+  "properties": {
+    "amount": {"allOf": [{"$ref": "#/$defs/Amount"}, {"maxLength": 5}]},
+    "amounts": {"type": "array", "items": {"allOf": [{"$ref": "#/$defs/Amount"}, {"description": "An amount."}]}},
+    "amountsByName": {
+      "type": "object",
+      "additionalProperties": {"allOf": [{"$ref": "#/$defs/Amount"}, {"maxLength": 5}]}
+    },
+    "price": {"allOf": [{"$ref": "#/$defs/Price"}, {"description": "The price, written as a nested class."}]},
+    "counts": {"allOf": [{"$ref": "#/$defs/Counts"}, {"description": "The counts by name."}]},
+    "tally": {"allOf": [{"$ref": "#/$defs/Counts"}, {"properties": {"total": {"type": "integer"}}}]}
+  },
+  "$defs": {
+    "Amount": {"type": "string", "x-python-import": {"module": "decimal", "name": "Decimal"}},
+    "Price": {"type": "string", "x-python-import": {"module": "tests.data.python.input_model.nested_reuse", "name": "Inner", "qualname": "Outer.Inner"}},
+    "Counts": {"type": "object", "x-python-import": {"module": "tests.data.python.input_model.nested_reuse", "name": "Parent"}},
+    "Unused": {"type": "string", "x-python-import": {"module": "fractions", "name": "Fraction"}}
+  }
+}

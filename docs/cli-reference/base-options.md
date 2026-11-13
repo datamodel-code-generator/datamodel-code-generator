@@ -238,7 +238,9 @@ Default is UTF-8, which is the standard encoding for JSON and most modern text f
 Map external `$ref` files to Python packages.
 
 Use `--external-ref-mapping FILE_PATH=PYTHON_PACKAGE` to import referenced models from an existing package,
-instead of generating duplicate classes from external schema files.
+instead of generating duplicate classes from external schema files. An `allOf` of a mapped `$ref` and keywords that
+add no field, such as `maxLength` or `description`, is typed by the import too; its other keywords are not kept, as
+with a local `$ref`.
 
 !!! tip "Usage"
 

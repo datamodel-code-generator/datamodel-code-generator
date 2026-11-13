@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Order",
+  "type": "object",
+  "properties": {
+    "code": {"allOf": [{"$ref": "shared.json#/$defs/Code"}, {"maxLength": 5}]},
+    "label": {"allOf": [{"$ref": "shared.json#/$defs/Code"}, {"description": "The code printed on the label."}]},
+    "codes": {"type": "array", "items": {"allOf": [{"$ref": "shared.json#/$defs/Code"}, {"maxLength": 5}]}},
+    "codesByName": {
+      "type": "object",
+      "additionalProperties": {"allOf": [{"$ref": "shared.json#/$defs/Code"}, {"maxLength": 5}]}
+    },
+    "plain": {"$ref": "shared.json#/$defs/Code"}
+  },
+  "required": ["code"]
+}

@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Code": {"type": "string", "minLength": 2},
+    "Base": {"type": "object", "properties": {"id": {"type": "string"}}}
+  }
+}
