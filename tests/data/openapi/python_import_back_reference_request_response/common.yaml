@@ -1,0 +1,10 @@
+openapi: 3.0.3
+info: {title: common, version: "1"}
+paths: {}
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        pet:
+          allOf: [{$ref: 'api.yaml#/components/schemas/Pet'}, {description: The pet.}]

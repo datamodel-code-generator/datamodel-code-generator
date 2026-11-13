@@ -120,6 +120,7 @@ __all__ = [
     "splits_into_rw_model_variants",
     "store_extra_items_type",
     "temporary_constraint_values",
+    "type_names_rw_variant",
     "typed_field_site",
     "unregister_temporary_field_references",
     "unregister_temporary_type",
@@ -381,6 +382,12 @@ class RwSplitHost(AllOfValuesHost, Protocol):
 
     def _is_base_stand_in(self, reference: Reference) -> bool:
         """Return whether the model of ``reference`` is a stand-in: never written, never split into variants."""
+
+    def _imports_type_reference(self, path: str) -> bool:
+        """Return whether an import types a field that names the schema at the key ``path``."""
+
+    def _keep_python_import_model(self, path: str) -> None:
+        """Keep the model of the schema at the key ``path`` whose read/write variant a split names before it is read."""
 
     def _linearize_inherited_schema_refs(self, base_classes: list[Reference]) -> tuple[str, ...]:
         """Return raw inherited schemas in the same C3 order as generated models."""
@@ -1054,14 +1061,26 @@ def data_types_reference_rw_model_variant(
     suffix: Literal["Request", "Response"],
 ) -> bool:
     """Return whether any reference these types name, nested ones included, needs the requested variant."""
-    for data_type in data_types:
-        for nested_data_type in data_type.all_data_types:
-            if (reference := nested_data_type.reference) and parser._ref_schema_generates_variant(  # noqa: SLF001
-                reference.path,
-                suffix,
-            ):
-                return True
-    return False
+    return any(
+        (reference := nested_data_type.reference) and type_names_rw_variant(parser, reference, suffix)
+        for data_type in data_types
+        for nested_data_type in data_type.all_data_types
+    )
+
+
+def type_names_rw_variant(parser: RwSplitHost, reference: Reference, suffix: Literal["Request", "Response"]) -> bool:
+    """Return whether a type that names ``reference`` names the requested variant of its model in its place.
+
+    It does where the schema at the reference generates that variant, unless an import types a field that names the
+    schema (``_imports_type_reference``): that import types the type, which names no model. A schema whose variant it
+    names keeps its model (``_keep_python_import_model``).
+    """
+    if not parser._ref_schema_generates_variant(reference.path, suffix) or parser._imports_type_reference(  # noqa: SLF001
+        reference.path
+    ):
+        return False
+    parser._keep_python_import_model(reference.path)  # noqa: SLF001
+    return True
 
 
 def writes_extra_items_type(parser: RwSplitHost) -> bool:
@@ -1335,7 +1354,7 @@ def update_data_type_ref_for_variant(
 ) -> None:
     """Recursively update data type references to point to variant models."""
     for nested_data_type in data_type.all_data_types:
-        if (reference := nested_data_type.reference) and parser._ref_schema_generates_variant(reference.path, suffix):  # noqa: SLF001
+        if (reference := nested_data_type.reference) and type_names_rw_variant(parser, reference, suffix):
             base_reference = parser.model_resolver.add_ref(reference.path, resolved=True)
             variant_ref = parser._get_rw_model_variant_reference(base_reference, suffix)  # noqa: SLF001
             parser._graph_builder.replace_data_type_ref(nested_data_type, variant_ref)  # noqa: SLF001
