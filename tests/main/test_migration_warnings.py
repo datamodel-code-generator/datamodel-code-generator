@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import inspect
 import os
 import shlex
 import shutil
@@ -17,7 +18,6 @@ import pydantic
 import pytest
 from packaging.version import Version
 
-import datamodel_code_generator
 from datamodel_code_generator import chdir, generate
 from datamodel_code_generator.__main__ import generate_cli_command
 from datamodel_code_generator.config import GenerateConfig
@@ -292,7 +292,7 @@ def test_cli_notices_name_the_package(tmp_path: Path) -> None:
     with chdir(tmp_path), warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")
         run_main_with_args([*args, "--output", str(tmp_path / "models.py")])
-    package = Path(datamodel_code_generator.__file__).parent
+    package = Path(inspect.getfile(generate)).parent
     notice = next(item for item in recorded if "--use-annotated is recommended" in str(item.message))
     env = {
         **{key: value for key, value in os.environ.items() if key != "PYTHONWARNINGS"},
