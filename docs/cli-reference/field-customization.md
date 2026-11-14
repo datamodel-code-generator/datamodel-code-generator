@@ -1803,6 +1803,8 @@ Include specific extra keys in Field() definitions.
 
 The `--field-extra-keys` flag configures the code generation behavior.
 
+**See also:** [Kubernetes Schemas](../kubernetes.md)
+
 !!! tip "Usage"
 
     ```bash

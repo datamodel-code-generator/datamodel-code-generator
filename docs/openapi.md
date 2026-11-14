@@ -497,3 +497,4 @@ enable validation-related options.
 - 🚀 [Getting Started](getting-started.md) - Installation and first model
 - 🖥️ [CLI Reference: OpenAPI-only Options](cli-reference/openapi-only-options.md) - All OpenAPI-specific CLI options
 - ⚙️ [CLI Reference: Base Options](cli-reference/base-options.md) - Input/output configuration options
+- ☸️ [Kubernetes Schemas](kubernetes.md) - Cluster documents and the x-kubernetes extensions

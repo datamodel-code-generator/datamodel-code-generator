@@ -669,6 +669,18 @@ def docs_examples() -> tuple[DocsExample, ...]:
             language="yaml",
             path=OPENAPI_DATA / "read_only_write_only_allof.yaml",
         ),
+        DocsExample(
+            example_id="kubernetes.crd.schema",
+            path=DOCS / "kubernetes.md",
+            render=lambda: details("widget.yaml", "yaml", read_text(JSON_SCHEMA_DATA / "kubernetes_crd_schema.yaml")),
+        ),
+        _file_example(
+            "kubernetes.crd.output",
+            "kubernetes.md",
+            language="python",
+            path=EXPECTED_MAIN / "kubernetes_extensions" / "kubernetes_crd_schema[pydantic_v2.BaseModel-on].py",
+            strip_python_header=True,
+        ),
         _file_example(
             "model-reuse.reuse-model.output",
             "model-reuse.md",
