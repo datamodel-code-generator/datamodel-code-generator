@@ -105,6 +105,7 @@ SignalName: TypeAlias = Literal[
     "boolean_exclusive_bounds",
     "coercible_scalars",
     "formats",
+    "formats_needing_extras",
     "integer_range_formats",
     "decimal_formats",
     "ref_siblings_read_as_draft_07",
@@ -138,6 +139,8 @@ _CONSTRAINT_ONLY_KEYWORDS = frozenset({"type", "properties", "required", "descri
 _COERCIBLE_TYPES = frozenset({"integer", "number", "boolean"})
 _PROPERTY_COUNTS = frozenset({"minProperties", "maxProperties"})
 _INTEGER_RANGE_FORMATS = ("int32", "int64")
+_FORMATS_NEEDING_EXTRAS = ("email", "idn-email", "ulid", "password")
+"""The formats whose Pydantic types need a package Pydantic does not install to import, or dump a mask."""
 _NORMALIZE = re.compile(r"[^a-z0-9]")
 _EXAMPLE_LIMIT = 4
 _TAG_REFERENCE_DEPTH = 5
@@ -1028,6 +1031,7 @@ def measure_signals(
     counts["dotted_namespace_reference_cycles"] = _reference_cycles(walker.references) if dotted else 0
     counts["formats"] = walker.formats.total()
     counts["integer_range_formats"] = sum(walker.formats[name] for name in _INTEGER_RANGE_FORMATS)
+    counts["formats_needing_extras"] = sum(walker.formats[name] for name in _FORMATS_NEEDING_EXTRAS)
     counts["decimal_formats"] = walker.formats["decimal"]
     counts["estimated_models"] = (
         counts["components"] + counts["inline_objects"] + counts["inline_enums"] + counts["inline_union_variants"]

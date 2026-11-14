@@ -55,6 +55,7 @@
 - `--no-keep-enum-member-values`
 - `--no-read-allof-parents-in-mro-order`
 - `--no-read-const-beside-enum`
+- `--no-read-format-as-annotation`
 - `--no-read-kubernetes-extensions`
 - `--no-read-unevaluated-properties`
 - `--no-type-overrides-replace-whole-type`
@@ -85,6 +86,7 @@
 - `--output-datetime-class`: Specify datetime class type for date-time schema fields.
 - `--read-allof-parents-in-mro-order`: Read the allOf parents of every inherited schema in the order of the clas...
 - `--read-const-beside-enum`: Read a `const` beside an `enum` as JSON Schema does.
+- `--read-format-as-annotation`: Read the format of a schema as an annotation, as JSON Schema does.
 - `--read-kubernetes-extensions`: Read the Kubernetes schema extensions as the keywords they stand for.
 - `--read-unevaluated-properties`: Read a schema-valued `unevaluatedProperties` as `additionalProperties`.
 - `--strict-types`: Enable strict type validation for specified Python types.
@@ -820,6 +822,18 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         value-enum-as-const an `enum` that admits its `const`
                         is read as that `const` instead of an Enum, except one
                         with `nullable: true` and a value other than null
+  --read-format-as-annotation, --no-read-format-as-annotation
+                        Read the format of a schema as an annotation, as JSON
+                        Schema does: a string, integer or number schema takes
+                        the type its type keyword gives (str, int, float),
+                        with its own length, pattern and bound keywords, so
+                        every value the schema accepts validates and dumps as
+                        written, and an unknown format gives no warning; a
+                        format that a --type-mappings entry names for the
+                        schema's type keeps that mapping, and format: binary
+                        stays bytes. Without it each known format selects a
+                        type (EmailStr, AwareDatetime, UUID, Decimal,
+                        SecretStr, Base64Str, ...), as in 0.96.0
   --read-kubernetes-extensions, --no-read-kubernetes-extensions
                         Read the Kubernetes schema extensions as the keywords
                         they stand for: x-kubernetes-int-or-string (and the

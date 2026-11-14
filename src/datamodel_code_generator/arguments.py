@@ -1334,6 +1334,16 @@ typing_options.add_argument(
     type=str,
     default=None,
 )
+_toggle(
+    typing_options,
+    "--read-format-as-annotation",
+    help="Read the format of a schema as an annotation, as JSON Schema does: a string, integer or number schema takes "
+    "the type its type keyword gives (str, int, float), with its own length, pattern and bound keywords, so every "
+    "value the schema accepts validates and dumps as written, and an unknown format gives no warning; a format that a "
+    "--type-mappings entry names for the schema's type keeps that mapping, and format: binary stays bytes. Without "
+    "it each known format selects a type (EmailStr, AwareDatetime, UUID, Decimal, SecretStr, Base64Str, ...), as in "
+    "0.96.0",
+)
 typing_options.add_argument(
     "--type-overrides",
     help="Replace schema model types with custom Python types. "

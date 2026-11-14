@@ -168,16 +168,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 259 | Shared generation options. |
-| `GenerateConfig` | 274 | Public `generate()` configuration. |
-| `ParserConfig` | 214 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 216 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 227 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 230 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 217 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 217 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 216 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 217 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 260 | Shared generation options. |
+| `GenerateConfig` | 275 | Public `generate()` configuration. |
+| `ParserConfig` | 215 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 217 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 228 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 231 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 218 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 218 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 217 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 218 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -258,14 +258,18 @@ which parses again with every role known at L0: `document_roles_to_seed`). These
 pipeline, not passes inside it.
 
 **L0.** `_load_source_dict` calls `parser/_schema_documents.py:read_document`, which keeps the document as written and
-reads it copy-on-write, each schema object through one walk (`_read_schema_objects`, which skips instance-data keywords
-and extension keys other than `x-propertyNames` through `_document_child_entries`): first, under
+reads it copy-on-write, each schema object after its children through one walk (`_read_schema_objects`, which skips
+instance-data keywords and extension keys other than `x-propertyNames` through `_document_child_entries`) and by the
+readings its options turn on, in this order, each taking the object as the readings before it left it: first, under
 `--read-kubernetes-extensions`, the Kubernetes extensions as the keywords they stand for (`_read_kubernetes_extensions`:
 `x-kubernetes-int-or-string` or the format `int-or-string` as `type: [integer, string]`,
 `x-kubernetes-preserve-unknown-fields` beside `properties` as `additionalProperties: true`, and where `const` is a
-keyword `x-kubernetes-group-version-kind` as the `const` and `default` of `apiVersion` and `kind`), so no later step
-reads an `x-kubernetes-*` key; then, under `--use-single-value-enum-as-const`, one-value `enum` as `const`, except
-beside `nullable: true` when the value is not null (`_single_value_enum_as_const`). `_parse_file` then calls `_prepare_schema_resources`, which
+keyword `x-kubernetes-group-version-kind` as the `const` and `default` of `apiVersion` and `kind`, each property so
+written read by the readings after this one), so no later step reads an `x-kubernetes-*` key and the format
+`int-or-string` is read before anything leaves it out; then, under `--read-format-as-annotation`, each `format` that no
+`--type-mappings` entry names for the schema's type, except `binary`, left out (`_read_format_as_annotation`); then,
+under `--use-single-value-enum-as-const`, one-value `enum` as `const`, except beside `nullable: true` when the value is
+not null (`_single_value_enum_as_const`). `_parse_file` then calls `_prepare_schema_resources`, which
 adds the document to the schema graph (`parser/_schema_graph.py`): `walk_schema_resources` finds which absolute URI
 names which schema of it (the root, `$id` or draft-04 `id` resources, the implicit component resources of OpenAPI,
 the schemas of the object a reference names the document's root as, `$anchor` and `$dynamicAnchor`) and returns one

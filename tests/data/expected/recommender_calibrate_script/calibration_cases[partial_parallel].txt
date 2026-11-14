@@ -150,6 +150,7 @@ A rule should fire on a schema when the grid's best configuration with its value
 - Not covered: versions.read-per-document (decision schema-version-scope has no grid axis)
 - Optional, not calibrated: validation.check-unique-items-and-pattern-properties (listed for the user to decide, never in the command)
 - Optional, not calibrated: policy.strict-scalar-types (listed for the user to decide, never in the command)
+- Optional, not calibrated: formats.read-as-annotation (listed for the user to decide, never in the command)
 
 Rules that disagree on 2 or more schemas:
 
@@ -857,6 +858,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "enums_beside_const": 0,
           "estimated_models": 3,
           "formats": 0,
+          "formats_needing_extras": 0,
           "inline_enums": 2,
           "inline_names_equal_component": 0,
           "inline_object_bodies": 0,
@@ -1532,6 +1534,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "enums_beside_const": 0,
           "estimated_models": 9,
           "formats": 0,
+          "formats_needing_extras": 0,
           "inline_enums": 4,
           "inline_names_equal_component": 0,
           "inline_object_bodies": 0,
@@ -1850,6 +1853,11 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "covered": "optional, not calibrated",
       "decision": "strict-types",
       "rule": "policy.strict-scalar-types"
+    },
+    {
+      "covered": "optional, not calibrated",
+      "decision": "format-reading",
+      "rule": "formats.read-as-annotation"
     },
     {
       "covered": "decision schema-version-scope has no grid axis",

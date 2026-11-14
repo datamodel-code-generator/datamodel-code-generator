@@ -210,6 +210,10 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
             id="unions-shared-variant-tags-msgspec",
         ),
         pytest.param("ref_siblings_oas31.yaml", ["--output-format", "json"], id="ref-siblings-read-as-draft-07"),
+        pytest.param("tool_formats.json", [], id="formats-needing-extras"),
+        pytest.param(
+            "tool_formats.json", ["--output-model-type", "msgspec.Struct"], id="formats-needing-extras-msgspec"
+        ),
         pytest.param("property_counts_draft07.json", [], id="property-counts-beside-ignored-ref"),
         pytest.param(
             "redundant_constraints.json",
@@ -300,7 +304,8 @@ def test_recommend_options_for_schemas(
     and no ``x-`` key of ``paths``; the paths scope reads the methods before OpenAPI 3.2 and an ``x-`` key that holds
     an object. The api scope counts only the operations of the paths ``--openapi-include-paths`` selects, so an excluded
     path whose operations generation never reads is no error. A discriminator mapping value that names a schema of
-    another document tags no variant, and the values after it still tag theirs.
+    another document tags no variant, and the values after it still tag theirs. Formats whose Pydantic types need an
+    extra package or dump a mask suggest reading formats as annotations for Pydantic output only.
     """
     extra = [] if "--preset" in args else ["--target-python-version", "3.14"]
     _recommend(tmp_path, capsys, ["--input", source, *extra, *args], inputs=_inputs(INPUT_PATH / source))

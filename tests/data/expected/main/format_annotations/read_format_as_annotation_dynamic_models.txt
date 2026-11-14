@@ -1,0 +1,3 @@
+{"email": "<class 'str'>", "website": "str | None", "remindAt": "<class 'str'>", "apiKey": "str | None"}
+{"email": "a@b.c", "website": "https://example.com", "remindAt": "2026-11-13T10:00:00", "apiKey": "k-1"}: {"email": "a@b.c", "website": "https://example.com", "remindAt": "2026-11-13T10:00:00", "apiKey": "k-1"}
+{"email": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "remindAt": "2026-11-13T10:00:00"}: rejected

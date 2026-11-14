@@ -86,6 +86,8 @@ blank-union-titles	main/main_recommend_options/recommend_options_for_schemas[bla
 draft-07-pattern-map	main/main_recommend_options/recommend_options_for_schemas[draft-07-pattern-map].stdout.txt
 enums-read-as-their-const	main/main_recommend_options/recommend_options_for_schemas[enums-read-as-their-const].stdout.txt
 explicit-options	main/main_recommend_options/recommend_options_for_schemas[explicit-options].stdout.txt
+formats-needing-extras	main/main_recommend_options/recommend_options_for_schemas[formats-needing-extras].stdout.txt
+formats-needing-extras-msgspec	main/main_recommend_options/recommend_options_for_schemas[formats-needing-extras-msgspec].stdout.txt
 integer-definition-keys	main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout.txt
 json	main/main_recommend_options/recommend_options_for_schemas[json].stdout.txt
 jsonschema	main/main_recommend_options/recommend_options_for_schemas[jsonschema].stdout.txt
