@@ -1,0 +1,46 @@
+Option recommendations (experimental; quick mode; rules 2026-10-19)
+
+Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
+  components                       0, 0 operations
+  inline objects / enums           0 / 0, nesting depth 0
+  shared property names            0 (none)
+  inline names = component names   0
+  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    0 objects, most repeated 0 (none)
+  unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants
+  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   none; 0 dotted in 0 namespaces
+  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
+  formats                          4 (email x1, idn-email x1, password x1, date-time x1), decimal 0; int32/int64 0, ranges not enforced
+  integer/number/boolean schemas   0
+  root schema                      object model 1, title words 1
+
+Start from  --preset standard-py314-20261113
+
+Add (1 option)
+  --class-name ToolFormats   [root.class-name-for-root-object]
+      The root schema is an object model. Without --class-name its class is Model (with
+      --use-title-as-name, its title: InviteMember), and full-path prefixes that name onto
+      root-level models. The suggested name comes from the input file name; replace it with the name
+      the project wants.
+      measured: SchemaStore tsconfig schema: JsonSchemaForTheTypescriptCompilerSConfigurationFile
+      became Tsconfig, names over 40 characters 6 -> 0
+      measured: SchemaStore github-workflow schema: Model became GithubWorkflow
+      measured: compose spec with --naming-strategy full-path: ComposeSpecification became
+      ComposeSpec
+      measured: SchemaStore package.json schema: JsonSchemaForNpmPackageJsonFiles became Package
+
+Notes
+  - The rules were calibrated on the 20261017 presets.
+
+Command
+  datamodel-codegen --class-name ToolFormats --input tool_formats.json --output-model-type msgspec.Struct --preset standard-py314-20261113 --target-python-version 3.14
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  class-name = "ToolFormats"
+  input = "tool_formats.json"
+  output-model-type = "msgspec.Struct"
+  preset = "standard-py314-20261113"
+  target-python-version = "3.14"

@@ -17344,7 +17344,7 @@ The counts, presets and options come from your schema and the installed version.
 | Add | Options to add on top of the preset. Each names its rule in brackets, the reason, `caveat:` lines for known limits, `measured:` lines with the effect seen on public schemas, and a `trial:` line with the candidates without and with it, their class and problem-name counts, and up to three class names it changes in your schema. |
 | Left out after the trial | Options the rules recommend that the selected candidate does without, because your schema's class names score better without them. |
 | Optional (validation) | Options for checks the schema declares that the models leave out by default, such as `--generate-schema-validators` for `uniqueItems` and for `patternProperties` a typed map cannot express (beside declared properties, with several patterns, or with other keys allowed) with Pydantic v2 models. They are experimental or change runtime behaviour, so they are not in the command; validate sample data with the generated models first. |
-| Optional (policy) | Options that depend on what input your project accepts rather than on the schema, such as `--strict-types`, which rejects the strings and booleans Pydantic's lax mode coerces into numbers and booleans. They are never in the command. |
+| Optional (policy) | Options that depend on what input your project accepts rather than on the schema, such as `--strict-types`, which rejects the strings and booleans Pydantic's lax mode coerces into numbers and booleans, and `--read-format-as-annotation` for Pydantic v2 models of a schema with `email`, `idn-email`, `ulid` or `password` formats, whose types need `email-validator` or `python-ulid` to import or dump a mask. They are never in the command. |
 | Not recommended | Options a rule argues against for this schema. |
 | Trial | The compared candidates with their class counts, problem names, median name length, and `unconstrained`: the fields dcg warns it generates without some of their constraints, counted per module in the generation each candidate keeps; `selected` marks the recommended one. |
 | Changes from the current configuration | The class names the recommended configuration changes from the configuration you run now, matched by the internal identity paths of their models. |
@@ -20573,6 +20573,12 @@ For example:
 MCP `inputSchema` and `outputSchema` entries are converted into JSON Schema definitions before generation. Local
 `$defs` and `definitions` entries inside a tool schema are hoisted and prefixed to avoid collisions between tools.
 
+A tool schema's `format` selects a type by default (`email` is `EmailStr`, `date-time` is `AwareDatetime`, `uri` is
+`AnyUrl`), so the models reject or change arguments the tool schema accepts. Models that take tool arguments as the
+schema accepts them are generated with
+[`--read-format-as-annotation`](cli-reference/typing-customization.md#read-format-as-annotation), which types each value by its `type`
+keyword.
+
 ## Supported MCP Features
 
 | Feature | Generation behavior |
@@ -22781,7 +22787,7 @@ If you encounter circular import errors:
 
 Source: https://datamodel-code-generator.koxudaxi.dev/type-mappings/
 
-<!-- related-cli-options: --type-mappings, --strict-types, --output-datetime-class, --use-pendulum, --use-decimal-for-multiple-of -->
+<!-- related-cli-options: --type-mappings, --read-format-as-annotation, --strict-types, --output-datetime-class, --use-pendulum, --use-decimal-for-multiple-of -->
 
 # Type Mappings and Custom Types
 
@@ -22792,6 +22798,7 @@ datamodel-code-generator allows you to customize how schema types are mapped to 
 | Option | Description |
 |--------|-------------|
 | `--type-mappings` | Map schema types to custom Python types |
+| `--read-format-as-annotation` | Type each value by its `type` keyword, reading `format` as an annotation |
 | `--strict-types` | Use Pydantic strict types for validation |
 | `--output-datetime-class` | Choose datetime output type |
 | `--use-pendulum` | Use Pendulum library for datetime types |
@@ -22878,6 +22885,63 @@ specifies for unencoded binary data, so `maxLength: 3` rejects `"ééé"`, three
 msgspec decodes a JSON string into `bytes` as base64, so in `msgspec.Struct` output a `format: binary` field rejects
 `"abc"` and decodes `"aGk="` into `b"hi"`; `--type-mappings binary=string` writes the field as `str`, which keeps the
 text as written.
+
+---
+
+## `--read-format-as-annotation`
+
+JSON Schema reads `format` as an annotation: a validator does not reject a string whose format does not match, and
+the value stays the JSON string. By default each known format selects a type instead, as in 0.96.0, so the models
+reject or change data the schema accepts: `email` is `EmailStr`, which needs `email-validator` to import and leaves
+out `maxLength`; `date-time` is `AwareDatetime`, which rejects a date-time without an offset; `password` is
+`SecretStr`, which dumps `**********`; and `uri` is `AnyUrl`, which dumps `https://example.com/` for
+`https://example.com`.
+
+With `--read-format-as-annotation` (`read-format-as-annotation = true`, `read_format_as_annotation=True`) a string,
+integer or number schema takes the type its `type` keyword gives, `str`, `int` or `float`, with its own `minLength`,
+`maxLength`, `pattern` and bounds, so the models accept every value the schema accepts and dump it as written. An
+unknown format gives no warning.
+
+```json
+{
+  "title": "CreateContact",
+  "type": "object",
+  "properties": {
+    "email": {"type": "string", "format": "email", "maxLength": 64},
+    "website": {"type": "string", "format": "uri"},
+    "remindAt": {"type": "string", "format": "date-time"},
+    "apiKey": {"type": "string", "format": "password"}
+  },
+  "required": ["email", "remindAt"]
+}
+```
+
+```python
+class CreateContact(BaseModel):
+    email: constr(max_length=64)
+    website: str | None = None
+    remindAt: str
+    apiKey: str | None = None
+```
+
+Two formats still select a type:
+
+- `format: binary` stays `bytes`: raw octets are not a JSON string. `--type-mappings binary=string` writes `str`.
+- A format that a `--type-mappings` entry names for a type the schema declares keeps that mapping:
+  `--type-mappings date-time=date-time` keeps the `date-time` strings typed, and `--output-datetime-class` then
+  applies to them. A schema that declares no `type`, such as an allOf part, has no such entry.
+
+The other options apply as to plain values: `--strict-types str` writes `StrictStr`, `--field-constraints` and
+`--use-annotated` write the schema's own keywords into `Field(...)` (the hostname pattern a `hostname` format adds is
+not written), `--use-subclass-enum` subclasses `str` for an enum of formatted strings, and the default of a
+`format: decimal` number under `--deserialize-default-values decimal` is a float, not a `Decimal(...)`. `--output-datetime-class`, `--output-date-class`, `--use-pendulum`,
+`--use-standard-primitive-types`, `--use-encoded-str-for-constrained-base64` and `--use-strict-str-for-base64` have no
+effect on the formats read as annotations. `contentMediaType` and `--use-bytes-for-content-media-type` are not
+`format` and work as without the option. The format itself is not written into the models.
+
+The option reads JSON Schema, OpenAPI, the JSON Schema payloads of AsyncAPI and MCP tool schemas, with every document
+they reference. Avro, Protocol Buffers and XML Schema inputs, and AsyncAPI payloads converted from them, keep the
+types of their formats: there the format carries the type of the source, such as an Avro `timestamp-millis`.
 
 ---
 
@@ -26977,6 +27041,13 @@ tool call. Where the schema has no `additionalProperties`, a property the schema
 An optional property is nullable in the model, as the next sections show: `assignee` above is `None` when left out,
 and so is `contact`.
 
+A `format` selects a type by default: `email` is `EmailStr` (which needs `email-validator`), `date-time` is
+`AwareDatetime` (which rejects a date-time without an offset), `password` is `SecretStr` (which dumps `**********`).
+To take tool arguments exactly as the schema accepts them and pass them on unchanged, set
+`read_format_as_annotation=True`: each value is then typed by its `type` keyword, `str`, `int` or `float`, with its
+own length, pattern and bound keywords, except `format: binary`, which stays `bytes`. See
+[`--read-format-as-annotation`](cli-reference/typing-customization.md#read-format-as-annotation).
+
 ### Class Names Follow the Schema
 
 The root class is named by `class_name`, else by the `title`. A `$defs` key, a property that holds an inline object or
@@ -27096,7 +27167,7 @@ exact document matters.
 | `description` (and `title`) beside a `$ref` | Kept on the property, beside the `$ref` |
 | `enum`, `const`, and `type` lists with `"null"` | Kept. An enum is a `$defs` entry named after its property |
 | `minLength`, `maxLength`, `pattern`, `minimum`, `maximum`, `multipleOf`, `exclusiveMinimum`, `exclusiveMaximum`, `minItems`, `maxItems` | Kept. An exclusive bound `0` reads `0.0` |
-| `format`, `examples`, `deprecated` | Kept. `format: uri` also gains `minLength: 1` |
+| `format`, `examples`, `deprecated` | Kept. `format: uri` also gains `minLength: 1`. Under `read_format_as_annotation=True` `format` is not kept, except `format: binary` |
 | `default` of an optional property | Kept |
 | `required` | Kept. A required property with a `default` loses the `default` |
 | `additionalProperties` (`true`, `false`, a schema) | Kept; absent stays absent |
@@ -35858,7 +35929,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 19 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 58 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 59 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 41 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 73 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
@@ -35876,7 +35947,7 @@ Use these pages when you know the workflow area but not the exact option name.
 |-------|---------|--------|
 | [Model Customization](topics/model-customization.md) | 35 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 23 | Custom Templates, Generated Output, Imports, Output Formatting |
-| [Typing Customization](topics/typing-customization.md) | 38 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
+| [Typing Customization](topics/typing-customization.md) | 39 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 14 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
@@ -36182,6 +36253,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum)
 - [`--read-dynamic-anchors-in-document-order`](base-options.md#read-dynamic-anchors-in-document-order)
 - [`--read-escaped-ref-pointers`](base-options.md#read-escaped-ref-pointers)
+- [`--read-format-as-annotation`](typing-customization.md#read-format-as-annotation)
 - [`--read-input-model-dataclass-fields-by-alias`](base-options.md#read-input-model-dataclass-fields-by-alias)
 - [`--read-kubernetes-extensions`](typing-customization.md#read-kubernetes-extensions)
 - [`--read-length-keywords-by-type`](field-customization.md#read-length-keywords-by-type)
@@ -57570,6 +57642,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/typing-custo
 | [`--output-datetime-class`](#output-datetime-class) | Specify datetime class type for date-time schema fields. |
 | [`--read-allof-parents-in-mro-order`](#read-allof-parents-in-mro-order) | Read the allOf parents of every inherited schema in the orde... |
 | [`--read-const-beside-enum`](#read-const-beside-enum) | Read a `const` beside an `enum` as JSON Schema does. |
+| [`--read-format-as-annotation`](#read-format-as-annotation) | Read the format of a schema as an annotation, as JSON Schema... |
 | [`--read-kubernetes-extensions`](#read-kubernetes-extensions) | Read the Kubernetes schema extensions as the keywords they s... |
 | [`--read-unevaluated-properties`](#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalP... |
 | [`--strict-types`](#strict-types) | Enable strict type validation for specified Python types. |
@@ -62289,6 +62362,229 @@ ignored.
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--read-format-as-annotation` {#read-format-as-annotation}
+
+Read the format of a schema as an annotation, as JSON Schema does.
+
+JSON Schema reads `format` as an annotation: a validator does not reject a string whose format does not match, and
+the value stays the string. Without this option each known format selects a type, as in 0.96.0: `email` is
+`EmailStr` (which needs `email-validator` to import, and drops `maxLength`), `date-time` is `AwareDatetime` (which
+rejects a date-time without an offset), `password` is `SecretStr` (which dumps `**********`), `uri` is `AnyUrl`
+(which dumps `https://example.com/` for `https://example.com`), and `uuid`, `date`, `ipv4` and `decimal` are parsed
+into Python objects. With it a string, integer or number schema takes the type its `type` keyword gives, `str`, `int`
+or `float`, with its own `minLength`, `maxLength`, `pattern` and bounds, so the models accept every value the schema
+accepts and dump it as written, and an unknown format gives no warning. Two formats still select a type:
+`format: binary`, which stays `bytes` (raw octets, not a JSON string), and a format that a `--type-mappings` entry
+names for a type the schema declares (`--type-mappings date-time=date-time` keeps `date-time` typed, and then
+`--output-datetime-class` applies). The format is not written into the models. The option reads JSON Schema, OpenAPI,
+the JSON Schema payloads of AsyncAPI and MCP tool schemas, with every document they reference; inputs converted from
+Avro, Protocol Buffers or XML Schema keep the types of their formats.
+
+**See also:** [Type Mappings and Custom Types](../type-mappings.md)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input tool_input_formats.json --read-format-as-annotation # (1)!
+    ```
+
+    1. :material-arrow-left: `--read-format-as-annotation` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "ScheduleCall",
+      "description": "Input of a tool that schedules a call with a contact.",
+      "type": "object",
+      "properties": {
+        "contactEmail": {"type": "string", "format": "email", "maxLength": 64},
+        "profileUrl": {"type": "string", "format": "uri"},
+        "startsAt": {"type": "string", "format": "date-time"},
+        "callDate": {"type": "string", "format": "date"},
+        "dialPin": {"type": "string", "format": "password"},
+        "attachment": {"type": "string", "format": "byte"},
+        "recording": {"type": "string", "format": "binary"},
+        "callId": {"type": "string", "format": "uuid"},
+        "bridgeHost": {"type": "string", "format": "hostname", "minLength": 3},
+        "clientIp": {"type": "string", "format": "ipv4"},
+        "fee": {"type": "number", "format": "decimal", "minimum": 0},
+        "feeText": {"type": "string", "format": "decimal"},
+        "createdEpoch": {"type": "integer", "format": "date-time"},
+        "attempts": {"type": "integer", "format": "int32", "minimum": 1},
+        "phone": {"type": "string", "format": "x-phone", "pattern": "^\\+[0-9]+$"},
+        "volume": {"type": "integer", "format": "uint8"},
+        "slot": {"type": "string", "format": "date", "enum": ["2026-11-20", "2026-11-21"]},
+        "backupEmail": {"allOf": [{"$ref": "#/$defs/Mailbox"}, {"format": "email", "maxLength": 40}]},
+        "notes": {"type": ["string", "null"], "format": "uri-reference"},
+        "rescheduledAt": {"type": ["string", "null"], "format": "date-time"},
+        "dialIn": {"type": "string", "format": "uri", "enum": ["https://voice.example.com/join"]},
+        "format": {"type": "string", "format": "date-time"},
+        "settings": {
+          "type": "object",
+          "properties": {"timezone": {"type": "string"}},
+          "examples": [{"format": "24h", "timezone": "UTC"}]
+        }
+      },
+      "required": ["contactEmail", "startsAt", "callId"],
+      "$defs": {
+        "Mailbox": {"type": "string", "format": "email"}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  tool_input_formats.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+        from pydantic import BaseModel, Field, RootModel, confloat, conint, constr
+
+
+        class Slot(Enum):
+            field_2026_11_20 = '2026-11-20'
+            field_2026_11_21 = '2026-11-21'
+
+
+        class DialIn(Enum):
+            https___voice_example_com_join = 'https://voice.example.com/join'
+
+
+        class Settings(BaseModel):
+            timezone: str | None = None
+
+
+        class Mailbox(RootModel[str]):
+            root: str
+
+
+        class ScheduleCall(BaseModel):
+            contactEmail: constr(max_length=64)
+            profileUrl: str | None = None
+            startsAt: str
+            callDate: str | None = None
+            dialPin: str | None = None
+            attachment: str | None = None
+            recording: bytes | None = None
+            callId: str
+            bridgeHost: constr(min_length=3) | None = None
+            clientIp: str | None = None
+            fee: confloat(ge=0.0) | None = None
+            feeText: str | None = None
+            createdEpoch: int | None = None
+            attempts: conint(ge=1) | None = None
+            phone: constr(pattern=r'^\+[0-9]+$') | None = None
+            volume: int | None = None
+            slot: Slot | None = None
+            backupEmail: Mailbox | None = None
+            notes: str | None = None
+            rescheduledAt: str | None = None
+            dialIn: DialIn | None = None
+            format: str | None = None
+            settings: Settings | None = Field(
+                None, examples=[{'format': '24h', 'timezone': 'UTC'}]
+            )
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  tool_input_formats.json
+
+        from __future__ import annotations
+
+        from datetime import date
+        from decimal import Decimal
+        from enum import Enum
+        from ipaddress import IPv4Address
+        from uuid import UUID
+
+        from pydantic import (
+            AnyUrl,
+            AwareDatetime,
+            Base64Str,
+            BaseModel,
+            EmailStr,
+            Field,
+            RootModel,
+            SecretStr,
+            condecimal,
+            conint,
+            constr,
+        )
+
+
+        class Slot(Enum):
+            field_2026_11_20 = '2026-11-20'
+            field_2026_11_21 = '2026-11-21'
+
+
+        class DialIn(Enum):
+            https___voice_example_com_join = 'https://voice.example.com/join'
+
+
+        class Settings(BaseModel):
+            timezone: str | None = None
+
+
+        class Mailbox(RootModel[EmailStr]):
+            root: EmailStr
+
+
+        class ScheduleCall(BaseModel):
+            contactEmail: EmailStr
+            profileUrl: AnyUrl | None = None
+            startsAt: AwareDatetime
+            callDate: date | None = None
+            dialPin: SecretStr | None = None
+            attachment: Base64Str | None = None
+            recording: bytes | None = None
+            callId: UUID
+            bridgeHost: (
+                constr(
+                    pattern=r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]{0,61}[A-Za-z0-9])$'
+                )
+                | None
+            ) = None
+            clientIp: IPv4Address | None = None
+            fee: condecimal(ge=Decimal('0')) | None = None
+            feeText: Decimal | None = None
+            createdEpoch: AwareDatetime | None = None
+            attempts: conint(ge=1) | None = None
+            phone: constr(pattern=r'^\+[0-9]+$') | None = None
+            volume: int | None = None
+            slot: Slot | None = None
+            backupEmail: Mailbox | None = None
+            notes: str | None = None
+            rescheduledAt: AwareDatetime | None = None
+            dialIn: DialIn | None = None
+            format: AwareDatetime | None = None
+            settings: Settings | None = Field(
+                None, examples=[{'format': '24h', 'timezone': 'UTC'}]
+            )
+        ```
+
+        <!-- fmt: on -->
 
 ---
 
@@ -87129,7 +87425,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 | [Imports](#imports) | 2 | Generated imports and type-checking import behavior. |
 | [Collection Types](#collection-types) | 8 | Collection and tuple/set generation. |
 | [Type Alias](#type-alias) | 4 | TypeAlias and root-model alias output. |
-| [Type Mapping](#type-mapping) | 21 | Scalar, date/time, and custom type mapping. |
+| [Type Mapping](#type-mapping) | 22 | Scalar, date/time, and custom type mapping. |
 | [Type Syntax](#type-syntax) | 3 | Modern annotation syntax and Annotated usage. |
 
 ## Imports {#imports}
@@ -87175,6 +87471,7 @@ Scalar, date/time, and custom type mapping.
 |--------|-------------|
 | [`--output-date-class`](../typing-customization.md#output-date-class) | Specify date class type for date schema fields. |
 | [`--output-datetime-class`](../typing-customization.md#output-datetime-class) | Specify datetime class type for date-time schema fields. |
+| [`--read-format-as-annotation`](../typing-customization.md#read-format-as-annotation) | Read the format of a schema as an annotation, as JSON Schema does. |
 | [`--read-kubernetes-extensions`](../typing-customization.md#read-kubernetes-extensions) | Read the Kubernetes schema extensions as the keywords they stand for. |
 | [`--read-unevaluated-properties`](../typing-customization.md#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalProperties`. |
 | [`--strict-types`](../typing-customization.md#strict-types) | Enable strict type validation for specified Python types. |
@@ -87333,6 +87630,7 @@ datamodel-codegen [OPTIONS]
 | [`--output-datetime-class`](typing-customization.md#output-datetime-class) | Specify datetime class type for date-time schema fields. |
 | [`--read-allof-parents-in-mro-order`](typing-customization.md#read-allof-parents-in-mro-order) | Read the allOf parents of every inherited schema in the order of the class bases... |
 | [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum) | Read a `const` beside an `enum` as JSON Schema does. |
+| [`--read-format-as-annotation`](typing-customization.md#read-format-as-annotation) | Read the format of a schema as an annotation, as JSON Schema does. |
 | [`--read-kubernetes-extensions`](typing-customization.md#read-kubernetes-extensions) | Read the Kubernetes schema extensions as the keywords they stand for. |
 | [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalProperties`. |
 | [`--strict-types`](typing-customization.md#strict-types) | Enable strict type validation for specified Python types. |
@@ -87820,6 +88118,7 @@ All options sorted alphabetically:
 - [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum) - Read a `const` beside an `enum` as JSON Schema does.
 - [`--read-dynamic-anchors-in-document-order`](base-options.md#read-dynamic-anchors-in-document-order) - Resolve a `$dynamicRef` to the first `$dynamicAnchor` of its...
 - [`--read-escaped-ref-pointers`](base-options.md#read-escaped-ref-pointers) - Read the escapes of a `$ref` JSON pointer as the characters ...
+- [`--read-format-as-annotation`](typing-customization.md#read-format-as-annotation) - Read the format of a schema as an annotation, as JSON Schema...
 - [`--read-input-model-dataclass-fields-by-alias`](base-options.md#read-input-model-dataclass-fields-by-alias) - Read the fields of a Pydantic dataclass by their aliases wit...
 - [`--read-kubernetes-extensions`](typing-customization.md#read-kubernetes-extensions) - Read the Kubernetes schema extensions as the keywords they s...
 - [`--read-length-keywords-by-type`](field-customization.md#read-length-keywords-by-type) - Read the string and the array keywords for their own kind on...
@@ -92855,16 +93154,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 259 | Shared generation options. |
-| `GenerateConfig` | 274 | Public `generate()` configuration. |
-| `ParserConfig` | 214 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 216 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 227 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 230 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 217 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 217 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 216 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 217 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 260 | Shared generation options. |
+| `GenerateConfig` | 275 | Public `generate()` configuration. |
+| `ParserConfig` | 215 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 217 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 228 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 231 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 218 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 218 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 217 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 218 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -92945,14 +93244,18 @@ which parses again with every role known at L0: `document_roles_to_seed`). These
 pipeline, not passes inside it.
 
 **L0.** `_load_source_dict` calls `parser/_schema_documents.py:read_document`, which keeps the document as written and
-reads it copy-on-write, each schema object through one walk (`_read_schema_objects`, which skips instance-data keywords
-and extension keys other than `x-propertyNames` through `_document_child_entries`): first, under
+reads it copy-on-write, each schema object after its children through one walk (`_read_schema_objects`, which skips
+instance-data keywords and extension keys other than `x-propertyNames` through `_document_child_entries`) and by the
+readings its options turn on, in this order, each taking the object as the readings before it left it: first, under
 `--read-kubernetes-extensions`, the Kubernetes extensions as the keywords they stand for (`_read_kubernetes_extensions`:
 `x-kubernetes-int-or-string` or the format `int-or-string` as `type: [integer, string]`,
 `x-kubernetes-preserve-unknown-fields` beside `properties` as `additionalProperties: true`, and where `const` is a
-keyword `x-kubernetes-group-version-kind` as the `const` and `default` of `apiVersion` and `kind`), so no later step
-reads an `x-kubernetes-*` key; then, under `--use-single-value-enum-as-const`, one-value `enum` as `const`, except
-beside `nullable: true` when the value is not null (`_single_value_enum_as_const`). `_parse_file` then calls `_prepare_schema_resources`, which
+keyword `x-kubernetes-group-version-kind` as the `const` and `default` of `apiVersion` and `kind`, each property so
+written read by the readings after this one), so no later step reads an `x-kubernetes-*` key and the format
+`int-or-string` is read before anything leaves it out; then, under `--read-format-as-annotation`, each `format` that no
+`--type-mappings` entry names for the schema's type, except `binary`, left out (`_read_format_as_annotation`); then,
+under `--use-single-value-enum-as-const`, one-value `enum` as `const`, except beside `nullable: true` when the value is
+not null (`_single_value_enum_as_const`). `_parse_file` then calls `_prepare_schema_resources`, which
 adds the document to the schema graph (`parser/_schema_graph.py`): `walk_schema_resources` finds which absolute URI
 names which schema of it (the root, `$id` or draft-04 `id` resources, the implicit component resources of OpenAPI,
 the schemas of the object a reference names the document's root as, `$anchor` and `$dynamicAnchor`) and returns one

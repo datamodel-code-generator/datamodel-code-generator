@@ -37,6 +37,7 @@
     "enums_beside_const": 0,
     "estimated_models": 2,
     "formats": 0,
+    "formats_needing_extras": 0,
     "inline_enums": 0,
     "inline_names_equal_component": 0,
     "inline_object_bodies": 0,

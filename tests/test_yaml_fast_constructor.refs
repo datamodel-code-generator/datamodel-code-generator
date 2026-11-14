@@ -13,6 +13,7 @@ asyncapi/dynamic_ref/shapes.yaml	yaml_fast_constructor/parity.txt
 asyncapi/edge-cases.yaml	yaml_fast_constructor/parity.txt
 asyncapi/external-message-ref.yaml	yaml_fast_constructor/parity.txt
 asyncapi/external-messages.yaml	yaml_fast_constructor/parity.txt
+asyncapi/format_annotations/calls.yaml	yaml_fast_constructor/parity.txt
 asyncapi/merged_trait_headers/null_member.yaml	yaml_fast_constructor/parity.txt
 asyncapi/merged_trait_headers/v2/api.yaml	yaml_fast_constructor/parity.txt
 asyncapi/merged_trait_headers/v2/traits.yaml	yaml_fast_constructor/parity.txt
@@ -448,6 +449,8 @@ openapi/msgspec_nullable_enum_inherited.yaml	yaml_fast_constructor/parity.txt
 openapi/msgspec_nullable_enum_inherited_overlap.yaml	yaml_fast_constructor/parity.txt
 openapi/msgspec_oneof_with_null.yaml	yaml_fast_constructor/parity.txt
 openapi/msgspec_union_tag_clashes.yaml	yaml_fast_constructor/parity.txt
+openapi/multipart_upload_formats/api.yaml	yaml_fast_constructor/parity.txt
+openapi/multipart_upload_formats/common.yaml	yaml_fast_constructor/parity.txt
 openapi/multiple_aliases_parameters.yaml	yaml_fast_constructor/parity.txt
 openapi/multiple_required_any_of.yaml	yaml_fast_constructor/parity.txt
 openapi/nested_anyof.yaml	yaml_fast_constructor/parity.txt

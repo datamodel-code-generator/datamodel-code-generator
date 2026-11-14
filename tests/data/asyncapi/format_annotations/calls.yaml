@@ -1,0 +1,43 @@
+asyncapi: 3.0.0
+info:
+  title: Call events
+  version: 1.0.0
+channels:
+  calls:
+    address: calls
+    messages:
+      callStarted:
+        payload:
+          type: object
+          properties:
+            callId:
+              type: string
+              format: uuid
+            startedAt:
+              type: string
+              format: date-time
+            callerEmail:
+              type: string
+              format: email
+          required: [callId, startedAt]
+      callEnded:
+        payload:
+          schemaFormat: application/vnd.apache.avro+yaml;version=1.9.0
+          schema:
+            type: record
+            name: CallEnded
+            namespace: com.example.calls
+            fields:
+              - name: callId
+                type:
+                  type: string
+                  logicalType: uuid
+              - name: endedAt
+                type:
+                  type: long
+                  logicalType: timestamp-millis
+operations:
+  receiveCalls:
+    action: receive
+    channel:
+      $ref: '#/channels/calls'

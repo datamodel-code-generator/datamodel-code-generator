@@ -11,7 +11,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 | [Imports](#imports) | 2 | Generated imports and type-checking import behavior. |
 | [Collection Types](#collection-types) | 8 | Collection and tuple/set generation. |
 | [Type Alias](#type-alias) | 4 | TypeAlias and root-model alias output. |
-| [Type Mapping](#type-mapping) | 21 | Scalar, date/time, and custom type mapping. |
+| [Type Mapping](#type-mapping) | 22 | Scalar, date/time, and custom type mapping. |
 | [Type Syntax](#type-syntax) | 3 | Modern annotation syntax and Annotated usage. |
 
 ## Imports {#imports}
@@ -57,6 +57,7 @@ Scalar, date/time, and custom type mapping.
 |--------|-------------|
 | [`--output-date-class`](../typing-customization.md#output-date-class) | Specify date class type for date schema fields. |
 | [`--output-datetime-class`](../typing-customization.md#output-datetime-class) | Specify datetime class type for date-time schema fields. |
+| [`--read-format-as-annotation`](../typing-customization.md#read-format-as-annotation) | Read the format of a schema as an annotation, as JSON Schema does. |
 | [`--read-kubernetes-extensions`](../typing-customization.md#read-kubernetes-extensions) | Read the Kubernetes schema extensions as the keywords they stand for. |
 | [`--read-unevaluated-properties`](../typing-customization.md#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalProperties`. |
 | [`--strict-types`](../typing-customization.md#strict-types) | Enable strict type validation for specified Python types. |

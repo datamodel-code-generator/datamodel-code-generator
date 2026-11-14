@@ -483,6 +483,9 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
         )
     },
     "jsonschema/enum_multiple_of_big_integer.json": dict.fromkeys(PayloadBackend, ("--filter-literal-values",)),
+    "jsonschema/tool_input_formats/tool_input_formats.json": dict.fromkeys(
+        PayloadBackend, ("--read-format-as-annotation",)
+    ),
     **{
         f"jsonschema/{name}.json": dict.fromkeys(PayloadBackend, ("--keep-enum-member-values",))
         for name in ("enum_value_base_kinds", "msgspec_enum_value_base_kept")
