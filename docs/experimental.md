@@ -19,8 +19,8 @@ This page lists features that are available but still experimental.
 | `cli-option.untrusted-input` | cli-option | `--untrusted-input` | 0.92.0 | - |
 | `cli-option.use-missing-sentinel` | cli-option | `--use-missing-sentinel` | 0.66.1 | - |
 | `cli-option.use-type-alias` | cli-option | `--use-type-alias` | 0.36.0 | - |
-| `cli-option.use-type-alias-type` | cli-option | `--use-type-alias-type` | 0.71.1 | - |
-| `extra.httpx2` | extra | `datamodel-code-generator[httpx2]` | 0.71.1 | - |
+| `cli-option.use-type-alias-type` | cli-option | `--use-type-alias-type` | 0.72.1 | - |
+| `extra.httpx2` | extra | `datamodel-code-generator[httpx2]` | 0.72.0 | - |
 | `input-format.asyncapi` | input-format | `--input-file-type asyncapi` | 0.59.0 | - |
 | `input-format.avro` | input-format | `--input-file-type avro` | 0.59.0 | - |
 | `input-format.mcp-tools` | input-format | `--input-file-type mcp-tools` | 0.60.0 | - |
@@ -164,7 +164,7 @@ The option replaces root model classes with type aliases where possible. Pydanti
 
 - **Kind:** cli-option
 - **Target:** `--use-type-alias-type`
-- **Since:** 0.71.1
+- **Since:** 0.72.1
 
 Runtime TypeAliasType output is experimental and may change as Python typing support evolves.
 
@@ -174,7 +174,7 @@ The option implies --use-type-alias and selects TypeAliasType for Python 3.10 an
 
 - **Kind:** extra
 - **Target:** `datamodel-code-generator[httpx2]`
-- **Since:** 0.71.1
+- **Since:** 0.72.0
 
 The HTTPX2-backed HTTP client is experimental and may change as compatibility is validated.
 

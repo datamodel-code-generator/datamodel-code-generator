@@ -1,0 +1,68 @@
+# The changes of 0.96.0, moved from docs/data/migration/unreleased/ when the release was stamped.
+
+[[change]]
+id = "client-item-stream-raw-body"
+kind = "experimental"
+action = "required"
+title = "Generated client methods return the raw body of `itemSchema` stream responses"
+summary = "For an OpenAPI 3.2 response whose `text/event-stream`, JSON Lines or NDJSON media has only an `itemSchema`, the operation method, its `with_response` view and its result type alias read the whole body raw: `str` for an event stream and `bytes` for JSON Lines or NDJSON, where they returned the model of the item schema's array projection."
+affects = { experimental = ["cli-option.generate-client"] }
+migrate = "Parse the raw body, or use the stream helper regenerated clients get at `client.protocols.<resource>.<method>`, which yields typed items."
+refs = ["#6767"]
+source = "release-note"
+
+[[change]]
+id = "client-stream-items-referenced-model"
+kind = "experimental"
+action = "required"
+title = "Generated client stream helpers type items as the model their `itemSchema` references"
+summary = "SSE, JSON Lines and NDJSON stream helpers whose `itemSchema` is a bare `$ref` use the referenced model, for example `EventStream[models.LogEntry]`, instead of the `ItemSchema` or `ItemSchemaModel` model generated at the item schema location. With Pydantic v2 output, decoded items are instances of the referenced model."
+affects = { experimental = ["cli-option.generate-client"] }
+migrate = "Annotate, `isinstance`-check or match stream items against the referenced model instead of `models.ItemSchema` or `models.ItemSchemaModel`."
+refs = ["#6771"]
+source = "release-note"
+
+[[change]]
+id = "client-stream-helper-name-collision"
+kind = "error"
+action = "required"
+title = "A protocols helper whose name collides with a derived stream helper is refused"
+summary = "Generation derives a stream helper named `<resource>.<method>` for each OpenAPI 3.2 operation that streams an `itemSchema`. A helper of the protocols helper file whose name contains a derived name, or is contained in one, now fails generation with an `E_NAME_COLLISION` config diagnostic."
+affects = { experimental = ["cli-option.generate-client"] }
+migrate = "Rename the declared helper."
+refs = ["#6767"]
+source = "release-note"
+
+[[change]]
+id = "object-keywords-by-type-branch-kinds"
+kind = "default-output"
+action = "review"
+title = "`--read-object-keywords-by-type` also reads `const`, `enum` and `allOf` branches as admitting no object"
+summary = "An `anyOf` or `oneOf` branch that is a `const`, an `enum`, a nested `allOf`, `anyOf` or `oneOf`, a false schema or a `$ref` to such a schema no longer takes the sibling object keywords, so such a site becomes a union, which adds enum classes and can renumber model names (`Owner` becomes `Owner1`). The standard and practical 20261112 presets turn the option on."
+affects = { options = ["--read-object-keywords-by-type"] }
+keep = { note = "No option restores the 0.95.0 reading; `--model-name-map` can pin individual names." }
+refs = ["#6777"]
+source = "release-note"
+
+[[change]]
+id = "pattern-quote-literal"
+kind = "output-text"
+action = "none"
+title = "Patterns holding a quote are written without an escaped quote"
+summary = "`constr(pattern=r'^it\\'s$')` is written `constr(pattern=r\"^it's$\")`: Python's `re` matches the same values, and `model_json_schema()` publishes the schema's pattern unchanged. Snapshot tests and committed generated code show the new text after regenerating."
+affects = { output_model_types = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"] }
+before = "text: constr(pattern=r'^it\\'s$') | None = None"
+after = "text: constr(pattern=r\"^it's$\") | None = None"
+refs = ["#6789", "#6790"]
+source = "release-note"
+
+[[change]]
+id = "notices-name-calling-code"
+kind = "python-api"
+action = "required"
+title = "Deprecation and migration notices name the code that called datamodel-code-generator"
+summary = "Notices of the deprecation registry are attributed to the outermost frame outside the package (your module that called `generate()`, or the console script) instead of a module inside it. Filters that match them by `module=\"datamodel_code_generator\"` no longer suppress them, and a script that calls the API directly may now show `DeprecationWarning` notices that were hidden."
+affects = { python_api = ["warnings filters with module=\"datamodel_code_generator\""] }
+migrate = "Filter the notices by category and message, or by your calling module, for example `warnings.filterwarnings(\"ignore\", category=FutureWarning, module=\"mypackage.models\")`."
+refs = ["#6793"]
+source = "release-note"

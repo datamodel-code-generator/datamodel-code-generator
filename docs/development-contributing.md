@@ -192,6 +192,53 @@ analysis still runs independently, and the full comparison link remains
 available. Excluded PRs receive no release notification unless they are
 referenced elsewhere in the release body.
 
+## Upgrade guide entries
+
+The [upgrade guide](migration/index.md) and the release notes' Breaking Changes are built from one list of
+changes, one TOML entry per change a user meets when upgrading. A pull request that makes such a change adds its
+entry as `docs/data/migration/unreleased/<id>.toml`; the release moves it into
+`docs/data/migration/changes/<version>.toml`.
+
+Write an entry for every behaviour change of the default output and every removal (an option, an option value, a
+template, a public name), and also for runtime floors, Python API behaviour, custom template content, inputs that
+are now refused and changes of experimental features that shipped in a release. A change of the generated text only,
+whose models behave the same, gets an entry with `action = "none"`, so users who compare generated code see it
+coming. Crash fixes need no entry. Deprecations, removals the deprecation registry schedules, experimental features
+and new dated presets get their entries from their registries; write nothing for them, or an entry with the same
+id (`deprecation:<id>`, `removal:<id>`, `experimental:<id>`, `preset:<date>`) to add a better title or a
+`supersedes`.
+
+```toml
+[[change]]
+id = "specialized-enum-default"
+kind = "default-output"
+action = "keep"
+title = "String and integer enums become `StrEnum` / `IntEnum`"
+summary = "Enums of strings or integers subclass `StrEnum` or `IntEnum` instead of `Enum`."
+affects = { input_file_types = ["openapi", "jsonschema"] }
+before = "class Status(Enum):"
+after = "class Status(StrEnum):"
+keep = { flags = ["--no-use-specialized-enum"] }
+refs = ["#2512"]
+source = "release-note"
+```
+
+- `kind`: `default-output`, `output-text` (the text changes, the models behave the same), `removal`, `cli`,
+  `python-api`, `template`, `runtime`, `warning`, `error`, `experimental` or `preset`.
+- `action`: `required` (users must change something; give `migrate`), `keep` (the output changes and `keep.flags`
+  restore it, or `keep.note` says how outside the command line), `review` (the output changes and nothing restores
+  it; `keep.note` may name the nearest tool), `warn` (a new warning) or `none`.
+- `affects` narrows who meets the change: `output_model_types`, `input_file_types`, `options` (only users who pass
+  them; their keep flags are listed apart), `python_api`, `templates` and `experimental` (feature ids).
+- `supersedes` drops older entries from the path of a user who meets both; `reverts` drops a change and the entry
+  that undoes it.
+- `keep.flags` must be options of the current release: the build parses them and writes their `pyproject.toml` form.
+
+Run `python scripts/build_migration_docs.py` to rebuild the committed pages (`docs/migration/index.md`,
+`docs/migration/changes.md`, `docs/data/migration.json`); `--check` fails on stale pages and on invalid entries.
+`--release-notes unreleased` prints the release-note sections of the next release, and
+`--range-pages docs/migration` writes the page of each range of releases locally, as the docs deploy does.
+
 ## Architecture boundaries
 
 Before adding a dependency between layers, check `docs/architecture.md` and run:

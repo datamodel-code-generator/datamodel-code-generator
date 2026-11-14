@@ -93,7 +93,7 @@
     "status": "active",
     "target": "JSON configuration values accepted by legacy validation",
     "warning_category": "FutureWarning",
-    "warning_since": "0.64.2"
+    "warning_since": "0.65.0"
   },
   {
     "id": "config.yaml-non-lowercase-bool",

@@ -1,0 +1,2101 @@
+{
+ "changes": [
+  {
+   "action": "warn",
+   "affects": {
+    "options": [
+     "--validation"
+    ]
+   },
+   "id": "deprecation:cli.validation",
+   "kind": "warning",
+   "migrate": "--field-constraints",
+   "release": "0.24.0",
+   "source": "registry",
+   "summary": "The `--validation` option is deprecated and will be removed in a future release. Use --field-constraints instead.",
+   "title": "--validation now emits DeprecationWarning"
+  },
+  {
+   "action": "warn",
+   "affects": {
+    "options": [
+     "--allow-extra-fields"
+    ]
+   },
+   "id": "deprecation:cli.allow-extra-fields",
+   "kind": "warning",
+   "migrate": "--extra-fields=allow",
+   "release": "0.31.0",
+   "source": "registry",
+   "summary": "--allow-extra-fields is deprecated. Use --extra-fields=allow instead.",
+   "title": "--allow-extra-fields now emits DeprecationWarning"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "cli-option.use-type-alias"
+    ]
+   },
+   "id": "experimental:cli-option.use-type-alias",
+   "kind": "experimental",
+   "release": "0.36.0",
+   "source": "registry",
+   "summary": "Type alias output is experimental and may change as Python typing support evolves.",
+   "title": "--use-type-alias is experimental"
+  },
+  {
+   "action": "warn",
+   "affects": {
+    "options": [
+     "--parent-scoped-naming"
+    ]
+   },
+   "id": "deprecation:cli.parent-scoped-naming",
+   "kind": "warning",
+   "migrate": "--naming-strategy parent-prefixed",
+   "release": "0.48.0",
+   "source": "registry",
+   "summary": "--parent-scoped-naming is deprecated. Use --naming-strategy parent-prefixed instead.",
+   "title": "--parent-scoped-naming now emits DeprecationWarning"
+  },
+  {
+   "action": "warn",
+   "id": "deprecation:config.yaml-non-lowercase-bool",
+   "kind": "warning",
+   "migrate": "Use lowercase true or false.",
+   "release": "0.48.0",
+   "source": "registry",
+   "summary": "Non-lowercase YAML bool values are deprecated. Use lowercase true or false instead.",
+   "title": "YAML bool values True, False, TRUE, FALSE now emits DeprecationWarning"
+  },
+  {
+   "action": "warn",
+   "id": "deprecation:format.default-formatters",
+   "kind": "warning",
+   "migrate": "Set formatters explicitly, for example black and isort or builtin.",
+   "release": "0.52.0",
+   "source": "registry",
+   "summary": "Default formatters will change to builtin no earlier than three months after 0.92.0. Set --formatters or --preset explicitly; see \"Dependency migration notices\" in the documentation. Run datamodel-codegen with --recommend-options on one schema to pick a preset and options for it (experimental).",
+   "title": "Default formatters now emits FutureWarning"
+  },
+  {
+   "action": "warn",
+   "id": "deprecation:behavior.pydantic-v2-use-annotated-default",
+   "kind": "warning",
+   "migrate": "Explicitly pass --use-annotated or --no-use-annotated.",
+   "release": "0.52.1",
+   "source": "registry",
+   "summary": "Pydantic v2 with --use-annotated is recommended for correct type annotations. In a future version, --use-annotated will be enabled by default for Pydantic v2.",
+   "title": "Pydantic v2 default for --use-annotated now emits DeprecationWarning"
+  },
+  {
+   "action": "warn",
+   "affects": {
+    "python_api": [
+     "PythonVersion.has_type_alias"
+    ]
+   },
+   "id": "deprecation:python-api.python-version-has-type-alias",
+   "kind": "warning",
+   "release": "0.52.1",
+   "source": "registry",
+   "summary": "has_type_alias is deprecated and will be removed in a future version.",
+   "title": "PythonVersion.has_type_alias now emits DeprecationWarning"
+  },
+  {
+   "action": "warn",
+   "id": "deprecation:schema.jsonschema-items-array",
+   "kind": "warning",
+   "migrate": "Use prefixItems.",
+   "release": "0.53.0",
+   "source": "registry",
+   "summary": "items as array tuple validation is deprecated in Draft 2020-12. Use prefixItems instead.",
+   "title": "JSON Schema Draft 2020-12 items array tuple validation now emits UserWarning"
+  },
+  {
+   "action": "warn",
+   "id": "deprecation:schema.openapi-nullable",
+   "kind": "warning",
+   "migrate": "Use type arrays such as type: [\"string\", \"null\"].",
+   "release": "0.53.0",
+   "source": "registry",
+   "summary": "nullable keyword is deprecated in OpenAPI 3.1, use type: [\"string\", \"null\"] instead.",
+   "title": "OpenAPI 3.1 nullable keyword now emits DeprecationWarning"
+  },
+  {
+   "action": "warn",
+   "id": "deprecation:behavior.remote-ref-default",
+   "kind": "warning",
+   "migrate": "Pass --allow-remote-refs for trusted remote schemas, or --no-allow-remote-refs to block HTTP(S) $ref fetching.",
+   "release": "0.56.0",
+   "source": "registry",
+   "summary": "Remote $ref fetching without --allow-remote-refs is deprecated.",
+   "title": "Remote $ref fetching without --allow-remote-refs now emits FutureWarning"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "input-format.asyncapi"
+    ]
+   },
+   "id": "experimental:input-format.asyncapi",
+   "kind": "experimental",
+   "release": "0.59.0",
+   "source": "registry",
+   "summary": "AsyncAPI input support is experimental and may change as real-world usage is validated.",
+   "title": "--input-file-type asyncapi is experimental"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "input-format.avro"
+    ]
+   },
+   "id": "experimental:input-format.avro",
+   "kind": "experimental",
+   "release": "0.59.0",
+   "source": "registry",
+   "summary": "Apache Avro schema input support is experimental and may change as real-world usage is validated.",
+   "title": "--input-file-type avro is experimental"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "input-format.protobuf"
+    ]
+   },
+   "id": "experimental:input-format.protobuf",
+   "kind": "experimental",
+   "release": "0.59.0",
+   "source": "registry",
+   "summary": "Protocol Buffers input support is experimental and may change as real-world usage is validated.",
+   "title": "--input-file-type protobuf is experimental"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "input-format.xmlschema"
+    ]
+   },
+   "id": "experimental:input-format.xmlschema",
+   "kind": "experimental",
+   "release": "0.59.0",
+   "source": "registry",
+   "summary": "XML Schema input support is experimental and may change as real-world usage is validated.",
+   "title": "--input-file-type xmlschema is experimental"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "input-format.mcp-tools"
+    ]
+   },
+   "id": "experimental:input-format.mcp-tools",
+   "kind": "experimental",
+   "release": "0.60.0",
+   "source": "registry",
+   "summary": "MCP tool schema profile input support is experimental and may change as MCP schemas evolve.",
+   "title": "--input-file-type mcp-tools is experimental"
+  },
+  {
+   "action": "none",
+   "id": "preset:20260619",
+   "kind": "preset",
+   "release": "0.64.1",
+   "source": "registry",
+   "summary": "The first dated presets; the [presets page](https://datamodel-code-generator.koxudaxi.dev/presets/) lists their options.",
+   "title": "New dated presets `standard-py3XX-20260619` and `practical-py3XX-20260619`"
+  },
+  {
+   "action": "warn",
+   "id": "deprecation:config.json-config-strict-validation",
+   "kind": "warning",
+   "migrate": "Update the JSON configuration to match --output-format-json-schema config.",
+   "release": "0.65.0",
+   "source": "registry",
+   "summary": "JSON configuration values that do not match the documented schema are deprecated and will become validation errors in a future release.",
+   "title": "JSON configuration values accepted by legacy validation now emits FutureWarning"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "cli-option.generate-schema-validators"
+    ]
+   },
+   "id": "experimental:cli-option.generate-schema-validators",
+   "kind": "experimental",
+   "release": "0.66.1",
+   "source": "registry",
+   "summary": "Schema-derived runtime validators are experimental and may change as JSON Schema coverage is expanded.",
+   "title": "--generate-schema-validators is experimental"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "cli-option.schema-validator-type"
+    ]
+   },
+   "id": "experimental:cli-option.schema-validator-type",
+   "kind": "experimental",
+   "release": "0.66.1",
+   "source": "registry",
+   "summary": "Schema-derived runtime validator backend selection is experimental and may change as validation backends are added.",
+   "title": "--schema-validator-type is experimental"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "cli-option.use-missing-sentinel"
+    ]
+   },
+   "id": "experimental:cli-option.use-missing-sentinel",
+   "kind": "experimental",
+   "release": "0.66.1",
+   "source": "registry",
+   "summary": "Pydantic MISSING sentinel output is experimental because it depends on pydantic.experimental.missing_sentinel, or on pydantic.MISSING for a 2.14 target.",
+   "title": "--use-missing-sentinel is experimental"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "extra.httpx2"
+    ]
+   },
+   "id": "experimental:extra.httpx2",
+   "kind": "experimental",
+   "release": "0.72.0",
+   "source": "registry",
+   "summary": "The HTTPX2-backed HTTP client is experimental and may change as compatibility is validated.",
+   "title": "datamodel-code-generator[httpx2] is experimental"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "cli-option.use-type-alias-type"
+    ]
+   },
+   "id": "experimental:cli-option.use-type-alias-type",
+   "kind": "experimental",
+   "release": "0.72.1",
+   "source": "registry",
+   "summary": "Runtime TypeAliasType output is experimental and may change as Python typing support evolves.",
+   "title": "--use-type-alias-type is experimental"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "behavior.batch-generation-jobs"
+    ]
+   },
+   "id": "experimental:behavior.batch-generation-jobs",
+   "kind": "experimental",
+   "release": "0.72.3",
+   "source": "registry",
+   "summary": "Named batch jobs are experimental; their configuration schema, batch output, and transactional/watch execution contracts may change.",
+   "title": "[tool.datamodel-codegen.jobs], --job, --all-jobs is experimental"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "behavior.remote-reference-lock"
+    ]
+   },
+   "id": "experimental:behavior.remote-reference-lock",
+   "kind": "experimental",
+   "release": "0.72.3",
+   "source": "registry",
+   "summary": "Remote reference integrity locking is experimental: the lock document schema and request-identity compatibility may evolve, but integrity mismatches remain fail-closed and credentials are never persisted.",
+   "title": "datamodel-codegen.lock, --lockfile, --update-lock, and --locked is experimental"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "options": [
+     "--set-default-enum-member"
+    ]
+   },
+   "id": "deprecation:cli.set-default-enum-member",
+   "kind": "warning",
+   "migrate": "--deserialize-default-values enum",
+   "release": "0.76.0",
+   "source": "registry",
+   "summary": "--set-default-enum-member is deprecated. Use --deserialize-default-values enum instead.",
+   "title": "--set-default-enum-member is scheduled to change"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "cli-option.install-skill"
+    ]
+   },
+   "id": "experimental:cli-option.install-skill",
+   "kind": "experimental",
+   "release": "0.76.0",
+   "source": "registry",
+   "summary": "Bundled Agent Skill installation is experimental; supported clients, scopes, and installed skill contents may change.",
+   "title": "--install-skill, --skill-scope, and --overwrite-skill is experimental"
+  },
+  {
+   "action": "none",
+   "id": "preset:20260826",
+   "kind": "preset",
+   "release": "0.76.0",
+   "source": "registry",
+   "summary": "They keep the options of the 20260619 presets and add:\n\n- All output model types (`--use-standard-collections`, `--use-union-operator`, `--use-annotated`, `--enum-field-as-literal one`, `--use-subclass-enum`, `--collapse-root-models`, `--strict-nullable`, `--disable-timestamp`): Use built-in collection syntax, PEP 604 unions, Annotated constraints, single-value enum Literals, typed enum subclasses, inline root wrappers, schema-accurate nullability, and reproducible file headers.\n- Serialized defaults (`--deserialize-default-values decimal enum`): Deserialize compatible serialized Decimal and enum defaults into generated Python values while preserving defaults that cannot be converted safely.",
+   "title": "New dated presets `standard-py3XX-20260826` and `practical-py3XX-20260826`"
+  },
+  {
+   "action": "warn",
+   "id": "deprecation:dependency.black-minimum",
+   "kind": "warning",
+   "migrate": "Upgrade Black to >=24.3.0 before the later support change.",
+   "release": "0.78.0",
+   "source": "registry",
+   "summary": "Support for Black <24.3.0 will end in a future release.",
+   "title": "Black <24.3.0 now emits FutureWarning"
+  },
+  {
+   "action": "warn",
+   "id": "deprecation:dependency.external-formatters-optional",
+   "kind": "warning",
+   "migrate": "Declare the black/isort extras for the external formatters you select.",
+   "release": "0.78.0",
+   "source": "registry",
+   "summary": "Black/isort will become optional. Declare the corresponding extras; see --help.",
+   "title": "Black/isort installation now emits FutureWarning"
+  },
+  {
+   "action": "warn",
+   "id": "deprecation:dependency.isort-minimum",
+   "kind": "warning",
+   "migrate": "Upgrade isort to >=6,<9 before the later support change.",
+   "release": "0.78.0",
+   "source": "registry",
+   "summary": "Support for isort <6 will end in a future release.",
+   "title": "isort <6 now emits FutureWarning"
+  },
+  {
+   "action": "warn",
+   "id": "deprecation:dependency.pydantic-runtime-minimum",
+   "kind": "warning",
+   "migrate": "Upgrade DCG runtime Pydantic to >=2.8.2; generated-code targets are unchanged.",
+   "release": "0.78.0",
+   "source": "registry",
+   "summary": "Support for DCG runtime Pydantic <2.8.2 will end in a future release.",
+   "title": "DCG runtime Pydantic <2.8.2 now emits FutureWarning"
+  },
+  {
+   "action": "none",
+   "id": "preset:20260909",
+   "kind": "preset",
+   "release": "0.78.0",
+   "source": "registry",
+   "summary": "They keep the options of the 20260826 presets and add:\n\n- Built-in formatting (`--formatters builtin`): Format generated models without running an external formatter. For projects using Ruff, override with --formatters ruff-check ruff-format. To preserve Black/isort formatting, override with --formatters black isort.",
+   "title": "New dated presets `standard-py3XX-20260909` and `practical-py3XX-20260909`"
+  },
+  {
+   "action": "warn",
+   "id": "deprecation:dependency.python-310-runtime",
+   "kind": "warning",
+   "migrate": "Run datamodel-code-generator on Python 3.11 or newer.",
+   "release": "0.84.0",
+   "source": "registry",
+   "summary": "Running datamodel-code-generator on Python 3.10 was removed in 0.93.0; run it on Python 3.11 or newer, for example with `uvx datamodel-code-generator` (uv fetches a supported Python). --target-python-version 3.10 is unaffected.",
+   "title": "Running datamodel-code-generator on Python 3.10 now emits FutureWarning"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "cli-option.generate-client"
+    ]
+   },
+   "id": "experimental:cli-option.generate-client",
+   "kind": "experimental",
+   "release": "0.84.0",
+   "source": "registry",
+   "summary": "HTTPX2 client generation from the CLI is experimental; its options and generated package may change.",
+   "title": "--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys and generate() options) is experimental"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "cli-option.generate-server"
+    ]
+   },
+   "id": "experimental:cli-option.generate-server",
+   "kind": "experimental",
+   "release": "0.84.0",
+   "source": "registry",
+   "summary": "FastAPI server generation from the CLI is experimental; its options and generated package may change.",
+   "title": "--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys and generate() options) is experimental"
+  },
+  {
+   "action": "none",
+   "id": "preset:20261015",
+   "kind": "preset",
+   "release": "0.85.0",
+   "source": "registry",
+   "summary": "They keep the options of the 20260909 presets and add:\n\n- Python 3.15 targets",
+   "title": "New dated presets `standard-py3XX-20261015` and `practical-py3XX-20261015`"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "behavior.naming-hint"
+    ]
+   },
+   "id": "experimental:behavior.naming-hint",
+   "kind": "experimental",
+   "release": "0.86.0",
+   "source": "registry",
+   "summary": "The hint at --recommend-options that a command line generation shows when many class names are numbered collisions is experimental; when it is shown and its text may change.",
+   "title": "NamingHintWarning is experimental"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "cli-option.recommend-options"
+    ]
+   },
+   "id": "experimental:cli-option.recommend-options",
+   "kind": "experimental",
+   "release": "0.86.0",
+   "source": "registry",
+   "summary": "Option recommendations are experimental; the rules, the schema signals they read, the class-name metrics, the report, and the JSON payload may change.",
+   "title": "--recommend-options, its rule data, its candidate comparison, its JSON payload, and --generate-prompt --recommend-options with the prompt JSON field recommendation is experimental"
+  },
+  {
+   "action": "none",
+   "id": "preset:20261017",
+   "kind": "preset",
+   "release": "0.86.0",
+   "source": "registry",
+   "summary": "They keep the options of the 20261015 presets and add:\n\n- stdlib dataclass output (`--use-standard-primitive-types`, `--enum-field-as-literal all`): Use stdlib primitive types without renaming input keys because dataclasses do not carry aliases. Stdlib dataclasses keep raw JSON values without conversion, so enums render as Literal values instead of enum classes; this overrides `--enum-field-as-literal one` from All output model types.\n- TypedDict output (`--use-standard-primitive-types`, `--use-frozen-field`, `--enum-field-as-literal all`): Use stdlib primitive types and ReadOnly metadata without renaming dictionary keys. TypedDict holds raw JSON values, so enums render as Literal values instead of enum classes; this overrides `--enum-field-as-literal one` from All output model types.",
+   "title": "New dated presets `standard-py3XX-20261017` and `practical-py3XX-20261017`"
+  },
+  {
+   "action": "none",
+   "id": "preset:20261027",
+   "kind": "preset",
+   "release": "0.87.0",
+   "source": "registry",
+   "summary": "They keep the options of the 20261017 presets and add:\n\n- Enums read as their const (`--use-single-value-enum-as-const`): Read an enum of one value, and an enum that admits the const beside it, as that const, so it renders as a Literal value instead of an enum class; one-value enum branches of a oneOf or anyOf merge into one enum.\n- OpenAPI schemas modeled as definitions (`--openapi-as-definitions paths-bodies ref-components`): Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type, and give an OpenAPI component written as a $ref to a recursive schema with sibling keywords the root model a definitions entry of the same schema gets, instead of no model.\n- Site models for constrained references (`--use-site-models-for-constrained-refs`): Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the values all parts admit, instead of the referenced type, which leaves the added assertions out; an allOf of enum references gets the enum of the members they share.\n- Redundant constraints omitted (`--omit-redundant-constraints`): Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values, which also keeps such a const branch inline instead of a root model.\n- Const read beside an enum (`--read-const-beside-enum`): Read a const beside an enum as JSON Schema does: a value is typed by the const that narrows the enum, and an enum that admits its const is read as that const.\n- Literal values filtered (`--filter-literal-values`): Keep only the values of a const or enum that meet the length, pattern, bound and multipleOf constraints beside them.\n- allOf keywords intersected (`--intersect-allof-keywords`): Combine the keywords of every part of an allOf, a $ref with sibling keywords and an inherited property override as JSON Schema validates them: the tightest bounds and the values every part admits.\n- Nullable beside a type list (`--read-nullable-beside-type-list`): Write the null that nullable: true declares beside a type list with an object into the root model of that schema under strict nullable output.\n- Field defaults kept off branch roots (`--keep-field-defaults-off-branch-roots`): Leave the default of a property off the root models extracted from the branches of its anyOf or oneOf.\n- Tuples for closed arrays (`--use-tuple-for-closed-arrays`): Generate tuple types for positional arrays that no other item can follow, so that each position keeps its own type.\n- One dict for object maps (`--use-single-dict-for-object-maps`): Type an object map whose keys patternProperties or propertyNames constrain as one dict of the values of every key class.\n- Stricter pattern-map checks (`--check-pattern-maps-strictly`): Under --generate-schema-validators, count every key that a pattern admits, check declared keys against the patterns that match them, and keep the propertyNames keys and the other types of a type array of an object without properties.\n- Typed map values beside other types (`--use-typed-map-values-beside-other-types`): Under --use-typed-nullable-map-values, also type the map values of a type array that lists object beside other types, such as [object, string].\n- Enum member values kept (`--keep-enum-member-values`): Write an enum as a plain Enum where its IntEnum, StrEnum or (T, Enum) base would change a member value, such as 2.5 beside integer members.\n- Unevaluated properties read (`--read-unevaluated-properties`): Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place.\n- Aliases pinned beside an alias generator (`--pin-aliases-with-alias-generator`): Write the generated alias on every field of a pydantic dataclass whose config names an alias generator, for pydantic versions older than 2.8.\n- msgspec tags by payload name (`--tag-msgspec-by-payload-name`): Tag the structs of a discriminated union with the property name the document carries instead of the Python name it resolves to.\n- Constructor fields ordered by final names and written defaults (`--order-constructor-fields-by final-names written-defaults`): Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write.\n- Request and response variants deduplicated (`--dedupe-request-response-variants`): Decide Request and Response variants from the schema graph and build each inline model once.\n- Redundant reference null omitted (`--omit-redundant-reference-null`): Do not write None again where a field references a model that holds null itself.\n- Decimal in field forms (`--use-decimal-in-field-forms`): Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float.\n- Shared parent wrappers collapsed (`--collapse-shared-parent-wrappers`): Under the parent name strategy, collapse a wrapper in every model that references it instead of keeping it for the models after the first.",
+   "title": "New dated presets `standard-py3XX-20261027` and `practical-py3XX-20261027`"
+  },
+  {
+   "action": "none",
+   "id": "preset:20261104",
+   "kind": "preset",
+   "release": "0.90.0",
+   "source": "registry",
+   "summary": "They keep the options of the 20261027 presets and add:\n\n- Shared variant tags merged (`--merge-shared-variant-tags`): Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. msgspec Structs take one tag, so they are unchanged.\n- EncodedStr for constrained base64 strings (`--use-encoded-str-for-constrained-base64`): Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic 2.10 or later checks them on the base64 text.\n- Length keywords read by type (`--read-length-keywords-by-type`): Read minLength, maxLength and pattern for strings only and minItems, maxItems and uniqueItems for arrays only, so a maxLength beside an array no longer limits how many items the list holds.\n- msgspec union bounds read exactly (`--read-msgspec-union-bounds-exactly`): Decide whether the int member of a msgspec union with a number member drops its bounds on the bounds the schema writes, so a bound past 2**53 no longer rejects an integer the number member accepts.\n- Model names taken from the schema (`--naming-strategy definitions-first`, `--name-allof-union-members-after-branches`, `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys`, `--name-converted-payloads-by-message`, `--singularize-last-word-of-item-names`): Give every definition its own name before an inline model that asks for it first, name the union members of an allOf after their branches, give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, strip only a leading slash from a paths key, name a converted AsyncAPI payload that names no type after its message, and singularize only the last word of an item model's name.\n- Schema version read per document (`--read-schema-version-per-document`): Read each document by the schema version it declares, or the version of the document that references it, so the keywords beside a $ref and the version's features apply as that version says in every document of a run, and an OpenAPI 3.1 or later document reads them as JSON Schema 2020-12 does.\n- Ignored $ref siblings left out (`--ignore-ref-siblings-by-schema-version`): Read a $ref as its target alone where the schema version ignores the keywords beside it (JSON Schema draft 4, 6 and 7, OpenAPI 3.0, AsyncAPI 2), so a sibling format: binary or uniqueItems no longer changes the type of a field.\n- Combined schema keywords intersected (`--intersect-combined-schema-keywords`): Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, read the $ref siblings, $ref aliases and null branches of allOf members and the required names an allOf adds to the one model it names, and keep no enum value that the merged type rejects, as JSON Schema validates them.\n- allOf distributed over unions (`--distribute-allof-over-unions`): Give an allOf one union variant per combination of the branches of the anyOf and oneOf it holds, also through a $ref member and for their value branches, read a $ref branch with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.\n- Reference null kept on merged models (`--keep-reference-null-on-merged-models`): Keep the null that the schema of a reference admits when its model is merged into an equal model that rejects null, so a `type: [object, null]` property keeps `| None` after duplicate removal or reuse.\n- Meta for msgspec map keys (`--use-msgspec-meta-for-map-keys`): Write the keys of a msgspec map whose keys propertyNames or patternProperties constrain as Annotated[str, Meta(...)], so msgspec checks them.\n- Submodules hidden by classes renamed (`--rename-submodules-hidden-by-classes`): Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of pkg/__init__.py, to the first free name with trailing underscores, so importing it leaves the class in place.\n- Unique items as sets by value (`--use-unique-items-as-set-by-value`): Under --use-unique-items-as-set, decide each set on the final item types and write one only where every value of its items hashes by value, and keep apart models whose arrays differ in uniqueItems.\n- Constrained root models kept in every container (`--keep-constrained-root-models-in-every-container`): Under --collapse-root-models with --field-constraints, keep a constrained root model named inside any container of its holder, so a set, Sequence or Mapping keeps the constraints of its items.\n- Enum literal aliases kept (`--keep-enum-literal-aliases`): Under --collapse-root-models, keep a named enum that the output writes as a Literal type alias named at its uses.\n- Plain aliases of recursive models (`--use-plain-alias-for-recursive-models`): In Pydantic output, write a type alias whose whole value is a model that names itself as a plain TypeAlias, which every model that uses it builds.\n- Whole types replaced by type overrides (`--type-overrides-replace-whole-type`): Make a class path of --type-overrides replace an object map itself (dict, not dict[str, dict]), and keep the item or property counts of the array or map an override replaces only where the new type counts the same.\n- SerializeAsAny for every subclass (`--use-serialize-as-any-for-every-subclass`): Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the output adds fields, at any depth, after reuse merges the model and through its module.\n- Dynamic anchors read in document order (`--read-dynamic-anchors-in-document-order`): Resolve a plain-name $dynamicRef that its dynamic scope does not bind, and a reference to a plain name several schemas declare, to the first declaration in document order, so the answer no longer depends on the order the schemas are parsed in.\n- One model per reference site (`--use-one-model-per-ref-site`): Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting.\n- Escaped reference pointers read (`--read-escaped-ref-pointers`): Read the ~0 and ~1 escapes and the percent-encoded octets of a $ref JSON pointer as the characters they encode, so every spelling of a pointer names the one model of its target instead of a copy named after the escaped text.\n- Pydantic dataclass fields read by alias (`--read-input-model-dataclass-fields-by-alias`): With --input-model, read the fields of a Pydantic dataclass by their aliases, as those of a model, so a field with an alias keeps its Python type, such as deque[int], like one without.\n- Practical model structure and names (practical presets) (`--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`): Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names.",
+   "title": "New dated presets `standard-py3XX-20261104` and `practical-py3XX-20261104`"
+  },
+  {
+   "action": "none",
+   "id": "preset:20261106",
+   "kind": "preset",
+   "release": "0.91.0",
+   "source": "registry",
+   "summary": "They keep the options of the 20261104 presets and add:\n\n- Dataclass arguments set to false written (`--keep-false-dataclass-arguments`): Write every dataclass decorator argument set to false, such as eq=False from --dataclass-arguments, instead of leaving it out, which gives it its default.\n- Content parameters typed by their reference (`--keep-content-parameter-refs`): Type an OpenAPI parameter whose content media schema is a $ref by the model the $ref names, as a schema parameter is, instead of a copy of the referenced schema.\n- Extension keys of paths skipped (`--skip-path-extension-keys`): In the paths scope, skip a key of paths that begins with x-, a specification extension and no path item, as the api scope does, so its operations get no models.\n- Every reached input model type reused (`--reuse-every-reached-input-model-type`): With --input-model-ref-strategy reuse-all or reuse-foreign, reach the types to reuse through the fields of every model kind, dataclasses too, and import a type the Python type of a field already imports instead of writing an unused copy of it.\n- x-python-type as written (`--use-x-python-type-as-written`): Write a field's x-python-type as given: a union spelled Optional[...] or Union[...] types the field as one spelled X | Y already does, instead of the schema's type, and a container class compatible with the schema, such as tuple or MutableSequence, is written around the schema's item types instead of list, Sequence, set, frozenset or Mapping.\n- Typed nullable map values (`--use-typed-nullable-map-values`): Type the values of a map whose type array lists object alone or with null, such as [object, null], as its additionalProperties say instead of Any, and with --use-typed-map-values-beside-other-types of the 20261027 presets also those of a type array that lists object beside other types.\n- Unknown fields forbidden by closed msgspec Structs (`--use-msgspec-forbid-unknown-fields`): Write forbid_unknown_fields=True on a msgspec Struct whose schema admits no property but its own (additionalProperties: false without patternProperties), so msgspec rejects the unknown fields the schema rejects.\n- Reference null kept on collapsed root models (`--keep-reference-null-on-collapsed-root-models`): Under --collapse-root-models, keep the null of a root model that admits null where a field, item or map value that names it takes its type.\n- allOf parents read in MRO order (`--read-allof-parents-in-mro-order`): Read the allOf parents of every inherited schema in the order of the class bases, so a property that several bases declare takes the nearer base's constraints and description, as the class does.\n- Field options on every field (`--apply-field-options-to-every-field`): Give a GraphQL field, a property whose schema is true or false, a required name without a property and the tag field a discriminator appends the field options the other fields take, such as --use-default-kwarg, --use-annotated and --use-default-factory-for-optional-nested-models.\n- Strict base64 strings (`--use-strict-str-for-base64`): Under --strict-types str, write a format: byte string as the StrictStr that EncodedStr decodes, so Pydantic 2.10 or later refuses bytes for it as for any other strict string, instead of Base64Str.\n- Content media type strings as bytes (`--use-bytes-for-content-media-type`): Type a string of an OpenAPI document that has a contentMediaType and no contentEncoding, raw binary content, as bytes, as a format: binary string is, instead of str.\n- Constrained string root models collapsed as Annotated (`--collapse-constrained-root-models-as-annotated`): Under --collapse-root-models with --use-annotated, inline a root model of a string with constraints into a union, list, dict or other container of its holder as Annotated[str, ...], which keeps the constraints on that member.\n- Unused models removed beside type overrides (`--remove-unused-models-beside-type-overrides`): Remove the models nothing uses, such as an inlined root model, also from a module that a model-level --type-overrides key takes a model out of.\n- Items of self-referencing arrays kept (`--keep-self-referencing-array-items`): Keep the items of an array whose items name the array itself (list[Node | Leaf] instead of list), except in msgspec output, which cannot decode such a type alias.\n- Shared members kept on collapsed root models (`--keep-shared-members-on-collapsed-root-models`): Under --collapse-root-models, keep each member of a root type that collapse inlined at several sites at every site when a root model that member names is collapsed later, as a recursive union reaches its plain member.\n- Operation enums written as Literal like definitions (`--use-enum-field-as-literal-in-operations`): Write the enum of an OpenAPI request body or response as a root model of a Literal where x-enum-field-as-literal, --enum-field-as-literal-map or --enum-field-as-literal writes a definition's enum so, instead of an Enum class.\n- Request and response variants of numbered models deduplicated (`--dedupe-numbered-request-response-variants`): Under --read-only-write-only-model-type, merge a Request or Response variant of a numbered model, such as Page1Request of an inline copy Page1 of Page, into PageRequest where it renders the same, as the numbered model merges into Page.\n- Defaults of inherited required fields kept (`--keep-defaults-of-inherited-required-fields`): With --use-default, keep the default a schema gives a property that only a schema it inherits from lists as required, as --use-default keeps that of a property the schema lists as required itself.\n- Incomplete model defaults omitted (`--omit-incomplete-model-defaults`): Write a property whose object default lacks required fields of its model, such as default: {}, without that default, so input that leaves the property out is valid instead of failing on the default.\n- AsyncAPI message trait headers merged (`--merge-message-trait-headers`): Give an AsyncAPI message the headers of all its traits, merged in order as JSON Merge Patches, inline and referenced traits alike, and then its own headers, which win.",
+   "title": "New dated presets `standard-py3XX-20261106` and `practical-py3XX-20261106`"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "behavior.asyncapi-client"
+    ]
+   },
+   "id": "experimental:behavior.asyncapi-client",
+   "kind": "experimental",
+   "release": "0.92.0",
+   "source": "registry",
+   "summary": "HTTPX2 client generation from AsyncAPI documents is experimental; the channels it opens and the generated package may change.",
+   "title": "--generate-client httpx2 with --input-file-type asyncapi, and --client-asyncapi-perspective is experimental"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "cli-option.untrusted-input"
+    ]
+   },
+   "id": "experimental:cli-option.untrusted-input",
+   "kind": "experimental",
+   "release": "0.92.0",
+   "source": "registry",
+   "summary": "The untrusted input switch is experimental; the references and schema keywords it refuses may grow as new ways for a schema to read files or write code are found.",
+   "title": "--untrusted-input is experimental"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "python-api.generate-dynamic-module"
+    ]
+   },
+   "id": "experimental:python-api.generate-dynamic-module",
+   "kind": "experimental",
+   "release": "0.92.0",
+   "source": "registry",
+   "summary": "Dynamic module generation is experimental; its parameters, the DynamicModule attributes, the schema locations it keys classes by, and the module registration rules may change.",
+   "title": "generate_dynamic_module(), DynamicModule, and register_module=True is experimental"
+  },
+  {
+   "action": "required",
+   "id": "removal:dependency.python-310-runtime",
+   "kind": "removal",
+   "migrate": "Run datamodel-code-generator on Python 3.11 or newer.",
+   "release": "0.93.0",
+   "source": "registry",
+   "summary": "Running datamodel-code-generator on Python 3.10 was removed in 0.93.0; run it on Python 3.11 or newer, for example with `uvx datamodel-code-generator` (uv fetches a supported Python). --target-python-version 3.10 is unaffected.",
+   "title": "Running datamodel-code-generator on Python 3.10 is removed"
+  },
+  {
+   "action": "none",
+   "id": "preset:20261111",
+   "kind": "preset",
+   "release": "0.94.0",
+   "source": "registry",
+   "summary": "They keep the options of the 20261106 presets and add:\n\n- Float consts fixed by bounds (`--use-bounds-for-float-const`): Type a finite float const, which no Literal holds, as a float whose minimum and maximum both equal it, written as the output writes number bounds, so Pydantic and msgspec reject other numbers instead of accepting any float.",
+   "title": "New dated presets `standard-py3XX-20261111` and `practical-py3XX-20261111`"
+  },
+  {
+   "action": "warn",
+   "id": "deprecation:dependency.genson-optional",
+   "kind": "warning",
+   "migrate": "Declare the genson extra if you generate from JSON, YAML, CSV or dict data.",
+   "release": "0.95.0",
+   "source": "registry",
+   "summary": "Genson will become optional. Declare the genson extra for JSON, YAML, CSV and dict input; see --help.",
+   "title": "Genson installation now emits FutureWarning"
+  },
+  {
+   "action": "warn",
+   "id": "deprecation:dependency.jinja2-optional",
+   "kind": "warning",
+   "migrate": "Declare the jinja2 extra if you use custom templates.",
+   "release": "0.95.0",
+   "source": "registry",
+   "summary": "Jinja2 will become optional. Declare the jinja2 extra for --custom-template-dir; see --help.",
+   "title": "Jinja2 installation now emits FutureWarning"
+  },
+  {
+   "action": "none",
+   "id": "deprecation:dependency.argcomplete-optional",
+   "kind": "warning",
+   "migrate": "Declare the argcomplete extra if you use shell completion.",
+   "release": "0.95.0",
+   "source": "registry",
+   "summary": "argcomplete will become optional. Declare the argcomplete extra for shell completion; see \"Dependency migration notices\" in the documentation.",
+   "title": "argcomplete installation is scheduled to change"
+  },
+  {
+   "action": "none",
+   "id": "preset:20261112",
+   "kind": "preset",
+   "release": "0.95.0",
+   "source": "registry",
+   "summary": "They keep the options of the 20261111 presets and add:\n\n- Object keywords by type (`--read-object-keywords-by-type`): Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself.",
+   "title": "New dated presets `standard-py3XX-20261112` and `practical-py3XX-20261112`"
+  },
+  {
+   "action": "required",
+   "affects": {
+    "experimental": [
+     "cli-option.generate-client"
+    ]
+   },
+   "id": "client-item-stream-raw-body",
+   "kind": "experimental",
+   "migrate": "Parse the raw body, or use the stream helper regenerated clients get at `client.protocols.<resource>.<method>`, which yields typed items.",
+   "refs": [
+    "#6767"
+   ],
+   "release": "0.96.0",
+   "source": "release-note",
+   "summary": "For an OpenAPI 3.2 response whose `text/event-stream`, JSON Lines or NDJSON media has only an `itemSchema`, the operation method, its `with_response` view and its result type alias read the whole body raw: `str` for an event stream and `bytes` for JSON Lines or NDJSON, where they returned the model of the item schema's array projection.",
+   "title": "Generated client methods return the raw body of `itemSchema` stream responses"
+  },
+  {
+   "action": "required",
+   "affects": {
+    "experimental": [
+     "cli-option.generate-client"
+    ]
+   },
+   "id": "client-stream-helper-name-collision",
+   "kind": "error",
+   "migrate": "Rename the declared helper.",
+   "refs": [
+    "#6767"
+   ],
+   "release": "0.96.0",
+   "source": "release-note",
+   "summary": "Generation derives a stream helper named `<resource>.<method>` for each OpenAPI 3.2 operation that streams an `itemSchema`. A helper of the protocols helper file whose name contains a derived name, or is contained in one, now fails generation with an `E_NAME_COLLISION` config diagnostic.",
+   "title": "A protocols helper whose name collides with a derived stream helper is refused"
+  },
+  {
+   "action": "required",
+   "affects": {
+    "experimental": [
+     "cli-option.generate-client"
+    ]
+   },
+   "id": "client-stream-items-referenced-model",
+   "kind": "experimental",
+   "migrate": "Annotate, `isinstance`-check or match stream items against the referenced model instead of `models.ItemSchema` or `models.ItemSchemaModel`.",
+   "refs": [
+    "#6771"
+   ],
+   "release": "0.96.0",
+   "source": "release-note",
+   "summary": "SSE, JSON Lines and NDJSON stream helpers whose `itemSchema` is a bare `$ref` use the referenced model, for example `EventStream[models.LogEntry]`, instead of the `ItemSchema` or `ItemSchemaModel` model generated at the item schema location. With Pydantic v2 output, decoded items are instances of the referenced model.",
+   "title": "Generated client stream helpers type items as the model their `itemSchema` references"
+  },
+  {
+   "action": "required",
+   "affects": {
+    "python_api": [
+     "warnings filters with module=\"datamodel_code_generator\""
+    ]
+   },
+   "id": "notices-name-calling-code",
+   "kind": "python-api",
+   "migrate": "Filter the notices by category and message, or by your calling module, for example `warnings.filterwarnings(\"ignore\", category=FutureWarning, module=\"mypackage.models\")`.",
+   "refs": [
+    "#6793"
+   ],
+   "release": "0.96.0",
+   "source": "release-note",
+   "summary": "Notices of the deprecation registry are attributed to the outermost frame outside the package (your module that called `generate()`, or the console script) instead of a module inside it. Filters that match them by `module=\"datamodel_code_generator\"` no longer suppress them, and a script that calls the API directly may now show `DeprecationWarning` notices that were hidden.",
+   "title": "Deprecation and migration notices name the code that called datamodel-code-generator"
+  },
+  {
+   "action": "review",
+   "affects": {
+    "options": [
+     "--read-object-keywords-by-type"
+    ]
+   },
+   "id": "object-keywords-by-type-branch-kinds",
+   "keep": {
+    "note": "No option restores the 0.95.0 reading; `--model-name-map` can pin individual names."
+   },
+   "kind": "default-output",
+   "refs": [
+    "#6777"
+   ],
+   "release": "0.96.0",
+   "source": "release-note",
+   "summary": "An `anyOf` or `oneOf` branch that is a `const`, an `enum`, a nested `allOf`, `anyOf` or `oneOf`, a false schema or a `$ref` to such a schema no longer takes the sibling object keywords, so such a site becomes a union, which adds enum classes and can renumber model names (`Owner` becomes `Owner1`). The standard and practical 20261112 presets turn the option on.",
+   "title": "`--read-object-keywords-by-type` also reads `const`, `enum` and `allOf` branches as admitting no object"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "output_model_types": [
+     "pydantic_v2.BaseModel",
+     "pydantic_v2.dataclass"
+    ]
+   },
+   "after": "text: constr(pattern=r\"^it's$\") | None = None",
+   "before": "text: constr(pattern=r'^it\\'s$') | None = None",
+   "id": "pattern-quote-literal",
+   "kind": "output-text",
+   "refs": [
+    "#6789",
+    "#6790"
+   ],
+   "release": "0.96.0",
+   "source": "release-note",
+   "summary": "`constr(pattern=r'^it\\'s$')` is written `constr(pattern=r\"^it's$\")`: Python's `re` matches the same values, and `model_json_schema()` publishes the schema's pattern unchanged. Snapshot tests and committed generated code show the new text after regenerating.",
+   "title": "Patterns holding a quote are written without an escaped quote"
+  },
+  {
+   "action": "none",
+   "id": "preset:20261113",
+   "kind": "preset",
+   "release": "unreleased",
+   "source": "registry",
+   "summary": "They keep the options of the 20261112 presets and add:\n\n- x-python-import for every reference (`--use-x-python-import-for-every-ref`): Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in another document, and split no request/response model for the readOnly or writeOnly properties of such a schema.\n- Extensible enums accept new values (`--open-enums extensible`): Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] | str, instead of rejecting them.\n- Discriminators inferred from tags (`--infer-union-discriminators`): Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names.\n- Kubernetes extensions read (`--read-kubernetes-extensions`): Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does.\n- Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values.",
+   "title": "New dated presets `standard-py3XX-20261113` and `practical-py3XX-20261113`"
+  }
+ ],
+ "latest": "0.96.0",
+ "ranges": [
+  {
+   "changes": [
+    "deprecation:cli.validation",
+    "deprecation:cli.allow-extra-fields",
+    "experimental:cli-option.use-type-alias",
+    "deprecation:cli.parent-scoped-naming",
+    "deprecation:config.yaml-non-lowercase-bool",
+    "deprecation:format.default-formatters",
+    "deprecation:behavior.pydantic-v2-use-annotated-default",
+    "deprecation:python-api.python-version-has-type-alias",
+    "deprecation:schema.jsonschema-items-array",
+    "deprecation:schema.openapi-nullable",
+    "deprecation:behavior.remote-ref-default",
+    "experimental:input-format.asyncapi",
+    "experimental:input-format.avro",
+    "experimental:input-format.protobuf",
+    "experimental:input-format.xmlschema",
+    "experimental:input-format.mcp-tools",
+    "preset:20260619",
+    "deprecation:config.json-config-strict-validation",
+    "experimental:cli-option.generate-schema-validators",
+    "experimental:cli-option.schema-validator-type",
+    "experimental:cli-option.use-missing-sentinel",
+    "experimental:extra.httpx2",
+    "experimental:cli-option.use-type-alias-type",
+    "experimental:behavior.batch-generation-jobs",
+    "experimental:behavior.remote-reference-lock",
+    "deprecation:cli.set-default-enum-member",
+    "experimental:cli-option.install-skill",
+    "preset:20260826",
+    "deprecation:dependency.black-minimum",
+    "deprecation:dependency.external-formatters-optional",
+    "deprecation:dependency.isort-minimum",
+    "deprecation:dependency.pydantic-runtime-minimum",
+    "preset:20260909",
+    "deprecation:dependency.python-310-runtime",
+    "experimental:cli-option.generate-client",
+    "experimental:cli-option.generate-server",
+    "preset:20261015",
+    "experimental:behavior.naming-hint",
+    "experimental:cli-option.recommend-options",
+    "preset:20261017",
+    "preset:20261027",
+    "preset:20261104",
+    "preset:20261106",
+    "experimental:behavior.asyncapi-client",
+    "experimental:cli-option.untrusted-input",
+    "experimental:python-api.generate-dynamic-module",
+    "removal:dependency.python-310-runtime",
+    "preset:20261111",
+    "deprecation:dependency.genson-optional",
+    "deprecation:dependency.jinja2-optional",
+    "deprecation:dependency.argcomplete-optional",
+    "preset:20261112",
+    "client-item-stream-raw-body",
+    "client-stream-helper-name-collision",
+    "client-stream-items-referenced-model",
+    "notices-name-calling-code",
+    "object-keywords-by-type-branch-kinds",
+    "pattern-quote-literal"
+   ],
+   "from": "0.20.0",
+   "keep_conditional": {},
+   "keep_flags": [],
+   "keep_pyproject": {},
+   "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.20.0/",
+   "sources": [
+    "0.20.0",
+    "0.21.0",
+    "0.21.1",
+    "0.21.2",
+    "0.21.3",
+    "0.21.4",
+    "0.21.5",
+    "0.22.0",
+    "0.22.1",
+    "0.23.0"
+   ],
+   "through": "0.23.0"
+  },
+  {
+   "changes": [
+    "deprecation:cli.allow-extra-fields",
+    "experimental:cli-option.use-type-alias",
+    "deprecation:cli.parent-scoped-naming",
+    "deprecation:config.yaml-non-lowercase-bool",
+    "deprecation:format.default-formatters",
+    "deprecation:behavior.pydantic-v2-use-annotated-default",
+    "deprecation:python-api.python-version-has-type-alias",
+    "deprecation:schema.jsonschema-items-array",
+    "deprecation:schema.openapi-nullable",
+    "deprecation:behavior.remote-ref-default",
+    "experimental:input-format.asyncapi",
+    "experimental:input-format.avro",
+    "experimental:input-format.protobuf",
+    "experimental:input-format.xmlschema",
+    "experimental:input-format.mcp-tools",
+    "preset:20260619",
+    "deprecation:config.json-config-strict-validation",
+    "experimental:cli-option.generate-schema-validators",
+    "experimental:cli-option.schema-validator-type",
+    "experimental:cli-option.use-missing-sentinel",
+    "experimental:extra.httpx2",
+    "experimental:cli-option.use-type-alias-type",
+    "experimental:behavior.batch-generation-jobs",
+    "experimental:behavior.remote-reference-lock",
+    "deprecation:cli.set-default-enum-member",
+    "experimental:cli-option.install-skill",
+    "preset:20260826",
+    "deprecation:dependency.black-minimum",
+    "deprecation:dependency.external-formatters-optional",
+    "deprecation:dependency.isort-minimum",
+    "deprecation:dependency.pydantic-runtime-minimum",
+    "preset:20260909",
+    "deprecation:dependency.python-310-runtime",
+    "experimental:cli-option.generate-client",
+    "experimental:cli-option.generate-server",
+    "preset:20261015",
+    "experimental:behavior.naming-hint",
+    "experimental:cli-option.recommend-options",
+    "preset:20261017",
+    "preset:20261027",
+    "preset:20261104",
+    "preset:20261106",
+    "experimental:behavior.asyncapi-client",
+    "experimental:cli-option.untrusted-input",
+    "experimental:python-api.generate-dynamic-module",
+    "removal:dependency.python-310-runtime",
+    "preset:20261111",
+    "deprecation:dependency.genson-optional",
+    "deprecation:dependency.jinja2-optional",
+    "deprecation:dependency.argcomplete-optional",
+    "preset:20261112",
+    "client-item-stream-raw-body",
+    "client-stream-helper-name-collision",
+    "client-stream-items-referenced-model",
+    "notices-name-calling-code",
+    "object-keywords-by-type-branch-kinds",
+    "pattern-quote-literal"
+   ],
+   "from": "0.24.0",
+   "keep_conditional": {},
+   "keep_flags": [],
+   "keep_pyproject": {},
+   "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.24.0/",
+   "sources": [
+    "0.24.0",
+    "0.24.1",
+    "0.24.2",
+    "0.25.0",
+    "0.25.1",
+    "0.25.2",
+    "0.25.3",
+    "0.25.4",
+    "0.25.5",
+    "0.25.6",
+    "0.25.7",
+    "0.25.8",
+    "0.25.9",
+    "0.26.0",
+    "0.26.1",
+    "0.26.2",
+    "0.26.3",
+    "0.26.4",
+    "0.26.5",
+    "0.27.0",
+    "0.27.1",
+    "0.27.2",
+    "0.27.3",
+    "0.28.0",
+    "0.28.1",
+    "0.28.2",
+    "0.28.3",
+    "0.28.4",
+    "0.28.5",
+    "0.29.0",
+    "0.30.0",
+    "0.30.1",
+    "0.30.2"
+   ],
+   "through": "0.30.2"
+  },
+  {
+   "changes": [
+    "experimental:cli-option.use-type-alias",
+    "deprecation:cli.parent-scoped-naming",
+    "deprecation:config.yaml-non-lowercase-bool",
+    "deprecation:format.default-formatters",
+    "deprecation:behavior.pydantic-v2-use-annotated-default",
+    "deprecation:python-api.python-version-has-type-alias",
+    "deprecation:schema.jsonschema-items-array",
+    "deprecation:schema.openapi-nullable",
+    "deprecation:behavior.remote-ref-default",
+    "experimental:input-format.asyncapi",
+    "experimental:input-format.avro",
+    "experimental:input-format.protobuf",
+    "experimental:input-format.xmlschema",
+    "experimental:input-format.mcp-tools",
+    "preset:20260619",
+    "deprecation:config.json-config-strict-validation",
+    "experimental:cli-option.generate-schema-validators",
+    "experimental:cli-option.schema-validator-type",
+    "experimental:cli-option.use-missing-sentinel",
+    "experimental:extra.httpx2",
+    "experimental:cli-option.use-type-alias-type",
+    "experimental:behavior.batch-generation-jobs",
+    "experimental:behavior.remote-reference-lock",
+    "deprecation:cli.set-default-enum-member",
+    "experimental:cli-option.install-skill",
+    "preset:20260826",
+    "deprecation:dependency.black-minimum",
+    "deprecation:dependency.external-formatters-optional",
+    "deprecation:dependency.isort-minimum",
+    "deprecation:dependency.pydantic-runtime-minimum",
+    "preset:20260909",
+    "deprecation:dependency.python-310-runtime",
+    "experimental:cli-option.generate-client",
+    "experimental:cli-option.generate-server",
+    "preset:20261015",
+    "experimental:behavior.naming-hint",
+    "experimental:cli-option.recommend-options",
+    "preset:20261017",
+    "preset:20261027",
+    "preset:20261104",
+    "preset:20261106",
+    "experimental:behavior.asyncapi-client",
+    "experimental:cli-option.untrusted-input",
+    "experimental:python-api.generate-dynamic-module",
+    "removal:dependency.python-310-runtime",
+    "preset:20261111",
+    "deprecation:dependency.genson-optional",
+    "deprecation:dependency.jinja2-optional",
+    "deprecation:dependency.argcomplete-optional",
+    "preset:20261112",
+    "client-item-stream-raw-body",
+    "client-stream-helper-name-collision",
+    "client-stream-items-referenced-model",
+    "notices-name-calling-code",
+    "object-keywords-by-type-branch-kinds",
+    "pattern-quote-literal"
+   ],
+   "from": "0.31.0",
+   "keep_conditional": {},
+   "keep_flags": [],
+   "keep_pyproject": {},
+   "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.31.0/",
+   "sources": [
+    "0.31.0",
+    "0.31.1",
+    "0.31.2",
+    "0.32.0",
+    "0.33.0",
+    "0.34.0",
+    "0.35.0",
+    "0.36.0",
+    "0.37.0",
+    "0.38.0",
+    "0.39.0",
+    "0.40.0",
+    "0.41.0",
+    "0.42.0",
+    "0.42.1",
+    "0.42.2",
+    "0.43.0",
+    "0.43.1",
+    "0.44.0",
+    "0.45.0",
+    "0.46.0",
+    "0.47.0"
+   ],
+   "through": "0.47.0"
+  },
+  {
+   "changes": [
+    "deprecation:format.default-formatters",
+    "deprecation:behavior.pydantic-v2-use-annotated-default",
+    "deprecation:python-api.python-version-has-type-alias",
+    "deprecation:schema.jsonschema-items-array",
+    "deprecation:schema.openapi-nullable",
+    "deprecation:behavior.remote-ref-default",
+    "experimental:input-format.asyncapi",
+    "experimental:input-format.avro",
+    "experimental:input-format.protobuf",
+    "experimental:input-format.xmlschema",
+    "experimental:input-format.mcp-tools",
+    "preset:20260619",
+    "deprecation:config.json-config-strict-validation",
+    "experimental:cli-option.generate-schema-validators",
+    "experimental:cli-option.schema-validator-type",
+    "experimental:cli-option.use-missing-sentinel",
+    "experimental:extra.httpx2",
+    "experimental:cli-option.use-type-alias-type",
+    "experimental:behavior.batch-generation-jobs",
+    "experimental:behavior.remote-reference-lock",
+    "deprecation:cli.set-default-enum-member",
+    "experimental:cli-option.install-skill",
+    "preset:20260826",
+    "deprecation:dependency.black-minimum",
+    "deprecation:dependency.external-formatters-optional",
+    "deprecation:dependency.isort-minimum",
+    "deprecation:dependency.pydantic-runtime-minimum",
+    "preset:20260909",
+    "deprecation:dependency.python-310-runtime",
+    "experimental:cli-option.generate-client",
+    "experimental:cli-option.generate-server",
+    "preset:20261015",
+    "experimental:behavior.naming-hint",
+    "experimental:cli-option.recommend-options",
+    "preset:20261017",
+    "preset:20261027",
+    "preset:20261104",
+    "preset:20261106",
+    "experimental:behavior.asyncapi-client",
+    "experimental:cli-option.untrusted-input",
+    "experimental:python-api.generate-dynamic-module",
+    "removal:dependency.python-310-runtime",
+    "preset:20261111",
+    "deprecation:dependency.genson-optional",
+    "deprecation:dependency.jinja2-optional",
+    "deprecation:dependency.argcomplete-optional",
+    "preset:20261112",
+    "client-item-stream-raw-body",
+    "client-stream-helper-name-collision",
+    "client-stream-items-referenced-model",
+    "notices-name-calling-code",
+    "object-keywords-by-type-branch-kinds",
+    "pattern-quote-literal"
+   ],
+   "from": "0.48.0",
+   "keep_conditional": {},
+   "keep_flags": [],
+   "keep_pyproject": {},
+   "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.48.0/",
+   "sources": [
+    "0.48.0",
+    "0.49.0",
+    "0.50.0",
+    "0.51.0"
+   ],
+   "through": "0.51.0"
+  },
+  {
+   "changes": [
+    "deprecation:behavior.pydantic-v2-use-annotated-default",
+    "deprecation:python-api.python-version-has-type-alias",
+    "deprecation:schema.jsonschema-items-array",
+    "deprecation:schema.openapi-nullable",
+    "deprecation:behavior.remote-ref-default",
+    "experimental:input-format.asyncapi",
+    "experimental:input-format.avro",
+    "experimental:input-format.protobuf",
+    "experimental:input-format.xmlschema",
+    "experimental:input-format.mcp-tools",
+    "preset:20260619",
+    "deprecation:config.json-config-strict-validation",
+    "experimental:cli-option.generate-schema-validators",
+    "experimental:cli-option.schema-validator-type",
+    "experimental:cli-option.use-missing-sentinel",
+    "experimental:extra.httpx2",
+    "experimental:cli-option.use-type-alias-type",
+    "experimental:behavior.batch-generation-jobs",
+    "experimental:behavior.remote-reference-lock",
+    "deprecation:cli.set-default-enum-member",
+    "experimental:cli-option.install-skill",
+    "preset:20260826",
+    "deprecation:dependency.black-minimum",
+    "deprecation:dependency.external-formatters-optional",
+    "deprecation:dependency.isort-minimum",
+    "deprecation:dependency.pydantic-runtime-minimum",
+    "preset:20260909",
+    "deprecation:dependency.python-310-runtime",
+    "experimental:cli-option.generate-client",
+    "experimental:cli-option.generate-server",
+    "preset:20261015",
+    "experimental:behavior.naming-hint",
+    "experimental:cli-option.recommend-options",
+    "preset:20261017",
+    "preset:20261027",
+    "preset:20261104",
+    "preset:20261106",
+    "experimental:behavior.asyncapi-client",
+    "experimental:cli-option.untrusted-input",
+    "experimental:python-api.generate-dynamic-module",
+    "removal:dependency.python-310-runtime",
+    "preset:20261111",
+    "deprecation:dependency.genson-optional",
+    "deprecation:dependency.jinja2-optional",
+    "deprecation:dependency.argcomplete-optional",
+    "preset:20261112",
+    "client-item-stream-raw-body",
+    "client-stream-helper-name-collision",
+    "client-stream-items-referenced-model",
+    "notices-name-calling-code",
+    "object-keywords-by-type-branch-kinds",
+    "pattern-quote-literal"
+   ],
+   "from": "0.52.0",
+   "keep_conditional": {},
+   "keep_flags": [],
+   "keep_pyproject": {},
+   "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.52.0/",
+   "sources": [
+    "0.52.0"
+   ],
+   "through": "0.52.0"
+  },
+  {
+   "changes": [
+    "deprecation:schema.jsonschema-items-array",
+    "deprecation:schema.openapi-nullable",
+    "deprecation:behavior.remote-ref-default",
+    "experimental:input-format.asyncapi",
+    "experimental:input-format.avro",
+    "experimental:input-format.protobuf",
+    "experimental:input-format.xmlschema",
+    "experimental:input-format.mcp-tools",
+    "preset:20260619",
+    "deprecation:config.json-config-strict-validation",
+    "experimental:cli-option.generate-schema-validators",
+    "experimental:cli-option.schema-validator-type",
+    "experimental:cli-option.use-missing-sentinel",
+    "experimental:extra.httpx2",
+    "experimental:cli-option.use-type-alias-type",
+    "experimental:behavior.batch-generation-jobs",
+    "experimental:behavior.remote-reference-lock",
+    "deprecation:cli.set-default-enum-member",
+    "experimental:cli-option.install-skill",
+    "preset:20260826",
+    "deprecation:dependency.black-minimum",
+    "deprecation:dependency.external-formatters-optional",
+    "deprecation:dependency.isort-minimum",
+    "deprecation:dependency.pydantic-runtime-minimum",
+    "preset:20260909",
+    "deprecation:dependency.python-310-runtime",
+    "experimental:cli-option.generate-client",
+    "experimental:cli-option.generate-server",
+    "preset:20261015",
+    "experimental:behavior.naming-hint",
+    "experimental:cli-option.recommend-options",
+    "preset:20261017",
+    "preset:20261027",
+    "preset:20261104",
+    "preset:20261106",
+    "experimental:behavior.asyncapi-client",
+    "experimental:cli-option.untrusted-input",
+    "experimental:python-api.generate-dynamic-module",
+    "removal:dependency.python-310-runtime",
+    "preset:20261111",
+    "deprecation:dependency.genson-optional",
+    "deprecation:dependency.jinja2-optional",
+    "deprecation:dependency.argcomplete-optional",
+    "preset:20261112",
+    "client-item-stream-raw-body",
+    "client-stream-helper-name-collision",
+    "client-stream-items-referenced-model",
+    "notices-name-calling-code",
+    "object-keywords-by-type-branch-kinds",
+    "pattern-quote-literal"
+   ],
+   "from": "0.52.1",
+   "keep_conditional": {},
+   "keep_flags": [],
+   "keep_pyproject": {},
+   "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.52.1/",
+   "sources": [
+    "0.52.1",
+    "0.52.2"
+   ],
+   "through": "0.52.2"
+  },
+  {
+   "changes": [
+    "deprecation:behavior.remote-ref-default",
+    "experimental:input-format.asyncapi",
+    "experimental:input-format.avro",
+    "experimental:input-format.protobuf",
+    "experimental:input-format.xmlschema",
+    "experimental:input-format.mcp-tools",
+    "preset:20260619",
+    "deprecation:config.json-config-strict-validation",
+    "experimental:cli-option.generate-schema-validators",
+    "experimental:cli-option.schema-validator-type",
+    "experimental:cli-option.use-missing-sentinel",
+    "experimental:extra.httpx2",
+    "experimental:cli-option.use-type-alias-type",
+    "experimental:behavior.batch-generation-jobs",
+    "experimental:behavior.remote-reference-lock",
+    "deprecation:cli.set-default-enum-member",
+    "experimental:cli-option.install-skill",
+    "preset:20260826",
+    "deprecation:dependency.black-minimum",
+    "deprecation:dependency.external-formatters-optional",
+    "deprecation:dependency.isort-minimum",
+    "deprecation:dependency.pydantic-runtime-minimum",
+    "preset:20260909",
+    "deprecation:dependency.python-310-runtime",
+    "experimental:cli-option.generate-client",
+    "experimental:cli-option.generate-server",
+    "preset:20261015",
+    "experimental:behavior.naming-hint",
+    "experimental:cli-option.recommend-options",
+    "preset:20261017",
+    "preset:20261027",
+    "preset:20261104",
+    "preset:20261106",
+    "experimental:behavior.asyncapi-client",
+    "experimental:cli-option.untrusted-input",
+    "experimental:python-api.generate-dynamic-module",
+    "removal:dependency.python-310-runtime",
+    "preset:20261111",
+    "deprecation:dependency.genson-optional",
+    "deprecation:dependency.jinja2-optional",
+    "deprecation:dependency.argcomplete-optional",
+    "preset:20261112",
+    "client-item-stream-raw-body",
+    "client-stream-helper-name-collision",
+    "client-stream-items-referenced-model",
+    "notices-name-calling-code",
+    "object-keywords-by-type-branch-kinds",
+    "pattern-quote-literal"
+   ],
+   "from": "0.53.0",
+   "keep_conditional": {},
+   "keep_flags": [],
+   "keep_pyproject": {},
+   "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.53.0/",
+   "sources": [
+    "0.53.0",
+    "0.54.0",
+    "0.54.1",
+    "0.55.0"
+   ],
+   "through": "0.55.0"
+  },
+  {
+   "changes": [
+    "experimental:input-format.asyncapi",
+    "experimental:input-format.avro",
+    "experimental:input-format.protobuf",
+    "experimental:input-format.xmlschema",
+    "experimental:input-format.mcp-tools",
+    "preset:20260619",
+    "deprecation:config.json-config-strict-validation",
+    "experimental:cli-option.generate-schema-validators",
+    "experimental:cli-option.schema-validator-type",
+    "experimental:cli-option.use-missing-sentinel",
+    "experimental:extra.httpx2",
+    "experimental:cli-option.use-type-alias-type",
+    "experimental:behavior.batch-generation-jobs",
+    "experimental:behavior.remote-reference-lock",
+    "deprecation:cli.set-default-enum-member",
+    "experimental:cli-option.install-skill",
+    "preset:20260826",
+    "deprecation:dependency.black-minimum",
+    "deprecation:dependency.external-formatters-optional",
+    "deprecation:dependency.isort-minimum",
+    "deprecation:dependency.pydantic-runtime-minimum",
+    "preset:20260909",
+    "deprecation:dependency.python-310-runtime",
+    "experimental:cli-option.generate-client",
+    "experimental:cli-option.generate-server",
+    "preset:20261015",
+    "experimental:behavior.naming-hint",
+    "experimental:cli-option.recommend-options",
+    "preset:20261017",
+    "preset:20261027",
+    "preset:20261104",
+    "preset:20261106",
+    "experimental:behavior.asyncapi-client",
+    "experimental:cli-option.untrusted-input",
+    "experimental:python-api.generate-dynamic-module",
+    "removal:dependency.python-310-runtime",
+    "preset:20261111",
+    "deprecation:dependency.genson-optional",
+    "deprecation:dependency.jinja2-optional",
+    "deprecation:dependency.argcomplete-optional",
+    "preset:20261112",
+    "client-item-stream-raw-body",
+    "client-stream-helper-name-collision",
+    "client-stream-items-referenced-model",
+    "notices-name-calling-code",
+    "object-keywords-by-type-branch-kinds",
+    "pattern-quote-literal"
+   ],
+   "from": "0.56.0",
+   "keep_conditional": {},
+   "keep_flags": [],
+   "keep_pyproject": {},
+   "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.56.0/",
+   "sources": [
+    "0.56.0",
+    "0.56.1",
+    "0.57.0",
+    "0.58.0",
+    "0.59.0",
+    "0.59.1",
+    "0.60.0",
+    "0.60.1",
+    "0.60.2",
+    "0.61.0",
+    "0.62.0",
+    "0.63.0",
+    "0.64.0",
+    "0.64.1"
+   ],
+   "through": "0.64.1"
+  },
+  {
+   "changes": [
+    "experimental:cli-option.generate-schema-validators",
+    "experimental:cli-option.schema-validator-type",
+    "experimental:cli-option.use-missing-sentinel",
+    "experimental:extra.httpx2",
+    "experimental:cli-option.use-type-alias-type",
+    "experimental:behavior.batch-generation-jobs",
+    "experimental:behavior.remote-reference-lock",
+    "deprecation:cli.set-default-enum-member",
+    "experimental:cli-option.install-skill",
+    "preset:20260826",
+    "deprecation:dependency.black-minimum",
+    "deprecation:dependency.external-formatters-optional",
+    "deprecation:dependency.isort-minimum",
+    "deprecation:dependency.pydantic-runtime-minimum",
+    "preset:20260909",
+    "deprecation:dependency.python-310-runtime",
+    "experimental:cli-option.generate-client",
+    "experimental:cli-option.generate-server",
+    "preset:20261015",
+    "experimental:behavior.naming-hint",
+    "experimental:cli-option.recommend-options",
+    "preset:20261017",
+    "preset:20261027",
+    "preset:20261104",
+    "preset:20261106",
+    "experimental:behavior.asyncapi-client",
+    "experimental:cli-option.untrusted-input",
+    "experimental:python-api.generate-dynamic-module",
+    "removal:dependency.python-310-runtime",
+    "preset:20261111",
+    "deprecation:dependency.genson-optional",
+    "deprecation:dependency.jinja2-optional",
+    "deprecation:dependency.argcomplete-optional",
+    "preset:20261112",
+    "client-item-stream-raw-body",
+    "client-stream-helper-name-collision",
+    "client-stream-items-referenced-model",
+    "notices-name-calling-code",
+    "object-keywords-by-type-branch-kinds",
+    "pattern-quote-literal"
+   ],
+   "from": "0.65.0",
+   "keep_conditional": {},
+   "keep_flags": [],
+   "keep_pyproject": {},
+   "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.65.0/",
+   "sources": [
+    "0.65.0",
+    "0.65.1",
+    "0.66.0",
+    "0.66.1",
+    "0.66.2",
+    "0.66.3",
+    "0.67.0",
+    "0.68.0",
+    "0.68.1",
+    "0.69.0",
+    "0.70.0",
+    "0.71.0",
+    "0.72.0",
+    "0.72.1",
+    "0.72.2",
+    "0.72.3",
+    "0.72.4",
+    "0.73.0",
+    "0.74.0",
+    "0.75.0",
+    "0.75.1",
+    "0.76.0",
+    "0.76.1",
+    "0.76.2",
+    "0.77.0"
+   ],
+   "through": "0.77.0"
+  },
+  {
+   "changes": [
+    "deprecation:dependency.python-310-runtime",
+    "experimental:cli-option.generate-client",
+    "experimental:cli-option.generate-server",
+    "preset:20261015",
+    "experimental:behavior.naming-hint",
+    "experimental:cli-option.recommend-options",
+    "preset:20261017",
+    "preset:20261027",
+    "preset:20261104",
+    "preset:20261106",
+    "experimental:behavior.asyncapi-client",
+    "experimental:cli-option.untrusted-input",
+    "experimental:python-api.generate-dynamic-module",
+    "removal:dependency.python-310-runtime",
+    "preset:20261111",
+    "deprecation:dependency.genson-optional",
+    "deprecation:dependency.jinja2-optional",
+    "deprecation:dependency.argcomplete-optional",
+    "preset:20261112",
+    "client-item-stream-raw-body",
+    "client-stream-helper-name-collision",
+    "client-stream-items-referenced-model",
+    "notices-name-calling-code",
+    "object-keywords-by-type-branch-kinds",
+    "pattern-quote-literal"
+   ],
+   "from": "0.78.0",
+   "keep_conditional": {},
+   "keep_flags": [],
+   "keep_pyproject": {},
+   "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.78.0/",
+   "sources": [
+    "0.78.0",
+    "0.79.0",
+    "0.80.0",
+    "0.81.0",
+    "0.82.0",
+    "0.83.0"
+   ],
+   "through": "0.83.0"
+  },
+  {
+   "changes": [
+    "preset:20261015",
+    "experimental:behavior.naming-hint",
+    "experimental:cli-option.recommend-options",
+    "preset:20261017",
+    "preset:20261027",
+    "preset:20261104",
+    "preset:20261106",
+    "experimental:behavior.asyncapi-client",
+    "experimental:cli-option.untrusted-input",
+    "experimental:python-api.generate-dynamic-module",
+    "removal:dependency.python-310-runtime",
+    "preset:20261111",
+    "deprecation:dependency.genson-optional",
+    "deprecation:dependency.jinja2-optional",
+    "deprecation:dependency.argcomplete-optional",
+    "preset:20261112",
+    "client-item-stream-raw-body",
+    "client-stream-helper-name-collision",
+    "client-stream-items-referenced-model",
+    "notices-name-calling-code",
+    "object-keywords-by-type-branch-kinds",
+    "pattern-quote-literal"
+   ],
+   "from": "0.84.0",
+   "keep_conditional": {},
+   "keep_flags": [],
+   "keep_pyproject": {},
+   "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.84.0/",
+   "sources": [
+    "0.84.0",
+    "0.85.0",
+    "0.86.0",
+    "0.87.0",
+    "0.88.0",
+    "0.89.0",
+    "0.90.0",
+    "0.91.0",
+    "0.92.0"
+   ],
+   "through": "0.92.0"
+  },
+  {
+   "changes": [
+    "preset:20261111",
+    "deprecation:dependency.genson-optional",
+    "deprecation:dependency.jinja2-optional",
+    "deprecation:dependency.argcomplete-optional",
+    "preset:20261112",
+    "client-item-stream-raw-body",
+    "client-stream-helper-name-collision",
+    "client-stream-items-referenced-model",
+    "notices-name-calling-code",
+    "object-keywords-by-type-branch-kinds",
+    "pattern-quote-literal"
+   ],
+   "from": "0.93.0",
+   "keep_conditional": {},
+   "keep_flags": [],
+   "keep_pyproject": {},
+   "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.93.0/",
+   "sources": [
+    "0.93.0",
+    "0.94.0"
+   ],
+   "through": "0.94.0"
+  },
+  {
+   "changes": [
+    "client-item-stream-raw-body",
+    "client-stream-helper-name-collision",
+    "client-stream-items-referenced-model",
+    "notices-name-calling-code",
+    "object-keywords-by-type-branch-kinds",
+    "pattern-quote-literal"
+   ],
+   "from": "0.95.0",
+   "keep_conditional": {},
+   "keep_flags": [],
+   "keep_pyproject": {},
+   "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.95.0/",
+   "sources": [
+    "0.95.0"
+   ],
+   "through": "0.95.0"
+  }
+ ],
+ "raw_page": "https://datamodel-code-generator.koxudaxi.dev/migration/from/{release}.md",
+ "releases": [
+  {
+   "date": "2023-06-06",
+   "version": "0.20.0"
+  },
+  {
+   "date": "2023-07-03",
+   "version": "0.21.0"
+  },
+  {
+   "date": "2023-07-06",
+   "version": "0.21.1"
+  },
+  {
+   "date": "2023-07-20",
+   "version": "0.21.2"
+  },
+  {
+   "date": "2023-08-03",
+   "version": "0.21.3"
+  },
+  {
+   "date": "2023-08-09",
+   "version": "0.21.4"
+  },
+  {
+   "date": "2023-09-06",
+   "version": "0.21.5"
+  },
+  {
+   "date": "2023-09-23",
+   "version": "0.22.0"
+  },
+  {
+   "date": "2023-10-08",
+   "version": "0.22.1"
+  },
+  {
+   "date": "2023-11-08",
+   "version": "0.23.0"
+  },
+  {
+   "date": "2023-11-16",
+   "version": "0.24.0"
+  },
+  {
+   "date": "2023-11-16",
+   "version": "0.24.1"
+  },
+  {
+   "date": "2023-11-16",
+   "version": "0.24.2"
+  },
+  {
+   "date": "2023-11-25",
+   "version": "0.25.0"
+  },
+  {
+   "date": "2023-11-26",
+   "version": "0.25.1"
+  },
+  {
+   "date": "2023-12-21",
+   "version": "0.25.2"
+  },
+  {
+   "date": "2024-02-01",
+   "version": "0.25.3"
+  },
+  {
+   "date": "2024-02-13",
+   "version": "0.25.4"
+  },
+  {
+   "date": "2024-03-16",
+   "version": "0.25.5"
+  },
+  {
+   "date": "2024-04-25",
+   "version": "0.25.6"
+  },
+  {
+   "date": "2024-06-11",
+   "version": "0.25.7"
+  },
+  {
+   "date": "2024-07-04",
+   "version": "0.25.8"
+  },
+  {
+   "date": "2024-08-07",
+   "version": "0.25.9"
+  },
+  {
+   "date": "2024-09-02",
+   "version": "0.26.0"
+  },
+  {
+   "date": "2024-09-27",
+   "version": "0.26.1"
+  },
+  {
+   "date": "2024-10-17",
+   "version": "0.26.2"
+  },
+  {
+   "date": "2024-11-10",
+   "version": "0.26.3"
+  },
+  {
+   "date": "2024-12-15",
+   "version": "0.26.4"
+  },
+  {
+   "date": "2025-01-14",
+   "version": "0.26.5"
+  },
+  {
+   "date": "2025-02-06",
+   "version": "0.27.0"
+  },
+  {
+   "date": "2025-02-06",
+   "version": "0.27.1"
+  },
+  {
+   "date": "2025-02-07",
+   "version": "0.27.2"
+  },
+  {
+   "date": "2025-02-11",
+   "version": "0.27.3"
+  },
+  {
+   "date": "2025-02-14",
+   "version": "0.28.0"
+  },
+  {
+   "date": "2025-02-15",
+   "version": "0.28.1"
+  },
+  {
+   "date": "2025-02-27",
+   "version": "0.28.2"
+  },
+  {
+   "date": "2025-03-10",
+   "version": "0.28.3"
+  },
+  {
+   "date": "2025-03-11",
+   "version": "0.28.4"
+  },
+  {
+   "date": "2025-03-24",
+   "version": "0.28.5"
+  },
+  {
+   "date": "2025-04-17",
+   "version": "0.29.0"
+  },
+  {
+   "date": "2025-04-17",
+   "version": "0.30.0"
+  },
+  {
+   "date": "2025-04-28",
+   "version": "0.30.1"
+  },
+  {
+   "date": "2025-06-07",
+   "version": "0.30.2"
+  },
+  {
+   "date": "2025-06-12",
+   "version": "0.31.0"
+  },
+  {
+   "date": "2025-06-17",
+   "version": "0.31.1"
+  },
+  {
+   "date": "2025-06-22",
+   "version": "0.31.2"
+  },
+  {
+   "date": "2025-07-25",
+   "version": "0.32.0"
+  },
+  {
+   "date": "2025-08-14",
+   "version": "0.33.0"
+  },
+  {
+   "date": "2025-09-28",
+   "version": "0.34.0"
+  },
+  {
+   "date": "2025-10-09",
+   "version": "0.35.0"
+  },
+  {
+   "date": "2025-11-26",
+   "version": "0.36.0"
+  },
+  {
+   "date": "2025-12-01",
+   "version": "0.37.0"
+  },
+  {
+   "date": "2025-12-02",
+   "version": "0.38.0"
+  },
+  {
+   "date": "2025-12-02",
+   "version": "0.39.0"
+  },
+  {
+   "date": "2025-12-03",
+   "version": "0.40.0"
+  },
+  {
+   "date": "2025-12-05",
+   "version": "0.41.0"
+  },
+  {
+   "date": "2025-12-08",
+   "version": "0.42.0"
+  },
+  {
+   "date": "2025-12-08",
+   "version": "0.42.1"
+  },
+  {
+   "date": "2025-12-08",
+   "version": "0.42.2"
+  },
+  {
+   "date": "2025-12-10",
+   "version": "0.43.0"
+  },
+  {
+   "date": "2025-12-12",
+   "version": "0.43.1"
+  },
+  {
+   "date": "2025-12-18",
+   "version": "0.44.0"
+  },
+  {
+   "date": "2025-12-19",
+   "version": "0.45.0"
+  },
+  {
+   "date": "2025-12-20",
+   "version": "0.46.0"
+  },
+  {
+   "date": "2025-12-23",
+   "version": "0.47.0"
+  },
+  {
+   "date": "2025-12-24",
+   "version": "0.48.0"
+  },
+  {
+   "date": "2025-12-25",
+   "version": "0.49.0"
+  },
+  {
+   "date": "2025-12-28",
+   "version": "0.50.0"
+  },
+  {
+   "date": "2026-01-01",
+   "version": "0.51.0"
+  },
+  {
+   "date": "2026-01-02",
+   "version": "0.52.0"
+  },
+  {
+   "date": "2026-01-03",
+   "version": "0.52.1"
+  },
+  {
+   "date": "2026-01-05",
+   "version": "0.52.2"
+  },
+  {
+   "date": "2026-01-12",
+   "version": "0.53.0"
+  },
+  {
+   "date": "2026-02-14",
+   "version": "0.54.0"
+  },
+  {
+   "date": "2026-03-04",
+   "version": "0.54.1"
+  },
+  {
+   "date": "2026-03-10",
+   "version": "0.55.0"
+  },
+  {
+   "date": "2026-04-04",
+   "version": "0.56.0"
+  },
+  {
+   "date": "2026-04-16",
+   "version": "0.56.1"
+  },
+  {
+   "date": "2026-05-07",
+   "version": "0.57.0"
+  },
+  {
+   "date": "2026-05-25",
+   "version": "0.58.0"
+  },
+  {
+   "date": "2026-05-29",
+   "version": "0.59.0"
+  },
+  {
+   "date": "2026-06-03",
+   "version": "0.59.1"
+  },
+  {
+   "date": "2026-06-04",
+   "version": "0.60.0"
+  },
+  {
+   "date": "2026-06-07",
+   "version": "0.60.1"
+  },
+  {
+   "date": "2026-06-08",
+   "version": "0.60.2"
+  },
+  {
+   "date": "2026-06-08",
+   "version": "0.61.0"
+  },
+  {
+   "date": "2026-06-10",
+   "version": "0.62.0"
+  },
+  {
+   "date": "2026-06-12",
+   "version": "0.63.0"
+  },
+  {
+   "date": "2026-06-14",
+   "version": "0.64.0"
+  },
+  {
+   "date": "2026-06-19",
+   "version": "0.64.1"
+  },
+  {
+   "date": "2026-06-21",
+   "version": "0.65.0"
+  },
+  {
+   "date": "2026-06-25",
+   "version": "0.65.1"
+  },
+  {
+   "date": "2026-06-26",
+   "version": "0.66.0"
+  },
+  {
+   "date": "2026-06-30",
+   "version": "0.66.1"
+  },
+  {
+   "date": "2026-07-01",
+   "version": "0.66.2"
+  },
+  {
+   "date": "2026-07-01",
+   "version": "0.66.3"
+  },
+  {
+   "date": "2026-07-03",
+   "version": "0.67.0"
+  },
+  {
+   "date": "2026-07-06",
+   "version": "0.68.0"
+  },
+  {
+   "date": "2026-07-08",
+   "version": "0.68.1"
+  },
+  {
+   "date": "2026-07-19",
+   "version": "0.69.0"
+  },
+  {
+   "date": "2026-07-23",
+   "version": "0.70.0"
+  },
+  {
+   "date": "2026-07-24",
+   "version": "0.71.0"
+  },
+  {
+   "date": "2026-08-03",
+   "version": "0.72.0"
+  },
+  {
+   "date": "2026-08-04",
+   "version": "0.72.1"
+  },
+  {
+   "date": "2026-08-06",
+   "version": "0.72.2"
+  },
+  {
+   "date": "2026-08-10",
+   "version": "0.72.3"
+  },
+  {
+   "date": "2026-08-12",
+   "version": "0.72.4"
+  },
+  {
+   "date": "2026-08-15",
+   "version": "0.73.0"
+  },
+  {
+   "date": "2026-08-17",
+   "version": "0.74.0"
+  },
+  {
+   "date": "2026-08-24",
+   "version": "0.75.0"
+  },
+  {
+   "date": "2026-08-24",
+   "version": "0.75.1"
+  },
+  {
+   "date": "2026-08-29",
+   "version": "0.76.0"
+  },
+  {
+   "date": "2026-09-02",
+   "version": "0.76.1"
+  },
+  {
+   "date": "2026-09-04",
+   "version": "0.76.2"
+  },
+  {
+   "date": "2026-09-08",
+   "version": "0.77.0"
+  },
+  {
+   "date": "2026-09-09",
+   "version": "0.78.0"
+  },
+  {
+   "date": "2026-09-10",
+   "version": "0.79.0"
+  },
+  {
+   "date": "2026-09-12",
+   "version": "0.80.0"
+  },
+  {
+   "date": "2026-09-14",
+   "version": "0.81.0"
+  },
+  {
+   "date": "2026-09-16",
+   "version": "0.82.0"
+  },
+  {
+   "date": "2026-09-24",
+   "version": "0.83.0"
+  },
+  {
+   "date": "2026-10-15",
+   "version": "0.84.0"
+  },
+  {
+   "date": "2026-10-16",
+   "version": "0.85.0"
+  },
+  {
+   "date": "2026-10-18",
+   "version": "0.86.0"
+  },
+  {
+   "date": "2026-10-28",
+   "version": "0.87.0"
+  },
+  {
+   "date": "2026-11-02",
+   "version": "0.88.0"
+  },
+  {
+   "date": "2026-11-04",
+   "version": "0.89.0"
+  },
+  {
+   "date": "2026-11-06",
+   "version": "0.90.0"
+  },
+  {
+   "date": "2026-11-07",
+   "version": "0.91.0"
+  },
+  {
+   "date": "2026-11-10",
+   "version": "0.92.0"
+  },
+  {
+   "date": "2026-11-11",
+   "version": "0.93.0"
+  },
+  {
+   "date": "2026-11-12",
+   "version": "0.94.0"
+  },
+  {
+   "date": "2026-11-12",
+   "version": "0.95.0"
+  },
+  {
+   "date": "2026-11-13",
+   "version": "0.96.0"
+  }
+ ],
+ "schema_version": 1
+}
