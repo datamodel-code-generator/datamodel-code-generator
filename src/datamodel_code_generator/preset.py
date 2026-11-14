@@ -1292,6 +1292,15 @@ _STANDARD_20261113_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "str, instead of rejecting them."
         ),
     ),
+    PresetOptionGroup(
+        title="Discriminators inferred from tags",
+        config=PresetConfig(infer_union_discriminators=True),
+        description=(
+            "Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not "
+            "null requires one property with one string or integer value, also in its allOf members; valid payloads "
+            "parse the same, an invalid one reports the errors of the branch its tag names."
+        ),
+    ),
 )
 """The 20261112 groups and the opt-in options added after them."""
 

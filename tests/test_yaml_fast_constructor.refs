@@ -35,6 +35,7 @@ asyncapi/single_value_enum_as_const/xml_schema.yaml	yaml_fast_constructor/parity
 asyncapi/stable-surface.yaml	yaml_fast_constructor/parity.txt
 asyncapi/string_discriminator/v2.yaml	yaml_fast_constructor/parity.txt
 asyncapi/string_discriminator/v3.yaml	yaml_fast_constructor/parity.txt
+asyncapi/tagged_payload_union.yaml	yaml_fast_constructor/parity.txt
 asyncapi/trait_headers_inline_and_ref.yaml	yaml_fast_constructor/parity.txt
 asyncapi/unknown-version.yaml	yaml_fast_constructor/parity.txt
 asyncapi/user-events.yaml	yaml_fast_constructor/parity.txt
@@ -660,6 +661,7 @@ openapi/strip_default_none_nullable_reference.yaml	yaml_fast_constructor/parity.
 openapi/strip_default_none_pydantic_v2.yaml	yaml_fast_constructor/parity.txt
 openapi/strip_default_none_semantic.yaml	yaml_fast_constructor/parity.txt
 openapi/tab_characters.yaml	yaml_fast_constructor/parity.txt
+openapi/tagged_union_read_only.yaml	yaml_fast_constructor/parity.txt
 openapi/type_alias.yaml	yaml_fast_constructor/parity.txt
 openapi/type_alias_cross_module_collision/a.yaml	yaml_fast_constructor/parity.txt
 openapi/type_alias_cross_module_collision/b.yaml	yaml_fast_constructor/parity.txt

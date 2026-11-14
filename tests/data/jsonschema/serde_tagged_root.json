@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Notification",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "channel": {
+          "type": "string",
+          "const": "email"
+        },
+        "address": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "channel",
+        "address"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "channel": {
+          "type": "string",
+          "const": "sms"
+        },
+        "number": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "channel",
+        "number"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "channel": {
+          "type": "string",
+          "const": "push"
+        }
+      },
+      "required": [
+        "channel"
+      ]
+    }
+  ]
+}

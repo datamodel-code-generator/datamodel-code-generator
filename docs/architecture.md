@@ -168,16 +168,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 257 | Shared generation options. |
-| `GenerateConfig` | 272 | Public `generate()` configuration. |
-| `ParserConfig` | 212 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 214 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 225 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 228 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 215 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 215 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 214 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 215 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 258 | Shared generation options. |
+| `GenerateConfig` | 273 | Public `generate()` configuration. |
+| `ParserConfig` | 213 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 215 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 226 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 229 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 216 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 216 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 215 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 216 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -406,7 +406,9 @@ its `legacy-map-*` rows (see "Legacy rows"). Names come from `ModelResolver.add`
 Each model records the location of the schema object it is built from on its `Reference` (`_record_schema_object`).
 Every use of a reference gets a new `DataType` that points to the one shared `Reference`. allOf `$ref` items become base
 classes; inherited fields whose parent is not parsed yet stay as placeholders that L5 resolves. Discriminators are only
-captured here (`field.extras["discriminator"]`), each mapping path with the location the parser resolves it to from
+captured here (`field.extras["discriminator"]`), or inferred here from the property that tags every branch where
+`parser/_union_tags.py:discriminator_inference` says so (msgspec output, and Pydantic output under
+`--infer-union-discriminators`), each mapping path with the location the parser resolves it to from
 the document that declares the mapping (`parser/_union_tags.py:located_mapping_paths` over the references of
 `discriminator_mapping_refs`, which an OpenAPI union built from a mapping reads too); the tag passes match a variant by
 that location where it is the schema of one (`parser/_tag_plan.py:located_mapping`). The union an OpenAPI `$ref` to a
@@ -1552,6 +1554,7 @@ is a new named row, never an anonymous `if`.
 | --- | --- | --- |
 | `legacy-exact-ints-as-floats` | the schema models read an int constraint as a float where one equals it and is written as it | keep |
 | `legacy-msgspec-float-bounds` | without `--read-msgspec-union-bounds-exactly`, the check of a msgspec union reads the bound of a float member as the float it is, so an integral bound past `2**53` is the integer of its binary value (`int(1e300)`), where the schema models read the decimal that is written (`10**300`), and the int member of a union can keep a constraint that rejects an integer the float member accepts | keep |
+| `legacy-branch-own-tags` | without `--infer-union-discriminators`, msgspec output reads the tag of each branch of a union only from the branch or the schema its local `$ref` names, never from its `allOf` members, and counts a null branch, so such a union stays untagged and warns that msgspec cannot decode it (`parser/_union_tags.py:UnionTagReading`) | keep |
 | `legacy-rw-parsed-facts` | without `--dedupe-request-response-variants`, the read/write facts and graph node of a key come from a temporary parse of its fields, the walk reads every reference of a key, and every model collects its inherited fields to decide its split | keep |
 | `legacy-rw-unowned-parent-fields` | without `--dedupe-request-response-variants`, the inline models of an allOf parent's own fields are parsed at no owner path | keep |
 | `legacy-rw-base-reads-imported-fields` | without `--use-x-python-import-for-every-ref`, under request-response an allOf base splits the model that inherits it where the base reaches a readOnly or writeOnly property through a field that an import types: the walk reads a base, and the base readers of the split read it, with every field naming its schema's model (`_rw_split.imported_field_reading`) | keep |

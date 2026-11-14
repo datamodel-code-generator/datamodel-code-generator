@@ -40,6 +40,12 @@ class Pets(RootModel[list[Pet]]):
     root: list[Pet]
 ```
 
+A `oneOf` or `anyOf` whose branches each require one property with one value (a tag) but that declares no
+`discriminator` is a plain union, which Pydantic validates by trying every branch.
+[`--infer-union-discriminators`](cli-reference/field-customization.md#infer-union-discriminators) writes it as a
+discriminated union (`Field(discriminator=...)`), so an invalid payload reports the errors of the branch its tag
+names; see [Tagged unions without a discriminator keyword](jsonschema.md#tagged-unions-without-a-discriminator-keyword).
+
 ### When to use
 
 - New projects requiring data validation
@@ -437,6 +443,12 @@ The union then decodes, while `petType` is no longer a constructor argument or a
 its own accepts a payload without `petType`. When a variant cannot take exactly one tag for the union, or a base
 or derived struct of a variant keeps the property as a field, the union tags none of its variants, the ones with
 a `const` included, and a warning names the reason. A variant that another union tags keeps that tag.
+
+A union that declares no discriminator is tagged when every branch requires one property holding one string or
+integer value written on the branch or in the schema its `$ref` names. With
+[`--infer-union-discriminators`](cli-reference/field-customization.md#infer-union-discriminators) the tag is also read
+from the `allOf` members of a branch, and a `null` branch does not count, so those unions decode too; without it they
+are written untagged and warn that msgspec cannot decode them, as in 0.96.0.
 
 ### Enums that list null
 
