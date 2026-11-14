@@ -121,7 +121,7 @@
     "kind": "cli-option",
     "message": "Runtime TypeAliasType output is experimental and may change as Python typing support evolves.",
     "note": "The option implies --use-type-alias and selects TypeAliasType for Python 3.10 and 3.11. Python 3.12 and newer continue to use native type statements.",
-    "since_version": "0.71.1",
+    "since_version": "0.72.1",
     "target": "--use-type-alias-type",
     "tracking_issue": null
   },
@@ -130,7 +130,7 @@
     "kind": "extra",
     "message": "The HTTPX2-backed HTTP client is experimental and may change as compatibility is validated.",
     "note": "`datamodel-code-generator[http]` remains the stable HTTPX backend and is not deprecated; `datamodel-code-generator[httpx2]` is experimental. The default HTTP backend policy is auto: stable httpx is selected when its client module is installed, including when both pairs are installed, and experimental httpx2 is selected only when that module is absent. Use `--http-backend httpx2` or `HTTPBackend.HTTPX2` to require the experimental pair. Explicit selections and paired dependency errors do not fall back.",
-    "since_version": "0.71.1",
+    "since_version": "0.72.0",
     "target": "datamodel-code-generator[httpx2]",
     "tracking_issue": null
   },

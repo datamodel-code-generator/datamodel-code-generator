@@ -1,0 +1,5 @@
+exit 1
+Invalid migration data:
+- releases.toml: {'version': '0.2.0', 'date': '2026'} is not a row of `version` and `date` (YYYY-MM-DD)
+- releases.toml: 0.1.0 does not come after 0.2.0
+written: []

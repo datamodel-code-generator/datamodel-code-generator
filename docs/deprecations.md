@@ -13,7 +13,7 @@ This page lists deprecations and scheduled breaking changes.
 | `cli.parent-scoped-naming` | active | cli-option | `--parent-scoped-naming` | 0.48.0 | TBD | --naming-strategy parent-prefixed |
 | `cli.set-default-enum-member` | scheduled | cli-option | `--set-default-enum-member` | 0.76.0 | TBD | --deserialize-default-values enum |
 | `cli.validation` | active | cli-option | `--validation` | 0.24.0 | TBD | --field-constraints |
-| `config.json-config-strict-validation` | active | config | `JSON configuration values accepted by legacy validation` | 0.64.2 | TBD | Update the JSON configuration to match --output-format-json-schema config. |
+| `config.json-config-strict-validation` | active | config | `JSON configuration values accepted by legacy validation` | 0.65.0 | TBD | Update the JSON configuration to match --output-format-json-schema config. |
 | `config.yaml-non-lowercase-bool` | active | config | `YAML bool values True, False, TRUE, FALSE` | 0.48.0 | TBD | Use lowercase true or false. |
 | `dependency.black-minimum` | active | dependency | `Black <24.3.0` | 0.78.0 | TBD | Upgrade Black to >=24.3.0 before the later support change. |
 | `dependency.external-formatters-optional` | active | dependency | `Black/isort installation` | 0.78.0 | TBD | Declare the black/isort extras for the external formatters you select. |
@@ -124,7 +124,7 @@ The `--validation` option is deprecated and will be removed in a future release.
 - **Status:** active
 - **Kind:** config
 - **Target:** `JSON configuration values accepted by legacy validation`
-- **Since:** 0.64.2
+- **Since:** 0.65.0
 - **Planned removal:** TBD
 - **Warning category:** `FutureWarning`
 - **Replacement:** Update the JSON configuration to match --output-format-json-schema config.

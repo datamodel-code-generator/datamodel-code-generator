@@ -1,0 +1,42 @@
+exit 1
+Invalid migration data:
+- derived.toml: preset date 20251231 is not in the source tree
+- preset 20260101: 0.2.5 was never released
+- changes/0.9.0.toml: 0.9.0 is not in releases.toml
+- changes/0.2.0.toml: id 'Not A Slug' is not a lower-case slug
+- entry unknown-keys: unknown key color
+- entry unknown-keys: title is not a string
+- entry unknown-keys: kind 'surprise' is not one of default-output, output-text, experimental, template, removal, cli, python-api, warning, runtime, error, preset
+- entry unknown-keys: action 'maybe' is not one of required, keep, review, warn, none
+- entry unknown-keys: source 'guess' is not one of run, release-note, registry
+- entry unknown-keys: unknown affects key planets
+- entry unknown-keys: affects.options is not a list of strings
+- entry unknown-keys: unknown keep key why
+- entry unknown-keys: unknown verify key now
+- entry unknown-keys: refs is not a list of strings
+- entry unknown-keys: supersedes is not a list of strings
+- entry unknown-keys: ref '6000' is not #<number>
+- entry unknown-keys: ref 7 is not #<number>
+- entry keep-without-flags: verify is not a table
+- changes/0.2.0.toml: entry required-without-migrate has no refs
+- changes/0.2.0.toml: removal:cli.unknown extends no derived entry
+- changes/0.2.0.toml: id links is also in changes/0.2.0.toml
+- changes/0.3.0.toml: removal:cli.validation belongs to 0.4.0
+- broken.toml: Expected ']]' at the end of an array declaration (at line 1, column 9)
+- unreleased/broken.toml: a fragment holds exactly one [[change]] whose id is the file name
+- unreleased/wrong-name.toml: a fragment holds exactly one [[change]] whose id is the file name
+- unreleased/wrong-name.toml: entry other has no refs
+- entry unknown-keys: keep.flags belong to an entry with action keep
+- entry keep-without-flags: action keep needs keep.flags or keep.note
+- entry keep-without-flags: source run needs verify.schema and verify.args
+- entry required-without-migrate: keep.flags belong to an entry with action keep
+- entry required-without-migrate: action required needs migrate
+- entry other: missing kind
+- entry other: missing action
+- entry other: missing title
+- entry other: missing summary
+- entry other: missing source
+- entry links: missing is not an entry
+- entry links: later comes after it
+- entry links: later comes after it
+written: []
