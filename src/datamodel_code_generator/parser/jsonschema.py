@@ -1129,6 +1129,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._python_import_values: dict[str, YamlValue] = {}
         self._python_import_target_keys: set[str] = set()
         """The keys of ``_python_import_values`` that a JSON pointer or a whole-document ``$ref`` parsed to a model."""
+        self._python_import_model_keys: set[str] = set()
+        """The keys a request/response split named a variant of before they were read: they keep their model."""
         self._dangling_refs: set[tuple[str, str]] = set()
         self._unescaped_slash_pointers: dict[tuple[str, str], str] = {}
         """Under --read-escaped-ref-pointers, the pointer of the key a dangling reference's unescaped ``/`` splits."""
@@ -2495,6 +2497,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self._false_schema_refs, resolved_ref, is_false=obj.is_boolean_schema_false
         )
         return facts
+
+    def _ref_python_import(self, resolved_ref: str) -> YamlValue:
+        """Return the ``x-python-import`` of the schema at ``resolved_ref``, as a reference to it reads it.
+
+        It is the fact ``get_ref_data_type`` reads (``_ref_data_type_facts``) once stored, else read from the schema.
+        """
+        if (facts := self._ref_data_type_facts.get(resolved_ref)) is not None:
+            return facts[0]
+        return self._load_inherited_schema_object(resolved_ref).extras.get("x-python-import")
 
     def get_ref_data_type(self, ref: str) -> DataType:
         """Get a data type from a reference string.
@@ -8183,13 +8194,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> TypeIs[dict[str, YamlValue]]:
         """Return whether the schema at ``path`` is the class its ``x-python-import`` imports.
 
-        A stand-in is parsed into its model, and --ignore-ref-siblings-by-schema-version may read the schema as its
+        A stand-in is parsed into its model, and so is a schema whose variant a request/response split named before it
+        was read (``_keep_python_import_model``); --ignore-ref-siblings-by-schema-version may read the schema as its
         ``$ref`` alone (``reads_ref_alone``).
         """
         return (
             isinstance(raw, dict)
             and "x-python-import" in raw
             and not self._is_base_stand_in_path(path)
+            and not (
+                self._python_import_model_keys
+                and self.model_resolver.join_path(tuple(path)) in self._python_import_model_keys
+            )
             and not reads_ref_alone(raw, self._schema_validation_context)
         )
 
@@ -8549,10 +8565,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for path, x_python_import in self._python_import_values.items():
                 if (
                     not self._is_base_stand_in(reference := self.model_resolver.references[path])
-                    and not (
-                        "legacy-python-import-modelled-targets" in self._legacy_python_import_rows
-                        and path in self._python_import_target_keys
-                    )
+                    and self._imports_type_reference(path)
                     and self._has_reference_users(reference, typed)
                     and (python_import_type := self._python_import_type_maker(x_python_import, path)) is not None
                 ):
@@ -8585,6 +8598,60 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _is_base_stand_in(self, reference: Reference) -> bool:
         """Return whether the model of ``reference`` is a stand-in: never written, never split into variants."""
         return model_key_of(reference) in self._base_stand_in_imports
+
+    def _imports_type_reference(self, path: str) -> bool:
+        """Return whether an import types a field that names the schema at the key ``path``, as it types a ``$ref``.
+
+        The import is the class (or the type expression in its place) that the schema's ``x-python-import`` names
+        (``_ref_python_import``); it also types the sites that name the schema as their one class
+        (``_type_imported_references_without_model``). Read from the schema itself, so the answer is the same before and
+        after the schema is parsed; a key the generator makes names no schema. The root of an input document is no
+        such schema: it keeps its model and the sites that name it (``_parse_document_root``), known from the sources
+        (``_schema_documents.is_input_document_root``). A schema of a document that ``--external-ref-mapping`` maps is
+        not read here: whether its model is written, as an input document's is, and keeps its users is known only once
+        every schema is parsed. Without --use-x-python-import-for-every-ref (row
+        ``legacy-python-import-modelled-targets``) the import types them only where the schema has no model of its own
+        (``_python_import_target_has_model``).
+        """
+        if (
+            _is_special_path(path)
+            or _schema_documents.is_input_document_root(self, path)
+            or self._python_import_type_maker(self._ref_python_import(path), path) is None
+        ):
+            return False
+        return (
+            "legacy-python-import-modelled-targets" not in self._legacy_python_import_rows
+            or not self._python_import_target_has_model(path)
+        )
+
+    def _python_import_target_has_model(self, path: str) -> bool:
+        """Return whether the schema with ``x-python-import`` at the key ``path`` has a model of its own, as in 0.96.0.
+
+        A schema the definitions of its document read as the class it imports (``_parse_raw_or_validated_obj``) has
+        none, one that a JSON pointer or a whole-document ``$ref`` parsed (``_python_import_target_keys``) has one;
+        each is final once the schema is read. A schema not read yet has one, as 0.96.0 assumed when it named the
+        variant of the schema: which parse reads it first (a ``$ref`` of any document, or the definitions) is not
+        predicted, so the split keeps its model (``_keep_python_import_model``) and the later read follows it.
+        """
+        if path in self._python_import_values:
+            return path in self._python_import_target_keys
+        return True
+
+    def _keep_python_import_model(self, path: str) -> None:
+        """Keep the model of the schema at the key ``path``, whose read/write variant a split names, before it is read.
+
+        Under row ``legacy-python-import-modelled-targets`` a split names the variant of a schema with
+        ``x-python-import`` that has a model of its own (``_python_import_target_has_model``); a definition of a
+        document a ``$ref`` names, not read yet, is then parsed into its model however its document is read
+        (``_reads_as_python_import``), as its JSON pointer parses it.
+        """
+        if (
+            "legacy-python-import-modelled-targets" in self._legacy_python_import_rows
+            and path not in self._python_import_values
+            and not ((reference := self.model_resolver.references.get(path)) is not None and reference.loaded)
+            and self._python_import_type_maker(self._ref_python_import(path), path) is not None
+        ):
+            self._python_import_model_keys.add(path)
 
     def _is_base_stand_in_path(self, path: list[str]) -> bool:
         """Return whether the schema at ``path`` is parsed into a stand-in."""

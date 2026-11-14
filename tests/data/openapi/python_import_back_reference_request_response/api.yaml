@@ -1,0 +1,16 @@
+openapi: 3.0.3
+info: {title: api, version: "1"}
+paths: {}
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        item: {$ref: 'common.yaml#/components/schemas/Item'}
+        pet: {$ref: '#/components/schemas/Pet'}
+    Pet:
+      type: object
+      properties:
+        id: {type: integer, readOnly: true}
+        name: {type: string}
+      x-python-import: {module: pets, name: Pet}

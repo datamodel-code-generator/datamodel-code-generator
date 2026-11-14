@@ -105,6 +105,7 @@ __all__ = [
     "has_schema_affecting_keywords",
     "implicit_schema_resources",
     "index_document",
+    "is_input_document_root",
     "iter_definition_namespace_entries",
     "iter_local_source_paths",
     "iter_schema_definition_entries",
@@ -1000,6 +1001,26 @@ def get_context_source_path_parts(parser: SchemaDocumentsHost) -> Iterator[tuple
             parser.model_resolver.current_root_context(path_parts),
         ):
             yield source, path_parts
+
+
+def is_input_document_root(parser: SchemaDocumentsHost, key: str) -> bool:
+    """Return whether the key ``key`` names the root of an input document, one read from a source, not a ``$ref``.
+
+    The input documents are known from the sources before any model is parsed (``get_context_source_path_parts``): the
+    local files of a directory or list input (``after_load_files``), else the one source, named as its path parts.
+    """
+    document, _, pointer = key.partition("#")
+    if pointer:
+        return False
+    location = schema_resource_document(parser, [document])
+    if parser.model_resolver.after_load_files:
+        return location in parser.model_resolver.after_load_files
+    path_parts: list[str] = []
+    if isinstance(parser.source, ParseResult):
+        path_parts = type(parser).get_url_path_parts(parser.source)
+    elif isinstance(parser.source, Path):
+        path_parts = list(parser.source.relative_to(parser.base_path).parts)
+    return location == schema_resource_document(parser, path_parts)
 
 
 def iter_local_source_paths(parser: SchemaDocumentsHost) -> Iterator[Path]:

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Order",
+  "type": "object",
+  "properties": {
+    "id": {"type": "integer", "readOnly": true},
+    "pet": {"allOf": [{"$ref": "#/$defs/Pet"}, {"description": "The pet."}]}
+  },
+  "$defs": {
+    "Pet": {
+      "type": "object",
+      "properties": {"id": {"type": "integer", "readOnly": true}, "name": {"type": "string"}},
+      "x-python-import": {"module": "pets", "name": "Pet"}
+    }
+  }
+}

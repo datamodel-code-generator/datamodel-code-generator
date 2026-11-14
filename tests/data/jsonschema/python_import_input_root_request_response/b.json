@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Order",
+  "type": "object",
+  "properties": {
+    "pet": {"allOf": [{"$ref": "a.json"}, {"description": "The pet."}]},
+    "plain": {"$ref": "a.json"}
+  }
+}

@@ -1,0 +1,18 @@
+openapi: 3.1.0
+info:
+  title: toys of another document
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Toy:
+      type: object
+      x-python-import:
+        module: toys
+        name: Toy
+      properties:
+        serial:
+          type: string
+          readOnly: true
+        color:
+          type: string

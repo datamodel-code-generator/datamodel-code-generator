@@ -1,0 +1,47 @@
+openapi: 3.1.0
+info: {title: shelter, version: "1"}
+paths:
+  /visits:
+    get:
+      operationId: getVisit
+      responses:
+        "200":
+          description: The visit.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Visit'}
+components:
+  schemas:
+    Visit:
+      type: object
+      properties:
+        dog:
+          allOf: [{$ref: '#/components/schemas/Dog'}, {description: The dog.}]
+    Dog:
+      type: object
+      properties:
+        id: {type: integer, readOnly: true}
+        name: {type: string}
+      x-python-import: {module: dogs, name: Dog}
+    Home:
+      type: object
+      properties:
+        cat:
+          $ref: 'pets.yaml#/components/schemas/Cat'
+    Order:
+      type: object
+      properties:
+        pet:
+          allOf: [{$ref: 'pets.yaml#/components/schemas/Pet'}, {description: The pet.}]
+    Kennel:
+      type: object
+      properties:
+        bird:
+          $ref: 'birds.yaml#/components/schemas/Bird'
+        parrot:
+          allOf: [{$ref: 'birds.yaml#/components/schemas/Parrot'}, {description: The parrot.}]
+    Cage:
+      type: object
+      properties:
+        parrot:
+          allOf: [{$ref: 'birds.yaml#/components/schemas/Parrot'}, {description: The caged parrot.}]
