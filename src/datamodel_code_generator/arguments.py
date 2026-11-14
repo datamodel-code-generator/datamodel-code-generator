@@ -779,6 +779,19 @@ _flag(
 )
 _toggle(
     model_options,
+    "--infer-union-discriminators",
+    help="Write a oneOf or anyOf that declares no discriminator as a discriminated union (Pydantic "
+    "Field(discriminator=...), msgspec tagged structs) when every branch that is not null requires one property "
+    "holding one string or integer value (a const or a one-value enum, also through allOf members and local $refs), "
+    "with no value shared; in Pydantic output a union with a discriminator keyword keeps it. Valid payloads parse the "
+    "same, except that a tag typed as a one-value enum class becomes its Literal value; with "
+    "--use-one-literal-as-default a payload without the tag, which the schema requires, is rejected. An invalid "
+    "payload reports the errors of the branch its tag names, or one tag error. Not applied to "
+    "dataclasses.dataclass and typing.TypedDict output. Without it these unions are smart unions in Pydantic output, "
+    "and msgspec output tags only the unions whose tags are written on the branches themselves, as in 0.96.0",
+)
+_toggle(
+    model_options,
     "--name-allof-union-members-after-branches",
     help="Name the classes an allOf gives the branches of a oneOf or anyOf it holds after the branch: the holder "
     "and the branch's tag (with --infer-union-variant-names or --use-tag-as-union-variant-name), its $ref class or "

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Zoo",
+  "type": "object",
+  "properties": {
+    "animal": {"$ref": "#/$defs/Animal"},
+    "conflict": {"$ref": "#/$defs/Conflict"},
+    "forbidden": {"$ref": "#/$defs/Forbidden"}
+  },
+  "required": ["animal"],
+  "$defs": {
+    "Pet": {
+      "type": "object",
+      "properties": {"petType": {"type": "string"}, "name": {"type": "string"}},
+      "required": ["petType", "name"]
+    },
+    "Animal": {
+      "description": "The tag pinned by an allOf part beside a base that declares it as a string.",
+      "oneOf": [
+        {"allOf": [{"$ref": "#/$defs/Pet"}, {"type": "object", "properties": {"petType": {"const": "cat"}}}]},
+        {"allOf": [{"type": "object", "properties": {"petType": {"const": "dog"}}}, {"$ref": "#/$defs/Pet"}, true]},
+        {
+          "type": "object",
+          "properties": {"petType": {"const": "bird"}, "wings": {"type": "integer"}},
+          "required": ["petType", "wings"],
+          "allOf": [{"type": "object", "properties": {"petType": {"const": "bird"}}}]
+        }
+      ]
+    },
+    "Conflict": {
+      "description": "Two parts pin the tag to different values: the first branch has no tag.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind"],
+          "allOf": [
+            {"type": "object", "properties": {"kind": {"const": "a"}}},
+            {"type": "object", "properties": {"kind": {"const": "b"}}}
+          ]
+        },
+        {"type": "object", "properties": {"kind": {"const": "c"}}, "required": ["kind"]}
+      ]
+    },
+    "Forbidden": {
+      "description": "A part forbids the tag: the first branch has no tag.",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {"kind": {"const": "x"}},
+          "required": ["kind"],
+          "allOf": [{"type": "object", "properties": {"kind": false}}]
+        },
+        {"type": "object", "properties": {"kind": {"const": "y"}}, "required": ["kind"]}
+      ]
+    }
+  }
+}
