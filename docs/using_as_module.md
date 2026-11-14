@@ -91,6 +91,39 @@ config = load_pyproject_config()
 result = generate(json_schema, config=config)
 ```
 
+`load_pyproject_config()` is available since 0.84.0. It translates the table the
+way the command line reads it, so there is no need to map its keys to `generate()`
+arguments by hand: kebab-case keys become the matching fields, keys whose
+`generate()` field has another name are renamed (`use-default` is
+`apply_default_values_for_required_fields`, `force-optional` is
+`force_optional_for_required_fields`, `default-values` is
+`default_value_overrides`), and the settings the command line implies are applied.
+For example, with this table:
+
+```toml
+[tool.datamodel-codegen]
+input = "schema.json"
+output = "models.py"
+output-model-type = "pydantic_v2.BaseModel"
+snake-case-field = true
+use-default = true
+disable-timestamp = true
+```
+
+```python
+from pathlib import Path
+
+from datamodel_code_generator import generate, load_pyproject_config
+
+config = load_pyproject_config()
+assert config.apply_default_values_for_required_fields
+generate(Path("schema.json"), config=config)
+```
+
+writes `models.py` next to `pyproject.toml`, as `datamodel-codegen` run in that
+directory does. `input` is a CLI-only key, so the schema is passed to
+`generate()`.
+
 The loader searches upward from the working directory, stopping at a Git project
 boundary, as the CLI does. Pass `path="project"`, a `Path`, or a `pyproject.toml` path
 to start elsewhere, and `profile="models"` to select a profile, including its

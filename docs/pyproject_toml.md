@@ -41,6 +41,9 @@ On the command line, relative paths in `pyproject.toml` resolve as follows:
 `load_pyproject_config()` reads those JSON files from the `pyproject.toml` directory instead; see
 [Using as Module](using_as_module.md).
 
+To use the same table from Python, pass `config=load_pyproject_config()` to `generate()`: it translates the keys as
+the command line does (see [Loading Project Configuration](using_as_module.md#loading-project-configuration)).
+
 ## Formatter settings
 
 Formatter selection is configured with the same keys as the CLI:
