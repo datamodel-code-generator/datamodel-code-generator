@@ -14,6 +14,7 @@ from typing import Any
 import pytest
 
 from scripts._behaviour_report import compare_records, error_name, redact, summarize_gate
+from scripts.behaviour_diff import name_accepted_changes
 from scripts.build_behaviour_docs import render_comparison, render_release
 from tests.conftest import assert_output
 
@@ -114,7 +115,13 @@ ACCEPTED_ENTRY = {
     "match": "AnchoredChild",
     "reason": "spec-correct $anchor target; 0.86.0 depended on file read order",
     "decision": "#5088",
-    "release_note": "an external $anchor resolves to the anchored schema regardless of file read order",
+    "migration": "external-anchor-target",
+}
+MIGRATION_TITLES = {
+    "changes": [
+        {"id": "external-anchor-target", "title": "An external $anchor resolves to the anchored schema"},
+        {"id": "other-change", "title": "Another change"},
+    ]
 }
 ACCEPTED_EXAMPLE = {
     "input": "tests/data/jsonschema/external_anchor",
@@ -200,10 +207,16 @@ RELEASE_CASES = {
 
 
 @pytest.mark.parametrize("case", sorted(RELEASE_CASES))
-def test_render_release(case: str) -> None:
-    """A release page sums the gate cells per class and output model type and lists each group's examples."""
+def test_render_release(case: str, tmp_path: Path) -> None:
+    """A release page sums the gate cells per class and output model type and lists each group's examples.
+
+    Each accepted change is named by the title of its upgrade guide entry.
+    """
     data = summarize_gate([ROWS[name] for name in RELEASE_CASES[case]], [ACCEPTED_ENTRY])
     data = {"version": "0.87.0", "previous": "0.86.0", "tier": "pr" if case == "pr_tier" else "release", **data}
+    migration_json = tmp_path / "migration.json"
+    migration_json.write_text(json.dumps(MIGRATION_TITLES), encoding="utf-8")
+    name_accepted_changes(data, migration_json)
     for group in data["accepted"]:
         group["restored_by"] = []
         group["example"] = ACCEPTED_EXAMPLE

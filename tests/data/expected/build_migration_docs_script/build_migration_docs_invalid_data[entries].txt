@@ -8,7 +8,7 @@ Invalid migration data:
 - entry unknown-keys: title is not a string
 - entry unknown-keys: kind 'surprise' is not one of default-output, output-text, experimental, template, removal, cli, python-api, warning, runtime, error, preset
 - entry unknown-keys: action 'maybe' is not one of required, keep, review, warn, none
-- entry unknown-keys: source 'guess' is not one of run, release-note, registry
+- entry unknown-keys: source 'guess' is not one of run, release-note, registry, surface
 - entry unknown-keys: unknown affects key planets
 - entry unknown-keys: affects.options is not a list of strings
 - entry unknown-keys: unknown keep key why

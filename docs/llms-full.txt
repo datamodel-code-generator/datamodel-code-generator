@@ -95332,6 +95332,13 @@ source = "release-note"
   that undoes it.
 - `keep.flags` must be options of the current release: the build parses them and writes their `pyproject.toml` form.
 
+Two rules are checked. An accepted default-output change in `scripts/behaviour_diff_allowlist.toml` names its entry
+in `migration`, and that entry must be unreleased. `docs/data/migration/surface.json` holds the options, option values,
+public names, `GenerateConfig` fields and builtin templates of the latest release; one that your change removes must
+be named in the `affects` of an unreleased entry (an option or value as `--name` or `--name value`, a field as
+`GenerateConfig.<field>`, a template by its path under the template directory), unless the deprecation registry
+schedules its removal. New options and option values get their entries from the same comparison.
+
 Run `python scripts/build_migration_docs.py` to rebuild the committed pages (`docs/migration/index.md`,
 `docs/migration/changes.md`, `docs/data/migration.json`); `--check` fails on stale pages and on invalid entries.
 `--release-notes unreleased` prints the release-note sections of the next release, and

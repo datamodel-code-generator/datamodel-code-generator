@@ -1,0 +1,6 @@
+exit 1
+Invalid migration data:
+- surface: --old-flag of the latest release is gone; an unreleased entry names it in affects.options, or the deprecation registry schedules its removal
+- surface: Old.jinja2 of the latest release is gone; an unreleased entry names it in affects.templates, or the deprecation registry schedules its removal
+- allowlist.toml: accepted entry 1 (*): migration 'custom-template-root' is not an unreleased entry
+written: []

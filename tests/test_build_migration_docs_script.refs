@@ -3,8 +3,10 @@
 [test_build_migration_docs_invalid_data]
 entries	build_migration_docs_script/build_migration_docs_invalid_data[entries].txt
 no releases	build_migration_docs_script/build_migration_docs_invalid_data[no releases].txt
+no surface	build_migration_docs_script/build_migration_docs_invalid_data[no surface].txt
 ranges	build_migration_docs_script/build_migration_docs_invalid_data[ranges].txt
 releases	build_migration_docs_script/build_migration_docs_invalid_data[releases].txt
+surface and allowlist	build_migration_docs_script/build_migration_docs_invalid_data[surface and allowlist].txt
 [test_build_migration_docs_outputs]
 	build_migration_docs_script/build_migration_docs_outputs.txt
 [test_build_migration_docs_stamp]
