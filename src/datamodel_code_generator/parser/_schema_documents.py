@@ -1015,13 +1015,11 @@ def is_input_document_root(parser: SchemaDocumentsHost, key: str) -> bool:
     location = schema_resource_document(parser, [document])
     if parser.model_resolver.after_load_files:
         return location in parser.model_resolver.after_load_files
-    match parser.source:
-        case ParseResult() as url:
-            path_parts = type(parser).get_url_path_parts(url)
-        case Path() as path:
-            path_parts = list(path.relative_to(parser.base_path).parts)
-        case _:
-            path_parts = []
+    path_parts: list[str] = []
+    if isinstance(parser.source, ParseResult):
+        path_parts = type(parser).get_url_path_parts(parser.source)
+    elif isinstance(parser.source, Path):
+        path_parts = list(parser.source.relative_to(parser.base_path).parts)
     return location == schema_resource_document(parser, path_parts)
 
 
