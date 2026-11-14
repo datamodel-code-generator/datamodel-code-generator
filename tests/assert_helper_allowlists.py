@@ -51,6 +51,7 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "data-logic:tests/data/python/fastapi_handlers/unauthorized.py",
         "data-logic:tests/data/python/fastapi_handlers/unbound.py",
         "data-logic:tests/data/python/fastapi_handlers/variants.py",
+        "data-logic:tests/data/python/open_enum.py",
         "private-import:tests/data/architecture_boundaries/input_model/forbidden.py",
         "private-import:tests/data/architecture_boundaries/output_model/forbidden.py",
         "private-import:tests/data/architecture_boundaries/parser/forbidden.py",

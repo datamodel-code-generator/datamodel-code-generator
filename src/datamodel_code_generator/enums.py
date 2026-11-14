@@ -261,6 +261,21 @@ class ReadOnlyWriteOnlyModelType(Enum):
     All = "all"
 
 
+class OpenEnums(Enum):
+    """Which enums accept values they do not list (``--open-enums``).
+
+    None_: no enum, as without the option.
+    Extensible: the enums whose schema marks them open (``x-extensible-enum: true``, or ``x-ms-enum`` with
+        ``modelAsString: true``).
+    All: every enum of two or more values, except one whose schema closes it (``x-extensible-enum: false``,
+        ``modelAsString: false``).
+    """
+
+    None_ = "none"
+    Extensible = "extensible"
+    All = "all"
+
+
 class ModuleSplitMode(Enum):
     """Mode for splitting generated models into separate files.
 
@@ -532,6 +547,7 @@ __all__ = [
     "OpenAPIAsDefinitions",
     "OpenAPIScope",
     "OpenAPIVersion",
+    "OpenEnums",
     "ProtobufVersion",
     "ReadOnlyWriteOnlyModelType",
     "ReuseScope",

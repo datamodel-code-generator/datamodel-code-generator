@@ -37,6 +37,7 @@ if TYPE_CHECKING:
         NamingStrategy,
         OpenAPIAsDefinitions,
         OpenAPIScope,
+        OpenEnums,
         ReadOnlyWriteOnlyModelType,
         ReuseScope,
         SchemaValidatorType,
@@ -116,6 +117,8 @@ class BaseGenerateConfig(TypedDict):
     encoding: NotRequired[str]
     enum_field_as_literal: NotRequired[LiteralType | None]
     enum_field_as_literal_map: NotRequired[dict[str, str] | None]
+    open_enums: NotRequired[OpenEnums | None]
+    open_enum_base_class_map: NotRequired[dict[str, str] | None]
     ignore_enum_constraints: NotRequired[bool]
     use_one_literal_as_default: NotRequired[bool]
     use_enum_values_in_discriminator: NotRequired[bool]

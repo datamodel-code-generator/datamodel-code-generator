@@ -17,6 +17,7 @@ JsonConfigFieldName: TypeAlias = Literal[
     "extra_template_data",
     "import_overrides",
     "model_name_map",
+    "open_enum_base_class_map",
     "serialization_aliases",
     "server_body_modes",
     "server_handler_modes",

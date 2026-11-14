@@ -335,6 +335,14 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     ),
     **_opts(
         _C.MODEL,
+        "--open-enum-base-class-map",
+        requires=_relations(
+            "--open-enums",
+            message="`--open-enum-base-class-map` requires `--open-enums extensible` or `--open-enums all`.",
+        ),
+    ),
+    **_opts(
+        _C.MODEL,
         "--use-missing-sentinel",
         implies=_relations("--target-pydantic-version", value=TargetPydanticVersion.V2_12.value),
         requires=_relations(
@@ -453,7 +461,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(_C.TYPING, "--strict-types", group=_G.TYPE_MAPPING),
     **_opts(
         _C.TYPING,
-        "--enum-field-as-literal --enum-field-as-literal-map --ignore-enum-constraints",
+        "--enum-field-as-literal --enum-field-as-literal-map --open-enums --ignore-enum-constraints",
         "--use-single-value-enum-as-const --no-use-single-value-enum-as-const --read-const-beside-enum",
         "--no-read-const-beside-enum --filter-literal-values --no-filter-literal-values",
         "--intersect-allof-keywords --no-intersect-allof-keywords",

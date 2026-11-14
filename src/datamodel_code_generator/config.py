@@ -49,6 +49,7 @@ from datamodel_code_generator.enums import (
     OpenAPIAsDefinitions,
     OpenAPIScope,
     OpenAPIVersion,
+    OpenEnums,
     ProtobufVersion,
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
@@ -261,6 +262,8 @@ class ParserConfig(BaseModel):
     encoding: str = DEFAULT_ENCODING
     enum_field_as_literal: LiteralType | None = None
     enum_field_as_literal_map: dict[str, str] | None = None
+    open_enums: OpenEnums | None = None
+    open_enum_base_class_map: dict[str, str] | None = None
     ignore_enum_constraints: bool = False
     set_default_enum_member: bool = False
     use_subclass_enum: bool = False

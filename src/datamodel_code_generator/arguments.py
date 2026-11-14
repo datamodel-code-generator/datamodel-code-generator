@@ -54,6 +54,7 @@ from datamodel_code_generator.enums import (
     NamingStrategy,
     OpenAPIAsDefinitions,
     OpenAPIScope,
+    OpenEnums,
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
     SchemaValidatorType,
@@ -927,6 +928,18 @@ typing_options.add_argument(
     type=_json_value_or_file,
     default=None,
 )
+typing_options.add_argument(
+    "--open-enums",
+    help="Accept values an enum does not list. "
+    "extensible: the enums whose schema marks them open (x-extensible-enum: true, or x-ms-enum with "
+    "modelAsString: true); "
+    "all: every enum of two or more values, except one whose schema closes it (x-extensible-enum: false, "
+    "modelAsString: false); "
+    "none: no enum, as without the option. "
+    "An open enum written as an Enum class takes the base --open-enum-base-class-map names for its class",
+    choices=_values(OpenEnums),
+    default=None,
+)
 _flag(
     typing_options,
     "--ignore-enum-constraints",
@@ -1175,6 +1188,16 @@ _toggle(
     typing_options,
     "--use-subclass-enum",
     help="Define generic Enum class as subclass with field type when enum has type (int, float, bytes, str)",
+)
+typing_options.add_argument(
+    "--open-enum-base-class-map",
+    help="Base classes that open the Enum classes of open enums (--open-enums), by the class the enum is written on "
+    "(JSON or JSON file path). Keys: Enum, StrEnum, IntEnum. "
+    'Example: \'{"StrEnum": "mypkg.OpenStrEnum", "IntEnum": "mypkg.OpenIntEnum"}\'. '
+    "Each is your member-less subclass of that class whose _missing_ keeps a value it does not list; a value type "
+    "before Enum (--use-subclass-enum) stays: (str, mypkg.OpenEnum)",
+    type=_json_value_or_file,
+    default=None,
 )
 _toggle(
     typing_options,

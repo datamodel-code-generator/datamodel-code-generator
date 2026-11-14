@@ -1,0 +1,133 @@
+openapi: 3.1.0
+info:
+  title: Jobs with open enums
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Job:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/JobStatus"
+        provisioningState:
+          $ref: "#/components/schemas/ProvisioningState"
+        type:
+          $ref: "#/components/schemas/JobType"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        phase:
+          $ref: "#/components/schemas/Phase"
+        region:
+          $ref: "#/components/schemas/Region"
+        tier:
+          $ref: "#/components/schemas/Tier"
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+        mode:
+          type: string
+          enum: [auto, manual]
+          default: auto
+          x-extensible-enum: true
+        kind:
+          type: string
+          enum: [job]
+        pinned:
+          type: string
+          enum: [fast, slow]
+          const: fast
+          x-extensible-enum: true
+        quota:
+          type: object
+          propertyNames:
+            type: string
+            enum: [cpu, memory]
+            x-extensible-enum: true
+          additionalProperties:
+            type: integer
+        lifecycle:
+          $ref: "#/components/schemas/Lifecycle"
+        stage:
+          $ref: "#/components/schemas/Stage"
+        color:
+          $ref: "#/components/schemas/Color"
+        pet:
+          $ref: "#/components/schemas/Pet"
+    JobStatus:
+      type: string
+      enum: [queued, running, done]
+      x-extensible-enum: true
+    ProvisioningState:
+      type: string
+      enum: [Succeeded, Failed]
+      x-ms-enum:
+        name: ProvisioningState
+        modelAsString: true
+    JobType:
+      type: string
+      enum: [scrape, crawl]
+    Priority:
+      type: integer
+      enum: [1, 2, 3]
+      x-extensible-enum: true
+    Phase:
+      type: [string, "null"]
+      enum: [pending, active, null]
+      x-extensible-enum: true
+    Region:
+      type: string
+      enum: [eu, us]
+      x-ms-enum:
+        name: Region
+        modelAsString: false
+    Tier:
+      type: string
+      enum: [free, paid]
+      x-extensible-enum: false
+    Tag:
+      type: string
+      enum: [red, blue]
+      x-extensible-enum: true
+    Lifecycle:
+      allOf:
+        - $ref: "#/components/schemas/JobStatus"
+        - $ref: "#/components/schemas/ProvisioningState"
+    Stage:
+      allOf:
+        - $ref: "#/components/schemas/JobStatus"
+        - $ref: "#/components/schemas/JobType"
+    Color:
+      type: string
+      enum: [red, blue]
+    PetType:
+      type: string
+      enum: [cat, dog]
+      x-extensible-enum: true
+    Cat:
+      type: object
+      required: [petType]
+      properties:
+        petType:
+          $ref: "#/components/schemas/PetType"
+        meows:
+          type: boolean
+    Dog:
+      type: object
+      required: [petType]
+      properties:
+        petType:
+          $ref: "#/components/schemas/PetType"
+        barks:
+          type: boolean
+    Pet:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: petType
+        mapping:
+          cat: "#/components/schemas/Cat"
+          dog: "#/components/schemas/Dog"

@@ -1780,7 +1780,25 @@ def _apply_model_run_options(config: Config, namespace: Namespace, pyproject_con
         )
         return Exit.ERROR
 
+    if config.open_enum_base_class_map and (config.open_enums is None or config.open_enums.value == "none"):
+        print(  # noqa: T201
+            "Error: --open-enum-base-class-map requires --open-enums extensible or --open-enums all",
+            file=sys.stderr,
+        )
+        return Exit.ERROR
+
     from datamodel_code_generator._requirements import python_target_meets  # noqa: PLC0415
+
+    if (config.open_enum_base_class_map or {}).get("StrEnum") is not None and not python_target_meets(
+        "python.strenum", config.target_python_version.version_key
+    ):
+        print(  # noqa: T201
+            f"Error: the StrEnum entry of --open-enum-base-class-map requires --target-python-version 3.11 or "
+            f"later.\nCurrent target version: {config.target_python_version.value}\n"
+            f"StrEnum is only available in Python 3.11+; string enums use the Enum entry there.",
+            file=sys.stderr,
+        )
+        return Exit.ERROR
 
     if (
         config.use_specialized_enum
