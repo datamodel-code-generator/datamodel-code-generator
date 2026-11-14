@@ -95339,6 +95339,17 @@ be named in the `affects` of an unreleased entry (an option or value as `--name`
 `GenerateConfig.<field>`, a template by its path under the template directory), unless the deprecation registry
 schedules its removal. New options and option values get their entries from the same comparison.
 
+An entry with `source = "run"` carries a minimal fixture, `[change.verify]` with a `schema` and the `args` of every
+run, and is proven by runs. `python scripts/build_migration_docs.py --record <id>` generates the fixture with the
+release before the entry's and with the entry's release (or this checkout for an unreleased entry), each installed
+into the cache of `scripts/compare_release.py` unless `--release-python VERSION=PYTHON` names an interpreter that has
+it. It checks that their models behave differently, that `before` and `after` are in their outputs and that
+`keep.flags` give this checkout the previous release's behaviour, and keeps the previous release's output in
+`docs/data/migration/recorded.json`; never edit that file by hand. `--verify` checks the keep claims of every such
+entry against this checkout and the recorded outputs, also with all keep flags of the steps from that release
+together, and `--verify --text` also checks the `before` and `after` lines. `--check` fails while an entry's fixture
+has no recorded output.
+
 Run `python scripts/build_migration_docs.py` to rebuild the committed pages (`docs/migration/index.md`,
 `docs/migration/changes.md`, `docs/data/migration.json`); `--check` fails on stale pages and on invalid entries.
 `--release-notes unreleased` prints the release-note sections of the next release, and

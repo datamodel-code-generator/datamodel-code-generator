@@ -113,7 +113,7 @@ An `anyOf` or `oneOf` branch that is a `const`, an `enum`, a nested `allOf`, `an
 
 - **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`
 - **Pull requests and issues:** [#6789](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6789), [#6790](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6790)
-- **Source:** the release notes
+- **Source:** generated output of both releases
 
 ```diff
 -text: constr(pattern=r'^it\'s$') | None = None
