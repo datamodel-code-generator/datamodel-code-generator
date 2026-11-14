@@ -122,6 +122,8 @@ FETCH_TRIES = 3
 DEFAULT_RECORDS = compare_release._default_cache_dir().parent / "behaviour-records"  # ruff: ignore[private-member-access]
 ERA_PYTHONS = ("3.14", "3.13", "3.12", "3.11")
 ERA_EXTRAS = "graphql,http,protobuf"
+# Installed beside every release: the formatters it may call and what the signature step and output imports need.
+ERA_PACKAGES = ("black", "isort", "msgspec", "email-validator")
 SNIPPET_LINES = 40
 OPT_IN_TRIES = 5
 RESTORE_GROUPS = (
@@ -148,7 +150,10 @@ print(json.dumps(found))
 """
 OPTION_INVENTORY = """
 import json
-from datamodel_code_generator.arguments import arg_parser
+try:
+    from datamodel_code_generator.arguments import arg_parser
+except ImportError:  # releases before 0.21 define the parser in __main__
+    from datamodel_code_generator.__main__ import arg_parser
 options = {o: sorted(map(str, a.choices)) if a.choices else None for a in arg_parser._actions for o in a.option_strings}
 print(json.dumps(options))
 """
@@ -1024,12 +1029,13 @@ def _pypi_upload_date(version: str) -> str:
 def era_python(version: str, cache_dir: Path) -> Path:
     """Install a release with the packages of its release day (`uv --exclude-newer`) and return its interpreter.
 
-    The newest Python of ERA_PYTHONS the release imports on is used.
+    The newest Python of ERA_PYTHONS the release imports on is used. The signature step imports msgspec, which no
+    release requires, so it is installed like black and isort, as is email-validator (`format: email` output).
     """
     import datetime as dt  # ruff: ignore[import-outside-top-level]
     import fcntl  # ruff: ignore[import-outside-top-level] - POSIX only, like compare_release
 
-    root = cache_dir / "era" / f"{version}-{ERA_EXTRAS.replace(',', '-')}"
+    root = cache_dir / "era" / f"{version}-{ERA_EXTRAS.replace(',', '-')}-{'-'.join(ERA_PACKAGES)}"
     root.parent.mkdir(parents=True, exist_ok=True)
     with (root.parent / f"{root.name}.lock").open("w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
@@ -1051,8 +1057,7 @@ def era_python(version: str, cache_dir: Path) -> Path:
                     "--exclude-newer",
                     newer,
                     f"datamodel-code-generator[{ERA_EXTRAS}]=={version}",
-                    "black",
-                    "isort",
+                    *ERA_PACKAGES,
                 ],
                 [str(root / "bin" / "python"), "-c", "import datamodel_code_generator.__main__"],
             ]
