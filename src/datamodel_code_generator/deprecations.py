@@ -334,7 +334,7 @@ _CLI_MIGRATION_WARNINGS: ContextVar[set[DeprecationId] | None] = ContextVar("cli
 
 @contextmanager
 def cli_migration_warning_scope() -> Generator[None]:
-    """Deduplicate migration notices within one CLI invocation, including batch/watch."""
+    """Deduplicate migration notices within one CLI invocation, including batch/watch, and keep them at the package."""
     with context_values({_CLI_MIGRATION_WARNINGS: set()}):
         yield
 
@@ -401,19 +401,21 @@ def warn_deprecated(
     """Emit a warning from the central registry.
 
     The warning names the code that called the package (``_stacklevel_at_caller``), or the frame ``stacklevel`` gives
-    as ``warnings.warn`` counts it when a caller passes one.
+    as ``warnings.warn`` counts it when a caller passes one. In a CLI invocation (``cli_migration_warning_scope``) it
+    names this function in the package: the console script and the ``__main__.py`` of ``python -m`` both run as
+    ``__main__``, and Python's default filters show a ``DeprecationWarning`` raised from ``__main__`` that they hide
+    when it is raised from the package.
     """
     if (deprecation := get_deprecation(deprecation_id)).status == "scheduled":
         return
-    seen = _CLI_MIGRATION_WARNINGS.get() if deprecation_id in _MIGRATION_WARNINGS else None
+    cli_seen = _CLI_MIGRATION_WARNINGS.get()
+    seen = cli_seen if deprecation_id in _MIGRATION_WARNINGS else None
     if seen is not None and deprecation_id in seen:
         return
     message = deprecation.message if details is None else f"{deprecation.message} {details}"
-    warnings.warn(
-        message,
-        _WARNING_CATEGORIES[deprecation.warning_category],
-        stacklevel=_stacklevel_at_caller() if stacklevel is None else stacklevel,
-    )
+    if stacklevel is None:
+        stacklevel = 1 if cli_seen is not None else _stacklevel_at_caller()
+    warnings.warn(message, _WARNING_CATEGORIES[deprecation.warning_category], stacklevel=stacklevel)
     if seen is not None:
         seen.add(deprecation_id)
 
@@ -423,8 +425,8 @@ def _stacklevel_at_caller() -> int:
 
     That caller is the frame that called the outermost frame of a file of the package: the code that called the
     library however deep in it, past the third-party code the package calls back through (a Pydantic validator, a YAML
-    constructor), so a ``module=`` filter matches the caller's module. In the CLI it is the console script, or the
-    ``runpy`` frame of ``python -m``. Frames are counted as ``warn()`` counts them, past the import machinery's own.
+    constructor), so a ``module=`` filter matches the caller's module. A CLI invocation does not use it (see
+    ``warn_deprecated``). Frames are counted as ``warn()`` counts them, past the import machinery's own.
     """
     frame: FrameType | None = sys._getframe(1)  # noqa: SLF001
     level = outermost = 1

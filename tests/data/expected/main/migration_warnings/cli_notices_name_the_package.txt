@@ -1,0 +1,3 @@
+notice of the CLI run names: deprecations.py
+DeprecationWarning lines, console script: 0
+DeprecationWarning lines, python -m: 0
