@@ -366,6 +366,7 @@ class ParserConfig(BaseModel):
     use_typed_map_values_beside_other_types: bool = False
     use_single_dict_for_object_maps: bool = False
     read_unevaluated_properties: bool = False
+    read_kubernetes_extensions: bool = False
     use_single_value_enum_as_const: bool = False
     read_const_beside_enum: bool = False
     filter_literal_values: bool = False

@@ -119,6 +119,7 @@ OPT_IN_OPTIONS_20261113: tuple[str, ...] = (
     "--open-enums",
     "extensible",
     "--infer-union-discriminators",
+    "--read-kubernetes-extensions",
 )
 """The options the 20261113 presets set beyond the 20261112 presets."""
 
@@ -481,6 +482,12 @@ CASES_20261113: tuple[pytest.ParameterSet, ...] = (
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="infer-union-discriminators",
     ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "kubernetes_crd_schema.yaml",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-kubernetes-extensions",
+    ),
 )
 """The inputs each opt-in option of the 20261113 presets changes."""
 
@@ -765,6 +772,13 @@ def test_preset_sets_opt_in_option(
             "--infer-union-discriminators",
             "--no-infer-union-discriminators",
             id="infer-union-discriminators",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "kubernetes_crd_schema.yaml",
+            [],
+            "--read-kubernetes-extensions",
+            "--no-read-kubernetes-extensions",
+            id="read-kubernetes-extensions",
         ),
     ],
 )

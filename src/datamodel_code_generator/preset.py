@@ -1301,6 +1301,15 @@ _STANDARD_20261113_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "parse the same, an invalid one reports the errors of the branch its tag names."
         ),
     ),
+    PresetOptionGroup(
+        title="Kubernetes extensions read",
+        config=PresetConfig(read_kubernetes_extensions=True),
+        description=(
+            "Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside "
+            "properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a "
+            "resource takes, so the models accept and keep what Kubernetes does."
+        ),
+    ),
 )
 """The 20261112 groups and the opt-in options added after them."""
 

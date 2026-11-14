@@ -55,6 +55,7 @@
 - `--no-keep-enum-member-values`
 - `--no-read-allof-parents-in-mro-order`
 - `--no-read-const-beside-enum`
+- `--no-read-kubernetes-extensions`
 - `--no-read-unevaluated-properties`
 - `--no-type-overrides-replace-whole-type`
 - `--no-use-annotated`
@@ -84,6 +85,7 @@
 - `--output-datetime-class`: Specify datetime class type for date-time schema fields.
 - `--read-allof-parents-in-mro-order`: Read the allOf parents of every inherited schema in the order of the clas...
 - `--read-const-beside-enum`: Read a `const` beside an `enum` as JSON Schema does.
+- `--read-kubernetes-extensions`: Read the Kubernetes schema extensions as the keywords they stand for.
 - `--read-unevaluated-properties`: Read a schema-valued `unevaluatedProperties` as `additionalProperties`.
 - `--strict-types`: Enable strict type validation for specified Python types.
 - `--type-mappings`: Override default type mappings for schema formats.
