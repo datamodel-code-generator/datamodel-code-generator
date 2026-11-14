@@ -54,7 +54,10 @@ affects = { output_model_types = ["pydantic_v2.BaseModel", "pydantic_v2.dataclas
 before = "text: constr(pattern=r'^it\\'s$') | None = None"
 after = "text: constr(pattern=r\"^it's$\") | None = None"
 refs = ["#6789", "#6790"]
-source = "release-note"
+source = "run"
+[change.verify]
+schema = '''{"$schema": "http://json-schema.org/draft-07/schema#", "title": "Note", "type": "object", "properties": {"text": {"type": "string", "pattern": "^it's$"}}}'''
+args = ["--input-file-type", "jsonschema", "--output-model-type", "pydantic_v2.BaseModel", "--target-python-version", "3.11"]
 
 [[change]]
 id = "notices-name-calling-code"

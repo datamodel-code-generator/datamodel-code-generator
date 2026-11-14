@@ -727,7 +727,7 @@
     "#6790"
    ],
    "release": "0.96.0",
-   "source": "release-note",
+   "source": "run",
    "summary": "`constr(pattern=r'^it\\'s$')` is written `constr(pattern=r\"^it's$\")`: Python's `re` matches the same values, and `model_json_schema()` publishes the schema's pattern unchanged. Snapshot tests and committed generated code show the new text after regenerating.",
    "title": "Patterns holding a quote are written without an escaped quote"
   },
