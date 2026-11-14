@@ -13,8 +13,8 @@ Each option is listed with the first release that has it. The examples use
 |---|---|---|
 | [Renames numbered classes (`Payload1`, `Payload2`) to stable names](#numbered-class-names) | `--infer-union-variant-names`, `--use-tag-as-union-variant-name`, `--model-name-map` | 0.65.0, 0.86.0, 0.65.0 |
 | [Injects a `title` into each union branch of the schema to name it](#numbered-class-names) | `--use-tag-as-union-variant-name` | 0.86.0 |
-| [Switches `extra='forbid'` / `'ignore'` / `'allow'`](#extra-fields) | `--extra-fields` | 0.31.0 |
-| [Removes `additionalProperties: false` from the schema](#extra-fields) | `--extra-fields ignore` | 0.31.0 |
+| [Switches `extra='forbid'` / `'ignore'` / `'allow'`](#extra-fields) | `--extra-fields` | 0.31.0 (Pydantic v2 output: 0.31.1) |
+| [Removes `additionalProperties: false` from the schema](#extra-fields) | `--extra-fields ignore` | 0.31.0 (Pydantic v2 output: 0.31.1) |
 | [Replaces `AnyUrl`, `Base64Str` or `AwareDatetime` with `str` or `datetime`](#looser-types-for-formats) | `--type-mappings`, `--output-datetime-class` | 0.37.0, 0.26.2 |
 | [Deletes `from __future__ import annotations`](#future-imports) | `--disable-future-imports` | 0.34.0 |
 | [Turns `class X(Enum)` into `class X(str, Enum)` or `StrEnum`](#enum-base-classes) | `--use-subclass-enum`, `--use-specialized-enum` | 0.13.0 or older, 0.36.0 |
@@ -226,7 +226,7 @@ See [`--skip-root-model`](cli-reference/model-customization.md#skip-root-model).
 puts your lines above it instead. `--disable-timestamp` leaves the timestamp out of the generated header:
 
 ```bash
-datamodel-codegen --input color.json --custom-file-header '# ruff: noqa' --custom-file-header-mode prepend
+datamodel-codegen --input color.json --custom-file-header '# ruff: noqa' --custom-file-header-mode prepend --disable-timestamp
 ```
 
 ```python
