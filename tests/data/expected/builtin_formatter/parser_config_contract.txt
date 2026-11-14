@@ -150,6 +150,7 @@ guarded type_mappings
 guarded type_overrides
 reviewed-safe type_overrides_replace_whole_type
 reviewed-safe untrusted_input
+reviewed-safe untyped_value_type
 reviewed-safe use_annotated
 reviewed-safe use_attribute_docstrings
 reviewed-safe use_bounds_for_float_const
