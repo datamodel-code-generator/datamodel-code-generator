@@ -1857,6 +1857,15 @@ def untyped_value_data_type(cls: type[DataTypeT], untyped_value: UntypedValue | 
     return data_type
 
 
+def written_type_name(data_type: DataType) -> str | None:
+    """Return the name of the type a type without an import writes: its type, or the --untyped-value-type name.
+
+    An untyped value keeps the type ``Any`` for every decision and writes the name the option gives
+    (``untyped_value_data_type``), such as ``object``.
+    """
+    return data_type.__dict__.get(_UNTYPED_VALUE_DATA_TYPE_KEY) or data_type.type
+
+
 @cache
 def _create_context_data_type(  # noqa: PLR0913, PLR0917
     model_name: str,

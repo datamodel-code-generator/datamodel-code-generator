@@ -77,18 +77,18 @@ def _parsed(model: Any, document: object) -> str:
     options=["--untyped-value-type"],
     option_description="""Write each value the schema leaves untyped as one type instead of `Any`.
 
-A value the schema leaves untyped, `{}`, `true`, a schema without `type`, the values of an object without properties
-and the items of an array without items, is written as `Any`, and under `--use-object-type` the values and items of
-containers as `object`, as in 0.96.0. With `--untyped-value-type pydantic.JsonValue` each of them is written as
-Pydantic's `JsonValue` (Pydantic 2.5 or later), in every position: a field, a union member, a dict value or key's
-value, a list item, the root of a root model, the value of a type alias and `__pydantic_extra__`. The structure is as
-without the option, and the models parse a JSON document to the same values; Python values that are no JSON values,
-such as a tuple, a set or a `datetime`, are rejected. The value may also be `object`, `Any`, or the dotted import path
-of a type of your own, which the models import (for example a recursive alias for `typing.TypedDict` output). The
-option takes precedence over `--use-object-type`; `--type-overrides`, `x-python-type` and `x-python-import` keep their
-types, and `msgspec.Struct` output keeps `Any`, which msgspec decodes into JSON values. A definition named like the
-imported type is renamed by the rule for names an import takes (`JsonValue` becomes `JsonValueModel`), unless
-`--collapse-root-models` writes the type at its references.""",
+A value the schema leaves untyped, `{}`, `true`, a schema whose keywords give it no type (`{"description": "..."}`, not
+an `enum`), the values of an object without properties and the items of an array without items, is written as `Any`, and
+under `--use-object-type` the values and items of containers as `object`, as in 0.96.0. With `--untyped-value-type
+pydantic.JsonValue` each of them is written as Pydantic's `JsonValue` (Pydantic 2.5 or later), in every position: a
+field, a union member, a dict value or key's value, a list item, the root of a root model, the value of a type alias and
+`__pydantic_extra__`. The structure is as without the option, and the models parse a JSON document to the same values;
+Python values that are no JSON values, such as a tuple, a set or a `datetime`, are rejected. The value may also be
+`object`, `Any`, or the dotted import path of a type of your own, which the models import (for example a recursive alias
+for `typing.TypedDict` output). The option takes precedence over `--use-object-type`; `--type-overrides`,
+`x-python-type` and `x-python-import` keep their types, and `msgspec.Struct` output keeps `Any`, which msgspec decodes
+into JSON values. A definition named like the imported type is renamed by the rule for names an import takes
+(`JsonValue` becomes `JsonValueModel`), unless `--collapse-root-models` writes the type at its references.""",
     input_schema="jsonschema/event_log_untyped/event_log_untyped.json",
     cli_args=["--untyped-value-type", "pydantic.JsonValue"],
     golden_output="main/untyped_value_type/untyped_value_type[json-value-pydantic_v2.BaseModel].py",
@@ -211,6 +211,79 @@ def test_untyped_value_type_openapi(output_file: Path, option_set: str) -> None:
         input_file_type="openapi",
         extra_args=[*COMMON_ARGS, *OPTION_SETS[option_set]],
         force_exec_validation=True,
+    )
+
+
+UNTYPED_API = """openapi: 3.0.3
+info: {title: Items, version: '1'}
+servers: [{url: 'https://api.example.com'}]
+paths:
+  /items/{id}:
+    post:
+      operationId: putItem
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+        - {name: filter, in: query, schema: {}}
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Item'}
+      responses:
+        '200':
+          description: The stored value
+          content:
+            application/json:
+              schema: {}
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        payload: {}
+        history: {type: array, items: {}}
+        labels: {type: object, additionalProperties: {}}
+"""
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        pytest.param(
+            [
+                *("--generate-client", "httpx2", "--client-output", "client"),
+                *("--client-package", "client", "--client-model-package", "models"),
+            ],
+            id="client",
+        ),
+        pytest.param(
+            [
+                *("--generate-server", "fastapi", "--server-output", "server"),
+                *("--server-package", "server", "--server-model-package", "models"),
+            ],
+            id="server",
+        ),
+    ],
+)
+def test_untyped_value_type_object_in_targets(
+    target: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Generate a client or a server whose operations carry values written as ``object``.
+
+    The targets read the type the models write for an untyped field, query parameter and response, ``object``, which
+    needs no import.
+    """
+    monkeypatch.chdir(tmp_path)
+    document = tmp_path / "items.yaml"
+    document.write_text(UNTYPED_API, encoding="utf-8")
+    run_main_and_assert(
+        input_path=document,
+        output_path=tmp_path / "models.py",
+        input_file_type="openapi",
+        extra_args=[
+            *COMMON_ARGS,
+            *("--openapi-scopes", "schemas", "api", "--untyped-value-type", "object"),
+            *target,
+        ],
     )
 
 

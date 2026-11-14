@@ -880,7 +880,7 @@ The 20261113 presets keep the 20261112 options and add:
 - Extensible enums accept new values (`--open-enums extensible`): Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] | str, instead of rejecting them.
 - Discriminators inferred from tags (`--infer-union-discriminators`): Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names.
 - Kubernetes extensions read (`--read-kubernetes-extensions`): Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does.
-- Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values.
+- Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.
 
 ## Override Preset Options
 
@@ -16043,7 +16043,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
-| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values. |
+| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected. |
 
 ### `practical-py311-20261113`
 
@@ -16262,7 +16262,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
-| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values. |
+| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected. |
 
 ### `practical-py312-20261113`
 
@@ -16481,7 +16481,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
-| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values. |
+| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected. |
 
 ### `practical-py313-20261113`
 
@@ -16700,7 +16700,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
-| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values. |
+| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected. |
 
 ### `practical-py314-20261113`
 
@@ -16919,7 +16919,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
-| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values. |
+| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected. |
 
 ### `practical-py315-20261113`
 
@@ -17138,7 +17138,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
-| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values. |
+| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected. |
 
 ---
 
@@ -20632,7 +20632,7 @@ generated models accept and keep the values Kubernetes does.
 ## 🚀 Quick Start
 
 ```bash
-# A cluster's document of one group version (built-in resources and served CRDs)
+# A cluster's document of one group version (here apps/v1; a CRD is served under its own group version)
 kubectl get --raw /openapi/v3/apis/apps/v1 > apps_v1.json
 datamodel-codegen --input apps_v1.json --input-file-type openapi --output models --read-kubernetes-extensions
 
@@ -20647,8 +20647,10 @@ The `standard-*-20261113` and later presets set `--read-kubernetes-extensions`.
 ## 📥 Two Ways to Get the Schemas
 
 **Cluster documents.** `kubectl get --raw /openapi/v3/apis/<group>/<version>` (or `/openapi/v3/api/v1` for the core
-group) returns a complete OpenAPI 3.0 document: the resources with their `x-kubernetes-group-version-kind`, the
-`ObjectMeta` they reference and every served CRD as the API server publishes it. Read it with
+group) returns a complete OpenAPI 3.0 document of the resources of that group version, with their
+`x-kubernetes-group-version-kind` and the `ObjectMeta` they reference. A served CRD is in the document of its own
+group version, such as `/openapi/v3/apis/example.com/v1`, as the API server publishes it; `kubectl get --raw
+/openapi/v3` lists the group versions. Read it with
 `--input-file-type openapi`; the dotted schema names (`io.k8s.api.apps.v1.Deployment`) become modules
 (`io/k8s/api/apps/v1.py`). Each document repeats the shared types, so to generate several group versions into one
 package, merge their `components.schemas` first:
@@ -20925,14 +20927,17 @@ class Widget(BaseModel):
 
 ## 📤 Sending Resources
 
-`apiVersion` and `kind` take their values by default, so a model built without them is complete. Dump it with
-`model_dump(exclude_none=True)` rather than `exclude_unset=True`: a default is not "set", and `exclude_unset` would
-leave `apiVersion` and `kind` out of the request.
+`apiVersion` and `kind` take their values by default, so a model built without them is complete; give the resource a
+`metadata.name` (or `generateName`), which Kubernetes needs to create it. Dump it with
+`model_dump(mode="json", exclude_none=True)` rather than `exclude_unset=True`: a default is not "set", and
+`exclude_unset` would leave `apiVersion` and `kind` out of the request. `mode="json"` writes enum members such as
+`UpdatePolicy.Recreate` as their values, so the result can be sent as JSON.
 
 ```python
-widget = Widget(spec=Spec(replicas=2))
-widget.model_dump(by_alias=True, exclude_none=True)
-# {'apiVersion': 'example.com/v1', 'kind': 'Widget', 'spec': {'replicas': 2}}
+widget = Widget(metadata={"name": "web"}, spec=Spec(replicas=2, updatePolicy="Recreate"))
+widget.model_dump(mode="json", by_alias=True, exclude_none=True)
+# {'apiVersion': 'example.com/v1', 'kind': 'Widget', 'metadata': {'name': 'web'},
+#  'spec': {'replicas': 2, 'updatePolicy': 'Recreate'}}
 ```
 
 ## 🧰 Options That Go Well With It
@@ -23267,8 +23272,9 @@ out `maxLength`; `date-time` is `AwareDatetime`, which rejects a date-time witho
 
 With `--read-format-as-annotation` (`read-format-as-annotation = true`, `read_format_as_annotation=True`) a string,
 integer or number schema takes the type its `type` keyword gives, `str`, `int` or `float`, with its own `minLength`,
-`maxLength`, `pattern` and bounds, so the models accept every value the schema accepts and dump it as written. An
-unknown format gives no warning.
+`maxLength`, `pattern` and bounds, so the models accept every value the schema accepts and dump a string or an
+integer as written. A number is the `float` it parses to, as without a format, which rounds a value a double cannot
+hold (`9007199254740993` dumps as `9007199254740992.0`). An unknown format gives no warning.
 
 ```json
 {
@@ -23315,9 +23321,10 @@ types of their formats: there the format carries the type of the source, such as
 
 ## `--untyped-value-type`
 
-A value the schema leaves untyped is any JSON value: `{}`, `true`, a schema without `type`, the values of an object
-without properties and the items of an array without items. By default it is written as `Any`, and under
-`--use-object-type` the values and items of such containers as `object`, as in 0.96.0.
+A value the schema leaves untyped is any JSON value: `{}`, `true`, a schema whose keywords give it no type (such as
+`{"description": "..."}`; an `enum` or a `const` gives one), the values of an object without properties and the items
+of an array without items. By default it is written as `Any`, and under `--use-object-type` the values and items of
+such containers as `object`, as in 0.96.0.
 
 `--untyped-value-type <type>` (`untyped-value-type = "pydantic.JsonValue"`, `untyped_value_type="pydantic.JsonValue"`)
 writes each of them as the given type, with the structure as without the option:
@@ -62812,7 +62819,8 @@ rejects a date-time without an offset), `password` is `SecretStr` (which dumps `
 (which dumps `https://example.com/` for `https://example.com`), and `uuid`, `date`, `ipv4` and `decimal` are parsed
 into Python objects. With it a string, integer or number schema takes the type its `type` keyword gives, `str`, `int`
 or `float`, with its own `minLength`, `maxLength`, `pattern` and bounds, so the models accept every value the schema
-accepts and dump it as written, and an unknown format gives no warning. Two formats still select a type:
+accepts and dump a string or an integer as written (a number as the `float` it parses to, as without a format), and an
+unknown format gives no warning. Two formats still select a type:
 `format: binary`, which stays `bytes` (raw octets, not a JSON string), and a format that a `--type-mappings` entry
 names for a type the schema declares (`--type-mappings date-time=date-time` keeps `date-time` typed, and then
 `--output-datetime-class` applies). The format is not written into the models. The option reads JSON Schema, OpenAPI,
@@ -63873,18 +63881,18 @@ new type does not count is left out with a warning.
 
 Write each value the schema leaves untyped as one type instead of `Any`.
 
-A value the schema leaves untyped, `{}`, `true`, a schema without `type`, the values of an object without properties
-and the items of an array without items, is written as `Any`, and under `--use-object-type` the values and items of
-containers as `object`, as in 0.96.0. With `--untyped-value-type pydantic.JsonValue` each of them is written as
-Pydantic's `JsonValue` (Pydantic 2.5 or later), in every position: a field, a union member, a dict value or key's
-value, a list item, the root of a root model, the value of a type alias and `__pydantic_extra__`. The structure is as
-without the option, and the models parse a JSON document to the same values; Python values that are no JSON values,
-such as a tuple, a set or a `datetime`, are rejected. The value may also be `object`, `Any`, or the dotted import path
-of a type of your own, which the models import (for example a recursive alias for `typing.TypedDict` output). The
-option takes precedence over `--use-object-type`; `--type-overrides`, `x-python-type` and `x-python-import` keep their
-types, and `msgspec.Struct` output keeps `Any`, which msgspec decodes into JSON values. A definition named like the
-imported type is renamed by the rule for names an import takes (`JsonValue` becomes `JsonValueModel`), unless
-`--collapse-root-models` writes the type at its references.
+A value the schema leaves untyped, `{}`, `true`, a schema whose keywords give it no type (`{"description": "..."}`, not
+an `enum`), the values of an object without properties and the items of an array without items, is written as `Any`, and
+under `--use-object-type` the values and items of containers as `object`, as in 0.96.0. With `--untyped-value-type
+pydantic.JsonValue` each of them is written as Pydantic's `JsonValue` (Pydantic 2.5 or later), in every position: a
+field, a union member, a dict value or key's value, a list item, the root of a root model, the value of a type alias and
+`__pydantic_extra__`. The structure is as without the option, and the models parse a JSON document to the same values;
+Python values that are no JSON values, such as a tuple, a set or a `datetime`, are rejected. The value may also be
+`object`, `Any`, or the dotted import path of a type of your own, which the models import (for example a recursive alias
+for `typing.TypedDict` output). The option takes precedence over `--use-object-type`; `--type-overrides`,
+`x-python-type` and `x-python-import` keep their types, and `msgspec.Struct` output keeps `Any`, which msgspec decodes
+into JSON values. A definition named like the imported type is renamed by the rule for names an import takes
+(`JsonValue` becomes `JsonValueModel`), unless `--collapse-root-models` writes the type at its references.
 
 **See also:** [Type Mappings and Custom Types](../type-mappings.md)
 
@@ -90110,161 +90118,163 @@ Source: https://datamodel-code-generator.koxudaxi.dev/migration/
 
 Pick the release you use now. Its page lists, for that release only, the options that keep your current output in 0.96.0, the changes you must make and the changes no option keeps. Coding agents can read the same steps as Markdown: `https://datamodel-code-generator.koxudaxi.dev/migration/from/<release>.md`, for example `https://datamodel-code-generator.koxudaxi.dev/migration/from/0.20.0.md`.
 
+Every change is listed for upgrades from 0.95.0 and later. The lists of older releases, marked incomplete, lack changes not written down yet: also read the breaking changes of the releases after yours through 0.95.0 in the [changelog](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/main/CHANGELOG.md).
+
 <div class="dcg-migration" data-migration-select hidden>
 <label for="dcg-migration-from">I use datamodel-code-generator</label>
 <select id="dcg-migration-from">
 <option value="">choose a release</option>
 <option value="from-0.95.0/">0.95.0</option>
-<option value="from-0.93.0/">0.94.0</option>
-<option value="from-0.93.0/">0.93.0</option>
-<option value="from-0.84.0/">0.92.0</option>
-<option value="from-0.84.0/">0.91.0</option>
-<option value="from-0.84.0/">0.90.0</option>
-<option value="from-0.84.0/">0.89.0</option>
-<option value="from-0.84.0/">0.88.0</option>
-<option value="from-0.84.0/">0.87.0</option>
-<option value="from-0.84.0/">0.86.0</option>
-<option value="from-0.84.0/">0.85.0</option>
-<option value="from-0.84.0/">0.84.0</option>
-<option value="from-0.78.0/">0.83.0</option>
-<option value="from-0.78.0/">0.82.0</option>
-<option value="from-0.78.0/">0.81.0</option>
-<option value="from-0.78.0/">0.80.0</option>
-<option value="from-0.78.0/">0.79.0</option>
-<option value="from-0.78.0/">0.78.0</option>
-<option value="from-0.65.0/">0.77.0</option>
-<option value="from-0.65.0/">0.76.2</option>
-<option value="from-0.65.0/">0.76.1</option>
-<option value="from-0.65.0/">0.76.0</option>
-<option value="from-0.65.0/">0.75.1</option>
-<option value="from-0.65.0/">0.75.0</option>
-<option value="from-0.65.0/">0.74.0</option>
-<option value="from-0.65.0/">0.73.0</option>
-<option value="from-0.65.0/">0.72.4</option>
-<option value="from-0.65.0/">0.72.3</option>
-<option value="from-0.65.0/">0.72.2</option>
-<option value="from-0.65.0/">0.72.1</option>
-<option value="from-0.65.0/">0.72.0</option>
-<option value="from-0.65.0/">0.71.0</option>
-<option value="from-0.65.0/">0.70.0</option>
-<option value="from-0.65.0/">0.69.0</option>
-<option value="from-0.65.0/">0.68.1</option>
-<option value="from-0.65.0/">0.68.0</option>
-<option value="from-0.65.0/">0.67.0</option>
-<option value="from-0.65.0/">0.66.3</option>
-<option value="from-0.65.0/">0.66.2</option>
-<option value="from-0.65.0/">0.66.1</option>
-<option value="from-0.65.0/">0.66.0</option>
-<option value="from-0.65.0/">0.65.1</option>
-<option value="from-0.65.0/">0.65.0</option>
-<option value="from-0.56.0/">0.64.1</option>
-<option value="from-0.56.0/">0.64.0</option>
-<option value="from-0.56.0/">0.63.0</option>
-<option value="from-0.56.0/">0.62.0</option>
-<option value="from-0.56.0/">0.61.0</option>
-<option value="from-0.56.0/">0.60.2</option>
-<option value="from-0.56.0/">0.60.1</option>
-<option value="from-0.56.0/">0.60.0</option>
-<option value="from-0.56.0/">0.59.1</option>
-<option value="from-0.56.0/">0.59.0</option>
-<option value="from-0.56.0/">0.58.0</option>
-<option value="from-0.56.0/">0.57.0</option>
-<option value="from-0.56.0/">0.56.1</option>
-<option value="from-0.56.0/">0.56.0</option>
-<option value="from-0.53.0/">0.55.0</option>
-<option value="from-0.53.0/">0.54.1</option>
-<option value="from-0.53.0/">0.54.0</option>
-<option value="from-0.53.0/">0.53.0</option>
-<option value="from-0.52.1/">0.52.2</option>
-<option value="from-0.52.1/">0.52.1</option>
-<option value="from-0.52.0/">0.52.0</option>
-<option value="from-0.48.0/">0.51.0</option>
-<option value="from-0.48.0/">0.50.0</option>
-<option value="from-0.48.0/">0.49.0</option>
-<option value="from-0.48.0/">0.48.0</option>
-<option value="from-0.31.0/">0.47.0</option>
-<option value="from-0.31.0/">0.46.0</option>
-<option value="from-0.31.0/">0.45.0</option>
-<option value="from-0.31.0/">0.44.0</option>
-<option value="from-0.31.0/">0.43.1</option>
-<option value="from-0.31.0/">0.43.0</option>
-<option value="from-0.31.0/">0.42.2</option>
-<option value="from-0.31.0/">0.42.1</option>
-<option value="from-0.31.0/">0.42.0</option>
-<option value="from-0.31.0/">0.41.0</option>
-<option value="from-0.31.0/">0.40.0</option>
-<option value="from-0.31.0/">0.39.0</option>
-<option value="from-0.31.0/">0.38.0</option>
-<option value="from-0.31.0/">0.37.0</option>
-<option value="from-0.31.0/">0.36.0</option>
-<option value="from-0.31.0/">0.35.0</option>
-<option value="from-0.31.0/">0.34.0</option>
-<option value="from-0.31.0/">0.33.0</option>
-<option value="from-0.31.0/">0.32.0</option>
-<option value="from-0.31.0/">0.31.2</option>
-<option value="from-0.31.0/">0.31.1</option>
-<option value="from-0.31.0/">0.31.0</option>
-<option value="from-0.24.0/">0.30.2</option>
-<option value="from-0.24.0/">0.30.1</option>
-<option value="from-0.24.0/">0.30.0</option>
-<option value="from-0.24.0/">0.29.0</option>
-<option value="from-0.24.0/">0.28.5</option>
-<option value="from-0.24.0/">0.28.4</option>
-<option value="from-0.24.0/">0.28.3</option>
-<option value="from-0.24.0/">0.28.2</option>
-<option value="from-0.24.0/">0.28.1</option>
-<option value="from-0.24.0/">0.28.0</option>
-<option value="from-0.24.0/">0.27.3</option>
-<option value="from-0.24.0/">0.27.2</option>
-<option value="from-0.24.0/">0.27.1</option>
-<option value="from-0.24.0/">0.27.0</option>
-<option value="from-0.24.0/">0.26.5</option>
-<option value="from-0.24.0/">0.26.4</option>
-<option value="from-0.24.0/">0.26.3</option>
-<option value="from-0.24.0/">0.26.2</option>
-<option value="from-0.24.0/">0.26.1</option>
-<option value="from-0.24.0/">0.26.0</option>
-<option value="from-0.24.0/">0.25.9</option>
-<option value="from-0.24.0/">0.25.8</option>
-<option value="from-0.24.0/">0.25.7</option>
-<option value="from-0.24.0/">0.25.6</option>
-<option value="from-0.24.0/">0.25.5</option>
-<option value="from-0.24.0/">0.25.4</option>
-<option value="from-0.24.0/">0.25.3</option>
-<option value="from-0.24.0/">0.25.2</option>
-<option value="from-0.24.0/">0.25.1</option>
-<option value="from-0.24.0/">0.25.0</option>
-<option value="from-0.24.0/">0.24.2</option>
-<option value="from-0.24.0/">0.24.1</option>
-<option value="from-0.24.0/">0.24.0</option>
-<option value="from-0.20.0/">0.23.0</option>
-<option value="from-0.20.0/">0.22.1</option>
-<option value="from-0.20.0/">0.22.0</option>
-<option value="from-0.20.0/">0.21.5</option>
-<option value="from-0.20.0/">0.21.4</option>
-<option value="from-0.20.0/">0.21.3</option>
-<option value="from-0.20.0/">0.21.2</option>
-<option value="from-0.20.0/">0.21.1</option>
-<option value="from-0.20.0/">0.21.0</option>
-<option value="from-0.20.0/">0.20.0</option>
+<option value="from-0.93.0/">0.94.0 (incomplete list)</option>
+<option value="from-0.93.0/">0.93.0 (incomplete list)</option>
+<option value="from-0.84.0/">0.92.0 (incomplete list)</option>
+<option value="from-0.84.0/">0.91.0 (incomplete list)</option>
+<option value="from-0.84.0/">0.90.0 (incomplete list)</option>
+<option value="from-0.84.0/">0.89.0 (incomplete list)</option>
+<option value="from-0.84.0/">0.88.0 (incomplete list)</option>
+<option value="from-0.84.0/">0.87.0 (incomplete list)</option>
+<option value="from-0.84.0/">0.86.0 (incomplete list)</option>
+<option value="from-0.84.0/">0.85.0 (incomplete list)</option>
+<option value="from-0.84.0/">0.84.0 (incomplete list)</option>
+<option value="from-0.78.0/">0.83.0 (incomplete list)</option>
+<option value="from-0.78.0/">0.82.0 (incomplete list)</option>
+<option value="from-0.78.0/">0.81.0 (incomplete list)</option>
+<option value="from-0.78.0/">0.80.0 (incomplete list)</option>
+<option value="from-0.78.0/">0.79.0 (incomplete list)</option>
+<option value="from-0.78.0/">0.78.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.77.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.76.2 (incomplete list)</option>
+<option value="from-0.65.0/">0.76.1 (incomplete list)</option>
+<option value="from-0.65.0/">0.76.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.75.1 (incomplete list)</option>
+<option value="from-0.65.0/">0.75.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.74.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.73.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.72.4 (incomplete list)</option>
+<option value="from-0.65.0/">0.72.3 (incomplete list)</option>
+<option value="from-0.65.0/">0.72.2 (incomplete list)</option>
+<option value="from-0.65.0/">0.72.1 (incomplete list)</option>
+<option value="from-0.65.0/">0.72.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.71.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.70.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.69.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.68.1 (incomplete list)</option>
+<option value="from-0.65.0/">0.68.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.67.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.66.3 (incomplete list)</option>
+<option value="from-0.65.0/">0.66.2 (incomplete list)</option>
+<option value="from-0.65.0/">0.66.1 (incomplete list)</option>
+<option value="from-0.65.0/">0.66.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.65.1 (incomplete list)</option>
+<option value="from-0.65.0/">0.65.0 (incomplete list)</option>
+<option value="from-0.56.0/">0.64.1 (incomplete list)</option>
+<option value="from-0.56.0/">0.64.0 (incomplete list)</option>
+<option value="from-0.56.0/">0.63.0 (incomplete list)</option>
+<option value="from-0.56.0/">0.62.0 (incomplete list)</option>
+<option value="from-0.56.0/">0.61.0 (incomplete list)</option>
+<option value="from-0.56.0/">0.60.2 (incomplete list)</option>
+<option value="from-0.56.0/">0.60.1 (incomplete list)</option>
+<option value="from-0.56.0/">0.60.0 (incomplete list)</option>
+<option value="from-0.56.0/">0.59.1 (incomplete list)</option>
+<option value="from-0.56.0/">0.59.0 (incomplete list)</option>
+<option value="from-0.56.0/">0.58.0 (incomplete list)</option>
+<option value="from-0.56.0/">0.57.0 (incomplete list)</option>
+<option value="from-0.56.0/">0.56.1 (incomplete list)</option>
+<option value="from-0.56.0/">0.56.0 (incomplete list)</option>
+<option value="from-0.53.0/">0.55.0 (incomplete list)</option>
+<option value="from-0.53.0/">0.54.1 (incomplete list)</option>
+<option value="from-0.53.0/">0.54.0 (incomplete list)</option>
+<option value="from-0.53.0/">0.53.0 (incomplete list)</option>
+<option value="from-0.52.1/">0.52.2 (incomplete list)</option>
+<option value="from-0.52.1/">0.52.1 (incomplete list)</option>
+<option value="from-0.52.0/">0.52.0 (incomplete list)</option>
+<option value="from-0.48.0/">0.51.0 (incomplete list)</option>
+<option value="from-0.48.0/">0.50.0 (incomplete list)</option>
+<option value="from-0.48.0/">0.49.0 (incomplete list)</option>
+<option value="from-0.48.0/">0.48.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.47.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.46.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.45.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.44.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.43.1 (incomplete list)</option>
+<option value="from-0.31.0/">0.43.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.42.2 (incomplete list)</option>
+<option value="from-0.31.0/">0.42.1 (incomplete list)</option>
+<option value="from-0.31.0/">0.42.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.41.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.40.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.39.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.38.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.37.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.36.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.35.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.34.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.33.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.32.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.31.2 (incomplete list)</option>
+<option value="from-0.31.0/">0.31.1 (incomplete list)</option>
+<option value="from-0.31.0/">0.31.0 (incomplete list)</option>
+<option value="from-0.24.0/">0.30.2 (incomplete list)</option>
+<option value="from-0.24.0/">0.30.1 (incomplete list)</option>
+<option value="from-0.24.0/">0.30.0 (incomplete list)</option>
+<option value="from-0.24.0/">0.29.0 (incomplete list)</option>
+<option value="from-0.24.0/">0.28.5 (incomplete list)</option>
+<option value="from-0.24.0/">0.28.4 (incomplete list)</option>
+<option value="from-0.24.0/">0.28.3 (incomplete list)</option>
+<option value="from-0.24.0/">0.28.2 (incomplete list)</option>
+<option value="from-0.24.0/">0.28.1 (incomplete list)</option>
+<option value="from-0.24.0/">0.28.0 (incomplete list)</option>
+<option value="from-0.24.0/">0.27.3 (incomplete list)</option>
+<option value="from-0.24.0/">0.27.2 (incomplete list)</option>
+<option value="from-0.24.0/">0.27.1 (incomplete list)</option>
+<option value="from-0.24.0/">0.27.0 (incomplete list)</option>
+<option value="from-0.24.0/">0.26.5 (incomplete list)</option>
+<option value="from-0.24.0/">0.26.4 (incomplete list)</option>
+<option value="from-0.24.0/">0.26.3 (incomplete list)</option>
+<option value="from-0.24.0/">0.26.2 (incomplete list)</option>
+<option value="from-0.24.0/">0.26.1 (incomplete list)</option>
+<option value="from-0.24.0/">0.26.0 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.9 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.8 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.7 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.6 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.5 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.4 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.3 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.2 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.1 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.0 (incomplete list)</option>
+<option value="from-0.24.0/">0.24.2 (incomplete list)</option>
+<option value="from-0.24.0/">0.24.1 (incomplete list)</option>
+<option value="from-0.24.0/">0.24.0 (incomplete list)</option>
+<option value="from-0.20.0/">0.23.0 (incomplete list)</option>
+<option value="from-0.20.0/">0.22.1 (incomplete list)</option>
+<option value="from-0.20.0/">0.22.0 (incomplete list)</option>
+<option value="from-0.20.0/">0.21.5 (incomplete list)</option>
+<option value="from-0.20.0/">0.21.4 (incomplete list)</option>
+<option value="from-0.20.0/">0.21.3 (incomplete list)</option>
+<option value="from-0.20.0/">0.21.2 (incomplete list)</option>
+<option value="from-0.20.0/">0.21.1 (incomplete list)</option>
+<option value="from-0.20.0/">0.21.0 (incomplete list)</option>
+<option value="from-0.20.0/">0.20.0 (incomplete list)</option>
 </select>
 </div>
 
 | Your release | Required | Kept by an option | Not kept | New warnings | Page |
 |---|---|---|---|---|---|
 | 0.95.0 | 4 | 0 | 1 | 0 | [from-0.95.0](from-0.95.0.md) |
-| 0.93.0 through 0.94.0 | 4 | 0 | 1 | 2 | [from-0.93.0](from-0.93.0.md) |
-| 0.84.0 through 0.92.0 | 5 | 0 | 1 | 2 | [from-0.84.0](from-0.84.0.md) |
-| 0.78.0 through 0.83.0 | 5 | 0 | 1 | 3 | [from-0.78.0](from-0.78.0.md) |
-| 0.65.0 through 0.77.0 | 5 | 0 | 1 | 7 | [from-0.65.0](from-0.65.0.md) |
-| 0.56.0 through 0.64.1 | 5 | 0 | 1 | 8 | [from-0.56.0](from-0.56.0.md) |
-| 0.53.0 through 0.55.0 | 5 | 0 | 1 | 9 | [from-0.53.0](from-0.53.0.md) |
-| 0.52.1 through 0.52.2 | 5 | 0 | 1 | 11 | [from-0.52.1](from-0.52.1.md) |
-| 0.52.0 | 5 | 0 | 1 | 13 | [from-0.52.0](from-0.52.0.md) |
-| 0.48.0 through 0.51.0 | 5 | 0 | 1 | 14 | [from-0.48.0](from-0.48.0.md) |
-| 0.31.0 through 0.47.0 | 5 | 0 | 1 | 16 | [from-0.31.0](from-0.31.0.md) |
-| 0.24.0 through 0.30.2 | 5 | 0 | 1 | 17 | [from-0.24.0](from-0.24.0.md) |
-| 0.20.0 through 0.23.0 | 5 | 0 | 1 | 18 | [from-0.20.0](from-0.20.0.md) |
+| 0.93.0 through 0.94.0 (incomplete list) | 4 | 0 | 1 | 2 | [from-0.93.0](from-0.93.0.md) |
+| 0.84.0 through 0.92.0 (incomplete list) | 5 | 0 | 1 | 2 | [from-0.84.0](from-0.84.0.md) |
+| 0.78.0 through 0.83.0 (incomplete list) | 5 | 0 | 1 | 3 | [from-0.78.0](from-0.78.0.md) |
+| 0.65.0 through 0.77.0 (incomplete list) | 5 | 0 | 1 | 7 | [from-0.65.0](from-0.65.0.md) |
+| 0.56.0 through 0.64.1 (incomplete list) | 5 | 0 | 1 | 8 | [from-0.56.0](from-0.56.0.md) |
+| 0.53.0 through 0.55.0 (incomplete list) | 5 | 0 | 1 | 9 | [from-0.53.0](from-0.53.0.md) |
+| 0.52.1 through 0.52.2 (incomplete list) | 5 | 0 | 1 | 11 | [from-0.52.1](from-0.52.1.md) |
+| 0.52.0 (incomplete list) | 5 | 0 | 1 | 13 | [from-0.52.0](from-0.52.0.md) |
+| 0.48.0 through 0.51.0 (incomplete list) | 5 | 0 | 1 | 14 | [from-0.48.0](from-0.48.0.md) |
+| 0.31.0 through 0.47.0 (incomplete list) | 5 | 0 | 1 | 16 | [from-0.31.0](from-0.31.0.md) |
+| 0.24.0 through 0.30.2 (incomplete list) | 5 | 0 | 1 | 17 | [from-0.24.0](from-0.24.0.md) |
+| 0.20.0 through 0.23.0 (incomplete list) | 5 | 0 | 1 | 18 | [from-0.20.0](from-0.20.0.md) |
 
 Releases before 0.20.0: start from the 0.20.0 page and read the older entries of the [changelog](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/main/CHANGELOG.md).
 
@@ -90309,7 +90319,7 @@ Accept values an enum does not list. extensible: the enums whose schema marks th
 
 ### New option `--read-format-as-annotation` (`--no-read-format-as-annotation`) (unreleased) { #option-read-format-as-annotation }
 
-Read the format of a schema as an annotation, as JSON Schema does: a string, integer or number schema takes the type its type keyword gives (str, int, float), with its own length, pattern and bound keywords, so every value the schema accepts validates and dumps as written, and an unknown format gives no warning; a format that a --type-mappings entry names for the schema's type keeps that mapping, and format: binary stays bytes. Without it each known format selects a type (EmailStr, AwareDatetime, UUID, Decimal, SecretStr, Base64Str, ...), as in 0.96.0
+Read the format of a schema as an annotation, as JSON Schema does: a string, integer or number schema takes the type its type keyword gives (str, int, float), with its own length, pattern and bound keywords, so every value the schema accepts validates, a string or integer dumps as written (a number as the float it parses to, as without a format), and an unknown format gives no warning; a format that a --type-mappings entry names for the schema's type keeps that mapping, and format: binary stays bytes. Without it each known format selects a type (EmailStr, AwareDatetime, UUID, Decimal, SecretStr, Base64Str, ...), as in 0.96.0
 
 - **Source:** the command-line options of both releases
 
@@ -90321,7 +90331,7 @@ Read the Kubernetes schema extensions as the keywords they stand for: x-kubernet
 
 ### New option `--untyped-value-type` (unreleased) { #option-untyped-value-type }
 
-Write each value the schema leaves untyped ({}, true, a schema without type, the values of an object without properties and the items of an array without items) as this type instead of Any: pydantic.JsonValue (Pydantic 2.5 or later), object, Any or the dotted import path of a type of your own, which the models import; the structure is as without the option. --type-overrides, x-python-type and x-python-import keep their types, and msgspec.Struct output keeps Any, which msgspec decodes into JSON values. Without it untyped values are Any, and object in containers under --use-object-type, as in 0.96.0
+Write each value the schema leaves untyped ({}, true, a schema whose keywords give it no type, the values of an object without properties and the items of an array without items) as this type instead of Any: pydantic.JsonValue (Pydantic 2.5 or later), object, Any or the dotted import path of a type of your own, which the models import; the structure is as without the option. --type-overrides, x-python-type and x-python-import keep their types, and msgspec.Struct output keeps Any, which msgspec decodes into JSON values. Without it untyped values are Any, and object in containers under --use-object-type, as in 0.96.0
 
 - **Source:** the command-line options of both releases
 
@@ -90339,7 +90349,7 @@ They keep the options of the 20261112 presets and add:
 - Extensible enums accept new values (`--open-enums extensible`): Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] | str, instead of rejecting them.
 - Discriminators inferred from tags (`--infer-union-discriminators`): Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names.
 - Kubernetes extensions read (`--read-kubernetes-extensions`): Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does.
-- Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values.
+- Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.
 
 - **Source:** the registry of deprecations, experimental features and dated presets
 
@@ -95360,6 +95370,10 @@ source = "release-note"
 - `supersedes` drops older entries from the path of a user who meets both; `reverts` drops a change and the entry
   that undoes it.
 - `keep.flags` must be options of the current release: the build parses them and writes their `pyproject.toml` form.
+
+`complete_from` in `docs/data/migration/releases.toml` names the oldest release whose users meet every change in the
+steps. The hub, the range pages, the per-release Markdown and the JSON mark the steps from an older release as
+incomplete and point to the changelog; move it back once the entries of the releases before it are written.
 
 Two rules are checked. An accepted default-output change in `scripts/behaviour_diff_allowlist.toml` names its entry
 in `migration`, and that entry must be unreleased. `docs/data/migration/surface.json` holds the options, option values,

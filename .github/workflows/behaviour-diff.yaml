@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/behaviour-diff.yaml'
+      - 'docs/data/migration/**'
       - 'pyproject.toml'
       - 'scripts/_behaviour_*.py'
       - 'scripts/behaviour_diff.py'
       - 'scripts/behaviour_diff_allowlist.toml'
+      - 'scripts/build_migration_docs.py'
       - 'scripts/compare_release.py'
       - 'src/**'
       - 'tests/data/**'
@@ -17,10 +19,12 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/behaviour-diff.yaml'
+      - 'docs/data/migration/**'
       - 'pyproject.toml'
       - 'scripts/_behaviour_*.py'
       - 'scripts/behaviour_diff.py'
       - 'scripts/behaviour_diff_allowlist.toml'
+      - 'scripts/build_migration_docs.py'
       - 'scripts/compare_release.py'
       - 'src/**'
       - 'tests/data/**'

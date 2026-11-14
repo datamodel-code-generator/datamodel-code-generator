@@ -304,9 +304,32 @@ def test_build_migration_docs_check() -> None:
     subprocess.run([sys.executable, str(SCRIPT), "--check"], check=True)
 
 
+COMPLETE_RELEASES = 'complete_from = "0.2.0"\n' + "".join(
+    f'\n[[release]]\nversion = "{version}"\ndate = "{date}"\n' for version, date in RELEASES
+)
+"""The releases with `complete_from`: the steps from 0.1.0 lack changes nobody wrote down."""
+OPTION_VALUE_ENTRY = """
+[[change]]
+id = "option:--output-model-type=b"
+title = "New value `b` of `--output-model-type`"
+summary = "Writes models of kind b."
+migrate = "Pass `--output-model-type b` for kind b models."
+"""
+
+
 def test_build_migration_docs_outputs(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """The pages, the per-release Markdown and the release notes come from the hand entries and the registries."""
-    _write_data(tmp_path, CHANGES, UNRELEASED)
+    """The pages, the per-release Markdown and the release notes come from the hand entries and the registries.
+
+    The steps from a release older than `complete_from` are marked incomplete with a pointer to the changelog, and a
+    hand entry extends the derived entry of an option value by its id.
+    """
+    _write_data(
+        tmp_path,
+        CHANGES | {"0.3.0": CHANGES["0.3.0"] + OPTION_VALUE_ENTRY},
+        UNRELEASED,
+        releases=COMPLETE_RELEASES,
+        derived=DERIVED + '"--output-model-type=b" = "0.3.0"\n',
+    )
     (tmp_path / "docs" / "output-changes").mkdir(parents=True)
     (tmp_path / "docs" / "output-changes" / "0.3.0.md").write_text("# Output changes in 0.3.0\n", encoding="utf-8")
     codes = {
@@ -438,7 +461,10 @@ source = "release-note"
     "releases": (
         {},
         {},
-        '[[release]]\nversion = "0.2.0"\ndate = "2026"\n\n[[release]]\nversion = "0.1.0"\ndate = "2026-01-01"\n',
+        (
+            'complete_from = "0.1.5"\n\n[[release]]\nversion = "0.2.0"\ndate = "2026"\n\n'
+            '[[release]]\nversion = "0.1.0"\ndate = "2026-01-01"\n'
+        ),
         DERIVED,
     ),
     "no releases": ({}, {}, "", DERIVED),
@@ -475,9 +501,32 @@ summary = "s"
 keep = { flags = ["--output-datetime-class", "AwareDatetime"] }
 refs = ["#3"]
 source = "release-note"
+
+[[change]]
+id = "conditional-unknown-flag"
+kind = "default-output"
+action = "keep"
+title = "t"
+summary = "s"
+affects = { options = ["--use-annotated"] }
+keep = { flags = ["--no-such-conditional-option"] }
+refs = ["#4"]
+source = "release-note"
 """,
         },
-        {},
+        {
+            "unreleased-unknown-flag": """
+[[change]]
+id = "unreleased-unknown-flag"
+kind = "default-output"
+action = "keep"
+title = "t"
+summary = "s"
+keep = { flags = ["--no-such-unreleased-option"] }
+refs = ["#5"]
+source = "release-note"
+"""
+        },
         None,
         DERIVED,
     ),
@@ -509,7 +558,11 @@ arg_parser.add_argument("--quiet-flag", action="store_true")
 
 
 def test_build_migration_docs_stamp(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """A stamp moves the fragments the tag contains, adds the release and the preset dates the tag first ships."""
+    """A stamp moves the fragments the tag contains, adds the release and the preset dates the tag first ships.
+
+    A tag tree whose fragment differs from the branch's, or whose preset names or surface cannot be read, is refused
+    before anything is written, so the stamp runs again once the tree is right.
+    """
     data = _write_data(
         tmp_path,
         CHANGES,
@@ -517,14 +570,25 @@ def test_build_migration_docs_stamp(tmp_path: Path, capsys: pytest.CaptureFixtur
         | {"merged-after-tag": UNRELEASED["custom-template-root"].replace("custom-template-root", "merged-after-tag")},
     )
     tree = tmp_path / "tag"
-    (tree / "docs" / "data" / "migration" / "unreleased").mkdir(parents=True)
-    (tree / "docs" / "data" / "migration" / "unreleased" / "custom-template-root.toml").write_text("", encoding="utf-8")
+    tagged = tree / "docs" / "data" / "migration" / "unreleased" / "custom-template-root.toml"
+    tagged.parent.mkdir(parents=True)
     package = tree / "src" / "datamodel_code_generator"
     (package / "model" / "template").mkdir(parents=True)
-    for name, text in TAG_PACKAGE.items():
-        (package / name).write_text(text, encoding="utf-8")
     stamp = ["--stamp", "0.5.0", "--tag-tree", str(tree), "--date", "2026-05-01"]
-    codes = [main([*_args(tmp_path), *stamp], REGISTRIES), main([*_args(tmp_path), *stamp], REGISTRIES)]
+    codes = []
+    for fragment, package_files in (
+        ("edited after the tag", TAG_PACKAGE),
+        (UNRELEASED["custom-template-root"], {**TAG_PACKAGE, "arguments.py": "raise SystemExit('no surface')"}),
+        (UNRELEASED["custom-template-root"], {k: v for k, v in TAG_PACKAGE.items() if k != "preset_names.py"}),
+        (UNRELEASED["custom-template-root"], TAG_PACKAGE),
+        (UNRELEASED["custom-template-root"], TAG_PACKAGE),
+    ):
+        tagged.write_text(fragment, encoding="utf-8")
+        for name in TAG_PACKAGE:
+            (package / name).unlink(missing_ok=True)
+        for name, text in package_files.items():
+            (package / name).write_text(text, encoding="utf-8")
+        codes.append(main([*_args(tmp_path), *stamp], REGISTRIES))
     printed = capsys.readouterr()
     with pytest.raises(SystemExit) as missing_tree:
         main([*_args(tmp_path), "--stamp", "0.6.0"], REGISTRIES)
@@ -625,6 +689,46 @@ args = {ENUM_ARGS}
 """,
 }
 RUN_CHANGES_IDS = ("enum-keep", "enum-wrong-keep")
+RUN_BROKEN = {
+    "enum-import-fails": "raise ImportError('the previous release wrote broken models')\n",
+    "enum-signature-crashes": "import os\n\nos._exit(3)\n",
+}
+"""Recorded outputs of entries whose keep flags cannot match them: one fails to import, one kills its signature."""
+RUN_BROKEN_CHANGES = "".join(
+    f"""
+[[change]]
+id = "{entry_id}"
+kind = "default-output"
+action = "keep"
+title = "A keep claim against a recorded output that {entry_id.removeprefix("enum-").replace("-", " ")}"
+summary = "s"
+keep = {{ flags = ["--no-use-specialized-enum"] }}
+refs = ["#2514"]
+source = "run"
+[change.verify]
+schema = '{ENUM_SCHEMA}'
+args = {ENUM_ARGS}
+"""
+    for entry_id in RUN_BROKEN
+)
+RUN_UNRELEASED = {
+    "enum-keep-next": f"""
+[[change]]
+id = "enum-keep-next"
+kind = "default-output"
+action = "keep"
+title = "An unreleased change kept only for Python 3.11 targets"
+summary = "Enums of strings subclass `StrEnum` instead of `Enum`."
+affects = {{ options = ["--target-python-version 3.11"] }}
+keep = {{ flags = ["--no-use-specialized-enum"] }}
+refs = ["#2515"]
+source = "run"
+[change.verify]
+schema = '{ENUM_SCHEMA}'
+args = {ENUM_ARGS}
+"""
+}
+"""An unreleased entry: its own keep flags, which `--target-python-version 3.11` in its args selects, are its union."""
 PREVIOUS_ENUM_OUTPUT = """from __future__ import annotations
 
 from enum import Enum
@@ -644,19 +748,34 @@ class Order(BaseModel):
 
 @pytest.mark.skipif(sys.platform == "win32", reason="the generations fork their workers")
 def test_build_migration_docs_verify(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Keep claims are checked against the recorded output of the previous release; a stale record is refused."""
-    data = _write_data(tmp_path, RUN_CHANGES, {}, **UNCHANGED)
+    """Keep claims are checked against the recorded output of the previous release; a stale record is refused.
+
+    A recorded output that fails to import, or whose signature cannot be taken, matches no output that imports; an
+    unreleased entry's union holds its own keep flags. A record of another previous release than the entry's is
+    stale.
+    """
+    data = _write_data(tmp_path, {"0.3.0": RUN_CHANGES["0.3.0"] + RUN_BROKEN_CHANGES}, RUN_UNRELEASED, **UNCHANGED)
     unrecorded = main(_args(tmp_path), REGISTRIES)
     missing = capsys.readouterr().err
     fixture = hashlib.sha256(json.dumps([ENUM_SCHEMA, json.loads(ENUM_ARGS)]).encode()).hexdigest()[:16]
     tree = {"model.py": PREVIOUS_ENUM_OUTPUT}
     records = {entry_id: {"previous": "0.2.0", "fixture": fixture, "tree": tree} for entry_id in RUN_CHANGES_IDS}
+    records |= {
+        entry_id: {"previous": "0.2.0", "fixture": fixture, "tree": {"model.py": text}}
+        for entry_id, text in RUN_BROKEN.items()
+    }
+    records["enum-keep-next"] = {"previous": "0.4.0", "fixture": fixture, "tree": tree}
     (data / "recorded.json").write_text(json.dumps(records), encoding="utf-8")
     codes = {
         "verify": main([*_args(tmp_path), "--verify", "--text", "-j", "2"], REGISTRIES),
         "verify one": main([*_args(tmp_path), "--verify", "enum-keep"], REGISTRIES),
     }
     printed = capsys.readouterr().out
+    (data / "recorded.json").write_text(
+        json.dumps(records | {"enum-keep": records["enum-keep"] | {"previous": "0.1.0"}}), encoding="utf-8"
+    )
+    codes["record of another previous release"] = main([*_args(tmp_path), "--check"], REGISTRIES)
+    (data / "recorded.json").write_text(json.dumps(records), encoding="utf-8")
     codes["unknown id"] = main([*_args(tmp_path), "--verify", "nothing"], REGISTRIES)
     codes["bad python"] = main([*_args(tmp_path), "--record", "enum-keep", "--release-python", "0.2.0"], REGISTRIES)
     errors = capsys.readouterr().err

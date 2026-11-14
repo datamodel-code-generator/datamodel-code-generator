@@ -97,7 +97,8 @@ rejects a date-time without an offset), `password` is `SecretStr` (which dumps `
 (which dumps `https://example.com/` for `https://example.com`), and `uuid`, `date`, `ipv4` and `decimal` are parsed
 into Python objects. With it a string, integer or number schema takes the type its `type` keyword gives, `str`, `int`
 or `float`, with its own `minLength`, `maxLength`, `pattern` and bounds, so the models accept every value the schema
-accepts and dump it as written, and an unknown format gives no warning. Two formats still select a type:
+accepts and dump a string or an integer as written (a number as the `float` it parses to, as without a format), and an
+unknown format gives no warning. Two formats still select a type:
 `format: binary`, which stays `bytes` (raw octets, not a JSON string), and a format that a `--type-mappings` entry
 names for a type the schema declares (`--type-mappings date-time=date-time` keeps `date-time` typed, and then
 `--output-datetime-class` applies). The format is not written into the models. The option reads JSON Schema, OpenAPI,
@@ -117,8 +118,8 @@ def test_read_format_as_annotation(output_file: Path, option_set: str, output_fo
     its ``minLength`` without the hostname pattern, a ``decimal`` number is ``float``, an integer ``date-time`` is
     ``int``, a formatted enum keeps its values, and the format of an allOf part, of a ``$ref`` target and of a
     property named ``format`` goes too, while ``format`` inside ``examples`` stays. The Pydantic models accept every
-    value the schema accepts, naive date-times and free text in an ``email`` among them, and dump them as written.
-    Without the option the output and the unknown-format warnings are as in 0.96.0.
+    value the schema accepts, naive date-times and free text in an ``email`` among them, and dump the strings as
+    written. Without the option the output and the unknown-format warnings are as in 0.96.0.
     """
     with _format_warnings(option_set):
         run_main_and_assert(
@@ -179,6 +180,72 @@ def test_read_format_as_annotation_openapi(output_file: Path, option_set: str) -
         output_path=output_file,
         input_file_type="openapi",
         extra_args=[*COMMON_ARGS, "--openapi-scopes", "schemas", "paths", "parameters", *OPTION_SETS[option_set]],
+        force_exec_validation=True,
+    )
+
+
+DISCRIMINATOR_MAPPING_DOCUMENT = """openapi: 3.0.3
+info: {title: Pets, version: '1'}
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+      discriminator:
+        propertyName: kind
+        mapping:
+          format: '#/components/schemas/Printed'
+          const: '#/components/schemas/Fixed'
+          other: '#/components/schemas/Other'
+    Printed:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        email: {type: string, format: email}
+    Fixed:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        level: {type: integer, enum: [1]}
+    Other:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+    Holder:
+      type: object
+      properties:
+        pet: {$ref: '#/components/schemas/Pet'}
+"""
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(("--read-format-as-annotation",), id="read-format-as-annotation"),
+        pytest.param(("--use-single-value-enum-as-const",), id="use-single-value-enum-as-const"),
+    ],
+)
+def test_schema_readings_keep_discriminator_mappings(
+    output_file: Path, tmp_path: Path, extra_args: tuple[str, ...]
+) -> None:
+    """Read no discriminator object as a schema: its mapping keys ``format`` and ``const`` are tag values.
+
+    The union of ``Holder.pet`` keeps ``Printed``, which a mapping key named ``format`` names; up to 0.96.0 a mapping
+    key named ``const`` made ``--use-single-value-enum-as-const`` fail.
+    """
+    document = tmp_path / "pets.yaml"
+    document.write_text(DISCRIMINATOR_MAPPING_DOCUMENT, encoding="utf-8")
+    run_main_and_assert(
+        input_path=document,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[*COMMON_ARGS, *extra_args],
         force_exec_validation=True,
     )
 

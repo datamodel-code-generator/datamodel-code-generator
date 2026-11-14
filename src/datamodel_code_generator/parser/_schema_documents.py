@@ -155,10 +155,10 @@ def _read_schema_objects(
 ) -> YamlValue:
     """Return a document with each schema object read by ``readings`` in order, after its children (one walk).
 
-    The values of instance data keywords, extensions other than x-propertyNames, links, security requirements and
-    servers hold no schemas and stay as written. Those words are names, not keywords, in maps of named entries such
-    as properties, $defs, responses, webhooks, channels or the component maps. Unchanged parts are shared, so cached
-    documents stay intact.
+    The values of instance data keywords, extensions other than x-propertyNames, discriminator objects, links,
+    security requirements and servers hold no schemas and stay as written. Those words are names, not keywords, in
+    maps of named entries such as properties, $defs, responses, webhooks, channels or the component maps. Unchanged
+    parts are shared, so cached documents stay intact.
     """
     if isinstance(value, list):
         items = [_read_schema_objects(item, named_entry_maps, readings) for item in value]

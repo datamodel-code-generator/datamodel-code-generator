@@ -154,7 +154,7 @@ from datamodel_code_generator.reference import (
     location_of,
     type_origin_of,
 )
-from datamodel_code_generator.types import DataType, Types, reference_names_nullable
+from datamodel_code_generator.types import DataType, Types, reference_names_nullable, written_type_name
 
 FieldKind: TypeAlias = Literal[
     "property", "required_only", "additional_properties", "root_value", "discriminator_synthetic"
@@ -1659,9 +1659,9 @@ class _Projector:
                 keywords = tuple((name, _freeze_argument(value)) for name, value in data_type.kwargs.items())
                 return ConstructorType(imported, keywords, self.hints.leaf(data_type), _constrained_base(data_type))
             return imported
-        if data_type.type is None:
+        if (name := written_type_name(data_type)) is None:
             return None
-        return NoneType() if data_type.type == "None" else _BUILTINS[data_type.type]
+        return NoneType() if name == "None" else _BUILTINS[name]
 
     @staticmethod
     def _literal(value: object) -> LiteralScalar:
