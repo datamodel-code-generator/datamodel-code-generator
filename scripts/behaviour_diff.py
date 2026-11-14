@@ -25,7 +25,8 @@ that uses an option, value or input type BASE does not have is `opt-in` and is n
 
 Accepted changes are listed in scripts/behaviour_diff_allowlist.toml: `base` and `[[accepted]]` entries with
 `input` (a glob, or a list of globs), optional `backends`, `aspects` and `match` (regex on the change line), `reason`,
-`decision` (the public PR or issue references of the owner decision, `#1234, #1235`) and `release_note`.
+`decision` (the public PR or issue references of the owner decision, `#1234, #1235`) and `migration` (the id of the
+upgrade guide entry whose title the release page and its notes use; scripts/build_migration_docs.py checks it).
 A `[[base_skip]]` entry (`input` glob, `bases`: releases such as `["0.88.0"]` or a maximum such as `["<=0.88.0"]`,
 `reason`, `issue`) names an input a release is known to hang on: the release does not run for those cells, which are
 `base-skipped` once the candidate generated and imported (a candidate failure is a violation). `--check` also fails
@@ -86,6 +87,7 @@ from scripts._behaviour_report import compare_records, redact, summarize_gate, v
 
 SIGNATURE_SCRIPT = Path(__file__).with_name("_behaviour_signature.py")
 DEFAULT_ALLOWLIST = Path(__file__).with_name("behaviour_diff_allowlist.toml")
+MIGRATION_JSON = ROOT / "docs" / "data" / "migration.json"
 FIXTURE_DIRS = (
     ("jsonschema", (".json", ".yaml", ".yml"), True),
     ("openapi", (".json", ".yaml", ".yml"), True),
@@ -1399,6 +1401,15 @@ def render_notes(data: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def name_accepted_changes(data: dict[str, Any], migration_json: Path) -> None:
+    """Give each accepted change of a release page the title of its upgrade guide entry, or its reason without one."""
+    titles = {
+        entry["id"]: entry["title"] for entry in json.loads(migration_json.read_text(encoding="utf-8"))["changes"]
+    }
+    for group in data["accepted"]:
+        group["release_note"] = titles.get(group["migration"], group["reason"])
+
+
 def guide_main(ns: argparse.Namespace) -> int:
     """Write a release page's data (and release notes) from a gate run of the release against the previous one."""
     gate, _ = build_gate(ns)
@@ -1410,6 +1421,7 @@ def guide_main(ns: argparse.Namespace) -> int:
         rows = [json.loads(line) for path in ns.cells for line in path.read_text(encoding="utf-8").splitlines()]
         data = summarize_gate(rows, gate.loaded_allowlist.entries)
         data = {"version": ns.version, "previous": ns.base, "tier": ns.tier, **data}
+        name_accepted_changes(data, MIGRATION_JSON)
         enrich_accepted(gate, rows, data, ns)
         enrich_opt_in(gate, rows, data)
     finally:

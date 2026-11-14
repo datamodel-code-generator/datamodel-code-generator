@@ -1,0 +1,2059 @@
+{
+ "generate_config": [
+  "additional_imports",
+  "alias_generator",
+  "aliases",
+  "all_exports_collision_strategy",
+  "all_exports_scope",
+  "allof_class_hierarchy",
+  "allof_merge_mode",
+  "allow_extra_fields",
+  "allow_leading_underscore_class_name",
+  "allow_population_by_field_name",
+  "allow_private_network",
+  "allow_remote_refs",
+  "apply_default_values_for_required_fields",
+  "apply_field_options_to_every_field",
+  "base_class",
+  "base_class_map",
+  "builtin_format_line_length",
+  "capitalise_enum_members",
+  "capitalise_numbered_enum_members",
+  "check_pattern_maps_strictly",
+  "class_decorators",
+  "class_name",
+  "class_name_affix_scope",
+  "class_name_prefix",
+  "class_name_suffix",
+  "client_asyncapi_perspective",
+  "client_body_arguments",
+  "client_deep_object_brackets",
+  "client_default_base_url",
+  "client_model_package",
+  "client_operations",
+  "client_output",
+  "client_package",
+  "client_protocols",
+  "client_resource_names",
+  "client_server_base_url",
+  "client_signature_style",
+  "collapse_constrained_root_models_as_annotated",
+  "collapse_reuse_models",
+  "collapse_root_models",
+  "collapse_root_models_name_strategy",
+  "collapse_shared_parent_wrappers",
+  "command_line",
+  "custom_class_name_generator",
+  "custom_file_header",
+  "custom_file_header_mode",
+  "custom_file_header_path",
+  "custom_formatters",
+  "custom_formatters_kwargs",
+  "custom_template_dir",
+  "dataclass_arguments",
+  "dedupe_numbered_request_response_variants",
+  "dedupe_request_response_variants",
+  "default_value_overrides",
+  "deserialize_default_values",
+  "disable_appending_item_suffix",
+  "disable_future_imports",
+  "disable_timestamp",
+  "distribute_allof_over_unions",
+  "duplicate_name_suffix",
+  "emit_model_metadata",
+  "empty_enum_field_name",
+  "enable_command_header",
+  "enable_faux_immutability",
+  "enable_generated_header_marker",
+  "enable_version_header",
+  "encoding",
+  "enum_field_as_literal",
+  "enum_field_as_literal_map",
+  "external_ref_mapping",
+  "extra_fields",
+  "extra_template_data",
+  "field_constraints",
+  "field_extra_keys",
+  "field_extra_keys_without_x_prefix",
+  "field_include_all_keys",
+  "field_type_collision_strategy",
+  "filter_literal_values",
+  "force_optional_for_required_fields",
+  "formatters",
+  "frozen_dataclasses",
+  "generate_client",
+  "generate_schema_validators",
+  "generate_server",
+  "graphql_no_typename",
+  "graphql_scopes",
+  "http_backend",
+  "http_headers",
+  "http_ignore_tls",
+  "http_local_ref_path",
+  "http_query_parameters",
+  "http_timeout",
+  "ignore_enum_constraints",
+  "ignore_ref_siblings_by_schema_version",
+  "import_overrides",
+  "include_path_parameters",
+  "infer_union_variant_names",
+  "input_file_type",
+  "input_filename",
+  "intersect_allof_keywords",
+  "intersect_combined_schema_keywords",
+  "keep_constrained_root_models_in_every_container",
+  "keep_content_parameter_refs",
+  "keep_defaults_of_inherited_required_fields",
+  "keep_enum_literal_aliases",
+  "keep_enum_member_values",
+  "keep_false_dataclass_arguments",
+  "keep_field_defaults_off_branch_roots",
+  "keep_first_character_of_path_keys",
+  "keep_model_order",
+  "keep_reference_null_on_collapsed_root_models",
+  "keep_reference_null_on_merged_models",
+  "keep_self_referencing_array_items",
+  "keep_shared_members_on_collapsed_root_models",
+  "keyword_only",
+  "locked",
+  "lockfile",
+  "merge_message_trait_headers",
+  "merge_shared_variant_tags",
+  "model_extra_keys",
+  "model_extra_keys_without_x_prefix",
+  "model_name_map",
+  "module_split_mode",
+  "name_allof_union_members_after_branches",
+  "name_converted_payloads_by_message",
+  "naming_strategy",
+  "no_alias",
+  "omit_incomplete_model_defaults",
+  "omit_redundant_constraints",
+  "omit_redundant_reference_null",
+  "openapi_as_definitions",
+  "openapi_include_info_version",
+  "openapi_include_paths",
+  "openapi_scopes",
+  "order_constructor_fields_by",
+  "original_field_name_delimiter",
+  "output",
+  "output_date_class",
+  "output_datetime_class",
+  "output_model_type",
+  "parent_scoped_naming",
+  "pin_aliases_with_alias_generator",
+  "preset",
+  "read_allof_parents_in_mro_order",
+  "read_const_beside_enum",
+  "read_dynamic_anchors_in_document_order",
+  "read_escaped_ref_pointers",
+  "read_input_model_dataclass_fields_by_alias",
+  "read_length_keywords_by_type",
+  "read_msgspec_union_bounds_exactly",
+  "read_nullable_beside_type_list",
+  "read_object_keywords_by_type",
+  "read_only_write_only_model_type",
+  "read_schema_version_per_document",
+  "read_unevaluated_properties",
+  "remove_special_field_name_prefix",
+  "remove_unused_models_beside_type_overrides",
+  "rename_submodules_hidden_by_classes",
+  "reuse_every_reached_input_model_type",
+  "reuse_model",
+  "reuse_scope",
+  "schema_validator_base_class_name",
+  "schema_validator_type",
+  "schema_version",
+  "schema_version_mode",
+  "serialization_aliases",
+  "server_body_mode",
+  "server_body_modes",
+  "server_handler_mode",
+  "server_handler_modes",
+  "server_include_request",
+  "server_layout",
+  "server_model_package",
+  "server_operation_names",
+  "server_output",
+  "server_package",
+  "server_parameter_names",
+  "server_primary_responses",
+  "server_router_names",
+  "set_default_enum_member",
+  "settings_path",
+  "shared_module_name",
+  "singularize_last_word_of_item_names",
+  "skip_path_extension_keys",
+  "skip_root_model",
+  "snake_case_field",
+  "special_field_name_prefix",
+  "strict_dotted_module_names",
+  "strict_nullable",
+  "strict_refs",
+  "strict_types",
+  "strip_default_none",
+  "tag_msgspec_by_payload_name",
+  "target_pydantic_version",
+  "target_python_version",
+  "treat_dot_as_module",
+  "type_mappings",
+  "type_overrides",
+  "type_overrides_replace_whole_type",
+  "union_mode",
+  "untrusted_input",
+  "update_lock",
+  "use_annotated",
+  "use_attribute_docstrings",
+  "use_bounds_for_float_const",
+  "use_bytes_for_content_media_type",
+  "use_closed_typed_dict",
+  "use_decimal_for_multiple_of",
+  "use_decimal_in_field_forms",
+  "use_default_factory_for_optional_nested_models",
+  "use_default_kwarg",
+  "use_double_quotes",
+  "use_duplicate_name_suffix_for_every_collision",
+  "use_encoded_str_for_constrained_base64",
+  "use_enum_field_as_literal_in_operations",
+  "use_enum_values_in_discriminator",
+  "use_exact_imports",
+  "use_field_description",
+  "use_field_description_example",
+  "use_frozen_field",
+  "use_generic_base_class",
+  "use_generic_container_types",
+  "use_inline_field_description",
+  "use_missing_sentinel",
+  "use_msgspec_forbid_unknown_fields",
+  "use_msgspec_meta_for_map_keys",
+  "use_msgspec_nullable_enum_alias",
+  "use_msgspec_tagged_unions",
+  "use_non_positive_negative_number_constrained_types",
+  "use_object_type",
+  "use_one_literal_as_default",
+  "use_one_model_per_ref_site",
+  "use_operation_id_as_name",
+  "use_pendulum",
+  "use_plain_alias_for_recursive_models",
+  "use_root_model_sequence_interface",
+  "use_root_model_type_alias",
+  "use_schema_description",
+  "use_serialization_alias",
+  "use_serialize_as_any",
+  "use_serialize_as_any_for_every_subclass",
+  "use_single_dict_for_object_maps",
+  "use_single_line_docstring",
+  "use_single_value_enum_as_const",
+  "use_site_models_for_constrained_refs",
+  "use_specialized_enum",
+  "use_standard_collections",
+  "use_standard_primitive_types",
+  "use_status_code_in_response_name",
+  "use_strict_str_for_base64",
+  "use_subclass_enum",
+  "use_tag_as_union_variant_name",
+  "use_title_as_name",
+  "use_total_false_for_typed_dict",
+  "use_tuple_for_closed_arrays",
+  "use_tuple_for_fixed_items",
+  "use_tuple_for_fixed_length_arrays",
+  "use_type_alias",
+  "use_type_alias_type",
+  "use_type_checking_imports",
+  "use_typed_map_values_beside_other_types",
+  "use_typed_nullable_map_values",
+  "use_union_operator",
+  "use_unique_items_as_set",
+  "use_unique_items_as_set_by_value",
+  "use_x_python_type_as_written",
+  "validation",
+  "validators",
+  "wrap_string_literal"
+ ],
+ "options": {
+  "--additional-imports": {
+   "aliases": [],
+   "choices": null
+  },
+  "--alias-generator": {
+   "aliases": [],
+   "choices": [
+    "to_camel",
+    "to_pascal",
+    "to_snake"
+   ]
+  },
+  "--aliases": {
+   "aliases": [],
+   "choices": null
+  },
+  "--all-exports-collision-strategy": {
+   "aliases": [],
+   "choices": [
+    "error",
+    "full-prefix",
+    "minimal-prefix"
+   ]
+  },
+  "--all-exports-scope": {
+   "aliases": [],
+   "choices": [
+    "children",
+    "recursive"
+   ]
+  },
+  "--all-jobs": {
+   "aliases": [],
+   "choices": null
+  },
+  "--allof-class-hierarchy": {
+   "aliases": [],
+   "choices": [
+    "always",
+    "if-no-conflict"
+   ]
+  },
+  "--allof-merge-mode": {
+   "aliases": [],
+   "choices": [
+    "all",
+    "constraints",
+    "none"
+   ]
+  },
+  "--allow-extra-fields": {
+   "aliases": [],
+   "choices": null
+  },
+  "--allow-leading-underscore-class-name": {
+   "aliases": [],
+   "choices": null
+  },
+  "--allow-population-by-field-name": {
+   "aliases": [
+    "--no-allow-population-by-field-name"
+   ],
+   "choices": null
+  },
+  "--allow-private-network": {
+   "aliases": [
+    "--no-allow-private-network"
+   ],
+   "choices": null
+  },
+  "--allow-remote-refs": {
+   "aliases": [
+    "--no-allow-remote-refs"
+   ],
+   "choices": null
+  },
+  "--apply-field-options-to-every-field": {
+   "aliases": [
+    "--no-apply-field-options-to-every-field"
+   ],
+   "choices": null
+  },
+  "--base-class": {
+   "aliases": [],
+   "choices": null
+  },
+  "--base-class-map": {
+   "aliases": [],
+   "choices": null
+  },
+  "--capitalise-enum-members": {
+   "aliases": [
+    "--capitalize-enum-members"
+   ],
+   "choices": null
+  },
+  "--capitalise-numbered-enum-members": {
+   "aliases": [
+    "--no-capitalise-numbered-enum-members",
+    "--capitalize-numbered-enum-members",
+    "--no-capitalize-numbered-enum-members"
+   ],
+   "choices": null
+  },
+  "--check": {
+   "aliases": [],
+   "choices": null
+  },
+  "--check-pattern-maps-strictly": {
+   "aliases": [
+    "--no-check-pattern-maps-strictly"
+   ],
+   "choices": null
+  },
+  "--class-decorators": {
+   "aliases": [],
+   "choices": null
+  },
+  "--class-name": {
+   "aliases": [],
+   "choices": null
+  },
+  "--class-name-affix-scope": {
+   "aliases": [],
+   "choices": [
+    "all",
+    "enums",
+    "models"
+   ]
+  },
+  "--class-name-prefix": {
+   "aliases": [],
+   "choices": null
+  },
+  "--class-name-suffix": {
+   "aliases": [],
+   "choices": null
+  },
+  "--client-asyncapi-perspective": {
+   "aliases": [],
+   "choices": [
+    "client",
+    "server"
+   ]
+  },
+  "--client-body-arguments": {
+   "aliases": [],
+   "choices": [
+    "body",
+    "both"
+   ]
+  },
+  "--client-deep-object-brackets": {
+   "aliases": [
+    "--no-client-deep-object-brackets"
+   ],
+   "choices": null
+  },
+  "--client-default-base-url": {
+   "aliases": [],
+   "choices": null
+  },
+  "--client-model-package": {
+   "aliases": [],
+   "choices": null
+  },
+  "--client-operations": {
+   "aliases": [],
+   "choices": null
+  },
+  "--client-output": {
+   "aliases": [],
+   "choices": null
+  },
+  "--client-package": {
+   "aliases": [],
+   "choices": null
+  },
+  "--client-protocols": {
+   "aliases": [],
+   "choices": null
+  },
+  "--client-resource-names": {
+   "aliases": [],
+   "choices": null
+  },
+  "--client-server-base-url": {
+   "aliases": [],
+   "choices": null
+  },
+  "--client-signature-style": {
+   "aliases": [],
+   "choices": [
+    "explicit",
+    "unpack"
+   ]
+  },
+  "--collapse-constrained-root-models-as-annotated": {
+   "aliases": [
+    "--no-collapse-constrained-root-models-as-annotated"
+   ],
+   "choices": null
+  },
+  "--collapse-reuse-models": {
+   "aliases": [
+    "--no-collapse-reuse-models"
+   ],
+   "choices": null
+  },
+  "--collapse-root-models": {
+   "aliases": [
+    "--no-collapse-root-models"
+   ],
+   "choices": null
+  },
+  "--collapse-root-models-name-strategy": {
+   "aliases": [],
+   "choices": [
+    "child",
+    "parent"
+   ]
+  },
+  "--collapse-shared-parent-wrappers": {
+   "aliases": [
+    "--no-collapse-shared-parent-wrappers"
+   ],
+   "choices": null
+  },
+  "--custom-file-header": {
+   "aliases": [],
+   "choices": null
+  },
+  "--custom-file-header-mode": {
+   "aliases": [],
+   "choices": [
+    "prepend",
+    "replace"
+   ]
+  },
+  "--custom-file-header-path": {
+   "aliases": [],
+   "choices": null
+  },
+  "--custom-formatters": {
+   "aliases": [],
+   "choices": null
+  },
+  "--custom-formatters-kwargs": {
+   "aliases": [],
+   "choices": null
+  },
+  "--custom-template-dir": {
+   "aliases": [],
+   "choices": null
+  },
+  "--dataclass-arguments": {
+   "aliases": [],
+   "choices": null
+  },
+  "--debug": {
+   "aliases": [],
+   "choices": null
+  },
+  "--dedupe-numbered-request-response-variants": {
+   "aliases": [
+    "--no-dedupe-numbered-request-response-variants"
+   ],
+   "choices": null
+  },
+  "--dedupe-request-response-variants": {
+   "aliases": [
+    "--no-dedupe-request-response-variants"
+   ],
+   "choices": null
+  },
+  "--default-values": {
+   "aliases": [],
+   "choices": null
+  },
+  "--deserialize-default-values": {
+   "aliases": [],
+   "choices": [
+    "decimal",
+    "enum"
+   ]
+  },
+  "--diff-against": {
+   "aliases": [],
+   "choices": null
+  },
+  "--disable-appending-item-suffix": {
+   "aliases": [],
+   "choices": null
+  },
+  "--disable-future-imports": {
+   "aliases": [],
+   "choices": null
+  },
+  "--disable-timestamp": {
+   "aliases": [
+    "--no-disable-timestamp"
+   ],
+   "choices": null
+  },
+  "--disable-warnings": {
+   "aliases": [],
+   "choices": null
+  },
+  "--distribute-allof-over-unions": {
+   "aliases": [
+    "--no-distribute-allof-over-unions"
+   ],
+   "choices": null
+  },
+  "--duplicate-name-suffix": {
+   "aliases": [],
+   "choices": null
+  },
+  "--emit-model-metadata": {
+   "aliases": [],
+   "choices": null
+  },
+  "--empty-enum-field-name": {
+   "aliases": [],
+   "choices": null
+  },
+  "--enable-command-header": {
+   "aliases": [],
+   "choices": null
+  },
+  "--enable-faux-immutability": {
+   "aliases": [],
+   "choices": null
+  },
+  "--enable-generated-header-marker": {
+   "aliases": [],
+   "choices": null
+  },
+  "--enable-version-header": {
+   "aliases": [],
+   "choices": null
+  },
+  "--encoding": {
+   "aliases": [],
+   "choices": null
+  },
+  "--enum-field-as-literal": {
+   "aliases": [],
+   "choices": [
+    "all",
+    "none",
+    "one"
+   ]
+  },
+  "--enum-field-as-literal-map": {
+   "aliases": [],
+   "choices": null
+  },
+  "--external-ref-mapping": {
+   "aliases": [],
+   "choices": null
+  },
+  "--extra-fields": {
+   "aliases": [],
+   "choices": [
+    "allow",
+    "forbid",
+    "ignore"
+   ]
+  },
+  "--extra-template-data": {
+   "aliases": [],
+   "choices": null
+  },
+  "--fail-on-multi-module-stdout": {
+   "aliases": [],
+   "choices": null
+  },
+  "--field-constraints": {
+   "aliases": [],
+   "choices": null
+  },
+  "--field-extra-keys": {
+   "aliases": [],
+   "choices": null
+  },
+  "--field-extra-keys-without-x-prefix": {
+   "aliases": [],
+   "choices": null
+  },
+  "--field-include-all-keys": {
+   "aliases": [],
+   "choices": null
+  },
+  "--field-type-collision-strategy": {
+   "aliases": [],
+   "choices": [
+    "rename-field",
+    "rename-type"
+   ]
+  },
+  "--filter-literal-values": {
+   "aliases": [
+    "--no-filter-literal-values"
+   ],
+   "choices": null
+  },
+  "--force-optional": {
+   "aliases": [],
+   "choices": null
+  },
+  "--formatters": {
+   "aliases": [],
+   "choices": [
+    "black",
+    "builtin",
+    "isort",
+    "ruff-check",
+    "ruff-format"
+   ]
+  },
+  "--frozen-dataclasses": {
+   "aliases": [],
+   "choices": null
+  },
+  "--generate-cli-command": {
+   "aliases": [],
+   "choices": null
+  },
+  "--generate-client": {
+   "aliases": [],
+   "choices": [
+    "httpx2"
+   ]
+  },
+  "--generate-prompt": {
+   "aliases": [],
+   "choices": null
+  },
+  "--generate-pyproject-config": {
+   "aliases": [],
+   "choices": null
+  },
+  "--generate-schema-validators": {
+   "aliases": [],
+   "choices": null
+  },
+  "--generate-server": {
+   "aliases": [],
+   "choices": [
+    "fastapi"
+   ]
+  },
+  "--graphql-no-typename": {
+   "aliases": [],
+   "choices": null
+  },
+  "--http-backend": {
+   "aliases": [],
+   "choices": [
+    "auto",
+    "httpx",
+    "httpx2"
+   ]
+  },
+  "--http-headers": {
+   "aliases": [],
+   "choices": null
+  },
+  "--http-ignore-tls": {
+   "aliases": [],
+   "choices": null
+  },
+  "--http-local-ref-path": {
+   "aliases": [],
+   "choices": null
+  },
+  "--http-query-parameters": {
+   "aliases": [],
+   "choices": null
+  },
+  "--http-timeout": {
+   "aliases": [],
+   "choices": null
+  },
+  "--ignore-enum-constraints": {
+   "aliases": [],
+   "choices": null
+  },
+  "--ignore-pyproject": {
+   "aliases": [],
+   "choices": null
+  },
+  "--ignore-ref-siblings-by-schema-version": {
+   "aliases": [
+    "--no-ignore-ref-siblings-by-schema-version"
+   ],
+   "choices": null
+  },
+  "--import-overrides": {
+   "aliases": [],
+   "choices": null
+  },
+  "--include-path-parameters": {
+   "aliases": [],
+   "choices": null
+  },
+  "--infer-union-variant-names": {
+   "aliases": [],
+   "choices": null
+  },
+  "--input": {
+   "aliases": [],
+   "choices": null
+  },
+  "--input-file-type": {
+   "aliases": [],
+   "choices": [
+    "asyncapi",
+    "auto",
+    "avro",
+    "csv",
+    "dict",
+    "graphql",
+    "json",
+    "jsonschema",
+    "mcp-tools",
+    "openapi",
+    "protobuf",
+    "xmlschema",
+    "yaml"
+   ]
+  },
+  "--input-model": {
+   "aliases": [],
+   "choices": null
+  },
+  "--input-model-ref-strategy": {
+   "aliases": [],
+   "choices": [
+    "regenerate-all",
+    "reuse-all",
+    "reuse-foreign"
+   ]
+  },
+  "--install-skill": {
+   "aliases": [],
+   "choices": [
+    "claude-code",
+    "codex"
+   ]
+  },
+  "--intersect-allof-keywords": {
+   "aliases": [
+    "--no-intersect-allof-keywords"
+   ],
+   "choices": null
+  },
+  "--intersect-combined-schema-keywords": {
+   "aliases": [
+    "--no-intersect-combined-schema-keywords"
+   ],
+   "choices": null
+  },
+  "--job": {
+   "aliases": [],
+   "choices": null
+  },
+  "--keep-constrained-root-models-in-every-container": {
+   "aliases": [
+    "--no-keep-constrained-root-models-in-every-container"
+   ],
+   "choices": null
+  },
+  "--keep-content-parameter-refs": {
+   "aliases": [
+    "--no-keep-content-parameter-refs"
+   ],
+   "choices": null
+  },
+  "--keep-defaults-of-inherited-required-fields": {
+   "aliases": [
+    "--no-keep-defaults-of-inherited-required-fields"
+   ],
+   "choices": null
+  },
+  "--keep-enum-literal-aliases": {
+   "aliases": [
+    "--no-keep-enum-literal-aliases"
+   ],
+   "choices": null
+  },
+  "--keep-enum-member-values": {
+   "aliases": [
+    "--no-keep-enum-member-values"
+   ],
+   "choices": null
+  },
+  "--keep-false-dataclass-arguments": {
+   "aliases": [
+    "--no-keep-false-dataclass-arguments"
+   ],
+   "choices": null
+  },
+  "--keep-field-defaults-off-branch-roots": {
+   "aliases": [
+    "--no-keep-field-defaults-off-branch-roots"
+   ],
+   "choices": null
+  },
+  "--keep-first-character-of-path-keys": {
+   "aliases": [
+    "--no-keep-first-character-of-path-keys"
+   ],
+   "choices": null
+  },
+  "--keep-model-order": {
+   "aliases": [],
+   "choices": null
+  },
+  "--keep-reference-null-on-collapsed-root-models": {
+   "aliases": [
+    "--no-keep-reference-null-on-collapsed-root-models"
+   ],
+   "choices": null
+  },
+  "--keep-reference-null-on-merged-models": {
+   "aliases": [
+    "--no-keep-reference-null-on-merged-models"
+   ],
+   "choices": null
+  },
+  "--keep-self-referencing-array-items": {
+   "aliases": [
+    "--no-keep-self-referencing-array-items"
+   ],
+   "choices": null
+  },
+  "--keep-shared-members-on-collapsed-root-models": {
+   "aliases": [
+    "--no-keep-shared-members-on-collapsed-root-models"
+   ],
+   "choices": null
+  },
+  "--keyword-only": {
+   "aliases": [],
+   "choices": null
+  },
+  "--list-deprecations": {
+   "aliases": [],
+   "choices": [
+    "json",
+    "markdown",
+    "table"
+   ]
+  },
+  "--list-experimental": {
+   "aliases": [],
+   "choices": [
+    "json",
+    "markdown",
+    "table"
+   ]
+  },
+  "--locked": {
+   "aliases": [],
+   "choices": null
+  },
+  "--lockfile": {
+   "aliases": [],
+   "choices": null
+  },
+  "--merge-message-trait-headers": {
+   "aliases": [
+    "--no-merge-message-trait-headers"
+   ],
+   "choices": null
+  },
+  "--merge-shared-variant-tags": {
+   "aliases": [
+    "--no-merge-shared-variant-tags"
+   ],
+   "choices": null
+  },
+  "--model-extra-keys": {
+   "aliases": [],
+   "choices": null
+  },
+  "--model-extra-keys-without-x-prefix": {
+   "aliases": [],
+   "choices": null
+  },
+  "--model-name-map": {
+   "aliases": [],
+   "choices": null
+  },
+  "--module-split-mode": {
+   "aliases": [],
+   "choices": [
+    "single"
+   ]
+  },
+  "--name-allof-union-members-after-branches": {
+   "aliases": [
+    "--no-name-allof-union-members-after-branches"
+   ],
+   "choices": null
+  },
+  "--name-converted-payloads-by-message": {
+   "aliases": [
+    "--no-name-converted-payloads-by-message"
+   ],
+   "choices": null
+  },
+  "--naming-strategy": {
+   "aliases": [],
+   "choices": [
+    "definitions-first",
+    "enclosing-model",
+    "full-path",
+    "numbered",
+    "parent-prefixed",
+    "primary-first"
+   ]
+  },
+  "--no-alias": {
+   "aliases": [],
+   "choices": null
+  },
+  "--no-color": {
+   "aliases": [],
+   "choices": null
+  },
+  "--no-deserialize-default-values": {
+   "aliases": [],
+   "choices": null
+  },
+  "--no-formatters": {
+   "aliases": [],
+   "choices": null
+  },
+  "--omit-incomplete-model-defaults": {
+   "aliases": [
+    "--no-omit-incomplete-model-defaults"
+   ],
+   "choices": null
+  },
+  "--omit-redundant-constraints": {
+   "aliases": [
+    "--no-omit-redundant-constraints"
+   ],
+   "choices": null
+  },
+  "--omit-redundant-reference-null": {
+   "aliases": [
+    "--no-omit-redundant-reference-null"
+   ],
+   "choices": null
+  },
+  "--openapi-as-definitions": {
+   "aliases": [],
+   "choices": [
+    "paths-bodies",
+    "ref-components"
+   ]
+  },
+  "--openapi-include-info-version": {
+   "aliases": [],
+   "choices": null
+  },
+  "--openapi-include-paths": {
+   "aliases": [],
+   "choices": null
+  },
+  "--openapi-scopes": {
+   "aliases": [],
+   "choices": [
+    "api",
+    "parameters",
+    "paths",
+    "requestbodies",
+    "schemas",
+    "tags",
+    "webhooks"
+   ]
+  },
+  "--order-constructor-fields-by": {
+   "aliases": [],
+   "choices": [
+    "final-names",
+    "written-defaults"
+   ]
+  },
+  "--original-field-name-delimiter": {
+   "aliases": [],
+   "choices": null
+  },
+  "--output": {
+   "aliases": [],
+   "choices": null
+  },
+  "--output-date-class": {
+   "aliases": [],
+   "choices": [
+    "FutureDate",
+    "PastDate",
+    "date"
+   ]
+  },
+  "--output-datetime-class": {
+   "aliases": [],
+   "choices": [
+    "AwareDatetime",
+    "FutureDatetime",
+    "NaiveDatetime",
+    "PastDatetime",
+    "datetime"
+   ]
+  },
+  "--output-format": {
+   "aliases": [],
+   "choices": [
+    "json",
+    "text"
+   ]
+  },
+  "--output-format-json-schema": {
+   "aliases": [],
+   "choices": [
+    "config",
+    "generate-prompt",
+    "generation",
+    "model-metadata",
+    "recommend-options",
+    "structured-output"
+   ]
+  },
+  "--output-model-type": {
+   "aliases": [],
+   "choices": [
+    "dataclasses.dataclass",
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass",
+    "typing.TypedDict"
+   ]
+  },
+  "--overwrite-skill": {
+   "aliases": [],
+   "choices": null
+  },
+  "--parent-scoped-naming": {
+   "aliases": [],
+   "choices": null
+  },
+  "--pin-aliases-with-alias-generator": {
+   "aliases": [
+    "--no-pin-aliases-with-alias-generator"
+   ],
+   "choices": null
+  },
+  "--preset": {
+   "aliases": [],
+   "choices": [
+    "practical-py310-20260619",
+    "practical-py310-20260826",
+    "practical-py310-20260909",
+    "practical-py310-20261015",
+    "practical-py310-20261017",
+    "practical-py310-20261027",
+    "practical-py310-20261104",
+    "practical-py310-20261106",
+    "practical-py310-20261111",
+    "practical-py310-20261112",
+    "practical-py311-20260619",
+    "practical-py311-20260826",
+    "practical-py311-20260909",
+    "practical-py311-20261015",
+    "practical-py311-20261017",
+    "practical-py311-20261027",
+    "practical-py311-20261104",
+    "practical-py311-20261106",
+    "practical-py311-20261111",
+    "practical-py311-20261112",
+    "practical-py312-20260619",
+    "practical-py312-20260826",
+    "practical-py312-20260909",
+    "practical-py312-20261015",
+    "practical-py312-20261017",
+    "practical-py312-20261027",
+    "practical-py312-20261104",
+    "practical-py312-20261106",
+    "practical-py312-20261111",
+    "practical-py312-20261112",
+    "practical-py313-20260619",
+    "practical-py313-20260826",
+    "practical-py313-20260909",
+    "practical-py313-20261015",
+    "practical-py313-20261017",
+    "practical-py313-20261027",
+    "practical-py313-20261104",
+    "practical-py313-20261106",
+    "practical-py313-20261111",
+    "practical-py313-20261112",
+    "practical-py314-20260619",
+    "practical-py314-20260826",
+    "practical-py314-20260909",
+    "practical-py314-20261015",
+    "practical-py314-20261017",
+    "practical-py314-20261027",
+    "practical-py314-20261104",
+    "practical-py314-20261106",
+    "practical-py314-20261111",
+    "practical-py314-20261112",
+    "practical-py315-20261015",
+    "practical-py315-20261017",
+    "practical-py315-20261027",
+    "practical-py315-20261104",
+    "practical-py315-20261106",
+    "practical-py315-20261111",
+    "practical-py315-20261112",
+    "standard-py310-20260619",
+    "standard-py310-20260826",
+    "standard-py310-20260909",
+    "standard-py310-20261015",
+    "standard-py310-20261017",
+    "standard-py310-20261027",
+    "standard-py310-20261104",
+    "standard-py310-20261106",
+    "standard-py310-20261111",
+    "standard-py310-20261112",
+    "standard-py311-20260619",
+    "standard-py311-20260826",
+    "standard-py311-20260909",
+    "standard-py311-20261015",
+    "standard-py311-20261017",
+    "standard-py311-20261027",
+    "standard-py311-20261104",
+    "standard-py311-20261106",
+    "standard-py311-20261111",
+    "standard-py311-20261112",
+    "standard-py312-20260619",
+    "standard-py312-20260826",
+    "standard-py312-20260909",
+    "standard-py312-20261015",
+    "standard-py312-20261017",
+    "standard-py312-20261027",
+    "standard-py312-20261104",
+    "standard-py312-20261106",
+    "standard-py312-20261111",
+    "standard-py312-20261112",
+    "standard-py313-20260619",
+    "standard-py313-20260826",
+    "standard-py313-20260909",
+    "standard-py313-20261015",
+    "standard-py313-20261017",
+    "standard-py313-20261027",
+    "standard-py313-20261104",
+    "standard-py313-20261106",
+    "standard-py313-20261111",
+    "standard-py313-20261112",
+    "standard-py314-20260619",
+    "standard-py314-20260826",
+    "standard-py314-20260909",
+    "standard-py314-20261015",
+    "standard-py314-20261017",
+    "standard-py314-20261027",
+    "standard-py314-20261104",
+    "standard-py314-20261106",
+    "standard-py314-20261111",
+    "standard-py314-20261112",
+    "standard-py315-20261015",
+    "standard-py315-20261017",
+    "standard-py315-20261027",
+    "standard-py315-20261104",
+    "standard-py315-20261106",
+    "standard-py315-20261111",
+    "standard-py315-20261112"
+   ]
+  },
+  "--profile": {
+   "aliases": [],
+   "choices": null
+  },
+  "--read-allof-parents-in-mro-order": {
+   "aliases": [
+    "--no-read-allof-parents-in-mro-order"
+   ],
+   "choices": null
+  },
+  "--read-const-beside-enum": {
+   "aliases": [
+    "--no-read-const-beside-enum"
+   ],
+   "choices": null
+  },
+  "--read-dynamic-anchors-in-document-order": {
+   "aliases": [
+    "--no-read-dynamic-anchors-in-document-order"
+   ],
+   "choices": null
+  },
+  "--read-escaped-ref-pointers": {
+   "aliases": [
+    "--no-read-escaped-ref-pointers"
+   ],
+   "choices": null
+  },
+  "--read-input-model-dataclass-fields-by-alias": {
+   "aliases": [
+    "--no-read-input-model-dataclass-fields-by-alias"
+   ],
+   "choices": null
+  },
+  "--read-length-keywords-by-type": {
+   "aliases": [
+    "--no-read-length-keywords-by-type"
+   ],
+   "choices": null
+  },
+  "--read-msgspec-union-bounds-exactly": {
+   "aliases": [
+    "--no-read-msgspec-union-bounds-exactly"
+   ],
+   "choices": null
+  },
+  "--read-nullable-beside-type-list": {
+   "aliases": [
+    "--no-read-nullable-beside-type-list"
+   ],
+   "choices": null
+  },
+  "--read-object-keywords-by-type": {
+   "aliases": [
+    "--no-read-object-keywords-by-type"
+   ],
+   "choices": null
+  },
+  "--read-only-write-only-model-type": {
+   "aliases": [],
+   "choices": [
+    "all",
+    "request-response"
+   ]
+  },
+  "--read-schema-version-per-document": {
+   "aliases": [
+    "--no-read-schema-version-per-document"
+   ],
+   "choices": null
+  },
+  "--read-unevaluated-properties": {
+   "aliases": [
+    "--no-read-unevaluated-properties"
+   ],
+   "choices": null
+  },
+  "--recommend-options": {
+   "aliases": [],
+   "choices": null
+  },
+  "--remove-special-field-name-prefix": {
+   "aliases": [],
+   "choices": null
+  },
+  "--remove-unused-models-beside-type-overrides": {
+   "aliases": [
+    "--no-remove-unused-models-beside-type-overrides"
+   ],
+   "choices": null
+  },
+  "--rename-submodules-hidden-by-classes": {
+   "aliases": [
+    "--no-rename-submodules-hidden-by-classes"
+   ],
+   "choices": null
+  },
+  "--reuse-every-reached-input-model-type": {
+   "aliases": [
+    "--no-reuse-every-reached-input-model-type"
+   ],
+   "choices": null
+  },
+  "--reuse-model": {
+   "aliases": [
+    "--no-reuse-model"
+   ],
+   "choices": null
+  },
+  "--reuse-scope": {
+   "aliases": [],
+   "choices": [
+    "module",
+    "tree"
+   ]
+  },
+  "--schema-validator-base-class-name": {
+   "aliases": [],
+   "choices": null
+  },
+  "--schema-validator-type": {
+   "aliases": [],
+   "choices": [
+    "pydantic-v2"
+   ]
+  },
+  "--schema-version": {
+   "aliases": [],
+   "choices": null
+  },
+  "--schema-version-mode": {
+   "aliases": [],
+   "choices": [
+    "lenient",
+    "strict"
+   ]
+  },
+  "--serialization-aliases": {
+   "aliases": [],
+   "choices": null
+  },
+  "--server-body-mode": {
+   "aliases": [],
+   "choices": [
+    "request",
+    "typed"
+   ]
+  },
+  "--server-body-modes": {
+   "aliases": [],
+   "choices": null
+  },
+  "--server-handler-mode": {
+   "aliases": [],
+   "choices": [
+    "async",
+    "sync"
+   ]
+  },
+  "--server-handler-modes": {
+   "aliases": [],
+   "choices": null
+  },
+  "--server-include-request": {
+   "aliases": [
+    "--no-server-include-request"
+   ],
+   "choices": null
+  },
+  "--server-layout": {
+   "aliases": [],
+   "choices": [
+    "routers",
+    "single"
+   ]
+  },
+  "--server-model-package": {
+   "aliases": [],
+   "choices": null
+  },
+  "--server-operation-names": {
+   "aliases": [],
+   "choices": null
+  },
+  "--server-output": {
+   "aliases": [],
+   "choices": null
+  },
+  "--server-package": {
+   "aliases": [],
+   "choices": null
+  },
+  "--server-parameter-names": {
+   "aliases": [],
+   "choices": null
+  },
+  "--server-primary-responses": {
+   "aliases": [],
+   "choices": null
+  },
+  "--server-router-names": {
+   "aliases": [],
+   "choices": null
+  },
+  "--set-default-enum-member": {
+   "aliases": [],
+   "choices": null
+  },
+  "--shared-module-name": {
+   "aliases": [],
+   "choices": null
+  },
+  "--singularize-last-word-of-item-names": {
+   "aliases": [
+    "--no-singularize-last-word-of-item-names"
+   ],
+   "choices": null
+  },
+  "--skill-scope": {
+   "aliases": [],
+   "choices": [
+    "project",
+    "user"
+   ]
+  },
+  "--skip-path-extension-keys": {
+   "aliases": [
+    "--no-skip-path-extension-keys"
+   ],
+   "choices": null
+  },
+  "--skip-root-model": {
+   "aliases": [],
+   "choices": null
+  },
+  "--snake-case-field": {
+   "aliases": [
+    "--no-snake-case-field"
+   ],
+   "choices": null
+  },
+  "--special-field-name-prefix": {
+   "aliases": [],
+   "choices": null
+  },
+  "--strict-dotted-module-names": {
+   "aliases": [
+    "--no-strict-dotted-module-names"
+   ],
+   "choices": null
+  },
+  "--strict-nullable": {
+   "aliases": [
+    "--no-strict-nullable"
+   ],
+   "choices": null
+  },
+  "--strict-refs": {
+   "aliases": [],
+   "choices": null
+  },
+  "--strict-types": {
+   "aliases": [],
+   "choices": [
+    "bool",
+    "bytes",
+    "float",
+    "int",
+    "str"
+   ]
+  },
+  "--strip-default-none": {
+   "aliases": [],
+   "choices": null
+  },
+  "--tag-msgspec-by-payload-name": {
+   "aliases": [
+    "--no-tag-msgspec-by-payload-name"
+   ],
+   "choices": null
+  },
+  "--target-pydantic-version": {
+   "aliases": [],
+   "choices": [
+    "2",
+    "2.11",
+    "2.12",
+    "2.14"
+   ]
+  },
+  "--target-python-version": {
+   "aliases": [],
+   "choices": [
+    "3.10",
+    "3.11",
+    "3.12",
+    "3.13",
+    "3.14",
+    "3.15"
+   ]
+  },
+  "--treat-dot-as-module": {
+   "aliases": [
+    "--no-treat-dot-as-module"
+   ],
+   "choices": null
+  },
+  "--type-mappings": {
+   "aliases": [],
+   "choices": null
+  },
+  "--type-overrides": {
+   "aliases": [],
+   "choices": null
+  },
+  "--type-overrides-replace-whole-type": {
+   "aliases": [
+    "--no-type-overrides-replace-whole-type"
+   ],
+   "choices": null
+  },
+  "--union-mode": {
+   "aliases": [],
+   "choices": [
+    "left_to_right",
+    "smart"
+   ]
+  },
+  "--untrusted-input": {
+   "aliases": [
+    "--no-untrusted-input"
+   ],
+   "choices": null
+  },
+  "--update-lock": {
+   "aliases": [],
+   "choices": null
+  },
+  "--url": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-annotated": {
+   "aliases": [
+    "--no-use-annotated"
+   ],
+   "choices": null
+  },
+  "--use-attribute-docstrings": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-bounds-for-float-const": {
+   "aliases": [
+    "--no-use-bounds-for-float-const"
+   ],
+   "choices": null
+  },
+  "--use-bytes-for-content-media-type": {
+   "aliases": [
+    "--no-use-bytes-for-content-media-type"
+   ],
+   "choices": null
+  },
+  "--use-closed-typed-dict": {
+   "aliases": [
+    "--no-use-closed-typed-dict"
+   ],
+   "choices": null
+  },
+  "--use-decimal-for-multiple-of": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-decimal-in-field-forms": {
+   "aliases": [
+    "--no-use-decimal-in-field-forms"
+   ],
+   "choices": null
+  },
+  "--use-default": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-default-factory-for-optional-nested-models": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-default-kwarg": {
+   "aliases": [
+    "--no-use-default-kwarg"
+   ],
+   "choices": null
+  },
+  "--use-double-quotes": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-duplicate-name-suffix-for-every-collision": {
+   "aliases": [
+    "--no-use-duplicate-name-suffix-for-every-collision"
+   ],
+   "choices": null
+  },
+  "--use-encoded-str-for-constrained-base64": {
+   "aliases": [
+    "--no-use-encoded-str-for-constrained-base64"
+   ],
+   "choices": null
+  },
+  "--use-enum-field-as-literal-in-operations": {
+   "aliases": [
+    "--no-use-enum-field-as-literal-in-operations"
+   ],
+   "choices": null
+  },
+  "--use-enum-values-in-discriminator": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-exact-imports": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-field-description": {
+   "aliases": [
+    "--no-use-field-description"
+   ],
+   "choices": null
+  },
+  "--use-field-description-example": {
+   "aliases": [
+    "--no-use-field-description-example"
+   ],
+   "choices": null
+  },
+  "--use-frozen-field": {
+   "aliases": [
+    "--no-use-frozen-field"
+   ],
+   "choices": null
+  },
+  "--use-generic-base-class": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-generic-container-types": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-inline-field-description": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-missing-sentinel": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-msgspec-forbid-unknown-fields": {
+   "aliases": [
+    "--no-use-msgspec-forbid-unknown-fields"
+   ],
+   "choices": null
+  },
+  "--use-msgspec-meta-for-map-keys": {
+   "aliases": [
+    "--no-use-msgspec-meta-for-map-keys"
+   ],
+   "choices": null
+  },
+  "--use-msgspec-nullable-enum-alias": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-msgspec-tagged-unions": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-non-positive-negative-number-constrained-types": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-object-type": {
+   "aliases": [
+    "--no-use-object-type"
+   ],
+   "choices": null
+  },
+  "--use-one-literal-as-default": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-one-model-per-ref-site": {
+   "aliases": [
+    "--no-use-one-model-per-ref-site"
+   ],
+   "choices": null
+  },
+  "--use-operation-id-as-name": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-pendulum": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-plain-alias-for-recursive-models": {
+   "aliases": [
+    "--no-use-plain-alias-for-recursive-models"
+   ],
+   "choices": null
+  },
+  "--use-root-model-sequence-interface": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-root-model-type-alias": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-schema-description": {
+   "aliases": [
+    "--no-use-schema-description"
+   ],
+   "choices": null
+  },
+  "--use-serialization-alias": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-serialize-as-any": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-serialize-as-any-for-every-subclass": {
+   "aliases": [
+    "--no-use-serialize-as-any-for-every-subclass"
+   ],
+   "choices": null
+  },
+  "--use-single-dict-for-object-maps": {
+   "aliases": [
+    "--no-use-single-dict-for-object-maps"
+   ],
+   "choices": null
+  },
+  "--use-single-line-docstring": {
+   "aliases": [
+    "--no-use-single-line-docstring"
+   ],
+   "choices": null
+  },
+  "--use-single-value-enum-as-const": {
+   "aliases": [
+    "--no-use-single-value-enum-as-const"
+   ],
+   "choices": null
+  },
+  "--use-site-models-for-constrained-refs": {
+   "aliases": [
+    "--no-use-site-models-for-constrained-refs"
+   ],
+   "choices": null
+  },
+  "--use-specialized-enum": {
+   "aliases": [
+    "--no-use-specialized-enum"
+   ],
+   "choices": null
+  },
+  "--use-standard-collections": {
+   "aliases": [
+    "--no-use-standard-collections"
+   ],
+   "choices": null
+  },
+  "--use-standard-primitive-types": {
+   "aliases": [
+    "--no-use-standard-primitive-types"
+   ],
+   "choices": null
+  },
+  "--use-status-code-in-response-name": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-strict-str-for-base64": {
+   "aliases": [
+    "--no-use-strict-str-for-base64"
+   ],
+   "choices": null
+  },
+  "--use-subclass-enum": {
+   "aliases": [
+    "--no-use-subclass-enum"
+   ],
+   "choices": null
+  },
+  "--use-tag-as-union-variant-name": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-title-as-name": {
+   "aliases": [
+    "--no-use-title-as-name"
+   ],
+   "choices": null
+  },
+  "--use-total-false-for-typed-dict": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-tuple-for-closed-arrays": {
+   "aliases": [
+    "--no-use-tuple-for-closed-arrays"
+   ],
+   "choices": null
+  },
+  "--use-tuple-for-fixed-items": {
+   "aliases": [
+    "--no-use-tuple-for-fixed-items"
+   ],
+   "choices": null
+  },
+  "--use-tuple-for-fixed-length-arrays": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-type-alias": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-type-alias-type": {
+   "aliases": [],
+   "choices": null
+  },
+  "--use-type-checking-imports": {
+   "aliases": [
+    "--no-use-type-checking-imports"
+   ],
+   "choices": null
+  },
+  "--use-typed-map-values-beside-other-types": {
+   "aliases": [
+    "--no-use-typed-map-values-beside-other-types"
+   ],
+   "choices": null
+  },
+  "--use-typed-nullable-map-values": {
+   "aliases": [
+    "--no-use-typed-nullable-map-values"
+   ],
+   "choices": null
+  },
+  "--use-union-operator": {
+   "aliases": [
+    "--no-use-union-operator"
+   ],
+   "choices": null
+  },
+  "--use-unique-items-as-set": {
+   "aliases": [
+    "--no-use-unique-items-as-set"
+   ],
+   "choices": null
+  },
+  "--use-unique-items-as-set-by-value": {
+   "aliases": [
+    "--no-use-unique-items-as-set-by-value"
+   ],
+   "choices": null
+  },
+  "--use-x-python-type-as-written": {
+   "aliases": [
+    "--no-use-x-python-type-as-written"
+   ],
+   "choices": null
+  },
+  "--validation": {
+   "aliases": [],
+   "choices": null
+  },
+  "--validators": {
+   "aliases": [],
+   "choices": null
+  },
+  "--version": {
+   "aliases": [],
+   "choices": null
+  },
+  "--watch": {
+   "aliases": [],
+   "choices": null
+  },
+  "--watch-delay": {
+   "aliases": [],
+   "choices": null
+  },
+  "--wrap-string-literal": {
+   "aliases": [],
+   "choices": null
+  },
+  "-h": {
+   "aliases": [
+    "--help"
+   ],
+   "choices": null
+  }
+ },
+ "python_api": [
+  "AliasGenerator",
+  "AllExportsCollisionStrategy",
+  "AllExportsScope",
+  "AllOfClassHierarchy",
+  "AllOfMergeMode",
+  "AsyncAPIVersion",
+  "ClassNameAffixScope",
+  "ClientAsyncAPIPerspective",
+  "ClientBodyArguments",
+  "ClientSignatureStyle",
+  "ClientType",
+  "CollapseRootModelsNameStrategy",
+  "ConstructorFieldOrder",
+  "CustomFileHeaderMode",
+  "DEFAULT_FORMATTERS",
+  "DEFAULT_SHARED_MODULE_NAME",
+  "DanglingRefWarning",
+  "DateClassType",
+  "DatetimeClassType",
+  "DefaultPutDict",
+  "DefaultValueType",
+  "DefaultValueTypeWarning",
+  "DocumentationAnnotationWarning",
+  "DynamicModule",
+  "Error",
+  "FieldTypeCollisionStrategy",
+  "GenerateConfig",
+  "GeneratedModules",
+  "GraphQLScope",
+  "HTTPBackend",
+  "InputFileType",
+  "InputModelRefStrategy",
+  "InvalidClassNameError",
+  "InvalidFileFormatError",
+  "JsonSchemaVersion",
+  "LeftoverFilesWarning",
+  "LiteralType",
+  "MAX_VERSION",
+  "MIN_VERSION",
+  "ModuleSplitMode",
+  "NamingHintWarning",
+  "NamingStrategy",
+  "OpenAPIAsDefinitions",
+  "OpenAPIScope",
+  "OpenAPIVersion",
+  "ProtobufVersion",
+  "PythonVersion",
+  "PythonVersionMin",
+  "ReadOnlyWriteOnlyModelType",
+  "ReuseScope",
+  "SchemaParseError",
+  "SchemaResourceRefWarning",
+  "SchemaValidatorType",
+  "ServerBodyMode",
+  "ServerHandlerMode",
+  "ServerLayout",
+  "ServerType",
+  "TargetPydanticVersion",
+  "VersionMode",
+  "XMLSchemaVersion",
+  "clear_dynamic_models_cache",
+  "detect_jsonschema_version",
+  "detect_openapi_version",
+  "detect_xmlschema_version",
+  "enable_parsed_source_cache",
+  "generate",
+  "generate_dynamic_models",
+  "generate_dynamic_module",
+  "load_pyproject_config"
+ ],
+ "templates": [
+  "Enum.jinja2",
+  "PydanticV2TypeAlias.jinja2",
+  "ScalarTypeAliasAnnotation.jinja2",
+  "ScalarTypeAliasType.jinja2",
+  "ScalarTypeStatement.jinja2",
+  "TypeAliasAnnotation.jinja2",
+  "TypeAliasType.jinja2",
+  "TypeStatement.jinja2",
+  "TypedDict.jinja2",
+  "TypedDictClass.jinja2",
+  "TypedDictFunction.jinja2",
+  "UnionTypeAliasAnnotation.jinja2",
+  "UnionTypeAliasType.jinja2",
+  "UnionTypeStatement.jinja2",
+  "dataclass.jinja2",
+  "msgspec.jinja2",
+  "pydantic_v2/BaseModel.jinja2",
+  "pydantic_v2/ConfigDict.jinja2",
+  "pydantic_v2/RootModel.jinja2",
+  "pydantic_v2/RootModelTypeAlias.jinja2",
+  "pydantic_v2/dataclass.jinja2",
+  "pydantic_v2/schema_runtime_validation.jinja2",
+  "pydantic_v2/schema_runtime_validation_helpers.jinja2"
+ ]
+}

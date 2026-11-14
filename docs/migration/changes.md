@@ -6,6 +6,48 @@ Every change a user meets when upgrading, newest first. To upgrade from a releas
 
 ## Unreleased
 
+### New option `--infer-union-discriminators` (`--no-infer-union-discriminators`) (unreleased) { #option-infer-union-discriminators }
+
+Write a oneOf or anyOf that declares no discriminator as a discriminated union (Pydantic Field(discriminator=...), msgspec tagged structs) when every branch that is not null requires one property holding one string or integer value (a const or a one-value enum, also through allOf members and local $refs), with no value shared; in Pydantic output a union with a discriminator keyword keeps it. Valid payloads parse the same, except that a tag typed as a one-value enum class becomes its Literal value; with --use-one-literal-as-default a payload without the tag, which the schema requires, is rejected. An invalid payload reports the errors of the branch its tag names, or one tag error. Not applied to dataclasses.dataclass and typing.TypedDict output. Without it these unions are smart unions in Pydantic output, and msgspec output tags only the unions whose tags are written on the branches themselves, as in 0.96.0
+
+- **Source:** the command-line options of both releases
+
+### New option `--open-enum-base-class-map` (unreleased) { #option-open-enum-base-class-map }
+
+Base classes that open the Enum classes of open enums (--open-enums), by the class the enum is written on (JSON or JSON file path). Keys: Enum, StrEnum, IntEnum. Example: '{"StrEnum": "mypkg.OpenStrEnum", "IntEnum": "mypkg.OpenIntEnum"}'. Each is your member-less subclass of that class whose _missing_ keeps a value it does not list; a value type before Enum (--use-subclass-enum) stays: (str, mypkg.OpenEnum). An open enum whose class has no entry, or that is written as a Literal, is written as Literal[...] joined with its type
+
+- **Source:** the command-line options of both releases
+
+### New option `--open-enums` (unreleased) { #option-open-enums }
+
+Accept values an enum does not list. extensible: the enums whose schema marks them open (x-extensible-enum: true, or x-ms-enum with modelAsString: true); all: every enum of two or more values, except one whose schema closes it (x-extensible-enum: false, modelAsString: false); none: no enum, as without the option. An open enum is written as its Enum class on the base --open-enum-base-class-map names for that class, else as Literal[...] joined with its type (Literal['red', 'green'] | str), whatever the options say about Literals
+
+- **Source:** the command-line options of both releases
+
+### New option `--read-format-as-annotation` (`--no-read-format-as-annotation`) (unreleased) { #option-read-format-as-annotation }
+
+Read the format of a schema as an annotation, as JSON Schema does: a string, integer or number schema takes the type its type keyword gives (str, int, float), with its own length, pattern and bound keywords, so every value the schema accepts validates and dumps as written, and an unknown format gives no warning; a format that a --type-mappings entry names for the schema's type keeps that mapping, and format: binary stays bytes. Without it each known format selects a type (EmailStr, AwareDatetime, UUID, Decimal, SecretStr, Base64Str, ...), as in 0.96.0
+
+- **Source:** the command-line options of both releases
+
+### New option `--read-kubernetes-extensions` (`--no-read-kubernetes-extensions`) (unreleased) { #option-read-kubernetes-extensions }
+
+Read the Kubernetes schema extensions as the keywords they stand for: x-kubernetes-int-or-string (and the int-or-string format) as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as additionalProperties true, and an x-kubernetes-group-version-kind as the const and default of the apiVersion and kind it names; without it they are ignored, as in 0.96.0
+
+- **Source:** the command-line options of both releases
+
+### New option `--untyped-value-type` (unreleased) { #option-untyped-value-type }
+
+Write each value the schema leaves untyped ({}, true, a schema without type, the values of an object without properties and the items of an array without items) as this type instead of Any: pydantic.JsonValue (Pydantic 2.5 or later), object, Any or the dotted import path of a type of your own, which the models import; the structure is as without the option. --type-overrides, x-python-type and x-python-import keep their types, and msgspec.Struct output keeps Any, which msgspec decodes into JSON values. Without it untyped values are Any, and object in containers under --use-object-type, as in 0.96.0
+
+- **Source:** the command-line options of both releases
+
+### New option `--use-x-python-import-for-every-ref` (`--no-use-x-python-import-for-every-ref`) (unreleased) { #option-use-x-python-import-for-every-ref }
+
+Type every reference to a schema with x-python-import by the class it imports, as a $ref to it at a field is: also an allOf of it beside keywords that add no field where a JSON pointer into another document or a whole-document $ref names it, and under --read-only-write-only-model-type request-response a model does not split for the readOnly or writeOnly properties of such a schema, nor for those its allOf bases reach through one; without it such a reference keeps the model of its schema and those models split, as in 0.96.0
+
+- **Source:** the command-line options of both releases
+
 ### New dated presets `standard-py3XX-20261113` and `practical-py3XX-20261113` (unreleased) { #preset-20261113 }
 
 They keep the options of the 20261112 presets and add:
