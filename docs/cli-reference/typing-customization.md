@@ -3890,12 +3890,17 @@ yet. `extensible` opens the enums whose schema marks them open: `x-extensible-en
 to that const, so it stays closed. The list form of `x-extensible-enum`, which lists the values in place of `enum`, is
 not read: such a schema has no `enum`, so its field is already a plain `str`.
 
-An open enum written as an Enum class takes the base `--open-enum-base-class-map` names for its class.
+An open enum is written as `Literal[...]` joined with the type of its schema, `Literal['queued', 'done'] | str`, where
+`--enum-field-as-literal all` writes a `Literal`: a listed value parses as itself, as from that `Literal`, and any other
+value of the type is accepted. This form wins over an option that asks for an Enum class (`--enum-field-as-literal
+none`, an `enum` entry of `--enum-field-as-literal-map`, `x-enum-field-as-literal: false`). Code that read a member's
+`.value` or compared with `is JobStatus.queued` compares with the string instead. With `--open-enum-base-class-map`,
+an open enum written as an Enum class keeps its class on the base the map names for it.
 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input open_enums.yaml --formatters builtin --target-python-version 3.11 --open-enums all --open-enum-base-class-map '{"StrEnum": "tests.data.python.open_enum.OpenStrEnum", "IntEnum": "tests.data.python.open_enum.OpenIntEnum", "Enum": "tests.data.python.open_enum.OpenEnum"}' # (1)!
+    datamodel-codegen --input open_enums.yaml --formatters builtin --target-python-version 3.11 --open-enums extensible # (1)!
     ```
 
     1. :material-arrow-left: `--open-enums` - the option documented here
@@ -4058,13 +4063,6 @@ An open enum written as an Enum class takes the base `--open-enum-base-class-map
 
         from pydantic import BaseModel, Field, RootModel
 
-        from tests.data.python.open_enum import OpenEnum, OpenIntEnum, OpenStrEnum
-
-
-        class Mode(OpenStrEnum):
-            auto = 'auto'
-            manual = 'manual'
-
 
         class Kind(StrEnum):
             job = 'job'
@@ -4075,32 +4073,25 @@ An open enum written as an Enum class takes the base `--open-enum-base-class-map
             slow = 'slow'
 
 
-        class JobStatus(OpenStrEnum):
-            queued = 'queued'
-            running = 'running'
-            done = 'done'
+        class JobStatus(RootModel[Literal['queued', 'running', 'done'] | str]):
+            root: Literal['queued', 'running', 'done'] | str
 
 
-        class ProvisioningState(OpenStrEnum):
-            Succeeded = 'Succeeded'
-            Failed = 'Failed'
+        class ProvisioningState(RootModel[Literal['Succeeded', 'Failed'] | str]):
+            root: Literal['Succeeded', 'Failed'] | str
 
 
-        class JobType(OpenStrEnum):
+        class JobType(StrEnum):
             scrape = 'scrape'
             crawl = 'crawl'
 
 
-        class Priority(OpenIntEnum):
-            integer_1 = 1
-            integer_2 = 2
-            integer_3 = 3
+        class Priority(RootModel[Literal[1, 2, 3] | int]):
+            root: Literal[1, 2, 3] | int
 
 
-        class Phase(OpenEnum):
-            pending = 'pending'
-            active = 'active'
-            NoneType_None = None
+        class Phase(RootModel[Literal['pending', 'active'] | str | None]):
+            root: Literal['pending', 'active'] | str | None
 
 
         class Region(StrEnum):
@@ -4113,35 +4104,26 @@ An open enum written as an Enum class takes the base `--open-enum-base-class-map
             paid = 'paid'
 
 
-        class Tag(OpenStrEnum):
-            red = 'red'
-            blue = 'blue'
+        class Tag(RootModel[Literal['red', 'blue'] | str]):
+            root: Literal['red', 'blue'] | str
 
 
-        class Lifecycle(OpenStrEnum):
-            queued = 'queued'
-            running = 'running'
-            done = 'done'
-            Succeeded = 'Succeeded'
-            Failed = 'Failed'
+        class Lifecycle(BaseModel):
+            pass
 
 
-        class Stage(OpenStrEnum):
-            queued = 'queued'
-            running = 'running'
-            done = 'done'
+        class Stage(StrEnum):
             scrape = 'scrape'
             crawl = 'crawl'
 
 
-        class Color(OpenStrEnum):
+        class Color(StrEnum):
             red = 'red'
             blue = 'blue'
 
 
-        class PetType(OpenStrEnum):
-            cat = 'cat'
-            dog = 'dog'
+        class PetType(RootModel[Literal['cat', 'dog'] | str]):
+            root: Literal['cat', 'dog'] | str
 
 
         class Cat(BaseModel):
@@ -4167,10 +4149,10 @@ An open enum written as an Enum class takes the base `--open-enum-base-class-map
             region: Region | None = None
             tier: Tier | None = None
             tags: list[Tag] | None = None
-            mode: Mode | None = 'auto'
+            mode: Literal['auto', 'manual'] | str | None = 'auto'
             kind: Kind | None = None
             pinned: Literal['fast'] | None = None
-            quota: dict[Literal['cpu', 'memory'], int] | None = None
+            quota: dict[Literal['cpu', 'memory'] | str, int] | None = None
             lifecycle: Lifecycle | None = None
             stage: Stage | None = None
             color: Color | None = None
@@ -4190,15 +4172,13 @@ An open enum written as an Enum class takes the base `--open-enum-base-class-map
 
         from __future__ import annotations
 
-        from enum import StrEnum
+        from enum import Enum, IntEnum, StrEnum
         from typing import Literal
 
         from pydantic import BaseModel, Field, RootModel
 
-        from tests.data.python.open_enum import OpenEnum, OpenIntEnum, OpenStrEnum
 
-
-        class Mode(OpenStrEnum):
+        class Mode(StrEnum):
             auto = 'auto'
             manual = 'manual'
 
@@ -4212,13 +4192,13 @@ An open enum written as an Enum class takes the base `--open-enum-base-class-map
             slow = 'slow'
 
 
-        class JobStatus(OpenStrEnum):
+        class JobStatus(StrEnum):
             queued = 'queued'
             running = 'running'
             done = 'done'
 
 
-        class ProvisioningState(OpenStrEnum):
+        class ProvisioningState(StrEnum):
             Succeeded = 'Succeeded'
             Failed = 'Failed'
 
@@ -4228,13 +4208,13 @@ An open enum written as an Enum class takes the base `--open-enum-base-class-map
             crawl = 'crawl'
 
 
-        class Priority(OpenIntEnum):
+        class Priority(IntEnum):
             integer_1 = 1
             integer_2 = 2
             integer_3 = 3
 
 
-        class Phase(OpenEnum):
+        class Phase(Enum):
             pending = 'pending'
             active = 'active'
             NoneType_None = None
@@ -4250,12 +4230,12 @@ An open enum written as an Enum class takes the base `--open-enum-base-class-map
             paid = 'paid'
 
 
-        class Tag(OpenStrEnum):
+        class Tag(StrEnum):
             red = 'red'
             blue = 'blue'
 
 
-        class Lifecycle(OpenStrEnum):
+        class Lifecycle(StrEnum):
             queued = 'queued'
             running = 'running'
             done = 'done'
@@ -4276,7 +4256,7 @@ An open enum written as an Enum class takes the base `--open-enum-base-class-map
             blue = 'blue'
 
 
-        class PetType(OpenStrEnum):
+        class PetType(StrEnum):
             cat = 'cat'
             dog = 'dog'
 

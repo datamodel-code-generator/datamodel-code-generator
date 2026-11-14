@@ -120,7 +120,7 @@ class Job(Struct):
     mode: Mode | UnsetType = 'auto'
     kind: Kind | UnsetType = UNSET
     pinned: Pinned | UnsetType = UNSET
-    quota: dict[Literal['cpu', 'memory'], int] | UnsetType = UNSET
+    quota: dict[Literal['cpu', 'memory'] | str, int] | UnsetType = UNSET
     lifecycle: Lifecycle | UnsetType = UNSET
     stage: Stage | UnsetType = UNSET
     color: Color | UnsetType = UNSET

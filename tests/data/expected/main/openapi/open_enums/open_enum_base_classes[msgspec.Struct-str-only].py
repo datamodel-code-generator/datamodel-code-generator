@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from enum import Enum, IntEnum, StrEnum
+from enum import StrEnum
 from typing import Literal, TypeAlias
 
 from msgspec import UNSET, Struct, UnsetType
@@ -42,18 +42,10 @@ class JobType(OpenStrEnum):
     crawl = 'crawl'
 
 
-class Priority(IntEnum):
-    integer_1 = 1
-    integer_2 = 2
-    integer_3 = 3
+Priority: TypeAlias = Literal[1, 2, 3] | int
 
 
-class PhaseEnum(Enum):
-    pending = 'pending'
-    active = 'active'
-
-
-Phase: TypeAlias = PhaseEnum | None
+Phase: TypeAlias = Literal['pending', 'active'] | str | None
 
 
 class Region(StrEnum):
@@ -120,7 +112,7 @@ class Job(Struct):
     mode: Mode | UnsetType = 'auto'
     kind: Kind | UnsetType = UNSET
     pinned: Pinned | UnsetType = UNSET
-    quota: dict[Literal['cpu', 'memory'], int] | UnsetType = UNSET
+    quota: dict[Literal['cpu', 'memory'] | str, int] | UnsetType = UNSET
     lifecycle: Lifecycle | UnsetType = UNSET
     stage: Stage | UnsetType = UNSET
     color: Color | UnsetType = UNSET

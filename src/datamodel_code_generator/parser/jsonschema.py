@@ -7597,6 +7597,62 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the type an enum class of the schema may specialize or subclass."""
         return self._get_type_with_mappings(obj.type, obj.format) if isinstance(obj.type, str) else None
 
+    def _enum_class_members(self, obj: JsonSchemaObject) -> tuple[list[Any], list[Any], bool]:
+        """Return the values the members of the enum class of a schema are named for, the values it holds, and nullable.
+
+        A null the schema reads as nullability names no member, nor is it held; a ``None`` member that msgspec's
+        nullable alias or a value base cannot hold names a member but is not held, and makes the enum nullable.
+        """
+        if (enum_null := self._null_facts(obj, "enum")).rule == "enum-null-as-nullable":
+            values = [e for e in obj.enum if e is not None]
+            return values, values, True
+        msgspec_null_alias = self.use_msgspec_nullable_enum_alias and not self.data_model_type.SUPPORTS_NULL_ENUM_MEMBER
+        if enum_null.rule == "enum-null-member" and (msgspec_null_alias or self._enum_class_has_value_base(obj)):
+            enum_times = [e for e in obj.enum if e is not None]
+            return obj.enum, enum_times, msgspec_null_alias or not enum_times
+        return obj.enum, obj.enum, False
+
+    def _open_enum_without_base(self, obj: JsonSchemaObject) -> bool:
+        """Return whether the enum of a schema is open and the map gives no base for the class it is written on.
+
+        Such an enum is written as ``Literal[...]`` joined with its type, whatever the options say about Literals.
+        The class is the one ``parse_enum`` builds, of the values the constraints beside the enum leave.
+        """
+        if not self._schema_enum_is_open(obj):
+            return False
+        viewed = self._literal_view(obj)
+        enum_cls, _ = self._get_enum_model_class(self._get_enum_type(viewed), self._enum_class_members(viewed)[1])
+        return self._open_enum_base(enum_cls) is None
+
+    def _with_open_enum_type(self, obj: JsonSchemaObject, literal: DataType) -> DataType:
+        """Return the Literal type of an enum joined with the type of its schema when the enum is open, else as given.
+
+        The type is what the schema's ``type``, ``format`` and the keywords beside them give without the enum, with
+        the keywords on the type (so the values the enum does not list meet them), else the types of the values; it
+        admits every value of that type the enum does not list. Null stays the nullability of the Literal type.
+        """
+        if not self._schema_enum_is_open(obj):
+            return literal
+        types = declared_types(obj.type)
+        opened = (
+            [
+                self._get_constrained_data_type(obj, type_, field_constraints=False)
+                for type_ in non_null_types(types, distinct=True)
+            ]
+            if types
+            else [
+                value_type
+                for value in obj.enum
+                if (value_type := _value_keywords.get_scalar_data_type_from_json_value(self, value)) is not None
+                and value is not None
+            ]
+        )
+        members = [*(literal.data_types or [self.data_type(literals=literal.literals)])]
+        for value_type in opened:
+            if value_type not in members:
+                members.append(value_type)
+        return build_union(self.data_type, members, nullable=literal.is_optional)
+
     def _schema_enum_is_open(self, obj: JsonSchemaObject) -> bool:
         """Return whether the enum of the schema accepts values it does not list, by the keywords beside it."""
         return self._enum_is_open(
@@ -7656,19 +7712,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             enum_fields: list[DataModelFieldBase] = []
 
             written_obj, obj = obj, self._literal_view(obj)
-            named_values = obj.enum
-            msgspec_null_alias = (
-                self.use_msgspec_nullable_enum_alias and not self.data_model_type.SUPPORTS_NULL_ENUM_MEMBER
-            )
-            if (enum_null := self._null_facts(obj, "enum")).rule == "enum-null-as-nullable":
-                nullable: bool = True
-                enum_times = named_values = [e for e in obj.enum if e is not None]
-            elif enum_null.rule == "enum-null-member" and (msgspec_null_alias or self._enum_class_has_value_base(obj)):
-                enum_times = [e for e in obj.enum if e is not None]
-                nullable = msgspec_null_alias or not enum_times
-            else:
-                enum_times = obj.enum
-                nullable = False
+            named_values, enum_times, nullable = self._enum_class_members(obj)
 
             exclude_field_names: set[str] = set()
 
