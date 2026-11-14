@@ -17,7 +17,7 @@ that tests call or that other parts of the parser call stay on the parser as del
 
 from __future__ import annotations
 
-from contextlib import ExitStack, contextmanager
+from contextlib import AbstractContextManager, ExitStack, contextmanager, nullcontext
 from itertools import chain
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeAlias, cast
 
@@ -60,7 +60,7 @@ from datamodel_code_generator.reference import (
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Generator, Iterable, Sequence
+    from collections.abc import Generator, Iterable, Iterator, Sequence
     from pathlib import Path
 
     from typing_extensions import Unpack
@@ -209,6 +209,11 @@ class RwSplitHost(AllOfValuesHost, Protocol):
     _rw_model_field_facts_cache: dict[str, tuple[bool, bool, bool, bool]]
     _rw_model_field_facts_in_progress: set[str]
     _rw_model_references_cache: dict[str, tuple[bool, tuple[str, ...]]]
+    _rw_model_base_refs: dict[str, tuple[str, ...]]
+    _rw_imported_field_caches: tuple[
+        dict[str, tuple[bool, tuple[str, ...]]], dict[tuple[str, str], bool], dict[str, tuple[str, ...]]
+    ]
+    _rw_walk_reads_imported_fields: bool
     _rw_model_variant_references: dict[tuple[str, str], Reference]
     _rw_model_variant_requirement_cache: dict[tuple[str, str], bool]
     _unsatisfiable_schemas: set[tuple[str, tuple[str, ...]]]
@@ -269,6 +274,10 @@ class RwSplitHost(AllOfValuesHost, Protocol):
     @property
     def _legacy_rw_variants(self) -> frozenset[str]:
         """The rows of the request/response split kept: every row without --dedupe-request-response-variants."""
+
+    @property
+    def _legacy_python_import_rows(self) -> frozenset[str]:
+        """The rows of 0.96.0 x-python-import typing kept: every row without --use-x-python-import-for-every-ref."""
 
     @property
     def _property_count_rule_cache(self) -> dict[int, tuple[JsonSchemaObject, PropertyCountRule | None]]:
@@ -388,6 +397,9 @@ class RwSplitHost(AllOfValuesHost, Protocol):
 
     def _keep_python_import_model(self, path: str) -> None:
         """Keep the model of the schema at the key ``path`` whose read/write variant a split names before it is read."""
+
+    def _import_types_ref(self, ref: str, defining_ref: str, *, one_class: bool = False) -> bool:
+        """Return whether an import types the ``$ref`` ``ref`` of a site in the schema at ``defining_ref``."""
 
     def _linearize_inherited_schema_refs(self, base_classes: list[Reference]) -> tuple[str, ...]:
         """Return raw inherited schemas in the same C3 order as generated models."""
@@ -559,6 +571,9 @@ def clear_inherited_field_caches(parser: RwSplitHost) -> None:
     parser._rw_model_field_facts_cache.clear()  # noqa: SLF001
     parser._rw_model_references_cache.clear()  # noqa: SLF001
     parser._rw_model_variant_requirement_cache.clear()  # noqa: SLF001
+    parser._rw_model_base_refs.clear()  # noqa: SLF001
+    for cache in parser._rw_imported_field_caches:  # noqa: SLF001
+        cache.clear()
     parser._rw_model_variant_references.clear()  # noqa: SLF001
     parser._inherited_schema_cache.clear()  # noqa: SLF001
     parser._inherited_schema_ancestor_cache.clear()  # noqa: SLF001
@@ -781,7 +796,7 @@ def get_separate_model_fields(
     all_fields: list[DataModelFieldBase] | None = None
     if (
         rw_model_fields_split(parser, fields)
-        or any(ref_schema_has_rw_model_facts(parser, base.path) for base in base_classes or () if base.path)
+        or any(base_has_rw_model_facts(parser, base.path) for base in base_classes or () if base.path)
         or rw_model_writes_variant_beside_fields(parser, reference.path)
     ):
         all_fields = collect_all_fields_for_request_response(parser, fields, base_classes)
@@ -842,7 +857,7 @@ def splits_into_rw_model_variants(
             for resolved_ref in parser._linearize_inherited_schema_refs(base_classes or [])  # noqa: SLF001
         )
         or rw_model_writes_variant_beside_fields(parser, reference.path)
-        or any(parser._ref_schema_generates_variant(base.path, "Request") for base in base_classes or ())  # noqa: SLF001
+        or any(base_generates_variant(parser, base.path) for base in base_classes or ())
     )
 
 
@@ -983,6 +998,13 @@ def _cache_request_response_split(parser: RwSplitHost, resolved_ref: str, *, spl
         parser._rw_model_variant_requirement_cache[resolved_ref, suffix] = splits  # noqa: SLF001
 
 
+def record_rw_model_split(parser: RwSplitHost, resolved_ref: str) -> None:
+    """Record that the model parsed at a key splits, for both readings of the walk (``imported_field_reading``)."""
+    _cache_request_response_split(parser, resolved_ref, splits=True)
+    for suffix in ("Request", "Response"):
+        parser._rw_imported_field_caches[1][resolved_ref, suffix] = True  # noqa: SLF001
+
+
 def request_response_ref_schema_generates_variant(
     parser: RwSplitHost,
     resolved_ref: str,
@@ -1002,6 +1024,11 @@ def request_response_ref_schema_generates_variant(
         if _rw_variant_of(current_ref):
             continue
         has_direct_variant, nested_refs = parser._get_rw_model_variant_graph_node(current_ref)  # noqa: SLF001
+        if not has_direct_variant and reads_bases_with_imported_fields(parser):
+            has_direct_variant = any(
+                base_generates_variant(parser, base)
+                for base in parser._rw_model_base_refs.get(current_ref, ())  # noqa: SLF001
+            )
         if has_direct_variant:
             matched_ref = current_ref
             break
@@ -1026,7 +1053,8 @@ def get_rw_model_variant_graph_node(parser: RwSplitHost, resolved_ref: str) -> t
 
     A special path has no raw schema of its own: its split is the one recorded when its model is parsed. Under
     ``legacy-rw-parsed-facts``, the 0.86.0 node: the facts of a temporary parse of the key also split it,
-    and the models its parsed fields reference are edges too.
+    and the models its parsed fields reference are edges too, except one an import types in their place
+    (``_imports_type_reference``).
     """
     if "legacy-rw-parsed-facts" not in parser._legacy_rw_variants:  # noqa: SLF001
         return parser._get_ref_schema_rw_model_reference_facts(resolved_ref)  # noqa: SLF001
@@ -1039,6 +1067,7 @@ def get_rw_model_variant_graph_node(parser: RwSplitHost, resolved_ref: str) -> t
         for field in fields
         for data_type in field.data_type.all_data_types
         if (reference := data_type.reference) is not None
+        and (parser._rw_walk_reads_imported_fields or not parser._imports_type_reference(reference.path))  # noqa: SLF001
     }
     with legacy_rw_errors(parser):
         has_inline_variant, raw_refs = parser._get_ref_schema_rw_model_reference_facts(resolved_ref)  # noqa: SLF001
@@ -1104,7 +1133,7 @@ def get_ref_schema_rw_model_reference_facts(
     ``_typed_model_children``) and follows what that types in turn. It stops at the first flagged property: the
     references of a node that needs variants are never read (under ``legacy-rw-parsed-facts`` it reads them all,
     as 0.86.0 did). A key that names no loadable schema has neither, nor has a special path, which the parser makes
-    and no ``$ref`` names.
+    and no ``$ref`` names, nor has a key whose schema is a ``$ref`` that an import types (``_import_types_ref``).
     """
     if _is_special_path(resolved_ref):
         return False, ()
@@ -1117,7 +1146,10 @@ def get_ref_schema_rw_model_reference_facts(
 
     has_inline_variant = False
     references: dict[str, None] = {}
-    stack: list[_Site] = [SchemaSite("", root_schema, [resolved_ref])]
+    base_refs: dict[str, None] = {}
+    stack: list[_Site] = (
+        [] if _is_imported_ref(parser, root_schema, resolved_ref) else [SchemaSite("", root_schema, [resolved_ref])]
+    )
     while stack:
         for child in parser._DEFINITION_TABLE.typed_children(parser, stack.pop()):  # noqa: SLF001
             match child.position:
@@ -1136,6 +1168,7 @@ def get_ref_schema_rw_model_reference_facts(
                 case "key":
                     references.setdefault(cast("str", child.reference), None)
                 case _:
+                    base_refs.update(dict.fromkeys(_member_base_refs(parser, child, resolved_ref)))
                     stack.append(
                         SchemaSite(
                             "",
@@ -1145,8 +1178,84 @@ def get_ref_schema_rw_model_reference_facts(
                             root=child.position == "root",
                         )
                     )
+    parser._rw_model_base_refs[resolved_ref] = tuple(base_refs)  # noqa: SLF001
     parser._rw_model_references_cache[resolved_ref] = result = (has_inline_variant, tuple(references))  # noqa: SLF001
     return result
+
+
+def _member_base_refs(parser: RwSplitHost, child: TypedChild[JsonSchemaObject], defining_ref: str) -> Iterator[str]:
+    """Yield the keys an allOf member names as a base of the model of ``defining_ref``, the refs its site types."""
+    if child.position != "member":
+        return
+    schema = cast("JsonSchemaObject", child.schema)
+    for ref in (schema.ref, schema.recursiveRef, schema.dynamicRef):
+        if ref and (nested_ref := parser._resolve_rw_model_reference(ref, defining_ref)):  # noqa: SLF001
+            yield nested_ref
+
+
+def reads_bases_with_imported_fields(parser: RwSplitHost) -> bool:
+    """Return whether the walk reads an allOf base as 0.96.0 did, while it reads the fields an import types as such.
+
+    Under row ``legacy-rw-base-reads-imported-fields`` (without --use-x-python-import-for-every-ref) a base splits
+    the model that inherits it where the base reaches a readOnly or writeOnly property through a field that an import
+    types, as in 0.96.0 (``imported_field_reading``); a type names the variant only of a model that splits.
+    """
+    return (
+        not parser._rw_walk_reads_imported_fields  # noqa: SLF001
+        and "legacy-rw-base-reads-imported-fields" in parser._legacy_python_import_rows  # noqa: SLF001
+    )
+
+
+@contextmanager
+def imported_field_reading(parser: RwSplitHost) -> Generator[None]:
+    """Read the walk with every field that an import types naming the model of its schema, as 0.96.0 read it.
+
+    The facts of this reading are kept apart from those of the reading in which the import types those fields; a
+    base is read in it only from the other reading (``reads_bases_with_imported_fields``).
+    """
+    caches = parser._rw_model_references_cache, parser._rw_model_variant_requirement_cache, parser._rw_model_base_refs  # noqa: SLF001
+    (
+        parser._rw_model_references_cache,  # noqa: SLF001
+        parser._rw_model_variant_requirement_cache,  # noqa: SLF001
+        parser._rw_model_base_refs,  # noqa: SLF001
+    ) = parser._rw_imported_field_caches  # noqa: SLF001
+    parser._rw_imported_field_caches, parser._rw_walk_reads_imported_fields = caches, True  # noqa: SLF001
+    try:
+        yield
+    finally:
+        parser._rw_imported_field_caches = (  # noqa: SLF001
+            parser._rw_model_references_cache,  # noqa: SLF001
+            parser._rw_model_variant_requirement_cache,  # noqa: SLF001
+            parser._rw_model_base_refs,  # noqa: SLF001
+        )
+        (
+            parser._rw_model_references_cache,  # noqa: SLF001
+            parser._rw_model_variant_requirement_cache,  # noqa: SLF001
+            parser._rw_model_base_refs,  # noqa: SLF001
+        ) = caches
+        parser._rw_walk_reads_imported_fields = False  # noqa: SLF001
+
+
+def _base_reading(parser: RwSplitHost) -> AbstractContextManager[None]:
+    """Return the reading of the walk an allOf base is read in (``reads_bases_with_imported_fields``)."""
+    return imported_field_reading(parser) if reads_bases_with_imported_fields(parser) else nullcontext()
+
+
+def base_has_rw_model_facts(parser: RwSplitHost, resolved_ref: str) -> bool:
+    """Return whether inheriting the schema at ``resolved_ref`` as an allOf base can bring read/write facts."""
+    with _base_reading(parser):
+        return ref_schema_has_rw_model_facts(parser, resolved_ref)
+
+
+def base_generates_variant(parser: RwSplitHost, resolved_ref: str) -> bool:
+    """Return whether the schema at ``resolved_ref``, read as an allOf base, generates a Request variant."""
+    with _base_reading(parser):
+        return parser._ref_schema_generates_variant(resolved_ref, "Request")  # noqa: SLF001
+
+
+def _is_imported_ref(parser: RwSplitHost, schema: JsonSchemaObject, defining_ref: str) -> bool:
+    """Return whether a schema is a ``$ref``, read as written, that an import types in place of a model."""
+    return bool(schema.ref) and not _merges_ref_siblings(schema) and parser._import_types_ref(schema.ref, defining_ref)  # noqa: SLF001
 
 
 def lightweight_type_keys(parser: RwSplitHost, data_type: DataType | None) -> tuple[str, ...]:
@@ -1531,7 +1640,7 @@ def create_request_response_models(  # noqa: PLR0913, PLR0917
     if request_response := parser.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
         if "legacy-rw-parsed-facts" in parser._legacy_rw_variants:  # noqa: SLF001
             parser._rw_model_field_facts_cache[reference.path] = facts  # noqa: SLF001
-        _cache_request_response_split(parser, reference.path, splits=True)
+        record_rw_model_split(parser, reference.path)
         parser._request_response_fields[reference.path] = tuple(copy_unregistered_fields(parser, all_fields))  # noqa: SLF001
         parser._raw_inherited_own_names_cache[reference.path] = frozenset(  # noqa: SLF001
             field_name for field in own_fields if (field_name := _field_source_name(field)) is not None

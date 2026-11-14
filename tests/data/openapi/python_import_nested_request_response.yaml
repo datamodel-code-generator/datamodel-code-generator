@@ -1,0 +1,109 @@
+openapi: 3.1.0
+info:
+  title: Shelter
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Visit:
+      type: object
+      properties:
+        kennel:
+          $ref: '#/components/schemas/Kennel'
+        ward:
+          $ref: '#/components/schemas/Ward'
+        alias:
+          $ref: '#/components/schemas/Alias'
+        nick:
+          type: string
+          writeOnly: true
+    Ward:
+      type: object
+      properties:
+        kennel:
+          $ref: '#/components/schemas/Kennel'
+    Kennel:
+      type: object
+      properties:
+        animal:
+          $ref: '#/components/schemas/Animal'
+        featured:
+          allOf:
+            - $ref: '#/components/schemas/Animal'
+            - description: The featured animal.
+        resident:
+          allOf:
+            - $ref: '#/components/schemas/Animal'
+        guest:
+          $ref: '#/components/schemas/Animal'
+          description: A visiting animal.
+        tag:
+          $ref: 'python_import_nested_request_response_tags.yaml#/components/schemas/Tag'
+        kit:
+          allOf:
+            - $ref: '#/components/schemas/Animal'
+          minProperties: 1
+        boarder:
+          allOf:
+            - $ref: '#/components/schemas/Animal'
+          type: object
+        spare:
+          allOf:
+            - $ref: '#/components/schemas/Animal'
+          nullable: true
+        foster:
+          allOf:
+            - $ref: '#/components/schemas/Animal'
+            - nullable: true
+        lodger:
+          allOf:
+            - $ref: '#/components/schemas/Animal'
+            - true
+    Alias:
+      $ref: '#/components/schemas/Animal'
+    Adoption:
+      type: object
+      properties:
+        yard:
+          $ref: '#/components/schemas/Yard'
+    Yard:
+      type: object
+      properties:
+        dog:
+          $ref: '#/components/schemas/Dog'
+        cat:
+          allOf:
+            - $ref: '#/components/schemas/Animal'
+            - type: object
+              properties:
+                purr:
+                  type: boolean
+        pup:
+          $ref: '#/components/schemas/Animal'
+          minProperties: 1
+        pal:
+          allOf:
+            - $ref: '#/components/schemas/Dog'
+        cub:
+          allOf:
+            - $ref: '#/components/schemas/Dog'
+            - description: A cub.
+          minProperties: 1
+    Dog:
+      allOf:
+        - $ref: '#/components/schemas/Animal'
+        - type: object
+          properties:
+            bark:
+              type: string
+    Animal:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+      x-python-import:
+        module: shelter.animals
+        name: Animal

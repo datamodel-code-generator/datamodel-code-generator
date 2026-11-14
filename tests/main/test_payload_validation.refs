@@ -1874,6 +1874,7 @@ openapi/pattern_backreference.yaml::components.schemas.Doubled	payloads/native_n
 openapi/pattern_backreference.yaml::components.schemas.Plain	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern_lookaround.yaml::components.schemas.info	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/python_import_all_of/alias.yaml::components.schemas.Stem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/python_import_nested_request_response_tags.yaml::components.schemas.Tag	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/python_import_order_request_response/birds.yaml::components.schemas.Bird	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/python_import_order_request_response/pets.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/query_parameters.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3966,6 +3967,7 @@ openapi/pattern_backreference.yaml::components.schemas.Doubled	payloads/native_n
 openapi/pattern_backreference.yaml::components.schemas.Plain	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern_lookaround.yaml::components.schemas.info	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/python_import_all_of/alias.yaml::components.schemas.Stem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/python_import_nested_request_response_tags.yaml::components.schemas.Tag	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/python_import_order_request_response/birds.yaml::components.schemas.Bird	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/python_import_order_request_response/pets.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/query_parameters.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

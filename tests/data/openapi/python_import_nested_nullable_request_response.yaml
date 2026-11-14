@@ -1,0 +1,57 @@
+openapi: 3.0.3
+info:
+  title: Clinic
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Appointment:
+      type: object
+      properties:
+        room:
+          $ref: '#/components/schemas/Room'
+        note:
+          type: string
+          writeOnly: true
+    Room:
+      type: object
+      required:
+        - patient
+      properties:
+        patient:
+          allOf:
+            - $ref: '#/components/schemas/Patient'
+          nullable: true
+        companion:
+          allOf:
+            - $ref: '#/components/schemas/Patient'
+            - nullable: true
+        transfer:
+          allOf:
+            - $ref: '#/components/schemas/Patient'
+              nullable: true
+        walkIn:
+          allOf:
+            - $ref: '#/components/schemas/Patient'
+          properties: {}
+          required: []
+        referral:
+          allOf:
+            - $ref: '#/components/schemas/Patient'
+              minProperties: 1
+        checkup:
+          allOf:
+            - $ref: '#/components/schemas/Patient'
+          required:
+            - reason
+    Patient:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+      x-python-import:
+        module: clinic.patients
+        name: Patient
