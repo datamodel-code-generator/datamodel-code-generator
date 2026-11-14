@@ -21736,6 +21736,90 @@ without the alias.
 
 ---
 
+## Enums that accept values they do not list
+
+APIs add enum values over time. A closed Enum class rejects a payload that carries a value the generated models do not
+know yet, so [`--open-enums`](cli-reference/typing-customization.md#open-enums) opens enums: `extensible` the enums
+whose schema marks them open (`x-extensible-enum: true`, or `x-ms-enum` with `modelAsString: true`), `all` every enum
+of two or more values except one whose schema closes it (`x-extensible-enum: false`, `modelAsString: false`).
+
+An open enum written as an Enum class takes the base
+[`--open-enum-base-class-map`](cli-reference/model-customization.md#open-enum-base-class-map) names for its class,
+`Enum`, `StrEnum` or `IntEnum`. Each base is a member-less subclass of that class in your project whose `_missing_`
+keeps a value it does not list; the generator writes no runtime code of its own. For example:
+
+```python
+"""Open enum bases: an Enum that keeps a value it does not list as a member of its own."""
+
+from __future__ import annotations
+
+from enum import Enum, IntEnum, StrEnum
+
+
+class OpenStrEnum(StrEnum):
+    """A StrEnum that keeps a string it does not list."""
+
+    @classmethod
+    def _missing_(cls, value: object) -> OpenStrEnum | None:
+        if not isinstance(value, str):
+            return None
+        member = str.__new__(cls, value)
+        member._name_ = value
+        member._value_ = value
+        return cls._value2member_map_.setdefault(value, member)
+
+
+class OpenIntEnum(IntEnum):
+    """An IntEnum that keeps an integer it does not list."""
+
+    @classmethod
+    def _missing_(cls, value: object) -> OpenIntEnum | None:
+        if not isinstance(value, int) or isinstance(value, bool):
+            return None
+        member = int.__new__(cls, value)
+        member._name_ = f"VALUE_{value}"
+        member._value_ = value
+        return cls._value2member_map_.setdefault(value, member)
+
+
+class OpenEnum(Enum):
+    """An Enum that keeps a string it does not list; after a value type (str, int), a value of that type."""
+
+    @classmethod
+    def _missing_(cls, value: object) -> OpenEnum | None:
+        member_type = cls._member_type_
+        if not isinstance(value, str if member_type is object else member_type) or isinstance(value, bool):
+            return None
+        member = object.__new__(cls) if member_type is object else member_type.__new__(cls, value)
+        member._name_ = str(value)
+        member._value_ = value
+        return cls._value2member_map_.setdefault(value, member)
+```
+
+with, in `pyproject.toml`:
+
+```toml
+[tool.datamodel-codegen]
+open-enums = "all"
+open-enum-base-class-map = {StrEnum = "myapi.open_enum.OpenStrEnum", IntEnum = "myapi.open_enum.OpenIntEnum", Enum = "myapi.open_enum.OpenEnum"}
+```
+
+`class JobStatus(StrEnum)` is then written as `class JobStatus(OpenStrEnum)`: `"queued"` still parses to
+`JobStatus.queued`, while `"paused"` parses to a member of its own that dumps as `"paused"`. `OpenEnum` is the entry
+for `Enum`, also under `--use-subclass-enum`, which writes `class JobStatus(str, OpenEnum)`; Python 3.10 has no
+`StrEnum`, so string enums of a 3.10 target use the `Enum` entry. Each entry must subclass its key class and add no data
+type of its own, or the class fails at import. The cache keeps one member per value; a server that receives arbitrary
+values may drop the `setdefault` and accept members that are not equal.
+
+What the class form validates depends on the output model type:
+
+- Pydantic v2 (models and dataclasses) validates through `_missing_`; the JSON schema of the models still lists only
+  the known values.
+- msgspec honours `_missing_` from msgspec 0.18.2 on; 0.18.0 and 0.18.1 reject the value.
+- dataclasses and TypedDict validate nothing; the class only lets you build `JobStatus("paused")` yourself.
+
+---
+
 ## Choosing the Right Type
 
 ```mermaid
@@ -27172,8 +27256,8 @@ On the command line, relative paths in `pyproject.toml` resolve as follows:
   JSON files of the server and client settings.
 - Relative to the working directory: the file of `input-model`, and the JSON files of `aliases`,
   `serialization-aliases`, `extra-template-data`, `custom-formatters-kwargs`, `default-values`, `base-class-map`,
-  `model-name-map`, `enum-field-as-literal-map`, `duplicate-name-suffix`, `import-overrides`, `type-overrides`, and
-  `validators`.
+  `model-name-map`, `enum-field-as-literal-map`, `open-enum-base-class-map`, `duplicate-name-suffix`,
+  `import-overrides`, `type-overrides`, and `validators`.
 
 `load_pyproject_config()` reads those JSON files from the `pyproject.toml` directory instead; see
 [Using as Module](using_as_module.md).
@@ -35633,9 +35717,9 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 19 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 56 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 57 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 40 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 72 | Model generation behavior |
+| 🏗️ [Model Customization](model-customization.md) | 73 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -35668,6 +35752,7 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--allow-extra-fields`](model-customization.md#allow-extra-fields) | Implies | Always | [`--extra-fields`](field-customization.md#extra-fields) = `allow` | - |
 | [`--collapse-root-models-name-strategy`](model-customization.md#collapse-root-models-name-strategy) | Requires | Always | [`--collapse-root-models`](model-customization.md#collapse-root-models) enabled | `--collapse-root-models-name-strategy` requires `--collapse-root-models`. |
 | [`--keyword-only`](model-customization.md#keyword-only) | Requires | Always | [`--target-python-version`](model-customization.md#target-python-version) = `3.10+` | `--keyword-only` requires `--target-python-version` 3.10 or higher for dataclasses. |
+| [`--open-enum-base-class-map`](model-customization.md#open-enum-base-class-map) | Requires | Always | [`--open-enums`](typing-customization.md#open-enums) | `--open-enum-base-class-map` requires `--open-enums extensible` or `--open-enums all`. |
 | [`--output-model-type`](model-customization.md#output-model-type) | Implies | `--output-model-type` = `msgspec.Struct` | [`--use-annotated`](typing-customization.md#use-annotated) enabled | - |
 | [`--parent-scoped-naming`](model-customization.md#parent-scoped-naming) | Implies | Always | [`--naming-strategy`](model-customization.md#naming-strategy) = `parent-prefixed` | - |
 | [`--reuse-scope`](model-customization.md#reuse-scope) | Requires | `--reuse-scope` = `tree` | [`--reuse-model`](model-customization.md#reuse-model) enabled | `--reuse-scope=tree` has no effect without `--reuse-model`. |
@@ -35926,6 +36011,8 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--omit-incomplete-model-defaults`](model-customization.md#omit-incomplete-model-defaults)
 - [`--omit-redundant-constraints`](field-customization.md#omit-redundant-constraints)
 - [`--omit-redundant-reference-null`](model-customization.md#omit-redundant-reference-null)
+- [`--open-enum-base-class-map`](model-customization.md#open-enum-base-class-map)
+- [`--open-enums`](typing-customization.md#open-enums)
 - [`--openapi-as-definitions`](openapi-only-options.md#openapi-as-definitions)
 - [`--openapi-include-info-version`](openapi-only-options.md#openapi-include-info-version)
 - [`--openapi-include-paths`](openapi-only-options.md#openapi-include-paths)
@@ -37934,6 +38021,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/model-custom
 | [`--naming-strategy`](#naming-strategy) | Choose how models are named and how duplicate model names ar... |
 | [`--omit-incomplete-model-defaults`](#omit-incomplete-model-defaults) | Write a property whose object default lacks required fields ... |
 | [`--omit-redundant-reference-null`](#omit-redundant-reference-null) | Do not write None again at a reference to a model that holds... |
+| [`--open-enum-base-class-map`](#open-enum-base-class-map) | Open the Enum classes of open enums on your own base classes... |
 | [`--order-constructor-fields-by`](#order-constructor-fields-by) | Order constructor fields by final names or by written defaul... |
 | [`--output-model-type`](#output-model-type) | Select the output model type (Pydantic v2, Pydantic v2 datac... |
 | [`--parent-scoped-naming`](#parent-scoped-naming) | Namespace models by their parent scope to avoid naming confl... |
@@ -44526,6 +44614,312 @@ or an optional field's default.
         ```
 
         <!-- fmt: on -->
+
+---
+
+## `--open-enum-base-class-map` {#open-enum-base-class-map}
+
+Open the Enum classes of open enums on your own base classes.
+
+The keys name the class an enum is written on: `Enum`, `StrEnum` or `IntEnum`. An open enum (`--open-enums`) written as
+an Enum class takes the entry of its class as its base in place of that class, so `class JobStatus(StrEnum)` becomes
+`class JobStatus(OpenStrEnum)`; the value type `--use-subclass-enum` writes before `Enum` stays, as in
+`class JobStatus(str, OpenEnum)`. Each entry is your member-less subclass of its key class whose `_missing_` decides
+which values it keeps, so the generator writes no runtime code of its own; a listed value still parses to its member.
+Pass the mapping inline as JSON or as a path to a JSON file. Each path is imported as written, like `--base-class-map`.
+
+msgspec honours `_missing_` from msgspec 0.18.2 on; dataclasses and TypedDict validate nothing, so there the class only
+lets you build `JobStatus("paused")` yourself. Pydantic's JSON schema of such a class still lists only the known
+values.
+
+**Option relationships:**
+
+- **Requires:** [`--open-enums`](typing-customization.md#open-enums) - `--open-enum-base-class-map` requires `--open-enums extensible` or `--open-enums all`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input open_enums.yaml --formatters builtin --target-python-version 3.11 --open-enums extensible --open-enum-base-class-map '{"StrEnum": "tests.data.python.open_enum.OpenStrEnum", "IntEnum": "tests.data.python.open_enum.OpenIntEnum", "Enum": "tests.data.python.open_enum.OpenEnum"}' # (1)!
+    ```
+
+    1. :material-arrow-left: `--open-enum-base-class-map` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info:
+      title: Jobs with open enums
+      version: "1"
+    paths: {}
+    components:
+      schemas:
+        Job:
+          type: object
+          required: [status]
+          properties:
+            status:
+              $ref: "#/components/schemas/JobStatus"
+            provisioningState:
+              $ref: "#/components/schemas/ProvisioningState"
+            type:
+              $ref: "#/components/schemas/JobType"
+            priority:
+              $ref: "#/components/schemas/Priority"
+            phase:
+              $ref: "#/components/schemas/Phase"
+            region:
+              $ref: "#/components/schemas/Region"
+            tier:
+              $ref: "#/components/schemas/Tier"
+            tags:
+              type: array
+              items:
+                $ref: "#/components/schemas/Tag"
+            mode:
+              type: string
+              enum: [auto, manual]
+              default: auto
+              x-extensible-enum: true
+            kind:
+              type: string
+              enum: [job]
+            pinned:
+              type: string
+              enum: [fast, slow]
+              const: fast
+              x-extensible-enum: true
+            quota:
+              type: object
+              propertyNames:
+                type: string
+                enum: [cpu, memory]
+                x-extensible-enum: true
+              additionalProperties:
+                type: integer
+            lifecycle:
+              $ref: "#/components/schemas/Lifecycle"
+            stage:
+              $ref: "#/components/schemas/Stage"
+            color:
+              $ref: "#/components/schemas/Color"
+            pet:
+              $ref: "#/components/schemas/Pet"
+        JobStatus:
+          type: string
+          enum: [queued, running, done]
+          x-extensible-enum: true
+        ProvisioningState:
+          type: string
+          enum: [Succeeded, Failed]
+          x-ms-enum:
+            name: ProvisioningState
+            modelAsString: true
+        JobType:
+          type: string
+          enum: [scrape, crawl]
+        Priority:
+          type: integer
+          enum: [1, 2, 3]
+          x-extensible-enum: true
+        Phase:
+          type: [string, "null"]
+          enum: [pending, active, null]
+          x-extensible-enum: true
+        Region:
+          type: string
+          enum: [eu, us]
+          x-ms-enum:
+            name: Region
+            modelAsString: false
+        Tier:
+          type: string
+          enum: [free, paid]
+          x-extensible-enum: false
+        Tag:
+          type: string
+          enum: [red, blue]
+          x-extensible-enum: true
+        Lifecycle:
+          allOf:
+            - $ref: "#/components/schemas/JobStatus"
+            - $ref: "#/components/schemas/ProvisioningState"
+        Stage:
+          allOf:
+            - $ref: "#/components/schemas/JobStatus"
+            - $ref: "#/components/schemas/JobType"
+        Color:
+          type: string
+          enum: [red, blue]
+        PetType:
+          type: string
+          enum: [cat, dog]
+          x-extensible-enum: true
+        Cat:
+          type: object
+          required: [petType]
+          properties:
+            petType:
+              $ref: "#/components/schemas/PetType"
+            meows:
+              type: boolean
+        Dog:
+          type: object
+          required: [petType]
+          properties:
+            petType:
+              $ref: "#/components/schemas/PetType"
+            barks:
+              type: boolean
+        Pet:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - $ref: "#/components/schemas/Dog"
+          discriminator:
+            propertyName: petType
+            mapping:
+              cat: "#/components/schemas/Cat"
+              dog: "#/components/schemas/Dog"
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  open_enums.yaml
+    #   timestamp: 2019-07-26T00:00:00+00:00
+
+    from __future__ import annotations
+
+    from enum import StrEnum
+    from typing import Literal
+
+    from pydantic import BaseModel, Field, RootModel
+
+    from tests.data.python.open_enum import OpenEnum, OpenIntEnum, OpenStrEnum
+
+
+    class Mode(OpenStrEnum):
+        auto = 'auto'
+        manual = 'manual'
+
+
+    class Kind(StrEnum):
+        job = 'job'
+
+
+    class Pinned(StrEnum):
+        fast = 'fast'
+        slow = 'slow'
+
+
+    class JobStatus(OpenStrEnum):
+        queued = 'queued'
+        running = 'running'
+        done = 'done'
+
+
+    class ProvisioningState(OpenStrEnum):
+        Succeeded = 'Succeeded'
+        Failed = 'Failed'
+
+
+    class JobType(StrEnum):
+        scrape = 'scrape'
+        crawl = 'crawl'
+
+
+    class Priority(OpenIntEnum):
+        integer_1 = 1
+        integer_2 = 2
+        integer_3 = 3
+
+
+    class Phase(OpenEnum):
+        pending = 'pending'
+        active = 'active'
+        NoneType_None = None
+
+
+    class Region(StrEnum):
+        eu = 'eu'
+        us = 'us'
+
+
+    class Tier(StrEnum):
+        free = 'free'
+        paid = 'paid'
+
+
+    class Tag(OpenStrEnum):
+        red = 'red'
+        blue = 'blue'
+
+
+    class Lifecycle(OpenStrEnum):
+        queued = 'queued'
+        running = 'running'
+        done = 'done'
+        Succeeded = 'Succeeded'
+        Failed = 'Failed'
+
+
+    class Stage(StrEnum):
+        queued = 'queued'
+        running = 'running'
+        done = 'done'
+        scrape = 'scrape'
+        crawl = 'crawl'
+
+
+    class Color(StrEnum):
+        red = 'red'
+        blue = 'blue'
+
+
+    class PetType(OpenStrEnum):
+        cat = 'cat'
+        dog = 'dog'
+
+
+    class Cat(BaseModel):
+        petType: Literal['cat']
+        meows: bool | None = None
+
+
+    class Dog(BaseModel):
+        petType: Literal['dog']
+        barks: bool | None = None
+
+
+    class Pet(RootModel[Cat | Dog]):
+        root: Cat | Dog = Field(..., discriminator='petType')
+
+
+    class Job(BaseModel):
+        status: JobStatus
+        provisioningState: ProvisioningState | None = None
+        type: JobType | None = None
+        priority: Priority | None = None
+        phase: Phase | None = None
+        region: Region | None = None
+        tier: Tier | None = None
+        tags: list[Tag] | None = None
+        mode: Mode | None = 'auto'
+        kind: Kind | None = None
+        pinned: Literal['fast'] | None = None
+        quota: dict[Literal['cpu', 'memory'], int] | None = None
+        lifecycle: Lifecycle | None = None
+        stage: Stage | None = None
+        color: Color | None = None
+        pet: Pet | None = None
+    ```
+
+    <!-- fmt: on -->
 
 ---
 
@@ -56860,6 +57254,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/typing-custo
 | [`--no-use-specialized-enum`](#no-use-specialized-enum) | Disable specialized Enum classes for Python 3.11+ code gener... |
 | [`--no-use-standard-collections`](#no-use-standard-collections) | Use typing.Dict/List instead of built-in dict/list for conta... |
 | [`--no-use-union-operator`](#no-use-union-operator) | Use Union[X, Y] / Optional[X] instead of X | Y union operato... |
+| [`--open-enums`](#open-enums) | Accept the values an enum does not list. |
 | [`--output-date-class`](#output-date-class) | Specify date class type for date schema fields. |
 | [`--output-datetime-class`](#output-datetime-class) | Specify datetime class type for date-time schema fields. |
 | [`--read-allof-parents-in-mro-order`](#read-allof-parents-in-mro-order) | Read the allOf parents of every inherited schema in the orde... |
@@ -60714,6 +61109,446 @@ for older Python versions or when explicit typing imports are preferred.
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--open-enums` {#open-enums}
+
+Accept the values an enum does not list.
+
+APIs add enum values over time, and a closed Enum class rejects a response that carries one the client does not know
+yet. `extensible` opens the enums whose schema marks them open: `x-extensible-enum: true`, or `x-ms-enum` with
+`modelAsString: true`. `all` opens every enum of two or more values, except one whose schema closes it
+(`x-extensible-enum: false`, `modelAsString: false`); a one-value enum is a tag, so it stays closed unless it is marked.
+`none` opens no enum, as without the option, which turns the option of a preset off. A const beside an enum narrows it
+to that const, so it stays closed. The list form of `x-extensible-enum`, which lists the values in place of `enum`, is
+not read: such a schema has no `enum`, so its field is already a plain `str`.
+
+An open enum written as an Enum class takes the base `--open-enum-base-class-map` names for its class.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input open_enums.yaml --formatters builtin --target-python-version 3.11 --open-enums all --open-enum-base-class-map '{"StrEnum": "tests.data.python.open_enum.OpenStrEnum", "IntEnum": "tests.data.python.open_enum.OpenIntEnum", "Enum": "tests.data.python.open_enum.OpenEnum"}' # (1)!
+    ```
+
+    1. :material-arrow-left: `--open-enums` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info:
+      title: Jobs with open enums
+      version: "1"
+    paths: {}
+    components:
+      schemas:
+        Job:
+          type: object
+          required: [status]
+          properties:
+            status:
+              $ref: "#/components/schemas/JobStatus"
+            provisioningState:
+              $ref: "#/components/schemas/ProvisioningState"
+            type:
+              $ref: "#/components/schemas/JobType"
+            priority:
+              $ref: "#/components/schemas/Priority"
+            phase:
+              $ref: "#/components/schemas/Phase"
+            region:
+              $ref: "#/components/schemas/Region"
+            tier:
+              $ref: "#/components/schemas/Tier"
+            tags:
+              type: array
+              items:
+                $ref: "#/components/schemas/Tag"
+            mode:
+              type: string
+              enum: [auto, manual]
+              default: auto
+              x-extensible-enum: true
+            kind:
+              type: string
+              enum: [job]
+            pinned:
+              type: string
+              enum: [fast, slow]
+              const: fast
+              x-extensible-enum: true
+            quota:
+              type: object
+              propertyNames:
+                type: string
+                enum: [cpu, memory]
+                x-extensible-enum: true
+              additionalProperties:
+                type: integer
+            lifecycle:
+              $ref: "#/components/schemas/Lifecycle"
+            stage:
+              $ref: "#/components/schemas/Stage"
+            color:
+              $ref: "#/components/schemas/Color"
+            pet:
+              $ref: "#/components/schemas/Pet"
+        JobStatus:
+          type: string
+          enum: [queued, running, done]
+          x-extensible-enum: true
+        ProvisioningState:
+          type: string
+          enum: [Succeeded, Failed]
+          x-ms-enum:
+            name: ProvisioningState
+            modelAsString: true
+        JobType:
+          type: string
+          enum: [scrape, crawl]
+        Priority:
+          type: integer
+          enum: [1, 2, 3]
+          x-extensible-enum: true
+        Phase:
+          type: [string, "null"]
+          enum: [pending, active, null]
+          x-extensible-enum: true
+        Region:
+          type: string
+          enum: [eu, us]
+          x-ms-enum:
+            name: Region
+            modelAsString: false
+        Tier:
+          type: string
+          enum: [free, paid]
+          x-extensible-enum: false
+        Tag:
+          type: string
+          enum: [red, blue]
+          x-extensible-enum: true
+        Lifecycle:
+          allOf:
+            - $ref: "#/components/schemas/JobStatus"
+            - $ref: "#/components/schemas/ProvisioningState"
+        Stage:
+          allOf:
+            - $ref: "#/components/schemas/JobStatus"
+            - $ref: "#/components/schemas/JobType"
+        Color:
+          type: string
+          enum: [red, blue]
+        PetType:
+          type: string
+          enum: [cat, dog]
+          x-extensible-enum: true
+        Cat:
+          type: object
+          required: [petType]
+          properties:
+            petType:
+              $ref: "#/components/schemas/PetType"
+            meows:
+              type: boolean
+        Dog:
+          type: object
+          required: [petType]
+          properties:
+            petType:
+              $ref: "#/components/schemas/PetType"
+            barks:
+              type: boolean
+        Pet:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - $ref: "#/components/schemas/Dog"
+          discriminator:
+            propertyName: petType
+            mapping:
+              cat: "#/components/schemas/Cat"
+              dog: "#/components/schemas/Dog"
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  open_enums.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import StrEnum
+        from typing import Literal
+
+        from pydantic import BaseModel, Field, RootModel
+
+        from tests.data.python.open_enum import OpenEnum, OpenIntEnum, OpenStrEnum
+
+
+        class Mode(OpenStrEnum):
+            auto = 'auto'
+            manual = 'manual'
+
+
+        class Kind(StrEnum):
+            job = 'job'
+
+
+        class Pinned(StrEnum):
+            fast = 'fast'
+            slow = 'slow'
+
+
+        class JobStatus(OpenStrEnum):
+            queued = 'queued'
+            running = 'running'
+            done = 'done'
+
+
+        class ProvisioningState(OpenStrEnum):
+            Succeeded = 'Succeeded'
+            Failed = 'Failed'
+
+
+        class JobType(OpenStrEnum):
+            scrape = 'scrape'
+            crawl = 'crawl'
+
+
+        class Priority(OpenIntEnum):
+            integer_1 = 1
+            integer_2 = 2
+            integer_3 = 3
+
+
+        class Phase(OpenEnum):
+            pending = 'pending'
+            active = 'active'
+            NoneType_None = None
+
+
+        class Region(StrEnum):
+            eu = 'eu'
+            us = 'us'
+
+
+        class Tier(StrEnum):
+            free = 'free'
+            paid = 'paid'
+
+
+        class Tag(OpenStrEnum):
+            red = 'red'
+            blue = 'blue'
+
+
+        class Lifecycle(OpenStrEnum):
+            queued = 'queued'
+            running = 'running'
+            done = 'done'
+            Succeeded = 'Succeeded'
+            Failed = 'Failed'
+
+
+        class Stage(OpenStrEnum):
+            queued = 'queued'
+            running = 'running'
+            done = 'done'
+            scrape = 'scrape'
+            crawl = 'crawl'
+
+
+        class Color(OpenStrEnum):
+            red = 'red'
+            blue = 'blue'
+
+
+        class PetType(OpenStrEnum):
+            cat = 'cat'
+            dog = 'dog'
+
+
+        class Cat(BaseModel):
+            petType: Literal['cat']
+            meows: bool | None = None
+
+
+        class Dog(BaseModel):
+            petType: Literal['dog']
+            barks: bool | None = None
+
+
+        class Pet(RootModel[Cat | Dog]):
+            root: Cat | Dog = Field(..., discriminator='petType')
+
+
+        class Job(BaseModel):
+            status: JobStatus
+            provisioningState: ProvisioningState | None = None
+            type: JobType | None = None
+            priority: Priority | None = None
+            phase: Phase | None = None
+            region: Region | None = None
+            tier: Tier | None = None
+            tags: list[Tag] | None = None
+            mode: Mode | None = 'auto'
+            kind: Kind | None = None
+            pinned: Literal['fast'] | None = None
+            quota: dict[Literal['cpu', 'memory'], int] | None = None
+            lifecycle: Lifecycle | None = None
+            stage: Stage | None = None
+            color: Color | None = None
+            pet: Pet | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  open_enums.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import StrEnum
+        from typing import Literal
+
+        from pydantic import BaseModel, Field, RootModel
+
+        from tests.data.python.open_enum import OpenEnum, OpenIntEnum, OpenStrEnum
+
+
+        class Mode(OpenStrEnum):
+            auto = 'auto'
+            manual = 'manual'
+
+
+        class Kind(StrEnum):
+            job = 'job'
+
+
+        class Pinned(StrEnum):
+            fast = 'fast'
+            slow = 'slow'
+
+
+        class JobStatus(OpenStrEnum):
+            queued = 'queued'
+            running = 'running'
+            done = 'done'
+
+
+        class ProvisioningState(OpenStrEnum):
+            Succeeded = 'Succeeded'
+            Failed = 'Failed'
+
+
+        class JobType(StrEnum):
+            scrape = 'scrape'
+            crawl = 'crawl'
+
+
+        class Priority(OpenIntEnum):
+            integer_1 = 1
+            integer_2 = 2
+            integer_3 = 3
+
+
+        class Phase(OpenEnum):
+            pending = 'pending'
+            active = 'active'
+            NoneType_None = None
+
+
+        class Region(StrEnum):
+            eu = 'eu'
+            us = 'us'
+
+
+        class Tier(StrEnum):
+            free = 'free'
+            paid = 'paid'
+
+
+        class Tag(OpenStrEnum):
+            red = 'red'
+            blue = 'blue'
+
+
+        class Lifecycle(OpenStrEnum):
+            queued = 'queued'
+            running = 'running'
+            done = 'done'
+            Succeeded = 'Succeeded'
+            Failed = 'Failed'
+
+
+        class Stage(StrEnum):
+            queued = 'queued'
+            running = 'running'
+            done = 'done'
+            scrape = 'scrape'
+            crawl = 'crawl'
+
+
+        class Color(StrEnum):
+            red = 'red'
+            blue = 'blue'
+
+
+        class PetType(OpenStrEnum):
+            cat = 'cat'
+            dog = 'dog'
+
+
+        class Cat(BaseModel):
+            petType: Literal['cat']
+            meows: bool | None = None
+
+
+        class Dog(BaseModel):
+            petType: Literal['dog']
+            barks: bool | None = None
+
+
+        class Pet(RootModel[Cat | Dog]):
+            root: Cat | Dog = Field(..., discriminator='petType')
+
+
+        class Job(BaseModel):
+            status: JobStatus
+            provisioningState: ProvisioningState | None = None
+            type: JobType | None = None
+            priority: Priority | None = None
+            phase: Phase | None = None
+            region: Region | None = None
+            tier: Tier | None = None
+            tags: list[Tag] | None = None
+            mode: Mode | None = 'auto'
+            kind: Kind | None = None
+            pinned: Literal['fast'] | None = None
+            quota: dict[Literal['cpu', 'memory'], int] | None = None
+            lifecycle: Lifecycle | None = None
+            stage: Stage | None = None
+            color: Color | None = None
+            pet: Pet | None = None
+        ```
+
+        <!-- fmt: on -->
 
 ---
 
@@ -85837,6 +86672,7 @@ datamodel-codegen [OPTIONS]
 | [`--no-use-specialized-enum`](typing-customization.md#no-use-specialized-enum) | Disable specialized Enum classes for Python 3.11+ code generation. |
 | [`--no-use-standard-collections`](typing-customization.md#no-use-standard-collections) | Use typing.Dict/List instead of built-in dict/list for container types. |
 | [`--no-use-union-operator`](typing-customization.md#no-use-union-operator) | Use Union[X, Y] / Optional[X] instead of X | Y union operator. |
+| [`--open-enums`](typing-customization.md#open-enums) | Accept the values an enum does not list. |
 | [`--output-date-class`](typing-customization.md#output-date-class) | Specify date class type for date schema fields. |
 | [`--output-datetime-class`](typing-customization.md#output-datetime-class) | Specify datetime class type for date-time schema fields. |
 | [`--read-allof-parents-in-mro-order`](typing-customization.md#read-allof-parents-in-mro-order) | Read the allOf parents of every inherited schema in the order of the class bases... |
@@ -85967,6 +86803,7 @@ datamodel-codegen [OPTIONS]
 | [`--naming-strategy`](model-customization.md#naming-strategy) | Choose how models are named and how duplicate model names are told apart. |
 | [`--omit-incomplete-model-defaults`](model-customization.md#omit-incomplete-model-defaults) | Write a property whose object default lacks required fields of its model without... |
 | [`--omit-redundant-reference-null`](model-customization.md#omit-redundant-reference-null) | Do not write None again at a reference to a model that holds null itself. |
+| [`--open-enum-base-class-map`](model-customization.md#open-enum-base-class-map) | Open the Enum classes of open enums on your own base classes. |
 | [`--order-constructor-fields-by`](model-customization.md#order-constructor-fields-by) | Order constructor fields by final names or by written defaults. |
 | [`--output-model-type`](model-customization.md#output-model-type) | Select the output model type (Pydantic v2, Pydantic v2 dataclass, dataclasses, T... |
 | [`--parent-scoped-naming`](model-customization.md#parent-scoped-naming) | Namespace models by their parent scope to avoid naming conflicts. |
@@ -86301,6 +87138,8 @@ All options sorted alphabetically:
 - [`--omit-incomplete-model-defaults`](model-customization.md#omit-incomplete-model-defaults) - Write a property whose object default lacks required fields ...
 - [`--omit-redundant-constraints`](field-customization.md#omit-redundant-constraints) - Do not write a constraint again beside a type that already e...
 - [`--omit-redundant-reference-null`](model-customization.md#omit-redundant-reference-null) - Do not write None again at a reference to a model that holds...
+- [`--open-enum-base-class-map`](model-customization.md#open-enum-base-class-map) - Open the Enum classes of open enums on your own base classes...
+- [`--open-enums`](typing-customization.md#open-enums) - Accept the values an enum does not list.
 - [`--openapi-as-definitions`](openapi-only-options.md#openapi-as-definitions) - Give OpenAPI paths bodies or ref components the models their...
 - [`--openapi-include-info-version`](openapi-only-options.md#openapi-include-info-version) - Emit OpenAPI info.version as a generated constant.
 - [`--openapi-include-paths`](openapi-only-options.md#openapi-include-paths) - Filter OpenAPI paths to include in model generation.
@@ -91356,16 +92195,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 255 | Shared generation options. |
-| `GenerateConfig` | 270 | Public `generate()` configuration. |
-| `ParserConfig` | 210 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 212 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 223 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 226 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 213 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 213 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 212 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 213 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 257 | Shared generation options. |
+| `GenerateConfig` | 272 | Public `generate()` configuration. |
+| `ParserConfig` | 212 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 214 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 225 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 228 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 215 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 215 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 214 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 215 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -91645,7 +92484,7 @@ Single-file output has one module, so "per module" then means the whole graph.
 | prepare | `override_required_field` (`parser/_passes/_shared.py`) | inherited placeholders, base models (any module) | replaces placeholders by copies of inherited fields, required, defaults |
 | prepare | `replace_unique_list_to_set` (`parser/_passes/modules.py`) | `uniqueItems` of the field's own schema but a type list's, the item types of each list (type aliases read as their values, a model as a value that hashes), defaults | list to set where `parser/_passes/_shared.py:unique_items_plan` says so (`sources="field"`: some value of its items hashes, a list default can be a set), set defaults; each set records that it is one (`_keys.py:with_unique_items_set`) and the field's list default is kept (`_unique_set_defaults`) |
 | prepare | `change_from_import` (`parser/_passes/modules.py`) | references to other modules, in field and base types, in the types of schema validator rules and in backend settings (TypedDict `extra_items`); not of stand-ins, nor of the bases that name them, nor of a root that names itself, which deduplication dropped (`_self_named_root_models`) | module imports, `data_type.alias` |
-| prepare | `extract_inherited_enum` (`parser/_passes/modules.py`) | models with Enum bases, their own fields included | replaces the model by a new Enum with the same `Reference`, of the class of its first Enum base (`decide_enum_kind`), without the members of the other Enums that class cannot hold (`holds_inherited_member_value`: a value `int()` refuses in an `IntEnum`, as `None` or `'bad'`; a value that is no str in a `StrEnum`) when that class is an `IntEnum` or a `StrEnum` |
+| prepare | `extract_inherited_enum` (`parser/_passes/modules.py`) | models with Enum bases, their own fields included | replaces the model by a new Enum with the same `Reference`, of the class of its first Enum base (`decide_enum_kind`), without the members of the other Enums that class cannot hold (`holds_inherited_member_value`: a value `int()` refuses in an `IntEnum`, as `None` or `'bad'`; a value that is no str in a `StrEnum`) when that class is an `IntEnum` or a `StrEnum`; with the open enum base of the first when every merged Enum is open (`_merged_open_enum_base`) |
 | process | `set_reference_default_value_to_field` (`parser/_passes/modules.py`) | defaults of referenced models | field defaults |
 | process | `reuse_model` (`parser/_passes/modules.py`) | rendered model text and union tags of this module's models | replaces duplicates by empty subclasses (users in this module redirected) or removes them (Enums, `--collapse-reuse-models`: users in every module redirected) |
 | process | `replace_merged_unique_list_to_set` (`parser/_passes/modules.py`) | the `uniqueItems` of a type list (`declares_type_list_unique_items`) and of each node that records it (UNIQUE_ITEMS: anyOf/oneOf/allOf members, items, map values, at any depth), the item types of each list, the models deduplication and reuse merged into the model (`merged_models`, recorded by `merge_duplicate` and `subclass_duplicate`) and their fields of that name, own or inherited | list to set where `unique_items_plan` says so (`sources="merged"`) and every merged model declares `uniqueItems` at the same position too, else the list deduplication compared; a list stays one in a union beside another member of its kind, an array or a map, that keeps its lists (`_beside_its_kind`: a msgspec union holds one of each); set defaults |
@@ -92523,6 +93362,7 @@ A table that `types.py` reads while it is imported is a top-level leaf instead, 
 | which class an enum is written as: under `--keep-enum-member-values` a value base (`IntEnum`, `StrEnum`, `(T, Enum)`) only when it keeps every member value, else `Enum`; without it the 0.86.0 base of the schema type unless that base refuses a member (`legacy-value-base-changing-a-member`); merged enums keep today's kinds as named `legacy-*` rows, and msgspec keeps the 0.86.0 base where it could not decode that `Enum` (`legacy-msgspec-decodable-value-base`, until G16 decides msgspec Enums; capability `DataModel._DECODES_MIXED_ENUM_VALUES` through `model/output.py:OutputModelContext.decodes_mixed_enum_values`) | `model/_decisions/enum_kind.py`: `decide_enum_kind` | `parser/jsonschema.py:JsonSchemaParser._get_enum_model_class` (schema enums, also those merged from `const` branches and those of the converted formats); `parser/graphql.py:GraphQLParser.parse_enum_as_enum_class`; `parser/_passes/modules.py:extract_inherited_enum` (L5); classes: `model/enum.py:_enum_class` |
 | the builtin type the members of an enum are instances of, its value base: the `T` of the `(T, Enum)` that `--use-subclass-enum` writes, or the `str` and `int` of a `StrEnum` and an `IntEnum`; it tells whether the members equal their values (the keys of discriminator choices), which constraint keywords a type that names the enum takes and which values msgspec decodes; row `legacy-merged-enum-specialized-only`: merging the enums that a model inherits reads the class of the first alone (`StrEnum`, `IntEnum`) | `model/enum.py`: `enum_value_base` (rows `EnumValueBaseRow`) | `model/enum.py:Enum.value_base` (read by `types.py:DataTypeManager._constraint_keywords` through `ModelView.value_base`); `parser/_tag_plan.py:_written_enum_member_keys`, `parser/_tag_plan.py:writes_member_values` (the members of a plain Enum that `--use-enum-values-in-discriminator` writes as tags hold their values beside them, `Literal[Kind.a, 'a']`, written by `parser/base.py:Parser._create_discriminator_data_type`); `parser/_passes/imports.py`: `_msgspec_mixed_enum_message`, `_msgspec_wide_int_enum_message`; `parser/_passes/modules.py:extract_inherited_enum` and its L1 prediction `parser/_all_of_values.py:merged_enum_fails` |
 | whether an enum is written as a `Literal` | `model/_decisions/enum_kind.py`: `enum_as_literal` | `should_parse_enum_as_literal` of `parser/jsonschema.py:JsonSchemaParser` and `parser/graphql.py:GraphQLParser`; legacy bypass: the enum branch of `parser/jsonschema.py:JsonSchemaParser.parse_array_fields` (a `type` list holding `array`) writes an Enum class without asking, so `--enum-field-as-literal all` leaves it a class |
+| whether an enum accepts the values of its type that it does not list (`--open-enums`: the `x-extensible-enum` or `x-ms-enum` `modelAsString` marker beside its `enum`, else `all` for two or more values; a const beside it keeps it closed), and the base an open Enum class takes in place of its `Enum`, `StrEnum` or `IntEnum` (`--open-enum-base-class-map`) | `model/_decisions/enum_kind.py`: `enum_open_marker`, `enum_is_open`, `open_enum_base` | `parser/base.py:Parser`: `_enum_is_open`, `_open_enum_base` (the class through `model/enum.py:enum_class_base`); `parser/jsonschema.py:JsonSchemaParser._schema_enum_is_open` (`parse_enum`); `parser/graphql.py:GraphQLParser._graphql_enum_is_open` (`parse_enum_as_enum_class`); `parser/_passes/modules.py:_merged_open_enum_base` (`extract_inherited_enum`: the base of the first merged enum when every one has one); the stdlib import a base replaces is left out by `model/enum.py:Enum._default_imports` |
 | which constraint keywords each emitted type takes in each output model, which keywords a declared schema type holds (a string reads `minItems`/`maxItems` as its lengths), which JSON kind each keyword applies to, the `con*` and `msgspec.Meta` arguments, the classes that enforce a zero bound and the values decoded from base64 text that carry their constraints; which declared keywords a field writes (a number keyword when a number value of the emitted type meets it, a string keyword when the type takes it) and which it leaves out with a warning; the keywords a type enforces itself by its zero-bound class or its literal values, which `--omit-redundant-constraints` leaves out at every position, the zero bound a field form keeps on its type, the `Decimal` of `--use-decimal-in-field-forms`, the `EncodedStr` of `--use-encoded-str-for-constrained-base64`, the `StrictStr` it decodes under `--use-strict-str-for-base64`, the reading by kind of `--read-length-keywords-by-type` (the options as the record `ConstraintOptions`); which types count the keys of a map they replace, a mapping class or a type the generator cannot classify, and so take its property counts (`counts_keys`, under `--type-overrides-replace-whole-type`), by the mapping classes of each output (`OutputKeywords.mapping_classes`), whose keys `msgspec.Meta` also checks as a length; why a field drops its constraints when it is written (a self-reference outside a container, a strict type with arguments, `AnyUrl`, the number constraints of a `None` type, in the Pydantic outputs the keywords no value of a type whose values are the instances of models takes) and the float `multipleOf` divisors msgspec checks inexactly; how a field assembles its constraints, one rule for an object property and a root field (the declared keywords it reads, an array's whatever the options and the others under `--field-constraints` and not beside a model or an enum class; the hostname pattern, the property counts of a map, the item counts of an array (a field whose type is no array takes none, nor does a root beside a model: `can_hold_array`; nor does one whose schema declares types without an array: `admits_array`) and the lengths a fixed tuple leaves out, none of the keywords and item counts for a heterogeneous type list but the `uniqueItems` its array member reads, then what it records), whose site facts are the rows of `_ConstraintSite` (a root is the model its schema becomes, so it reads the keywords beside a `$ref`, a combinator or an object too; a type list of number kinds keeps its shared bounds on a property, whose type leaves them out; a root always holds a constraints record); rows `legacy-consumed-at-object-property`, `legacy-property-counts-beside-models`, `legacy-root-tuple-lengths`, `legacy-root-records-by-option`, `legacy-all-of-root-format-kinds`, `legacy-undeclared-keywords-off-literal`, `legacy-override-keeps-string-keywords`, `legacy-class-override-keeps-container`, `legacy-anyurl-keeps-string-keywords`, `legacy-reference-takes-every-keyword`, `legacy-length-keywords-across-kinds` keep today's disagreeing sites | `_constraint_applicability.py`: the `OutputKeywords` rows `BASE_OUTPUT`, `PYDANTIC_OUTPUT`, `MSGSPEC_OUTPUT`; `listed_type_keywords`, `unlisted_type_keywords`, `shape_keywords`, `key_count_keywords`, `member_keywords`, `literal_number_keywords`, `DeclaredKinds`, `kind_keywords`, `declared_keywords`, `other_kind_keywords`, `split_declared_keywords`, `declared_string_keywords_taken`, `length_reading`, `untaken_values`, `undeclared_keywords_taken`, `property_consumed_keywords`, `keyword_kinds`, `all_of_root_keyword_kinds`, `constrained_type_keyword_order`, `shape_meta_keywords`, `meta_keywords`, `overridden_declared_constraints`, `resplit_overridden_constraints`, `untaken_minimums`; `ConstraintOptions`, `enforced_keywords`, `literal_enforces_every_keyword`, `writes_beside_literal`, `literal_met_keywords`, `field_form_zero_bound`, `decimal_field_form`, `strict_decimal_multiple`, `encoded_str_field_form`, `strict_encoded_str`, `length_keywords_by_type`, `render_drop`, `none_type_keywords`, `inexact_float_divisor`, `engine_pattern_types` | `types.py:DataTypeManager.constraint_keywords`, `member_constraint_keywords` (one walk, `_constraint_keywords`: the model a type names is read only for a union member's value, row `legacy-reference-takes-every-keyword`), `model_value_constraint_keywords` (what one value of a type whose values are the instances of models takes, over that walk) and `type_constraint_keywords` (its `CONSTRAINT_KEYWORDS`, `NUMBER_VALUE_TYPES`, `TARGET_NUMBER_KEYWORDS`, `CONSTRAINED_TYPE_CONSUMED_KEYS` and the flags, the keyword groups of `types.py` and the `con*` filters of `model/pydantic_v2/types.py` read the rows); `parser/_value_keywords.py`: `split_constraint_values`, `keywords_taken`, `declared_kinds`, `schema_kinds`, `type_list_keywords` (also for the array builder of a type list, `JsonSchemaParser.parse_array_fields`); the field assembly `parser/jsonschema.py:JsonSchemaParser._assemble_field_constraints` and `_mark_assembled_constraints` (sites `_PROPERTY_SITE` for `get_object_field`, with the zero-bound keywords of an object property, and `_ROOT_SITE` for `_parse_root_type_with_context`); the zero-bound keywords of `parser/_inherited_schemas.py:drop_incompatible_inherited_constraints`; the format step of `parser/_all_of_values.py:handle_allof_root_model_with_constraints`; `parser/_type_overrides.py`: `decide_overridden_constraints` (with `_untaken_container_counts`) and `mark_untaken_constraints`; `parser/_passes/modules.py:_discriminator_tag_constraints` (the tag keyword); `model/msgspec.py:DataModelField._meta_keywords`, `_dropped_meta_keywords` and `_literal_decided_meta_keywords`; `types.py:DataTypeManager.constraint_options` (the options) and `encodes_constrained_base64`; `parser/_value_keywords.py`: `type_enforced_keywords` (over `_enforcing_leaves`), `can_hold_array`, `const_literal_enforces_constraints` and `literal_written`; `model/pydantic_v2/types.py:DataTypeManager._field_form_kwargs`, `get_data_type` and `get_data_float_type`; `model/base.py:DataModelFieldBase._constraints_blocked_by`, `model/pydantic_base.py:DataModelField._warned_omissions` and `_normalized_constraint_arguments`, `model/pydantic_v2/base_model.py:DataModelField._untaken_beside_models`; capability `DataTypeManager._WRITES_CONSTRAINED_TYPES` through `model/output.py:OutputModelContext.writes_constrained_types`; the string and bytes types whose pattern the regex engine choice reads (`model/pydantic_v2/base_model.py:_pattern_data_type`); not yet: `parser/_value_keywords.py:has_effective_constraints` (its own keywords of a type) and the array builder's own assembly (`JsonSchemaParser.parse_array_fields`: `get_array_constraints` and the lengths of a fixed tuple) |
 | the keys deduplication and reuse compare models by (the rendered model and its imports, the rendering with referenced names masked, the union tags taken before any merge, the referenced models compared pairwise, the reuse candidate key and the stdout fingerprint; the type alias of an item-count site, an array that was inline up to 0.89.0, is compared only with other such aliases, so the models those releases wrote group as they did); rendering for a key writes nothing, as `model/base.py:DataModel._prepare_dedup_key` first decides a root model's sequence interface and writes the nullability the field types render; today's disagreeing users are named `legacy-*` rows, replaced by keys over model facts (G06, G07): same-name deduplication leaves union tags out, renders models under their own class name, redirects root models that name the model of their own name and tells bases apart by type hint (`legacy-same-name-dedup`), collapse-reuse skips root models, renders each round anew and tells bases apart by reference (`legacy-collapse-reuse`), tree scope compares root models (`legacy-tree-scope`), and `--reuse-model` skips root models only under `--collapse-root-models` (`legacy-reuse-model`); every user but collapse-reuse compares the key the parse's memo kept for a model in an earlier pass, which only render-cache invalidation drops (`legacy-stale-dedup-keys`); which model of a group of duplicates stays canonical, keeping its name and its place: a model created to yield its name yields that place too, a site model in same-name deduplication and a yielding model (a model of a typed map value) for every other user, recorded once those names are settled | `parser/_model_shapes.py`: `ModelShapes` (`ShapeRow`, `ShapeSource`), `skips_root_model`, `reuse_candidate_key`, `stdout_fingerprint`, `STALE_DEDUP_KEYS`, `ReuseGroups` (`site_models_last`, `typed_map_values_last`, `yields_to`, `canonical_pair`) | `parser/base.py`: `_ModelShapeSource` (the facts); `model/base.py:DataModel._fresh_dedup_key` (writes what the rendering decides, then renders the key; `get_dedup_key` keeps it in the parse's memo); `parser/_passes/_shared.py:compared_models` (the models a user compares: those reuse may change, without the root models its row leaves out); user `parser/_stdout_repair.py:stdout_model_fingerprint` (behind `Parser._stdout_model_fingerprint`); `parser/_passes/settle.py:settle_yielding_names` (records the plan); `parser/_passes/modules.py`: user `reuse_model`; `parser/_passes/plans.py`: user `find_possible_reuse_duplicates`; `parser/_passes/structure.py`: users `delete_duplicate_models` (`renders_as_duplicate`), `replace_duplicate_name_in_module`, `find_duplicate_models_across_modules`, `replace_typed_map_value_duplicates`; `parser/_passes/imports.py:record_model_placement`; `parser/_stdout_repair.py:model_inventory` (behind `Parser._model_inventory`); not yet: L4 `find_possible_reuse_duplicates` predicts with the first model of a candidate key, without the yield |
 | what becomes of a duplicate that deduplication or reuse found, in the slot of the user that found it: it leaves the output and every user, in any module, names the equal canonical model and records the null of the schema it named; a duplicate that reuse removes instead of subclassing it keeps the tags of the unions that named it (`keeps_duplicate_tags`), and the children of a merged model take their bases once each as the user's row tells them apart (`ShapeRow.base_dedup`); after a merge or a subclass, every model that inherits the canonical model or the subclass, however distant, and whose bases Python would refuse (a base twice, an order C3 cannot merge: `model/base.py:python_base_classes`, not for a TypedDict, which merges its bases itself) lists them once each, descendants first (`settle_python_bases`); reuse removes an Enum, the model of a typed map value, every duplicate under `--collapse-reuse-models` and, in tree scope, every duplicate the output's models cannot inherit (`SUPPORTS_TREE_SCOPE_REUSE_MODEL_INHERITANCE`), and makes any other an empty subclass of the canonical model in its place, which the users of its module (of every module under single-model splitting) name; the canonical model records each duplicate merged into it either way, read by `replace_merged_unique_list_to_set` | `parser/_passes/_shared.py`: `merge_duplicate`, `removes_reuse_duplicate`, `subclass_duplicate`, `merged_models`, `settle_python_bases`; the path suffix of the subclass, `model/base.py:_REUSE_PATH_SUFFIX` (written by `DataModel.create_reuse_model`), and the model it replaced, `DataModel.reused_reference` (read by `_target_binding.py:_Binder.source` and `_Binder.reused`, wherever a later step moved either model) | `parser/_passes/structure.py`: `delete_duplicate_models` (same-name and collapse-reuse merges), `replace_typed_map_value_duplicates`, `create_shared_module_from_duplicates`; `parser/_passes/modules.py`: `reuse_model` (`redirect_removed_reuse_users` records the users whose module already imported the duplicate, for `import_removed_reuse_canonicals`); not routed: a root model that names the model of its own name (`_drop_duplicate_root_model`: its users name what its root names, without a merge) |

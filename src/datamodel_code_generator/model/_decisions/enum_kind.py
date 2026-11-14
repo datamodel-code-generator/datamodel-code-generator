@@ -30,9 +30,12 @@ __all__ = [
     "EnumOrigin",
     "LiteralSetting",
     "LiteralValueKind",
+    "OpenEnumSetting",
     "decide_enum_kind",
     "enum_as_literal",
+    "enum_is_open",
     "enum_member_kinds",
+    "enum_open_marker",
     "holds_inherited_member_value",
     "holds_member_value",
     "is_literal_kind",
@@ -40,6 +43,7 @@ __all__ = [
     "json_type",
     "keeps_member_value",
     "literal_value_kind",
+    "open_enum_base",
     "values_no_literal_holds",
 ]
 
@@ -95,6 +99,9 @@ EnumKindRule: TypeAlias = Literal[
 
 LiteralSetting: TypeAlias = Literal["all", "one", "none"]
 """The ``--enum-field-as-literal`` values."""
+
+OpenEnumSetting: TypeAlias = Literal["none", "extensible", "all"]
+"""The ``--open-enums`` values."""
 
 LiteralValueKind: TypeAlias = Literal["none", "bool", "int", "float", "str", "other"]
 """The kind of a JSON value, named like the Python type of the value."""
@@ -276,6 +283,50 @@ def enum_as_literal(
     if mapped is not None:
         return mapped == "literal"
     return setting == "all" or (setting == "one" and member_count == 1)
+
+
+def enum_open_marker(extras: Mapping[str, Any], /) -> bool | None:
+    """Return whether the schema keywords beside an enum mark it open (True) or closed (False), or None for neither.
+
+    ``x-extensible-enum`` decides first, then the ``modelAsString`` of ``x-ms-enum``; each only as a bool, so the list
+    form of ``x-extensible-enum``, which lists the values in place of ``enum``, marks nothing.
+    """
+    if isinstance(extensible := extras.get("x-extensible-enum"), bool):
+        return extensible
+    if isinstance(ms_enum := extras.get("x-ms-enum"), dict) and isinstance(
+        model_as_string := ms_enum.get("modelAsString"), bool
+    ):
+        return model_as_string
+    return None
+
+
+_OPEN_MEMBER_MINIMUM: Final = 2
+"""The fewest values other than null an enum lists that ``--open-enums all`` opens: one value is a tag, not a set."""
+
+
+def enum_is_open(
+    *, setting: OpenEnumSetting | None, marker: bool | None, member_count: int, const_beside: bool
+) -> bool:
+    """Return whether an enum accepts the values of its type that it does not list (``--open-enums``).
+
+    Without the option (or ``none``) no enum is open. A const beside the enum narrows it to that const, so it stays
+    closed. Else the schema's marker decides (``enum_open_marker``), then ``all`` opens an enum of two or more values
+    other than null, and ``extensible`` none.
+    """
+    if setting in {None, "none"} or const_beside:
+        return False
+    if marker is not None:
+        return marker
+    return setting == "all" and member_count >= _OPEN_MEMBER_MINIMUM
+
+
+def open_enum_base(kind_base: EnumBase | None, base_map: Mapping[str, str] | None, /) -> str | None:
+    """Return the base an open enum written as an Enum class takes in place of its ``Enum``, ``StrEnum`` or ``IntEnum``.
+
+    It is the ``--open-enum-base-class-map`` entry of the class the enum is written on; None when there is none, so
+    the enum is written as ``Literal[...]`` joined with its type instead.
+    """
+    return None if kind_base is None or not base_map else base_map.get(kind_base)
 
 
 def literal_value_kind(value: object, /) -> LiteralValueKind:

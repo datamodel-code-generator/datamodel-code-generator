@@ -35,8 +35,8 @@ On the command line, relative paths in `pyproject.toml` resolve as follows:
   JSON files of the server and client settings.
 - Relative to the working directory: the file of `input-model`, and the JSON files of `aliases`,
   `serialization-aliases`, `extra-template-data`, `custom-formatters-kwargs`, `default-values`, `base-class-map`,
-  `model-name-map`, `enum-field-as-literal-map`, `duplicate-name-suffix`, `import-overrides`, `type-overrides`, and
-  `validators`.
+  `model-name-map`, `enum-field-as-literal-map`, `open-enum-base-class-map`, `duplicate-name-suffix`,
+  `import-overrides`, `type-overrides`, and `validators`.
 
 `load_pyproject_config()` reads those JSON files from the `pyproject.toml` directory instead; see
 [Using as Module](using_as_module.md).

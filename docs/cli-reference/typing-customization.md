@@ -20,6 +20,7 @@
 | [`--no-use-specialized-enum`](#no-use-specialized-enum) | Disable specialized Enum classes for Python 3.11+ code gener... |
 | [`--no-use-standard-collections`](#no-use-standard-collections) | Use typing.Dict/List instead of built-in dict/list for conta... |
 | [`--no-use-union-operator`](#no-use-union-operator) | Use Union[X, Y] / Optional[X] instead of X | Y union operato... |
+| [`--open-enums`](#open-enums) | Accept the values an enum does not list. |
 | [`--output-date-class`](#output-date-class) | Specify date class type for date schema fields. |
 | [`--output-datetime-class`](#output-datetime-class) | Specify datetime class type for date-time schema fields. |
 | [`--read-allof-parents-in-mro-order`](#read-allof-parents-in-mro-order) | Read the allOf parents of every inherited schema in the orde... |
@@ -3874,6 +3875,446 @@ for older Python versions or when explicit typing imports are preferred.
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--open-enums` {#open-enums}
+
+Accept the values an enum does not list.
+
+APIs add enum values over time, and a closed Enum class rejects a response that carries one the client does not know
+yet. `extensible` opens the enums whose schema marks them open: `x-extensible-enum: true`, or `x-ms-enum` with
+`modelAsString: true`. `all` opens every enum of two or more values, except one whose schema closes it
+(`x-extensible-enum: false`, `modelAsString: false`); a one-value enum is a tag, so it stays closed unless it is marked.
+`none` opens no enum, as without the option, which turns the option of a preset off. A const beside an enum narrows it
+to that const, so it stays closed. The list form of `x-extensible-enum`, which lists the values in place of `enum`, is
+not read: such a schema has no `enum`, so its field is already a plain `str`.
+
+An open enum written as an Enum class takes the base `--open-enum-base-class-map` names for its class.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input open_enums.yaml --formatters builtin --target-python-version 3.11 --open-enums all --open-enum-base-class-map '{"StrEnum": "tests.data.python.open_enum.OpenStrEnum", "IntEnum": "tests.data.python.open_enum.OpenIntEnum", "Enum": "tests.data.python.open_enum.OpenEnum"}' # (1)!
+    ```
+
+    1. :material-arrow-left: `--open-enums` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info:
+      title: Jobs with open enums
+      version: "1"
+    paths: {}
+    components:
+      schemas:
+        Job:
+          type: object
+          required: [status]
+          properties:
+            status:
+              $ref: "#/components/schemas/JobStatus"
+            provisioningState:
+              $ref: "#/components/schemas/ProvisioningState"
+            type:
+              $ref: "#/components/schemas/JobType"
+            priority:
+              $ref: "#/components/schemas/Priority"
+            phase:
+              $ref: "#/components/schemas/Phase"
+            region:
+              $ref: "#/components/schemas/Region"
+            tier:
+              $ref: "#/components/schemas/Tier"
+            tags:
+              type: array
+              items:
+                $ref: "#/components/schemas/Tag"
+            mode:
+              type: string
+              enum: [auto, manual]
+              default: auto
+              x-extensible-enum: true
+            kind:
+              type: string
+              enum: [job]
+            pinned:
+              type: string
+              enum: [fast, slow]
+              const: fast
+              x-extensible-enum: true
+            quota:
+              type: object
+              propertyNames:
+                type: string
+                enum: [cpu, memory]
+                x-extensible-enum: true
+              additionalProperties:
+                type: integer
+            lifecycle:
+              $ref: "#/components/schemas/Lifecycle"
+            stage:
+              $ref: "#/components/schemas/Stage"
+            color:
+              $ref: "#/components/schemas/Color"
+            pet:
+              $ref: "#/components/schemas/Pet"
+        JobStatus:
+          type: string
+          enum: [queued, running, done]
+          x-extensible-enum: true
+        ProvisioningState:
+          type: string
+          enum: [Succeeded, Failed]
+          x-ms-enum:
+            name: ProvisioningState
+            modelAsString: true
+        JobType:
+          type: string
+          enum: [scrape, crawl]
+        Priority:
+          type: integer
+          enum: [1, 2, 3]
+          x-extensible-enum: true
+        Phase:
+          type: [string, "null"]
+          enum: [pending, active, null]
+          x-extensible-enum: true
+        Region:
+          type: string
+          enum: [eu, us]
+          x-ms-enum:
+            name: Region
+            modelAsString: false
+        Tier:
+          type: string
+          enum: [free, paid]
+          x-extensible-enum: false
+        Tag:
+          type: string
+          enum: [red, blue]
+          x-extensible-enum: true
+        Lifecycle:
+          allOf:
+            - $ref: "#/components/schemas/JobStatus"
+            - $ref: "#/components/schemas/ProvisioningState"
+        Stage:
+          allOf:
+            - $ref: "#/components/schemas/JobStatus"
+            - $ref: "#/components/schemas/JobType"
+        Color:
+          type: string
+          enum: [red, blue]
+        PetType:
+          type: string
+          enum: [cat, dog]
+          x-extensible-enum: true
+        Cat:
+          type: object
+          required: [petType]
+          properties:
+            petType:
+              $ref: "#/components/schemas/PetType"
+            meows:
+              type: boolean
+        Dog:
+          type: object
+          required: [petType]
+          properties:
+            petType:
+              $ref: "#/components/schemas/PetType"
+            barks:
+              type: boolean
+        Pet:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - $ref: "#/components/schemas/Dog"
+          discriminator:
+            propertyName: petType
+            mapping:
+              cat: "#/components/schemas/Cat"
+              dog: "#/components/schemas/Dog"
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  open_enums.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import StrEnum
+        from typing import Literal
+
+        from pydantic import BaseModel, Field, RootModel
+
+        from tests.data.python.open_enum import OpenEnum, OpenIntEnum, OpenStrEnum
+
+
+        class Mode(OpenStrEnum):
+            auto = 'auto'
+            manual = 'manual'
+
+
+        class Kind(StrEnum):
+            job = 'job'
+
+
+        class Pinned(StrEnum):
+            fast = 'fast'
+            slow = 'slow'
+
+
+        class JobStatus(OpenStrEnum):
+            queued = 'queued'
+            running = 'running'
+            done = 'done'
+
+
+        class ProvisioningState(OpenStrEnum):
+            Succeeded = 'Succeeded'
+            Failed = 'Failed'
+
+
+        class JobType(OpenStrEnum):
+            scrape = 'scrape'
+            crawl = 'crawl'
+
+
+        class Priority(OpenIntEnum):
+            integer_1 = 1
+            integer_2 = 2
+            integer_3 = 3
+
+
+        class Phase(OpenEnum):
+            pending = 'pending'
+            active = 'active'
+            NoneType_None = None
+
+
+        class Region(StrEnum):
+            eu = 'eu'
+            us = 'us'
+
+
+        class Tier(StrEnum):
+            free = 'free'
+            paid = 'paid'
+
+
+        class Tag(OpenStrEnum):
+            red = 'red'
+            blue = 'blue'
+
+
+        class Lifecycle(OpenStrEnum):
+            queued = 'queued'
+            running = 'running'
+            done = 'done'
+            Succeeded = 'Succeeded'
+            Failed = 'Failed'
+
+
+        class Stage(OpenStrEnum):
+            queued = 'queued'
+            running = 'running'
+            done = 'done'
+            scrape = 'scrape'
+            crawl = 'crawl'
+
+
+        class Color(OpenStrEnum):
+            red = 'red'
+            blue = 'blue'
+
+
+        class PetType(OpenStrEnum):
+            cat = 'cat'
+            dog = 'dog'
+
+
+        class Cat(BaseModel):
+            petType: Literal['cat']
+            meows: bool | None = None
+
+
+        class Dog(BaseModel):
+            petType: Literal['dog']
+            barks: bool | None = None
+
+
+        class Pet(RootModel[Cat | Dog]):
+            root: Cat | Dog = Field(..., discriminator='petType')
+
+
+        class Job(BaseModel):
+            status: JobStatus
+            provisioningState: ProvisioningState | None = None
+            type: JobType | None = None
+            priority: Priority | None = None
+            phase: Phase | None = None
+            region: Region | None = None
+            tier: Tier | None = None
+            tags: list[Tag] | None = None
+            mode: Mode | None = 'auto'
+            kind: Kind | None = None
+            pinned: Literal['fast'] | None = None
+            quota: dict[Literal['cpu', 'memory'], int] | None = None
+            lifecycle: Lifecycle | None = None
+            stage: Stage | None = None
+            color: Color | None = None
+            pet: Pet | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  open_enums.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import StrEnum
+        from typing import Literal
+
+        from pydantic import BaseModel, Field, RootModel
+
+        from tests.data.python.open_enum import OpenEnum, OpenIntEnum, OpenStrEnum
+
+
+        class Mode(OpenStrEnum):
+            auto = 'auto'
+            manual = 'manual'
+
+
+        class Kind(StrEnum):
+            job = 'job'
+
+
+        class Pinned(StrEnum):
+            fast = 'fast'
+            slow = 'slow'
+
+
+        class JobStatus(OpenStrEnum):
+            queued = 'queued'
+            running = 'running'
+            done = 'done'
+
+
+        class ProvisioningState(OpenStrEnum):
+            Succeeded = 'Succeeded'
+            Failed = 'Failed'
+
+
+        class JobType(StrEnum):
+            scrape = 'scrape'
+            crawl = 'crawl'
+
+
+        class Priority(OpenIntEnum):
+            integer_1 = 1
+            integer_2 = 2
+            integer_3 = 3
+
+
+        class Phase(OpenEnum):
+            pending = 'pending'
+            active = 'active'
+            NoneType_None = None
+
+
+        class Region(StrEnum):
+            eu = 'eu'
+            us = 'us'
+
+
+        class Tier(StrEnum):
+            free = 'free'
+            paid = 'paid'
+
+
+        class Tag(OpenStrEnum):
+            red = 'red'
+            blue = 'blue'
+
+
+        class Lifecycle(OpenStrEnum):
+            queued = 'queued'
+            running = 'running'
+            done = 'done'
+            Succeeded = 'Succeeded'
+            Failed = 'Failed'
+
+
+        class Stage(StrEnum):
+            queued = 'queued'
+            running = 'running'
+            done = 'done'
+            scrape = 'scrape'
+            crawl = 'crawl'
+
+
+        class Color(StrEnum):
+            red = 'red'
+            blue = 'blue'
+
+
+        class PetType(OpenStrEnum):
+            cat = 'cat'
+            dog = 'dog'
+
+
+        class Cat(BaseModel):
+            petType: Literal['cat']
+            meows: bool | None = None
+
+
+        class Dog(BaseModel):
+            petType: Literal['dog']
+            barks: bool | None = None
+
+
+        class Pet(RootModel[Cat | Dog]):
+            root: Cat | Dog = Field(..., discriminator='petType')
+
+
+        class Job(BaseModel):
+            status: JobStatus
+            provisioningState: ProvisioningState | None = None
+            type: JobType | None = None
+            priority: Priority | None = None
+            phase: Phase | None = None
+            region: Region | None = None
+            tier: Tier | None = None
+            tags: list[Tag] | None = None
+            mode: Mode | None = 'auto'
+            kind: Kind | None = None
+            pinned: Literal['fast'] | None = None
+            quota: dict[Literal['cpu', 'memory'], int] | None = None
+            lifecycle: Lifecycle | None = None
+            stage: Stage | None = None
+            color: Color | None = None
+            pet: Pet | None = None
+        ```
+
+        <!-- fmt: on -->
 
 ---
 

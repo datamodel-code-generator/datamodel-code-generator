@@ -1253,6 +1253,15 @@ def replace_unhashable_unique_set_to_list(parser: ModulesHost, models: list[Data
             reverted.update(paths)
 
 
+def _merged_open_enum_base(enums: Sequence[Enum]) -> str | list[str] | None:
+    """Return the open enum base a merged enum takes: that of the first enum it merges, when every one of them has one.
+
+    An open enum's base is the ``--open-enum-base-class-map`` entry of its class, which the merged enum keeps; it stays
+    closed when one of the enums it merges is closed.
+    """
+    return enums[0].custom_base_class if all(enum.custom_base_class is not None for enum in enums) else None
+
+
 def extract_inherited_enum(models: list[DataModel]) -> None:
     for model in models.copy():
         enums: list[Enum] = []
@@ -1277,6 +1286,7 @@ def extract_inherited_enum(models: list[DataModel]) -> None:
                 ],
                 description=model.description,
                 reference=model.reference,
+                custom_base_class=_merged_open_enum_base(enums),
             )
             replace_model_in_list(models, model, merged_enum)
 

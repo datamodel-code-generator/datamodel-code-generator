@@ -149,6 +149,8 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--omit-incomplete-model-defaults": "Write a property whose object default lacks required fields of its model w...",
     "--omit-redundant-constraints": "Do not write a constraint again beside a type that already enforces it.",
     "--omit-redundant-reference-null": "Do not write None again at a reference to a model that holds null itself.",
+    "--open-enum-base-class-map": "Open the Enum classes of open enums on your own base classes.",
+    "--open-enums": "Accept the values an enum does not list.",
     "--openapi-as-definitions": "Give OpenAPI paths bodies or ref components the models their definitions get.",
     "--openapi-include-info-version": "Emit OpenAPI info.version as a generated constant.",
     "--openapi-include-paths": "Filter OpenAPI paths to include in model generation.",
