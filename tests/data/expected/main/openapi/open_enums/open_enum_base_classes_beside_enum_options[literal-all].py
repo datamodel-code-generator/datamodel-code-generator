@@ -9,24 +9,24 @@ from typing import Literal
 from pydantic import BaseModel, Field, RootModel
 
 
-class JobStatus(RootModel[Literal['queued', 'running', 'done']]):
-    root: Literal['queued', 'running', 'done']
+class JobStatus(RootModel[Literal['queued', 'running', 'done'] | str]):
+    root: Literal['queued', 'running', 'done'] | str
 
 
-class ProvisioningState(RootModel[Literal['Succeeded', 'Failed']]):
-    root: Literal['Succeeded', 'Failed']
+class ProvisioningState(RootModel[Literal['Succeeded', 'Failed'] | str]):
+    root: Literal['Succeeded', 'Failed'] | str
 
 
 class JobType(RootModel[Literal['scrape', 'crawl']]):
     root: Literal['scrape', 'crawl']
 
 
-class Priority(RootModel[Literal[1, 2, 3]]):
-    root: Literal[1, 2, 3]
+class Priority(RootModel[Literal[1, 2, 3] | int]):
+    root: Literal[1, 2, 3] | int
 
 
-class Phase(RootModel[Literal['pending', 'active'] | None]):
-    root: Literal['pending', 'active'] | None
+class Phase(RootModel[Literal['pending', 'active'] | str | None]):
+    root: Literal['pending', 'active'] | str | None
 
 
 class Region(RootModel[Literal['eu', 'us']]):
@@ -37,8 +37,8 @@ class Tier(RootModel[Literal['free', 'paid']]):
     root: Literal['free', 'paid']
 
 
-class Tag(RootModel[Literal['red', 'blue']]):
-    root: Literal['red', 'blue']
+class Tag(RootModel[Literal['red', 'blue'] | str]):
+    root: Literal['red', 'blue'] | str
 
 
 class Lifecycle(BaseModel):
@@ -53,8 +53,8 @@ class Color(RootModel[Literal['red', 'blue']]):
     root: Literal['red', 'blue']
 
 
-class PetType(RootModel[Literal['cat', 'dog']]):
-    root: Literal['cat', 'dog']
+class PetType(RootModel[Literal['cat', 'dog'] | str]):
+    root: Literal['cat', 'dog'] | str
 
 
 class Cat(BaseModel):
@@ -80,10 +80,10 @@ class Job(BaseModel):
     region: Region | None = None
     tier: Tier | None = None
     tags: list[Tag] | None = None
-    mode: Literal['auto', 'manual'] | None = 'auto'
+    mode: Literal['auto', 'manual'] | str | None = 'auto'
     kind: Literal['job'] | None = None
     pinned: Literal['fast'] | None = None
-    quota: dict[Literal['cpu', 'memory'], int] | None = None
+    quota: dict[Literal['cpu', 'memory'] | str, int] | None = None
     lifecycle: Lifecycle | None = None
     stage: Stage | None = None
     color: Color | None = None

@@ -81,6 +81,8 @@ omit-incomplete-model-defaults-practical	main/preset_opt_in_options/preset_sets_
 omit-incomplete-model-defaults-standard	main/preset_opt_in_options/preset_sets_opt_in_option[omit-incomplete-model-defaults-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[omit-incomplete-model-defaults-practical].py
 omit-redundant-reference-null-practical	main/preset_opt_in_options/preset_sets_opt_in_option[omit-redundant-reference-null-practical].py
 omit-redundant-reference-null-standard	main/preset_opt_in_options/preset_sets_opt_in_option[omit-redundant-reference-null-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[omit-redundant-reference-null-practical].py
+open-enums-practical	main/preset_opt_in_options/preset_sets_opt_in_option[open-enums-practical].py
+open-enums-standard	main/preset_opt_in_options/preset_sets_opt_in_option[open-enums-standard].py
 openapi-ref-components-as-definitions-practical	main/preset_opt_in_options/preset_sets_opt_in_option[openapi-ref-components-as-definitions-practical].py
 openapi-ref-components-as-definitions-standard	main/preset_opt_in_options/preset_sets_opt_in_option[openapi-ref-components-as-definitions-standard].py
 order-constructor-fields-by-final-names-practical	main/preset_opt_in_options/preset_sets_opt_in_option[order-constructor-fields-by-final-names-practical]/
