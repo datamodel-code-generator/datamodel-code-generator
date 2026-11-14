@@ -15,7 +15,7 @@ Schema  OpenAPI 3.1.0 (OpenAPI scopes: api)
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   0
 
-Start from  --preset standard-py314-20261112
+Start from  --preset standard-py314-20261113
 
 Add  nothing on top of the preset
 
@@ -23,11 +23,11 @@ Notes
   - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --input referenced_holders.yaml --openapi-scopes api --preset standard-py314-20261112 --target-python-version 3.14
+  datamodel-codegen --input referenced_holders.yaml --openapi-scopes api --preset standard-py314-20261113 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "referenced_holders.yaml"
   openapi-scopes = ["api"]
-  preset = "standard-py314-20261112"
+  preset = "standard-py314-20261113"
   target-python-version = "3.14"

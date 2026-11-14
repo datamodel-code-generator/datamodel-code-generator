@@ -519,7 +519,8 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(
         _C.TYPING,
         "--type-mappings --type-overrides --type-overrides-replace-whole-type --no-type-overrides-replace-whole-type "
-        "--use-x-python-type-as-written --no-use-x-python-type-as-written --use-bytes-for-content-media-type "
+        "--use-x-python-type-as-written --no-use-x-python-type-as-written --use-x-python-import-for-every-ref "
+        "--no-use-x-python-import-for-every-ref --use-bytes-for-content-media-type "
         "--no-use-bytes-for-content-media-type",
         group=_G.TYPE_MAPPING,
     ),

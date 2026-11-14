@@ -2075,6 +2075,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "use_plain_alias_for_recursive_models",
         "type_overrides_replace_whole_type",
         "use_x_python_type_as_written",
+        "use_x_python_import_for_every_ref",
         "use_bytes_for_content_media_type",
         "capitalise_numbered_enum_members",
         "snake_case_field",
@@ -8379,6 +8380,7 @@ def test_all_exports_includes_generate_config() -> None:
             ("20261106", ("310", "311", "312", "313", "314", "315")),
             ("20261111", ("310", "311", "312", "313", "314", "315")),
             ("20261112", ("310", "311", "312", "313", "314", "315")),
+            ("20261113", ("310", "311", "312", "313", "314", "315")),
         )
         for family in ("standard", "practical")
         for target in targets

@@ -226,7 +226,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261112 \
+  --preset standard-py312-20261113 \
   --output app/models.py \
   --generate-server fastapi \
   --server-output app/server \
@@ -239,7 +239,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261112 \
+  --preset standard-py312-20261113 \
   --output app/models.py \
   --generate-client httpx2 \
   --client-output app/client \

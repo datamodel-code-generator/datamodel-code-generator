@@ -16,6 +16,8 @@ use-bounds-for-float-const-command-line	main/preset_opt_in_options/preset_option
 use-bounds-for-float-const-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].py
 use-typed-nullable-map-values-command-line	main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-command-line].py
 use-typed-nullable-map-values-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-command-line].py
+use-x-python-import-for-every-ref-command-line	main/preset_opt_in_options/preset_option_turned_off[use-x-python-import-for-every-ref-command-line].py
+use-x-python-import-for-every-ref-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-x-python-import-for-every-ref-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[use-x-python-import-for-every-ref-command-line].py
 [test_preset_sets_opt_in_option]
 apply-field-options-to-every-field-practical	main/preset_opt_in_options/preset_sets_opt_in_option[apply-field-options-to-every-field-practical].py
 apply-field-options-to-every-field-standard	main/preset_opt_in_options/preset_sets_opt_in_option[apply-field-options-to-every-field-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[apply-field-options-to-every-field-practical].py
@@ -153,5 +155,7 @@ use-typed-nullable-map-values-practical	main/preset_opt_in_options/preset_sets_o
 use-typed-nullable-map-values-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-nullable-map-values-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-map-values-beside-other-types-practical].py
 use-unique-items-as-set-by-value-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-unique-items-as-set-by-value-practical].py
 use-unique-items-as-set-by-value-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-unique-items-as-set-by-value-standard].py
+use-x-python-import-for-every-ref-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-x-python-import-for-every-ref-practical].py
+use-x-python-import-for-every-ref-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-x-python-import-for-every-ref-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-x-python-import-for-every-ref-practical].py
 use-x-python-type-as-written-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-x-python-type-as-written-practical].py
 use-x-python-type-as-written-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-x-python-type-as-written-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-x-python-type-as-written-practical].py

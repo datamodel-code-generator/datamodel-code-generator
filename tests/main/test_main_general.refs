@@ -603,6 +603,78 @@ minimal-kept	main/main_general/all_exports_export_displaced_by_a_prefixed_name_t
 20261112-standard-315-formatters262	main/formatter_policy/standard-315-black.py	= main/formatter_policy/standard-314-black.py
 20261112-standard-315-formatters263	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 20261112-standard-315-formatters263	main/formatter_policy/standard-315-ruff-check.py	= main/formatter_policy/standard-314-ruff-check.py
+20261113-practical-310-formatters300	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-practical-310-formatters300	main/formatter_policy/practical-310-builtin.py	= main/formatter_policy/practical-310-black.py
+20261113-practical-310-formatters301	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-practical-310-formatters301	main/formatter_policy/practical-310-black.py
+20261113-practical-310-formatters302	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-practical-310-formatters302	main/formatter_policy/practical-310-ruff-check.py
+20261113-practical-311-formatters303	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-practical-311-formatters303	main/formatter_policy/practical-311-builtin.py	= main/formatter_policy/practical-310-black.py
+20261113-practical-311-formatters304	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-practical-311-formatters304	main/formatter_policy/practical-311-black.py	= main/formatter_policy/practical-310-black.py
+20261113-practical-311-formatters305	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-practical-311-formatters305	main/formatter_policy/practical-311-ruff-check.py	= main/formatter_policy/practical-310-ruff-check.py
+20261113-practical-312-formatters306	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-practical-312-formatters306	main/formatter_policy/practical-312-builtin.py	= main/formatter_policy/practical-310-black.py
+20261113-practical-312-formatters307	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-practical-312-formatters307	main/formatter_policy/practical-312-black.py	= main/formatter_policy/practical-310-black.py
+20261113-practical-312-formatters308	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-practical-312-formatters308	main/formatter_policy/practical-312-ruff-check.py	= main/formatter_policy/practical-310-ruff-check.py
+20261113-practical-313-formatters309	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-practical-313-formatters309	main/formatter_policy/practical-313-builtin.py	= main/formatter_policy/practical-310-black.py
+20261113-practical-313-formatters310	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-practical-313-formatters310	main/formatter_policy/practical-313-black.py	= main/formatter_policy/practical-310-black.py
+20261113-practical-313-formatters311	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-practical-313-formatters311	main/formatter_policy/practical-313-ruff-check.py	= main/formatter_policy/practical-310-ruff-check.py
+20261113-practical-314-formatters312	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-practical-314-formatters312	main/formatter_policy/practical-314-builtin.py	= main/formatter_policy/practical-314-black.py
+20261113-practical-314-formatters313	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-practical-314-formatters313	main/formatter_policy/practical-314-black.py
+20261113-practical-314-formatters314	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-practical-314-formatters314	main/formatter_policy/practical-314-ruff-check.py
+20261113-practical-315-formatters315	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-practical-315-formatters315	main/formatter_policy/practical-315-builtin.py	= main/formatter_policy/practical-314-black.py
+20261113-practical-315-formatters316	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-practical-315-formatters316	main/formatter_policy/practical-315-black.py	= main/formatter_policy/practical-314-black.py
+20261113-practical-315-formatters317	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-practical-315-formatters317	main/formatter_policy/practical-315-ruff-check.py	= main/formatter_policy/practical-314-ruff-check.py
+20261113-standard-310-formatters282	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-standard-310-formatters282	main/formatter_policy/standard-310-builtin.py	= main/standard_preset_pydantic_v2.py
+20261113-standard-310-formatters283	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-standard-310-formatters283	main/formatter_policy/standard-310-black.py	= main/standard_preset_pydantic_v2.py
+20261113-standard-310-formatters284	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-standard-310-formatters284	main/formatter_policy/standard-310-ruff-check.py
+20261113-standard-311-formatters285	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-standard-311-formatters285	main/formatter_policy/standard-311-builtin.py	= main/standard_preset_pydantic_v2.py
+20261113-standard-311-formatters286	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-standard-311-formatters286	main/formatter_policy/standard-311-black.py	= main/standard_preset_pydantic_v2.py
+20261113-standard-311-formatters287	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-standard-311-formatters287	main/formatter_policy/standard-311-ruff-check.py	= main/formatter_policy/standard-310-ruff-check.py
+20261113-standard-312-formatters288	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-standard-312-formatters288	main/formatter_policy/standard-312-builtin.py	= main/standard_preset_pydantic_v2.py
+20261113-standard-312-formatters289	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-standard-312-formatters289	main/formatter_policy/standard-312-black.py	= main/standard_preset_pydantic_v2.py
+20261113-standard-312-formatters290	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-standard-312-formatters290	main/formatter_policy/standard-312-ruff-check.py	= main/formatter_policy/standard-310-ruff-check.py
+20261113-standard-313-formatters291	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-standard-313-formatters291	main/formatter_policy/standard-313-builtin.py	= main/standard_preset_pydantic_v2.py
+20261113-standard-313-formatters292	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-standard-313-formatters292	main/formatter_policy/standard-313-black.py	= main/standard_preset_pydantic_v2.py
+20261113-standard-313-formatters293	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-standard-313-formatters293	main/formatter_policy/standard-313-ruff-check.py	= main/formatter_policy/standard-310-ruff-check.py
+20261113-standard-314-formatters294	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-standard-314-formatters294	main/formatter_policy/standard-314-builtin.py	= main/formatter_policy/standard-314-black.py
+20261113-standard-314-formatters295	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-standard-314-formatters295	main/formatter_policy/standard-314-black.py
+20261113-standard-314-formatters296	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-standard-314-formatters296	main/formatter_policy/standard-314-ruff-check.py
+20261113-standard-315-formatters297	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-standard-315-formatters297	main/formatter_policy/standard-315-builtin.py	= main/formatter_policy/standard-314-black.py
+20261113-standard-315-formatters298	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-standard-315-formatters298	main/formatter_policy/standard-315-black.py	= main/formatter_policy/standard-314-black.py
+20261113-standard-315-formatters299	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+20261113-standard-315-formatters299	main/formatter_policy/standard-315-ruff-check.py	= main/formatter_policy/standard-314-ruff-check.py
 [test_check_directory_extra_file]
 	main/main_general/check_directory_extra_file/
 [test_check_directory_file_differs]

@@ -1127,6 +1127,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._mapped_definition_imports: dict[str, Import] = {}
         self._mapped_references: dict[str, tuple[str, str]] = {}
         self._python_import_values: dict[str, YamlValue] = {}
+        self._python_import_target_keys: set[str] = set()
+        """The keys of ``_python_import_values`` that a JSON pointer or a whole-document ``$ref`` parsed to a model."""
         self._dangling_refs: set[tuple[str, str]] = set()
         self._unescaped_slash_pointers: dict[tuple[str, str], str] = {}
         """Under --read-escaped-ref-pointers, the pointer of the key a dangling reference's unescaped ``/`` splits."""
@@ -1727,6 +1729,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> list[DataModelFieldBase]:
         """Recursively materialize one raw schema's effective fields without live reverse edges."""
         return _rw_split.get_raw_inherited_fields(self, reference, active)
+
+    @cached_property
+    def _legacy_python_import_rows(self) -> frozenset[str]:
+        """The rows of 0.96.0 x-python-import typing kept: every row without --use-x-python-import-for-every-ref.
+
+        ``legacy-python-import-modelled-targets``: the import types the sites that name a schema with
+        ``x-python-import`` as their one class only where the schema got no model, read as the class it imports by
+        the definitions of its document; a schema that a JSON pointer or a whole-document ``$ref`` parsed into a model
+        keeps that model at those sites.
+        """
+        if self.config.use_x_python_import_for_every_ref:
+            return frozenset()
+        return frozenset({"legacy-python-import-modelled-targets"})
 
     @cached_property
     def _legacy_rw_variants(self) -> frozenset[str]:
@@ -8179,16 +8194,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
 
     def _note_python_import_target(self, target: YamlValue, path: list[str]) -> None:
-        """Note the empty model a ``$ref`` target parsed into at ``path`` when its ``x-python-import`` types its uses.
+        """Note a ``$ref`` target parsed into a model at ``path`` whose ``x-python-import`` types its uses.
 
-        The target is that of a JSON pointer or the root of a document a ``$ref`` names (``_parse_document_root``). A
-        model of no field and no generated base is one nobody can use: only a base that names the schema needs it, so
-        unnamed, it is left out with the unused models (#5533). A model with fields or a root type stays.
+        The target is that of a JSON pointer or the root of a document a ``$ref`` names (``_parse_document_root``). Its
+        ``x-python-import`` is recorded as a definition's is, so the import types the sites that name it as their one
+        class (``_type_imported_references_without_model``). A model of no field and no generated base is one nobody
+        can use: only a base that names the schema needs it, so unnamed, it is left out with the unused models (#5533).
+        A model with fields or a root type stays.
         """
+        if not self._reads_as_python_import(target, path) or not (
+            reference := self.model_resolver.references.get(key := self.model_resolver.join_path(tuple(path)))
+        ):
+            return
+        self._python_import_values[key] = target["x-python-import"]
+        self._python_import_target_keys.add(key)
         if (
-            self._reads_as_python_import(target, path)
-            and (reference := self.model_resolver.references.get(key := self.model_resolver.join_path(tuple(path))))
-            and isinstance(model := reference.source, DataModel)
+            isinstance(model := reference.source, DataModel)
             and not model.fields
             and not any(base.reference for base in model.base_classes)
         ):
@@ -8506,15 +8527,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self._graph_builder.redirect_reference_users(reference, target)
 
     def _type_imported_references_without_model(self) -> None:
-        """Type the users of each reference that got no model by the type a field naming it gets from an import.
+        """Type the users of each reference that a field naming it types by an import by the type it gets from it.
 
-        Such a reference, to a schema of a document that ``--external-ref-mapping`` maps or to a definition with
+        Such a reference, to a schema of a document that ``--external-ref-mapping`` maps or to a schema with
         ``x-python-import``, is one that a site names as its one class, as an allOf of it and keywords that add no
         field does; the import types it as it types a ``$ref`` to it at a field, and the site's other keywords leave
         with the reference, as they leave with a local one. The imports every module shares stay: a model that names
         the import imports it itself. A mapped reference whose fragment names no schema, one to the whole document for
         example, names no class that ``--external-ref-mapping`` could import: a model that uses it stops with an
-        error. A reference that got a model, such as the root of an input document or a stand-in, keeps its output.
+        error. A mapped reference that got a model, such as the root of an input document, keeps its output; so does a
+        stand-in, whose users ``_parse_base_stand_ins`` typed. A schema with ``x-python-import`` that a JSON pointer or
+        a whole-document ``$ref`` names keeps its model when it has fields or a root type
+        (``_note_python_import_target``), its users typed by the import as those of a definition are.
         """
         if not self._mapped_references and not self._python_import_values:
             return
@@ -8524,8 +8548,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         with self._unshared_imports():
             for path, x_python_import in self._python_import_values.items():
                 if (
-                    path not in modelled
-                    and self._has_reference_users(reference := self.model_resolver.references[path], typed)
+                    not self._is_base_stand_in(reference := self.model_resolver.references[path])
+                    and not (
+                        "legacy-python-import-modelled-targets" in self._legacy_python_import_rows
+                        and path in self._python_import_target_keys
+                    )
+                    and self._has_reference_users(reference, typed)
                     and (python_import_type := self._python_import_type_maker(x_python_import, path)) is not None
                 ):
                     self._type_users_by(reference, python_import_type, python_import_type)

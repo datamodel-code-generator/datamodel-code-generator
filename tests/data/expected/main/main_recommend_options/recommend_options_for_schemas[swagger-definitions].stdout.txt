@@ -16,7 +16,7 @@ Schema  Swagger 2.0
   integer/number/boolean schemas   0
   root schema                      object model 0, title words 0
 
-Start from  --preset standard-py314-20261112
+Start from  --preset standard-py314-20261113
 
 Add (1 option)
   --naming-strategy enclosing-model   [naming.qualify-shared-inline-names]
@@ -36,12 +36,12 @@ Notes
   - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --input swagger.yaml --input-file-type jsonschema --naming-strategy enclosing-model --preset standard-py314-20261112 --target-python-version 3.14
+  datamodel-codegen --input swagger.yaml --input-file-type jsonschema --naming-strategy enclosing-model --preset standard-py314-20261113 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "swagger.yaml"
   input-file-type = "jsonschema"
   naming-strategy = "enclosing-model"
-  preset = "standard-py314-20261112"
+  preset = "standard-py314-20261113"
   target-python-version = "3.14"

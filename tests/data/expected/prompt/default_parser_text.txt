@@ -77,6 +77,7 @@
 - `--no-use-union-operator`: Use Union[X, Y] / Optional[X] instead of X | Y union operator.
 - `--no-use-unique-items-as-set`
 - `--no-use-unique-items-as-set-by-value`
+- `--no-use-x-python-import-for-every-ref`
 - `--no-use-x-python-type-as-written`
 - `--output-date-class`: Specify date class type for date schema fields.
 - `--output-datetime-class`: Specify datetime class type for date-time schema fields.
@@ -116,6 +117,7 @@
 - `--use-union-operator`: Use | operator for Union types (PEP 604).
 - `--use-unique-items-as-set`: Generate set types for arrays with uniqueItems constraint.
 - `--use-unique-items-as-set-by-value`: Write a uniqueItems set only where its final items hash by value.
+- `--use-x-python-import-for-every-ref`: Type every reference to a schema with `x-python-import` by the class it...
 - `--use-x-python-type-as-written`: Write a field's `x-python-type` as given: unions of every spelling and conta...
 
 ### Field Customization

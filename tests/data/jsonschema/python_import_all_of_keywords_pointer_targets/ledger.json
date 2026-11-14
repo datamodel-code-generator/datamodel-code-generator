@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "x-python-import": {"module": "collections", "name": "OrderedDict"},
+  "$defs": {
+    "Entry": {
+      "type": "object",
+      "properties": {"label": {"type": "string"}, "totals": {"allOf": [{"$ref": "#"}, {"description": "Totals."}]}}
+    }
+  }
+}
