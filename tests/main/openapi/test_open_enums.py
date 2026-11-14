@@ -338,6 +338,36 @@ def test_open_enum_base_classes_in_modules(tmp_path: Path) -> None:
     )
 
 
+def test_open_enum_literals_without_type(output_file: Path, tmp_path: Path) -> None:
+    """Join an open enum without ``type`` with the JSON types of its scalar values, each with the keywords beside it.
+
+    A ``maxLength``, a ``pattern``, a bound or a ``format`` constrains the values the enum does not list, as with the
+    type written out.
+    """
+    schema = tmp_path / "open_untyped.json"
+    schema.write_text(
+        json.dumps({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Code",
+            "type": "object",
+            "properties": {
+                "code": {"enum": ["ab", "cd"], "maxLength": 2},
+                "written": {"type": "string", "enum": ["ab", "cd"], "maxLength": 2},
+                "mixed": {"enum": ["a", 1, None, True], "minimum": 0, "pattern": "^[a-z]+$"},
+                "day": {"enum": ["2020-01-01", "2020-01-02"], "format": "date"},
+                "shape": {"enum": [{"a": 1}, "x"]},
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=schema,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*COMMON, "--open-enums", "all"],
+    )
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [

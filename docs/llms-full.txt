@@ -880,7 +880,7 @@ The 20261113 presets keep the 20261112 options and add:
 - Extensible enums accept new values (`--open-enums extensible`): Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] | str, instead of rejecting them.
 - Discriminators inferred from tags (`--infer-union-discriminators`): Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names.
 - Kubernetes extensions read (`--read-kubernetes-extensions`): Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does.
-- Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values.
+- Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.
 
 ## Override Preset Options
 
@@ -16043,7 +16043,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
-| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values. |
+| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected. |
 
 ### `practical-py311-20261113`
 
@@ -16262,7 +16262,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
-| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values. |
+| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected. |
 
 ### `practical-py312-20261113`
 
@@ -16481,7 +16481,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
-| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values. |
+| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected. |
 
 ### `practical-py313-20261113`
 
@@ -16700,7 +16700,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
-| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values. |
+| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected. |
 
 ### `practical-py314-20261113`
 
@@ -16919,7 +16919,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
-| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values. |
+| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected. |
 
 ### `practical-py315-20261113`
 
@@ -17138,7 +17138,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
-| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values. |
+| Untyped values as JSON values | `--untyped-value-type pydantic.JsonValue` | Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected. |
 
 ---
 
@@ -20616,6 +20616,361 @@ tools, validate tool runtime behavior, or infer schemas from tool implementation
 
 ---
 
+# Kubernetes Schemas
+
+Source: https://datamodel-code-generator.koxudaxi.dev/kubernetes/
+
+<!-- related-cli-options: --read-kubernetes-extensions, --strict-nullable, --type-mappings, --type-overrides, --type-overrides-replace-whole-type, --field-extra-keys -->
+
+# ☸️ Kubernetes Schemas
+
+Kubernetes describes its resources with OpenAPI schemas: the `openAPIV3Schema` of each version of a
+CustomResourceDefinition (CRD), and the `/openapi/v3` documents a cluster serves for every group version. These schemas
+carry `x-kubernetes-*` extensions that change what a value may be. `--read-kubernetes-extensions` reads them, so the
+generated models accept and keep the values Kubernetes does.
+
+## 🚀 Quick Start
+
+```bash
+# A cluster's document of one group version (here apps/v1; a CRD is served under its own group version)
+kubectl get --raw /openapi/v3/apis/apps/v1 > apps_v1.json
+datamodel-codegen --input apps_v1.json --input-file-type openapi --output models --read-kubernetes-extensions
+
+# The schema of one version of a CRD file
+yq '.spec.versions[] | select(.name == "v1") | .schema.openAPIV3Schema' widgets.yaml > widget.yaml
+datamodel-codegen --input widget.yaml --input-file-type jsonschema --class-name Widget \
+    --read-kubernetes-extensions --strict-nullable
+```
+
+The `standard-*-20261113` and later presets set `--read-kubernetes-extensions`.
+
+## 📥 Two Ways to Get the Schemas
+
+**Cluster documents.** `kubectl get --raw /openapi/v3/apis/<group>/<version>` (or `/openapi/v3/api/v1` for the core
+group) returns a complete OpenAPI 3.0 document of the resources of that group version, with their
+`x-kubernetes-group-version-kind` and the `ObjectMeta` they reference. A served CRD is in the document of its own
+group version, such as `/openapi/v3/apis/example.com/v1`, as the API server publishes it; `kubectl get --raw
+/openapi/v3` lists the group versions. Read it with
+`--input-file-type openapi`; the dotted schema names (`io.k8s.api.apps.v1.Deployment`) become modules
+(`io/k8s/api/apps/v1.py`). Each document repeats the shared types, so to generate several group versions into one
+package, merge their `components.schemas` first:
+
+```bash
+jq -s '.[0] * {components: {schemas: (map(.components.schemas) | add)}}' apps_v1.json batch_v1.json > merged.json
+```
+
+**CRD files.** The schema of a CRD version sits at `spec.versions[N].schema.openAPIV3Schema`. Extract it and read it as
+JSON Schema. The extracted schema has no title (give the class a name with `--class-name` or add a `title`), no
+`x-kubernetes-group-version-kind` (add one, as below, to fix `apiVersion` and `kind`), and writes OpenAPI 3.0's
+`nullable`, which `--strict-nullable` reads. A whole CRD file, given as it is, is read as sample data, not as a schema.
+
+```yaml
+x-kubernetes-group-version-kind:
+- group: example.com
+  version: v1
+  kind: Widget
+```
+
+## ⚙️ What `--read-kubernetes-extensions` Reads
+
+Each extension is read as the standard keywords it stands for, wherever a schema object writes it:
+
+| Extension | Read as | Output |
+|---|---|---|
+| `x-kubernetes-int-or-string: true`, or `format: int-or-string` | `type: [integer, string]`, in place of an `anyOf` or `oneOf` of exactly those two types | `int \| str`; a quantity (that `anyOf` beside a `pattern`) is one `int \| constr(pattern=...)` instead of two root models |
+| `x-kubernetes-preserve-unknown-fields: true` beside `properties` and no `additionalProperties` | `additionalProperties: true` | Pydantic models keep the keys they do not declare (`extra='allow'`) |
+| `x-kubernetes-group-version-kind` | `const` and `default` of the `apiVersion` and `kind` properties | `apiVersion: Literal['apps/v1'] = 'apps/v1'`, `kind: Literal['Deployment'] = 'Deployment'` |
+
+- The group version kind fixes a property only where every entry of the list names the same value for it and the
+  property is a plain string schema (no `enum`, `const`, `$ref` or combinator; a `default`, if any, equal to the
+  value). `DeleteOptions`, listed under two groups, gets its `kind` but keeps a free `apiVersion`. The core group,
+  whose name is empty, gives `v1`. An entry without a `group`, `version` and `kind` string is not read, and neither is
+  the list in a draft-04 document, where `const` is no keyword.
+- A model keeps unknown keys only where the output can: a Pydantic `BaseModel` keeps and dumps them, and a Pydantic
+  dataclass keeps them as attributes, as for `additionalProperties: true`. `msgspec` drops unknown fields by design, a
+  standard dataclass has no place for them, and a `TypedDict` accepts them already. A preserved
+  object without `properties` is a `dict[str, Any]`, and an untyped one is `Any`, with or without the option.
+- `--extra-fields` wins over the extra keys this option keeps, as it does over `additionalProperties`.
+- Under `--union-mode left_to_right` a numeric string such as `"5"` reads as `5`; keep the default smart mode.
+
+Input: an extracted CRD version with a group version kind added
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: kubernetes.crd.schema -->
+<details>
+<summary>widget.yaml</summary>
+
+<!-- fmt: off -->
+
+```yaml
+$schema: http://json-schema.org/draft-07/schema#
+title: Widget
+description: Widget is the Schema for the widgets API.
+type: object
+x-kubernetes-group-version-kind:
+- group: example.com
+  kind: Widget
+  version: v1
+required:
+- spec
+properties:
+  apiVersion:
+    description: APIVersion defines the versioned schema of this representation of an object.
+    type: string
+  kind:
+    description: Kind is a string value representing the REST resource this object represents.
+    type: string
+  metadata:
+    type: object
+  spec:
+    description: WidgetSpec defines the desired state of Widget.
+    type: object
+    required:
+    - replicas
+    properties:
+      replicas:
+        type: integer
+        format: int32
+      maxSurge:
+        anyOf:
+        - type: integer
+        - type: string
+        x-kubernetes-int-or-string: true
+      port:
+        x-kubernetes-int-or-string: true
+      targetPort:
+        type:
+        - integer
+        - string
+        x-kubernetes-int-or-string: true
+      resources:
+        type: object
+        properties:
+          limits:
+            type: object
+            additionalProperties:
+              anyOf:
+              - type: integer
+              - type: string
+              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+              x-kubernetes-int-or-string: true
+      selector:
+        type: object
+        properties:
+          app:
+            type: string
+        x-kubernetes-preserve-unknown-fields: true
+      config:
+        x-kubernetes-preserve-unknown-fields: true
+      template:
+        type: object
+        x-kubernetes-embedded-resource: true
+        x-kubernetes-preserve-unknown-fields: true
+      ports:
+        type: array
+        items:
+          type: object
+          required:
+          - name
+          properties:
+            name:
+              type: string
+            port:
+              type: integer
+        x-kubernetes-list-map-keys:
+        - name
+        x-kubernetes-list-type: map
+      finalizers:
+        type: array
+        items:
+          type: string
+        x-kubernetes-list-type: set
+      labels:
+        type: object
+        additionalProperties:
+          type: string
+        x-kubernetes-map-type: atomic
+      paused:
+        type: boolean
+        nullable: true
+      updatePolicy:
+        type: string
+        enum:
+        - Recreate
+    x-kubernetes-validations:
+    - message: replicas must not be negative
+      rule: self.replicas >= 0
+  status:
+    type: object
+    properties:
+      readyReplicas:
+        type: integer
+      conditions:
+        type: array
+        items:
+          type: object
+          required:
+          - type
+          - status
+          properties:
+            type:
+              type: string
+            status:
+              type: string
+              enum:
+              - "True"
+              - "False"
+              - Unknown
+        x-kubernetes-list-map-keys:
+        - type
+        x-kubernetes-list-type: map
+```
+
+<!-- fmt: on -->
+</details>
+<!-- END AUTO-GENERATED DOC EXAMPLE: kubernetes.crd.schema -->
+
+```bash
+datamodel-codegen --input widget.yaml --input-file-type jsonschema --read-kubernetes-extensions
+```
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: kubernetes.crd.output -->
+<!-- fmt: off -->
+
+```python
+from __future__ import annotations
+
+from enum import Enum
+from typing import Any, Literal
+
+from pydantic import BaseModel, ConfigDict, Field, constr
+
+
+class Resources(BaseModel):
+    limits: (
+        dict[
+            str,
+            int
+            | constr(
+                pattern=r'^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$'
+            ),
+        ]
+        | None
+    ) = None
+
+
+class Selector(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    app: str | None = None
+
+
+class Port(BaseModel):
+    name: str
+    port: int | None = None
+
+
+class UpdatePolicy(Enum):
+    Recreate = 'Recreate'
+
+
+class Spec(BaseModel):
+    replicas: int
+    maxSurge: int | str | None = None
+    port: int | str | None = None
+    targetPort: int | str | None = None
+    resources: Resources | None = None
+    selector: Selector | None = None
+    config: Any | None = None
+    template: dict[str, Any] | None = None
+    ports: list[Port] | None = None
+    finalizers: list[str] | None = None
+    labels: dict[str, str] | None = None
+    paused: bool | None = None
+    updatePolicy: UpdatePolicy | None = None
+
+
+class Status1(Enum):
+    True_ = 'True'
+    False_ = 'False'
+    Unknown = 'Unknown'
+
+
+class Condition(BaseModel):
+    type: str
+    status: Status1
+
+
+class Status(BaseModel):
+    readyReplicas: int | None = None
+    conditions: list[Condition] | None = None
+
+
+class Widget(BaseModel):
+    apiVersion: Literal['example.com/v1'] = Field(
+        'example.com/v1',
+        description='APIVersion defines the versioned schema of this representation of an object.',
+    )
+    kind: Literal['Widget'] = Field(
+        'Widget',
+        description='Kind is a string value representing the REST resource this object represents.',
+    )
+    metadata: dict[str, Any] | None = None
+    spec: Spec = Field(
+        ..., description='WidgetSpec defines the desired state of Widget.'
+    )
+    status: Status | None = None
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: kubernetes.crd.output -->
+
+## 📤 Sending Resources
+
+`apiVersion` and `kind` take their values by default, so a model built without them is complete; give the resource a
+`metadata.name` (or `generateName`), which Kubernetes needs to create it. Dump it with
+`model_dump(mode="json", exclude_none=True)` rather than `exclude_unset=True`: a default is not "set", and
+`exclude_unset` would leave `apiVersion` and `kind` out of the request. `mode="json"` writes enum members such as
+`UpdatePolicy.Recreate` as their values, so the result can be sent as JSON.
+
+```python
+widget = Widget(metadata={"name": "web"}, spec=Spec(replicas=2, updatePolicy="Recreate"))
+widget.model_dump(mode="json", by_alias=True, exclude_none=True)
+# {'apiVersion': 'example.com/v1', 'kind': 'Widget', 'metadata': {'name': 'web'},
+#  'spec': {'replicas': 2, 'updatePolicy': 'Recreate'}}
+```
+
+## 🧰 Options That Go Well With It
+
+- `--strict-nullable` reads the `nullable: true` of a CRD schema read as JSON Schema.
+- `--type-mappings string+duration=string` keeps Go durations (`format: duration`, such as `"15s"` or `"1h30m"`) as
+  strings: by default they are `timedelta`, which reads ISO 8601 durations and rejects that form.
+- `--type-overrides '{"Widget.metadata": "my_models.ObjectMeta"}'` with `--type-overrides-replace-whole-type` types the
+  `metadata` of a resource read from a CRD file, which the CRD writes as a bare `type: object`, by an `ObjectMeta`
+  model you have, for example one generated from a cluster document.
+- `--field-extra-keys` carries the extensions this option does not read into the field's `json_schema_extra`, for
+  example `--field-extra-keys x-kubernetes-validations`.
+
+## 🚫 What Is Not Read
+
+- `x-kubernetes-list-type`, `x-kubernetes-list-map-keys`, `x-kubernetes-map-type`, `x-kubernetes-patch-strategy` and
+  `x-kubernetes-patch-merge-key` describe how server-side apply and strategic merge combine values; no Python type
+  expresses that. A list of type `set` stays a `list`, which keeps the order Kubernetes keeps.
+- `x-kubernetes-validations` holds CEL rules; evaluating them would need a CEL runtime in the generated models.
+- `x-kubernetes-embedded-resource` stands beside `x-kubernetes-preserve-unknown-fields` on an object, which is already
+  a `dict[str, Any]` in a CRD file; in a cluster document the API server adds the `apiVersion`, `kind` and `metadata`
+  properties, and the object keeps its other keys.
+- `x-kubernetes-unions` is not read.
+
+## 📖 See Also
+
+- [Generate from JSON Schema](jsonschema.md)
+- [Generate from OpenAPI](openapi.md)
+- [Presets](presets.md)
+- [CLI Reference: `--read-kubernetes-extensions`](cli-reference/typing-customization.md#read-kubernetes-extensions)
+
+---
+
 # Generate from JSON / YAML / CSV Data
 
 Source: https://datamodel-code-generator.koxudaxi.dev/jsondata/
@@ -22917,8 +23272,9 @@ out `maxLength`; `date-time` is `AwareDatetime`, which rejects a date-time witho
 
 With `--read-format-as-annotation` (`read-format-as-annotation = true`, `read_format_as_annotation=True`) a string,
 integer or number schema takes the type its `type` keyword gives, `str`, `int` or `float`, with its own `minLength`,
-`maxLength`, `pattern` and bounds, so the models accept every value the schema accepts and dump it as written. An
-unknown format gives no warning.
+`maxLength`, `pattern` and bounds, so the models accept every value the schema accepts and dump a string or an
+integer as written. A number is the `float` it parses to, as without a format, which rounds a value a double cannot
+hold (`9007199254740993` dumps as `9007199254740992.0`). An unknown format gives no warning.
 
 ```json
 {
@@ -22965,9 +23321,10 @@ types of their formats: there the format carries the type of the source, such as
 
 ## `--untyped-value-type`
 
-A value the schema leaves untyped is any JSON value: `{}`, `true`, a schema without `type`, the values of an object
-without properties and the items of an array without items. By default it is written as `Any`, and under
-`--use-object-type` the values and items of such containers as `object`, as in 0.96.0.
+A value the schema leaves untyped is any JSON value: `{}`, `true`, a schema whose keywords give it no type (such as
+`{"description": "..."}`; an `enum` or a `const` gives one), the values of an object without properties and the items
+of an array without items. By default it is written as `Any`, and under `--use-object-type` the values and items of
+such containers as `object`, as in 0.96.0.
 
 `--untyped-value-type <type>` (`untyped-value-type = "pydantic.JsonValue"`, `untyped_value_type="pydantic.JsonValue"`)
 writes each of them as the given type, with the structure as without the option:
@@ -62462,7 +62819,8 @@ rejects a date-time without an offset), `password` is `SecretStr` (which dumps `
 (which dumps `https://example.com/` for `https://example.com`), and `uuid`, `date`, `ipv4` and `decimal` are parsed
 into Python objects. With it a string, integer or number schema takes the type its `type` keyword gives, `str`, `int`
 or `float`, with its own `minLength`, `maxLength`, `pattern` and bounds, so the models accept every value the schema
-accepts and dump it as written, and an unknown format gives no warning. Two formats still select a type:
+accepts and dump a string or an integer as written (a number as the `float` it parses to, as without a format), and an
+unknown format gives no warning. Two formats still select a type:
 `format: binary`, which stays `bytes` (raw octets, not a JSON string), and a format that a `--type-mappings` entry
 names for a type the schema declares (`--type-mappings date-time=date-time` keeps `date-time` typed, and then
 `--output-datetime-class` applies). The format is not written into the models. The option reads JSON Schema, OpenAPI,
@@ -63523,18 +63881,18 @@ new type does not count is left out with a warning.
 
 Write each value the schema leaves untyped as one type instead of `Any`.
 
-A value the schema leaves untyped, `{}`, `true`, a schema without `type`, the values of an object without properties
-and the items of an array without items, is written as `Any`, and under `--use-object-type` the values and items of
-containers as `object`, as in 0.96.0. With `--untyped-value-type pydantic.JsonValue` each of them is written as
-Pydantic's `JsonValue` (Pydantic 2.5 or later), in every position: a field, a union member, a dict value or key's
-value, a list item, the root of a root model, the value of a type alias and `__pydantic_extra__`. The structure is as
-without the option, and the models parse a JSON document to the same values; Python values that are no JSON values,
-such as a tuple, a set or a `datetime`, are rejected. The value may also be `object`, `Any`, or the dotted import path
-of a type of your own, which the models import (for example a recursive alias for `typing.TypedDict` output). The
-option takes precedence over `--use-object-type`; `--type-overrides`, `x-python-type` and `x-python-import` keep their
-types, and `msgspec.Struct` output keeps `Any`, which msgspec decodes into JSON values. A definition named like the
-imported type is renamed by the rule for names an import takes (`JsonValue` becomes `JsonValueModel`), unless
-`--collapse-root-models` writes the type at its references.
+A value the schema leaves untyped, `{}`, `true`, a schema whose keywords give it no type (`{"description": "..."}`, not
+an `enum`), the values of an object without properties and the items of an array without items, is written as `Any`, and
+under `--use-object-type` the values and items of containers as `object`, as in 0.96.0. With `--untyped-value-type
+pydantic.JsonValue` each of them is written as Pydantic's `JsonValue` (Pydantic 2.5 or later), in every position: a
+field, a union member, a dict value or key's value, a list item, the root of a root model, the value of a type alias and
+`__pydantic_extra__`. The structure is as without the option, and the models parse a JSON document to the same values;
+Python values that are no JSON values, such as a tuple, a set or a `datetime`, are rejected. The value may also be
+`object`, `Any`, or the dotted import path of a type of your own, which the models import (for example a recursive alias
+for `typing.TypedDict` output). The option takes precedence over `--use-object-type`; `--type-overrides`,
+`x-python-type` and `x-python-import` keep their types, and `msgspec.Struct` output keeps `Any`, which msgspec decodes
+into JSON values. A definition named like the imported type is renamed by the rule for names an import takes
+(`JsonValue` becomes `JsonValueModel`), unless `--collapse-root-models` writes the type at its references.
 
 **See also:** [Type Mappings and Custom Types](../type-mappings.md)
 
@@ -89752,1126 +90110,807 @@ None of these three changes is performed yet. The first one follows the [timelin
 
 ---
 
-# Output changes in 0.87.0
-
-Source: https://datamodel-code-generator.koxudaxi.dev/output-changes/0.87.0/
-
-<!-- Generated by scripts/build_behaviour_docs.py. Do not edit manually. -->
-
-How the models 0.87.0 generates differ in behaviour from the models 0.86.0 generates. Both releases generated every test fixture and payload validation case of the repository with each output model type, with default options, with the released presets and with the documented CLI examples (tier `release`). Each generation (one input, output model type and option set) whose output differs was imported and compared by behaviour: public names, model kinds and bases, configuration, field types, constraints, aliases, defaults, required flags, enum members, constructor order, and the validation result of sample payloads.
-
-## Summary
-
-| Output model type | same | no-behaviour | crash-fix | accepted | both-fail | opt-in |
-|---|---|---|---|---|---|---|
-| dataclasses.dataclass | 10302 | 28 | 318 | 7 | 667 | 20 |
-| msgspec.Struct | 23581 | 44 | 1215 | 16 | 1708 | 22 |
-| pydantic_v2.BaseModel | 23633 | 96 | 1135 | 138 | 1743 | 42 |
-| pydantic_v2.dataclass | 10135 | 37 | 442 | 23 | 670 | 24 |
-| typing.TypedDict | 8667 | 33 | 286 | 17 | 537 | 0 |
-| Total | 76318 | 238 | 3396 | 201 | 5325 | 108 |
-
-Generations per kind: documented CLI examples 244, default options 9530, payload validation cases 7196, released presets 68616.
-
-- **same**: identical output
-- **no-behaviour**: the output differs, the models behave the same (formatting, import order, redundant lines)
-- **crash-fix**: the previous release failed to generate, import or validate; the new one works
-- **accepted**: a behaviour change in default output that was decided and announced
-- **both-fail**: both releases fail on the input
-- **opt-in**: the generation uses an option or option value the previous release does not have
-
-## Fixed crashes
-
-Generations that failed with 0.86.0 and work with 0.87.0, by the error 0.86.0 raised.
-
-| Stage | Error | Generations | Inputs | Output model types |
-|---|---|---|---|---|
-| generation | no exception name | 1334 | 44 | dataclasses.dataclass, msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass, typing.TypedDict |
-| import | TypeError | 576 | 43 | dataclasses.dataclass, msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass, typing.TypedDict |
-| validation | no validator or unusable value | 318 | 34 | dataclasses.dataclass, msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass, typing.TypedDict |
-| import | ImportError | 205 | 5 | dataclasses.dataclass, msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass, typing.TypedDict |
-| import | ValueError | 160 | 11 | dataclasses.dataclass, msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass |
-| generation | OverflowError | 155 | 5 | msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass |
-| import | NameError | 150 | 14 | dataclasses.dataclass, msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass, typing.TypedDict |
-| generation | ValidationError | 135 | 6 | dataclasses.dataclass, msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass, typing.TypedDict |
-| generation | AttributeError | 131 | 5 | dataclasses.dataclass, msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass, typing.TypedDict |
-| import | PydanticUserError | 105 | 9 | pydantic_v2.BaseModel, pydantic_v2.dataclass |
-| generation | TypeError | 45 | 2 | dataclasses.dataclass, msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass, typing.TypedDict |
-| generation | NotADirectoryError | 41 | 1 | dataclasses.dataclass, msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass, typing.TypedDict |
-| import | OverflowError | 28 | 1 | msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass |
-| import | AttributeError | 13 | 1 | pydantic_v2.BaseModel |
-
-Generation, no exception name:
-
-- `tests/data/jsonschema/allof_inherited_ref_other_directory` (dataclasses.dataclass): `$ref file not found: tests/data/json`
-- `tests/data/jsonschema/allof_ref_siblings` (pydantic_v2.BaseModel): `allOf contains a boolean false schema that makes the schema unsatisfiable`
-- `tests/data/jsonschema/anchor_in_one_of.json` (dataclasses.dataclass): `Unresolved $id reference '#inner' in scope 'anchor_in_one_of.json'. Known $id values: <none>`
-
-Import, TypeError:
-
-- `tests/data/jsonschema/discriminator_lone_scalar_variant.json` (pydantic_v2.BaseModel): `TypeError: The core schema type 'str' is not a valid discriminated union variant.`
-- `tests/data/jsonschema/discriminator_tag_of_earlier_module` (dataclasses.dataclass): `TypeError: non-default argument 'kind' follows default argument 'name'`
-- `tests/data/jsonschema/discriminator_tag_value_kinds.json` (msgspec.Struct): `` TypeError: `tag` must be a `str` or an `int` ``
-
-Validation, no validator or unusable value:
-
-- `tests/data/asyncapi/edge-cases.yaml` (pydantic_v2.dataclass): `[type] UserAlias: Annotated[User, discriminator='kind'] -> User`
-- `tests/data/jsonschema/additional_pattern_intersections` (msgspec.Struct): `[type] anchored_disjoint:Root: Union[dict[str, Root1], dict[str, Root2]] -> dict[str, Union[Root1, Root2]]`
-- `tests/data/jsonschema/annotated_string_keys` (msgspec.Struct): `[type] union:SomeSpec:services: Union[dict[str, int], dict[str, str]] -> dict[str, Union[int, str]]`
-
-Import, ImportError:
-
-- `tests/data/openapi/allof_self_reference_base.yaml` (dataclasses.dataclass): `ImportError: attempted relative import with no known parent package`
-- `tests/data/openapi/circular_imports_module_below_package.yaml` (dataclasses.dataclass): `ImportError: cannot import name 'ReceivedDebit' from partially initialized module 'pkg._internal' (most likely due to a `
-- `tests/data/openapi/circular_imports_module_using_ancestor_package.yaml` (dataclasses.dataclass): `ImportError: cannot import name 'Item' from partially initialized module 'pkg._internal' (most likely due to a circular `
-
-Import, ValueError:
-
-- `tests/data/jsonschema/discriminator_enum_const_outside_enum.json` (msgspec.Struct): `` ValueError: `tag_field='k' conflicts with an existing field of that name ``
-- `tests/data/jsonschema/enum_value_base_kinds.json` (dataclasses.dataclass): `ValueError: invalid literal for int() with base 10: 'a'`
-- `tests/data/jsonschema/msgspec_tag_below_instance_field.json` (msgspec.Struct): `` ValueError: `tag_field='k' conflicts with an existing field of that name ``
-
-Generation, OverflowError:
-
-- `tests/data/jsonschema/msgspec_number_limits` (msgspec.Struct): `OverflowError: int too large to convert to float`
-- `tests/data/jsonschema/msgspec_number_limits/float_range_bounds.json` (msgspec.Struct): `OverflowError: int too large to convert to float`
-- `tests/data/jsonschema/numeric_constraint_precision` (msgspec.Struct): `OverflowError: int too large to convert to float`
-
-Import, NameError:
-
-- `tests/data/jsonschema/annotated_forward_reference.json` (typing.TypedDict): `NameError: name 'Node' is not defined`
-- `tests/data/jsonschema/literal_constraints_undecided.yaml` (dataclasses.dataclass): `NameError: name 'inf' is not defined`
-- `tests/data/jsonschema/non_finite_enum_members.yaml` (dataclasses.dataclass): `NameError: name 'inf' is not defined`
-
-Generation, ValidationError:
-
-- `tests/data/jsonschema/allof_constraint_intersections` (dataclasses.dataclass): `For further information visit https://errors.pydantic.dev/2.14/v/float_type`
-- `tests/data/jsonschema/allof_constraint_intersections/property_named_bounds.json` (dataclasses.dataclass): `For further information visit https://errors.pydantic.dev/2.14/v/float_type`
-- `tests/data/jsonschema/discriminator_tag_value_kinds.json` (dataclasses.dataclass): `For further information visit https://errors.pydantic.dev/2.14/v/string_type`
-
-Generation, AttributeError:
-
-- `tests/data/openapi/allof_boolean_member` (dataclasses.dataclass): `AttributeError: 'bool' object has no attribute 'get'`
-- `tests/data/openapi/allof_boolean_member/external.yaml` (dataclasses.dataclass): `AttributeError: 'bool' object has no attribute 'get'`
-- `tests/data/openapi/allof_boolean_member/openapi.yaml` (dataclasses.dataclass): `AttributeError: 'bool' object has no attribute 'get'`
-
-Import, PydanticUserError:
-
-- `tests/data/asyncapi/edge-cases.yaml` (pydantic_v2.BaseModel): `` PydanticUserError: Model 'User' needs field 'kind' to be of type `Literal` ``
-- `tests/data/jsonschema/discriminator_lone_variant_modules` (pydantic_v2.BaseModel): `PydanticUserError: Model 'Untagged' needs a discriminator field for key 'type'`
-- `tests/data/jsonschema/discriminator_lone_variant_modules/a.json` (pydantic_v2.BaseModel): `PydanticUserError: Model 'Untagged' needs a discriminator field for key 'type'`
-
-Generation, TypeError:
-
-- `tests/data/jsonschema/allof_type_list_member.json` (dataclasses.dataclass): `TypeError: cannot use 'tuple' as a set element (unhashable type: 'list')`
-- `payload:jsonschema/allof_type_list_member.json` (dataclasses.dataclass, `--target-python-version 3.14 --class-name Payload --disable-timestamp`): `TypeError: cannot use 'tuple' as a set element (unhashable type: 'list')`
-
-Generation, NotADirectoryError:
-
-- `tests/data/asyncapi/avro-named-types.yaml` (dataclasses.dataclass): `NotADirectoryError: [Errno 20] Not a directory: '<path>`
-
-Import, OverflowError:
-
-- `tests/data/jsonschema/enum_byte_counts_overflow.json` (msgspec.Struct, `--preset practical-py310-20261017`): `OverflowError: cannot fit 'int' into an index-sized integer`
-
-Import, AttributeError:
-
-- `tests/data/jsonschema/property_names_root_model_key_modules` (pydantic_v2.BaseModel): `AttributeError: partially initialized module 'pkg.keys' from '<path>`
-
-## Behaviour changes in default output
-
-### propertyNames keys are typed as constrained str instead of a RootModel that could not be hashed
-
-- Decision: #5017
-- Why: propertyNames dict keys RootModel -> constrained str: 0.86.0 keys are unhashable (crash class)
-- Affected: 67 generations of 7 inputs; pydantic_v2.BaseModel; option sets: `--preset practical-py310-20261017`, `--preset practical-py312-20260619`, `--preset practical-py312-20260826`, `--preset practical-py312-20260909`, `--preset practical-py312-20261015`, `--preset practical-py314-20261017`, `--preset standard-py310-20261017`, `--preset standard-py312-20260619`, `--preset standard-py312-20260826`, `--preset standard-py312-20260909`, `--preset standard-py312-20261015`, `--preset standard-py314-20261017`, `default`
-- Changed aspects: type, config
-- How to keep the old output: no option restores it
-
-`tests/data/jsonschema/property_names_root_model_key_modules/z.json` (pydantic_v2.BaseModel):
-
-```diff
---- model.py
-+++ model.py
-@@ -8,5 +8,5 @@
-
- class A(BaseModel):
--    m: dict[Key, int] | None = None
-+    m: dict[constr(max_length=3), int] | None = None
-
-
-```
-
-### an external $anchor resolves to the anchored schema regardless of file read order
-
-- Decision: #5088
-- Why: spec-correct $anchor target; 0.86.0 depended on file read order (announced in the 0.87.0 release notes)
-- Affected: 38 generations of 1 inputs; dataclasses.dataclass, msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass, typing.TypedDict; option sets: `--preset practical-py310-20261017`, `--preset practical-py312-20260619`, `--preset practical-py312-20260826`, `--preset practical-py312-20260909`, `--preset practical-py312-20261015`, `--preset practical-py314-20261017`, `--preset standard-py310-20261017`, `--preset standard-py312-20260619`, `--preset standard-py312-20260826`, `--preset standard-py312-20260909`, `--preset standard-py312-20261015`, `--preset standard-py314-20261017`, `default`
-- Changed aspects: type
-- How to keep the old output: no option restores it
-
-`tests/data/jsonschema/external_anchor` (dataclasses.dataclass):
-
-```diff
---- pkg/root.py
-+++ pkg/root.py
-@@ -11,6 +11,6 @@
- @dataclass
- class ExternalAnchor:
--    anchored: child.NestedChild | None = None
--    anchored_again: child.NestedChild | None = None
-+    anchored: child.AnchoredChild | None = None
-+    anchored_again: child.AnchoredChild | None = None
-     legacy: child.LegacyChild | None = None
-     nested: child.NestedChild | None = None
-```
-
-### string keywords are no longer written on date, time, UUID and other non-string types, where Pydantic raised TypeError on every value
-
-- Decision: #5001
-- Why: StampLenMap was RootModel[AwareDatetime] with max_length: TypeError on every value in 0.86.0 (crash class)
-- Affected: 16 generations of 1 inputs; pydantic_v2.BaseModel, pydantic_v2.dataclass; option sets: `--preset practical-py310-20261017`, `--preset practical-py312-20260619`, `--preset practical-py312-20260826`, `--preset practical-py312-20260909`, `--preset practical-py312-20261015`, `--preset practical-py314-20261017`, `--preset standard-py310-20261017`, `--preset standard-py312-20260619`, `--preset standard-py312-20260826`, `--preset standard-py312-20260909`, `--preset standard-py312-20261015`, `--preset standard-py314-20261017`
-- Changed aspects: name-removed, type, constraints
-- How to keep the old output: no option restores it
-
-`tests/data/jsonschema/schema_intersection/allof_refs.json` (pydantic_v2.BaseModel, `--preset practical-py310-20261017`):
-
-```diff
---- model.py
-+++ model.py
-@@ -21,8 +21,4 @@
- class TwoRefsMap(RootModel[int]):
-     root: Annotated[int, Field(ge=3, le=5)]
--
--
--class StampLenMap(RootModel[AwareDatetime]):
--    root: Annotated[AwareDatetime, Field(max_length=40)]
-
-
-@@ -115,5 +111,5 @@
-     stamp_len_prop: AwareDatetime | None = None
-     stamp_len_items: list[StampLenItem] | None = None
--    stamp_len_map: dict[str, StampLenMap] | None = None
-+    stamp_len_map: dict[str, AwareDatetime] | None = None
-     quantity: Annotated[int | None, Field(ge=1)] = None
-     q_allof: Annotated[int | None, Field(ge=1, le=10)] = None
-```
-
-### string keywords are no longer written on date, time, UUID and other non-string types, where Pydantic raised TypeError on every value
-
-- Decision: #5001
-- Why: StampMap was RootModel[AwareDatetime] with max_length: TypeError on every value in 0.86.0 (crash class)
-- Affected: 16 generations of 1 inputs; pydantic_v2.BaseModel, pydantic_v2.dataclass; option sets: `--preset practical-py310-20261017`, `--preset practical-py312-20260619`, `--preset practical-py312-20260826`, `--preset practical-py312-20260909`, `--preset practical-py312-20261015`, `--preset practical-py314-20261017`, `--preset standard-py310-20261017`, `--preset standard-py312-20260619`, `--preset standard-py312-20260826`, `--preset standard-py312-20260909`, `--preset standard-py312-20261015`, `--preset standard-py314-20261017`
-- Changed aspects: name-removed, type, constraints
-- How to keep the old output: no option restores it
-
-`tests/data/jsonschema/schema_intersection/allof_ref_item_constraints.json` (pydantic_v2.BaseModel, `--preset practical-py310-20261017`):
-
-```diff
---- model.py
-+++ model.py
-@@ -32,8 +32,4 @@
- class TwoMap(RootModel[int]):
-     root: Annotated[int, Field(ge=4, le=5)]
--
--
--class StampMap(RootModel[AwareDatetime]):
--    root: Annotated[AwareDatetime, Field(max_length=40)]
-
-
-@@ -123,5 +119,5 @@
-     two_map: dict[str, TwoMap] | None = None
-     stamp_items: list[StampItem] | None = None
--    stamp_map: dict[str, StampMap] | None = None
-+    stamp_map: dict[str, AwareDatetime] | None = None
-     enum_items: list[EnumItem] | None = None
-     enum_map: dict[str, Quantity] | None = None
-```
-
-### string keywords are no longer written on date, time, UUID and other non-string types, where Pydantic raised TypeError on every value
-
-- Decision: #5001
-- Why: every dropped keyword raised TypeError on every value in 0.86.0; the required `at` field made the model reject every payload (crash class)
-- Affected: 16 generations of 1 inputs; pydantic_v2.BaseModel, pydantic_v2.dataclass; option sets: `--preset practical-py310-20261017`, `--preset practical-py312-20260619`, `--preset practical-py312-20260826`, `--preset practical-py312-20260909`, `--preset practical-py312-20261015`, `--preset practical-py314-20261017`, `--preset standard-py310-20261017`, `--preset standard-py312-20260619`, `--preset standard-py312-20260826`, `--preset standard-py312-20260909`, `--preset standard-py312-20261015`, `--preset standard-py314-20261017`
-- Changed aspects: name-removed, type, constraints
-- How to keep the old output: no option restores it
-
-`tests/data/jsonschema/string_constraints_on_emitted_types.json` (pydantic_v2.BaseModel, `--preset practical-py310-20261017`):
-
-```diff
---- model.py
-+++ model.py
-@@ -28,11 +28,5 @@
-
-
--class Day(RootModel[date]):
--    root: Annotated[date, Field(max_length=10)]
--
--
--StampsAdditionalProperty = TypeAliasType(
--    "StampsAdditionalProperty", Annotated[AwareDatetime, Field(min_length=20)]
--)
-+StampsAdditionalProperty = TypeAliasType("StampsAdditionalProperty", AwareDatetime)
-
-
-@@ -41,21 +35,21 @@
-         populate_by_name=True,
-     )
--    at: Annotated[AwareDatetime, Field(max_length=64)]
--    day: Annotated[date | None, Field(pattern='^2')] = None
--    clock: Annotated[time | None, Field(min_length=5)] = None
--    wait: Annotated[timedelta | None, Field(max_length=32)] = None
--    id: Annotated[UUID | None, Field(min_length=36)] = None
--    host: Annotated[IPv4Address | None, Field(max_length=15)] = None
--    amount: Annotated[Decimal | None, Field(max_length=12)] = None
--    tag: Annotated[UUID | None, Field(min_length=2)] = None
-+    at: AwareDatetime
-+    day: date | None = None
-+    clock: time | None = None
-+    wait: timedelta | None = None
-+    id: UUID | None = None
-+    host: IPv4Address | None = None
-+    amount: Decimal | None = None
-+    tag: UUID | None = None
-     link: AnyUrl | None = None
-     links: list[Link] | None = None
-     email: Annotated[EmailStr | None, Field(pattern='@example\\.com$')] = None
--    secret: Annotated[SecretStr | None, Field(min_length=8, pattern='^[a-z]+$')] = None
-+    secret: Annotated[SecretStr | None, Field(min_length=8)] = None
-     blob: Annotated[Base64Str | None, Field(max_length=12)] = None
-... (8 more lines)
-```
-
-### string keywords are no longer written on date, time, UUID and other non-string types, where Pydantic raised TypeError on every value
-
-- Decision: #5001
-- Why: required UUID fields with min_length raised TypeError on every value in 0.86.0, so Base and Child rejected every payload (crash class)
-- Affected: 16 generations of 1 inputs; pydantic_v2.BaseModel, pydantic_v2.dataclass; option sets: `--preset practical-py310-20261017`, `--preset practical-py312-20260619`, `--preset practical-py312-20260826`, `--preset practical-py312-20260909`, `--preset practical-py312-20261015`, `--preset practical-py314-20261017`, `--preset standard-py310-20261017`, `--preset standard-py312-20260619`, `--preset standard-py312-20260826`, `--preset standard-py312-20260909`, `--preset standard-py312-20261015`, `--preset standard-py314-20261017`
-- Changed aspects: constraints
-- How to keep the old output: no option restores it
-
-`tests/data/openapi/allof_no_merge_constraint_type_shape.yaml` (pydantic_v2.BaseModel, `--preset practical-py310-20261017`):
-
-```diff
---- model.py
-+++ model.py
-@@ -71,5 +71,5 @@
-     nullable_value: Annotated[str | None, Field(alias='nullableValue')]
-     non_nullable_value: Annotated[str | None, Field(alias='nonNullableValue')]
--    ref_sibling_value: Annotated[UUID, Field(alias='refSiblingValue', min_length=2)]
-+    ref_sibling_value: Annotated[UUID, Field(alias='refSiblingValue')]
-     unconstrained_union_value: Annotated[
-         str | Any, Field(alias='unconstrainedUnionValue')
-@@ -172,5 +172,5 @@
-     enum_value: Annotated[Literal['ab'], Field(alias='enumValue')]
-     const_value: Annotated[Literal['ab'], Field(alias='constValue', min_length=1)]
--    uuid_value: Annotated[UUID, Field(alias='uuidValue', min_length=1)]
-+    uuid_value: Annotated[UUID, Field(alias='uuidValue')]
-     single_any_value: Annotated[str, Field(alias='singleAnyValue')]
-     single_one_value: Annotated[str, Field(alias='singleOneValue')]
-@@ -195,5 +195,5 @@
-     nullable_value: Annotated[str | None, Field(alias='nullableValue', min_length=1)]
-     non_nullable_value: Annotated[str, Field(alias='nonNullableValue', min_length=1)]
--    ref_sibling_value: Annotated[UUID, Field(alias='refSiblingValue', min_length=1)]
-+    ref_sibling_value: Annotated[UUID, Field(alias='refSiblingValue')]
-     unconstrained_union_value: Annotated[
-         UnconstrainedUnionValue1 | Any, Field(alias='unconstrainedUnionValue')
-```
-
-### string keywords are no longer written on date, time, UUID and other non-string types, where Pydantic raised TypeError on every value
-
-- Decision: #5001
-- Why: min_length on an exception class: no validator can be built in 0.86.0 (the model is not fully defined on both sides) (crash class)
-- Affected: 2 generations of 1 inputs; pydantic_v2.BaseModel; option sets: `--preset practical-py314-20261017`, `--preset standard-py314-20261017`
-- Changed aspects: constraints
-- How to keep the old output: no option restores it
-
-`tests/data/jsonschema/constraints_on_target_builtin_names.json` (pydantic_v2.BaseModel, `--preset practical-py314-20261017`):
-
-```diff
---- model.py
-+++ model.py
-@@ -15,5 +15,5 @@
-     frozendict_items: Annotated[frozendict, Field(max_length=3)]
-     import_cycle_minimum: Annotated[ImportCycleError, Field(ge=1)]
--    finalization_length: Annotated[PythonFinalizationError, Field(min_length=2)]
-+    finalization_length: PythonFinalizationError
-     finalization_minimum: PythonFinalizationError
-     exception_group_minimum: ExceptionGroup
-```
-
-### a tuple item inlined by --collapse-root-models (practical presets) keeps its position instead of moving to the end
-
-- Decision: #5291, #5283
-- Why: tuple items in the wrong order rejected every schema-valid value in 0.86.0 (crash class)
-- Affected: 18 generations of 1 inputs; dataclasses.dataclass, msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass, typing.TypedDict; option sets: `--preset practical-py310-20261017`, `--preset practical-py312-20260619`, `--preset practical-py312-20260826`, `--preset practical-py312-20260909`, `--preset practical-py312-20261015`, `--preset practical-py314-20261017`
-- Changed aspects: type
-- How to keep the old output: no option restores it
-
-`tests/data/jsonschema/collapse_root_models_tuple_items.json` (dataclasses.dataclass, `--preset practical-py310-20261017`):
-
-```diff
---- model.py
-+++ model.py
-@@ -9,4 +9,4 @@
- @dataclass
- class Model:
--    pair: tuple[str, int | bool] | None = None
--    triple: tuple[float, bool, str] | None = None
-+    pair: tuple[int | bool, str] | None = None
-+    triple: tuple[float, str, bool] | None = None
-```
-
-### a tuple item inlined by --collapse-root-models (practical presets) keeps its position instead of moving to the end
-
-- Decision: #5291, #5283
-- Why: prefixItems [string, integer] was typed tuple[int, str] in 0.86.0: no valid value matches the annotation (crash class)
-- Affected: 4 generations of 1 inputs; typing.TypedDict; option sets: `--preset practical-py310-20261017`, `--preset practical-py314-20261017`, `--preset standard-py310-20261017`, `--preset standard-py314-20261017`
-- Changed aspects: type
-- How to keep the old output: no option restores it
-
-`tests/data/openapi/allof_no_merge_constraint_type_shape.yaml` (pydantic_v2.BaseModel, `--preset practical-py310-20261017`):
-
-```diff
---- model.py
-+++ model.py
-@@ -71,5 +71,5 @@
-     nullable_value: Annotated[str | None, Field(alias='nullableValue')]
-     non_nullable_value: Annotated[str | None, Field(alias='nonNullableValue')]
--    ref_sibling_value: Annotated[UUID, Field(alias='refSiblingValue', min_length=2)]
-+    ref_sibling_value: Annotated[UUID, Field(alias='refSiblingValue')]
-     unconstrained_union_value: Annotated[
-         str | Any, Field(alias='unconstrainedUnionValue')
-@@ -172,5 +172,5 @@
-     enum_value: Annotated[Literal['ab'], Field(alias='enumValue')]
-     const_value: Annotated[Literal['ab'], Field(alias='constValue', min_length=1)]
--    uuid_value: Annotated[UUID, Field(alias='uuidValue', min_length=1)]
-+    uuid_value: Annotated[UUID, Field(alias='uuidValue')]
-     single_any_value: Annotated[str, Field(alias='singleAnyValue')]
-     single_one_value: Annotated[str, Field(alias='singleOneValue')]
-@@ -195,5 +195,5 @@
-     nullable_value: Annotated[str | None, Field(alias='nullableValue', min_length=1)]
-     non_nullable_value: Annotated[str, Field(alias='nonNullableValue', min_length=1)]
--    ref_sibling_value: Annotated[UUID, Field(alias='refSiblingValue', min_length=1)]
-+    ref_sibling_value: Annotated[UUID, Field(alias='refSiblingValue')]
-     unconstrained_union_value: Annotated[
-         UnconstrainedUnionValue1 | Any, Field(alias='unconstrainedUnionValue')
-```
-
-### a tuple item inlined by --collapse-root-models (practical presets) keeps its position instead of moving to the end
-
-- Decision: #5291, #5283
-- Why: prefixItems [string, integer] was typed tuple[int, str] in 0.86.0: no valid value matches the annotation (crash class)
-- Affected: 4 generations of 1 inputs; typing.TypedDict; option sets: `--preset practical-py310-20261017`, `--preset practical-py314-20261017`, `--preset standard-py310-20261017`, `--preset standard-py314-20261017`
-- Changed aspects: type
-- How to keep the old output: no option restores it
-
-`tests/data/openapi/allof_partial_unconstrained_schemas.yaml` (typing.TypedDict, `--preset practical-py310-20261017`):
-
-```diff
---- model.py
-+++ model.py
-@@ -36,7 +36,7 @@
-     scalarMappingWeaker: dict[str, str]
-     scalarDeepWeaker: list[list[str]]
--    prefixItemsNeutral: tuple[int, str]
--    legacyItemsNeutral: tuple[int, str]
--    unevaluatedItemsNeutral: tuple[int, str]
-+    prefixItemsNeutral: tuple[str, int]
-+    legacyItemsNeutral: tuple[str, int]
-+    unevaluatedItemsNeutral: tuple[str, int]
-     inlineObjectNeutral: Item
-     refObjectNeutral: Item
-@@ -68,7 +68,7 @@
-     scalarMappingWeaker: dict[str, str]
-     scalarDeepWeaker: list[list[str]]
--    prefixItemsNeutral: tuple[int, str]
--    legacyItemsNeutral: tuple[int, str]
--    unevaluatedItemsNeutral: tuple[int, str]
-+    prefixItemsNeutral: tuple[str, int]
-+    legacyItemsNeutral: tuple[str, int]
-+    unevaluatedItemsNeutral: tuple[str, int]
-     inlineObjectNeutral: Item
-     refObjectNeutral: Item
-```
-
-### a submodule named like a builtin (list, dict, ...) is imported under an alias, so the module's list[...] annotations name the builtin again
-
-- Decision: #5387
-- Why: the shadowing submodule import made Holder unusable (TypeError on every decode / type-hint evaluation) in 0.86.0 (crash class)
-- Affected: 2 generations of 1 inputs; pydantic_v2.BaseModel; option sets: `--preset practical-py314-20261017`, `--preset standard-py314-20261017`
-- Changed aspects: import-path-removed
-- How to keep the old output: `--all-exports-scope children`, `--all-exports-scope recursive`, `--enable-command-header`, `--enable-generated-header-marker`, `--enable-version-header`, `--no-use-standard-collections`, `--no-use-union-operator`, `--skip-root-model`, `--use-attribute-docstrings`, `--use-exact-imports`, `--use-generic-base-class`, `--use-generic-container-types`
-
-`tests/data/jsonschema/module_import_named_like_builtin.json` (pydantic_v2.BaseModel, `--preset practical-py314-20261017`):
-
-```diff
---- pkg/holder.py
-+++ pkg/holder.py
-@@ -5,5 +5,5 @@
-
- from . import app
--from .app import list
-+from .app import list as list_1
-
-
-@@ -13,4 +13,4 @@
-     )
-     tags: list[str] | None = None
--    pop: list.Pop | None = None
-+    pop: list_1.Pop | None = None
-     thing: app.Thing | None = None
-```
-
-### TypedDict extra_items names the referenced class under its final name
-
-- Decision: #5022
-- Why: 0.86.0's extra_items named the local Bar instead of the referenced external Bar (renamed Bar1); a wrong reference is fixed by default
-- Affected: 2 generations of 1 inputs; typing.TypedDict; option sets: `--preset practical-py310-20261017`, `--preset practical-py314-20261017`
-- Changed aspects: config
-- How to keep the old output: no option restores it
-
-`tests/data/openapi/typed_dict_extra_items_final_name/renamed.yaml` (typing.TypedDict, `--preset practical-py310-20261017`):
-
-```diff
---- model.py
-+++ model.py
-@@ -15,4 +15,4 @@
-
-
--class Foo(TypedDict, extra_items='Bar'):
-+class Foo(TypedDict, extra_items='Bar1'):
-     name: NotRequired[str]
-```
-
-## New opt-in options
-
-Options and option values 0.86.0 does not have. Default output does not change; each row shows where the option changes the output.
-
-| Option | Generations | Inputs | Output model types |
-|---|---|---|---|
-| `--check-pattern-maps-strictly` | 1 | 1 | pydantic_v2.BaseModel |
-| `--collapse-shared-parent-wrappers` | 1 | 1 | pydantic_v2.BaseModel |
-| `--dedupe-request-response-variants` | 1 | 1 | pydantic_v2.BaseModel |
-| `--filter-literal-values` | 5 | 2 | dataclasses.dataclass, msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass |
-| `--input-file-type malformed` | 1 | 1 | pydantic_v2.BaseModel |
-| `--intersect-allof-keywords` | 9 | 3 | dataclasses.dataclass, msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass |
-| `--keep-enum-member-values` | 9 | 3 | dataclasses.dataclass, msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass |
-| `--keep-field-defaults-off-branch-roots` | 1 | 1 | pydantic_v2.BaseModel |
-| `--omit-redundant-constraints` | 3 | 2 | pydantic_v2.BaseModel, pydantic_v2.dataclass |
-| `--omit-redundant-reference-null` | 1 | 1 | pydantic_v2.BaseModel |
-| `--openapi-as-definitions` | 2 | 2 | pydantic_v2.BaseModel |
-| `--order-constructor-fields-by` | 2 | 2 | msgspec.Struct, pydantic_v2.dataclass |
-| `--pin-aliases-with-alias-generator` | 1 | 1 | pydantic_v2.dataclass |
-| `--read-const-beside-enum` | 49 | 13 | dataclasses.dataclass, msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass |
-| `--read-nullable-beside-type-list` | 1 | 1 | pydantic_v2.BaseModel |
-| `--read-unevaluated-properties` | 1 | 1 | pydantic_v2.BaseModel |
-| `--tag-msgspec-by-payload-name` | 1 | 1 | msgspec.Struct |
-| `--use-decimal-in-field-forms` | 3 | 2 | pydantic_v2.BaseModel, pydantic_v2.dataclass |
-| `--use-single-dict-for-object-maps` | 5 | 2 | dataclasses.dataclass, msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass |
-| `--use-site-models-for-constrained-refs` | 1 | 1 | pydantic_v2.BaseModel |
-| `--use-tuple-for-closed-arrays` | 9 | 3 | dataclasses.dataclass, msgspec.Struct, pydantic_v2.BaseModel, pydantic_v2.dataclass |
-| `--use-typed-map-values-beside-other-types` | 1 | 1 | pydantic_v2.BaseModel |
-
-### `--check-pattern-maps-strictly`
-
-`tests/data/jsonschema/object_maps/strict_pattern_maps.json` (pydantic_v2.BaseModel), without and with `--generate-schema-validators --check-pattern-maps-strictly`:
-
-```diff
---- model.py
-+++ model.py
-@@ -37,6 +37,5 @@
-             additional_adapter = None
-             for key, value in data.items():
--                if key in rule['declared_properties']:
--                    continue
-+                declared = key in rule['declared_properties']
-                 if any(
-                     re.search(pattern, key) for pattern in rule['rejected_patterns']
-@@ -57,9 +56,11 @@
-                         adapter = TypeAdapter(value_type)
-                         pattern_adapters[index] = adapter
--                    value = adapter.validate_python(value)
-+                    validated = adapter.validate_python(value)
-+                if declared:
-+                    continue
-                 if matched:
-                     if values is data:
-                         values = dict(data)
--                    values[key] = value
-+                    values[key] = validated
-                     continue
-                 if rule['additional_property_type'] is not None:
-@@ -106,5 +107,5 @@
-     )
-
--    root: dict[str, Any] = Field(..., max_length=0, min_length=1)
-+    root: dict[str, Any] = Field(..., min_length=1)
-
-
-```
-
-### `--collapse-shared-parent-wrappers`
-
-`tests/data/openapi/collapse_root_models_name_strategy/later_holder_renames_wrapper.yaml` (pydantic_v2.BaseModel), without and with `--collapse-root-models --collapse-root-models-name-strategy parent --field-type-collision-strategy rename-type --collapse-shared-parent-wrappers`:
-
-```diff
---- model.py
-+++ model.py
-@@ -4,16 +4,12 @@
- from __future__ import annotations
-
--from pydantic import BaseModel, RootModel
-+from pydantic import BaseModel
-
-
--class Wrapper_2(BaseModel):
-+class Wrapper_1(BaseModel):
-     x: str | None = None
-
-
--class Wrapper_1(RootModel[Wrapper_2]):
--    root: Wrapper_2
--
--
- class User(BaseModel):
--    first: Wrapper_2 | None = None
-+    first: Wrapper_1 | None = None
-     Wrapper: Wrapper_1 | None = None
-```
-
-### `--dedupe-request-response-variants`
-
-`tests/data/openapi/read_only_write_only_allof_parent_inline_models.yaml` (pydantic_v2.BaseModel), without and with `--read-only-write-only-model-type request-response --dedupe-request-response-variants`:
-
-```diff
---- model.py
-+++ model.py
-@@ -29,13 +29,9 @@
-
-
--class Payload2(BaseModel):
--    value: Value | None = None
--
--
- class ParentRequest(BaseModel):
--    payload: Payload2 | None = None
-+    payload: Payload1 | None = None
-
-
- class ParentResponse(BaseModel):
-     id: int | None = None
--    payload: Payload2 | None = None
-+    payload: Payload1 | None = None
-```
-
-### `--filter-literal-values`
-
-`tests/data/openapi/max_items_enum.yaml` (pydantic_v2.BaseModel), without and with `--filter-literal-values`:
-
-```diff
---- model.py
-+++ model.py
-@@ -11,5 +11,4 @@
- class BarEnum(Enum):
-     hello = 'hello'
--    goodbye = 'goodbye'
-
-
-```
-
-### `--intersect-allof-keywords`
-
-`tests/data/jsonschema/schema_intersection/inherited_overrides.json` (pydantic_v2.BaseModel), without and with `--intersect-allof-keywords`:
-
-```diff
---- model.py
-+++ model.py
-@@ -22,9 +22,8 @@
- class E1(Enum):
-     b = 'b'
--    c = 'c'
-
-
- class Child(Base):
--    x: conint(le=20) | None = None
-+    x: conint(le=10) | None = None
-     e: E1 | None = None
-     y: conint(ge=0, le=5) | None = None
-```
-
-### `--keep-enum-member-values`
-
-`tests/data/jsonschema/enum_value_base_kinds.json` (pydantic_v2.BaseModel), without and with `--keep-enum-member-values`:
-
-```diff
---- model.py
-+++ model.py
-@@ -19,5 +19,5 @@
-
-
--class IntThenFloat(IntEnum):
-+class IntThenFloat(Enum):
-     integer_1 = 1
-     integer_2_5 = 2.5
-```
-
-### `--keep-field-defaults-off-branch-roots`
-
-`tests/data/openapi/extracted_branch_default.yaml` (pydantic_v2.BaseModel), without and with `--field-constraints --keep-field-defaults-off-branch-roots`:
-
-```diff
---- model.py
-+++ model.py
-@@ -8,17 +8,17 @@
-
- class Weight(RootModel[float]):
--    root: float = Field(None, ge=0.0)
-+    root: float = Field(..., ge=0.0)
-
-
- class Quantity(RootModel[int]):
--    root: int = Field(5, ge=0)
-+    root: int = Field(..., ge=0)
-
-
- class Quantity1(RootModel[str]):
--    root: str = Field(5, max_length=3)
-+    root: str = Field(..., max_length=3)
-
-
- class Tags(RootModel[list[str]]):
--    root: list[str] = Field(None, min_length=1)
-+    root: list[str] = Field(..., min_length=1)
-
-
-```
-
-### `--omit-redundant-constraints`
-
-`tests/data/jsonschema/redundant_constraints.json` (pydantic_v2.BaseModel), without and with `--use-annotated --use-non-positive-negative-number-constrained-types --use-single-value-enum-as-const --omit-redundant-constraints`:
-
-```diff
---- model.py
-+++ model.py
-@@ -18,5 +18,5 @@
-
- class Count(RootModel[NonNegativeInt | None]):
--    root: Annotated[NonNegativeInt | None, Field(ge=0)]
-+    root: NonNegativeInt | None
-
-
-@@ -25,18 +25,6 @@
-
-
--class Model1(RootModel[Literal['gpt-live-1']]):
--    root: Annotated[Literal['gpt-live-1'], Field(min_length=1)]
--
--
- class ConstModel(RootModel[str]):
-     root: Annotated[str, Field(min_length=1)]
--
--
--class ConstModel1(RootModel[Literal['gpt-live-1']]):
--    root: Annotated[Literal['gpt-live-1'], Field(min_length=1)]
--
--
--class Code(RootModel[Literal['abc']]):
--    root: Annotated[Literal['abc'], Field(min_length=2)]
-
-
-@@ -45,22 +33,18 @@
-
-
--class PatternedItem(RootModel[Literal['abc']]):
--    root: Annotated[Literal['abc'], Field(min_length=1, pattern='^a')]
--
--
- class CountModel(RootModel[NonNegativeInt]):
--    root: Annotated[NonNegativeInt, Field(ge=0)]
-+    root: NonNegativeInt
-
-
-... (62 more lines)
-```
-
-### `--omit-redundant-reference-null`
-
-`tests/data/openapi/redundant_reference_null.yaml` (pydantic_v2.BaseModel), without and with `--strict-nullable --omit-redundant-reference-null`:
-
-```diff
---- model.py
-+++ model.py
-@@ -28,8 +28,8 @@
-
- class Use(BaseModel):
--    name_f: Name | None
--    name_a: list[Name | None]
--    name_m: dict[str, Name | None]
--    name_u: Name | int | None
-+    name_f: Name
-+    name_a: list[Name]
-+    name_m: dict[str, Name]
-+    name_u: Name | int
-     name_o: Name | None
-     name_d: Name | None = None
-```
-
-### `--openapi-as-definitions`
-
-`tests/data/openapi/ref_siblings_recursive_target/schema.yaml` (pydantic_v2.BaseModel), without and with `--openapi-as-definitions ref-components`:
-
-```diff
---- model.py
-+++ model.py
-@@ -4,9 +4,5 @@
- from __future__ import annotations
-
--from pydantic import BaseModel, RootModel
--
--
--class Node(BaseModel):
--    children: list[Node] | None = None
-+from pydantic import BaseModel, Field, RootModel
-
-
-@@ -19,22 +15,38 @@
-
-
--class Branch(Node):
-+class Node(BaseModel):
-+    children: list[Tree] | None = None
-+
-+
-+class Holder(BaseModel):
-+    tree: Tree | None = None
-+    trees: list[Tree] | None = None
-+    grove: Grove | None = None
-+    either: Tree | str | None = None
-+    byName: dict[str, Tree] | None = None
-+    shrub: Shrub | None = None
-+
-+
-+class Tree(RootModel[Node]):
-+    root: Node = Field(..., description='A tree.')
-+
-+
-+class Forest(RootModel[Node]):
-+    root: Node
-+
-+
-+class Grove(RootModel[Tree]):
-+    root: Tree
-... (26 more lines)
-```
-
-### `--order-constructor-fields-by`
-
-`tests/data/jsonschema/field_type_collision_inherited_modules` (pydantic_v2.dataclass), without and with `--target-python-version 3.11 --order-constructor-fields-by final-names`:
-
-```diff
---- pkg/b.py
-+++ pkg/b.py
-@@ -13,4 +13,4 @@
- @dataclass
- class Child(Base):
--    Bar_1: a.Bar = Field(..., alias='Bar', kw_only=True)
-+    Bar_1: a.Bar = Field(..., alias='Bar')
-     Zed: str | None = None
-```
-
-### `--pin-aliases-with-alias-generator`
-
-`tests/data/jsonschema/alias_generator.json` (pydantic_v2.dataclass), without and with `--snake-case-field --pin-aliases-with-alias-generator --extra-template-data jsonschema/extra_data_alias_generator.json --target-pydantic-version 2`:
-
-```diff
---- model.py
-+++ model.py
-@@ -10,7 +10,7 @@
- @dataclass
- class AliasGeneratorModel:
--    first_name: str
--    foo_bar: str = Field(..., alias='foo_bar')
--    last_name: str | None = None
-+    foo_bar: str
-+    first_name: str = Field(..., alias='firstName')
-+    last_name: str | None = Field(None, alias='lastName')
-     weird_url: int = Field(
-         ..., serialization_alias='weird-url', validation_alias=AliasChoices('weird-url')
-```
-
-### `--read-const-beside-enum`
-
-`tests/data/jsonschema/enum_const_positions.json` (pydantic_v2.BaseModel), without and with `--read-const-beside-enum`:
-
-```diff
---- model.py
-+++ model.py
-@@ -82,8 +82,8 @@
-     propertySingle: Literal['a'] | None = None
-     words: list[Word] | None = None
--    counts: dict[str, Counts] | None = None
-+    counts: dict[str, Literal[Counts.integer_2]] | None = None
-     branch: Branch | int | None = None
-     refSibling: Literal['on'] | None = None
--    keys: dict[Literal['a', 'b'], int] | None = None
-+    keys: dict[Literal['a'], int] | None = None
-     refKeys: dict[Narrowed, int] | None = None
-     definition: Narrowed | None = None
-```
-
-### `--read-nullable-beside-type-list`
-
-`tests/data/openapi/schema_intersection/null_multiple_types_oas30.yaml` (pydantic_v2.BaseModel), without and with `--use-missing-sentinel --read-nullable-beside-type-list`:
-
-```diff
---- model.py
-+++ model.py
-@@ -12,6 +12,6 @@
-
-
--class U1(RootModel[U | str | MISSING]):
--    root: U | str | MISSING = MISSING
-+class U1(RootModel[U | str | None | MISSING]):
-+    root: U | str | None | MISSING = MISSING
-
-
-```
-
-### `--read-unevaluated-properties`
-
-`tests/data/jsonschema/unevaluated_properties_schema.json` (pydantic_v2.BaseModel), without and with `--read-unevaluated-properties`:
-
-```diff
---- model.py
-+++ model.py
-@@ -3,4 +3,6 @@
-
- from __future__ import annotations
-+
-+from typing import Dict
-
- from pydantic import BaseModel, ConfigDict
-@@ -11,3 +13,6 @@
-         extra='allow',
-     )
-+    __annotations__ = {
-+        '__pydantic_extra__': Dict[str, str],
-+    }
-     name: str
-```
-
-### `--tag-msgspec-by-payload-name`
-
-`tests/data/jsonschema/discriminator_msgspec_wire_name.json` (msgspec.Struct), without and with `--tag-msgspec-by-payload-name`:
-
-```diff
---- model.py
-+++ model.py
-@@ -7,9 +7,9 @@
-
-
--class Cat(Struct, tag_field='pet_kind', tag='cat'):
-+class Cat(Struct, tag_field='pet-kind', tag='cat'):
-     name: str | UnsetType = UNSET
-
-
--class Dog(Struct, tag_field='pet_kind', tag='dog'):
-+class Dog(Struct, tag_field='pet-kind', tag='dog'):
-     bark: str | UnsetType = UNSET
-
-```
-
-### `--use-decimal-in-field-forms`
-
-`tests/data/jsonschema/decimal_multiple_of_field_forms.json` (pydantic_v2.BaseModel), without and with `--use-decimal-for-multiple-of --use-annotated --use-decimal-in-field-forms`:
-
-```diff
---- model.py
-+++ model.py
-@@ -4,4 +4,5 @@
- from __future__ import annotations
-
-+from decimal import Decimal
- from typing import Annotated
-
-@@ -10,26 +11,24 @@
-
-
--class ArrItem(RootModel[float]):
--    root: Annotated[float, Field(ge=-1000000.0, le=1000000.0, multiple_of=0.01)]
-+class ArrItem(RootModel[Decimal]):
-+    root: Annotated[Decimal, Field(ge=-1000000, le=1000000, multiple_of=0.01)]
-
-
- MapvAdditionalProperty = TypeAliasType(
-     "MapvAdditionalProperty",
--    Annotated[float, Field(ge=-1000000.0, le=1000000.0, multiple_of=0.01)],
-+    Annotated[Decimal, Field(ge=-1000000, le=1000000, multiple_of=0.01)],
- )
-
-
--class Rate(RootModel[float]):
--    root: Annotated[float, Field(gt=0.0, le=1000000.0, multiple_of=0.001)]
-+class Rate(RootModel[Decimal]):
-+    root: Annotated[Decimal, Field(gt=0, le=1000000, multiple_of=0.001)]
-
-
- class DecimalMultipleOfFieldForms(BaseModel):
--    amount: Annotated[float, Field(ge=0.0, le=1000000.0, multiple_of=0.01)]
--    opt: Annotated[
--        float | None, Field(ge=-1000000.0, le=1000000.0, multiple_of=0.5)
--    ] = None
--    maxed: Annotated[float | None, Field(ge=-1000000.0, le=10.0, multiple_of=0.1)] = (
-+    amount: Annotated[Decimal, Field(ge=0, le=1000000, multiple_of=0.01)]
-+    opt: Annotated[Decimal | None, Field(ge=-1000000, le=1000000, multiple_of=0.5)] = (
-         None
-     )
-... (3 more lines)
-```
-
-### `--use-single-dict-for-object-maps`
-
-`tests/data/jsonschema/pattern_properties_merge.json` (pydantic_v2.BaseModel), without and with `--use-single-dict-for-object-maps`:
-
-```diff
---- model.py
-+++ model.py
-@@ -7,6 +7,4 @@
-
-
--class Model(
--    RootModel[dict[constr(pattern=r'^i-|^t-'), str] | dict[constr(pattern=r'^n-'), int]]
--):
--    root: dict[constr(pattern=r'^i-|^t-'), str] | dict[constr(pattern=r'^n-'), int]
-+class Model(RootModel[dict[constr(pattern=r'^i-|^t-|^n-'), str | int]]):
-+    root: dict[constr(pattern=r'^i-|^t-|^n-'), str | int]
-```
-
-### `--use-site-models-for-constrained-refs`
-
-`tests/data/jsonschema/site_models_for_constrained_refs.json` (pydantic_v2.BaseModel), without and with `--use-site-models-for-constrained-refs`:
-
-```diff
---- model.py
-+++ model.py
-@@ -9,4 +9,18 @@
-
-
-+class Quantity1(RootModel[conint(ge=1, le=10)]):
-+    root: conint(ge=1, le=10)
-+
-+
-+class Size2(Enum):
-+    m = 'm'
-+    l = 'l'
-+
-+
-+class Order(BaseModel):
-+    quantity: Quantity1 | None = None
-+    sizes: list[Size2] | None = None
-+
-+
- class Quantity(RootModel[conint(ge=1)]):
-     root: conint(ge=1)
-@@ -17,7 +31,2 @@
-     m = 'm'
-     l = 'l'
--
--
--class Order(BaseModel):
--    quantity: Quantity | None = None
--    sizes: list[Size] | None = None
-```
-
-### `--use-tuple-for-closed-arrays`
-
-`tests/data/jsonschema/prefix_items_closed_length.json` (pydantic_v2.BaseModel), without and with `--use-tuple-for-closed-arrays`:
-
-```diff
---- model.py
-+++ model.py
-@@ -22,5 +22,5 @@
-
- class Parent(BaseModel):
--    closed: list[str | int] | None = Field(None, max_length=2, min_length=2)
-+    closed: tuple[str, int] | None = None
-
-
-@@ -30,29 +30,17 @@
-
- class Child(Parent):
--    closed: list[ClosedItem | int] | None = Field(None, max_length=2, min_length=2)
-+    closed: tuple[ClosedItem, int] | None = None
-
-
- class PrefixItemsClosedLength(BaseModel):
--    closed_by_items_false: list[str | int] | None = Field(
--        None, max_length=2, min_length=2
--    )
--    closed_by_unevaluated_items_false: list[str | int] | None = Field(
--        None, max_length=2, min_length=2
--    )
--    closed_by_false_position: list[str | int] | None = Field(
--        None, max_length=2, min_length=2
--    )
--    closed_below_max_items: list[str | int] | None = Field(
--        None, max_length=2, min_length=2
--    )
--    closed_nullable: list[str | int] | None = Field(None, max_length=2, min_length=2)
--    closed_by_contains: list[Any] | None = Field(None, max_length=2, min_length=2)
--    closed_by_contains_beyond_positions: list[Any] | None = Field(
--        None, max_length=3, min_length=3
--    )
--    closed_to_one_position: list[Any] | None = Field(None, max_length=1, min_length=1)
--    closed_before_other_positions: list[str | int] | None = Field(
--        None, max_length=2, min_length=2
--    )
-+    closed_by_items_false: tuple[str, int] | None = None
-+    closed_by_unevaluated_items_false: tuple[str, int] | None = None
-... (16 more lines)
-```
-
-### `--use-typed-map-values-beside-other-types`
-
-`tests/data/jsonschema/typed_map_values_beside_other_types.json` (pydantic_v2.BaseModel), without and with `--use-typed-nullable-map-values --use-typed-map-values-beside-other-types`:
-
-```diff
---- model.py
-+++ model.py
-@@ -4,11 +4,13 @@
- from __future__ import annotations
-
--from typing import Any
-+from pydantic import BaseModel
-
--from pydantic import BaseModel
-+
-+class Owners(BaseModel):
-+    name: str | None = None
-
-
- class Settings(BaseModel):
-     limits: dict[str, int] | None = None
--    quotas: dict[str, Any] | str | None = None
--    owners: dict[str, Any] | str | None = None
-+    quotas: dict[str, int] | str | None = None
-+    owners: dict[str, Owners] | str | None = None
-```
-
-## Upgrading across several releases
-
-The [upgrade guide](../migration/index.md) lists the steps from each older release to the latest one.
+# Upgrading to 0.96.0
+
+Source: https://datamodel-code-generator.koxudaxi.dev/migration/
+
+<!-- Generated by scripts/build_migration_docs.py. Do not edit manually. -->
+
+Pick the release you use now. Its page lists, for that release only, the options that keep your current output in 0.96.0, the changes you must make and the changes no option keeps. Coding agents can read the same steps as Markdown: `https://datamodel-code-generator.koxudaxi.dev/migration/from/<release>.md`, for example `https://datamodel-code-generator.koxudaxi.dev/migration/from/0.20.0.md`.
+
+Every change is listed for upgrades from 0.95.0 and later. The lists of older releases, marked incomplete, lack changes not written down yet: also read the breaking changes of the releases after yours through 0.95.0 in the [changelog](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/main/CHANGELOG.md).
+
+<div class="dcg-migration" data-migration-select hidden>
+<label for="dcg-migration-from">I use datamodel-code-generator</label>
+<select id="dcg-migration-from">
+<option value="">choose a release</option>
+<option value="from-0.95.0/">0.95.0</option>
+<option value="from-0.93.0/">0.94.0 (incomplete list)</option>
+<option value="from-0.93.0/">0.93.0 (incomplete list)</option>
+<option value="from-0.84.0/">0.92.0 (incomplete list)</option>
+<option value="from-0.84.0/">0.91.0 (incomplete list)</option>
+<option value="from-0.84.0/">0.90.0 (incomplete list)</option>
+<option value="from-0.84.0/">0.89.0 (incomplete list)</option>
+<option value="from-0.84.0/">0.88.0 (incomplete list)</option>
+<option value="from-0.84.0/">0.87.0 (incomplete list)</option>
+<option value="from-0.84.0/">0.86.0 (incomplete list)</option>
+<option value="from-0.84.0/">0.85.0 (incomplete list)</option>
+<option value="from-0.84.0/">0.84.0 (incomplete list)</option>
+<option value="from-0.78.0/">0.83.0 (incomplete list)</option>
+<option value="from-0.78.0/">0.82.0 (incomplete list)</option>
+<option value="from-0.78.0/">0.81.0 (incomplete list)</option>
+<option value="from-0.78.0/">0.80.0 (incomplete list)</option>
+<option value="from-0.78.0/">0.79.0 (incomplete list)</option>
+<option value="from-0.78.0/">0.78.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.77.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.76.2 (incomplete list)</option>
+<option value="from-0.65.0/">0.76.1 (incomplete list)</option>
+<option value="from-0.65.0/">0.76.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.75.1 (incomplete list)</option>
+<option value="from-0.65.0/">0.75.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.74.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.73.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.72.4 (incomplete list)</option>
+<option value="from-0.65.0/">0.72.3 (incomplete list)</option>
+<option value="from-0.65.0/">0.72.2 (incomplete list)</option>
+<option value="from-0.65.0/">0.72.1 (incomplete list)</option>
+<option value="from-0.65.0/">0.72.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.71.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.70.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.69.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.68.1 (incomplete list)</option>
+<option value="from-0.65.0/">0.68.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.67.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.66.3 (incomplete list)</option>
+<option value="from-0.65.0/">0.66.2 (incomplete list)</option>
+<option value="from-0.65.0/">0.66.1 (incomplete list)</option>
+<option value="from-0.65.0/">0.66.0 (incomplete list)</option>
+<option value="from-0.65.0/">0.65.1 (incomplete list)</option>
+<option value="from-0.65.0/">0.65.0 (incomplete list)</option>
+<option value="from-0.56.0/">0.64.1 (incomplete list)</option>
+<option value="from-0.56.0/">0.64.0 (incomplete list)</option>
+<option value="from-0.56.0/">0.63.0 (incomplete list)</option>
+<option value="from-0.56.0/">0.62.0 (incomplete list)</option>
+<option value="from-0.56.0/">0.61.0 (incomplete list)</option>
+<option value="from-0.56.0/">0.60.2 (incomplete list)</option>
+<option value="from-0.56.0/">0.60.1 (incomplete list)</option>
+<option value="from-0.56.0/">0.60.0 (incomplete list)</option>
+<option value="from-0.56.0/">0.59.1 (incomplete list)</option>
+<option value="from-0.56.0/">0.59.0 (incomplete list)</option>
+<option value="from-0.56.0/">0.58.0 (incomplete list)</option>
+<option value="from-0.56.0/">0.57.0 (incomplete list)</option>
+<option value="from-0.56.0/">0.56.1 (incomplete list)</option>
+<option value="from-0.56.0/">0.56.0 (incomplete list)</option>
+<option value="from-0.53.0/">0.55.0 (incomplete list)</option>
+<option value="from-0.53.0/">0.54.1 (incomplete list)</option>
+<option value="from-0.53.0/">0.54.0 (incomplete list)</option>
+<option value="from-0.53.0/">0.53.0 (incomplete list)</option>
+<option value="from-0.52.1/">0.52.2 (incomplete list)</option>
+<option value="from-0.52.1/">0.52.1 (incomplete list)</option>
+<option value="from-0.52.0/">0.52.0 (incomplete list)</option>
+<option value="from-0.48.0/">0.51.0 (incomplete list)</option>
+<option value="from-0.48.0/">0.50.0 (incomplete list)</option>
+<option value="from-0.48.0/">0.49.0 (incomplete list)</option>
+<option value="from-0.48.0/">0.48.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.47.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.46.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.45.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.44.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.43.1 (incomplete list)</option>
+<option value="from-0.31.0/">0.43.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.42.2 (incomplete list)</option>
+<option value="from-0.31.0/">0.42.1 (incomplete list)</option>
+<option value="from-0.31.0/">0.42.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.41.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.40.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.39.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.38.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.37.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.36.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.35.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.34.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.33.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.32.0 (incomplete list)</option>
+<option value="from-0.31.0/">0.31.2 (incomplete list)</option>
+<option value="from-0.31.0/">0.31.1 (incomplete list)</option>
+<option value="from-0.31.0/">0.31.0 (incomplete list)</option>
+<option value="from-0.24.0/">0.30.2 (incomplete list)</option>
+<option value="from-0.24.0/">0.30.1 (incomplete list)</option>
+<option value="from-0.24.0/">0.30.0 (incomplete list)</option>
+<option value="from-0.24.0/">0.29.0 (incomplete list)</option>
+<option value="from-0.24.0/">0.28.5 (incomplete list)</option>
+<option value="from-0.24.0/">0.28.4 (incomplete list)</option>
+<option value="from-0.24.0/">0.28.3 (incomplete list)</option>
+<option value="from-0.24.0/">0.28.2 (incomplete list)</option>
+<option value="from-0.24.0/">0.28.1 (incomplete list)</option>
+<option value="from-0.24.0/">0.28.0 (incomplete list)</option>
+<option value="from-0.24.0/">0.27.3 (incomplete list)</option>
+<option value="from-0.24.0/">0.27.2 (incomplete list)</option>
+<option value="from-0.24.0/">0.27.1 (incomplete list)</option>
+<option value="from-0.24.0/">0.27.0 (incomplete list)</option>
+<option value="from-0.24.0/">0.26.5 (incomplete list)</option>
+<option value="from-0.24.0/">0.26.4 (incomplete list)</option>
+<option value="from-0.24.0/">0.26.3 (incomplete list)</option>
+<option value="from-0.24.0/">0.26.2 (incomplete list)</option>
+<option value="from-0.24.0/">0.26.1 (incomplete list)</option>
+<option value="from-0.24.0/">0.26.0 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.9 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.8 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.7 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.6 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.5 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.4 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.3 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.2 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.1 (incomplete list)</option>
+<option value="from-0.24.0/">0.25.0 (incomplete list)</option>
+<option value="from-0.24.0/">0.24.2 (incomplete list)</option>
+<option value="from-0.24.0/">0.24.1 (incomplete list)</option>
+<option value="from-0.24.0/">0.24.0 (incomplete list)</option>
+<option value="from-0.20.0/">0.23.0 (incomplete list)</option>
+<option value="from-0.20.0/">0.22.1 (incomplete list)</option>
+<option value="from-0.20.0/">0.22.0 (incomplete list)</option>
+<option value="from-0.20.0/">0.21.5 (incomplete list)</option>
+<option value="from-0.20.0/">0.21.4 (incomplete list)</option>
+<option value="from-0.20.0/">0.21.3 (incomplete list)</option>
+<option value="from-0.20.0/">0.21.2 (incomplete list)</option>
+<option value="from-0.20.0/">0.21.1 (incomplete list)</option>
+<option value="from-0.20.0/">0.21.0 (incomplete list)</option>
+<option value="from-0.20.0/">0.20.0 (incomplete list)</option>
+</select>
+</div>
+
+| Your release | Required | Kept by an option | Not kept | New warnings | Page |
+|---|---|---|---|---|---|
+| 0.95.0 | 4 | 0 | 1 | 0 | [from-0.95.0](from-0.95.0.md) |
+| 0.93.0 through 0.94.0 (incomplete list) | 4 | 0 | 1 | 2 | [from-0.93.0](from-0.93.0.md) |
+| 0.84.0 through 0.92.0 (incomplete list) | 5 | 0 | 1 | 2 | [from-0.84.0](from-0.84.0.md) |
+| 0.78.0 through 0.83.0 (incomplete list) | 5 | 0 | 1 | 3 | [from-0.78.0](from-0.78.0.md) |
+| 0.65.0 through 0.77.0 (incomplete list) | 5 | 0 | 1 | 7 | [from-0.65.0](from-0.65.0.md) |
+| 0.56.0 through 0.64.1 (incomplete list) | 5 | 0 | 1 | 8 | [from-0.56.0](from-0.56.0.md) |
+| 0.53.0 through 0.55.0 (incomplete list) | 5 | 0 | 1 | 9 | [from-0.53.0](from-0.53.0.md) |
+| 0.52.1 through 0.52.2 (incomplete list) | 5 | 0 | 1 | 11 | [from-0.52.1](from-0.52.1.md) |
+| 0.52.0 (incomplete list) | 5 | 0 | 1 | 13 | [from-0.52.0](from-0.52.0.md) |
+| 0.48.0 through 0.51.0 (incomplete list) | 5 | 0 | 1 | 14 | [from-0.48.0](from-0.48.0.md) |
+| 0.31.0 through 0.47.0 (incomplete list) | 5 | 0 | 1 | 16 | [from-0.31.0](from-0.31.0.md) |
+| 0.24.0 through 0.30.2 (incomplete list) | 5 | 0 | 1 | 17 | [from-0.24.0](from-0.24.0.md) |
+| 0.20.0 through 0.23.0 (incomplete list) | 5 | 0 | 1 | 18 | [from-0.20.0](from-0.20.0.md) |
+
+Releases before 0.20.0: start from the 0.20.0 page and read the older entries of the [changelog](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/main/CHANGELOG.md).
+
+## How to upgrade without surprises
+
+1. Add the options of your page; they keep the output where the new release can.
+2. Regenerate and compare: `datamodel-codegen ... --check` fails on any difference.
+3. Make the required changes and review the changes no option keeps.
+4. Later, drop one keep option at a time, or move to the newest dated preset.
+
+[All changes by release](changes.md) lists every entry with its details, newest first.
 
 ---
 
-# Upgrading from an Older Release
+# All Changes by Release
 
-Source: https://datamodel-code-generator.koxudaxi.dev/output-changes/upgrading/
+Source: https://datamodel-code-generator.koxudaxi.dev/migration/changes/
 
-<!-- Generated by scripts/build_behaviour_docs.py. Do not edit manually. -->
+<!-- Generated by scripts/build_migration_docs.py. Do not edit manually. -->
 
-The [upgrade guide](../migration/index.md) replaces this page: pick the release you use now to get the options that keep your current output, the changes you must make and the changes no option keeps. [All changes by release](../migration/changes.md) lists every entry.
+Every change a user meets when upgrading, newest first. To upgrade from a release, apply every section above it, or open [the page for your release](index.md).
+
+## Unreleased
+
+### New option `--infer-union-discriminators` (`--no-infer-union-discriminators`) (unreleased) { #option-infer-union-discriminators }
+
+Write a oneOf or anyOf that declares no discriminator as a discriminated union (Pydantic Field(discriminator=...), msgspec tagged structs) when every branch that is not null requires one property holding one string or integer value (a const or a one-value enum, also through allOf members and local $refs), with no value shared; in Pydantic output a union with a discriminator keyword keeps it. Valid payloads parse the same, except that a tag typed as a one-value enum class becomes its Literal value; with --use-one-literal-as-default a payload without the tag, which the schema requires, is rejected. An invalid payload reports the errors of the branch its tag names, or one tag error. Not applied to dataclasses.dataclass and typing.TypedDict output. Without it these unions are smart unions in Pydantic output, and msgspec output tags only the unions whose tags are written on the branches themselves, as in 0.96.0
+
+- **Source:** the command-line options of both releases
+
+### New option `--open-enum-base-class-map` (unreleased) { #option-open-enum-base-class-map }
+
+Base classes that open the Enum classes of open enums (--open-enums), by the class the enum is written on (JSON or JSON file path). Keys: Enum, StrEnum, IntEnum. Example: '{"StrEnum": "mypkg.OpenStrEnum", "IntEnum": "mypkg.OpenIntEnum"}'. Each is your member-less subclass of that class whose _missing_ keeps a value it does not list; a value type before Enum (--use-subclass-enum) stays: (str, mypkg.OpenEnum). An open enum whose class has no entry, or that is written as a Literal, is written as Literal[...] joined with its type
+
+- **Source:** the command-line options of both releases
+
+### New option `--open-enums` (unreleased) { #option-open-enums }
+
+Accept values an enum does not list. extensible: the enums whose schema marks them open (x-extensible-enum: true, or x-ms-enum with modelAsString: true); all: every enum of two or more values, except one whose schema closes it (x-extensible-enum: false, modelAsString: false); none: no enum, as without the option. An open enum is written as its Enum class on the base --open-enum-base-class-map names for that class, else as Literal[...] joined with its type (Literal['red', 'green'] | str), whatever the options say about Literals
+
+- **Source:** the command-line options of both releases
+
+### New option `--read-format-as-annotation` (`--no-read-format-as-annotation`) (unreleased) { #option-read-format-as-annotation }
+
+Read the format of a schema as an annotation, as JSON Schema does: a string, integer or number schema takes the type its type keyword gives (str, int, float), with its own length, pattern and bound keywords, so every value the schema accepts validates, a string or integer dumps as written (a number as the float it parses to, as without a format), and an unknown format gives no warning; a format that a --type-mappings entry names for the schema's type keeps that mapping, and format: binary stays bytes. Without it each known format selects a type (EmailStr, AwareDatetime, UUID, Decimal, SecretStr, Base64Str, ...), as in 0.96.0
+
+- **Source:** the command-line options of both releases
+
+### New option `--read-kubernetes-extensions` (`--no-read-kubernetes-extensions`) (unreleased) { #option-read-kubernetes-extensions }
+
+Read the Kubernetes schema extensions as the keywords they stand for: x-kubernetes-int-or-string (and the int-or-string format) as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as additionalProperties true, and an x-kubernetes-group-version-kind as the const and default of the apiVersion and kind it names; without it they are ignored, as in 0.96.0
+
+- **Source:** the command-line options of both releases
+
+### New option `--untyped-value-type` (unreleased) { #option-untyped-value-type }
+
+Write each value the schema leaves untyped ({}, true, a schema whose keywords give it no type, the values of an object without properties and the items of an array without items) as this type instead of Any: pydantic.JsonValue (Pydantic 2.5 or later), object, Any or the dotted import path of a type of your own, which the models import; the structure is as without the option. --type-overrides, x-python-type and x-python-import keep their types, and msgspec.Struct output keeps Any, which msgspec decodes into JSON values. Without it untyped values are Any, and object in containers under --use-object-type, as in 0.96.0
+
+- **Source:** the command-line options of both releases
+
+### New option `--use-x-python-import-for-every-ref` (`--no-use-x-python-import-for-every-ref`) (unreleased) { #option-use-x-python-import-for-every-ref }
+
+Type every reference to a schema with x-python-import by the class it imports, as a $ref to it at a field is: also an allOf of it beside keywords that add no field where a JSON pointer into another document or a whole-document $ref names it, and under --read-only-write-only-model-type request-response a model does not split for the readOnly or writeOnly properties of such a schema, nor for those its allOf bases reach through one; without it such a reference keeps the model of its schema and those models split, as in 0.96.0
+
+- **Source:** the command-line options of both releases
+
+### New dated presets `standard-py3XX-20261113` and `practical-py3XX-20261113` (unreleased) { #preset-20261113 }
+
+They keep the options of the 20261112 presets and add:
+
+- x-python-import for every reference (`--use-x-python-import-for-every-ref`): Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in another document, and split no request/response model for the readOnly or writeOnly properties of such a schema.
+- Extensible enums accept new values (`--open-enums extensible`): Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] | str, instead of rejecting them.
+- Discriminators inferred from tags (`--infer-union-discriminators`): Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names.
+- Kubernetes extensions read (`--read-kubernetes-extensions`): Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does.
+- Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.
+
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.96.0 (2026-11-13)
+
+### Generated client methods return the raw body of `itemSchema` stream responses (0.96.0) { #client-item-stream-raw-body }
+
+For an OpenAPI 3.2 response whose `text/event-stream`, JSON Lines or NDJSON media has only an `itemSchema`, the operation method, its `with_response` view and its result type alias read the whole body raw: `str` for an event stream and `bytes` for JSON Lines or NDJSON, where they returned the model of the item schema's array projection.
+
+- **Affects:** experimental features: `cli-option.generate-client`
+- **What to change:** Parse the raw body, or use the stream helper regenerated clients get at `client.protocols.<resource>.<method>`, which yields typed items.
+- **Pull requests and issues:** [#6767](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6767)
+- **Source:** the release notes
+
+### A protocols helper whose name collides with a derived stream helper is refused (0.96.0) { #client-stream-helper-name-collision }
+
+Generation derives a stream helper named `<resource>.<method>` for each OpenAPI 3.2 operation that streams an `itemSchema`. A helper of the protocols helper file whose name contains a derived name, or is contained in one, now fails generation with an `E_NAME_COLLISION` config diagnostic.
+
+- **Affects:** experimental features: `cli-option.generate-client`
+- **What to change:** Rename the declared helper.
+- **Pull requests and issues:** [#6767](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6767)
+- **Source:** the release notes
+
+### Generated client stream helpers type items as the model their `itemSchema` references (0.96.0) { #client-stream-items-referenced-model }
+
+SSE, JSON Lines and NDJSON stream helpers whose `itemSchema` is a bare `$ref` use the referenced model, for example `EventStream[models.LogEntry]`, instead of the `ItemSchema` or `ItemSchemaModel` model generated at the item schema location. With Pydantic v2 output, decoded items are instances of the referenced model.
+
+- **Affects:** experimental features: `cli-option.generate-client`
+- **What to change:** Annotate, `isinstance`-check or match stream items against the referenced model instead of `models.ItemSchema` or `models.ItemSchemaModel`.
+- **Pull requests and issues:** [#6771](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6771)
+- **Source:** the release notes
+
+### Deprecation and migration notices name the code that called datamodel-code-generator (0.96.0) { #notices-name-calling-code }
+
+Notices of the deprecation registry are attributed to the outermost frame outside the package (your module that called `generate()`, or the console script) instead of a module inside it. Filters that match them by `module="datamodel_code_generator"` no longer suppress them, and a script that calls the API directly may now show `DeprecationWarning` notices that were hidden.
+
+- **Affects:** Python API: `warnings filters with module="datamodel_code_generator"`
+- **What to change:** Filter the notices by category and message, or by your calling module, for example `warnings.filterwarnings("ignore", category=FutureWarning, module="mypackage.models")`.
+- **Pull requests and issues:** [#6793](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6793)
+- **Source:** the release notes
+
+### `--read-object-keywords-by-type` also reads `const`, `enum` and `allOf` branches as admitting no object (0.96.0) { #object-keywords-by-type-branch-kinds }
+
+An `anyOf` or `oneOf` branch that is a `const`, an `enum`, a nested `allOf`, `anyOf` or `oneOf`, a false schema or a `$ref` to such a schema no longer takes the sibling object keywords, so such a site becomes a union, which adds enum classes and can renumber model names (`Owner` becomes `Owner1`). The standard and practical 20261112 presets turn the option on.
+
+- **Affects:** only with: `--read-object-keywords-by-type`
+- **Keep the old output:** No option restores the 0.95.0 reading; `--model-name-map` can pin individual names.
+- **Pull requests and issues:** [#6777](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6777)
+- **Source:** the release notes
+
+### Patterns holding a quote are written without an escaped quote (0.96.0) { #pattern-quote-literal }
+
+`constr(pattern=r'^it\'s$')` is written `constr(pattern=r"^it's$")`: Python's `re` matches the same values, and `model_json_schema()` publishes the schema's pattern unchanged. Snapshot tests and committed generated code show the new text after regenerating.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`
+- **Pull requests and issues:** [#6789](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6789), [#6790](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6790)
+- **Source:** generated output of both releases
+
+```diff
+-text: constr(pattern=r'^it\'s$') | None = None
++text: constr(pattern=r"^it's$") | None = None
+```
+
+## 0.95.0 (2026-11-12)
+
+### Genson installation now emits FutureWarning (0.95.0) { #deprecation-dependency-genson-optional }
+
+Genson will become optional. Declare the genson extra for JSON, YAML, CSV and dict input; see --help.
+
+- **What to change:** Declare the genson extra if you generate from JSON, YAML, CSV or dict data.
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### Jinja2 installation now emits FutureWarning (0.95.0) { #deprecation-dependency-jinja2-optional }
+
+Jinja2 will become optional. Declare the jinja2 extra for --custom-template-dir; see --help.
+
+- **What to change:** Declare the jinja2 extra if you use custom templates.
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### argcomplete installation is scheduled to change (0.95.0) { #deprecation-dependency-argcomplete-optional }
+
+argcomplete will become optional. Declare the argcomplete extra for shell completion; see "Dependency migration notices" in the documentation.
+
+- **What to change:** Declare the argcomplete extra if you use shell completion.
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### New dated presets `standard-py3XX-20261112` and `practical-py3XX-20261112` (0.95.0) { #preset-20261112 }
+
+They keep the options of the 20261111 presets and add:
+
+- Object keywords by type (`--read-object-keywords-by-type`): Read the keywords that constrain objects only beside an anyOf or oneOf for the branches that admit objects, so a string, const or enum branch beside patternProperties stays itself.
+
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.94.0 (2026-11-12)
+
+### New dated presets `standard-py3XX-20261111` and `practical-py3XX-20261111` (0.94.0) { #preset-20261111 }
+
+They keep the options of the 20261106 presets and add:
+
+- Float consts fixed by bounds (`--use-bounds-for-float-const`): Type a finite float const, which no Literal holds, as a float whose minimum and maximum both equal it, written as the output writes number bounds, so Pydantic and msgspec reject other numbers instead of accepting any float.
+
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.93.0 (2026-11-11)
+
+### Running datamodel-code-generator on Python 3.10 is removed (0.93.0) { #removal-dependency-python-310-runtime }
+
+Running datamodel-code-generator on Python 3.10 was removed in 0.93.0; run it on Python 3.11 or newer, for example with `uvx datamodel-code-generator` (uv fetches a supported Python). --target-python-version 3.10 is unaffected.
+
+- **What to change:** Run datamodel-code-generator on Python 3.11 or newer.
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.92.0 (2026-11-10)
+
+### --generate-client httpx2 with --input-file-type asyncapi, and --client-asyncapi-perspective is experimental (0.92.0) { #experimental-behavior-asyncapi-client }
+
+HTTPX2 client generation from AsyncAPI documents is experimental; the channels it opens and the generated package may change.
+
+- **Affects:** experimental features: `behavior.asyncapi-client`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### --untrusted-input is experimental (0.92.0) { #experimental-cli-option-untrusted-input }
+
+The untrusted input switch is experimental; the references and schema keywords it refuses may grow as new ways for a schema to read files or write code are found.
+
+- **Affects:** experimental features: `cli-option.untrusted-input`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### generate_dynamic_module(), DynamicModule, and register_module=True is experimental (0.92.0) { #experimental-python-api-generate-dynamic-module }
+
+Dynamic module generation is experimental; its parameters, the DynamicModule attributes, the schema locations it keys classes by, and the module registration rules may change.
+
+- **Affects:** experimental features: `python-api.generate-dynamic-module`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.91.0 (2026-11-07)
+
+### New dated presets `standard-py3XX-20261106` and `practical-py3XX-20261106` (0.91.0) { #preset-20261106 }
+
+They keep the options of the 20261104 presets and add:
+
+- Dataclass arguments set to false written (`--keep-false-dataclass-arguments`): Write every dataclass decorator argument set to false, such as eq=False from --dataclass-arguments, instead of leaving it out, which gives it its default.
+- Content parameters typed by their reference (`--keep-content-parameter-refs`): Type an OpenAPI parameter whose content media schema is a $ref by the model the $ref names, as a schema parameter is, instead of a copy of the referenced schema.
+- Extension keys of paths skipped (`--skip-path-extension-keys`): In the paths scope, skip a key of paths that begins with x-, a specification extension and no path item, as the api scope does, so its operations get no models.
+- Every reached input model type reused (`--reuse-every-reached-input-model-type`): With --input-model-ref-strategy reuse-all or reuse-foreign, reach the types to reuse through the fields of every model kind, dataclasses too, and import a type the Python type of a field already imports instead of writing an unused copy of it.
+- x-python-type as written (`--use-x-python-type-as-written`): Write a field's x-python-type as given: a union spelled Optional[...] or Union[...] types the field as one spelled X | Y already does, instead of the schema's type, and a container class compatible with the schema, such as tuple or MutableSequence, is written around the schema's item types instead of list, Sequence, set, frozenset or Mapping.
+- Typed nullable map values (`--use-typed-nullable-map-values`): Type the values of a map whose type array lists object alone or with null, such as [object, null], as its additionalProperties say instead of Any, and with --use-typed-map-values-beside-other-types of the 20261027 presets also those of a type array that lists object beside other types.
+- Unknown fields forbidden by closed msgspec Structs (`--use-msgspec-forbid-unknown-fields`): Write forbid_unknown_fields=True on a msgspec Struct whose schema admits no property but its own (additionalProperties: false without patternProperties), so msgspec rejects the unknown fields the schema rejects.
+- Reference null kept on collapsed root models (`--keep-reference-null-on-collapsed-root-models`): Under --collapse-root-models, keep the null of a root model that admits null where a field, item or map value that names it takes its type.
+- allOf parents read in MRO order (`--read-allof-parents-in-mro-order`): Read the allOf parents of every inherited schema in the order of the class bases, so a property that several bases declare takes the nearer base's constraints and description, as the class does.
+- Field options on every field (`--apply-field-options-to-every-field`): Give a GraphQL field, a property whose schema is true or false, a required name without a property and the tag field a discriminator appends the field options the other fields take, such as --use-default-kwarg, --use-annotated and --use-default-factory-for-optional-nested-models.
+- Strict base64 strings (`--use-strict-str-for-base64`): Under --strict-types str, write a format: byte string as the StrictStr that EncodedStr decodes, so Pydantic 2.10 or later refuses bytes for it as for any other strict string, instead of Base64Str.
+- Content media type strings as bytes (`--use-bytes-for-content-media-type`): Type a string of an OpenAPI document that has a contentMediaType and no contentEncoding, raw binary content, as bytes, as a format: binary string is, instead of str.
+- Constrained string root models collapsed as Annotated (`--collapse-constrained-root-models-as-annotated`): Under --collapse-root-models with --use-annotated, inline a root model of a string with constraints into a union, list, dict or other container of its holder as Annotated[str, ...], which keeps the constraints on that member.
+- Unused models removed beside type overrides (`--remove-unused-models-beside-type-overrides`): Remove the models nothing uses, such as an inlined root model, also from a module that a model-level --type-overrides key takes a model out of.
+- Items of self-referencing arrays kept (`--keep-self-referencing-array-items`): Keep the items of an array whose items name the array itself (list[Node | Leaf] instead of list), except in msgspec output, which cannot decode such a type alias.
+- Shared members kept on collapsed root models (`--keep-shared-members-on-collapsed-root-models`): Under --collapse-root-models, keep each member of a root type that collapse inlined at several sites at every site when a root model that member names is collapsed later, as a recursive union reaches its plain member.
+- Operation enums written as Literal like definitions (`--use-enum-field-as-literal-in-operations`): Write the enum of an OpenAPI request body or response as a root model of a Literal where x-enum-field-as-literal, --enum-field-as-literal-map or --enum-field-as-literal writes a definition's enum so, instead of an Enum class.
+- Request and response variants of numbered models deduplicated (`--dedupe-numbered-request-response-variants`): Under --read-only-write-only-model-type, merge a Request or Response variant of a numbered model, such as Page1Request of an inline copy Page1 of Page, into PageRequest where it renders the same, as the numbered model merges into Page.
+- Defaults of inherited required fields kept (`--keep-defaults-of-inherited-required-fields`): With --use-default, keep the default a schema gives a property that only a schema it inherits from lists as required, as --use-default keeps that of a property the schema lists as required itself.
+- Incomplete model defaults omitted (`--omit-incomplete-model-defaults`): Write a property whose object default lacks required fields of its model, such as default: {}, without that default, so input that leaves the property out is valid instead of failing on the default.
+- AsyncAPI message trait headers merged (`--merge-message-trait-headers`): Give an AsyncAPI message the headers of all its traits, merged in order as JSON Merge Patches, inline and referenced traits alike, and then its own headers, which win.
+
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.90.0 (2026-11-06)
+
+### New dated presets `standard-py3XX-20261104` and `practical-py3XX-20261104` (0.90.0) { #preset-20261104 }
+
+They keep the options of the 20261027 presets and add:
+
+- Shared variant tags merged (`--merge-shared-variant-tags`): Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. msgspec Structs take one tag, so they are unchanged.
+- EncodedStr for constrained base64 strings (`--use-encoded-str-for-constrained-base64`): Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic 2.10 or later checks them on the base64 text.
+- Length keywords read by type (`--read-length-keywords-by-type`): Read minLength, maxLength and pattern for strings only and minItems, maxItems and uniqueItems for arrays only, so a maxLength beside an array no longer limits how many items the list holds.
+- msgspec union bounds read exactly (`--read-msgspec-union-bounds-exactly`): Decide whether the int member of a msgspec union with a number member drops its bounds on the bounds the schema writes, so a bound past 2**53 no longer rejects an integer the number member accepts.
+- Model names taken from the schema (`--naming-strategy definitions-first`, `--name-allof-union-members-after-branches`, `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys`, `--name-converted-payloads-by-message`, `--singularize-last-word-of-item-names`): Give every definition its own name before an inline model that asks for it first, name the union members of an allOf after their branches, give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, strip only a leading slash from a paths key, name a converted AsyncAPI payload that names no type after its message, and singularize only the last word of an item model's name.
+- Schema version read per document (`--read-schema-version-per-document`): Read each document by the schema version it declares, or the version of the document that references it, so the keywords beside a $ref and the version's features apply as that version says in every document of a run, and an OpenAPI 3.1 or later document reads them as JSON Schema 2020-12 does.
+- Ignored $ref siblings left out (`--ignore-ref-siblings-by-schema-version`): Read a $ref as its target alone where the schema version ignores the keywords beside it (JSON Schema draft 4, 6 and 7, OpenAPI 3.0, AsyncAPI 2), so a sibling format: binary or uniqueItems no longer changes the type of a field.
+- Combined schema keywords intersected (`--intersect-combined-schema-keywords`): Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, read the $ref siblings, $ref aliases and null branches of allOf members and the required names an allOf adds to the one model it names, and keep no enum value that the merged type rejects, as JSON Schema validates them.
+- allOf distributed over unions (`--distribute-allof-over-unions`): Give an allOf one union variant per combination of the branches of the anyOf and oneOf it holds, also through a $ref member and for their value branches, read a $ref branch with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.
+- Reference null kept on merged models (`--keep-reference-null-on-merged-models`): Keep the null that the schema of a reference admits when its model is merged into an equal model that rejects null, so a `type: [object, null]` property keeps `| None` after duplicate removal or reuse.
+- Meta for msgspec map keys (`--use-msgspec-meta-for-map-keys`): Write the keys of a msgspec map whose keys propertyNames or patternProperties constrain as Annotated[str, Meta(...)], so msgspec checks them.
+- Submodules hidden by classes renamed (`--rename-submodules-hidden-by-classes`): Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of pkg/__init__.py, to the first free name with trailing underscores, so importing it leaves the class in place.
+- Unique items as sets by value (`--use-unique-items-as-set-by-value`): Under --use-unique-items-as-set, decide each set on the final item types and write one only where every value of its items hashes by value, and keep apart models whose arrays differ in uniqueItems.
+- Constrained root models kept in every container (`--keep-constrained-root-models-in-every-container`): Under --collapse-root-models with --field-constraints, keep a constrained root model named inside any container of its holder, so a set, Sequence or Mapping keeps the constraints of its items.
+- Enum literal aliases kept (`--keep-enum-literal-aliases`): Under --collapse-root-models, keep a named enum that the output writes as a Literal type alias named at its uses.
+- Plain aliases of recursive models (`--use-plain-alias-for-recursive-models`): In Pydantic output, write a type alias whose whole value is a model that names itself as a plain TypeAlias, which every model that uses it builds.
+- Whole types replaced by type overrides (`--type-overrides-replace-whole-type`): Make a class path of --type-overrides replace an object map itself (dict, not dict[str, dict]), and keep the item or property counts of the array or map an override replaces only where the new type counts the same.
+- SerializeAsAny for every subclass (`--use-serialize-as-any-for-every-subclass`): Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the output adds fields, at any depth, after reuse merges the model and through its module.
+- Dynamic anchors read in document order (`--read-dynamic-anchors-in-document-order`): Resolve a plain-name $dynamicRef that its dynamic scope does not bind, and a reference to a plain name several schemas declare, to the first declaration in document order, so the answer no longer depends on the order the schemas are parsed in.
+- One model per reference site (`--use-one-model-per-ref-site`): Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting.
+- Escaped reference pointers read (`--read-escaped-ref-pointers`): Read the ~0 and ~1 escapes and the percent-encoded octets of a $ref JSON pointer as the characters they encode, so every spelling of a pointer names the one model of its target instead of a copy named after the escaped text.
+- Pydantic dataclass fields read by alias (`--read-input-model-dataclass-fields-by-alias`): With --input-model, read the fields of a Pydantic dataclass by their aliases, as those of a model, so a field with an alias keeps its Python type, such as deque[int], like one without.
+- Practical model structure and names (practical presets) (`--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`): Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names.
+
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.87.0 (2026-10-28)
+
+[Output changes in 0.87.0](../output-changes/0.87.0.md) compares the generated models.
+
+### New dated presets `standard-py3XX-20261027` and `practical-py3XX-20261027` (0.87.0) { #preset-20261027 }
+
+They keep the options of the 20261017 presets and add:
+
+- Enums read as their const (`--use-single-value-enum-as-const`): Read an enum of one value, and an enum that admits the const beside it, as that const, so it renders as a Literal value instead of an enum class; one-value enum branches of a oneOf or anyOf merge into one enum.
+- OpenAPI schemas modeled as definitions (`--openapi-as-definitions paths-bodies ref-components`): Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type, and give an OpenAPI component written as a $ref to a recursive schema with sibling keywords the root model a definitions entry of the same schema gets, instead of no model.
+- Site models for constrained references (`--use-site-models-for-constrained-refs`): Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the values all parts admit, instead of the referenced type, which leaves the added assertions out; an allOf of enum references gets the enum of the members they share.
+- Redundant constraints omitted (`--omit-redundant-constraints`): Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values, which also keeps such a const branch inline instead of a root model.
+- Const read beside an enum (`--read-const-beside-enum`): Read a const beside an enum as JSON Schema does: a value is typed by the const that narrows the enum, and an enum that admits its const is read as that const.
+- Literal values filtered (`--filter-literal-values`): Keep only the values of a const or enum that meet the length, pattern, bound and multipleOf constraints beside them.
+- allOf keywords intersected (`--intersect-allof-keywords`): Combine the keywords of every part of an allOf, a $ref with sibling keywords and an inherited property override as JSON Schema validates them: the tightest bounds and the values every part admits.
+- Nullable beside a type list (`--read-nullable-beside-type-list`): Write the null that nullable: true declares beside a type list with an object into the root model of that schema under strict nullable output.
+- Field defaults kept off branch roots (`--keep-field-defaults-off-branch-roots`): Leave the default of a property off the root models extracted from the branches of its anyOf or oneOf.
+- Tuples for closed arrays (`--use-tuple-for-closed-arrays`): Generate tuple types for positional arrays that no other item can follow, so that each position keeps its own type.
+- One dict for object maps (`--use-single-dict-for-object-maps`): Type an object map whose keys patternProperties or propertyNames constrain as one dict of the values of every key class.
+- Stricter pattern-map checks (`--check-pattern-maps-strictly`): Under --generate-schema-validators, count every key that a pattern admits, check declared keys against the patterns that match them, and keep the propertyNames keys and the other types of a type array of an object without properties.
+- Typed map values beside other types (`--use-typed-map-values-beside-other-types`): Under --use-typed-nullable-map-values, also type the map values of a type array that lists object beside other types, such as [object, string].
+- Enum member values kept (`--keep-enum-member-values`): Write an enum as a plain Enum where its IntEnum, StrEnum or (T, Enum) base would change a member value, such as 2.5 beside integer members.
+- Unevaluated properties read (`--read-unevaluated-properties`): Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the object in place.
+- Aliases pinned beside an alias generator (`--pin-aliases-with-alias-generator`): Write the generated alias on every field of a pydantic dataclass whose config names an alias generator, for pydantic versions older than 2.8.
+- msgspec tags by payload name (`--tag-msgspec-by-payload-name`): Tag the structs of a discriminated union with the property name the document carries instead of the Python name it resolves to.
+- Constructor fields ordered by final names and written defaults (`--order-constructor-fields-by final-names written-defaults`): Order the constructor fields of dataclass and msgspec models after every field has its final name, and the fields of msgspec and Pydantic dataclass models by the defaults they write.
+- Request and response variants deduplicated (`--dedupe-request-response-variants`): Decide Request and Response variants from the schema graph and build each inline model once.
+- Redundant reference null omitted (`--omit-redundant-reference-null`): Do not write None again where a field references a model that holds null itself.
+- Decimal in field forms (`--use-decimal-in-field-forms`): Under --use-decimal-for-multiple-of, write Decimal for a number with multipleOf in the field forms too, and make it strict under --strict-types float.
+- Shared parent wrappers collapsed (`--collapse-shared-parent-wrappers`): Under the parent name strategy, collapse a wrapper in every model that references it instead of keeping it for the models after the first.
+
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.86.0 (2026-10-18)
+
+### NamingHintWarning is experimental (0.86.0) { #experimental-behavior-naming-hint }
+
+The hint at --recommend-options that a command line generation shows when many class names are numbered collisions is experimental; when it is shown and its text may change.
+
+- **Affects:** experimental features: `behavior.naming-hint`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### --recommend-options, its rule data, its candidate comparison, its JSON payload, and --generate-prompt --recommend-options with the prompt JSON field recommendation is experimental (0.86.0) { #experimental-cli-option-recommend-options }
+
+Option recommendations are experimental; the rules, the schema signals they read, the class-name metrics, the report, and the JSON payload may change.
+
+- **Affects:** experimental features: `cli-option.recommend-options`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### New dated presets `standard-py3XX-20261017` and `practical-py3XX-20261017` (0.86.0) { #preset-20261017 }
+
+They keep the options of the 20261015 presets and add:
+
+- stdlib dataclass output (`--use-standard-primitive-types`, `--enum-field-as-literal all`): Use stdlib primitive types without renaming input keys because dataclasses do not carry aliases. Stdlib dataclasses keep raw JSON values without conversion, so enums render as Literal values instead of enum classes; this overrides `--enum-field-as-literal one` from All output model types.
+- TypedDict output (`--use-standard-primitive-types`, `--use-frozen-field`, `--enum-field-as-literal all`): Use stdlib primitive types and ReadOnly metadata without renaming dictionary keys. TypedDict holds raw JSON values, so enums render as Literal values instead of enum classes; this overrides `--enum-field-as-literal one` from All output model types.
+
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.85.0 (2026-10-16)
+
+### New dated presets `standard-py3XX-20261015` and `practical-py3XX-20261015` (0.85.0) { #preset-20261015 }
+
+They keep the options of the 20260909 presets and add:
+
+- Python 3.15 targets
+
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.84.0 (2026-10-15)
+
+### Running datamodel-code-generator on Python 3.10 now emits FutureWarning (0.84.0) { #deprecation-dependency-python-310-runtime }
+
+Running datamodel-code-generator on Python 3.10 was removed in 0.93.0; run it on Python 3.11 or newer, for example with `uvx datamodel-code-generator` (uv fetches a supported Python). --target-python-version 3.10 is unaffected.
+
+- **What to change:** Run datamodel-code-generator on Python 3.11 or newer.
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### --generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys and generate() options) is experimental (0.84.0) { #experimental-cli-option-generate-client }
+
+HTTPX2 client generation from the CLI is experimental; its options and generated package may change.
+
+- **Affects:** experimental features: `cli-option.generate-client`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### --generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys and generate() options) is experimental (0.84.0) { #experimental-cli-option-generate-server }
+
+FastAPI server generation from the CLI is experimental; its options and generated package may change.
+
+- **Affects:** experimental features: `cli-option.generate-server`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.78.0 (2026-09-09)
+
+### Black <24.3.0 now emits FutureWarning (0.78.0) { #deprecation-dependency-black-minimum }
+
+Support for Black <24.3.0 will end in a future release.
+
+- **What to change:** Upgrade Black to >=24.3.0 before the later support change.
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### Black/isort installation now emits FutureWarning (0.78.0) { #deprecation-dependency-external-formatters-optional }
+
+Black/isort will become optional. Declare the corresponding extras; see --help.
+
+- **What to change:** Declare the black/isort extras for the external formatters you select.
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### isort <6 now emits FutureWarning (0.78.0) { #deprecation-dependency-isort-minimum }
+
+Support for isort <6 will end in a future release.
+
+- **What to change:** Upgrade isort to >=6,<9 before the later support change.
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### DCG runtime Pydantic <2.8.2 now emits FutureWarning (0.78.0) { #deprecation-dependency-pydantic-runtime-minimum }
+
+Support for DCG runtime Pydantic <2.8.2 will end in a future release.
+
+- **What to change:** Upgrade DCG runtime Pydantic to >=2.8.2; generated-code targets are unchanged.
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### New dated presets `standard-py3XX-20260909` and `practical-py3XX-20260909` (0.78.0) { #preset-20260909 }
+
+They keep the options of the 20260826 presets and add:
+
+- Built-in formatting (`--formatters builtin`): Format generated models without running an external formatter. For projects using Ruff, override with --formatters ruff-check ruff-format. To preserve Black/isort formatting, override with --formatters black isort.
+
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.76.0 (2026-08-29)
+
+### --set-default-enum-member is scheduled to change (0.76.0) { #deprecation-cli-set-default-enum-member }
+
+--set-default-enum-member is deprecated. Use --deserialize-default-values enum instead.
+
+- **Affects:** only with: `--set-default-enum-member`
+- **What to change:** --deserialize-default-values enum
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### --install-skill, --skill-scope, and --overwrite-skill is experimental (0.76.0) { #experimental-cli-option-install-skill }
+
+Bundled Agent Skill installation is experimental; supported clients, scopes, and installed skill contents may change.
+
+- **Affects:** experimental features: `cli-option.install-skill`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### New dated presets `standard-py3XX-20260826` and `practical-py3XX-20260826` (0.76.0) { #preset-20260826 }
+
+They keep the options of the 20260619 presets and add:
+
+- All output model types (`--use-standard-collections`, `--use-union-operator`, `--use-annotated`, `--enum-field-as-literal one`, `--use-subclass-enum`, `--collapse-root-models`, `--strict-nullable`, `--disable-timestamp`): Use built-in collection syntax, PEP 604 unions, Annotated constraints, single-value enum Literals, typed enum subclasses, inline root wrappers, schema-accurate nullability, and reproducible file headers.
+- Serialized defaults (`--deserialize-default-values decimal enum`): Deserialize compatible serialized Decimal and enum defaults into generated Python values while preserving defaults that cannot be converted safely.
+
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.72.3 (2026-08-10)
+
+### [tool.datamodel-codegen.jobs], --job, --all-jobs is experimental (0.72.3) { #experimental-behavior-batch-generation-jobs }
+
+Named batch jobs are experimental; their configuration schema, batch output, and transactional/watch execution contracts may change.
+
+- **Affects:** experimental features: `behavior.batch-generation-jobs`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### datamodel-codegen.lock, --lockfile, --update-lock, and --locked is experimental (0.72.3) { #experimental-behavior-remote-reference-lock }
+
+Remote reference integrity locking is experimental: the lock document schema and request-identity compatibility may evolve, but integrity mismatches remain fail-closed and credentials are never persisted.
+
+- **Affects:** experimental features: `behavior.remote-reference-lock`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.72.1 (2026-08-04)
+
+### --use-type-alias-type is experimental (0.72.1) { #experimental-cli-option-use-type-alias-type }
+
+Runtime TypeAliasType output is experimental and may change as Python typing support evolves.
+
+- **Affects:** experimental features: `cli-option.use-type-alias-type`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.72.0 (2026-08-03)
+
+### datamodel-code-generator[httpx2] is experimental (0.72.0) { #experimental-extra-httpx2 }
+
+The HTTPX2-backed HTTP client is experimental and may change as compatibility is validated.
+
+- **Affects:** experimental features: `extra.httpx2`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.66.1 (2026-06-30)
+
+### --generate-schema-validators is experimental (0.66.1) { #experimental-cli-option-generate-schema-validators }
+
+Schema-derived runtime validators are experimental and may change as JSON Schema coverage is expanded.
+
+- **Affects:** experimental features: `cli-option.generate-schema-validators`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### --schema-validator-type is experimental (0.66.1) { #experimental-cli-option-schema-validator-type }
+
+Schema-derived runtime validator backend selection is experimental and may change as validation backends are added.
+
+- **Affects:** experimental features: `cli-option.schema-validator-type`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### --use-missing-sentinel is experimental (0.66.1) { #experimental-cli-option-use-missing-sentinel }
+
+Pydantic MISSING sentinel output is experimental because it depends on pydantic.experimental.missing_sentinel, or on pydantic.MISSING for a 2.14 target.
+
+- **Affects:** experimental features: `cli-option.use-missing-sentinel`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.65.0 (2026-06-21)
+
+### JSON configuration values accepted by legacy validation now emits FutureWarning (0.65.0) { #deprecation-config-json-config-strict-validation }
+
+JSON configuration values that do not match the documented schema are deprecated and will become validation errors in a future release.
+
+- **What to change:** Update the JSON configuration to match --output-format-json-schema config.
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.64.1 (2026-06-19)
+
+### New dated presets `standard-py3XX-20260619` and `practical-py3XX-20260619` (0.64.1) { #preset-20260619 }
+
+The first dated presets; the [presets page](https://datamodel-code-generator.koxudaxi.dev/presets/) lists their options.
+
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.60.0 (2026-06-04)
+
+### --input-file-type mcp-tools is experimental (0.60.0) { #experimental-input-format-mcp-tools }
+
+MCP tool schema profile input support is experimental and may change as MCP schemas evolve.
+
+- **Affects:** experimental features: `input-format.mcp-tools`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.59.0 (2026-05-29)
+
+### --input-file-type asyncapi is experimental (0.59.0) { #experimental-input-format-asyncapi }
+
+AsyncAPI input support is experimental and may change as real-world usage is validated.
+
+- **Affects:** experimental features: `input-format.asyncapi`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### --input-file-type avro is experimental (0.59.0) { #experimental-input-format-avro }
+
+Apache Avro schema input support is experimental and may change as real-world usage is validated.
+
+- **Affects:** experimental features: `input-format.avro`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### --input-file-type protobuf is experimental (0.59.0) { #experimental-input-format-protobuf }
+
+Protocol Buffers input support is experimental and may change as real-world usage is validated.
+
+- **Affects:** experimental features: `input-format.protobuf`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### --input-file-type xmlschema is experimental (0.59.0) { #experimental-input-format-xmlschema }
+
+XML Schema input support is experimental and may change as real-world usage is validated.
+
+- **Affects:** experimental features: `input-format.xmlschema`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.56.0 (2026-04-04)
+
+### Remote $ref fetching without --allow-remote-refs now emits FutureWarning (0.56.0) { #deprecation-behavior-remote-ref-default }
+
+Remote $ref fetching without --allow-remote-refs is deprecated.
+
+- **What to change:** Pass --allow-remote-refs for trusted remote schemas, or --no-allow-remote-refs to block HTTP(S) $ref fetching.
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.53.0 (2026-01-12)
+
+### JSON Schema Draft 2020-12 items array tuple validation now emits UserWarning (0.53.0) { #deprecation-schema-jsonschema-items-array }
+
+items as array tuple validation is deprecated in Draft 2020-12. Use prefixItems instead.
+
+- **What to change:** Use prefixItems.
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### OpenAPI 3.1 nullable keyword now emits DeprecationWarning (0.53.0) { #deprecation-schema-openapi-nullable }
+
+nullable keyword is deprecated in OpenAPI 3.1, use type: ["string", "null"] instead.
+
+- **What to change:** Use type arrays such as type: ["string", "null"].
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.52.1 (2026-01-03)
+
+### Pydantic v2 default for --use-annotated now emits DeprecationWarning (0.52.1) { #deprecation-behavior-pydantic-v2-use-annotated-default }
+
+Pydantic v2 with --use-annotated is recommended for correct type annotations. In a future version, --use-annotated will be enabled by default for Pydantic v2.
+
+- **What to change:** Explicitly pass --use-annotated or --no-use-annotated.
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### PythonVersion.has_type_alias now emits DeprecationWarning (0.52.1) { #deprecation-python-api-python-version-has-type-alias }
+
+has_type_alias is deprecated and will be removed in a future version.
+
+- **Affects:** Python API: `PythonVersion.has_type_alias`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.52.0 (2026-01-02)
+
+### Default formatters now emits FutureWarning (0.52.0) { #deprecation-format-default-formatters }
+
+Default formatters will change to builtin no earlier than three months after 0.92.0. Set --formatters or --preset explicitly; see "Dependency migration notices" in the documentation. Run datamodel-codegen with --recommend-options on one schema to pick a preset and options for it (experimental).
+
+- **What to change:** Set formatters explicitly, for example black and isort or builtin.
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.48.0 (2025-12-24)
+
+### --parent-scoped-naming now emits DeprecationWarning (0.48.0) { #deprecation-cli-parent-scoped-naming }
+
+--parent-scoped-naming is deprecated. Use --naming-strategy parent-prefixed instead.
+
+- **Affects:** only with: `--parent-scoped-naming`
+- **What to change:** --naming-strategy parent-prefixed
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### YAML bool values True, False, TRUE, FALSE now emits DeprecationWarning (0.48.0) { #deprecation-config-yaml-non-lowercase-bool }
+
+Non-lowercase YAML bool values are deprecated. Use lowercase true or false instead.
+
+- **What to change:** Use lowercase true or false.
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.36.0 (2025-11-26)
+
+### --use-type-alias is experimental (0.36.0) { #experimental-cli-option-use-type-alias }
+
+Type alias output is experimental and may change as Python typing support evolves.
+
+- **Affects:** experimental features: `cli-option.use-type-alias`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.31.0 (2025-06-12)
+
+### --allow-extra-fields now emits DeprecationWarning (0.31.0) { #deprecation-cli-allow-extra-fields }
+
+--allow-extra-fields is deprecated. Use --extra-fields=allow instead.
+
+- **Affects:** only with: `--allow-extra-fields`
+- **What to change:** --extra-fields=allow
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.24.0 (2023-11-16)
+
+### --validation now emits DeprecationWarning (0.24.0) { #deprecation-cli-validation }
+
+The `--validation` option is deprecated and will be removed in a future release. Use --field-constraints instead.
+
+- **Affects:** only with: `--validation`
+- **What to change:** --field-constraints
+- **Source:** the registry of deprecations, experimental features and dated presets
 
 ---
 
@@ -95331,6 +95370,10 @@ source = "release-note"
 - `supersedes` drops older entries from the path of a user who meets both; `reverts` drops a change and the entry
   that undoes it.
 - `keep.flags` must be options of the current release: the build parses them and writes their `pyproject.toml` form.
+
+`complete_from` in `docs/data/migration/releases.toml` names the oldest release whose users meet every change in the
+steps. The hub, the range pages, the per-release Markdown and the JSON mark the steps from an older release as
+incomplete and point to the changelog; move it back once the entries of the releases before it are written.
 
 Two rules are checked. An accepted default-output change in `scripts/behaviour_diff_allowlist.toml` names its entry
 in `migration`, and that entry must be unreleased. `docs/data/migration/surface.json` holds the options, option values,

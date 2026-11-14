@@ -37784,7 +37784,7 @@
         "title": "Schema documentation"
       },
       {
-        "description": "Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values.",
+        "description": "Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.",
         "options": [
           "--untyped-value-type pydantic.JsonValue"
         ],
@@ -38410,7 +38410,7 @@
         "title": "Schema documentation"
       },
       {
-        "description": "Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values.",
+        "description": "Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.",
         "options": [
           "--untyped-value-type pydantic.JsonValue"
         ],
@@ -39036,7 +39036,7 @@
         "title": "Schema documentation"
       },
       {
-        "description": "Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values.",
+        "description": "Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.",
         "options": [
           "--untyped-value-type pydantic.JsonValue"
         ],
@@ -39662,7 +39662,7 @@
         "title": "Schema documentation"
       },
       {
-        "description": "Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values.",
+        "description": "Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.",
         "options": [
           "--untyped-value-type pydantic.JsonValue"
         ],
@@ -40288,7 +40288,7 @@
         "title": "Schema documentation"
       },
       {
-        "description": "Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values.",
+        "description": "Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.",
         "options": [
           "--untyped-value-type pydantic.JsonValue"
         ],
@@ -40914,7 +40914,7 @@
         "title": "Schema documentation"
       },
       {
-        "description": "Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values.",
+        "description": "Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.",
         "options": [
           "--untyped-value-type pydantic.JsonValue"
         ],

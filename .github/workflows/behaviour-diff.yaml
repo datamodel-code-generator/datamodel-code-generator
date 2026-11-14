@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/behaviour-diff.yaml'
+      - 'docs/data/migration/**'
       - 'pyproject.toml'
       - 'scripts/_behaviour_*.py'
       - 'scripts/behaviour_diff.py'
       - 'scripts/behaviour_diff_allowlist.toml'
+      - 'scripts/build_migration_docs.py'
       - 'scripts/compare_release.py'
       - 'src/**'
       - 'tests/data/**'
@@ -17,10 +19,12 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/behaviour-diff.yaml'
+      - 'docs/data/migration/**'
       - 'pyproject.toml'
       - 'scripts/_behaviour_*.py'
       - 'scripts/behaviour_diff.py'
       - 'scripts/behaviour_diff_allowlist.toml'
+      - 'scripts/build_migration_docs.py'
       - 'scripts/compare_release.py'
       - 'src/**'
       - 'tests/data/**'
@@ -84,6 +88,8 @@ jobs:
           set -o pipefail
           .venv/bin/python scripts/behaviour_diff.py gate "$BASE" --tier pr --check \
             --cache-dir "$BEHAVIOUR_DIFF_CACHE" --json behaviour-diff-pr.jsonl | tee behaviour-diff-pr.txt
+      - name: Check the upgrade guide's keep claims
+        run: .venv/bin/python scripts/build_migration_docs.py --verify -j 4
       - name: Write job summary
         if: always()
         run: |

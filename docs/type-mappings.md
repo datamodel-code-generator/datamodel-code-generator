@@ -111,8 +111,9 @@ out `maxLength`; `date-time` is `AwareDatetime`, which rejects a date-time witho
 
 With `--read-format-as-annotation` (`read-format-as-annotation = true`, `read_format_as_annotation=True`) a string,
 integer or number schema takes the type its `type` keyword gives, `str`, `int` or `float`, with its own `minLength`,
-`maxLength`, `pattern` and bounds, so the models accept every value the schema accepts and dump it as written. An
-unknown format gives no warning.
+`maxLength`, `pattern` and bounds, so the models accept every value the schema accepts and dump a string or an
+integer as written. A number is the `float` it parses to, as without a format, which rounds a value a double cannot
+hold (`9007199254740993` dumps as `9007199254740992.0`). An unknown format gives no warning.
 
 ```json
 {
@@ -159,9 +160,10 @@ types of their formats: there the format carries the type of the source, such as
 
 ## `--untyped-value-type`
 
-A value the schema leaves untyped is any JSON value: `{}`, `true`, a schema without `type`, the values of an object
-without properties and the items of an array without items. By default it is written as `Any`, and under
-`--use-object-type` the values and items of such containers as `object`, as in 0.96.0.
+A value the schema leaves untyped is any JSON value: `{}`, `true`, a schema whose keywords give it no type (such as
+`{"description": "..."}`; an `enum` or a `const` gives one), the values of an object without properties and the items
+of an array without items. By default it is written as `Any`, and under `--use-object-type` the values and items of
+such containers as `object`, as in 0.96.0.
 
 `--untyped-value-type <type>` (`untyped-value-type = "pydantic.JsonValue"`, `untyped_value_type="pydantic.JsonValue"`)
 writes each of them as the given type, with the structure as without the option:

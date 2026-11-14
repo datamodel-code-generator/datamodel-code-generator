@@ -234,6 +234,10 @@ source = "release-note"
   that undoes it.
 - `keep.flags` must be options of the current release: the build parses them and writes their `pyproject.toml` form.
 
+`complete_from` in `docs/data/migration/releases.toml` names the oldest release whose users meet every change in the
+steps. The hub, the range pages, the per-release Markdown and the JSON mark the steps from an older release as
+incomplete and point to the changelog; move it back once the entries of the releases before it are written.
+
 Two rules are checked. An accepted default-output change in `scripts/behaviour_diff_allowlist.toml` names its entry
 in `migration`, and that entry must be unreleased. `docs/data/migration/surface.json` holds the options, option values,
 public names, `GenerateConfig` fields and builtin templates of the latest release; one that your change removes must

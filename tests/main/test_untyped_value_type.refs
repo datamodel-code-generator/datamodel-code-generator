@@ -26,6 +26,9 @@ off-pydantic_v2.dataclass	main/untyped_value_type/untyped_value_type[off-pydanti
 	main/untyped_value_type/imports_only_where_used/
 [test_untyped_value_type_keeps_msgspec_any]
 	main/untyped_value_type/keeps_msgspec_any.py
+[test_untyped_value_type_object_in_targets]
+client	main/untyped_value_type/object_in_targets[client].py
+server	main/untyped_value_type/object_in_targets[server].py	= main/untyped_value_type/object_in_targets[client].py
 [test_untyped_value_type_openapi]
 json-value	main/untyped_value_type/openapi[json-value].py
 json-value-collapse-root-models	main/untyped_value_type/openapi[json-value-collapse-root-models].py

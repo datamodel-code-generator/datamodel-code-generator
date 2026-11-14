@@ -429,6 +429,7 @@ def _split_json_pointer(
 
 
 _NON_SCHEMA_KEYWORDS = INSTANCE_DATA_KEYWORDS | {
+    "discriminator",
     "links",
     "security",
     "server",

@@ -4760,7 +4760,8 @@ rejects a date-time without an offset), `password` is `SecretStr` (which dumps `
 (which dumps `https://example.com/` for `https://example.com`), and `uuid`, `date`, `ipv4` and `decimal` are parsed
 into Python objects. With it a string, integer or number schema takes the type its `type` keyword gives, `str`, `int`
 or `float`, with its own `minLength`, `maxLength`, `pattern` and bounds, so the models accept every value the schema
-accepts and dump it as written, and an unknown format gives no warning. Two formats still select a type:
+accepts and dump a string or an integer as written (a number as the `float` it parses to, as without a format), and an
+unknown format gives no warning. Two formats still select a type:
 `format: binary`, which stays `bytes` (raw octets, not a JSON string), and a format that a `--type-mappings` entry
 names for a type the schema declares (`--type-mappings date-time=date-time` keeps `date-time` typed, and then
 `--output-datetime-class` applies). The format is not written into the models. The option reads JSON Schema, OpenAPI,
@@ -5821,18 +5822,18 @@ new type does not count is left out with a warning.
 
 Write each value the schema leaves untyped as one type instead of `Any`.
 
-A value the schema leaves untyped, `{}`, `true`, a schema without `type`, the values of an object without properties
-and the items of an array without items, is written as `Any`, and under `--use-object-type` the values and items of
-containers as `object`, as in 0.96.0. With `--untyped-value-type pydantic.JsonValue` each of them is written as
-Pydantic's `JsonValue` (Pydantic 2.5 or later), in every position: a field, a union member, a dict value or key's
-value, a list item, the root of a root model, the value of a type alias and `__pydantic_extra__`. The structure is as
-without the option, and the models parse a JSON document to the same values; Python values that are no JSON values,
-such as a tuple, a set or a `datetime`, are rejected. The value may also be `object`, `Any`, or the dotted import path
-of a type of your own, which the models import (for example a recursive alias for `typing.TypedDict` output). The
-option takes precedence over `--use-object-type`; `--type-overrides`, `x-python-type` and `x-python-import` keep their
-types, and `msgspec.Struct` output keeps `Any`, which msgspec decodes into JSON values. A definition named like the
-imported type is renamed by the rule for names an import takes (`JsonValue` becomes `JsonValueModel`), unless
-`--collapse-root-models` writes the type at its references.
+A value the schema leaves untyped, `{}`, `true`, a schema whose keywords give it no type (`{"description": "..."}`, not
+an `enum`), the values of an object without properties and the items of an array without items, is written as `Any`, and
+under `--use-object-type` the values and items of containers as `object`, as in 0.96.0. With `--untyped-value-type
+pydantic.JsonValue` each of them is written as Pydantic's `JsonValue` (Pydantic 2.5 or later), in every position: a
+field, a union member, a dict value or key's value, a list item, the root of a root model, the value of a type alias and
+`__pydantic_extra__`. The structure is as without the option, and the models parse a JSON document to the same values;
+Python values that are no JSON values, such as a tuple, a set or a `datetime`, are rejected. The value may also be
+`object`, `Any`, or the dotted import path of a type of your own, which the models import (for example a recursive alias
+for `typing.TypedDict` output). The option takes precedence over `--use-object-type`; `--type-overrides`,
+`x-python-type` and `x-python-import` keep their types, and `msgspec.Struct` output keeps `Any`, which msgspec decodes
+into JSON values. A definition named like the imported type is renamed by the rule for names an import takes
+(`JsonValue` becomes `JsonValueModel`), unless `--collapse-root-models` writes the type at its references.
 
 **See also:** [Type Mappings and Custom Types](../type-mappings.md)
 
