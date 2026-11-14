@@ -17,7 +17,6 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._constraint_applicability import NUMBER_KEYWORD_ORDER
 from datamodel_code_generator._url_redaction import named_location
-from datamodel_code_generator.imports import IMPORT_ANY
 from datamodel_code_generator.parser import _value_keywords
 from datamodel_code_generator.parser._intersection import (
     intersect_constraint,
@@ -28,7 +27,7 @@ from datamodel_code_generator.parser._origins import with_unique_items
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _numeric_type_domain
 from datamodel_code_generator.parser._value_keywords import ValueKeywordsHost
-from datamodel_code_generator.types import ANY, DataType, UnionIntFloat, build_union
+from datamodel_code_generator.types import ANY, DataType, UnionIntFloat, build_union, untyped_value_data_type
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -204,7 +203,7 @@ def build_lightweight_array_type(  # noqa: PLR0913, PLR0917
         ]
     )
     if not item_types and not (is_homogeneous_tuple and tuple_item_count == 0):
-        item_types = [DataType(type=ANY, import_=IMPORT_ANY)]
+        item_types = [untyped_value_data_type(DataType, parser.data_type_manager.untyped_value)]
     array_type = with_unique_items(
         parser.data_type(
             data_types=item_types,

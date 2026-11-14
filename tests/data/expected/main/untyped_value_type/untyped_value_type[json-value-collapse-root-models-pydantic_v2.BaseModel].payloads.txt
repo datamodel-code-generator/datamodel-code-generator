@@ -1,0 +1,5 @@
+valid {"payload": {"a": [1, 2.5, null, true]}, "previous": "x", "note": [{"k": "v"}], "context": {"n": {"m": []}}, "flags": {"f": false}, "attributes": {"a": 1}, "tags": [1, "two", null], "samples": [{"s": 1}], "extra": null, "labelOrObject": {"k": 1}, "choice": 3, "notText": 4, "headers": {"x-trace": "abc"}, "snapshot": {"deep": {"er": [1]}}, "baseline": null, "actor": {"id": 7, "role": "admin"}}: {'payload': {'a': [1, 2.5, None, True]}, 'previous': 'x', 'note': [{'k': 'v'}], 'context': {'n': {'m': []}}, 'flags': {'f': False}, 'attributes': {'a': 1}, 'tags': [1, 'two', None], 'samples': [{'s': 1}], 'labelOrObject': {'k': 1}, 'choice': 3, 'notText': 4, 'headers': {'x-trace': 'abc'}, 'snapshot': {'deep': {'er': [1]}}, 'actor': {'id': 7, 'role': 'admin'}}
+valid {"payload": null}: {}
+payload tuple: rejected
+payload set: rejected
+payload datetime: rejected

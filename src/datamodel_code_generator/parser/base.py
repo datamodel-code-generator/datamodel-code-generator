@@ -1095,6 +1095,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             treat_dot_as_module=config.treat_dot_as_module or False,
             use_serialize_as_any=config.use_serialize_as_any,
         )
+        self.data_type_manager.use_untyped_value_type(config.untyped_value_type)
         self.data_type_manager.omit_redundant_constraints = config.omit_redundant_constraints
         self.data_type_manager.read_length_keywords_by_type = config.read_length_keywords_by_type
         self.data_type_manager.read_msgspec_union_bounds_exactly = config.read_msgspec_union_bounds_exactly

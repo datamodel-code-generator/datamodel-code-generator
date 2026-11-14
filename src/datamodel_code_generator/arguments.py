@@ -1172,6 +1172,18 @@ _toggle(
     "--use-object-type",
     help="Use object instead of Any for unspecified JSON Schema object and array values",
 )
+typing_options.add_argument(
+    "--untyped-value-type",
+    help="Write each value the schema leaves untyped ({}, true, a schema without type, the values of an object "
+    "without properties and the items of an array without items) as this type instead of Any: pydantic.JsonValue "
+    "(Pydantic 2.5 or later), object, Any or the dotted import path of a type of your own, which the models import; "
+    "the structure is as without the option. --type-overrides, x-python-type and x-python-import keep their types, "
+    "and msgspec.Struct output keeps Any, which msgspec decodes into JSON values. Without it untyped values are Any, "
+    "and object in containers under --use-object-type, as in 0.96.0",
+    metavar="TYPE",
+    type=str,
+    default=None,
+)
 _toggle(
     typing_options,
     "--use-typed-nullable-map-values",

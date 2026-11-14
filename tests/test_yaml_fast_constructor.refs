@@ -696,6 +696,7 @@ openapi/unique_items_default_set.yaml	yaml_fast_constructor/parity.txt
 openapi/unquoted_null.yaml	yaml_fast_constructor/parity.txt
 openapi/unrelated_invalid_dotted_model.yaml	yaml_fast_constructor/parity.txt
 openapi/unsorted_optional_fields.yaml	yaml_fast_constructor/parity.txt
+openapi/untyped_value_type/task_api.yaml	yaml_fast_constructor/parity.txt
 openapi/usable_collapsed_invalid_dotted_models.yaml	yaml_fast_constructor/parity.txt
 openapi/usable_converging_invalid_dotted_models.yaml	yaml_fast_constructor/parity.txt
 openapi/usable_discriminator_invalid_dotted_models.yaml	yaml_fast_constructor/parity.txt

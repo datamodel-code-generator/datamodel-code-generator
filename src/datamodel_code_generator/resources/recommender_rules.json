@@ -1418,6 +1418,10 @@
       "not_recommended": "io",
       "reason": "Whether the input comes from an untrusted source; a security decision of the project."
     },
+    "untyped_value_type": {
+      "not_recommended": "preset",
+      "reason": "Set to pydantic.JsonValue by the practical 20261113 presets for Pydantic output; the recommendation starts from a preset."
+    },
     "update_lock": {
       "not_recommended": "io",
       "reason": "Writes the remote reference lock."

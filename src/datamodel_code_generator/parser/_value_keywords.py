@@ -42,7 +42,7 @@ from datamodel_code_generator._container_kinds import ARRAYS, CONTAINERS, MAPPIN
 from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS, non_null_types
 from datamodel_code_generator._url_redaction import named_location
-from datamodel_code_generator.imports import IMPORT_ANY, _import_path
+from datamodel_code_generator.imports import _import_path
 from datamodel_code_generator.model._decisions.enum_kind import enum_as_literal, is_literal_kind, literal_value_kind
 from datamodel_code_generator.model._decisions.literal_default import const_type
 from datamodel_code_generator.model.base import ConstraintsBase
@@ -63,7 +63,7 @@ from datamodel_code_generator.parser._schema_reading import (
 )
 from datamodel_code_generator.parser._schema_refs import SchemaRefsHost
 from datamodel_code_generator.parser.base import _TYPE_DEPENDENT_CONSTRAINTS_KEY
-from datamodel_code_generator.types import ANY, Types, _is_plain_none, _is_value_literal
+from datamodel_code_generator.types import Types, _is_plain_none, _is_value_literal, untyped_value_data_type
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Mapping, Sequence
@@ -1265,13 +1265,15 @@ def get_data_type_from_json_value(parser: ValueKeywordsHost, value: object) -> D
     if isinstance(value, list):
         item_types = [get_data_type_from_json_value(parser, item) for item in value]
         return parser.data_type(
-            data_types=item_types or [parser.data_type(type=ANY, import_=IMPORT_ANY)],
+            data_types=item_types
+            or [untyped_value_data_type(parser.data_type, parser.data_type_manager.untyped_value)],
             is_list=True,
         )
     if isinstance(value, dict):
         value_types = [get_data_type_from_json_value(parser, item) for item in value.values()]
         return parser.data_type(
-            data_types=value_types or [parser.data_type(type=ANY, import_=IMPORT_ANY)],
+            data_types=value_types
+            or [untyped_value_data_type(parser.data_type, parser.data_type_manager.untyped_value)],
             is_dict=True,
         )
     return parser.data_type_manager.get_data_type(Types.any)

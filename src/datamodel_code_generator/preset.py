@@ -80,7 +80,7 @@ PresetEnumConfigValue: TypeAlias = (
     | Formatter
 )
 PresetEnumSequenceConfigValue: TypeAlias = tuple[PresetEnumConfigValue, ...]
-PresetConfigValue: TypeAlias = bool | PresetEnumConfigValue | PresetEnumSequenceConfigValue
+PresetConfigValue: TypeAlias = bool | str | PresetEnumConfigValue | PresetEnumSequenceConfigValue
 PresetRawConfigValue: TypeAlias = PresetConfigValue | Sequence[PresetEnumConfigValue] | str | None
 
 
@@ -437,8 +437,11 @@ def _normalize_preset_config_value(
 
 
 def _ensure_preset_config_value(field_name: str, value: PresetRawConfigValue) -> PresetConfigValue:
+    """Return a preset value: a bool, the value of a text field such as a type path, an enum or a tuple of enums."""
     match value:
         case bool():
+            return value
+        case str() if not isinstance(value, Enum):
             return value
         case tuple() | list():
             return tuple(_ensure_preset_enum_config_value(field_name, item) for item in value)
@@ -473,7 +476,7 @@ def _config_item_to_cli_option(item: PresetConfigItem) -> str:
     if arguments is None:  # pragma: no cover
         msg = f"Preset field {stable_repr(item.field_name)} does not map to a documented negative CLI option"
         raise PresetError(msg)
-    return " ".join([arguments[0], *(str(value.value) for value in arguments[1:])])
+    return " ".join([arguments[0], *(str(toml_value(value)) for value in arguments[1:])])
 
 
 _STANDARD_20260619_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
@@ -619,12 +622,25 @@ _PRACTICAL_20261104_EXTRA_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
     *_PRACTICAL_20260619_EXTRA_OPTION_GROUPS[1:],
 )
 """The practical extras of the 20261104 presets: the naming strategy comes from the standard groups."""
+_PRACTICAL_20261113_EXTRA_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
+    *_PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
+    PresetOptionGroup(
+        title="Untyped values as JSON values",
+        config=PresetConfig(untyped_value_type="pydantic.JsonValue"),
+        description=(
+            "Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the "
+            "object the practical groups prefer for unconstrained values."
+        ),
+        output_model_types=_PYDANTIC_MODEL_TYPES,
+    ),
+)
+"""The 20261104 practical extras and the opt-in options added after them."""
 _PRACTICAL_EXTRA_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20261104": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
     "20261106": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
     "20261111": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
     "20261112": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
-    "20261113": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
+    "20261113": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
 }
 """The practical extras of the dates whose extras are not those of 20260619."""
 
@@ -1416,19 +1432,21 @@ def _validate_preset_infos(infos: tuple[PresetInfo, ...]) -> None:
             msg = f"Preset {stable_repr(info.name.value)} does not include its Python target in the name"
             raise PresetError(msg)
 
-        output_model_groups: dict[DataModelType, str] = {}
+        output_model_groups: dict[tuple[DataModelType, str], str] = {}
         for group in info.option_groups:
             if not group.config:  # pragma: no cover
                 msg = f"Preset option group {stable_repr(group.title)} does not define any config fields"
                 raise PresetError(msg)
             for output_model_type in group.output_model_types:
-                if output_model_type in output_model_groups:  # pragma: no cover
-                    msg = (
-                        f"Preset {stable_repr(info.name.value)} maps {stable_repr(output_model_type.value)} to both "
-                        f"{stable_repr(output_model_groups[output_model_type])} and {stable_repr(group.title)}"
-                    )
-                    raise PresetError(msg)
-                output_model_groups[output_model_type] = group.title
+                for item in group.config.items():
+                    if (key := (output_model_type, item.field_name)) in output_model_groups:  # pragma: no cover
+                        msg = (
+                            f"Preset {stable_repr(info.name.value)} sets {stable_repr(item.field_name)} for "
+                            f"{stable_repr(output_model_type.value)} in both {stable_repr(output_model_groups[key])} "
+                            f"and {stable_repr(group.title)}"
+                        )
+                        raise PresetError(msg)
+                    output_model_groups[key] = group.title
 
 
 _validate_preset_infos(_PRESET_INFOS)

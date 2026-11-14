@@ -195,7 +195,7 @@ from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import (
     AliasGenerator,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
-from datamodel_code_generator.imports import IMPORT_ANY, Import, Imports
+from datamodel_code_generator.imports import IMPORT_ANY, Import, Imports  # noqa: F401  # Preserve the parser.jsonschema export.
 from datamodel_code_generator.model import (  # Preserve the established parser.jsonschema export.
     DataModel,
     DataModelFieldBase,
@@ -483,6 +483,8 @@ from datamodel_code_generator.types import (
     Types,
     UnionIntFloat,
     build_union,
+    untyped_value_data_type,
+    writes_object_for_untyped_items,
 )
 from datamodel_code_generator.util import BaseModel, get_yaml_parse_errors  # noqa: F401  # Preserve the established parser.jsonschema export.
 from datamodel_code_generator.validators import _validate_schema_python_import_path
@@ -3260,7 +3262,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return None
         allof_effective_items = [item for item in allof_items if isinstance(item, JsonSchemaObject)]
         if not allof_effective_items:
-            return DataType(type=ANY, import_=IMPORT_ANY)
+            return untyped_value_data_type(DataType, self.data_type_manager.untyped_value)
         if len(allof_effective_items) == 1:
             item = allof_effective_items[0]
             if item.ref:
@@ -3308,7 +3310,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         best_type = ap_type
                 return self.data_type(data_types=[best_type], is_dict=True)
 
-            return self.data_type(data_types=[DataType(type=ANY, import_=IMPORT_ANY)], is_dict=True)
+            return self.data_type(
+                data_types=[untyped_value_data_type(DataType, self.data_type_manager.untyped_value)], is_dict=True
+            )
 
         return None
 
@@ -3323,12 +3327,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if item_schema is False:
             return None  # pragma: no cover
         if item_schema is True:
-            return DataType(type=ANY, import_=IMPORT_ANY)
+            return untyped_value_data_type(DataType, self.data_type_manager.untyped_value)
         if item_schema.ref:
             return self.get_ref_data_type(item_schema.ref)
-        return self._build_lightweight_type(item_schema, depth + 1, visited, max_depth, max_union_elements) or DataType(
-            type=ANY, import_=IMPORT_ANY
-        )
+        return self._build_lightweight_type(
+            item_schema, depth + 1, visited, max_depth, max_union_elements
+        ) or untyped_value_data_type(DataType, self.data_type_manager.untyped_value)
 
     def _enforced_value_keywords(
         self, schema: JsonSchemaObject
@@ -3399,7 +3403,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if _lightweight_types.is_false_schema_item(self, item):
                     continue
                 if item is True:
-                    data_types.append(DataType(type=ANY, import_=IMPORT_ANY))
+                    data_types.append(untyped_value_data_type(DataType, self.data_type_manager.untyped_value))
                     continue
                 if not isinstance(item, JsonSchemaObject):  # pragma: no cover
                     continue
@@ -3421,11 +3425,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 schema.additionalProperties, depth + 1, visited, max_depth, max_union_elements
             )
             if value_type is None:
-                value_type = DataType(type=ANY, import_=IMPORT_ANY)
+                value_type = untyped_value_data_type(DataType, self.data_type_manager.untyped_value)
             return self.data_type(data_types=[value_type], is_dict=True)
 
         if schema.properties or schema.type == "object":
-            return self.data_type(data_types=[DataType(type=ANY, import_=IMPORT_ANY)], is_dict=True)
+            return self.data_type(
+                data_types=[untyped_value_data_type(DataType, self.data_type_manager.untyped_value)], is_dict=True
+            )
 
         return None
 
@@ -6782,7 +6788,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         elif not (is_tuple and tuple_item_count == 0):
             item_data_types = [
                 self.data_type_manager.data_type(type="object")
-                if self.data_type_manager.use_object_type
+                if writes_object_for_untyped_items(
+                    self.data_type_manager.use_object_type, self.data_type_manager.untyped_value
+                )
                 else self.data_type_manager.get_data_type(Types.any)
             ]
         else:

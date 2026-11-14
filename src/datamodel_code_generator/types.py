@@ -25,6 +25,7 @@ from typing import (
     ClassVar,
     Final,
     Literal,
+    NamedTuple,
     Optional,
     Protocol,
     TypeAlias,
@@ -114,6 +115,8 @@ _ENUM_MEMBER_LITERAL_REFERENCE_DATA_TYPE_KEY = "_enum_member_literal_reference"
 _FORWARD_REFERENCE_DATA_TYPE_KEY = "_is_forward_reference"
 _TYPE_NULL_DATA_TYPE_KEY = "_type_null"
 _LITERAL_IMPORT_DATA_TYPE_KEY = "_literal_import"
+_UNTYPED_VALUE_DATA_TYPE_KEY = "_untyped_value_name"
+"""The name an untyped value is written as under --untyped-value-type, on the ``Any`` type that stands for it."""
 _DEEP_COPY_LEAVES_OUT: Final = frozenset({_LITERAL_IMPORT_DATA_TYPE_KEY})
 """The private state of a type that a deep copy leaves out and every other copy keeps: the ``Literal`` import alias."""
 _RenderStateWrite: TypeAlias = Literal["reference-null", "member-null", "null-moved-to-union", "empty-union"]
@@ -1148,8 +1151,12 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
     @property
     def _own_text(self) -> str | None:
-        """Return the text the type writes of its own: its alias, else its type; none when its members write it."""
-        return self.alias or self.type
+        """Return the text the type writes of its own: its alias, else its type; none when its members write it.
+
+        An untyped value under --untyped-value-type keeps the type ``Any`` and writes the name of the type it is
+        written as (``untyped_value_data_type``).
+        """
+        return self.alias or self.__dict__.get(_UNTYPED_VALUE_DATA_TYPE_KEY) or self.type
 
     @property
     def _writes_nothing_of_its_own(self) -> bool:
@@ -1810,6 +1817,46 @@ def _valid_import_type(
     )
 
 
+@final
+class UntypedValue(NamedTuple):
+    """The type --untyped-value-type writes the untyped values as: its name and the import it needs, if any."""
+
+    name: str
+    import_: Import | None
+
+    @classmethod
+    def from_option(cls, value: str) -> UntypedValue:
+        """Read a value of --untyped-value-type: ``Any``, ``object`` or a dotted import path the models import."""
+        match value:
+            case "Any":
+                return cls(ANY, IMPORT_ANY)
+            case "object":
+                return cls("object", None)
+        import_ = Import.from_full_path(value)
+        return cls(import_.import_, import_)
+
+
+def writes_object_for_untyped_items(use_object_type: bool, untyped_value: UntypedValue | None) -> bool:  # noqa: FBT001
+    """Whether the values and items of objects and arrays without types are ``object``: under --use-object-type.
+
+    --untyped-value-type takes precedence: it gives them the type of every untyped value.
+    """
+    return use_object_type and untyped_value is None
+
+
+def untyped_value_data_type(cls: type[DataTypeT], untyped_value: UntypedValue | None) -> DataTypeT:
+    """Return the type of a value the schema leaves untyped: ``Any``, or under --untyped-value-type that type.
+
+    The type stays ``Any`` for every decision that reads it, as without the option; it writes the name and needs the
+    import of the type the option gives.
+    """
+    data_type = _valid_import_type(cls, IMPORT_ANY)
+    if untyped_value is not None:
+        data_type.import_ = untyped_value.import_
+        data_type.__dict__[_UNTYPED_VALUE_DATA_TYPE_KEY] = untyped_value.name
+    return data_type
+
+
 @cache
 def _create_context_data_type(  # noqa: PLR0913, PLR0917
     model_name: str,
@@ -2041,6 +2088,10 @@ class DataTypeManager(ABC):
     """The regex engines the models compile a schema's ``pattern`` on (``_regex_syntax.read_pattern``)."""
     _WRITES_CONSTRAINED_TYPES: ClassVar[bool] = _applicability.BASE_OUTPUT.writes_constrained_types
     """Whether the type manager writes scalar constraints into ``con*`` types (``OutputKeywords``)."""
+    WRITES_UNTYPED_VALUE_TYPE: ClassVar[bool] = True
+    """Whether the output writes the untyped values as the type --untyped-value-type gives; else they stay ``Any``."""
+    type_map: dict[Types, DataType]
+    """The type of each schema type and format, which the type managers of the outputs build."""
 
     def __init__(  # noqa: PLR0913, PLR0917
         self,
@@ -2075,6 +2126,7 @@ class DataTypeManager(ABC):
         self.target_date_class: DateClassType | None = target_date_class
         self.treat_dot_as_module: bool = treat_dot_as_module or False
         self.use_serialize_as_any: bool = use_serialize_as_any
+        self.untyped_value: UntypedValue | None = None
 
         self.data_type: type[DataType] = _create_context_data_type(
             "ContextDataType",
@@ -2099,6 +2151,24 @@ class DataTypeManager(ABC):
             self.treat_dot_as_module,
             self.use_serialize_as_any,
         )
+
+    def use_untyped_value_type(self, untyped_value_type: str | None) -> None:
+        """Write the untyped values as the type --untyped-value-type gives, unless the output keeps ``Any``.
+
+        The untyped value of the type map, and the values and items of objects and arrays without types, which it
+        gives also under --use-object-type, become that type (``untyped_value_data_type``). The option is set after
+        construction, so a type manager with the constructor of an older release keeps working.
+        """
+        if untyped_value_type is None or not self.WRITES_UNTYPED_VALUE_TYPE:
+            return
+        untyped_value = self.untyped_value = UntypedValue.from_option(untyped_value_type)
+        type_map = self.type_map
+        type_map[Types.any] = untyped_value_data_type(type(type_map[Types.any]), untyped_value)
+        for types, container in ((Types.object, "is_dict"), (Types.array, "is_list")):
+            cls = type(type_map[types])
+            type_map[types] = _valid_data_type(
+                cls, data_types=[untyped_value_data_type(cls, untyped_value)], **{container: True}
+            )
 
     @abstractmethod
     def get_data_type(self, types: Types, **kwargs: Any) -> DataType:

@@ -225,6 +225,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--type-overrides-replace-whole-type": "Make every `--type-overrides` value of a field replace the field's whol...",
     "--union-mode": "Union mode for combining anyOf/oneOf schemas (smart or left_to_right).",
     "--untrusted-input": "Treat the input as a schema from an untrusted source.",
+    "--untyped-value-type": "Write each value the schema leaves untyped as one type instead of `Any`.",
     "--update-lock": "Create or atomically update the selected remote lock after generation (experimental).",
     "--url": "Fetch a schema from a URL with custom HTTP headers.",
     "--use-annotated": "Use typing.Annotated for Field() with constraints.",

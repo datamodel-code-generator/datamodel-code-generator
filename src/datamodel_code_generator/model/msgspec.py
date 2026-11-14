@@ -2296,6 +2296,8 @@ class DataTypeManager(_DataTypeManager):
     REFUSED_LITERAL_TYPES: ClassVar[tuple[type, ...]] = _applicability.MSGSPEC_OUTPUT.refused_literal_types
     MAPPING_CLASS_PATHS: ClassVar[frozenset[str]] = _applicability.MSGSPEC_OUTPUT.mapping_classes
     REGEX_ENGINES: ClassVar[frozenset[str]] = _applicability.MSGSPEC_OUTPUT.regex_engines
+    WRITES_UNTYPED_VALUE_TYPE: ClassVar[bool] = False
+    """msgspec decodes neither ``pydantic.JsonValue`` nor a recursive alias, and decodes ``Any`` into JSON values."""
 
     @property
     @override
