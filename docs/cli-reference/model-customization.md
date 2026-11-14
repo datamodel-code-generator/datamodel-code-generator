@@ -1039,6 +1039,8 @@ Specify a custom base class for generated models.
 
 The `--base-class` flag configures the code generation behavior.
 
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
+
 !!! tip "Usage"
 
     ```bash
@@ -1336,6 +1338,8 @@ When using multiple base classes, the specified classes are used directly withou
 adding `BaseModel`. Ensure your mixins inherit from `BaseModel` if needed.
 
 **Related:** [`--base-class`](#base-class)
+
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
 
 !!! tip "Usage"
 
@@ -5679,6 +5683,8 @@ warning. GraphQL input does not apply `--model-name-map`, so every key is report
 
 **Related:** [`--naming-strategy`](#naming-strategy), [`--use-title-as-name`](field-customization.md#use-title-as-name)
 
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
+
 !!! tip "Usage"
 
     ```bash
@@ -8714,6 +8720,8 @@ Skip generation of root model when schema contains nested definitions.
 The `--skip-root-model` flag prevents generating a model for the root schema object
 when the schema primarily contains reusable definitions. This is useful when the root
 object is just a container for $defs and not a meaningful model itself.
+
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
 
 !!! tip "Usage"
 
@@ -11815,6 +11823,8 @@ Generate typed Enum subclasses for enums with specific field types.
 The `--use-subclass-enum` flag generates Enum classes as subclasses of the
 appropriate field type (int, float, bytes, str) when an enum has a specific
 type, providing better type safety and IDE support.
+
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
 
 !!! tip "Usage"
 

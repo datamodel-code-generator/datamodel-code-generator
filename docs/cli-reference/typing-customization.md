@@ -429,6 +429,8 @@ The `--allof-merge-mode constraints` merges only constraint properties
 This ensures child schemas inherit validation constraints while keeping
 other properties separate.
 
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
+
 !!! tip "Usage"
 
     ```bash
@@ -1077,7 +1079,7 @@ The --disable-future-imports option stops the generator from adding
 you need compatibility with tools or environments that don't support
 postponed evaluation of annotations (PEP 563).
 
-**See also:** [Python Version Compatibility](../python-version-compatibility.md)
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md), [Python Version Compatibility](../python-version-compatibility.md)
 
 !!! tip "Usage"
 
@@ -1165,6 +1167,8 @@ read in its place, so its union joins those of the site (`Leaf4(Leaf1, Leaf3)`).
 read at a field (`RootModel[constr(min_length=2) | int]` where 0.89.0 writes `Any`), beside a `$ref` member that is
 the type of a field or an item, and beside object branches (`R3m3 | constr(min_length=2)`), as an `allOf` of value
 unions that would be a model without fields is read without the option.
+
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
 
 !!! tip "Usage"
 
@@ -3938,7 +3942,7 @@ The `--output-datetime-class` flag controls which datetime type to use for field
 with date-time format. Options include 'AwareDatetime' for timezone-aware datetimes
 or 'datetime' for standard Python datetime objects.
 
-**See also:** [Type Mappings and Custom Types](../type-mappings.md)
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md), [Type Mappings and Custom Types](../type-mappings.md)
 
 !!! tip "Usage"
 
@@ -4540,7 +4544,7 @@ Override default type mappings for schema formats.
 
 The `--type-mappings` flag configures the code generation behavior.
 
-**See also:** [Type Mappings and Custom Types](../type-mappings.md)
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md), [Type Mappings and Custom Types](../type-mappings.md)
 
 !!! tip "Usage"
 
@@ -6700,6 +6704,8 @@ key, such as one referenced as `headers.yaml#/x-rate`, is read as written too. A
 with draft-04 schema features, which have no `const`, is kept, and Avro, Protocol Buffers, XML
 Schema and GraphQL inputs are not changed.
 
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
+
 !!! tip "Usage"
 
     ```bash
@@ -6955,6 +6961,8 @@ The `--use-specialized-enum` flag generates specialized enum types:
 This is the default behavior for Python 3.11+ targets.
 
 **Related:** [`--no-use-specialized-enum`](#no-use-specialized-enum), [`--use-subclass-enum`](model-customization.md#use-subclass-enum)
+
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
 
 **Option relationships:**
 

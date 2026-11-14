@@ -39,6 +39,7 @@ nav = [
       { "Field Aliases" = "aliases.md" },
       { "Validators" = "validators.md" },
       { "Class Decorators" = "class-decorators.md" },
+      { "Options That Replace Post-Processing" = "post-processing-options.md" },
     ]},
     { "Templates and Formatting" = [
       { "Custom Templates" = "custom_template.md" },

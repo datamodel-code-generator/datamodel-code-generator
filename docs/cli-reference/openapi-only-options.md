@@ -1062,6 +1062,8 @@ Filter OpenAPI paths to include in model generation.
 
 The `--openapi-include-paths` flag allows filtering which paths are processed.
 
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
+
 !!! tip "Usage"
 
     ```bash
@@ -1485,7 +1487,7 @@ Specify OpenAPI scopes to generate (schemas, paths, parameters).
 
 The `--openapi-scopes` flag configures the code generation behavior.
 
-**See also:** [OpenAPI Options](../openapi-options.md)
+**See also:** [OpenAPI Options](../openapi-options.md), [Options That Replace Post-Processing](../post-processing-options.md)
 
 !!! tip "Usage"
 

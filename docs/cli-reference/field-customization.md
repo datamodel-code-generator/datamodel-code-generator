@@ -974,6 +974,8 @@ The `--extra-fields` flag sets the generated models to allow, forbid, or
 ignore extra fields. With `--extra-fields allow`, models will accept and
 store fields not defined in the schema. Options: allow, ignore, forbid.
 
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
+
 !!! tip "Usage"
 
     ```bash
@@ -2151,6 +2153,8 @@ only tagged branch and branches tagged by their only key, use
 Existing generated output is preserved unless this option is enabled.
 
 **Related:** [`--use-tag-as-union-variant-name`](#use-tag-as-union-variant-name), [`--use-title-as-name`](#use-title-as-name)
+
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
 
 !!! tip "Usage"
 
@@ -6605,6 +6609,8 @@ like any other name when another model has it.
 | Single-key branch (`{"granular": ...}`) | `AskForApproval2` | `AskForApproval2` | `AskForApprovalGranular` |
 
 **Related:** [`--infer-union-variant-names`](#infer-union-variant-names), [`--use-title-as-name`](#use-title-as-name)
+
+**See also:** [Options That Replace Post-Processing](../post-processing-options.md)
 
 !!! tip "Usage"
 
