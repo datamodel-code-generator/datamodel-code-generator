@@ -6,6 +6,7 @@ dated preset) shows up; the committed guide is checked against the registries of
 
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
@@ -579,3 +580,104 @@ console.log(JSON.stringify({ hiddenAtStart: shown, hiddenAfterNewContent: elemen
         ["node", "-e", driver, str(SCRIPT_JS)], capture_output=True, text=True, encoding="utf-8", check=True
     )
     assert_output(result.stdout)
+
+
+ENUM_SCHEMA = (
+    '{"title": "Order", "type": "object", "properties": {"status": {"type": "string", "enum": ["open", "closed"]}}}'
+)
+ENUM_ARGS = json.dumps([
+    "--input-file-type",
+    "jsonschema",
+    "--output-model-type",
+    "pydantic_v2.BaseModel",
+    "--target-python-version",
+    "3.11",
+])
+RUN_CHANGES = {
+    "0.3.0": f"""
+[[change]]
+id = "enum-keep"
+kind = "default-output"
+action = "keep"
+title = "String enums become `StrEnum`"
+summary = "Enums of strings subclass `StrEnum` instead of `Enum`."
+before = "class Status(Enum):"
+after = "class Status(StrEnum):"
+keep = {{ flags = ["--no-use-specialized-enum"] }}
+refs = ["#2512"]
+source = "run"
+[change.verify]
+schema = '{ENUM_SCHEMA}'
+args = {ENUM_ARGS}
+
+[[change]]
+id = "enum-wrong-keep"
+kind = "default-output"
+action = "keep"
+title = "A keep claim that does not hold"
+summary = "Constraints move into `Annotated`."
+keep = {{ flags = ["--use-annotated"] }}
+refs = ["#2513"]
+source = "run"
+[change.verify]
+schema = '{ENUM_SCHEMA}'
+args = {ENUM_ARGS}
+""",
+}
+RUN_CHANGES_IDS = ("enum-keep", "enum-wrong-keep")
+PREVIOUS_ENUM_OUTPUT = """from __future__ import annotations
+
+from enum import Enum
+
+from pydantic import BaseModel
+
+
+class Status(Enum):
+    open = 'open'
+    closed = 'closed'
+
+
+class Order(BaseModel):
+    status: Status | None = None
+"""
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the generations fork their workers")
+def test_build_migration_docs_verify(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Keep claims are checked against the recorded output of the previous release; a stale record is refused."""
+    data = _write_data(tmp_path, RUN_CHANGES, {}, **UNCHANGED)
+    unrecorded = main(_args(tmp_path), REGISTRIES)
+    missing = capsys.readouterr().err
+    fixture = hashlib.sha256(json.dumps([ENUM_SCHEMA, json.loads(ENUM_ARGS)]).encode()).hexdigest()[:16]
+    tree = {"model.py": PREVIOUS_ENUM_OUTPUT}
+    records = {entry_id: {"previous": "0.2.0", "fixture": fixture, "tree": tree} for entry_id in RUN_CHANGES_IDS}
+    (data / "recorded.json").write_text(json.dumps(records), encoding="utf-8")
+    codes = {
+        "verify": main([*_args(tmp_path), "--verify", "--text", "-j", "2"], REGISTRIES),
+        "verify one": main([*_args(tmp_path), "--verify", "enum-keep"], REGISTRIES),
+    }
+    printed = capsys.readouterr().out
+    codes["unknown id"] = main([*_args(tmp_path), "--verify", "nothing"], REGISTRIES)
+    codes["bad python"] = main([*_args(tmp_path), "--record", "enum-keep", "--release-python", "0.2.0"], REGISTRIES)
+    errors = capsys.readouterr().err
+    assert_output("\n".join([f"exit {unrecorded}", missing, json.dumps(codes, indent=1), printed, errors]))
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the generations fork their workers")
+def test_build_migration_docs_record_without_change(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A fixture both releases generate alike is not recorded: the entry claims a change that is not there."""
+    data = _write_data(tmp_path, RUN_CHANGES, {}, **UNCHANGED)
+    python = f"={sys.executable}"
+    code = main(
+        [
+            *_args(tmp_path),
+            "--record",
+            "enum-keep",
+            "--release-python",
+            f"0.2.0{python}",
+            "--release-python",
+            f"0.3.0{python}",
+        ],
+        REGISTRIES,
+    )
+    assert_output(f"exit {code}\n{capsys.readouterr().out}recorded: {(data / 'recorded.json').read_text()}")

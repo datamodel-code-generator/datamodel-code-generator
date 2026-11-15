@@ -615,21 +615,26 @@ def _write_tree(tree: dict[str, str], directory: Path) -> Path:
 
 def signature(gate: Gate, target: Path, backend: str, payloads: Path | None) -> dict[str, Any]:
     """Compute a behaviour signature in a fresh process of the candidate's interpreter."""
+    return signature_of(gate.signature_python or gate.candidate_python, gate.timeout, target, backend, payloads)
+
+
+def signature_of(python: Path, timeout: int, target: Path, backend: str, payloads: Path | None) -> dict[str, Any]:
+    """Compute the behaviour signature of a generated module or package in a fresh process of `python`."""
     env = {k: v for k, v in os.environ.items() if not k.startswith("DATAMODEL_CODE_GENERATOR")}
     env["PYTHONDONTWRITEBYTECODE"] = "1"
-    command = [str(gate.signature_python or gate.candidate_python), "-I", str(SIGNATURE_SCRIPT), str(target), backend]
+    command = [str(python), "-I", str(SIGNATURE_SCRIPT), str(target), backend]
     try:
         result = subprocess.run(
             [*command, *([str(payloads)] if payloads else [])],
             capture_output=True,
             text=True,
-            timeout=gate.timeout,
+            timeout=timeout,
             cwd=target.parent,
             env=env,
             check=False,
         )
     except subprocess.TimeoutExpired:
-        return {"import_error": f"signature timed out after {gate.timeout}s", SIGNATURE_FAILED: True}
+        return {"import_error": f"signature timed out after {timeout}s", SIGNATURE_FAILED: True}
     try:
         return json.loads(result.stdout)
     except json.JSONDecodeError:

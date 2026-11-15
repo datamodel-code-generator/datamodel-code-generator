@@ -9,7 +9,11 @@ releases	build_migration_docs_script/build_migration_docs_invalid_data[releases]
 surface and allowlist	build_migration_docs_script/build_migration_docs_invalid_data[surface and allowlist].txt
 [test_build_migration_docs_outputs]
 	build_migration_docs_script/build_migration_docs_outputs.txt
+[test_build_migration_docs_record_without_change]
+	build_migration_docs_script/build_migration_docs_record_without_change.txt
 [test_build_migration_docs_stamp]
 	build_migration_docs_script/build_migration_docs_stamp.txt
+[test_build_migration_docs_verify]
+	build_migration_docs_script/build_migration_docs_verify.txt
 [test_migration_selector_script]
 	build_migration_docs_script/migration_selector_script.txt

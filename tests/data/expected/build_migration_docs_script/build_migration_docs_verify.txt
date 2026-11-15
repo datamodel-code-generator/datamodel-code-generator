@@ -1,0 +1,19 @@
+exit 1
+Invalid migration data:
+- entry enum-keep: no recorded output of its previous release for its fixture; run 'python scripts/build_migration_docs.py --record enum-keep'
+- entry enum-wrong-keep: no recorded output of its previous release for its fixture; run 'python scripts/build_migration_docs.py --record enum-wrong-keep'
+
+{
+ "verify": 1,
+ "verify one": 0,
+ "unknown id": 1,
+ "bad python": 1
+}
+PASS enum-keep [0.2.0 -> HEAD] keep=ok union=ok before=ok after=ok
+FAIL enum-wrong-keep [0.2.0 -> HEAD] keep=NO union=ok
+PASS enum-keep [0.2.0 -> HEAD] keep=ok union=ok
+
+Invalid migration data:
+- nothing is not an entry with source run
+Invalid migration data:
+- --release-python '0.2.0' is not VERSION=PYTHON
