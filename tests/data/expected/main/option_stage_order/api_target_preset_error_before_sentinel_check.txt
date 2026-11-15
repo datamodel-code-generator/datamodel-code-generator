@@ -1,0 +1,3 @@
+raised PresetError: --preset standard-py312-20260619 targets Python 3.12; current --target-python-version is 3.11.
+written:
+  pets.yaml
