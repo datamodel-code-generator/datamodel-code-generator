@@ -21,6 +21,7 @@ from datamodel_code_generator._json_schema import (
     SCHEMA_MAP_KEYS,
     SCHEMA_POSITIONS,
     admitted_types,
+    json_value_type,
     schema_positions,
 )
 from datamodel_code_generator._openapi_paths import PATH_ITEM_METHODS
@@ -61,20 +62,9 @@ def _schema_dump(schema: JsonSchemaObject | bool) -> dict[str, Any] | bool:  # r
     return schema.model_dump(exclude_unset=True, by_alias=True) if isinstance(schema, JsonSchemaObject) else schema
 
 
-_JSON_VALUE_TYPES: Final = (
-    (bool, "boolean"),
-    (int, "integer"),
-    (float, "number"),
-    (str, "string"),
-    (list, "array"),
-    (dict, "object"),
-    (type(None), "null"),
-)
-
-
 def _get_json_value_type(value: object) -> str:
-    """Return a JSON Schema primitive type name for a concrete value."""
-    return next((name for kind, name in _JSON_VALUE_TYPES if isinstance(value, kind)), "")
+    """Return a JSON Schema primitive type name for a concrete value, ``""`` for a value outside JSON."""
+    return json_value_type(value) or ""
 
 
 def _json_value_admitted(schema_types: AbstractSet[str], value: object) -> bool:

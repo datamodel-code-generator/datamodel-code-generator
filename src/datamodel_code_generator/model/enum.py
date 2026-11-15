@@ -6,11 +6,11 @@ Provides Enum, StrEnum, and specialized enum classes for code generation.
 from __future__ import annotations
 
 from functools import lru_cache
-from math import isnan
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, TypeAlias
 
-from typing_extensions import Sentinel, override
+from typing_extensions import override
 
+from datamodel_code_generator._json_schema import json_value_key, python_values_equal
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._parse_memo import MemoTable, memoized
 from datamodel_code_generator._python_syntax import SINGLE_QUOTED_ESCAPES
@@ -42,8 +42,6 @@ _INT: str = "int"
 _FLOAT: str = "float"
 _BYTES: str = "bytes"
 _STR: str = "str"
-_JSON_NUMBER_KEY = Sentinel("_JSON_NUMBER_KEY")
-_JSON_NAN_KEY = Sentinel("_JSON_NAN_KEY")
 
 escape_characters = SINGLE_QUOTED_ESCAPES
 
@@ -110,19 +108,6 @@ def get_raw_enum_member_value(default: Any) -> Any:
         case str():
             return _get_legacy_raw_enum_member_value(default)
     return default
-
-
-def _json_value_key(value: Any) -> tuple[object, Any] | None:
-    """Build a hash key with the same bool/number/type distinctions as JSON comparison."""
-    if isinstance(value, bool):
-        return bool, value
-    if isinstance(value, (int, float)):
-        return _JSON_NUMBER_KEY, _JSON_NAN_KEY if isinstance(value, float) and isnan(value) else value
-    try:
-        hash(value)
-    except TypeError:
-        return None
-    return type(value), value
 
 
 SUBCLASS_BASE_CLASSES: dict[Types, str] = {
@@ -281,7 +266,7 @@ class Enum(DataModel):
     def _index_members(self) -> dict[tuple[object, Any], DataModelFieldBase]:
         exact: dict[tuple[object, Any], DataModelFieldBase] = {}
         for field, member_value in self._valued_members():
-            if (key := _json_value_key(member_value)) is not None:
+            if (key := json_value_key(member_value)) is not None:
                 exact.setdefault(key, field)
         return exact
 
@@ -308,11 +293,11 @@ class Enum(DataModel):
         """
         if coerce_strings and isinstance(value, str):
             return self.get_member(field) if (field := self._coerced_member_index.get(value)) is not None else None
-        if (key := _json_value_key(value)) is not None:
+        if (key := json_value_key(value)) is not None:
             return self.get_member(field) if (field := self._member_index.get(key)) is not None else None
 
         for field, member_value in self._valued_members():
-            if type(member_value) is type(value) and member_value == value:
+            if python_values_equal(member_value, value):
                 return self.get_member(field)
         return None
 

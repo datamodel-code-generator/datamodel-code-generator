@@ -53,7 +53,7 @@ from __future__ import annotations
 from copy import copy
 from fractions import Fraction
 from functools import partial
-from itertools import chain, product, starmap
+from itertools import chain, product
 from math import gcd, isfinite, isnan, lcm, prod
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, final
 from warnings import warn
@@ -66,6 +66,7 @@ from datamodel_code_generator._json_schema import (
     SINGLE_SCHEMA_SHAPES,
     admitted_types,
     declared_types,
+    json_values_equal,
     non_null_types,
     schema_positions,
 )
@@ -283,42 +284,6 @@ class KeywordIntersection:
     untaken_patterns: tuple[str, ...] = ()
 
 
-def json_values_equal(left: object, right: object) -> bool:  # ruff: ignore[too-many-return-statements]
-    """Compare JSON values as ``enum``, ``const`` and ``uniqueItems`` do: booleans are not numbers, ``1 == 1.0``.
-
-    NaN, which a YAML document can write, equals NaN.
-    """
-    match left:
-        case None:
-            return right is None
-        case bool() as boolean:
-            return isinstance(right, bool) and boolean == right
-        case int() | float() as number:
-            return (
-                not isinstance(right, bool)
-                and isinstance(right, (int, float))
-                and (
-                    number == right
-                    or (isinstance(number, float) and isinstance(right, float) and isnan(number) and isnan(right))
-                )
-            )
-        case str() as string:
-            return isinstance(right, str) and string == right
-        case list() as array:
-            return (
-                isinstance(right, list)
-                and len(array) == len(right)
-                and all(starmap(json_values_equal, zip(array, right, strict=True)))
-            )
-        case dict() as object_:
-            return (
-                isinstance(right, dict)
-                and len(object_) == len(right)
-                and all(key in right and json_values_equal(item, right[key]) for key, item in object_.items())
-            )
-    return False
-
-
 def is_hash_safe_json_scalar(value: object) -> bool:
     """Return whether a JSON scalar hashes and compares as its base type, so a set can hold it; NaN cannot."""
     value_type = type(value)
@@ -333,12 +298,25 @@ def is_hash_safe_json_scalar(value: object) -> bool:
 
 
 def _retained_indices(first: Sequence[Any], second: Sequence[Any]) -> list[int]:
-    """Return the positions of the values of ``first`` that ``second`` also lists."""
-    if all(map(is_hash_safe_json_scalar, chain(first, second))):
-        keys = {(isinstance(value, bool), value) for value in second}
-        return [index for index, value in enumerate(first) if (isinstance(value, bool), value) in keys]
+    """Return the positions of the values of ``first`` that ``second`` also lists.
+
+    A scalar that hashes as its base type (``is_hash_safe_json_scalar``) has a key, which finds it among such values
+    of ``second``; only a pair with a value that has no key (an array, an object, NaN, a scalar of a type with its
+    own hash or equality) is compared (``json_values_equal``), which gives a pair of keyed values the same answer.
+    """
+    keyed = list(map(is_hash_safe_json_scalar, second))
+    keys = {
+        (isinstance(candidate, bool), candidate) for candidate, has_key in zip(second, keyed, strict=True) if has_key
+    }
+    unkeyed = [candidate for candidate, has_key in zip(second, keyed, strict=True) if not has_key]
     return [
-        index for index, value in enumerate(first) if any(json_values_equal(value, candidate) for candidate in second)
+        index
+        for index, value in enumerate(first)
+        if (
+            (isinstance(value, bool), value) in keys or any(map(partial(json_values_equal, value), unkeyed))
+            if is_hash_safe_json_scalar(value)
+            else any(map(partial(json_values_equal, value), second))
+        )
     ]
 
 
