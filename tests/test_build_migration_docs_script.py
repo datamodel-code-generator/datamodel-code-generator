@@ -315,17 +315,40 @@ title = "New value `b` of `--output-model-type`"
 summary = "Writes models of kind b."
 migrate = "Pass `--output-model-type b` for kind b models."
 """
+NEW_WARNING_ENTRIES = """
+[[change]]
+id = "unmatched-override-keys"
+kind = "warning"
+action = "warn"
+title = "`--type-overrides` keys that match nothing emit a `UserWarning`"
+summary = "A key that names no generated model or field is reported; the output is unchanged."
+affects = { options = ["--type-overrides"] }
+migrate = "Fix or drop the keys the warning names."
+refs = ["#3004"]
+source = "release-note"
+
+[[change]]
+id = "quiet-warning-text"
+kind = "warning"
+action = "none"
+title = "The warning of an unknown format names the field"
+summary = "The text of an existing warning changes; nothing else does."
+refs = ["#3005"]
+source = "release-note"
+"""
+"""Hand entries of new warnings that deprecate nothing, beside the deprecation the registry gives in 0.3.0."""
 
 
 def test_build_migration_docs_outputs(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """The pages, the per-release Markdown and the release notes come from the hand entries and the registries.
 
     The steps from a release older than `complete_from` are marked incomplete with a pointer to the changelog, and a
-    hand entry extends the derived entry of an option value by its id.
+    hand entry extends the derived entry of an option value by its id. A hand-written new warning is listed apart
+    from the deprecations, under a heading and a release-note section that plan no removal.
     """
     _write_data(
         tmp_path,
-        CHANGES | {"0.3.0": CHANGES["0.3.0"] + OPTION_VALUE_ENTRY},
+        CHANGES | {"0.3.0": CHANGES["0.3.0"] + OPTION_VALUE_ENTRY + NEW_WARNING_ENTRIES},
         UNRELEASED,
         releases=COMPLETE_RELEASES,
         derived=DERIVED + '"--output-model-type=b" = "0.3.0"\n',
