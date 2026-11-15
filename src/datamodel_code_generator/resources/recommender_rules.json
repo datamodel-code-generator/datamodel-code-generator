@@ -1202,6 +1202,10 @@
       "not_recommended": "preset",
       "reason": "Set by the 20261113 presets; the recommendation starts from a preset."
     },
+    "read_implied_options_from_merged_values": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261113 presets; the recommendation starts from a preset."
+    },
     "read_inherited_property_schemas_in_mro_order": {
       "not_recommended": "preset",
       "reason": "With --intersect-combined-schema-keywords only: set by the 20261113 presets; the recommendation starts from a preset."

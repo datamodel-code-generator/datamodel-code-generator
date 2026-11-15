@@ -383,7 +383,9 @@
 - `--module-split-mode`: Split generated models into separate files, one per model class.
 - `--no-allow-private-network`
 - `--no-allow-remote-refs`
+- `--no-read-implied-options-from-merged-values`
 - `--no-untrusted-input`
+- `--read-implied-options-from-merged-values`: Read the options that another option turns on from the arguments ...
 - `--recommend-options`: Recommend options for the input schema on top of the latest dated preset (experimental).
 - `--shared-module-name`: Customize the name of the shared module for deduplicated models.
 - `--strict-refs`: Treat unresolved local `$ref` JSON pointers as errors.

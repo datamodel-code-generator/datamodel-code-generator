@@ -1,0 +1,4 @@
+UserWarning: --field-constraints was turned off but stays on: --use-annotated, given as well, turns it on; --no-use-annotated turns both off
+exit: OK
+resolved:
+  a: Annotated[int | None, Field(le=10)] = None

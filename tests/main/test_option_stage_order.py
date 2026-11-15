@@ -6,9 +6,10 @@ raised exception of an API call. Warnings are written to stderr in the order the
 command prints, so the stored text also pins the order of a warning and a printed refusal.
 
 The tests after them pin the warning of the resolution itself: an option that was turned off and that another
-option turns on (``IMPLIED_OPTIONS``) is reported once, where the options are resolved. The last tests pin each
-relation between two options (``_option_rules.py:OPTION_RELATIONS``) at its stage, what each stage sees, and the
-order where two relations of one stage meet.
+option turns on (``IMPLIED_OPTIONS``) is reported once, where the options are resolved, also where an argument turned
+the other option off after pyproject.toml turned it on, which ``--read-implied-options-from-merged-values`` undoes.
+The last tests pin each relation between two options (``_option_rules.py:OPTION_RELATIONS``) at its stage, what each
+stage sees, and the order where two relations of one stage meet.
 """
 
 from __future__ import annotations
@@ -737,6 +738,103 @@ def test_loaded_config_warns_of_an_option_its_table_turns_off_and_on(
         REF_WITH_SIBLING, config=load_pyproject_config(tmp_path, overrides={"input_file_type": "jsonschema"})
     )
     assert_output(_seen(capsys) + _resolved(cast("str", code)))
+
+
+INTEGER_MAXIMUM = JSON_SCHEMA_DATA_PATH / "integer_maximum.json"
+MERGED_VALUES = "--read-implied-options-from-merged-values"
+ANNOTATED_TABLE = f"{TABLE}use-annotated = true\nfield-constraints = false\n"
+
+
+@pytest.mark.usefixtures("warnings_on_stderr")
+@pytest.mark.parametrize(
+    ("arguments", "pyproject"),
+    [
+        pytest.param(["--no-use-annotated"], ANNOTATED_TABLE, id="argument"),
+        pytest.param([], f"{TABLE}use-annotated = false\nfield-constraints = false\n", id="key"),
+        pytest.param(["--no-use-annotated", MERGED_VALUES], ANNOTATED_TABLE, id="option"),
+        pytest.param(
+            ["--no-use-annotated"],
+            f"{ANNOTATED_TABLE}read-implied-options-from-merged-values = true\n",
+            id="option-key",
+        ),
+        pytest.param(
+            ["--preset", "standard-py312-20261112", "--no-use-annotated"], ANNOTATED_TABLE, id="preset-without-option"
+        ),
+        pytest.param(["--preset", "standard-py312-20261113", "--no-use-annotated"], ANNOTATED_TABLE, id="preset"),
+        pytest.param(
+            ["--no-use-annotated", "--field-constraints", MERGED_VALUES], ANNOTATED_TABLE, id="option-argument-given"
+        ),
+        pytest.param(
+            ["--use-annotated", MERGED_VALUES], f"{TABLE}field-constraints = false\n", id="option-with-the-other-on"
+        ),
+        pytest.param(["--no-use-annotated", "--disable-warnings"], ANNOTATED_TABLE, id="disable-warnings"),
+    ],
+)
+def test_cli_argument_turns_off_an_option_that_pyproject_turned_on(
+    arguments: list[str], pyproject: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """An argument turns off an option whose pyproject.toml value turned another option on (#6891).
+
+    The first two cases are the commands of the issue. --no-use-annotated over use-annotated = true leaves
+    --field-constraints on, which use-annotated = true turned on before the arguments applied, although
+    field-constraints = false: the run warns once, names the key and the option, and writes the field constraint as
+    before. use-annotated = false in pyproject.toml writes conint. Under --read-implied-options-from-merged-values,
+    given as an argument, as a key or by a 20261113 preset, the argument writes what the key writes; a
+    --field-constraints argument keeps the option on, and so does --use-annotated, with the warning of #6850.
+    """
+    (tmp_path / "schema.json").write_text(INTEGER_MAXIMUM.read_text(encoding="utf-8"), encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text(pyproject, encoding="utf-8")
+    with chdir(tmp_path):
+        exit_code = run_main_with_args(
+            [
+                "--input",
+                "schema.json",
+                "--input-file-type",
+                "jsonschema",
+                *PYDANTIC,
+                "--disable-timestamp",
+                "--output",
+                "model.py",
+                *BUILTIN,
+                *arguments,
+            ],
+        )
+    assert_output(_seen(capsys, exit_code) + _resolved((tmp_path / "model.py").read_text(encoding="utf-8")))
+
+
+@pytest.mark.cli_doc(
+    options=[MERGED_VALUES],
+    option_description="""Read the options that another option turns on from the arguments and pyproject.toml together.
+
+`--use-annotated` turns `--field-constraints` on. The command line reads the values of `pyproject.toml` before it
+applies the arguments, so with `use-annotated = true` and `field-constraints = false` in `pyproject.toml` the argument
+`--no-use-annotated` turns `--use-annotated` off and `--field-constraints` stays on, which `use-annotated = true`
+turned on: the field constraint is written and the run warns, as in 0.96.0, while `use-annotated = false` in
+`pyproject.toml` writes `conint`. With `--read-implied-options-from-merged-values` the argument writes what the key
+writes.""",
+    input_schema="jsonschema/integer_maximum.json",
+    cli_args=["--no-use-annotated", MERGED_VALUES],
+    config_content=ANNOTATED_TABLE,
+    golden_output="main/option_stage_order/read_implied_options_from_merged_values[option].py",
+    comparison_output="main/option_stage_order/read_implied_options_from_merged_values[default].py",
+    related_options=["--use-annotated", "--field-constraints"],
+)
+@pytest.mark.usefixtures("warnings_on_stderr")
+@pytest.mark.parametrize("option", [False, True], ids=["default", "option"])
+def test_read_implied_options_from_merged_values(*, option: bool, tmp_path: Path) -> None:
+    """--no-use-annotated over use-annotated = true and field-constraints = false in pyproject.toml (#6891).
+
+    Without the option the model has the field constraint; with it, the conint that use-annotated = false writes.
+    """
+    (tmp_path / "pyproject.toml").write_text(ANNOTATED_TABLE, encoding="utf-8")
+    with chdir(tmp_path):
+        run_main_and_assert(
+            input_path=INTEGER_MAXIMUM,
+            output_path=tmp_path / "model.py",
+            input_file_type="jsonschema",
+            extra_args=[*PYDANTIC, "--disable-timestamp", *BUILTIN, "--no-use-annotated"]
+            + ([MERGED_VALUES] if option else []),
+        )
 
 
 OPEN_ENUM_MAP = '{"StrEnum": "tests.data.python.open_enum.OpenStrEnum", "Enum": "tests.data.python.open_enum.OpenEnum"}'

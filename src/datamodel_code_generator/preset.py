@@ -1358,6 +1358,15 @@ _STANDARD_20261113_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "values '16:9' and '4:3' instead of the integers 969 and 243."
         ),
     ),
+    PresetOptionGroup(
+        title="Implied options read from the merged values",
+        config=PresetConfig(read_implied_options_from_merged_values=True),
+        description=(
+            "Read the options that another option turns on from the arguments and pyproject.toml together, so "
+            "--no-use-annotated over use-annotated = true in pyproject.toml also leaves --field-constraints off where "
+            "pyproject.toml gives it false, as use-annotated = false there does."
+        ),
+    ),
 )
 """The 20261112 groups and the opt-in options added after them."""
 

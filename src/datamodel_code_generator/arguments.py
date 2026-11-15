@@ -2062,6 +2062,14 @@ general_options.add_argument(
     ),
 )
 _flag(general_options, "--ignore-pyproject", help="Ignore pyproject.toml configuration", default=False)
+_toggle(
+    general_options,
+    "--read-implied-options-from-merged-values",
+    help="Read the options that another option turns on (--use-annotated turns on --field-constraints) from the "
+    "arguments and pyproject.toml together, so --no-use-annotated over use-annotated = true in pyproject.toml also "
+    "leaves --field-constraints off where pyproject.toml gives it false, as use-annotated = false there does; "
+    "without it --field-constraints stays on, as in 0.96.0.",
+)
 general_options.add_argument(
     "--install-skill",
     choices=["codex", "claude-code"],

@@ -123,6 +123,7 @@ OPT_IN_OPTIONS_20261113: tuple[str, ...] = (
     "--read-inherited-property-schemas-in-mro-order",
     "--read-ids-with-empty-fragment",
     "--read-yaml-1-1-numbers-as-text",
+    "--read-implied-options-from-merged-values",
 )
 """The options the 20261113 presets set beyond the 20261112 presets."""
 

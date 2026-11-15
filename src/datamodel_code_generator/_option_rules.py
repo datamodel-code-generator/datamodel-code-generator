@@ -7,8 +7,10 @@ The settings stage and the preset read every source option of the table. Each co
 ``BaseGenerateConfig`` the ``use_type_alias_type`` row (a frozen ``PresetConfig`` sets the other source options) and
 the command line's ``Config`` the ``use_annotated`` row (row ``validator-stage-rows``). ``get_data_model_types`` reads
 the ``use_type_alias_type`` row through ``implied_options`` for direct callers of the public function. Where an
-option of the table replaces a value that was given, the resolution of the run's options warns
-(``__init__.py:_run_option_stages``, through ``implying_options``).
+implied option was given off and is on, the resolution of the run's options warns (``__init__.py:_run_option_stages``,
+through ``enabled_implied_options``): an enabled option of the table replaced the value, or the command line's
+validator applied its row to the pyproject.toml values before an argument turned the option off, which the stage
+``implied-model`` undoes under ``--read-implied-options-from-merged-values``.
 
 ``OPTION_RELATIONS`` is every pair of options that a run refuses or warns of together, and what the CLI reference
 documents for it (``cli_options.CLI_OPTION_META``). ``check_option_relations`` runs the rows of one stage in table
@@ -61,9 +63,9 @@ def implied_option_sources(config: object) -> dict[str, object]:
     return {option: getattr(config, option) for option in IMPLIED_OPTIONS}
 
 
-def implying_options(config: object) -> dict[str, str]:
-    """Return the enabled option of ``config`` that turns each implied option on, in the order of the table."""
-    return {implied: option for option, implied in IMPLIED_OPTIONS.items() if getattr(config, option)}
+def enabled_implied_options(config: object) -> dict[str, str]:
+    """Return each implied option that is on in ``config``, with the option that turns it on, in table order."""
+    return {implied: option for option, implied in IMPLIED_OPTIONS.items() if getattr(config, implied)}
 
 
 def enable_implied_options(config: object, *options: str) -> None:
@@ -246,7 +248,7 @@ __all__ = [
     "check_option_relation",
     "check_option_relations",
     "enable_implied_options",
+    "enabled_implied_options",
     "implied_option_sources",
     "implied_options",
-    "implying_options",
 ]

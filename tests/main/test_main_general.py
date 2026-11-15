@@ -2110,6 +2110,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "read_ids_with_empty_fragment",
         "ignore_ref_siblings_by_schema_version",
         "read_yaml_1_1_numbers_as_text",
+        "read_implied_options_from_merged_values",
         "server_include_request",
         "client_deep_object_brackets",
     ])
