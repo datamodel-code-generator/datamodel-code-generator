@@ -9,9 +9,9 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 19 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 56 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 57 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 40 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 72 | Model generation behavior |
+| 🏗️ [Model Customization](model-customization.md) | 73 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -44,6 +44,7 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--allow-extra-fields`](model-customization.md#allow-extra-fields) | Implies | Always | [`--extra-fields`](field-customization.md#extra-fields) = `allow` | - |
 | [`--collapse-root-models-name-strategy`](model-customization.md#collapse-root-models-name-strategy) | Requires | Always | [`--collapse-root-models`](model-customization.md#collapse-root-models) enabled | `--collapse-root-models-name-strategy` requires `--collapse-root-models`. |
 | [`--keyword-only`](model-customization.md#keyword-only) | Requires | Always | [`--target-python-version`](model-customization.md#target-python-version) = `3.10+` | `--keyword-only` requires `--target-python-version` 3.10 or higher for dataclasses. |
+| [`--open-enum-base-class-map`](model-customization.md#open-enum-base-class-map) | Requires | Always | [`--open-enums`](typing-customization.md#open-enums) | `--open-enum-base-class-map` requires `--open-enums extensible` or `--open-enums all`. |
 | [`--output-model-type`](model-customization.md#output-model-type) | Implies | `--output-model-type` = `msgspec.Struct` | [`--use-annotated`](typing-customization.md#use-annotated) enabled | - |
 | [`--parent-scoped-naming`](model-customization.md#parent-scoped-naming) | Implies | Always | [`--naming-strategy`](model-customization.md#naming-strategy) = `parent-prefixed` | - |
 | [`--reuse-scope`](model-customization.md#reuse-scope) | Requires | `--reuse-scope` = `tree` | [`--reuse-model`](model-customization.md#reuse-model) enabled | `--reuse-scope=tree` has no effect without `--reuse-model`. |
@@ -302,6 +303,8 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--omit-incomplete-model-defaults`](model-customization.md#omit-incomplete-model-defaults)
 - [`--omit-redundant-constraints`](field-customization.md#omit-redundant-constraints)
 - [`--omit-redundant-reference-null`](model-customization.md#omit-redundant-reference-null)
+- [`--open-enum-base-class-map`](model-customization.md#open-enum-base-class-map)
+- [`--open-enums`](typing-customization.md#open-enums)
 - [`--openapi-as-definitions`](openapi-only-options.md#openapi-as-definitions)
 - [`--openapi-include-info-version`](openapi-only-options.md#openapi-include-info-version)
 - [`--openapi-include-paths`](openapi-only-options.md#openapi-include-paths)

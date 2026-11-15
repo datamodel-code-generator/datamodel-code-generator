@@ -40,6 +40,7 @@ JsonConfigOptionName: TypeAlias = Literal[
     "--extra-template-data",
     "--import-overrides",
     "--model-name-map",
+    "--open-enum-base-class-map",
     "--serialization-aliases",
     "--server-body-modes",
     "--server-handler-modes",
@@ -74,6 +75,10 @@ class StringOrStringListMappingConfig(RootModel[dict[str, str | list[str]]]):
 
 class EnumFieldAsLiteralMapConfig(RootModel[dict[str, Literal["literal", "enum"]]]):
     """Per-field enum/literal generation override mapping."""
+
+
+class OpenEnumBaseClassMapConfig(RootModel[dict[Literal["Enum", "StrEnum", "IntEnum"], str]]):
+    """Base classes that open the Enum classes of open enums, by the class an enum is written on."""
 
 
 class DuplicateNameSuffixConfig(RootModel[dict[Literal["model", "enum", "default"], str]]):
@@ -142,6 +147,7 @@ JsonConfigStrictModel: TypeAlias = (
     | type[StringOrStringListMappingConfig]
     | type[EnumFieldAsLiteralMapConfig]
     | type[DuplicateNameSuffixConfig]
+    | type[OpenEnumBaseClassMapConfig]
     | type[DefaultValuesConfig]
     | type[ExtraTemplateDataConfig]
     | type[ClientOperationsConfig]
@@ -174,6 +180,7 @@ class JsonConfigSchemasPayload(BaseModel):
     extra_template_data: ExtraTemplateDataConfig | None = Field(default=None, alias="extra-template-data")
     import_overrides: StringMappingConfig | None = Field(default=None, alias="import-overrides")
     model_name_map: StringMappingConfig | None = Field(default=None, alias="model-name-map")
+    open_enum_base_class_map: OpenEnumBaseClassMapConfig | None = Field(default=None, alias="open-enum-base-class-map")
     serialization_aliases: StringMappingConfig | None = Field(default=None, alias="serialization-aliases")
     server_body_modes: ServerBodyModesConfig | None = Field(default=None, alias="server-body-modes")
     server_handler_modes: ServerHandlerModesConfig | None = Field(default=None, alias="server-handler-modes")
@@ -387,6 +394,7 @@ class JsonConfigSpecs:
         ),
         "import_overrides": JsonConfigSpec("--import-overrides", StringMappingConfig),
         "model_name_map": JsonConfigSpec("--model-name-map", StringMappingConfig),
+        "open_enum_base_class_map": JsonConfigSpec("--open-enum-base-class-map", OpenEnumBaseClassMapConfig),
         "serialization_aliases": JsonConfigSpec(
             "--serialization-aliases",
             StringMappingConfig,

@@ -231,6 +231,11 @@ class Enum(DataModel):
                 *self.base_classes,
             ]
 
+    @override
+    def _default_imports(self) -> tuple[Import, ...]:
+        """Return the import of the enum class, left out where a configured base (an open enum's) replaces it."""
+        return self.DEFAULT_IMPORTS if self.custom_base_class is None else ()
+
     @classmethod
     def get_data_type(cls, types: Types, **kwargs: Any) -> DataType:
         """Get data type for enum (not implemented)."""
@@ -368,6 +373,13 @@ _ENUM_CLASSES: dict[EnumBase, type[Enum]] = {"Enum": Enum, "IntEnum": IntEnum, "
 def _enum_class(kind: EnumKind, first_merged: type[Enum] = Enum) -> type[Enum]:
     """Return the class an enum of the kind is written as; the merged rows keep the class of the first merged enum."""
     return first_merged if kind.base is None else _ENUM_CLASSES[kind.base]
+
+
+def enum_class_base(enum_class: type[Enum]) -> EnumBase:
+    """Return the stdlib class an enum model class is written on: ``IntEnum``, ``StrEnum`` or ``Enum``."""
+    if issubclass(enum_class, IntEnum):
+        return "IntEnum"
+    return "StrEnum" if issubclass(enum_class, StrEnum) else "Enum"
 
 
 class Member:

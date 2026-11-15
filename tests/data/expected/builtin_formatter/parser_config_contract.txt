@@ -101,6 +101,8 @@ reviewed-safe no_alias
 reviewed-safe omit_incomplete_model_defaults
 reviewed-safe omit_redundant_constraints
 reviewed-safe omit_redundant_reference_null
+reviewed-safe open_enum_base_class_map
+reviewed-safe open_enums
 reviewed-safe order_constructor_fields_by
 reviewed-safe original_field_name_delimiter
 reviewed-safe parent_scoped_naming

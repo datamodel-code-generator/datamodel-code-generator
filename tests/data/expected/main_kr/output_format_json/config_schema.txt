@@ -74,6 +74,21 @@
       "title": "ModelValidators",
       "type": "object"
     },
+    "OpenEnumBaseClassMapConfig": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Base classes that open the Enum classes of open enums, by the class an enum is written on.",
+      "propertyNames": {
+        "enum": [
+          "Enum",
+          "StrEnum",
+          "IntEnum"
+        ]
+      },
+      "title": "OpenEnumBaseClassMapConfig",
+      "type": "object"
+    },
     "ServerBodyModesConfig": {
       "additionalProperties": {
         "enum": [
@@ -366,6 +381,17 @@
       "anyOf": [
         {
           "$ref": "#/$defs/StringMappingConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "open-enum-base-class-map": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/OpenEnumBaseClassMapConfig"
         },
         {
           "type": "null"

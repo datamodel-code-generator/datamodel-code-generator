@@ -1,0 +1,15 @@
+enum JobStatus {
+  QUEUED
+  RUNNING
+  DONE
+}
+
+enum Kind {
+  JOB
+}
+
+type Job {
+  status: JobStatus!
+  history: [JobStatus!]
+  kind: Kind
+}

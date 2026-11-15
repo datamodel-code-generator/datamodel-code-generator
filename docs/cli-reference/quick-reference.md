@@ -56,6 +56,7 @@ datamodel-codegen [OPTIONS]
 | [`--no-use-specialized-enum`](typing-customization.md#no-use-specialized-enum) | Disable specialized Enum classes for Python 3.11+ code generation. |
 | [`--no-use-standard-collections`](typing-customization.md#no-use-standard-collections) | Use typing.Dict/List instead of built-in dict/list for container types. |
 | [`--no-use-union-operator`](typing-customization.md#no-use-union-operator) | Use Union[X, Y] / Optional[X] instead of X | Y union operator. |
+| [`--open-enums`](typing-customization.md#open-enums) | Accept the values an enum does not list. |
 | [`--output-date-class`](typing-customization.md#output-date-class) | Specify date class type for date schema fields. |
 | [`--output-datetime-class`](typing-customization.md#output-datetime-class) | Specify datetime class type for date-time schema fields. |
 | [`--read-allof-parents-in-mro-order`](typing-customization.md#read-allof-parents-in-mro-order) | Read the allOf parents of every inherited schema in the order of the class bases... |
@@ -186,6 +187,7 @@ datamodel-codegen [OPTIONS]
 | [`--naming-strategy`](model-customization.md#naming-strategy) | Choose how models are named and how duplicate model names are told apart. |
 | [`--omit-incomplete-model-defaults`](model-customization.md#omit-incomplete-model-defaults) | Write a property whose object default lacks required fields of its model without... |
 | [`--omit-redundant-reference-null`](model-customization.md#omit-redundant-reference-null) | Do not write None again at a reference to a model that holds null itself. |
+| [`--open-enum-base-class-map`](model-customization.md#open-enum-base-class-map) | Open the Enum classes of open enums on your own base classes. |
 | [`--order-constructor-fields-by`](model-customization.md#order-constructor-fields-by) | Order constructor fields by final names or by written defaults. |
 | [`--output-model-type`](model-customization.md#output-model-type) | Select the output model type (Pydantic v2, Pydantic v2 dataclass, dataclasses, T... |
 | [`--parent-scoped-naming`](model-customization.md#parent-scoped-naming) | Namespace models by their parent scope to avoid naming conflicts. |
@@ -520,6 +522,8 @@ All options sorted alphabetically:
 - [`--omit-incomplete-model-defaults`](model-customization.md#omit-incomplete-model-defaults) - Write a property whose object default lacks required fields ...
 - [`--omit-redundant-constraints`](field-customization.md#omit-redundant-constraints) - Do not write a constraint again beside a type that already e...
 - [`--omit-redundant-reference-null`](model-customization.md#omit-redundant-reference-null) - Do not write None again at a reference to a model that holds...
+- [`--open-enum-base-class-map`](model-customization.md#open-enum-base-class-map) - Open the Enum classes of open enums on your own base classes...
+- [`--open-enums`](typing-customization.md#open-enums) - Accept the values an enum does not list.
 - [`--openapi-as-definitions`](openapi-only-options.md#openapi-as-definitions) - Give OpenAPI paths bodies or ref components the models their...
 - [`--openapi-include-info-version`](openapi-only-options.md#openapi-include-info-version) - Emit OpenAPI info.version as a generated constant.
 - [`--openapi-include-paths`](openapi-only-options.md#openapi-include-paths) - Filter OpenAPI paths to include in model generation.

@@ -2867,10 +2867,14 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             field.parent = self
             field.invalidate_semantic_caches(invalidate_parent=False)
 
-        self._additional_imports.extend(self.DEFAULT_IMPORTS)
+        self._additional_imports.extend(self._default_imports())
         self.default: Any = default
         self._nullable: bool = nullable
         self._treat_dot_as_module: bool | None = treat_dot_as_module
+
+    def _default_imports(self) -> tuple[Import, ...]:
+        """Return the imports every model of the class takes (``DEFAULT_IMPORTS``)."""
+        return self.DEFAULT_IMPORTS
 
     def _with_template_value(self, key: str, value: Any) -> Any:
         """Return the value the options give the model with the one of the template data over it.

@@ -29,6 +29,7 @@ if TYPE_CHECKING:
         OpenAPIAsDefinitions,
         OpenAPIScope,
         OpenAPIVersion,
+        OpenEnums,
         ProtobufVersion,
         ReadOnlyWriteOnlyModelType,
         ReuseScope,
@@ -106,6 +107,8 @@ class ParserConfigDict(TypedDict):
     encoding: NotRequired[str]
     enum_field_as_literal: NotRequired[LiteralType | None]
     enum_field_as_literal_map: NotRequired[dict[str, str] | None]
+    open_enums: NotRequired[OpenEnums | None]
+    open_enum_base_class_map: NotRequired[dict[str, str] | None]
     ignore_enum_constraints: NotRequired[bool]
     set_default_enum_member: NotRequired[bool]
     use_subclass_enum: NotRequired[bool]

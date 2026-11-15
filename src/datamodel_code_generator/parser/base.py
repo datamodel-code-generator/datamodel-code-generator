@@ -128,6 +128,7 @@ from datamodel_code_generator.imports import (
     Imports,
     _iter_import_bindings,
 )
+from datamodel_code_generator.model._decisions.enum_kind import enum_is_open, open_enum_base
 from datamodel_code_generator.model._render_plan import RENDER_READY, NestedFactoryMetadata, RenderReady
 from datamodel_code_generator.model.base import (
     ALL_MODEL,  # noqa: F401  # Preserve the established parser.base export.
@@ -145,6 +146,7 @@ from datamodel_code_generator.model.base import (
 )
 from datamodel_code_generator.model.enum import (
     Enum,
+    enum_class_base,
 )
 from datamodel_code_generator.model.enum import escape_characters as _enum_escape_characters
 from datamodel_code_generator.model.output import (
@@ -279,6 +281,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.http import _HTTPFetchSession
+    from datamodel_code_generator.model._decisions.enum_kind import OpenEnumSetting
     from datamodel_code_generator.model_metadata import GeneratedModelMetadata, ModelFieldMetadata, ModelMetadata
     from datamodel_code_generator.parser._facts import Phase
     from datamodel_code_generator.parser._field_rows import FieldAliasRow, FieldFacts, FieldIdentity, FieldRow
@@ -1205,6 +1208,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.encoding: str = self._source_context.encoding
         self.enum_field_as_literal: LiteralType | None = config.enum_field_as_literal
         self.enum_field_as_literal_map: dict[str, str] = config.enum_field_as_literal_map or {}
+        self.open_enums: OpenEnumSetting | None = config.open_enums.value if config.open_enums else None
+        self.open_enum_base_class_map: dict[str, str] = config.open_enum_base_class_map or {}
         self.ignore_enum_constraints: bool = config.ignore_enum_constraints
         self.set_default_enum_member: bool = config.set_default_enum_member
         self.use_subclass_enum: bool = config.use_subclass_enum
@@ -1698,6 +1703,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         for additional_import_string in _validate_additional_import_paths(additional_imports, target) or []:
             new_import = Import.from_full_path(additional_import_string)
             self._import_ledger.append(self.imports, new_import, _ADDITIONAL_IMPORTS)
+
+    def _enum_is_open(self, *, marker: bool | None, member_count: int, const_beside: bool) -> bool:
+        """Return whether an enum accepts the values of its type that it does not list (``enum_is_open``)."""
+        return enum_is_open(
+            setting=self.open_enums, marker=marker, member_count=member_count, const_beside=const_beside
+        )
+
+    def _open_enum_base(self, enum_class: type[Enum]) -> str | None:
+        """Return the ``--open-enum-base-class-map`` entry an open enum of ``enum_class`` takes as its base, if any."""
+        return open_enum_base(enum_class_base(enum_class), self.open_enum_base_class_map)
 
     def _resolve_base_class(
         self, scope: ClassScope, custom_base_path: str | list[str] | None = None

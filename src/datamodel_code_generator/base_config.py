@@ -51,6 +51,7 @@ from datamodel_code_generator.enums import (
     ModuleSplitMode,
     NamingStrategy,
     OpenAPIAsDefinitions,
+    OpenEnums,
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
     SchemaValidatorType,
@@ -127,17 +128,35 @@ def _type_override_class_paths(type_overrides: Mapping[str, str]) -> Iterable[st
     ]
 
 
+OPEN_ENUM_BASE_CLASS_KEYS: Final = ("Enum", "StrEnum", "IntEnum")
+"""The classes an enum is written on, which the ``--open-enum-base-class-map`` keys name."""
+
+
+def _open_enum_base_paths(base_map: Mapping[str, str]) -> list[str]:
+    """Return the paths of the ``--open-enum-base-class-map`` entries, refusing a key no enum class is written on."""
+    if unknown := [key for key in base_map if key not in OPEN_ENUM_BASE_CLASS_KEYS]:
+        from datamodel_code_generator import Error  # noqa: PLC0415
+
+        msg = (
+            f"open_enum_base_class_map keys must be {', '.join(OPEN_ENUM_BASE_CLASS_KEYS)}, "
+            f"not {', '.join(map(repr, unknown))}"
+        )
+        raise Error(msg)
+    return _given(base_map.values())
+
+
 _NAMED_PATHS: Final[dict[str, Callable[[Any], Iterable[str]]]] = {
     "base_class": lambda base_class: _given((base_class,)),
     "base_class_map": lambda base_class_map: _given(
         base for bases in base_class_map.values() for base in ((bases,) if isinstance(bases, str) else bases)
     ),
     "class_decorators": _decorator_paths,
+    "open_enum_base_class_map": _open_enum_base_paths,
     "type_overrides": _type_override_class_paths,
 }
 """The paths each setting that names Python objects by path names; a value or entry of only whitespace names none."""
 
-_RELATIVE_NAMED_PATHS: Final = frozenset({"base_class", "base_class_map", "type_overrides"})
+_RELATIVE_NAMED_PATHS: Final = frozenset({"base_class", "base_class_map", "open_enum_base_class_map", "type_overrides"})
 """The settings of ``_NAMED_PATHS`` whose paths the output imports, so a path may be relative (``...base.BaseClass``).
 
 Its module is written after ``from`` as given, as 0.88.0 wrote it; a decorator path is written as an expression, which
@@ -368,6 +387,8 @@ class BaseGenerateConfig(BaseModel):
     encoding: str = DEFAULT_ENCODING
     enum_field_as_literal: LiteralType | None = None
     enum_field_as_literal_map: dict[str, str] | None = None
+    open_enums: OpenEnums | None = None
+    open_enum_base_class_map: dict[str, str] | None = None
     ignore_enum_constraints: bool = False
     use_one_literal_as_default: bool = False
     use_enum_values_in_discriminator: bool = False

@@ -488,6 +488,7 @@ openapi/object_map_bodies.yaml	yaml_fast_constructor/parity.txt
 openapi/one_literal_as_default_nullable.yaml	yaml_fast_constructor/parity.txt
 openapi/one_of_body_beside_properties.yaml	yaml_fast_constructor/parity.txt
 openapi/oneof.yaml	yaml_fast_constructor/parity.txt
+openapi/open_enums.yaml	yaml_fast_constructor/parity.txt
 openapi/operation_enums_as_literal.yaml	yaml_fast_constructor/parity.txt
 openapi/override_required_all_of.yaml	yaml_fast_constructor/parity.txt
 openapi/parameter_content.yaml	yaml_fast_constructor/parity.txt

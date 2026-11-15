@@ -203,6 +203,7 @@ from datamodel_code_generator.model import (  # Preserve the established parser.
 from datamodel_code_generator.model._decisions.enum_kind import (
     decide_enum_kind,
     enum_as_literal,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    enum_open_marker,
     holds_inherited_member_value,  # noqa: F401  # Preserve the established parser.jsonschema export.
     holds_member_value,  # noqa: F401  # Preserve the established parser.jsonschema export.
     is_literal_kind,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -7596,6 +7597,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the type an enum class of the schema may specialize or subclass."""
         return self._get_type_with_mappings(obj.type, obj.format) if isinstance(obj.type, str) else None
 
+    def _schema_enum_is_open(self, obj: JsonSchemaObject) -> bool:
+        """Return whether the enum of the schema accepts values it does not list, by the keywords beside it."""
+        return self._enum_is_open(
+            marker=enum_open_marker(obj.extras),
+            member_count=sum(value is not None for value in obj.enum),
+            const_beside="const" in obj.extras,
+        )
+
     def _enum_class_has_value_base(self, obj: JsonSchemaObject) -> bool:
         """Return whether the enum class of the schema subclasses a value type, whose members cannot be None.
 
@@ -7723,6 +7732,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     enum_cls,
                     reference=reference_,
                     fields=enum_fields,
+                    custom_base_class=self._open_enum_base(enum_cls) if self._schema_enum_is_open(obj) else None,
                     path=self.current_source_path,
                     description=obj.description if self.use_schema_description else None,
                     custom_template_dir=self.custom_template_dir,

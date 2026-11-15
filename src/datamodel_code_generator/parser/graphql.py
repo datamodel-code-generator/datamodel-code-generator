@@ -233,6 +233,10 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             member_count=len(obj.values),
         )
 
+    def _graphql_enum_is_open(self, obj: graphql.GraphQLEnumType) -> bool:
+        """Return whether a GraphQL enum accepts values it does not list, by its member count: SDL marks none."""
+        return self._enum_is_open(marker=None, member_count=len(obj.values), const_beside=False)
+
     def parse_enum(self, enum_object: graphql.GraphQLEnumType) -> None:
         """Parse a GraphQL enum type and add it to results."""
         if self.ignore_enum_constraints:
@@ -310,10 +314,12 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             has_strenum=python_target_meets("python.strenum", self.target_python_version.version_key),
             keep_member_values=self.config.keep_enum_member_values,
         )
+        enum_class = _enum_class(kind)
         enum = self._new_model(
-            _enum_class(kind),
+            enum_class,
             reference=self.references[enum_object.name],
             fields=enum_fields,
+            custom_base_class=self._open_enum_base(enum_class) if self._graphql_enum_is_open(enum_object) else None,
             path=self.current_source_path,
             description=enum_object.description,
             type_=Types.string if kind.subclasses_value_type else None,
