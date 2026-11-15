@@ -15,29 +15,25 @@ for every value, with the row of the ladders it replaced: outside JSON a Decimal
 array.
 
 The JSON equality of two values (a bool is no number, ``1 == 1.0``, and NaN, which a YAML document can write, equals
-NaN) is one rule in two forms here: ``json_value_key``, the hash key enum member lookups index values by
-(``model/enum.py``), which tells a bool from a number by the kind, and ``json_values_equal``, the equality the ``enum``,
-``const`` and ``uniqueItems`` intersections compare values by (``parser/_intersection.py`` keeps it under its name),
-which compares a null, a bool and a number by that key. Rows kept from the copies they replaced: ``json_value_key`` keys
-a string, and any other hashable value outside the numbers, by its exact type, where ``json_values_equal`` takes any
-``str`` as a string; and ``python_values_equal`` (``legacy-python-equality-fallback``), the Python equality between
-values of one exact type by which an enum member lookup compares a value without a hash key (a list or an object), so
-``[True]`` matches ``[1]`` where ``json_values_equal`` refuses.
+NaN; arrays and objects item by item) is the equality of their keys: ``json_value_key`` is the one rule, which tells a
+bool from a number by the kind. The ``enum``, ``const`` and ``uniqueItems`` intersections compare by it
+(``json_values_equal``, which ``parser/_intersection.py`` keeps under its name) and find values by it
+(``parser/_intersection.py:_retained_indices``); enum member lookups index members by it (``model/enum.py``). Two rows
+kept from the forms it replaced are its parameters, which the lookup turns on: ``exact_types``
+(``legacy-exact-type-key``), a value outside the numbers under its exact type, so a ``str`` subclass is another value
+than the equal ``str``, where the intersections take any ``str`` as its text; and ``python_items``
+(``legacy-python-equality-fallback``), the items of an array or object as Python compares them, so ``[True]`` is
+``[1]`` and a NaN inside is equal only to the same object, where the intersections compare the items as JSON values.
 
-Not routed here yet: ``parser/_intersection.py:_retained_indices`` keys a scalar that hashes as its base type by
-``(isinstance(value, bool), value)``. It cannot read ``json_value_key``, because of the exact-type row: a ``str``
-subclass that hashes and compares as a ``str`` equals the plain string there, as in ``json_values_equal``, and has
-another key here. ``_constraint_applicability.py`` (``json_integer``, ``json_number``) tells a bool from a number on its
+Not routed here: ``_constraint_applicability.py`` (``json_integer``, ``json_number``) tells a bool from a number on its
 own, as the constraint leaf does not import this module.
 """
 
 from __future__ import annotations
 
-from collections.abc import Collection, Iterable, Iterator, Mapping
+from collections.abc import Callable, Collection, Iterable, Iterator, Mapping
 from copy import deepcopy
 from decimal import Decimal
-from itertools import starmap
-from math import isnan
 from types import MappingProxyType
 from typing import Any, Final, Literal, NamedTuple, TypeAlias, overload
 
@@ -242,57 +238,61 @@ def json_type(value: object) -> str:
 
 _JSON_NUMBER_KEY = Sentinel("_JSON_NUMBER_KEY")
 _JSON_NAN_KEY = Sentinel("_JSON_NAN_KEY")
+_KEY_KINDS: Final[Mapping[type, object]] = MappingProxyType({
+    type(None): type(None),
+    bool: bool,
+    int: _JSON_NUMBER_KEY,
+    float: _JSON_NUMBER_KEY,
+    str: str,
+})
+"""What a scalar of each JSON type is keyed under: a bool is no number, an int and a float are numbers alike."""
+_PLAIN_VALUES: Final[Mapping[LiteralValueKind, Callable[[Any], object]]] = MappingProxyType({
+    "int": int.__int__,
+    "float": float.__float__,
+    "str": str.__str__,
+})
+"""The value of the scalar type itself that an instance of one of its subclasses holds, by the kind of the instance."""
 
 
-def json_value_key(value: Any, /) -> tuple[object, Any] | None:
-    """Return the hash key of a value under JSON equality, None for a value that does not hash (a list, an object).
+def _python_item_key(item: object) -> object:
+    """Return an item as Python compares it (``python_items``): itself, an array or object by its items in turn."""
+    return json_value_key(item, python_items=True) if isinstance(item, (list, dict)) else item
 
-    A bool and a number are told apart by their kind (``literal_value_kind``), and every NaN has one key.
+
+def json_value_key(value: Any, /, *, exact_types: bool = False, python_items: bool = False) -> object:
+    """Return the key of a value under JSON equality: two values are equal exactly when their keys are.
+
+    A null, a bool, a number (every NaN one value) and a string are keyed under their kind, an array by the keys of its
+    items and an object by those of its values under their names, in any order. An instance of a subclass of ``int``,
+    ``float`` or ``str`` (an ``IntEnum`` or ``StrEnum`` member of a schema built in Python) is keyed as the value of
+    that type it holds. A value outside JSON, which a schema built in Python or a YAML tag such as ``!!binary`` gives,
+    has a key equal to no other.
+
+    The rows of enum member lookups:
+
+    * ``exact_types`` (``legacy-exact-type-key``): a value outside the numbers is keyed under its exact type, so a
+      ``str`` subclass is another value than the equal ``str``; it and a value outside JSON are keyed by their own hash
+      and equality where their type has a hash (a set, which a unique-items default is written as, has none).
+    * ``python_items`` (``legacy-python-equality-fallback``): the items of an array or object are their own keys, as
+      Python compares them: ``True``, ``1`` and ``1.0`` are one item and a NaN is equal only to the same object.
     """
+    cls = type(value)
+    if cls in _KEY_KINDS:
+        return _KEY_KINDS[cls], _JSON_NAN_KEY if value != value else value  # noqa: PLR0124  # only a NaN is not itself
+    item_key = _python_item_key if python_items else json_value_key
+    if isinstance(value, list):
+        return (cls if exact_types else list), tuple(map(item_key, value))
+    if isinstance(value, dict):
+        return (cls if exact_types else dict), frozenset(zip(value, map(item_key, value.values()), strict=True))
     kind = literal_value_kind(value)
-    if kind == "bool":
-        return bool, value
-    if kind in {"int", "float"}:
-        return _JSON_NUMBER_KEY, _JSON_NAN_KEY if kind == "float" and isnan(value) else value
-    try:
-        hash(value)
-    except TypeError:
-        return None
-    return type(value), value
+    if exact_types and kind not in {"int", "float"} and cls.__hash__ is not None:
+        return cls, value
+    return json_value_key(_PLAIN_VALUES[kind](value)) if kind in _PLAIN_VALUES else object()
 
 
 def json_values_equal(left: object, right: object) -> bool:
-    """Compare JSON values as ``enum``, ``const`` and ``uniqueItems`` do: a null, a bool or a number by its hash key.
-
-    Arrays and objects compare item by item; a value outside JSON equals nothing.
-    """
-    match left:
-        case None | bool() | int() | float():
-            # Two values of one type that Python tells apart have different keys, except NaN, which equals nothing in
-            # Python, itself included, and has one key: that test decides most pairs without building a key.
-            if type(left) is type(right) and left != right and not (isinstance(left, float) and isnan(left)):
-                return False
-            return json_value_key(left) == json_value_key(right)
-        case str() as string:
-            return isinstance(right, str) and string == right
-        case list() as array:
-            return (
-                isinstance(right, list)
-                and len(array) == len(right)
-                and all(starmap(json_values_equal, zip(array, right, strict=True)))
-            )
-        case dict() as object_:
-            return (
-                isinstance(right, dict)
-                and len(object_) == len(right)
-                and all(key in right and json_values_equal(item, right[key]) for key, item in object_.items())
-            )
-    return False
-
-
-def python_values_equal(left: object, right: object, /) -> bool:
-    """Return whether two values of one exact type are equal in Python (row ``legacy-python-equality-fallback``)."""
-    return type(left) is type(right) and left == right
+    """Compare JSON values as ``enum``, ``const`` and ``uniqueItems`` do: by their keys (``json_value_key``)."""
+    return json_value_key(left) == json_value_key(right)
 
 
 SCHEMA_MAP_KEYS: frozenset[str] = frozenset(schema_positions(shapes=("map",)))
