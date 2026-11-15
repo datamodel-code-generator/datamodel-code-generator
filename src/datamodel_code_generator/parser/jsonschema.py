@@ -6035,6 +6035,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             parent
             and not item.enum
             and not _value_keywords.const_literal_enforces_constraints(self, item)
+            and not (self._joins_other_types(item) and self._object_kind_object_model_applies(site))
             and (
                 self._has_materialized_container_constraints(item)
                 or (item.has_constraint and (parent.has_constraint or self.field_constraints))

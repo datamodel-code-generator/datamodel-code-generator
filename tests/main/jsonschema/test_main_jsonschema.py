@@ -43090,3 +43090,36 @@ def test_main_naming_strategy_enclosing_model_modules(output_dir: Path, input_di
         ],
         force_exec_validation=True,
     )
+
+
+def test_any_of_multiple_types_with_properties_and_field_constraints(output_file: Path) -> None:
+    """Keep object properties and string constraints for a multi-type anyOf branch under --field-constraints (#6852)."""
+    schema = {
+        "title": "Doc",
+        "type": "object",
+        "properties": {
+            "owner": {
+                "anyOf": [
+                    {"type": ["object", "string"], "properties": {"name": {"type": "string"}}, "minLength": 2},
+                    {"type": "integer"},
+                ]
+            }
+        },
+    }
+    generate(
+        json.dumps(schema),
+        input_file_type=InputFileType.JsonSchema,
+        output=output_file,
+        output_model_type=DataModelType.PydanticV2BaseModel,
+        field_constraints=True,
+        disable_timestamp=True,
+        formatters=[Formatter.BUILTIN],
+    )
+    generated = output_file.read_text(encoding="utf-8")
+    assert "class Owner(BaseModel):\n    name: str | None = None" in generated
+    assert "min_length=2" in generated
+    with _generated_model(output_file, "any_of_multitype_field_constraints", "Doc") as model:
+        assert model.model_validate({"owner": {"name": "alice"}}).owner.name == "alice"
+        assert model.model_validate({"owner": "ab"}).owner == "ab"
+        with pytest.raises(ValidationError):
+            model.model_validate({"owner": "a"})
