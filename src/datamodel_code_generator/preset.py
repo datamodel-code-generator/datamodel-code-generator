@@ -629,7 +629,8 @@ _PRACTICAL_20261113_EXTRA_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         config=PresetConfig(untyped_value_type="pydantic.JsonValue"),
         description=(
             "Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the "
-            "object the practical groups prefer for unconstrained values."
+            "object the practical groups prefer for unconstrained values: a JSON document parses to the same values, "
+            "and Python values that are no JSON values, such as a datetime or a set, are rejected."
         ),
         output_model_types=_PYDANTIC_MODEL_TYPES,
     ),

@@ -9,9 +9,10 @@ Usage:
     python scripts/build_migration_docs.py --range-pages docs/migration
     python scripts/build_migration_docs.py --raw-site site
 
-Data (docs/data/migration/): `releases.toml` (every published release since the oldest one the guide covers),
-`changes/<version>.toml` (the hand-written `[[change]]` entries of a release), `unreleased/<id>.toml` (one entry per
-file until the release stamps it) and `derived.toml` (the first release of each dated preset). The deprecation and
+Data (docs/data/migration/): `releases.toml` (every published release since the oldest one the guide covers, and
+`complete_from`, the oldest release whose users meet every change in the steps), `changes/<version>.toml` (the
+hand-written `[[change]]` entries of a release), `unreleased/<id>.toml` (one entry per file until the release stamps
+it) and `derived.toml` (the first release of each dated preset). The deprecation and
 experimental registries and the dated presets of the source tree add entries nobody writes by hand; a hand entry
 with the id of such an entry extends it.
 
@@ -186,6 +187,7 @@ RELEASES_HEADER = (
     "# Every published release since the oldest one the upgrade guide covers, oldest first.\n"
     "# `scripts/build_migration_docs.py --stamp` appends a row when a release is published.\n"
 )
+CHANGELOG_URL = f"{REPO_URL}/blob/main/CHANGELOG.md"
 DERIVED_HEADER = (
     "# Facts the source tree cannot know, written by `scripts/build_migration_docs.py --stamp`: the first release of\n"
     "# each dated preset and of each option or option value added since surface.json was first written. A preset date\n"
@@ -296,11 +298,16 @@ class Registries:
 
 @dataclass
 class Range:
-    """Consecutive source releases whose users meet the same steps on the way to the latest release."""
+    """Consecutive source releases whose users meet the same steps on the way to the latest release.
+
+    `complete` is whether the steps hold every change those users meet: their releases are not older than the guide's
+    `complete_from`.
+    """
 
     sources: list[str]
     steps: tuple[str, ...]
     path: list[dict[str, Any]]
+    complete: bool = True
     keep_flags: list[str] = field(default_factory=list)
     keep_pyproject: dict[str, Any] = field(default_factory=dict)
     keep_conditional: dict[str, list[str]] = field(default_factory=dict)
@@ -328,11 +335,16 @@ class Range:
 
 @dataclass
 class Guide:
-    """The loaded change list: releases oldest first, entries in release order, and the ranges."""
+    """The loaded change list: releases oldest first, entries in release order, the ranges, and `complete_from`.
+
+    `complete_from` is the oldest release whose users meet every change in the steps; the steps of an older release
+    lack changes nobody has written an entry for yet.
+    """
 
     releases: list[dict[str, str]]
     changes: list[dict[str, Any]]
     ranges: list[Range]
+    complete_from: str
 
     @property
     def latest(self) -> str:
@@ -439,8 +451,10 @@ def _read_toml(path: Path, problems: list[str]) -> dict[str, Any]:
     return {}
 
 
-def _load_releases(layout: Layout, problems: list[str]) -> list[dict[str, str]]:
-    releases = _read_toml(layout.releases, problems).get("release", [])
+def _load_releases(layout: Layout, problems: list[str]) -> tuple[list[dict[str, str]], str]:
+    """Return the release rows and `complete_from`, which defaults to the oldest release (every list complete)."""
+    table = _read_toml(layout.releases, problems)
+    releases = table.get("release", [])
     problems.extend(
         f"releases.toml: {release} is not a row of `version` and `date` (YYYY-MM-DD)"
         for release in releases
@@ -452,7 +466,10 @@ def _load_releases(layout: Layout, problems: list[str]) -> list[dict[str, str]]:
     for older, newer in pairwise(versions):
         if version_key(older) >= version_key(newer):
             problems.append(f"releases.toml: {newer} does not come after {older}")
-    return releases
+    complete_from = str(table.get("complete_from", versions[0] if versions else ""))
+    if versions and complete_from not in versions:
+        problems.append(f"releases.toml: complete_from {complete_from} is not a listed release")
+    return releases, complete_from
 
 
 def _registry_affects(kind: str, target: str) -> dict[str, list[str]]:
@@ -609,7 +626,11 @@ def _check_shape(entry_id: str, entry: dict[str, Any], problems: list[str]) -> N
 
 
 def _hand_changes(layout: Layout, changes: dict[str, dict[str, Any]], releases: _Releases, problems: list[str]) -> None:
-    """Add the hand-written entries to `changes`; one with the id of a derived entry extends it."""
+    """Add the hand-written entries to `changes`; one with the id of a derived entry extends it.
+
+    A new entry's id is a lower-case slug; the id of a derived entry is taken as the build gives it, such as
+    `option:--output-model-type=msgspec.Struct`.
+    """
     derived = set(changes)
     seen: dict[str, str] = {}
     for release, path in _hand_files(layout, releases, problems):
@@ -618,7 +639,9 @@ def _hand_changes(layout: Layout, changes: dict[str, dict[str, Any]], releases: 
         if release == UNRELEASED and [entry.get("id") for entry in entries] != [path.stem]:
             problems.append(f"{where}: a fragment holds exactly one [[change]] whose id is the file name")
         for entry in entries:
-            if not isinstance(entry_id := entry.get("id"), str) or not ID_PATTERN.fullmatch(entry_id):
+            if not isinstance(entry_id := entry.get("id"), str) or not (
+                entry_id in derived or ID_PATTERN.fullmatch(entry_id)
+            ):
                 problems.append(f"{where}: id {entry_id!r} is not a lower-case slug")
                 continue
             if entry_id in seen:
@@ -693,13 +716,13 @@ def keep_config(flags: list[str]) -> dict[str, Any]:
     return tomllib.loads(generate_pyproject_config(namespace))["tool"]["datamodel-codegen"]
 
 
-def _steps_after(changes: list[dict[str, Any]], index: int) -> list[dict[str, Any]]:
+def _steps_after(changes: list[dict[str, Any]], index: int, *, unreleased: bool = False) -> list[dict[str, Any]]:
     """Return the entries a user of the release at `index` meets on the way to the latest release.
 
     An entry another entry on the path supersedes is left out, and so is a pair of an entry and the one that reverts it.
-    Unreleased entries are not on the path.
+    Unreleased entries are on the path only with `unreleased`, the way to this checkout.
     """
-    path = [entry for entry in changes if index < entry["index"] and entry["release"] != UNRELEASED]
+    path = [entry for entry in changes if index < entry["index"] and (unreleased or entry["release"] != UNRELEASED)]
     ids = {entry["id"] for entry in path}
     dropped = {old for entry in path for old in entry.get("supersedes", []) if old in ids}
     dropped |= {
@@ -708,32 +731,48 @@ def _steps_after(changes: list[dict[str, Any]], index: int) -> list[dict[str, An
     return [entry for entry in path if entry["id"] not in dropped]
 
 
-def _ranges(releases: list[dict[str, str]], changes: list[dict[str, Any]], problems: list[str]) -> list[Range]:
-    """Group consecutive source releases whose steps that need an action are the same."""
+def _keep_configs(changes: list[dict[str, Any]], problems: list[str]) -> dict[str, dict[str, Any]]:
+    """Return the `pyproject.toml` values of the keep flags of every entry that has them, by entry id.
+
+    The flags of every entry are parsed, also those of an entry `affects.options` narrows and of an unreleased one,
+    whose values no page writes.
+    """
+    configs: dict[str, dict[str, Any]] = {}
+    for entry in changes:
+        if not (flags := entry.get("keep", {}).get("flags")):
+            continue
+        try:
+            configs[entry["id"]] = keep_config(flags)
+        except ValueError as error:
+            problems.append(f"entry {entry['id']}: keep.flags {' '.join(flags)!r}: {error}")
+            configs[entry["id"]] = {}
+    return configs
+
+
+def _ranges(
+    releases: list[dict[str, str]], changes: list[dict[str, Any]], complete_from: str, problems: list[str]
+) -> list[Range]:
+    """Group consecutive source releases whose steps that need an action are the same, and complete or not alike."""
+    configs = _keep_configs(changes, problems)
     ranges: list[Range] = []
     for index, release in enumerate(releases[:-1]):
         path = _steps_after(changes, index)
         steps = tuple(entry["id"] for entry in path if entry["action"] != "none")
-        if ranges and ranges[-1].steps == steps:
+        complete = version_key(release["version"]) >= version_key(complete_from)
+        if ranges and ranges[-1].steps == steps and ranges[-1].complete == complete:
             ranges[-1].sources.append(release["version"])
             continue
-        ranges.append(Range([release["version"]], steps, path))
-    configs: dict[str, dict[str, Any]] = {}
+        ranges.append(Range([release["version"]], steps, path, complete=complete))
     for group in ranges:
         unconditional: dict[str, tuple[str, Any]] = {}
         for entry in group.path:
-            if entry["action"] != "keep" or not (flags := entry.get("keep", {}).get("flags")):
+            if entry["id"] not in configs:
                 continue
-            if (only := entry.get("affects", {}).get("options")) is not None:
+            flags = entry["keep"]["flags"]
+            if (only := entry["affects"].get("options")) is not None:
                 group.keep_conditional.setdefault(", ".join(only), []).extend(flags)
                 continue
             group.keep_flags += flags
-            if entry["id"] not in configs:
-                try:
-                    configs[entry["id"]] = keep_config(flags)
-                except ValueError as error:
-                    problems.append(f"entry {entry['id']}: keep.flags {' '.join(flags)!r}: {error}")
-                    configs[entry["id"]] = {}
             for key, value in configs[entry["id"]].items():
                 if key in unconditional and unconditional[key][1] != value:
                     problems.append(
@@ -790,6 +829,11 @@ def _check_allowlist(
             )
 
 
+def previous_release(versions: list[str], entry: dict[str, Any]) -> str:
+    """Return the release before an entry's release, the latest one for an unreleased entry: its output is recorded."""
+    return versions[entry["index"] - 1]
+
+
 def fixture_key(entry: dict[str, Any]) -> str:
     """Return the key of an entry's fixture: a record is stale once the schema or the arguments change."""
     verify = entry["verify"]
@@ -800,11 +844,20 @@ def _read_records(layout: Layout) -> dict[str, Any]:
     return json.loads(layout.recorded.read_text(encoding="utf-8")) if layout.recorded.exists() else {}
 
 
-def _check_records(layout: Layout, changes: dict[str, dict[str, Any]], problems: list[str]) -> None:
-    """Report each entry with a fixture whose previous release's output is not recorded for its current fixture."""
+def _check_records(
+    layout: Layout, versions: list[str], changes: dict[str, dict[str, Any]], problems: list[str]
+) -> None:
+    """Report each entry with a fixture whose previous release's output is not recorded for its current fixture.
+
+    A record is of the fixture and of the release before the entry's: one taken before the entry moved to another
+    release is stale too.
+    """
     records = _read_records(layout)
     for entry_id, entry in changes.items():
-        if entry.get("source") == "run" and records.get(entry_id, {}).get("fixture") != fixture_key(entry):
+        record = records.get(entry_id, {})
+        if entry.get("source") == "run" and (
+            record.get("fixture") != fixture_key(entry) or record.get("previous") != previous_release(versions, entry)
+        ):
             problems.append(
                 f"entry {entry_id}: no recorded output of its previous release for its fixture; run "
                 f"'python scripts/build_migration_docs.py --record {entry_id}'"
@@ -819,7 +872,7 @@ def load(layout: Layout | None = None, registries: Registries | None = None, *, 
     layout = layout or Layout()
     registries = registries or current_registries()
     problems: list[str] = []
-    releases = _load_releases(layout, problems)
+    releases, complete_from = _load_releases(layout, problems)
     placed = _Releases(releases, problems)
     derived = _read_toml(layout.derived, problems)
     presets = {str(date): str(version) for date, version in derived.get("presets", {}).items()}
@@ -842,16 +895,16 @@ def load(layout: Layout | None = None, registries: Registries | None = None, *, 
     _check_removals(registries.surface, released_surface, changes, problems)
     _check_allowlist(layout, placed.versions, changes, problems)
     if records and not problems:
-        _check_records(layout, changes, problems)
+        _check_records(layout, placed.versions, changes, problems)
     action_order = {action: index for index, action in enumerate(ACTIONS)}
     ordered = sorted(
         changes.values(),
         key=lambda entry: (entry["index"], action_order.get(entry.get("action"), len(ACTIONS)), entry["id"]),
     )
-    ranges = _ranges(releases, ordered, problems) if releases and not problems else []
+    ranges = _ranges(releases, ordered, complete_from, problems) if releases and not problems else []
     if problems:
         raise MigrationDataError(problems)
-    return Guide(releases, ordered, ranges)
+    return Guide(releases, ordered, ranges, complete_from)
 
 
 def _affects_line(entry: dict[str, Any]) -> str | None:
@@ -938,12 +991,27 @@ def _short_line(entry: dict[str, Any], base: str) -> str:
     return f"{line} {_details_link(entry, base)}"
 
 
-def guide_page(title: str, intro: str, group: Range, latest: str, base: str) -> str:
+def _incomplete_note(group: Range, complete_from: str) -> list[str]:
+    """Return the warning a range whose steps are incomplete starts with, pointing to the changelog."""
+    if group.complete:
+        return []
+    return [
+        (
+            f"**Incomplete list:** the changes of the releases after yours through {complete_from} are not all listed "
+            f"yet. Read the breaking changes of those releases in the [changelog]({CHANGELOG_URL}) too; every change "
+            f"after {complete_from} is listed."
+        ),
+        "",
+    ]
+
+
+def guide_page(title: str, intro: str, group: Range, guide: Guide, base: str) -> str:
     """Return the steps of one range or release: the keep options, then the entries by action.
 
     `base` is where the entries' details are: the all-changes page, relative or as a URL.
     """
     path = group.path
+    latest = guide.latest
     counts = {action: sum(entry["action"] == action for entry in path) for action in ACTIONS}
     lines = [
         f"# {title}",
@@ -957,6 +1025,7 @@ def guide_page(title: str, intro: str, group: Range, latest: str, base: str) -> 
             f"[All changes]({base}) · [Machine-readable list]({SITE_URL}/data/migration.json)"
         ),
         "",
+        *_incomplete_note(group, guide.complete_from),
         "## Keep your current output",
         "",
         *_keep_block(group, latest),
@@ -979,7 +1048,7 @@ def range_page(guide: Guide, group: Range) -> str:
     if len(group.sources) == 1:
         intro = f"For datamodel-code-generator {group.first}."
     title = f"Upgrading from {group.span} to {guide.latest}"
-    return guide_page(title, intro, group, guide.latest, CHANGES_PAGE)
+    return guide_page(title, intro, group, guide, CHANGES_PAGE)
 
 
 def raw_page(guide: Guide, version: str) -> str:
@@ -993,7 +1062,11 @@ def raw_page(guide: Guide, version: str) -> str:
         f"For datamodel-code-generator {version}; the [upgrade guide]({SITE_URL}/migration/) has the other releases."
     )
     title = f"Upgrading from {version} to {guide.latest}"
-    return guide_page(title, intro, exact, guide.latest, f"{SITE_URL}/migration/changes/")
+    return guide_page(title, intro, exact, guide, f"{SITE_URL}/migration/changes/")
+
+
+def _incomplete_mark(group: Range) -> str:
+    return "" if group.complete else " (incomplete list)"
 
 
 def hub_page(guide: Guide) -> str:
@@ -1011,12 +1084,24 @@ def hub_page(guide: Guide) -> str:
             f"`{SITE_URL}/migration/from/{floor}.md`."
         ),
         "",
+        *(
+            [
+                (
+                    f"Every change is listed for upgrades from {guide.complete_from} and later. The lists of older "
+                    "releases, marked incomplete, lack changes not written down yet: also read the breaking changes "
+                    f"of the releases after yours through {guide.complete_from} in the [changelog]({CHANGELOG_URL})."
+                ),
+                "",
+            ]
+            if not all(group.complete for group in guide.ranges)
+            else []
+        ),
         '<div class="dcg-migration" data-migration-select hidden>',
         '<label for="dcg-migration-from">I use datamodel-code-generator</label>',
         '<select id="dcg-migration-from">',
         '<option value="">choose a release</option>',
         *(
-            f'<option value="{group.page.removesuffix(".md")}/">{source}</option>'
+            f'<option value="{group.page.removesuffix(".md")}/">{source}{_incomplete_mark(group)}</option>'
             for group in reversed(guide.ranges)
             for source in reversed(group.sources)
         ),
@@ -1029,14 +1114,15 @@ def hub_page(guide: Guide) -> str:
     for group in reversed(guide.ranges):
         counts = {action: sum(entry["action"] == action for entry in group.path) for action in ACTIONS}
         lines.append(
-            f"| {group.span} | {counts['required']} | {counts['keep']} | {counts['review']} | {counts['warn']} "
+            f"| {group.span}{_incomplete_mark(group)} | {counts['required']} | {counts['keep']} | {counts['review']} "
+            f"| {counts['warn']} "
             f"| [{group.page.removesuffix('.md')}]({group.page}) |"
         )
     lines += [
         "",
         (
             f"Releases before {floor}: start from the {floor} page and read the older entries of the "
-            f"[changelog]({REPO_URL}/blob/main/CHANGELOG.md)."
+            f"[changelog]({CHANGELOG_URL})."
         ),
         "",
         "## How to upgrade without surprises",
@@ -1086,6 +1172,8 @@ def to_json(guide: Guide) -> str:
     data = {
         "schema_version": SCHEMA_VERSION,
         "latest": guide.latest,
+        "complete_from": guide.complete_from,
+        "changelog": CHANGELOG_URL,
         "raw_page": f"{SITE_URL}/migration/from/{{release}}.md",
         "releases": guide.releases,
         "changes": [
@@ -1098,6 +1186,7 @@ def to_json(guide: Guide) -> str:
                 "through": group.last,
                 "sources": group.sources,
                 "page": f"{SITE_URL}/migration/{group.page.removesuffix('.md')}/",
+                "complete": group.complete,
                 "changes": [entry["id"] for entry in group.path],
                 "keep_flags": group.keep_flags,
                 "keep_pyproject": group.keep_pyproject,
@@ -1192,32 +1281,54 @@ def _preset_dates_of(tree: Path) -> set[str]:
     return set(PRESET_DATE_PATTERN.findall((tree / TAG_PRESET_NAMES).read_text(encoding="utf-8")))
 
 
+def _tag_facts(tag_tree: Path) -> tuple[set[str], dict[str, Any]]:
+    """Return the preset dates and the public surface of a release tag's tree; raise MigrationDataError if unread."""
+    try:
+        return _preset_dates_of(tag_tree), read_surface(tag_tree / "src")
+    except OSError:
+        raise MigrationDataError([f"--tag-tree: {TAG_PRESET_NAMES.as_posix()} cannot be read"]) from None
+    except subprocess.CalledProcessError as error:
+        last = [f"exit {error.returncode}", *error.stderr.splitlines()][-1]
+        problem = f"--tag-tree: the surface of its src cannot be read: {last}"
+        raise MigrationDataError([problem]) from None
+
+
 def stamp(layout: Layout, version: str, tag_tree: Path, date: str, registries: Registries | None = None) -> list[str]:
     """Record a published release: move the fragments its tag contains, add its row and its new preset dates.
 
     Returns the ids of the moved fragments. Fragments the tag does not contain were merged after it and stay unreleased.
+    Every input is read and checked before the first write, so a refused stamp can run again: a fragment edited after
+    the tag is refused, as its release would get text it did not ship.
     """
     guide = load(layout, registries)
     if version_key(version) <= version_key(guide.latest):
         msg = f"{version} does not come after the latest release {guide.latest}"
         raise MigrationDataError([msg])
     tagged = tag_tree / TAG_FRAGMENTS
-    moved = [path for path in sorted(layout.unreleased.glob("*.toml")) if (tagged / path.name).exists()]
+    moved = {
+        path: path.read_text(encoding="utf-8")
+        for path in sorted(layout.unreleased.glob("*.toml"))
+        if (tagged / path.name).exists()
+    }
+    if edited := [path for path, text in moved.items() if (tagged / path.name).read_text(encoding="utf-8") != text]:
+        raise MigrationDataError([
+            f"unreleased/{path.name} differs from the tag's; move later edits to a new fragment" for path in edited
+        ])
+    tag_presets, tagged_surface = _tag_facts(tag_tree)
+    derived = tomllib.loads(layout.derived.read_text(encoding="utf-8"))
+    released_surface = json.loads(layout.surface.read_text(encoding="utf-8"))
     if moved:
         target = layout.changes / f"{version}.toml"
         layout.changes.mkdir(parents=True, exist_ok=True)
-        texts = [path.read_text(encoding="utf-8").strip() + "\n" for path in moved]
+        texts = [text.strip() + "\n" for text in moved.values()]
         target.write_text(CHANGES_HEADER.format(version=version) + "\n" + "\n".join(texts), encoding="utf-8")
         for path in moved:
             path.unlink()
     with layout.releases.open("a", encoding="utf-8") as releases:
         releases.write(f'\n[[release]]\nversion = "{version}"\ndate = "{date}"\n')
-    derived = tomllib.loads(layout.derived.read_text(encoding="utf-8"))
     presets = derived.get("presets", {})
-    presets |= {preset_date: version for preset_date in _preset_dates_of(tag_tree) if preset_date not in presets}
-    tagged_surface = read_surface(tag_tree / "src")
+    presets |= {preset_date: version for preset_date in tag_presets if preset_date not in presets}
     options = derived.get("options", {})
-    released_surface = json.loads(layout.surface.read_text(encoding="utf-8"))
     options |= dict.fromkeys(_option_additions(tagged_surface, released_surface), version)
     layout.derived.write_text(
         f"{DERIVED_HEADER}\n[presets]\n{_toml_rows(presets)}\n[options]\n{_toml_rows(options)}", encoding="utf-8"
@@ -1300,16 +1411,27 @@ def signature(tree: dict[str, str], entry: dict[str, Any]) -> dict[str, Any]:
         return behaviour_diff.signature_of(Path(sys.executable), GENERATION_TIMEOUT, target, _model_type(entry), None)
 
 
-def same_behaviour(old: dict[str, Any], new: dict[str, Any]) -> bool:
-    """Return whether both signatures were taken and show no behaviour change."""
+def behaviour_change(old: dict[str, Any], new: dict[str, Any]) -> bool | str:
+    """Return whether two signatures differ in behaviour as the behaviour gate counts it, or why one was not taken.
+
+    The modules that fail to import differ, or an item, a probe or a payload changes in behaviour. A signature that
+    timed out or crashed (``SIGNATURE_FAILED``) proves neither, so its error is returned instead.
+    """
     from scripts._behaviour_classify import (  # ruff: ignore[import-outside-top-level] - only --record/--verify need it
         SIGNATURE_FAILED,
         diff,
+        import_errors,
+        payload_changes,
+        probe_changes,
     )
 
-    if old.get(SIGNATURE_FAILED) or new.get(SIGNATURE_FAILED):
-        return False
-    return not [change for change in diff(old, new) if change.behaviour]
+    if failed := [signature["import_error"] for signature in (old, new) if signature.get(SIGNATURE_FAILED)]:
+        return failed[0]
+    return (
+        import_errors(old).keys() != import_errors(new).keys()
+        or any(change.behaviour for change in diff(old, new))
+        or bool(probe_changes(old, new) or payload_changes(old, new))
+    )
 
 
 def _contains(tree: dict[str, str] | str, snippet: str) -> bool:
@@ -1319,7 +1441,7 @@ def _contains(tree: dict[str, str] | str, snippet: str) -> bool:
 
 def _behaves_like(generations: Generations, entry: dict[str, Any], flags: list[str], old: dict[str, Any]) -> bool:
     kept = generations.tree(HEAD, entry, flags)
-    return isinstance(kept, dict) and same_behaviour(old, signature(kept, entry))
+    return isinstance(kept, dict) and behaviour_change(old, signature(kept, entry)) is False
 
 
 def _result_line(entry: dict[str, Any], sides: str, checks: dict[str, bool | str]) -> tuple[bool, str]:
@@ -1331,20 +1453,21 @@ def _result_line(entry: dict[str, Any], sides: str, checks: dict[str, bool | str
 def record_entry(guide: Guide, generations: Generations, entry: dict[str, Any]) -> tuple[bool, str, dict[str, Any]]:
     """Generate an entry's fixture with its previous release and its own release, and check what the entry claims.
 
-    attribution: the two outputs behave differently (for `output-text`, the text differs); before: `before` is in the
+    attribution: the two outputs behave differently (for `output-text`, the text differs), both signatures taken (else
+    the error of the one that failed); before: `before` is in the
     previous release's output; after: `after` is in the output of the entry's release; keep: this checkout with
     `keep.flags` behaves like the previous release. Returns the result, its line and the record to keep.
     """
-    previous = guide.releases[entry["index"] - 1]["version"]
+    previous = previous_release([release["version"] for release in guide.releases], entry)
     release = HEAD if entry["release"] == UNRELEASED else entry["release"]
     sides = f"{previous} -> {release}"
     old, new = generations.tree(previous, entry), generations.tree(release, entry)
     if isinstance(old, str) or isinstance(new, str):
         return False, _result_line(entry, sides, {"generation": old if isinstance(old, str) else str(new)})[1], {}
     old_signature = signature(old, entry)
+    changed = behaviour_change(old_signature, signature(new, entry))
     checks: dict[str, bool | str] = {
-        "attribution": not same_behaviour(old_signature, signature(new, entry))
-        or (entry["kind"] == "output-text" and old != new)
+        "attribution": changed if changed is not False else entry["kind"] == "output-text" and old != new
     }
     if "before" in entry:
         checks["before"] = _contains(old, entry["before"])
@@ -1356,14 +1479,27 @@ def record_entry(guide: Guide, generations: Generations, entry: dict[str, Any]) 
     return passed, line, {"previous": previous, "fixture": fixture_key(entry), "tree": old}
 
 
+def _passes(args: list[str], option: str) -> bool:
+    """Return whether command-line arguments pass an `affects.options` item: `--name`, or `--name value` in a row.
+
+    An argument `--name=value` counts as `--name value`.
+    """
+    tokens = [token for arg in args for token in (arg.split("=", 1) if arg.startswith("--") else [arg])]
+    wanted = option.split()
+    return any(tokens[start : start + len(wanted)] == wanted for start in range(len(tokens)))
+
+
 def _union_flags(guide: Guide, entry: dict[str, Any], previous: str) -> list[str]:
-    """Return the keep flags a user of `previous` adds for the steps to the latest release, where they apply here."""
+    """Return the keep flags a user of `previous` adds for the steps to this checkout, where they apply here.
+
+    The steps are those to the latest release and the unreleased ones, the entry itself among them when unreleased.
+    """
     versions = [release["version"] for release in guide.releases]
-    args = set(entry["verify"]["args"])
+    args = entry["verify"]["args"]
     return [
         flag
-        for step in _steps_after(guide.changes, versions.index(previous))
-        if step["action"] == "keep" and set(step["affects"].get("options", [])) <= args
+        for step in _steps_after(guide.changes, versions.index(previous), unreleased=True)
+        if step["action"] == "keep" and all(_passes(args, option) for option in step["affects"].get("options", []))
         for flag in step.get("keep", {}).get("flags", [])
     ]
 

@@ -2,17 +2,26 @@ exit 1
 Invalid migration data:
 - entry enum-keep: no recorded output of its previous release for its fixture; run 'python scripts/build_migration_docs.py --record enum-keep'
 - entry enum-wrong-keep: no recorded output of its previous release for its fixture; run 'python scripts/build_migration_docs.py --record enum-wrong-keep'
+- entry enum-import-fails: no recorded output of its previous release for its fixture; run 'python scripts/build_migration_docs.py --record enum-import-fails'
+- entry enum-signature-crashes: no recorded output of its previous release for its fixture; run 'python scripts/build_migration_docs.py --record enum-signature-crashes'
+- entry enum-keep-next: no recorded output of its previous release for its fixture; run 'python scripts/build_migration_docs.py --record enum-keep-next'
 
 {
  "verify": 1,
  "verify one": 0,
+ "record of another previous release": 1,
  "unknown id": 1,
  "bad python": 1
 }
+FAIL enum-import-fails [0.2.0 -> HEAD] keep=NO union=NO
 PASS enum-keep [0.2.0 -> HEAD] keep=ok union=ok before=ok after=ok
+FAIL enum-signature-crashes [0.2.0 -> HEAD] keep=NO union=NO
 FAIL enum-wrong-keep [0.2.0 -> HEAD] keep=NO union=ok
+PASS enum-keep-next [0.4.0 -> HEAD] keep=ok
 PASS enum-keep [0.2.0 -> HEAD] keep=ok union=ok
 
+Invalid migration data:
+- entry enum-keep: no recorded output of its previous release for its fixture; run 'python scripts/build_migration_docs.py --record enum-keep'
 Invalid migration data:
 - nothing is not an entry with source run
 Invalid migration data:

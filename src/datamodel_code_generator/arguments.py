@@ -1174,11 +1174,12 @@ _toggle(
 )
 typing_options.add_argument(
     "--untyped-value-type",
-    help="Write each value the schema leaves untyped ({}, true, a schema without type, the values of an object "
-    "without properties and the items of an array without items) as this type instead of Any: pydantic.JsonValue "
-    "(Pydantic 2.5 or later), object, Any or the dotted import path of a type of your own, which the models import; "
-    "the structure is as without the option. --type-overrides, x-python-type and x-python-import keep their types, "
-    "and msgspec.Struct output keeps Any, which msgspec decodes into JSON values. Without it untyped values are Any, "
+    help="Write each value the schema leaves untyped ({}, true, a schema whose keywords give it no type, the values of "
+    "an object without properties and the items of an array without items) as this type instead of Any: "
+    "pydantic.JsonValue (Pydantic 2.5 or later), object, Any or the dotted import path of a type of your own, which "
+    "the models import; the structure is as without the option. --type-overrides, x-python-type and x-python-import "
+    "keep their types, and msgspec.Struct output keeps Any, which msgspec decodes into JSON values. Without it untyped "
+    "values are Any, "
     "and object in containers under --use-object-type, as in 0.96.0",
     metavar="TYPE",
     type=str,
@@ -1351,8 +1352,9 @@ _toggle(
     "--read-format-as-annotation",
     help="Read the format of a schema as an annotation, as JSON Schema does: a string, integer or number schema takes "
     "the type its type keyword gives (str, int, float), with its own length, pattern and bound keywords, so every "
-    "value the schema accepts validates and dumps as written, and an unknown format gives no warning; a format that a "
-    "--type-mappings entry names for the schema's type keeps that mapping, and format: binary stays bytes. Without "
+    "value the schema accepts validates, a string or integer dumps as written (a number as the float it parses to, as "
+    "without a format), and an unknown format gives no warning; a format that a --type-mappings entry names for the "
+    "schema's type keeps that mapping, and format: binary stays bytes. Without "
     "it each known format selects a type (EmailStr, AwareDatetime, UUID, Decimal, SecretStr, Base64Str, ...), as in "
     "0.96.0",
 )

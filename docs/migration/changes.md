@@ -26,7 +26,7 @@ Accept values an enum does not list. extensible: the enums whose schema marks th
 
 ### New option `--read-format-as-annotation` (`--no-read-format-as-annotation`) (unreleased) { #option-read-format-as-annotation }
 
-Read the format of a schema as an annotation, as JSON Schema does: a string, integer or number schema takes the type its type keyword gives (str, int, float), with its own length, pattern and bound keywords, so every value the schema accepts validates and dumps as written, and an unknown format gives no warning; a format that a --type-mappings entry names for the schema's type keeps that mapping, and format: binary stays bytes. Without it each known format selects a type (EmailStr, AwareDatetime, UUID, Decimal, SecretStr, Base64Str, ...), as in 0.96.0
+Read the format of a schema as an annotation, as JSON Schema does: a string, integer or number schema takes the type its type keyword gives (str, int, float), with its own length, pattern and bound keywords, so every value the schema accepts validates, a string or integer dumps as written (a number as the float it parses to, as without a format), and an unknown format gives no warning; a format that a --type-mappings entry names for the schema's type keeps that mapping, and format: binary stays bytes. Without it each known format selects a type (EmailStr, AwareDatetime, UUID, Decimal, SecretStr, Base64Str, ...), as in 0.96.0
 
 - **Source:** the command-line options of both releases
 
@@ -38,7 +38,7 @@ Read the Kubernetes schema extensions as the keywords they stand for: x-kubernet
 
 ### New option `--untyped-value-type` (unreleased) { #option-untyped-value-type }
 
-Write each value the schema leaves untyped ({}, true, a schema without type, the values of an object without properties and the items of an array without items) as this type instead of Any: pydantic.JsonValue (Pydantic 2.5 or later), object, Any or the dotted import path of a type of your own, which the models import; the structure is as without the option. --type-overrides, x-python-type and x-python-import keep their types, and msgspec.Struct output keeps Any, which msgspec decodes into JSON values. Without it untyped values are Any, and object in containers under --use-object-type, as in 0.96.0
+Write each value the schema leaves untyped ({}, true, a schema whose keywords give it no type, the values of an object without properties and the items of an array without items) as this type instead of Any: pydantic.JsonValue (Pydantic 2.5 or later), object, Any or the dotted import path of a type of your own, which the models import; the structure is as without the option. --type-overrides, x-python-type and x-python-import keep their types, and msgspec.Struct output keeps Any, which msgspec decodes into JSON values. Without it untyped values are Any, and object in containers under --use-object-type, as in 0.96.0
 
 - **Source:** the command-line options of both releases
 
@@ -56,7 +56,7 @@ They keep the options of the 20261112 presets and add:
 - Extensible enums accept new values (`--open-enums extensible`): Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] | str, instead of rejecting them.
 - Discriminators inferred from tags (`--infer-union-discriminators`): Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names.
 - Kubernetes extensions read (`--read-kubernetes-extensions`): Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does.
-- Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values.
+- Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.
 
 - **Source:** the registry of deprecations, experimental features and dated presets
 

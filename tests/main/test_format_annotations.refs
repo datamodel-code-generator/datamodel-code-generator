@@ -39,3 +39,6 @@ on	main/format_annotations/read_format_as_annotation_mcp_tools[on].py
 [test_read_format_as_annotation_openapi]
 off	main/format_annotations/read_format_as_annotation_openapi[off].py
 on	main/format_annotations/read_format_as_annotation_openapi[on].py
+[test_schema_readings_keep_discriminator_mappings]
+read-format-as-annotation	main/format_annotations/schema_readings_keep_discriminator_mappings[read-format-as-annotation].py
+use-single-value-enum-as-const	main/format_annotations/schema_readings_keep_discriminator_mappings[use-single-value-enum-as-const].py

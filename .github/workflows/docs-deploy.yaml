@@ -84,8 +84,12 @@ jobs:
           PLAYGROUND_CHECKOUT_REF: ${{ inputs.checkout_ref }}
           PLAYGROUND_DEPLOY_BRANCH: ${{ inputs.deploy_branch }}
           PLAYGROUND_MAIN_ASSET_BASE: ${{ inputs.deploy_branch != '' && github.repository == 'datamodel-code-generator/datamodel-code-generator' && './generated/main/' || '' }}
+      - name: Build upgrade guide range pages
+        run: uv run python scripts/build_migration_docs.py --range-pages docs/migration
       - name: Build site
         run: uv run zensical build --clean
+      - name: Publish per-release upgrade Markdown
+        run: uv run python scripts/build_migration_docs.py --raw-site site
       - name: Publish standalone playground route
         run: |
           rm -rf site/playground

@@ -55,6 +55,8 @@ set-default-enum-member	main/openapi/open_enums/open_enum_literals_beside_enum_o
 strict-types	main/openapi/open_enums/open_enum_literals_beside_enum_options[strict-types].py
 subclass-310	main/openapi/open_enums/open_enum_literals_beside_enum_options[subclass-310].py
 use-type-alias	main/openapi/open_enums/open_enum_literals_beside_enum_options[use-type-alias].py
+[test_open_enum_literals_without_type]
+	main/openapi/open_enums/open_enum_literals_without_type.py
 [test_open_enums_turned_off_in_preset]
 command-line	main/openapi/open_enums/turned_off_in_preset[command-line].py
 pyproject	main/openapi/open_enums/turned_off_in_preset[pyproject].py	= main/openapi/open_enums/turned_off_in_preset[command-line].py

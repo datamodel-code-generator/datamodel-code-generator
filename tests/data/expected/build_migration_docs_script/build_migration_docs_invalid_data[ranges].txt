@@ -1,5 +1,7 @@
 exit 1
 Invalid migration data:
 - entry unknown-flag: keep.flags '--no-such-option': unrecognized arguments: --no-such-option
+- entry conditional-unknown-flag: keep.flags '--no-such-conditional-option': unrecognized arguments: --no-such-conditional-option
+- entry unreleased-unknown-flag: keep.flags '--no-such-unreleased-option': unrecognized arguments: --no-such-unreleased-option
 - range from 0.1.0: datetime-class-again and datetime-class set output-datetime-class differently
 written: []

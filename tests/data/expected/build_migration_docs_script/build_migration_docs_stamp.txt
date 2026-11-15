@@ -1,6 +1,12 @@
-exits [0, 1], without --tag-tree 2
+exits [1, 1, 1, 0, 1], without --tag-tree 2
 stamped 0.5.0: custom-template-root
 
+Invalid migration data:
+- unreleased/custom-template-root.toml differs from the tag's; move later edits to a new fragment
+Invalid migration data:
+- --tag-tree: the surface of its src cannot be read: no surface
+Invalid migration data:
+- --tag-tree: src/datamodel_code_generator/preset_names.py cannot be read
 Invalid migration data:
 - 0.5.0 does not come after the latest release 0.5.0
 
@@ -233,6 +239,7 @@ source = "release-note"
 
 --- data/migration.json ---
 {
+ "changelog": "https://github.com/datamodel-code-generator/datamodel-code-generator/blob/main/CHANGELOG.md",
  "changes": [
   {
    "action": "required",
@@ -593,6 +600,7 @@ source = "release-note"
    "title": "`--old-flag` is removed"
   }
  ],
+ "complete_from": "0.1.0",
  "latest": "0.5.0",
  "ranges": [
   {
@@ -618,6 +626,7 @@ source = "release-note"
     "option:--quiet-flag",
     "preset:20260301"
    ],
+   "complete": true,
    "from": "0.1.0",
    "keep_conditional": {
     "--use-annotated": [
@@ -658,6 +667,7 @@ source = "release-note"
     "option:--quiet-flag",
     "preset:20260301"
    ],
+   "complete": true,
    "from": "0.2.0",
    "keep_conditional": {
     "--use-annotated": [
@@ -689,6 +699,7 @@ source = "release-note"
     "option:--quiet-flag",
     "preset:20260301"
    ],
+   "complete": true,
    "from": "0.3.0",
    "keep_conditional": {},
    "keep_flags": [],
@@ -708,6 +719,7 @@ source = "release-note"
     "option:--quiet-flag",
     "preset:20260301"
    ],
+   "complete": true,
    "from": "0.4.0",
    "keep_conditional": {},
    "keep_flags": [],

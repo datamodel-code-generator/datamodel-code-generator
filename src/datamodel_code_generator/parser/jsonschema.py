@@ -207,6 +207,7 @@ from datamodel_code_generator.model._decisions.enum_kind import (
     holds_inherited_member_value,  # noqa: F401  # Preserve the established parser.jsonschema export.
     holds_member_value,  # noqa: F401  # Preserve the established parser.jsonschema export.
     is_literal_kind,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    json_type,
     literal_value_kind,  # noqa: F401  # Preserve the established parser.jsonschema export.
     values_no_literal_holds,
 )
@@ -7635,26 +7636,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _with_open_enum_type(self, obj: JsonSchemaObject, literal: DataType) -> DataType:
         """Return the Literal type of an enum joined with the type of its schema when the enum is open, else as given.
 
-        The type is what the schema's ``type``, ``format`` and the keywords beside them give without the enum, with
-        the keywords on the type (so the values the enum does not list meet them), else the types of the values; it
-        admits every value of that type the enum does not list. Null stays the nullability of the Literal type.
+        The type is what the schema's ``type``, or else the JSON types of its scalar values, ``format`` and the keywords
+        beside them give without the enum, with the keywords on the type (so the values the enum does not list meet
+        them); it admits every value of that type the enum does not list. Null stays the nullability of the Literal
+        type.
         """
         if not self._schema_enum_is_open(obj):
             return literal
-        types = declared_types(obj.type)
-        opened = (
-            [
-                self._get_constrained_data_type(obj, type_, field_constraints=False)
-                for type_ in non_null_types(types, distinct=True)
-            ]
-            if types
-            else [
-                value_type
-                for value in obj.enum
-                if (value_type := _value_keywords.get_scalar_data_type_from_json_value(self, value)) is not None
-                and value is not None
-            ]
+        types = declared_types(obj.type) or tuple(
+            type_ for value in obj.enum if (type_ := json_type(value)) not in {"array", "object"}
         )
+        opened = [
+            self._get_constrained_data_type(obj, type_, field_constraints=False)
+            for type_ in non_null_types(types, distinct=True)
+        ]
         members = [*(literal.data_types or [self.data_type(literals=literal.literals)])]
         for value_type in opened:
             if value_type not in members:

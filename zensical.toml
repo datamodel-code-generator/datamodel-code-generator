@@ -24,6 +24,7 @@ nav = [
       { "XML Schema" = "xmlschema.md" },
       { "Protocol Buffers / gRPC" = "protobuf.md" },
       { "MCP Tool Schemas" = "mcp-tools.md" },
+      { "Kubernetes Schemas" = "kubernetes.md" },
       { "JSON / YAML / CSV Data" = "jsondata.md" },
       { "GraphQL" = "graphql.md" },
       { "Python Models" = "python-model.md" }
@@ -106,8 +107,8 @@ nav = [
   { "Deprecations" = "deprecations.md" },
   { "Dependency Migration" = "dependency-migration.md" },
   { "Migration" = [
-    { "Output Changes in 0.87.0" = "output-changes/0.87.0.md" },
-    { "Upgrading from an Older Release" = "output-changes/upgrading.md" }
+    { "Upgrade Guide" = "migration/index.md" },
+    { "All Changes by Release" = "migration/changes.md" }
   ]},
   { "Experimental Features" = "experimental.md" },
   { "FAQ" = "faq.md" },
@@ -120,7 +121,8 @@ extra_css = [
 ]
 
 extra_javascript = [
-  "assets/benchmarks/release-benchmarks.js"
+  "assets/benchmarks/release-benchmarks.js",
+  "assets/migration/migration.js"
 ]
 
 [project.theme]

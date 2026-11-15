@@ -22,6 +22,12 @@ on:
       - 'scripts/build_conformance_docs.py'
       - 'scripts/build_architecture_docs.py'
       - 'scripts/build_behaviour_docs.py'
+      - 'scripts/build_migration_docs.py'
+      - 'scripts/behaviour_diff_allowlist.toml'
+      - 'src/datamodel_code_generator/arguments.py'
+      - 'src/datamodel_code_generator/deprecations.py'
+      - 'src/datamodel_code_generator/experimental.py'
+      - 'src/datamodel_code_generator/preset.py'
       - 'scripts/build_release_benchmark_docs.py'
       - 'scripts/build_llms_txt.py'
       - 'scripts/update_generate_prompt_snapshots.py'
@@ -29,6 +35,8 @@ on:
       - 'docs/data/release-benchmarks.json'
       - 'docs/data/release-benchmark-notes.json'
       - 'docs/data/output-changes/*.json'
+      - 'docs/data/migration/**'
+      - 'docs/assets/migration/migration.js'
       - 'docs/assets/benchmarks/release-benchmarks.css'
       - 'docs/assets/benchmarks/release-benchmarks.js'
       - 'tox.ini'
@@ -91,6 +99,9 @@ jobs:
             docs/architecture.md
             docs/performance-benchmarks.md
             docs/output-changes/
+            docs/migration/index.md
+            docs/migration/changes.md
+            docs/data/migration.json
             docs/cli-reference/
             skills/datamodel-code-generator/references/cli-options.md
             docs/llms.txt

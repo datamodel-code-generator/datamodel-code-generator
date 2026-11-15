@@ -1,5 +1,9 @@
 # Every published release since the oldest one the upgrade guide covers, oldest first.
 # `scripts/build_migration_docs.py --stamp` appends a row when a release is published.
+# `complete_from` is the oldest release whose users meet every change in the steps: the changes of the releases up to
+# it are not all written down yet, so the steps from an older release are marked incomplete.
+
+complete_from = "0.95.0"
 
 [[release]]
 version = "0.20.0"

@@ -1,4 +1,5 @@
 {
+ "changelog": "https://github.com/datamodel-code-generator/datamodel-code-generator/blob/main/CHANGELOG.md",
  "changes": [
   {
    "action": "warn",
@@ -764,7 +765,7 @@
    "kind": "cli",
    "release": "unreleased",
    "source": "surface",
-   "summary": "Read the format of a schema as an annotation, as JSON Schema does: a string, integer or number schema takes the type its type keyword gives (str, int, float), with its own length, pattern and bound keywords, so every value the schema accepts validates and dumps as written, and an unknown format gives no warning; a format that a --type-mappings entry names for the schema's type keeps that mapping, and format: binary stays bytes. Without it each known format selects a type (EmailStr, AwareDatetime, UUID, Decimal, SecretStr, Base64Str, ...), as in 0.96.0",
+   "summary": "Read the format of a schema as an annotation, as JSON Schema does: a string, integer or number schema takes the type its type keyword gives (str, int, float), with its own length, pattern and bound keywords, so every value the schema accepts validates, a string or integer dumps as written (a number as the float it parses to, as without a format), and an unknown format gives no warning; a format that a --type-mappings entry names for the schema's type keeps that mapping, and format: binary stays bytes. Without it each known format selects a type (EmailStr, AwareDatetime, UUID, Decimal, SecretStr, Base64Str, ...), as in 0.96.0",
    "title": "New option `--read-format-as-annotation` (`--no-read-format-as-annotation`)"
   },
   {
@@ -782,7 +783,7 @@
    "kind": "cli",
    "release": "unreleased",
    "source": "surface",
-   "summary": "Write each value the schema leaves untyped ({}, true, a schema without type, the values of an object without properties and the items of an array without items) as this type instead of Any: pydantic.JsonValue (Pydantic 2.5 or later), object, Any or the dotted import path of a type of your own, which the models import; the structure is as without the option. --type-overrides, x-python-type and x-python-import keep their types, and msgspec.Struct output keeps Any, which msgspec decodes into JSON values. Without it untyped values are Any, and object in containers under --use-object-type, as in 0.96.0",
+   "summary": "Write each value the schema leaves untyped ({}, true, a schema whose keywords give it no type, the values of an object without properties and the items of an array without items) as this type instead of Any: pydantic.JsonValue (Pydantic 2.5 or later), object, Any or the dotted import path of a type of your own, which the models import; the structure is as without the option. --type-overrides, x-python-type and x-python-import keep their types, and msgspec.Struct output keeps Any, which msgspec decodes into JSON values. Without it untyped values are Any, and object in containers under --use-object-type, as in 0.96.0",
    "title": "New option `--untyped-value-type`"
   },
   {
@@ -800,10 +801,11 @@
    "kind": "preset",
    "release": "unreleased",
    "source": "registry",
-   "summary": "They keep the options of the 20261112 presets and add:\n\n- x-python-import for every reference (`--use-x-python-import-for-every-ref`): Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in another document, and split no request/response model for the readOnly or writeOnly properties of such a schema.\n- Extensible enums accept new values (`--open-enums extensible`): Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] | str, instead of rejecting them.\n- Discriminators inferred from tags (`--infer-union-discriminators`): Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names.\n- Kubernetes extensions read (`--read-kubernetes-extensions`): Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does.\n- Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values.",
+   "summary": "They keep the options of the 20261112 presets and add:\n\n- x-python-import for every reference (`--use-x-python-import-for-every-ref`): Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in another document, and split no request/response model for the readOnly or writeOnly properties of such a schema.\n- Extensible enums accept new values (`--open-enums extensible`): Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] | str, instead of rejecting them.\n- Discriminators inferred from tags (`--infer-union-discriminators`): Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names.\n- Kubernetes extensions read (`--read-kubernetes-extensions`): Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does.\n- Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.",
    "title": "New dated presets `standard-py3XX-20261113` and `practical-py3XX-20261113`"
   }
  ],
+ "complete_from": "0.95.0",
  "latest": "0.96.0",
  "ranges": [
   {
@@ -867,6 +869,7 @@
     "object-keywords-by-type-branch-kinds",
     "pattern-quote-literal"
    ],
+   "complete": false,
    "from": "0.20.0",
    "keep_conditional": {},
    "keep_flags": [],
@@ -946,6 +949,7 @@
     "object-keywords-by-type-branch-kinds",
     "pattern-quote-literal"
    ],
+   "complete": false,
    "from": "0.24.0",
    "keep_conditional": {},
    "keep_flags": [],
@@ -1047,6 +1051,7 @@
     "object-keywords-by-type-branch-kinds",
     "pattern-quote-literal"
    ],
+   "complete": false,
    "from": "0.31.0",
    "keep_conditional": {},
    "keep_flags": [],
@@ -1134,6 +1139,7 @@
     "object-keywords-by-type-branch-kinds",
     "pattern-quote-literal"
    ],
+   "complete": false,
    "from": "0.48.0",
    "keep_conditional": {},
    "keep_flags": [],
@@ -1202,6 +1208,7 @@
     "object-keywords-by-type-branch-kinds",
     "pattern-quote-literal"
    ],
+   "complete": false,
    "from": "0.52.0",
    "keep_conditional": {},
    "keep_flags": [],
@@ -1265,6 +1272,7 @@
     "object-keywords-by-type-branch-kinds",
     "pattern-quote-literal"
    ],
+   "complete": false,
    "from": "0.52.1",
    "keep_conditional": {},
    "keep_flags": [],
@@ -1327,6 +1335,7 @@
     "object-keywords-by-type-branch-kinds",
     "pattern-quote-literal"
    ],
+   "complete": false,
    "from": "0.53.0",
    "keep_conditional": {},
    "keep_flags": [],
@@ -1390,6 +1399,7 @@
     "object-keywords-by-type-branch-kinds",
     "pattern-quote-literal"
    ],
+   "complete": false,
    "from": "0.56.0",
    "keep_conditional": {},
    "keep_flags": [],
@@ -1456,6 +1466,7 @@
     "object-keywords-by-type-branch-kinds",
     "pattern-quote-literal"
    ],
+   "complete": false,
    "from": "0.65.0",
    "keep_conditional": {},
    "keep_flags": [],
@@ -1518,6 +1529,7 @@
     "object-keywords-by-type-branch-kinds",
     "pattern-quote-literal"
    ],
+   "complete": false,
    "from": "0.78.0",
    "keep_conditional": {},
    "keep_flags": [],
@@ -1558,6 +1570,7 @@
     "object-keywords-by-type-branch-kinds",
     "pattern-quote-literal"
    ],
+   "complete": false,
    "from": "0.84.0",
    "keep_conditional": {},
    "keep_flags": [],
@@ -1590,6 +1603,7 @@
     "object-keywords-by-type-branch-kinds",
     "pattern-quote-literal"
    ],
+   "complete": false,
    "from": "0.93.0",
    "keep_conditional": {},
    "keep_flags": [],
@@ -1610,6 +1624,7 @@
     "object-keywords-by-type-branch-kinds",
     "pattern-quote-literal"
    ],
+   "complete": true,
    "from": "0.95.0",
    "keep_conditional": {},
    "keep_flags": [],

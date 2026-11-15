@@ -10,7 +10,7 @@ generated models accept and keep the values Kubernetes does.
 ## 🚀 Quick Start
 
 ```bash
-# A cluster's document of one group version (built-in resources and served CRDs)
+# A cluster's document of one group version (here apps/v1; a CRD is served under its own group version)
 kubectl get --raw /openapi/v3/apis/apps/v1 > apps_v1.json
 datamodel-codegen --input apps_v1.json --input-file-type openapi --output models --read-kubernetes-extensions
 
@@ -25,8 +25,10 @@ The `standard-*-20261113` and later presets set `--read-kubernetes-extensions`.
 ## 📥 Two Ways to Get the Schemas
 
 **Cluster documents.** `kubectl get --raw /openapi/v3/apis/<group>/<version>` (or `/openapi/v3/api/v1` for the core
-group) returns a complete OpenAPI 3.0 document: the resources with their `x-kubernetes-group-version-kind`, the
-`ObjectMeta` they reference and every served CRD as the API server publishes it. Read it with
+group) returns a complete OpenAPI 3.0 document of the resources of that group version, with their
+`x-kubernetes-group-version-kind` and the `ObjectMeta` they reference. A served CRD is in the document of its own
+group version, such as `/openapi/v3/apis/example.com/v1`, as the API server publishes it; `kubectl get --raw
+/openapi/v3` lists the group versions. Read it with
 `--input-file-type openapi`; the dotted schema names (`io.k8s.api.apps.v1.Deployment`) become modules
 (`io/k8s/api/apps/v1.py`). Each document repeats the shared types, so to generate several group versions into one
 package, merge their `components.schemas` first:
@@ -303,14 +305,17 @@ class Widget(BaseModel):
 
 ## 📤 Sending Resources
 
-`apiVersion` and `kind` take their values by default, so a model built without them is complete. Dump it with
-`model_dump(exclude_none=True)` rather than `exclude_unset=True`: a default is not "set", and `exclude_unset` would
-leave `apiVersion` and `kind` out of the request.
+`apiVersion` and `kind` take their values by default, so a model built without them is complete; give the resource a
+`metadata.name` (or `generateName`), which Kubernetes needs to create it. Dump it with
+`model_dump(mode="json", exclude_none=True)` rather than `exclude_unset=True`: a default is not "set", and
+`exclude_unset` would leave `apiVersion` and `kind` out of the request. `mode="json"` writes enum members such as
+`UpdatePolicy.Recreate` as their values, so the result can be sent as JSON.
 
 ```python
-widget = Widget(spec=Spec(replicas=2))
-widget.model_dump(by_alias=True, exclude_none=True)
-# {'apiVersion': 'example.com/v1', 'kind': 'Widget', 'spec': {'replicas': 2}}
+widget = Widget(metadata={"name": "web"}, spec=Spec(replicas=2, updatePolicy="Recreate"))
+widget.model_dump(mode="json", by_alias=True, exclude_none=True)
+# {'apiVersion': 'example.com/v1', 'kind': 'Widget', 'metadata': {'name': 'web'},
+#  'spec': {'replicas': 2, 'updatePolicy': 'Recreate'}}
 ```
 
 ## 🧰 Options That Go Well With It
