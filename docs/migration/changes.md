@@ -85,6 +85,20 @@ Under `--collapse-root-models-name-strategy parent`, a module that named an enum
 +kind: Literal[b.Foo.cat, 'cat']
 ```
 
+### More patterns past the regex size limit no longer fail at import, such as `^\p{L}{1,256}$`, `^.{0,10240}$` and `[\p{L}\p{N}_-]{1,256}` (unreleased) { #regex-size-limit-more-classes }
+
+A `pattern` that every pydantic-core release from 2.0 to 2.50 refuses for size, but that the size check counted below the limit, was written as the schema writes it, and the module failed at import with `Compiled regex exceeds size limit`: a class of several Unicode general categories (`[\p{L}\p{N}_-]{1,256}`, `^[\p{L}\p{Z}\p{N}_.:/=+\-@]{0,256}$`), `\p{Lu}` or `\p{Ll}`, a count that passes the limit only with what the ASCII characters of its atom and its optional copies add (`^\p{L}{1,256}$`, `^.{0,10240}$`, `^[^<>]{1,10000}$`), a counted group of single atoms (`^(?:[\w-]\.?){1,128}@(?:[\w-]\.?){1,128}$`) and an alternation without `^` or `$` in which every branch holds at least one copy of these classes or escapes outside a group (`user-[\w-]{1,128}|group-[\w-]{1,128}`). The model now selects `regex_engine="python-re"` for it; a pattern Python's `re` rejects too, as it rejects `\p{...}`, is left out with a warning. Only patterns that every pydantic-core release from 2.0 to 2.50 refuses are read this way. Output that imported before is unchanged.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`
+- **Keep the old output:** The previous module failed at import; nothing restores it.
+- **Pull requests and issues:** [#6908](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6908)
+- **Source:** the release notes
+
+```diff
+-root: constr(pattern=r'^\p{L}{1,256}$')
++root: str
+```
+
 ### A pattern past the regex size limit by repetitions together or by a Unicode class no longer fails at import (unreleased) { #regex-size-limit-repetitions-together }
 
 A `pattern` whose counted repetitions pass the size limit of Pydantic's default regex engine only together (four classes such as `[\w+=,.@-]{1,64}`), that repeats a class of `\w` and `\d` or `\s` (`^[\w\s-]{1,255}$`), or that repeats a class of a major Unicode general category (`[^\p{C}]{1,2048}`, `[\P{M}\p{M}]{0,20000}`), was written as the schema writes it, and the module failed at import with `Compiled regex exceeds size limit`. The model now selects `regex_engine="python-re"` for it; a pattern Python's `re` rejects too, as it rejects `\p{...}`, is left out with a warning. That is what a single repetition past the limit has got since 0.92.0. Only patterns that every pydantic-core release from 2.0 to 2.50 refuses are read this way. Output that imported before is unchanged.
