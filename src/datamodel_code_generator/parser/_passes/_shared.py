@@ -1949,14 +1949,12 @@ def without_stand_ins(host: BaseStandInHost, models: list[DataModel]) -> list[Da
     return [model for model in models if model_key_of(model.reference) not in stand_ins]
 
 
-ModuleMembersRow: TypeAlias = Literal["members", "members-without-stand-ins", "legacy-raw-members"]
+ModuleMembersRow: TypeAlias = Literal["members", "members-without-stand-ins"]
 """Which models of a module's list ``module_members`` takes for the models the module writes.
 
 ``members`` leaves out the roots that collapse replaced by their inner models, which leave the module at the decision.
 ``members-without-stand-ins`` also leaves out the stand-ins, which are never written
-(``modules.py:change_from_import``). ``legacy-raw-members`` takes every model of the list, the replaced roots
-included, as the repairs of ``cross_module.py`` that import reuse canonicals and enum member literal classes read
-them.
+(``modules.py:change_from_import``).
 """
 
 
@@ -1966,7 +1964,7 @@ class ModuleMembersHost(ReplacedRootsHost, BaseStandInHost, Protocol):
 
 def module_members(host: ModuleMembersHost, models: list[DataModel], *, row: ModuleMembersRow) -> list[DataModel]:
     """Return the models of a module's list ``models`` that the module writes, by ``row`` (``ModuleMembersRow``)."""
-    if row == "legacy-raw-members" or not (replaced_root_models := host._replaced_root_models):  # noqa: SLF001
+    if not (replaced_root_models := host._replaced_root_models):  # noqa: SLF001
         members = models
     else:
         members = [model for model in models if id(model) not in replaced_root_models]

@@ -289,7 +289,7 @@ def import_removed_reuse_canonicals(parser: CrossModuleHost, run: CrossModuleRun
             }
         ):
             continue
-        members = module_member_keys(parser, ctx.models, row="legacy-raw-members")
+        members = module_member_keys(parser, ctx.models, row="members")
         module = ModuleImportTarget.of(parser.imports, ctx, run)
         for model in ctx.models:
             for data_type in _named_data_types(model):
@@ -372,7 +372,7 @@ def import_enum_member_literal_classes(parser: CrossModuleHost, run: CrossModule
     changes after the literal is made.
     """
     for ctx in run.contexts:
-        members = module_member_keys(parser, ctx.models, row="legacy-raw-members")
+        members = module_member_keys(parser, ctx.models, row="members")
         module = ModuleImportTarget.of(parser.imports, ctx, run)
         for model in ctx.models:
             for data_type in model.all_data_types:

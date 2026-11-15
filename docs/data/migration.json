@@ -733,6 +733,28 @@
    "title": "Patterns holding a quote are written without an escaped quote"
   },
   {
+   "action": "review",
+   "affects": {
+    "options": [
+     "--collapse-root-models-name-strategy parent"
+    ]
+   },
+   "after": "kind: Literal[b.Foo.cat, 'cat']",
+   "before": "kind: Literal[Foo.cat, 'cat']",
+   "id": "enum-literal-after-collapsed-alias",
+   "keep": {
+    "note": "The previous module imported, but the models that named the enum failed at first use, as the module did not import it; nothing restores it."
+   },
+   "kind": "default-output",
+   "refs": [
+    "#6842"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "Under `--collapse-root-models-name-strategy parent`, a module that named an enum of another module through a collapsed alias wrote the enum without importing it in two places: in an enum member literal (`--use-enum-values-in-discriminator`, or a const beside an enum under `--read-const-beside-enum`) and, under `--reuse-model`, where the enum replaced a duplicate that reuse removed. The models that named it failed when they were used. The module now imports the enum and writes `Literal[b.Foo.cat, 'cat']`. Output that worked before is unchanged.",
+   "title": "A Literal member of an enum named through a collapsed alias imports the enum"
+  },
+  {
    "action": "warn",
    "affects": {
     "options": [
