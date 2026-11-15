@@ -3,8 +3,8 @@
 ``RunOptions`` is the one record every question "was this option given, and by whom" reads. It is built once per
 entry of a run from the sources that entry has, before any value is validated: the command line from its arguments
 and the ``pyproject.toml`` values (base table, profile and job merged), ``load_pyproject_config()`` from the keys it
-keeps and its overrides, ``generate()`` from the fields its config has set. The option stages read it and return it
-with the fields each of them gave a value (``__init__.py:_run_option_stages``).
+keeps and its overrides, ``generate()`` from the fields its config has set, with their values. The option stages read
+it and return it with the fields each of them gave a value (``__init__.py:_run_option_stages``).
 
 The record is history: a later write to the config does not change it, and a copy of a config shares it.
 """
@@ -27,9 +27,10 @@ class RunOptions:
     arguments: Mapping[str, Any] = field(default_factory=dict)
     """The values the caller gave over them, by field name: the command-line arguments, or the overrides of
     ``load_pyproject_config()``."""
-    fields_set: frozenset[str] = frozenset()
-    """The fields a config without those sources had set when its run started (``generate()``; row
-    ``given-is-fields-set``: a validator, a loader and an earlier copy count as the caller)."""
+    fields_set: Mapping[str, Any] = field(default_factory=dict)
+    """The fields a config without those sources had set when its run started, each with the value it had
+    (``generate()``; row ``given-is-fields-set``: a validator, a loader and an earlier copy count as the caller), or
+    None for the fields of a config ``load_pyproject_config()`` returned, whose values do not say who gave them."""
     staged: Mapping[str, str] = field(default_factory=dict)
     """Each field an option stage gave a value, with the stage that gave it last, in the order they were first given."""
 
@@ -40,7 +41,7 @@ class RunOptions:
     @property
     def given(self) -> frozenset[str]:
         """The fields a source of the run gave: never one that only a preset or an implied setting set."""
-        return self.fields_set.union(self.pyproject, self.arguments)
+        return frozenset(self.fields_set).union(self.pyproject, self.arguments)
 
     @property
     def preset_explicit(self) -> frozenset[str]:
@@ -62,8 +63,12 @@ class RunOptions:
         return {**self.pyproject, **self.arguments}
 
     def given_value(self, name: str) -> Any:
-        """Return the value a field was given, an argument's over the pyproject.toml one; None for a field not given."""
-        return self.arguments.get(name, self.pyproject.get(name))
+        """Return the value a field was given; None for a field not given.
+
+        An argument's value comes before the pyproject.toml one; a config without those sources gives the value the
+        field had when its run started.
+        """
+        return self.arguments.get(name, self.pyproject.get(name, self.fields_set.get(name)))
 
     def staged_by(self, stage: str) -> tuple[str, ...]:
         """Return the fields whose value an option stage gave, in the order it gave them."""

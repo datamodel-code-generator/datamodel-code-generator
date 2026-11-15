@@ -167,6 +167,7 @@ from datamodel_code_generator._project_config import profile_table_keys as _prof
 from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._run_record import RunOptions
 from datamodel_code_generator._url_redaction import is_url, redact_url
+from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.arguments import _reset_namespace, arg_parser, namespace
 from datamodel_code_generator.deprecations import render_deprecations, warn_deprecated
 from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES, _ExitCode
@@ -340,9 +341,11 @@ def _run_cli_option_stages(
     """Return a config with the values option stages of the command line give it, carrying the record of the run.
 
     The record of what the stages gave replaces the one the config carried: on the copy the stages made, or on the
-    config itself when no value changed. No record is ever written.
+    config itself when no value changed. No record is ever written. `--disable-warnings` silences the warnings of
+    the stages, which run before the run installs its filter (`_apply_model_run_options`).
     """
-    config, record = _run_option_stages(config, record, stages, checks)
+    with quiet() if config.disable_warnings else nullcontext():
+        config, record = _run_option_stages(config, record, stages, checks)
     config._run_options = record  # noqa: SLF001
     return config
 
