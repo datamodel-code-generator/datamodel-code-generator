@@ -1122,6 +1122,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self.raw_obj: dict[str, YamlValue] = {}
         self._all_of_root_value_ref_stack: set[tuple[_TargetNode, ...]] | None = None
         self._root_pattern_string_constraints: JsonSchemaObject | None = None
+        self._parsed_branches: tuple[JsonSchemaObject | None, str, list[JsonSchemaObject]] = (None, "", [])
+        """The site, keyword and branches the last ``parse_combined_schema`` parsed (``_parse_all_of_union_parts``)."""
         self._init_schema_resources()
         self._pattern_validation_document_root: JsonSchemaObject | None = None
         self._root_id: Optional[str] = None  # noqa: UP045
@@ -3661,9 +3663,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 self, cast("list[JsonSchemaObject | bool]", item_schemas)
             )
 
-    def _merge_all_of_root_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
-        """Unwrap one value schema or merge mapping-shaped allOf items into a root schema."""
-        return _all_of_values.merge_all_of_root_schema(self, obj)
+    def _merge_all_of_root_schema(
+        self, obj: JsonSchemaObject, site: _all_of_values.ValueSite | None = None
+    ) -> JsonSchemaObject | None:
+        """Unwrap one value schema or merge mapping-shaped allOf items into a root schema.
+
+        ``site`` is the record of the value parts of ``obj`` its caller reads (``_all_of_values.ValueSite``).
+        """
+        return _all_of_values.merge_all_of_root_schema(self, site or _all_of_values.ValueSite(self, obj))
 
     def _merge_value_schemas(self, schemas: list[JsonSchemaObject]) -> JsonSchemaObject | None:
         """Merge schemas that constrain one value, unless their types, formats or literals disagree."""
@@ -3692,22 +3699,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         return self._schema_object(merged)
 
-    def _satisfiable_all_of_value_parts(self, obj: JsonSchemaObject) -> list[JsonSchemaObject] | None:
+    def _satisfiable_all_of_value_parts(self, site: _all_of_values.ValueSite) -> list[JsonSchemaObject] | None:
         """Return the parts of an allOf site whose members each describe one value, references resolved, else None.
 
         A site whose parts no value meets in common gets None, and a warning unless ``legacy-all-of-site-form`` is kept:
-        it keeps the form it is written in, and a form that cannot be generated takes its first part.
+        it keeps the form it is written in, and a form that cannot be generated takes its first part. ``site`` is the
+        record of its value parts (``_all_of_values.ValueSite``), the warning is asked at every call.
         """
-        if (parts := _all_of_values.all_of_value_parts(self, obj)) is None:
+        if (parts := site.parts) is None:
             return None
-        unsatisfiable = _all_of_values.unsatisfiable_value_keywords(self, parts)
         if "legacy-all-of-site-form" not in self._legacy_intersection:
             self._warn_unsatisfiable(
-                named_location(obj.schema_location, "allOf"),
-                unsatisfiable,
+                named_location(site.obj.schema_location, "allOf"),
+                site.unsatisfiable,
                 _ALL_OF_PARTS,
             )
-        return None if unsatisfiable else parts
+        return None if site.unsatisfiable else parts
 
     def _site_schema(self, obj: JsonSchemaObject, *, merge_ref_siblings: bool = False) -> JsonSchemaObject:
         """Return ``obj`` as a site reads it: an array ``allOf`` as one value schema, a false allOf as ``false``.
@@ -3930,7 +3937,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         Each member records the location of the branch it is parsed from as its origin (``reference.type_origin_of``),
         also the member that stands for a referenced branch. The model paths of ``$ref`` branches number the variants
         in union order, a branch a discriminator expanded counting its subtypes where the site distributes its
-        ``allOf`` members.
+        ``allOf`` members. The branches it parsed are left in ``_parsed_branches`` for the caller to take.
         """
         combined_schemas, refs = self._combined_schema_members(obj, target_attribute_name)
         variant_keys: dict[int, str] = {}
@@ -3995,6 +4002,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else:
                 data_types.append(d)
                 position += 1
+        self._parsed_branches = obj, target_attribute_name, combined_schemas
         return data_types
 
     def _ref_branch_takes_no_site_parts(self, obj: JsonSchemaObject, branch: JsonSchemaObject) -> bool:
@@ -4572,9 +4580,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         A part holds the models of its branches. Under ``legacy-union-parts-joined`` every part is parsed at the site's
         path; else the first part of the site is, and part ``p`` at ``union_part-<p>`` below it, so the branches of two
-        parts are different models. ``branch_schemas`` takes, by the path of each model, the branch it is parsed from
-        (``_combined_schema_members``, read again without its warnings). Unless ``legacy-union-parts-joined`` is kept, a
-        ``$ref`` branch a discriminator expanded holds the models of its subtypes (``_expanded_variants``).
+        parts are different models. ``branch_schemas`` takes, by the path of each model, the branch it is parsed from:
+        those ``parse_combined_schema`` leaves (``_parsed_branches``), else, where a subclass's hook parsed another
+        object, ``_combined_schema_members`` read again without warnings. Unless ``legacy-union-parts-joined`` is
+        kept, a ``$ref`` branch a discriminator expanded holds the models of its subtypes (``_expanded_variants``).
         """
         for keyword, parse in (("anyOf", self.parse_any_of), ("oneOf", self.parse_one_of)):
             if getattr(schema, keyword):
@@ -4584,8 +4593,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     else get_special_path(f"union_part-{len(union_parts)}", path)
                 )
                 parsed = parse(name, schema, part_path)
-                with quiet():
-                    branches, _ = self._combined_schema_members(schema, keyword)
+                parsed_site, parsed_keyword, branches = self._parsed_branches
+                if parsed_site is not schema or parsed_keyword != keyword:
+                    with quiet():
+                        branches, _ = self._combined_schema_members(schema, keyword)
                 branch_schemas.update(
                     (data_type.reference.path, branch)
                     for data_type, branch in zip(parsed, branches, strict=True)
@@ -4952,14 +4963,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         with self._model_frame() as frame:
             if _lightweight_types.contains_false_schema(self, obj.allOf):
                 _all_of_values.raise_unsatisfiable_schema(self, obj, path, "allOf")
+            site = _all_of_values.ValueSite(self, obj)
             if "legacy-all-of-site-form" not in self._legacy_intersection:
-                self._satisfiable_all_of_value_parts(obj)
+                self._satisfiable_all_of_value_parts(site)
 
             single_ref_result = self._parse_all_of_single_ref(name, obj, path)
             if single_ref_result is not None:
                 return frame.built(single_ref_result)
 
-            if merged_root := self._merge_all_of_root_schema(obj):
+            if merged_root := self._merge_all_of_root_schema(obj, site):
                 if self.generate_schema_validators and self._root_validates_literals:
                     return frame.built(
                         self._parse_all_of_root_value(name, merged_root.with_schema_location(obj.schema_location), path)
@@ -5019,10 +5031,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if not (fields or required or union_models) and (
                 value_root := _all_of_values.merge_all_of_value_schema(self, obj, path, base_classes)
                 or (
-                    _all_of_values.reference_site_schema(self, obj)
+                    _all_of_values.reference_site_schema(self, site)
                     if ignore_duplicate_model and len(base_classes) == 1
-                    else _all_of_values.all_of_root_value_schema(self, obj)
-                    or _all_of_values.all_of_enum_site_schema(self, obj)
+                    else _all_of_values.all_of_root_value_schema(self, site)
+                    or _all_of_values.all_of_enum_site_schema(self, site)
                 )
             ):
                 return frame.built(
@@ -5040,7 +5052,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     nullable=nullable,
                 )
                 if not fields and len(base_classes) == 1 and data_type.reference is base_classes[0]:
-                    self._record_site_constraints(obj, data_type)
+                    self._record_site_constraints(site, data_type)
                 return frame.built(data_type)
             reference = self.model_resolver.add(path, name, class_name=True, loaded=True)
             self._record_schema_object(reference, obj)
@@ -6140,17 +6152,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             is_custom_type=True,
         )
 
-    def _record_site_constraints(self, obj: JsonSchemaObject, data_type: DataType) -> DataType:
-        """Keep on ``data_type`` the constraints the allOf site ``obj`` adds to the target of its first ``$ref``.
+    def _record_site_constraints(self, site: _all_of_values.ValueSite, data_type: DataType) -> DataType:
+        """Keep on ``data_type`` the constraints the allOf site ``site`` adds to the target of its first ``$ref``.
 
         ``data_type`` is the type of the site where it names that target alone (``reference_site_constraints``); a
         type that names another model keeps none. Return ``data_type``.
         """
+        obj = site.obj
         if (
             (reference := data_type.reference) is not None
             and (first := next((item for item in obj.allOf if isinstance(item, JsonSchemaObject) and item.ref), None))
             and reference.path == self._ref_path(cast("str", first.ref))
-            and (constraints := _all_of_values.reference_site_constraints(self, obj))
+            and (constraints := _all_of_values.reference_site_constraints(self, site))
         ):
             self._graph_builder.record_site_constraints(data_type, constraints)
         return data_type
@@ -6176,7 +6189,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
             return self.parse_root_type(root_model_name, item, all_of_path)
         if (ref := self._all_of_member_ref(item)) is not None:
-            reference_site = self._all_of_ref_site_form(item, ref)
+            reference_site = self._all_of_ref_site_form(values := _all_of_values.ValueSite(self, item), ref)
             if isinstance(reference_site, JsonSchemaObject):
                 with self.model_resolver.yielding_new_references():
                     site_type = self._parse_all_of_merged_root(
@@ -6187,7 +6200,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 self._site_model_keys.add(model_key_of(site_type.reference))
                 return site_type
             if reference_site:
-                return self._record_site_constraints(item, self.get_ref_data_type(ref))
+                return self._record_site_constraints(values, self.get_ref_data_type(ref))
         with (
             self.model_resolver.yielding_new_references()
             if self.config.use_site_models_for_constrained_refs
@@ -6381,7 +6394,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if (ref := self._all_of_member_ref(obj)) is not None:
             if self._import_types_ref(ref, defining_ref):
                 with self._inherited_ref_context(defining_ref):
-                    if self._all_of_ref_site_form(obj, ref) is True:
+                    if self._all_of_ref_site_form(_all_of_values.ValueSite(self, obj), ref) is True:
                         return ()
         elif (ref := self._all_of_class_ref(obj)) is not None and self._import_types_ref(
             ref, defining_ref, one_class=True
@@ -6403,17 +6416,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return None
         return member.ref
 
-    def _all_of_ref_site_form(self, obj: JsonSchemaObject, ref: str) -> JsonSchemaObject | bool:
+    def _all_of_ref_site_form(self, site: _all_of_values.ValueSite, ref: str) -> JsonSchemaObject | bool:
         """Return the form of an allOf site whose one member is the ``$ref`` ``ref`` (``_all_of_member_ref``).
 
         The schema of the root model the site leaves that reference for (``reference_site_schema``); else True where
         ``get_ref_data_type`` types the site as the reference, and False where the site requires a name the model the
         reference names does not, so ``parse_all_of`` builds a model of it.
         """
-        if (reference_site := _all_of_values.reference_site_schema(self, obj)) is not None:
+        if (reference_site := _all_of_values.reference_site_schema(self, site)) is not None:
             return reference_site
         return not self._adds_required_names(
-            self._get_inline_required_names(obj), partial(self._ref_required_names, ref)
+            self._get_inline_required_names(site.obj), partial(self._ref_required_names, ref)
         )
 
     def _all_of_class_ref(self, obj: JsonSchemaObject) -> str | None:
@@ -7066,8 +7079,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     else:  # pragma: no cover
                         data_type = data_types[0]
             case "all-of":
-                value_obj = obj
-                parts: list[JsonSchemaObject] = []
+                value_obj, values, parts = obj, _all_of_values.ValueSite(self, obj), []
                 if (
                     "legacy-all-of-site-form" not in self._legacy_intersection
                     and _all_of_values.collect_all_of_value_parts(self, obj, parts)
@@ -7081,10 +7093,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     if not (inline_value.enum or "const" in inline_value.extras):
                         constraint_obj = inline_value
                 elif (self.field_constraints or preserve_constraints) and (
-                    referenced_value := _all_of_values.all_of_reference_value_schema(self, obj)
+                    referenced_value := _all_of_values.all_of_reference_value_schema(self, values)
                 ) is not None:
                     value_obj = constraint_obj = referenced_value
-                elif (site_keywords := _all_of_values.legacy_site_keywords(self, obj)) is not None:
+                elif (site_keywords := _all_of_values.legacy_site_keywords(self, values)) is not None:
                     constraint_obj = site_keywords
                 data_type = (
                     self._enum_literal(
@@ -7096,7 +7108,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if data_type is None:  # pragma: no cover
                     data_type = self.data_type_manager.get_data_type(Types.any)
                 elif value_obj is obj and data_type.reference is not None:
-                    self._record_site_constraints(obj, data_type)
+                    self._record_site_constraints(values, data_type)
             case "object-map":
                 data_type = self._parse_object_map(name, obj, path, path)
             case "enum":

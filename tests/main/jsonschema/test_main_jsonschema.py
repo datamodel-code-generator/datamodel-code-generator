@@ -39761,6 +39761,26 @@ def test_main_jsonschema_one_of_without_member_types_beside_properties() -> None
     assert_output(str(parser.parse()))
 
 
+class _UnionCopyParser(JsonSchemaParser):
+    """Parses a copy of the schema of each `anyOf` and `oneOf`: a hook that hands another object to the parser."""
+
+    def parse_any_of(self, name: str, obj: Any, path: list[str]) -> list[Any]:
+        return super().parse_any_of(name, obj.model_copy(), path)
+
+    def parse_one_of(self, name: str, obj: Any, path: list[str]) -> list[Any]:
+        return super().parse_one_of(name, obj.model_copy(), path)
+
+
+@pytest.mark.parametrize("keyword", ["all_of_any_of", "all_of_one_of"])
+def test_main_jsonschema_all_of_union_parsed_from_a_copy(keyword: str) -> None:
+    """An allOf over a union whose `anyOf` or `oneOf` a subclass parses from a copy is the union of its variants.
+
+    Each variant joins one branch with the other part, as the parser builds them without the subclass.
+    """
+    parser = _UnionCopyParser(JSON_SCHEMA_DATA_PATH / keyword / "direct.json", formatters=[Formatter.BUILTIN])
+    assert_output(str(parser.parse()))
+
+
 def test_main_jsonschema_reserved_target_of_a_rewritten_document(tmp_path: Path) -> None:
     """A target another file reserves in a document whose embedded `$id` rewrites a reference is read as prepared.
 
