@@ -28,6 +28,7 @@ How do I convert enums to Literal types?
 - `--no-read-ids-with-empty-fragment`
 - `--no-read-input-model-dataclass-fields-by-alias`
 - `--no-read-schema-version-per-document`
+- `--no-read-yaml-1-1-numbers-as-text`
 - `--no-reuse-every-reached-input-model-type`
 - `--output`: Specify the destination path for generated Python code.
 - `--preset`: Apply an immutable built-in option preset.
@@ -36,6 +37,7 @@ How do I convert enums to Literal types?
 - `--read-ids-with-empty-fragment`: Read an `$id` that ends with an empty fragment as the document that declares...
 - `--read-input-model-dataclass-fields-by-alias`: Read the fields of a Pydantic dataclass by their aliases with ...
 - `--read-schema-version-per-document`: Read each document by the schema version it declares.
+- `--read-yaml-1-1-numbers-as-text`: Read the unquoted YAML values that only YAML 1.1 reads as numbers as their ...
 - `--reuse-every-reached-input-model-type`: Reach the types to reuse through every model kind and write no copy ...
 - `--schema-version`: Schema version to use for parsing.
 - `--schema-version-mode`: Schema version validation mode.
@@ -628,6 +630,17 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         gives every document its version; the schema
                         validators then read an OpenAPI or AsyncAPI document
                         by it only with the option, else as draft 7.
+  --read-yaml-1-1-numbers-as-text, --no-read-yaml-1-1-numbers-as-text
+                        Read an unquoted YAML value with _ or : that YAML 1.1
+                        reads as a number, such as 16:9 (969 in base 60),
+                        18_24 or 1_000, as its text, as YAML 1.2, which
+                        OpenAPI names, and the ryaml reader read it, also in
+                        enum, default, const, examples, extensions and YAML
+                        data input. Without it such a value is the number YAML
+                        1.1 reads, as in 0.96.0, except where a string is
+                        required in a document that the number makes invalid
+                        (a pattern, a format, a description, a component or
+                        property name), where it is its text.
   --reuse-every-reached-input-model-type, --no-reuse-every-reached-input-model-type
                         With --input-model-ref-strategy reuse-all or reuse-
                         foreign, reach the types to reuse through the fields

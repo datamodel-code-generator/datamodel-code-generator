@@ -2155,6 +2155,9 @@ openapi/x_enum_varnames.yaml::components.schemas.unknown_type_string	payloads/na
 openapi/x_property_names.yaml::components.schemas.PatternKeys	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/x_property_names_false.yaml::components.schemas.NoKeys	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/x_property_names_non_dict.yaml::components.schemas.NonDictPropertyNames	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/yaml_1_1_numbers/quoted.yaml::components.schemas.18_24	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/yaml_1_1_numbers/quoted.yaml::components.schemas.PickThumbnail	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/yaml_1_1_numbers/quoted.yaml::components.schemas.VideoAspectRatio	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 [test_generated_pydantic_v2_model_dumps_schema_valid_payloads]
 jsonschema/additional_import_named_like_unused_model.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/additional_items_schema_tuple.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -4284,6 +4287,9 @@ openapi/x_enum_varnames.yaml::components.schemas.unknown_type_string	payloads/na
 openapi/x_property_names.yaml::components.schemas.PatternKeys	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/x_property_names_false.yaml::components.schemas.NoKeys	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/x_property_names_non_dict.yaml::components.schemas.NonDictPropertyNames	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/yaml_1_1_numbers/quoted.yaml::components.schemas.18_24	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/yaml_1_1_numbers/quoted.yaml::components.schemas.PickThumbnail	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/yaml_1_1_numbers/quoted.yaml::components.schemas.VideoAspectRatio	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 [test_numeric_payload_sampling_preserves_source_schemas]
 	payloads/numeric_sampling.txt
 [test_numeric_payload_sampling_validates_generated_models]

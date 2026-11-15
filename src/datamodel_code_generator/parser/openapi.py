@@ -16,7 +16,8 @@ from functools import cache, cached_property, partial
 from operator import getitem
 from pathlib import Path
 from re import Pattern
-from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Final, Optional, TypeVar, Union, cast
+from types import UnionType
+from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Final, Optional, TypeVar, Union, cast, get_args, get_origin
 from warnings import warn
 
 from pydantic import Field, StrictBool, ValidationError, WrapValidator, field_validator
@@ -61,6 +62,7 @@ from datamodel_code_generator.parser._schema_object import _has_map_key_keywords
 from datamodel_code_generator.parser._schema_refs import ref_file_document
 from datamodel_code_generator.parser.base import Result, get_special_path
 from datamodel_code_generator.parser.jsonschema import (
+    Discriminator,
     JsonSchemaObject,
     JsonSchemaParser,
     _all_of_applies,
@@ -91,7 +93,7 @@ from datamodel_code_generator.types import (
     EmptyDataType,  # noqa: F401  # Preserve the established parser.openapi export.
     build_union,
 )
-from datamodel_code_generator.util import BaseModel
+from datamodel_code_generator.util import BaseModel, YamlStringKeywords
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterator, Sequence
@@ -306,6 +308,82 @@ _ROLE_MODELS: dict[str, type[BaseModel]] = {
     "header": ParameterObject,
 }
 """The model that validates an object of each such role; a response's headers validate as parameter objects."""
+_DOCUMENT_MODELS: Final = (
+    JsonSchemaObject,
+    Discriminator,
+    ReferenceObject,
+    ExampleObject,
+    MediaObject,
+    RawMediaObject,
+    ParameterObject,
+    HeaderObject,
+    RequestBodyObject,
+    ResponseObject,
+    Operation,
+    ComponentsObject,
+)
+"""The models that validate the objects of an OpenAPI or a JSON Schema document."""
+_VALUE_SHAPES: Final = ("scalar", "list", "map")
+
+
+def _value_kinds(annotation: object) -> dict[str, set[str]]:
+    """Return whether a field typed ``annotation`` admits a string, a number, both or neither, in each shape of value.
+
+    The shapes are the value itself, the items of a list and the values of a map; None and a model admit neither. A
+    type this reading does not know, such as ``Any``, may hold a number in any shape.
+    """
+    kinds: dict[str, set[str]] = {shape: set() for shape in _VALUE_SHAPES}
+
+    def visit(member: object, shape: str) -> None:
+        origin = get_origin(member)
+        if origin in {Union, UnionType}:
+            for argument in get_args(member):
+                visit(argument, shape)
+        elif origin is Annotated:
+            visit(get_args(member)[0], shape)
+        elif shape == "scalar" and origin in {list, dict}:
+            visit(get_args(member)[-1], "list" if origin is list else "map")
+        elif member is str or (
+            isinstance(member, type)
+            and issubclass(member, Enum)
+            and all(isinstance(item.value, str) for item in member)
+        ):
+            kinds[shape].add("string")
+        elif (
+            member is type(None)
+            or origin in {list, dict}
+            or (isinstance(member, type) and issubclass(member, BaseModel))
+        ):
+            return
+        else:
+            kinds[shape].add("number")
+            if shape == "scalar" and member not in {bool, int, float}:
+                kinds["list"].add("number")
+                kinds["map"].add("number")
+
+    visit(annotation, "scalar")
+    return kinds
+
+
+@cache
+def yaml_string_keywords() -> YamlStringKeywords:
+    """Return the keywords whose values the document models read as strings: a scalar, a list's items, a map's values.
+
+    A keyword is in a shape where a model types it as strings in that shape and none types it as admitting a number
+    there, so ``examples`` (any value in a schema object) and a scalar ``required`` (a boolean in a parameter) are not.
+    A run whose YAML 1.1 reading of numbers is refused reads them again as text there (``settle_yaml_numbers``).
+    """
+    strings: dict[str, set[str]] = {shape: set() for shape in _VALUE_SHAPES}
+    numbers: dict[str, set[str]] = {shape: set() for shape in _VALUE_SHAPES}
+    for model in _DOCUMENT_MODELS:
+        for name, field in model.model_fields.items():
+            for shape, kinds in _value_kinds(field.annotation).items():
+                if "number" in kinds:
+                    numbers[shape].add(field.alias or name)
+                elif kinds:
+                    strings[shape].add(field.alias or name)
+    scalars, lists, maps = (frozenset(strings[shape] - numbers[shape]) for shape in _VALUE_SHAPES)
+    return YamlStringKeywords(scalars=scalars, lists=lists, maps=maps)
 
 
 def _held_members(role: str, model: type[BaseModel]) -> tuple[tuple[str, str, str], ...]:

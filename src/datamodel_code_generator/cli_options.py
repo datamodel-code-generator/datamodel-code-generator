@@ -253,6 +253,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--read-dynamic-anchors-in-document-order --no-read-dynamic-anchors-in-document-order",
         "--read-ids-with-empty-fragment --no-read-ids-with-empty-fragment",
         "--ignore-ref-siblings-by-schema-version --no-ignore-ref-siblings-by-schema-version",
+        "--read-yaml-1-1-numbers-as-text --no-read-yaml-1-1-numbers-as-text",
         "--external-ref-mapping --preset",
     ),
     **_opts(

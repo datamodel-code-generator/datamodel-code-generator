@@ -136,6 +136,8 @@ openapi/anchor_object_documents/held_after_pointer/parameter.yaml	yaml_fast_cons
 openapi/anchor_object_documents/held_after_pointer/request_body.yaml	yaml_fast_constructor/parity.txt
 openapi/anchor_object_documents/held_after_pointer/request_body_api.yaml	yaml_fast_constructor/parity.txt
 openapi/anchor_object_documents/held_after_pointer/two_documents_api.yaml	yaml_fast_constructor/parity.txt
+openapi/anchor_object_documents/held_after_pointer/yaml_numbers_api.yaml	yaml_fast_constructor/parity.txt
+openapi/anchor_object_documents/held_after_pointer/yaml_numbers_parameter.yaml	yaml_fast_constructor/parity.txt
 openapi/anchor_object_documents/held_by_cyclic_path_item/api.yaml	yaml_fast_constructor/parity.txt
 openapi/anchor_object_documents/held_by_cyclic_path_item/path_item.yaml	yaml_fast_constructor/parity.txt
 openapi/anchor_object_documents/held_by_path_item/api.yaml	yaml_fast_constructor/parity.txt
@@ -727,6 +729,12 @@ openapi/x_enum_varnames.yaml	yaml_fast_constructor/parity.txt
 openapi/x_property_names.yaml	yaml_fast_constructor/parity.txt
 openapi/x_property_names_false.yaml	yaml_fast_constructor/parity.txt
 openapi/x_property_names_non_dict.yaml	yaml_fast_constructor/parity.txt
+openapi/yaml_1_1_numbers/names.yaml	yaml_fast_constructor/parity.txt
+openapi/yaml_1_1_numbers/pattern.yaml	yaml_fast_constructor/parity.txt
+openapi/yaml_1_1_numbers/positions.yaml	yaml_fast_constructor/parity.txt
+openapi/yaml_1_1_numbers/quoted.yaml	yaml_fast_constructor/parity.txt
+openapi/yaml_1_1_numbers/ratio.yaml	yaml_fast_constructor/parity.txt
+openapi/yaml_1_1_numbers/still_refused.yaml	yaml_fast_constructor/parity.txt
 [test_fast_constructor_matches_standard_cases]
 custom-alias	yaml_fast_constructor/parity.txt
 custom-anchor_on_scalar	yaml_fast_constructor/parity.txt

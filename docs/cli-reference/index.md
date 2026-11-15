@@ -345,6 +345,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type)
 - [`--read-schema-version-per-document`](base-options.md#read-schema-version-per-document)
 - [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties)
+- [`--read-yaml-1-1-numbers-as-text`](base-options.md#read-yaml-1-1-numbers-as-text)
 - [`--recommend-options`](general-options.md#recommend-options)
 - [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix)
 - [`--remove-unused-models-beside-type-overrides`](model-customization.md#remove-unused-models-beside-type-overrides)

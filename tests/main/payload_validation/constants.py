@@ -79,6 +79,10 @@ PAYLOAD_FORMAT_ENUMS = {
 SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON = (
     "focused Decimal-default e2e fixture intentionally emits a compatibility warning in default generation"
 )
+_YAML_1_1_NUMBERS_EXCLUSION_REASON = (
+    "unquoted 00:00:00.00 or 18_24 where a string is required, which the sweep reads as the YAML 1.1 numbers 0.0 and "
+    "1824, a pattern and component names that generation refuses; test_main_yaml_1_1_numbers validates its payloads"
+)
 EXCLUDED_FILES: dict[str, str] = {
     "jsonschema/allof_class_hierarchy.json": "intentionally invalid JSON fixture",
     "jsonschema/allof_inheritance_errors/mro_conflict.json": "generation rejects the inconsistent allOf inheritance",
@@ -179,6 +183,14 @@ EXCLUDED_FILES: dict[str, str] = {
     "openapi/list.json": "input is JSON data, not an OpenAPI document",
     "openapi/not.json": "intentionally invalid JSON fixture",
     "openapi/subclass_enum.json": "intentionally invalid JSON fixture",
+    **dict.fromkeys(
+        (f"openapi/yaml_1_1_numbers/{name}.yaml" for name in ("names", "pattern", "positions")),
+        _YAML_1_1_NUMBERS_EXCLUSION_REASON,
+    ),
+    "openapi/yaml_1_1_numbers/ratio.yaml": (
+        "the string enum [16:9, 4:3], which the sweep reads as the YAML 1.1 numbers 969 and 243, admits no payload"
+    ),
+    "openapi/yaml_1_1_numbers/still_refused.yaml": "generation refuses its maxLength `ten` in every reading",
 }
 ALLOF_REF_SIBLING_DIAGNOSTICS = json.loads(
     (DATA_PATH / "payloads/allof_ref_sibling_diagnostics.json").read_text(encoding="utf-8")

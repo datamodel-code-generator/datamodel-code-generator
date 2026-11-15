@@ -18,6 +18,8 @@ read-length-keywords-by-type-command-line	main/preset_opt_in_options/preset_opti
 read-length-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].py
 read-object-keywords-by-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-command-line].py
 read-object-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-command-line].py
+read-yaml-1-1-numbers-as-text-command-line	main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-command-line].py
+read-yaml-1-1-numbers-as-text-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-command-line].py
 use-bounds-for-float-const-command-line	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].py
 use-bounds-for-float-const-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].py
 use-typed-nullable-map-values-command-line	main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-command-line].py
@@ -125,6 +127,8 @@ read-schema-version-per-document-practical	main/preset_opt_in_options/preset_set
 read-schema-version-per-document-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-standard]/	= main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-practical]/
 read-unevaluated-properties-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-practical].py
 read-unevaluated-properties-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-practical].py
+read-yaml-1-1-numbers-as-text-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-yaml-1-1-numbers-as-text-practical].py
+read-yaml-1-1-numbers-as-text-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-yaml-1-1-numbers-as-text-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-yaml-1-1-numbers-as-text-practical].py
 remove-unused-models-beside-type-overrides-practical	main/preset_opt_in_options/preset_sets_opt_in_option[remove-unused-models-beside-type-overrides-practical].py
 remove-unused-models-beside-type-overrides-standard	main/preset_opt_in_options/preset_sets_opt_in_option[remove-unused-models-beside-type-overrides-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[remove-unused-models-beside-type-overrides-practical].py
 rename-submodules-hidden-by-classes-practical	main/preset_opt_in_options/preset_sets_opt_in_option[rename-submodules-hidden-by-classes-practical]/

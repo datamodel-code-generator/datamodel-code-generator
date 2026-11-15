@@ -409,6 +409,7 @@ class BaseGenerateConfig(BaseModel):
     read_dynamic_anchors_in_document_order: bool = False
     read_ids_with_empty_fragment: bool = False
     ignore_ref_siblings_by_schema_version: bool = False
+    read_yaml_1_1_numbers_as_text: bool = False
     use_msgspec_tagged_unions: bool = False
     tag_msgspec_by_payload_name: bool = False
     use_msgspec_nullable_enum_alias: bool = False
