@@ -1349,6 +1349,15 @@ _STANDARD_20261113_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "the document at that URL from the network. A relative $id is not matched: a $ref to it reads the file."
         ),
     ),
+    PresetOptionGroup(
+        title="YAML 1.1-only numbers read as text",
+        config=PresetConfig(read_yaml_1_1_numbers_as_text=True),
+        description=(
+            "Read an unquoted YAML value with _ or : that YAML 1.1 reads as a number, such as 16:9 or 18_24, as its "
+            "text, as YAML 1.2, which OpenAPI names, and the ryaml reader do, so an enum of aspect ratios keeps the "
+            "values '16:9' and '4:3' instead of the integers 969 and 243."
+        ),
+    ),
 )
 """The 20261112 groups and the opt-in options added after them."""
 

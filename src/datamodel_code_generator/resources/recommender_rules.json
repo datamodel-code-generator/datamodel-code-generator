@@ -1235,6 +1235,10 @@
         "versions.read-per-document"
       ]
     },
+    "read_yaml_1_1_numbers_as_text": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261113 presets; the recommendation starts from a preset."
+    },
     "recommend_options": {
       "not_recommended": "command",
       "reason": "Prints these recommendations and exits."

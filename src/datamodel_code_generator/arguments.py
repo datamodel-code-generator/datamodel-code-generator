@@ -1940,6 +1940,15 @@ _toggle(
     "schema converted from Avro, XML Schema or Protocol Buffers keeps the keywords its converter writes beside a "
     "$ref, such as the default of a field typed by a named type.",
 )
+_toggle(
+    base_options,
+    "--read-yaml-1-1-numbers-as-text",
+    help="Read an unquoted YAML value with _ or : that YAML 1.1 reads as a number, such as 16:9 (969 in base 60), "
+    "18_24 or 1_000, as its text, as YAML 1.2, which OpenAPI names, and the ryaml reader read it, also in enum, "
+    "default, const, examples, extensions and YAML data input. Without it such a value is the number YAML 1.1 reads, "
+    "as in 0.96.0, except where a string is required in a document that the number makes invalid (a pattern, a "
+    "format, a description, a component or property name), where it is its text.",
+)
 
 # ======================================================================================
 # Options specific to GraphQL input schemas

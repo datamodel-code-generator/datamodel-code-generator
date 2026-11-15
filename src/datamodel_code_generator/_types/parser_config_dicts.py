@@ -204,6 +204,7 @@ class ParserConfigDict(TypedDict):
     read_dynamic_anchors_in_document_order: NotRequired[bool]
     read_ids_with_empty_fragment: NotRequired[bool]
     ignore_ref_siblings_by_schema_version: NotRequired[bool]
+    read_yaml_1_1_numbers_as_text: NotRequired[bool]
     use_msgspec_tagged_unions: NotRequired[bool]
     tag_msgspec_by_payload_name: NotRequired[bool]
     use_msgspec_nullable_enum_alias: NotRequired[bool]

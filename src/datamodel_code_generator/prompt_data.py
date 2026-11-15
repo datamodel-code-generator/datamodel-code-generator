@@ -181,6 +181,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--read-only-write-only-model-type": "Generate separate request and response models for readOnly/writeOnly fields.",
     "--read-schema-version-per-document": "Read each document by the schema version it declares.",
     "--read-unevaluated-properties": "Read a schema-valued `unevaluatedProperties` as `additionalProperties`.",
+    "--read-yaml-1-1-numbers-as-text": "Read the unquoted YAML values that only YAML 1.1 reads as numbers as their ...",
     "--recommend-options": "Recommend options for the input schema on top of the latest dated preset (experimental).",
     "--remove-special-field-name-prefix": "Remove the special prefix from field names.",
     "--remove-unused-models-beside-type-overrides": "Remove the unused models from a module that a model-level `--t...",

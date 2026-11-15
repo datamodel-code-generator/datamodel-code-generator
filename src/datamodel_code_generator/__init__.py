@@ -67,7 +67,7 @@ from datamodel_code_generator._source import (
 )
 from datamodel_code_generator._source import input_text as _input_text
 from datamodel_code_generator._url_redaction import redact_path, redact_url
-from datamodel_code_generator._warning_control import quiet
+from datamodel_code_generator._warning_control import held, quiet
 from datamodel_code_generator.enums import (
     _PYDANTIC_MODEL_TYPES,
     DEFAULT_SHARED_MODULE_NAME,
@@ -127,6 +127,7 @@ if TYPE_CHECKING:
     import tempfile
     from collections.abc import Collection
     from collections.abc import Set as AbstractSet
+    from contextlib import AbstractContextManager
     from types import FunctionType
 
     from datamodel_code_generator._format_types import (
@@ -2491,6 +2492,8 @@ def _parse_again(  # noqa: PLR0913, PLR0917
     parser_factory: TargetParserFactory | None,
     ignored_warnings: type[Warning] | None = Warning,
     collapse_retry: bool = False,
+    as_first: Callable[..., tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]]
+    | None = None,
 ) -> tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]:
     """Parse once more with a fresh parser that reuses the first parse's ``caches`` of documents and base path.
 
@@ -2509,13 +2512,19 @@ def _parse_again(  # noqa: PLR0913, PLR0917
     as both share loaded documents. A ``collapse_retry`` parses through the root-model collapse retry. The roles of
     documents that an earlier attempt recorded after preparing them start the parse (``document_roles``); an attempt
     with such roles that fails after recording more of them parses once more with every role, until none is new.
-    ``import_cycle_seeds`` lays out otherwise what an earlier attempt found to fail as its output is imported.
+    ``import_cycle_seeds`` lays out otherwise what an earlier attempt found to fail as its output is imported. A run
+    that its YAML 1.1-only numbers refused reads them as text where a string is required
+    (``read_yaml_numbers_where_strings_required``), in a parse that is a first parse of the run: with ``as_first``, the
+    run's parse again, a parse that fails parses again through it as the run's first parse does (``_parse_first``).
     """
     from dataclasses import replace  # noqa: PLC0415
 
     run_context = replace(run_context, suppress_parse_warnings=True)
     remote_text_cache, reference_cache, base_path = caches
-    with contextlib.nullcontext() if ignored_warnings is None else quiet(ignored_warnings):
+    with (
+        contextlib.nullcontext() if ignored_warnings is None else quiet(ignored_warnings),
+        _yaml_numbers_reading(run_context),
+    ):
         while True:
             data_model_types, parser_source, defer_formatting, parser_options, python_type_expressions = (
                 _reparse_inputs(
@@ -2544,21 +2553,43 @@ def _parse_again(  # noqa: PLR0913, PLR0917
                 python_type_expressions=python_type_expressions,
                 parser_factory=parser_factory,
             )
-            try:
-                results = (_parse_collapse_root_models_retry if collapse_retry else _parse_with_disposal)(
-                    input_,
-                    parser,
+            parse = _partial(
+                _parse_collapse_root_models_retry if collapse_retry else _parse_with_disposal,
+                input_,
+                config=config,
+                parser_settings_path=parser_settings_path,
+                collect_model_metadata=collect_model_metadata,
+                capture=capture,
+            )
+            if as_first is not None:
+                return _parse_first(
+                    as_first,
                     config,
-                    parser_settings_path=parser_settings_path,
-                    collect_model_metadata=collect_model_metadata,
-                    capture=capture,
+                    run_context,
+                    (parser, data_model_types, defer_formatting, extra_template_data),
+                    parse,
                 )
+            try:
+                results = parse(parser)
                 break
             except Error:
                 if not run_context.document_roles or not (recorded := parser.document_roles_to_seed):
                     raise
                 run_context = replace(run_context, document_roles=recorded)
     return parser, results, data_model_types, defer_formatting, extra_template_data
+
+
+def _yaml_numbers_reading(run_context: ParserRunContext) -> AbstractContextManager[None]:
+    """Return the block in which a parse again reads the YAML 1.1-only numbers as ``run_context`` says.
+
+    A run that they refused as numbers reads them as text where a string is required; any other keeps its reading.
+    """
+    if not run_context.read_yaml_numbers_where_strings_required:
+        return contextlib.nullcontext()
+    from datamodel_code_generator.parser.openapi import yaml_string_keywords  # noqa: PLC0415
+    from datamodel_code_generator.util import yaml_numbers_read_where_strings_required  # noqa: PLC0415
+
+    return yaml_numbers_read_where_strings_required(yaml_string_keywords())
 
 
 def _reparse_inputs(  # noqa: PLR0913, PLR0917
@@ -2590,6 +2621,46 @@ def _reparse_inputs(  # noqa: PLR0913, PLR0917
     return prepared
 
 
+def _parse_first(
+    parse_again: Callable[..., tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]],
+    config: GenerateConfig,
+    run_context: ParserRunContext,
+    built: tuple[Any, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None],
+    parse: Callable[[Any], _ParserResults],
+) -> tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]:
+    """Parse a first parse of a run, the parser ``built`` with what it was built with, and parse again where it fails.
+
+    A collapse of root models that needs its circular-reference fallback parses again through that retry, and a parse
+    that fails after references held documents it had prepared as objects of other roles parses again with those roles
+    (``_parse_with_document_roles``). The run's first parse is one, and so is its read-again of the YAML 1.1-only
+    numbers (``_parse_yaml_numbers_again``).
+    """
+    from dataclasses import replace  # noqa: PLC0415
+
+    parser, data_model_types, defer_formatting, extra_template_data = built
+    try:
+        results = parse(parser)
+    except _CollapseRootModelsRecursionError:
+        return parse_again(
+            config,
+            _prepare_generation_extra_template_data(config),
+            _reparse_caches(parser),
+            replace(run_context, preserve_circular_root_models=True, untyped_nullable_maps=False),
+            ignored_warnings=None,
+            collapse_retry=True,
+        )
+    except Error:
+        if not (document_roles := parser.document_roles_to_seed):
+            raise
+        return _parse_with_document_roles(
+            parse_again,
+            config,
+            _reparse_caches(parser),
+            replace(run_context, untyped_nullable_maps=False, document_roles=document_roles),
+        )
+    return parser, results, data_model_types, defer_formatting, extra_template_data
+
+
 def _parse_with_document_roles(
     parse_again: Callable[..., tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]],
     config: GenerateConfig,
@@ -2619,6 +2690,45 @@ def _parse_with_document_roles(
             ignored_warnings=None,
             collapse_retry=True,
         )
+
+
+def _parse_yaml_numbers_again(
+    parse_again: Callable[..., tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]],
+    config: GenerateConfig,
+    caches: tuple[DefaultPutDict[str, str], Any | None, Path],
+    run_context: ParserRunContext,
+) -> tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None] | None:
+    """Parse again a refused run whose documents held YAML 1.1-only numbers, read as text where a string is required.
+
+    Such a number is text in YAML 1.2, which OpenAPI names: ``pattern: 00:00:00.00`` reads 0.0 and a component named
+    ``18_24`` reads 1824, which the run refuses. The parse again reads them as text as mapping keys and as the values of
+    the keywords the document models read as strings, and as numbers anywhere else (``settle_yaml_numbers``). It is a
+    first parse of the run (``_parse_first``), with a reference cache of its own, as the documents read again; its
+    warnings are shown once, as after a parse with document roles, and only where it succeeds. A run whose documents
+    held none, or that reads them as text already, is not parsed again; a parse again that fails gives None, so the
+    refusal stays as it was.
+    """
+    from dataclasses import replace  # noqa: PLC0415
+
+    from datamodel_code_generator.util import yaml_numbers_held  # noqa: PLC0415
+
+    if not yaml_numbers_held():
+        return None
+    remote_text_cache, _, base_path = caches
+    try:
+        with held() as show_warnings:
+            parsed = parse_again(
+                config,
+                _prepare_generation_extra_template_data(config),
+                (remote_text_cache, None, base_path),
+                replace(run_context, untyped_nullable_maps=False, read_yaml_numbers_where_strings_required=True),
+                ignored_warnings=None,
+                as_first=parse_again,
+            )
+    except Exception:  # noqa: BLE001
+        return None
+    show_warnings()
+    return parsed
 
 
 def _reparse_caches(parser: Any) -> tuple[DefaultPutDict[str, str], Any | None, Path]:
@@ -2879,36 +2989,25 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         settle_diagnostics_reported_once(),
     ):
         try:
-            results = _parse_with_disposal(
-                input_,
-                parser,
-                config,
-                parser_settings_path=parser_settings_path,
-                collect_model_metadata=collect_model_metadata,
-                capture=capture,
-            )
-        except _CollapseRootModelsRecursionError:
-            caches = _reparse_caches(parser)
-            del parser
-            parser, results, data_model_types, defer_formatting, extra_template_data = parse_again(
-                config,
-                _prepare_generation_extra_template_data(config),
-                caches,
-                replace(run_context, preserve_circular_root_models=True, untyped_nullable_maps=False),
-                ignored_warnings=None,
-                collapse_retry=True,
-            )
-        except Error:
-            if not (document_roles := parser.document_roles_to_seed):
-                raise
-            caches = _reparse_caches(parser)
-            del parser
-            parser, results, data_model_types, defer_formatting, extra_template_data = _parse_with_document_roles(
+            parser, results, data_model_types, defer_formatting, extra_template_data = _parse_first(
                 parse_again,
                 config,
-                caches,
-                replace(run_context, untyped_nullable_maps=False, document_roles=document_roles),
+                run_context,
+                (parser, data_model_types, defer_formatting, extra_template_data),
+                _partial(
+                    _parse_with_disposal,
+                    input_,
+                    config=config,
+                    parser_settings_path=parser_settings_path,
+                    collect_model_metadata=collect_model_metadata,
+                    capture=capture,
+                ),
             )
+        except Error:
+            read_again = _parse_yaml_numbers_again(parse_again, config, _reparse_caches(parser), run_context)
+            if read_again is None:
+                raise
+            parser, results, data_model_types, defer_formatting, extra_template_data = read_again
         if yielding_names := parser.yielding_names_to_assign:
             caches = _reparse_caches(parser)
             context = replace(parser.run_context, untyped_nullable_maps=False, yielding_names=yielding_names)
@@ -3139,8 +3238,10 @@ def _run_generation_with_metadata(  # noqa: PLR0913
     They are collected when ``collect_model_metadata`` is set or the config emits the metadata; otherwise they are
     None and empty.
     """
+    from datamodel_code_generator.util import yaml_number_reading  # noqa: PLC0415
+
     try:
-        with _tuned_gc():
+        with _tuned_gc(), yaml_number_reading(as_text=config.read_yaml_1_1_numbers_as_text):
             (
                 results,
                 model_metadata,
@@ -3314,6 +3415,8 @@ def _collect_model_metadata(
     written. The input type is the one the run parsed, detected when the config's is auto. Runs that share
     ``remote_text_cache`` fetch each remote document once.
     """
+    from datamodel_code_generator.util import yaml_number_reading  # noqa: PLC0415
+
     config = _prepare_generate_facade_config(
         config.model_copy(
             update={
@@ -3326,7 +3429,11 @@ def _collect_model_metadata(
         )
     )
     use_output_cwd = config.output is not None and _uses_legacy_process_state(config)
-    with _tuned_gc(), PROCESS_STATE_LOCK if use_output_cwd else contextlib.nullcontext():
+    with (
+        _tuned_gc(),
+        PROCESS_STATE_LOCK if use_output_cwd else contextlib.nullcontext(),
+        yaml_number_reading(as_text=config.read_yaml_1_1_numbers_as_text),
+    ):
         with PROCESS_STATE_LOCK:
             caller_cwd = Path.cwd()
         parsed = _parse_run(

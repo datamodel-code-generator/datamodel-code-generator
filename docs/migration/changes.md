@@ -157,6 +157,12 @@ Read the Kubernetes schema extensions as the keywords they stand for: x-kubernet
 
 - **Source:** the command-line options of both releases
 
+### New option `--read-yaml-1-1-numbers-as-text` (`--no-read-yaml-1-1-numbers-as-text`) (unreleased) { #option-read-yaml-1-1-numbers-as-text }
+
+Read an unquoted YAML value with _ or : that YAML 1.1 reads as a number, such as 16:9 (969 in base 60), 18_24 or 1_000, as its text, as YAML 1.2, which OpenAPI names, and the ryaml reader read it, also in enum, default, const, examples, extensions and YAML data input. Without it such a value is the number YAML 1.1 reads, as in 0.96.0, except where a string is required in a document that the number makes invalid (a pattern, a format, a description, a component or property name), where it is its text.
+
+- **Source:** the command-line options of both releases
+
 ### New option `--untyped-value-type` (unreleased) { #option-untyped-value-type }
 
 Write each value the schema leaves untyped ({}, true, a schema whose keywords give it no type, the values of an object without properties and the items of an array without items) as this type instead of Any: pydantic.JsonValue (Pydantic 2.5 or later), object, Any or the dotted import path of a type of your own, which the models import; the structure is as without the option. --type-overrides, x-python-type and x-python-import keep their types, and msgspec.Struct output keeps Any, which msgspec decodes into JSON values. Without it untyped values are Any, and object in containers under --use-object-type, as in 0.96.0
@@ -179,6 +185,7 @@ They keep the options of the 20261112 presets and add:
 - Kubernetes extensions read (`--read-kubernetes-extensions`): Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does.
 - Inherited property schemas read in MRO order (`--read-inherited-property-schemas-in-mro-order`): Give a property that a model only makes required the schema its allOf parents declare, read in the order of the class bases from the allOf members the model's fields are read from, so a model written before its parents takes the field it takes when written after them.
 - Ids with an empty fragment read as their documents (`--read-ids-with-empty-fragment`): Read an absolute-URL $id written with an empty fragment, such as https://example.com/item.json#, as the URI without it, so a $ref to it resolves inside the document that declares it instead of loading the document at that URL from the network. A relative $id is not matched: a $ref to it reads the file.
+- YAML 1.1-only numbers read as text (`--read-yaml-1-1-numbers-as-text`): Read an unquoted YAML value with _ or : that YAML 1.1 reads as a number, such as 16:9 or 18_24, as its text, as YAML 1.2, which OpenAPI names, and the ryaml reader do, so an enum of aspect ratios keeps the values '16:9' and '4:3' instead of the integers 969 and 243.
 - Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.
 
 - **Source:** the registry of deprecations, experimental features and dated presets

@@ -123,6 +123,7 @@ reviewed-safe read_object_keywords_by_type
 reviewed-safe read_only_write_only_model_type
 reviewed-safe read_schema_version_per_document
 reviewed-safe read_unevaluated_properties
+reviewed-safe read_yaml_1_1_numbers_as_text
 reviewed-safe remote_text_cache
 reviewed-safe remove_special_field_name_prefix
 reviewed-safe remove_unused_models_beside_type_overrides
