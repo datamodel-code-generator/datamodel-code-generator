@@ -2199,44 +2199,6 @@ def _get_discriminator_field_value(
     return None if tag is None else tag.value
 
 
-def _get_enum_from_base(
-    discriminator_model: DataModel, field_name: str, *, use_field_name: bool = False
-) -> Enum | None:
-    """Return the Enum typing the tag field a variant inherits, from the nearest ancestor whose field it types.
-
-    The direct bases come first, in their order, then the ancestors above them in method resolution order, so a
-    variant two levels below the schema whose Enum types the tag property takes that Enum, as a direct subclass does.
-    """
-    match_mode: TagFieldMatch = "python-name" if use_field_name else "python-or-original-name"
-    direct = [
-        base_class.reference.source
-        for base_class in discriminator_model.base_classes
-        if base_class.reference and base_class.reference.source
-    ]
-    return _declared_tag_enum(direct, field_name, match_mode) or _declared_tag_enum(
-        [
-            ancestor
-            for ancestor in linearize_data_models([discriminator_model])[1:]
-            if all(ancestor is not base for base in direct)
-        ],
-        field_name,
-        match_mode,
-    )
-
-
-def _declared_tag_enum(models: Iterable[object], field_name: str, match_mode: TagFieldMatch) -> Enum | None:
-    """Return the Enum typing the first field of ``models`` that holds the tag property, by models that inherit one."""
-    for model in models:
-        if not isinstance(model, DataModel) or not model.SUPPORTS_INHERITED_DISCRIMINATOR_ENUM:
-            continue
-        for field_ in model.fields:
-            if _tag_field_matches(field_, match_mode, field_name) and (
-                enum_source := field_.data_type.find_source(Enum)
-            ):
-                return enum_source
-    return None
-
-
 _STRING_LITERAL_SOURCE: Final = r"""'''[\s\S]*?'''|\"\"\"[\s\S]*?\"\"\"|'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|"""
 _STRING_OR_IDENTIFIER_PATTERN: Final = re.compile(
     _STRING_LITERAL_SOURCE + r"""^[ \t]*[A-Za-z_]\w*(?=:)|([A-Za-z_]\w*)""", re.MULTILINE

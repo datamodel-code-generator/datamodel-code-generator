@@ -39,7 +39,6 @@ from datamodel_code_generator.model.type_alias import TypeAlias, TypeAliasTypeBa
 from datamodel_code_generator.parser._passes._shared import (
     _detach_deferred_inherited_field_parents,
     _get_discriminator_field_value,
-    _get_enum_from_base,
     _restore_inherited_field_names_for_unique_aliases,
     exact_import,
     is_ancestor_package_reference,
@@ -687,33 +686,6 @@ def test_dataclass_metadata_assignment_without_default_stays_positional(parser_f
 
     assert str(metadata_field) == "field(repr=False)"
     assert child_field.extras == {}
-
-
-def test_get_enum_from_base_skips_models_without_inherited_enum_capability() -> None:
-    """Do not inherit discriminator enums from output models that opt out."""
-    from datamodel_code_generator.model.enum import Enum
-
-    enum_reference = _reference("Kind")
-    Enum(fields=[], reference=enum_reference)
-    base_reference = _reference("Base")
-    base_model = PydanticDataclassModel(
-        fields=[
-            PydanticDataclassField(
-                name="kind",
-                original_name="kind",
-                data_type=DataType(reference=enum_reference),
-            )
-        ],
-        reference=base_reference,
-    )
-    child_model = BaseModel(
-        fields=[],
-        base_classes=[base_reference],
-        reference=_reference("Child"),
-    )
-
-    assert not base_model.SUPPORTS_INHERITED_DISCRIMINATOR_ENUM
-    assert _get_enum_from_base(child_model, "kind") is None
 
 
 def _create_override_required_models(

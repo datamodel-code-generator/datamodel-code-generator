@@ -3,7 +3,11 @@
 A union site is a field whose extras carry a discriminator object naming a property; :func:`iter_union_sites` is the one
 match on ``extras["discriminator"]`` that the tag passes share, and each caller passes its own models, so it keeps its
 order; the paths of a site's mapping keep the location the parser resolved them to where it is the schema of a variant
-(:func:`located_mapping`). The decisions of the L5 tag passes are the functions here: whether a union can be tagged
+(:func:`located_mapping`). How the variants of a site are read is one record (``_SiteReading``: its names and the
+field matches of ``_SITE_MODES``, by whether the union field writes ``discriminator=``), and the fields of a variant
+that hold the discriminator's property come from one function each: those a model declares (``_own_tag_fields``),
+those a variant inherits in an order of :data:`TagFieldOrder` (``_inherited_tag_fields``), and both, its own first
+(``_tag_fields_of``). The decisions of the L5 tag passes are the functions here: whether a union can be tagged
 (:func:`site_validity`), the Python name of its tag field (:func:`site_names`, :func:`shared_site_names`), the tags of a
 variant (:func:`tags_of_variant`, :class:`UnionView`), the form each tag field takes (:func:`iter_tag_field_decisions`),
 which msgspec unions take struct tags (:func:`tag_msgspec_unions`) and which ``discriminator=`` Pydantic cannot build
@@ -32,7 +36,17 @@ loop replaces them:
   (:func:`possible_tag_names`, with the mapping-path row ``legacy-any-key``).
 - ``legacy-collapse-python-name-mode``: the union that ``--collapse-root-models`` inlines as list items is checked by
   the Python names of its variants' tag fields (``python-or-original-name``), where L5 checks a union that writes
-  ``discriminator=`` by the names the schema gives them (``source-name``; :data:`ValidityMode`).
+  ``discriminator=`` by the names the schema gives them (``source-name``; :data:`ValidityMode`). It writes
+  ``discriminator=`` by the Python name the property takes in any class, which those names find.
+
+Four readings differ from the rule of their home where output depends on it; these rows name them until their fixes:
+
+- ``legacy-root-most-first`` and ``legacy-direct-bases-first``: the order some readers take a variant's inherited
+  tag fields in (:data:`TagFieldOrder`), where the generated class has the nearest one.
+- ``legacy-inherited-enum-by-default-name``: a union's check finds the Enum of a base by the Python name the
+  property takes in any class (``_find_tag_enum``), not by the name the variants share.
+- ``legacy-collapse-any-discriminator``: the union ``--collapse-root-models`` inlines as list items is a site also
+  where its discriminator is a string or names an empty property (:func:`collapsed_item_site`).
 """
 
 from __future__ import annotations
@@ -43,7 +57,7 @@ from collections.abc import Callable
 from dataclasses import field
 from functools import cache
 from itertools import chain, islice
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, final
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast, final
 
 from typing_extensions import Protocol
 
@@ -82,7 +96,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _FieldTagFacts,
     _format_tags,
     _get_discriminator_field_value,
-    _get_enum_from_base,
     _get_mapping_discriminator_values,
     _get_schema_path,
     _is_discriminator_wrapper,
@@ -142,6 +155,7 @@ __all__ = [
     "VariantTags",
     "appended_takes_struct_tag",
     "collapsed_duplicate",
+    "collapsed_item_site",
     "declared_union_tags",
     "field_namer",
     "has_any_variant",
@@ -272,9 +286,20 @@ def taggable_variant(
     return (variant, capabilities) if capabilities.variant_takes_tag else None
 
 
+_SITE_MODES: Final[Mapping[bool, tuple[ValidityMode, TagFieldMatch]]] = {
+    True: ("source-name", "python-name"),
+    False: ("python-or-original-name", "python-or-original-name"),
+}
+"""The field matches of a union site, by whether its field writes ``discriminator=`` (``writes_argument``).
+
+The first column finds the tag fields its variants are checked by (:data:`ValidityMode`), the second those its view
+reads and writes and the Enum a variant inherits (:attr:`UnionView.mode`).
+"""
+
+
 def site_mode(*, writes_argument: bool) -> ValidityMode:
     """Return the names a union is checked by: those of the schema where it writes ``discriminator=``."""
-    return "source-name" if writes_argument else "python-or-original-name"
+    return _SITE_MODES[writes_argument][0]
 
 
 def writes_member_values(variant: DataModel, enum_source: Enum) -> bool:
@@ -353,6 +378,21 @@ def union_site(model: DataModel, field: DataModelFieldBase) -> UnionSite | None:
     return None
 
 
+def collapsed_item_site(
+    model: DataModel, field: DataModelFieldBase, data_types: Iterable[DataType]
+) -> UnionSite | None:
+    """Return the site of the union that ``--collapse-root-models`` inlines as list items, read with its copied types.
+
+    Row ``legacy-collapse-any-discriminator``: a discriminator written as a string, or one that names an empty
+    property, makes a site here, where :func:`union_site` reads none and L5 writes no tags.
+    """
+    if not (declared := field.extras.get("discriminator")):
+        return None
+    discriminator = declared if isinstance(declared, dict) else {"propertyName": declared}
+    mapping = located_mapping(discriminator.get("mapping"), data_types)
+    return UnionSite(model, field, cast("str", discriminator.get("propertyName")), discriminator, mapping)
+
+
 def iter_union_sites(models: Iterable[DataModel]) -> Iterator[UnionSite]:
     """Yield the union sites of the models, field by field in the order of ``models``."""
     for model in models:
@@ -394,6 +434,111 @@ def site_names(property_name: str, namer: FieldNamer) -> SiteNames:
     return SiteNames(property_name, *namer(property_name, None))
 
 
+@final
+@record(eq=False)
+class _SiteReading:
+    """How the variants of a union site are read: its names and the field matches of its row of ``_SITE_MODES``."""
+
+    names: SiteNames
+    writes_argument: bool
+    """Whether the union field writes ``discriminator=`` (``TagCapabilities.writes_argument``)."""
+    validity_mode: ValidityMode
+    tag_name: str
+    """The name ``validity_mode`` finds a tag field by: the property name for ``source-name``, else the field name."""
+    view_mode: TagFieldMatch
+    """The field match of the union's view (:attr:`UnionView.mode`), which finds a tag field by the field name."""
+
+
+def _site_reading(
+    site: UnionSite, namer: FieldNamer, *, row: Literal["site", "legacy-collapse-python-name-mode"] = "site"
+) -> _SiteReading:
+    """Return how the variants of a union site are read, by whether its field writes ``discriminator=``.
+
+    Row ``legacy-collapse-python-name-mode`` reads a union that writes it by the row of one that does not.
+    """
+    names = site_names(site.property_name, namer)
+    writes_argument = tag_capabilities(type(site.model), type(site.field)).writes_argument
+    by_argument = writes_argument and row == "site"
+    validity_mode = site_mode(writes_argument=by_argument)
+    return _SiteReading(
+        names,
+        writes_argument,
+        validity_mode,
+        names.property_name if validity_mode == "source-name" else names.field_name,
+        _SITE_MODES[by_argument][1],
+    )
+
+
+TagFieldOrder: TypeAlias = Literal["nearest-first", "legacy-root-most-first", "legacy-direct-bases-first"]
+"""The order the models a variant inherits from are read in for its tag fields (``_inherited_models``).
+
+* ``nearest-first``: the order Python resolves an attribute in (``linearize_data_models``), so the first tag field is
+  the one the generated class has.
+* ``legacy-root-most-first``: each model after its bases (``DataModel.iter_all_fields``), so the first tag field is the
+  one the root-most ancestor declares, which the generated class does not have where a nearer ancestor declares the
+  property again. The Python name the variants of a union share (:func:`shared_site_names`), the variants nested
+  choices give a union (:func:`_iter_nested_discriminator_variants`, ``_VariantTagFacts.inherited_tag``), the one
+  variant a union names (:func:`_variant_carries_tag`) and the inline variants (:meth:`TagPlan.inline_variant_tags`)
+  are read so.
+* ``legacy-direct-bases-first``: the direct bases in their order, then the other ancestors nearest first, so a later
+  direct base comes before the ancestors of an earlier one. The Enum a variant inherits is read so
+  (:func:`_inherited_tag_enum`).
+"""
+
+
+def _inherited_models(variant: DataModel, order: TagFieldOrder) -> Iterator[DataModel]:
+    """Yield the models a variant inherits from, each once, in ``order`` (:data:`TagFieldOrder`)."""
+    if order == "legacy-root-most-first":
+        yield from variant._bases_first(set())[:-1]  # noqa: SLF001
+    else:
+        direct = _find_base_classes(variant) if order == "legacy-direct-bases-first" else []
+        yield from direct
+        yield from (
+            ancestor
+            for ancestor in linearize_data_models([variant])[1:]
+            if all(ancestor is not base for base in direct)
+        )
+
+
+def _own_tag_fields(
+    model: DataModel, name: str, mode: TagFieldMatch, *, python_name: str | None = None
+) -> Iterator[DataModelFieldBase]:
+    """Yield the fields a model declares that hold the discriminator's property (``tag_field_matches``)."""
+    return (field_ for field_ in model.fields if _tag_field_matches(field_, mode, name, python_name=python_name))
+
+
+def _inherited_tag_fields(
+    variant: DataModel,
+    name: str,
+    mode: TagFieldMatch,
+    *,
+    python_name: str | None = None,
+    order: TagFieldOrder = "nearest-first",
+) -> Iterator[tuple[DataModel, DataModelFieldBase]]:
+    """Yield the tag fields a variant inherits, each with the model that declares it, model by model in ``order``."""
+    for owner in _inherited_models(variant, order):
+        for field_ in _own_tag_fields(owner, name, mode, python_name=python_name):
+            yield owner, field_
+
+
+def _tag_fields_of(
+    variant: DataModel,
+    name: str,
+    mode: TagFieldMatch,
+    *,
+    python_name: str | None = None,
+    order: TagFieldOrder = "nearest-first",
+) -> Iterator[DataModelFieldBase]:
+    """Yield the fields of a variant that hold the discriminator's property: its own, then those it inherits.
+
+    The inherited ones come model by model in ``order`` (``_inherited_tag_fields``). Nothing is kept: the tag passes
+    write the tag fields they read.
+    """
+    yield from _own_tag_fields(variant, name, mode, python_name=python_name)
+    for _, field_ in _inherited_tag_fields(variant, name, mode, python_name=python_name, order=order):
+        yield field_
+
+
 def shared_site_names(names: SiteNames, data_types: Iterable[DataType], namer: FieldNamer) -> SiteNames:
     """Return the names of a union that writes ``discriminator=``: the one Python name its variants give the property.
 
@@ -407,14 +552,17 @@ def shared_site_names(names: SiteNames, data_types: Iterable[DataType], namer: F
         if not data_type.reference:
             continue
         variant = cast("DataModel", data_type.reference.source)
-        for variant_field in chain(variant.fields, variant.iter_all_fields()):
-            if _tag_field_matches(
-                variant_field, "original-or-unaliased-python-name", property_name, python_name=default_name
-            ):
-                variant_name = variant_field.name
-                break
-        else:
-            variant_name, _ = namer(property_name, variant.reference)
+        tag_field = next(
+            _tag_fields_of(
+                variant,
+                property_name,
+                "original-or-unaliased-python-name",
+                python_name=default_name,
+                order="legacy-root-most-first",
+            ),
+            None,
+        )
+        variant_name = namer(property_name, variant.reference)[0] if tag_field is None else tag_field.name
         if common_name is not None and common_name != variant_name:
             msg = (
                 f"Discriminator {stable_repr(property_name)} resolves to different field names "
@@ -428,35 +576,19 @@ def shared_site_names(names: SiteNames, data_types: Iterable[DataType], namer: F
 
 
 def _iter_discriminator_fields(
-    fields: Iterable[DataModelFieldBase],
-    field_name: str,
-    *,
-    field_name_mode: TagFieldMatch,
-    site: FieldTagSite = "variant-field",
+    tag_fields: Iterable[DataModelFieldBase], site: FieldTagSite = "variant-field"
 ) -> Iterator[tuple[DataModelFieldBase, DiscriminatorValue]]:
-    """Yield the fields of the discriminator's name that carry one discriminator value at ``site``, with that value."""
-    for field_ in fields:
-        if (
-            _tag_field_matches(field_, field_name_mode, field_name)
-            and (value := _get_discriminator_field_value(field_, site)) is not None
-        ):
+    """Yield those of the tag fields that carry one discriminator value at ``site``, with that value."""
+    for field_ in tag_fields:
+        if (value := _get_discriminator_field_value(field_, site)) is not None:
             yield field_, value
 
 
 def _find_discriminator_value(
-    fields: Iterable[DataModelFieldBase],
-    field_name: str,
-    *,
-    field_name_mode: TagFieldMatch,
-    site: FieldTagSite = "variant-field",
+    tag_fields: Iterable[DataModelFieldBase], site: FieldTagSite = "variant-field"
 ) -> DiscriminatorValue | None:
-    return next(
-        (
-            value
-            for _, value in _iter_discriminator_fields(fields, field_name, field_name_mode=field_name_mode, site=site)
-        ),
-        None,
-    )
+    """Return the tag of the first of the tag fields that carries one discriminator value at ``site``."""
+    return next((value for _, value in _iter_discriminator_fields(tag_fields, site)), None)
 
 
 def _find_reused_discriminator_value(
@@ -469,7 +601,7 @@ def _find_reused_discriminator_value(
     reused = variant.reused_reference
     if reused is None or not isinstance(source := reused.source, DataModel):
         return None
-    return _find_discriminator_value(source.fields, field_name, field_name_mode=field_name_mode, site=site)
+    return _find_discriminator_value(_own_tag_fields(source, field_name, field_name_mode), site)
 
 
 def _schema_path_segment(model: DataModel | Reference) -> str:
@@ -499,9 +631,7 @@ def tag_satisfies_pattern(value: DiscriminatorValue, pattern: str) -> bool:
 def _tag_field_patterns(variant: DataModel, tag_name: str, mode: TagFieldMatch) -> tuple[str, ...]:
     """Return the patterns of a variant's tag fields: arguments of their ``Field()``, else of their constrained type."""
     patterns: list[str] = []
-    for field_ in variant.fields:
-        if not _tag_field_matches(field_, mode, tag_name):
-            continue
+    for field_ in _own_tag_fields(variant, tag_name, mode):
         written = (
             field_.constraints.model_dump(by_alias=True, exclude_unset=True)
             if isinstance(field_.constraints, ConstraintsBase)
@@ -557,8 +687,7 @@ class _MergeSite:
     """A union site as ``TagPlan.merged_variant_tags`` reads it, with the tags it gives the variants it lists."""
 
     site: UnionSite
-    names: SiteNames
-    mode: ValidityMode
+    site_reading: _SiteReading
     reading: TagReading
     """What the variants are read with before any union writes a tag, with no merged tags."""
     listed: tuple[_ListedVariant, ...]
@@ -568,27 +697,21 @@ class _MergeSite:
         field_ = self.site.field
         return _site_tag_keys(
             field_.data_type.data_types,
-            self.names,
+            self.site_reading,
             self.site.mapping,
             field_type=type(field_),
-            mode=self.mode,
             reading=self.reading.with_merged(read_tags),
         )
 
 
 def _listed_variants(
-    site: UnionSite,
-    names: SiteNames,
-    mode: ValidityMode,
-    *,
-    reading: TagReading,
-    collapsed_users: CollapsedReuseUsers,
+    site: UnionSite, site_reading: _SiteReading, *, reading: TagReading, collapsed_users: CollapsedReuseUsers
 ) -> Iterator[_ListedVariant]:
     """Yield the variants a union lists that are no msgspec Struct, with the tags it gives them before any write.
 
     A variant that a type naming a duplicate collapsed reuse removed now names takes the tags given the duplicate.
     """
-    tag_name = names.property_name if mode == "source-name" else names.field_name
+    tag_name, mode = site_reading.tag_name, site_reading.validity_mode
     for data_type, can_update_discriminator, _ in _iter_discriminator_data_types(site.field.data_type.data_types):
         if (
             not can_update_discriminator
@@ -716,9 +839,7 @@ class _VariantTagFacts:
 
     def own_tag(self) -> DiscriminatorValue | None:
         """Return the tag of the variant's own tag field."""
-        return _find_discriminator_value(
-            self.model.fields, self.field_name, field_name_mode=self.field_name_mode, site=self.site
-        )
+        return _find_discriminator_value(_own_tag_fields(self.model, self.field_name, self.field_name_mode), self.site)
 
     def reused_tag(self) -> DiscriminatorValue | None:
         """Return the tag of the model reuse replaced with the variant."""
@@ -727,9 +848,15 @@ class _VariantTagFacts:
         )
 
     def inherited_tag(self) -> DiscriminatorValue | None:
-        """Return the tag of a tag field the variant inherits."""
+        """Return the tag of a tag field the variant inherits, the root-most first (``legacy-root-most-first``)."""
         return _find_discriminator_value(
-            self.model.iter_all_fields(), self.field_name, field_name_mode=self.field_name_mode, site=self.site
+            (
+                field_
+                for _, field_ in _inherited_tag_fields(
+                    self.model, self.field_name, self.field_name_mode, order="legacy-root-most-first"
+                )
+            ),
+            self.site,
         )
 
     def inherited_schema_tag(self) -> DiscriminatorValue | None:
@@ -741,27 +868,20 @@ class _VariantTagFacts:
         """
         if _is_special_path(self.path_segment()):
             return None
-        return next(
-            (
-                value
-                for field_ in self._ancestor_tag_fields(start=1 if self.model.reused_reference is None else 2)
-                if (value := _get_discriminator_field_value(field_, self.site)) is not None
-            ),
-            None,
-        )
+        reuse_base = () if self.model.reused_reference is None else _find_base_classes(self.model)[:1]
+        return _find_discriminator_value(self._ancestor_tag_fields(skipped=reuse_base), self.site)
 
-    def _ancestor_tag_fields(self, *, start: int = 1) -> Iterator[DataModelFieldBase]:
-        """Yield the tag fields of the variant's ancestors from position ``start`` of its MRO, but those a union wrote.
+    def _ancestor_tag_fields(self, *, skipped: Sequence[DataModel] = ()) -> Iterator[DataModelFieldBase]:
+        """Yield the tag fields the variant inherits, nearest first, but those of ``skipped`` and of what a union wrote.
 
         The tag field of an ancestor in ``union_written`` holds a tag that union wrote, not what its schema declares.
         """
-        for ancestor in linearize_data_models([self.model])[start:]:
-            if (id(ancestor), self.property_name) not in self.reading.union_written:
-                yield from self._tag_fields(ancestor.fields)
-
-    def _tag_fields(self, fields: Iterable[DataModelFieldBase]) -> Iterator[DataModelFieldBase]:
-        """Yield the fields that hold the discriminator's property."""
-        return (field_ for field_ in fields if _tag_field_matches(field_, self.field_name_mode, self.field_name))
+        written = self.reading.union_written
+        return (
+            field_
+            for owner, field_ in _inherited_tag_fields(self.model, self.field_name, self.field_name_mode)
+            if all(owner is not model for model in skipped) and (id(owner), self.property_name) not in written
+        )
 
     def inline_tag(self) -> DiscriminatorValue | None:
         """Return the tag an inline variant inherits as ``TagPlan.inline_variant_tags`` read it, where it takes it."""
@@ -789,7 +909,8 @@ class _VariantTagFacts:
         """
         if not (keys := _get_mapping_discriminator_values(self.model, self.mapping)):
             return []
-        tag_field = next(chain(self._tag_fields(self.model.fields), self._ancestor_tag_fields()), None)
+        own_fields = _own_tag_fields(self.model, self.field_name, self.field_name_mode)
+        tag_field = next(chain(own_fields, self._ancestor_tag_fields()), None)
         if tag_field is None:
             return [*keys]
         enum_source = tag_field.data_type.find_source(Enum)
@@ -843,6 +964,10 @@ class UnionView:
             reading=self.reading,
         )
 
+    def inherited_enum(self, variant: DataModel) -> Enum | None:
+        """Return the Enum typing the tag field a variant inherits (``_inherited_tag_enum``)."""
+        return _inherited_tag_enum(variant, self.names.field_name, self.mode)
+
 
 def _is_any_variant(data_type: DataType) -> bool:
     return data_type.type == ANY or (
@@ -858,29 +983,49 @@ def has_any_variant(data_types: Iterable[DataType]) -> bool:
     return any(map(_is_any_variant, data_types))
 
 
-def _find_tag_enum(model: DataModel, field_name: str, tag_name: str, *, use_field_name: bool) -> Enum | None:
-    """Return the Enum typing a variant's tag field, of the field itself or else of its bases."""
+def _inherited_tag_enum(variant: DataModel, field_name: str, mode: TagFieldMatch) -> Enum | None:
+    """Return the Enum typing the tag field a variant inherits, from the first ancestor whose field it types.
+
+    The direct bases come first, in their order, then the ancestors above them nearest first (row
+    ``legacy-direct-bases-first``), so a variant two levels below the schema whose Enum types the tag property takes
+    that Enum, as a direct subclass does. Only an ancestor of a class that inherits one counts
+    (``SUPPORTS_INHERITED_DISCRIMINATOR_ENUM``).
+    """
     return next(
         (
             enum_source
-            for field_ in model.fields
-            if _tag_field_matches(field_, site_mode(writes_argument=use_field_name), tag_name)
-            and (enum_source := field_.data_type.find_source(Enum))
+            for owner, field_ in _inherited_tag_fields(variant, field_name, mode, order="legacy-direct-bases-first")
+            if owner.SUPPORTS_INHERITED_DISCRIMINATOR_ENUM and (enum_source := field_.data_type.find_source(Enum))
         ),
         None,
-    ) or _get_enum_from_base(model, field_name, use_field_name=use_field_name)
+    )
 
 
-def _is_enum_member_tag(
-    model: DataModel, field_name: str, tag_name: str, value: DiscriminatorValue, *, use_field_name: bool
-) -> bool:
+def _find_tag_enum(variant: DataModel, site_reading: _SiteReading) -> Enum | None:
+    """Return the Enum typing a variant's tag field, of the field itself or else of its bases.
+
+    Row ``legacy-inherited-enum-by-default-name``: the Enum of a base is found by the view's field match with the
+    Python name the property takes in any class, as the name the variants share is read only once the union is valid
+    (:func:`shared_site_names`); a base that names the field otherwise types no tag here.
+    """
+    return next(
+        (
+            enum_source
+            for field_ in _own_tag_fields(variant, site_reading.tag_name, site_reading.validity_mode)
+            if (enum_source := field_.data_type.find_source(Enum))
+        ),
+        None,
+    ) or _inherited_tag_enum(variant, site_reading.names.field_name, site_reading.view_mode)
+
+
+def _is_enum_member_tag(variant: DataModel, site_reading: _SiteReading, value: DiscriminatorValue) -> bool:
     """Return whether the Enum typing a variant's tag field has a member for ``value``, written as that member."""
-    enum_source = _find_tag_enum(model, field_name, tag_name, use_field_name=use_field_name)
+    enum_source = _find_tag_enum(variant, site_reading)
     return enum_source is not None and enum_source.find_member(value, coerce_strings=True) is not None
 
 
 def _written_enum_member_keys(
-    model: DataModel, field_name: str, tag_name: str, values: list[DiscriminatorValue], *, use_field_name: bool
+    variant: DataModel, site_reading: _SiteReading, values: list[DiscriminatorValue]
 ) -> list[object]:
     """Return the keys of the choices that the members a variant is written with make (``enum_discriminator_members``).
 
@@ -891,15 +1036,10 @@ def _written_enum_member_keys(
     the Enum compares. A tag field that already is the one ``Literal`` of the variant's tag is kept as it is.
     """
     literal_kept = any(
-        _tag_field_matches(field_, site_mode(writes_argument=use_field_name), tag_name)
-        and len(literals := field_.data_type.literals) == 1
-        and same_tag(literals[0], values[0], "legacy-python-equality")
-        for field_ in model.fields
+        len(literals := field_.data_type.literals) == 1 and same_tag(literals[0], values[0], "legacy-python-equality")
+        for field_ in _own_tag_fields(variant, site_reading.tag_name, site_reading.validity_mode)
     )
-    if (
-        literal_kept
-        or (enum_source := _find_tag_enum(model, field_name, tag_name, use_field_name=use_field_name)) is None
-    ):
+    if literal_kept or (enum_source := _find_tag_enum(variant, site_reading)) is None:
         return []
     tags = enum_discriminator_members(enum_source, values)
     values_of_members = [tag_key(member.value, "legacy-python-equality") for member in tags.members]
@@ -907,7 +1047,9 @@ def _written_enum_member_keys(
         return values_of_members
     keys: list[object] = [(id(enum_source), v) for v in values_of_members]
     return (
-        [*keys, *values_of_members] if tags.rule == "all-members" or writes_member_values(model, enum_source) else keys
+        [*keys, *values_of_members]
+        if tags.rule == "all-members" or writes_member_values(variant, enum_source)
+        else keys
     )
 
 
@@ -932,27 +1074,24 @@ def _shared_tag_variants(variants: Sequence[_VariantTagKeys]) -> set[tuple[int, 
     return {variant.key for variant in variants if any(len(owners[key]) > 1 for key in variant.keys)}
 
 
-def _site_tag_keys(  # noqa: PLR0913
+def _site_tag_keys(
     data_types: Sequence[DataType],
-    names: SiteNames,
+    site_reading: _SiteReading,
     mapping: dict[str, str],
     *,
     field_type: type[DataModelFieldBase],
-    mode: ValidityMode,
     reading: TagReading,
 ) -> SiteStatus | list[_VariantTagKeys]:
     """Return the tag keys of each variant of a union, else why its discriminator is dropped (``site_validity``).
 
     Each variant is a model that takes a tag and has tags the backend reads as tags (or, where ``reading`` writes Enum
     members as tags, that members of the Enum typing its tag field write). The variants' tag fields are found by the
-    names ``mode`` gives (``ValidityMode``).
+    names the validity mode of ``site_reading`` gives (``ValidityMode``).
     """
     enum_member_tags = reading.enum_member_tags
     if has_any_variant(data_types):  # pragma: no cover
         return "dropped-any"
-    use_field_name = mode == "source-name"
-    field_name = names.field_name
-    tag_name = names.property_name if use_field_name else field_name
+    property_name = site_reading.names.property_name
     variants: list[_VariantTagKeys] = []
     for data_type, can_update_discriminator, owner in _iter_discriminator_data_types(data_types):
         if not data_type.reference and data_type.type == NONE:
@@ -965,36 +1104,31 @@ def _site_tag_keys(  # noqa: PLR0913
         values = tags_of_variant(
             "variant" if can_update_discriminator else "nested",
             variant,
-            tag_name,
+            site_reading.tag_name,
             mapping,
-            mode=mode,
-            property_name=names.property_name,
+            mode=site_reading.validity_mode,
+            property_name=property_name,
             reading=reading,
         )
         if not values or not all(
             is_tag_value(value, bool_literals=capabilities.bool_tags)
-            or (
-                enum_member_tags
-                and not capabilities.struct_tags
-                and _is_enum_member_tag(variant, field_name, tag_name, value, use_field_name=use_field_name)
-            )
+            or (enum_member_tags and not capabilities.struct_tags and _is_enum_member_tag(variant, site_reading, value))
             for value in values
         ):
             return "dropped-invalid"
         keys = [tag_key(value, "legacy-python-equality") for value in values]
         if enum_member_tags and can_update_discriminator and not capabilities.struct_tags:
-            keys += _written_enum_member_keys(variant, field_name, tag_name, values, use_field_name=use_field_name)
-        variants.append(_VariantTagKeys((id(variant), names.property_name), owner, keys))
+            keys += _written_enum_member_keys(variant, site_reading, values)
+        variants.append(_VariantTagKeys((id(variant), property_name), owner, keys))
     return variants
 
 
-def site_validity(  # noqa: PLR0913
+def site_validity(
     data_types: Sequence[DataType],
-    names: SiteNames,
+    site_reading: _SiteReading,
     mapping: dict[str, str],
     *,
     field_type: type[DataModelFieldBase],
-    mode: ValidityMode,
     reading: TagReading,
 ) -> SiteStatus:
     """Return whether a union's variants let it be tagged (``tagged``), else why its discriminator is dropped.
@@ -1003,8 +1137,7 @@ def site_validity(  # noqa: PLR0913
     variants share one but those reached through one root model or nested union.
     """
     if isinstance(
-        variants := _site_tag_keys(data_types, names, mapping, field_type=field_type, mode=mode, reading=reading),
-        str,
+        variants := _site_tag_keys(data_types, site_reading, mapping, field_type=field_type, reading=reading), str
     ):
         return variants
     return "dropped-invalid" if _shared_tag_variants(variants) else "tagged"
@@ -1033,15 +1166,8 @@ def _iter_nested_discriminator_variants(
         source = data_type.reference.source if data_type.reference else None
         if can_update or not isinstance(source, DataModel):
             continue
-        for tag_field, value in islice(
-            _iter_discriminator_fields(
-                chain(source.fields, source.iter_all_fields()),
-                field_name,
-                field_name_mode=field_name_mode,
-                site="legacy-nested-root-model-tag",
-            ),
-            1,
-        ):
+        tag_fields = _tag_fields_of(source, field_name, field_name_mode, order="legacy-root-most-first")
+        for tag_field, value in islice(_iter_discriminator_fields(tag_fields, "legacy-nested-root-model-tag"), 1):
             yield data_type, (source, tag_field, (value,))
 
 
@@ -1051,7 +1177,7 @@ def _is_enum_tag(tag_field: DataModelFieldBase) -> bool:
 
 
 def nested_variant_tags(
-    data_types: Iterable[DataType], names: SiteNames, *, writes_argument: bool, enum_values: bool
+    data_types: Iterable[DataType], site_reading: _SiteReading, *, enum_values: bool
 ) -> tuple[list[DataType], list[VariantTagField]]:
     """Return the variants nested choices give a union whose tag fields L5 writes again, and the tag fields of the rest.
 
@@ -1061,11 +1187,9 @@ def nested_variant_tags(
     enum_tagged: list[DataType] = []
     tag_fields: list[VariantTagField] = []
     for data_type, variant_tag_field in _iter_nested_discriminator_variants(
-        data_types,
-        names.property_name if writes_argument else names.field_name,
-        field_name_mode=site_mode(writes_argument=writes_argument),
+        data_types, site_reading.tag_name, field_name_mode=site_reading.validity_mode
     ):
-        if writes_argument and not enum_values and _is_enum_tag(variant_tag_field[1]):
+        if site_reading.writes_argument and not enum_values and _is_enum_tag(variant_tag_field[1]):
             enum_tagged.append(data_type)
         else:
             tag_fields.append(variant_tag_field)
@@ -1106,9 +1230,7 @@ def iter_tag_field_decisions(
     const is; either ends the search. Any other tag field gets its type written, by its Enum or, for Enum values, by
     the Enum of the field its base declares.
     """
-    for tag_field in variant.fields:
-        if not _tag_field_matches(tag_field, view.mode, view.names.field_name):
-            continue
+    for tag_field in _own_tag_fields(variant, view.names.field_name, view.mode):
         expected_value = values[0] if values else None
         if len(literals := tag_field.data_type.literals) == 1 and same_tag(
             literal := literals[0], expected_value, "legacy-python-equality"
@@ -1124,9 +1246,7 @@ def iter_tag_field_decisions(
             return
         enum_source = tag_field.data_type.find_source(Enum)
         if enum_values:
-            enum_source = enum_source or _get_enum_from_base(
-                variant, view.names.field_name, use_field_name=view.mode == "python-name"
-            )
+            enum_source = enum_source or view.inherited_enum(variant)
         yield RetypedTagField(tag_field, expected_value, enum_source)
 
 
@@ -1304,14 +1424,7 @@ def _variant_carries_tag(data_type: DataType, field_name: str) -> bool:
         return data_type.type == NONE
     return isinstance(source := data_type.reference.source, DataModel) and any(
         _is_tag_type(tag_field.data_type) and not tag_field._admits_none()  # noqa: SLF001
-        for tag_field in islice(
-            (
-                variant_field
-                for variant_field in chain(source.fields, source.iter_all_fields())
-                if _tag_field_matches(variant_field, "python-name", field_name)
-            ),
-            1,
-        )
+        for tag_field in islice(_tag_fields_of(source, field_name, "python-name", order="legacy-root-most-first"), 1)
     )
 
 
@@ -1568,7 +1681,8 @@ class TagPlan:
             variants = {
                 id(source): tuple(
                     (tag_field, value)
-                    for tag_field in source.iter_all_fields()
+                    for owner in (*_inherited_models(source, "legacy-root-most-first"), source)
+                    for tag_field in owner.fields
                     if (value := _get_discriminator_field_value(tag_field, "legacy-nested-root-model-tag")) is not None
                 )
                 for data_type, _, _ in _iter_discriminator_data_types(field_.data_type.data_types)
@@ -1578,16 +1692,14 @@ class TagPlan:
             }
             if not variants:
                 continue
-            names = site_names(site.property_name, namer)
             inline |= variants
-            mode = site_mode(writes_argument=tag_capabilities(type(site.model), type(field_)).writes_argument)
+            site_reading = _site_reading(site, namer)
             if [
                 site_validity(
                     field_.data_type.data_types,
-                    names,
+                    site_reading,
                     site.mapping,
                     field_type=type(field_),
-                    mode=mode,
                     reading=TagReading(inline_models, self.union_written, enum_member_tags, {}),
                 )
                 == "tagged"
@@ -1632,10 +1744,9 @@ class TagPlan:
         )
         sites: list[_MergeSite] = []
         for site in iter_union_sites(models):
-            names = site_names(site.property_name, namer)
-            mode = site_mode(writes_argument=tag_capabilities(type(site.model), type(site.field)).writes_argument)
-            listed = _listed_variants(site, names, mode, reading=reading, collapsed_users=collapsed_users)
-            sites.append(_MergeSite(site, names, mode, reading, tuple(listed)))
+            site_reading = _site_reading(site, namer)
+            listed = _listed_variants(site, site_reading, reading=reading, collapsed_users=collapsed_users)
+            sites.append(_MergeSite(site, site_reading, reading, tuple(listed)))
         self.merged_variants = merged = _merged_tags(sites)
         return merged
 
@@ -1671,7 +1782,7 @@ class TagPlan:
             elif not same_tags(tags := view.tags("union", variant), values, "legacy-python-equality"):
                 recorded.others.setdefault(union_name, tags)
             return
-        if _find_discriminator_value(variant.fields, view.names.field_name, field_name_mode=view.mode) is None:
+        if _find_discriminator_value(_own_tag_fields(variant, view.names.field_name, view.mode)) is None:
             self.first_tags[key] = VariantTags(variant, property_name, values, union_name, {})
             self.union_written.add(key)
 
