@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "$defs": {
+    "Names": {"type": "array", "items": {"type": "string"}, "contains": true}
+  },
+  "properties": {
+    "names": {"$ref": "#/$defs/Names", "contains": {"const": "a"}, "minContains": 0, "maxItems": 2},
+    "reversed": {"$ref": "#/$defs/Names", "minContains": 0, "contains": {"const": "b"}, "maxItems": 2},
+    "bounded": {"$ref": "#/$defs/Names", "maxContains": 2, "contains": {"const": "c"}, "minContains": 0, "maxItems": 3}
+  }
+}

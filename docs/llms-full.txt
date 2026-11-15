@@ -90512,6 +90512,19 @@ A key of `--type-overrides` that names no generated model or field is reported w
 - **Pull requests and issues:** [#6835](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6835)
 - **Source:** the release notes
 
+### `--field-include-all-keys` writes the contains keywords beside a `$ref` in the order of the schema (unreleased) { #contains-keywords-beside-ref-schema-order }
+
+With `--field-include-all-keys`, a `$ref` to an array schema with `contains` beside it wrote `contains`, `minContains` and `maxContains` into `json_schema_extra` in an order that depended on the hash seed of the process, so one command gave either of two files and `--check` failed at random. They are now written in the order the schema writes them. The models behave the same: only the order of the keys of the `json_schema_extra` dict changes, to one of the two orders earlier runs produced.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`; only with: `--field-include-all-keys`
+- **Pull requests and issues:** [#6866](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6866)
+- **Source:** the release notes
+
+```diff
+-json_schema_extra={'minContains': 0, 'contains': {'const': 'a'}},
++json_schema_extra={'contains': {'const': 'a'}, 'minContains': 0},
+```
+
 ### New option `--infer-union-discriminators` (`--no-infer-union-discriminators`) (unreleased) { #option-infer-union-discriminators }
 
 Write a oneOf or anyOf that declares no discriminator as a discriminated union (Pydantic Field(discriminator=...), msgspec tagged structs) when every branch that is not null requires one property holding one string or integer value (a const or a one-value enum, also through allOf members and local $refs), with no value shared; in Pydantic output a union with a discriminator keyword keeps it. Valid payloads parse the same, except that a tag typed as a one-value enum class becomes its Literal value; with --use-one-literal-as-default a payload without the tag, which the schema requires, is rejected. An invalid payload reports the errors of the branch its tag names, or one tag error. Not applied to dataclasses.dataclass and typing.TypedDict output. Without it these unions are smart unions in Pydantic output, and msgspec output tags only the unions whose tags are written on the branches themselves, as in 0.96.0
