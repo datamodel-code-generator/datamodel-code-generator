@@ -678,6 +678,7 @@ exact document matters.
 | `enum`, `const`, and `type` lists with `"null"` | Kept. An enum is a `$defs` entry named after its property |
 | `minLength`, `maxLength`, `pattern`, `minimum`, `maximum`, `multipleOf`, `exclusiveMinimum`, `exclusiveMaximum`, `minItems`, `maxItems` | Kept. An exclusive bound `0` reads `0.0` |
 | `format`, `examples`, `deprecated` | Kept. `format: uri` also gains `minLength: 1`. Under `read_format_as_annotation=True` `format` is not kept, except `format: binary` |
+| `{}` and other untyped values | Kept as `{}`. Under `untyped_value_type="pydantic.JsonValue"` a `$ref` to `"JsonValue": {}` in `$defs` |
 | `default` of an optional property | Kept |
 | `required` | Kept. A required property with a `default` loses the `default` |
 | `additionalProperties` (`true`, `false`, a schema) | Kept; absent stays absent |

@@ -485,6 +485,19 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         a warning otherwise; without it a class path keeps the
                         dict of a map around the class and every override
                         keeps those counts whatever its type, as in 0.89.0
+  --untyped-value-type TYPE
+                        Write each value the schema leaves untyped ({}, true,
+                        a schema without type, the values of an object without
+                        properties and the items of an array without items) as
+                        this type instead of Any: pydantic.JsonValue (Pydantic
+                        2.5 or later), object, Any or the dotted import path
+                        of a type of your own, which the models import; the
+                        structure is as without the option. --type-overrides,
+                        x-python-type and x-python-import keep their types,
+                        and msgspec.Struct output keeps Any, which msgspec
+                        decodes into JSON values. Without it untyped values
+                        are Any, and object in containers under --use-object-
+                        type, as in 0.96.0
   --use-annotated, --no-use-annotated
                         Use typing.Annotated for Field(). Also, `--field-
                         constraints` option will be enabled. Will become

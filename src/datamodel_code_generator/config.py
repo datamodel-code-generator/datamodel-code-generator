@@ -26,6 +26,7 @@ from datamodel_code_generator.base_config import (
     _schema_validator_base_class_name_error,
     _validate_additional_import_paths,
     validate_named_paths,
+    validate_untyped_value_type,
 )
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
@@ -384,6 +385,7 @@ class ParserConfig(BaseModel):
     use_pendulum: bool = False
     use_standard_primitive_types: bool = False
     use_object_type: bool = False
+    untyped_value_type: str | None = None
     http_query_parameters: Sequence[tuple[str, str]] | None = None
     treat_dot_as_module: bool | None = None
     strict_dotted_module_names: bool = False
@@ -431,6 +433,7 @@ class ParserConfig(BaseModel):
         return _validate_additional_import_paths(value, NEWEST_TARGET)
 
     _validate_named_paths = field_validator(*_NAMED_PATHS)(validate_named_paths)
+    _validate_untyped_value_type = field_validator("untyped_value_type")(validate_untyped_value_type)
     _validate_schema_validator_base_class_name = field_validator("schema_validator_base_class_name")(
         validate_schema_validator_base_class_name
     )

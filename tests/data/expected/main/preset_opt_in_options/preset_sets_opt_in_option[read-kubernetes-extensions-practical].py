@@ -4,9 +4,9 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, constr
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, constr
 
 
 class Resources(BaseModel):
@@ -53,8 +53,8 @@ class Spec(BaseModel):
     target_port: Annotated[int | str | None, Field(alias='targetPort')] = None
     resources: Resources | None = None
     selector: Selector | None = None
-    config: Any | None = None
-    template: dict[str, object] | None = None
+    config: JsonValue | None = None
+    template: dict[str, JsonValue] | None = None
     ports: list[Port] | None = None
     finalizers: list[str] | None = None
     labels: dict[str, str] | None = None
@@ -98,7 +98,7 @@ class Widget(BaseModel):
     """APIVersion defines the versioned schema of this representation of an object."""
     kind: Literal['Widget'] = 'Widget'
     """Kind is a string value representing the REST resource this object represents."""
-    metadata: dict[str, object] | None = None
+    metadata: dict[str, JsonValue] | None = None
     spec: Spec
     """WidgetSpec defines the desired state of Widget."""
     status: Status | None = None

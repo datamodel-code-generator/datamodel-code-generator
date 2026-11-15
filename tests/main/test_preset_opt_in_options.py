@@ -123,6 +123,11 @@ OPT_IN_OPTIONS_20261113: tuple[str, ...] = (
 )
 """The options the 20261113 presets set beyond the 20261112 presets."""
 
+PRACTICAL_OPT_IN_OPTIONS: dict[str, tuple[str, ...]] = {
+    "20261113": ("--untyped-value-type", "pydantic.JsonValue"),
+}
+"""The options the practical presets of a date set beyond its standard options, for Pydantic output."""
+
 PRESET_RELEASES: dict[str, tuple[str, tuple[str, ...]]] = {
     "20261027": ("20261017", OPT_IN_OPTIONS),
     "20261104": ("20261027", OPT_IN_OPTIONS_20261104),
@@ -703,7 +708,13 @@ def test_preset_sets_opt_in_option(
         input_path=input_path,
         output_path=options_output,
         input_file_type=input_file_type,
-        extra_args=["--preset", f"{family}-py312-{previous}", *common, *options],
+        extra_args=[
+            "--preset",
+            f"{family}-py312-{previous}",
+            *common,
+            *options,
+            *(PRACTICAL_OPT_IN_OPTIONS.get(release, ()) if family == "practical" else ()),
+        ],
         skip_code_validation=sys.version_info < (3, 12),
         **(
             {"expected_directory": preset_output}

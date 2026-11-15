@@ -486,6 +486,10 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
     "jsonschema/tool_input_formats/tool_input_formats.json": dict.fromkeys(
         PayloadBackend, ("--read-format-as-annotation",)
     ),
+    "jsonschema/event_log_untyped/event_log_untyped.json": dict.fromkeys(
+        (PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS),
+        ("--untyped-value-type", "pydantic.JsonValue"),
+    ),
     **{
         f"jsonschema/{name}.json": dict.fromkeys(PayloadBackend, ("--keep-enum-member-values",))
         for name in ("enum_value_base_kinds", "msgspec_enum_value_base_kept")

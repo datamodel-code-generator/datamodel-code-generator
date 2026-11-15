@@ -40,7 +40,7 @@ from datamodel_code_generator._regex_syntax import (
     pattern_engine,
     selects_python_engine,
 )
-from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS
+from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS, form_path
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
@@ -181,6 +181,7 @@ if TYPE_CHECKING:
 
 
 _CONSTRAINED_STRING_IMPORTS = frozenset({IMPORT_CONSTR, IMPORT_STRING_CONSTRAINTS, IMPORT_FIELD})
+_IMPORT_JSON_VALUE = Import.from_full_path(form_path("pydantic.json_value"))
 _ANNOTATED_CONSTRAINT_BASES: dict[_ImportKey, str] = {
     _import_key(IMPORT_CONSTR): "str",
     _import_key(IMPORT_CONINT): "int",
@@ -765,6 +766,8 @@ class DataModelField(_PydanticBaseDataModelField):
             for data_type in self.data_type.all_data_types
         ):
             constructs.append("pydantic.compiled_pattern")
+        if any(data_type.import_ == _IMPORT_JSON_VALUE for data_type in self.data_type.all_data_types):
+            constructs.append("pydantic.json_value")
         if pattern is not None:
             if self._constrains_bytes_only():
                 constructs.append("pydantic.bytes_pattern")

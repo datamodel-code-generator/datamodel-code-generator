@@ -40,7 +40,6 @@ from datamodel_code_generator._json_schema import (
 from datamodel_code_generator._mro import linearize, sort_descendants_first
 from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator._warning_control import quiet
-from datamodel_code_generator.imports import IMPORT_ANY
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model.base import _field_source_name, get_inherited_fields
 from datamodel_code_generator.parser import _rw_split, _schema_refs, _value_keywords
@@ -95,7 +94,7 @@ from datamodel_code_generator.reference import (
     context_variable,
     get_inferred_module_name,
 )
-from datamodel_code_generator.types import ANY, DataType
+from datamodel_code_generator.types import DataType, untyped_value_data_type
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
@@ -2084,7 +2083,7 @@ def build_missing_required_field(  # noqa: PLR0913, PLR0917
         parser.data_type()
         if deferred
         else parser._get_inherited_field_type(required_field_name, base_classes)  # noqa: SLF001
-        or DataType(type=ANY, import_=IMPORT_ANY),
+        or untyped_value_data_type(DataType, parser.data_type_manager.untyped_value),
         name=field_name,
         alias=alias,
         source_name=required_field_name,

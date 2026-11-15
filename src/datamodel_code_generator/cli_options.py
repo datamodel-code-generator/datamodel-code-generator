@@ -487,7 +487,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(
         _C.TYPING,
         "--use-pendulum --use-standard-primitive-types --no-use-standard-primitive-types --use-object-type",
-        "--no-use-object-type",
+        "--no-use-object-type --untyped-value-type",
         "--use-typed-nullable-map-values --no-use-typed-nullable-map-values",
         "--use-typed-map-values-beside-other-types --no-use-typed-map-values-beside-other-types",
         group=_G.TYPE_MAPPING,

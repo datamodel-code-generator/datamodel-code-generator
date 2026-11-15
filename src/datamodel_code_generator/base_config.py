@@ -193,6 +193,22 @@ def _check_config_named_paths(config: object, target: PythonVersion) -> None:
         _check_named_paths(field, getattr(config, field), target)
 
 
+def validate_untyped_value_type(value: str | None) -> str | None:
+    """Refuse a value of --untyped-value-type other than ``Any``, ``object`` or a dotted import path of Python names."""
+    if value is None or value in {"Any", "object"}:
+        return value
+    from datamodel_code_generator import Error  # noqa: PLC0415
+    from datamodel_code_generator.python_literal import message_repr  # noqa: PLC0415
+    from datamodel_code_generator.validators import _validate_dotted_python_identifier_path  # noqa: PLC0415
+
+    try:
+        _validate_dotted_python_identifier_path(value, NEWEST_TARGET)
+    except ValueError:
+        msg = f"untyped_value_type must be Any, object or a dotted import path: {message_repr(value)}"
+        raise Error(msg) from None
+    return value
+
+
 def _schema_validator_base_class_name_error(value: str | None, target: PythonVersion) -> str | None:
     """Return why a name cannot name the shared schema validator base class, or None when it can or none is given.
 
@@ -536,6 +552,7 @@ class BaseGenerateConfig(BaseModel):
     use_pendulum: bool = False
     use_standard_primitive_types: bool = False
     use_object_type: bool = False
+    untyped_value_type: str | None = None
     http_query_parameters: Sequence[tuple[str, str]] | None = None
     treat_dot_as_module: bool | None = None
     strict_dotted_module_names: bool = False
@@ -620,6 +637,7 @@ class BaseGenerateConfig(BaseModel):
         return _validate_additional_import_paths(value, NEWEST_TARGET)
 
     _validate_named_paths = field_validator(*_NAMED_PATHS)(validate_named_paths)
+    _validate_untyped_value_type = field_validator("untyped_value_type")(validate_untyped_value_type)
 
     @model_validator(mode="after")
     def normalize_schema_validator_type(self) -> Self:

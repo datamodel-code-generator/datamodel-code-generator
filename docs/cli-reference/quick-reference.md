@@ -68,6 +68,7 @@ datamodel-codegen [OPTIONS]
 | [`--type-mappings`](typing-customization.md#type-mappings) | Override default type mappings for schema formats. |
 | [`--type-overrides`](typing-customization.md#type-overrides) | Replace schema model types with custom Python types via JSON mapping. |
 | [`--type-overrides-replace-whole-type`](typing-customization.md#type-overrides-replace-whole-type) | Make every `--type-overrides` value of a field replace the field's whole type. |
+| [`--untyped-value-type`](typing-customization.md#untyped-value-type) | Write each value the schema leaves untyped as one type instead of `Any`. |
 | [`--use-annotated`](typing-customization.md#use-annotated) | Use typing.Annotated for Field() with constraints. |
 | [`--use-bytes-for-content-media-type`](typing-customization.md#use-bytes-for-content-media-type) | Type an OpenAPI string with a `contentMediaType` and no `contentEncoding` as `by... |
 | [`--use-closed-typed-dict`](typing-customization.md#use-closed-typed-dict) | Generate TypedDict with PEP 728 closed/extra_items (default: enabled). |
@@ -606,6 +607,7 @@ All options sorted alphabetically:
 - [`--type-overrides-replace-whole-type`](typing-customization.md#type-overrides-replace-whole-type) - Make every `--type-overrides` value of a field replace the f...
 - [`--union-mode`](model-customization.md#union-mode) - Union mode for combining anyOf/oneOf schemas (smart or left_...
 - [`--untrusted-input`](general-options.md#untrusted-input) - Treat the input as a schema from an untrusted source.
+- [`--untyped-value-type`](typing-customization.md#untyped-value-type) - Write each value the schema leaves untyped as one type inste...
 - [`--update-lock`](general-options.md#update-lock) - Create or atomically update the selected remote lock after g...
 - [`--url`](base-options.md#url) - Fetch a schema from a URL with custom HTTP headers.
 - [`--use-annotated`](typing-customization.md#use-annotated) - Use typing.Annotated for Field() with constraints.

@@ -101,6 +101,7 @@ PydanticConstruct: TypeAlias = Literal[
     "pydantic.coerce_numbers_to_str",
     "pydantic.dataclass_alias",
     "pydantic.regex_engine",
+    "pydantic.json_value",
     "pydantic.attribute_docstrings",
     "pydantic.field_deprecated",
     "pydantic.dict_key_forward_ref",
@@ -234,6 +235,7 @@ _ROWS: Final[tuple[Requirement, ...]] = (
     ),
     Requirement("pydantic.dataclass_alias", "pydantic", "2.4"),
     Requirement("pydantic.regex_engine", "pydantic", "2.5", label="regex_engine", config_key="regex_engine"),
+    Requirement("pydantic.json_value", "pydantic", "2.5", form="pydantic.JsonValue", label="pydantic.JsonValue"),
     Requirement(
         "pydantic.attribute_docstrings",
         "pydantic",

@@ -248,6 +248,7 @@ class BaseGenerateConfig(TypedDict):
     use_pendulum: NotRequired[bool]
     use_standard_primitive_types: NotRequired[bool]
     use_object_type: NotRequired[bool]
+    untyped_value_type: NotRequired[str | None]
     http_query_parameters: NotRequired[Sequence[tuple[str, str]] | None]
     treat_dot_as_module: NotRequired[bool | None]
     strict_dotted_module_names: NotRequired[bool]

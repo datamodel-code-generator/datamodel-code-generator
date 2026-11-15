@@ -144,8 +144,13 @@ CONSTRUCTION_METHODS = frozenset({
     "get_data_type",
     "register_reference",
     "unregister_reference",
+    "untyped_value_data_type",
+    "use_untyped_value_type",
 })
-"""Methods parser code calls that build objects, keep reverse-reference bookkeeping or implement ``class_name``."""
+"""Methods parser code calls that build objects, keep reverse-reference bookkeeping or implement ``class_name``.
+
+``use_untyped_value_type`` builds the untyped types of the type map when the parser builds its type manager.
+"""
 
 RENDER_ENTRY_POINTS = {
     "get_dedup_key": "renders a model to compare duplicates; its writes are caches, which the cache rules report",

@@ -412,6 +412,10 @@ class Pet(Struct):
     tag: str | UnsetType = UNSET
 ```
 
+`--untyped-value-type` has no effect on `msgspec.Struct` output: msgspec decodes neither `pydantic.JsonValue` nor a
+recursive alias, and decodes `Any` into JSON values already, so untyped values stay `Any`. The other output types write
+them as the given type (see [`--untyped-value-type`](cli-reference/typing-customization.md#untyped-value-type)).
+
 ### Discriminated unions
 
 msgspec only decodes a union of structs when every struct is tagged, and a tagged struct cannot also have a field
