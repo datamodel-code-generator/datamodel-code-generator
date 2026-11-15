@@ -1,0 +1,39 @@
+openapi: 3.1.0
+info: {title: a named array of a union named like its Enum used from another module, version: "1"}
+paths: {}
+components:
+  schemas:
+    pets.Kind:
+      type: string
+      enum: [cat, dog]
+    pets.Cat:
+      type: object
+      required: [Kind]
+      properties:
+        Kind: {$ref: '#/components/schemas/pets.Kind'}
+        lives: {type: integer}
+    pets.Dog:
+      type: object
+      required: [Kind]
+      properties:
+        Kind: {$ref: '#/components/schemas/pets.Kind'}
+        bark: {type: boolean}
+    pets.Pet:
+      oneOf:
+        - $ref: '#/components/schemas/pets.Cat'
+        - $ref: '#/components/schemas/pets.Dog'
+      discriminator:
+        propertyName: Kind
+        mapping:
+          cat: '#/components/schemas/pets.Cat'
+          dog: '#/components/schemas/pets.Dog'
+    pets.Pets:
+      type: array
+      items: {$ref: '#/components/schemas/pets.Pet'}
+    api.Shelter:
+      type: object
+      properties:
+        all: {$ref: '#/components/schemas/pets.Pets'}
+        some:
+          type: array
+          items: {$ref: '#/components/schemas/pets.Pet'}
