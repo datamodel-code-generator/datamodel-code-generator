@@ -25,7 +25,7 @@ from datamodel_code_generator._format_types import (
 )
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._option_names import option_flag
-from datamodel_code_generator._option_rules import enable_implied_options, implied_options
+from datamodel_code_generator._option_rules import enable_implied_options, implied_option_sources, implied_options
 from datamodel_code_generator._shared_types import LiteralType  # noqa: TC001 - used at runtime by Pydantic
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
@@ -267,8 +267,8 @@ def implied_model_settings(config: Any, explicit: AbstractSet[str]) -> dict[str,
 
     A setting is unset unless `explicit` names it. msgspec models use `Annotated` constraints, `use_annotated` writes
     the constraints as field constraints, and an unset `field_constraints` follows `use_annotated`, so the command
-    line and `generate()` keep the same constraints. `intersect_combined_schema_keywords` turns on
-    `intersect_allof_keywords`, also where a preset sets it.
+    line and `generate()` keep the same constraints. Every other source option of `IMPLIED_OPTIONS` turns on its
+    option, also where a preset sets it.
     """
     use_annotated = config.use_annotated
     implied: dict[str, bool] = {}
@@ -276,12 +276,7 @@ def implied_model_settings(config: Any, explicit: AbstractSet[str]) -> dict[str,
         implied["use_annotated"] = use_annotated = True
     if "field_constraints" not in explicit:
         implied["field_constraints"] = use_annotated
-    implied.update(
-        implied_options({
-            "use_annotated": use_annotated,
-            "intersect_combined_schema_keywords": config.intersect_combined_schema_keywords,
-        })
-    )
+    implied.update(implied_options({**implied_option_sources(config), "use_annotated": use_annotated}))
     return implied
 
 
@@ -668,7 +663,12 @@ class BaseGenerateConfig(BaseModel):
 
     @model_validator(mode="after")
     def normalize_use_type_alias_type(self) -> Self:
-        """Enable type aliases when their implementation is explicitly selected."""
+        """Enable type aliases when their implementation is explicitly selected.
+
+        The validator applies this one row of `IMPLIED_OPTIONS` (row `validator-stage-rows`): a frozen
+        `PresetConfig` sets other source options of the table, so the other rows are applied by
+        `implied_model_settings`.
+        """
         enable_implied_options(self, "use_type_alias_type")
         return self
 

@@ -304,12 +304,16 @@ class ResolvedPresetConfig:
     force_field_constraints: bool
 
     def updates(self) -> dict[str, PresetConfigValue | PythonVersion]:
-        """Return the config updates a preset makes, in the order they are applied."""
+        """Return the config updates a preset makes, in the order they are applied.
+
+        The updates include the options they imply (`IMPLIED_OPTIONS`), returned as on also where the caller set
+        the option off: the later stage resolves it the same way.
+        """
         updates: dict[str, PresetConfigValue | PythonVersion] = {}
         if self.target_python_version is not None:
             updates["target_python_version"] = self.target_python_version
         updates.update((item.field_name, item.applied_value) for item in self.items)
-        updates.update(implied_options({"use_annotated": self.force_field_constraints}))
+        updates.update(implied_options({**updates, "use_annotated": self.force_field_constraints}))
         return updates
 
 
@@ -1845,7 +1849,10 @@ def resolve_preset_config_updates(
     use_annotated: bool,
     explicit_fields: set[str],
 ) -> ResolvedPresetConfig:
-    """Resolve preset updates while preserving caller-explicit config fields."""
+    """Resolve preset updates, leaving out the items of caller-explicit config fields.
+
+    The updates still carry the options the items imply, as on also where the caller set the option off.
+    """
     preset_name = _coerce_preset_name(preset)
     info = _get_preset_info(preset_name)
     explicit_field_names = set(explicit_fields)
