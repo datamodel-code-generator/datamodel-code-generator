@@ -6,6 +6,20 @@ Every change a user meets when upgrading, newest first. To upgrade from a releas
 
 ## Unreleased
 
+### A Literal member of an enum named through a collapsed alias imports the enum (unreleased) { #enum-literal-after-collapsed-alias }
+
+Under `--collapse-root-models-name-strategy parent`, a module that named an enum of another module through a collapsed alias wrote the enum without importing it in two places: in an enum member literal (`--use-enum-values-in-discriminator`, or a const beside an enum under `--read-const-beside-enum`) and, under `--reuse-model`, where the enum replaced a duplicate that reuse removed. The models that named it failed when they were used. The module now imports the enum and writes `Literal[b.Foo.cat, 'cat']`. Output that worked before is unchanged.
+
+- **Affects:** only with: `--collapse-root-models-name-strategy parent`
+- **Keep the old output:** The previous module imported, but the models that named the enum failed at first use, as the module did not import it; nothing restores it.
+- **Pull requests and issues:** [#6842](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6842)
+- **Source:** the release notes
+
+```diff
+-kind: Literal[Foo.cat, 'cat']
++kind: Literal[b.Foo.cat, 'cat']
+```
+
 ### `--type-overrides` keys that match no model or field emit a `UserWarning` (unreleased) { #type-overrides-unmatched-keys }
 
 A key of `--type-overrides` that names no generated model or field is reported with a `UserWarning`; the generated output is unchanged. A caller that turns warnings into errors gets an error.

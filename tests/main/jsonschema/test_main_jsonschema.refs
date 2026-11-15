@@ -5894,6 +5894,9 @@ use_annotated.py-cli_args1-options1-cli	main/jsonschema/entry_point_constraints/
 	main/jsonschema/enum_field_as_literal_map.py
 [test_main_enum_field_as_literal_map_override_global]
 	main/jsonschema/enum_field_as_literal_map_override.py
+[test_main_enum_literal_of_collapsed_alias_modules]
+const	main/jsonschema/main_jsonschema/main_enum_literal_of_collapsed_alias_modules[const]/
+discriminator	main/jsonschema/main_jsonschema/main_enum_literal_of_collapsed_alias_modules[discriminator]/
 [test_main_exact_imports_collapse_root_models_module_class_collision]
 	main/jsonschema/exact_imports_collapse_root_models//*.py
 [test_main_exact_imports_collapse_root_models_module_split_oneof_imports]

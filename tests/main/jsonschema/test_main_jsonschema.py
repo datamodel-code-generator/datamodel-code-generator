@@ -43157,3 +43157,54 @@ def test_main_naming_strategy_enclosing_model_modules(output_dir: Path, input_di
         ],
         force_exec_validation=True,
     )
+
+
+@pytest.mark.parametrize(
+    ("input_dir", "extra_args", "model_name", "payload"),
+    [
+        pytest.param(
+            "enum_literal_collapsed_alias",
+            ["--use-enum-values-in-discriminator"],
+            "Pet",
+            {"pet": {"kind": "cat"}},
+            id="discriminator",
+        ),
+        pytest.param(
+            "enum_literal_collapsed_alias_const",
+            ["--read-const-beside-enum", "--use-subclass-enum"],
+            "Holder",
+            {"other": "cat"},
+            id="const",
+        ),
+    ],
+)
+def test_main_enum_literal_of_collapsed_alias_modules(
+    output_dir: Path, input_dir: str, extra_args: list[str], model_name: str, payload: dict[str, Any]
+) -> None:
+    """Import the enum an enum member literal names after the collapsed alias of another module (#6842).
+
+    ``Foo`` of ``a.json`` is an alias of the enum of ``b.json`` that ``parent`` collapse replaces by the enum, which
+    takes its path and its name. ``a.py`` writes ``Literal[b.Foo.cat, 'cat']`` and imports ``b``, as it names
+    ``b.Foo`` in ``Holder``. A const beside the enum makes the same literal without a discriminator
+    (``enum_literal_collapsed_alias_const``): ``a.py`` writes ``Literal[b.Foo.cat]`` and imports ``b``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_dir,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--collapse-root-models",
+            "--collapse-root-models-name-strategy",
+            "parent",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+        runtime_validation_module="a",
+        runtime_validation_model_name=model_name,
+        runtime_validation_data=payload,
+    )

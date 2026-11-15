@@ -1,0 +1,25 @@
+openapi: 3.1.0
+info:
+  title: A collapsed alias of a reused enum
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    c.Color:
+      type: string
+      enum: [red, green]
+    c.Kind:
+      type: string
+      enum: [red, green]
+    z.Holder:
+      type: object
+      properties:
+        kind:
+          $ref: "#/components/schemas/c.Kind"
+    z.Alias:
+      $ref: "#/components/schemas/c.Color"
+    z.Other:
+      type: object
+      properties:
+        alias:
+          $ref: "#/components/schemas/z.Alias"

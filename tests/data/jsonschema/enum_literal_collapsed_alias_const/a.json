@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Foo": {"$ref": "b.json#/$defs/Kind"},
+    "Holder": {"type": "object", "properties": {"other": {"$ref": "#/$defs/Foo"}}}
+  }
+}

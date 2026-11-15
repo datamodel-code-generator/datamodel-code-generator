@@ -14850,6 +14850,34 @@ def test_main_openapi_generic_base_class_package_cycle(output_dir: Path) -> None
     )
 
 
+def test_main_openapi_reuse_model_collapsed_alias_enum(output_dir: Path) -> None:
+    """Import the kept enum where reuse removed a duplicate and its alias in another module was collapsed (#6842).
+
+    ``z.Alias`` is replaced by the enum ``c.Color`` under the ``parent`` strategy, which takes its path, and reuse
+    removes ``c.Kind``, which ``z.Holder`` named before: ``z.py`` writes ``c.Alias`` and imports ``c``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "reuse_model_collapsed_alias_enum.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--reuse-model",
+            "--collapse-root-models",
+            "--collapse-root-models-name-strategy",
+            "parent",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+        runtime_validation_module="z",
+        runtime_validation_model_name="Holder",
+        runtime_validation_data={"kind": "red"},
+    )
+
+
 def test_main_openapi_dot_notation_deep_inheritance(output_dir: Path) -> None:
     """Test dot notation with deep inheritance from ancestor packages (issue #2039)."""
     run_main_and_assert(
