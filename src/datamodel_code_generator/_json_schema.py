@@ -268,9 +268,9 @@ def json_values_equal(left: object, right: object) -> bool:
     """
     match left:
         case None | bool() | int() | float():
-            # Two values of one type that Python tells apart have different keys, except two NaN, which equal nothing
-            # in Python, themselves included: that test decides most pairs without building a key.
-            if type(left) is type(right) and left == left and not left == right:  # noqa: PLR0124, SIM201
+            # Two values of one type that Python tells apart have different keys, except NaN, which equals nothing in
+            # Python, itself included, and has one key: that test decides most pairs without building a key.
+            if type(left) is type(right) and left != right and not (isinstance(left, float) and isnan(left)):
                 return False
             return json_value_key(left) == json_value_key(right)
         case str() as string:
