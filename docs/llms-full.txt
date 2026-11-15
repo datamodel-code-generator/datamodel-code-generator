@@ -63689,6 +63689,9 @@ instead of generating them.
 | `{"ModelName": "package.Type"}` | Model-level: Skip generation; replace field and inheritance refs |
 | `{"Model.field": "package.Type"}` | Scoped: Override only specific field in specific model |
 
+A key that matches no generated model or field is reported in a warning, with the key that would match where there
+is a close one, such as `ItemModel.price` for `Item.price` when the schema's `Item` is written as `ItemModel`.
+
 **Common Use Cases:**
 
 | Use Case | Example Override |
@@ -90299,6 +90302,15 @@ Every change a user meets when upgrading, newest first. To upgrade from a releas
 
 ## Unreleased
 
+### `--type-overrides` keys that match no model or field emit a `UserWarning` (unreleased) { #type-overrides-unmatched-keys }
+
+A key of `--type-overrides` that names no generated model or field is reported with a `UserWarning`; the generated output is unchanged. A caller that turns warnings into errors gets an error.
+
+- **Affects:** only with: `--type-overrides`
+- **What to change:** Fix or drop the keys the warning names.
+- **Pull requests and issues:** [#6835](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6835)
+- **Source:** the release notes
+
 ### New option `--infer-union-discriminators` (`--no-infer-union-discriminators`) (unreleased) { #option-infer-union-discriminators }
 
 Write a oneOf or anyOf that declares no discriminator as a discriminated union (Pydantic Field(discriminator=...), msgspec tagged structs) when every branch that is not null requires one property holding one string or integer value (a const or a one-value enum, also through allOf members and local $refs), with no value shared; in Pydantic output a union with a discriminator keyword keeps it. Valid payloads parse the same, except that a tag typed as a one-value enum class becomes its Literal value; with --use-one-literal-as-default a payload without the tag, which the schema requires, is rejected. An invalid payload reports the errors of the branch its tag names, or one tag error. Not applied to dataclasses.dataclass and typing.TypedDict output. Without it these unions are smart unions in Pydantic output, and msgspec output tags only the unions whose tags are written on the branches themselves, as in 0.96.0
@@ -93889,6 +93901,7 @@ entry.
 | IMPORTS | `warn_about_decimal_defaults` | global | check | STDERR | DEFAULTS | After `warn_about_dropped_constraints`: warnings keep their order. |
 | IMPORTS | `warn_about_variant_discriminator_tags` | global | check | STDERR | DISCRIMINATOR_TAGS | After `warn_about_decimal_defaults`: warnings keep their order. |
 | IMPORTS | `warn_about_msgspec_decoding` | global | check | STDERR | FIELD_TYPES | After `warn_about_variant_discriminator_tags`: warnings keep their order. |
+| IMPORTS | `warn_about_unmatched_type_override_keys` | global | check | STDERR | CLASS_NAMES, FIELD_NAMES, TYPE_OVERRIDES | Runs when: type_overrides. After `warn_about_msgspec_decoding`: warnings keep their order. |
 | IMPORTS | `set_nested_model_default_factory_metadata` | global | transform | DEFAULT_EXPRESSION | - | Publishes the nested-factory decision on the models, for the models that render without frozen plans (GraphQL unions, custom output models; row legacy.L-NF). Runs when: use_default_factory_for_optional_nested_models. |
 | IMPORTS | `record_pydantic_floor` | global | check | - | BACKEND_CONFIG, CONSTRAINTS, FIELD_ALIASES, FIELD_TYPES, MODEL_KIND, TYPE_ALIAS_BODY | Runs when: an explicit target Pydantic version. |
 | IMPORTS | `add_root_init_result` | global | bookkeeping | - | MODULE_MEMBERSHIP |  |

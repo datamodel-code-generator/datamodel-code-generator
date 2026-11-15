@@ -58,7 +58,10 @@ after names are final):
 from __future__ import annotations
 
 from dataclasses import field
-from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, TypeVar
+from difflib import get_close_matches
+from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, TypeVar, cast
+
+from typing_extensions import override
 
 from datamodel_code_generator._records import mutable_record, record
 
@@ -73,12 +76,15 @@ __all__ = [
     "ModelNameKeys",
     "ModelNameRecord",
     "ModelNames",
+    "RecordedOverrides",
     "ScopedKeyRow",
+    "TypeOverrideLookups",
     "TypeOverrideRow",
     "class_field_key",
     "class_key",
     "class_name_keys",
     "class_scope",
+    "closest_type_override_key",
     "field_keys",
     "first_given",
     "first_present",
@@ -86,6 +92,7 @@ __all__ = [
     "model_level_type_override",
     "model_name_path_keys",
     "model_type_override",
+    "record_written_as",
     "scoped_key",
     "template_data_keys",
     "translate_class_keys",
@@ -233,12 +240,81 @@ def model_type_override(
     models built from it and the base layouts read one name. Row ``predicted-class-name`` compares them with the class
     name a parser gives before the resolver allocates it, passed as ``model`` (the Avro fixed types).
     """
-    return overrides.get(class_key(_TYPE_OVERRIDE_CLASS_KEYS[row], model))
+    if not overrides:
+        return None
+    key = class_key(_TYPE_OVERRIDE_CLASS_KEYS[row], model)
+    if not isinstance(model, str):
+        record_written_as(overrides, model.original_name, key)
+    return overrides.get(key)
 
 
 def type_override_classes(type_overrides: Iterable[str]) -> frozenset[str]:
     """Return the class names ``--type-overrides`` keys name, by the part before the first dot (row ``first-dot``)."""
     return frozenset(class_name for key in type_overrides for class_name, _ in scoped_key(key, row="first-dot"))
+
+
+@mutable_record(slots=True)
+class TypeOverrideLookups:
+    """The ``--type-overrides`` lookups of one parse, which tell the keys that matched nothing and the closest names."""
+
+    probed: set[str] = field(default_factory=set)
+    """Every key a lookup compared with the keys: the names that a key would have matched."""
+    found: set[str] = field(default_factory=set)
+    """The keys a lookup found."""
+    written_as: dict[str, set[str]] = field(default_factory=dict)
+    """The keys a lookup compared, by the same key written with the original (schema) name of the model."""
+
+
+class RecordedOverrides(dict[str, _ValueT]):  # ruff: ignore[subclass-builtin]
+    """The ``--type-overrides`` keys of a parse, as a dict that records each lookup in its ``TypeOverrideLookups``.
+
+    A lookup by key (``get``, ``in``) is a match attempt: it records the key it compares, and the key as found when
+    the dict holds it. Every lookup returns what the plain dict returns; ``[]``, iteration, ``.values()``, truthiness
+    and equality are those of the dict and record nothing (no lookup site uses ``[]``), so code that only asks whether
+    the option names a key iterates instead of looking it up. A copy (``copy.copy``) shares the record; ``dict(...)``
+    is a plain dict.
+    """
+
+    __slots__ = ("lookups",)
+
+    def __init__(self, items: Mapping[str, _ValueT], lookups: TypeOverrideLookups) -> None:
+        """Hold ``items`` and record their lookups in ``lookups``."""
+        super().__init__(items)
+        self.lookups = lookups
+
+    def _record(self, key: str) -> None:
+        self.lookups.probed.add(key)
+        if super().__contains__(key):
+            self.lookups.found.add(key)
+
+    @override
+    def __contains__(self, key: object) -> bool:
+        self._record(cast("str", key))
+        return super().__contains__(key)
+
+    @override
+    def get(self, key: object, default: object = None, /) -> object:  # ty: ignore[invalid-method-override]
+        self._record(cast("str", key))
+        return super().get(key, default)
+
+
+def record_written_as(overrides: Mapping[str, object], written: str, key: str) -> None:
+    """Record that a lookup compared ``key``, which ``written`` writes with the original name of its model."""
+    if isinstance(overrides, RecordedOverrides) and written != key:
+        overrides.lookups.written_as.setdefault(written, set()).add(key)
+
+
+def closest_type_override_key(key: str, lookups: TypeOverrideLookups) -> str | None:
+    """Return the key that would have matched where ``key`` matched nothing, or None.
+
+    The key written with the class name of a model whose original (schema) name ``key`` writes comes first, the
+    shortest; then the closest key a lookup compared, of the same form (with or without a class part).
+    """
+    if written := lookups.written_as.get(key):
+        return min(written, key=lambda name: (len(name), name))
+    scoped = _SCOPE_SEPARATOR in key
+    candidates = sorted(name for name in lookups.probed if (_SCOPE_SEPARATOR in name) == scoped)
+    return next(iter(get_close_matches(key, candidates, n=1, cutoff=0.7)), None)
 
 
 @record

@@ -30,6 +30,8 @@ single-module	main/input_diff/virtual_directory_sentinel//*.py
 [test_diff_against_reports_single_file_and_directory_results_by_path]
 directory-to-single-file	main/input_diff/directory_to_single_file.txt
 single-file-to-directory	main/input_diff/single_file_to_directory.txt
+[test_diff_against_reports_type_overrides_keys_that_match_nothing_of_the_current_input]
+	main/main_input_diff/diff_against_reports_type_overrides_keys_that_match_nothing_of_the_current_input.warnings.txt
 [test_diff_against_single_file_comparison_reports_added_when_old_output_is_missing]
 	main/input_diff/added_single_file.txt
 	main/input_diff/added_single_file_json.txt

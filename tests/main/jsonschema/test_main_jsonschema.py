@@ -13516,6 +13516,73 @@ def test_main_jsonschema_model_name_map_warns_on_unmatched_keys(output_file: Pat
 
 
 @pytest.mark.parametrize(
+    ("type_overrides", "extra_args", "modules"),
+    [
+        pytest.param({"Item.price": "decimal.Decimal"}, (), False, id="schema-name"),
+        pytest.param({"Widget": "decimal.Decimal"}, (), False, id="no-close-name"),
+        pytest.param({"Ordr": "decimal.Decimal", "Order.itme": "decimal.Decimal"}, (), False, id="close-names"),
+        pytest.param({"Widget": "decimal.Decimal", "Item.price": "decimal.Decimal"}, (), False, id="several"),
+        pytest.param({"ItemModel.price": "decimal.Decimal", "Item": "decimal.Decimal"}, (), False, id="matched"),
+        pytest.param(
+            {"Order.item": "decimal.Decimal"},
+            ("--model-name-map", json.dumps({"Order": "Purchase"})),
+            False,
+            id="parsed-again",
+        ),
+        pytest.param({"stats.Rank": "decimal.Decimal"}, (), True, id="dotted-schema-name"),
+    ],
+)
+def test_main_jsonschema_type_overrides_warns_on_unmatched_keys(
+    output_file: Path,
+    output_dir: Path,
+    type_overrides: dict[str, str],
+    extra_args: tuple[str, ...],
+    modules: bool,
+) -> None:
+    """Report once the --type-overrides keys that match no model or field, with the key that would match.
+
+    ``#/$defs/Item`` is written as ``ItemModel``, as the inline object of ``item`` takes ``Item``: a key with the
+    schema's name is given with the class name, another key with the closest name a lookup compared. A run that
+    parses again (a class-name key of ``--model-name-map``) reports the keys once, by the names of the parse it keeps,
+    and a dotted schema name (``stats.Rank``, the class ``Rank`` of module ``stats``) gives its class name.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH
+            / ("type_overrides_unmatched_keys_modules.json" if modules else "type_overrides_unmatched_keys.json"),
+            output_path=output_dir if modules else output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+                "--type-overrides",
+                json.dumps(type_overrides),
+                *extra_args,
+            ],
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning), name="warnings"
+    )
+
+
+def test_main_jsonschema_type_overrides_warns_on_unmatched_keys_of_a_parser() -> None:
+    """Warn from the parse itself about the --type-overrides keys that match nothing outside a generation run."""
+    parser = JsonSchemaParser(
+        (JSON_SCHEMA_DATA_PATH / "type_overrides_unmatched_keys.json").read_text(encoding="utf-8"),
+        type_overrides={"Item.price": "decimal.Decimal"},
+    )
+    message = (
+        "--type-overrides: 1 key matched no generated model or field: 'Item.price' (did you mean 'ItemModel.price'?)"
+    )
+    with pytest.warns(UserWarning, match=re.escape(message)):
+        parser.parse()
+
+
+@pytest.mark.parametrize(
     "model_name_map",
     [
         pytest.param({"#/$defs/A": "Tags", "Tags": "Q", "Labels": "L"}, id="displaced-name"),

@@ -2798,6 +2798,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                 )
         model_metadata, model_identities = parser.model_metadata, parser.model_metadata_identities
         parser.record_dropped_constraints()
+        unmatched_type_override_keys = floors.unmatched_type_override_keys_of(parser)
         pydantic_floor = floors.of(parser)
         refused_bytes_patterns = floors.refused_bytes_patterns_of(parser)
         class_names = parser.generated_class_names
@@ -2823,6 +2824,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         del parser
         if discarded_parser is not None:
             _dispose_capture_parser(discarded_parser, capture, discard=True)
+        floors.report_unmatched_type_override_keys(unmatched_type_override_keys)
 
         if repair_modules:
             retry_config = config.model_copy(

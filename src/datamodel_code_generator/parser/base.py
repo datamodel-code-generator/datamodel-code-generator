@@ -114,6 +114,8 @@ from datamodel_code_generator._user_keys import (
     model_level_type_override,
     scoped_key,
 )
+from datamodel_code_generator._user_keys import RecordedOverrides as _RecordedOverrides
+from datamodel_code_generator._user_keys import TypeOverrideLookups as _TypeOverrideLookups
 from datamodel_code_generator._user_keys import class_scope as _class_scope_of
 from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.enums import (
@@ -1447,6 +1449,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._model_type_override_imports: dict[str, Import] = {
             key: import_ for key, import_ in self._type_override_imports.items() if model_level_type_override(key)
         }
+        self._type_override_lookups: _TypeOverrideLookups | None = None
+        """The lookups of the ``--type-overrides`` keys, which the two dicts above record when the option gives keys."""
+        if self._type_override_imports:
+            self._type_override_lookups = lookups = _TypeOverrideLookups()
+            self._type_override_imports = _RecordedOverrides(self._type_override_imports, lookups)
+            if self._model_type_override_imports:
+                self._model_type_override_imports = _RecordedOverrides(self._model_type_override_imports, lookups)
         self._base_stand_in_imports: dict[ModelKey, Import] = {}
         """The import of the class each stand-in model stands for, by model key: a schema that a base names and the
         output types by an import (``--external-ref-mapping``, ``x-python-import``) is parsed into a model that is
