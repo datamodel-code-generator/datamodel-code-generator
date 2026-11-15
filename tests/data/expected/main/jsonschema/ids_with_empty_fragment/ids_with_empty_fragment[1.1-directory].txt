@@ -1,0 +1,5 @@
+SchemaResourceRefWarning: A $ref in ninjs_1_1.json to 'http://www.iptc.org/std/ninjs/ninjs-schema_1.1.json' loads the document at that URL for compatibility, but JSON Schema resolves it to the document itself, whose $id 'http://www.iptc.org/std/ninjs/ninjs-schema_1.1.json#' names it with an empty fragment. Pass --read-ids-with-empty-fragment to read it inside the document.
+exit: OK
+written:
+  out/models/__init__.py
+  out/models/ninjs_schema_1.py

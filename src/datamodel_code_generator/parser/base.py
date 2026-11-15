@@ -1341,6 +1341,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             skip_affix_for_root=config.class_name is not None,
             default_value_overrides=config.default_value_overrides,
             http_backend=self._source_context.http_backend,
+            read_ids_with_empty_fragment=config.read_ids_with_empty_fragment,
             field_name_resolver_classes=(
                 {self.field_name_model_type: field_name_resolver_class}
                 if (field_name_resolver_class := self.data_model_type.FIELD_NAME_RESOLVER_CLASS) is not None

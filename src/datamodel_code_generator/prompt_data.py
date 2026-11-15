@@ -170,6 +170,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--read-dynamic-anchors-in-document-order": "Resolve a `$dynamicRef` to the first `$dynamicAnchor` of its name ...",
     "--read-escaped-ref-pointers": "Read the escapes of a `$ref` JSON pointer as the characters they encode.",
     "--read-format-as-annotation": "Read the format of a schema as an annotation, as JSON Schema does.",
+    "--read-ids-with-empty-fragment": "Read an `$id` that ends with an empty fragment as the document that declares...",
     "--read-inherited-property-schemas-in-mro-order": "Give a required inherited property the schema its allOf pare...",
     "--read-input-model-dataclass-fields-by-alias": "Read the fields of a Pydantic dataclass by their aliases with ...",
     "--read-kubernetes-extensions": "Read the Kubernetes schema extensions as the keywords they stand for.",

@@ -251,6 +251,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--read-schema-version-per-document --no-read-schema-version-per-document",
         "--read-escaped-ref-pointers --no-read-escaped-ref-pointers",
         "--read-dynamic-anchors-in-document-order --no-read-dynamic-anchors-in-document-order",
+        "--read-ids-with-empty-fragment --no-read-ids-with-empty-fragment",
         "--ignore-ref-siblings-by-schema-version --no-ignore-ref-siblings-by-schema-version",
         "--external-ref-mapping --preset",
     ),

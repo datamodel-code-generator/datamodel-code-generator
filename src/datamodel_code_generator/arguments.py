@@ -1922,6 +1922,14 @@ _toggle(
 )
 _toggle(
     base_options,
+    "--read-ids-with-empty-fragment",
+    help="Read an $id that ends with an empty fragment, such as https://example.com/item.json#, as the URI without "
+    "it, which names the same resource, so a $ref to https://example.com/item.json# or "
+    "https://example.com/item.json#/definitions/Tag in the document that declares it resolves inside that document; "
+    "without it such a $ref loads the document at that URL, from the network, as in 0.96.0.",
+)
+_toggle(
+    base_options,
     "--ignore-ref-siblings-by-schema-version",
     help="Read a $ref as its target alone where the schema version ignores the keywords beside it (JSON Schema "
     "draft 4, 6 and 7, OpenAPI 3.0, AsyncAPI 2), as those versions specify: a $ref with a sibling format: binary "

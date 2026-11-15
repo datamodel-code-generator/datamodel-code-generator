@@ -1,0 +1,8 @@
+SchemaResourceRefWarning: A $ref in ninjs_1_0.json to 'http://www.iptc.org/std/ninjs/ninjs-schema_1.0.json' loads the document at that URL for compatibility, but JSON Schema resolves it to the document itself, whose $id 'http://www.iptc.org/std/ninjs/ninjs-schema_1.0.json#' names it with an empty fragment. Pass --read-ids-with-empty-fragment to read it inside the document.
+Error at schema path 'http://www.iptc.org/std/ninjs/ninjs-schema_1.0.json#': ValidationError: 2 validation errors for JsonSchemaObject
+properties.uri.JsonSchemaObject.required
+  Input should be a valid list [type=list_type, input_value=True, input_type=bool]
+properties.uri.bool
+  Input should be a valid boolean [type=bool_type, input_value={'type': 'string', 'required': True}, input_type=dict]
+exit: ERROR
+written:

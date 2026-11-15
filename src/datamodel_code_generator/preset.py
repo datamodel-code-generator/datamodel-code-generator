@@ -1340,6 +1340,15 @@ _STANDARD_20261113_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "its parents takes the field it takes when written after them."
         ),
     ),
+    PresetOptionGroup(
+        title="Ids with an empty fragment read as their documents",
+        config=PresetConfig(read_ids_with_empty_fragment=True),
+        description=(
+            "Read an $id written with an empty fragment, such as https://example.com/item.json#, as the URI without "
+            "it, so a $ref to it resolves inside the document that declares it instead of loading the document at "
+            "that URL from the network."
+        ),
+    ),
 )
 """The 20261112 groups and the opt-in options added after them."""
 
