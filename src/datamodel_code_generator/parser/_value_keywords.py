@@ -43,7 +43,12 @@ from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS, non_null_types
 from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator.imports import _import_path
-from datamodel_code_generator.model._decisions.enum_kind import enum_as_literal, is_literal_kind, literal_value_kind
+from datamodel_code_generator.model._decisions.enum_kind import (
+    enum_as_literal,
+    is_literal_kind,
+    json_type,
+    literal_value_kind,
+)
 from datamodel_code_generator.model._decisions.literal_default import const_type
 from datamodel_code_generator.model.base import ConstraintsBase
 from datamodel_code_generator.parser import _schema_refs
@@ -137,13 +142,17 @@ __all__ = [
     "union_sibling_constraints",
 ]
 
-_CONST_ENUM_TYPES: Final[Mapping[LiteralValueKind, str]] = {
-    "str": "string",
-    "bool": "boolean",
-    "int": "integer",
-    "float": "number",
+_UNTYPED_CONST_KINDS: Final[frozenset[LiteralValueKind]] = frozenset({"none", "other"})
+"""The kinds of a const that give a merged enum of const branches no ``type``: a null, and a list, an object or any
+other value; the first const of another kind gives the merged enum its JSON type (``json_type``)."""
+_SCALAR_VALUE_TYPES: Final[Mapping[LiteralValueKind, Types]] = {
+    "none": Types.null,
+    "bool": Types.boolean,
+    "int": Types.integer,
+    "float": Types.float,
+    "str": Types.string,
 }
-"""The ``type`` a merged enum of const branches takes from the kind of the first const that has one."""
+"""The type a scalar JSON value of each kind is read as where no schema names one."""
 _NON_ASSERTING_KEYWORDS = _ANNOTATION_KEYWORDS | {"contentEncoding", "contentMediaType", "contentSchema", "format"}
 
 
@@ -491,8 +500,8 @@ def extract_const_enum_from_combined(  # noqa: PLR0912
         branches.append(item)
         read_as_const = read_as_const and item.read_as_const
 
-        if inferred_type is None:
-            inferred_type = _CONST_ENUM_TYPES.get(literal_value_kind(const_value))
+        if inferred_type is None and literal_value_kind(const_value) not in _UNTYPED_CONST_KINDS:
+            inferred_type = json_type(const_value)
 
     if not enum_values:  # pragma: no cover
         return None
@@ -1244,17 +1253,9 @@ def resolve_array_field_required_nullable(parser: ValueKeywordsHost, obj: JsonSc
 
 def get_scalar_data_type_from_json_value(parser: ValueKeywordsHost, value: object) -> DataType | None:
     """Infer a normal Python type from a scalar JSON value."""
-    if value is None:
-        return parser.data_type_manager.get_data_type(Types.null)
-    if isinstance(value, bool):
-        return parser.data_type_manager.get_data_type(Types.boolean)
-    if isinstance(value, int):
-        return parser.data_type_manager.get_data_type(Types.integer)
-    if isinstance(value, float):
-        return parser.data_type_manager.get_data_type(Types.float)
-    if isinstance(value, str):
-        return parser.data_type_manager.get_data_type(Types.string)
-    return None
+    if (type_ := _SCALAR_VALUE_TYPES.get(literal_value_kind(value))) is None:
+        return None
+    return parser.data_type_manager.get_data_type(type_)
 
 
 def get_data_type_from_json_value(parser: ValueKeywordsHost, value: object) -> DataType:

@@ -14,7 +14,6 @@ from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.naming import HELPER_KINDS
 from datamodel_code_generator._client.pagination import (
     _fits,
-    _json_type,
     _label,
     _page_use,
     _Pages,
@@ -22,6 +21,7 @@ from datamodel_code_generator._client.pagination import (
     _value_types_problem,
 )
 from datamodel_code_generator._client.plan import success_response
+from datamodel_code_generator._json_schema import json_type
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_module import TargetModule, TypeNames
 from datamodel_code_generator._target_types import without_none
@@ -220,7 +220,7 @@ class _Polls:
             return
         for name in STATES:
             for index, value in enumerate(tree[name]):
-                if not _fits(kind := _json_type(value), types):
+                if not _fits(kind := json_type(value), types):
                     message = (
                         f"The state {stable_repr(value)} of {stable_repr(helper.name)} is {kind}, which its state "
                         "never reads"
