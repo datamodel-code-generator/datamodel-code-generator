@@ -350,6 +350,25 @@ def test_input_model_unsupported_msgspec_struct(capsys: pytest.CaptureFixture[st
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--input-model-ref-strategy", "reuse-all"], id="reuse-all"),
+    ],
+)
+def test_input_model_unsupported_dataclass_instance(capsys: pytest.CaptureFixture[str], extra_args: list[str]) -> None:
+    """Test error when the object is an instance of a dataclass, as for an instance of a Pydantic model (#6884)."""
+    run_input_model_error_and_assert(
+        input_model="tests.data.python.input_model.dataclass_models:default_user",
+        extra_args=extra_args,
+        capsys=capsys,
+        expected_stderr_contains=(
+            "'default_user' is not a supported type. Supported: dict, Pydantic v2 BaseModel, dataclass, TypedDict"
+        ),
+    )
+
+
 def test_input_model_mutual_exclusion_with_input(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

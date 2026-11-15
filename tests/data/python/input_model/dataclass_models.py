@@ -23,3 +23,7 @@ class DataclassWithPythonTypes:
     frozen_tags: FrozenSet[int]
     metadata: Mapping[str, int]
     items: Sequence[str]
+
+
+default_user = User(name="Alice", age=30)
+"""An instance of a dataclass: no class, so no --input-model."""
