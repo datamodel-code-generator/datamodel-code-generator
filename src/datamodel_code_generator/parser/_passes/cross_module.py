@@ -23,7 +23,6 @@ from datamodel_code_generator.model.base import (
     _find_base_classes,
 )
 from datamodel_code_generator.model.enum import Enum
-from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._import_binding import (
     ModuleImportTarget,
@@ -40,6 +39,8 @@ from datamodel_code_generator.parser._passes._shared import (
     _context_models,
     _get_model_module_name,
     _named_data_types,
+    keyed_module_members,
+    module_member_keys,
     module_members,
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
@@ -161,7 +162,7 @@ def _flattener(
             ModuleImportTarget.of(parser.imports, ctx, run),
             model,
             (data_type for field in copied for data_type in field.data_type.all_data_types),
-            members=keyed_models(module_members(parser, ctx.models), "module members"),
+            members=module_member_keys(parser, ctx.models, row="members"),
             producer=ImportProducer(producer, model),
         )
 
@@ -288,7 +289,7 @@ def import_removed_reuse_canonicals(parser: CrossModuleHost, run: CrossModuleRun
             }
         ):
             continue
-        members = keyed_models(ctx.models, "module members")
+        members = module_member_keys(parser, ctx.models, row="legacy-raw-members")
         module = ModuleImportTarget.of(parser.imports, ctx, run)
         for model in ctx.models:
             for data_type in _named_data_types(model):
@@ -342,8 +343,8 @@ def import_renamed_types(parser: CrossModuleHost, run: CrossModuleRun) -> None:
     if not by_key:
         return
     for ctx in run.contexts:
-        members = module_members(parser, ctx.models)
-        keyed_members = keyed_models(members, "module members")
+        members = module_members(parser, ctx.models, row="members")
+        keyed_members = keyed_module_members(members)
         stale_users = [
             (model, data_type, import_)
             for model in members
@@ -371,7 +372,7 @@ def import_enum_member_literal_classes(parser: CrossModuleHost, run: CrossModule
     changes after the literal is made.
     """
     for ctx in run.contexts:
-        members = keyed_models(ctx.models, "module members")
+        members = module_member_keys(parser, ctx.models, row="legacy-raw-members")
         for model in ctx.models:
             for data_type in model.all_data_types:
                 if (reference := data_type._enum_member_literal_reference) is None or data_type.alias:  # noqa: SLF001

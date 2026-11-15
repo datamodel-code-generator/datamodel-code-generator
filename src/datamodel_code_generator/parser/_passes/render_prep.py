@@ -49,9 +49,9 @@ from datamodel_code_generator.parser._passes._shared import (
     ConstructorInfoHost,
     GenerationStoreHost,
     ImportOptionsHost,
+    ModuleMembersHost,
     OutputOptionsHost,
     RecursionFactsHost,
-    ReplacedRootsHost,
     RootModelTypeHost,
     RuntimeExpressionFlags,
     UnusedModels,
@@ -66,7 +66,7 @@ from datamodel_code_generator.parser._passes._shared import (
     get_constructor_ordering_conflicts,
     get_inherited_constructor_info,
     has_import_override,
-    module_members,
+    module_member_keys,
     normalize_default_value_constraints,
     required_fields_a_default_lacks,
     resolve_default_value_descriptor,
@@ -143,7 +143,7 @@ class RenderPrepHost(
     ConstructorInfoHost,
     RecursionFactsHost,
     ReferenceExpressionHost,
-    ReplacedRootsHost,
+    ModuleMembersHost,
     RuntimeExpressionFlags,
     GenerationStoreHost,
     OutputOptionsHost,
@@ -698,7 +698,7 @@ def copy_inherited_conflicts(  # noqa: PLR0913, PLR0917
     """
     if not inherited.inherited_conflicts:
         return []
-    members = keyed_models(module_members(parser, ctx.models), "module members")
+    members = module_member_keys(parser, ctx.models, row="members")
     module = ModuleImportTarget.of(parser.imports, ctx, copies)
     copied_fields: list[DataModelFieldBase] = []
     for field, declaring_model in inherited.inherited_conflicts:
