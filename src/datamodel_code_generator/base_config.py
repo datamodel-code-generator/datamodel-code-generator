@@ -408,6 +408,7 @@ class BaseGenerateConfig(BaseModel):
     read_kubernetes_extensions: bool = False
     use_single_value_enum_as_const: bool = False
     read_const_beside_enum: bool = False
+    read_format_as_annotation: bool = False
     filter_literal_values: bool = False
     intersect_allof_keywords: bool = False
     intersect_combined_schema_keywords: bool = False

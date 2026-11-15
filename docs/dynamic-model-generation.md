@@ -551,6 +551,13 @@ tool call. Where the schema has no `additionalProperties`, a property the schema
 An optional property is nullable in the model, as the next sections show: `assignee` above is `None` when left out,
 and so is `contact`.
 
+A `format` selects a type by default: `email` is `EmailStr` (which needs `email-validator`), `date-time` is
+`AwareDatetime` (which rejects a date-time without an offset), `password` is `SecretStr` (which dumps `**********`).
+To take tool arguments exactly as the schema accepts them and pass them on unchanged, set
+`read_format_as_annotation=True`: each value is then typed by its `type` keyword, `str`, `int` or `float`, with its
+own length, pattern and bound keywords, except `format: binary`, which stays `bytes`. See
+[`--read-format-as-annotation`](cli-reference/typing-customization.md#read-format-as-annotation).
+
 ### Class Names Follow the Schema
 
 The root class is named by `class_name`, else by the `title`. A `$defs` key, a property that holds an inline object or
@@ -670,7 +677,7 @@ exact document matters.
 | `description` (and `title`) beside a `$ref` | Kept on the property, beside the `$ref` |
 | `enum`, `const`, and `type` lists with `"null"` | Kept. An enum is a `$defs` entry named after its property |
 | `minLength`, `maxLength`, `pattern`, `minimum`, `maximum`, `multipleOf`, `exclusiveMinimum`, `exclusiveMaximum`, `minItems`, `maxItems` | Kept. An exclusive bound `0` reads `0.0` |
-| `format`, `examples`, `deprecated` | Kept. `format: uri` also gains `minLength: 1` |
+| `format`, `examples`, `deprecated` | Kept. `format: uri` also gains `minLength: 1`. Under `read_format_as_annotation=True` `format` is not kept, except `format: binary` |
 | `default` of an optional property | Kept |
 | `required` | Kept. A required property with a `default` loses the `default` |
 | `additionalProperties` (`true`, `false`, a schema) | Kept; absent stays absent |

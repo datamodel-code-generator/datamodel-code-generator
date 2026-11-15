@@ -18,6 +18,8 @@ extra-fields-ignore	main/kubernetes_extensions/kubernetes_crd_schema_beside_othe
 field-extra-keys	main/kubernetes_extensions/kubernetes_crd_schema_beside_other_options[field-extra-keys].py
 snake-case-field	main/kubernetes_extensions/kubernetes_crd_schema_beside_other_options[snake-case-field].py
 use-single-value-enum-as-const	main/kubernetes_extensions/kubernetes_crd_schema_beside_other_options[use-single-value-enum-as-const].py
+[test_kubernetes_extensions_beside_format_as_annotation]
+	main/kubernetes_extensions/beside_format_as_annotation.py	= main/kubernetes_extensions/referenced_document.py
 [test_kubernetes_extensions_directory]
 off	main/kubernetes_extensions/directory[off].warnings.txt
 off	main/kubernetes_extensions/directory[off]/

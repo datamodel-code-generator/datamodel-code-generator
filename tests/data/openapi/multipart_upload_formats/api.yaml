@@ -1,0 +1,53 @@
+openapi: 3.1.0
+info:
+  title: Call recordings
+  version: 1.0.0
+paths:
+  /recordings:
+    post:
+      operationId: uploadRecording
+      parameters:
+        - name: since
+          in: query
+          schema:
+            type: string
+            format: date-time
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RecordingUpload'
+      responses:
+        '201':
+          description: Stored recording
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recording'
+components:
+  schemas:
+    RecordingUpload:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+        checksum:
+          type: string
+          format: byte
+      required: [file]
+    Recording:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accessToken:
+          type: string
+          format: password
+        storedAt:
+          type: string
+          format: date-time
+        owner:
+          $ref: 'common.yaml#/components/schemas/Owner'
+      required: [id, storedAt]

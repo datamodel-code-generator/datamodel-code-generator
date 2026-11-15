@@ -25,6 +25,7 @@
 | [`--output-datetime-class`](#output-datetime-class) | Specify datetime class type for date-time schema fields. |
 | [`--read-allof-parents-in-mro-order`](#read-allof-parents-in-mro-order) | Read the allOf parents of every inherited schema in the orde... |
 | [`--read-const-beside-enum`](#read-const-beside-enum) | Read a `const` beside an `enum` as JSON Schema does. |
+| [`--read-format-as-annotation`](#read-format-as-annotation) | Read the format of a schema as an annotation, as JSON Schema... |
 | [`--read-kubernetes-extensions`](#read-kubernetes-extensions) | Read the Kubernetes schema extensions as the keywords they s... |
 | [`--read-unevaluated-properties`](#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalP... |
 | [`--strict-types`](#strict-types) | Enable strict type validation for specified Python types. |
@@ -4744,6 +4745,229 @@ ignored.
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--read-format-as-annotation` {#read-format-as-annotation}
+
+Read the format of a schema as an annotation, as JSON Schema does.
+
+JSON Schema reads `format` as an annotation: a validator does not reject a string whose format does not match, and
+the value stays the string. Without this option each known format selects a type, as in 0.96.0: `email` is
+`EmailStr` (which needs `email-validator` to import, and drops `maxLength`), `date-time` is `AwareDatetime` (which
+rejects a date-time without an offset), `password` is `SecretStr` (which dumps `**********`), `uri` is `AnyUrl`
+(which dumps `https://example.com/` for `https://example.com`), and `uuid`, `date`, `ipv4` and `decimal` are parsed
+into Python objects. With it a string, integer or number schema takes the type its `type` keyword gives, `str`, `int`
+or `float`, with its own `minLength`, `maxLength`, `pattern` and bounds, so the models accept every value the schema
+accepts and dump it as written, and an unknown format gives no warning. Two formats still select a type:
+`format: binary`, which stays `bytes` (raw octets, not a JSON string), and a format that a `--type-mappings` entry
+names for a type the schema declares (`--type-mappings date-time=date-time` keeps `date-time` typed, and then
+`--output-datetime-class` applies). The format is not written into the models. The option reads JSON Schema, OpenAPI,
+the JSON Schema payloads of AsyncAPI and MCP tool schemas, with every document they reference; inputs converted from
+Avro, Protocol Buffers or XML Schema keep the types of their formats.
+
+**See also:** [Type Mappings and Custom Types](../type-mappings.md)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input tool_input_formats.json --read-format-as-annotation # (1)!
+    ```
+
+    1. :material-arrow-left: `--read-format-as-annotation` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "ScheduleCall",
+      "description": "Input of a tool that schedules a call with a contact.",
+      "type": "object",
+      "properties": {
+        "contactEmail": {"type": "string", "format": "email", "maxLength": 64},
+        "profileUrl": {"type": "string", "format": "uri"},
+        "startsAt": {"type": "string", "format": "date-time"},
+        "callDate": {"type": "string", "format": "date"},
+        "dialPin": {"type": "string", "format": "password"},
+        "attachment": {"type": "string", "format": "byte"},
+        "recording": {"type": "string", "format": "binary"},
+        "callId": {"type": "string", "format": "uuid"},
+        "bridgeHost": {"type": "string", "format": "hostname", "minLength": 3},
+        "clientIp": {"type": "string", "format": "ipv4"},
+        "fee": {"type": "number", "format": "decimal", "minimum": 0},
+        "feeText": {"type": "string", "format": "decimal"},
+        "createdEpoch": {"type": "integer", "format": "date-time"},
+        "attempts": {"type": "integer", "format": "int32", "minimum": 1},
+        "phone": {"type": "string", "format": "x-phone", "pattern": "^\\+[0-9]+$"},
+        "volume": {"type": "integer", "format": "uint8"},
+        "slot": {"type": "string", "format": "date", "enum": ["2026-11-20", "2026-11-21"]},
+        "backupEmail": {"allOf": [{"$ref": "#/$defs/Mailbox"}, {"format": "email", "maxLength": 40}]},
+        "notes": {"type": ["string", "null"], "format": "uri-reference"},
+        "rescheduledAt": {"type": ["string", "null"], "format": "date-time"},
+        "dialIn": {"type": "string", "format": "uri", "enum": ["https://voice.example.com/join"]},
+        "format": {"type": "string", "format": "date-time"},
+        "settings": {
+          "type": "object",
+          "properties": {"timezone": {"type": "string"}},
+          "examples": [{"format": "24h", "timezone": "UTC"}]
+        }
+      },
+      "required": ["contactEmail", "startsAt", "callId"],
+      "$defs": {
+        "Mailbox": {"type": "string", "format": "email"}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  tool_input_formats.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+        from pydantic import BaseModel, Field, RootModel, confloat, conint, constr
+
+
+        class Slot(Enum):
+            field_2026_11_20 = '2026-11-20'
+            field_2026_11_21 = '2026-11-21'
+
+
+        class DialIn(Enum):
+            https___voice_example_com_join = 'https://voice.example.com/join'
+
+
+        class Settings(BaseModel):
+            timezone: str | None = None
+
+
+        class Mailbox(RootModel[str]):
+            root: str
+
+
+        class ScheduleCall(BaseModel):
+            contactEmail: constr(max_length=64)
+            profileUrl: str | None = None
+            startsAt: str
+            callDate: str | None = None
+            dialPin: str | None = None
+            attachment: str | None = None
+            recording: bytes | None = None
+            callId: str
+            bridgeHost: constr(min_length=3) | None = None
+            clientIp: str | None = None
+            fee: confloat(ge=0.0) | None = None
+            feeText: str | None = None
+            createdEpoch: int | None = None
+            attempts: conint(ge=1) | None = None
+            phone: constr(pattern=r'^\+[0-9]+$') | None = None
+            volume: int | None = None
+            slot: Slot | None = None
+            backupEmail: Mailbox | None = None
+            notes: str | None = None
+            rescheduledAt: str | None = None
+            dialIn: DialIn | None = None
+            format: str | None = None
+            settings: Settings | None = Field(
+                None, examples=[{'format': '24h', 'timezone': 'UTC'}]
+            )
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  tool_input_formats.json
+
+        from __future__ import annotations
+
+        from datetime import date
+        from decimal import Decimal
+        from enum import Enum
+        from ipaddress import IPv4Address
+        from uuid import UUID
+
+        from pydantic import (
+            AnyUrl,
+            AwareDatetime,
+            Base64Str,
+            BaseModel,
+            EmailStr,
+            Field,
+            RootModel,
+            SecretStr,
+            condecimal,
+            conint,
+            constr,
+        )
+
+
+        class Slot(Enum):
+            field_2026_11_20 = '2026-11-20'
+            field_2026_11_21 = '2026-11-21'
+
+
+        class DialIn(Enum):
+            https___voice_example_com_join = 'https://voice.example.com/join'
+
+
+        class Settings(BaseModel):
+            timezone: str | None = None
+
+
+        class Mailbox(RootModel[EmailStr]):
+            root: EmailStr
+
+
+        class ScheduleCall(BaseModel):
+            contactEmail: EmailStr
+            profileUrl: AnyUrl | None = None
+            startsAt: AwareDatetime
+            callDate: date | None = None
+            dialPin: SecretStr | None = None
+            attachment: Base64Str | None = None
+            recording: bytes | None = None
+            callId: UUID
+            bridgeHost: (
+                constr(
+                    pattern=r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]{0,61}[A-Za-z0-9])$'
+                )
+                | None
+            ) = None
+            clientIp: IPv4Address | None = None
+            fee: condecimal(ge=Decimal('0')) | None = None
+            feeText: Decimal | None = None
+            createdEpoch: AwareDatetime | None = None
+            attempts: conint(ge=1) | None = None
+            phone: constr(pattern=r'^\+[0-9]+$') | None = None
+            volume: int | None = None
+            slot: Slot | None = None
+            backupEmail: Mailbox | None = None
+            notes: str | None = None
+            rescheduledAt: AwareDatetime | None = None
+            dialIn: DialIn | None = None
+            format: AwareDatetime | None = None
+            settings: Settings | None = Field(
+                None, examples=[{'format': '24h', 'timezone': 'UTC'}]
+            )
+        ```
+
+        <!-- fmt: on -->
 
 ---
 

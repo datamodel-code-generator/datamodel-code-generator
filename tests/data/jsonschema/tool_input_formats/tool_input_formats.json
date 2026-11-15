@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ScheduleCall",
+  "description": "Input of a tool that schedules a call with a contact.",
+  "type": "object",
+  "properties": {
+    "contactEmail": {"type": "string", "format": "email", "maxLength": 64},
+    "profileUrl": {"type": "string", "format": "uri"},
+    "startsAt": {"type": "string", "format": "date-time"},
+    "callDate": {"type": "string", "format": "date"},
+    "dialPin": {"type": "string", "format": "password"},
+    "attachment": {"type": "string", "format": "byte"},
+    "recording": {"type": "string", "format": "binary"},
+    "callId": {"type": "string", "format": "uuid"},
+    "bridgeHost": {"type": "string", "format": "hostname", "minLength": 3},
+    "clientIp": {"type": "string", "format": "ipv4"},
+    "fee": {"type": "number", "format": "decimal", "minimum": 0},
+    "feeText": {"type": "string", "format": "decimal"},
+    "createdEpoch": {"type": "integer", "format": "date-time"},
+    "attempts": {"type": "integer", "format": "int32", "minimum": 1},
+    "phone": {"type": "string", "format": "x-phone", "pattern": "^\\+[0-9]+$"},
+    "volume": {"type": "integer", "format": "uint8"},
+    "slot": {"type": "string", "format": "date", "enum": ["2026-11-20", "2026-11-21"]},
+    "backupEmail": {"allOf": [{"$ref": "#/$defs/Mailbox"}, {"format": "email", "maxLength": 40}]},
+    "notes": {"type": ["string", "null"], "format": "uri-reference"},
+    "rescheduledAt": {"type": ["string", "null"], "format": "date-time"},
+    "dialIn": {"type": "string", "format": "uri", "enum": ["https://voice.example.com/join"]},
+    "format": {"type": "string", "format": "date-time"},
+    "settings": {
+      "type": "object",
+      "properties": {"timezone": {"type": "string"}},
+      "examples": [{"format": "24h", "timezone": "UTC"}]
+    }
+  },
+  "required": ["contactEmail", "startsAt", "callId"],
+  "$defs": {
+    "Mailbox": {"type": "string", "format": "email"}
+  }
+}

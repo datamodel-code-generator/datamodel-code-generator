@@ -203,3 +203,24 @@ def test_kubernetes_extensions_referenced_document(output_file: Path) -> None:
             "--read-kubernetes-extensions",
         ],
     )
+
+
+def test_kubernetes_extensions_beside_format_as_annotation(output_file: Path) -> None:
+    """Read the extensions before --read-format-as-annotation leaves formats out, in the one walk of a document.
+
+    The format int-or-string of ``timeout`` is read as the integer or string it names, ``int | str``, before the
+    format reading would leave it out and type it ``str``, so the models are those of --read-kubernetes-extensions.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "kubernetes_extensions" / "gadget.yaml",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--read-kubernetes-extensions",
+            "--read-format-as-annotation",
+        ],
+    )

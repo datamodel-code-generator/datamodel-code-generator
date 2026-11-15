@@ -214,6 +214,7 @@ class ParserConfigDict(TypedDict):
     read_kubernetes_extensions: NotRequired[bool]
     use_single_value_enum_as_const: NotRequired[bool]
     read_const_beside_enum: NotRequired[bool]
+    read_format_as_annotation: NotRequired[bool]
     filter_literal_values: NotRequired[bool]
     intersect_allof_keywords: NotRequired[bool]
     intersect_combined_schema_keywords: NotRequired[bool]
