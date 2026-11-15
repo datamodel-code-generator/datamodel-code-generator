@@ -68,8 +68,10 @@ from datamodel_code_generator.parser._imports_plan import Added, Aliased, Import
 from datamodel_code_generator.parser._passes._import_binding import (
     ModuleImportTarget,
     ReferenceExpressionHost,
+    keep_off_shared_bindings,
     reference_import_target,
     register_reference_import,
+    shared_future_bindings,
     shared_import_bindings,
 )
 from datamodel_code_generator.parser._passes._import_edges import (
@@ -433,7 +435,8 @@ def _alias_reserved_names(
 ) -> set[str]:
     """Return the names an alias that a module imports a name under takes none of.
 
-    The names of its classes and fields, those its imports and the shared imports bind, and ``also``.
+    The names of its classes and fields, those its imports and the shared imports bind, and ``also``: every name the
+    module binds, a ``__future__`` one too, which ``shared_import_bindings`` leaves out.
     """
     return {
         *also,
@@ -572,6 +575,7 @@ def _released_name_imports(  # noqa: PLR0914
         for released_name, name in forwarder.released
     }
     unimported = unimported_model_keys(parser)
+    shared_bindings = shared_import_bindings(parser.imports)
     names: dict[ModulePath, tuple[tuple[ModulePath, str, str], ...]] = {}
     for module, forwarder in forwarder_map.items():
         if not forwarder.released:
@@ -606,7 +610,7 @@ def _released_name_imports(  # noqa: PLR0914
                 init=ctx.is_init,
                 internal_modules=forwarder.released_internal_modules,
                 base_class=isinstance(data_type, BaseClassDataType),
-                shared_imports=parser.imports,
+                shared_bindings=shared_bindings,
             )
             target.reserve_name(resolver)
             binding = resolver.add(target.full_path, target.import_).name
@@ -1635,7 +1639,7 @@ def _names_written_as_text(models: Iterable[DataModel]) -> set[str]:
     return names
 
 
-def _imported_names(models: Sequence[DataModel], imports: Imports, shared_names: set[str]) -> set[str]:
+def _imported_names(models: Sequence[DataModel], imports: Imports, shared_names: frozenset[str]) -> set[str]:
     """Return the names the imports of a module bind that a class of the module may not take.
 
     The imports every module writes (``shared_names``) count only where a type of the module writes the name as text.
@@ -1687,7 +1691,7 @@ def change_imported_model_name(parser: ImportsHost[Any], state: _FinalizeState[A
             if model.class_name == IMPORT_LITERAL.import_ and alias_reused_variant_literal(parser, models, imports):
                 continue
 
-            ctx.scoped_model_resolver.exclude_names.update(shared_names)
+            keep_off_shared_bindings(ctx.scoped_model_resolver, parser.imports)
             parser._graph_builder.rename_model(  # noqa: SLF001
                 model,
                 reference_name=parser._import_ledger.add_name(  # noqa: SLF001
@@ -1944,7 +1948,7 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
         }
     ):
         return
-    resolver.exclude_names.update(shared_import_bindings(parser.imports))
+    keep_off_shared_bindings(resolver, parser.imports)
     written = {
         name
         for model in ctx.models
@@ -2018,7 +2022,7 @@ def _alias_imports_hidden_by_submodules(
                 continue
             users.setdefault(binding, []).append((data_type, _import_key(import_)))
     if users:
-        resolver.exclude_names.update(shared_import_bindings(parser.imports))
+        keep_off_shared_bindings(resolver, parser.imports)
     _rebind_users(
         parser,
         ctx,
@@ -2124,7 +2128,7 @@ def submodules_hidden_by_packages(
             is not None
         }
 
-    shared_future = {binding for (from_, _), binding in _import_bindings(parser.imports) if from_ == "__future__"}
+    shared_future = shared_future_bindings(parser.imports)
     inits = {
         package: ctx
         for ctx in contexts
@@ -2307,8 +2311,9 @@ def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _Finaliz
     of its import of the module (``_held_count``). The name keeps
     off every name the module's imports bind already: the resolver holds those that no model import took through it,
     such as ``collections.Counter`` beside a model ``Counter``, and the shared ones are kept off as for a module named
-    like a shared import (``ReferenceImportTarget.reserve_name``). The use keeps an expression, the class name where the
-    import binds it, as the field render plans froze it written.
+    like a shared import (``ReferenceImportTarget.reserve_name``); a name that a shared ``__future__`` import binds is
+    left out with them, as released, though that keeps no import off it. The use keeps an expression, the class name
+    where the import binds it, as the field render plans froze it written.
     """
     _alias_imports_hidden_by_loaded_submodules(parser, state)
     by_packages = submodules_hidden_by_packages(parser, state.contexts, state, state.config)
@@ -2340,14 +2345,14 @@ def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _Finaliz
         ledger.release_names(
             imports, resolver, {stale.binding_name for *_, stale in users}.difference(_iter_import_bindings(imports))
         )
+        module = ModuleImportTarget.of(parser.imports, ctx, state)
         for name in sorted(
             {reference.short_name for _, _, reference, _ in users}
             .intersection(_iter_import_bindings(imports))
             .difference(held.name for held in resolver.references.values())
-            .difference(_iter_import_bindings(parser.imports))
+            .difference(module.shared_bindings, shared_future_bindings(parser.imports))
         ):
             ledger.add_name(imports, resolver, get_special_path("import", [name]), name)
-        module = ModuleImportTarget.of(parser.imports, ctx, state)
         for model, data_type, reference, _ in users:
             expression = register_reference_import(
                 reference,

@@ -373,6 +373,7 @@ def import_enum_member_literal_classes(parser: CrossModuleHost, run: CrossModule
     """
     for ctx in run.contexts:
         members = module_member_keys(parser, ctx.models, row="legacy-raw-members")
+        module = ModuleImportTarget.of(parser.imports, ctx, run)
         for model in ctx.models:
             for data_type in model.all_data_types:
                 if (reference := data_type._enum_member_literal_reference) is None or data_type.alias:  # noqa: SLF001
@@ -384,7 +385,7 @@ def import_enum_member_literal_classes(parser: CrossModuleHost, run: CrossModule
                         reference,
                         _get_model_module_name(model, run.model_path_to_module_name),
                         _module_qualified_name(reference, run.model_path_to_module_name),
-                        ModuleImportTarget.of(parser.imports, ctx, run),
+                        module,
                         producer=ImportProducer("import-enum-member-literal-classes", model),
                         import_ledger=parser._import_ledger,  # noqa: SLF001
                     )

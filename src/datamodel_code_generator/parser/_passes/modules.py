@@ -2869,7 +2869,8 @@ def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) ->
     named the root model through a key that no longer names it. Each changed model refreshes its backend config, as a
     pattern that a key takes may need another regex engine.
     """
-    imports = state.imports
+    module = ModuleImportTarget.of(parser.imports, state, state)
+    imports = module.imports
     index = parser.generation_store.index
     for model in state.model_list:
         changed = False
@@ -2900,7 +2901,7 @@ def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) ->
                 producer = ImportProducer("type-dict-keys-by-root-types", model, field)
                 import_references(
                     parser,
-                    ModuleImportTarget.of(parser.imports, state, state),
+                    module,
                     model,
                     root_type.all_data_types,
                     members=None,
@@ -3342,12 +3343,13 @@ def write_rule_aliases_as_classes(parser: RuleAliasHost, run: ProcessingRun[Any,
     classes = {id(model) for model in replacements.values()}
     for ctx in run.contexts:
         members = module_member_keys(parser, ctx.models, row="members")
+        module = ModuleImportTarget.of(parser.imports, ctx, run)
         for model in ctx.models:
             if id(model) not in classes:
                 continue
             import_references(
                 parser,
-                ModuleImportTarget.of(parser.imports, ctx, run),
+                module,
                 model,
                 (
                     data_type
