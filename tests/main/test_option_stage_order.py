@@ -4,6 +4,9 @@ Each test gives an input where two conditions hold that belong to two different 
 and stores everything the user sees: the exit status and the whole stderr of a command, or the warnings and the
 raised exception of an API call. Warnings are written to stderr in the order they are shown, beside the lines the
 command prints, so the stored text also pins the order of a warning and a printed refusal.
+
+The last tests pin the warning of the resolution itself: an option that was turned off and that another option
+turns on (``IMPLIED_OPTIONS``) is reported once, where the options are resolved.
 """
 
 from __future__ import annotations
@@ -12,11 +15,11 @@ import shutil
 import sys
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
-from datamodel_code_generator import Error, chdir, generate
+from datamodel_code_generator import Error, chdir, generate, load_pyproject_config
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.config import GenerateConfig
 from datamodel_code_generator.dynamic import generate_dynamic_models, generate_dynamic_module
@@ -516,3 +519,216 @@ def test_cli_target_use_annotated_deprecation_before_implied_settings_notice(
             expected_exit=expected_exit,
         )
     assert_output(_seen(capsys, exit_code).partition("Add the runtime dependencies")[0] + _written(tmp_path))
+
+
+REF_WITH_SIBLING = """\
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {"A": {"type": "integer", "maximum": 5}},
+  "type": "object",
+  "properties": {"a": {"$ref": "#/$defs/A", "maximum": 10}}
+}
+"""
+PYDANTIC = ["--output-model-type", "pydantic_v2.BaseModel"]
+BUILTIN = ["--formatters", "builtin"]
+PRESET_WITHOUT_EITHER = "standard-py312-20261017"
+PRESET_BEFORE_COMBINED = "standard-py312-20261027"
+PRESET_WITH_COMBINED = "standard-py312-20261104"
+TABLE = "[tool.datamodel-codegen]\n"
+
+
+def _resolved(code: str) -> str:
+    """Return the lines of field ``a`` and of ``A``, which show what the options of the three rows resolved to."""
+    shown = [line.strip() for line in code.splitlines() if line.strip().startswith(("a:", "A =", "A:", "class A"))]
+    return "resolved:\n" + "".join(f"  {line}\n" for line in shown)
+
+
+@pytest.mark.usefixtures("warnings_on_stderr")
+@pytest.mark.parametrize(
+    ("arguments", "pyproject"),
+    [
+        pytest.param(
+            [*PYDANTIC, "--preset", PRESET_BEFORE_COMBINED, "--no-intersect-allof-keywords"],
+            None,
+            id="preset-without-it",
+        ),
+        pytest.param([*PYDANTIC, "--preset", PRESET_WITH_COMBINED, "--no-intersect-allof-keywords"], None, id="preset"),
+        pytest.param(
+            [
+                *PYDANTIC,
+                "--preset",
+                PRESET_WITH_COMBINED,
+                "--no-intersect-allof-keywords",
+                "--no-intersect-combined-schema-keywords",
+            ],
+            None,
+            id="both-off",
+        ),
+        pytest.param(
+            PYDANTIC, f'{TABLE}preset = "{PRESET_WITH_COMBINED}"\nintersect-allof-keywords = false\n', id="pyproject"
+        ),
+        pytest.param(
+            [*PYDANTIC, "--preset", PRESET_WITH_COMBINED],
+            f"{TABLE}intersect-allof-keywords = false\n",
+            id="argument-preset-over-pyproject",
+        ),
+        pytest.param(
+            [*PYDANTIC, "--preset", PRESET_WITHOUT_EITHER, "--intersect-combined-schema-keywords"],
+            f"{TABLE}intersect-allof-keywords = false\n",
+            id="argument-preset-without-it-over-pyproject",
+        ),
+        pytest.param(
+            [*PYDANTIC, "--preset", PRESET_WITH_COMBINED, "--no-intersect-allof-keywords", "--disable-warnings"],
+            None,
+            id="disable-warnings",
+        ),
+        pytest.param(
+            [*PYDANTIC, *BUILTIN, "--use-annotated", "--intersect-combined-schema-keywords"],
+            f"{TABLE}intersect-allof-keywords = false\n",
+            id="given-as-well",
+        ),
+        pytest.param(
+            [*PYDANTIC, *BUILTIN, "--use-annotated"], f"{TABLE}field-constraints = false\n", id="field-constraints"
+        ),
+        pytest.param(
+            [*PYDANTIC, *BUILTIN],
+            f"{TABLE}use-annotated = true\nfield-constraints = false\n",
+            id="field-constraints-pyproject",
+        ),
+        pytest.param(
+            ["--output-model-type", "msgspec.Struct", *BUILTIN],
+            f"{TABLE}field-constraints = false\n",
+            id="field-constraints-msgspec",
+        ),
+        pytest.param(
+            [*PYDANTIC, *BUILTIN, "--use-annotated", "--use-type-alias-type"],
+            f"{TABLE}use-type-alias = false\n",
+            id="use-type-alias",
+        ),
+    ],
+)
+def test_cli_warns_of_an_option_turned_off_that_another_option_turns_on(
+    arguments: list[str], pyproject: str | None, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """An option that an argument or pyproject.toml turns off meets an option that turns it on (#6850).
+
+    The first three cases are the commands of the issue. The run warns once where a preset, an argument, a key of
+    pyproject.toml or the output model type turns the other option on over the value given, and names how to turn
+    both off: the argument, or the key where pyproject.toml alone turns the other option on. It does not where the
+    other option is off, where a preset that an argument selects replaces the pyproject.toml value itself (a preset
+    that sets neither option replaces nothing, so that value is reported), or under --disable-warnings. The
+    generated field shows that the value each option resolves to stays as it was.
+    """
+    (tmp_path / "ref.json").write_text(REF_WITH_SIBLING, encoding="utf-8")
+    if pyproject is not None:
+        (tmp_path / "pyproject.toml").write_text(pyproject, encoding="utf-8")
+    with chdir(tmp_path):
+        exit_code = run_main_with_args(
+            [
+                "--input",
+                "ref.json",
+                "--input-file-type",
+                "jsonschema",
+                "--disable-timestamp",
+                "--output",
+                "model.py",
+                *arguments,
+            ],
+        )
+    assert_output(_seen(capsys, exit_code) + _resolved((tmp_path / "model.py").read_text(encoding="utf-8")))
+
+
+@pytest.mark.usefixtures("warnings_on_stderr")
+def test_cli_target_warns_once_of_an_option_turned_off_that_a_preset_turns_on(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A server target, whose options are resolved three times, meets --no-intersect-allof-keywords under a preset.
+
+    The warning shows once, where the command's options are resolved, before the notice of the settings the target
+    set.
+    """
+    shutil.copy2(SERVER_SOURCE, tmp_path / "pets.yaml")
+    with chdir(tmp_path):
+        exit_code = run_main_with_args(
+            [
+                "--input",
+                "pets.yaml",
+                "--output",
+                "models.py",
+                "--input-file-type",
+                "openapi",
+                *PYDANTIC,
+                "--disable-timestamp",
+                "--server-package",
+                "server",
+                "--server-model-package",
+                "models",
+                *SERVER_ARGUMENTS,
+                "--preset",
+                PRESET_WITH_COMBINED,
+                "--no-intersect-allof-keywords",
+            ],
+        )
+    assert_output(_seen(capsys, exit_code).partition("Add the runtime dependencies")[0])
+
+
+@pytest.mark.usefixtures("warnings_on_stderr")
+@pytest.mark.parametrize(
+    "options",
+    [
+        pytest.param({"preset": PRESET_WITH_COMBINED, "intersect_allof_keywords": False}, id="preset"),
+        pytest.param(
+            {
+                "preset": PRESET_WITH_COMBINED,
+                "intersect_allof_keywords": False,
+                "intersect_combined_schema_keywords": False,
+            },
+            id="both-off",
+        ),
+        pytest.param(
+            {"formatters": ["builtin"], "use_annotated": True, "field_constraints": False}, id="field-constraints"
+        ),
+    ],
+)
+def test_api_warns_of_an_option_turned_off_that_another_option_turns_on(
+    options: dict[str, Any], capsys: pytest.CaptureFixture[str]
+) -> None:
+    """An option that generate() is given as False meets an option, or a preset, that turns it on (#6850)."""
+    code = generate(
+        REF_WITH_SIBLING,
+        input_file_type="jsonschema",
+        output_model_type="pydantic_v2.BaseModel",
+        disable_timestamp=True,
+        **options,
+    )
+    assert_output(_seen(capsys) + _resolved(cast("str", code)))
+
+
+@pytest.mark.usefixtures("warnings_on_stderr")
+@pytest.mark.parametrize(
+    "table",
+    [
+        pytest.param(
+            "use-annotated = true\nintersect-combined-schema-keywords = true\nintersect-allof-keywords = false\n",
+            id="table",
+        ),
+        pytest.param(f'preset = "{PRESET_WITH_COMBINED}"\n', id="preset"),
+    ],
+)
+def test_loaded_config_warns_of_an_option_its_table_turns_off_and_on(
+    table: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A table that load_pyproject_config() reads is resolved by the loader and again by generate().
+
+    A key the table turns off and another key of it turns on is reported once, by the loader, with the key that
+    turns both off. A table with a preset alone reports nothing: the loader marks the options it resolved as set,
+    such as --field-constraints, off before the preset turns --use-annotated on, and generate() does not read them
+    as given.
+    """
+    (tmp_path / "pyproject.toml").write_text(
+        f'{TABLE}output-model-type = "pydantic_v2.BaseModel"\nformatters = ["builtin"]\n{table}', encoding="utf-8"
+    )
+    code = generate(
+        REF_WITH_SIBLING, config=load_pyproject_config(tmp_path, overrides={"input_file_type": "jsonschema"})
+    )
+    assert_output(_seen(capsys) + _resolved(cast("str", code)))

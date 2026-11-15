@@ -1,0 +1,4 @@
+exit: OK
+resolved:
+  a: Annotated[int | None, Field(le=5)] = None
+  class A(RootModel[int]):

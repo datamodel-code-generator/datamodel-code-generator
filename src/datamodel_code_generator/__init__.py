@@ -751,6 +751,49 @@ _OPTION_STAGES: Final[dict[_OptionStage, Callable[[BaseGenerateConfig, RunOption
 }
 
 
+def _warn_of_replaced_options(config: BaseGenerateConfig, record: RunOptions, preset_gave: Collection[str]) -> None:
+    """Warn of each option that was turned off and stays on, as an enabled option turns it on (`IMPLIED_OPTIONS`).
+
+    An option was turned off where a source of the run gave it False and the preset did not replace that value: a
+    preset that an argument selects replaces the values of pyproject.toml (row `preset-over-pyproject`), so a
+    pyproject.toml value of an option the preset gave a value (`preset_gave`: the fields the `preset` stage of the
+    call gave, its own items and what they imply) is the preset's to replace and is not reported. The warning names
+    the option that turns it on, with where that one came from (the preset that set it, the output model type it was
+    set for, or that it was given as well), and how to turn both off: the option's argument, or its key where
+    pyproject.toml turns it on (an argument given as well is named by the next run).
+    """
+    from datamodel_code_generator._option_rules import implying_options  # noqa: PLC0415
+
+    replaced = {
+        implied: option
+        for implied, option in implying_options(config).items()
+        if record.given_value(implied) is False and (implied in record.preset_explicit or implied not in preset_gave)
+    }
+    if not replaced:
+        return
+    from datamodel_code_generator._option_names import option_flag  # noqa: PLC0415
+    from datamodel_code_generator.cli_options import _values_arguments  # noqa: PLC0415
+
+    for implied, option in replaced.items():
+        flag = option_flag(option)
+        off = _values_arguments([(option, False)])
+        remedy = f"{off[0]} turns both off" if off else f"both are off without {flag}"
+        match record.staged.get(option):
+            case "preset":
+                origin = f", set by --preset {config.preset},"
+            case "implied-model":
+                origin = f", set for --output-model-type {DataModelType(config.output_model_type).value},"
+            case _:
+                origin = ", given as well,"
+                if record.pyproject.get(option):
+                    remedy = f"{option.replace('_', '-')} = false in pyproject.toml turns both off"
+        warnings.warn(
+            f"{option_flag(implied)} was turned off but stays on: {flag}{origin} turns it on; {remedy}",
+            UserWarning,
+            stacklevel=2,
+        )
+
+
 def _run_option_stages(
     config: _RunConfigT,
     record: RunOptions,
@@ -769,6 +812,13 @@ def _run_option_stages(
     every field the stage gave a value: nothing reads the fields a config has set after it came in. A check of the
     entry point runs after its stage, with the config so far and the values that stage gave, so that what a user
     sees first stays where the entry point shows it.
+
+    A call that ran `implied-model`, the stage that applies every row of `IMPLIED_OPTIONS` to the final values, ends
+    with a warning for each option that was turned off and stays on (`_warn_of_replaced_options`, which reads the
+    fields the `preset` stage of the call gave), after the checks, so a resolution that is refused reports none. A
+    run shows it once: a later resolution of the same config reads the resolved value as the given one, and a call
+    that runs other stages alone (the command line's late `implied-target`, the preset dynamic generation reads the
+    formatters from) reports nothing.
 
     The entry points, each with its record, its stages and its own checks in order:
 
@@ -789,15 +839,18 @@ def _run_option_stages(
       `dynamic.py:_without_default_formatting` (the formatters dynamic generation runs with): `preset` alone, so
       that no later refusal comes before the facade's warnings.
     """
+    gave: dict[_OptionStage, Mapping[str, Any]] = {}
     for stage, values_of in _OPTION_STAGES.items():
         if stage not in stages:
             continue
-        values = values_of(config, record)
+        values = gave[stage] = values_of(config, record)
         if changed := {name: value for name, value in values.items() if getattr(config, name) != value}:
             config = config.model_copy(update=changed)
         record = record.after(stage, values)
         if checks is not None and (check := checks.get(stage)) is not None:
             check(config, values)
+    if "implied-model" in stages:
+        _warn_of_replaced_options(config, record, gave.get("preset", ()))
     return config, record
 
 
@@ -808,12 +861,19 @@ def _resolve_run_options(
 ) -> GenerateConfig:
     """Return a config with the values its option stages give it (`_run_option_stages`).
 
-    The fields the config has set are the given ones (row `given-is-fields-set`). A record the config carries is
-    not read, so a command's config is resolved here again, to the same values.
+    The fields the config has set are the given ones, with the values they have here (row `given-is-fields-set`). A
+    record the config carries is not read, so a command's config is resolved here again, to the same values. A config
+    that `load_pyproject_config()` returned gives no values: the loader marks as set every field its stage gave, also
+    one that kept its value, so a value of that config does not say that its caller gave it.
     """
     from datamodel_code_generator._run_record import RunOptions  # noqa: PLC0415
 
-    return _run_option_stages(config, RunOptions(fields_set=frozenset(config.model_fields_set)), stages, checks)[0]
+    fields_set = (
+        {name: getattr(config, name) for name in config.model_fields_set}
+        if config._pyproject_path is None  # noqa: SLF001
+        else dict.fromkeys(config.model_fields_set)
+    )
+    return _run_option_stages(config, RunOptions(fields_set=fields_set), stages, checks)[0]
 
 
 class InvalidFileFormatError(Error):

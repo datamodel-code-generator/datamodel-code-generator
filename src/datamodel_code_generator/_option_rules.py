@@ -6,7 +6,9 @@ settings a config leaves unset, and a preset to the updates it makes; the CLI re
 The settings stage and the preset read every source option of the table. Each config validator applies one row:
 ``BaseGenerateConfig`` the ``use_type_alias_type`` row (a frozen ``PresetConfig`` sets the other source options) and
 the command line's ``Config`` the ``use_annotated`` row (row ``validator-stage-rows``). ``get_data_model_types`` reads
-the ``use_type_alias_type`` row through ``implied_options`` for direct callers of the public function.
+the ``use_type_alias_type`` row through ``implied_options`` for direct callers of the public function. Where an
+option of the table replaces a value that was given, the resolution of the run's options warns
+(``__init__.py:_run_option_stages``, through ``implying_options``).
 """
 
 from __future__ import annotations
@@ -34,10 +36,21 @@ def implied_option_sources(config: object) -> dict[str, object]:
     return {option: getattr(config, option) for option in IMPLIED_OPTIONS}
 
 
+def implying_options(config: object) -> dict[str, str]:
+    """Return the enabled option of ``config`` that turns each implied option on, in the order of the table."""
+    return {implied: option for option, implied in IMPLIED_OPTIONS.items() if getattr(config, option)}
+
+
 def enable_implied_options(config: object, *options: str) -> None:
     """Turn on, on ``config``, the options that its enabled ``options`` imply."""
     for name, value in implied_options({option: getattr(config, option) for option in options}).items():
         setattr(config, name, value)
 
 
-__all__ = ["IMPLIED_OPTIONS", "enable_implied_options", "implied_option_sources", "implied_options"]
+__all__ = [
+    "IMPLIED_OPTIONS",
+    "enable_implied_options",
+    "implied_option_sources",
+    "implied_options",
+    "implying_options",
+]
