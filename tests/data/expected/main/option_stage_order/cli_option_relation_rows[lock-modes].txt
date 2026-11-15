@@ -1,0 +1,7 @@
+Invalid configuration: 1 validation error for Config
+  Value error, --update-lock and --locked cannot be used together [type=value_error, input_value={'update_lock': True, 'locked': True}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/value_error
+exit: ERROR
+written:
+  header.txt
+  pyproject.toml

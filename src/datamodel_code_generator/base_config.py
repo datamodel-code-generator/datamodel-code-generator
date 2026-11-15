@@ -25,7 +25,12 @@ from datamodel_code_generator._format_types import (
 )
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._option_names import option_flag
-from datamodel_code_generator._option_rules import enable_implied_options, implied_option_sources, implied_options
+from datamodel_code_generator._option_rules import (
+    check_option_relation,
+    enable_implied_options,
+    implied_option_sources,
+    implied_options,
+)
 from datamodel_code_generator._shared_types import LiteralType  # noqa: TC001 - used at runtime by Pydantic
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
@@ -648,20 +653,14 @@ class BaseGenerateConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_remote_lock_mode(self) -> Self:
-        """Keep lock update and verification modes mutually exclusive."""
-        if self.update_lock and self.locked:
-            msg = "--update-lock and --locked cannot be used together"
-            raise ValueError(msg)
+        """Keep lock update and verification modes mutually exclusive (a relation row of `_option_rules.py`)."""
+        check_option_relation(("--update-lock", "conflicts", "--locked"), self)
         return self
 
     @model_validator(mode="after")
     def validate_target_selection(self) -> Self:
-        """Validate that one run selects at most one generation target."""
-        if self.generate_server is not None and self.generate_client is not None:
-            from datamodel_code_generator import Error  # noqa: PLC0415
-
-            msg = "--generate-server and --generate-client cannot be used together"
-            raise Error(msg)
+        """Validate that one run selects at most one generation target (a relation row of `_option_rules.py`)."""
+        check_option_relation(("--generate-server", "conflicts", "--generate-client"), self)
         return self
 
     @model_validator(mode="after")

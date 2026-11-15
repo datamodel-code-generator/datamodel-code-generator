@@ -109,7 +109,6 @@ from datamodel_code_generator import (
     InputFileType,
     InvalidClassNameError,
     NamingHintWarning,
-    ReuseScope,
     _run_option_stages,
     _validate_generation_path_conflicts,
     enable_debug_message,
@@ -336,7 +335,7 @@ def _run_cli_option_stages(
     config: Config,
     record: RunOptions,
     stages: tuple[Literal["preset", "implied-target", "implied-model"], ...],
-    checks: Mapping[Any, Callable[[Config, Mapping[str, Any]], None]] | None = None,
+    checks: Mapping[Any, Callable[[Config, Mapping[str, Any]], object]] | None = None,
 ) -> Config:
     """Return a config with the values option stages of the command line give it, carrying the record of the run.
 
@@ -353,14 +352,17 @@ def _run_cli_option_stages(
 def _resolve_cli_config(record: RunOptions) -> Config:
     """Create the config of a run with its preset and implied values, checking what only the merged values decide.
 
-    The command line's row of `_run_option_stages`. The record is the arguments and the pyproject.toml values of the
-    run, built before any of them is validated; the config that comes back carries it.
+    The command line's row of `_run_option_stages`, with the relation rows of stage `cli-after-preset` after its
+    implied values. The record is the arguments and the pyproject.toml values of the run, built before any of them
+    is validated; the config that comes back carries it.
     """
+    from datamodel_code_generator._option_rules import check_option_relations  # noqa: PLC0415
+
     return _run_cli_option_stages(
         _create_config(record.pyproject, record.arguments),
         record,
         ("preset", "implied-model"),
-        {"implied-model": lambda config, _: config.validate_original_field_name_delimiter()},
+        {"implied-model": lambda config, _: check_option_relations("cli-after-preset", config)},
     )
 
 
@@ -1721,9 +1723,8 @@ def _target_settings(config: Config, args: Sequence[str], lockfile: Path | None)
 def _apply_model_run_options(config: Config) -> Exit | None:
     """Apply the checks, warnings and debug settings every generation run shares; return the exit code of a refusal.
 
-    The deprecation of the `--use-annotated` default shows where no source of the run gave the option. The refusal of
-    `--use-specialized-enum` reads the value it was given, not whether it was given (row `specialized-enum-by-value`:
-    a pyproject.toml value that is not the TOML boolean `true` is not refused).
+    The deprecation of the `--use-annotated` default shows where no source of the run gave the option. The relation
+    rows of stage `run-options` follow, with the record of the run.
     """
     record: RunOptions = config._run_options  # noqa: SLF001
     uses_black_formatter = config.formatters is None or Formatter.BLACK in config.formatters
@@ -1750,52 +1751,9 @@ def _apply_model_run_options(config: Config) -> Exit | None:
             ),
         )
 
-    if config.reuse_scope == ReuseScope.Tree and not config.reuse_model:
-        print(  # noqa: T201
-            "Warning: --reuse-scope=tree has no effect without --reuse-model",
-            file=sys.stderr,
-        )
+    from datamodel_code_generator._option_rules import check_option_relations  # noqa: PLC0415
 
-    if config.collapse_root_models_name_strategy and not config.collapse_root_models:
-        print(  # noqa: T201
-            "Error: --collapse-root-models-name-strategy requires --collapse-root-models",
-            file=sys.stderr,
-        )
-        return Exit.ERROR
-
-    if config.open_enum_base_class_map and (config.open_enums is None or config.open_enums.value == "none"):
-        print(  # noqa: T201
-            "Error: --open-enum-base-class-map requires --open-enums extensible or --open-enums all",
-            file=sys.stderr,
-        )
-        return Exit.ERROR
-
-    from datamodel_code_generator._requirements import python_target_meets  # noqa: PLC0415
-
-    if (config.open_enum_base_class_map or {}).get("StrEnum") is not None and not python_target_meets(
-        "python.strenum", config.target_python_version.version_key
-    ):
-        print(  # noqa: T201
-            f"Error: the StrEnum entry of --open-enum-base-class-map requires --target-python-version 3.11 or "
-            f"later.\nCurrent target version: {config.target_python_version.value}\n"
-            f"StrEnum is only available in Python 3.11+; string enums use the Enum entry there.",
-            file=sys.stderr,
-        )
-        return Exit.ERROR
-
-    if (
-        config.use_specialized_enum
-        and record.given_value("use_specialized_enum") is True
-        and not python_target_meets("python.strenum", config.target_python_version.version_key)
-    ):
-        print(  # noqa: T201
-            f"Error: --use-specialized-enum requires --target-python-version 3.11 or later.\n"
-            f"Current target version: {config.target_python_version.value}\n"
-            f"StrEnum is only available in Python 3.11+.",
-            file=sys.stderr,
-        )
-        return Exit.ERROR
-    return None
+    return Exit.ERROR if check_option_relations("run-options", config, record) else None
 
 
 def _collect_naming_hint(config: Config, namespace: Namespace) -> NamingHint | None:

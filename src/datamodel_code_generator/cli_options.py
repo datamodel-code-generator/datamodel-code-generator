@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import re
 from argparse import BooleanOptionalAction
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any
@@ -23,15 +23,12 @@ from datamodel_code_generator._format_types import PythonVersion  # noqa: F401  
 from datamodel_code_generator._option_names import option_arguments as _arguments_negated_by
 from datamodel_code_generator._option_names import option_flag
 from datamodel_code_generator._option_names import values_arguments as _values_arguments_negated_by
-from datamodel_code_generator._option_rules import IMPLIED_OPTIONS
-from datamodel_code_generator._requirements import REQUIREMENTS
+from datamodel_code_generator._option_rules import IMPLIED_OPTIONS, OPTION_RELATIONS
 from datamodel_code_generator.deprecations import cli_deprecations
 from datamodel_code_generator.enums import (
-    AllExportsScope,
     DataModelType,
     InputFileType,
     NamingStrategy,
-    ReuseScope,
     TargetPydanticVersion,
 )
 from datamodel_code_generator.python_literal import stable_repr
@@ -239,9 +236,21 @@ def _target_options(generate: str, value: str, *names: str) -> dict[str, CLIOpti
     }
 
 
+def _with_relation_rows(options: dict[str, CLIOptionMeta]) -> dict[str, CLIOptionMeta]:
+    """Add the relations of ``OPTION_RELATIONS``, the rows a run checks, to the options they start from."""
+    for row in OPTION_RELATIONS:
+        option, kind, other = row.pair
+        ends = [(option, CLIOptionRelation(other, row.value, row.when, row.message))]
+        if kind == "conflicts":
+            ends.append((other, CLIOptionRelation(option, message=row.other_message)))
+        for start, relation in ends if row.documented else ():
+            options[start] = replace(options[start], **{kind: (*getattr(options[start], kind), relation)})
+    return options
+
+
 # Documentation metadata for CLI options
 # Sync is verified by tests/cli_doc/test_cli_options_sync.py
-CLI_OPTION_META: dict[str, CLIOptionMeta] = {
+CLI_OPTION_META: dict[str, CLIOptionMeta] = _with_relation_rows({
     **_opts(
         _C.BASE,
         "--input --output --emit-model-metadata --http-backend --url --input-model --input-model-ref-strategy",
@@ -273,45 +282,12 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--class-name-suffix --class-name-affix-scope",
         group=_G.MODEL_NAMING,
     ),
-    **_opts(_C.MODEL, "--frozen-dataclasses"),
+    **_opts(_C.MODEL, "--frozen-dataclasses --keyword-only"),
+    **_opts(_C.MODEL, "--reuse-model --no-reuse-model --reuse-scope", group=_G.MODEL_REUSE),
     **_opts(
         _C.MODEL,
-        "--keyword-only",
-        requires=_relations(
-            "--target-python-version",
-            value=f"{REQUIREMENTS['python.kw_only_dataclass'].minimum}+",
-            message=(
-                f"`--keyword-only` requires `--target-python-version` "
-                f"{REQUIREMENTS['python.kw_only_dataclass'].minimum} or higher for dataclasses."
-            ),
-        ),
-    ),
-    **_opts(_C.MODEL, "--reuse-model --no-reuse-model", group=_G.MODEL_REUSE),
-    **_opts(
-        _C.MODEL,
-        "--reuse-scope",
-        group=_G.MODEL_REUSE,
-        requires=_relations(
-            "--reuse-model",
-            value=True,
-            when=ReuseScope.Tree.value,
-            message="`--reuse-scope=tree` has no effect without `--reuse-model`.",
-        ),
-    ),
-    **_opts(_C.MODEL, "--collapse-root-models --no-collapse-root-models", group=_G.ROOT_MODEL),
-    **_opts(
-        _C.MODEL,
-        "--collapse-root-models-name-strategy",
-        group=_G.ROOT_MODEL,
-        requires=_relations(
-            "--collapse-root-models",
-            value=True,
-            message="`--collapse-root-models-name-strategy` requires `--collapse-root-models`.",
-        ),
-    ),
-    **_opts(_C.MODEL, "--collapse-shared-parent-wrappers --no-collapse-shared-parent-wrappers", group=_G.ROOT_MODEL),
-    **_opts(
-        _C.MODEL,
+        "--collapse-root-models --no-collapse-root-models --collapse-root-models-name-strategy",
+        "--collapse-shared-parent-wrappers --no-collapse-shared-parent-wrappers",
         "--keep-constrained-root-models-in-every-container --no-keep-constrained-root-models-in-every-container",
         "--keep-enum-literal-aliases --no-keep-enum-literal-aliases",
         "--keep-reference-null-on-collapsed-root-models --no-keep-reference-null-on-collapsed-root-models",
@@ -335,14 +311,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--use-default-kwarg --no-use-default-kwarg",
         "--apply-field-options-to-every-field --no-apply-field-options-to-every-field",
     ),
-    **_opts(
-        _C.MODEL,
-        "--open-enum-base-class-map",
-        requires=_relations(
-            "--open-enums",
-            message="`--open-enum-base-class-map` requires `--open-enums extensible` or `--open-enums all`.",
-        ),
-    ),
+    **_opts(_C.MODEL, "--open-enum-base-class-map"),
     **_opts(
         _C.MODEL,
         "--use-missing-sentinel",
@@ -400,18 +369,9 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(_C.MODEL, "--use-generic-base-class", group=_G.MODEL_SHAPE),
     **_opts(_C.MODEL, "--merge-message-trait-headers --no-merge-message-trait-headers", group=_G.MODEL_SHAPE),
     **_opts(_C.MODEL, "--model-extra-keys --model-extra-keys-without-x-prefix"),
-    **_opts(_C.FIELD, "--snake-case-field --no-snake-case-field"),
     **_opts(
         _C.FIELD,
-        "--original-field-name-delimiter",
-        requires=_relations(
-            "--snake-case-field",
-            value=True,
-            message="`--original-field-name-delimiter` can not be used without `--snake-case-field`.",
-        ),
-    ),
-    **_opts(
-        _C.FIELD,
+        "--snake-case-field --no-snake-case-field --original-field-name-delimiter",
         "--capitalize-enum-members --capitalize-numbered-enum-members --no-capitalize-numbered-enum-members",
         "--special-field-name-prefix",
         "--remove-special-field-name-prefix --empty-enum-field-name",
@@ -537,39 +497,14 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--no-use-bytes-for-content-media-type",
         group=_G.TYPE_MAPPING,
     ),
-    **_opts(
-        _C.TYPING,
-        "--use-specialized-enum",
-        requires=_relations(
-            "--target-python-version",
-            value=f"{REQUIREMENTS['python.strenum'].minimum}+",
-            message=(
-                f"`--use-specialized-enum` requires `--target-python-version` "
-                f"{REQUIREMENTS['python.strenum'].minimum} or higher."
-            ),
-        ),
-    ),
-    **_opts(_C.TYPING, "--no-use-specialized-enum --allof-merge-mode --allof-class-hierarchy"),
+    **_opts(_C.TYPING, "--use-specialized-enum --no-use-specialized-enum --allof-merge-mode --allof-class-hierarchy"),
     **_opts(_C.TEMPLATE, "--wrap-string-literal", group=_G.OUTPUT_FORMATTING),
     **_opts(_C.TEMPLATE, "--custom-template-dir --extra-template-data --validators", group=_G.CUSTOM_TEMPLATES),
     **_opts(
         _C.TEMPLATE,
-        "--custom-file-header",
+        "--custom-file-header --custom-file-header-path --custom-file-header-mode",
         group=_G.GENERATED_OUTPUT,
-        conflicts=_relations(
-            "--custom-file-header-path",
-            message="`--custom-file-header` can not be used with `--custom-file-header-path`.",
-        ),
     ),
-    **_opts(
-        _C.TEMPLATE,
-        "--custom-file-header-path",
-        group=_G.GENERATED_OUTPUT,
-        conflicts=_relations(
-            "--custom-file-header", message="`--custom-file-header-path` can not be used with `--custom-file-header`."
-        ),
-    ),
-    **_opts(_C.TEMPLATE, "--custom-file-header-mode", group=_G.GENERATED_OUTPUT),
     **_opts(_C.TEMPLATE, "--additional-imports", group=_G.IMPORTS),
     **_opts(_C.TEMPLATE, "--class-decorators", group=_G.GENERATED_OUTPUT),
     **_opts(_C.TEMPLATE, "--use-double-quotes", group=_G.OUTPUT_FORMATTING),
@@ -636,22 +571,17 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--http-ignore-tls --http-query-parameters --http-timeout --lockfile",
     ),
     **_opts(_C.GENERAL, "--untrusted-input", implies=_relations("--allow-remote-refs", value=False)),
-    **_opts(_C.GENERAL, "--no-untrusted-input"),
-    **_opts(_C.GENERAL, "--update-lock", conflicts=_relations("--locked")),
-    **_opts(_C.GENERAL, "--locked", conflicts=_relations("--update-lock")),
-    **_opts(_C.GENERAL, "--ignore-pyproject --generate-cli-command --generate-pyproject-config --recommend-options"),
-    **_opts(_C.GENERAL, "--shared-module-name", group=_G.MODEL_REUSE, topic=OptionTopic.MODEL_CUSTOMIZATION),
-    **_opts(_C.GENERAL, "--all-exports-scope"),
     **_opts(
         _C.GENERAL,
-        "--all-exports-collision-strategy",
-        requires=_relations(
-            "--all-exports-scope",
-            value=AllExportsScope.Recursive.value,
-            message="`--all-exports-collision-strategy` can only be used with `--all-exports-scope=recursive`.",
-        ),
+        "--no-untrusted-input --update-lock --locked --ignore-pyproject --generate-cli-command",
+        "--generate-pyproject-config --recommend-options",
     ),
-    **_opts(_C.GENERAL, "--module-split-mode --disable-warnings --watch --watch-delay"),
+    **_opts(_C.GENERAL, "--shared-module-name", group=_G.MODEL_REUSE, topic=OptionTopic.MODEL_CUSTOMIZATION),
+    **_opts(
+        _C.GENERAL,
+        "--all-exports-scope --all-exports-collision-strategy --module-split-mode --disable-warnings --watch",
+        "--watch-delay",
+    ),
     **_opts(
         _C.TARGET,
         "--generate-server",
@@ -666,9 +596,6 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
                 value=InputFileType.OpenAPI.value,
                 message="`--generate-server` requires `--input-file-type openapi`.",
             ),
-        ),
-        conflicts=_relations(
-            "--generate-client", message="`--generate-server` can not be used with `--generate-client`."
         ),
     ),
     **_target_options(
@@ -693,9 +620,6 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
                 message="`--generate-client` requires `--input-file-type openapi` or `--input-file-type asyncapi`.",
             ),
         ),
-        conflicts=_relations(
-            "--generate-server", message="`--generate-client` can not be used with `--generate-server`."
-        ),
     ),
     **_target_options(
         "--generate-client",
@@ -705,7 +629,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--client-protocols --client-deep-object-brackets --no-client-deep-object-brackets",
         "--client-asyncapi-perspective",
     ),
-}
+})
 
 
 def _validate_option_topic_groups() -> None:

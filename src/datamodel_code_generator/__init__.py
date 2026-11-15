@@ -802,7 +802,7 @@ def _run_option_stages(
     config: _RunConfigT,
     record: RunOptions,
     stages: Collection[_OptionStage],
-    checks: Mapping[_OptionStage, Callable[[_RunConfigT, Mapping[str, Any]], None]] | None = None,
+    checks: Mapping[_OptionStage, Callable[[_RunConfigT, Mapping[str, Any]], object]] | None = None,
 ) -> tuple[_RunConfigT, RunOptions]:
     """Return a config with the values its option stages give it, and the record of the run with what they gave.
 
@@ -827,9 +827,10 @@ def _run_option_stages(
     The entry points, each with its record, its stages and its own checks in order:
 
     - `__main__.py:_resolve_cli_config` (a command, each batch job): the arguments and the pyproject.toml values, as
-      they are before validation; `preset`, `implied-model`, then the delimiter check that only the merged values
-      decide. Later, where a target is selected (a run after its option checks, `--recommend-options` after the
-      target's option check): `implied-target`, with the record the config carries. No `sentinel` stage: the config
+      they are before validation; `preset`, `implied-model`, then the relation rows that only the merged values
+      decide (`_option_rules.py`, stage `cli-after-preset`). Later, where a target is selected (a run after its
+      option checks, `--recommend-options` after the target's option check): `implied-target`, with the record the
+      config carries. No `sentinel` stage: the config
       goes to `generate()` without a preset, which runs it after the command's own refusals (row
       `cli-sentinel-in-generate`).
     - `_project_config.py:load_pyproject_config`: the pyproject.toml keys it keeps and its overrides; `implied-model`

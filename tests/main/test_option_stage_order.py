@@ -5,12 +5,15 @@ and stores everything the user sees: the exit status and the whole stderr of a c
 raised exception of an API call. Warnings are written to stderr in the order they are shown, beside the lines the
 command prints, so the stored text also pins the order of a warning and a printed refusal.
 
-The last tests pin the warning of the resolution itself: an option that was turned off and that another option
-turns on (``IMPLIED_OPTIONS``) is reported once, where the options are resolved.
+The tests after them pin the warning of the resolution itself: an option that was turned off and that another
+option turns on (``IMPLIED_OPTIONS``) is reported once, where the options are resolved. The last tests pin each
+relation between two options (``_option_rules.py:OPTION_RELATIONS``) at its stage, what each stage sees, and the
+order where two relations of one stage meet.
 """
 
 from __future__ import annotations
 
+import re
 import shutil
 import sys
 import warnings
@@ -18,6 +21,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 import pytest
+from pydantic import ValidationError
 
 from datamodel_code_generator import Error, chdir, generate, load_pyproject_config
 from datamodel_code_generator.__main__ import Exit
@@ -733,3 +737,175 @@ def test_loaded_config_warns_of_an_option_its_table_turns_off_and_on(
         REF_WITH_SIBLING, config=load_pyproject_config(tmp_path, overrides={"input_file_type": "jsonschema"})
     )
     assert_output(_seen(capsys) + _resolved(cast("str", code)))
+
+
+OPEN_ENUM_MAP = '{"StrEnum": "tests.data.python.open_enum.OpenStrEnum", "Enum": "tests.data.python.open_enum.OpenEnum"}'
+HEADER_PAIR = ["--custom-file-header", "# inline", "--custom-file-header-path", "header.txt"]
+HEADER_KEYS = 'custom-file-header = "# inline"\ncustom-file-header-path = "header.txt"\n'
+STRATEGY = ["--all-exports-collision-strategy", "minimal-prefix"]
+DELIMITER = ["--original-field-name-delimiter", "_"]
+COLLAPSE_STRATEGY = ["--collapse-root-models-name-strategy", "child"]
+SPECIALIZED_ON_310 = ["--use-specialized-enum", "--target-python-version", "3.10"]
+TARGET_KEYS = 'generate-server = "fastapi"\ngenerate-client = "httpx2"\n'
+PYDANTIC_DOCS = re.compile(r"errors\.pydantic\.dev/[^/]+/")
+
+
+def _refusal(raised: BaseException) -> str:
+    """Return the class of a refusal and its text; pydantic's by its first message, which names no pydantic version."""
+    text = raised.errors()[0]["msg"] if isinstance(raised, ValidationError) else str(raised)
+    return f"raised {type(raised).__name__}: {text}\n"
+
+
+@pytest.mark.usefixtures("warnings_on_stderr")
+@pytest.mark.parametrize(
+    ("arguments", "table", "expected_exit"),
+    [
+        pytest.param([], "update-lock = true\nlocked = true\n", Exit.ERROR, id="lock-modes"),
+        pytest.param([], TARGET_KEYS, Exit.ERROR, id="targets"),
+        pytest.param(HEADER_PAIR, None, Exit.ERROR, id="custom-file-header"),
+        pytest.param(STRATEGY, None, Exit.ERROR, id="all-exports-collision-strategy"),
+        pytest.param(DELIMITER, None, Exit.ERROR, id="original-field-name-delimiter"),
+        pytest.param(["--reuse-scope", "tree"], None, Exit.OK, id="reuse-scope"),
+        pytest.param(COLLAPSE_STRATEGY, None, Exit.ERROR, id="collapse-root-models-name-strategy"),
+        pytest.param(
+            ["--open-enum-base-class-map", OPEN_ENUM_MAP, "--target-python-version", "3.11"],
+            None,
+            Exit.ERROR,
+            id="open-enum-base-class-map",
+        ),
+        pytest.param(
+            ["--open-enums", "all", "--open-enum-base-class-map", OPEN_ENUM_MAP, "--target-python-version", "3.10"],
+            None,
+            Exit.ERROR,
+            id="str-enum-entry",
+        ),
+        pytest.param(SPECIALIZED_ON_310, None, Exit.ERROR, id="use-specialized-enum"),
+        pytest.param(
+            ["--custom-file-header-path", "header.txt"], 'custom-file-header = "# inline"\n', Exit.OK, id="split"
+        ),
+        pytest.param(STRATEGY, 'all-exports-scope = "recursive"\n', Exit.ERROR, id="scope-in-pyproject"),
+        pytest.param(DELIMITER, "snake-case-field = true\n", Exit.OK, id="snake-case-in-pyproject"),
+        pytest.param([], TARGET_KEYS + HEADER_KEYS, Exit.ERROR, id="targets-before-custom-file-header"),
+        pytest.param(
+            ["--output-model-type", "dataclasses.dataclass", "--output-datetime-class", "AwareDatetime", *HEADER_PAIR],
+            None,
+            Exit.ERROR,
+            id="output-datetime-class-before-custom-file-header",
+        ),
+        pytest.param([*STRATEGY, *HEADER_PAIR, *DELIMITER], None, Exit.ERROR, id="custom-file-header-before-others"),
+        pytest.param(
+            [*DELIMITER, *COLLAPSE_STRATEGY, "--intersect-combined-schema-keywords", "--no-intersect-allof-keywords"],
+            None,
+            Exit.ERROR,
+            id="delimiter-before-run-options",
+        ),
+        pytest.param(
+            [*COLLAPSE_STRATEGY, "--open-enum-base-class-map", OPEN_ENUM_MAP, *SPECIALIZED_ON_310],
+            None,
+            Exit.ERROR,
+            id="collapse-before-open-enums",
+        ),
+        pytest.param(
+            ["--open-enum-base-class-map", OPEN_ENUM_MAP, *SPECIALIZED_ON_310],
+            None,
+            Exit.ERROR,
+            id="open-enums-before-str-enum-entry",
+        ),
+        pytest.param(
+            ["--open-enums", "all", "--open-enum-base-class-map", OPEN_ENUM_MAP, *SPECIALIZED_ON_310],
+            None,
+            Exit.ERROR,
+            id="str-enum-entry-before-specialized-enum",
+        ),
+        pytest.param(["--reuse-scope", "tree", *SPECIALIZED_ON_310], None, Exit.ERROR, id="reuse-scope-before-refusal"),
+    ],
+)
+def test_cli_option_relation_rows(
+    arguments: list[str],
+    table: str | None,
+    expected_exit: Exit,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Each relation between two options at its stage, and the pairs where two of one stage meet.
+
+    The config validators see the pyproject.toml values alone and then the arguments alone, so a pair split between
+    them is not refused by its validator, and an argument is refused without a value pyproject.toml gives; the
+    delimiter check after the preset sees the merged values. The run-option checks follow the deprecation of the
+    --use-annotated default and show the reuse-scope warning before a refusal.
+    """
+    (tmp_path / "header.txt").write_text("# header\n", encoding="utf-8")
+    if table is not None:
+        (tmp_path / "pyproject.toml").write_text(TABLE + table, encoding="utf-8")
+    with chdir(tmp_path):
+        exit_code = run_main_with_args(
+            ["--input", str(PERSON), "--output", "output.py", *MODEL_ARGUMENTS, *BUILTIN, *arguments],
+            expected_exit=expected_exit,
+        )
+    assert_output(PYDANTIC_DOCS.sub("errors.pydantic.dev/<version>/", _seen(capsys, exit_code)) + _written(tmp_path))
+
+
+@pytest.mark.usefixtures("warnings_on_stderr")
+@pytest.mark.parametrize(
+    "options",
+    [
+        pytest.param({"update_lock": True, "locked": True}, id="lock-modes"),
+        pytest.param({"generate_server": "fastapi", "generate_client": "httpx2"}, id="targets"),
+        pytest.param(
+            {"update_lock": True, "locked": True, "generate_server": "fastapi", "generate_client": "httpx2"},
+            id="lock-modes-before-targets",
+        ),
+    ],
+)
+def test_api_config_refuses_option_relations(options: dict[str, Any], capsys: pytest.CaptureFixture[str]) -> None:
+    """A generate() config that sets both lock modes or both targets is refused while it is validated."""
+    with pytest.raises((Error, ValidationError)) as raised:
+        GenerateConfig(**options)
+    assert_output(_seen(capsys) + _refusal(raised.value))
+
+
+@pytest.mark.usefixtures("warnings_on_stderr")
+@pytest.mark.parametrize(
+    "table",
+    [
+        pytest.param(HEADER_KEYS, id="custom-file-header"),
+        pytest.param('all-exports-collision-strategy = "minimal-prefix"\n', id="all-exports-collision-strategy"),
+        pytest.param(TARGET_KEYS + HEADER_KEYS, id="targets-before-custom-file-header"),
+    ],
+)
+def test_loaded_config_refuses_option_relations_of_its_table(
+    table: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """load_pyproject_config() validates its table as the command line validates pyproject.toml."""
+    (tmp_path / "pyproject.toml").write_text(TABLE + table, encoding="utf-8")
+    with pytest.raises((Error, ValidationError)) as raised:
+        load_pyproject_config(tmp_path)
+    assert_output(_seen(capsys) + _refusal(raised.value))
+
+
+@pytest.mark.usefixtures("warnings_on_stderr")
+def test_api_runs_option_pairs_only_the_command_line_refuses(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """generate() and a loaded config run the pairs the command line's validator, delimiter and run checks refuse."""
+    (tmp_path / "pyproject.toml").write_text(
+        f'{TABLE}original-field-name-delimiter = "_"\ncollapse-root-models-name-strategy = "child"\n', encoding="utf-8"
+    )
+    loaded = load_pyproject_config(tmp_path)
+    code = generate(
+        PERSON_SCHEMA,
+        input_file_type="jsonschema",
+        output_model_type="pydantic_v2.BaseModel",
+        formatters=["builtin"],
+        disable_timestamp=True,
+        custom_file_header="# inline",
+        custom_file_header_path=tmp_path / "pyproject.toml",
+        all_exports_collision_strategy="minimal-prefix",
+        original_field_name_delimiter="_",
+        reuse_scope="tree",
+        collapse_root_models_name_strategy="child",
+        open_enum_base_class_map={"StrEnum": "tests.data.python.open_enum.OpenStrEnum"},
+        use_specialized_enum=True,
+        target_python_version="3.10",
+    )
+    assert_output(_seen(capsys) + f"loaded {loaded.original_field_name_delimiter!r}\n" + cast("str", code))
