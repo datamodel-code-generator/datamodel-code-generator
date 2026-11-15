@@ -514,6 +514,10 @@ class _StructuredOutputUnavailableError(Error):
     """Raised when the installed Pydantic is too old for the payload models of the JSON output of the CLI."""
 
 
+class _InvalidConfigTomlError(Error, ValueError):
+    """Raised for a configuration file that is not valid TOML: a configuration error, and the ``ValueError`` it was."""
+
+
 def _written_paths(
     output: Path | None, model_metadata: Path | None, lockfile: Path | None
 ) -> tuple[tuple[str, Path | None], ...]:
