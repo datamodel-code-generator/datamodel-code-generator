@@ -21,6 +21,8 @@ from typing import (
     IO,
     TYPE_CHECKING,
     Any,
+    Final,
+    Literal,
     TypeAlias,
     TypeVar,
     cast,
@@ -123,6 +125,8 @@ from typing import Unpack
 
 if TYPE_CHECKING:
     import tempfile
+    from collections.abc import Collection
+    from collections.abc import Set as AbstractSet
     from types import FunctionType
 
     from datamodel_code_generator._format_types import (
@@ -149,6 +153,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._types.generate_config_dict import GenerateConfigDict
     from datamodel_code_generator._user_keys import ModelNameKeys, ModelNameRecord
+    from datamodel_code_generator.base_config import BaseGenerateConfig
     from datamodel_code_generator.config import (
         GenerateConfig,
         ParserConfig,
@@ -156,6 +161,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model import DataModelSet
     from datamodel_code_generator.model_metadata import ModelMetadata
     from datamodel_code_generator.parser.base import ParserRunContext, Result
+    from datamodel_code_generator.preset import PresetName, ResolvedPresetConfig
     from datamodel_code_generator.remote_lock import RemoteReferenceLock
 
 T = TypeVar("T")
@@ -231,6 +237,7 @@ if TYPE_CHECKING:
         ProtobufVersion,
     )
     _GenerationInput: TypeAlias = Path | str | ParseResult | Mapping[str, Any] | list[Any]
+    _OptionStage: TypeAlias = Literal["preset", "implied-target", "sentinel", "implied-model"]
     _ParserResults: TypeAlias = str | dict[tuple[str, ...], Result]
     _ParserSource: TypeAlias = str | Path | list[Path] | ParseResult | dict[str, Any]
     _PythonTypeExpressions: TypeAlias = Mapping[str, PythonTypeExpr]
@@ -283,22 +290,6 @@ GeneratedModules: TypeAlias = dict[tuple[str, ...], str]
 Maps module path tuples (e.g., ("models", "user.py")) to generated code strings.
 Returned by generate() when output=None and multiple modules are generated, or a server or client package.
 """
-
-
-def _apply_generate_config_preset(config: GenerateConfig) -> GenerateConfig:
-    """Return a generate config with preset defaults applied."""
-    preset_name = config.preset
-    if preset_name is None:
-        return config
-
-    from datamodel_code_generator.preset import PresetError, _resolve_config_preset  # noqa: PLC0415
-
-    try:
-        preset_config = _resolve_config_preset(preset_name, config, config.model_fields_set)
-    except PresetError as e:
-        raise Error(str(e)) from e
-
-    return config.model_copy(update=updates) if (updates := preset_config.updates()) else config
 
 
 DEFAULT_BASE_CLASS: str = "pydantic.BaseModel"
@@ -678,9 +669,41 @@ def _validate_alias_generator(output_model_type: DataModelType, alias_generator:
     raise Error(msg)
 
 
-def _apply_missing_sentinel_config(config: GenerateConfig) -> GenerateConfig:
+def _resolve_preset(
+    preset: PresetName | str, config: BaseGenerateConfig, given: AbstractSet[str]
+) -> ResolvedPresetConfig:
+    """Resolve a preset for a config, leaving out the fields that are `given`; one that does not fit is an `Error`.
+
+    The one resolution of a preset outside the command line's own: `generate()`, a server or client target, dynamic
+    generation and the recommender read it, so each shows the same refusal.
+    """
+    from datamodel_code_generator.preset import PresetError, _resolve_config_preset  # noqa: PLC0415
+
+    try:
+        return _resolve_config_preset(preset, config, given)
+    except PresetError as e:
+        raise Error(str(e)) from e
+
+
+def _preset_updates(config: GenerateConfig, given: AbstractSet[str]) -> dict[str, Any]:
+    """Return the values the preset of a config gives the fields that are not `given`."""
+    return {} if config.preset is None else _resolve_preset(config.preset, config, given).updates()
+
+
+def _implied_target_updates(config: GenerateConfig, _given: AbstractSet[str]) -> dict[str, Any]:
+    """Return the values a server or client target gives the settings nothing set, the preset included.
+
+    It reads the fields the config has set so far, those the `preset` stage set among them, not the given ones.
+    """
+    from datamodel_code_generator.base_config import implied_target_settings  # noqa: PLC0415
+
+    return implied_target_settings(config, config.model_fields_set)
+
+
+def _missing_sentinel_updates(config: GenerateConfig, _given: AbstractSet[str]) -> dict[str, Any]:
+    """Return the target pydantic version `--use-missing-sentinel` needs where none is set, refusing an older one."""
     if not config.use_missing_sentinel:
-        return config
+        return {}
 
     if config.output_model_type not in _PYDANTIC_MODEL_TYPES:
         msg = (
@@ -694,9 +717,9 @@ def _apply_missing_sentinel_config(config: GenerateConfig) -> GenerateConfig:
     minimum = TargetPydanticVersion(REQUIREMENTS["pydantic.experimental_missing_sentinel"].minimum)
     match target_version := config.target_pydantic_version:
         case None:
-            return config.model_copy(update={"target_pydantic_version": minimum})
+            return {"target_pydantic_version": minimum}
         case _ if pydantic_target_meets("pydantic.experimental_missing_sentinel", target_version):
-            return config
+            return {}
         case _:
             target_version_value = (
                 target_version.value if isinstance(target_version, TargetPydanticVersion) else target_version
@@ -709,6 +732,63 @@ def _apply_missing_sentinel_config(config: GenerateConfig) -> GenerateConfig:
             )
             raise Error(msg)
     raise AssertionError  # pragma: no cover
+
+
+def _implied_model_updates(config: GenerateConfig, given: AbstractSet[str]) -> dict[str, Any]:
+    """Return the constraint settings whose value the other settings of a config change, read with `given` as set."""
+    from datamodel_code_generator.base_config import implied_model_settings  # noqa: PLC0415
+
+    return {
+        name: value for name, value in implied_model_settings(config, given).items() if getattr(config, name) != value
+    }
+
+
+_OPTION_STAGES: Final[dict[_OptionStage, Callable[[GenerateConfig, AbstractSet[str]], dict[str, Any]]]] = {
+    "preset": _preset_updates,
+    "implied-target": _implied_target_updates,
+    "sentinel": _missing_sentinel_updates,
+    "implied-model": _implied_model_updates,
+}
+
+
+def _resolve_run_options(
+    config: GenerateConfig,
+    stages: Collection[_OptionStage],
+    checks: Mapping[_OptionStage, Callable[[GenerateConfig, Mapping[str, Any]], None]] | None = None,
+) -> GenerateConfig:
+    """Return a config with the values its option stages give it: the one resolution of every entry point.
+
+    The stages run in the order of `_OPTION_STAGES`, each on the config the stages before it left, and an entry point
+    names the ones it runs. The fields the config set when it came in are the given ones: the preset leaves them
+    alone, and the implied model settings read them as they were before the preset (row
+    `implied-reads-given-before-preset`). A stage that gives no value keeps the config object. A check of the entry
+    point runs after its stage, with the config so far and the values that stage gave, so that what a user sees
+    first stays where the entry point shows it.
+
+    The entry points, each with its stages and its own checks in order:
+
+    - `_prepare_generate_facade_config` (`generate()`, a trial of the recommender, the metadata run of dynamic
+      generation): the facade's warnings; `preset`, `sentinel`, `implied-model`; the metadata path and the output
+      encoding.
+    - `_api_generation.py:prepare_target` (a server or client target): the model output; every stage, with the
+      Pydantic target of a sentinel and then the facade's warnings after `implied-target`; the metadata path and the
+      output encoding; the target's checks, which read the resolved config.
+    - `dynamic.py:_without_default_formatting` (the formatters dynamic generation runs with): `preset` alone, so
+      that no later refusal comes before the facade's warnings.
+
+    The command line resolves its preset and implied model settings itself (`__main__.py:_resolve_cli_config`), with
+    its own mapping of a preset that does not fit to `Error` (`_apply_preset`), applies the implied target settings
+    itself (its two calls of `implied_target_settings`) and hands `generate()` a config without a preset.
+    """
+    given = frozenset(config.model_fields_set)
+    for stage, updates_of in _OPTION_STAGES.items():
+        if stage not in stages:
+            continue
+        if updates := updates_of(config, given):
+            config = config.model_copy(update=updates)
+        if checks is not None and (check := checks.get(stage)) is not None:
+            check(config, updates)
+    return config
 
 
 class InvalidFileFormatError(Error):
@@ -1869,13 +1949,17 @@ def generate(
 
 
 def _prepare_generate_facade_config(config: GenerateConfig) -> GenerateConfig:
-    """Apply existing facade warnings, presets, sentinels, metadata checks, and the output encoding check in order.
+    """Return the config `generate()` runs with: the `generate()` row of `_resolve_run_options`, in its order."""
+    _warn_facade_dependencies(config)
+    config = _resolve_run_options(config, ("preset", "sentinel", "implied-model"))
+    _check_facade_outputs(config)
+    return config
 
-    The encoding is checked before any input is read with it.
-    """
+
+def _warn_facade_dependencies(config: GenerateConfig) -> None:
+    """Warn of an installed pydantic older than the coming minimum and of a template directory, which needs Jinja2."""
     from pydantic import VERSION as PYDANTIC_VERSION  # ruff: ignore[import-outside-top-level]
 
-    from datamodel_code_generator.base_config import implied_model_settings  # ruff: ignore[import-outside-top-level]
     from datamodel_code_generator.deprecations import (  # ruff: ignore[import-outside-top-level]
         warn_deprecated,
         warn_legacy_dependency,
@@ -1884,19 +1968,13 @@ def _prepare_generate_facade_config(config: GenerateConfig) -> GenerateConfig:
     warn_legacy_dependency("dependency.pydantic-runtime-minimum", PYDANTIC_VERSION, (2, 8, 2))
     if config.custom_template_dir:
         warn_deprecated("dependency.jinja2-optional")
-    given = set(config.model_fields_set)
-    config = _apply_generate_config_preset(config)
-    config = _apply_missing_sentinel_config(config)
-    if implied := {
-        name: value for name, value in implied_model_settings(config, given).items() if getattr(config, name) != value
-    }:
-        config = config.model_copy(update=implied)
 
+
+def _check_facade_outputs(config: GenerateConfig) -> None:
+    """Refuse a metadata path that is a directory, then an unknown output encoding, before any input is read with it."""
     if (metadata_path := config.emit_model_metadata) is not None:
         _ensure_file_output_path(metadata_path, _MODEL_METADATA_OUTPUT_DIRECTORY_ERROR)
     _ensure_output_text_encodable("", config.encoding)
-
-    return config
 
 
 def _prepare_atomic_generation_remote_lock(

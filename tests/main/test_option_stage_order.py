@@ -20,7 +20,6 @@ from datamodel_code_generator import Error, chdir, generate
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.config import GenerateConfig
 from datamodel_code_generator.dynamic import generate_dynamic_models, generate_dynamic_module
-from datamodel_code_generator.preset import PresetError
 from tests.conftest import assert_output
 from tests.main.conftest import DATA_PATH, JSON_SCHEMA_DATA_PATH, run_main_and_assert, run_main_with_args
 
@@ -169,10 +168,13 @@ def test_cli_run_option_refusal_before_generate_sentinel_refusal(
 def test_api_target_preset_error_before_sentinel_check(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """A server target's preset for another Python target meets the sentinel with a too old pydantic target."""
+    """A server target's preset for another Python target meets the sentinel with a too old pydantic target.
+
+    The preset is refused with the `Error` a model-only run raises for it.
+    """
     monkeypatch.chdir(tmp_path)
     shutil.copy2(SERVER_SOURCE, tmp_path / "pets.yaml")
-    with pytest.raises(PresetError) as raised:
+    with pytest.raises(Error) as raised:
         generate(
             Path("pets.yaml"),
             input_file_type="openapi",
