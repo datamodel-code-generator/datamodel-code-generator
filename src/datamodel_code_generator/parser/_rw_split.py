@@ -70,6 +70,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model import DataModelFieldBase
     from datamodel_code_generator.model.runtime_validation import PropertyCountRule
     from datamodel_code_generator.parser._field_rows import FieldCopyFacts, FieldIdentity
+    from datamodel_code_generator.parser._inherited_schemas import _BaseList, _InheritedSchema
     from datamodel_code_generator.parser._schema_dispatch import DispatchTable
     from datamodel_code_generator.parser._schema_graph import _TargetNode
     from datamodel_code_generator.reference import Reference
@@ -199,10 +200,8 @@ class RwSplitHost(AllOfValuesHost, Protocol):
             tuple[JsonSchemaObject, str, frozenset[_TargetNode]],
         ],
     ]
-    _inherited_required_cache: dict[tuple[str, ...], frozenset[str]]
-    _inherited_schema_ancestor_cache: dict[str, frozenset[str]]
-    _inherited_schema_cache: dict[str, JsonSchemaObject]
-    _inherited_schema_linearization_cache: dict[tuple[str, ...], tuple[str, ...]]
+    _inherited_base_lists: dict[tuple[str, ...], _BaseList]
+    _inherited_schema_records: dict[str, _InheritedSchema]
     _raw_inherited_fields_cache: dict[str, tuple[DataModelFieldBase, ...]]
     _raw_inherited_own_names_cache: dict[str, frozenset[str]]
     _request_response_fields: dict[str, tuple[DataModelFieldBase, ...]]
@@ -575,10 +574,8 @@ def clear_inherited_field_caches(parser: RwSplitHost) -> None:
     for cache in parser._rw_imported_field_caches:  # noqa: SLF001
         cache.clear()
     parser._rw_model_variant_references.clear()  # noqa: SLF001
-    parser._inherited_schema_cache.clear()  # noqa: SLF001
-    parser._inherited_schema_ancestor_cache.clear()  # noqa: SLF001
-    parser._inherited_schema_linearization_cache.clear()  # noqa: SLF001
-    parser._inherited_required_cache.clear()  # noqa: SLF001
+    parser._inherited_schema_records.clear()  # noqa: SLF001
+    parser._inherited_base_lists.clear()  # noqa: SLF001
     parser._inherited_parent_property_cache.clear()  # noqa: SLF001
     parser._ref_target_dumps.clear()  # noqa: SLF001
     parser._unsatisfiable_schemas.clear()  # noqa: SLF001
@@ -948,7 +945,8 @@ def get_parsed_ref_schema_rw_model_field_facts(
 def join_rw_model_property_flags(parser: RwSplitHost, resolved_ref: str, flags: dict[str, tuple[bool, bool]]) -> None:
     """Join the readOnly/writeOnly flags of the properties the schema at a key declares, by name, into ``flags``.
 
-    The properties of inline allOf members count as its own, as inherited fields collect them.
+    The properties of inline allOf members as written count as its own. Inherited fields collect them so only where
+    ``_inherited_schemas.all_of_members`` reads the members as written: this join does not ask it yet.
     """
     pending = [parser._load_inherited_schema_object(resolved_ref)]  # noqa: SLF001
     with parser._inherited_ref_context(resolved_ref):  # noqa: SLF001

@@ -16,9 +16,10 @@ import operator
 from collections import Counter
 from functools import partial, reduce
 from itertools import islice
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
 
-from typing_extensions import Protocol, Sentinel
+from typing_extensions import Protocol, Sentinel, final
 
 from datamodel_code_generator import AllOfMergeMode
 from datamodel_code_generator._constraint_applicability import (
@@ -38,6 +39,7 @@ from datamodel_code_generator._json_schema import (
     schema_positions,
 )
 from datamodel_code_generator._mro import linearize, sort_descendants_first
+from datamodel_code_generator._records import mutable_record
 from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
@@ -111,6 +113,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.reference import ModelType, SchemaLocation
 
 __all__ = [
+    "InheritedOrderRow",
     "InheritedParentRow",
     "InheritedSchemasHost",
     "ModelDeclarations",
@@ -144,6 +147,7 @@ __all__ = [
     "inferred_module_name",
     "inherited_node",
     "inherited_override_schema",
+    "inherited_schema",
     "inherited_schema_parents",
     "inline_all_of_parts",
     "is_inherited_type_narrowing",
@@ -156,6 +160,7 @@ __all__ = [
     "load_inherited_schema_object",
     "mark_inherited_materialized_type_shapes",
     "mark_partial_inherited_fields",
+    "member_reading",
     "merge_inherited_type_shape_dict",
     "merge_inherited_union_branch",
     "merge_properties_with_parent_constraints",
@@ -175,6 +180,7 @@ __all__ = [
     "select_inherited_distributed_shape",
     "sort_inherited_base_classes_for_mro",
     "union_model_properties",
+    "walk_inherited_schemas",
     "with_conjoined_properties",
 ]
 
@@ -208,6 +214,211 @@ _DOCUMENTATION_KEYWORDS: Final = frozenset({"$comment", "deprecated", "descripti
 _MODEL_BUILDING_KEYWORDS: Final = frozenset({*SCHEMA_POSITIONS, *_REF_KEYWORDS, "enum"})
 """The keywords a declaration may build a model of its own with: its subschemas, references and ``enum``."""
 _NO_INHERITED_SCHEMA_MERGE = Sentinel("_NO_INHERITED_SCHEMA_MERGE")
+_MEMBERS_AS_WRITTEN: Final = (False, False, False)
+"""The reading of ``member_reading`` under which ``all_of_members`` reads every member of an allOf as written."""
+InheritedOrderRow: TypeAlias = Literal[
+    "c3", "legacy-dfs-inline-first", "ancestor-first", "legacy-direct-then-grandparents"
+]
+"""What ``walk_inherited_schemas`` visits of the schemas a model inherits, one row per reader that asks it.
+
+Two rows are orders of the parts ``all_of_members`` reads, and output needs both:
+
+- ``c3``: the inherited schemas in C3 order (``linearize_inherited_schema_refs``), each as its parts
+  (``inline_all_of_parts``): the property map (``get_inherited_property_map``, which takes the first declaration of a
+  property) and the declarations of a model (``model_declarations``, which reads all of them).
+- ``ancestor-first``: from each base, sorted descendants first, the parents it names (``get_allof_parent_references``,
+  which registers their references), sorted the same way, before its own parts, members first; each schema once
+  (``get_inherited_property_order``: the order of the fields a request or response variant collects).
+
+Two rows are no orders: they read the members of each allOf as written, also where an option makes
+``all_of_members`` read them otherwise, and answer as ``c3`` does wherever it reads them as written (#6849):
+
+- ``legacy-dfs-inline-first``: depth first from each base, sorted descendants first: a schema, then its inline allOf
+  members as written, each with its own members and references, then the schemas its ``$ref`` members as written
+  name, none twice on one path (``get_inherited_field_schema``, which asks whether some ancestor declares a property).
+- ``legacy-direct-then-grandparents``: each base, sorted descendants first, as written without its inline members,
+  until the first whose allOf names parents: the walk then yields it again with the references of those parents
+  (registered with ``model_resolver.add_ref``) and the path, and ends; the reader goes on with them
+  (``JsonSchemaParser._get_inherited_field_type``, which reads the generated fields of each list of parents first).
+"""
+_InheritedVisit: TypeAlias = "tuple[JsonSchemaObject, str, tuple[list[Reference], frozenset[_TargetNode]] | None]"
+"""A schema ``walk_inherited_schemas`` visits, the key of the inherited schema it belongs to, and the references of the
+parents the reader goes on with and the path of the walk (``legacy-direct-then-grandparents``), else None."""
+
+
+@final
+@mutable_record(slots=True, eq=False)
+class _InheritedSchema:
+    """The inherited schema at a reference key (``inherited_schema``) and what is read from it.
+
+    ``schema`` is the object the share returns for the key and ``ancestors`` the keys of its ancestors
+    (``get_inherited_schema_ancestor_paths``): both keep the answer of their first ask until L1 ends, whatever document
+    asks later (row ``legacy-inherited-reads-at-first-ask``). ``parts`` (``inline_all_of_parts``) and ``conjunctions``
+    (``property_conjunctions``, read quiet) are kept only where they are functions of the schema object alone
+    (``_reads_schemas_alone``); elsewhere each ask computes them.
+    """
+
+    schema: JsonSchemaObject
+    ancestors: frozenset[str] | None = None
+    parts: tuple[JsonSchemaObject, ...] | None = None
+    conjunctions: Mapping[str, Sequence[JsonSchemaObject | None]] | None = None
+
+
+@final
+@mutable_record(slots=True, eq=False)
+class _BaseList:
+    """A tuple of reference keys (``_base_list``), and what is read from it as the bases of a model or as their order.
+
+    ``linearized`` is the C3 order of the tuple read as sorted direct bases (``linearize_inherited_schema_refs``);
+    ``required_names`` (``get_inherited_required_names``) and ``property_map`` (``get_inherited_property_map``) are
+    read from the tuple as such an order. ``linearized`` and ``required_names`` keep the answer of their first ask until
+    L1 ends, whatever document asks later (row ``legacy-inherited-reads-at-first-ask``: where an option makes
+    ``all_of_members`` read the version of the document being parsed, the document that asks first decides them for
+    every document); ``property_map`` is kept only where ``_reads_schemas_alone`` holds, read-only.
+    """
+
+    linearized: tuple[str, ...] | None = None
+    required_names: frozenset[str] | None = None
+    property_map: Mapping[str, tuple[JsonSchemaObject | bool, str]] | None = None
+
+
+def _reads_schemas_alone(parser: InheritedSchemasHost) -> bool:
+    """Return whether the parts and conjunctions of an inherited schema are functions of its schema object alone.
+
+    They are where ``all_of_members`` reads the members as written (``member_reading``), which resolves no reference
+    and reads no document. ``checked_declarations`` then validates dumps, which no schema version reads again:
+    --ignore-ref-siblings-by-schema-version asks it of the objects of a loaded document only (``reads_ref_alone``).
+    """
+    return parser._all_of_member_reading == _MEMBERS_AS_WRITTEN  # noqa: SLF001
+
+
+def inherited_schema(parser: InheritedSchemasHost, resolved_ref: str) -> _InheritedSchema:
+    """Return the record of the inherited schema at a reference key, loading the schema at the first ask."""
+    if (found := parser._inherited_schema_records.get(resolved_ref)) is None:  # noqa: SLF001
+        schema = _schema_refs.shared_schema_object(parser, parser._get_ref_raw_schema(resolved_ref), [resolved_ref])  # noqa: SLF001
+        found = parser._inherited_schema_records[resolved_ref] = _InheritedSchema(schema)  # noqa: SLF001
+    return found
+
+
+def _base_list(parser: InheritedSchemasHost, refs: tuple[str, ...]) -> _BaseList:
+    """Return the record of a tuple of reference keys."""
+    if (found := parser._inherited_base_lists.get(refs)) is None:  # noqa: SLF001
+        found = parser._inherited_base_lists[refs] = _BaseList()  # noqa: SLF001
+    return found
+
+
+def _parts_at(parser: InheritedSchemasHost, resolved_ref: str) -> tuple[JsonSchemaObject, ...]:
+    """Return the parts of the inherited schema at a reference key (``inline_all_of_parts``): the schema first."""
+    found = inherited_schema(parser, resolved_ref)
+    if not _reads_schemas_alone(parser):
+        return tuple(inline_all_of_parts(parser, found.schema))
+    if found.parts is None:
+        found.parts = tuple(inline_all_of_parts(parser, found.schema))
+    return found.parts
+
+
+def _conjunctions_at(
+    parser: InheritedSchemasHost, resolved_ref: str
+) -> Mapping[str, Sequence[JsonSchemaObject | None]]:
+    """Return the conjunctions of the inherited schema at a reference key, read quiet (``property_conjunctions``).
+
+    Quiet: the parse of that schema reports their warnings, a kept value reports nothing a fresh one would not.
+    """
+    found = inherited_schema(parser, resolved_ref)
+    if not _reads_schemas_alone(parser):
+        with quiet():
+            return property_conjunctions(parser, found.schema)
+    if found.conjunctions is None:
+        with quiet():
+            found.conjunctions = property_conjunctions(parser, found.schema)
+    return found.conjunctions
+
+
+def walk_inherited_schemas(
+    parser: InheritedSchemasHost,
+    base_classes: list[Reference],
+    order: InheritedOrderRow,
+    visited: frozenset[_TargetNode] = frozenset(),
+) -> Iterator[_InheritedVisit]:
+    """Yield the schemas a model with the bases ``base_classes`` inherits, in the order ``order`` names.
+
+    It is the one entry of the readers that find the ancestor declaring a property; ``visited`` holds the schema nodes
+    the walk does not enter (``legacy-dfs-inline-first``, ``legacy-direct-then-grandparents``). The depth-first rows
+    load each schema when they reach it, so a reader that stops at the first declaration it needs loads no further
+    schema.
+    """
+    match order:
+        case "c3":
+            yield from _walk_c3(parser, linearize_inherited_schema_refs(parser, base_classes))
+        case "legacy-dfs-inline-first":
+            for schema, path, resolved_ref in iter_inherited_schema_objects(parser, base_classes, visited):
+                yield from _walk_inline_first(parser, schema, resolved_ref, path)
+        case "ancestor-first":
+            entered: set[_TargetNode] = set()
+            for base in sort_inherited_base_classes_for_mro(parser, base_classes):
+                yield from _walk_ancestors_first(parser, base.path, entered)
+        case _:  # legacy-direct-then-grandparents
+            yield from _walk_direct_then_grandparents(parser, base_classes, visited)
+
+
+def _walk_c3(parser: InheritedSchemasHost, linearized: tuple[str, ...]) -> Iterator[_InheritedVisit]:
+    """Yield the parts of the inherited schemas at the keys of a C3 order, each schema first."""
+    for resolved_ref in linearized:
+        for part in _parts_at(parser, resolved_ref):
+            yield part, resolved_ref, None
+
+
+def _walk_inline_first(
+    parser: InheritedSchemasHost, schema: JsonSchemaObject, resolved_ref: str, path: frozenset[_TargetNode]
+) -> Iterator[_InheritedVisit]:
+    """Yield ``schema``, its inline allOf members as written, then the schemas its ``$ref`` members name, in depth."""
+    yield schema, resolved_ref, None
+    for item in schema.allOf:
+        if isinstance(item, JsonSchemaObject) and not item.ref:
+            yield from _walk_inline_first(parser, item, resolved_ref, path)
+    for item in schema.allOf:
+        if not isinstance(item, JsonSchemaObject) or not item.ref:
+            continue
+        parent_ref = _schema_refs.ref_path(parser, item.ref)
+        parent_schema = load_inherited_schema_object(parser, parent_ref)
+        if (node := _schema_node(parent_schema, parent_ref)) not in path:
+            yield from _walk_inline_first(parser, parent_schema, parent_ref, path | {node})
+
+
+def _walk_ancestors_first(
+    parser: InheritedSchemasHost, resolved_ref: str, entered: set[_TargetNode]
+) -> Iterator[_InheritedVisit]:
+    """Yield the parts of the ancestors of the schema at a key, then its own parts, members first; each schema once."""
+    if _is_special_path(resolved_ref):
+        return
+    schema = load_inherited_schema_object(parser, resolved_ref)
+    if (node := _schema_node(schema, resolved_ref)) in entered:
+        return
+    entered.add(node)
+    parent_refs = get_allof_parent_references(parser, schema, defining_ref=resolved_ref)
+    for parent in sort_inherited_base_classes_for_mro(parser, parent_refs):
+        yield from _walk_ancestors_first(parser, parent.path, entered)
+    for source in inline_all_of_parts(parser, schema, members_first=True):
+        yield source, resolved_ref, None
+
+
+def _walk_direct_then_grandparents(
+    parser: InheritedSchemasHost, base_classes: list[Reference], visited: frozenset[_TargetNode]
+) -> Iterator[_InheritedVisit]:
+    """Yield each base as written until the first whose allOf names parents, then it again with them and the path."""
+    with_parents: _InheritedVisit | None = None
+    for schema, path, resolved_ref in iter_inherited_schema_objects(parser, base_classes, visited):
+        yield schema, resolved_ref, None
+        if schema.allOf and (
+            parents := [
+                parser.model_resolver.add_ref(_schema_refs.ref_path(parser, ref), resolved=True)
+                for ref in iter_allof_refs(parser, schema)
+            ]
+        ):
+            with_parents = schema, resolved_ref, (parents, path)
+            break
+    if with_parents is not None:
+        yield with_parents
 
 
 def inline_all_of_parts(
@@ -259,6 +470,10 @@ class InheritedSchemasHost(RwSplitHost, Protocol):
     @property
     def strict_dotted_module_names(self) -> bool:
         """Whether dotted schema names keep their dots in module names (``--strict-dotted-module-names``)."""
+
+    @property
+    def _all_of_member_reading(self) -> tuple[bool, bool, bool]:
+        """How ``all_of_members`` reads a ``$ref`` member other than as written (``member_reading``)."""
 
     @property
     def _inherited_parent_row(self) -> InheritedParentRow:
@@ -1126,7 +1341,7 @@ def _admits_inherited_value(
 def get_deferred_inherited_property_names(
     parser: InheritedSchemasHost,
     source_obj: JsonSchemaObject,
-    parent_properties: dict[str, tuple[JsonSchemaObject | bool, str]],
+    parent_properties: Mapping[str, tuple[JsonSchemaObject | bool, str]],
 ) -> frozenset[str]:
     """Find partial properties that need canonical generated-type resolution.
 
@@ -1255,7 +1470,7 @@ def sanitize_untyped_boolean_inherited_property(
 def merge_properties_with_parent_constraints(
     parser: InheritedSchemasHost,
     child_obj: JsonSchemaObject,
-    parent_properties: dict[str, tuple[JsonSchemaObject | bool, str]],
+    parent_properties: Mapping[str, tuple[JsonSchemaObject | bool, str]],
     deferred_property_names: frozenset[str],
 ) -> JsonSchemaObject:
     """Merge child properties with parent property constraints for allOf inheritance."""
@@ -1335,12 +1550,9 @@ def all_of_members(parser: InheritedSchemasHost, schema: JsonSchemaObject) -> li
     siblings at its location, as an inline member is read. Without the second, a ``$ref`` member names the schema that
     a chain of aliases ends at (``alias_target``).
     """
-    legacy = parser._legacy_intersection  # noqa: SLF001
-    splits = "legacy-all-of-ref-siblings-ignored" not in legacy
-    follows = "legacy-all-of-alias-member-base" not in legacy
-    reads_through = "legacy-ref-member-union-dropped" not in legacy
-    if not (splits or follows or reads_through):
+    if (reading := parser._all_of_member_reading) == _MEMBERS_AS_WRITTEN:  # noqa: SLF001
         return list(schema.allOf)
+    splits, follows, reads_through = reading
     members: list[JsonSchemaObject | bool] = []
     for item in schema.allOf:
         if not (isinstance(item, JsonSchemaObject) and item.ref):
@@ -1359,6 +1571,22 @@ def all_of_members(parser: InheritedSchemasHost, schema: JsonSchemaObject) -> li
                 )
             )
     return _read_through_members(parser, schema, members) if reads_through else members
+
+
+def member_reading(legacy_rows: frozenset[str]) -> tuple[bool, bool, bool]:
+    """Return how ``all_of_members`` reads a ``$ref`` member other than as written, each by the row that is not kept.
+
+    Whether it splits the keywords beside it off (without ``legacy-all-of-ref-siblings-ignored``), follows it where
+    it names an alias (without ``legacy-all-of-alias-member-base``) and reads it in place where it names an allOf that
+    holds a union (without ``legacy-ref-member-union-dropped``). None of them (``_MEMBERS_AS_WRITTEN``): every member
+    is as written, and what is read of an inherited schema is kept (``_reads_schemas_alone``). A parser reads it once
+    (``JsonSchemaParser._all_of_member_reading``).
+    """
+    return (
+        "legacy-all-of-ref-siblings-ignored" not in legacy_rows,
+        "legacy-all-of-alias-member-base" not in legacy_rows,
+        "legacy-ref-member-union-dropped" not in legacy_rows,
+    )
 
 
 def _read_through_members(
@@ -1426,7 +1654,7 @@ def property_conjunctions(
     takes the check keywords of all of them (``checked_declarations``). A property that one of them declares as a
     boolean schema keeps its declarations.
     """
-    reads_through = "legacy-ref-member-union-dropped" not in parser._legacy_intersection  # noqa: SLF001
+    _, _, reads_through = parser._all_of_member_reading  # noqa: SLF001
     declarations: dict[str, list[tuple[JsonSchemaObject | bool, object]]] = {}
     for source in islice(inline_all_of_parts(parser, schema), 1, None):
         for name, declared in (source.properties or {}).items():
@@ -1593,12 +1821,18 @@ def get_inherited_schema_ancestor_paths(
     resolved_ref: str,
     active: frozenset[_TargetNode] = frozenset(),
 ) -> frozenset[str]:
-    """Collect raw-schema ancestors for stable base ordering before generation."""
-    if resolved_ref in parser._inherited_schema_ancestor_cache:  # noqa: SLF001
-        return parser._inherited_schema_ancestor_cache[resolved_ref]  # noqa: SLF001
+    """Collect raw-schema ancestors for stable base ordering before generation.
+
+    The answer of the first ask is kept (row ``legacy-inherited-reads-at-first-ask``).
+    """
+    if (
+        found := parser._inherited_schema_records.get(resolved_ref)  # noqa: SLF001
+    ) is not None and found.ancestors is not None:
+        return found.ancestors
     if _is_special_path(resolved_ref):
         return frozenset()
-    schema = load_inherited_schema_object(parser, resolved_ref)
+    found = inherited_schema(parser, resolved_ref)
+    schema = found.schema
     if (node := _schema_node(schema, resolved_ref)) in active:
         return frozenset()
     ancestors: set[str] = set()
@@ -1612,9 +1846,8 @@ def get_inherited_schema_ancestor_paths(
                 active | {node},
             )
         )
-    result = frozenset(ancestors)
-    parser._inherited_schema_ancestor_cache[resolved_ref] = result  # noqa: SLF001
-    return result
+    found.ancestors = frozenset(ancestors)
+    return found.ancestors
 
 
 def sort_inherited_base_classes_for_mro(parser: InheritedSchemasHost, base_classes: list[Reference]) -> list[Reference]:
@@ -1646,15 +1879,16 @@ def inherited_schema_parents(parser: InheritedSchemasHost, ref: str) -> list[str
 def linearize_inherited_schema_refs(parser: InheritedSchemasHost, base_classes: list[Reference]) -> tuple[str, ...]:
     """Return raw inherited schemas in the same C3 order as generated models.
 
-    The parents of each schema are those ``inherited_schema_parents`` reads.
+    The parents of each schema are those ``inherited_schema_parents`` reads. The answer of the first ask is kept (row
+    ``legacy-inherited-reads-at-first-ask``).
     """
     direct_refs = tuple(
         base.path
         for base in sort_inherited_base_classes_for_mro(parser, base_classes)
         if base.path and not _is_special_path(base.path)
     )
-    if direct_refs not in parser._inherited_schema_linearization_cache:  # noqa: SLF001
-        parser._inherited_schema_linearization_cache[direct_refs] = tuple(  # noqa: SLF001
+    if (found := _base_list(parser, direct_refs)).linearized is None:
+        found.linearized = tuple(
             linearize(
                 list(direct_refs),
                 lambda ref: ref,
@@ -1662,7 +1896,7 @@ def linearize_inherited_schema_refs(parser: InheritedSchemasHost, base_classes: 
                 lambda ref: _schema_node(load_inherited_schema_object(parser, ref), ref),
             )
         )
-    return parser._inherited_schema_linearization_cache[direct_refs]  # noqa: SLF001
+    return found.linearized
 
 
 def model_declarations(
@@ -1671,7 +1905,7 @@ def model_declarations(
     """Return the property declarations and the required names of a model built from ``schema`` and ``parents``.
 
     The sources are ``schema`` with its inline allOf members and the schemas ``parents`` inherit, in C3 order
-    (``linearize_inherited_schema_refs``). A property one source declares as a schema is that declaration, as the
+    (``walk_inherited_schemas``, row ``c3``). A property one source declares as a schema is that declaration, as the
     model writes it; one that several declare, or one declares as a boolean schema, is None: the model writes their
     merge.
     """
@@ -1679,11 +1913,7 @@ def model_declarations(
     required: set[str] = set()
     for source in (
         *(inline_all_of_parts(parser, schema) if schema is not None else ()),
-        *(
-            source
-            for ref in linearize_inherited_schema_refs(parser, parents)
-            for source in inline_all_of_parts(parser, load_inherited_schema_object(parser, ref))
-        ),
+        *(source for source, _, _ in walk_inherited_schemas(parser, parents, "c3")),
     ):
         required.update(source.required)
         for name, declaration in (source.properties or {}).items():
@@ -1734,35 +1964,50 @@ def _without_checks(declaration: JsonSchemaObject) -> dict[str, Any]:
 def get_inherited_property_map(
     parser: InheritedSchemasHost,
     base_classes: list[Reference],
-) -> dict[str, tuple[JsonSchemaObject | bool, str]]:
-    """Build the effective raw property map once in inherited C3 order.
+) -> Mapping[str, tuple[JsonSchemaObject | bool, str]]:
+    """Return the effective raw property map in inherited C3 order, read-only.
 
-    The declarations of a property that several inline allOf members of an inherited schema declare are read as its
-    model reads them (``property_conjunctions``); the parse of that schema reports their warnings.
+    A property takes the first declaration the walk meets (``walk_inherited_schemas``, row ``c3``). The declarations of
+    a property that several inline allOf members of an inherited schema declare are read as its model reads them
+    (``property_conjunctions``); the parse of that schema reports their warnings. The map is kept for the C3 order of
+    the bases where ``_reads_schemas_alone`` holds, else built per ask.
     """
+    linearized = linearize_inherited_schema_refs(parser, base_classes)
+    if not _reads_schemas_alone(parser):
+        return MappingProxyType(_property_map(parser, linearized))
+    if (found := _base_list(parser, linearized)).property_map is None:
+        found.property_map = MappingProxyType(_property_map(parser, linearized))
+    return found.property_map
+
+
+def _property_map(
+    parser: InheritedSchemasHost, linearized: tuple[str, ...]
+) -> dict[str, tuple[JsonSchemaObject | bool, str]]:
+    """Build the property map of ``get_inherited_property_map`` from the C3 order of the bases."""
     properties: dict[str, tuple[JsonSchemaObject | bool, str]] = {}
-    for ref in linearize_inherited_schema_refs(parser, base_classes):
-        schema, *members = inline_all_of_parts(parser, load_inherited_schema_object(parser, ref))
-        with quiet():
-            conjunctions = property_conjunctions(parser, schema)
-        for name, prop_schema in (schema.properties or {}).items():
+    owner: str | None = None
+    conjunctions: Mapping[str, Sequence[JsonSchemaObject | None]] = {}
+    written: Counter[str] = Counter()
+    for source, ref, _ in _walk_c3(parser, linearized):
+        if ref != owner:
+            owner, conjunctions, written = ref, _conjunctions_at(parser, ref), Counter()
+            declared = source.properties or {}
+        else:
+            declared = with_conjoined_properties(source, conjunctions, written).properties or {}
+        for name, prop_schema in declared.items():
             properties.setdefault(name, (prop_schema, ref))
-        written: Counter[str] = Counter()
-        for source in members:
-            for name, prop_schema in (
-                with_conjoined_properties(source, conjunctions, written).properties or {}
-            ).items():
-                properties.setdefault(name, (prop_schema, ref))
     return properties
 
 
 def get_inherited_required_names(parser: InheritedSchemasHost, base_classes: list[Reference]) -> frozenset[str]:
-    """Collect required names across the effective inherited allOf graph."""
+    """Collect required names across the effective inherited allOf graph.
+
+    The answer of the first ask is kept (row ``legacy-inherited-reads-at-first-ask``).
+    """
     linearized_refs = linearize_inherited_schema_refs(parser, base_classes)
-    if linearized_refs in parser._inherited_required_cache:  # noqa: SLF001
-        return parser._inherited_required_cache[linearized_refs]  # noqa: SLF001
-    result = parser._inherited_required_cache[linearized_refs] = _required_names(parser, linearized_refs)  # noqa: SLF001
-    return result
+    if (found := _base_list(parser, linearized_refs)).required_names is None:
+        found.required_names = _required_names(parser, linearized_refs)
+    return found.required_names
 
 
 def required_names_at(parser: InheritedSchemasHost, resolved_ref: str) -> frozenset[str]:
@@ -1775,12 +2020,7 @@ def required_names_at(parser: InheritedSchemasHost, resolved_ref: str) -> frozen
 
 def _required_names(parser: InheritedSchemasHost, refs: Iterable[str]) -> frozenset[str]:
     """Return the names the schemas at reference keys ``refs`` require, with their inline allOf members."""
-    return frozenset(
-        name
-        for ref in refs
-        for source in inline_all_of_parts(parser, load_inherited_schema_object(parser, ref))
-        for name in source.required
-    )
+    return frozenset(name for ref in refs for source in _parts_at(parser, ref) for name in source.required)
 
 
 def get_inline_required_names(parser: InheritedSchemasHost, schema: JsonSchemaObject) -> tuple[str, ...]:
@@ -1815,29 +2055,10 @@ def get_inherited_field_owner_reference(
 
 
 def get_inherited_property_order(parser: InheritedSchemasHost, base_classes: list[Reference]) -> tuple[str, ...]:
-    """Return raw inherited property names in ancestor-first declaration order."""
+    """Return raw inherited property names in ancestor-first declaration order (``walk_inherited_schemas``)."""
     ordered_names: dict[str, None] = {}
-    visited_refs: set[_TargetNode] = set()
-
-    def collect_ref(resolved_ref: str) -> None:
-        if _is_special_path(resolved_ref):
-            return
-        schema = load_inherited_schema_object(parser, resolved_ref)
-        if (node := _schema_node(schema, resolved_ref)) in visited_refs:
-            return
-        visited_refs.add(node)
-        parent_refs = get_allof_parent_references(
-            parser,
-            schema,
-            defining_ref=resolved_ref,
-        )
-        for parent in sort_inherited_base_classes_for_mro(parser, parent_refs):
-            collect_ref(parent.path)
-        for source in inline_all_of_parts(parser, schema, members_first=True):
-            ordered_names.update(dict.fromkeys(source.properties or {}))
-
-    for base in sort_inherited_base_classes_for_mro(parser, base_classes):
-        collect_ref(base.path)
+    for source, _, _ in walk_inherited_schemas(parser, base_classes, "ancestor-first"):
+        ordered_names.update(dict.fromkeys(source.properties or {}))
     return tuple(ordered_names)
 
 
@@ -1854,7 +2075,7 @@ def inferred_module_name(parser: InheritedSchemasHost, name: str) -> str:
 def parse_fields_beside_parents(
     parser: InheritedSchemasHost,
     source: JsonSchemaObject,
-    parent_properties: dict[str, tuple[JsonSchemaObject | bool, str]],
+    parent_properties: Mapping[str, tuple[JsonSchemaObject | bool, str]],
     path: list[str],
     scope: ClassScope,
 ) -> list[DataModelFieldBase]:
@@ -1951,12 +2172,10 @@ def iter_inherited_schema_objects(
 
 
 def load_inherited_schema_object(parser: InheritedSchemasHost, resolved_ref: str) -> JsonSchemaObject:
-    """Load and cache a schema used only for inherited field inspection."""
-    if cached := parser._inherited_schema_cache.get(resolved_ref):  # noqa: SLF001
-        return cached
-    schema = _schema_refs.shared_schema_object(parser, parser._get_ref_raw_schema(resolved_ref), [resolved_ref])  # noqa: SLF001
-    parser._inherited_schema_cache[resolved_ref] = schema  # noqa: SLF001
-    return schema
+    """Load and cache a schema used only for inherited field inspection (``inherited_schema``)."""
+    if (found := parser._inherited_schema_records.get(resolved_ref)) is None:  # noqa: SLF001
+        found = inherited_schema(parser, resolved_ref)
+    return found.schema
 
 
 def get_generated_base_models(parser: InheritedSchemasHost, base_classes: list[Reference]) -> list[DataModel]:
@@ -2005,39 +2224,15 @@ def get_inherited_field(
 def get_inherited_field_schema(
     parser: InheritedSchemasHost, prop_name: str, base_classes: list[Reference]
 ) -> JsonSchemaObject | None:
-    """Get the schema for an inherited property from parent schemas."""
-
-    def find_property(schema: JsonSchemaObject, current_visited: frozenset[_TargetNode]) -> JsonSchemaObject | None:
-        if schema.properties and isinstance(
-            property_schema := schema.properties.get(prop_name),
-            JsonSchemaObject,
-        ):
-            return property_schema
-
-        for item in schema.allOf:
-            if (
-                isinstance(item, JsonSchemaObject)
-                and not item.ref
-                and (inline_property := find_property(item, current_visited))
-            ):
-                return inline_property
-
-        for item in schema.allOf:
-            if not isinstance(item, JsonSchemaObject) or not item.ref:
-                continue
-            resolved_ref = _schema_refs.ref_path(parser, item.ref)
-            parent_schema = load_inherited_schema_object(parser, resolved_ref)
-            if (node := _schema_node(parent_schema, resolved_ref)) in current_visited:
-                continue
-            if property_schema := find_property(parent_schema, current_visited | {node}):
-                return property_schema
-        return None
-
-    for parent_schema, next_visited, _ in iter_inherited_schema_objects(parser, base_classes, frozenset()):
-        if property_schema := find_property(parent_schema, next_visited):
-            return property_schema
-
-    return None
+    """Get the schema for an inherited property from parent schemas (``walk_inherited_schemas``)."""
+    return next(
+        (
+            property_schema
+            for schema, _, _ in walk_inherited_schemas(parser, base_classes, "legacy-dfs-inline-first")
+            if schema.properties and isinstance(property_schema := schema.properties.get(prop_name), JsonSchemaObject)
+        ),
+        None,
+    )
 
 
 def build_missing_required_field(  # noqa: PLR0913, PLR0917

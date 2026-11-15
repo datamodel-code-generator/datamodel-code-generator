@@ -499,7 +499,12 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr, PythonTypeRuntimeSymbol
     from datamodel_code_generator._types import JSONSchemaParserConfigDict
     from datamodel_code_generator.config import JSONSchemaParserConfig
-    from datamodel_code_generator.parser._inherited_schemas import InheritedParentRow, ModelDeclarations
+    from datamodel_code_generator.parser._inherited_schemas import (
+        InheritedParentRow,
+        ModelDeclarations,
+        _BaseList,
+        _InheritedSchema,
+    )
     from datamodel_code_generator.parser._naming import Claim
     from datamodel_code_generator.parser._rw_split import _Site
     from datamodel_code_generator.parser._schema_reading import SlashNames
@@ -1152,10 +1157,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._python_imports: tuple[dict[str, Import], set[str], list[str]] | None = None
         self._generic_python_import_expressions: dict[str, PythonTypeExpr] | None = None
         self._false_schema_refs: set[str] | None = None
-        self._inherited_schema_cache: dict[str, JsonSchemaObject] = {}
-        self._inherited_schema_ancestor_cache: dict[str, frozenset[str]] = {}
-        self._inherited_schema_linearization_cache: dict[tuple[str, ...], tuple[str, ...]] = {}
-        self._inherited_required_cache: dict[tuple[str, ...], frozenset[str]] = {}
+        self._inherited_schema_records: dict[str, _InheritedSchema] = {}
+        self._inherited_base_lists: dict[tuple[str, ...], _BaseList] = {}
         self._ref_target_dumps: dict[tuple[_TargetNode, str], tuple[dict[str, Any], str]] = {}
         self._unsatisfiable_schemas: set[tuple[str, tuple[str, ...]]] = set()
         self._untaken_pattern_schemas: set[tuple[str, tuple[str, ...]]] = set()
@@ -1447,6 +1450,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         opt-in.
         """
         return self._read_dialect(self.raw_obj, kind="jsonschema").features.ref_sibling_keywords
+
+    @cached_property
+    def _all_of_member_reading(self) -> tuple[bool, bool, bool]:
+        """How the members of an allOf are read other than as written, by the rows of the run.
+
+        The rows of ``_legacy_intersection`` that ``_inherited_schemas.all_of_members`` reads
+        (``_inherited_schemas.member_reading``).
+        """
+        return _inherited_schemas.member_reading(self._legacy_intersection)
 
     @property
     def _inherited_parent_row(self) -> InheritedParentRow:
@@ -3501,8 +3513,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _get_inherited_property_map(
         self,
         base_classes: list[Reference],
-    ) -> dict[str, tuple[JsonSchemaObject | bool, str]]:
-        """Build the effective raw property map once in inherited C3 order."""
+    ) -> Mapping[str, tuple[JsonSchemaObject | bool, str]]:
+        """Return the effective raw property map in inherited C3 order, read-only."""
         return _inherited_schemas.get_inherited_property_map(self, base_classes)
 
     def _adds_required_names(
@@ -3563,42 +3575,31 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> DataType | None:
         """Get the data type for an inherited property from parent schemas.
 
-        Recursively traverses the inheritance chain when a parent property
-        doesn't have type information but the parent itself inherits from another schema.
+        The walk (``_inherited_schemas.walk_inherited_schemas``, row ``legacy-direct-then-grandparents``) reads the
+        generated fields of each list of parents first, then the property each parent declares itself. A type without
+        information (``Any``, a list of ``Any``) goes on up the chain of the first parent with parents of its own, one
+        call of this method per level; where that finds nothing, the type of that parent, if it has one, is the answer.
         """
         if inherited_field := _inherited_schemas.get_inherited_field(self, prop_name, base_classes):
             return self._copy_model_type(inherited_field.data_type)
-
-        if visited is None:
-            visited = frozenset()
-
-        for parent_schema, next_visited, parent_ref in _inherited_schemas.iter_inherited_schema_objects(
-            self, base_classes, visited
+        result: DataType | None = None
+        for parent_schema, parent_ref, up in _inherited_schemas.walk_inherited_schemas(
+            self, base_classes, "legacy-direct-then-grandparents", visited or frozenset()
         ):
-            result: DataType | None = None
-            if parent_schema.properties:
-                prop_schema = parent_schema.properties.get(prop_name)
-                if isinstance(prop_schema, JsonSchemaObject):
-                    with self._inherited_ref_context(parent_ref):
-                        result = self._build_lightweight_type(prop_schema)
-            # In case of a missing type, continue searching up the inheritance chain
+            if up is not None:
+                parents, path = up
+                deeper = self._get_inherited_field_type(prop_name, parents, path)
+                return deeper if deeper is not None else result
+            result = None
+            if parent_schema.properties and isinstance(
+                prop_schema := parent_schema.properties.get(prop_name), JsonSchemaObject
+            ):
+                with self._inherited_ref_context(parent_ref):
+                    result = self._build_lightweight_type(prop_schema)
             if result is not None and not (
                 result.type == ANY or _lightweight_types.is_list_with_any_item_type(self, result)
             ):
                 return result
-
-            parent_result: DataType | None = None
-            if parent_schema.allOf:
-                grandparent_refs = [
-                    self.model_resolver.add_ref(self._ref_path(ref), resolved=True)
-                    for ref in _inherited_schemas.iter_allof_refs(self, parent_schema)
-                ]
-                if grandparent_refs:
-                    parent_result = self._get_inherited_field_type(prop_name, grandparent_refs, next_visited)
-                    if parent_result is not None:
-                        return parent_result
-                    return result
-
         return None
 
     def _merge_all_of_root_validation_keywords(self, merged: dict[str, Any], sources: list[JsonSchemaObject]) -> None:
@@ -4290,7 +4291,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if self.generate_schema_validators:
                 obj = self._merge_conditional_properties(obj)
             inherited_fields: dict[str, DataModelFieldBase] = {}
-            inherited_properties: dict[str, tuple[JsonSchemaObject | bool, str]] = {}
+            inherited_properties: Mapping[str, tuple[JsonSchemaObject | bool, str]] = {}
             inherited_required_names: frozenset[str] = frozenset()
             if base_classes:
                 base_classes[:] = _inherited_schemas.sort_inherited_base_classes_for_mro(self, base_classes)

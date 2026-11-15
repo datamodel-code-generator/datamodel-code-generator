@@ -296,8 +296,8 @@ class AllOfValuesHost(LightweightTypesHost, Protocol):
     def _get_inherited_property_map(
         self,
         base_classes: list[Reference],
-    ) -> dict[str, tuple[JsonSchemaObject | bool, str]]:
-        """Build the effective raw property map once in inherited C3 order."""
+    ) -> Mapping[str, tuple[JsonSchemaObject | bool, str]]:
+        """Return the effective raw property map in inherited C3 order, read-only."""
 
     def _get_schema_type(self, obj: JsonSchemaObject, type_: str, format_: str) -> Types:
         """Get the Types enum for a type and format of ``obj``, applying custom type mappings."""
