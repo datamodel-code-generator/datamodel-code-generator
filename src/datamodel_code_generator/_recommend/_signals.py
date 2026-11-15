@@ -11,7 +11,7 @@ from functools import partial
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args
 
-from datamodel_code_generator import SchemaParseError
+from datamodel_code_generator import SchemaParseError, is_swagger_2
 from datamodel_code_generator._constraint_applicability import (
     LENGTH_KEYWORDS,
     NUMBER_BOUND_KEYWORDS,
@@ -552,7 +552,7 @@ def _count_operations(
 
 
 def _schema_label(document: Mapping[str, Any], kind: SchemaKind) -> str:
-    if "swagger" in document:
+    if is_swagger_2(document):
         return f"Swagger {document['swagger']}"
     if kind == "jsonschema":
         schema_uri = document.get("$schema")

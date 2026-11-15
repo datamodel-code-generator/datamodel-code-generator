@@ -52,6 +52,15 @@ Under `--collapse-root-models-name-strategy parent`, a module that named an enum
 - **Pull requests and issues:** [#6850](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6850)
 - **Source:** the release notes
 
+### A Swagger 2.0 document is named in the notice of the inferred input type and in the refusal of `--input-file-type openapi` (unreleased) { #swagger-2-named-in-input-messages }
+
+A document whose root has a `swagger` key and no `openapi` key is read as YAML or JSON data when `--input-file-type` is not given, and the OpenAPI reader finds no model in it, as it reads `components/schemas`, not the `definitions` of Swagger 2.0. The notice that names the inferred type now adds a line that the input looks like a Swagger 2.0 document, which is read as data, and that its definitions are read as JSON Schema with `--input-file-type jsonschema`. The refusal `Models not found in the input data` of such a document under `--input-file-type openapi` continues with the cause and what to do. The inferred type, the generated output and every document that generates are unchanged.
+
+- **Affects:** input types: `yaml`, `json`, `openapi`
+- **What to change:** Read the definitions of the document as JSON Schema with `--input-file-type jsonschema`, or convert the document to OpenAPI 3.
+- **Pull requests and issues:** [#6882](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6882)
+- **Source:** the release notes
+
 ### `--type-overrides` keys that match no model or field emit a `UserWarning` (unreleased) { #type-overrides-unmatched-keys }
 
 A key of `--type-overrides` that names no generated model or field is reported with a `UserWarning`; the generated output is unchanged. A caller that turns warnings into errors gets an error.

@@ -14,7 +14,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
-from datamodel_code_generator import Error, _resolve_preset
+from datamodel_code_generator import Error, _resolve_preset, is_swagger_2
 from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._option_names import CONFIG_TABLE, SENSITIVE_FIELDS, configured_value, option_flag
 from datamodel_code_generator._recommend._rules import Decision, decide, load_rules
@@ -262,7 +262,7 @@ def _analyse(request: RecommendRequest) -> _Input:
     if text is None or (kind := _ANALYSED_TYPES.get(file_type or "")) is None:
         return _Input(text, source, stem, file_type, None, None, None)
     document = _document(text, kind, "the input")
-    if kind == "openapi" and "swagger" in document:
+    if kind == "openapi" and is_swagger_2(document):
         return _Input(text, source, stem, file_type, None, document, None, swagger=True)
     return _Input(text, source, stem, file_type, kind, document, _measure(document, kind, request.config))
 

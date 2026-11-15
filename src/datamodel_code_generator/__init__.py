@@ -266,9 +266,7 @@ if TYPE_CHECKING:
         _SharedParserConfigDict,
         _PythonTypeExpressions | None,
     ]
-    _ParsedGeneration: TypeAlias = tuple[
-        _ParserResults, ModelMetadata | None, tuple[str, ...], DataModelSet, bool, bool
-    ]
+    _ParsedGeneration: TypeAlias = tuple[_ParserResults, ModelMetadata | None, tuple[str, ...], DataModelSet, bool, str]
     _ParsedRun: TypeAlias = tuple[
         _ParserResults,
         ModelMetadata | None,
@@ -281,7 +279,7 @@ if TYPE_CHECKING:
         Path,
         RemoteReferenceLock | None,
         bool,
-        bool,
+        str,
         InputFileType,
     ]
 
@@ -458,6 +456,11 @@ def _uses_legacy_process_state(config: GenerateConfig) -> bool:
 def is_openapi(data: Mapping[str, Any]) -> bool:
     """Check if the data dict is an OpenAPI specification."""
     return "openapi" in data
+
+
+def is_swagger_2(data: Mapping[str, Any]) -> bool:
+    """Check if the data dict is a Swagger 2.0 document: its root has a `swagger` key and no `openapi` key."""
+    return "swagger" in data and not is_openapi(data)
 
 
 def is_asyncapi(data: Mapping[str, Any]) -> bool:
@@ -1758,10 +1761,6 @@ def _module_texts(
 
 
 _MODEL_METADATA_OUTPUT_DIRECTORY_ERROR = "Model metadata output requires a file path, not a directory"
-_INLINE_OBJECT_BODIES_HINT = (
-    "request or response bodies of the paths or webhooks scope are typed inline, and "
-    "--openapi-as-definitions paths-bodies gives them the models their schema definitions get"
-)
 
 
 def _refuse_output_layout(layout: OutputLayout | None, destination: Path, *, compares: bool = False) -> None:
@@ -1902,16 +1901,14 @@ def _emit_results(  # noqa: PLR0913
     data_model_types: DataModelSet,
     settings_path: Path,
     allow_empty_api: bool = False,
-    inline_object_bodies: bool = False,
+    models_not_found_hint: str = "",
 ) -> str | GeneratedModules | None:
     if not input_filename:  # pragma: no cover
         input_filename = _default_input_filename(input_)
     if not results:
         if allow_empty_api:
             return None
-        msg = "Models not found in the input data"
-        if inline_object_bodies:
-            msg += f"; {_INLINE_OBJECT_BODIES_HINT}"
+        msg = f"Models not found in the input data{models_not_found_hint}"
         raise Error(msg)
 
     custom_file_header = _read_custom_file_header(custom_file_header, config.custom_file_header_path, config.encoding)
@@ -2366,7 +2363,7 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         try:
             with _warn_on_input_string_path_failure(input_):
                 assert isinstance(input_text_, str)
-                input_file_type = infer_input_type(input_text_)
+                input_file_type, swagger_2 = _infer_input(input_text_)
         except Exception as exc:
             raise InvalidFileFormatError(exc) from exc
         else:
@@ -2374,6 +2371,8 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
                 inferred_message.format(input_file_type.value),
                 file=sys.stderr,
             )
+            if swagger_2:
+                print(inferred_swagger_2_message, file=sys.stderr)  # noqa: T201
             # Reuse already-read text for single Path file to avoid re-reading
             # Only for OpenAPI/JsonSchema (RAW_DATA_TYPES are transformed by genson)
             if isinstance(input_, Path) and not input_.is_dir() and input_file_type not in RAW_DATA_TYPES:
@@ -2965,7 +2964,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         pydantic_floor = floors.of(parser)
         refused_bytes_patterns = floors.refused_bytes_patterns_of(parser)
         class_names = parser.generated_class_names
-        inline_object_bodies: bool = getattr(parser, "inline_object_bodies", False)
+        models_not_found_hint: str = getattr(parser, "models_not_found_hint", "")
         if repair_modules := parser.invalid_dotted_stdout_repair_modules:
             legacy_inventory = parser.generated_model_inventory
             legacy_source_fingerprint = parser.source_data_fingerprint
@@ -3066,7 +3065,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         model_identities,
         data_model_types,
         defer_formatting,
-        inline_object_bodies,
+        models_not_found_hint,
     ), model_name_record
 
 
@@ -3083,7 +3082,7 @@ def _emit_generation(  # noqa: PLR0913
     settings_path: Path,
     owned_remote_lock: RemoteReferenceLock | None,
     allow_empty_api: bool = False,
-    inline_object_bodies: bool = False,
+    models_not_found_hint: str = "",
 ) -> str | GeneratedModules | None:
     """Emit generated artifacts and commit a generation-owned remote lock.
 
@@ -3105,7 +3104,7 @@ def _emit_generation(  # noqa: PLR0913
         defer_formatting=defer_formatting,
         data_model_types=data_model_types,
         settings_path=settings_path,
-        inline_object_bodies=inline_object_bodies,
+        models_not_found_hint=models_not_found_hint,
     )
     if metadata is not None:
         _write_model_metadata(*metadata, config.encoding)
@@ -3154,7 +3153,7 @@ def _run_generation_with_metadata(  # noqa: PLR0913
                 emit_settings_path,
                 owned_remote_lock,
                 allow_empty_api,
-                inline_object_bodies,
+                models_not_found_hint,
                 _,
             ) = _parse_run(
                 input_,
@@ -3177,7 +3176,7 @@ def _run_generation_with_metadata(  # noqa: PLR0913
                 settings_path=emit_settings_path,
                 owned_remote_lock=owned_remote_lock,
                 allow_empty_api=allow_empty_api,
-                inline_object_bodies=inline_object_bodies,
+                models_not_found_hint=models_not_found_hint,
             )
             return generated, model_metadata, model_identities
     except BaseException:
@@ -3258,7 +3257,7 @@ def _parse_run(  # noqa: PLR0913, PLR0914
     if capture is not None and (parser_factory := capture.parser_factory(input_file_type)) is not None:
         parse_generation = _partial(_parse_generation, parser_factory=parser_factory)
         allow_empty_api = allow_empty_api and getattr(parser_factory, "_supports_api_scope", False) is True
-    results, model_metadata, model_identities, data_model_types, defer_formatting, inline_object_bodies = (
+    results, model_metadata, model_identities, data_model_types, defer_formatting, models_not_found_hint = (
         parse_generation(
             input_,
             input_text,
@@ -3295,7 +3294,7 @@ def _parse_run(  # noqa: PLR0913, PLR0914
         emit_settings_path,
         owned_remote_lock,
         allow_empty_api,
-        inline_object_bodies,
+        models_not_found_hint,
         input_file_type,
     )
 
@@ -3341,15 +3340,20 @@ def _collect_model_metadata(
         return parsed[1], parsed[2], parsed[-1]
 
 
-def infer_input_type(text: str) -> InputFileType:  # noqa: PLR0911, PLR0912
+def infer_input_type(text: str) -> InputFileType:
     """Automatically detect the input file type from text content."""
+    return _infer_input(text)[0]
+
+
+def _infer_input(text: str) -> tuple[InputFileType, bool]:  # noqa: PLR0911, PLR0912
+    """Detect the input file type from text content, and whether the input is a Swagger 2.0 document read as data."""
     from datamodel_code_generator.util import get_yaml_parse_errors  # noqa: PLC0415
 
     if _is_xml_text(text):
         from datamodel_code_generator._xmlschema_detection import is_xml_schema_text  # noqa: PLC0415
 
         if is_xml_schema_text(text):
-            return InputFileType.XMLSchema
+            return InputFileType.XMLSchema, False
 
     protobuf_declaration = _has_protobuf_declaration(text)
 
@@ -3358,39 +3362,39 @@ def infer_input_type(text: str) -> InputFileType:  # noqa: PLR0911, PLR0912
             data = load_yaml(text)
         except get_yaml_parse_errors() as exc:
             if not _is_json_text(text) and _looks_like_csv_text(text):
-                return InputFileType.CSV
+                return InputFileType.CSV, False
             if protobuf_declaration:
-                return InputFileType.Protobuf
+                return InputFileType.Protobuf, False
             msg = _infer_input_type_error_message(parse_error=exc)
             raise Error(msg) from exc
     if isinstance(data, dict):
         if is_asyncapi(data):
-            return InputFileType.AsyncAPI
+            return InputFileType.AsyncAPI, False
         if is_openapi(data):
-            return InputFileType.OpenAPI
+            return InputFileType.OpenAPI, False
         from datamodel_code_generator._avro_detection import is_avro_schema_data  # noqa: PLC0415
 
         if is_avro_schema_data(data):
-            return InputFileType.Avro
+            return InputFileType.Avro, False
         if is_schema(data):
-            return InputFileType.JsonSchema
-        return InputFileType.Json if is_json_document else InputFileType.Yaml
+            return InputFileType.JsonSchema, False
+        return (InputFileType.Json if is_json_document else InputFileType.Yaml), is_swagger_2(data)
     if _is_protobuf_text(text):
-        return InputFileType.Protobuf
+        return InputFileType.Protobuf, False
     if isinstance(data, list):
         from datamodel_code_generator._avro_detection import is_avro_schema_data  # noqa: PLC0415
 
         if is_avro_schema_data(data):
-            return InputFileType.Avro
+            return InputFileType.Avro, False
     if isinstance(data, str):
         if _looks_like_csv_text(text):
-            return InputFileType.CSV
+            return InputFileType.CSV, False
         if protobuf_declaration:
-            return InputFileType.Protobuf
+            return InputFileType.Protobuf, False
         from datamodel_code_generator._avro_detection import is_avro_schema_data  # noqa: PLC0415
 
         if is_avro_schema_data(data):
-            return InputFileType.Avro
+            return InputFileType.Avro, False
     msg = _infer_input_type_error_message()
     raise Error(msg)
 
@@ -3426,6 +3430,10 @@ def _looks_like_csv_text(text: str) -> bool:
 inferred_message = (
     "The input file type was determined to be: {}\nThis can be specified explicitly with the "
     "`--input-file-type` option."
+)
+inferred_swagger_2_message = (
+    "The input looks like a Swagger 2.0 document, which is read as data; "
+    "its definitions are read as JSON Schema with `--input-file-type jsonschema`."
 )
 
 

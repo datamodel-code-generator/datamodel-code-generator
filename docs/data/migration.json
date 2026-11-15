@@ -820,6 +820,26 @@
   {
    "action": "warn",
    "affects": {
+    "input_file_types": [
+     "yaml",
+     "json",
+     "openapi"
+    ]
+   },
+   "id": "swagger-2-named-in-input-messages",
+   "kind": "warning",
+   "migrate": "Read the definitions of the document as JSON Schema with `--input-file-type jsonschema`, or convert the document to OpenAPI 3.",
+   "refs": [
+    "#6882"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "A document whose root has a `swagger` key and no `openapi` key is read as YAML or JSON data when `--input-file-type` is not given, and the OpenAPI reader finds no model in it, as it reads `components/schemas`, not the `definitions` of Swagger 2.0. The notice that names the inferred type now adds a line that the input looks like a Swagger 2.0 document, which is read as data, and that its definitions are read as JSON Schema with `--input-file-type jsonschema`. The refusal `Models not found in the input data` of such a document under `--input-file-type openapi` continues with the cause and what to do. The inferred type, the generated output and every document that generates are unchanged.",
+   "title": "A Swagger 2.0 document is named in the notice of the inferred input type and in the refusal of `--input-file-type openapi`"
+  },
+  {
+   "action": "warn",
+   "affects": {
     "options": [
      "--type-overrides"
     ]
