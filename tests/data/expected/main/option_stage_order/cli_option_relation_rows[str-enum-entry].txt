@@ -1,0 +1,7 @@
+DeprecationWarning: Pydantic v2 with --use-annotated is recommended for correct type annotations. In a future version, --use-annotated will be enabled by default for Pydantic v2. The current default (use_annotated=False) generates constrained types like 'conint(ge=1, le=365)' which are discouraged in Pydantic v2.
+Error: the StrEnum entry of --open-enum-base-class-map requires --target-python-version 3.11 or later.
+Current target version: 3.10
+StrEnum is only available in Python 3.11+; string enums use the Enum entry there.
+exit: ERROR
+written:
+  header.txt

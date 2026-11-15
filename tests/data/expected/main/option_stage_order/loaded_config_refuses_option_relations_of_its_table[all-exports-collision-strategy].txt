@@ -1,0 +1,1 @@
+raised Error: `--all-exports-collision-strategy` can only be used with `--all-exports-scope=recursive`.

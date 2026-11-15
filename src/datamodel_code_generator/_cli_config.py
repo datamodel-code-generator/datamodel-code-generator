@@ -22,7 +22,6 @@ from datamodel_code_generator._paths import resolved
 from datamodel_code_generator._url_redaction import is_url, redact_url
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import (
-    AllExportsScope,
     ClassNameAffixScope,
     DataModelType,
     InputFileType,
@@ -36,7 +35,6 @@ if TYPE_CHECKING:
     from argparse import Namespace
     from collections import defaultdict
 
-    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator.json_config import JsonConfigFieldName, JsonConfigSource
     from datamodel_code_generator.validators import ModelValidators
 
@@ -319,37 +317,12 @@ def _get_config_class() -> type[Config]:
             _validate_alias_generator(self.output_model_type, self.alias_generator)
             return self
 
-        def validate_original_field_name_delimiter(self) -> None:
-            """Validate original field name delimiter requires snake case after preset merging."""
-            if self.original_field_name_delimiter is not None and not self.snake_case_field:
-                msg = "`--original-field-name-delimiter` can not be used without `--snake-case-field`."
-                raise Error(msg)
-
         @model_validator(mode="after")
-        def validate_custom_file_header(self: Self) -> Self:
-            """Validate custom file header options are mutually exclusive."""
-            if self.custom_file_header is not None and self.custom_file_header_path is not None:
-                msg = "`--custom-file-header-path` can not be used with `--custom-file-header`."
-                raise Error(msg)
-            return self
+        def validate_cli_option_relations(self: Self) -> Self:
+            """Refuse the options that the relation rows of stage `cli-validator` refuse together."""
+            from datamodel_code_generator._option_rules import check_option_relations  # noqa: PLC0415
 
-        @model_validator(mode="after")
-        def validate_keyword_only(self: Self) -> Self:
-            """Validate keyword-only compatibility with target Python version."""
-            from datamodel_code_generator._requirements import REQUIREMENTS, python_target_meets  # noqa: PLC0415
-
-            output_model_type: DataModelType = self.output_model_type
-            python_target: PythonVersion = self.target_python_version
-            if (
-                self.keyword_only
-                and output_model_type == DataModelType.DataclassesDataclass
-                and not python_target_meets("python.kw_only_dataclass", python_target.version_key)
-            ):
-                msg = (  # pragma: no cover
-                    f"`--keyword-only` requires `--target-python-version` "
-                    f"{REQUIREMENTS['python.kw_only_dataclass'].minimum} or higher."
-                )
-                raise Error(msg)  # pragma: no cover
+            check_option_relations("cli-validator", self)
             return self
 
         @model_validator(mode="after")
@@ -358,14 +331,6 @@ def _get_config_class() -> type[Config]:
             from datamodel_code_generator._option_rules import enable_implied_options  # noqa: PLC0415
 
             enable_implied_options(self, "use_annotated")
-            return self
-
-        @model_validator(mode="after")
-        def validate_all_exports_collision_strategy(self: Self) -> Self:
-            """Validate all_exports_collision_strategy requires recursive scope."""
-            if self.all_exports_collision_strategy is not None and self.all_exports_scope != AllExportsScope.Recursive:
-                msg = "`--all-exports-collision-strategy` can only be used with `--all-exports-scope=recursive`."
-                raise Error(msg)
             return self
 
         @field_validator("input_model", mode="before")
