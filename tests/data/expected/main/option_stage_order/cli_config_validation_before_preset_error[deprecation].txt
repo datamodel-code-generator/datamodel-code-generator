@@ -1,0 +1,3 @@
+DeprecationWarning: --parent-scoped-naming is deprecated. Use --naming-strategy parent-prefixed instead.
+--preset standard-py312-20260619 targets Python 3.12; current --target-python-version is 3.10.
+exit: ERROR

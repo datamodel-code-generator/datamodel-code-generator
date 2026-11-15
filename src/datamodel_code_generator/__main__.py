@@ -110,12 +110,12 @@ from datamodel_code_generator import (
     InvalidClassNameError,
     NamingHintWarning,
     ReuseScope,
+    _run_option_stages,
     _validate_generation_path_conflicts,
     enable_debug_message,
     generate,
 )
 from datamodel_code_generator._cli_config import (
-    _apply_implicit_cli_config_values,
     _explicit_config_args,
     _get_config_class,
     _prepare_cli_config_args,
@@ -165,6 +165,7 @@ from datamodel_code_generator._project_config import (
 )
 from datamodel_code_generator._project_config import profile_table_keys as _profile_table_keys
 from datamodel_code_generator._python_syntax import normalize_newlines
+from datamodel_code_generator._run_record import RunOptions
 from datamodel_code_generator._url_redaction import is_url, redact_url
 from datamodel_code_generator.arguments import _reset_namespace, arg_parser, namespace
 from datamodel_code_generator.deprecations import render_deprecations, warn_deprecated
@@ -243,7 +244,6 @@ SENSITIVE_COMMAND_OPTIONS: frozenset[str] = frozenset(map(option_flag, SENSITIVE
 REDACTED_COMMAND_ARGUMENT = "<redacted>"
 BATCH_UNSAFE_CLI_FIELDS: frozenset[str] = frozenset({"input", "input_model", "output", "url"})
 BATCH_COMMAND_ONLY_CONFIG_FIELDS: frozenset[str] = frozenset({"list_deprecations", "list_experimental"})
-BATCH_CONFIG_CONTEXT_FIELDS: frozenset[str] = frozenset({"use_annotated", "use_specialized_enum"})
 BATCH_OUTER_CONFIG_FIELDS: frozenset[str] = frozenset({"watch", "watch_delay"})
 _NAMING_FIELDS: frozenset[str] = frozenset({"model_name_map", "naming_strategy", "parent_scoped_naming"})
 
@@ -319,10 +319,7 @@ def _create_config(
     pyproject_config: Mapping[str, Any],
     cli_config_args: Mapping[str, _RawConfigValue],
 ) -> Config:
-    """Create the final CLI config while preserving pyproject/CLI validation order.
-
-    The config keeps the text or path each JSON option was given as: a JSON file is the base of the paths it names.
-    """
+    """Create the final CLI config while preserving pyproject/CLI validation order."""
     config_class = _get_config_class()
     if pyproject_config:
         from argparse import Namespace as ArgNamespace  # noqa: PLC0415
@@ -331,55 +328,51 @@ def _create_config(
         config.merge_args(ArgNamespace(**cli_config_args))
     else:
         config = config_class.model_validate(_prepare_cli_config_args(cli_config_args))
-    config._json_sources = {  # noqa: SLF001
-        name: value
-        for name in JSON_FIELDS
-        if isinstance(value := cli_config_args.get(name, pyproject_config.get(name)), str | Path)
-    }
-    config._naming_chosen = not _NAMING_FIELDS.isdisjoint({*pyproject_config, *cli_config_args})  # noqa: SLF001
     return config
 
 
-def _preset_explicit_fields(
-    pyproject_config: Mapping[str, _RawConfigValue], cli_config_args: Mapping[str, _RawConfigValue]
-) -> set[str]:
-    """Return the fields a preset leaves alone: the command line's when it selects the preset, else every one set."""
-    fields = set(cli_config_args) if "preset" in cli_config_args else {*pyproject_config, *cli_config_args}
-    fields.discard("preset")
-    return fields
-
-
-def _apply_preset(
+def _run_cli_option_stages(
     config: Config,
-    pyproject_config: Mapping[str, _RawConfigValue],
-    cli_config_args: Mapping[str, _RawConfigValue],
-) -> None:
-    """Apply the selected preset to the final CLI/pyproject config."""
-    preset_from_cli = "preset" in cli_config_args
-    preset_name = cast("str", cli_config_args["preset"]) if preset_from_cli else config.preset
-    if preset_name is None:
-        return
+    record: RunOptions,
+    stages: tuple[Literal["preset", "implied-target", "implied-model"], ...],
+    checks: Mapping[Any, Callable[[Config, Mapping[str, Any]], None]] | None = None,
+) -> Config:
+    """Return a config with the values option stages of the command line give it, carrying the record of the run.
 
-    from datamodel_code_generator.preset import PresetError, _resolve_config_preset  # noqa: PLC0415
-
-    try:
-        preset_config = _resolve_config_preset(
-            preset_name, config, _preset_explicit_fields(pyproject_config, cli_config_args)
-        )
-    except PresetError as e:
-        raise Error(str(e)) from e
-
-    for name, value in preset_config.updates().items():
-        setattr(config, name, value)
-
-
-def _resolve_cli_config(pyproject_config: Mapping[str, Any], cli_config_args: Mapping[str, _RawConfigValue]) -> Config:
-    """Create the config of a run with its preset and implied values, checking what only the merged values decide."""
-    config = _create_config(pyproject_config, cli_config_args)
-    _apply_preset(config, pyproject_config, cli_config_args)
-    _apply_implicit_cli_config_values(config, pyproject_config, cli_config_args)
-    config.validate_original_field_name_delimiter()
+    The record of what the stages gave replaces the one the config carried: on the copy the stages made, or on the
+    config itself when no value changed. No record is ever written.
+    """
+    config, record = _run_option_stages(config, record, stages, checks)
+    config._run_options = record  # noqa: SLF001
     return config
+
+
+def _resolve_cli_config(record: RunOptions) -> Config:
+    """Create the config of a run with its preset and implied values, checking what only the merged values decide.
+
+    The command line's row of `_run_option_stages`. The record is the arguments and the pyproject.toml values of the
+    run, built before any of them is validated; the config that comes back carries it.
+    """
+    return _run_cli_option_stages(
+        _create_config(record.pyproject, record.arguments),
+        record,
+        ("preset", "implied-model"),
+        {"implied-model": lambda config, _: config.validate_original_field_name_delimiter()},
+    )
+
+
+def _imply_target_settings(config: Config) -> Config:
+    """Return a config with the model settings its target needs that neither a source nor a preset gave.
+
+    The late stage of the command line's row of `_run_option_stages`, after the checks of the target's options; the
+    record of the config that comes back names the settings the target set.
+    """
+    return _run_cli_option_stages(config, config._run_options, ("implied-target",))  # noqa: SLF001
+
+
+def _implied_target_settings(config: Config) -> dict[str, Any]:
+    """Return the settings the target of a config set, with their values."""
+    return {name: getattr(config, name) for name in config._run_options.staged_by("implied-target")}  # noqa: SLF001
 
 
 class JobPlan(NamedTuple):
@@ -387,9 +380,6 @@ class JobPlan(NamedTuple):
 
     name: str
     config: Config
-    pyproject_context: dict[str, Any]
-    raw_config: dict[str, Any]
-    cli_config_args: dict[str, _RawConfigValue]
     pyproject_path: Path
     resolved_output_root: Path | None
     resolved_output_parent: Path | None
@@ -708,7 +698,7 @@ def _get_job_config(  # noqa: PLR0913
     ):
         msg = f"Job '{name}' contains a null path character"
         raise ValueError(msg)
-    config = _resolve_cli_config(normalized_config, cli_config_args)
+    config = _resolve_cli_config(RunOptions(pyproject=normalized_config, arguments=cli_config_args))
     if command_only_fields := [
         field_name for field_name in sorted(BATCH_COMMAND_ONLY_CONFIG_FIELDS) if getattr(config, field_name)
     ]:
@@ -718,16 +708,7 @@ def _get_job_config(  # noqa: PLR0913
 
     from datamodel_code_generator._publication import artifact_roots  # noqa: PLC0415
 
-    context = {key: normalized_config[key] for key in BATCH_CONFIG_CONTEXT_FIELDS if key in normalized_config}
-    return JobPlan(
-        name,
-        config,
-        context,
-        normalized_config,
-        dict(cli_config_args),
-        pyproject_path,
-        *artifact_roots(config.output, config.emit_model_metadata),
-    )
+    return JobPlan(name, config, pyproject_path, *artifact_roots(config.output, config.emit_model_metadata))
 
 
 def _paths_overlap_or_samefile(first: Path, second: Path) -> bool:
@@ -1472,11 +1453,9 @@ def _recommend_generation_config(config: Config, namespace: Namespace) -> Callab
     return generation_config
 
 
-def _run_recommend_options(  # noqa: PLR0913
+def _run_recommend_options(
     args: Namespace,
     config: Config,
-    pyproject_config: Mapping[str, Any],
-    cli_config_args: Mapping[str, _RawConfigValue],
     pyproject_path: Path | None,
     *,
     table: tuple[str, ...] = CONFIG_TABLE,
@@ -1493,28 +1472,24 @@ def _run_recommend_options(  # noqa: PLR0913
         render_json,
         render_text,
     )
-    from datamodel_code_generator.base_config import (  # noqa: PLC0415
-        _selected_target,
-        _target_options_error,
-        implied_target_settings,
-    )
+    from datamodel_code_generator.base_config import _selected_target, _target_options_error  # noqa: PLC0415
     from datamodel_code_generator.remote_lock import RemoteLockError  # noqa: PLC0415
 
     if (target := _selected_target(config)) is not None:
         if (error := _target_options_error(config)) is not None:
             print(f"Error: {error}", file=sys.stderr)  # noqa: T201
             return Exit.ERROR
-        config = config.model_copy(update=implied_target_settings(config, config.model_fields_set))
+        config = _imply_target_settings(config)
 
-    preset_on_command_line = "preset" in cli_config_args
+    record: RunOptions = config._run_options  # noqa: SLF001
     try:
         recommendation = recommend_options(
             RecommendRequest(
                 config=config,
-                explicit_fields=frozenset(_preset_explicit_fields(pyproject_config, cli_config_args)),
+                explicit_fields=record.preset_explicit,
                 cli_values=_cli_config_values(args),
-                has_project_config=bool(pyproject_config),
-                preset_on_command_line=preset_on_command_line,
+                has_project_config=bool(record.pyproject),
+                preset_on_command_line="preset" in record.arguments,
                 read_stdin=sys.stdin.read,
                 generation_config=_recommend_generation_config(config, args),
                 table=table,
@@ -1686,7 +1661,7 @@ def _target_output(config: Config) -> tuple[str, Path] | None:
     return f"{selected[1].removesuffix('_')} output", output
 
 
-def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
+def _target_usage_errors(config: Config) -> list[str]:
     """Return why the target options of a run cannot apply.
 
     Target keys of pyproject.toml are validated like model keys but have no effect while their target is not selected.
@@ -1694,14 +1669,14 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
     from datamodel_code_generator._message_text import english_list, for_count  # noqa: PLC0415
     from datamodel_code_generator.base_config import _selected_target, _target_options_error  # noqa: PLC0415
 
-    explicit = _explicit_config_args(namespace)
+    arguments: Mapping[str, Any] = config._run_options.arguments  # noqa: SLF001
     unselected = [(selector, prefix) for selector, prefix in TARGET_SELECTORS if getattr(config, selector) is None]
     given = [
         (
             option_flag(selector),
             [
                 option_flag(field, negative=value is False)
-                for field, value in explicit.items()
+                for field, value in arguments.items()
                 if field.startswith(prefix)
             ],
         )
@@ -1740,8 +1715,14 @@ def _target_settings(config: Config, args: Sequence[str], lockfile: Path | None)
     })
 
 
-def _apply_model_run_options(config: Config, namespace: Namespace, pyproject_config: Mapping[str, Any]) -> Exit | None:
-    """Apply the checks, warnings and debug settings every generation run shares; return the exit code of a refusal."""
+def _apply_model_run_options(config: Config) -> Exit | None:
+    """Apply the checks, warnings and debug settings every generation run shares; return the exit code of a refusal.
+
+    The deprecation of the `--use-annotated` default shows where no source of the run gave the option. The refusal of
+    `--use-specialized-enum` reads the value it was given, not whether it was given (row `specialized-enum-by-value`:
+    a pyproject.toml value that is not the TOML boolean `true` is not refused).
+    """
+    record: RunOptions = config._run_options  # noqa: SLF001
     uses_black_formatter = config.formatters is None or Formatter.BLACK in config.formatters
     if uses_black_formatter and not is_supported_in_black(config.target_python_version):
         print(_unsupported_black_message(config.target_python_version), file=sys.stderr)  # noqa: T201
@@ -1756,8 +1737,7 @@ def _apply_model_run_options(config: Config, namespace: Namespace, pyproject_con
     if (
         config.output_model_type in _PYDANTIC_MODEL_TYPES
         and not config.use_annotated
-        and namespace.use_annotated is None
-        and pyproject_config.get("use_annotated") is None
+        and "use_annotated" not in record.given
     ):
         warn_deprecated(
             "behavior.pydantic-v2-use-annotated-default",
@@ -1802,8 +1782,7 @@ def _apply_model_run_options(config: Config, namespace: Namespace, pyproject_con
 
     if (
         config.use_specialized_enum
-        and namespace.use_specialized_enum is not False  # CLI didn't disable it
-        and (namespace.use_specialized_enum is True or pyproject_config.get("use_specialized_enum") is True)
+        and record.given_value("use_specialized_enum") is True
         and not python_target_meets("python.strenum", config.target_python_version.version_key)
     ):
         print(  # noqa: T201
@@ -1827,7 +1806,7 @@ def _collect_naming_hint(config: Config, namespace: Namespace) -> NamingHint | N
 
     return collect_class_names(
         wanted=not (
-            config._naming_chosen  # noqa: SLF001
+            not _NAMING_FIELDS.isdisjoint(config._run_options.given)  # noqa: SLF001
             or config.check
             or config.diff_against is not None
             or namespace.output_format == "json"
@@ -2072,11 +2051,7 @@ def _run_watched_jobs(
 ) -> Exit:
     """Collect one full batch graph and publish it only with a successful cycle."""
     dependencies.configure_many(
-        (
-            plan.config,
-            {**plan.raw_config, **plan.cli_config_args},
-            plan.pyproject_path,
-        )
+        (plan.config, plan.config._run_options.merged, plan.pyproject_path)  # noqa: SLF001
         for plan in batch_plan.jobs
     )
     remote_lock_plans, remote_lock_intent = dependencies._apply_remote_lock_plans(  # noqa: SLF001
@@ -2155,7 +2130,6 @@ def _run_staged_job(
         args,
         start_watch=False,
         _batch_config=staged_plan.config,
-        _batch_pyproject_context=staged_plan.plan.pyproject_context,
         _batch_pyproject_path=staged_plan.plan.pyproject_path,
         _batch_original_output=staged_plan.output,
         _batch_output_is_staged=staged_plan.output is not None,
@@ -2245,18 +2219,14 @@ def _single_job_plan(config: Config, pyproject_path: Path | None) -> JobPlan:
     return JobPlan(
         "command",
         config,
-        {},
-        {},
-        {},
         pyproject_path or Path.cwd() / "pyproject.toml",
         *artifact_roots(config.output, config.emit_model_metadata),
     )
 
 
-def _run_single_remote_transaction(  # noqa: PLR0913, PLR0917
+def _run_single_remote_transaction(  # noqa: PLR0913
     args: Sequence[str],
     config: Config,
-    pyproject_config: Mapping[str, Any],
     pyproject_path: Path | None,
     remote_locks: _RemoteLockTransaction,
     remote_lock_plan: _RemoteLockPlan,
@@ -2281,7 +2251,6 @@ def _run_single_remote_transaction(  # noqa: PLR0913, PLR0917
                     start_watch=False,
                     dependencies=dependencies,
                     _batch_config=run_config,
-                    _batch_pyproject_context=pyproject_config,
                     _batch_pyproject_path=pyproject_path,
                     _batch_original_output=original_output,
                     _batch_output_is_staged=output_is_staged,
@@ -2400,7 +2369,7 @@ def _generation_option_errors(config: Config, namespace: Namespace) -> list[str]
         (config.check and config.emit_model_metadata is not None, "--check cannot be used with --emit-model-metadata"),
     )):
         return [check_conflict]
-    if (target_usage := _target_usage_errors(config, namespace)) or not config.watch:
+    if (target_usage := _target_usage_errors(config)) or not config.watch:
         return target_usage
     watch_conflict = _first_conflict((
         (config.check, _WATCH_CHECK_CONFLICT),
@@ -2480,7 +2449,6 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     start_watch: bool,
     dependencies: WatchDependencies | None = None,
     _batch_config: Config | None = None,
-    _batch_pyproject_context: Mapping[str, Any] | None = None,
     _batch_pyproject_path: Path | None = None,
     _batch_original_output: Path | None = None,
     _batch_output_is_staged: bool = False,
@@ -2564,8 +2532,6 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             return _run_recommend_options(
                 namespace,
                 job_plan.config,
-                job_plan.raw_config,
-                job_plan.cli_config_args,
                 job_plan.pyproject_path,
                 table=config_table("jobs", job_plan.name),
                 selector=("--job", job_plan.name),
@@ -2595,7 +2561,9 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
 
     # Handle --ignore-pyproject and --profile options
     if _batch_config is not None:
-        pyproject_config = dict(_batch_pyproject_context or {})
+        # The run enters the command again with the config it resolved, a batch job or the transaction of a lock:
+        # the pyproject.toml values are the ones that config was resolved from.
+        pyproject_config = dict(_batch_config._run_options.pyproject)  # noqa: SLF001
         pyproject_path = _batch_pyproject_path
     elif namespace.ignore_pyproject:
         pyproject_config: dict[str, Any] = {}
@@ -2629,19 +2597,20 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         print(e.message, file=sys.stderr)  # noqa: T201
         return Exit.ERROR
 
-    cli_config_args: dict[str, _RawConfigValue] = {}
     if _batch_config is not None:
         # Generation adjusts a few Config fields while resolving templates and
         # stdout behaviour. Each batch job therefore receives a fresh copy.
         config = _batch_config.model_copy(deep=True)
-        merged_config_values = dict(pyproject_config)
+        # Row `lock-reentry-watch-values-pyproject-only`: the transaction of a lock configures the watch again, from
+        # the pyproject.toml values alone, so a path an argument gives is watched where pyproject.toml names it.
+        watch_values: Mapping[str, Any] = pyproject_config
     else:
-        cli_config_args = _explicit_config_args(namespace)
-        merged_config_values = {**pyproject_config, **cli_config_args}
+        record = RunOptions(pyproject=pyproject_config, arguments=_explicit_config_args(namespace))
+        watch_values = record.merged
         if dependencies is not None:
-            dependencies.stage_raw_config(merged_config_values)
+            dependencies.stage_raw_config(watch_values)
         try:
-            config = _resolve_cli_config(pyproject_config, cli_config_args)
+            config = _resolve_cli_config(record)
         except Error as e:
             print(str(e), file=sys.stderr)  # noqa: T201
             return Exit.ERROR
@@ -2658,10 +2627,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         from datamodel_code_generator.watch_dependencies import WatchDependencies  # noqa: PLC0415
 
         watch_dependencies = watch_dependencies or WatchDependencies()
-        watch_dependencies.configure(
-            config,
-            config_values=merged_config_values,
-        )
+        watch_dependencies.configure(config, config_values=watch_values)
 
     if config.list_deprecations:
         return _print_registry("deprecations", render_deprecations, config.list_deprecations)
@@ -2693,8 +2659,6 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         return _run_recommend_options(
             namespace,
             config,
-            pyproject_config,
-            cli_config_args,
             pyproject_path,
             selector=("--profile", namespace.profile) if names_profile(namespace.profile) else (),
             table=config_table(*_profile_table_keys(namespace.profile)),
@@ -2707,12 +2671,12 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             print(f"Error: {error}", file=sys.stderr)  # noqa: T201
         return Exit.ERROR
 
-    from datamodel_code_generator.base_config import _selected_target, implied_target_settings  # noqa: PLC0415
+    from datamodel_code_generator.base_config import _selected_target  # noqa: PLC0415
 
     if _selected_target(config) is not None:
-        if implied := implied_target_settings(config, config.model_fields_set):
-            config = config.model_copy(update=implied)
-        if (refusal := _apply_model_run_options(config, namespace, pyproject_config)) is not None:
+        config = _imply_target_settings(config)
+        implied = _implied_target_settings(config)
+        if (refusal := _apply_model_run_options(config)) is not None:
             return refusal
         announced = implied if start_watch or not config.watch else {}
         lock = None
@@ -2772,14 +2736,14 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     if remote_transaction_owner and remote_locks is not None:
         result = finish_watch_remote_lock_intent(
             _run_single_remote_transaction(
-                args, config, pyproject_config, pyproject_path, remote_locks, lock_plan, dependencies=watch_dependencies
+                args, config, pyproject_path, remote_locks, lock_plan, dependencies=watch_dependencies
             )
         )
         if result is not Exit.OK or not (config.watch and start_watch):
             return result
         return _watch_and_regenerate(args, config, watch_dependencies)
     config.resolve_remote_lock(None if remote_locks is None else remote_locks.collector_for(lock_plan))
-    if (refusal := _apply_model_run_options(config, namespace, pyproject_config)) is not None:
+    if (refusal := _apply_model_run_options(config)) is not None:
         return refusal
 
     try:

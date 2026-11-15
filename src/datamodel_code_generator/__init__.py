@@ -141,6 +141,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._project_config import load_pyproject_config
     from datamodel_code_generator._publication import PublicationAnchor
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
+    from datamodel_code_generator._run_record import RunOptions
     from datamodel_code_generator._types import (
         AsyncAPIParserConfigDict,
         AvroParserConfigDict,
@@ -166,6 +167,7 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 ParserConfigT = TypeVar("ParserConfigT", bound="ParserConfig")
+_RunConfigT = TypeVar("_RunConfigT", bound="BaseGenerateConfig")
 
 # Preserve the historical private facade identity for repr and pickling compatibility.
 _CollapseRootModelsRecursionError.__module__ = __name__
@@ -674,8 +676,8 @@ def _resolve_preset(
 ) -> ResolvedPresetConfig:
     """Resolve a preset for a config, leaving out the fields that are `given`; one that does not fit is an `Error`.
 
-    The one resolution of a preset outside the command line's own: `generate()`, a server or client target, dynamic
-    generation and the recommender read it, so each shows the same refusal.
+    The one resolution of a preset: the command line, `generate()`, a server or client target, dynamic generation and
+    the recommender read it, so each shows the same refusal.
     """
     from datamodel_code_generator.preset import PresetError, _resolve_config_preset  # noqa: PLC0415
 
@@ -685,22 +687,22 @@ def _resolve_preset(
         raise Error(str(e)) from e
 
 
-def _preset_updates(config: GenerateConfig, given: AbstractSet[str]) -> dict[str, Any]:
-    """Return the values the preset of a config gives the fields that are not `given`."""
-    return {} if config.preset is None else _resolve_preset(config.preset, config, given).updates()
+def _preset_updates(config: BaseGenerateConfig, record: RunOptions) -> dict[str, Any]:
+    """Return the values the preset of a config gives the fields that are not explicit to it."""
+    return {} if config.preset is None else _resolve_preset(config.preset, config, record.preset_explicit).updates()
 
 
-def _implied_target_updates(config: GenerateConfig, _given: AbstractSet[str]) -> dict[str, Any]:
+def _implied_target_updates(config: BaseGenerateConfig, record: RunOptions) -> dict[str, Any]:
     """Return the values a server or client target gives the settings nothing set, the preset included.
 
-    It reads the fields the config has set so far, those the `preset` stage set among them, not the given ones.
+    It reads the fields that have a value from a source or from an earlier stage, not only the given ones.
     """
     from datamodel_code_generator.base_config import implied_target_settings  # noqa: PLC0415
 
-    return implied_target_settings(config, config.model_fields_set)
+    return implied_target_settings(config, record.set_fields)
 
 
-def _missing_sentinel_updates(config: GenerateConfig, _given: AbstractSet[str]) -> dict[str, Any]:
+def _missing_sentinel_updates(config: BaseGenerateConfig, _record: RunOptions) -> dict[str, Any]:
     """Return the target pydantic version `--use-missing-sentinel` needs where none is set, refusing an older one."""
     if not config.use_missing_sentinel:
         return {}
@@ -734,16 +736,14 @@ def _missing_sentinel_updates(config: GenerateConfig, _given: AbstractSet[str]) 
     raise AssertionError  # pragma: no cover
 
 
-def _implied_model_updates(config: GenerateConfig, given: AbstractSet[str]) -> dict[str, Any]:
-    """Return the constraint settings whose value the other settings of a config change, read with `given` as set."""
+def _implied_model_updates(config: BaseGenerateConfig, record: RunOptions) -> dict[str, Any]:
+    """Return the constraint settings the other settings of a config decide, read with the given fields as set."""
     from datamodel_code_generator.base_config import implied_model_settings  # noqa: PLC0415
 
-    return {
-        name: value for name, value in implied_model_settings(config, given).items() if getattr(config, name) != value
-    }
+    return implied_model_settings(config, record.given)
 
 
-_OPTION_STAGES: Final[dict[_OptionStage, Callable[[GenerateConfig, AbstractSet[str]], dict[str, Any]]]] = {
+_OPTION_STAGES: Final[dict[_OptionStage, Callable[[BaseGenerateConfig, RunOptions], dict[str, Any]]]] = {
     "preset": _preset_updates,
     "implied-target": _implied_target_updates,
     "sentinel": _missing_sentinel_updates,
@@ -751,44 +751,69 @@ _OPTION_STAGES: Final[dict[_OptionStage, Callable[[GenerateConfig, AbstractSet[s
 }
 
 
+def _run_option_stages(
+    config: _RunConfigT,
+    record: RunOptions,
+    stages: Collection[_OptionStage],
+    checks: Mapping[_OptionStage, Callable[[_RunConfigT, Mapping[str, Any]], None]] | None = None,
+) -> tuple[_RunConfigT, RunOptions]:
+    """Return a config with the values its option stages give it, and the record of the run with what they gave.
+
+    The one resolution of every entry point. The stages run in the order of `_OPTION_STAGES`, each on the config the
+    stages before it left, and an entry point names the ones it runs. What an entry point knows about where its
+    values came from is the record it brings (`_run_record.py:RunOptions`), which the stages read instead of asking
+    who calls: the preset leaves the fields explicit to it alone, the implied target settings leave every field a
+    source or an earlier stage gave a value, and the implied model settings read the given fields as they were before
+    the preset (row `implied-reads-given-before-preset`). The values of a stage that differ from the config's are
+    applied to a copy, so a config that already has them stays the same object, and the record that comes back names
+    every field the stage gave a value: nothing reads the fields a config has set after it came in. A check of the
+    entry point runs after its stage, with the config so far and the values that stage gave, so that what a user
+    sees first stays where the entry point shows it.
+
+    The entry points, each with its record, its stages and its own checks in order:
+
+    - `__main__.py:_resolve_cli_config` (a command, each batch job): the arguments and the pyproject.toml values, as
+      they are before validation; `preset`, `implied-model`, then the delimiter check that only the merged values
+      decide. Later, where a target is selected (a run after its option checks, `--recommend-options` after the
+      target's option check): `implied-target`, with the record the config carries. No `sentinel` stage: the config
+      goes to `generate()` without a preset, which runs it after the command's own refusals (row
+      `cli-sentinel-in-generate`).
+    - `_project_config.py:load_pyproject_config`: the pyproject.toml keys it keeps and its overrides; `implied-model`
+      alone. The config it returns keeps its `preset`, which `generate()` resolves (row `loader-applies-no-preset`).
+    - `_resolve_run_options`, which reads no record but the fields the config has set (row `given-is-fields-set`):
+      `_prepare_generate_facade_config` (`generate()`, a trial of the recommender, the metadata run of dynamic
+      generation): the facade's warnings; `preset`, `sentinel`, `implied-model`; the metadata path and the output
+      encoding. `_api_generation.py:prepare_target` (a server or client target): the model output; every stage,
+      with the Pydantic target of a sentinel and then the facade's warnings after `implied-target`; the metadata
+      path and the output encoding; the target's checks, which read the resolved config.
+      `dynamic.py:_without_default_formatting` (the formatters dynamic generation runs with): `preset` alone, so
+      that no later refusal comes before the facade's warnings.
+    """
+    for stage, values_of in _OPTION_STAGES.items():
+        if stage not in stages:
+            continue
+        values = values_of(config, record)
+        if changed := {name: value for name, value in values.items() if getattr(config, name) != value}:
+            config = config.model_copy(update=changed)
+        record = record.after(stage, values)
+        if checks is not None and (check := checks.get(stage)) is not None:
+            check(config, values)
+    return config, record
+
+
 def _resolve_run_options(
     config: GenerateConfig,
     stages: Collection[_OptionStage],
     checks: Mapping[_OptionStage, Callable[[GenerateConfig, Mapping[str, Any]], None]] | None = None,
 ) -> GenerateConfig:
-    """Return a config with the values its option stages give it: the one resolution of every entry point.
+    """Return a config with the values its option stages give it (`_run_option_stages`).
 
-    The stages run in the order of `_OPTION_STAGES`, each on the config the stages before it left, and an entry point
-    names the ones it runs. The fields the config set when it came in are the given ones: the preset leaves them
-    alone, and the implied model settings read them as they were before the preset (row
-    `implied-reads-given-before-preset`). A stage that gives no value keeps the config object. A check of the entry
-    point runs after its stage, with the config so far and the values that stage gave, so that what a user sees
-    first stays where the entry point shows it.
-
-    The entry points, each with its stages and its own checks in order:
-
-    - `_prepare_generate_facade_config` (`generate()`, a trial of the recommender, the metadata run of dynamic
-      generation): the facade's warnings; `preset`, `sentinel`, `implied-model`; the metadata path and the output
-      encoding.
-    - `_api_generation.py:prepare_target` (a server or client target): the model output; every stage, with the
-      Pydantic target of a sentinel and then the facade's warnings after `implied-target`; the metadata path and the
-      output encoding; the target's checks, which read the resolved config.
-    - `dynamic.py:_without_default_formatting` (the formatters dynamic generation runs with): `preset` alone, so
-      that no later refusal comes before the facade's warnings.
-
-    The command line resolves its preset and implied model settings itself (`__main__.py:_resolve_cli_config`), with
-    its own mapping of a preset that does not fit to `Error` (`_apply_preset`), applies the implied target settings
-    itself (its two calls of `implied_target_settings`) and hands `generate()` a config without a preset.
+    The fields the config has set are the given ones (row `given-is-fields-set`). A record the config carries is
+    not read, so a command's config is resolved here again, to the same values.
     """
-    given = frozenset(config.model_fields_set)
-    for stage, updates_of in _OPTION_STAGES.items():
-        if stage not in stages:
-            continue
-        if updates := updates_of(config, given):
-            config = config.model_copy(update=updates)
-        if checks is not None and (check := checks.get(stage)) is not None:
-            check(config, updates)
-    return config
+    from datamodel_code_generator._run_record import RunOptions  # noqa: PLC0415
+
+    return _run_option_stages(config, RunOptions(fields_set=frozenset(config.model_fields_set)), stages, checks)[0]
 
 
 class InvalidFileFormatError(Error):
@@ -2962,6 +2987,8 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         warnings.warn(
             pydantic_floor_message(
                 pydantic_floor,
+                # Row `floor-target-from-by-value`: the source of the target is read from the values, so the
+                # sentinel is named also where an option gave the 2.12 target.
                 target_from="--use-missing-sentinel"
                 if config.use_missing_sentinel and pydantic_floor.target == TargetPydanticVersion.V2_12.value
                 else None,
