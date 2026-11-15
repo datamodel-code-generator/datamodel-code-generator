@@ -29,7 +29,9 @@ import argparse
 import contextlib
 import io
 import json
+import os
 import re
+import subprocess
 import sys
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
@@ -66,6 +68,8 @@ from datamodel_code_generator.preset import (  # ruff: ignore[module-import-not-
 from scripts._behaviour_report import version_key  # ruff: ignore[module-import-not-at-top-of-file]
 
 DATA_DIR = ROOT / "docs" / "data" / "migration"
+ALLOWLIST = ROOT / "scripts" / "behaviour_diff_allowlist.toml"
+PRESET_OPTION = "--preset"
 DOCS_DIR = ROOT / "docs" / "migration"
 JSON_PATH = ROOT / "docs" / "data" / "migration.json"
 SITE_URL = "https://datamodel-code-generator.koxudaxi.dev"
@@ -88,6 +92,7 @@ BREAKING_ACTIONS = ("required", "keep", "review")
 RELEASE_NOTE_SECTIONS = (
     "Deprecations",
     "Scheduled Breaking Changes",
+    "New Options",
     "New Dated Presets",
     "Experimental Features",
     "Changes That Need No Action",
@@ -125,6 +130,7 @@ SOURCES = {
     "run": "generated output of both releases",
     "release-note": "the release notes",
     "registry": "the registry of deprecations, experimental features and dated presets",
+    "surface": "the command-line options of both releases",
 }
 ENTRY_KEYS = frozenset({
     "id",
@@ -147,7 +153,7 @@ TEXT_KEYS = ("title", "summary", "before", "after", "migrate", "reverts")
 REQUIRED_KEYS = ("kind", "action", "title", "summary", "source")
 KEEP_KEYS = frozenset({"flags", "note"})
 VERIFY_KEYS = frozenset({"schema", "args"})
-DERIVED_PREFIXES = ("deprecation:", "removal:", "experimental:", "preset:")
+DERIVED_PREFIXES = ("deprecation:", "removal:", "experimental:", "preset:", "option:")
 JSON_KEYS = (
     "id",
     "release",
@@ -174,9 +180,35 @@ RELEASES_HEADER = (
     "# `scripts/build_migration_docs.py --stamp` appends a row when a release is published.\n"
 )
 DERIVED_HEADER = (
-    "# The first release of each dated preset, written by `scripts/build_migration_docs.py --stamp`.\n"
-    "# A preset date of the source tree that is not listed here is unreleased.\n"
+    "# Facts the source tree cannot know, written by `scripts/build_migration_docs.py --stamp`: the first release of\n"
+    "# each dated preset and of each option or option value added since surface.json was first written. A preset date\n"
+    "# of the source tree that is not listed here is unreleased; an option the latest release lacks is unreleased.\n"
 )
+SURFACE_SCRIPT = """
+import json
+from pathlib import Path
+
+import datamodel_code_generator
+from datamodel_code_generator.arguments import arg_parser
+from datamodel_code_generator.config import GenerateConfig
+
+options = {}
+for action in arg_parser._actions:
+    if action.option_strings:
+        name, *aliases = action.option_strings
+        options[name] = {
+            "aliases": aliases,
+            "choices": sorted(map(str, action.choices)) if action.choices else None,
+            "help": " ".join(str(action.help or "").split()),
+        }
+templates = Path(datamodel_code_generator.__file__).parent / "model" / "template"
+print(json.dumps({
+    "options": options,
+    "python_api": sorted(datamodel_code_generator.__all__),
+    "generate_config": sorted(GenerateConfig.model_fields),
+    "templates": sorted(path.relative_to(templates).as_posix() for path in templates.rglob("*.jinja2")),
+}))
+"""
 CHANGES_HEADER = (
     "# The changes of {version}, moved from docs/data/migration/unreleased/ when the release was stamped.\n"
 )
@@ -198,6 +230,7 @@ class Layout:
     data: Path = DATA_DIR
     docs: Path = DOCS_DIR
     json: Path = JSON_PATH
+    allowlist: Path = ALLOWLIST
 
     @property
     def releases(self) -> Path:
@@ -218,6 +251,11 @@ class Layout:
     def unreleased(self) -> Path:
         """Return the directory of the unreleased fragments."""
         return self.data / UNRELEASED
+
+    @property
+    def surface(self) -> Path:
+        """Return the public surface of the latest release."""
+        return self.data / "surface.json"
 
     @property
     def output_changes(self) -> Path:
@@ -241,6 +279,7 @@ class Registries:
     deprecations: tuple[Deprecation, ...]
     experimental: tuple[ExperimentalFeature, ...]
     preset_dates: tuple[PresetDate, ...]
+    surface: dict[str, Any]
 
 
 @dataclass
@@ -303,7 +342,71 @@ def current_registries() -> Registries:
             PresetDate(dates[0], None, ()),
             *(PresetDate(date, previous, tuple(_date_additions(previous, date))) for previous, date in pairwise(dates)),
         ),
+        read_surface(SRC_PATH),
     )
+
+
+def read_surface(src: Path) -> dict[str, Any]:
+    """Return the public surface of the package under `src`: options and choices, `__all__`, config fields, templates.
+
+    It runs in a fresh interpreter, so the surface of a release tag's tree can be read next to this checkout's.
+    """
+    env = {**os.environ, "PYTHONPATH": str(src), "PYTHONWARNINGS": "ignore"}
+    result = subprocess.run(
+        [sys.executable, "-c", SURFACE_SCRIPT], capture_output=True, text=True, env=env, check=True, encoding="utf-8"
+    )
+    return json.loads(result.stdout)
+
+
+def surface_items(surface: dict[str, Any]) -> dict[str, str]:
+    """Return every item of a surface by the name an entry's `affects` gives it, with the `affects` key it goes under.
+
+    An option and each of its other spellings are `--name`, a choice `--name value`, a public name of the package its
+    name, a `GenerateConfig` field `GenerateConfig.<field>`, a builtin template its path under the template directory.
+    """
+    items: dict[str, str] = {}
+    for name, option in surface["options"].items():
+        items |= dict.fromkeys([name, *option["aliases"]], "options")
+        items |= {f"{name} {choice}": "options" for choice in option["choices"] or []}
+    items |= dict.fromkeys(surface["python_api"], "python_api")
+    items |= {f"GenerateConfig.{name}": "python_api" for name in surface["generate_config"]}
+    return items | dict.fromkeys(surface["templates"], "templates")
+
+
+def _option_additions(current: dict[str, Any], released: dict[str, Any]) -> list[str]:
+    """Return the options and choices of `current` that `released` lacks, as `--name` and `--name=value` keys.
+
+    New `--preset` names are left out: the entry of their preset date lists what they add.
+    """
+    added = []
+    for name, option in current["options"].items():
+        if name not in released["options"]:
+            added.append(name)
+            continue
+        if name == PRESET_OPTION:
+            continue
+        old = set(released["options"][name]["choices"] or [])
+        added += [f"{name}={choice}" for choice in option["choices"] or [] if choice not in old]
+    return added
+
+
+def _option_entry(key: str, release: str, current: dict[str, Any]) -> dict[str, Any]:
+    name, _, choice = key.partition("=")
+    option = current["options"].get(name)
+    title = f"New value `{choice}` of `{name}`" if choice else f"New option `{name}`"
+    if option and not choice and option["aliases"]:
+        title += f" ({', '.join(f'`{alias}`' for alias in option['aliases'])})"
+    summary = option["help"] if option and option["help"] and not choice else f"{title}."
+    return {
+        "release": release,
+        "kind": "cli",
+        "action": "none",
+        "title": title,
+        "summary": summary,
+        "affects": {},
+        "source": "surface",
+        "note": f"{title}: {summary}" if summary != f"{title}." else title,
+    }
 
 
 def _code(text: str) -> str:
@@ -317,9 +420,11 @@ def _anchor(entry_id: str) -> str:
 def _read_toml(path: Path, problems: list[str]) -> dict[str, Any]:
     try:
         return tomllib.loads(path.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError) as error:
+    except OSError as error:
+        problems.append(f"{path.name}: {error.strerror}")
+    except tomllib.TOMLDecodeError as error:
         problems.append(f"{path.name}: {error}")
-        return {}
+    return {}
 
 
 def _load_releases(layout: Layout, problems: list[str]) -> list[dict[str, str]]:
@@ -356,7 +461,7 @@ class _Releases:
 
     def place(self, version: str, where: str) -> str | None:
         """Return the release a version belongs to: itself, `unreleased` after the latest one, None before the floor."""
-        if version in self.versions:
+        if version in self.versions or version == UNRELEASED:
             return version
         if not self.versions or version_key(version) > version_key(self.versions[-1]):
             return UNRELEASED
@@ -627,6 +732,52 @@ def _ranges(releases: list[dict[str, str]], changes: list[dict[str, Any]], probl
     return ranges
 
 
+def _read_surface_file(layout: Layout, problems: list[str]) -> dict[str, Any]:
+    try:
+        return json.loads(layout.surface.read_text(encoding="utf-8"))
+    except OSError as error:
+        problems.append(f"{layout.surface.name}: {error.strerror}")
+    except json.JSONDecodeError as error:
+        problems.append(f"{layout.surface.name}: {error}")
+    return {"options": {}, "python_api": [], "generate_config": [], "templates": []}
+
+
+def _check_removals(
+    current: dict[str, Any], released: dict[str, Any], changes: dict[str, dict[str, Any]], problems: list[str]
+) -> None:
+    """Report each item of the latest release's surface that is gone and that no unreleased entry names."""
+    named = {
+        (key, value)
+        for entry in changes.values()
+        if entry["release"] == UNRELEASED
+        for key, values in entry["affects"].items()
+        for value in values
+    }
+    present = surface_items(current)
+    problems.extend(
+        f"surface: {item} of the latest release is gone; an unreleased entry names it in affects.{key}, or the "
+        "deprecation registry schedules its removal"
+        for item, key in surface_items(released).items()
+        if item not in present and (key, item) not in named
+    )
+
+
+def _check_allowlist(
+    layout: Layout, versions: list[str], changes: dict[str, dict[str, Any]], problems: list[str]
+) -> None:
+    """Report each accepted default-output change of the current cycle whose `migration` names no unreleased entry."""
+    allowlist = tomllib.loads(layout.allowlist.read_text(encoding="utf-8"))
+    if not versions or allowlist.get("base") != versions[-1]:
+        return
+    for index, accepted in enumerate(allowlist.get("accepted", []), 1):
+        migration = accepted.get("migration")
+        if migration not in changes or changes[migration]["release"] != UNRELEASED:
+            problems.append(
+                f"{layout.allowlist.name}: accepted entry {index} ({accepted.get('input')}): migration {migration!r} "
+                "is not an unreleased entry"
+            )
+
+
 def load(layout: Layout | None = None, registries: Registries | None = None) -> Guide:
     """Load, derive and check the change list; raise MigrationDataError with every problem found."""
     layout = layout or Layout()
@@ -634,10 +785,15 @@ def load(layout: Layout | None = None, registries: Registries | None = None) -> 
     problems: list[str] = []
     releases = _load_releases(layout, problems)
     placed = _Releases(releases, problems)
-    presets = {
-        str(date): str(version) for date, version in _read_toml(layout.derived, problems).get("presets", {}).items()
-    }
+    derived = _read_toml(layout.derived, problems)
+    presets = {str(date): str(version) for date, version in derived.get("presets", {}).items()}
     changes = _derived_changes(registries, presets, placed, problems)
+    released_surface = _read_surface_file(layout, problems)
+    option_releases = {str(key): str(version) for key, version in derived.get("options", {}).items()}
+    option_releases |= dict.fromkeys(_option_additions(registries.surface, released_surface), UNRELEASED)
+    for key, version in option_releases.items():
+        if release := placed.place(version, f"option {key}"):
+            changes[f"option:{key}"] = _option_entry(key, release, registries.surface)
     _hand_changes(layout, changes, placed, problems)
     order = {version: index for index, version in enumerate(placed.versions)} | {UNRELEASED: len(placed.versions)}
     for entry_id, entry in changes.items():
@@ -647,6 +803,8 @@ def load(layout: Layout | None = None, registries: Registries | None = None) -> 
         entry["affects"] = {key: values for key, values in _table(entry, "affects").items() if values}
         _check_entry(entry, problems)
     _check_links(changes, order, problems)
+    _check_removals(registries.surface, released_surface, changes, problems)
+    _check_allowlist(layout, placed.versions, changes, problems)
     action_order = {action: index for index, action in enumerate(ACTIONS)}
     ordered = sorted(
         changes.values(),
@@ -933,6 +1091,8 @@ def _release_note_section(entry: dict[str, Any]) -> str:
             return "Scheduled Breaking Changes"
         case "preset":
             return "New Dated Presets"
+    if entry["id"].startswith("option:"):
+        return "New Options"
     return "Experimental Features" if entry["id"].startswith("experimental:") else "Changes That Need No Action"
 
 
@@ -977,6 +1137,19 @@ def _write(files: dict[Path, str]) -> None:
         path.write_text(text, encoding="utf-8")
 
 
+def _toml_rows(table: dict[str, str]) -> str:
+    return "".join(f"{json.dumps(key)} = {json.dumps(table[key])}\n" for key in sorted(table))
+
+
+def _surface_json(surface: dict[str, Any]) -> str:
+    """Return a surface as surface.json keeps it: without the help texts, which may change freely."""
+    options = {
+        name: {"aliases": option["aliases"], "choices": option["choices"]}
+        for name, option in surface["options"].items()
+    }
+    return json.dumps({**surface, "options": options}, indent=1, sort_keys=True) + "\n"
+
+
 def _preset_dates_of(tree: Path) -> set[str]:
     return set(PRESET_DATE_PATTERN.findall((tree / TAG_PRESET_NAMES).read_text(encoding="utf-8")))
 
@@ -1001,10 +1174,17 @@ def stamp(layout: Layout, version: str, tag_tree: Path, date: str, registries: R
             path.unlink()
     with layout.releases.open("a", encoding="utf-8") as releases:
         releases.write(f'\n[[release]]\nversion = "{version}"\ndate = "{date}"\n')
-    presets = tomllib.loads(layout.derived.read_text(encoding="utf-8")).get("presets", {})
+    derived = tomllib.loads(layout.derived.read_text(encoding="utf-8"))
+    presets = derived.get("presets", {})
     presets |= {preset_date: version for preset_date in _preset_dates_of(tag_tree) if preset_date not in presets}
-    rows = "".join(f'"{preset_date}" = "{presets[preset_date]}"\n' for preset_date in sorted(presets))
-    layout.derived.write_text(f"{DERIVED_HEADER}\n[presets]\n{rows}", encoding="utf-8")
+    tagged_surface = read_surface(tag_tree / "src")
+    options = derived.get("options", {})
+    released_surface = json.loads(layout.surface.read_text(encoding="utf-8"))
+    options |= dict.fromkeys(_option_additions(tagged_surface, released_surface), version)
+    layout.derived.write_text(
+        f"{DERIVED_HEADER}\n[presets]\n{_toml_rows(presets)}\n[options]\n{_toml_rows(options)}", encoding="utf-8"
+    )
+    layout.surface.write_text(_surface_json(tagged_surface), encoding="utf-8")
     _write(committed_files(load(layout, registries), layout))
     return [path.stem for path in moved]
 
@@ -1034,6 +1214,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--data-dir", type=Path, default=DATA_DIR)
     parser.add_argument("--docs-dir", type=Path, default=DOCS_DIR)
     parser.add_argument("--json", type=Path, default=JSON_PATH)
+    parser.add_argument("--allowlist", type=Path, default=ALLOWLIST)
     ns = parser.parse_args(argv)
     if ns.stamp and ns.tag_tree is None:
         parser.error("--stamp needs --tag-tree")
@@ -1042,7 +1223,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
 
 def run(ns: argparse.Namespace, registries: Registries | None = None) -> int:
     """Run the command the arguments name."""
-    layout = Layout(ns.data_dir, ns.docs_dir, ns.json)
+    layout = Layout(ns.data_dir, ns.docs_dir, ns.json, ns.allowlist)
     if ns.stamp:
         date = ns.date or datetime.now(UTC).date().isoformat()
         moved = stamp(layout, ns.stamp, ns.tag_tree, date, registries)

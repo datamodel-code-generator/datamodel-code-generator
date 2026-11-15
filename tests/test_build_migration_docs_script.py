@@ -10,6 +10,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -76,9 +77,38 @@ REGISTRIES = Registries(
         ),
         PresetDate("20260301", "20260201", ("- Snake case (`--snake-case-field`): Snake case field names.",)),
     ),
+    surface={
+        "options": {
+            "--output-model-type": {"aliases": [], "choices": ["a", "b", "c"], "help": "Output model type."},
+            "--preset": {"aliases": [], "choices": ["p1", "p2"], "help": "A dated preset."},
+            "--new-flag": {"aliases": ["--no-new-flag"], "help": "Turn on new things.", "choices": None},
+            "--quiet-flag": {"aliases": [], "help": "", "choices": None},
+        },
+        "python_api": ["generate"],
+        "generate_config": ["output"],
+        "templates": ["Kept.jinja2"],
+    },
 )
+RELEASED_SURFACE = {
+    "options": {
+        "--old-flag": {"aliases": [], "choices": None},
+        "--output-model-type": {"aliases": [], "choices": ["a", "b"]},
+        "--preset": {"aliases": [], "choices": ["p1"]},
+    },
+    "python_api": ["generate"],
+    "generate_config": ["output"],
+    "templates": ["Kept.jinja2", "Old.jinja2"],
+}
 RELEASES = [("0.1.0", "2026-01-01"), ("0.2.0", "2026-02-01"), ("0.3.0", "2026-03-01"), ("0.4.0", "2026-04-01")]
-DERIVED = '[presets]\n"20260101" = "0.2.0"\n"20260201" = "0.3.0"\n'
+DERIVED = '[presets]\n"20260101" = "0.2.0"\n"20260201" = "0.3.0"\n\n[options]\n"--released-flag" = "0.3.0"\n'
+ALLOWLIST = """base = "0.4.0"
+
+[[accepted]]
+input = "*"
+reason = "r"
+decision = "#5001"
+migration = "custom-template-root"
+"""
 CHANGES = {
     "0.2.0": """
 [[change]]
@@ -202,16 +232,34 @@ kind = "template"
 action = "required"
 title = "Custom templates receive `fields` instead of `model_fields`"
 summary = "Templates of `--custom-template-dir` read the fields as `fields`."
-affects = { templates = ["pydantic_v2/BaseModel.jinja2"] }
+affects = { templates = ["pydantic_v2/BaseModel.jinja2", "Old.jinja2"] }
 migrate = "Rename `model_fields` to `fields` in your templates."
 refs = ["#5001"]
+source = "release-note"
+""",
+    "old-flag-removed": """
+[[change]]
+id = "old-flag-removed"
+kind = "removal"
+action = "required"
+title = "`--old-flag` is removed"
+summary = "The option did nothing since 0.3.0."
+affects = { options = ["--old-flag"] }
+migrate = "Drop `--old-flag`."
+refs = ["#5002"]
 source = "release-note"
 """,
 }
 
 
 def _write_data(
-    root: Path, changes: dict[str, str], unreleased: dict[str, str], releases: str | None = None, derived: str = DERIVED
+    root: Path,
+    changes: dict[str, str],
+    unreleased: dict[str, str],
+    releases: str | None = None,
+    derived: str = DERIVED,
+    surface: dict[str, Any] | None = RELEASED_SURFACE,
+    allowlist: str = ALLOWLIST,
 ) -> Path:
     data = root / "data"
     (data / "changes").mkdir(parents=True)
@@ -219,6 +267,9 @@ def _write_data(
     rows = "".join(f'\n[[release]]\nversion = "{version}"\ndate = "{date}"\n' for version, date in RELEASES)
     (data / "releases.toml").write_text(rows if releases is None else releases, encoding="utf-8")
     (data / "derived.toml").write_text(derived, encoding="utf-8")
+    (root / "allowlist.toml").write_text(allowlist, encoding="utf-8")
+    if surface is not None:
+        (data / "surface.json").write_text(json.dumps(surface), encoding="utf-8")
     for version, text in changes.items():
         (data / "changes" / f"{version}.toml").write_text(text, encoding="utf-8")
     for entry_id, text in unreleased.items():
@@ -234,6 +285,8 @@ def _args(root: Path) -> list[str]:
         str(root / "docs" / "migration"),
         "--json",
         str(root / "docs" / "data" / "migration.json"),
+        "--allowlist",
+        str(root / "allowlist.toml"),
     ]
 
 
@@ -274,7 +327,31 @@ def test_build_migration_docs_outputs(tmp_path: Path, capsys: pytest.CaptureFixt
     assert_output("\n".join(output))
 
 
+UNCHANGED = {"surface": REGISTRIES.surface, "allowlist": ALLOWLIST.replace("0.4.0", "0.3.0")}
+INVALID_SURFACES = {
+    "surface and allowlist": {"surface": RELEASED_SURFACE, "allowlist": ALLOWLIST},
+    "no surface": {"surface": None, "allowlist": ALLOWLIST},
+}
 INVALID_CASES = {
+    "surface and allowlist": (
+        {},
+        {
+            "other-flag": """
+[[change]]
+id = "other-flag"
+kind = "cli"
+action = "none"
+title = "t"
+summary = "s"
+affects = { options = ["--other-flag"] }
+refs = ["#1"]
+source = "release-note"
+"""
+        },
+        None,
+        DERIVED,
+    ),
+    "no surface": ({}, {}, None, DERIVED),
     "entries": (
         {
             "0.2.0": """
@@ -409,9 +486,25 @@ source = "release-note"
 @pytest.mark.parametrize("case", sorted(INVALID_CASES))
 def test_build_migration_docs_invalid_data(case: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Every problem of the change list is reported, and nothing is written."""
-    _write_data(tmp_path, *INVALID_CASES[case])
+    _write_data(tmp_path, *INVALID_CASES[case], **INVALID_SURFACES.get(case, UNCHANGED))
     code = main(_args(tmp_path), REGISTRIES)
     assert_output(f"exit {code}\n{capsys.readouterr().err}written: {sorted(tmp_path.rglob('*.md'))}\n")
+
+
+TAG_PACKAGE = {
+    "__init__.py": '__all__ = ["generate"]\n',
+    "arguments.py": """import argparse
+
+arg_parser = argparse.ArgumentParser(add_help=False)
+arg_parser.add_argument("--output-model-type", choices=["a", "b", "c"], help="Output model type.")
+arg_parser.add_argument("--preset", choices=["p1", "p2"], help="A dated preset.")
+arg_parser.add_argument("--new-flag", action=argparse.BooleanOptionalAction, help="Turn on new things.")
+arg_parser.add_argument("--quiet-flag", action="store_true")
+""",
+    "config.py": 'class GenerateConfig:\n    model_fields = {"output": None}\n',
+    "preset_names.py": 'PresetName = Literal[\n    "standard-py313-20260101",\n    "practical-py314-20260301",\n]\n',
+    "model/template/Kept.jinja2": "{{ class_name }}\n",
+}
 
 
 def test_build_migration_docs_stamp(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -425,10 +518,10 @@ def test_build_migration_docs_stamp(tmp_path: Path, capsys: pytest.CaptureFixtur
     tree = tmp_path / "tag"
     (tree / "docs" / "data" / "migration" / "unreleased").mkdir(parents=True)
     (tree / "docs" / "data" / "migration" / "unreleased" / "custom-template-root.toml").write_text("", encoding="utf-8")
-    (tree / "src" / "datamodel_code_generator").mkdir(parents=True)
-    (tree / "src" / "datamodel_code_generator" / "preset_names.py").write_text(
-        'PresetName = Literal[\n    "standard-py313-20260101",\n    "practical-py314-20260301",\n]\n', encoding="utf-8"
-    )
+    package = tree / "src" / "datamodel_code_generator"
+    (package / "model" / "template").mkdir(parents=True)
+    for name, text in TAG_PACKAGE.items():
+        (package / name).write_text(text, encoding="utf-8")
     stamp = ["--stamp", "0.5.0", "--tag-tree", str(tree), "--date", "2026-05-01"]
     codes = [main([*_args(tmp_path), *stamp], REGISTRIES), main([*_args(tmp_path), *stamp], REGISTRIES)]
     printed = capsys.readouterr()

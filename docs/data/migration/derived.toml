@@ -1,5 +1,6 @@
-# The first release of each dated preset, written by `scripts/build_migration_docs.py --stamp`.
-# A preset date of the source tree that is not listed here is unreleased.
+# Facts the source tree cannot know, written by `scripts/build_migration_docs.py --stamp`: the first release of
+# each dated preset and of each option or option value added since surface.json was first written. A preset date
+# of the source tree that is not listed here is unreleased; an option the latest release lacks is unreleased.
 
 [presets]
 "20260619" = "0.64.1"
@@ -12,3 +13,5 @@
 "20261106" = "0.91.0"
 "20261111" = "0.94.0"
 "20261112" = "0.95.0"
+
+[options]

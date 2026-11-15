@@ -5,8 +5,10 @@
 # A table whose base is a release before the gate's base accepts nothing and is no error, as that release contains
 # its changes; replace the whole table when the next accepted change of the new cycle is added.
 # Entry keys: input (glob on the cell's input), backends, aspects, match (regex on the change line), reason,
-# decision, release_note. The aspect `generation` accepts a generation the owner decided to refuse; its change line is
-# `[generation] : now fails: <the error>`.
+# decision, migration (the id of the upgrade guide entry, docs/data/migration/unreleased/<id>.toml, whose title the
+# release notes and the release page use; `scripts/build_migration_docs.py --check` fails while an entry of the
+# current cycle names none). The aspect `generation` accepts a generation the owner decided to refuse; its change line
+# is `[generation] : now fails: <the error>`.
 # `[[base_skip]]` names an input that releases are known to hang on, so they do not run for it (the cell is
 # `base-skipped` once the candidate generated and imported). Keys: input (glob), bases (releases, `["0.88.0"]`, or a
 # maximum, `["<=0.88.0"]`), reason, issue (public issue references, `#1234`). `--check` fails on a missing key and,
@@ -20,4 +22,4 @@ aspects = [ "constraints" ]
 match = "^\\[constraints\\] [\\w:]+: .*StringConstraints\\(pattern=.*\\\\\\\\(?:\\\\)?'.* -> .*StringConstraints\\(pattern=.*$"
 reason = "a pattern holding a single quote was written in a raw literal with the quote escaped (r'^it\\'s$'), so the constr or StringConstraints held the pattern with an extra backslash, which Python's re matches the same way but model_json_schema() published, and ECMA-262 engines in unicode mode reject; the raw literal takes a quote the pattern does not hold, and a pattern holding both quotes is a plain literal (same matches: every valid payload parses to the same value; class names, field names and structure stay; the published pattern now equals the schema's)"
 decision = "#6789"
-release_note = "a pattern holding a quote is written so that the generated constr or StringConstraints holds the schema's pattern unchanged (r\"^it's$\" instead of r'^it\\'s$'), so model_json_schema() publishes the schema's pattern"
+migration = "pattern-quote-literal"

@@ -127,18 +127,25 @@ kind = "template"
 action = "required"
 title = "Custom templates receive `fields` instead of `model_fields`"
 summary = "Templates of `--custom-template-dir` read the fields as `fields`."
-affects = { templates = ["pydantic_v2/BaseModel.jinja2"] }
+affects = { templates = ["pydantic_v2/BaseModel.jinja2", "Old.jinja2"] }
 migrate = "Rename `model_fields` to `fields` in your templates."
 refs = ["#5001"]
 source = "release-note"
 --- derived.toml ---
-# The first release of each dated preset, written by `scripts/build_migration_docs.py --stamp`.
-# A preset date of the source tree that is not listed here is unreleased.
+# Facts the source tree cannot know, written by `scripts/build_migration_docs.py --stamp`: the first release of
+# each dated preset and of each option or option value added since surface.json was first written. A preset date
+# of the source tree that is not listed here is unreleased; an option the latest release lacks is unreleased.
 
 [presets]
 "20260101" = "0.2.0"
 "20260201" = "0.3.0"
 "20260301" = "0.5.0"
+
+[options]
+"--new-flag" = "0.5.0"
+"--output-model-type=c" = "0.5.0"
+"--quiet-flag" = "0.5.0"
+"--released-flag" = "0.3.0"
 --- releases.toml ---
 
 [[release]]
@@ -160,6 +167,45 @@ date = "2026-04-01"
 [[release]]
 version = "0.5.0"
 date = "2026-05-01"
+--- surface.json ---
+{
+ "generate_config": [
+  "output"
+ ],
+ "options": {
+  "--new-flag": {
+   "aliases": [
+    "--no-new-flag"
+   ],
+   "choices": null
+  },
+  "--output-model-type": {
+   "aliases": [],
+   "choices": [
+    "a",
+    "b",
+    "c"
+   ]
+  },
+  "--preset": {
+   "aliases": [],
+   "choices": [
+    "p1",
+    "p2"
+   ]
+  },
+  "--quiet-flag": {
+   "aliases": [],
+   "choices": null
+  }
+ },
+ "python_api": [
+  "generate"
+ ],
+ "templates": [
+  "Kept.jinja2"
+ ]
+}
 --- unreleased/merged-after-tag.toml ---
 
 [[change]]
@@ -168,9 +214,21 @@ kind = "template"
 action = "required"
 title = "Custom templates receive `fields` instead of `model_fields`"
 summary = "Templates of `--custom-template-dir` read the fields as `fields`."
-affects = { templates = ["pydantic_v2/BaseModel.jinja2"] }
+affects = { templates = ["pydantic_v2/BaseModel.jinja2", "Old.jinja2"] }
 migrate = "Rename `model_fields` to `fields` in your templates."
 refs = ["#5001"]
+source = "release-note"
+--- unreleased/old-flag-removed.toml ---
+
+[[change]]
+id = "old-flag-removed"
+kind = "removal"
+action = "required"
+title = "`--old-flag` is removed"
+summary = "The option did nothing since 0.3.0."
+affects = { options = ["--old-flag"] }
+migrate = "Drop `--old-flag`."
+refs = ["#5002"]
 source = "release-note"
 
 --- data/migration.json ---
@@ -376,6 +434,15 @@ source = "release-note"
   },
   {
    "action": "none",
+   "id": "option:--released-flag",
+   "kind": "cli",
+   "release": "0.3.0",
+   "source": "surface",
+   "summary": "New option `--released-flag`.",
+   "title": "New option `--released-flag`"
+  },
+  {
+   "action": "none",
    "id": "preset:20260201",
    "kind": "preset",
    "release": "0.3.0",
@@ -428,7 +495,8 @@ source = "release-note"
    "action": "required",
    "affects": {
     "templates": [
-     "pydantic_v2/BaseModel.jinja2"
+     "pydantic_v2/BaseModel.jinja2",
+     "Old.jinja2"
     ]
    },
    "id": "custom-template-root",
@@ -453,6 +521,33 @@ source = "release-note"
   },
   {
    "action": "none",
+   "id": "option:--new-flag",
+   "kind": "cli",
+   "release": "0.5.0",
+   "source": "surface",
+   "summary": "Turn on new things.",
+   "title": "New option `--new-flag` (`--no-new-flag`)"
+  },
+  {
+   "action": "none",
+   "id": "option:--output-model-type=c",
+   "kind": "cli",
+   "release": "0.5.0",
+   "source": "surface",
+   "summary": "New value `c` of `--output-model-type`.",
+   "title": "New value `c` of `--output-model-type`"
+  },
+  {
+   "action": "none",
+   "id": "option:--quiet-flag",
+   "kind": "cli",
+   "release": "0.5.0",
+   "source": "surface",
+   "summary": "New option `--quiet-flag`.",
+   "title": "New option `--quiet-flag`"
+  },
+  {
+   "action": "none",
    "id": "preset:20260301",
    "kind": "preset",
    "release": "0.5.0",
@@ -464,7 +559,8 @@ source = "release-note"
    "action": "required",
    "affects": {
     "templates": [
-     "pydantic_v2/BaseModel.jinja2"
+     "pydantic_v2/BaseModel.jinja2",
+     "Old.jinja2"
     ]
    },
    "id": "merged-after-tag",
@@ -477,6 +573,24 @@ source = "release-note"
    "source": "release-note",
    "summary": "Templates of `--custom-template-dir` read the fields as `fields`.",
    "title": "Custom templates receive `fields` instead of `model_fields`"
+  },
+  {
+   "action": "required",
+   "affects": {
+    "options": [
+     "--old-flag"
+    ]
+   },
+   "id": "old-flag-removed",
+   "kind": "removal",
+   "migrate": "Drop `--old-flag`.",
+   "refs": [
+    "#5002"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "The option did nothing since 0.3.0.",
+   "title": "`--old-flag` is removed"
   }
  ],
  "latest": "0.5.0",
@@ -493,11 +607,15 @@ source = "release-note"
     "dynamic-models-unformatted",
     "deprecation:python-api.python-version-has-type-alias",
     "experimental:input-format.avro",
+    "option:--released-flag",
     "preset:20260201",
     "refuse-empty-enum",
     "removal:cli.validation",
     "custom-template-root",
     "deprecation:dependency.argcomplete-optional",
+    "option:--new-flag",
+    "option:--output-model-type=c",
+    "option:--quiet-flag",
     "preset:20260301"
    ],
    "from": "0.1.0",
@@ -529,11 +647,15 @@ source = "release-note"
     "dynamic-models-unformatted",
     "deprecation:python-api.python-version-has-type-alias",
     "experimental:input-format.avro",
+    "option:--released-flag",
     "preset:20260201",
     "refuse-empty-enum",
     "removal:cli.validation",
     "custom-template-root",
     "deprecation:dependency.argcomplete-optional",
+    "option:--new-flag",
+    "option:--output-model-type=c",
+    "option:--quiet-flag",
     "preset:20260301"
    ],
    "from": "0.2.0",
@@ -562,6 +684,9 @@ source = "release-note"
     "docstrings-unwrapped",
     "custom-template-root",
     "deprecation:dependency.argcomplete-optional",
+    "option:--new-flag",
+    "option:--output-model-type=c",
+    "option:--quiet-flag",
     "preset:20260301"
    ],
    "from": "0.3.0",
@@ -578,6 +703,9 @@ source = "release-note"
    "changes": [
     "custom-template-root",
     "deprecation:dependency.argcomplete-optional",
+    "option:--new-flag",
+    "option:--output-model-type=c",
+    "option:--quiet-flag",
     "preset:20260301"
    ],
    "from": "0.4.0",
@@ -629,9 +757,18 @@ Every change a user meets when upgrading, newest first. To upgrade from a releas
 
 Templates of `--custom-template-dir` read the fields as `fields`.
 
-- **Affects:** custom templates: `pydantic_v2/BaseModel.jinja2`
+- **Affects:** custom templates: `pydantic_v2/BaseModel.jinja2`, `Old.jinja2`
 - **What to change:** Rename `model_fields` to `fields` in your templates.
 - **Pull requests and issues:** [#5001](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5001)
+- **Source:** the release notes
+
+### `--old-flag` is removed (unreleased) { #old-flag-removed }
+
+The option did nothing since 0.3.0.
+
+- **Affects:** only with: `--old-flag`
+- **What to change:** Drop `--old-flag`.
+- **Pull requests and issues:** [#5002](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5002)
 - **Source:** the release notes
 
 ## 0.5.0 (2026-05-01)
@@ -640,7 +777,7 @@ Templates of `--custom-template-dir` read the fields as `fields`.
 
 Templates of `--custom-template-dir` read the fields as `fields`.
 
-- **Affects:** custom templates: `pydantic_v2/BaseModel.jinja2`
+- **Affects:** custom templates: `pydantic_v2/BaseModel.jinja2`, `Old.jinja2`
 - **What to change:** Rename `model_fields` to `fields` in your templates.
 - **Pull requests and issues:** [#5001](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5001)
 - **Source:** the release notes
@@ -650,6 +787,24 @@ Templates of `--custom-template-dir` read the fields as `fields`.
 argcomplete will become optional.
 
 - **Source:** the registry of deprecations, experimental features and dated presets
+
+### New option `--new-flag` (`--no-new-flag`) (0.5.0) { #option-new-flag }
+
+Turn on new things.
+
+- **Source:** the command-line options of both releases
+
+### New value `c` of `--output-model-type` (0.5.0) { #option-output-model-type-c }
+
+New value `c` of `--output-model-type`.
+
+- **Source:** the command-line options of both releases
+
+### New option `--quiet-flag` (0.5.0) { #option-quiet-flag }
+
+New option `--quiet-flag`.
+
+- **Source:** the command-line options of both releases
 
 ### New dated presets `standard-py3XX-20260301` and `practical-py3XX-20260301` (0.5.0) { #preset-20260301 }
 
@@ -741,6 +896,12 @@ Avro input is experimental.
 
 - **Affects:** experimental features: `input-format.avro`
 - **Source:** the registry of deprecations, experimental features and dated presets
+
+### New option `--released-flag` (0.3.0) { #option-released-flag }
+
+New option `--released-flag`.
+
+- **Source:** the command-line options of both releases
 
 ### New dated presets `standard-py3XX-20260201` and `practical-py3XX-20260201` (0.3.0) { #preset-20260201 }
 

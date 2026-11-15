@@ -1,0 +1,5 @@
+exit 1
+Invalid migration data:
+- surface.json: No such file or directory
+- allowlist.toml: accepted entry 1 (*): migration 'custom-template-root' is not an unreleased entry
+written: []

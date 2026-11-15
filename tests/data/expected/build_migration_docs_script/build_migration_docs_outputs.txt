@@ -42,6 +42,10 @@
 
 * `PythonVersion.has_type_alias` now emits `DeprecationWarning`. Planned removal: TBD. has_type_alias is deprecated.
 
+## New Options
+
+* New option `--released-flag`
+
 ## New Dated Presets
 
 * `standard-py3XX-20260201` and `practical-py3XX-20260201`: they keep the 20260101 options and add Python 3.15 targets; Strict types (`--strict-types str`): Be strict.
@@ -73,9 +77,18 @@
 ### Custom Template Update Required
 * Custom templates receive `fields` instead of `model_fields` - Templates of `--custom-template-dir` read the fields as `fields`. Rename `model_fields` to `fields` in your templates. (#5001)
 
+### API/CLI Changes
+* `--old-flag` is removed - The option did nothing since 0.3.0. Drop `--old-flag`. (#5002)
+
 ## Scheduled Breaking Changes
 
 * `argcomplete installation` is registered without a runtime warning. Planned removal: TBD. argcomplete will become optional.
+
+## New Options
+
+* New option `--new-flag` (`--no-new-flag`): Turn on new things.
+* New value `c` of `--output-model-type`
+* New option `--quiet-flag`
 
 ## New Dated Presets
 
@@ -284,6 +297,15 @@
   },
   {
    "action": "none",
+   "id": "option:--released-flag",
+   "kind": "cli",
+   "release": "0.3.0",
+   "source": "surface",
+   "summary": "New option `--released-flag`.",
+   "title": "New option `--released-flag`"
+  },
+  {
+   "action": "none",
    "id": "preset:20260201",
    "kind": "preset",
    "release": "0.3.0",
@@ -336,7 +358,8 @@
    "action": "required",
    "affects": {
     "templates": [
-     "pydantic_v2/BaseModel.jinja2"
+     "pydantic_v2/BaseModel.jinja2",
+     "Old.jinja2"
     ]
    },
    "id": "custom-template-root",
@@ -351,6 +374,24 @@
    "title": "Custom templates receive `fields` instead of `model_fields`"
   },
   {
+   "action": "required",
+   "affects": {
+    "options": [
+     "--old-flag"
+    ]
+   },
+   "id": "old-flag-removed",
+   "kind": "removal",
+   "migrate": "Drop `--old-flag`.",
+   "refs": [
+    "#5002"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "The option did nothing since 0.3.0.",
+   "title": "`--old-flag` is removed"
+  },
+  {
    "action": "none",
    "id": "deprecation:dependency.argcomplete-optional",
    "kind": "warning",
@@ -358,6 +399,33 @@
    "source": "registry",
    "summary": "argcomplete will become optional.",
    "title": "argcomplete installation is scheduled to change"
+  },
+  {
+   "action": "none",
+   "id": "option:--new-flag",
+   "kind": "cli",
+   "release": "unreleased",
+   "source": "surface",
+   "summary": "Turn on new things.",
+   "title": "New option `--new-flag` (`--no-new-flag`)"
+  },
+  {
+   "action": "none",
+   "id": "option:--output-model-type=c",
+   "kind": "cli",
+   "release": "unreleased",
+   "source": "surface",
+   "summary": "New value `c` of `--output-model-type`.",
+   "title": "New value `c` of `--output-model-type`"
+  },
+  {
+   "action": "none",
+   "id": "option:--quiet-flag",
+   "kind": "cli",
+   "release": "unreleased",
+   "source": "surface",
+   "summary": "New option `--quiet-flag`.",
+   "title": "New option `--quiet-flag`"
   },
   {
    "action": "none",
@@ -383,6 +451,7 @@
     "dynamic-models-unformatted",
     "deprecation:python-api.python-version-has-type-alias",
     "experimental:input-format.avro",
+    "option:--released-flag",
     "preset:20260201",
     "refuse-empty-enum",
     "removal:cli.validation"
@@ -416,6 +485,7 @@
     "dynamic-models-unformatted",
     "deprecation:python-api.python-version-has-type-alias",
     "experimental:input-format.avro",
+    "option:--released-flag",
     "preset:20260201",
     "refuse-empty-enum",
     "removal:cli.validation"
@@ -490,9 +560,18 @@ Every change a user meets when upgrading, newest first. To upgrade from a releas
 
 Templates of `--custom-template-dir` read the fields as `fields`.
 
-- **Affects:** custom templates: `pydantic_v2/BaseModel.jinja2`
+- **Affects:** custom templates: `pydantic_v2/BaseModel.jinja2`, `Old.jinja2`
 - **What to change:** Rename `model_fields` to `fields` in your templates.
 - **Pull requests and issues:** [#5001](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5001)
+- **Source:** the release notes
+
+### `--old-flag` is removed (unreleased) { #old-flag-removed }
+
+The option did nothing since 0.3.0.
+
+- **Affects:** only with: `--old-flag`
+- **What to change:** Drop `--old-flag`.
+- **Pull requests and issues:** [#5002](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5002)
 - **Source:** the release notes
 
 ### argcomplete installation is scheduled to change (unreleased) { #deprecation-dependency-argcomplete-optional }
@@ -500,6 +579,24 @@ Templates of `--custom-template-dir` read the fields as `fields`.
 argcomplete will become optional.
 
 - **Source:** the registry of deprecations, experimental features and dated presets
+
+### New option `--new-flag` (`--no-new-flag`) (unreleased) { #option-new-flag }
+
+Turn on new things.
+
+- **Source:** the command-line options of both releases
+
+### New value `c` of `--output-model-type` (unreleased) { #option-output-model-type-c }
+
+New value `c` of `--output-model-type`.
+
+- **Source:** the command-line options of both releases
+
+### New option `--quiet-flag` (unreleased) { #option-quiet-flag }
+
+New option `--quiet-flag`.
+
+- **Source:** the command-line options of both releases
 
 ### New dated presets `standard-py3XX-20260301` and `practical-py3XX-20260301` (unreleased) { #preset-20260301 }
 
@@ -593,6 +690,12 @@ Avro input is experimental.
 
 - **Affects:** experimental features: `input-format.avro`
 - **Source:** the registry of deprecations, experimental features and dated presets
+
+### New option `--released-flag` (0.3.0) { #option-released-flag }
+
+New option `--released-flag`.
+
+- **Source:** the command-line options of both releases
 
 ### New dated presets `standard-py3XX-20260201` and `practical-py3XX-20260201` (0.3.0) { #preset-20260201 }
 
@@ -689,7 +792,7 @@ Releases before 0.1.0: start from the 0.1.0 page and read the older entries of t
 
 <!-- Generated by scripts/build_migration_docs.py. Do not edit manually. -->
 
-For datamodel-code-generator 0.1.0. On the way to 0.4.0: 3 required changes, 4 output changes an option keeps, 1 changes no option keeps, 2 new warnings, 3 changes that need nothing. Each item names the release that made it. [All changes](changes.md) · [Machine-readable list](https://datamodel-code-generator.koxudaxi.dev/data/migration.json)
+For datamodel-code-generator 0.1.0. On the way to 0.4.0: 3 required changes, 4 output changes an option keeps, 1 changes no option keeps, 2 new warnings, 4 changes that need nothing. Each item names the release that made it. [All changes](changes.md) · [Machine-readable list](https://datamodel-code-generator.koxudaxi.dev/data/migration.json)
 
 ## Keep your current output
 
@@ -801,13 +904,14 @@ Models of `anyOf` and `oneOf` members no longer end in `Item`.
 
 - New dated presets `standard-py3XX-20260101` and `practical-py3XX-20260101` (0.2.0) [details](changes.md#preset-20260101)
 - --input-file-type avro is experimental (0.3.0) [details](changes.md#experimental-input-format-avro)
+- New option `--released-flag` (0.3.0) [details](changes.md#option-released-flag)
 - New dated presets `standard-py3XX-20260201` and `practical-py3XX-20260201` (0.3.0) [details](changes.md#preset-20260201)
 --- from-0.2.0.md ---
 # Upgrading from 0.2.0 to 0.4.0
 
 <!-- Generated by scripts/build_migration_docs.py. Do not edit manually. -->
 
-For datamodel-code-generator 0.2.0. On the way to 0.4.0: 3 required changes, 3 output changes an option keeps, 0 changes no option keeps, 1 new warnings, 2 changes that need nothing. Each item names the release that made it. [All changes](changes.md) · [Machine-readable list](https://datamodel-code-generator.koxudaxi.dev/data/migration.json)
+For datamodel-code-generator 0.2.0. On the way to 0.4.0: 3 required changes, 3 output changes an option keeps, 0 changes no option keeps, 1 new warnings, 3 changes that need nothing. Each item names the release that made it. [All changes](changes.md) · [Machine-readable list](https://datamodel-code-generator.koxudaxi.dev/data/migration.json)
 
 ## Keep your current output
 
@@ -892,6 +996,7 @@ It skips Black and isort unless formatters are selected.
 ## Also changed, no action needed
 
 - --input-file-type avro is experimental (0.3.0) [details](changes.md#experimental-input-format-avro)
+- New option `--released-flag` (0.3.0) [details](changes.md#option-released-flag)
 - New dated presets `standard-py3XX-20260201` and `practical-py3XX-20260201` (0.3.0) [details](changes.md#preset-20260201)
 --- from-0.3.0.md ---
 # Upgrading from 0.3.0 to 0.4.0
@@ -931,7 +1036,7 @@ A schema with `enum: []` fails with an error instead of generating an empty enum
 
 <!-- Generated by scripts/build_migration_docs.py. Do not edit manually. -->
 
-For datamodel-code-generator 0.1.0; the [upgrade guide](https://datamodel-code-generator.koxudaxi.dev/migration/) has the other releases. On the way to 0.4.0: 3 required changes, 4 output changes an option keeps, 1 changes no option keeps, 2 new warnings, 3 changes that need nothing. Each item names the release that made it. [All changes](https://datamodel-code-generator.koxudaxi.dev/migration/changes/) · [Machine-readable list](https://datamodel-code-generator.koxudaxi.dev/data/migration.json)
+For datamodel-code-generator 0.1.0; the [upgrade guide](https://datamodel-code-generator.koxudaxi.dev/migration/) has the other releases. On the way to 0.4.0: 3 required changes, 4 output changes an option keeps, 1 changes no option keeps, 2 new warnings, 4 changes that need nothing. Each item names the release that made it. [All changes](https://datamodel-code-generator.koxudaxi.dev/migration/changes/) · [Machine-readable list](https://datamodel-code-generator.koxudaxi.dev/data/migration.json)
 
 ## Keep your current output
 
@@ -1043,13 +1148,14 @@ Models of `anyOf` and `oneOf` members no longer end in `Item`.
 
 - New dated presets `standard-py3XX-20260101` and `practical-py3XX-20260101` (0.2.0) [details](https://datamodel-code-generator.koxudaxi.dev/migration/changes/#preset-20260101)
 - --input-file-type avro is experimental (0.3.0) [details](https://datamodel-code-generator.koxudaxi.dev/migration/changes/#experimental-input-format-avro)
+- New option `--released-flag` (0.3.0) [details](https://datamodel-code-generator.koxudaxi.dev/migration/changes/#option-released-flag)
 - New dated presets `standard-py3XX-20260201` and `practical-py3XX-20260201` (0.3.0) [details](https://datamodel-code-generator.koxudaxi.dev/migration/changes/#preset-20260201)
 --- migration/from/0.2.0.md ---
 # Upgrading from 0.2.0 to 0.4.0
 
 <!-- Generated by scripts/build_migration_docs.py. Do not edit manually. -->
 
-For datamodel-code-generator 0.2.0; the [upgrade guide](https://datamodel-code-generator.koxudaxi.dev/migration/) has the other releases. On the way to 0.4.0: 3 required changes, 3 output changes an option keeps, 0 changes no option keeps, 1 new warnings, 2 changes that need nothing. Each item names the release that made it. [All changes](https://datamodel-code-generator.koxudaxi.dev/migration/changes/) · [Machine-readable list](https://datamodel-code-generator.koxudaxi.dev/data/migration.json)
+For datamodel-code-generator 0.2.0; the [upgrade guide](https://datamodel-code-generator.koxudaxi.dev/migration/) has the other releases. On the way to 0.4.0: 3 required changes, 3 output changes an option keeps, 0 changes no option keeps, 1 new warnings, 3 changes that need nothing. Each item names the release that made it. [All changes](https://datamodel-code-generator.koxudaxi.dev/migration/changes/) · [Machine-readable list](https://datamodel-code-generator.koxudaxi.dev/data/migration.json)
 
 ## Keep your current output
 
@@ -1134,6 +1240,7 @@ It skips Black and isort unless formatters are selected.
 ## Also changed, no action needed
 
 - --input-file-type avro is experimental (0.3.0) [details](https://datamodel-code-generator.koxudaxi.dev/migration/changes/#experimental-input-format-avro)
+- New option `--released-flag` (0.3.0) [details](https://datamodel-code-generator.koxudaxi.dev/migration/changes/#option-released-flag)
 - New dated presets `standard-py3XX-20260201` and `practical-py3XX-20260201` (0.3.0) [details](https://datamodel-code-generator.koxudaxi.dev/migration/changes/#preset-20260201)
 --- migration/from/0.3.0.md ---
 # Upgrading from 0.3.0 to 0.4.0

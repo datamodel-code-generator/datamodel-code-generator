@@ -121,7 +121,7 @@ def summarize_gate(rows: list[dict[str, Any]], entries: list[dict[str, Any]]) ->
                 "entry": entries[index].get("input", ""),
                 "reason": entries[index].get("reason", ""),
                 "decision": entries[index].get("decision", ""),
-                "release_note": entries[index].get("release_note", ""),
+                "migration": entries[index].get("migration", ""),
                 "cells": len(group),
                 "inputs": sorted({row["input"] for row in group}),
                 "types": sorted({row["type"] for row in group}),

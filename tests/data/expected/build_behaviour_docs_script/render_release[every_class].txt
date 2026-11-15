@@ -136,7 +136,7 @@
       "entry": "tests/data/jsonschema/external_anchor",
       "reason": "spec-correct $anchor target; 0.86.0 depended on file read order",
       "decision": "#5088",
-      "release_note": "an external $anchor resolves to the anchored schema regardless of file read order",
+      "migration": "external-anchor-target",
       "cells": 1,
       "inputs": [
         "tests/data/jsonschema/external_anchor"
@@ -150,6 +150,7 @@
       "aspects": [
         "type"
       ],
+      "release_note": "An external $anchor resolves to the anchored schema",
       "restored_by": [],
       "example": {
         "input": "tests/data/jsonschema/external_anchor",
@@ -233,7 +234,7 @@ Validation, no validator or unusable value:
 
 ## Behaviour changes in default output
 
-### an external $anchor resolves to the anchored schema regardless of file read order
+### An external $anchor resolves to the anchored schema
 
 - Decision: #5088
 - Why: spec-correct $anchor target; 0.86.0 depended on file read order
