@@ -43,6 +43,15 @@ Under `--collapse-root-models-name-strategy parent`, a module that named an enum
 +kind: Literal[b.Foo.cat, 'cat']
 ```
 
+### A member of `$defs` that is not a schema is skipped with a `UserWarning` in a draft 7 or older document (unreleased) { #defs-member-not-a-schema }
+
+Draft 7 and older have no `$defs` keyword, so their meta-schemas do not constrain its members. In a document read in one of these versions (the version of the input document, or of each document under `--read-schema-version-per-document`), a member of `$defs` whose value is neither an object nor a boolean, such as a `description` string written beside the definitions, is now skipped with a `UserWarning` that names it, and the document is generated; it was refused before. Such a member is still refused in a document read as 2019-09 or later (a document without `$schema` that holds `$defs` reads as 2020-12) and where a reference names it. A caller that turns warnings into errors gets an error.
+
+- **Affects:** input types: `jsonschema`
+- **What to change:** Move the value into the definition it belongs to, or remove it.
+- **Pull requests and issues:** [#6880](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6880)
+- **Source:** the release notes
+
 ### An option that is turned off and that another option turns on emits a `UserWarning` (unreleased) { #implied-option-replaces-given-value }
 
 `--use-annotated` turns `--field-constraints` on, `--use-type-alias-type` turns `--use-type-alias` on and `--intersect-combined-schema-keywords` turns `--intersect-allof-keywords` on, also where a preset sets the first option. A run that turns the second option off (`--no-intersect-allof-keywords`, `false` in `pyproject.toml`, `False` given to `generate()`) is now reported with a `UserWarning` that names both options and how to turn both off; the option stays on as before and the generated output is unchanged. A `false` in `pyproject.toml` is not reported under a `--preset` argument whose preset sets that option, as such a preset replaces the values of `pyproject.toml`. `generate()` does not report `use_type_alias`, nor a value of a config that `load_pyproject_config()` returned. A caller that turns warnings into errors gets an error.
