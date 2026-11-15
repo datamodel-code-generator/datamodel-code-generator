@@ -758,3 +758,34 @@ def test_generate_server_implied_settings(
         f"printed {printed.out + printed.err!r}; models equal those of a model-only run given the settings: {same}\n",
         GENERATE / "implied.txt",
     )
+
+
+@pytest.mark.parametrize(
+    ("target_options", "source_fn"),
+    [
+        (SERVER, _server),
+        (CLIENT, _client),
+    ],
+    ids=["server", "client"],
+)
+def test_generate_target_mismatched_preset_raises_error(
+    target_options: dict[str, Any],
+    source_fn: Any,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Raise Error, not PresetError, when a server or client target gets a mismatched preset."""
+    monkeypatch.chdir(tmp_path)
+    source = source_fn(tmp_path)
+    with pytest.raises(
+        Error,
+        match=r"--preset standard-py312-20260619 targets Python 3\.12; current --target-python-version is 3\.11\.",
+    ):
+        generate(
+            source,
+            input_file_type=InputFileType.OpenAPI,
+            output_model_type=DataModelType.PydanticV2BaseModel,
+            target_python_version=PythonVersion.PY_311,
+            preset="standard-py312-20260619",
+            **target_options,
+        )
