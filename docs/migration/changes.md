@@ -6,6 +6,15 @@ Every change a user meets when upgrading, newest first. To upgrade from a releas
 
 ## Unreleased
 
+### `generate()` with a server or client target raises `Error` for a preset that does not fit (unreleased) { #target-preset-error-class }
+
+With `generate_server` or `generate_client`, a `preset` that does not match `target_python_version` raises `datamodel_code_generator.Error`, as a model-only run does, with the same message. It raised `datamodel_code_generator.preset.PresetError`, which is not an `Error`. The command line is unchanged.
+
+- **Affects:** experimental features: `cli-option.generate-server`, `cli-option.generate-client`
+- **What to change:** Catch `datamodel_code_generator.Error` where the code caught `PresetError` around a target run.
+- **Pull requests and issues:** [#6851](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6851)
+- **Source:** the release notes
+
 ### A Literal member of an enum named through a collapsed alias imports the enum (unreleased) { #enum-literal-after-collapsed-alias }
 
 Under `--collapse-root-models-name-strategy parent`, a module that named an enum of another module through a collapsed alias wrote the enum without importing it in two places: in an enum member literal (`--use-enum-values-in-discriminator`, or a const beside an enum under `--read-const-beside-enum`) and, under `--reuse-model`, where the enum replaced a duplicate that reuse removed. The models that named it failed when they were used. The module now imports the enum and writes `Literal[b.Foo.cat, 'cat']`. Output that worked before is unchanged.

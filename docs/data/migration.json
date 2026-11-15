@@ -733,6 +733,25 @@
    "title": "Patterns holding a quote are written without an escaped quote"
   },
   {
+   "action": "required",
+   "affects": {
+    "experimental": [
+     "cli-option.generate-server",
+     "cli-option.generate-client"
+    ]
+   },
+   "id": "target-preset-error-class",
+   "kind": "experimental",
+   "migrate": "Catch `datamodel_code_generator.Error` where the code caught `PresetError` around a target run.",
+   "refs": [
+    "#6851"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "With `generate_server` or `generate_client`, a `preset` that does not match `target_python_version` raises `datamodel_code_generator.Error`, as a model-only run does, with the same message. It raised `datamodel_code_generator.preset.PresetError`, which is not an `Error`. The command line is unchanged.",
+   "title": "`generate()` with a server or client target raises `Error` for a preset that does not fit"
+  },
+  {
    "action": "review",
    "affects": {
     "options": [
