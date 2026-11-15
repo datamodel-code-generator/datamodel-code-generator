@@ -17,7 +17,7 @@ from datamodel_code_generator._config_fields import (
     option_path,
 )
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
-from datamodel_code_generator._option_names import field_name, split_external_ref_mapping
+from datamodel_code_generator._option_names import split_external_ref_mapping
 from datamodel_code_generator._paths import resolved
 from datamodel_code_generator._url_redaction import is_url, redact_url
 from datamodel_code_generator.deprecations import warn_deprecated
@@ -145,6 +145,7 @@ def _get_config_class() -> type[Config]:
     )
     from typing_extensions import Self  # noqa: PLC0415
 
+    from datamodel_code_generator._run_record import RunOptions  # noqa: PLC0415
     from datamodel_code_generator.base_config import BaseGenerateConfig  # noqa: PLC0415
 
     class Config(BaseGenerateConfig):  # noqa: PLR0904
@@ -157,8 +158,8 @@ def _get_config_class() -> type[Config]:
             defer_build=True,
         )
 
-        _json_sources: dict[str, Any] = PrivateAttr(default_factory=dict)
-        _naming_chosen: bool = PrivateAttr(default=False)
+        # Where the values of the run came from and what its option stages gave: the copies of a config share it.
+        _run_options: RunOptions = PrivateAttr(default_factory=RunOptions)
 
         def get(self, item: str) -> Any:  # pragma: no cover
             """Get attribute value by name."""
@@ -468,19 +469,6 @@ def _prepare_cli_config_args(set_args: Mapping[str, _RawConfigValue]) -> dict[st
     from datamodel_code_generator._option_rules import implied_options  # noqa: PLC0415
 
     return {**set_args, **implied_options(set_args)}
-
-
-def _apply_implicit_cli_config_values(
-    config: Config,
-    pyproject_config: Mapping[str, _RawConfigValue],
-    cli_config_args: Mapping[str, _RawConfigValue],
-) -> None:
-    """Apply CLI defaults after pyproject, command-line, and preset values have merged."""
-    from datamodel_code_generator.base_config import implied_model_settings  # noqa: PLC0415
-
-    explicit_fields = {field_name(field) for field in pyproject_config} | set(cli_config_args)
-    for name, value in implied_model_settings(config, explicit_fields).items():
-        setattr(config, name, value)
 
 
 def _template_data(config: Config) -> defaultdict[str, dict[str, Any]] | None:

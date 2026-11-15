@@ -2323,9 +2323,10 @@ def test_pyproject_job_plan_preserves_watch_provenance(jobs_project: dict[str, P
     assert batch_plan.watch_delay == pytest.approx(0.25)
     assert not plan.config.watch
     assert plan.config.watch_delay == pytest.approx(0.5)
-    assert plan.raw_config["input"] == (JSON_SCHEMA_DATA_PATH / "person.json").as_posix()
-    assert plan.raw_config["output"] == jobs_project["plain"].as_posix()
-    assert plan.cli_config_args["formatters"] == ["builtin"]
+    record = plan.config._run_options
+    assert record.pyproject["input"] == (JSON_SCHEMA_DATA_PATH / "person.json").as_posix()
+    assert record.pyproject["output"] == jobs_project["plain"].as_posix()
+    assert record.arguments["formatters"] == ["builtin"]
     assert plan.pyproject_path == tmp_path / "pyproject.toml"
 
 
