@@ -585,19 +585,13 @@ def iter_property_count_validation_sources(
 
     A ``$ref`` member yields its own count keywords where its schema version applies the keywords beside a ``$ref``
     (``_ref_siblings_apply_to``), as the other source walkers do; without --read-schema-version-per-document in every
-    version (row ``legacy-count-ref-member-as-written``).
+    version (row ``legacy-count-ref-member-as-written``). They are the sources of
+    ``iter_scoped_schema_validation_sources`` under that row, with each such member yielded as written.
     """
-    yield obj
-    for item in obj.allOf:
-        if not isinstance(item, JsonSchemaObject):
-            continue
-        if not item.ref:
-            yield from iter_property_count_validation_sources(parser, item, visited_refs)
-            continue
-        if parser._ref_siblings_apply_to(item, legacy="as-written"):  # noqa: SLF001
-            yield item
-        if (target := _schema_refs.unmapped_ref_target(parser, item.ref, visited_refs)) is not None:
-            yield from iter_property_count_validation_sources(parser, *target)
+    for source, _ in iter_scoped_schema_validation_sources(
+        parser, obj, visited_refs, ref_siblings="as-written", sibling_yield="member", track_scope=False
+    ):
+        yield source
 
 
 def should_parse_object_with_schema_validators(parser: SchemaValidatorsHost, obj: JsonSchemaObject) -> bool:
@@ -707,46 +701,99 @@ def iter_schema_validation_sources(
         yield source
 
 
-def iter_scoped_schema_validation_sources(
+def _iter_all_of_reads(  # noqa: PLR0913
+    parser: SchemaValidatorsHost,
+    obj: JsonSchemaObject,
+    visited_refs: frozenset[_TargetNode],
+    scope: str | None,
+    *,
+    include_references: bool,
+    ref_siblings: Literal["as-written", "first-read"] | None,
+    track_scope: bool,
+) -> Iterator[tuple[JsonSchemaObject, frozenset[_TargetNode], str | None, bool]]:
+    """Yield what the validator rules of ``obj`` read in its allOf, as (schema, visited refs, scope, is a target).
+
+    In document order, each schema-object member, a ``$ref`` member only where ``ref_siblings`` reads the keywords
+    beside its ``$ref`` (``_ref_siblings_apply_to`` with that row; None: always, its reader decides), then, with
+    ``include_references``, the schema the ``$ref`` names unless the reference is mapped or visited
+    (``unmapped_ref_target``). A target is read after the reader consumed the member before it. With ``track_scope``
+    a target's scope is that of ``iter_scoped_schema_validation_sources``; without it a target keeps ``scope``.
+    """
+    for item in obj.allOf:
+        if not isinstance(item, JsonSchemaObject):
+            continue
+        if not item.ref:
+            yield item, visited_refs, scope, False
+            continue
+        if ref_siblings is None or parser._ref_siblings_apply_to(item, legacy=ref_siblings):  # noqa: SLF001
+            yield item, visited_refs, scope, False
+        if not include_references:
+            continue
+        target_scope = scope
+        if track_scope:
+            file_part = _schema_refs.ref_path(parser, item.ref).split("#", 1)[0]
+            root_file = parser.model_resolver.resolve_ref("#").split("#", 1)[0]
+            target_scope = None if scope is None or scope else ("" if file_part == root_file else file_part)
+        if (target := _schema_refs.unmapped_ref_target(parser, item.ref, visited_refs)) is not None:
+            yield *target, target_scope, True
+
+
+def iter_scoped_schema_validation_sources(  # noqa: PLR0913
     parser: SchemaValidatorsHost,
     obj: JsonSchemaObject,
     visited_refs: frozenset[_TargetNode] = frozenset(),
     scope: str | None = "",
     *,
     include_references: bool = True,
+    ref_siblings: Literal["as-written", "first-read"] = "first-read",
+    sibling_yield: Literal["member", "ref-less-copy"] = "ref-less-copy",
+    track_scope: bool = True,
 ) -> Iterator[tuple[JsonSchemaObject, str | None]]:
     """Yield the schema and its allOf sources with the document each was read from.
 
     The scope of a source is the file part of its resolved reference, ``""`` for the schema itself, and None
     when the document is not known: a reference followed inside another document resolves against the current
     one.
+
+    The keywords beside an allOf ``$ref`` are read where ``ref_siblings`` applies them (``_iter_all_of_reads``), as
+    ``sibling_yield`` says: ``ref-less-copy`` walks a copy of the member without its ``$ref`` and without following
+    references, only when the member has an applicator, ``if`` or a map keyword; ``member`` yields the member as
+    written (the property counts). Without ``track_scope`` every source keeps ``scope``.
     """
     yield obj, scope
-    for item in obj.allOf:
-        if not isinstance(item, JsonSchemaObject):
-            continue
-        if item.ref:
-            if parser._ref_siblings_apply_to(item, legacy="first-read"):  # noqa: SLF001
-                has_sibling_constraints = (
-                    item.patternProperties
-                    or item.additionalProperties is not None
-                    or item.unevaluatedProperties is not None
-                )
-                if item.allOf or item.oneOf or item.anyOf or "if" in item.extras or has_sibling_constraints:
-                    yield from iter_scoped_schema_validation_sources(
-                        parser, item.model_copy(update={"ref": None}), visited_refs, scope, include_references=False
-                    )
-            if not include_references:
+    if not obj.allOf:
+        return
+    for node, node_visited_refs, node_scope, is_target in _iter_all_of_reads(
+        parser,
+        obj,
+        visited_refs,
+        scope,
+        include_references=include_references,
+        ref_siblings=ref_siblings,
+        track_scope=track_scope,
+    ):
+        source, follows_references = node, include_references
+        if node.ref and not is_target:
+            if sibling_yield == "member":
+                yield node, node_scope
                 continue
-            file_part = _schema_refs.ref_path(parser, item.ref).split("#", 1)[0]
-            root_file = parser.model_resolver.resolve_ref("#").split("#", 1)[0]
-            if (target := _schema_refs.unmapped_ref_target(parser, item.ref, visited_refs)) is not None:
-                yield from iter_scoped_schema_validation_sources(
-                    parser, *target, None if scope is None or scope else ("" if file_part == root_file else file_part)
-                )
-            continue
+            has_sibling_constraints = (
+                node.patternProperties
+                or node.additionalProperties is not None
+                or node.unevaluatedProperties is not None
+            )
+            if not (node.allOf or node.oneOf or node.anyOf or "if" in node.extras or has_sibling_constraints):
+                continue
+            source, follows_references = node.model_copy(update={"ref": None}), False
         yield from iter_scoped_schema_validation_sources(
-            parser, item, visited_refs, scope, include_references=include_references
+            parser,
+            source,
+            node_visited_refs,
+            node_scope,
+            include_references=follows_references,
+            ref_siblings=ref_siblings,
+            sibling_yield=sibling_yield,
+            track_scope=track_scope,
         )
 
 
@@ -1026,19 +1073,16 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
     if obj.uniqueItems is True:
         yield UniqueItemsRule(path=path)
 
-    for item in obj.allOf:
-        if not isinstance(item, JsonSchemaObject):
-            continue
-        yield from parser._iter_unique_items_rules(  # noqa: SLF001
-            item,
-            path,
-            visited_refs,
-            property_input_names,
-            include_properties=include_properties,
-        )
-        if item.ref and (target := _schema_refs.unmapped_ref_target(parser, item.ref, visited_refs)):
+    if obj.allOf:
+        for node, node_visited_refs, _, _ in _iter_all_of_reads(
+            parser, obj, visited_refs, "", include_references=True, ref_siblings=None, track_scope=False
+        ):
             yield from parser._iter_unique_items_rules(  # noqa: SLF001
-                target[0], path, target[1], property_input_names, include_properties=include_properties
+                node,
+                path,
+                node_visited_refs,
+                property_input_names,
+                include_properties=include_properties,
             )
 
     for members in (obj.anyOf, obj.oneOf):
@@ -1453,23 +1497,21 @@ def pattern_validation_with_undeclared_required(
     return None
 
 
-def add_pattern_properties_validator(  # noqa: PLR0913, PLR0917
+def add_pattern_properties_validator(
     parser: SchemaValidatorsHost,
     reference_path: str,
-    name: str,
     obj: JsonSchemaObject,
-    path: list[str],
-    fields: Sequence[DataModelFieldBase],
-    base_classes: Sequence[Reference],
+    pattern_validators: tuple[list[tuple[str, DataType]], list[str], DataType | None, bool],
+    names_by_property: dict[str, tuple[str, ...]],
 ) -> None:
-    """Register the patternProperties rule of ``obj`` and its allOf sources."""
-    pattern_value_types, rejected_patterns, additional_property_type, allow_unmatched = (
-        parser._collect_pattern_property_validators(name, obj, path)  # noqa: SLF001
-    )
+    """Register the patternProperties rule of ``obj`` and its allOf sources.
+
+    ``pattern_validators`` is what ``_collect_pattern_property_validators`` collected for ``obj``.
+    """
+    pattern_value_types, rejected_patterns, additional_property_type, allow_unmatched = pattern_validators
     if not pattern_value_types and not rejected_patterns:
         return
 
-    names_by_property = parser._get_input_names_by_property(fields, base_classes)  # noqa: SLF001
     declared_names = tuple(sorted({name for names in names_by_property.values() for name in names}))
     rule_type = PatternPropertiesRule
     helpers_kept = customizes_models(parser.config)
@@ -1586,8 +1628,9 @@ def add_schema_validators(  # noqa: PLR0913, PLR0917
     if not parser.generate_schema_validators:
         return
 
-    add_pattern_properties_validator(parser, reference_path, name, obj, path, fields, base_classes)
+    pattern_validators = parser._collect_pattern_property_validators(name, obj, path)  # noqa: SLF001
     names_by_property = parser._get_input_names_by_property(fields, base_classes)  # noqa: SLF001
+    add_pattern_properties_validator(parser, reference_path, obj, pattern_validators, names_by_property)
     if (
         not parser.force_optional_for_required_fields
         and not obj.custom_base_path
