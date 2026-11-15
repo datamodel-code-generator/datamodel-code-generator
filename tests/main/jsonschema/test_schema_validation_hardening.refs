@@ -17,3 +17,11 @@ pydantic_v2.BaseModel	main/jsonschema/enum_names_beside_null_warnings.txt
 	main/jsonschema/schema_validators_required_object_type_list.py
 [test_main_jsonschema_required_only_type_list_with_schema_validator]
 	main/jsonschema/schema_validators_required_type_list.py
+[test_main_jsonschema_root_id_object_generates_as_before]
+	main/jsonschema/schema_validation_hardening/main_jsonschema_root_id_object_generates_as_before.py
+[test_main_jsonschema_root_id_of_another_type]
+dollar-id-boolean	main/jsonschema/schema_validation_hardening/main_jsonschema_root_id_of_another_type[dollar-id-boolean].txt
+dollar-id-number	main/jsonschema/schema_validation_hardening/main_jsonschema_root_id_of_another_type[dollar-id-number].txt
+id-boolean	main/jsonschema/schema_validation_hardening/main_jsonschema_root_id_of_another_type[id-boolean].txt
+id-number	main/jsonschema/schema_validation_hardening/main_jsonschema_root_id_of_another_type[id-number].txt
+id-number-in-referenced-document	main/jsonschema/schema_validation_hardening/main_jsonschema_root_id_of_another_type[id-number-in-referenced-document].txt

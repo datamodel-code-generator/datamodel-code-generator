@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import json
 import warnings
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_output
 from tests.main.conftest import JSON_SCHEMA_DATA_PATH, run_main_and_assert
 from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_file_content
@@ -137,4 +139,56 @@ def test_main_jsonschema_draft4_exclusive_bounds_without_bound(output_file: Path
         expected_file="draft4_exclusive_without_bound.py",
         extra_args=["--disable-timestamp", "--target-python-version", "3.10"],
         force_exec_validation=True,
+    )
+
+
+OPENWEATHER_SAMPLE = {"id": 420006353, "name": "Mountain View", "cod": 200}
+OBJECT_SCHEMA = {"type": "object", "properties": {"name": {"type": "string"}}}
+ROOT_IDS_OF_ANOTHER_TYPE: dict[str, tuple[dict[str, Any], dict[str, Any] | None]] = {
+    "id-number": (OPENWEATHER_SAMPLE, None),
+    "dollar-id-number": ({"$id": 420006353, **OBJECT_SCHEMA}, None),
+    "id-boolean": ({"id": True, **OBJECT_SCHEMA}, None),
+    "dollar-id-boolean": ({"$id": True, **OBJECT_SCHEMA}, None),
+    "id-number-in-referenced-document": (
+        {"type": "object", "properties": {"other": {"$ref": "other.json"}}},
+        {"id": 5122, **OBJECT_SCHEMA},
+    ),
+}
+
+
+@pytest.mark.parametrize("case", ROOT_IDS_OF_ANOTHER_TYPE)
+def test_main_jsonschema_root_id_of_another_type(case: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A root ``id`` or ``$id`` that is a number or a boolean is refused as a keyword of the wrong type is (#6881).
+
+    The message names the keyword, the value and the document that holds it, also where a reference loads that
+    document; the run ended in a traceback before. pydantic's link to its documentation is left out of the stored
+    text, as it names the installed version.
+    """
+    schema, referenced = ROOT_IDS_OF_ANOTHER_TYPE[case]
+    (tmp_path / "schema.json").write_text(json.dumps(schema), encoding="utf-8")
+    if referenced is not None:
+        (tmp_path / "other.json").write_text(json.dumps(referenced), encoding="utf-8")
+    run_main_and_assert(
+        input_path=tmp_path / "schema.json",
+        output_path=tmp_path / "model.py",
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--disable-timestamp"],
+        expected_exit=Exit.ERROR,
+    )
+    lines = capsys.readouterr().err.splitlines(keepends=True)
+    assert_output("".join(line for line in lines if "errors.pydantic.dev" not in line))
+
+
+def test_main_jsonschema_root_id_object_generates_as_before(output_file: Path, tmp_path: Path) -> None:
+    """A root ``id`` that is an object, such as a property schema written beside ``properties``, is kept as read.
+
+    Runs that read one generate, so its document generates the code it generated before (#6881).
+    """
+    schema = tmp_path / "schema.json"
+    schema.write_text(json.dumps({"id": {"type": "string"}, **OBJECT_SCHEMA}), encoding="utf-8")
+    run_main_and_assert(
+        input_path=schema,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--disable-timestamp"],
     )

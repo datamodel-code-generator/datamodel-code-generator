@@ -8180,12 +8180,24 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Context manager to temporarily set the root $id during parsing.
 
         Uses the id_field of the schema features to support both "id" (Draft 4) and "$id" (Draft 6+).
-        Falls back to checking both fields for lenient compatibility.
+        Falls back to checking both fields for lenient compatibility. The first of them whose value is not empty is
+        read. A value that is not a string, an object or an array, such as a number, is refused as a keyword of the
+        wrong type is (#6881); an object or an array is kept as read, so the runs that read one keep their output.
         """
         previous_root_id = self.root_id
         # Try version-specific field first, then fallback to alternative for compatibility
         id_field = self._features_at(None).id_field
-        self.root_id = root_raw.get(id_field) or root_raw.get("$id") or root_raw.get("id") or None
+        keyword = next((key for key in (id_field, "$id", "id") if root_raw.get(key)), None)
+        root_id = None if keyword is None else root_raw[keyword]
+        if keyword is not None and not isinstance(root_id, str | dict | list):
+            from pydantic import ValidationError  # noqa: PLC0415
+
+            error = ValidationError.from_exception_data(
+                self.SCHEMA_OBJECT_TYPE.__name__, [{"type": "string_type", "loc": (keyword,), "input": root_id}]
+            )
+            path = _named_path(self._schema_value_location(root_raw), list(self.model_resolver.current_root) or ["#"])
+            raise SchemaParseError(message=f"{type(error).__name__}: {error}", path=path, original_error=error)
+        self.root_id = root_id
         yield
         self.root_id = previous_root_id
 
