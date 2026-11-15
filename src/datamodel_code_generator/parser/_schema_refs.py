@@ -1279,11 +1279,10 @@ def intersect_ref_siblings_schema(  # noqa: PLR0913
         and "contains" in holder.extras
         and (contains_bounds := get_contains_bounds(parser, parser._schema_object(target))) is not None  # noqa: SLF001
     ):
-        sibling_contains = _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS & holder.extras.keys()
         extras_key = JsonSchemaObject.__extra_key__
         merged[extras_key] = {
             **_without_contains_keywords(merged[extras_key]),
-            **{key: holder.extras[key] for key in sibling_contains},
+            **{key: value for key, value in holder.extras.items() if key in _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS},
         }
         parser._merge_schema_constraints(merged, [contains_bounds], intersect=True)  # noqa: SLF001
     merged_schema = parser._schema_object(merged)  # noqa: SLF001
