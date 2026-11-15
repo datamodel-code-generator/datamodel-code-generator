@@ -5,7 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-from pydantic import BaseModel
+import msgspec
+from pydantic import BaseModel, ConfigDict
 from typing_extensions import TypedDict
 
 
@@ -66,3 +67,32 @@ class ModelWithMixed(BaseModel):
     pydantic_field: NestedPydantic
     dataclass_field: NestedDataclass
     category: Category
+
+
+class NestedStruct(msgspec.Struct):
+    """msgspec Struct, for which Pydantic has no schema."""
+
+    name: str
+
+
+class ModelWithStruct(BaseModel):
+    """Pydantic model containing a msgspec Struct field."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    info: NestedStruct
+    category: Category
+
+
+@dataclass
+class ExportOptions:
+    """Dataclass with a field named like the fields attribute of a Pydantic model."""
+
+    name: str
+    model_fields: tuple[str, ...] = ()
+
+
+class ModelWithExportOptions(BaseModel):
+    """Pydantic model containing a dataclass that has a field named ``model_fields``."""
+
+    options: ExportOptions

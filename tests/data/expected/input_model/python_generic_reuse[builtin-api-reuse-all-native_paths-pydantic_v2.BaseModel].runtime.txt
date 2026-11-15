@@ -1,0 +1,100 @@
+[
+  {
+    "name": "NativePathsRoot",
+    "fields": [
+      "both",
+      "nested",
+      "own"
+    ],
+    "annotations_equal": {
+      "both": true,
+      "nested": true,
+      "own": true
+    },
+    "type_identity": {
+      "nested": true,
+      "own": true
+    },
+    "results": {
+      "native": {
+        "valid": {
+          "both": [
+            {
+              "value": 4
+            },
+            {
+              "value": 5
+            }
+          ],
+          "nested": {
+            "inner": {
+              "value": 1
+            }
+          },
+          "own": {
+            "value": 2
+          }
+        },
+        "invalid": [
+          [
+            [
+              "both",
+              1,
+              "value"
+            ],
+            "greater_than"
+          ],
+          [
+            [
+              "own",
+              "value"
+            ],
+            "greater_than_equal"
+          ]
+        ]
+      },
+      "generated": {
+        "valid": {
+          "both": [
+            {
+              "value": 4
+            },
+            {
+              "value": 5
+            }
+          ],
+          "nested": {
+            "inner": {
+              "value": 1
+            }
+          },
+          "own": {
+            "value": 2
+          }
+        },
+        "invalid": [
+          [
+            [
+              "both",
+              1,
+              "value"
+            ],
+            "greater_than"
+          ],
+          [
+            [
+              "own",
+              "value"
+            ],
+            "greater_than_equal"
+          ]
+        ]
+      }
+    },
+    "type_leaf_identity": {
+      "both": true,
+      "nested": true,
+      "own": true
+    }
+  }
+]

@@ -24,6 +24,8 @@ variadic	input_model/callable_types[variadic].txt	= input_model/callable_types[b
 	input_model/custom_generic_type_import.txt
 [test_input_model_cwd_already_in_path]
 	input_model/cwd_already_in_path.txt
+[test_input_model_dataclass_field_named_model_fields]
+	input_model/dataclass_field_named_model_fields.txt
 [test_input_model_dataclass_fields_of_one_alias]
 option	input_model/dataclass_fields_of_one_alias[option].txt
 released	input_model/dataclass_fields_of_one_alias[released].txt	= input_model/dataclass_fields_of_one_alias[option].txt
@@ -1034,6 +1036,8 @@ released	input_model/read_dataclass_fields_by_alias[released].txt	= input_model/
 	input_model/ref_strategy_reuse_foreign_mixed_types.txt
 [test_input_model_ref_strategy_reuse_foreign_msgspec_output]
 	input_model/ref_strategy_reuse_foreign_msgspec_output.txt
+[test_input_model_ref_strategy_reuse_foreign_msgspec_struct_field]
+	input_model/ref_strategy_reuse_foreign_msgspec_struct_field.txt
 [test_input_model_ref_strategy_reuse_foreign_no_regeneration]
 	input_model/ref_strategy_reuse_foreign_no_regeneration.txt	= input_model/ref_strategy_reuse_foreign.txt
 [test_input_model_ref_strategy_reuse_foreign_pydantic_output]
@@ -1952,6 +1956,8 @@ builtin-api-reuse-all-multi_reverse-pydantic_v2.BaseModel	input_model/python_gen
 builtin-api-reuse-all-multi_reverse-pydantic_v2.BaseModel	input_model/python_generic_reuse[builtin-api-reuse-all-multi_reverse-pydantic_v2.BaseModel].runtime.txt
 builtin-api-reuse-all-named-pydantic_v2.BaseModel	input_model/python_generic_reuse[builtin-api-reuse-all-named-pydantic_v2.BaseModel].py
 builtin-api-reuse-all-named-pydantic_v2.BaseModel	input_model/python_generic_reuse[builtin-api-reuse-all-named-pydantic_v2.BaseModel].runtime.txt
+builtin-api-reuse-all-native_paths-pydantic_v2.BaseModel	input_model/python_generic_reuse[builtin-api-reuse-all-native_paths-pydantic_v2.BaseModel].py
+builtin-api-reuse-all-native_paths-pydantic_v2.BaseModel	input_model/python_generic_reuse[builtin-api-reuse-all-native_paths-pydantic_v2.BaseModel].runtime.txt
 builtin-api-reuse-all-nested-pydantic_v2.BaseModel	input_model/python_generic_reuse[builtin-api-reuse-all-nested-pydantic_v2.BaseModel].py
 builtin-api-reuse-all-nested-pydantic_v2.BaseModel	input_model/python_generic_reuse[builtin-api-reuse-all-nested-pydantic_v2.BaseModel].runtime.txt
 builtin-api-reuse-all-plain-pydantic_v2.BaseModel	input_model/python_generic_reuse[builtin-api-reuse-all-plain-pydantic_v2.BaseModel].py
@@ -2295,6 +2301,8 @@ builtin-cli-reuse-all-multi_reverse-pydantic_v2.BaseModel	input_model/python_gen
 builtin-cli-reuse-all-multi_reverse-pydantic_v2.BaseModel	input_model/python_generic_reuse[builtin-cli-reuse-all-multi_reverse-pydantic_v2.BaseModel].txt
 builtin-cli-reuse-all-named-pydantic_v2.BaseModel	input_model/python_generic_reuse[builtin-cli-reuse-all-named-pydantic_v2.BaseModel].runtime.txt	= input_model/python_generic_reuse[builtin-api-reuse-all-named-pydantic_v2.BaseModel].runtime.txt
 builtin-cli-reuse-all-named-pydantic_v2.BaseModel	input_model/python_generic_reuse[builtin-cli-reuse-all-named-pydantic_v2.BaseModel].txt
+builtin-cli-reuse-all-native_paths-pydantic_v2.BaseModel	input_model/python_generic_reuse[builtin-cli-reuse-all-native_paths-pydantic_v2.BaseModel].runtime.txt	= input_model/python_generic_reuse[builtin-api-reuse-all-native_paths-pydantic_v2.BaseModel].runtime.txt
+builtin-cli-reuse-all-native_paths-pydantic_v2.BaseModel	input_model/python_generic_reuse[builtin-cli-reuse-all-native_paths-pydantic_v2.BaseModel].txt
 builtin-cli-reuse-all-nested-pydantic_v2.BaseModel	input_model/python_generic_reuse[builtin-cli-reuse-all-nested-pydantic_v2.BaseModel].runtime.txt	= input_model/python_generic_reuse[builtin-api-reuse-all-nested-pydantic_v2.BaseModel].runtime.txt
 builtin-cli-reuse-all-nested-pydantic_v2.BaseModel	input_model/python_generic_reuse[builtin-cli-reuse-all-nested-pydantic_v2.BaseModel].txt
 builtin-cli-reuse-all-plain-pydantic_v2.BaseModel	input_model/python_generic_reuse[builtin-cli-reuse-all-plain-pydantic_v2.BaseModel].runtime.txt	= input_model/python_generic_reuse[builtin-api-reuse-all-plain-pydantic_v2.BaseModel].runtime.txt
@@ -2654,6 +2662,8 @@ external-api-reuse-all-multi_reverse-pydantic_v2.BaseModel	input_model/python_ge
 external-api-reuse-all-multi_reverse-pydantic_v2.BaseModel	input_model/python_generic_reuse[external-api-reuse-all-multi_reverse-pydantic_v2.BaseModel].runtime.txt	= input_model/python_generic_reuse[builtin-api-reuse-all-multi_reverse-pydantic_v2.BaseModel].runtime.txt
 external-api-reuse-all-named-pydantic_v2.BaseModel	input_model/python_generic_reuse[external-api-reuse-all-named-pydantic_v2.BaseModel].py	= input_model/python_generic_reuse[builtin-api-reuse-all-named-pydantic_v2.BaseModel].py
 external-api-reuse-all-named-pydantic_v2.BaseModel	input_model/python_generic_reuse[external-api-reuse-all-named-pydantic_v2.BaseModel].runtime.txt	= input_model/python_generic_reuse[builtin-api-reuse-all-named-pydantic_v2.BaseModel].runtime.txt
+external-api-reuse-all-native_paths-pydantic_v2.BaseModel	input_model/python_generic_reuse[external-api-reuse-all-native_paths-pydantic_v2.BaseModel].py	= input_model/python_generic_reuse[builtin-api-reuse-all-native_paths-pydantic_v2.BaseModel].py
+external-api-reuse-all-native_paths-pydantic_v2.BaseModel	input_model/python_generic_reuse[external-api-reuse-all-native_paths-pydantic_v2.BaseModel].runtime.txt	= input_model/python_generic_reuse[builtin-api-reuse-all-native_paths-pydantic_v2.BaseModel].runtime.txt
 external-api-reuse-all-nested-pydantic_v2.BaseModel	input_model/python_generic_reuse[external-api-reuse-all-nested-pydantic_v2.BaseModel].py	= input_model/python_generic_reuse[builtin-api-reuse-all-nested-pydantic_v2.BaseModel].py
 external-api-reuse-all-nested-pydantic_v2.BaseModel	input_model/python_generic_reuse[external-api-reuse-all-nested-pydantic_v2.BaseModel].runtime.txt	= input_model/python_generic_reuse[builtin-api-reuse-all-nested-pydantic_v2.BaseModel].runtime.txt
 external-api-reuse-all-plain-pydantic_v2.BaseModel	input_model/python_generic_reuse[external-api-reuse-all-plain-pydantic_v2.BaseModel].py	= input_model/python_generic_reuse[builtin-api-reuse-all-plain-pydantic_v2.BaseModel].py
@@ -3022,6 +3032,8 @@ external-cli-reuse-all-multi_reverse-pydantic_v2.BaseModel	input_model/python_ge
 external-cli-reuse-all-multi_reverse-pydantic_v2.BaseModel	input_model/python_generic_reuse[external-cli-reuse-all-multi_reverse-pydantic_v2.BaseModel].txt	= input_model/python_generic_reuse[builtin-cli-reuse-all-multi_reverse-pydantic_v2.BaseModel].txt
 external-cli-reuse-all-named-pydantic_v2.BaseModel	input_model/python_generic_reuse[external-cli-reuse-all-named-pydantic_v2.BaseModel].runtime.txt	= input_model/python_generic_reuse[builtin-api-reuse-all-named-pydantic_v2.BaseModel].runtime.txt
 external-cli-reuse-all-named-pydantic_v2.BaseModel	input_model/python_generic_reuse[external-cli-reuse-all-named-pydantic_v2.BaseModel].txt	= input_model/python_generic_reuse[builtin-cli-reuse-all-named-pydantic_v2.BaseModel].txt
+external-cli-reuse-all-native_paths-pydantic_v2.BaseModel	input_model/python_generic_reuse[external-cli-reuse-all-native_paths-pydantic_v2.BaseModel].runtime.txt	= input_model/python_generic_reuse[builtin-api-reuse-all-native_paths-pydantic_v2.BaseModel].runtime.txt
+external-cli-reuse-all-native_paths-pydantic_v2.BaseModel	input_model/python_generic_reuse[external-cli-reuse-all-native_paths-pydantic_v2.BaseModel].txt	= input_model/python_generic_reuse[builtin-cli-reuse-all-native_paths-pydantic_v2.BaseModel].txt
 external-cli-reuse-all-nested-pydantic_v2.BaseModel	input_model/python_generic_reuse[external-cli-reuse-all-nested-pydantic_v2.BaseModel].runtime.txt	= input_model/python_generic_reuse[builtin-api-reuse-all-nested-pydantic_v2.BaseModel].runtime.txt
 external-cli-reuse-all-nested-pydantic_v2.BaseModel	input_model/python_generic_reuse[external-cli-reuse-all-nested-pydantic_v2.BaseModel].txt	= input_model/python_generic_reuse[builtin-cli-reuse-all-nested-pydantic_v2.BaseModel].txt
 external-cli-reuse-all-plain-pydantic_v2.BaseModel	input_model/python_generic_reuse[external-cli-reuse-all-plain-pydantic_v2.BaseModel].runtime.txt	= input_model/python_generic_reuse[builtin-api-reuse-all-plain-pydantic_v2.BaseModel].runtime.txt

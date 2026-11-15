@@ -1537,5 +1537,54 @@
       "pydantic_v2.BaseModel",
       "dataclasses.dataclass"
     ]
+  },
+  {
+    "name": "native_paths",
+    "sources": [
+      "generic_reuse:NativePathsRoot"
+    ],
+    "payloads": [
+      {
+        "both": [
+          {
+            "value": 4
+          },
+          {
+            "value": 5
+          }
+        ],
+        "nested": {
+          "inner": {
+            "value": 1
+          }
+        },
+        "own": {
+          "value": 2
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "both": [
+          {
+            "value": 4
+          },
+          {
+            "value": 1
+          }
+        ],
+        "nested": {
+          "inner": {
+            "value": 1
+          }
+        },
+        "own": {
+          "value": 0
+        }
+      }
+    ],
+    "strategies": [
+      "reuse-all"
+    ]
   }
 ]
