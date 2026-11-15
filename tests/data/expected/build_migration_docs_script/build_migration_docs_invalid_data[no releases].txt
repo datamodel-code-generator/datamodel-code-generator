@@ -1,0 +1,4 @@
+exit 1
+Invalid migration data:
+- releases.toml lists no release
+written: []

@@ -132,7 +132,7 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         kind="extra",
         target=extra_requirement("httpx2"),
         message="The HTTPX2-backed HTTP client is experimental and may change as compatibility is validated.",
-        since_version="0.71.1",
+        since_version="0.72.0",
         note=(
             f"`{extra_requirement('http')}` remains the stable HTTPX backend and is not deprecated; "
             f"`{extra_requirement('httpx2')}` is experimental. The default HTTP backend policy is auto: stable "
@@ -307,7 +307,7 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         kind="cli-option",
         target="--use-type-alias-type",
         message="Runtime TypeAliasType output is experimental and may change as Python typing support evolves.",
-        since_version="0.71.1",
+        since_version="0.72.1",
         note=(
             "The option implies --use-type-alias and selects TypeAliasType for Python 3.10 and 3.11. "
             "Python 3.12 and newer continue to use native type statements."
@@ -436,15 +436,16 @@ def render_experimental_features(format_: ExperimentalFeatureFormat) -> str:
     return _render_registry(iter_experimental_features(), _PAGE, format_)
 
 
+def _release_note_line(feature: ExperimentalFeature) -> str:
+    """Return the release-note line of an experimental feature in the release that introduces it."""
+    return f"`{feature.target}` is experimental. {feature.message}"
+
+
 def render_release_note_experimental_features(version: str) -> str:
     """Render release-note text for experimental features introduced in a version."""
     return _render_release_notes((
         (
             "Experimental Features",
-            (
-                f"`{item.target}` is experimental. {item.message}"
-                for item in iter_experimental_features()
-                if item.since_version == version
-            ),
+            (_release_note_line(item) for item in iter_experimental_features() if item.since_version == version),
         ),
     ))

@@ -263,4 +263,4 @@ Options and option values 0.86.0 does not have. Default output does not change; 
 
 ## Upgrading across several releases
 
-[Upgrading from an older release](upgrading.md) compares the recorded older releases with the latest one.
+The [upgrade guide](../migration/index.md) lists the steps from each older release to the latest one.

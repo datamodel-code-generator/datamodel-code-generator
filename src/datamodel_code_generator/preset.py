@@ -1507,35 +1507,40 @@ def render_presets_json() -> str:
 
 
 def _date_additions_markdown(since: str) -> list[str]:
-    """Return the lines that say, date by date after ``since``, what the presets of a date add to the date before.
-
-    A date adds its new Python targets and the option groups its standard or practical presets list that the date before
-    does not, each written as the reference tables write it: its title, its options and its description.
-    """
+    """Return the lines that say, date by date after ``since``, what the presets of a date add to the date before."""
     dates = list(_STANDARD_OPTION_GROUPS_BY_DATE)
     dates = dates[dates.index(since) :]
     lines: list[str] = []
     for previous, date in _pairwise(dates):
-        targets = [
-            target.value
-            for target in _PRESET_NAMES_BY_TARGET["standard", date]
-            if target not in _PRESET_NAMES_BY_TARGET["standard", previous]
-        ]
-        added = [
-            *(f"- Python {target} targets" for target in targets),
-            *(
-                _group_item(group, family)
-                for family, groups_by_date in (
-                    ("", _STANDARD_OPTION_GROUPS_BY_DATE),
-                    (" (practical presets)", _PRACTICAL_EXTRA_OPTION_GROUPS_BY_DATE),
-                )
-                for group in groups_by_date.get(date, _PRACTICAL_20260619_EXTRA_OPTION_GROUPS)
-                if group not in groups_by_date.get(previous, _PRACTICAL_20260619_EXTRA_OPTION_GROUPS)
-            ),
-        ]
+        added = _date_additions(previous, date)
         heading = f"The {date} presets keep the {previous} options{' and add:' if added else '.'}"
         lines.extend((heading, "", *added, *([""] if added else [])))
     return lines
+
+
+def _date_additions(previous: str, date: str) -> list[str]:
+    """Return the list items of what the presets of ``date`` add to those of ``previous``.
+
+    A date adds its new Python targets and the option groups its standard or practical presets list that the date before
+    does not, each written as the reference tables write it: its title, its options and its description.
+    """
+    targets = [
+        target.value
+        for target in _PRESET_NAMES_BY_TARGET["standard", date]
+        if target not in _PRESET_NAMES_BY_TARGET["standard", previous]
+    ]
+    return [
+        *(f"- Python {target} targets" for target in targets),
+        *(
+            _group_item(group, family)
+            for family, groups_by_date in (
+                ("", _STANDARD_OPTION_GROUPS_BY_DATE),
+                (" (practical presets)", _PRACTICAL_EXTRA_OPTION_GROUPS_BY_DATE),
+            )
+            for group in groups_by_date.get(date, _PRACTICAL_20260619_EXTRA_OPTION_GROUPS)
+            if group not in groups_by_date.get(previous, _PRACTICAL_20260619_EXTRA_OPTION_GROUPS)
+        ),
+    ]
 
 
 def _group_item(group: PresetOptionGroup, family: str) -> str:

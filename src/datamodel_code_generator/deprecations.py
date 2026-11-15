@@ -276,7 +276,7 @@ DEPRECATIONS: dict[DeprecationId, Deprecation] = {
             "JSON configuration values that do not match the documented schema are deprecated and will become "
             "validation errors in a future release."
         ),
-        warning_since="0.64.2",
+        warning_since="0.65.0",
         removal_version=None,
         replacement="Update the JSON configuration to match --output-format-json-schema config.",
         warning_category="FutureWarning",
@@ -521,6 +521,21 @@ def render_deprecations(format_: DeprecationFormat) -> str:
     return _render_registry(iter_deprecations(), _PAGE, format_)
 
 
+def _release_note_line(item: Deprecation) -> str:
+    """Return the release-note line of a deprecation in the release where its warning or scheduled change starts."""
+    started = (
+        "is registered without a runtime warning"
+        if item.status == "scheduled"
+        else f"now emits `{item.warning_category}`"
+    )
+    return f"`{item.target}` {started}. Planned removal: {_format_removal_version(item)}. {item.message}"
+
+
+def _removal_release_note_line(item: Deprecation) -> str:
+    """Return the release-note line of a deprecation in the release that removes it."""
+    return f"`{item.target}` was scheduled for removal in {item.removal_version}. {item.message}"
+
+
 def render_release_note_deprecations(version: str) -> str:
     """Render release-note text for deprecations that start or end in a version."""
     warning_started: list[Deprecation] = []
@@ -537,24 +552,7 @@ def render_release_note_deprecations(version: str) -> str:
             removals.append(item)
 
     return _render_release_notes((
-        (
-            "Deprecations",
-            (
-                f"`{item.target}` now emits `{item.warning_category}`. "
-                f"Planned removal: {_format_removal_version(item)}. {item.message}"
-                for item in warning_started
-            ),
-        ),
-        (
-            "Scheduled Breaking Changes",
-            (
-                f"`{item.target}` is registered without a runtime warning. "
-                f"Planned removal: {_format_removal_version(item)}. {item.message}"
-                for item in scheduled_changes
-            ),
-        ),
-        (
-            "Removed Deprecated Features",
-            (f"`{item.target}` was scheduled for removal in {version}. {item.message}" for item in removals),
-        ),
+        ("Deprecations", map(_release_note_line, warning_started)),
+        ("Scheduled Breaking Changes", map(_release_note_line, scheduled_changes)),
+        ("Removed Deprecated Features", map(_removal_release_note_line, removals)),
     ))

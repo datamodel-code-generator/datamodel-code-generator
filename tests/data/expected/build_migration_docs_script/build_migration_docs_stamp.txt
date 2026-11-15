@@ -1,0 +1,833 @@
+exits [0, 1], without --tag-tree 2
+stamped 0.5.0: custom-template-root
+
+Invalid migration data:
+- 0.5.0 does not come after the latest release 0.5.0
+
+build_migration_docs.py: error: --stamp needs --tag-tree
+--- changes/0.2.0.toml ---
+
+[[change]]
+id = "specialized-enum-default"
+kind = "default-output"
+action = "keep"
+title = "String enums become `StrEnum`"
+summary = "Enums of strings subclass `StrEnum` instead of `Enum`."
+affects = { input_file_types = ["openapi", "jsonschema"] }
+before = "class Status(Enum):"
+after = "class Status(StrEnum):"
+keep = { flags = ["--no-use-specialized-enum"] }
+refs = ["#2512"]
+source = "release-note"
+
+[[change]]
+id = "union-item-suffix-removed"
+kind = "default-output"
+action = "review"
+title = "Models of `anyOf` members lose the `Item` suffix"
+summary = "Models of `anyOf` and `oneOf` members no longer end in `Item`."
+keep = { note = "No option restores the old names; `--model-name-map` can pin individual names." }
+refs = ["#1682"]
+source = "release-note"
+
+[[change]]
+id = "python-37-runtime-dropped"
+kind = "runtime"
+action = "required"
+title = "datamodel-code-generator no longer runs on Python 3.7"
+summary = "Install and run the generator on Python 3.8 or newer."
+migrate = "Use Python 3.8 or newer."
+refs = ["#2060"]
+source = "release-note"
+--- changes/0.3.0.toml ---
+
+[[change]]
+id = "aware-datetime"
+kind = "default-output"
+action = "keep"
+title = "`format: date-time` becomes `AwareDatetime`"
+summary = "A timestamp without a UTC offset is rejected."
+affects = { output_model_types = ["pydantic_v2.BaseModel"] }
+keep = { flags = ["--output-datetime-class", "datetime"] }
+refs = ["#1735"]
+source = "release-note"
+
+[[change]]
+id = "annotated-constraints"
+kind = "default-output"
+action = "keep"
+title = "Constraints move into `Annotated`"
+summary = "With `--use-annotated`, constraints are written in `Annotated`."
+affects = { options = ["--use-annotated"] }
+keep = { flags = ["--field-constraints"] }
+refs = ["#3001"]
+source = "release-note"
+
+[[change]]
+id = "dynamic-models-unformatted"
+kind = "python-api"
+action = "keep"
+title = "`generate_dynamic_models()` no longer formats the code it builds"
+summary = "It skips Black and isort unless formatters are selected."
+affects = { python_api = ["generate_dynamic_models"] }
+keep = { note = "Pass `formatters=[Formatter.BLACK, Formatter.ISORT]` in the config." }
+refs = ["#6750"]
+source = "release-note"
+
+[[change]]
+id = "class-docstrings"
+kind = "output-text"
+action = "none"
+title = "Class docstrings are wrapped"
+summary = "Long class docstrings are wrapped at the line length."
+refs = ["#3002"]
+source = "release-note"
+
+[[change]]
+id = "python-38-runtime-dropped"
+kind = "runtime"
+action = "required"
+title = "datamodel-code-generator no longer runs on Python 3.8"
+summary = "Install and run the generator on Python 3.9 or newer."
+migrate = "Use Python 3.9 or newer."
+supersedes = ["python-37-runtime-dropped"]
+refs = ["#3003"]
+source = "release-note"
+--- changes/0.4.0.toml ---
+
+[[change]]
+id = "removal:cli.validation"
+title = "`--validation` is removed"
+
+[[change]]
+id = "docstrings-unwrapped"
+kind = "output-text"
+action = "none"
+title = "Class docstrings are no longer wrapped"
+summary = "The wrapping of 0.3.0 is undone."
+reverts = "class-docstrings"
+refs = ["#4001"]
+source = "release-note"
+
+[[change]]
+id = "refuse-empty-enum"
+kind = "error"
+action = "required"
+title = "An empty `enum` is refused"
+summary = "A schema with `enum: []` fails with an error instead of generating an empty enum."
+migrate = "Drop the empty `enum` keyword."
+refs = ["#4002"]
+source = "release-note"
+--- changes/0.5.0.toml ---
+# The changes of 0.5.0, moved from docs/data/migration/unreleased/ when the release was stamped.
+
+[[change]]
+id = "custom-template-root"
+kind = "template"
+action = "required"
+title = "Custom templates receive `fields` instead of `model_fields`"
+summary = "Templates of `--custom-template-dir` read the fields as `fields`."
+affects = { templates = ["pydantic_v2/BaseModel.jinja2"] }
+migrate = "Rename `model_fields` to `fields` in your templates."
+refs = ["#5001"]
+source = "release-note"
+--- derived.toml ---
+# The first release of each dated preset, written by `scripts/build_migration_docs.py --stamp`.
+# A preset date of the source tree that is not listed here is unreleased.
+
+[presets]
+"20260101" = "0.2.0"
+"20260201" = "0.3.0"
+"20260301" = "0.5.0"
+--- releases.toml ---
+
+[[release]]
+version = "0.1.0"
+date = "2026-01-01"
+
+[[release]]
+version = "0.2.0"
+date = "2026-02-01"
+
+[[release]]
+version = "0.3.0"
+date = "2026-03-01"
+
+[[release]]
+version = "0.4.0"
+date = "2026-04-01"
+
+[[release]]
+version = "0.5.0"
+date = "2026-05-01"
+--- unreleased/merged-after-tag.toml ---
+
+[[change]]
+id = "merged-after-tag"
+kind = "template"
+action = "required"
+title = "Custom templates receive `fields` instead of `model_fields`"
+summary = "Templates of `--custom-template-dir` read the fields as `fields`."
+affects = { templates = ["pydantic_v2/BaseModel.jinja2"] }
+migrate = "Rename `model_fields` to `fields` in your templates."
+refs = ["#5001"]
+source = "release-note"
+
+--- data/migration.json ---
+{
+ "changes": [
+  {
+   "action": "required",
+   "id": "python-37-runtime-dropped",
+   "kind": "runtime",
+   "migrate": "Use Python 3.8 or newer.",
+   "refs": [
+    "#2060"
+   ],
+   "release": "0.2.0",
+   "source": "release-note",
+   "summary": "Install and run the generator on Python 3.8 or newer.",
+   "title": "datamodel-code-generator no longer runs on Python 3.7"
+  },
+  {
+   "action": "keep",
+   "affects": {
+    "input_file_types": [
+     "openapi",
+     "jsonschema"
+    ]
+   },
+   "after": "class Status(StrEnum):",
+   "before": "class Status(Enum):",
+   "id": "specialized-enum-default",
+   "keep": {
+    "flags": [
+     "--no-use-specialized-enum"
+    ]
+   },
+   "kind": "default-output",
+   "refs": [
+    "#2512"
+   ],
+   "release": "0.2.0",
+   "source": "release-note",
+   "summary": "Enums of strings subclass `StrEnum` instead of `Enum`.",
+   "title": "String enums become `StrEnum`"
+  },
+  {
+   "action": "review",
+   "id": "union-item-suffix-removed",
+   "keep": {
+    "note": "No option restores the old names; `--model-name-map` can pin individual names."
+   },
+   "kind": "default-output",
+   "refs": [
+    "#1682"
+   ],
+   "release": "0.2.0",
+   "source": "release-note",
+   "summary": "Models of `anyOf` and `oneOf` members no longer end in `Item`.",
+   "title": "Models of `anyOf` members lose the `Item` suffix"
+  },
+  {
+   "action": "warn",
+   "affects": {
+    "options": [
+     "--validation"
+    ]
+   },
+   "id": "deprecation:cli.validation",
+   "kind": "warning",
+   "migrate": "Use --field-constraints.",
+   "release": "0.2.0",
+   "source": "registry",
+   "summary": "--validation is deprecated.",
+   "title": "--validation now emits DeprecationWarning"
+  },
+  {
+   "action": "none",
+   "id": "preset:20260101",
+   "kind": "preset",
+   "release": "0.2.0",
+   "source": "registry",
+   "summary": "The first dated presets; the [presets page](https://datamodel-code-generator.koxudaxi.dev/presets/) lists their options.",
+   "title": "New dated presets `standard-py3XX-20260101` and `practical-py3XX-20260101`"
+  },
+  {
+   "action": "required",
+   "id": "python-38-runtime-dropped",
+   "kind": "runtime",
+   "migrate": "Use Python 3.9 or newer.",
+   "refs": [
+    "#3003"
+   ],
+   "release": "0.3.0",
+   "source": "release-note",
+   "summary": "Install and run the generator on Python 3.9 or newer.",
+   "supersedes": [
+    "python-37-runtime-dropped"
+   ],
+   "title": "datamodel-code-generator no longer runs on Python 3.8"
+  },
+  {
+   "action": "keep",
+   "affects": {
+    "options": [
+     "--use-annotated"
+    ]
+   },
+   "id": "annotated-constraints",
+   "keep": {
+    "flags": [
+     "--field-constraints"
+    ]
+   },
+   "kind": "default-output",
+   "refs": [
+    "#3001"
+   ],
+   "release": "0.3.0",
+   "source": "release-note",
+   "summary": "With `--use-annotated`, constraints are written in `Annotated`.",
+   "title": "Constraints move into `Annotated`"
+  },
+  {
+   "action": "keep",
+   "affects": {
+    "output_model_types": [
+     "pydantic_v2.BaseModel"
+    ]
+   },
+   "id": "aware-datetime",
+   "keep": {
+    "flags": [
+     "--output-datetime-class",
+     "datetime"
+    ]
+   },
+   "kind": "default-output",
+   "refs": [
+    "#1735"
+   ],
+   "release": "0.3.0",
+   "source": "release-note",
+   "summary": "A timestamp without a UTC offset is rejected.",
+   "title": "`format: date-time` becomes `AwareDatetime`"
+  },
+  {
+   "action": "keep",
+   "affects": {
+    "python_api": [
+     "generate_dynamic_models"
+    ]
+   },
+   "id": "dynamic-models-unformatted",
+   "keep": {
+    "note": "Pass `formatters=[Formatter.BLACK, Formatter.ISORT]` in the config."
+   },
+   "kind": "python-api",
+   "refs": [
+    "#6750"
+   ],
+   "release": "0.3.0",
+   "source": "release-note",
+   "summary": "It skips Black and isort unless formatters are selected.",
+   "title": "`generate_dynamic_models()` no longer formats the code it builds"
+  },
+  {
+   "action": "warn",
+   "affects": {
+    "python_api": [
+     "PythonVersion.has_type_alias"
+    ]
+   },
+   "id": "deprecation:python-api.python-version-has-type-alias",
+   "kind": "warning",
+   "release": "0.3.0",
+   "source": "registry",
+   "summary": "has_type_alias is deprecated.",
+   "title": "PythonVersion.has_type_alias now emits DeprecationWarning"
+  },
+  {
+   "action": "none",
+   "id": "class-docstrings",
+   "kind": "output-text",
+   "refs": [
+    "#3002"
+   ],
+   "release": "0.3.0",
+   "source": "release-note",
+   "summary": "Long class docstrings are wrapped at the line length.",
+   "title": "Class docstrings are wrapped"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "input-format.avro"
+    ]
+   },
+   "id": "experimental:input-format.avro",
+   "kind": "experimental",
+   "release": "0.3.0",
+   "source": "registry",
+   "summary": "Avro input is experimental.",
+   "title": "--input-file-type avro is experimental"
+  },
+  {
+   "action": "none",
+   "id": "preset:20260201",
+   "kind": "preset",
+   "release": "0.3.0",
+   "source": "registry",
+   "summary": "They keep the options of the 20260101 presets and add:\n\n- Python 3.15 targets\n- Strict types (`--strict-types str`): Be strict.",
+   "title": "New dated presets `standard-py3XX-20260201` and `practical-py3XX-20260201`"
+  },
+  {
+   "action": "required",
+   "id": "refuse-empty-enum",
+   "kind": "error",
+   "migrate": "Drop the empty `enum` keyword.",
+   "refs": [
+    "#4002"
+   ],
+   "release": "0.4.0",
+   "source": "release-note",
+   "summary": "A schema with `enum: []` fails with an error instead of generating an empty enum.",
+   "title": "An empty `enum` is refused"
+  },
+  {
+   "action": "required",
+   "affects": {
+    "options": [
+     "--validation"
+    ]
+   },
+   "id": "removal:cli.validation",
+   "kind": "removal",
+   "migrate": "Use --field-constraints.",
+   "release": "0.4.0",
+   "source": "registry",
+   "summary": "--validation is deprecated.",
+   "title": "`--validation` is removed"
+  },
+  {
+   "action": "none",
+   "id": "docstrings-unwrapped",
+   "kind": "output-text",
+   "refs": [
+    "#4001"
+   ],
+   "release": "0.4.0",
+   "reverts": "class-docstrings",
+   "source": "release-note",
+   "summary": "The wrapping of 0.3.0 is undone.",
+   "title": "Class docstrings are no longer wrapped"
+  },
+  {
+   "action": "required",
+   "affects": {
+    "templates": [
+     "pydantic_v2/BaseModel.jinja2"
+    ]
+   },
+   "id": "custom-template-root",
+   "kind": "template",
+   "migrate": "Rename `model_fields` to `fields` in your templates.",
+   "refs": [
+    "#5001"
+   ],
+   "release": "0.5.0",
+   "source": "release-note",
+   "summary": "Templates of `--custom-template-dir` read the fields as `fields`.",
+   "title": "Custom templates receive `fields` instead of `model_fields`"
+  },
+  {
+   "action": "none",
+   "id": "deprecation:dependency.argcomplete-optional",
+   "kind": "warning",
+   "release": "0.5.0",
+   "source": "registry",
+   "summary": "argcomplete will become optional.",
+   "title": "argcomplete installation is scheduled to change"
+  },
+  {
+   "action": "none",
+   "id": "preset:20260301",
+   "kind": "preset",
+   "release": "0.5.0",
+   "source": "registry",
+   "summary": "They keep the options of the 20260201 presets and add:\n\n- Snake case (`--snake-case-field`): Snake case field names.",
+   "title": "New dated presets `standard-py3XX-20260301` and `practical-py3XX-20260301`"
+  },
+  {
+   "action": "required",
+   "affects": {
+    "templates": [
+     "pydantic_v2/BaseModel.jinja2"
+    ]
+   },
+   "id": "merged-after-tag",
+   "kind": "template",
+   "migrate": "Rename `model_fields` to `fields` in your templates.",
+   "refs": [
+    "#5001"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "Templates of `--custom-template-dir` read the fields as `fields`.",
+   "title": "Custom templates receive `fields` instead of `model_fields`"
+  }
+ ],
+ "latest": "0.5.0",
+ "ranges": [
+  {
+   "changes": [
+    "specialized-enum-default",
+    "union-item-suffix-removed",
+    "deprecation:cli.validation",
+    "preset:20260101",
+    "python-38-runtime-dropped",
+    "annotated-constraints",
+    "aware-datetime",
+    "dynamic-models-unformatted",
+    "deprecation:python-api.python-version-has-type-alias",
+    "experimental:input-format.avro",
+    "preset:20260201",
+    "refuse-empty-enum",
+    "removal:cli.validation",
+    "custom-template-root",
+    "deprecation:dependency.argcomplete-optional",
+    "preset:20260301"
+   ],
+   "from": "0.1.0",
+   "keep_conditional": {
+    "--use-annotated": [
+     "--field-constraints"
+    ]
+   },
+   "keep_flags": [
+    "--no-use-specialized-enum",
+    "--output-datetime-class",
+    "datetime"
+   ],
+   "keep_pyproject": {
+    "output-datetime-class": "datetime",
+    "use-specialized-enum": false
+   },
+   "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.1.0/",
+   "sources": [
+    "0.1.0"
+   ],
+   "through": "0.1.0"
+  },
+  {
+   "changes": [
+    "python-38-runtime-dropped",
+    "annotated-constraints",
+    "aware-datetime",
+    "dynamic-models-unformatted",
+    "deprecation:python-api.python-version-has-type-alias",
+    "experimental:input-format.avro",
+    "preset:20260201",
+    "refuse-empty-enum",
+    "removal:cli.validation",
+    "custom-template-root",
+    "deprecation:dependency.argcomplete-optional",
+    "preset:20260301"
+   ],
+   "from": "0.2.0",
+   "keep_conditional": {
+    "--use-annotated": [
+     "--field-constraints"
+    ]
+   },
+   "keep_flags": [
+    "--output-datetime-class",
+    "datetime"
+   ],
+   "keep_pyproject": {
+    "output-datetime-class": "datetime"
+   },
+   "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.2.0/",
+   "sources": [
+    "0.2.0"
+   ],
+   "through": "0.2.0"
+  },
+  {
+   "changes": [
+    "refuse-empty-enum",
+    "removal:cli.validation",
+    "docstrings-unwrapped",
+    "custom-template-root",
+    "deprecation:dependency.argcomplete-optional",
+    "preset:20260301"
+   ],
+   "from": "0.3.0",
+   "keep_conditional": {},
+   "keep_flags": [],
+   "keep_pyproject": {},
+   "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.3.0/",
+   "sources": [
+    "0.3.0"
+   ],
+   "through": "0.3.0"
+  },
+  {
+   "changes": [
+    "custom-template-root",
+    "deprecation:dependency.argcomplete-optional",
+    "preset:20260301"
+   ],
+   "from": "0.4.0",
+   "keep_conditional": {},
+   "keep_flags": [],
+   "keep_pyproject": {},
+   "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.4.0/",
+   "sources": [
+    "0.4.0"
+   ],
+   "through": "0.4.0"
+  }
+ ],
+ "raw_page": "https://datamodel-code-generator.koxudaxi.dev/migration/from/{release}.md",
+ "releases": [
+  {
+   "date": "2026-01-01",
+   "version": "0.1.0"
+  },
+  {
+   "date": "2026-02-01",
+   "version": "0.2.0"
+  },
+  {
+   "date": "2026-03-01",
+   "version": "0.3.0"
+  },
+  {
+   "date": "2026-04-01",
+   "version": "0.4.0"
+  },
+  {
+   "date": "2026-05-01",
+   "version": "0.5.0"
+  }
+ ],
+ "schema_version": 1
+}
+--- migration/changes.md ---
+# All Changes by Release
+
+<!-- Generated by scripts/build_migration_docs.py. Do not edit manually. -->
+
+Every change a user meets when upgrading, newest first. To upgrade from a release, apply every section above it, or open [the page for your release](index.md).
+
+## Unreleased
+
+### Custom templates receive `fields` instead of `model_fields` (unreleased) { #merged-after-tag }
+
+Templates of `--custom-template-dir` read the fields as `fields`.
+
+- **Affects:** custom templates: `pydantic_v2/BaseModel.jinja2`
+- **What to change:** Rename `model_fields` to `fields` in your templates.
+- **Pull requests and issues:** [#5001](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5001)
+- **Source:** the release notes
+
+## 0.5.0 (2026-05-01)
+
+### Custom templates receive `fields` instead of `model_fields` (0.5.0) { #custom-template-root }
+
+Templates of `--custom-template-dir` read the fields as `fields`.
+
+- **Affects:** custom templates: `pydantic_v2/BaseModel.jinja2`
+- **What to change:** Rename `model_fields` to `fields` in your templates.
+- **Pull requests and issues:** [#5001](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5001)
+- **Source:** the release notes
+
+### argcomplete installation is scheduled to change (0.5.0) { #deprecation-dependency-argcomplete-optional }
+
+argcomplete will become optional.
+
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### New dated presets `standard-py3XX-20260301` and `practical-py3XX-20260301` (0.5.0) { #preset-20260301 }
+
+They keep the options of the 20260201 presets and add:
+
+- Snake case (`--snake-case-field`): Snake case field names.
+
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.4.0 (2026-04-01)
+
+### An empty `enum` is refused (0.4.0) { #refuse-empty-enum }
+
+A schema with `enum: []` fails with an error instead of generating an empty enum.
+
+- **What to change:** Drop the empty `enum` keyword.
+- **Pull requests and issues:** [#4002](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4002)
+- **Source:** the release notes
+
+### `--validation` is removed (0.4.0) { #removal-cli-validation }
+
+--validation is deprecated.
+
+- **Affects:** only with: `--validation`
+- **What to change:** Use --field-constraints.
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### Class docstrings are no longer wrapped (0.4.0) { #docstrings-unwrapped }
+
+The wrapping of 0.3.0 is undone.
+
+- **Pull requests and issues:** [#4001](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4001)
+- **Source:** the release notes
+
+## 0.3.0 (2026-03-01)
+
+### datamodel-code-generator no longer runs on Python 3.8 (0.3.0) { #python-38-runtime-dropped }
+
+Install and run the generator on Python 3.9 or newer.
+
+- **What to change:** Use Python 3.9 or newer.
+- **Pull requests and issues:** [#3003](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/3003)
+- **Source:** the release notes
+
+### Constraints move into `Annotated` (0.3.0) { #annotated-constraints }
+
+With `--use-annotated`, constraints are written in `Annotated`.
+
+- **Affects:** only with: `--use-annotated`
+- **Keep the old output:** `--field-constraints`
+- **Pull requests and issues:** [#3001](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/3001)
+- **Source:** the release notes
+
+### `format: date-time` becomes `AwareDatetime` (0.3.0) { #aware-datetime }
+
+A timestamp without a UTC offset is rejected.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`
+- **Keep the old output:** `--output-datetime-class datetime`
+- **Pull requests and issues:** [#1735](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/1735)
+- **Source:** the release notes
+
+### `generate_dynamic_models()` no longer formats the code it builds (0.3.0) { #dynamic-models-unformatted }
+
+It skips Black and isort unless formatters are selected.
+
+- **Affects:** Python API: `generate_dynamic_models`
+- **Keep the old output:** Pass `formatters=[Formatter.BLACK, Formatter.ISORT]` in the config.
+- **Pull requests and issues:** [#6750](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6750)
+- **Source:** the release notes
+
+### PythonVersion.has_type_alias now emits DeprecationWarning (0.3.0) { #deprecation-python-api-python-version-has-type-alias }
+
+has_type_alias is deprecated.
+
+- **Affects:** Python API: `PythonVersion.has_type_alias`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### Class docstrings are wrapped (0.3.0) { #class-docstrings }
+
+Long class docstrings are wrapped at the line length.
+
+- **Pull requests and issues:** [#3002](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/3002)
+- **Source:** the release notes
+
+### --input-file-type avro is experimental (0.3.0) { #experimental-input-format-avro }
+
+Avro input is experimental.
+
+- **Affects:** experimental features: `input-format.avro`
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### New dated presets `standard-py3XX-20260201` and `practical-py3XX-20260201` (0.3.0) { #preset-20260201 }
+
+They keep the options of the 20260101 presets and add:
+
+- Python 3.15 targets
+- Strict types (`--strict-types str`): Be strict.
+
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+## 0.2.0 (2026-02-01)
+
+### datamodel-code-generator no longer runs on Python 3.7 (0.2.0) { #python-37-runtime-dropped }
+
+Install and run the generator on Python 3.8 or newer.
+
+- **What to change:** Use Python 3.8 or newer.
+- **Pull requests and issues:** [#2060](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/2060)
+- **Source:** the release notes
+
+### String enums become `StrEnum` (0.2.0) { #specialized-enum-default }
+
+Enums of strings subclass `StrEnum` instead of `Enum`.
+
+- **Affects:** input types: `openapi`, `jsonschema`
+- **Keep the old output:** `--no-use-specialized-enum`
+- **Pull requests and issues:** [#2512](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/2512)
+- **Source:** the release notes
+
+```diff
+-class Status(Enum):
++class Status(StrEnum):
+```
+
+### Models of `anyOf` members lose the `Item` suffix (0.2.0) { #union-item-suffix-removed }
+
+Models of `anyOf` and `oneOf` members no longer end in `Item`.
+
+- **Keep the old output:** No option restores the old names; `--model-name-map` can pin individual names.
+- **Pull requests and issues:** [#1682](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/1682)
+- **Source:** the release notes
+
+### --validation now emits DeprecationWarning (0.2.0) { #deprecation-cli-validation }
+
+--validation is deprecated.
+
+- **Affects:** only with: `--validation`
+- **What to change:** Use --field-constraints.
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### New dated presets `standard-py3XX-20260101` and `practical-py3XX-20260101` (0.2.0) { #preset-20260101 }
+
+The first dated presets; the [presets page](https://datamodel-code-generator.koxudaxi.dev/presets/) lists their options.
+
+- **Source:** the registry of deprecations, experimental features and dated presets
+--- migration/index.md ---
+# Upgrading to 0.5.0
+
+<!-- Generated by scripts/build_migration_docs.py. Do not edit manually. -->
+
+Pick the release you use now. Its page lists, for that release only, the options that keep your current output in 0.5.0, the changes you must make and the changes no option keeps. Coding agents can read the same steps as Markdown: `https://datamodel-code-generator.koxudaxi.dev/migration/from/<release>.md`, for example `https://datamodel-code-generator.koxudaxi.dev/migration/from/0.1.0.md`.
+
+<div class="dcg-migration" data-migration-select hidden>
+<label for="dcg-migration-from">I use datamodel-code-generator</label>
+<select id="dcg-migration-from">
+<option value="">choose a release</option>
+<option value="from-0.4.0/">0.4.0</option>
+<option value="from-0.3.0/">0.3.0</option>
+<option value="from-0.2.0/">0.2.0</option>
+<option value="from-0.1.0/">0.1.0</option>
+</select>
+</div>
+
+| Your release | Required | Kept by an option | Not kept | New warnings | Page |
+|---|---|---|---|---|---|
+| 0.4.0 | 1 | 0 | 0 | 0 | [from-0.4.0](from-0.4.0.md) |
+| 0.3.0 | 3 | 0 | 0 | 0 | [from-0.3.0](from-0.3.0.md) |
+| 0.2.0 | 4 | 3 | 0 | 1 | [from-0.2.0](from-0.2.0.md) |
+| 0.1.0 | 4 | 4 | 1 | 2 | [from-0.1.0](from-0.1.0.md) |
+
+Releases before 0.1.0: start from the 0.1.0 page and read the older entries of the [changelog](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/main/CHANGELOG.md).
+
+## How to upgrade without surprises
+
+1. Add the options of your page; they keep the output where the new release can.
+2. Regenerate and compare: `datamodel-codegen ... --check` fails on any difference.
+3. Make the required changes and review the changes no option keeps.
+4. Later, drop one keep option at a time, or move to the newest dated preset.
+
+[All changes by release](changes.md) lists every entry with its details, newest first.
