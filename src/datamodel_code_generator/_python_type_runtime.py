@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import types
 from collections.abc import Callable as ABCCallable
+from contextlib import suppress
 from enum import Enum
 from functools import lru_cache
 from typing import Annotated, Concatenate, ForwardRef, Literal, ParamSpec, Union, get_args, get_origin
@@ -23,16 +24,18 @@ from datamodel_code_generator._python_type_annotation import (
 
 
 def _runtime_symbol(module: str, qualname: str, *, qualify: bool) -> PythonTypeExpr:
-    """Build a runtime-identity leaf without parsing its rendered spelling."""
+    """Build a runtime-identity leaf without parsing its rendered spelling, or its text where the node refuses a name.
+
+    Row ``legacy-host-identifier-runtime-names``: a name with a part the running interpreter does not read as an
+    identifier is text, whichever names the newest target binds.
+    """
     parts = tuple(qualname.split("."))
-    if not all(part.isidentifier() for part in parts):
-        return PythonTypeOpaqueText(f"{module}.{qualname}" if module and qualify else qualname)
-    if qualify and module not in {"", "builtins", "typing", "collections.abc"}:
-        try:
-            return PythonTypeRuntimeSymbol(module, parts)
-        except ValueError:
-            return PythonTypeOpaqueText(f"{module}.{qualname}")
-    return python_type_name(qualname) if len(parts) == 1 else PythonTypeRuntimeSymbol("", parts)
+    if all(part.isidentifier() for part in parts):
+        with suppress(ValueError):
+            if qualify and module not in {"", "builtins", "typing", "collections.abc"}:
+                return PythonTypeRuntimeSymbol(module, parts)
+            return python_type_name(qualname) if len(parts) == 1 else PythonTypeRuntimeSymbol("", parts)
+    return PythonTypeOpaqueText(f"{module}.{qualname}" if module and qualify else qualname)
 
 
 def _runtime_leaf_expr(tp: object) -> PythonTypeExpr:
