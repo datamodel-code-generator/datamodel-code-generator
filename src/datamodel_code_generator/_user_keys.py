@@ -59,7 +59,7 @@ from __future__ import annotations
 
 from dataclasses import field
 from difflib import get_close_matches
-from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, TypeVar, cast, overload
+from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, TypeVar, cast
 
 from typing_extensions import override
 
@@ -100,7 +100,6 @@ __all__ = [
 ]
 
 _ValueT = TypeVar("_ValueT")
-_DefaultT = TypeVar("_DefaultT")
 
 _SCOPE_SEPARATOR: Final = "."
 _PATH_KEY_MARKER: Final = "#"
@@ -292,15 +291,6 @@ class RecordedOverrides(dict[str, _ValueT]):  # ruff: ignore[subclass-builtin]
     def __contains__(self, key: object) -> bool:
         self._record(cast("str", key))
         return super().__contains__(key)
-
-    @overload
-    def get(self, key: str, default: None = None, /) -> _ValueT | None: ...
-
-    @overload
-    def get(self, key: str, default: _ValueT, /) -> _ValueT: ...
-
-    @overload
-    def get(self, key: object, default: _DefaultT, /) -> _ValueT | _DefaultT: ...
 
     @override
     def get(self, key: object, default: object = None, /) -> object:  # ty: ignore[invalid-method-override]

@@ -328,9 +328,14 @@ class PydanticFloors:
         """Record the warning about the ``--type-overrides`` keys of ``parser`` that matched nothing."""
         self._unmatched_type_override_keys[parser] = message
 
-    def report_unmatched_type_override_keys(self, parser: object) -> None:
-        """Emit the warning about the ``--type-overrides`` keys that ``parser`` recorded, if it recorded one."""
-        if (message := self._unmatched_type_override_keys.get(parser)) is not None:
+    def unmatched_type_override_keys_of(self, parser: object) -> str | None:
+        """Return the warning about the ``--type-overrides`` keys that ``parser`` recorded, None when it has none."""
+        return self._unmatched_type_override_keys.get(parser)
+
+    @staticmethod
+    def report_unmatched_type_override_keys(message: str | None) -> None:
+        """Emit the warning that the kept parse recorded, if it recorded one, once its parsers are disposed."""
+        if message is not None:
             report_unmatched_type_override_keys(message)
 
     def record(self, parser: object, floor: PydanticFloor | None, refused_bytes_patterns: tuple[str, ...]) -> None:
