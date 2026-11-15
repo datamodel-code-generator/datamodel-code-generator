@@ -1344,9 +1344,9 @@ _STANDARD_20261113_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         title="Ids with an empty fragment read as their documents",
         config=PresetConfig(read_ids_with_empty_fragment=True),
         description=(
-            "Read an $id written with an empty fragment, such as https://example.com/item.json#, as the URI without "
-            "it, so a $ref to it resolves inside the document that declares it instead of loading the document at "
-            "that URL from the network."
+            "Read an absolute-URL $id written with an empty fragment, such as https://example.com/item.json#, as "
+            "the URI without it, so a $ref to it resolves inside the document that declares it instead of loading "
+            "the document at that URL from the network. A relative $id is not matched: a $ref to it reads the file."
         ),
     ),
 )
