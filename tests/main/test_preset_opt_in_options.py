@@ -114,7 +114,12 @@ OPT_IN_OPTIONS_20261111: tuple[str, ...] = ("--use-bounds-for-float-const",)
 OPT_IN_OPTIONS_20261112: tuple[str, ...] = ("--read-object-keywords-by-type",)
 """The options the 20261112 presets set beyond the 20261111 presets."""
 
-OPT_IN_OPTIONS_20261113: tuple[str, ...] = ("--use-x-python-import-for-every-ref", "--open-enums", "extensible")
+OPT_IN_OPTIONS_20261113: tuple[str, ...] = (
+    "--use-x-python-import-for-every-ref",
+    "--open-enums",
+    "extensible",
+    "--infer-union-discriminators",
+)
 """The options the 20261113 presets set beyond the 20261112 presets."""
 
 PRESET_RELEASES: dict[str, tuple[str, tuple[str, ...]]] = {
@@ -470,6 +475,12 @@ CASES_20261113: tuple[pytest.ParameterSet, ...] = (
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="open-enums",
     ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "serde_internally_tagged.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="infer-union-discriminators",
+    ),
 )
 """The inputs each opt-in option of the 20261113 presets changes."""
 
@@ -747,6 +758,13 @@ def test_preset_sets_opt_in_option(
             "--use-x-python-import-for-every-ref",
             "--no-use-x-python-import-for-every-ref",
             id="use-x-python-import-for-every-ref",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "serde_internally_tagged.json",
+            [],
+            "--infer-union-discriminators",
+            "--no-infer-union-discriminators",
+            id="infer-union-discriminators",
         ),
     ],
 )

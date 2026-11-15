@@ -114,6 +114,7 @@ datamodel-codegen [OPTIONS]
 | [`--field-extra-keys-without-x-prefix`](field-customization.md#field-extra-keys-without-x-prefix) | Include schema extension keys in Field() without requiring 'x-' prefix. |
 | [`--field-include-all-keys`](field-customization.md#field-include-all-keys) | Include all schema keys in Field() json_schema_extra. |
 | [`--field-type-collision-strategy`](field-customization.md#field-type-collision-strategy) | Rename type class instead of field when names collide (Pydantic v2 only). |
+| [`--infer-union-discriminators`](field-customization.md#infer-union-discriminators) | Write a oneOf or anyOf whose branches each pin a tag as a discriminated union. |
 | [`--infer-union-variant-names`](field-customization.md#infer-union-variant-names) | Name inline oneOf/anyOf branch models after the value of their tag field (`Pet` ... |
 | [`--merge-shared-variant-tags`](field-customization.md#merge-shared-variant-tags) | Give a variant that discriminated unions tag differently every tag they give it. |
 | [`--name-allof-union-members-after-branches`](field-customization.md#name-allof-union-members-after-branches) | Name the classes an allOf gives the branches of a oneOf or anyOf it holds after ... |
@@ -473,6 +474,7 @@ All options sorted alphabetically:
 - [`--ignore-ref-siblings-by-schema-version`](base-options.md#ignore-ref-siblings-by-schema-version) - Read a `$ref` as its target alone where the schema version i...
 - [`--import-overrides`](typing-customization.md#import-overrides) - Override modules for generated imports by symbol name.
 - [`--include-path-parameters`](openapi-only-options.md#include-path-parameters) - Include OpenAPI path parameters in generated parameter model...
+- [`--infer-union-discriminators`](field-customization.md#infer-union-discriminators) - Write a oneOf or anyOf whose branches each pin a tag as a di...
 - [`--infer-union-variant-names`](field-customization.md#infer-union-variant-names) - Name inline oneOf/anyOf branch models after the value of the...
 - [`--input`](base-options.md#input) - Specify the input schema file path.
 - [`--input-file-type`](base-options.md#input-file-type) - Specify the input file type for code generation.

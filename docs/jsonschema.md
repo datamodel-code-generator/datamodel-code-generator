@@ -228,6 +228,39 @@ This allows you to set a default base class with `--base-class`, override specif
 | `format` values | Mapped to Python/Pydantic types where supported |
 | Custom extensions | `customBasePath` and related options can steer generated base classes |
 
+## Tagged unions without a discriminator keyword
+
+Typed languages write an internally tagged enum, such as a Rust `#[serde(tag = "type")]` enum described by schemars,
+as a `oneOf` whose every branch requires one property holding one value, a `const` or a one-value `enum`, with no
+`discriminator` keyword:
+
+```json
+{
+  "title": "Notification",
+  "oneOf": [
+    {"type": "object", "properties": {"channel": {"const": "email"}, "address": {"type": "string"}}, "required": ["channel", "address"]},
+    {"type": "object", "properties": {"channel": {"const": "push"}}, "required": ["channel"]}
+  ]
+}
+```
+
+By default such a union is a plain union, which Pydantic validates by trying every branch. With
+[`--infer-union-discriminators`](cli-reference/field-customization.md#infer-union-discriminators) it is written as a
+discriminated union, as a `discriminator` keyword writes it:
+
+```python
+class Notification(RootModel[Notification1 | Notification2]):
+    root: Notification1 | Notification2 = Field(..., discriminator="channel", title="Notification")
+```
+
+The tag is read from the branch, the schema its local `$ref` names and its `allOf` members; a `null` branch stays the
+`None` of the union. A union is left as it is where a branch leaves the tag out, two branches share a value, a branch
+is no object with the tag, or the tag is no string or integer. Valid payloads parse to the same values, except that
+in Pydantic output a tag written as a one-value enum class becomes its `Literal` value, as
+`--use-single-value-enum-as-const` writes it (the dated presets already do). With `--use-one-literal-as-default`, a
+payload without the tag is rejected, because the schema requires it. An invalid payload reports the errors of the
+branch its tag names.
+
 ## Regular Expression Patterns
 
 Pydantic v2 validates `pattern` with pydantic-core's Rust regex engine by default, and pydantic-core compiles the

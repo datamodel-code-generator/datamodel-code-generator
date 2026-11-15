@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "A": {
+      "allOf": [
+        {"$ref": "#/$defs/B"},
+        {"type": "object", "properties": {"kind": {"const": "a"}}, "required": ["kind"]}
+      ]
+    },
+    "B": {
+      "allOf": [
+        {"$ref": "#/$defs/A"},
+        {"type": "object", "properties": {"b": {"type": "string"}}}
+      ]
+    },
+    "Shape": {
+      "oneOf": [
+        {"$ref": "#/$defs/A"},
+        {"type": "object", "properties": {"kind": {"const": "c"}}, "required": ["kind"]}
+      ]
+    }
+  },
+  "$ref": "#/$defs/Shape"
+}

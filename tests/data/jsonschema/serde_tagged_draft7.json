@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Canvas",
+  "type": "object",
+  "properties": {
+    "layer": {
+      "$ref": "#/definitions/Layer"
+    },
+    "layers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Layer"
+      }
+    }
+  },
+  "required": [
+    "layer"
+  ],
+  "definitions": {
+    "Layer": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "layerKind": {
+              "type": "string",
+              "enum": [
+                "raster"
+              ]
+            },
+            "pixels": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "layerKind",
+            "pixels"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "layerKind": {
+              "type": "string",
+              "enum": [
+                "vector"
+              ]
+            },
+            "paths": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "layerKind",
+            "paths"
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/definitions/Group"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "layerKind": {
+                  "type": "string",
+                  "enum": [
+                    "group"
+                  ]
+                }
+              },
+              "required": [
+                "layerKind"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "Group": {
+      "type": "object",
+      "properties": {
+        "children": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "children"
+      ]
+    }
+  }
+}

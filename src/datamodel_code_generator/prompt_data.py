@@ -105,6 +105,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--ignore-ref-siblings-by-schema-version": "Read a `$ref` as its target alone where the schema version ignores ...",
     "--import-overrides": "Override modules for generated imports by symbol name.",
     "--include-path-parameters": "Include OpenAPI path parameters in generated parameter models.",
+    "--infer-union-discriminators": "Write a oneOf or anyOf whose branches each pin a tag as a discriminated union.",
     "--infer-union-variant-names": "Name inline oneOf/anyOf branch models after the value of their tag field (`Pet`...",
     "--input": "Specify the input schema file path.",
     "--input-file-type": "Specify the input file type for code generation.",

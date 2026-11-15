@@ -440,6 +440,7 @@ class BaseGenerateConfig(BaseModel):
     use_title_as_name: bool = False
     infer_union_variant_names: bool = False
     use_tag_as_union_variant_name: bool = False
+    infer_union_discriminators: bool = False
     name_allof_union_members_after_branches: bool = False
     use_operation_id_as_name: bool = False
     use_unique_items_as_set: bool = False

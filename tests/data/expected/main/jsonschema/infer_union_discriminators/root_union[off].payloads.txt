@@ -1,0 +1,5 @@
+{"channel": "email", "address": "a@example.com"}: schema accepts, model Notification(root=Notification1(channel='email', address='a@example.com'))
+{"channel": "push"}: schema accepts, model Notification(root=Notification3(channel='push'))
+{"channel": "sms", "number": 5}: schema rejects, model rejects
+{"channel": "fax"}: schema rejects, model rejects
+{"address": "a@example.com"}: schema rejects, model rejects

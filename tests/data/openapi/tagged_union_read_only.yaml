@@ -1,0 +1,49 @@
+openapi: 3.1.0
+info:
+  title: Payments
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Payment:
+      oneOf:
+      - $ref: '#/components/schemas/Card'
+      - $ref: '#/components/schemas/Transfer'
+    Card:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        method:
+          type: string
+          const: card
+        last4: &id001
+          type: string
+      required:
+      - id
+      - method
+      - last4
+    Transfer:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        method:
+          type: string
+          const: transfer
+        iban: *id001
+      required:
+      - id
+      - method
+      - iban
+    Order:
+      type: object
+      properties:
+        payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Payment'
+      required:
+      - payments

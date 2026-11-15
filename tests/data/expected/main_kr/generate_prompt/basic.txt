@@ -134,12 +134,14 @@
 - `--field-extra-keys-without-x-prefix`: Include schema extension keys in Field() without requiring 'x-' prefix.
 - `--field-include-all-keys`: Include all schema keys in Field() json_schema_extra.
 - `--field-type-collision-strategy`: Rename type class instead of field when names collide (Pydantic v2 only).
+- `--infer-union-discriminators`: Write a oneOf or anyOf whose branches each pin a tag as a discriminated union.
 - `--infer-union-variant-names`: Name inline oneOf/anyOf branch models after the value of their tag field (`Pet`...
 - `--merge-shared-variant-tags`: Give a variant that discriminated unions tag differently every tag they give it.
 - `--name-allof-union-members-after-branches`: Name the classes an allOf gives the branches of a oneOf or anyOf ...
 - `--no-alias`: Disable Field alias generation for non-Python-safe property names.
 - `--no-capitalize-numbered-enum-members`
 - `--no-deserialize-default-values`: Keep serialized schema defaults instead of deserializing selected types.
+- `--no-infer-union-discriminators`
 - `--no-merge-shared-variant-tags`
 - `--no-name-allof-union-members-after-branches`
 - `--no-omit-redundant-constraints`
@@ -1332,6 +1334,26 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         extra fields.
   --frozen-dataclasses  Generate frozen dataclasses (dataclass(frozen=True)).
                         Only applies to dataclass output.
+  --infer-union-discriminators, --no-infer-union-discriminators
+                        Write a oneOf or anyOf that declares no discriminator
+                        as a discriminated union (Pydantic
+                        Field(discriminator=...), msgspec tagged structs) when
+                        every branch that is not null requires one property
+                        holding one string or integer value (a const or a one-
+                        value enum, also through allOf members and local
+                        $refs), with no value shared; in Pydantic output a
+                        union with a discriminator keyword keeps it. Valid
+                        payloads parse the same, except that a tag typed as a
+                        one-value enum class becomes its Literal value; with
+                        --use-one-literal-as-default a payload without the
+                        tag, which the schema requires, is rejected. An
+                        invalid payload reports the errors of the branch its
+                        tag names, or one tag error. Not applied to
+                        dataclasses.dataclass and typing.TypedDict output.
+                        Without it these unions are smart unions in Pydantic
+                        output, and msgspec output tags only the unions whose
+                        tags are written on the branches themselves, as in
+                        0.96.0
   --infer-union-variant-names
                         Name inline oneOf/anyOf branch models after the value
                         of their tag field (Pet + type: "cat" -> PetCat)

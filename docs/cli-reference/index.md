@@ -10,7 +10,7 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 19 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 57 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 40 | Field naming and docstring behavior |
+| 🏷️ [Field Customization](field-customization.md) | 41 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 73 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
@@ -236,6 +236,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--ignore-ref-siblings-by-schema-version`](base-options.md#ignore-ref-siblings-by-schema-version)
 - [`--import-overrides`](typing-customization.md#import-overrides)
 - [`--include-path-parameters`](openapi-only-options.md#include-path-parameters)
+- [`--infer-union-discriminators`](field-customization.md#infer-union-discriminators)
 - [`--infer-union-variant-names`](field-customization.md#infer-union-variant-names)
 - [`--input`](base-options.md#input)
 - [`--input-file-type`](base-options.md#input-file-type)

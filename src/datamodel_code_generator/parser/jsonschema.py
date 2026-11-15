@@ -3919,8 +3919,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if self.infer_union_variant_names
             else None
         )
-        if self._output_model_context.requires_tagged_union_discriminator:
-            _union_tags.set_tagged_union_discriminator(self, obj, combined_schemas)
+        if (reading := _union_tags.discriminator_inference(self, obj)) is not None:
+            _union_tags.set_tagged_union_discriminator(self, obj, combined_schemas, reading)
         parsed_schemas = _union_tags.parse_combined_schema_items(
             self, name, obj, path, combined_schemas, variant_names, variant_keys
         )

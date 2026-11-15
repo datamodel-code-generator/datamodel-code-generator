@@ -6,6 +6,8 @@ toml-list	main/preset_opt_in_options/option_list_in_pyproject[toml-list].py	= ma
 [test_preset_option_turned_off]
 capitalize-numbered-enum-members-alias-command-line	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].py
 capitalize-numbered-enum-members-alias-pyproject	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].py
+infer-union-discriminators-command-line	main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-command-line].py
+infer-union-discriminators-pyproject	main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-command-line].py
 read-const-beside-enum-command-line	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].py
 read-const-beside-enum-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].py
 read-length-keywords-by-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].py
@@ -39,6 +41,8 @@ filter-literal-values-practical	main/preset_opt_in_options/preset_sets_opt_in_op
 filter-literal-values-standard	main/preset_opt_in_options/preset_sets_opt_in_option[filter-literal-values-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[filter-literal-values-practical].py
 ignore-ref-siblings-by-schema-version-practical	main/preset_opt_in_options/preset_sets_opt_in_option[ignore-ref-siblings-by-schema-version-practical].py
 ignore-ref-siblings-by-schema-version-standard	main/preset_opt_in_options/preset_sets_opt_in_option[ignore-ref-siblings-by-schema-version-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[ignore-ref-siblings-by-schema-version-practical].py
+infer-union-discriminators-practical	main/preset_opt_in_options/preset_sets_opt_in_option[infer-union-discriminators-practical].py
+infer-union-discriminators-standard	main/preset_opt_in_options/preset_sets_opt_in_option[infer-union-discriminators-standard].py
 intersect-allof-keywords-practical	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-allof-keywords-practical].py
 intersect-allof-keywords-standard	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-allof-keywords-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[intersect-allof-keywords-practical].py
 intersect-combined-schema-keywords-practical	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-combined-schema-keywords-practical].py

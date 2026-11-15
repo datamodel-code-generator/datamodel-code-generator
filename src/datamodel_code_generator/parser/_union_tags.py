@@ -8,7 +8,7 @@ call them through the parser.
 from __future__ import annotations
 
 from collections import Counter
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Literal, Union
 
 from typing_extensions import Protocol, final
 
@@ -20,6 +20,7 @@ from datamodel_code_generator.model._decisions.tag_value import (
     MappingPath,
     distinct_tags,
     field_tag,
+    same_tag,
     tagged_union_discriminator,
     union_tag_values,
 )
@@ -32,6 +33,7 @@ from datamodel_code_generator.parser._schema_refs import SchemaRefsHost
 if TYPE_CHECKING:
     from collections.abc import Container, Iterable, Iterator, Mapping, Sequence
 
+    from datamodel_code_generator.model.output import OutputModelContext
     from datamodel_code_generator.parser._naming import Claim, NamingScope
     from datamodel_code_generator.parser._schema_graph import _TargetNode
     from datamodel_code_generator.parser._schema_object import JsonSchemaLiteral
@@ -40,8 +42,10 @@ if TYPE_CHECKING:
 
 __all__ = [
     "TaggedUnionValue",
+    "UnionTagReading",
     "UnionTagsHost",
     "all_of_adds_properties",
+    "discriminator_inference",
     "discriminator_mapping_refs",
     "get_referenced_single_literal_value",
     "get_single_literal_value",
@@ -60,6 +64,13 @@ __all__ = [
 ]
 
 TaggedUnionValue = Union[int, str]  # noqa: UP007
+UnionTagReading = Literal["legacy-branch-own-tags", "branch-and-all-of-tags"]
+"""How the branches of a union are read for the property that tags them (``get_tagged_union_field_values``).
+
+``legacy-branch-own-tags`` reads every branch, or the schema its local ``$ref`` names, as msgspec output did up to
+0.96.0; ``branch-and-all-of-tags`` (``--infer-union-discriminators``) also reads the allOf members of each, and leaves
+out the branches that admit only null, which the union keeps as its ``None``.
+"""
 _MIN_UNION_VARIANT_LITERAL_VALUES = 2
 
 
@@ -69,6 +80,10 @@ class UnionTagsHost(SchemaRefsHost, Protocol):
     @property
     def use_tag_as_union_variant_name(self) -> bool:
         """Whether union branches are named after their tags (``--use-tag-as-union-variant-name``)."""
+
+    @property
+    def _output_model_context(self) -> OutputModelContext:
+        """The capabilities of the output model types."""
 
     def _claiming(self, claim: Claim | None) -> NamingScope:
         """Return the naming frame that makes ``claim`` for the model its block builds, while L1 records them."""
@@ -378,16 +393,93 @@ def infer_union_variant_names(
     return tag_names
 
 
+def _branch_own_tag_schema(parser: UnionTagsHost, item: JsonSchemaObject) -> JsonSchemaObject:
+    """Return the schema a branch reads its own tag from: the one its local ``$ref`` names, else the branch itself."""
+    if (ref := item.ref) and _schema_refs.is_local_ref(parser, ref):
+        return parser._load_ref_schema_object(ref)  # noqa: SLF001
+    return item
+
+
+def _branch_tag_parts(
+    parser: UnionTagsHost, item: JsonSchemaObject, seen_refs: frozenset[_TargetNode]
+) -> Iterator[JsonSchemaObject]:
+    """Yield a branch, or the schema its local ``$ref`` names, and its allOf members read the same way, in order.
+
+    A ``$ref`` into another document is not read: the branch stands as written. A local ``$ref`` that a fact walk reads
+    no schema at (``unmapped_ref_target``: a mapped or a visited one) gives no part.
+    """
+    if item.ref and _schema_refs.is_local_ref(parser, item.ref):
+        if (target := _schema_refs.unmapped_ref_target(parser, item.ref, seen_refs)) is None:
+            return
+        item, seen_refs = target
+    yield item
+    for member in item.allOf:
+        if isinstance(member, JsonSchemaObject):
+            yield from _branch_tag_parts(parser, member, seen_refs)
+
+
+def _pinned_value(parser: UnionTagsHost, schema: JsonSchemaObject | bool) -> JsonSchemaLiteral | None:  # noqa: FBT001
+    """Return the one value a property schema admits as a tag, None for a boolean schema."""
+    return parser._get_single_literal_value(schema) if isinstance(schema, JsonSchemaObject) else None  # noqa: SLF001
+
+
+def _part_property_schema(
+    parser: UnionTagsHost,
+    kept: JsonSchemaObject | bool,  # noqa: FBT001
+    schema: JsonSchemaObject | bool,  # noqa: FBT001
+) -> JsonSchemaObject | bool:
+    """Return the schema a property of a branch reads its tag from, given the one kept so far and that of a next part.
+
+    The part that pins the property to one value gives it; two parts pinning different values, or a part that forbids
+    the property (false), leave it no value (false).
+    """
+    if kept is False or schema is False:
+        return False
+    if (value := _pinned_value(parser, schema)) is None:
+        return kept
+    if (kept_value := _pinned_value(parser, kept)) is None:
+        return schema
+    return kept if same_tag(kept_value, value, "type-and-value") else False
+
+
+def _branch_tag_view(parser: UnionTagsHost, item: JsonSchemaObject) -> JsonSchemaObject:
+    """Return the properties and the required names a branch reads its tag from, with those of its allOf members.
+
+    The parts are the branch, or the schema its local ``$ref`` names, and its allOf members (``_branch_tag_parts``). A
+    name is required where a part requires it; a property takes its schema from the part that pins it
+    (``_part_property_schema``). A branch of one part is that part; otherwise the view is a new object that holds only
+    these two keywords, read and never written or put in the schema graph.
+    """
+    parts = list(_branch_tag_parts(parser, item, frozenset()))
+    if len(parts) == 1:
+        return parts[0]
+    properties: dict[str, JsonSchemaObject | bool] = {}
+    required: dict[str, None] = {}
+    for part in parts:
+        required.update(dict.fromkeys(part.required))
+        for name, schema in (part.properties or {}).items():
+            properties[name] = (
+                schema if name not in properties else _part_property_schema(parser, properties[name], schema)
+            )
+    return JsonSchemaObject.model_construct(properties=properties, required=list(required))
+
+
 def get_tagged_union_field_values(
     parser: UnionTagsHost,
     obj: JsonSchemaObject,
     combined_schemas: Sequence[JsonSchemaObject],
+    reading: UnionTagReading,
 ) -> tuple[str, dict[int, TaggedUnionValue]] | None:
-    """Return the shared required literal field and the msgspec tags of the branches (``union_tag_values``)."""
-    discriminator_schemas = [
-        parser._load_ref_schema_object(item.ref) if item.ref and _schema_refs.is_local_ref(parser, item.ref) else item  # noqa: SLF001
-        for item in combined_schemas
-    ]
+    """Return the shared required literal field and the tags of the branches (``union_tag_values``).
+
+    ``reading`` names how the branches are read (``UnionTagReading``); the tags are keyed by the index of the branch
+    among those read.
+    """
+    discriminator_schemas = (
+        [_branch_own_tag_schema(parser, item) for item in combined_schemas]
+        if reading == "legacy-branch-own-tags"
+        else [_branch_tag_view(parser, item) for item in combined_schemas if not is_null_only_schema(parser, item)]
+    )
     for field_name in iter_union_variant_literal_field_names(parser, obj, discriminator_schemas):
         if (
             literal_values := get_union_variant_literal_values(parser, discriminator_schemas, field_name)
@@ -446,13 +538,31 @@ def _names_local_file(path: str) -> bool:
     return "/" in path and bool(file_part) and not is_url(path) and is_pointer_fragment(fragment)
 
 
+def discriminator_inference(parser: UnionTagsHost, obj: JsonSchemaObject) -> UnionTagReading | None:
+    """Return how the branches of a union are read for the property that tags them, or None where no tag is inferred.
+
+    msgspec output tags every union a property tags, also beside a discriminator the union declares (row
+    ``legacy-branch-own-tags`` of ``UnionTagReading`` unless ``--infer-union-discriminators`` is given). With the
+    option, a union that declares no discriminator is tagged too in an output whose union fields write
+    ``discriminator=`` (Pydantic); dataclasses and TypedDicts validate nothing, so the option leaves them alone.
+    """
+    infers = parser.config.infer_union_discriminators
+    context = parser._output_model_context  # noqa: SLF001
+    if context.requires_tagged_union_discriminator:
+        return "branch-and-all-of-tags" if infers else "legacy-branch-own-tags"
+    if infers and context.writes_discriminator_argument and "discriminator" not in obj.extras:
+        return "branch-and-all-of-tags"
+    return None
+
+
 def set_tagged_union_discriminator(
     parser: UnionTagsHost,
     obj: JsonSchemaObject,
     combined_schemas: Sequence[JsonSchemaObject],
+    reading: UnionTagReading,
 ) -> None:
-    """Set a discriminator extra when the output requires a tagged union."""
-    if not (tag_data := get_tagged_union_field_values(parser, obj, combined_schemas)):
+    """Capture the discriminator of the property that tags every branch of a union, read as ``reading`` reads them."""
+    if not (tag_data := get_tagged_union_field_values(parser, obj, combined_schemas, reading)):
         return
     obj.extras["discriminator"] = tagged_union_discriminator(
         obj.extras.get("discriminator"), literal_property=tag_data[0]

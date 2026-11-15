@@ -154,6 +154,7 @@ class OutputModelContext:
         "supports_boolean_literals",
         "supports_internal_annotated_constraints",
         "writes_constrained_types",
+        "writes_discriminator_argument",
     )
 
     def __init__(  # noqa: PLR0913
@@ -172,8 +173,13 @@ class OutputModelContext:
         literal_holds_enum_members: bool = True,
         layers_repeated_constraints: bool = True,
         checks_constraints: bool = False,
+        writes_discriminator_argument: bool = False,
     ) -> None:
-        """Initialize capabilities with the established keyword signature."""
+        """Initialize capabilities with the established keyword signature.
+
+        ``writes_discriminator_argument`` tells whether a union field writes ``discriminator=``, which Pydantic builds
+        and checks (``DataModelFieldBase.SUPPORTS_DISCRIMINATOR``).
+        """
         self._data_model_type = data_model_type
         self._data_model_root_type = data_model_root_type
         self.supports_annotated_constraints = supports_annotated_constraints
@@ -187,6 +193,7 @@ class OutputModelContext:
         self.literal_holds_enum_members = literal_holds_enum_members
         self.layers_repeated_constraints = layers_repeated_constraints
         self.checks_constraints = checks_constraints
+        self.writes_discriminator_argument = writes_discriminator_argument
 
     @classmethod
     def from_generation_types(  # noqa: PLR0913
@@ -229,6 +236,7 @@ class OutputModelContext:
             literal_holds_enum_members=data_model_type._LITERAL_HOLDS_ENUM_MEMBERS,  # noqa: SLF001
             layers_repeated_constraints=data_model_type._LAYERS_REPEATED_CONSTRAINTS,  # ruff: ignore[private-member-access]
             checks_constraints=data_model_type._CHECKS_CONSTRAINTS,  # ruff: ignore[private-member-access]
+            writes_discriminator_argument=data_model_field_type.SUPPORTS_DISCRIMINATOR,
         )
 
     def resolve_nested_constrained_model_type(self) -> type[DataModel]:

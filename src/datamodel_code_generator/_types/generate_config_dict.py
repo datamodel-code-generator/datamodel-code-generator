@@ -170,6 +170,7 @@ class BaseGenerateConfig(TypedDict):
     use_title_as_name: NotRequired[bool]
     infer_union_variant_names: NotRequired[bool]
     use_tag_as_union_variant_name: NotRequired[bool]
+    infer_union_discriminators: NotRequired[bool]
     name_allof_union_members_after_branches: NotRequired[bool]
     use_operation_id_as_name: NotRequired[bool]
     use_unique_items_as_set: NotRequired[bool]

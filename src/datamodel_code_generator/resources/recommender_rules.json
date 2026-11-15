@@ -891,6 +891,10 @@
       "not_recommended": "style",
       "reason": "Adds path parameters to parameter models; the project decides which models it needs."
     },
+    "infer_union_discriminators": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261113 presets; the recommendation starts from a preset."
+    },
     "infer_union_variant_names": {
       "rules": [
         "unions.name-variants-after-tags"
