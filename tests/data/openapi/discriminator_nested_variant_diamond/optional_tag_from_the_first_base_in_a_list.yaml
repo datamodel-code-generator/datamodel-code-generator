@@ -1,0 +1,55 @@
+openapi: 3.1.0
+info: {title: "diamond variant whose first base inherits an optional tag, in a list", version: "1"}
+paths: {}
+components:
+  schemas:
+    A:
+      type: object
+      properties:
+        kind: {const: d}
+    E:
+      allOf:
+        - $ref: '#/components/schemas/A'
+        - type: object
+          properties:
+            kind: {const: d}
+            e: {type: string}
+    B:
+      allOf:
+        - $ref: '#/components/schemas/E'
+        - type: object
+          properties:
+            b: {type: string}
+    C:
+      allOf:
+        - $ref: '#/components/schemas/E'
+        - type: object
+          required: [kind]
+          properties:
+            kind: {const: d}
+            c: {type: string}
+    D:
+      allOf:
+        - $ref: '#/components/schemas/B'
+        - $ref: '#/components/schemas/C'
+    Group:
+      oneOf:
+        - $ref: '#/components/schemas/D'
+    Plane:
+      type: object
+      required: [kind]
+      properties:
+        kind: {const: plane}
+    Thing:
+      oneOf:
+        - $ref: '#/components/schemas/Group'
+        - $ref: '#/components/schemas/Plane'
+      discriminator:
+        propertyName: kind
+    Shelter:
+      type: object
+      properties:
+        things:
+          type: array
+          items:
+            $ref: '#/components/schemas/Thing'

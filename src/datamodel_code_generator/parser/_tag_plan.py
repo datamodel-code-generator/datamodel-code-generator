@@ -44,7 +44,7 @@ loop replaces them:
 Four readings differ from the rule of their home where output depends on it; these rows name them until their fixes:
 
 - ``legacy-root-most-first`` and ``legacy-direct-bases-first``: the order some readers take a variant's inherited
-  tag fields in (:data:`TagFieldOrder`), where the generated class has the nearest one.
+  tag fields in (:data:`TagFieldOrder`), where the generated class has another one (``_class_tag_field``).
 - ``legacy-inherited-enum-by-default-name``: a union's check finds the Enum of a base by the Python name the
   property takes in any class (``_find_tag_enum``), not by the name the variants share.
 - ``legacy-collapse-any-discriminator``: the union ``--collapse-root-models`` inlines as list items is a site also
@@ -486,7 +486,8 @@ TagFieldOrder: TypeAlias = Literal["nearest-first", "legacy-root-most-first", "l
 """The order the models a variant inherits from are read in for its tag fields (``_inherited_models``).
 
 * ``nearest-first``: the order Python resolves an attribute in (``linearize_data_models``), so the first tag field is
-  the one the generated class has.
+  the nearest declaration, which the generated class has (``_class_tag_field``) unless two bases share an ancestor
+  that declares it.
 * ``legacy-root-most-first``: each model after its bases (``DataModel.iter_all_fields``), so the first tag field is the
   one the root-most ancestor declares, which the generated class does not have where a nearer ancestor declares the
   property again. The Python name the variants of a union share (:func:`shared_site_names`), the variants nested
@@ -1434,18 +1435,35 @@ def _is_tag_type(data_type: DataType) -> bool:
     return all(leaf.literals or leaf.enum_member_literals for leaf, _, _ in _iter_discriminator_data_types([data_type]))
 
 
-def _variant_carries_tag(data_type: DataType, field_name: str, order: TagFieldOrder) -> bool:
+def _class_tag_field(variant: DataModel, field_name: str) -> Iterator[DataModelFieldBase]:
+    """Yield the field the class of a variant has under the Python name ``field_name``, the one Pydantic reads, if any.
+
+    It is the variant's own, else the one its bases give it as Pydantic collects fields (``DataModel.effective_fields``,
+    row ``collected``): the first base that has it, with the field its own bases gave it. Where two bases share an
+    ancestor that declares it and a later base declares it again, that is not the nearest in the C3 order (#6905).
+    """
+    return (field_ for field_ in variant.effective_fields if field_.name == field_name)
+
+
+def _variant_carries_tag(
+    data_type: DataType, field_name: str, order: Literal["collected", "legacy-root-most-first"]
+) -> bool:
     """Return whether a variant has the tag field ``field_name``, of ``Literal`` values and not optional.
 
-    The variant may inherit the field, the first one in ``order`` (:data:`TagFieldOrder`). Pydantic reads an optional
-    tag as the ``Literal`` and None, which no tag is. The None that a root model of nullable variants holds is no
-    variant.
+    The variant may inherit the field: row ``collected`` reads the one its class has (``_class_tag_field``), row
+    ``legacy-root-most-first`` the first in that order (:data:`TagFieldOrder`). Pydantic reads an optional tag as the
+    ``Literal`` and None, which no tag is. The None that a root model of nullable variants holds is no variant.
     """
     if not data_type.reference:
         return data_type.type == NONE
     return isinstance(source := data_type.reference.source, DataModel) and any(
         _is_tag_type(tag_field.data_type) and not tag_field._admits_none()  # noqa: SLF001
-        for tag_field in islice(_tag_fields_of(source, field_name, "python-name", order=order), 1)
+        for tag_field in islice(
+            _class_tag_field(source, field_name)
+            if order == "collected"
+            else _tag_fields_of(source, field_name, "python-name", order=order),
+            1,
+        )
     )
 
 
@@ -1473,11 +1491,11 @@ def _root_writes_default(wrapper: DataModel) -> bool:
 def _written_tag_keys(variant: DataModel, field_name: str) -> list[object]:
     """Return the keys of the tags Pydantic reads in the tag field ``field_name`` that the class of a variant has.
 
-    The field is the variant's own, else the nearest one it inherits. Its ``Literal`` values are its tags, through the
-    unions and the root models its type names: the values, the Enum members (``_member_choice_keys``) and the values
-    written beside them.
+    The field is the one its class has (``_class_tag_field``). Its ``Literal`` values are its tags, through the unions
+    and the root models its type names: the values, the Enum members (``_member_choice_keys``) and the values written
+    beside them.
     """
-    tag_field = next(_tag_fields_of(variant, field_name, "python-name"), None)
+    tag_field = next(_class_tag_field(variant, field_name), None)
     keys: list[object] = []
     for leaf, _, _ in _iter_discriminator_data_types(() if tag_field is None else [tag_field.data_type]):
         keys += (tag_key(value, "legacy-python-equality") for value in (*leaf.literals, *leaf.enum_member_tag_values))
@@ -1534,7 +1552,7 @@ def settle_site(site: UnionSite) -> SiteStatus:
     are then asked as those of a union inlined into a type are (``_settle_choices``): no root with a default, no tag
     that two of them hold in the tag fields that were written. Last, a variant that a nested choice gives the union
     keeps the tag fields it has, of which L5 wrote the root-most (``legacy-root-most-first``), so it needs the tag in
-    the field its class has (``_variant_carries_tag``, nearest first), which Pydantic reads.
+    the field its class has (``_class_tag_field``), which Pydantic reads.
     """
     field_ = site.field
     lone = tag_capabilities(type(site.model), type(field_)).writes_argument and not field_.data_type.data_types
@@ -1551,7 +1569,7 @@ def settle_site(site: UnionSite) -> SiteStatus:
     ):
         return "dropped-lone-untagged"
     if (status := _settle_choices(variants, wrappers, site.property_name)) == "tagged" and not all(
-        can_update or _variant_carries_tag(data_type, site.property_name, "nearest-first")
+        can_update or _variant_carries_tag(data_type, site.property_name, "collected")
         for data_type, can_update, _ in variants
     ):
         return "dropped-nested-untagged"
@@ -1568,9 +1586,9 @@ def iter_unbuildable_inlined_unions(field_: DataModelFieldBase) -> Iterator[tupl
     before every tag is written and before the site of the root model writes the name its variants share or drops its
     discriminator. So the choices of the union are asked here as those of a field's own union are (``_settle_choices``),
     by the tag field the type names: where they fail, it takes none. Where every choice carries that tag in the field
-    its class has, it is kept. Else Pydantic refuses the name, as some choice has no field of that name that holds a
-    ``Literal`` and no None, and the union takes the decision of its site: the name the site writes, where it writes one
-    Pydantic can build (:func:`settle_site`), else none.
+    its class has (``_class_tag_field``), it is kept. Else Pydantic refuses the name, as some choice has no field of
+    that name that holds a ``Literal`` and no None, and the union takes the decision of its site: the name the site
+    writes, where it writes one Pydantic can build (:func:`settle_site`), else none.
     """
     for nested in field_.data_type.all_data_types:
         if nested is field_.data_type or not (name := nested.discriminator):
@@ -1579,7 +1597,7 @@ def iter_unbuildable_inlined_unions(field_: DataModelFieldBase) -> Iterator[tupl
         variants = list(_iter_discriminator_data_types(nested.data_types, wrappers=wrappers))
         if _settle_choices(variants, wrappers, name) != "tagged":
             yield nested, None
-        elif not all(_variant_carries_tag(data_type, name, "nearest-first") for data_type, _, _ in variants):
+        elif not all(_variant_carries_tag(data_type, name, "collected") for data_type, _, _ in variants):
             site: UnionSite = inlined_site(nested)
             written = union_site(site.model, site.field)
             yield nested, None if written is None or settle_site(written) != "tagged" else written.property_name
