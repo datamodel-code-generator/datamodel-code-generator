@@ -879,6 +879,7 @@ The 20261113 presets keep the 20261112 options and add:
 - x-python-import for every reference (`--use-x-python-import-for-every-ref`): Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in another document, and split no request/response model for the readOnly or writeOnly properties of such a schema.
 - Extensible enums accept new values (`--open-enums extensible`): Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] | str, instead of rejecting them.
 - Discriminators inferred from tags (`--infer-union-discriminators`): Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names.
+- Kubernetes extensions read (`--read-kubernetes-extensions`): Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does.
 
 ## Override Preset Options
 
@@ -14679,6 +14680,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     read-dynamic-anchors-in-document-order = true
     read-escaped-ref-pointers = true
     read-input-model-dataclass-fields-by-alias = true
+    read-kubernetes-extensions = true
     read-length-keywords-by-type = true
     read-msgspec-union-bounds-exactly = true
     read-nullable-beside-type-list = true
@@ -14726,7 +14728,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
+    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-kubernetes-extensions --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
     ```
 
 | Scope | Options | Notes |
@@ -14808,6 +14810,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | x-python-import for every reference | `--use-x-python-import-for-every-ref` | Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in another document, and split no request/response model for the readOnly or writeOnly properties of such a schema. |
 | Extensible enums accept new values | `--open-enums extensible` | Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] \| str, instead of rejecting them. |
 | Discriminators inferred from tags | `--infer-union-discriminators` | Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names. |
+| Kubernetes extensions read | `--read-kubernetes-extensions` | Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does. |
 
 ### `standard-py311-20261113`
 
@@ -14878,6 +14881,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     read-dynamic-anchors-in-document-order = true
     read-escaped-ref-pointers = true
     read-input-model-dataclass-fields-by-alias = true
+    read-kubernetes-extensions = true
     read-length-keywords-by-type = true
     read-msgspec-union-bounds-exactly = true
     read-nullable-beside-type-list = true
@@ -14926,7 +14930,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
+    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-kubernetes-extensions --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
     ```
 
 | Scope | Options | Notes |
@@ -15009,6 +15013,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | x-python-import for every reference | `--use-x-python-import-for-every-ref` | Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in another document, and split no request/response model for the readOnly or writeOnly properties of such a schema. |
 | Extensible enums accept new values | `--open-enums extensible` | Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] \| str, instead of rejecting them. |
 | Discriminators inferred from tags | `--infer-union-discriminators` | Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names. |
+| Kubernetes extensions read | `--read-kubernetes-extensions` | Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does. |
 
 ### `standard-py312-20261113`
 
@@ -15079,6 +15084,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     read-dynamic-anchors-in-document-order = true
     read-escaped-ref-pointers = true
     read-input-model-dataclass-fields-by-alias = true
+    read-kubernetes-extensions = true
     read-length-keywords-by-type = true
     read-msgspec-union-bounds-exactly = true
     read-nullable-beside-type-list = true
@@ -15127,7 +15133,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
+    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-kubernetes-extensions --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
     ```
 
 | Scope | Options | Notes |
@@ -15210,6 +15216,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | x-python-import for every reference | `--use-x-python-import-for-every-ref` | Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in another document, and split no request/response model for the readOnly or writeOnly properties of such a schema. |
 | Extensible enums accept new values | `--open-enums extensible` | Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] \| str, instead of rejecting them. |
 | Discriminators inferred from tags | `--infer-union-discriminators` | Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names. |
+| Kubernetes extensions read | `--read-kubernetes-extensions` | Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does. |
 
 ### `standard-py313-20261113`
 
@@ -15280,6 +15287,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     read-dynamic-anchors-in-document-order = true
     read-escaped-ref-pointers = true
     read-input-model-dataclass-fields-by-alias = true
+    read-kubernetes-extensions = true
     read-length-keywords-by-type = true
     read-msgspec-union-bounds-exactly = true
     read-nullable-beside-type-list = true
@@ -15328,7 +15336,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
+    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-kubernetes-extensions --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
     ```
 
 | Scope | Options | Notes |
@@ -15411,6 +15419,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | x-python-import for every reference | `--use-x-python-import-for-every-ref` | Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in another document, and split no request/response model for the readOnly or writeOnly properties of such a schema. |
 | Extensible enums accept new values | `--open-enums extensible` | Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] \| str, instead of rejecting them. |
 | Discriminators inferred from tags | `--infer-union-discriminators` | Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names. |
+| Kubernetes extensions read | `--read-kubernetes-extensions` | Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does. |
 
 ### `standard-py314-20261113`
 
@@ -15481,6 +15490,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     read-dynamic-anchors-in-document-order = true
     read-escaped-ref-pointers = true
     read-input-model-dataclass-fields-by-alias = true
+    read-kubernetes-extensions = true
     read-length-keywords-by-type = true
     read-msgspec-union-bounds-exactly = true
     read-nullable-beside-type-list = true
@@ -15529,7 +15539,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
+    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-kubernetes-extensions --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
     ```
 
 | Scope | Options | Notes |
@@ -15612,6 +15622,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | x-python-import for every reference | `--use-x-python-import-for-every-ref` | Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in another document, and split no request/response model for the readOnly or writeOnly properties of such a schema. |
 | Extensible enums accept new values | `--open-enums extensible` | Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] \| str, instead of rejecting them. |
 | Discriminators inferred from tags | `--infer-union-discriminators` | Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names. |
+| Kubernetes extensions read | `--read-kubernetes-extensions` | Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does. |
 
 ### `standard-py315-20261113`
 
@@ -15682,6 +15693,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     read-dynamic-anchors-in-document-order = true
     read-escaped-ref-pointers = true
     read-input-model-dataclass-fields-by-alias = true
+    read-kubernetes-extensions = true
     read-length-keywords-by-type = true
     read-msgspec-union-bounds-exactly = true
     read-nullable-beside-type-list = true
@@ -15730,7 +15742,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
+    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-kubernetes-extensions --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
     ```
 
 | Scope | Options | Notes |
@@ -15813,6 +15825,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | x-python-import for every reference | `--use-x-python-import-for-every-ref` | Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in another document, and split no request/response model for the readOnly or writeOnly properties of such a schema. |
 | Extensible enums accept new values | `--open-enums extensible` | Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] \| str, instead of rejecting them. |
 | Discriminators inferred from tags | `--infer-union-discriminators` | Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names. |
+| Kubernetes extensions read | `--read-kubernetes-extensions` | Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does. |
 
 ### `practical-py310-20261113`
 
@@ -15884,6 +15897,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     read-dynamic-anchors-in-document-order = true
     read-escaped-ref-pointers = true
     read-input-model-dataclass-fields-by-alias = true
+    read-kubernetes-extensions = true
     read-length-keywords-by-type = true
     read-msgspec-union-bounds-exactly = true
     read-nullable-beside-type-list = true
@@ -15941,7 +15955,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --reuse-model --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-object-type --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
+    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-kubernetes-extensions --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --reuse-model --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-object-type --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
     ```
 
 | Scope | Options | Notes |
@@ -16023,6 +16037,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | x-python-import for every reference | `--use-x-python-import-for-every-ref` | Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in another document, and split no request/response model for the readOnly or writeOnly properties of such a schema. |
 | Extensible enums accept new values | `--open-enums extensible` | Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] \| str, instead of rejecting them. |
 | Discriminators inferred from tags | `--infer-union-discriminators` | Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names. |
+| Kubernetes extensions read | `--read-kubernetes-extensions` | Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -16097,6 +16112,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     read-dynamic-anchors-in-document-order = true
     read-escaped-ref-pointers = true
     read-input-model-dataclass-fields-by-alias = true
+    read-kubernetes-extensions = true
     read-length-keywords-by-type = true
     read-msgspec-union-bounds-exactly = true
     read-nullable-beside-type-list = true
@@ -16155,7 +16171,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --reuse-model --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-object-type --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
+    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-kubernetes-extensions --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --reuse-model --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-object-type --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
     ```
 
 | Scope | Options | Notes |
@@ -16238,6 +16254,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | x-python-import for every reference | `--use-x-python-import-for-every-ref` | Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in another document, and split no request/response model for the readOnly or writeOnly properties of such a schema. |
 | Extensible enums accept new values | `--open-enums extensible` | Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] \| str, instead of rejecting them. |
 | Discriminators inferred from tags | `--infer-union-discriminators` | Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names. |
+| Kubernetes extensions read | `--read-kubernetes-extensions` | Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -16312,6 +16329,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     read-dynamic-anchors-in-document-order = true
     read-escaped-ref-pointers = true
     read-input-model-dataclass-fields-by-alias = true
+    read-kubernetes-extensions = true
     read-length-keywords-by-type = true
     read-msgspec-union-bounds-exactly = true
     read-nullable-beside-type-list = true
@@ -16370,7 +16388,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --reuse-model --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-object-type --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
+    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-kubernetes-extensions --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --reuse-model --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-object-type --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
     ```
 
 | Scope | Options | Notes |
@@ -16453,6 +16471,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | x-python-import for every reference | `--use-x-python-import-for-every-ref` | Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in another document, and split no request/response model for the readOnly or writeOnly properties of such a schema. |
 | Extensible enums accept new values | `--open-enums extensible` | Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] \| str, instead of rejecting them. |
 | Discriminators inferred from tags | `--infer-union-discriminators` | Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names. |
+| Kubernetes extensions read | `--read-kubernetes-extensions` | Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -16527,6 +16546,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     read-dynamic-anchors-in-document-order = true
     read-escaped-ref-pointers = true
     read-input-model-dataclass-fields-by-alias = true
+    read-kubernetes-extensions = true
     read-length-keywords-by-type = true
     read-msgspec-union-bounds-exactly = true
     read-nullable-beside-type-list = true
@@ -16585,7 +16605,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --reuse-model --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-object-type --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
+    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-kubernetes-extensions --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --reuse-model --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-object-type --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
     ```
 
 | Scope | Options | Notes |
@@ -16668,6 +16688,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | x-python-import for every reference | `--use-x-python-import-for-every-ref` | Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in another document, and split no request/response model for the readOnly or writeOnly properties of such a schema. |
 | Extensible enums accept new values | `--open-enums extensible` | Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] \| str, instead of rejecting them. |
 | Discriminators inferred from tags | `--infer-union-discriminators` | Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names. |
+| Kubernetes extensions read | `--read-kubernetes-extensions` | Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -16742,6 +16763,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     read-dynamic-anchors-in-document-order = true
     read-escaped-ref-pointers = true
     read-input-model-dataclass-fields-by-alias = true
+    read-kubernetes-extensions = true
     read-length-keywords-by-type = true
     read-msgspec-union-bounds-exactly = true
     read-nullable-beside-type-list = true
@@ -16800,7 +16822,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --reuse-model --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-object-type --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
+    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-kubernetes-extensions --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --reuse-model --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-object-type --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
     ```
 
 | Scope | Options | Notes |
@@ -16883,6 +16905,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | x-python-import for every reference | `--use-x-python-import-for-every-ref` | Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in another document, and split no request/response model for the readOnly or writeOnly properties of such a schema. |
 | Extensible enums accept new values | `--open-enums extensible` | Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] \| str, instead of rejecting them. |
 | Discriminators inferred from tags | `--infer-union-discriminators` | Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names. |
+| Kubernetes extensions read | `--read-kubernetes-extensions` | Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -16957,6 +16980,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     read-dynamic-anchors-in-document-order = true
     read-escaped-ref-pointers = true
     read-input-model-dataclass-fields-by-alias = true
+    read-kubernetes-extensions = true
     read-length-keywords-by-type = true
     read-msgspec-union-bounds-exactly = true
     read-nullable-beside-type-list = true
@@ -17015,7 +17039,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --reuse-model --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-object-type --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
+    datamodel-codegen --allow-population-by-field-name --apply-field-options-to-every-field --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-constrained-root-models-as-annotated --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-numbered-request-response-variants --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --infer-union-discriminators --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-constrained-root-models-in-every-container --keep-content-parameter-refs --keep-defaults-of-inherited-required-fields --keep-enum-literal-aliases --keep-enum-member-values --keep-false-dataclass-arguments --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-collapsed-root-models --keep-reference-null-on-merged-models --keep-self-referencing-array-items --keep-shared-members-on-collapsed-root-models --merge-message-trait-headers --merge-shared-variant-tags --name-allof-union-members-after-branches --name-converted-payloads-by-message --naming-strategy definitions-first --omit-incomplete-model-defaults --omit-redundant-constraints --omit-redundant-reference-null --open-enums extensible --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-allof-parents-in-mro-order --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-input-model-dataclass-fields-by-alias --read-kubernetes-extensions --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-object-keywords-by-type --read-schema-version-per-document --read-unevaluated-properties --remove-unused-models-beside-type-overrides --rename-submodules-hidden-by-classes --reuse-every-reached-input-model-type --reuse-model --singularize-last-word-of-item-names --skip-path-extension-keys --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --type-overrides-replace-whole-type --use-annotated --use-bounds-for-float-const --use-bytes-for-content-media-type --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-enum-field-as-literal-in-operations --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-forbid-unknown-fields --use-msgspec-meta-for-map-keys --use-object-type --use-one-model-per-ref-site --use-plain-alias-for-recursive-models --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-strict-str-for-base64 --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-typed-nullable-map-values --use-union-operator --use-unique-items-as-set --use-unique-items-as-set-by-value --use-x-python-import-for-every-ref --use-x-python-type-as-written
     ```
 
 | Scope | Options | Notes |
@@ -17098,6 +17122,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | x-python-import for every reference | `--use-x-python-import-for-every-ref` | Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in another document, and split no request/response model for the readOnly or writeOnly properties of such a schema. |
 | Extensible enums accept new values | `--open-enums extensible` | Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] \| str, instead of rejecting them. |
 | Discriminators inferred from tags | `--infer-union-discriminators` | Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names. |
+| Kubernetes extensions read | `--read-kubernetes-extensions` | Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name` | Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class names; the standard groups keep definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -19022,6 +19047,7 @@ enable validation-related options.
 - 🚀 [Getting Started](getting-started.md) - Installation and first model
 - 🖥️ [CLI Reference: OpenAPI-only Options](cli-reference/openapi-only-options.md) - All OpenAPI-specific CLI options
 - ⚙️ [CLI Reference: Base Options](cli-reference/base-options.md) - Input/output configuration options
+- ☸️ [Kubernetes Schemas](kubernetes.md) - Cluster documents and the x-kubernetes extensions
 
 ---
 
@@ -20037,6 +20063,7 @@ schema keywords are represented as type hints or field metadata rather than full
 - 🏷️ [CLI Reference: Field Customization](cli-reference/field-customization.md) - Field naming and constraint options
 - 📊 [Supported Data Types](supported-data-types.md) - JSON Schema data type support
 - 🏗️ [CLI Reference: Model Customization](cli-reference/model-customization.md) - Base class and model customization options
+- ☸️ [Kubernetes Schemas](kubernetes.md) - CRD schemas and the x-kubernetes extensions
 
 ---
 
@@ -35831,7 +35858,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 19 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 57 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 58 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 41 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 73 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
@@ -35849,7 +35876,7 @@ Use these pages when you know the workflow area but not the exact option name.
 |-------|---------|--------|
 | [Model Customization](topics/model-customization.md) | 35 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 23 | Custom Templates, Generated Output, Imports, Output Formatting |
-| [Typing Customization](topics/typing-customization.md) | 37 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
+| [Typing Customization](topics/typing-customization.md) | 38 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 14 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
@@ -36156,6 +36183,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--read-dynamic-anchors-in-document-order`](base-options.md#read-dynamic-anchors-in-document-order)
 - [`--read-escaped-ref-pointers`](base-options.md#read-escaped-ref-pointers)
 - [`--read-input-model-dataclass-fields-by-alias`](base-options.md#read-input-model-dataclass-fields-by-alias)
+- [`--read-kubernetes-extensions`](typing-customization.md#read-kubernetes-extensions)
 - [`--read-length-keywords-by-type`](field-customization.md#read-length-keywords-by-type)
 - [`--read-msgspec-union-bounds-exactly`](field-customization.md#read-msgspec-union-bounds-exactly)
 - [`--read-nullable-beside-type-list`](model-customization.md#read-nullable-beside-type-list)
@@ -47189,6 +47217,8 @@ where optional fields have defaults but cannot accept `None` values.
 
 **Related:** [`--use-default`](#use-default)
 
+**See also:** [Kubernetes Schemas](../kubernetes.md)
+
 !!! tip "Usage"
 
     ```bash
@@ -52117,6 +52147,8 @@ validation constraints (min/max length, pattern, etc.) from the schema.
 Include specific extra keys in Field() definitions.
 
 The `--field-extra-keys` flag configures the code generation behavior.
+
+**See also:** [Kubernetes Schemas](../kubernetes.md)
 
 !!! tip "Usage"
 
@@ -57538,6 +57570,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/typing-custo
 | [`--output-datetime-class`](#output-datetime-class) | Specify datetime class type for date-time schema fields. |
 | [`--read-allof-parents-in-mro-order`](#read-allof-parents-in-mro-order) | Read the allOf parents of every inherited schema in the orde... |
 | [`--read-const-beside-enum`](#read-const-beside-enum) | Read a `const` beside an `enum` as JSON Schema does. |
+| [`--read-kubernetes-extensions`](#read-kubernetes-extensions) | Read the Kubernetes schema extensions as the keywords they s... |
 | [`--read-unevaluated-properties`](#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalP... |
 | [`--strict-types`](#strict-types) | Enable strict type validation for specified Python types. |
 | [`--type-mappings`](#type-mappings) | Override default type mappings for schema formats. |
@@ -62259,6 +62292,365 @@ ignored.
 
 ---
 
+## `--read-kubernetes-extensions` {#read-kubernetes-extensions}
+
+Read the Kubernetes schema extensions as the keywords they stand for.
+
+Kubernetes schemas, the `openAPIV3Schema` of a CustomResourceDefinition and the `/openapi/v3` documents a cluster
+serves, carry extensions that change what a value may be. Without this option they are ignored. With it, wherever a
+schema object writes them:
+
+- `x-kubernetes-int-or-string: true`, or the format `int-or-string`, is read as `type: [integer, string]` in place of an
+  `anyOf` or `oneOf` of exactly those two types, so a bare one is `int | str` instead of `Any`, and a quantity (that
+  `anyOf` beside a `pattern`) is one `int | constr(pattern=...)` instead of two root models;
+- `x-kubernetes-preserve-unknown-fields: true` beside `properties` and no `additionalProperties` is read as
+  `additionalProperties: true`, so a Pydantic model keeps the keys it does not declare (`extra='allow'`);
+- `x-kubernetes-group-version-kind` gives the `apiVersion` and the `kind` property, each where all its entries name one
+  value and the property is a plain string, that value as `const` and `default`, so they are `Literal['apps/v1'] =
+  'apps/v1'` and `Literal['Deployment'] = 'Deployment'`. Where `const` is no keyword (draft-04) it is not read.
+
+The other extensions (`x-kubernetes-list-type`, `x-kubernetes-list-map-keys`, `x-kubernetes-map-type`,
+`x-kubernetes-validations`, `x-kubernetes-embedded-resource`) stay as they are; `--field-extra-keys` carries them into
+the field.
+
+**See also:** [Kubernetes Schemas](../kubernetes.md)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input kubernetes_crd_schema.yaml --read-kubernetes-extensions # (1)!
+    ```
+
+    1. :material-arrow-left: `--read-kubernetes-extensions` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    $schema: http://json-schema.org/draft-07/schema#
+    title: Widget
+    description: Widget is the Schema for the widgets API.
+    type: object
+    x-kubernetes-group-version-kind:
+    - group: example.com
+      kind: Widget
+      version: v1
+    required:
+    - spec
+    properties:
+      apiVersion:
+        description: APIVersion defines the versioned schema of this representation of an object.
+        type: string
+      kind:
+        description: Kind is a string value representing the REST resource this object represents.
+        type: string
+      metadata:
+        type: object
+      spec:
+        description: WidgetSpec defines the desired state of Widget.
+        type: object
+        required:
+        - replicas
+        properties:
+          replicas:
+            type: integer
+            format: int32
+          maxSurge:
+            anyOf:
+            - type: integer
+            - type: string
+            x-kubernetes-int-or-string: true
+          port:
+            x-kubernetes-int-or-string: true
+          targetPort:
+            type:
+            - integer
+            - string
+            x-kubernetes-int-or-string: true
+          resources:
+            type: object
+            properties:
+              limits:
+                type: object
+                additionalProperties:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                  x-kubernetes-int-or-string: true
+          selector:
+            type: object
+            properties:
+              app:
+                type: string
+            x-kubernetes-preserve-unknown-fields: true
+          config:
+            x-kubernetes-preserve-unknown-fields: true
+          template:
+            type: object
+            x-kubernetes-embedded-resource: true
+            x-kubernetes-preserve-unknown-fields: true
+          ports:
+            type: array
+            items:
+              type: object
+              required:
+              - name
+              properties:
+                name:
+                  type: string
+                port:
+                  type: integer
+            x-kubernetes-list-map-keys:
+            - name
+            x-kubernetes-list-type: map
+          finalizers:
+            type: array
+            items:
+              type: string
+            x-kubernetes-list-type: set
+          labels:
+            type: object
+            additionalProperties:
+              type: string
+            x-kubernetes-map-type: atomic
+          paused:
+            type: boolean
+            nullable: true
+          updatePolicy:
+            type: string
+            enum:
+            - Recreate
+        x-kubernetes-validations:
+        - message: replicas must not be negative
+          rule: self.replicas >= 0
+      status:
+        type: object
+        properties:
+          readyReplicas:
+            type: integer
+          conditions:
+            type: array
+            items:
+              type: object
+              required:
+              - type
+              - status
+              properties:
+                type:
+                  type: string
+                status:
+                  type: string
+                  enum:
+                  - "True"
+                  - "False"
+                  - Unknown
+            x-kubernetes-list-map-keys:
+            - type
+            x-kubernetes-list-type: map
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  kubernetes_crd_schema.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Any, Literal
+
+        from pydantic import BaseModel, ConfigDict, Field, constr
+
+
+        class Resources(BaseModel):
+            limits: (
+                dict[
+                    str,
+                    int
+                    | constr(
+                        pattern=r'^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$'
+                    ),
+                ]
+                | None
+            ) = None
+
+
+        class Selector(BaseModel):
+            model_config = ConfigDict(
+                extra='allow',
+            )
+            app: str | None = None
+
+
+        class Port(BaseModel):
+            name: str
+            port: int | None = None
+
+
+        class UpdatePolicy(Enum):
+            Recreate = 'Recreate'
+
+
+        class Spec(BaseModel):
+            replicas: int
+            maxSurge: int | str | None = None
+            port: int | str | None = None
+            targetPort: int | str | None = None
+            resources: Resources | None = None
+            selector: Selector | None = None
+            config: Any | None = None
+            template: dict[str, Any] | None = None
+            ports: list[Port] | None = None
+            finalizers: list[str] | None = None
+            labels: dict[str, str] | None = None
+            paused: bool | None = None
+            updatePolicy: UpdatePolicy | None = None
+
+
+        class Status1(Enum):
+            True_ = 'True'
+            False_ = 'False'
+            Unknown = 'Unknown'
+
+
+        class Condition(BaseModel):
+            type: str
+            status: Status1
+
+
+        class Status(BaseModel):
+            readyReplicas: int | None = None
+            conditions: list[Condition] | None = None
+
+
+        class Widget(BaseModel):
+            apiVersion: Literal['example.com/v1'] = Field(
+                'example.com/v1',
+                description='APIVersion defines the versioned schema of this representation of an object.',
+            )
+            kind: Literal['Widget'] = Field(
+                'Widget',
+                description='Kind is a string value representing the REST resource this object represents.',
+            )
+            metadata: dict[str, Any] | None = None
+            spec: Spec = Field(
+                ..., description='WidgetSpec defines the desired state of Widget.'
+            )
+            status: Status | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  kubernetes_crd_schema.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Any
+
+        from pydantic import BaseModel, Field, RootModel, constr
+
+
+        class Limits(RootModel[int]):
+            root: int
+
+
+        class Limits1(
+            RootModel[
+                constr(
+                    pattern=r'^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$'
+                )
+            ]
+        ):
+            root: constr(
+                pattern=r'^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$'
+            )
+
+
+        class Resources(BaseModel):
+            limits: dict[str, Limits | Limits1] | None = None
+
+
+        class Selector(BaseModel):
+            app: str | None = None
+
+
+        class Port(BaseModel):
+            name: str
+            port: int | None = None
+
+
+        class UpdatePolicy(Enum):
+            Recreate = 'Recreate'
+
+
+        class Spec(BaseModel):
+            replicas: int
+            maxSurge: int | str | None = None
+            port: Any | None = None
+            targetPort: int | str | None = None
+            resources: Resources | None = None
+            selector: Selector | None = None
+            config: Any | None = None
+            template: dict[str, Any] | None = None
+            ports: list[Port] | None = None
+            finalizers: list[str] | None = None
+            labels: dict[str, str] | None = None
+            paused: bool | None = None
+            updatePolicy: UpdatePolicy | None = None
+
+
+        class Status1(Enum):
+            True_ = 'True'
+            False_ = 'False'
+            Unknown = 'Unknown'
+
+
+        class Condition(BaseModel):
+            type: str
+            status: Status1
+
+
+        class Status(BaseModel):
+            readyReplicas: int | None = None
+            conditions: list[Condition] | None = None
+
+
+        class Widget(BaseModel):
+            apiVersion: str | None = Field(
+                None,
+                description='APIVersion defines the versioned schema of this representation of an object.',
+            )
+            kind: str | None = Field(
+                None,
+                description='Kind is a string value representing the REST resource this object represents.',
+            )
+            metadata: dict[str, Any] | None = None
+            spec: Spec = Field(
+                ..., description='WidgetSpec defines the desired state of Widget.'
+            )
+            status: Status | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--read-unevaluated-properties` {#read-unevaluated-properties}
 
 Read a schema-valued `unevaluatedProperties` as `additionalProperties`.
@@ -62478,7 +62870,7 @@ Override default type mappings for schema formats.
 
 The `--type-mappings` flag configures the code generation behavior.
 
-**See also:** [Options That Replace Post-Processing](../post-processing-options.md), [Type Mappings and Custom Types](../type-mappings.md)
+**See also:** [Kubernetes Schemas](../kubernetes.md), [Options That Replace Post-Processing](../post-processing-options.md), [Type Mappings and Custom Types](../type-mappings.md)
 
 !!! tip "Usage"
 
@@ -62566,6 +62958,8 @@ instead of generating them.
 | MongoDB ObjectId | `{"ObjectId": "bson.ObjectId"}` |
 | Custom validators | `{"Email": "my_app.types.ValidatedEmail"}` |
 
+**See also:** [Kubernetes Schemas](../kubernetes.md)
+
 !!! tip "Usage"
 
     ```bash
@@ -62646,6 +63040,8 @@ counts the same: a sequence class its items (`builtins.tuple`), a mapping class 
 is: a `str` in place of an array with `maxItems` limits the length of the string (`notes`), and `typing.Any` in place of
 an array with `minItems` checks the length of every value and raises `TypeError` for one without a length. A count the
 new type does not count is left out with a warning.
+
+**See also:** [Kubernetes Schemas](../kubernetes.md)
 
 !!! tip "Usage"
 
@@ -86733,7 +87129,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 | [Imports](#imports) | 2 | Generated imports and type-checking import behavior. |
 | [Collection Types](#collection-types) | 8 | Collection and tuple/set generation. |
 | [Type Alias](#type-alias) | 4 | TypeAlias and root-model alias output. |
-| [Type Mapping](#type-mapping) | 20 | Scalar, date/time, and custom type mapping. |
+| [Type Mapping](#type-mapping) | 21 | Scalar, date/time, and custom type mapping. |
 | [Type Syntax](#type-syntax) | 3 | Modern annotation syntax and Annotated usage. |
 
 ## Imports {#imports}
@@ -86779,6 +87175,7 @@ Scalar, date/time, and custom type mapping.
 |--------|-------------|
 | [`--output-date-class`](../typing-customization.md#output-date-class) | Specify date class type for date schema fields. |
 | [`--output-datetime-class`](../typing-customization.md#output-datetime-class) | Specify datetime class type for date-time schema fields. |
+| [`--read-kubernetes-extensions`](../typing-customization.md#read-kubernetes-extensions) | Read the Kubernetes schema extensions as the keywords they stand for. |
 | [`--read-unevaluated-properties`](../typing-customization.md#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalProperties`. |
 | [`--strict-types`](../typing-customization.md#strict-types) | Enable strict type validation for specified Python types. |
 | [`--type-mappings`](../typing-customization.md#type-mappings) | Override default type mappings for schema formats. |
@@ -86936,6 +87333,7 @@ datamodel-codegen [OPTIONS]
 | [`--output-datetime-class`](typing-customization.md#output-datetime-class) | Specify datetime class type for date-time schema fields. |
 | [`--read-allof-parents-in-mro-order`](typing-customization.md#read-allof-parents-in-mro-order) | Read the allOf parents of every inherited schema in the order of the class bases... |
 | [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum) | Read a `const` beside an `enum` as JSON Schema does. |
+| [`--read-kubernetes-extensions`](typing-customization.md#read-kubernetes-extensions) | Read the Kubernetes schema extensions as the keywords they stand for. |
 | [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalProperties`. |
 | [`--strict-types`](typing-customization.md#strict-types) | Enable strict type validation for specified Python types. |
 | [`--type-mappings`](typing-customization.md#type-mappings) | Override default type mappings for schema formats. |
@@ -87423,6 +87821,7 @@ All options sorted alphabetically:
 - [`--read-dynamic-anchors-in-document-order`](base-options.md#read-dynamic-anchors-in-document-order) - Resolve a `$dynamicRef` to the first `$dynamicAnchor` of its...
 - [`--read-escaped-ref-pointers`](base-options.md#read-escaped-ref-pointers) - Read the escapes of a `$ref` JSON pointer as the characters ...
 - [`--read-input-model-dataclass-fields-by-alias`](base-options.md#read-input-model-dataclass-fields-by-alias) - Read the fields of a Pydantic dataclass by their aliases wit...
+- [`--read-kubernetes-extensions`](typing-customization.md#read-kubernetes-extensions) - Read the Kubernetes schema extensions as the keywords they s...
 - [`--read-length-keywords-by-type`](field-customization.md#read-length-keywords-by-type) - Read the string and the array keywords for their own kind on...
 - [`--read-msgspec-union-bounds-exactly`](field-customization.md#read-msgspec-union-bounds-exactly) - Decide the bounds of the int member of a msgspec union on th...
 - [`--read-nullable-beside-type-list`](model-customization.md#read-nullable-beside-type-list) - Write the null that `nullable: true` declares beside a `type...
@@ -92456,16 +92855,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 258 | Shared generation options. |
-| `GenerateConfig` | 273 | Public `generate()` configuration. |
-| `ParserConfig` | 213 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 215 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 226 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 229 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 216 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 216 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 215 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 216 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 259 | Shared generation options. |
+| `GenerateConfig` | 274 | Public `generate()` configuration. |
+| `ParserConfig` | 214 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 216 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 227 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 230 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 217 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 217 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 216 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 217 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -92545,10 +92944,15 @@ modules, and a run that fails after a reference held a document it had prepared 
 which parses again with every role known at L0: `document_roles_to_seed`). These are retries around the whole
 pipeline, not passes inside it.
 
-**L0.** `_load_source_dict` calls `parser/_schema_documents.py:read_document`, which keeps the document as written and, under
-`--use-single-value-enum-as-const`, rewrites one-value `enum` to `const` copy-on-write, except beside `nullable: true`
-when the value is not null (`_single_value_enum_as_const`, which skips instance-data keywords and extension keys other
-than `x-propertyNames` through `_document_child_entries`). `_parse_file` then calls `_prepare_schema_resources`, which
+**L0.** `_load_source_dict` calls `parser/_schema_documents.py:read_document`, which keeps the document as written and
+reads it copy-on-write, each schema object through one walk (`_read_schema_objects`, which skips instance-data keywords
+and extension keys other than `x-propertyNames` through `_document_child_entries`): first, under
+`--read-kubernetes-extensions`, the Kubernetes extensions as the keywords they stand for (`_read_kubernetes_extensions`:
+`x-kubernetes-int-or-string` or the format `int-or-string` as `type: [integer, string]`,
+`x-kubernetes-preserve-unknown-fields` beside `properties` as `additionalProperties: true`, and where `const` is a
+keyword `x-kubernetes-group-version-kind` as the `const` and `default` of `apiVersion` and `kind`), so no later step
+reads an `x-kubernetes-*` key; then, under `--use-single-value-enum-as-const`, one-value `enum` as `const`, except
+beside `nullable: true` when the value is not null (`_single_value_enum_as_const`). `_parse_file` then calls `_prepare_schema_resources`, which
 adds the document to the schema graph (`parser/_schema_graph.py`): `walk_schema_resources` finds which absolute URI
 names which schema of it (the root, `$id` or draft-04 `id` resources, the implicit component resources of OpenAPI,
 the schemas of the object a reference names the document's root as, `$anchor` and `$dynamicAnchor`) and returns one
@@ -93998,7 +94402,7 @@ part marks the schema objects in scope where the document is rewritten (L0), and
 parses. Parse paths are not document locations: legacy OpenAPI `paths` and `parameters` scopes, `$ref` merged with
 sibling keywords, `$ref` targets inside extension keys and properties whose names start with `x-` all produce paths
 that a path-based test misreads. The mark has to survive every step that builds a new object from a marked one:
-copy-on-write rewrites (`parser/_schema_documents.py`: `_single_value_enum_as_const`, `rewrite_schema_resource_refs`),
+copy-on-write rewrites (`parser/_schema_documents.py`: `_read_schema_objects`, `rewrite_schema_resource_refs`),
 `_validate_schema_object`, `_merge_ref_with_schema`, synthetic enums, allOf and combined-schema merges, and OpenAPI
 operation copies.
 `--use-single-value-enum-as-const` has

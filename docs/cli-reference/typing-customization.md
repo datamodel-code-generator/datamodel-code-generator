@@ -25,6 +25,7 @@
 | [`--output-datetime-class`](#output-datetime-class) | Specify datetime class type for date-time schema fields. |
 | [`--read-allof-parents-in-mro-order`](#read-allof-parents-in-mro-order) | Read the allOf parents of every inherited schema in the orde... |
 | [`--read-const-beside-enum`](#read-const-beside-enum) | Read a `const` beside an `enum` as JSON Schema does. |
+| [`--read-kubernetes-extensions`](#read-kubernetes-extensions) | Read the Kubernetes schema extensions as the keywords they s... |
 | [`--read-unevaluated-properties`](#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalP... |
 | [`--strict-types`](#strict-types) | Enable strict type validation for specified Python types. |
 | [`--type-mappings`](#type-mappings) | Override default type mappings for schema formats. |
@@ -4746,6 +4747,365 @@ ignored.
 
 ---
 
+## `--read-kubernetes-extensions` {#read-kubernetes-extensions}
+
+Read the Kubernetes schema extensions as the keywords they stand for.
+
+Kubernetes schemas, the `openAPIV3Schema` of a CustomResourceDefinition and the `/openapi/v3` documents a cluster
+serves, carry extensions that change what a value may be. Without this option they are ignored. With it, wherever a
+schema object writes them:
+
+- `x-kubernetes-int-or-string: true`, or the format `int-or-string`, is read as `type: [integer, string]` in place of an
+  `anyOf` or `oneOf` of exactly those two types, so a bare one is `int | str` instead of `Any`, and a quantity (that
+  `anyOf` beside a `pattern`) is one `int | constr(pattern=...)` instead of two root models;
+- `x-kubernetes-preserve-unknown-fields: true` beside `properties` and no `additionalProperties` is read as
+  `additionalProperties: true`, so a Pydantic model keeps the keys it does not declare (`extra='allow'`);
+- `x-kubernetes-group-version-kind` gives the `apiVersion` and the `kind` property, each where all its entries name one
+  value and the property is a plain string, that value as `const` and `default`, so they are `Literal['apps/v1'] =
+  'apps/v1'` and `Literal['Deployment'] = 'Deployment'`. Where `const` is no keyword (draft-04) it is not read.
+
+The other extensions (`x-kubernetes-list-type`, `x-kubernetes-list-map-keys`, `x-kubernetes-map-type`,
+`x-kubernetes-validations`, `x-kubernetes-embedded-resource`) stay as they are; `--field-extra-keys` carries them into
+the field.
+
+**See also:** [Kubernetes Schemas](../kubernetes.md)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input kubernetes_crd_schema.yaml --read-kubernetes-extensions # (1)!
+    ```
+
+    1. :material-arrow-left: `--read-kubernetes-extensions` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    $schema: http://json-schema.org/draft-07/schema#
+    title: Widget
+    description: Widget is the Schema for the widgets API.
+    type: object
+    x-kubernetes-group-version-kind:
+    - group: example.com
+      kind: Widget
+      version: v1
+    required:
+    - spec
+    properties:
+      apiVersion:
+        description: APIVersion defines the versioned schema of this representation of an object.
+        type: string
+      kind:
+        description: Kind is a string value representing the REST resource this object represents.
+        type: string
+      metadata:
+        type: object
+      spec:
+        description: WidgetSpec defines the desired state of Widget.
+        type: object
+        required:
+        - replicas
+        properties:
+          replicas:
+            type: integer
+            format: int32
+          maxSurge:
+            anyOf:
+            - type: integer
+            - type: string
+            x-kubernetes-int-or-string: true
+          port:
+            x-kubernetes-int-or-string: true
+          targetPort:
+            type:
+            - integer
+            - string
+            x-kubernetes-int-or-string: true
+          resources:
+            type: object
+            properties:
+              limits:
+                type: object
+                additionalProperties:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                  x-kubernetes-int-or-string: true
+          selector:
+            type: object
+            properties:
+              app:
+                type: string
+            x-kubernetes-preserve-unknown-fields: true
+          config:
+            x-kubernetes-preserve-unknown-fields: true
+          template:
+            type: object
+            x-kubernetes-embedded-resource: true
+            x-kubernetes-preserve-unknown-fields: true
+          ports:
+            type: array
+            items:
+              type: object
+              required:
+              - name
+              properties:
+                name:
+                  type: string
+                port:
+                  type: integer
+            x-kubernetes-list-map-keys:
+            - name
+            x-kubernetes-list-type: map
+          finalizers:
+            type: array
+            items:
+              type: string
+            x-kubernetes-list-type: set
+          labels:
+            type: object
+            additionalProperties:
+              type: string
+            x-kubernetes-map-type: atomic
+          paused:
+            type: boolean
+            nullable: true
+          updatePolicy:
+            type: string
+            enum:
+            - Recreate
+        x-kubernetes-validations:
+        - message: replicas must not be negative
+          rule: self.replicas >= 0
+      status:
+        type: object
+        properties:
+          readyReplicas:
+            type: integer
+          conditions:
+            type: array
+            items:
+              type: object
+              required:
+              - type
+              - status
+              properties:
+                type:
+                  type: string
+                status:
+                  type: string
+                  enum:
+                  - "True"
+                  - "False"
+                  - Unknown
+            x-kubernetes-list-map-keys:
+            - type
+            x-kubernetes-list-type: map
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  kubernetes_crd_schema.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Any, Literal
+
+        from pydantic import BaseModel, ConfigDict, Field, constr
+
+
+        class Resources(BaseModel):
+            limits: (
+                dict[
+                    str,
+                    int
+                    | constr(
+                        pattern=r'^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$'
+                    ),
+                ]
+                | None
+            ) = None
+
+
+        class Selector(BaseModel):
+            model_config = ConfigDict(
+                extra='allow',
+            )
+            app: str | None = None
+
+
+        class Port(BaseModel):
+            name: str
+            port: int | None = None
+
+
+        class UpdatePolicy(Enum):
+            Recreate = 'Recreate'
+
+
+        class Spec(BaseModel):
+            replicas: int
+            maxSurge: int | str | None = None
+            port: int | str | None = None
+            targetPort: int | str | None = None
+            resources: Resources | None = None
+            selector: Selector | None = None
+            config: Any | None = None
+            template: dict[str, Any] | None = None
+            ports: list[Port] | None = None
+            finalizers: list[str] | None = None
+            labels: dict[str, str] | None = None
+            paused: bool | None = None
+            updatePolicy: UpdatePolicy | None = None
+
+
+        class Status1(Enum):
+            True_ = 'True'
+            False_ = 'False'
+            Unknown = 'Unknown'
+
+
+        class Condition(BaseModel):
+            type: str
+            status: Status1
+
+
+        class Status(BaseModel):
+            readyReplicas: int | None = None
+            conditions: list[Condition] | None = None
+
+
+        class Widget(BaseModel):
+            apiVersion: Literal['example.com/v1'] = Field(
+                'example.com/v1',
+                description='APIVersion defines the versioned schema of this representation of an object.',
+            )
+            kind: Literal['Widget'] = Field(
+                'Widget',
+                description='Kind is a string value representing the REST resource this object represents.',
+            )
+            metadata: dict[str, Any] | None = None
+            spec: Spec = Field(
+                ..., description='WidgetSpec defines the desired state of Widget.'
+            )
+            status: Status | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  kubernetes_crd_schema.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Any
+
+        from pydantic import BaseModel, Field, RootModel, constr
+
+
+        class Limits(RootModel[int]):
+            root: int
+
+
+        class Limits1(
+            RootModel[
+                constr(
+                    pattern=r'^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$'
+                )
+            ]
+        ):
+            root: constr(
+                pattern=r'^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$'
+            )
+
+
+        class Resources(BaseModel):
+            limits: dict[str, Limits | Limits1] | None = None
+
+
+        class Selector(BaseModel):
+            app: str | None = None
+
+
+        class Port(BaseModel):
+            name: str
+            port: int | None = None
+
+
+        class UpdatePolicy(Enum):
+            Recreate = 'Recreate'
+
+
+        class Spec(BaseModel):
+            replicas: int
+            maxSurge: int | str | None = None
+            port: Any | None = None
+            targetPort: int | str | None = None
+            resources: Resources | None = None
+            selector: Selector | None = None
+            config: Any | None = None
+            template: dict[str, Any] | None = None
+            ports: list[Port] | None = None
+            finalizers: list[str] | None = None
+            labels: dict[str, str] | None = None
+            paused: bool | None = None
+            updatePolicy: UpdatePolicy | None = None
+
+
+        class Status1(Enum):
+            True_ = 'True'
+            False_ = 'False'
+            Unknown = 'Unknown'
+
+
+        class Condition(BaseModel):
+            type: str
+            status: Status1
+
+
+        class Status(BaseModel):
+            readyReplicas: int | None = None
+            conditions: list[Condition] | None = None
+
+
+        class Widget(BaseModel):
+            apiVersion: str | None = Field(
+                None,
+                description='APIVersion defines the versioned schema of this representation of an object.',
+            )
+            kind: str | None = Field(
+                None,
+                description='Kind is a string value representing the REST resource this object represents.',
+            )
+            metadata: dict[str, Any] | None = None
+            spec: Spec = Field(
+                ..., description='WidgetSpec defines the desired state of Widget.'
+            )
+            status: Status | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--read-unevaluated-properties` {#read-unevaluated-properties}
 
 Read a schema-valued `unevaluatedProperties` as `additionalProperties`.
@@ -4965,7 +5325,7 @@ Override default type mappings for schema formats.
 
 The `--type-mappings` flag configures the code generation behavior.
 
-**See also:** [Options That Replace Post-Processing](../post-processing-options.md), [Type Mappings and Custom Types](../type-mappings.md)
+**See also:** [Kubernetes Schemas](../kubernetes.md), [Options That Replace Post-Processing](../post-processing-options.md), [Type Mappings and Custom Types](../type-mappings.md)
 
 !!! tip "Usage"
 
@@ -5053,6 +5413,8 @@ instead of generating them.
 | MongoDB ObjectId | `{"ObjectId": "bson.ObjectId"}` |
 | Custom validators | `{"Email": "my_app.types.ValidatedEmail"}` |
 
+**See also:** [Kubernetes Schemas](../kubernetes.md)
+
 !!! tip "Usage"
 
     ```bash
@@ -5133,6 +5495,8 @@ counts the same: a sequence class its items (`builtins.tuple`), a mapping class 
 is: a `str` in place of an array with `maxItems` limits the length of the string (`notes`), and `typing.Any` in place of
 an array with `minItems` checks the length of every value and raises `TypeError` for one without a length. A count the
 new type does not count is left out with a warning.
+
+**See also:** [Kubernetes Schemas](../kubernetes.md)
 
 !!! tip "Usage"
 

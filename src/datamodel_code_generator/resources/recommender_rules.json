@@ -1557,6 +1557,10 @@
       "not_recommended": "preset",
       "reason": "Pydantic v2 output under --use-serialize-as-any only: set by the 20261104 presets; the recommendation starts from a preset."
     },
+    "read_kubernetes_extensions": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261113 presets; the recommendation starts from a preset."
+    },
     "read_unevaluated_properties": {
       "not_recommended": "preset",
       "reason": "Set by the 20261027 presets; the recommendation starts from a preset."

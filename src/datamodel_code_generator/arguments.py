@@ -1193,6 +1193,14 @@ _toggle(
 )
 _toggle(
     typing_options,
+    "--read-kubernetes-extensions",
+    help="Read the Kubernetes schema extensions as the keywords they stand for: x-kubernetes-int-or-string (and the "
+    "int-or-string format) as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as "
+    "additionalProperties true, and an x-kubernetes-group-version-kind as the const and default of the apiVersion "
+    "and kind it names; without it they are ignored, as in 0.96.0",
+)
+_toggle(
+    typing_options,
     "--use-single-dict-for-object-maps",
     help="Type an object map, an object without properties whose keys patternProperties or propertyNames constrain, "
     "as one dict whose keys are those of every key class and whose value is the union of their values, beside the "

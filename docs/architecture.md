@@ -168,16 +168,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 258 | Shared generation options. |
-| `GenerateConfig` | 273 | Public `generate()` configuration. |
-| `ParserConfig` | 213 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 215 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 226 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 229 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 216 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 216 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 215 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 216 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 259 | Shared generation options. |
+| `GenerateConfig` | 274 | Public `generate()` configuration. |
+| `ParserConfig` | 214 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 216 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 227 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 230 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 217 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 217 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 216 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 217 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -257,10 +257,15 @@ modules, and a run that fails after a reference held a document it had prepared 
 which parses again with every role known at L0: `document_roles_to_seed`). These are retries around the whole
 pipeline, not passes inside it.
 
-**L0.** `_load_source_dict` calls `parser/_schema_documents.py:read_document`, which keeps the document as written and, under
-`--use-single-value-enum-as-const`, rewrites one-value `enum` to `const` copy-on-write, except beside `nullable: true`
-when the value is not null (`_single_value_enum_as_const`, which skips instance-data keywords and extension keys other
-than `x-propertyNames` through `_document_child_entries`). `_parse_file` then calls `_prepare_schema_resources`, which
+**L0.** `_load_source_dict` calls `parser/_schema_documents.py:read_document`, which keeps the document as written and
+reads it copy-on-write, each schema object through one walk (`_read_schema_objects`, which skips instance-data keywords
+and extension keys other than `x-propertyNames` through `_document_child_entries`): first, under
+`--read-kubernetes-extensions`, the Kubernetes extensions as the keywords they stand for (`_read_kubernetes_extensions`:
+`x-kubernetes-int-or-string` or the format `int-or-string` as `type: [integer, string]`,
+`x-kubernetes-preserve-unknown-fields` beside `properties` as `additionalProperties: true`, and where `const` is a
+keyword `x-kubernetes-group-version-kind` as the `const` and `default` of `apiVersion` and `kind`), so no later step
+reads an `x-kubernetes-*` key; then, under `--use-single-value-enum-as-const`, one-value `enum` as `const`, except
+beside `nullable: true` when the value is not null (`_single_value_enum_as_const`). `_parse_file` then calls `_prepare_schema_resources`, which
 adds the document to the schema graph (`parser/_schema_graph.py`): `walk_schema_resources` finds which absolute URI
 names which schema of it (the root, `$id` or draft-04 `id` resources, the implicit component resources of OpenAPI,
 the schemas of the object a reference names the document's root as, `$anchor` and `$dynamicAnchor`) and returns one
@@ -1710,7 +1715,7 @@ part marks the schema objects in scope where the document is rewritten (L0), and
 parses. Parse paths are not document locations: legacy OpenAPI `paths` and `parameters` scopes, `$ref` merged with
 sibling keywords, `$ref` targets inside extension keys and properties whose names start with `x-` all produce paths
 that a path-based test misreads. The mark has to survive every step that builds a new object from a marked one:
-copy-on-write rewrites (`parser/_schema_documents.py`: `_single_value_enum_as_const`, `rewrite_schema_resource_refs`),
+copy-on-write rewrites (`parser/_schema_documents.py`: `_read_schema_objects`, `rewrite_schema_resource_refs`),
 `_validate_schema_object`, `_merge_ref_with_schema`, synthetic enums, allOf and combined-schema merges, and OpenAPI
 operation copies.
 `--use-single-value-enum-as-const` has

@@ -495,8 +495,8 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(_C.TYPING, "--keep-enum-member-values --no-keep-enum-member-values"),
     **_opts(
         _C.TYPING,
-        "--read-unevaluated-properties --no-read-unevaluated-properties --use-single-dict-for-object-maps",
-        "--no-use-single-dict-for-object-maps",
+        "--read-unevaluated-properties --no-read-unevaluated-properties --read-kubernetes-extensions",
+        "--no-read-kubernetes-extensions --use-single-dict-for-object-maps --no-use-single-dict-for-object-maps",
         group=_G.TYPE_MAPPING,
     ),
     **_opts(_C.TEMPLATE, "--use-type-checking-imports --no-use-type-checking-imports", group=_G.IMPORTS),

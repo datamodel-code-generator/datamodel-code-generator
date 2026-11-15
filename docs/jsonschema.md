@@ -340,3 +340,4 @@ schema keywords are represented as type hints or field metadata rather than full
 - 🏷️ [CLI Reference: Field Customization](cli-reference/field-customization.md) - Field naming and constraint options
 - 📊 [Supported Data Types](supported-data-types.md) - JSON Schema data type support
 - 🏗️ [CLI Reference: Model Customization](cli-reference/model-customization.md) - Base class and model customization options
+- ☸️ [Kubernetes Schemas](kubernetes.md) - CRD schemas and the x-kubernetes extensions

@@ -10,6 +10,8 @@ infer-union-discriminators-command-line	main/preset_opt_in_options/preset_option
 infer-union-discriminators-pyproject	main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-command-line].py
 read-const-beside-enum-command-line	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].py
 read-const-beside-enum-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].py
+read-kubernetes-extensions-command-line	main/preset_opt_in_options/preset_option_turned_off[read-kubernetes-extensions-command-line].py
+read-kubernetes-extensions-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-kubernetes-extensions-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-kubernetes-extensions-command-line].py
 read-length-keywords-by-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].py
 read-length-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].py
 read-object-keywords-by-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-command-line].py
@@ -103,6 +105,8 @@ read-dynamic-anchors-in-document-order-practical	main/preset_opt_in_options/pres
 read-dynamic-anchors-in-document-order-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-dynamic-anchors-in-document-order-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-dynamic-anchors-in-document-order-practical].py
 read-escaped-ref-pointers-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-escaped-ref-pointers-practical].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-escaped-ref-pointers-standard].py
 read-escaped-ref-pointers-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-escaped-ref-pointers-standard].py
+read-kubernetes-extensions-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-kubernetes-extensions-practical].py
+read-kubernetes-extensions-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-kubernetes-extensions-standard].py
 read-length-keywords-by-type-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-length-keywords-by-type-practical].py
 read-length-keywords-by-type-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-length-keywords-by-type-standard].py
 read-msgspec-union-bounds-exactly-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-msgspec-union-bounds-exactly-practical].py

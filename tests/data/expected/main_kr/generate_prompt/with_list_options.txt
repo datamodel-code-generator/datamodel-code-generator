@@ -57,6 +57,7 @@
 - `--no-keep-enum-member-values`
 - `--no-read-allof-parents-in-mro-order`
 - `--no-read-const-beside-enum`
+- `--no-read-kubernetes-extensions`
 - `--no-read-unevaluated-properties`
 - `--no-type-overrides-replace-whole-type`
 - `--no-use-annotated`
@@ -86,6 +87,7 @@
 - `--output-datetime-class`: Specify datetime class type for date-time schema fields.
 - `--read-allof-parents-in-mro-order`: Read the allOf parents of every inherited schema in the order of the clas...
 - `--read-const-beside-enum`: Read a `const` beside an `enum` as JSON Schema does.
+- `--read-kubernetes-extensions`: Read the Kubernetes schema extensions as the keywords they stand for.
 - `--read-unevaluated-properties`: Read a schema-valued `unevaluatedProperties` as `additionalProperties`.
 - `--strict-types`: Enable strict type validation for specified Python types.
 - `--type-mappings`: Override default type mappings for schema formats.
@@ -820,6 +822,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         value-enum-as-const an `enum` that admits its `const`
                         is read as that `const` instead of an Enum, except one
                         with `nullable: true` and a value other than null
+  --read-kubernetes-extensions, --no-read-kubernetes-extensions
+                        Read the Kubernetes schema extensions as the keywords
+                        they stand for: x-kubernetes-int-or-string (and the
+                        int-or-string format) as an integer or a string,
+                        x-kubernetes-preserve-unknown-fields beside properties
+                        as additionalProperties true, and an x-kubernetes-
+                        group-version-kind as the const and default of the
+                        apiVersion and kind it names; without it they are
+                        ignored, as in 0.96.0
   --read-length-keywords-by-type, --no-read-length-keywords-by-type
                         Read minLength, maxLength and pattern for strings only
                         and minItems, maxItems and uniqueItems for arrays

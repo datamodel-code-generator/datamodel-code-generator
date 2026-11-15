@@ -74,6 +74,8 @@ openapi.quick-start.output: openapi.md
 openapi.read-only-write-only.schema: openapi.md
 openapi.read-only-write-only.output: openapi.md
 openapi.read-only-write-only-allof.schema: openapi.md
+kubernetes.crd.schema: kubernetes.md
+kubernetes.crd.output: kubernetes.md
 model-reuse.reuse-model.output: model-reuse.md
 model-reuse.reuse-scope-tree.output: model-reuse.md
 recommend-options.schema: recommend-options.md

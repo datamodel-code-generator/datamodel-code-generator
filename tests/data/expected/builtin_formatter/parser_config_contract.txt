@@ -112,6 +112,7 @@ reviewed-safe read_allof_parents_in_mro_order
 reviewed-safe read_const_beside_enum
 reviewed-safe read_dynamic_anchors_in_document_order
 reviewed-safe read_escaped_ref_pointers
+reviewed-safe read_kubernetes_extensions
 reviewed-safe read_length_keywords_by_type
 reviewed-safe read_msgspec_union_bounds_exactly
 reviewed-safe read_nullable_beside_type_list

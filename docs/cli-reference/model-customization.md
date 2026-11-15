@@ -9097,6 +9097,8 @@ where optional fields have defaults but cannot accept `None` values.
 
 **Related:** [`--use-default`](#use-default)
 
+**See also:** [Kubernetes Schemas](../kubernetes.md)
+
 !!! tip "Usage"
 
     ```bash

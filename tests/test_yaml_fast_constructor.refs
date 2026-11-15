@@ -421,6 +421,7 @@ openapi/json_pointer_boolean_key.yaml	yaml_fast_constructor/parity.txt
 openapi/json_pointer_integer_keys.yaml	yaml_fast_constructor/parity.txt
 openapi/json_pointer_through_scalar.yaml	yaml_fast_constructor/parity.txt
 openapi/keep_model_order_same_short_name.yaml	yaml_fast_constructor/parity.txt
+openapi/kubernetes_group_version.yaml	yaml_fast_constructor/parity.txt
 openapi/lazy_resolved_models.yaml	yaml_fast_constructor/parity.txt
 openapi/literal_fields_beside_dotted_literal_model.yaml	yaml_fast_constructor/parity.txt
 openapi/literal_property_enum_root_names.yaml	yaml_fast_constructor/parity.txt
