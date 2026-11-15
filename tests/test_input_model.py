@@ -341,6 +341,15 @@ def test_input_model_unsupported_type(capsys: pytest.CaptureFixture[str]) -> Non
     )
 
 
+def test_input_model_unsupported_msgspec_struct(capsys: pytest.CaptureFixture[str]) -> None:
+    """Test error when object is a msgspec Struct: a class with typed fields that Pydantic has no schema for."""
+    run_input_model_error_and_assert(
+        input_model="tests.data.python.input_model.mixed_nested:NestedStruct",
+        capsys=capsys,
+        expected_stderr_contains="'NestedStruct' is not a supported type",
+    )
+
+
 def test_input_model_mutual_exclusion_with_input(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -1546,6 +1555,28 @@ def test_input_model_ref_strategy_reuse_foreign_msgspec_output(tmp_path: Path) -
             "--input-model-ref-strategy",
             "reuse-foreign",
         ],
+    )
+
+
+def test_input_model_ref_strategy_reuse_foreign_msgspec_struct_field(tmp_path: Path) -> None:
+    """Test a msgspec Struct field of a Pydantic model keeps its Python type: Pydantic has no schema to reuse."""
+    run_input_model_and_assert(
+        input_model="tests.data.python.input_model.mixed_nested:ModelWithStruct",
+        output_path=tmp_path / "output.py",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--input-model-ref-strategy",
+            "reuse-foreign",
+        ],
+    )
+
+
+def test_input_model_dataclass_field_named_model_fields(tmp_path: Path) -> None:
+    """Test a dataclass with a field named ``model_fields`` is read as a dataclass, not as a Pydantic model."""
+    run_input_model_and_assert(
+        input_model="tests.data.python.input_model.mixed_nested:ModelWithExportOptions",
+        output_path=tmp_path / "output.py",
     )
 
 
