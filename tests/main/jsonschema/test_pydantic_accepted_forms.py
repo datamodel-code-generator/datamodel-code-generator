@@ -9,7 +9,13 @@ import pytest
 from pydantic import ValidationError
 
 from tests.conftest import assert_output
-from tests.main.conftest import JSON_SCHEMA_DATA_PATH, _generated_model, _model_json_validator, run_main_and_assert
+from tests.main.conftest import (
+    JSON_SCHEMA_DATA_PATH,
+    OPEN_API_DATA_PATH,
+    _generated_model,
+    _model_json_validator,
+    run_main_and_assert,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -59,6 +65,25 @@ SIZE_AND_DIALECT_PAYLOADS = {
     "AtLeastWordsBeyondTheSizeLimit": ("a" * 300, "a" * 299),
     "LettersBeyondTheSizeLimit": ("bbb", "bc"),
     "WordWithinBoundaries": ("abc", "a b"),
+}
+
+SIZE_LIMIT_PAYLOADS = {
+    "repetitions": (
+        "UserArn",
+        {
+            "user": "arn:aws:iam::123456789012:user/alice",
+            "role session": "arn:aws:sts::123456789012:assumed-role/admin/alice@example.com",
+            "group": "arn:aws:iam::123456789012:group/admins",
+        },
+    ),
+    "negated_property": ("Description", {"text": "Déjà vu", "empty": ""}),
+    "property_class": (
+        "TranslatedTextString",
+        {"text": "Déjà vu", "20,001 characters": "x" * 20001},
+    ),
+    "word_and_digit_class": ("ResourceName", {"name": "my_resource-01", "slash": "a/b"}),
+    "word_and_space_class": ("Title", {"title": "Déjà vu - Part 2", "slash": "a/b"}),
+    "decimal_number": ("Digits", {"digits": "١٢٣", "letters": "12a"}),
 }
 
 
@@ -255,6 +280,34 @@ def test_patterns_no_engine_compiles_as_written(
                 outcomes += _outcomes(model, {f"{name} {payload!r}": payload for payload in payloads})
                 value = validate(json.dumps(payloads[0]))
                 outcomes += f"{name} value: {getattr(value, 'root', value) == payloads[0]}\n"
+    assert_output(outcomes, name="outcomes")
+
+
+@pytest.mark.parametrize("document", SIZE_LIMIT_PAYLOADS)
+def test_size_limit_of_repetitions_together_and_of_unicode_classes(
+    output_file: Path, recwarn: pytest.WarningsRecorder, document: str
+) -> None:
+    r"""Write a pattern Rust refuses for several repetitions together or a class of a general category (#6877).
+
+    AWS documents write them: four counted classes of ``\\w`` that pass Rust's compiled-size limit only together
+    select ``python-re``; a counted negated class of ``\\p{C}`` and a counted class of ``\\P{M}`` and ``\\p{M}``,
+    which Python's ``re`` rejects too, are left out with a warning, and the model checks the other keywords only
+    (``maxLength``). A class of ``\\w`` and ``\\d`` counts as ``\\w``, so does one of ``\\w`` and ``\\s``, and
+    ``\\p{Nd}`` counts as ``\\d``. Each module once failed at import with ``Compiled regex exceeds size limit``.
+    """
+    name, payloads = SIZE_LIMIT_PAYLOADS[document]
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"pattern_size_{document}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    outcomes = "".join(
+        f"{warning.message}\n" for warning in recwarn if "no regex engine of the output" in str(warning.message)
+    )
+    with _generated_model(output_file, f"pattern_size_{document}", name) as model:
+        outcomes += _outcomes(model, payloads)
     assert_output(outcomes, name="outcomes")
 
 

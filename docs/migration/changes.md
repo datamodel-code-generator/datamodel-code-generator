@@ -43,6 +43,20 @@ Under `--collapse-root-models-name-strategy parent`, a module that named an enum
 +kind: Literal[b.Foo.cat, 'cat']
 ```
 
+### A pattern past the regex size limit by repetitions together or by a Unicode class no longer fails at import (unreleased) { #regex-size-limit-repetitions-together }
+
+A `pattern` whose counted repetitions pass the size limit of Pydantic's default regex engine only together (four classes such as `[\w+=,.@-]{1,64}`), that repeats a class of `\w` and `\d` or `\s` (`^[\w\s-]{1,255}$`), or that repeats a class of a major Unicode general category (`[^\p{C}]{1,2048}`, `[\P{M}\p{M}]{0,20000}`), was written as the schema writes it, and the module failed at import with `Compiled regex exceeds size limit`. The model now selects `regex_engine="python-re"` for it; a pattern Python's `re` rejects too, as it rejects `\p{...}`, is left out with a warning. That is what a single repetition past the limit has got since 0.92.0. Only patterns that every pydantic-core release from 2.0 to 2.50 refuses are read this way. Output that imported before is unchanged.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`
+- **Keep the old output:** The previous module failed at import; nothing restores it.
+- **Pull requests and issues:** [#6877](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6877)
+- **Source:** the release notes
+
+```diff
+-root: constr(pattern=r'[^\p{C}]{1,2048}')
++root: str
+```
+
 ### A member of `$defs` that is not a schema is skipped with a `UserWarning` in a draft 7 or older document (unreleased) { #defs-member-not-a-schema }
 
 Draft 7 and older have no `$defs` keyword, so their meta-schemas do not constrain its members. In a document read in one of these versions (the version of the input document, or of each document under `--read-schema-version-per-document`), a member of `$defs` whose value is neither an object nor a boolean, such as a `description` string written beside the definitions, is now skipped with a `UserWarning` that names it, and the document is generated; it was refused before. Such a member is still refused in a document read as 2019-09 or later (a document without `$schema` that holds `$defs` reads as 2020-12) and where a reference names it. A caller that turns warnings into errors gets an error.
@@ -164,7 +178,7 @@ They keep the options of the 20261112 presets and add:
 - Discriminators inferred from tags (`--infer-union-discriminators`): Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names.
 - Kubernetes extensions read (`--read-kubernetes-extensions`): Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does.
 - Inherited property schemas read in MRO order (`--read-inherited-property-schemas-in-mro-order`): Give a property that a model only makes required the schema its allOf parents declare, read in the order of the class bases from the allOf members the model's fields are read from, so a model written before its parents takes the field it takes when written after them.
-- Ids with an empty fragment read as their documents (`--read-ids-with-empty-fragment`): Read an $id written with an empty fragment, such as https://example.com/item.json#, as the URI without it, so a $ref to it resolves inside the document that declares it instead of loading the document at that URL from the network.
+- Ids with an empty fragment read as their documents (`--read-ids-with-empty-fragment`): Read an absolute-URL $id written with an empty fragment, such as https://example.com/item.json#, as the URI without it, so a $ref to it resolves inside the document that declares it instead of loading the document at that URL from the network. A relative $id is not matched: a $ref to it reads the file.
 - Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.
 
 - **Source:** the registry of deprecations, experimental features and dated presets

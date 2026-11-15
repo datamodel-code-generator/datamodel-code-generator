@@ -1,0 +1,8 @@
+openapi: 3.0.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    Description:
+      type: string
+      pattern: '[^\p{C}]{1,2048}'
