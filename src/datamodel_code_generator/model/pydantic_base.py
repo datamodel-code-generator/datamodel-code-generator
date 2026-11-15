@@ -624,14 +624,6 @@ class DataModelField(DataModelFieldBase):
         """Return the default factory the call writes: the one the field's facts give it."""
         return args.factory
 
-    def _get_field_data_and_default_factory(self) -> tuple[dict[str, Any], Any]:
-        """Build Field() keyword data and the effective default_factory."""
-        if self.is_class_var:
-            return {}, None
-        omitted, anyurl = self._warned_omissions()
-        args = self._field_arguments(omitted, anyurl=anyurl)
-        return args.data(), None if (factory := self._call_default_factory(args)) is None else factory.value
-
     @override
     def _build_render_plan(self) -> FieldRenderPlan:
         """Build the field's render plan from its facts as they are now."""

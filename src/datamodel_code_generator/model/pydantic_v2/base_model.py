@@ -756,12 +756,13 @@ class DataModelField(_PydanticBaseDataModelField):
 
     @override
     def _pydantic_constructs(self) -> tuple[PydanticConstruct, ...]:
-        """Return the Pydantic constructs that the field's ``Field()`` data and constrained types write."""
-        data, _ = self._get_field_data_and_default_factory()
+        """Return the Pydantic constructs that the field's ``Field()`` call and constrained types write."""
+        call = self._render_plan().call
+        written = {} if call is None else {argument.name: argument.value for argument in call.kwargs}
         constructs: list[PydanticConstruct] = []
-        if "union_mode" in data:
+        if "union_mode" in written:
             constructs.append("pydantic.union_mode")
-        if isinstance(pattern := data.get("pattern"), PythonRuntimeExpression) or any(
+        if isinstance(pattern := written.get("pattern"), PythonRuntimeExpression) or any(
             isinstance((data_type.kwargs or {}).get("pattern"), PythonRuntimeExpression)
             for data_type in self.data_type.all_data_types
         ):
@@ -793,8 +794,13 @@ class DataModelField(_PydanticBaseDataModelField):
         """
         if not self._constrains_bytes_only():
             return False
-        data, _ = self._get_field_data_and_default_factory()
-        return isinstance(pattern := data.get("pattern"), str) and pattern_engine(pattern, row="model") == "python"
+        call = self._render_plan().call
+        return call is not None and any(
+            argument.name == "pattern"
+            and isinstance(pattern := argument.value, str)
+            and pattern_engine(pattern, row="model") == "python"
+            for argument in call.kwargs
+        )
 
     @property
     @override
@@ -1378,8 +1384,8 @@ def _only_describes_own_named_type(field: DataModelFieldBase) -> bool:
         for data_type in field.data_type.all_data_types
     ):
         return False
-    data, default_factory = cast("DataModelField", field)._get_field_data_and_default_factory()  # noqa: SLF001
-    return not default_factory and all(key == "description" for key, value in data.items() if value is not None)
+    call = field._render_plan().call  # noqa: SLF001
+    return call is None or (call.factory is None and all(argument.name == "description" for argument in call.kwargs))
 
 
 def _field_patterns(fields: Iterable[DataModelFieldBase]) -> Iterator[tuple[str, DataType, DataModelFieldBase, bool]]:
