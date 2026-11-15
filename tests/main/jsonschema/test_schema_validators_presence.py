@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from datamodel_code_generator import DataModelType, Error, Formatter, InputFileType
+from datamodel_code_generator import DataModelType, Error, Formatter, InputFileType, generate
 from datamodel_code_generator.model.base import TEMPLATE_DIR
 from tests.main.conftest import (
     DATA_PATH,
@@ -81,4 +81,35 @@ def test_schema_validators_presence_custom_helper(output_file: Path, case_name: 
         disable_timestamp=True,
         formatters=[Formatter.BUILTIN],
         custom_template_dir=DATA_PATH / "templates/schema_validators_presence",
+    )
+
+
+def test_schema_validators_ref_with_sibling_not(output_file: Path) -> None:
+    """Apply `not: {required: [...]}` when it sits beside `$ref` in an allOf member (#6848)."""
+    schema = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "M",
+        "type": "object",
+        "properties": {"a": {"type": "string"}, "z": {"type": "string"}},
+        "allOf": [{"$ref": "#/$defs/B", "not": {"required": ["z"]}}],
+        "$defs": {"B": {"type": "object", "properties": {"b": {"type": "string"}}}},
+    }
+    generate(
+        json.dumps(schema),
+        input_file_type=InputFileType.JsonSchema,
+        output=output_file,
+        output_model_type=DataModelType.PydanticV2BaseModel,
+        generate_schema_validators=True,
+        disable_timestamp=True,
+        formatters=[Formatter.BUILTIN],
+    )
+    generated = output_file.read_text(encoding="utf-8")
+    assert "__json_schema_not_required_groups__" in generated
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="ref_with_sibling_not",
+        model_name="M",
+        valid_json='{"a": "ok", "b": "ok"}',
+        invalid_json='{"z": "x"}',
+        expected_error_type="value_error",
     )

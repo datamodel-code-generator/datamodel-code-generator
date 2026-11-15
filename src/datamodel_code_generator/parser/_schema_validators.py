@@ -732,7 +732,14 @@ def iter_scoped_schema_validation_sources(
                     or item.additionalProperties is not None
                     or item.unevaluatedProperties is not None
                 )
-                if item.allOf or item.oneOf or item.anyOf or "if" in item.extras or has_sibling_constraints:
+                if (
+                    item.allOf
+                    or item.oneOf
+                    or item.anyOf
+                    or "if" in item.extras
+                    or "not" in item.extras
+                    or has_sibling_constraints
+                ):
                     yield from iter_scoped_schema_validation_sources(
                         parser, item.model_copy(update={"ref": None}), visited_refs, scope, include_references=False
                     )
