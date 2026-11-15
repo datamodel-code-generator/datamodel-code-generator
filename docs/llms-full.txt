@@ -36444,7 +36444,7 @@ This documentation is auto-generated from test cases.
 
 | Category | Options | Description |
 |----------|---------|-------------|
-| 📁 [Base Options](base-options.md) | 20 | Input/output configuration |
+| 📁 [Base Options](base-options.md) | 21 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 61 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 41 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 73 | Model generation behavior |
