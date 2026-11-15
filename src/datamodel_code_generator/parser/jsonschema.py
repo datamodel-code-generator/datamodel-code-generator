@@ -1145,6 +1145,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._unescaped_slash_pointers: dict[tuple[str, str], str] = {}
         """Under --read-escaped-ref-pointers, the pointer of the key a dangling reference's unescaped ``/`` splits."""
         self._empty_enum_locations: set[SchemaLocation] = set()
+        self._non_schema_defs_members: set[str] = set()
+        """The ``$defs`` members that are no schemas, left out where it is no keyword (``_definition_entries_read``)."""
         self._version_checked_locations: set[SchemaLocation] = set()
         """The schema locations --schema-version-mode strict has checked, each warned about once."""
         self._unread_patterns: dict[SchemaLocation, str] = {}
@@ -9140,7 +9142,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         Each schema object of a document whose ``enum`` lists no value is reported too: no value is valid against it,
         while the generated code reads it as if it had no ``enum``. So is each ``pattern`` that no regex engine of the
-        output compiles, which the generated code leaves out (``read_pattern``).
+        output compiles, which the generated code leaves out (``read_pattern``), and each member of ``$defs`` that is
+        no schema where ``$defs`` is no keyword, which the parse left out (``_definition_entries_read``).
         """
         for message in sorted(self._resource_ref_warnings):
             warn(message, SchemaResourceRefWarning, stacklevel=stacklevel_at_parse_caller())
@@ -9160,6 +9163,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 stacklevel=stacklevel_at_parse_caller(),
             )
         self._empty_enum_locations.clear()
+        for where in sorted(self._non_schema_defs_members):
+            warn(
+                f"The member {where} of $defs is not a schema, so it is skipped: $defs is no keyword of the JSON "
+                "Schema version the document is read by (draft 7 or older), which does not constrain its members.",
+                stacklevel=stacklevel_at_parse_caller(),
+            )
+        self._non_schema_defs_members.clear()
         for where, pattern in sorted(
             (named_location(location, "schema"), pattern) for location, pattern in self._unread_patterns.items()
         ):
@@ -9273,10 +9283,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     self.parse_id(root_obj, [*path_parts, "#"] if path_parts else ["#"])
                     _schema_refs.build_anchor_indexes(self, root_obj, path_parts)
                     schema_path, definitions = _schema_documents.first_definitions(self, raw, None)
-                    definition_metadata_entries = _schema_documents.definition_entries(
-                        self, definitions, [*path_parts, schema_path]
+                    definition_metadata_entries, definition_entries = self._definition_entries_read(
+                        schema_path, definitions, path_parts
                     )
-                    definition_entries = definition_metadata_entries[len(definitions) :]
                     seen_definition_metadata_paths: set[tuple[str, ...]] = set()
                     validated_definition_objects: dict[tuple[str, ...], JsonSchemaObject] = {}
                     for _key, model, definition_path in definition_metadata_entries:
@@ -9320,6 +9329,30 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                                 )
 
                     self._parse_reserved_targets(raw, path_parts)
+
+    def _definition_entries_read(
+        self, schema_path: str, definitions: dict[str, YamlValue], path_parts: list[str]
+    ) -> tuple[list[tuple[str, YamlValue, list[str]]], list[tuple[str, YamlValue, list[str]]]]:
+        """Return the entries of a document's definitions container that ``_parse_file`` validates and that it parses.
+
+        Those it validates are ``definition_entries``: one per key of the container, then those of the walk of its
+        namespaces, which it parses. A member of ``$defs`` that is neither an object nor a boolean is left out of both
+        where ``$defs`` is no keyword (#6880): where the document reads it as the definitions container of a version
+        before 2019-09, whose schema paths put ``definitions`` first and which does not constrain its members. Each
+        one left out is reported once after the parse.
+        """
+        entries = _schema_documents.definition_entries(self, definitions, [*path_parts, schema_path])
+        if schema_path != "#/$defs" or self._features_at(None).definitions_key == "$defs":
+            return entries, entries[len(definitions) :]
+        left_out: set[tuple[str, ...]] = set()
+        for key, value in definitions.items():
+            if not isinstance(value, dict | bool):
+                path = (*path_parts, schema_path, str(key))
+                left_out.add(path)
+                location = self._member_location(definitions, str(key))
+                self._non_schema_defs_members.add(named_location(location, self.model_resolver.join_path(path)))
+        read = [entry for entry in entries if tuple(entry[2]) not in left_out]
+        return read, [entry for entry in entries[len(definitions) :] if tuple(entry[2]) not in left_out]
 
     def _parse_reserved_targets(self, raw: dict[str, Any], path_parts: list[str]) -> None:
         """Parse the targets the document at ``path_parts`` reserves from its prepared tree, while it reserves more."""

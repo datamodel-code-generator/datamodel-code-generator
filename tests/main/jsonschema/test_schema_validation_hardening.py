@@ -192,3 +192,75 @@ def test_main_jsonschema_root_id_object_generates_as_before(output_file: Path, t
         input_file_type="jsonschema",
         extra_args=["--formatters", "builtin", "--disable-timestamp"],
     )
+
+
+DRAFT_07 = "http://json-schema.org/draft-07/schema#"
+SETTINGS_WITH_SLIPPED_DESCRIPTION = {
+    "$schema": DRAFT_07,
+    "title": "Settings",
+    "type": "object",
+    "$defs": {
+        "enable": {"enum": ["cpython-prerelease", "graalpy", "pypy"]},
+        "description": "A Python version or flavor to enable.",
+    },
+    "properties": {"enable": {"type": "array", "items": {"$ref": "#/$defs/enable"}}},
+}
+DEFS_MEMBERS_SKIPPED: dict[str, tuple[dict[str, Any], dict[str, Any] | None]] = {
+    "draft-07": (SETTINGS_WITH_SLIPPED_DESCRIPTION, None),
+    "referenced-draft-07-document": (
+        {"$schema": DRAFT_07, "type": "object", "properties": {"settings": {"$ref": "other.json"}}},
+        SETTINGS_WITH_SLIPPED_DESCRIPTION,
+    ),
+}
+DEFS_MEMBERS_REFUSED: dict[str, dict[str, Any]] = {
+    "2020-12": {**SETTINGS_WITH_SLIPPED_DESCRIPTION, "$schema": "https://json-schema.org/draft/2020-12/schema"},
+    "referenced-member": {
+        **SETTINGS_WITH_SLIPPED_DESCRIPTION,
+        "properties": {"description": {"$ref": "#/$defs/description"}},
+    },
+}
+
+
+@pytest.mark.parametrize("case", DEFS_MEMBERS_SKIPPED)
+def test_main_jsonschema_defs_member_that_is_not_a_schema_is_skipped(
+    case: str, output_file: Path, tmp_path: Path, recwarn: pytest.WarningsRecorder
+) -> None:
+    """A member of ``$defs`` that is not a schema is skipped where ``$defs`` is no keyword (#6880).
+
+    Draft 7 and older have no ``$defs`` keyword, so their meta-schemas do not constrain its members: the document of the
+    issue, alone or loaded by a reference, generates the code it generates with the string inside the definition, and
+    a warning names the member.
+    """
+    schema, referenced = DEFS_MEMBERS_SKIPPED[case]
+    (tmp_path / "schema.json").write_text(json.dumps(schema), encoding="utf-8")
+    if referenced is not None:
+        (tmp_path / "other.json").write_text(json.dumps(referenced), encoding="utf-8")
+    run_main_and_assert(
+        input_path=tmp_path / "schema.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--disable-timestamp"],
+    )
+    messages = dict.fromkeys(str(warning.message) for warning in recwarn if warning.category is UserWarning)
+    assert_output("".join(f"{message}\n" for message in messages))
+
+
+@pytest.mark.parametrize("case", DEFS_MEMBERS_REFUSED)
+def test_main_jsonschema_defs_member_that_is_not_a_schema_is_refused(
+    case: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A member of ``$defs`` that is not a schema stays refused where ``$defs`` is a keyword, or a reference names it.
+
+    2019-09 and later require every member of ``$defs`` to be a schema; a reference to the member of a draft-07
+    document reads it as one. Both are refused with the message they got before (#6880).
+    """
+    (tmp_path / "schema.json").write_text(json.dumps(DEFS_MEMBERS_REFUSED[case]), encoding="utf-8")
+    run_main_and_assert(
+        input_path=tmp_path / "schema.json",
+        output_path=tmp_path / "model.py",
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--disable-timestamp"],
+        expected_exit=Exit.ERROR,
+    )
+    lines = capsys.readouterr().err.splitlines(keepends=True)
+    assert_output("".join(line for line in lines if "errors.pydantic.dev" not in line))

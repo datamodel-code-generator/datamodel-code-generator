@@ -1,0 +1,2 @@
+Error at schema path 'schema.json#/$defs/description': ValidationError: 1 validation error for JsonSchemaObject
+  Input should be a valid dictionary or instance of JsonSchemaObject [type=model_type, input_value='A Python version or flavor to enable.', input_type=str]
