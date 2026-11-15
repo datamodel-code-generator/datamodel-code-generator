@@ -43,6 +43,7 @@ from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, w
 from datamodel_code_generator._requirements import pydantic_floor
 from datamodel_code_generator._target_unicode import is_importable_part
 from datamodel_code_generator._url_redaction import redact_reference
+from datamodel_code_generator._user_keys import closest_type_override_key
 from datamodel_code_generator.enums import DefaultValueType
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATIONS,
@@ -113,7 +114,13 @@ from datamodel_code_generator.parser._passes._shared import (
     unique_items_plan,
     unused_model_lists,
 )
-from datamodel_code_generator.parser._passes._state import _PYDANTIC_FLOORS, ConfigT, ContextT, ResultT
+from datamodel_code_generator.parser._passes._state import (
+    _PYDANTIC_FLOORS,
+    ConfigT,
+    ContextT,
+    ResultT,
+    report_unmatched_type_override_keys,
+)
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser._tag_plan import TagPlanHost
 from datamodel_code_generator.python_literal import stable_repr
@@ -129,7 +136,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator._target_unicode import ModulePartRow
-    from datamodel_code_generator._user_keys import ConstructionKeys
+    from datamodel_code_generator._user_keys import ConstructionKeys, TypeOverrideLookups
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.enums import AllExportsScope
     from datamodel_code_generator.imports import Imports, _ImportKey
@@ -184,6 +191,7 @@ __all__ = [
     "render",
     "render_module_models",
     "replan_schema_validators_after_renames",
+    "report_unmatched_type_override_keys",
     "resolve_module_import_conflicts",
     "snapshot_model_imports",
     "submodules_hidden_by_packages",
@@ -192,6 +200,7 @@ __all__ = [
     "warn_about_decimal_defaults",
     "warn_about_dropped_constraints",
     "warn_about_msgspec_decoding",
+    "warn_about_unmatched_type_override_keys",
     "warn_about_variant_discriminator_tags",
 ]
 
@@ -242,6 +251,8 @@ class FinishHost(ReuseOptionsHost, RootModelHost, OutputOptionsHost, TagPlanHost
     _decimal_default_warning_count: int
     _decimal_default_warning_examples: list[str] | None
     _dropped_constraint_fields: frozenset[tuple[ModulePath, str]]
+    _type_override_lookups: TypeOverrideLookups | None
+    type_overrides: dict[str, str]
     final_name_keys_to_assign: tuple[tuple[str, tuple[str, ...]], ...]
     generated_class_names: tuple[tuple[str, str], ...]
     model_placement: dict[ModulePath, frozenset[str]]
@@ -1482,6 +1493,30 @@ def warn_about_variant_discriminator_tags(parser: FinishHost) -> None:
     for recorded in parser._tag_plan.first_tags.values():  # noqa: SLF001
         for message in recorded.warning_messages():
             warn_as_parser_base(message, UserWarning, stacklevel=2)
+
+
+def warn_about_unmatched_type_override_keys(parser: FinishHost) -> None:
+    """Report the ``--type-overrides`` keys that no lookup found, once every lookup has compared its names.
+
+    The last lookups are those of the module passes (L5) and of render preparation, so the keys are final here. A
+    parse of a generation run records the warning (``PydanticFloors``), which the run emits for the parse it keeps
+    (``__init__.py:_parse_generation_run``); a parse outside one warns.
+    """
+    if (lookups := parser._type_override_lookups) is None or not (  # noqa: SLF001
+        unmatched := sorted(set(parser.type_overrides) - lookups.found)
+    ):
+        return
+    listed = ", ".join(
+        f"{stable_repr(key)} (did you mean {stable_repr(closest)}?)"
+        if (closest := closest_type_override_key(key, lookups)) is not None
+        else stable_repr(key)
+        for key in unmatched
+    )
+    message = f"--type-overrides: {counted(len(unmatched), 'key')} matched no generated model or field: {listed}"
+    if (record := _PYDANTIC_FLOORS.get()) is None:
+        report_unmatched_type_override_keys(message)
+    else:
+        record.record_unmatched_type_override_keys(parser, message)
 
 
 def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleContextView]) -> None:  # noqa: PLR0912

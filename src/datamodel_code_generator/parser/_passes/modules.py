@@ -53,7 +53,7 @@ from datamodel_code_generator._reference_graph import (
 )
 from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator._shared_types import _CollapseRootModelsRecursionError
-from datamodel_code_generator._user_keys import class_field_key, model_type_override
+from datamodel_code_generator._user_keys import class_field_key, class_key, model_type_override, record_written_as
 from datamodel_code_generator.enums import DefaultValueType
 from datamodel_code_generator.imports import IMPORT_OPTIONAL, IMPORT_UNION, Import
 from datamodel_code_generator.model._decisions.collapse_eligibility import (
@@ -2744,6 +2744,9 @@ def remove_overridden_models(parser: ModulesHost, state: ModuleStateView) -> Non
     if imported := parser._python_import_target_paths:  # noqa: SLF001
         _drop_unnamed_python_import_models(parser, state.model_list, imported)
     state.model_list_before_override_removal = models = state.model_list
+    if all_overrides := parser._type_override_imports:  # noqa: SLF001
+        for model in models:
+            record_written_as(all_overrides, model.reference.original_name, class_key("class-name", model.reference))
     overrides, stand_ins = parser._model_type_override_imports, parser._base_stand_in_imports  # noqa: SLF001
     if not (overrides or stand_ins):
         return
@@ -2812,12 +2815,13 @@ def apply_field_type_overrides(parser: ModulesHost, models: list[DataModel]) -> 
     """
     if not parser._type_override_imports:  # noqa: SLF001
         return
+    overrides = parser._type_override_imports  # noqa: SLF001
     for model in models:
         derived_import = derived_override_import(parser, model)
         for field in model.fields:
-            if override_import := (
-                parser._type_override_imports.get(class_field_key(model.class_name, field.name)) or derived_import  # noqa: SLF001
-            ):
+            key = class_field_key(model.class_name, field.name)
+            record_written_as(overrides, class_field_key(model.reference.original_name, field.name), key)
+            if override_import := overrides.get(key) or derived_import:
                 apply_override_to_field(parser, field, override_import)
             elif parser._model_type_override_imports:  # noqa: SLF001
                 apply_override_to_data_type(parser, field.data_type)

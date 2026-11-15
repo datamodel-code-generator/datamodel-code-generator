@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Order",
+  "type": "object",
+  "properties": {
+    "item": {"type": "object", "properties": {"sku": {"type": "string"}}},
+    "items": {"type": "array", "items": {"$ref": "#/$defs/Item"}}
+  },
+  "$defs": {
+    "Item": {"type": "object", "properties": {"price": {"type": "string"}}}
+  }
+}

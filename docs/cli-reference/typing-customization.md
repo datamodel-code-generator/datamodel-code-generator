@@ -5630,6 +5630,9 @@ instead of generating them.
 | `{"ModelName": "package.Type"}` | Model-level: Skip generation; replace field and inheritance refs |
 | `{"Model.field": "package.Type"}` | Scoped: Override only specific field in specific model |
 
+A key that matches no generated model or field is reported in a warning, with the key that would match where there
+is a close one, such as `ItemModel.price` for `Item.price` when the schema's `Item` is written as `ItemModel`.
+
 **Common Use Cases:**
 
 | Use Case | Example Override |

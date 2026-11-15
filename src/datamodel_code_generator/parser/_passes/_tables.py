@@ -777,6 +777,11 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                 "warn_about_msgspec_decoding", lambda self, run: imports.warn_about_msgspec_decoding(self, run.contexts)
             ),
             PassSpec(
+                "warn_about_unmatched_type_override_keys",
+                lambda self, _: imports.warn_about_unmatched_type_override_keys(self),
+                when=lambda self, _: bool(self.type_overrides),
+            ),
+            PassSpec(
                 "set_nested_model_default_factory_metadata",
                 lambda self, run: self._set_nested_model_default_factory_metadata(run.contexts),
                 when=lambda self, _: self.use_default_factory_for_optional_nested_models,

@@ -4150,6 +4150,9 @@ instead of generating them.
 | `{"ModelName": "package.Type"}` | Model-level: Skip generation; replace field and inheritance refs |
 | `{"Model.field": "package.Type"}` | Scoped: Override only specific field in specific model |
 
+A key that matches no generated model or field is reported in a warning, with the key that would match where there
+is a close one, such as `ItemModel.price` for `Item.price` when the schema's `Item` is written as `ItemModel`.
+
 !!! note "Model-level overrides skip generation"
     When you specify a model-level override (without a dot in the key), the generator will
     **skip generating that model entirely** and import it from the specified package instead.
@@ -4672,30 +4675,38 @@ def test_type_overrides_model_level_dict_key(output_file: Path) -> None:
     ],
 )
 def test_type_overrides_for_target(output_file: Path, target_python_version: str, expected_file: str) -> None:
-    """Import a typing name newer than the target from its backport, leaving overrides no model uses unchecked."""
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_target.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
-        extra_args=[
-            "--output-model-type",
-            "typing.TypedDict",
-            "--target-python-version",
-            target_python_version,
-            "--formatters",
-            "builtin",
-            "--disable-timestamp",
-            "--type-overrides",
-            json.dumps({
-                "Model.c": "typing.LiteralString",
-                "D": "collections.abc.Buffer",
-                "Missing": "pathlib.types.PathInfo",
-                "Model.missing": "enum.StrEnum",
-            }),
-        ],
-        force_exec_validation=tuple(map(int, target_python_version.split("."))) <= sys.version_info[:2],
+    """Import a typing name newer than the target from its backport, leaving overrides no model uses unchecked.
+
+    The overrides no model uses are reported as keys that matched nothing.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_target.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=expected_file,
+            extra_args=[
+                "--output-model-type",
+                "typing.TypedDict",
+                "--target-python-version",
+                target_python_version,
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+                "--type-overrides",
+                json.dumps({
+                    "Model.c": "typing.LiteralString",
+                    "D": "collections.abc.Buffer",
+                    "Missing": "pathlib.types.PathInfo",
+                    "Model.missing": "enum.StrEnum",
+                }),
+            ],
+            force_exec_validation=tuple(map(int, target_python_version.split("."))) <= sys.version_info[:2],
+        )
+    assert_warnings_contain(
+        recorded, "--type-overrides: 2 keys matched no generated model or field: 'Missing', 'Model.missing'"
     )
 
 

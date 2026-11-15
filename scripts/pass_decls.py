@@ -1789,6 +1789,16 @@ WARN_ABOUT_MSGSPEC_DECODING = PassDecl(
     reads=_facts(Fact.FIELD_TYPES),
     after=(After("warn_about_variant_discriminator_tags", "warnings keep their order"),),
 )
+WARN_ABOUT_UNMATCHED_TYPE_OVERRIDE_KEYS = PassDecl(
+    "warn_about_unmatched_type_override_keys",
+    Phase.IMPORTS,
+    Scope.GLOBAL,
+    PassKind.CHECK,
+    writes=_facts(RenderFact.STDERR),
+    reads=_facts(Fact.TYPE_OVERRIDES, Fact.FIELD_NAMES, RenderFact.CLASS_NAMES),
+    after=(After("warn_about_msgspec_decoding", "warnings keep their order"),),
+    condition="type_overrides",
+)
 SET_NESTED_MODEL_DEFAULT_FACTORY_METADATA = PassDecl(
     "set_nested_model_default_factory_metadata",
     Phase.IMPORTS,

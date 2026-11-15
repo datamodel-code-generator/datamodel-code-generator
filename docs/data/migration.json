@@ -733,6 +733,24 @@
    "title": "Patterns holding a quote are written without an escaped quote"
   },
   {
+   "action": "warn",
+   "affects": {
+    "options": [
+     "--type-overrides"
+    ]
+   },
+   "id": "type-overrides-unmatched-keys",
+   "kind": "warning",
+   "migrate": "Fix or drop the keys the warning names.",
+   "refs": [
+    "#6835"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "A key of `--type-overrides` that names no generated model or field is reported with a `UserWarning`; the generated output is unchanged. A caller that turns warnings into errors gets an error.",
+   "title": "`--type-overrides` keys that match no model or field emit a `UserWarning`"
+  },
+  {
    "action": "none",
    "id": "option:--infer-union-discriminators",
    "kind": "cli",

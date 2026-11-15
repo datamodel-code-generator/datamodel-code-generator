@@ -1076,7 +1076,8 @@ _UNMATCHED_MODEL_NAME_KEYS_REPORTED: ContextVar[bool] = ContextVar("unmatched_mo
 def unmatched_model_name_keys_unreported() -> Generator[None, None, None]:
     """Leave the ``--model-name-map`` keys that match no model unreported by the generations run inside.
 
-    A comparison generates its baseline input inside, so the keys are reported for the current input alone.
+    The ``--type-overrides`` keys that match no model or field are left unreported too. A comparison generates its
+    baseline input inside, so the keys are reported for the current input alone.
     """
     with context_values({_UNMATCHED_MODEL_NAME_KEYS_REPORTED: False}):
         yield
