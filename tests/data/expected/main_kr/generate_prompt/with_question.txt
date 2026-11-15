@@ -785,7 +785,10 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         "IntEnum": "mypkg.OpenIntEnum"}'. Each is your member-
                         less subclass of that class whose _missing_ keeps a
                         value it does not list; a value type before Enum
-                        (--use-subclass-enum) stays: (str, mypkg.OpenEnum)
+                        (--use-subclass-enum) stays: (str, mypkg.OpenEnum). An
+                        open enum whose class has no entry, or that is written
+                        as a Literal, is written as Literal[...] joined with
+                        its type
   --open-enums {none,extensible,all}
                         Accept values an enum does not list. extensible: the
                         enums whose schema marks them open (x-extensible-enum:
@@ -793,9 +796,11 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         every enum of two or more values, except one whose
                         schema closes it (x-extensible-enum: false,
                         modelAsString: false); none: no enum, as without the
-                        option. An open enum written as an Enum class takes
-                        the base --open-enum-base-class-map names for its
-                        class
+                        option. An open enum is written as its Enum class on
+                        the base --open-enum-base-class-map names for that
+                        class, else as Literal[...] joined with its type
+                        (Literal['red', 'green'] | str), whatever the options
+                        say about Literals
   --read-allof-parents-in-mro-order, --no-read-allof-parents-in-mro-order
                         Read the allOf parents of every inherited schema in
                         the order of the class bases (the MRO), so a property

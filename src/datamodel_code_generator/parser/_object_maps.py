@@ -644,7 +644,7 @@ def parse_property_name_key_schema(  # noqa: PLR0911
                 if isinstance(value, str)
             ]
             if string_enums:
-                return parser.data_type(literals=string_enums)
+                return parser._with_open_enum_type(property_names, parser.data_type(literals=string_enums))  # noqa: SLF001
             return parser.data_type_manager.get_data_type(Types.string)
         case "const":
             return parser.data_type(literals=[property_names.extras["const"]])

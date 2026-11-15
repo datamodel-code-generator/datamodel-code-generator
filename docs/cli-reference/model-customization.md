@@ -6649,7 +6649,9 @@ an Enum class takes the entry of its class as its base in place of that class, s
 `class JobStatus(OpenStrEnum)`; the value type `--use-subclass-enum` writes before `Enum` stays, as in
 `class JobStatus(str, OpenEnum)`. Each entry is your member-less subclass of its key class whose `_missing_` decides
 which values it keeps, so the generator writes no runtime code of its own; a listed value still parses to its member.
-Pass the mapping inline as JSON or as a path to a JSON file. Each path is imported as written, like `--base-class-map`.
+An open enum whose class has no entry, or that the options write as a `Literal`, is written as `Literal[...]` joined
+with its type instead. Pass the mapping inline as JSON or as a path to a JSON file. Each path is imported as written,
+like `--base-class-map`.
 
 msgspec honours `_missing_` from msgspec 0.18.2 on; dataclasses and TypedDict validate nothing, so there the class only
 lets you build `JobStatus("paused")` yourself. Pydantic's JSON schema of such a class still lists only the known
@@ -6935,7 +6937,7 @@ values.
         mode: Mode | None = 'auto'
         kind: Kind | None = None
         pinned: Literal['fast'] | None = None
-        quota: dict[Literal['cpu', 'memory'], int] | None = None
+        quota: dict[Literal['cpu', 'memory'] | str, int] | None = None
         lifecycle: Lifecycle | None = None
         stage: Stage | None = None
         color: Color | None = None

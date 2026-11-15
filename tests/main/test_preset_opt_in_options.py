@@ -114,7 +114,7 @@ OPT_IN_OPTIONS_20261111: tuple[str, ...] = ("--use-bounds-for-float-const",)
 OPT_IN_OPTIONS_20261112: tuple[str, ...] = ("--read-object-keywords-by-type",)
 """The options the 20261112 presets set beyond the 20261111 presets."""
 
-OPT_IN_OPTIONS_20261113: tuple[str, ...] = ("--use-x-python-import-for-every-ref",)
+OPT_IN_OPTIONS_20261113: tuple[str, ...] = ("--use-x-python-import-for-every-ref", "--open-enums", "extensible")
 """The options the 20261113 presets set beyond the 20261112 presets."""
 
 PRESET_RELEASES: dict[str, tuple[str, tuple[str, ...]]] = {
@@ -463,6 +463,12 @@ CASES_20261113: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="use-x-python-import-for-every-ref",
+    ),
+    pytest.param(
+        OPEN_API_DATA_PATH / "open_enums.yaml",
+        "openapi",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="open-enums",
     ),
 )
 """The inputs each opt-in option of the 20261113 presets changes."""

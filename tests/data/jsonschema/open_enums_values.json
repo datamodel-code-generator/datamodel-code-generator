@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Reading",
+  "type": "object",
+  "properties": {
+    "untyped": {"enum": ["low", "high"]},
+    "mixed": {"enum": ["auto", 1]},
+    "uuid": {
+      "type": "string",
+      "format": "uuid",
+      "enum": ["9a1f2c4e-0000-4000-8000-000000000001", "9a1f2c4e-0000-4000-8000-000000000002"]
+    },
+    "ratio": {"type": "number", "enum": [0.5, 1.5]},
+    "flag": {"type": "boolean", "enum": [true, false]},
+    "code": {"type": "string", "enum": ["ab", "cd"], "maxLength": 2},
+    "nullable": {"type": ["integer", "null"], "enum": [1, 2, null]},
+    "byUnit": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/Unit"},
+      "additionalProperties": {"type": "number"}
+    },
+    "unit": {"$ref": "#/$defs/Unit"}
+  },
+  "$defs": {
+    "Unit": {"type": "string", "enum": ["kg", "lb"]}
+  }
+}

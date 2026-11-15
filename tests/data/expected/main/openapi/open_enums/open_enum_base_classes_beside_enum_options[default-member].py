@@ -121,7 +121,7 @@ class Job(BaseModel):
     mode: Mode | None = Mode.AUTO
     kind: Kind | None = None
     pinned: Literal['fast'] | None = None
-    quota: dict[Literal['cpu', 'memory'], int] | None = None
+    quota: dict[Literal['cpu', 'memory'] | str, int] | None = None
     lifecycle: Lifecycle | None = None
     stage: Stage | None = None
     color: Color | None = None

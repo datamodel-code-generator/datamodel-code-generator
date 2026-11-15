@@ -39,6 +39,7 @@ from datamodel_code_generator.enums import (
     InputFileType,
     NamingStrategy,
     OpenAPIAsDefinitions,
+    OpenEnums,
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
     TargetPydanticVersion,
@@ -75,6 +76,7 @@ PresetEnumConfigValue: TypeAlias = (
     | DefaultValueType
     | ConstructorFieldOrder
     | OpenAPIAsDefinitions
+    | OpenEnums
     | Formatter
 )
 PresetEnumSequenceConfigValue: TypeAlias = tuple[PresetEnumConfigValue, ...]
@@ -1279,6 +1281,15 @@ _STANDARD_20261113_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "Type every reference to a schema with x-python-import by the class it imports, also an allOf of one in "
             "another document, and split no request/response model for the readOnly or writeOnly properties of such "
             "a schema."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Extensible enums accept new values",
+        config=PresetConfig(open_enums=OpenEnums.Extensible),
+        description=(
+            "Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum "
+            "modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] | "
+            "str, instead of rejecting them."
         ),
     ),
 )

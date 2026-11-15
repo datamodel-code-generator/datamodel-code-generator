@@ -487,10 +487,29 @@ know yet, so [`--open-enums`](cli-reference/typing-customization.md#open-enums) 
 whose schema marks them open (`x-extensible-enum: true`, or `x-ms-enum` with `modelAsString: true`), `all` every enum
 of two or more values except one whose schema closes it (`x-extensible-enum: false`, `modelAsString: false`).
 
-An open enum written as an Enum class takes the base
+Without more options an open enum is written as `Literal[...]` joined with the type of its schema, where
+`--enum-field-as-literal all` would write the `Literal`:
+
+```python
+class JobStatus(RootModel[Literal["queued", "running", "done"] | str]):
+    root: Literal["queued", "running", "done"] | str
+```
+
+A listed value parses as itself, the same value the `Literal` gives, and any other value of the type is accepted, by
+the rules of that type (`int` takes what a `type: integer` field takes). Keywords beside the enum, such as `maxLength`,
+are kept on the type for Pydantic; msgspec takes them only on a whole field, so there a value the enum does not list is
+not checked against them. The JSON schema of the models says `anyOf: [{enum: [...]}, {type: string}]`. This form works for
+every output model type and needs no code of your own; code that read `.value` of a member or compared with
+`is JobStatus.queued` compares with the string instead. An option that asks for an Enum class
+(`--enum-field-as-literal none`, an `enum` entry of `--enum-field-as-literal-map`, `x-enum-field-as-literal: false`)
+does not close an open enum: it is still the `Literal` form. The dated presets from 20261113 set `open-enums =
+"extensible"`; `--open-enums none` turns it off.
+
+To keep the Enum classes, give the base classes: an open enum written as an Enum class takes the base
 [`--open-enum-base-class-map`](cli-reference/model-customization.md#open-enum-base-class-map) names for its class,
-`Enum`, `StrEnum` or `IntEnum`. Each base is a member-less subclass of that class in your project whose `_missing_`
-keeps a value it does not list; the generator writes no runtime code of its own. For example:
+`Enum`, `StrEnum` or `IntEnum`, and an open enum whose class has no entry is the `Literal` form. Each base is a
+member-less subclass of that class in your project whose `_missing_` keeps a value it does not list; the generator
+writes no runtime code of its own. For example:
 
 ```python
 """Open enum bases: an Enum that keeps a value it does not list as a member of its own."""

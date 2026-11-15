@@ -6,19 +6,19 @@ from __future__ import annotations
 
 from typing import Literal, NotRequired, TypeAlias, TypedDict
 
-JobStatus: TypeAlias = Literal['queued', 'running', 'done']
+JobStatus: TypeAlias = Literal['queued', 'running', 'done'] | str
 
 
-ProvisioningState: TypeAlias = Literal['Succeeded', 'Failed']
+ProvisioningState: TypeAlias = Literal['Succeeded', 'Failed'] | str
 
 
-JobType: TypeAlias = Literal['scrape', 'crawl']
+JobType: TypeAlias = Literal['scrape', 'crawl'] | str
 
 
-Priority: TypeAlias = Literal[1, 2, 3]
+Priority: TypeAlias = Literal[1, 2, 3] | int
 
 
-Phase: TypeAlias = Literal['pending', 'active'] | None
+Phase: TypeAlias = Literal['pending', 'active'] | str | None
 
 
 Region: TypeAlias = Literal['eu', 'us']
@@ -27,7 +27,7 @@ Region: TypeAlias = Literal['eu', 'us']
 Tier: TypeAlias = Literal['free', 'paid']
 
 
-Tag: TypeAlias = Literal['red', 'blue']
+Tag: TypeAlias = Literal['red', 'blue'] | str
 
 
 class Lifecycle(TypedDict):
@@ -38,10 +38,10 @@ class Stage(TypedDict):
     pass
 
 
-Color: TypeAlias = Literal['red', 'blue']
+Color: TypeAlias = Literal['red', 'blue'] | str
 
 
-PetType: TypeAlias = Literal['cat', 'dog']
+PetType: TypeAlias = Literal['cat', 'dog'] | str
 
 
 class Cat(TypedDict):
@@ -66,10 +66,10 @@ class Job(TypedDict):
     region: NotRequired[Region]
     tier: NotRequired[Tier]
     tags: NotRequired[list[Tag]]
-    mode: NotRequired[Literal['auto', 'manual']]
+    mode: NotRequired[Literal['auto', 'manual'] | str]
     kind: NotRequired[Literal['job']]
     pinned: NotRequired[Literal['fast']]
-    quota: NotRequired[dict[Literal['cpu', 'memory'], int]]
+    quota: NotRequired[dict[Literal['cpu', 'memory'] | str, int]]
     lifecycle: NotRequired[Lifecycle]
     stage: NotRequired[Stage]
     color: NotRequired[Color]

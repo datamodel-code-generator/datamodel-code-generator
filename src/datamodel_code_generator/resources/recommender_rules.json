@@ -1076,8 +1076,8 @@
       "reason": "The project's own base classes that open the Enum classes of open enums."
     },
     "open_enums": {
-      "not_recommended": "runtime-behaviour",
-      "reason": "Accepting the values an enum does not list changes validation, on the project's own Enum bases."
+      "not_recommended": "preset",
+      "reason": "Set to extensible by the 20261113 presets; the recommendation starts from a preset."
     },
     "openapi_as_definitions": {
       "rules": [

@@ -14,7 +14,7 @@ pydantic_v2.dataclass-all	main/openapi/open_enums/open_enum_base_classes[pydanti
 pydantic_v2.dataclass-extensible	main/openapi/open_enums/open_enum_base_classes[pydantic_v2.dataclass-extensible].py
 pydantic_v2.dataclass-str-only	main/openapi/open_enums/open_enum_base_classes[pydantic_v2.dataclass-str-only].py
 typing.TypedDict-all	main/openapi/open_enums/open_enum_base_classes[typing.TypedDict-all].py
-typing.TypedDict-extensible	main/openapi/open_enums/open_enum_base_classes[typing.TypedDict-extensible].py	= main/openapi/open_enums/open_enum_base_classes[typing.TypedDict-all].py
+typing.TypedDict-extensible	main/openapi/open_enums/open_enum_base_classes[typing.TypedDict-extensible].py	= main/openapi/open_enums/open_enum_literals[typing.TypedDict-extensible].py
 typing.TypedDict-str-only	main/openapi/open_enums/open_enum_base_classes[typing.TypedDict-str-only].py	= main/openapi/open_enums/open_enum_base_classes[typing.TypedDict-all].py
 [test_open_enum_base_classes_beside_enum_options]
 collapse-root-models	main/openapi/open_enums/open_enum_base_classes_beside_enum_options[collapse-root-models].py
@@ -29,5 +29,36 @@ subclass-311	main/openapi/open_enums/open_enum_base_classes_beside_enum_options[
 	main/openapi/open_enums/open_enum_base_classes_from_file.py	= main/openapi/open_enums/open_enum_base_classes[pydantic_v2.BaseModel-extensible].py
 [test_open_enum_base_classes_in_modules]
 	main/openapi/open_enums/open_enum_base_classes_in_modules/
+[test_open_enum_literals]
+dataclasses.dataclass-all	main/openapi/open_enums/open_enum_literals[dataclasses.dataclass-all].py
+dataclasses.dataclass-extensible	main/openapi/open_enums/open_enum_literals[dataclasses.dataclass-extensible].py
+dataclasses.dataclass-off	main/openapi/open_enums/open_enum_literals[dataclasses.dataclass-off].py
+msgspec.Struct-all	main/openapi/open_enums/open_enum_literals[msgspec.Struct-all].py
+msgspec.Struct-extensible	main/openapi/open_enums/open_enum_literals[msgspec.Struct-extensible].py
+msgspec.Struct-off	main/openapi/open_enums/open_enum_literals[msgspec.Struct-off].py
+pydantic_v2.BaseModel-all	main/openapi/open_enums/open_enum_literals[pydantic_v2.BaseModel-all].py
+pydantic_v2.BaseModel-extensible	main/openapi/open_enums/open_enum_literals[pydantic_v2.BaseModel-extensible].py
+pydantic_v2.BaseModel-off	main/openapi/open_enums/open_enum_literals[pydantic_v2.BaseModel-off].py
+pydantic_v2.dataclass-all	main/openapi/open_enums/open_enum_literals[pydantic_v2.dataclass-all].py
+pydantic_v2.dataclass-extensible	main/openapi/open_enums/open_enum_literals[pydantic_v2.dataclass-extensible].py
+pydantic_v2.dataclass-off	main/openapi/open_enums/open_enum_literals[pydantic_v2.dataclass-off].py
+typing.TypedDict-all	main/openapi/open_enums/open_enum_literals[typing.TypedDict-all].py	= main/openapi/open_enums/open_enum_base_classes[typing.TypedDict-all].py
+typing.TypedDict-extensible	main/openapi/open_enums/open_enum_literals[typing.TypedDict-extensible].py
+typing.TypedDict-off	main/openapi/open_enums/open_enum_literals[typing.TypedDict-off].py
+[test_open_enum_literals_beside_enum_options]
+collapse-root-models	main/openapi/open_enums/open_enum_literals_beside_enum_options[collapse-root-models].py
+int-enum-base-only	main/openapi/open_enums/open_enum_literals_beside_enum_options[int-enum-base-only].py
+literal-map-enum	main/openapi/open_enums/open_enum_literals_beside_enum_options[literal-map-enum].py	= main/openapi/open_enums/open_enum_literals[pydantic_v2.BaseModel-extensible].py
+literal-none	main/openapi/open_enums/open_enum_literals_beside_enum_options[literal-none].py	= main/openapi/open_enums/open_enum_literals[pydantic_v2.BaseModel-extensible].py
+one-literal-as-default	main/openapi/open_enums/open_enum_literals_beside_enum_options[one-literal-as-default].py
+set-default-enum-member	main/openapi/open_enums/open_enum_literals_beside_enum_options[set-default-enum-member].py	= main/openapi/open_enums/open_enum_literals[pydantic_v2.BaseModel-extensible].py
+strict-types	main/openapi/open_enums/open_enum_literals_beside_enum_options[strict-types].py
+subclass-310	main/openapi/open_enums/open_enum_literals_beside_enum_options[subclass-310].py
+use-type-alias	main/openapi/open_enums/open_enum_literals_beside_enum_options[use-type-alias].py
+[test_open_enums_turned_off_in_preset]
+command-line	main/openapi/open_enums/turned_off_in_preset[command-line].py
+pyproject	main/openapi/open_enums/turned_off_in_preset[pyproject].py	= main/openapi/open_enums/turned_off_in_preset[command-line].py
 [test_open_graphql_enums]
-	main/openapi/open_enums/open_graphql_enums.py
+base-classes	main/openapi/open_enums/open_graphql_enums[base-classes].py
+literal-all	main/openapi/open_enums/open_graphql_enums[literal-all].py
+literals	main/openapi/open_enums/open_graphql_enums[literals].py

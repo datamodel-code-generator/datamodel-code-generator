@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from enum import Enum, IntEnum, StrEnum
+from enum import StrEnum
 from typing import Literal
 
 from pydantic import BaseModel, Field, RootModel
@@ -42,16 +42,12 @@ class JobType(OpenStrEnum):
     crawl = 'crawl'
 
 
-class Priority(IntEnum):
-    integer_1 = 1
-    integer_2 = 2
-    integer_3 = 3
+class Priority(RootModel[Literal[1, 2, 3] | int]):
+    root: Literal[1, 2, 3] | int
 
 
-class Phase(Enum):
-    pending = 'pending'
-    active = 'active'
-    NoneType_None = None
+class Phase(RootModel[Literal['pending', 'active'] | str | None]):
+    root: Literal['pending', 'active'] | str | None
 
 
 class Region(StrEnum):
@@ -121,7 +117,7 @@ class Job(BaseModel):
     mode: Mode | None = 'auto'
     kind: Kind | None = None
     pinned: Literal['fast'] | None = None
-    quota: dict[Literal['cpu', 'memory'], int] | None = None
+    quota: dict[Literal['cpu', 'memory'] | str, int] | None = None
     lifecycle: Lifecycle | None = None
     stage: Stage | None = None
     color: Color | None = None

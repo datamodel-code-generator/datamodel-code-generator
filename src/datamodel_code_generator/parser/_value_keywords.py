@@ -402,8 +402,14 @@ class ValueKeywordsHost(SchemaRefsHost, Protocol):
     def _reads_enum(self, obj: JsonSchemaObject) -> bool:
         """Return whether the run reads the enum of a schema: it has one and --ignore-enum-constraints is off."""
 
+    def _open_enum_without_base(self, obj: JsonSchemaObject) -> bool:
+        """Return whether the enum of a schema is open with no base for its class, so it is written as a Literal."""
+
     def _ref_schema_exists(self, resolved_ref: str) -> bool:
         """Return whether a resolved JSON pointer identifies a source schema."""
+
+    def _with_open_enum_type(self, obj: JsonSchemaObject, literal: DataType) -> DataType:
+        """Return the Literal type of an open enum joined with the type of its schema, else the Literal type."""
 
 
 def should_parse_enum_as_literal(
@@ -435,13 +441,16 @@ def enum_as_literal_under(
     property_name: str | None,
     property_obj: JsonSchemaObject | None,
 ) -> bool:
-    """Return whether an enum is written as a Literal under an ``--enum-field-as-literal`` setting."""
+    """Return whether an enum is written as a Literal under an ``--enum-field-as-literal`` setting.
+
+    An open enum with no base for its class (``--open-enum-base-class-map``) is a Literal whatever the setting.
+    """
     return enum_as_literal(
         extension=(property_obj if property_obj is not None else obj).x_enum_field_as_literal,
         mapped=parser.enum_field_as_literal_map.get(property_name) if property_name else None,
         setting=setting,
         member_count=len(obj.enum),
-    )
+    ) or parser._open_enum_without_base(obj)  # noqa: SLF001
 
 
 def extract_const_enum_from_combined(  # noqa: PLR0912
@@ -586,10 +595,11 @@ def check_literal_const(parser: ValueKeywordsHost, obj: JsonSchemaObject, const:
 def enum_literal(parser: ValueKeywordsHost, obj: JsonSchemaObject, written: frozenset[str] = NO_KEYWORDS) -> DataType:
     """Return the Literal type of the enum values that meet the constraints its field leaves out.
 
-    A type of only some of the values (``_literal_view``) keeps them as written.
+    A type of only some of the values (``_literal_view``) keeps them as written. An open enum's Literal type is joined
+    with the type of its schema (``_with_open_enum_type``).
     """
     view = parser._literal_view(obj, written)  # noqa: SLF001
-    data_type = parser._literal_values_type(view.enum)  # noqa: SLF001
+    data_type = parser._with_open_enum_type(obj, parser._literal_values_type(view.enum))  # noqa: SLF001
     if (values_as_written := view.__dict__.get(VALUES_AS_WRITTEN_KEY)) is not None:
         parser._graph_builder.record_values_as_written(data_type, values_as_written)  # noqa: SLF001
     return data_type

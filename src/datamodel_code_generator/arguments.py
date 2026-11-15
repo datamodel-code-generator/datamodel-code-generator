@@ -936,7 +936,8 @@ typing_options.add_argument(
     "all: every enum of two or more values, except one whose schema closes it (x-extensible-enum: false, "
     "modelAsString: false); "
     "none: no enum, as without the option. "
-    "An open enum written as an Enum class takes the base --open-enum-base-class-map names for its class",
+    "An open enum is written as its Enum class on the base --open-enum-base-class-map names for that class, else "
+    "as Literal[...] joined with its type (Literal['red', 'green'] | str), whatever the options say about Literals",
     choices=_values(OpenEnums),
     default=None,
 )
@@ -1195,7 +1196,8 @@ typing_options.add_argument(
     "(JSON or JSON file path). Keys: Enum, StrEnum, IntEnum. "
     'Example: \'{"StrEnum": "mypkg.OpenStrEnum", "IntEnum": "mypkg.OpenIntEnum"}\'. '
     "Each is your member-less subclass of that class whose _missing_ keeps a value it does not list; a value type "
-    "before Enum (--use-subclass-enum) stays: (str, mypkg.OpenEnum)",
+    "before Enum (--use-subclass-enum) stays: (str, mypkg.OpenEnum). An open enum whose class has no entry, or that "
+    "is written as a Literal, is written as Literal[...] joined with its type",
     type=_json_value_or_file,
     default=None,
 )
