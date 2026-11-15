@@ -37,7 +37,9 @@ loop replaces them:
 - ``legacy-collapse-python-name-mode``: the union that ``--collapse-root-models`` inlines as list items is checked by
   the Python names of its variants' tag fields (``python-or-original-name``), where L5 checks a union that writes
   ``discriminator=`` by the names the schema gives them (``source-name``; :data:`ValidityMode`). It writes
-  ``discriminator=`` by the Python name the property takes in any class, which those names find.
+  ``discriminator=`` by the Python name the property takes in any class, which those names find; once every module
+  wrote its tags, such a union whose choices do not all carry that tag takes the name its site writes, or none
+  (:func:`iter_unbuildable_inlined_unions`).
 
 Four readings differ from the rule of their home where output depends on it; these rows name them until their fixes:
 
@@ -91,6 +93,7 @@ from datamodel_code_generator.model.base import (
     linearize_data_models,
 )
 from datamodel_code_generator.model.enum import Enum
+from datamodel_code_generator.parser._passes._keys import inlined_site
 from datamodel_code_generator.parser._passes._shared import (
     _base_schema_paths,
     _FieldTagFacts,
@@ -1423,17 +1426,18 @@ def _is_tag_type(data_type: DataType) -> bool:
     return all(leaf.literals or leaf.enum_member_literals for leaf, _, _ in _iter_discriminator_data_types([data_type]))
 
 
-def _variant_carries_tag(data_type: DataType, field_name: str) -> bool:
+def _variant_carries_tag(data_type: DataType, field_name: str, order: TagFieldOrder) -> bool:
     """Return whether a variant has the tag field ``field_name``, of ``Literal`` values and not optional.
 
-    The variant may inherit the field. Pydantic reads an optional tag as the ``Literal`` and None, which no tag is.
-    The None that a root model of nullable variants holds is no variant.
+    The variant may inherit the field, the first one in ``order`` (:data:`TagFieldOrder`). Pydantic reads an optional
+    tag as the ``Literal`` and None, which no tag is. The None that a root model of nullable variants holds is no
+    variant.
     """
     if not data_type.reference:
         return data_type.type == NONE
     return isinstance(source := data_type.reference.source, DataModel) and any(
         _is_tag_type(tag_field.data_type) and not tag_field._admits_none()  # noqa: SLF001
-        for tag_field in islice(_tag_fields_of(source, field_name, "python-name", order="legacy-root-most-first"), 1)
+        for tag_field in islice(_tag_fields_of(source, field_name, "python-name", order=order), 1)
     )
 
 
@@ -1530,27 +1534,40 @@ def settle_site(site: UnionSite) -> SiteStatus:
     )
     if lone and not (
         any(data_type.reference for data_type, _, _ in variants)
-        and all(_variant_carries_tag(data_type, site.property_name) for data_type, _, _ in variants)
+        and all(
+            _variant_carries_tag(data_type, site.property_name, "legacy-root-most-first")
+            for data_type, _, _ in variants
+        )
     ):
         return "dropped-lone-untagged"
     return _settle_choices(variants, wrappers, site.property_name)
 
 
-def iter_unbuildable_inlined_unions(field_: DataModelFieldBase) -> Iterator[DataType]:
-    """Yield the unions inside a field's type whose ``discriminator=`` Pydantic cannot build, as the pass drops each.
+def iter_unbuildable_inlined_unions(field_: DataModelFieldBase) -> Iterator[tuple[DataType, str | None]]:
+    """Yield the unions inside a field's type whose ``discriminator=`` Pydantic cannot build, with the one each takes.
 
     ``--collapse-root-models`` writes the discriminator of the root model that a list names as its items onto the
-    union it inlines there, a type of its own that the field's extras do not hold. It decides that when the module of
-    the list is processed, before every tag is written, so the choices of the union are asked here as those of a
-    field's own union are (``_settle_choices``), by the tag field the type names.
+    union it inlines there, a type of its own that the field's extras do not hold, by the Python name the property
+    takes in any class (row ``legacy-collapse-python-name-mode``), and records the site of the root model on it
+    (``inlined_site``), which every copy of the type keeps. It decides that when the module of the list is processed,
+    before every tag is written and before the site of the root model writes the name its variants share or drops its
+    discriminator. So the choices of the union are asked here as those of a field's own union are (``_settle_choices``),
+    by the tag field the type names: where they fail, it takes none. Where every choice carries that tag in the field
+    its class has, it is kept. Else Pydantic refuses the name, as some choice has no field of that name that holds a
+    ``Literal`` and no None, and the union takes the decision of its site: the name the site writes, where it writes one
+    Pydantic can build (:func:`settle_site`), else none.
     """
     for nested in field_.data_type.all_data_types:
-        if nested is field_.data_type or not nested.discriminator:
+        if nested is field_.data_type or not (name := nested.discriminator):
             continue
         wrappers: list[DataModel] = []
         variants = list(_iter_discriminator_data_types(nested.data_types, wrappers=wrappers))
-        if _settle_choices(variants, wrappers, nested.discriminator) != "tagged":
-            yield nested
+        if _settle_choices(variants, wrappers, name) != "tagged":
+            yield nested, None
+        elif not all(_variant_carries_tag(data_type, name, "nearest-first") for data_type, _, _ in variants):
+            site: UnionSite = inlined_site(nested)
+            written = union_site(site.model, site.field)
+            yield nested, None if written is None or settle_site(written) != "tagged" else written.property_name
 
 
 @mutable_record(slots=True)

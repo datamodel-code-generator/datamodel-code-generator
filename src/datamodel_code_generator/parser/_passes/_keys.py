@@ -14,6 +14,7 @@ __all__ = [
     "_DEFERRED_INHERITED_FIELD_KEY",
     "_DEFERRED_INHERITED_TYPE_KEY",
     "_DERIVED_FROM_KEY",
+    "_INLINED_SITE_KEY",
     "_RAW_SCHEMA_DEFAULT_KEY",
     "_RAW_SCHEMA_DEFAULT_UNDEFINED",
     "_SITE_CONSTRAINTS_KEY",
@@ -21,9 +22,11 @@ __all__ = [
     "_UNIQUE_ITEMS_SET_KEY",
     "declares_raw_schema_default",
     "declares_type_list_unique_items",
+    "inlined_site",
     "is_unique_items_set",
     "raw_schema_default",
     "site_constraints",
+    "with_inlined_site",
     "with_type_list_unique_items",
     "with_unique_items_set",
 ]
@@ -33,6 +36,8 @@ _DEFERRED_INHERITED_FIELD_KEY: Final = "_deferred_inherited_field"
 _DEFERRED_INHERITED_TYPE_KEY: Final = "_deferred_inherited_type"
 _DERIVED_FROM_KEY: Final = "_derived_from"
 """The Reference of the one ``$ref`` target a site model is built from with the site's other parts."""
+_INLINED_SITE_KEY: Final = "_inlined_site"
+"""The union site whose union ``--collapse-root-models`` inlined as list items with its ``discriminator=``."""
 _RAW_SCHEMA_DEFAULT_KEY: Final = "_raw_schema_default"
 _RAW_SCHEMA_DEFAULT_UNDEFINED: Final = Sentinel("_RAW_SCHEMA_DEFAULT_UNDEFINED")
 _SITE_CONSTRAINTS_KEY: Final = "_site_constraints"
@@ -61,6 +66,21 @@ def site_constraints(data_type: object) -> dict[str, Any]:
     to the type it inlines in its place. Empty for every other type.
     """
     return data_type.__dict__.get(_SITE_CONSTRAINTS_KEY, {})
+
+
+def with_inlined_site(data_type: Any, site: object) -> Any:
+    """Record on ``data_type`` the site whose union collapse inlined as it with a ``discriminator=``; return it."""
+    data_type.__dict__[_INLINED_SITE_KEY] = site
+    return data_type
+
+
+def inlined_site(data_type: object) -> Any:
+    """Return the union site whose union collapse inlined as ``data_type`` with its ``discriminator=``.
+
+    A copy of the node keeps the record, such as the copy of a root type holding it that collapse inlines into another
+    module, or the copy of a field that holds it.
+    """
+    return data_type.__dict__[_INLINED_SITE_KEY]
 
 
 def declares_raw_schema_default(field: object) -> bool:

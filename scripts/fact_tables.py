@@ -415,6 +415,9 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     AttributeFact(
         "DataType", "_UNIQUE_ITEMS_SET_KEY", FactKind.BOOKKEEPING, (), Phase.MODULES, None, access=Access.DICT_KEY
     ),
+    AttributeFact(
+        "DataType", "_INLINED_SITE_KEY", FactKind.BOOKKEEPING, (), Phase.MODULES, None, access=Access.DICT_KEY
+    ),
     AttributeFact("DataType", "ENUM_LITERAL_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY),
     AttributeFact(
         "DataType",

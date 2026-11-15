@@ -98,7 +98,12 @@ from datamodel_code_generator.parser._passes._import_binding import (
     import_references,
     reimport_module_references,
 )
-from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY, site_constraints, with_unique_items_set
+from datamodel_code_generator.parser._passes._keys import (
+    _DERIVED_FROM_KEY,
+    site_constraints,
+    with_inlined_site,
+    with_unique_items_set,
+)
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._reference_users import (
     ReferenceUsersHost,
@@ -1793,6 +1798,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                             == "tagged"
                         ):
                             graph_builder.set_type_discriminator(copied_data_type, site_reading.names.field_name)
+                            with_inlined_site(copied_data_type, site)
                     replacement_context = generation_store._replace_data_type_and_detach_data_type_ref(  # noqa: SLF001
                         data_type,
                         copied_data_type,
@@ -2922,8 +2928,11 @@ def settle_discriminated_unions(parser: ModulesHost, run: ModulesRun) -> None:
     alone by its ``$ref``, and a union of any module may still tag that variant, so a variant without a tag is final
     only once every module is processed. The tag fields the classes of the variants have are final then too, so a union
     two of whose choices hold one tag in them, which Pydantic refuses, is found here, also where
-    ``--collapse-root-models`` inlined it into the items of a list. The tag plan decides (``settle_site``,
-    ``iter_unbuildable_inlined_unions``); this pass drops what it decides and records it.
+    ``--collapse-root-models`` inlined it into the items of a list. Such an inlined union took its ``discriminator=``
+    before the site of its root model wrote the name its variants share, or dropped it, which are final here too: one
+    whose choices do not all carry the tag it names takes the decision of that site. The tag plan decides
+    (``settle_site``, ``iter_unbuildable_inlined_unions``); this pass writes what it decides and records the drops of
+    union sites.
     """
     builder = parser._graph_builder  # noqa: SLF001
     for ctx in run.contexts:
@@ -2933,8 +2942,8 @@ def settle_discriminated_unions(parser: ModulesHost, run: ModulesRun) -> None:
                     parser._tag_plan.record_settled(site, status)  # noqa: SLF001
                     builder.drop_field_discriminator(field)
                 if parser.collapse_root_models:
-                    for nested in iter_unbuildable_inlined_unions(field):
-                        builder.set_type_discriminator(nested, None)
+                    for nested, discriminator in iter_unbuildable_inlined_unions(field):
+                        builder.set_type_discriminator(nested, discriminator)
 
 
 def constrain_fields_by_their_reference_sites(parser: ModulesHost, run: ModulesRun) -> None:

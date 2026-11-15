@@ -885,7 +885,8 @@ SETTLE_DISCRIMINATED_UNIONS = PassDecl(
         "scalar, `Any` or None, as a collapsed alias or an inline schema leaves it), nor for a union that takes a "
         "root model, or a type alias, with a default as a variant, nor for a union two of whose choices hold one tag "
         "in the tag fields that were written; the last two also where `--collapse-root-models` inlines the union "
-        "into the items of a list."
+        "into the items of a list, where a union whose choices do not all carry the tag it names takes the name the "
+        "site of its root model writes, or none."
     ),
     condition="the output fields write `discriminator=`",
 )

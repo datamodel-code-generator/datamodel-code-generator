@@ -15,6 +15,20 @@ With `generate_server` or `generate_client`, a `preset` that does not match `tar
 - **Pull requests and issues:** [#6851](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6851)
 - **Source:** the release notes
 
+### A union `--collapse-root-models` writes as list items names the tag field its site writes (unreleased) { #discriminator-inlined-list-items }
+
+Under `--collapse-root-models`, a discriminated union that is a named schema and is used as the items of an array is written into the list with `discriminator=` by the Python name of the tag property, decided before the union itself is written. Where its variants do not all carry that tag, Pydantic refused the module when it was imported: where the variants name the field otherwise, as a property named like the Enum that types it is renamed (`Kind_1`, #6874), and where the union itself is written without `discriminator=` and a variant keeps an untagged field (#6892). Such a list now names the field the union names where the union is written with `discriminator=`, and else is written without one. A list whose variants carry the tag is unchanged, so output that imported before is unchanged.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`; only with: `--collapse-root-models`
+- **Keep the old output:** The previous module failed at import; nothing restores it.
+- **Pull requests and issues:** [#6874](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6874), [#6892](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6892)
+- **Source:** the release notes
+
+```diff
+-pets: list[Annotated[Cat | Dog, Field(discriminator='Kind')]] | None = None
++pets: list[Annotated[Cat | Dog, Field(discriminator='Kind_1')]] | None = None
+```
+
 ### A union whose variants were written with one tag value has no `discriminator=` (unreleased) { #discriminator-shared-written-tag }
 
 A Pydantic union whose variants ended up with the same value in their tag fields was written with `discriminator=`, which Pydantic refuses when the module is imported (`Value ... mapped to multiple choices`). It happened where a union lists a nested `oneOf` beside the parent of the variant it groups, which has its parent's tag (#6876), also where `--collapse-root-models` writes that union as the items of a list, and under `--use-enum-values-in-discriminator` where the discriminator property is named like the Enum that types it and the variants inherit it, so that every variant takes every member (#6865). The union is now written without `discriminator=`; the tag fields of the variants are unchanged. For #6865 this means that the module imports: its variants still have the tag field with every member of the Enum, and a parsed tag is the text, not the member. Output that imported before is unchanged.
