@@ -406,6 +406,7 @@ def _walk_direct_then_grandparents(
     parser: InheritedSchemasHost, base_classes: list[Reference], visited: frozenset[_TargetNode]
 ) -> Iterator[_InheritedVisit]:
     """Yield each base as written until the first whose allOf names parents, then it again with them and the path."""
+    with_parents: _InheritedVisit | None = None
     for schema, path, resolved_ref in iter_inherited_schema_objects(parser, base_classes, visited):
         yield schema, resolved_ref, None
         if schema.allOf and (
@@ -414,8 +415,10 @@ def _walk_direct_then_grandparents(
                 for ref in iter_allof_refs(parser, schema)
             ]
         ):
-            yield schema, resolved_ref, (parents, path)
-            return
+            with_parents = schema, resolved_ref, (parents, path)
+            break
+    if with_parents is not None:
+        yield with_parents
 
 
 def inline_all_of_parts(
