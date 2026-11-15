@@ -1932,7 +1932,12 @@ class ModelResolver:  # noqa: PLR0904
     def _add_ref_at(self, path: str, ref: str) -> Reference:
         """Return the Reference at a resolved ``path``, added and named after ``ref``, its spelling, if it is new.
 
-        A reference ``_assigned_names`` names takes the name and duplicate name they give it.
+        A reference ``_assigned_names`` names takes the name and duplicate name they give it. Row
+        ``legacy-ref-drops-duplicate-name``: a name generated here keeps no duplicate name, so under
+        ``--naming-strategy primary-first`` a reference of another file that is numbered here (``Pet1``, where a
+        definition of the main file holds ``Pet``) is not given its name back where its module leaves it free, while
+        one that took the name first and that the definition renames later is
+        (``_rename_external_ref_with_same_name``).
         """
         if reference := self.references.get(path):
             return reference
@@ -1940,31 +1945,16 @@ class ModelResolver:  # noqa: PLR0904
         # For PrimaryFirst strategy, use unique=True for external references
         # so that definitions in the main input file get priority for clean names
         use_unique = self.naming_strategy == NamingStrategy.PrimaryFirst and self._is_external_path(path)
-        duplicate_name: str | None = None
         if (assigned := self._assigned_names.get(path)) is not None:
             name, duplicate_name = assigned
         else:
             generate = partial(
                 self.get_class_name, original_name, unique=use_unique, skip_affix=self._affix_needs_scope, path=path
             )
-            generated = generate()
-            self._record_allocation(path, generated, original_name)
-            name = self._apply_model_name_map(path, original_name, generated, regenerate=generate).name
-        if self._yielding_names:
-            self._evict_yielding_reference(name)
-        reference = Reference(
-            path=path,
-            original_name=original_name,
-            name=name,
-            loaded=False,
-            duplicate_name=duplicate_name,
+            name, duplicate_name = self._allocate_class_name(path, original_name, generate)[0].name, None
+        return self._register_reference(
+            path, original_name, name, duplicate_name, unique=use_unique, loaded=False, records_request=True
         )
-        if self._records_name_requests:
-            reference.__dict__[NAME_REQUEST_KEY] = NameRequest(original_name)
-
-        self.references[path] = reference
-        self._update_reference_name(None, reference.name, unique=use_unique)
-        return reference
 
     def _named_by_model_name_map(self, path: str) -> bool:
         """Return whether ``--model-name-map`` named the reference at ``path``."""
@@ -2088,7 +2078,7 @@ class ModelResolver:  # noqa: PLR0904
                     self._rename_reference(ref, new_name, name)
                     break
 
-    def add(  # noqa: PLR0912, PLR0913, PLR0915
+    def add(  # noqa: PLR0913
         self,
         path: Sequence[str],
         original_name: str,
@@ -2114,7 +2104,6 @@ class ModelResolver:  # noqa: PLR0904
         joined_path = self.join_path(tuple(path))
         is_root = _is_root_path(joined_path)
         reference: Reference | None = self.references.get(joined_path)
-        old_ref_name: str | None = reference.name if reference else None
         if reference:
             was_already_loaded = reference.loaded
             if loaded and not reference.loaded:
@@ -2149,11 +2138,12 @@ class ModelResolver:  # noqa: PLR0904
                 # For primary definitions, try to use the clean name first
                 # If an external reference has the same name, rename it
                 self._rename_external_ref_with_same_name(name, joined_path)
+            reserved_name = reference.name if reference else None
             generate = partial(
                 self.get_class_name,
                 name=name,
                 unique=unique,
-                reserved_name=reference.name if reference else None,
+                reserved_name=reserved_name,
                 singular_name=singular_name,
                 singular_name_suffix=singular_name_suffix,
                 model_type=model_type,
@@ -2162,19 +2152,9 @@ class ModelResolver:  # noqa: PLR0904
                 path=joined_path,
                 **({"yields": True} if yields else {}),
             )
-            generated_class_name = generate()
-            if not yields:
-                self._record_allocation(joined_path, generated_class_name, original_name)
-            class_name_result = self._apply_model_name_map(
-                joined_path,
-                original_name,
-                generated_class_name,
-                reserved_name=reference.name if reference else None,
-                match_names=not yields,
-                regenerate=generate,
+            (name, duplicate_name), yields = self._allocate_class_name(
+                joined_path, original_name, generate, reserved_name=reserved_name, yields=yields
             )
-            yields = yields and class_name_result is generated_class_name
-            name, duplicate_name = class_name_result
         else:
             # TODO: create a validate for module name
             name = self.get_valid_field_name(name, model_type=ModelType.CLASS)
@@ -2185,25 +2165,111 @@ class ModelResolver:  # noqa: PLR0904
                 if unique_name != name:
                     duplicate_name = name
                 name = unique_name
+        return self._register_reference(
+            joined_path,
+            original_name,
+            name,
+            duplicate_name,
+            reference=reference,
+            unique=unique,
+            loaded=loaded,
+            yields=yields,
+            previous_entry=previous_entry,
+            records_request=class_name,
+            singular_name=singular_name,
+            singular_name_suffix=singular_name_suffix,
+            model_type=model_type,
+            preserve_class_name=preserve_class_name,
+        )
+
+    def _add_affixed(self, path: str, original_name: str, *, model_type: str) -> Reference:
+        """Add a loaded reference at ``path`` named by ``get_affixed_name`` alone, the legacy mode of ``add``.
+
+        GraphQL names its types this way (row ``legacy-graphql-affix-only``): no uniqueness, no ``--model-name-map``,
+        no naming strategy and no singularization, and a dotted name stays one name.
+        """
+        return self._register_reference(
+            path,
+            original_name,
+            self.get_affixed_name(original_name, model_type=model_type),
+            None,
+            unique=False,
+            loaded=True,
+            records_request=False,
+        )
+
+    def _allocate_class_name(
+        self,
+        path: str,
+        original_name: str,
+        generate: Callable[[], ClassName],
+        *,
+        reserved_name: str | None = None,
+        yields: bool = False,
+    ) -> tuple[ClassName, bool]:
+        """Return the class name ``generate`` makes for the reference at ``path``, and whether the reference yields.
+
+        The allocation is recorded (``_record_allocation``) unless the reference yields; ``--model-name-map`` applies
+        to the generated name, matches it by name unless the reference yields and may take ``reserved_name``, the
+        name the reference holds; a reference the map renames yields no more.
+        """
+        generated = generate()
+        if not yields:
+            self._record_allocation(path, generated, original_name)
+        allocated = self._apply_model_name_map(
+            path,
+            original_name,
+            generated,
+            reserved_name=reserved_name,
+            match_names=not yields,
+            regenerate=generate,
+        )
+        return allocated, yields and allocated is generated
+
+    def _register_reference(  # noqa: PLR0913
+        self,
+        path: str,
+        original_name: str,
+        name: str,
+        duplicate_name: str | None,
+        *,
+        reference: Reference | None = None,
+        unique: bool,
+        loaded: bool,
+        yields: bool = False,
+        previous_entry: _YieldingName | None = None,
+        records_request: bool,
+        singular_name: bool = False,
+        singular_name_suffix: str | None = None,
+        model_type: str = "model",
+        preserve_class_name: bool = False,
+    ) -> Reference:
+        """Register the reference at ``path``, asked for as ``original_name``, under ``name`` and return it.
+
+        Every reference the resolver holds is created here (``add_ref``, ``add``, ``_add_affixed``). A reference that
+        does not yield moves a yielding one off ``name``. ``reference``, the one ``path`` holds already, takes the
+        names and ``loaded``; without one a new reference is created and held at ``path``. The name cache counts
+        ``name`` once when ``unique`` (the name was made unique) and once more per holder otherwise. Where
+        ``records_request`` and the resolver records them, the reference records what it asked for (``NameRequest``).
+        A yielding reference is entered under ``name`` with ``model_type`` and the name it was created with (that of
+        ``previous_entry``, the entry it had).
+        """
         if not yields and self._yielding_names:
             self._evict_yielding_reference(name)
-        if reference:
+        if reference is not None:
+            old_name = reference.name
             reference.original_name = original_name
             reference.name = name
             reference.loaded = loaded
             reference.duplicate_name = duplicate_name
-            self._update_reference_name(old_ref_name, name, unique=unique)
+            self._update_reference_name(old_name, name, unique=unique)
         else:
             reference = Reference(
-                path=joined_path,
-                original_name=original_name,
-                name=name,
-                loaded=loaded,
-                duplicate_name=duplicate_name,
+                path=path, original_name=original_name, name=name, loaded=loaded, duplicate_name=duplicate_name
             )
-            self.references[joined_path] = reference
+            self.references[path] = reference
             self._update_reference_name(None, name, unique=unique)
-        if class_name and self._records_name_requests:
+        if records_request and self._records_name_requests:
             reference.__dict__[NAME_REQUEST_KEY] = NameRequest(
                 original_name, singular_name, singular_name_suffix, model_type, preserve_class_name
             )
@@ -2214,19 +2280,6 @@ class ModelResolver:  # noqa: PLR0904
                 model_type,
                 previous_entry.created_name if previous_entry is not None else name,
             )
-        return reference
-
-    def _add_affixed(self, path: str, original_name: str, *, model_type: str) -> Reference:
-        """Add a reference at ``path`` named by ``get_affixed_name`` alone, the legacy mode of ``add``.
-
-        GraphQL names its types this way (row ``legacy-graphql-affix-only``): no uniqueness, no ``--model-name-map``,
-        no naming strategy and no singularization, and a dotted name stays one name.
-        """
-        reference = Reference(
-            path=path, original_name=original_name, name=self.get_affixed_name(original_name, model_type=model_type)
-        )
-        self.references[path] = reference
-        self._update_reference_name(None, reference.name, unique=False)
         return reference
 
     def get(self, path: Sequence[str] | str) -> Reference | None:
