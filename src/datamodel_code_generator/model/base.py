@@ -142,6 +142,7 @@ from datamodel_code_generator.types import (
     NONE,
     DataType,
     Nullable,
+    _hint_null,
     chain_as_tuple,
 )
 
@@ -854,7 +855,8 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         if base:
             type_hint, hint_has_none = data_type.base_type_hint, None
         else:
-            type_hint, hint_has_none = data_type._type_hint_and_null()  # noqa: SLF001
+            type_hint, hint_null = data_type._type_hint_and_null()  # noqa: SLF001
+            hint_has_none = hint_null is not None
 
         if not type_hint:
             return NONE
@@ -871,14 +873,12 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     ) -> FieldNullSource | None:
         """Return why the field writes None around the hint of ``data_type`` (``field_renders_none``).
 
-        Without ``pending_reference_null`` the hint is the one ``type_hint`` renders, whose None ``hint_has_none``
-        gives when the caller rendered it; with it, imports collected without a hint read the type's own None and pass
-        its model's.
+        Whether the hint writes None is the answer of ``types._hint_null``, which ``hint_has_none`` gives when the
+        caller rendered the hint; with ``pending_reference_null``, imports collected without a hint leave the None of
+        the type's model out of it and pass that None on.
         """
         if hint_has_none is None:
-            hint_has_none = (
-                data_type.is_optional if pending_reference_null else data_type._hint_null_source() is not None  # noqa: SLF001
-            )
+            hint_has_none = _hint_null(data_type, reference=not pending_reference_null) is not None
         return _field_imports.field_none_source(
             self, hint_has_none=hint_has_none and data_type.type != ANY, pending_reference_null=pending_reference_null
         )

@@ -83,6 +83,7 @@ from datamodel_code_generator.parser._sites import (
     position_step,
     site_of,
 )
+from datamodel_code_generator.types import _hint_null
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
@@ -1639,7 +1640,7 @@ class GenerationStore:  # noqa: PLR0904
         Render preparation writes rendered nullability once for every node of every model. A None that is not the
         type's own comes from its nullable model (also marked as not the type's own) or from its union's members.
         """
-        if (null := data_type._hint_null_source()) in {None, "own"}:  # noqa: SLF001
+        if (null := _hint_null(data_type)) in {None, "own"}:
             return
         data_type.is_optional = True
         data_type._update_type_null(  # noqa: SLF001

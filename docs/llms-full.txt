@@ -93693,7 +93693,7 @@ attempt; otherwise the refusal stands, for a module L3 cannot rename (the shared
 templates and Jinja2 when a custom template directory is set. Type-alias styles are chosen when the parser is built
 (`model/__init__.py:get_data_model_types`). Rendering a type hint and collecting a field's imports write no
 nullability: `type_hint` renders the None of the type, of the nullable model it names and, for a union, of the members
-whose hints strip it (`types.py:DataType._hint_null_source`), and import collection reads
+whose hints strip it (`types.py:_hint_null`), and import collection reads
 `types.py:DataType.admits_none`. Render preparation writes rendered nullability once, in its first pass
 (`parser/_passes/render_prep.py:finalize_rendered_nullability`, after the module bodies, whose type-alias updates write the
 union operators and quotes the members' hints read), through `types.py:DataType._materialize_render_state`, which marks

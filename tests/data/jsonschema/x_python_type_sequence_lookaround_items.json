@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "codes": {"$ref": "#/definitions/Codes"},
+    "mutable_codes": {"$ref": "#/definitions/MutableCodes"},
+    "listed_codes": {"$ref": "#/definitions/ListedCodes"}
+  },
+  "definitions": {
+    "Codes": {
+      "type": "array",
+      "x-python-type": "Sequence[Optional[str]]",
+      "items": [{"type": "string", "pattern": "^(?=a).*$"}, {"type": "null"}]
+    },
+    "MutableCodes": {
+      "type": "array",
+      "x-python-type": "MutableSequence[Optional[str]]",
+      "items": [{"type": "string", "pattern": "^(?=a).*$"}, {"type": "null"}]
+    },
+    "ListedCodes": {
+      "type": "array",
+      "items": [{"type": "string", "pattern": "^(?=a).*$"}, {"type": "null"}]
+    }
+  }
+}

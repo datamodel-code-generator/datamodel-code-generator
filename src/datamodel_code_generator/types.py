@@ -1232,24 +1232,6 @@ class DataType(_BaseModel):  # noqa: PLR0904
             member_count=len(self.data_types),
         )
 
-    def _hint_null_source(self) -> NullSource | None:
-        """Return why ``type_hint`` writes None: the type's own, its nullable model's, or its members' by their hints.
-
-        A union takes the None of a member whose rendered hint strips it under the union's operator (row M,
-        ``legacy-member-null-from-hint-text``), so the members are rendered only when neither of the others decides.
-        A rendering of the hint answers whether it is None as well (``_type_hint_and_null``).
-        """
-        return _nullability_core().rendered_nullability(
-            own=self.is_optional, reference=self.adds_reference_null, member_nulls=self._iter_hint_member_nulls()
-        )
-
-    def _iter_hint_member_nulls(self) -> Iterator[bool]:
-        """Yield whether the union, as ``type_hint`` renders it, takes the None of its members."""
-        if not self._own_text and self._takes_member_null(_nullability_core()):
-            yield _merge_union_members(
-                self, tuple(type_expr_of(member, base=False) for member in self.data_types)
-            ).takes_null
-
     def _gives_member_null(self, core: ModuleType) -> bool:
         """Return whether the type, as a member of a union, gives the union its None (``member_null``)."""
         verdict = core.member_null(is_none=_is_plain_none(self), is_any=self.type == ANY)
@@ -1307,13 +1289,13 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """Generate the Python type hint string for this DataType."""
         return render_type_expr(_build_type_expr(self, base=False))
 
-    def _type_hint_and_null(self) -> tuple[str, bool]:
-        """Return ``type_hint`` and whether it writes None (``_hint_null_source``), from one rendering.
+    def _type_hint_and_null(self) -> tuple[str, NullSource | None]:
+        """Return ``type_hint`` and why it writes None (``_hint_null``), from one rendering.
 
-        A class that writes its own hint renders it, then the None.
+        A class that writes its own hint renders it, then the None is asked.
         """
         if type(self).type_hint is not DataType.type_hint:
-            return self.type_hint, self._hint_null_source() is not None
+            return self.type_hint, _hint_null(self)
         return _render_apply(cast("TypeApply", _build_type_expr(self, base=False)))
 
     @property
@@ -1490,6 +1472,36 @@ def _build_type_expr(data_type: DataType, *, base: bool) -> TypeExpr:
     return TypeApply(data_type, form, args, base=base)
 
 
+def _hint_null(node: DataType, *, reference: bool = True, member_null: bool | None = None) -> NullSource | None:
+    """Return why the hint of a type writes None: the type's own, its nullable model's, or its members' by their hints.
+
+    The rule is ``rendered_nullability`` with the members answering by their hints (row
+    ``legacy-member-null-from-hint-text``; ``DataType.admits_none`` is the row ``structure``): a union takes the None
+    of a member whose hint strips it under the union's operator, unless a container that the hint writes holds the
+    union. ``member_null`` is that answer of the hint ``_render_apply`` is writing, base hints included; without it
+    the members' hints of ``type_hint`` are merged, when neither the type nor its model gives the None.
+    ``reference`` False leaves the model's None out: the base type of a constrained call names no model, and imports
+    collected without a hint pass that None on as the field's.
+    """
+    core = _nullability_core()
+    return core.rendered_nullability(
+        own=node.is_optional,
+        reference=reference and node.adds_reference_null,
+        member_nulls=_hint_member_nulls(node, core) if member_null is None else (member_null,),
+    )
+
+
+def _hint_member_nulls(node: DataType, core: ModuleType) -> Iterator[bool]:
+    """Yield whether ``type_hint`` merges a None out of its members' hints, for a union that it writes in no container.
+
+    ``type_hint`` writes every container but the tuple, which is no union (``_TYPE_HINT_CONTAINER_ORDER``).
+    """
+    if not node._own_text and node._takes_member_null(core):  # noqa: SLF001
+        yield _merge_union_members(
+            node, tuple(type_expr_of(member, base=False) for member in node.data_types)
+        ).takes_null
+
+
 def render_type_expr(expr: TypeExpr, /) -> str:
     """Write a type expression, through the rendering hooks of the data types that it holds."""
     if isinstance(expr, TypeApply):
@@ -1502,11 +1514,11 @@ def render_type_expr(expr: TypeExpr, /) -> str:
     return node.base_type_hint if expr.base else node.type_hint
 
 
-def _render_apply(expr: TypeApply) -> tuple[str, bool]:
+def _render_apply(expr: TypeApply) -> tuple[str, NullSource | None]:
     """Write what one data type writes: its own text or its form, its container, its quotes, its None or its call.
 
-    Return the text and whether the hint holds the None ``DataType._hint_null_source`` reads: the type's own, its
-    nullable model's, or the one the members of its union hold (``rendered_nullability``).
+    Return the text and why the hint writes None (``_hint_null``). The members' None is the one its union merged from
+    their hints: a container that is written keeps it inside, and the name of an alias of None writes it already.
     """
     node = expr.node
     text = node._own_text  # noqa: SLF001
@@ -1519,7 +1531,8 @@ def _render_apply(expr: TypeApply) -> tuple[str, bool]:
         text = node._get_wrapped_alias_type_hint(text)  # noqa: SLF001
     if (container := expr.container) is not None:
         if member_null:
-            text, member_null = node._optional_hint(text, node.use_union_operator), False  # noqa: SLF001
+            text = node._optional_hint(text, node.use_union_operator)  # noqa: SLF001
+        member_null = merged_null = False
         if expr.mapping:
             key = STR if expr.key is None else render_type_expr(expr.key)
             text = subscript_text(container, (key, text or ANY)) if expr.key is not None or text else container
@@ -1529,22 +1542,12 @@ def _render_apply(expr: TypeApply) -> tuple[str, bool]:
             text = container
     if not expr.base and node._is_forward_reference:  # noqa: SLF001
         text = stable_repr(text) if '"' in text or "\\" in text else f'"{text}"'
-    core = _nullability_core()
-    if (
-        hint_null := core.rendered_nullability(
-            own=node.is_optional,
-            reference=expr.form != "base" and node.adds_reference_null,
-            member_nulls=(member_null,),
-        )
-        is not None
-    ) and text != ANY:
-        return node._optional_hint(text, node.use_union_operator), True  # noqa: SLF001
-    hint_null = hint_null or (merged_null and node._takes_member_null(core))  # noqa: SLF001
+    null = _hint_null(node, reference=expr.form != "base", member_null=merged_null)
+    if null is not None and (member_null or null != "member") and text != ANY:
+        return node._optional_hint(text, node.use_union_operator), null  # noqa: SLF001
     if not expr.base and node.is_func and node.kwargs:
-        return call_text(
-            text, (keyword_argument(k, represent_python_value(v)) for k, v in node.kwargs.items())
-        ), hint_null
-    return text, hint_null
+        return call_text(text, (keyword_argument(k, represent_python_value(v)) for k, v in node.kwargs.items())), null
+    return text, null
 
 
 def _render_form(expr: TypeApply) -> tuple[str, bool, bool]:
