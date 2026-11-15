@@ -27,6 +27,7 @@ from datamodel_code_generator import (
     InputFileType,
     OpenAPIScope,
     SchemaParseError,
+    is_swagger_2,
     snooper_to_methods,
 )
 from datamodel_code_generator._document_reader import as_mapping as _as_mapping
@@ -442,6 +443,16 @@ def _parameter_array(value: YamlValue, path: Sequence[str]) -> list[Any]:
 
 _CONTENT_MEDIA_TYPE_OCTETS_VERSIONS: Final = frozenset({OpenAPIVersion.V30, OpenAPIVersion.V31, OpenAPIVersion.V32})
 
+_INLINE_OBJECT_BODIES_HINT: Final = (
+    "; request or response bodies of the paths or webhooks scope are typed inline, and "
+    "--openapi-as-definitions paths-bodies gives them the models their schema definitions get"
+)
+_SWAGGER_2_HINT: Final = (
+    ': the input is a Swagger 2.0 document ("swagger: 2.0"), and the OpenAPI reader reads OpenAPI 3 '
+    '"components/schemas", not "definitions". Convert it to OpenAPI 3, or read its definitions as JSON Schema '
+    "with --input-file-type jsonschema."
+)
+
 
 @cache
 def _operation_name_resolver(target_python_version: PythonVersion) -> FieldNameResolver:
@@ -531,6 +542,7 @@ class OpenAPIParser(JsonSchemaParser):
         self.openapi_include_info_version: bool = self.config.openapi_include_info_version
         self.openapi_info_version: str | None = None
         self.inline_object_bodies = False
+        self.swagger_2 = False
         if (
             self.openapi_include_paths
             and OpenAPIScope.Paths not in self.open_api_scopes
@@ -601,8 +613,16 @@ class OpenAPIParser(JsonSchemaParser):
         string_keys(components, "component name", self._key_path(components, path))
         return components
 
+    @property
+    def models_not_found_hint(self) -> str:
+        """Return what ends the "Models not found in the input data" message of this parse, or an empty text."""
+        if self.swagger_2:
+            return _SWAGGER_2_HINT
+        return _INLINE_OBJECT_BODIES_HINT if self.inline_object_bodies else ""
+
     def _parse_specification(self, specification: dict[str, Any], path_parts: list[str]) -> None:
         """Parse the loaded OpenAPI specification."""
+        self.swagger_2 |= is_swagger_2(specification)
         if self.openapi_include_info_version:
             self._update_openapi_info_version(specification)
         self._collect_discriminator_schemas()
