@@ -1551,6 +1551,8 @@ openapi/discriminator_msgspec_tagged_unions_inherited.yaml::components.schemas.V
 openapi/discriminator_nested_variant_defaults.yaml::components.schemas.Bird	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_nested_variant_defaults.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_nested_variant_defaults.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_nested_variant_restated_tag/restated_optional_tag.yaml::components.schemas.Animal	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_nested_variant_restated_tag/restated_optional_tag.yaml::components.schemas.Plane	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_nested_variant_schema_default.yaml::components.schemas.Bird	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_nested_variant_schema_default.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_nested_variant_schema_default.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3690,6 +3692,8 @@ openapi/discriminator_msgspec_tagged_unions_inherited.yaml::components.schemas.V
 openapi/discriminator_nested_variant_defaults.yaml::components.schemas.Bird	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_nested_variant_defaults.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_nested_variant_defaults.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_nested_variant_restated_tag/restated_optional_tag.yaml::components.schemas.Animal	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_nested_variant_restated_tag/restated_optional_tag.yaml::components.schemas.Plane	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_nested_variant_schema_default.yaml::components.schemas.Bird	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_nested_variant_schema_default.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_nested_variant_schema_default.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

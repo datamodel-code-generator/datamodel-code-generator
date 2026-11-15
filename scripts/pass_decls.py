@@ -882,7 +882,8 @@ SETTLE_DISCRIMINATED_UNIONS = PassDecl(
     summary=(
         "After every module is processed: writes no `discriminator=` for the union of a lone `$ref` variant that has "
         "no tag, which a union of any module may still write into it, nor for a lone variant that is no model (a "
-        "scalar, `Any` or None, as a collapsed alias or an inline schema leaves it), nor for a union that takes a "
+        "scalar, `Any` or None, as a collapsed alias or an inline schema leaves it), nor for a union a nested choice "
+        "of which gives it a variant without the tag in the field its class has, nor for a union that takes a "
         "root model, or a type alias, with a default as a variant, nor for a union two of whose choices hold one tag "
         "in the tag fields that were written; the last two also where `--collapse-root-models` inlines the union "
         "into the items of a list, where a union whose choices do not all carry the tag it names takes the name the "

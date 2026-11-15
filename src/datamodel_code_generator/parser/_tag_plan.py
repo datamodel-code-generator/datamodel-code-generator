@@ -211,13 +211,21 @@ ValidityMode: TypeAlias = Literal["source-name", "python-or-original-name"]
 """Which names a union's variants are checked by: those the schema gives their tag fields, or their Python names."""
 
 SiteStatus: TypeAlias = Literal[
-    "tagged", "dropped-any", "dropped-invalid", "dropped-lone-untagged", "dropped-root-default", "dropped-shared-tag"
+    "tagged",
+    "dropped-any",
+    "dropped-invalid",
+    "dropped-lone-untagged",
+    "dropped-nested-untagged",
+    "dropped-root-default",
+    "dropped-shared-tag",
 ]
 """Whether a union keeps its discriminator, else why it is dropped.
 
 * ``dropped-any``: a variant admits any value.
 * ``dropped-invalid``: a variant is no model that takes a tag, has no tag the backend reads as one, or shares a tag.
 * ``dropped-lone-untagged``: the one variant a ``$ref`` names, or one its root models reach, has no tag Pydantic reads.
+* ``dropped-nested-untagged``: a variant a nested choice gives the union has no tag Pydantic reads in the field its
+  class has.
 * ``dropped-root-default``: a variant is a root model, or a type alias, whose root has a default.
 * ``dropped-shared-tag``: two choices of the union hold one tag in the tag fields that were written.
 """
@@ -1524,7 +1532,9 @@ def settle_site(site: UnionSite) -> SiteStatus:
     The one variant a union names by its ``$ref`` alone, or that the ``$ref`` reaches through root models, takes no tag
     from L5, so it needs a tag field of ``Literal`` values; it must also be a model at all. The choices of the union
     are then asked as those of a union inlined into a type are (``_settle_choices``): no root with a default, no tag
-    that two of them hold in the tag fields that were written.
+    that two of them hold in the tag fields that were written. Last, a variant that a nested choice gives the union
+    keeps the tag fields it has, of which L5 wrote the root-most (``legacy-root-most-first``), so it needs the tag in
+    the field its class has (``_variant_carries_tag``, nearest first), which Pydantic reads.
     """
     field_ = site.field
     lone = tag_capabilities(type(site.model), type(field_)).writes_argument and not field_.data_type.data_types
@@ -1540,7 +1550,12 @@ def settle_site(site: UnionSite) -> SiteStatus:
         )
     ):
         return "dropped-lone-untagged"
-    return _settle_choices(variants, wrappers, site.property_name)
+    if (status := _settle_choices(variants, wrappers, site.property_name)) == "tagged" and not all(
+        can_update or _variant_carries_tag(data_type, site.property_name, "nearest-first")
+        for data_type, can_update, _ in variants
+    ):
+        return "dropped-nested-untagged"
+    return status
 
 
 def iter_unbuildable_inlined_unions(field_: DataModelFieldBase) -> Iterator[tuple[DataType, str | None]]:
