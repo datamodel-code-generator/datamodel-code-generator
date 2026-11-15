@@ -1516,11 +1516,25 @@ target-python-version = "3.10"
         assert_error_message(capsys, "Profile 'nonexistent' not found in pyproject.toml")
 
 
+# Black 24.2.0 (its changelog, "Configuration") looks for the project root past a pyproject.toml without [tool.black].
+BLACK_SEARCHES_PAST_PYPROJECT_WITHOUT_BLACK_TABLE = version.parse(black.__version__) >= version.parse("24.2.0")
+BLACK_ARGS = ["--input", "schema.json", "--ignore-pyproject", "--formatters", "black"]
+
+
 @pytest.mark.parametrize(
     ("args", "project_dir"),
     [
         pytest.param(["--input", "schema.json"], ".", id="project-configuration"),
-        pytest.param(["--input", "schema.json", "--ignore-pyproject", "--formatters", "black"], "sub", id="black"),
+        pytest.param(BLACK_ARGS, ".", id="black"),
+        pytest.param(
+            BLACK_ARGS,
+            "sub/inner",
+            id="black-ancestor",
+            marks=pytest.mark.skipif(
+                not BLACK_SEARCHES_PAST_PYPROJECT_WITHOUT_BLACK_TABLE,
+                reason="Installed black stops at a pyproject.toml without [tool.black]",
+            ),
+        ),
         pytest.param(["--all-jobs"], ".", id="jobs"),
     ],
 )
@@ -1531,10 +1545,11 @@ def test_invalid_pyproject_toml_is_a_configuration_error(
     (tmp_path / "pyproject.toml").write_text(
         '[tool.datamodel-codegen]\ninput = "schema.json\noutput = "model.py"\n', encoding="utf-8"
     )
-    (tmp_path / "schema.json").write_text('{"type": "object", "properties": {"name": {"type": "string"}}}')
-    (tmp_path / "sub").mkdir()
+    (tmp_path / "sub" / "inner").mkdir(parents=True)
     (tmp_path / "sub" / "pyproject.toml").write_text("[tool.other]\nkey = 1\n", encoding="utf-8")
-    (tmp_path / "sub" / "schema.json").write_text((tmp_path / "schema.json").read_text())
+    (tmp_path / project_dir / "schema.json").write_text(
+        '{"type": "object", "properties": {"name": {"type": "string"}}}'
+    )
 
     with chdir(tmp_path / project_dir):
         run_main_with_args(
