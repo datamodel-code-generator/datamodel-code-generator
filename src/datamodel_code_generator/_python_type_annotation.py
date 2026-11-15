@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal, TypeAlias
+from typing import TYPE_CHECKING, Literal, TypeAlias, TypeGuard
 
 from datamodel_code_generator._copy_on_change import unchanged
 from datamodel_code_generator._module_paths import dotted_name
@@ -359,9 +359,19 @@ def is_union_python_type_expr(expression: PythonTypeExpr) -> bool:
     )
 
 
-def is_literal_python_type_expr(expression: PythonTypeExpr) -> bool:
-    """Return whether an expression subscripts ``Literal``, by its base's last name."""
-    return isinstance(expression, PythonTypeSubscript) and python_type_expr_base_name(expression) == "Literal"
+def _is_literal_base(base: PythonTypeExpr) -> bool:
+    """Return whether a subscript of ``base`` is a ``Literal``: ``base``, not a subscript, names it by its last name.
+
+    The codec admits string constants only in such a subscript; the walks of ``Literal`` values read the same ones.
+    This is a security gate: elsewhere a string constant would be written as a quoted forward reference, which
+    Pydantic evaluates with ``eval()`` in ``model_rebuild()``, a code-execution sink. It must never accept more.
+    """
+    return not isinstance(base, PythonTypeSubscript) and python_type_expr_base_name(base) == "Literal"
+
+
+def is_literal_python_type_expr(expression: PythonTypeExpr) -> TypeGuard[PythonTypeSubscript]:
+    """Return whether an expression subscripts ``Literal`` (``_is_literal_base``)."""
+    return isinstance(expression, PythonTypeSubscript) and _is_literal_base(expression.base)
 
 
 _NameForm: TypeAlias = Literal["terminal", "qualified", "head"]
@@ -488,7 +498,7 @@ def iter_literal_members(expression: PythonTypeExpr) -> Iterator[PythonTypeExpr]
 def literal_values(arguments: tuple[PythonTypeExpr, ...]) -> Iterator[PythonTypeExpr]:
     """Yield the values of a ``Literal``, those of a ``Literal`` it nests included."""
     for argument in arguments:
-        if isinstance(argument, PythonTypeSubscript) and is_literal_python_type_expr(argument):
+        if is_literal_python_type_expr(argument):
             yield from literal_values(argument.arguments)
         else:
             yield argument
@@ -509,7 +519,7 @@ def _literal_values_held(expression: PythonTypeExpr) -> Iterator[PythonTypeExpr]
 
     An ``Annotated`` type holds the values of the type it annotates.
     """
-    if isinstance(expression, PythonTypeSubscript) and is_literal_python_type_expr(expression):
+    if is_literal_python_type_expr(expression):
         yield from literal_values(expression.arguments)
     elif _annotation_metadata(expression):
         yield from _literal_values_held(python_type_expr_arguments(expression)[0])
@@ -553,7 +563,7 @@ def literal_values_as_text(expression: PythonTypeExpr) -> PythonTypeExpr:
     ``Literal`` are flattened, and a value equal to an earlier one of its ``Literal`` is dropped. The metadata of an
     ``Annotated`` type stay as written.
     """
-    if isinstance(expression, PythonTypeSubscript) and is_literal_python_type_expr(expression):
+    if is_literal_python_type_expr(expression):
         return PythonTypeSubscript(
             expression.base,
             tuple(
@@ -591,7 +601,7 @@ def write_refused_literal_values(
     def write(node: PythonTypeExpr, *, held: bool = True) -> PythonTypeExpr:
         if held and bytes in refused and _holds_bytes_and_str(node):
             return node
-        if isinstance(node, PythonTypeSubscript) and is_literal_python_type_expr(node):
+        if is_literal_python_type_expr(node):
             members = tuple(literal_values(node.arguments))
             written = [m for m in members if isinstance(m, PythonTypeLiteralValue) and type(m.value) in refused]
             if not written:
