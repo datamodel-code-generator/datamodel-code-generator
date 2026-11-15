@@ -2926,8 +2926,9 @@ def settle_discriminated_unions(parser: ModulesHost, run: ModulesRun) -> None:
 
     The variants a union lists get their tags from ``apply_discriminator_type``, but not the one variant a union names
     alone by its ``$ref``, and a union of any module may still tag that variant, so a variant without a tag is final
-    only once every module is processed. The tag fields the classes of the variants have are final then too, so a union
-    two of whose choices hold one tag in them, which Pydantic refuses, is found here, also where
+    only once every module is processed. The tag fields the classes of the variants have are final then too, so the
+    unions Pydantic refuses for them are found here: one a nested choice of which gives it a variant without the tag in
+    the field its class has, and one two of whose choices hold one tag in them, the latter also where
     ``--collapse-root-models`` inlined it into the items of a list. Such an inlined union took its ``discriminator=``
     before the site of its root model wrote the name its variants share, or dropped it, which are final here too: one
     whose choices do not all carry the tag it names takes the decision of that site. The tag plan decides

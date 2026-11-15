@@ -29,6 +29,20 @@ Under `--collapse-root-models`, a discriminated union that is a named schema and
 +pets: list[Annotated[Cat | Dog, Field(discriminator='Kind_1')]] | None = None
 ```
 
+### A union has no `discriminator=` where the class of a nested variant has an optional tag field (unreleased) { #discriminator-nested-variant-restated-tag }
+
+A discriminated union that lists a `oneOf` grouping a variant wrote that variant's tag as the default of the tag field of the root-most parent that declares it. Where a nearer parent declares the same optional `const` tag again, the class of the variant has that parent's field, which stays optional, and Pydantic refused the union when the module was imported (`needs field 'kind' to be of type Literal`, #6875); under `--use-enum-values-in-discriminator` the same happened where such a variant keeps an optional tag typed by its Enum. Such a union is now written as a plain union, without `discriminator=`; the variants and their tag fields are unchanged, so only the module that holds the union changes. A module that imported before is unchanged.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`
+- **Keep the old output:** The previous module failed at import; nothing restores it.
+- **Pull requests and issues:** [#6875](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6875)
+- **Source:** the release notes
+
+```diff
+-thing: Young | Plane | None = Field(None, discriminator='kind')
++thing: Young | Plane | None = None
+```
+
 ### A union whose variants were written with one tag value has no `discriminator=` (unreleased) { #discriminator-shared-written-tag }
 
 A Pydantic union whose variants ended up with the same value in their tag fields was written with `discriminator=`, which Pydantic refuses when the module is imported (`Value ... mapped to multiple choices`). It happened where a union lists a nested `oneOf` beside the parent of the variant it groups, which has its parent's tag (#6876), also where `--collapse-root-models` writes that union as the items of a list, and under `--use-enum-values-in-discriminator` where the discriminator property is named like the Enum that types it and the variants inherit it, so that every variant takes every member (#6865). The union is now written without `discriminator=`; the tag fields of the variants are unchanged. For #6865 this means that the module imports: its variants still have the tag field with every member of the Enum, and a parsed tag is the text, not the member. Output that imported before is unchanged.

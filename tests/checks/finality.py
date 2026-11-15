@@ -370,6 +370,10 @@ class KnownWrite:
 _IMPORTS_CORRECT_WITNESS: Final = (
     "--input tests/data/jsonschema/imports_correct --output-model-type pydantic_v2.BaseModel --formatters builtin"
 )
+_NESTED_TAG_WITNESS: Final = (
+    "--input tests/data/openapi/discriminator_nested_variant_restated_tag/restated_optional_tag_across_modules.yaml "
+    "--input-file-type openapi --formatters builtin"
+)
 
 KNOWN_WRITES: tuple[KnownWrite, ...] = (
     KnownWrite(
@@ -385,6 +389,12 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
     ),
     KnownWrite(
         "apply_discriminator_type", Rule.OTHER_MODULE, "DataModelFieldBase.required", _IMPORTS_CORRECT_WITNESS, "RP17"
+    ),
+    KnownWrite(
+        "apply_discriminator_type", Rule.OTHER_MODULE, "DataModelFieldBase.default", _NESTED_TAG_WITNESS, "RP17"
+    ),
+    KnownWrite(
+        "apply_discriminator_type", Rule.OTHER_MODULE, "DataModelFieldBase.nullable", _NESTED_TAG_WITNESS, "RP17"
     ),
     KnownWrite(
         "apply_discriminator_type",
