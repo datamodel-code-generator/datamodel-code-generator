@@ -220,12 +220,6 @@ alias = 1
 ["src/datamodel_code_generator/parser/_passes/modules.py"."set_default_enum_member"]
 alias = 1
 
-["src/datamodel_code_generator/parser/_passes/render_prep.py"."_flatten_union_members"]
-data_types = 1
-
-["src/datamodel_code_generator/parser/_passes/render_prep.py"."defer_recursive_containers"]
-use_union_operator = 1
-
 ["src/datamodel_code_generator/parser/_rw_split.py"."prepare_required_inherited_field"]
 '__dict__.pop(_RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY)' = 1
 

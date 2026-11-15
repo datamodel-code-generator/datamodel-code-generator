@@ -94973,7 +94973,8 @@ the counted ones. When the scan learns to find a write a witness covers, the wit
 Current behaviour that a decision reading the index must allow for:
 
 - Index queries answer over the parsed universe: the models parsers registered (`Parser.results`) plus
-  redirected edges, removed ones included, not the module lists that L3–L6 edit. A model a later pass builds (a reuse
+  redirected edges, removed ones included, not the module lists that L3–L6 edit (in place, through
+  `set_module_models`, which notes nothing: nothing the store derives reads them). A model a later pass builds (a reuse
   subclass, the merged inherited Enum, the generic base class) is registered in the emitted universe only, and
   `retire_model` (`replace_model` for a model built in another's place) records each model that leaves the output
   (duplicates, reused and overridden models, unused models leaving their written module list). Under
@@ -94999,10 +95000,10 @@ Current behaviour that a decision reading the index must allow for:
   type and raw schema default before it is installed (`_copy_resolved_inherited_field`, `apply_override_to_field`)
   stay outside the store.
 - Most fact writes after parsing still bypass the store; `scripts/generation_store_allowlist.toml` lists them by
-  function. The checker cannot see writes through a model-list variable (`models.sort()` on a module's list), writes
-  to module imports (`ModuleContext.imports`, which go through the import ledger and its runtime check instead, see
-  L6 above), or writes in model methods that the hook closure does not reach; the runtime guard sees the last kind, and
-  the allowlist lists them with a witness.
+  function. The checker cannot see writes through a model-list variable (`models.sort()` on a module's list, which
+  changes through `set_module_models` instead), writes to module imports (`ModuleContext.imports`, which go through
+  the import ledger and its runtime check instead, see L6 above), or writes in model methods that the hook closure
+  does not reach; the runtime guard sees the last kind, and the allowlist lists them with a witness.
 - Dedup keys (cached on the model, read through `ModelShapes.key`) and model shapes are separate caches, not store facts.
 
 ### Placement Guide

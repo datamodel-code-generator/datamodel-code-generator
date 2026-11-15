@@ -413,7 +413,7 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
                 models_to_remove.add(duplicate)
 
     if models_to_remove:
-        models[:] = [m for m in models if m not in models_to_remove]
+        parser._graph_builder.set_module_models(models, [m for m in models if m not in models_to_remove])  # noqa: SLF001
 
 
 def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataModel]) -> None:
@@ -537,7 +537,8 @@ def replace_typed_map_value_duplicates(
         duplicate_module, duplicate_model, _, canonical = duplicate
         if groups.yields_to(duplicate_model, canonical):
             merge_duplicate(parser, duplicate_model, canonical, TREE_SCOPE, keeps_duplicate_tags=False)
-            module_lists[duplicate_module].remove(duplicate_model)
+            models = module_lists[duplicate_module]
+            parser._graph_builder.set_module_models(models, [m for m in models if m is not duplicate_model])  # noqa: SLF001
         else:
             remaining.append(duplicate)
     return remaining
@@ -636,7 +637,7 @@ def create_shared_module_from_duplicates(  # noqa: PLR0912
     for module, models in module_models:
         to_remove = models_to_remove.get(module)
         if to_remove:
-            models[:] = [m for m in models if m not in to_remove]
+            parser._graph_builder.set_module_models(models, [m for m in models if m not in to_remove])  # noqa: SLF001
 
     if reference_models is not None:
         # Relocation can introduce forward references after the initial sort.
