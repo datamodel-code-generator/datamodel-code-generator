@@ -500,6 +500,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._types import JSONSchemaParserConfigDict
     from datamodel_code_generator.config import JSONSchemaParserConfig
     from datamodel_code_generator.parser._inherited_schemas import (
+        InheritedOrderRow,
         InheritedParentRow,
         ModelDeclarations,
         _BaseList,
@@ -1468,6 +1469,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         (``_inherited_schemas.inherited_schema_parents``).
         """
         return "class-bases" if self.config.read_allof_parents_in_mro_order else "legacy-document-order"
+
+    @property
+    def _inherited_declaration_row(self) -> InheritedOrderRow:
+        """What is read to find the schema an inherited schema declares a property as: the class order under the option.
+
+        Row ``c3`` under --read-inherited-property-schemas-in-mro-order, else row ``legacy-dfs-inline-first``
+        (``_inherited_schemas.get_inherited_field_schema``).
+        """
+        return "c3" if self.config.read_inherited_property_schemas_in_mro_order else "legacy-dfs-inline-first"
 
     @property
     def _pointer_slash_names(self) -> SlashNames:

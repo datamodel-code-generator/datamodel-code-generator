@@ -60,6 +60,7 @@ How do I convert enums to Literal types?
 - `--no-read-allof-parents-in-mro-order`
 - `--no-read-const-beside-enum`
 - `--no-read-format-as-annotation`
+- `--no-read-inherited-property-schemas-in-mro-order`
 - `--no-read-kubernetes-extensions`
 - `--no-read-unevaluated-properties`
 - `--no-type-overrides-replace-whole-type`
@@ -91,6 +92,7 @@ How do I convert enums to Literal types?
 - `--read-allof-parents-in-mro-order`: Read the allOf parents of every inherited schema in the order of the clas...
 - `--read-const-beside-enum`: Read a `const` beside an `enum` as JSON Schema does.
 - `--read-format-as-annotation`: Read the format of a schema as an annotation, as JSON Schema does.
+- `--read-inherited-property-schemas-in-mro-order`: Give a required inherited property the schema its allOf pare...
 - `--read-kubernetes-extensions`: Read the Kubernetes schema extensions as the keywords they stand for.
 - `--read-unevaluated-properties`: Read a schema-valued `unevaluatedProperties` as `additionalProperties`.
 - `--strict-types`: Enable strict type validation for specified Python types.
@@ -840,6 +842,19 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         and format: binary stays bytes. Without it each known
                         format selects a type (EmailStr, AwareDatetime, UUID,
                         Decimal, SecretStr, Base64Str, ...), as in 0.96.0
+  --read-inherited-property-schemas-in-mro-order, --no-read-inherited-property-schemas-in-mro-order
+                        With --intersect-combined-schema-keywords, give a
+                        property that a model only makes required the schema
+                        its allOf parents declare, read in the order of the
+                        class bases from the allOf members the model's own
+                        fields are read from (an alias member followed to the
+                        schema it names, the keywords beside a $ref member
+                        read with it), so a model written before its parents
+                        takes the field it takes when written after them;
+                        without it the declaration is looked up in the allOf
+                        members as written, and under --intersect-combined-
+                        schema-keywords such a field can lose its description
+                        or its constraints or become Any, as in 0.96.0
   --read-kubernetes-extensions, --no-read-kubernetes-extensions
                         Read the Kubernetes schema extensions as the keywords
                         they stand for: x-kubernetes-int-or-string (and the

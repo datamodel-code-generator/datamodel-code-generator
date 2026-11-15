@@ -120,6 +120,7 @@ OPT_IN_OPTIONS_20261113: tuple[str, ...] = (
     "extensible",
     "--infer-union-discriminators",
     "--read-kubernetes-extensions",
+    "--read-inherited-property-schemas-in-mro-order",
 )
 """The options the 20261113 presets set beyond the 20261112 presets."""
 
@@ -493,6 +494,12 @@ CASES_20261113: tuple[pytest.ParameterSet, ...] = (
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="read-kubernetes-extensions",
     ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "inherited_property_schemas" / "sibling.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-inherited-property-schemas-in-mro-order",
+    ),
 )
 """The inputs each opt-in option of the 20261113 presets changes."""
 
@@ -790,6 +797,13 @@ def test_preset_sets_opt_in_option(
             "--read-kubernetes-extensions",
             "--no-read-kubernetes-extensions",
             id="read-kubernetes-extensions",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "inherited_property_schemas" / "sibling.json",
+            [],
+            "--read-inherited-property-schemas-in-mro-order",
+            "--no-read-inherited-property-schemas-in-mro-order",
+            id="read-inherited-property-schemas-in-mro-order",
         ),
     ],
 )

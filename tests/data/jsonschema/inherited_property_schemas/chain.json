@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/P1"
+        },
+        {
+          "type": "object",
+          "required": [
+            "count"
+          ]
+        }
+      ]
+    },
+    "P1": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/P2"
+        }
+      ]
+    },
+    "P2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/P3"
+        }
+      ]
+    },
+    "P3": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Alias"
+        }
+      ]
+    },
+    "Alias": {
+      "$ref": "#/$defs/Target",
+      "description": "a"
+    },
+    "Target": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "child": {
+      "$ref": "#/$defs/Child"
+    }
+  }
+}
