@@ -1050,14 +1050,16 @@ def _add_python_type_info(  # ruff: ignore[too-many-arguments]
 def _typed_fields_family(tp: object) -> _OutputModelFamily | None:
     """Return the family of a class with typed fields that is no Pydantic model, None for anything else.
 
-    Such a class is a dataclass (one of Pydantic is of the Pydantic family, and an instance reads as its class does),
-    a TypedDict or a msgspec Struct.
+    Such a class is a dataclass (one of Pydantic is of the Pydantic family), a TypedDict or a msgspec Struct. An
+    instance of one is no class, as an instance of a Pydantic model is none.
     """
+    if not isinstance(tp, type):
+        return None
     if is_dataclass(tp):
         return _OutputModelFamily.PYDANTIC if hasattr(tp, "__pydantic_fields__") else _OutputModelFamily.DATACLASS
-    if hasattr(tp, "__required_keys__") and isinstance(tp, type):
+    if hasattr(tp, "__required_keys__"):
         return _OutputModelFamily.TYPEDDICT
-    if hasattr(tp, "__struct_fields__") and isinstance(tp, type):
+    if hasattr(tp, "__struct_fields__"):
         return _OutputModelFamily.MSGSPEC
     return None
 
