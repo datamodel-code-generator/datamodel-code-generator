@@ -2191,6 +2191,16 @@ def enum_discriminator_members(enum_source: Enum, values: Iterable[Discriminator
     )
 
 
+def enum_member_literal_values(data_type: DataType) -> tuple[Enum, list[Any]] | None:
+    """Return the Enum whose members a type writes as ``Literal`` values, with the values of those members, or None."""
+    if (reference := data_type._enum_member_literal_reference) is None or not isinstance(  # noqa: SLF001
+        enum_source := reference.source, Enum
+    ):
+        return None
+    member_values = {member.name: enum_source.get_member(member).value for member in enum_source.fields}
+    return enum_source, [member_values[member] for _, member in data_type.enum_member_literals]
+
+
 def _get_discriminator_field_value(
     discriminator_field: DataModelFieldBase, site: FieldTagSite = "variant-field"
 ) -> DiscriminatorValue | None:

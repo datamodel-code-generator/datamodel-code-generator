@@ -11,13 +11,13 @@ those a variant inherits in an order of :data:`TagFieldOrder` (``_inherited_tag_
 (:func:`site_validity`), the Python name of its tag field (:func:`site_names`, :func:`shared_site_names`), the tags of a
 variant (:func:`tags_of_variant`, :class:`UnionView`), the form each tag field takes (:func:`iter_tag_field_decisions`),
 which msgspec unions take struct tags (:func:`tag_msgspec_unions`) and which ``discriminator=`` Pydantic cannot build
-(:func:`settle_site`, :func:`iter_root_default_unions`), and at L6 what becomes of the msgspec structs below tagged
-bases (:func:`iter_struct_tag_decisions`). The passes keep their slots: they call these where they read the facts
-before, write the result through the store, in the order they read it, as a variant may read a tag field that the write
-for an earlier variant changed, and record it in :class:`TagPlan`, which holds what the tag passes of one parse
-recorded; :meth:`TagPlan.reset` forgets it at the start of L4. The class constants of a backend these decisions read are
-the rows of :class:`TagCapabilities`. The L3 reuse keys (:func:`declared_union_tags`) and the L4 layout prediction
-(:func:`possible_tag_names`) are read here too.
+(:func:`settle_site`, :func:`iter_unbuildable_inlined_unions`), and at L6 what becomes of the msgspec structs below
+tagged bases (:func:`iter_struct_tag_decisions`). The passes keep their slots: they call these where they read the
+facts before, write the result through the store, in the order they read it, as a variant may read a tag field that
+the write for an earlier variant changed, and record it in :class:`TagPlan`, which holds what the tag passes of one
+parse recorded; :meth:`TagPlan.reset` forgets it at the start of L4. The class constants of a backend these decisions
+read are the rows of :class:`TagCapabilities`. The L3 reuse keys (:func:`declared_union_tags`) and the L4 layout
+prediction (:func:`possible_tag_names`) are read here too.
 
 Each pass keeps its slot in the pipeline, so today's timing stays; these rows name it until a decision after the module
 loop replaces them:
@@ -52,11 +52,11 @@ Four readings differ from the rule of their home where output depends on it; the
 from __future__ import annotations
 
 import re
-from collections import defaultdict, deque
+from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import field
 from functools import cache
-from itertools import chain, islice
+from itertools import chain, combinations, islice
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast, final
 
 from typing_extensions import Protocol
@@ -104,6 +104,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _tag_field_matches,
     enum_discriminator_literal,
     enum_discriminator_members,
+    enum_member_literal_values,
     union_structs,
 )
 from datamodel_code_generator.parser._passes.render_prep import validates_structured_default
@@ -160,9 +161,9 @@ __all__ = [
     "field_namer",
     "has_any_variant",
     "has_reused_variant",
-    "iter_root_default_unions",
     "iter_struct_tag_decisions",
     "iter_tag_field_decisions",
+    "iter_unbuildable_inlined_unions",
     "iter_union_sites",
     "located_mapping",
     "mapped_struct_tag",
@@ -207,7 +208,7 @@ ValidityMode: TypeAlias = Literal["source-name", "python-or-original-name"]
 """Which names a union's variants are checked by: those the schema gives their tag fields, or their Python names."""
 
 SiteStatus: TypeAlias = Literal[
-    "tagged", "dropped-any", "dropped-invalid", "dropped-lone-untagged", "dropped-root-default"
+    "tagged", "dropped-any", "dropped-invalid", "dropped-lone-untagged", "dropped-root-default", "dropped-shared-tag"
 ]
 """Whether a union keeps its discriminator, else why it is dropped.
 
@@ -215,6 +216,7 @@ SiteStatus: TypeAlias = Literal[
 * ``dropped-invalid``: a variant is no model that takes a tag, has no tag the backend reads as one, or shares a tag.
 * ``dropped-lone-untagged``: the one variant a ``$ref`` names, or one its root models reach, has no tag Pydantic reads.
 * ``dropped-root-default``: a variant is a root model, or a type alias, whose root has a default.
+* ``dropped-shared-tag``: two choices of the union hold one tag in the tag fields that were written.
 """
 
 MsgspecOutcome: TypeAlias = Literal["applied", "deferred", "untaggable", "related"]
@@ -1031,9 +1033,10 @@ def _written_enum_member_keys(
 
     A member is its value where members equal their values at runtime, as Pydantic compares discriminator choices: those
     of an Enum with a value base (``Enum.value_base``: an ``IntEnum``, a ``StrEnum``, an Enum that subclasses its value
-    type), else only itself (its Enum and its value), and also its value where the value is written beside it
-    (``writes_member_values``). A variant tagged by no member takes every member, so its tags are their values whatever
-    the Enum compares. A tag field that already is the one ``Literal`` of the variant's tag is kept as it is.
+    type), else only itself (its Enum and its value; ``_member_choice_keys``), and also its value where the value is
+    written beside it (``writes_member_values``). A variant tagged by no member takes every member, so its tags are
+    their values whatever the Enum compares. A tag field that already is the one ``Literal`` of the variant's tag is
+    kept as it is.
     """
     literal_kept = any(
         len(literals := field_.data_type.literals) == 1 and same_tag(literals[0], values[0], "legacy-python-equality")
@@ -1042,15 +1045,21 @@ def _written_enum_member_keys(
     if literal_kept or (enum_source := _find_tag_enum(variant, site_reading)) is None:
         return []
     tags = enum_discriminator_members(enum_source, values)
-    values_of_members = [tag_key(member.value, "legacy-python-equality") for member in tags.members]
-    if enum_source.value_base is not None:
-        return values_of_members
-    keys: list[object] = [(id(enum_source), v) for v in values_of_members]
-    return (
-        [*keys, *values_of_members]
-        if tags.rule == "all-members" or writes_member_values(variant, enum_source)
-        else keys
-    )
+    member_values = [member.value for member in tags.members]
+    keys = _member_choice_keys(enum_source, member_values)
+    if enum_source.value_base is None and (tags.rule == "all-members" or writes_member_values(variant, enum_source)):
+        keys += (tag_key(value, "legacy-python-equality") for value in member_values)
+    return keys
+
+
+def _member_choice_keys(enum_source: Enum, member_values: Iterable[Any]) -> list[object]:
+    """Return the keys of the choices that members of an Enum make, as Pydantic compares discriminator choices.
+
+    A member is its value where members equal their values at runtime (``Enum.value_base``), else only itself: its
+    Enum and its value.
+    """
+    values = [tag_key(value, "legacy-python-equality") for value in member_values]
+    return values if enum_source.value_base is not None else [(id(enum_source), value) for value in values]
 
 
 @final
@@ -1449,13 +1458,69 @@ def _root_writes_default(wrapper: DataModel) -> bool:
     return call_default or wrapper._field_assignment_facts(root).has_default  # noqa: SLF001
 
 
+def _written_tag_keys(variant: DataModel, field_name: str) -> list[object]:
+    """Return the keys of the tags Pydantic reads in the tag field ``field_name`` that the class of a variant has.
+
+    The field is the variant's own, else the nearest one it inherits. Its ``Literal`` values are its tags, through the
+    unions and the root models its type names: the values, the Enum members (``_member_choice_keys``) and the values
+    written beside them.
+    """
+    tag_field = next(_tag_fields_of(variant, field_name, "python-name"), None)
+    keys: list[object] = []
+    for leaf, _, _ in _iter_discriminator_data_types(() if tag_field is None else [tag_field.data_type]):
+        keys += (tag_key(value, "legacy-python-equality") for value in (*leaf.literals, *leaf.enum_member_tag_values))
+        if (members := enum_member_literal_values(leaf)) is not None:
+            keys += _member_choice_keys(*members)
+    return keys
+
+
+def _shares_written_tag(variants: Iterable[tuple[DataType, bool, int]], field_name: str) -> bool:
+    """Return whether two choices of a union hold one tag in the tag fields that were written, which Pydantic refuses.
+
+    Pydantic maps each value of a choice's tag field to that choice and raises where a value is mapped to two
+    (``Value ... mapped to multiple choices``). A choice is a model the union lists, or a root model, or a type alias,
+    with every variant its root reaches (the owner ``_iter_discriminator_data_types`` gives), and two values are one
+    where their keys are (``tag_key``, ``_member_choice_keys``). One model that two choices hold, a root model, or a
+    type alias, of a model and that model beside it, is no clash here: a type alias written as a plain alias is the
+    model itself and Pydantic builds that union, and a later pass still decides which aliases are written so
+    (``write_plain_aliases_for_recursive_models``), so such a union keeps what L5 decided.
+    """
+    holders: defaultdict[object, set[tuple[int, int]]] = defaultdict(set)
+    for data_type, _, owner in variants:
+        if data_type.reference and isinstance(source := data_type.reference.source, DataModel):
+            for key in _written_tag_keys(source, field_name):
+                holders[key].add((owner, id(source)))
+    return any(
+        owner != other_owner and model != other_model
+        for held in holders.values()
+        for (owner, model), (other_owner, other_model) in combinations(held, 2)
+    )
+
+
+def _settle_choices(
+    variants: Iterable[tuple[DataType, bool, int]], wrappers: Iterable[DataModel], field_name: str
+) -> SiteStatus:
+    """Return whether Pydantic can build a ``discriminator=`` over the choices of a union, else why it is dropped.
+
+    ``variants`` and ``wrappers`` are what ``_iter_discriminator_data_types`` gives for the members of the union, a
+    field's own or one inlined into its type, and ``field_name`` is the tag field the argument names. No variant may
+    be a root model, or a type alias, whose root has a default, however deep the root models it names reach: the
+    default makes the schema of the root a ``default`` schema, which no tagged union holds. No two choices may hold one
+    tag in the tag fields that were written (``_shares_written_tag``): the check before the writes
+    (:func:`site_validity`) reads the tags by its own names, which need not be those the classes end up with.
+    """
+    if any(map(_root_writes_default, wrappers)):
+        return "dropped-root-default"
+    return "dropped-shared-tag" if _shares_written_tag(variants, field_name) else "tagged"
+
+
 def settle_site(site: UnionSite) -> SiteStatus:
     """Return whether Pydantic can build the ``discriminator=`` of a union once every module wrote its tags.
 
     The one variant a union names by its ``$ref`` alone, or that the ``$ref`` reaches through root models, takes no tag
-    from L5, so it needs a tag field of ``Literal`` values; it must also be a model at all. No variant may be a root
-    model, or a type alias, whose root has a default, however deep the root models it names reach: the default makes
-    the schema of the root a ``default`` schema, which no tagged union holds.
+    from L5, so it needs a tag field of ``Literal`` values; it must also be a model at all. The choices of the union
+    are then asked as those of a union inlined into a type are (``_settle_choices``): no root with a default, no tag
+    that two of them hold in the tag fields that were written.
     """
     field_ = site.field
     lone = tag_capabilities(type(site.model), type(field_)).writes_argument and not field_.data_type.data_types
@@ -1468,21 +1533,23 @@ def settle_site(site: UnionSite) -> SiteStatus:
         and all(_variant_carries_tag(data_type, site.property_name) for data_type, _, _ in variants)
     ):
         return "dropped-lone-untagged"
-    return "dropped-root-default" if any(map(_root_writes_default, wrappers)) else "tagged"
+    return _settle_choices(variants, wrappers, site.property_name)
 
 
-def iter_root_default_unions(field_: DataModelFieldBase) -> Iterator[DataType]:
-    """Yield the unions inside a field's type that take a root model with a default, as the pass drops each.
+def iter_unbuildable_inlined_unions(field_: DataModelFieldBase) -> Iterator[DataType]:
+    """Yield the unions inside a field's type whose ``discriminator=`` Pydantic cannot build, as the pass drops each.
 
     ``--collapse-root-models`` writes the discriminator of the root model that a list names as its items onto the
-    union it inlines there, a type of its own that the field's extras do not hold.
+    union it inlines there, a type of its own that the field's extras do not hold. It decides that when the module of
+    the list is processed, before every tag is written, so the choices of the union are asked here as those of a
+    field's own union are (``_settle_choices``), by the tag field the type names.
     """
     for nested in field_.data_type.all_data_types:
         if nested is field_.data_type or not nested.discriminator:
             continue
         wrappers: list[DataModel] = []
-        deque(_iter_discriminator_data_types(nested.data_types, wrappers=wrappers), maxlen=0)
-        if any(map(_root_writes_default, wrappers)):
+        variants = list(_iter_discriminator_data_types(nested.data_types, wrappers=wrappers))
+        if _settle_choices(variants, wrappers, nested.discriminator) != "tagged":
             yield nested
 
 

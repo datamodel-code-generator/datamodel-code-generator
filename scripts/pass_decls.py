@@ -868,15 +868,24 @@ SETTLE_DISCRIMINATED_UNIONS = PassDecl(
     Scope.GLOBAL,
     PassKind.TRANSFORM,
     reads=_facts(
-        Fact.DEFAULTS, Fact.DISCRIMINATOR_TAGS, Fact.FIELD_SET, Fact.FIELD_TYPES, Fact.NULLABLE, Fact.REQUIRED
+        Fact.BASES,
+        Fact.DEFAULTS,
+        Fact.DISCRIMINATOR_TAGS,
+        Fact.FIELD_NAMES,
+        Fact.FIELD_SET,
+        Fact.FIELD_TYPES,
+        Fact.MODEL_KIND,
+        Fact.NULLABLE,
+        Fact.REQUIRED,
     ),
     writes=_facts(Fact.DISCRIMINATOR_TAGS),
     summary=(
         "After every module is processed: writes no `discriminator=` for the union of a lone `$ref` variant that has "
         "no tag, which a union of any module may still write into it, nor for a lone variant that is no model (a "
         "scalar, `Any` or None, as a collapsed alias or an inline schema leaves it), nor for a union that takes a "
-        "root model, or a type alias, with a default as a variant, also where `--collapse-root-models` inlines the "
-        "union into the items of a list."
+        "root model, or a type alias, with a default as a variant, nor for a union two of whose choices hold one tag "
+        "in the tag fields that were written; the last two also where `--collapse-root-models` inlines the union "
+        "into the items of a list."
     ),
     condition="the output fields write `discriminator=`",
 )

@@ -189,8 +189,8 @@ from datamodel_code_generator.parser._tag_plan import (
     field_namer,
     has_any_variant,
     has_reused_variant,
-    iter_root_default_unions,
     iter_tag_field_decisions,
+    iter_unbuildable_inlined_unions,
     iter_union_sites,
     located_mapping,
     mapped_struct_tag,
@@ -2920,8 +2920,10 @@ def settle_discriminated_unions(parser: ModulesHost, run: ModulesRun) -> None:
 
     The variants a union lists get their tags from ``apply_discriminator_type``, but not the one variant a union names
     alone by its ``$ref``, and a union of any module may still tag that variant, so a variant without a tag is final
-    only once every module is processed. The tag plan decides (``settle_site``, ``iter_root_default_unions``); this
-    pass drops what it decides and records it.
+    only once every module is processed. The tag fields the classes of the variants have are final then too, so a union
+    two of whose choices hold one tag in them, which Pydantic refuses, is found here, also where
+    ``--collapse-root-models`` inlined it into the items of a list. The tag plan decides (``settle_site``,
+    ``iter_unbuildable_inlined_unions``); this pass drops what it decides and records it.
     """
     builder = parser._graph_builder  # noqa: SLF001
     for ctx in run.contexts:
@@ -2931,7 +2933,7 @@ def settle_discriminated_unions(parser: ModulesHost, run: ModulesRun) -> None:
                     parser._tag_plan.record_settled(site, status)  # noqa: SLF001
                     builder.drop_field_discriminator(field)
                 if parser.collapse_root_models:
-                    for nested in iter_root_default_unions(field):
+                    for nested in iter_unbuildable_inlined_unions(field):
                         builder.set_type_discriminator(nested, None)
 
 

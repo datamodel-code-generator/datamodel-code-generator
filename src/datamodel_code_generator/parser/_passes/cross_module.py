@@ -22,7 +22,6 @@ from datamodel_code_generator.model.base import (
     DataModel,
     _find_base_classes,
 )
-from datamodel_code_generator.model.enum import Enum
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._import_binding import (
     ModuleImportTarget,
@@ -39,6 +38,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _context_models,
     _get_model_module_name,
     _named_data_types,
+    enum_member_literal_values,
     keyed_module_members,
     module_member_keys,
     module_members,
@@ -230,14 +230,9 @@ def write_enum_member_tags_as_values(parser: CrossModuleHost, run: CrossModuleRu
     for model in _context_models(run.contexts):
         for field in model.fields:
             data_type = field.data_type
-            if (
-                (reference := data_type._enum_member_literal_reference) is None  # noqa: SLF001
-                or data_type.alias
-                or not isinstance(enum := reference.source, Enum)
-            ):
+            if data_type.alias or (written := enum_member_literal_values(data_type)) is None:
                 continue
-            member_values = {member.name: enum.get_member(member).value for member in enum.fields}
-            values = [member_values[member] for _, member in data_type.enum_member_literals]
+            values = written[1]
             if enum_tag_as_values(values, bool_literals=parser.data_model_type.SUPPORTS_BOOLEAN_LITERAL):
                 parser._graph_builder.replace_field_type(  # noqa: SLF001
                     field, data_type.__class__(literals=values, is_optional=data_type.is_optional)
