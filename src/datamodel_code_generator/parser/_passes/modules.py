@@ -108,7 +108,6 @@ from datamodel_code_generator.parser._passes._reference_users import (
 )
 from datamodel_code_generator.parser._passes._shared import (
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,
-    BaseStandInHost,
     CollapsedReuseHost,
     CollapseRootModelsHost,
     ConstructorInfoHost,
@@ -119,6 +118,7 @@ from datamodel_code_generator.parser._passes._shared import (
     GenericBaseHost,
     GraphBuilderHost,
     MergedDuplicatesHost,
+    ModuleMembersHost,
     ModuleScopeView,
     OutputOptionsHost,
     RecursionFactsHost,
@@ -148,8 +148,10 @@ from datamodel_code_generator.parser._passes._shared import (
     get_constructor_field_adjustment,
     get_inherited_constructor_info,
     holds_own_unique_items_set,
+    keyed_module_members,
     merge_duplicate,
     merged_models,
+    module_member_keys,
     module_members,
     removes_reuse_duplicate,
     replace_model_in_list,
@@ -161,7 +163,6 @@ from datamodel_code_generator.parser._passes._shared import (
     unhashable_unique_sets,
     unimported_model_keys,
     unique_items_plan,
-    without_stand_ins,
 )
 from datamodel_code_generator.parser._passes._state import (
     ConfigT,
@@ -615,7 +616,7 @@ class DiscriminatorHost(InlineVariantHost, CollapsedReuseHost, RootModelHost, Pr
         """Build a field of a model the parser writes, with the configured options its ``row`` takes."""
 
 
-class ImportFromHost(ReferenceExpressionHost, ReplacedRootsHost, BaseStandInHost, GraphBuilderHost, Protocol):
+class ImportFromHost(ReferenceExpressionHost, ModuleMembersHost, GraphBuilderHost, Protocol):
     """The option, the import ledger, the replaced roots, the stand-ins and the dropped roots that importing reads."""
 
     @property
@@ -3137,9 +3138,9 @@ def change_from_import(parser: ImportFromHost, state: ModuleStateView) -> None:
     A root that names itself, which deduplication dropped from every module, has no module to import from. A model
     whose imports follow its written hints, which the new expressions changed, registers its imports again.
     """
-    models = without_stand_ins(parser, module_members(parser, state.model_list))
+    models = module_members(parser, state.model_list, row="members-without-stand-ins")
     unimported = unimported_model_keys(parser)
-    members = keyed_models(models, "module members")
+    members = keyed_module_members(models)
     module = ModuleImportTarget.of(parser.imports, state, state)
     imports = module.imports
 
@@ -3340,7 +3341,7 @@ def write_rule_aliases_as_classes(parser: RuleAliasHost, run: ProcessingRun[Any,
     _replace_aliases(parser, run, aliases, replacements)
     classes = {id(model) for model in replacements.values()}
     for ctx in run.contexts:
-        members = keyed_models(module_members(parser, ctx.models), "module members")
+        members = module_member_keys(parser, ctx.models, row="members")
         for model in ctx.models:
             if id(model) not in classes:
                 continue

@@ -26,13 +26,12 @@ from datamodel_code_generator._module_paths import (
 from datamodel_code_generator._records import record
 from datamodel_code_generator.imports import Import, _import_bindings, _iter_import_bindings
 from datamodel_code_generator.model.base import BaseClassDataType
-from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._shared import (
-    ReplacedRootsHost,
+    ModuleMembersHost,
     _get_data_type_target_full_name,
     _get_model_module_name,
-    module_members,
+    module_member_keys,
     names_left_by_replaced_roots,
 )
 
@@ -394,7 +393,7 @@ class EmittingModulesHost(Protocol):
         """The module that emits each model found in the live lists, by model id."""
 
 
-class ReimportHost(ReferenceExpressionHost, ReplacedRootsHost, EmittingModulesHost, Protocol):
+class ReimportHost(ReferenceExpressionHost, ModuleMembersHost, EmittingModulesHost, Protocol):
     """What importing again the models a module imported under stale imports reads of the parser."""
 
 
@@ -445,9 +444,7 @@ def reimport_module_references(  # noqa: PLR0913
         ledger.release_names(
             imports,
             module.resolver,
-            released.union(
-                names_left_by_replaced_roots(host, models, keyed_models(module_members(host, models), "module members"))
-            ),
+            released.union(names_left_by_replaced_roots(host, models, module_member_keys(host, models, row="members"))),
         )
     for model, data_type, _ in stale_users:
         producer = ImportProducer(row, model)
