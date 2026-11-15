@@ -43,6 +43,20 @@ Under `--collapse-root-models-name-strategy parent`, a module that named an enum
 +kind: Literal[b.Foo.cat, 'cat']
 ```
 
+### A pattern past the regex size limit by repetitions together or by a Unicode class no longer fails at import (unreleased) { #regex-size-limit-repetitions-together }
+
+A `pattern` whose counted repetitions pass the size limit of Pydantic's default regex engine only together (four classes such as `[\w+=,.@-]{1,64}`), that repeats a class of `\w` and `\d` or `\s` (`^[\w\s-]{1,255}$`), or that repeats a class of a major Unicode general category (`[^\p{C}]{1,2048}`, `[\P{M}\p{M}]{0,20000}`), was written as the schema writes it, and the module failed at import with `Compiled regex exceeds size limit`. The model now selects `regex_engine="python-re"` for it; a pattern Python's `re` rejects too, as it rejects `\p{...}`, is left out with a warning. That is what a single repetition past the limit has got since 0.92.0. Only patterns that every pydantic-core release from 2.0 to 2.50 refuses are read this way. Output that imported before is unchanged.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`
+- **Keep the old output:** The previous module failed at import; nothing restores it.
+- **Pull requests and issues:** [#6877](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6877)
+- **Source:** the release notes
+
+```diff
+-root: constr(pattern=r'[^\p{C}]{1,2048}')
++root: str
+```
+
 ### A member of `$defs` that is not a schema is skipped with a `UserWarning` in a draft 7 or older document (unreleased) { #defs-member-not-a-schema }
 
 Draft 7 and older have no `$defs` keyword, so their meta-schemas do not constrain its members. In a document read in one of these versions (the version of the input document, or of each document under `--read-schema-version-per-document`), a member of `$defs` whose value is neither an object nor a boolean, such as a `description` string written beside the definitions, is now skipped with a `UserWarning` that names it, and the document is generated; it was refused before. Such a member is still refused in a document read as 2019-09 or later (a document without `$schema` that holds `$defs` reads as 2020-12) and where a reference names it. A caller that turns warnings into errors gets an error.

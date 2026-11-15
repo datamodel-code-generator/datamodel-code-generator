@@ -518,6 +518,12 @@ openapi/paths_ref_with_external_schema/openapi.yaml	yaml_fast_constructor/parity
 openapi/pattern.yaml	yaml_fast_constructor/parity.txt
 openapi/pattern_backreference.yaml	yaml_fast_constructor/parity.txt
 openapi/pattern_lookaround.yaml	yaml_fast_constructor/parity.txt
+openapi/pattern_size_decimal_number.yaml	yaml_fast_constructor/parity.txt
+openapi/pattern_size_negated_property.yaml	yaml_fast_constructor/parity.txt
+openapi/pattern_size_property_class.yaml	yaml_fast_constructor/parity.txt
+openapi/pattern_size_repetitions.yaml	yaml_fast_constructor/parity.txt
+openapi/pattern_size_word_and_digit_class.yaml	yaml_fast_constructor/parity.txt
+openapi/pattern_size_word_and_space_class.yaml	yaml_fast_constructor/parity.txt
 openapi/pointer_into_integer_keyed_document/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/pointer_into_integer_keyed_document/plain.yaml	yaml_fast_constructor/parity.txt
 openapi/pointer_into_integer_keyed_document/shared.yaml	yaml_fast_constructor/parity.txt
