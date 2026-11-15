@@ -107,6 +107,8 @@ read-dynamic-anchors-in-document-order-practical	main/preset_opt_in_options/pres
 read-dynamic-anchors-in-document-order-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-dynamic-anchors-in-document-order-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-dynamic-anchors-in-document-order-practical].py
 read-escaped-ref-pointers-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-escaped-ref-pointers-practical].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-escaped-ref-pointers-standard].py
 read-escaped-ref-pointers-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-escaped-ref-pointers-standard].py
+read-ids-with-empty-fragment-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-ids-with-empty-fragment-practical].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-ids-with-empty-fragment-standard].py
+read-ids-with-empty-fragment-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-ids-with-empty-fragment-standard].py
 read-inherited-property-schemas-in-mro-order-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-inherited-property-schemas-in-mro-order-practical].py
 read-inherited-property-schemas-in-mro-order-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-inherited-property-schemas-in-mro-order-standard].py
 read-kubernetes-extensions-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-kubernetes-extensions-practical].py

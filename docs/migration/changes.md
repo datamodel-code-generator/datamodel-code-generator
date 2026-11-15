@@ -52,6 +52,15 @@ Draft 7 and older have no `$defs` keyword, so their meta-schemas do not constrai
 - **Pull requests and issues:** [#6880](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6880)
 - **Source:** the release notes
 
+### A `$ref` to its document's `$id` written with an empty fragment emits a `SchemaResourceRefWarning` before the fetch (unreleased) { #id-with-empty-fragment-fetched }
+
+Where a document declares an `$id` with an empty fragment (`https://example.com/item.json#`) and a `$ref` in it names that URI, the generator loads the document at that URL, as before, and now first warns with a `SchemaResourceRefWarning` that names the URL, the `$id` and `--read-ids-with-empty-fragment`, under which the reference resolves inside the document; the generated output is unchanged. A caller that turns warnings into errors gets an error.
+
+- **Affects:** input types: `jsonschema`, `openapi`
+- **What to change:** Pass `--read-ids-with-empty-fragment` (the 20261113 presets turn it on), or write the `$id` without the `#`.
+- **Pull requests and issues:** [#6878](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6878)
+- **Source:** the release notes
+
 ### An option that is turned off and that another option turns on emits a `UserWarning` (unreleased) { #implied-option-replaces-given-value }
 
 `--use-annotated` turns `--field-constraints` on, `--use-type-alias-type` turns `--use-type-alias` on and `--intersect-combined-schema-keywords` turns `--intersect-allof-keywords` on, also where a preset sets the first option. A run that turns the second option off (`--no-intersect-allof-keywords`, `false` in `pyproject.toml`, `False` given to `generate()`) is now reported with a `UserWarning` that names both options and how to turn both off; the option stays on as before and the generated output is unchanged. A `false` in `pyproject.toml` is not reported under a `--preset` argument whose preset sets that option, as such a preset replaces the values of `pyproject.toml`. `generate()` does not report `use_type_alias`, nor a value of a config that `load_pyproject_config()` returned. A caller that turns warnings into errors gets an error.
@@ -116,6 +125,12 @@ Read the format of a schema as an annotation, as JSON Schema does: a string, int
 
 - **Source:** the command-line options of both releases
 
+### New option `--read-ids-with-empty-fragment` (`--no-read-ids-with-empty-fragment`) (unreleased) { #option-read-ids-with-empty-fragment }
+
+Read an $id that ends with an empty fragment, such as https://example.com/item.json#, as the URI without it, which names the same resource, so a $ref to https://example.com/item.json# or https://example.com/item.json#/definitions/Tag in the document that declares it resolves inside that document; without it such a $ref loads the document at that URL, from the network, as in 0.96.0.
+
+- **Source:** the command-line options of both releases
+
 ### New option `--read-inherited-property-schemas-in-mro-order` (`--no-read-inherited-property-schemas-in-mro-order`) (unreleased) { #option-read-inherited-property-schemas-in-mro-order }
 
 With --intersect-combined-schema-keywords, give a property that a model only makes required the schema its allOf parents declare, read in the order of the class bases from the allOf members the model's own fields are read from (an alias member followed to the schema it names, the keywords beside a $ref member read with it), so a model written before its parents takes the field it takes when written after them; without it the declaration is looked up in the allOf members as written, and under --intersect-combined-schema-keywords such a field can lose its description or its constraints or become Any, as in 0.96.0
@@ -149,6 +164,7 @@ They keep the options of the 20261112 presets and add:
 - Discriminators inferred from tags (`--infer-union-discriminators`): Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names.
 - Kubernetes extensions read (`--read-kubernetes-extensions`): Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does.
 - Inherited property schemas read in MRO order (`--read-inherited-property-schemas-in-mro-order`): Give a property that a model only makes required the schema its allOf parents declare, read in the order of the class bases from the allOf members the model's fields are read from, so a model written before its parents takes the field it takes when written after them.
+- Ids with an empty fragment read as their documents (`--read-ids-with-empty-fragment`): Read an $id written with an empty fragment, such as https://example.com/item.json#, as the URI without it, so a $ref to it resolves inside the document that declares it instead of loading the document at that URL from the network.
 - Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.
 
 - **Source:** the registry of deprecations, experimental features and dated presets

@@ -121,6 +121,7 @@ OPT_IN_OPTIONS_20261113: tuple[str, ...] = (
     "--infer-union-discriminators",
     "--read-kubernetes-extensions",
     "--read-inherited-property-schemas-in-mro-order",
+    "--read-ids-with-empty-fragment",
 )
 """The options the 20261113 presets set beyond the 20261112 presets."""
 
@@ -499,6 +500,12 @@ CASES_20261113: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="read-inherited-property-schemas-in-mro-order",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "ids_with_empty_fragment" / "ninjs_1_0.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-ids-with-empty-fragment",
     ),
 )
 """The inputs each opt-in option of the 20261113 presets changes."""

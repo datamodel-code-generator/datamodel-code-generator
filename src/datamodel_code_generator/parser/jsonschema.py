@@ -7911,6 +7911,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                             "targets also require --allow-private-network."
                         ),
                     )
+            if (own_id := self.model_resolver.empty_fragment_id_target(resolved_ref)) is not None:
+                document, written_id = own_id
+                warn(
+                    f"A $ref in {redact_reference(document)} to {stable_repr(redact_reference(resolved_ref))} loads "
+                    "the document at that URL for compatibility, but JSON Schema resolves it to the document itself, "
+                    f"whose $id {stable_repr(redact_reference(written_id))} names it with an empty fragment. Pass "
+                    "--read-ids-with-empty-fragment to read it inside the document.",
+                    SchemaResourceRefWarning,
+                    stacklevel=stacklevel_at_parse_caller(),
+                )
             return _schema_documents.prepare_schema_resources(
                 self, self._get_ref_body_from_url(resolved_ref), [resolved_ref]
             )

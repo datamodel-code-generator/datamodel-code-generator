@@ -168,16 +168,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 262 | Shared generation options. |
-| `GenerateConfig` | 277 | Public `generate()` configuration. |
-| `ParserConfig` | 217 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 219 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 230 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 233 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 220 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 220 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 219 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 220 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 263 | Shared generation options. |
+| `GenerateConfig` | 278 | Public `generate()` configuration. |
+| `ParserConfig` | 218 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 220 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 231 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 234 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 221 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 221 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 220 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 221 | GraphQL-specific parser options. |
 
 ### Formatter Names
 

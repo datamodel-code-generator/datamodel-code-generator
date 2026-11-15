@@ -2107,6 +2107,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "read_schema_version_per_document",
         "read_escaped_ref_pointers",
         "read_dynamic_anchors_in_document_order",
+        "read_ids_with_empty_fragment",
         "ignore_ref_siblings_by_schema_version",
         "server_include_request",
         "client_deep_object_brackets",

@@ -1133,6 +1133,7 @@ class ModelResolver:  # noqa: PLR0904
         http_backend: HTTPBackend = HTTPBackend.AUTO,
         capitalise_numbered_enum_members: bool = False,  # noqa: FBT001, FBT002
         singularize_last_word_of_item_names: bool = False,  # noqa: FBT001, FBT002
+        read_ids_with_empty_fragment: bool = False,  # noqa: FBT001, FBT002
     ) -> None:
         """Initialize model resolver with naming and resolution options."""
         self.references: dict[str, Reference] = {}
@@ -1149,6 +1150,9 @@ class ModelResolver:  # noqa: PLR0904
             singular_name_suffix if isinstance(singular_name_suffix, str) else SINGULAR_NAME_SUFFIX
         )
         self.singularize_last_word_of_item_names = singularize_last_word_of_item_names
+        self.read_ids_with_empty_fragment = read_ids_with_empty_fragment
+        self._empty_fragment_id_targets: dict[str, tuple[str, str]] = {}
+        """The URLs a reference resolved to that are an `$id` of its document written with an empty fragment."""
         self._field_name_resolvers: dict[ModelType, FieldNameResolver] | _FieldNameResolvers = _FieldNameResolvers(
             field_name_resolver_classes,
             _FieldNameResolverOptions(
@@ -1291,6 +1295,8 @@ class ModelResolver:  # noqa: PLR0904
         self.__dict__.setdefault("_reserved_names", {})
         self.__dict__.setdefault("model_name_record", None)
         self.__dict__.setdefault("singularize_last_word_of_item_names", False)
+        self.__dict__.setdefault("read_ids_with_empty_fragment", False)
+        self.__dict__.setdefault("_empty_fragment_id_targets", {})
         self.__dict__.setdefault("_records_name_requests", False)
         for name, value in slot_state.items():
             setattr(self, name, value)
@@ -1694,7 +1700,8 @@ class ModelResolver:  # noqa: PLR0904
         return self._root_id_base_path
 
     def set_root_id(self, root_id: str | None) -> None:
-        """Set the root identifier and extract its base path."""
+        """Set the root identifier, recorded as ``_recorded_id`` records it, and extract its base path."""
+        root_id = root_id and self._recorded_id(root_id)
         if root_id and "/" in root_id:
             self._root_id_base_path = root_id.rsplit("/", 1)[0]
         else:
@@ -1709,7 +1716,26 @@ class ModelResolver:  # noqa: PLR0904
         resolved from the base path, not from the directory of the document parsed now.
         """
         with self.current_base_path_context(self._base_path.resolve() if self.current_base_path else None):
-            self.ids[self.current_document][id_] = self.resolve_ref(path)
+            self.ids[self.current_document][self._recorded_id(id_)] = self.resolve_ref(path)
+
+    def _recorded_id(self, id_: str) -> str:
+        """Return an `$id` as it is recorded: as written, or under --read-ids-with-empty-fragment without its `#`.
+
+        An `$id` that ends with an empty fragment names the resource the URI without it names (JSON Schema draft 7,
+        section 8.2.1), so under the option a reference to that URI resolves to it (#6878). An anchor (``#name``), a
+        bare ``#`` and a root identifier that is no string are recorded as written.
+        """
+        if self.read_ids_with_empty_fragment and isinstance(id_, str) and len(id_) > 1 and id_.endswith("#"):
+            return id_[:-1]
+        return id_
+
+    def empty_fragment_id_target(self, url: str) -> tuple[str, str] | None:
+        """Return the document and `$id` of a reference resolved to ``url``, an `$id` written with an empty fragment.
+
+        It is noted where ``resolve_ref`` returns the URL as a document to fetch, without the option; each one is
+        returned once.
+        """
+        return self._empty_fragment_id_targets.pop(url.partition("#")[0], None)
 
     def registered_id(self, id_: str) -> str | None:
         """Return the resolved reference path an identifier is registered for in the current scope, if any."""
@@ -1837,6 +1863,8 @@ class ModelResolver:  # noqa: PLR0904
                     combined_fragment = f"{mapped_fragment.rstrip('/')}/{path_part.lstrip('/')}"
                     return f"{mapped_base}#{combined_fragment}"
                 return mapped_ref
+            if (written_id := f"{file_part}#") in scoped_ids:
+                self._empty_fragment_id_targets.setdefault(file_part, (id_scope, written_id))
 
         if self.base_url:
             from .http import join_url  # noqa: PLC0415
