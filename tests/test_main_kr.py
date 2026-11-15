@@ -1516,6 +1516,37 @@ target-python-version = "3.10"
         assert_error_message(capsys, "Profile 'nonexistent' not found in pyproject.toml")
 
 
+@pytest.mark.parametrize(
+    ("args", "project_dir"),
+    [
+        pytest.param(["--input", "schema.json"], ".", id="project-configuration"),
+        pytest.param(["--input", "schema.json", "--ignore-pyproject", "--formatters", "black"], "sub", id="black"),
+        pytest.param(["--all-jobs"], ".", id="jobs"),
+    ],
+)
+def test_invalid_pyproject_toml_is_a_configuration_error(
+    args: list[str], project_dir: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Report a pyproject.toml that is not valid TOML as an error naming the file, wherever the run reads it."""
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.datamodel-codegen]\ninput = "schema.json\noutput = "model.py"\n', encoding="utf-8"
+    )
+    (tmp_path / "schema.json").write_text('{"type": "object", "properties": {"name": {"type": "string"}}}')
+    (tmp_path / "sub").mkdir()
+    (tmp_path / "sub" / "pyproject.toml").write_text("[tool.other]\nkey = 1\n", encoding="utf-8")
+    (tmp_path / "sub" / "schema.json").write_text((tmp_path / "schema.json").read_text())
+
+    with chdir(tmp_path / project_dir):
+        run_main_with_args(
+            args,
+            expected_exit=Exit.ERROR,
+            capsys=capsys,
+            expected_stderr_contains="pyproject.toml: Illegal character '\\n' (at line 2, column 21)",
+        )
+
+    _assert_file_does_not_exist(tmp_path / "model.py")
+
+
 @freeze_time("2019-07-26")
 def test_ignore_pyproject_option(output_file: Path, tmp_path: Path) -> None:
     """Test --ignore-pyproject ignores pyproject.toml configuration."""
@@ -2202,6 +2233,11 @@ aliases = "unprofiled-aliases.json"
         assert main_module._main(["--all-jobs"], start_watch=False, dependencies=invalid_job_dependencies) is Exit.ERROR
     assert_error_message(capsys, "Job 'models' must be a table")
     assert invalid_job_dependencies.includes(pyproject_path)
+
+    pyproject_path.write_text('[tool.datamodel-codegen.jobs]\nmodels = "invalid\n', encoding="utf-8")
+    with chdir(tmp_path):
+        assert main_module._main(["--all-jobs"], start_watch=False, dependencies=WatchDependencies()) is Exit.ERROR
+    assert_error_message(capsys, "pyproject.toml: Illegal character")
 
 
 @pytest.mark.parametrize(
