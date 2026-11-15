@@ -10,6 +10,7 @@ import sys
 from typing import TYPE_CHECKING, NamedTuple
 
 from datamodel_code_generator._format_types import NEWEST_TARGET, PythonVersion
+from datamodel_code_generator._option_rules import implied_options
 from datamodel_code_generator._requirements import pydantic_target_meets, python_target_meets
 
 from .base import UNDEFINED, ConstraintsBase, DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
@@ -87,7 +88,10 @@ def get_data_model_types(  # noqa: PLR0912, PLR0913, PLR0917
             from . import pydantic_v2  # noqa: PLC0415
 
             if (
-                (uses_alias := use_type_alias or use_type_alias_type)
+                (
+                    uses_alias := use_type_alias
+                    or "use_type_alias" in implied_options({"use_type_alias_type": use_type_alias_type})
+                )
                 or include_graphql_models
                 or use_root_model_type_alias
             ):
