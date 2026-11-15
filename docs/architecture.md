@@ -579,8 +579,11 @@ the expression that names it is `parser/_passes/_import_binding.py`: the rule (`
 `ImportPathRow`; a model is imported from its module, not through the module its package imports, where the module is
 named like an import every module shares, such as an `--additional-imports` name, since the package binds that name
 too; the import then takes an alias where a shared import binds the model's name as well), the import it adds into
-the module a pass imports into (`register_reference_import`, `ModuleImportTarget`), the import of the generated base
-class, by the same rule (`generic_base_class_import`), and the writes through the generation store
+the module a pass imports into (`register_reference_import`, `ModuleImportTarget`, which takes the names the shared
+imports bind when a pass first asks for them: `shared_import_bindings`, the `__future__` ones apart,
+`shared_future_bindings`; a pass that names a class or an import of a module anew keeps its resolver off them,
+`keep_off_shared_bindings`), the import of the generated base class, by the same rule (`generic_base_class_import`),
+and the writes through the generation store
 (`set_reference_expression`, `import_references`), and the re-import of what a module
 imported under a stale import (`reimport_module_references`: drop it, release the names it leaves, write the expression again,
 under a `ReimportRow` named after the pass: collapsed holders, renamed types, removed reuse duplicates); the
