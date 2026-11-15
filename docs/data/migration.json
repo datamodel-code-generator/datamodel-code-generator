@@ -754,6 +754,30 @@
   {
    "action": "review",
    "affects": {
+    "output_model_types": [
+     "pydantic_v2.BaseModel",
+     "pydantic_v2.dataclass"
+    ]
+   },
+   "after": "guest: Young | Cat | None = None",
+   "before": "guest: Young | Cat | None = Field(None, discriminator='kind')",
+   "id": "discriminator-shared-written-tag",
+   "keep": {
+    "note": "The previous module failed at import; nothing restores it."
+   },
+   "kind": "default-output",
+   "refs": [
+    "#6865",
+    "#6876"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "A Pydantic union whose variants ended up with the same value in their tag fields was written with `discriminator=`, which Pydantic refuses when the module is imported (`Value ... mapped to multiple choices`). It happened where a union lists a nested `oneOf` beside the parent of the variant it groups, which has its parent's tag (#6876), also where `--collapse-root-models` writes that union as the items of a list, and under `--use-enum-values-in-discriminator` where the discriminator property is named like the Enum that types it and the variants inherit it, so that every variant takes every member (#6865). The union is now written without `discriminator=`; the tag fields of the variants are unchanged. For #6865 this means that the module imports: its variants still have the tag field with every member of the Enum, and a parsed tag is the text, not the member. Output that imported before is unchanged.",
+   "title": "A union whose variants were written with one tag value has no `discriminator=`"
+  },
+  {
+   "action": "review",
+   "affects": {
     "options": [
      "--collapse-root-models-name-strategy parent"
     ]

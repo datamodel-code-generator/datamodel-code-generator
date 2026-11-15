@@ -15,6 +15,20 @@ With `generate_server` or `generate_client`, a `preset` that does not match `tar
 - **Pull requests and issues:** [#6851](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6851)
 - **Source:** the release notes
 
+### A union whose variants were written with one tag value has no `discriminator=` (unreleased) { #discriminator-shared-written-tag }
+
+A Pydantic union whose variants ended up with the same value in their tag fields was written with `discriminator=`, which Pydantic refuses when the module is imported (`Value ... mapped to multiple choices`). It happened where a union lists a nested `oneOf` beside the parent of the variant it groups, which has its parent's tag (#6876), also where `--collapse-root-models` writes that union as the items of a list, and under `--use-enum-values-in-discriminator` where the discriminator property is named like the Enum that types it and the variants inherit it, so that every variant takes every member (#6865). The union is now written without `discriminator=`; the tag fields of the variants are unchanged. For #6865 this means that the module imports: its variants still have the tag field with every member of the Enum, and a parsed tag is the text, not the member. Output that imported before is unchanged.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`
+- **Keep the old output:** The previous module failed at import; nothing restores it.
+- **Pull requests and issues:** [#6865](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6865), [#6876](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6876)
+- **Source:** the release notes
+
+```diff
+-guest: Young | Cat | None = Field(None, discriminator='kind')
++guest: Young | Cat | None = None
+```
+
 ### A Literal member of an enum named through a collapsed alias imports the enum (unreleased) { #enum-literal-after-collapsed-alias }
 
 Under `--collapse-root-models-name-strategy parent`, a module that named an enum of another module through a collapsed alias wrote the enum without importing it in two places: in an enum member literal (`--use-enum-values-in-discriminator`, or a const beside an enum under `--read-const-beside-enum`) and, under `--reuse-model`, where the enum replaced a duplicate that reuse removed. The models that named it failed when they were used. The module now imports the enum and writes `Literal[b.Foo.cat, 'cat']`. Output that worked before is unchanged.

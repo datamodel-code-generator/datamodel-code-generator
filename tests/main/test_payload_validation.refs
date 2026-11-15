@@ -1616,6 +1616,9 @@ openapi/discriminator_shared_variant_tags.yaml::components.schemas.Ring	payloads
 openapi/discriminator_shared_variant_tags.yaml::components.schemas.Shell	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_shared_variant_tags.yaml::components.schemas.Square	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_shared_variant_tags.yaml::components.schemas.Star	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_shared_written_tag/nested_variant_inherits_tag.yaml::components.schemas.Animal	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_shared_written_tag/tag_named_like_enum.yaml::components.schemas.Kind	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_shared_written_tag/tag_named_like_enum_list_items.yaml::components.schemas.Kind	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_short_mapping_names.yaml::components.schemas.BarItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_short_mapping_names.yaml::components.schemas.BaseItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_short_mapping_names.yaml::components.schemas.FooItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3739,6 +3742,9 @@ openapi/discriminator_shared_variant_tags.yaml::components.schemas.Ring	payloads
 openapi/discriminator_shared_variant_tags.yaml::components.schemas.Shell	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_shared_variant_tags.yaml::components.schemas.Square	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_shared_variant_tags.yaml::components.schemas.Star	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_shared_written_tag/nested_variant_inherits_tag.yaml::components.schemas.Animal	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_shared_written_tag/tag_named_like_enum.yaml::components.schemas.Kind	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/discriminator_shared_written_tag/tag_named_like_enum_list_items.yaml::components.schemas.Kind	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_short_mapping_names.yaml::components.schemas.BarItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_short_mapping_names.yaml::components.schemas.BaseItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/discriminator_short_mapping_names.yaml::components.schemas.FooItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

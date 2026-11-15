@@ -1,0 +1,40 @@
+openapi: 3.1.0
+info: {title: nested variant below two tagged ancestors, version: "1"}
+paths: {}
+components:
+  schemas:
+    Animal:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+    Cat:
+      allOf:
+        - $ref: '#/components/schemas/Animal'
+        - type: object
+          properties:
+            meow: {type: string}
+    Kitten:
+      allOf:
+        - $ref: '#/components/schemas/Cat'
+        - type: object
+          properties:
+            tiny: {type: boolean}
+    Young:
+      oneOf:
+        - $ref: '#/components/schemas/Kitten'
+    Shelter:
+      type: object
+      properties:
+        any:
+          oneOf:
+            - $ref: '#/components/schemas/Animal'
+            - $ref: '#/components/schemas/Cat'
+          discriminator:
+            propertyName: kind
+        guest:
+          oneOf:
+            - $ref: '#/components/schemas/Young'
+            - $ref: '#/components/schemas/Cat'
+          discriminator:
+            propertyName: kind
