@@ -406,13 +406,15 @@ def test_main_yaml_1_1_numbers_still_refused(output_file: Path, capsys: pytest.C
 
 @pytest.mark.parametrize("yaml_backend", ["pyyaml"], indirect=True)
 @pytest.mark.usefixtures("yaml_backend")
-def test_main_yaml_1_1_numbers_document_roles(output_file: Path) -> None:
+def test_main_yaml_1_1_numbers_document_roles(output_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Read again a split document that its number refused, as the first reading, with the roles its references need.
 
     A pointer into the parameter document, which holds the pattern `00:00:00.00`, loads it before the reference that
     holds it as a parameter; the read-again stops there as the first reading does and reads once more with that role,
-    so the run generates as when the pattern is quoted and shows the warning of the format `unknown-format` once.
+    so the run generates as when the pattern is quoted and shows the warning of the format `unknown-format` once. One
+    generation is recorded, so the second one of the formatter parity check is left out.
     """
+    monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")
         run_main_and_assert(
