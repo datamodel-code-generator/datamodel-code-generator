@@ -9,7 +9,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 19 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 60 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 61 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 41 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 73 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
@@ -334,6 +334,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--read-dynamic-anchors-in-document-order`](base-options.md#read-dynamic-anchors-in-document-order)
 - [`--read-escaped-ref-pointers`](base-options.md#read-escaped-ref-pointers)
 - [`--read-format-as-annotation`](typing-customization.md#read-format-as-annotation)
+- [`--read-inherited-property-schemas-in-mro-order`](typing-customization.md#read-inherited-property-schemas-in-mro-order)
 - [`--read-input-model-dataclass-fields-by-alias`](base-options.md#read-input-model-dataclass-fields-by-alias)
 - [`--read-kubernetes-extensions`](typing-customization.md#read-kubernetes-extensions)
 - [`--read-length-keywords-by-type`](field-customization.md#read-length-keywords-by-type)

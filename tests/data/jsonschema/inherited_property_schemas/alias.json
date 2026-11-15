@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Child": {"allOf": [{"$ref": "#/$defs/Mid"}, {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["count", "name"]}]},
+    "Mid": {"allOf": [{"$ref": "#/$defs/Alias"}]},
+    "Alias": {"$ref": "#/$defs/Target", "description": "an alias"},
+    "Target": {"type": "object", "properties": {"count": {"type": "integer", "minimum": 1, "description": "how many"}}}
+  },
+  "type": "object",
+  "properties": {"child": {"$ref": "#/$defs/Child"}}
+}

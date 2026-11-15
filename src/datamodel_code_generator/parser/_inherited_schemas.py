@@ -225,21 +225,25 @@ Two rows are orders of the parts ``all_of_members`` reads, and output needs both
 
 - ``c3``: the inherited schemas in C3 order (``linearize_inherited_schema_refs``), each as its parts
   (``inline_all_of_parts``): the property map (``get_inherited_property_map``, which takes the first declaration of a
-  property) and the declarations of a model (``model_declarations``, which reads all of them).
+  property), the declarations of a model (``model_declarations``, which reads all of them) and, under
+  --read-inherited-property-schemas-in-mro-order, whether some ancestor declares a property as a schema
+  (``get_inherited_field_schema``).
 - ``ancestor-first``: from each base, sorted descendants first, the parents it names (``get_allof_parent_references``,
   which registers their references), sorted the same way, before its own parts, members first; each schema once
   (``get_inherited_property_order``: the order of the fields a request or response variant collects).
 
-Two rows are no orders: they read the members of each allOf as written, also where an option makes
-``all_of_members`` read them otherwise, and answer as ``c3`` does wherever it reads them as written (#6849):
+Two rows keep the output of earlier releases for a property a model only requires (#6849):
 
 - ``legacy-dfs-inline-first``: depth first from each base, sorted descendants first: a schema, then its inline allOf
   members as written, each with its own members and references, then the schemas its ``$ref`` members as written
-  name, none twice on one path (``get_inherited_field_schema``, which asks whether some ancestor declares a property).
+  name, none twice on one path (``get_inherited_field_schema`` without the option). It is no order of its own: it
+  finds what ``c3`` finds wherever ``all_of_members`` reads the members as written, and misses a declaration behind an
+  alias member or beside a ``$ref`` member where an option makes ``all_of_members`` read those.
 - ``legacy-direct-then-grandparents``: each base, sorted descendants first, as written without its inline members,
   until the first whose allOf names parents: the walk then yields it again with the references of those parents
   (registered with ``model_resolver.add_ref``) and the path, and ends; the reader goes on with them
-  (``JsonSchemaParser._get_inherited_field_type``, which reads the generated fields of each list of parents first).
+  (``JsonSchemaParser._get_inherited_field_type``, which reads the generated fields of each list of parents first:
+  the field that only the model of a parent's parent holds, while the parent has no model yet).
 """
 _InheritedVisit: TypeAlias = "tuple[JsonSchemaObject, str, tuple[list[Reference], frozenset[_TargetNode]] | None]"
 """A schema ``walk_inherited_schemas`` visits, the key of the inherited schema it belongs to, and the references of the
@@ -474,6 +478,10 @@ class InheritedSchemasHost(RwSplitHost, Protocol):
     @property
     def _all_of_member_reading(self) -> tuple[bool, bool, bool]:
         """How ``all_of_members`` reads a ``$ref`` member other than as written (``member_reading``)."""
+
+    @property
+    def _inherited_declaration_row(self) -> InheritedOrderRow:
+        """The row ``get_inherited_field_schema`` reads to find the schema an ancestor declares a property as."""
 
     @property
     def _inherited_parent_row(self) -> InheritedParentRow:
@@ -2224,11 +2232,18 @@ def get_inherited_field(
 def get_inherited_field_schema(
     parser: InheritedSchemasHost, prop_name: str, base_classes: list[Reference]
 ) -> JsonSchemaObject | None:
-    """Get the schema for an inherited property from parent schemas (``walk_inherited_schemas``)."""
+    """Return the first schema an inherited schema declares a property as, None for none.
+
+    Under --read-inherited-property-schemas-in-mro-order the parts are those the property map reads, in the class
+    order (``walk_inherited_schemas``, row ``c3``); a boolean schema is no declaration here, so a later part that
+    declares a schema is found where the map keeps the boolean. Row ``legacy-dfs-inline-first`` without the option:
+    the members of each allOf as written, so a declaration behind an alias member or beside a ``$ref`` member is not
+    found where ``all_of_members`` reads those, and the field takes what ``_get_inherited_field_type`` finds (#6849).
+    """
     return next(
         (
             property_schema
-            for schema, _, _ in walk_inherited_schemas(parser, base_classes, "legacy-dfs-inline-first")
+            for schema, _, _ in walk_inherited_schemas(parser, base_classes, parser._inherited_declaration_row)  # noqa: SLF001
             if schema.properties and isinstance(property_schema := schema.properties.get(prop_name), JsonSchemaObject)
         ),
         None,

@@ -62,6 +62,12 @@ Read the format of a schema as an annotation, as JSON Schema does: a string, int
 
 - **Source:** the command-line options of both releases
 
+### New option `--read-inherited-property-schemas-in-mro-order` (`--no-read-inherited-property-schemas-in-mro-order`) (unreleased) { #option-read-inherited-property-schemas-in-mro-order }
+
+With --intersect-combined-schema-keywords, give a property that a model only makes required the schema its allOf parents declare, read in the order of the class bases from the allOf members the model's own fields are read from (an alias member followed to the schema it names, the keywords beside a $ref member read with it), so a model written before its parents takes the field it takes when written after them; without it the declaration is looked up in the allOf members as written, and under --intersect-combined-schema-keywords such a field can lose its description or its constraints or become Any, as in 0.96.0
+
+- **Source:** the command-line options of both releases
+
 ### New option `--read-kubernetes-extensions` (`--no-read-kubernetes-extensions`) (unreleased) { #option-read-kubernetes-extensions }
 
 Read the Kubernetes schema extensions as the keywords they stand for: x-kubernetes-int-or-string (and the int-or-string format) as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as additionalProperties true, and an x-kubernetes-group-version-kind as the const and default of the apiVersion and kind it names; without it they are ignored, as in 0.96.0
@@ -88,6 +94,7 @@ They keep the options of the 20261112 presets and add:
 - Extensible enums accept new values (`--open-enums extensible`): Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] | str, instead of rejecting them.
 - Discriminators inferred from tags (`--infer-union-discriminators`): Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names.
 - Kubernetes extensions read (`--read-kubernetes-extensions`): Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does.
+- Inherited property schemas read in MRO order (`--read-inherited-property-schemas-in-mro-order`): Give a property that a model only makes required the schema its allOf parents declare, read in the order of the class bases from the allOf members the model's fields are read from, so a model written before its parents takes the field it takes when written after them.
 - Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.
 
 - **Source:** the registry of deprecations, experimental features and dated presets

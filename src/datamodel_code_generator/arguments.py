@@ -1027,6 +1027,16 @@ _toggle(
     "of an inner allOf are read in document order and the property can take the farther base's looser constraints, "
     "as in 0.90.0",
 )
+_toggle(
+    typing_options,
+    "--read-inherited-property-schemas-in-mro-order",
+    help="With --intersect-combined-schema-keywords, give a property that a model only makes required the schema its "
+    "allOf parents declare, read in the order of the class bases from the allOf members the model's own fields are "
+    "read from (an alias member followed to the schema it names, the keywords beside a $ref member read with it), so "
+    "a model written before its parents takes the field it takes when written after them; without it the declaration "
+    "is looked up in the allOf members as written, and under --intersect-combined-schema-keywords such a field can "
+    "lose its description or its constraints or become Any, as in 0.96.0",
+)
 _flag(typing_options, "--field-constraints", help="Use field constraints and not con* annotations")
 _toggle(
     typing_options,

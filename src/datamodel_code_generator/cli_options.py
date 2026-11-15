@@ -477,6 +477,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         _C.TYPING,
         "--distribute-allof-over-unions --no-distribute-allof-over-unions",
         "--read-allof-parents-in-mro-order --no-read-allof-parents-in-mro-order",
+        "--read-inherited-property-schemas-in-mro-order --no-read-inherited-property-schemas-in-mro-order",
     ),
     **_opts(
         _C.MODEL,

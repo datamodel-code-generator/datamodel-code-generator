@@ -1331,6 +1331,15 @@ _STANDARD_20261113_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "resource takes, so the models accept and keep what Kubernetes does."
         ),
     ),
+    PresetOptionGroup(
+        title="Inherited property schemas read in MRO order",
+        config=PresetConfig(read_inherited_property_schemas_in_mro_order=True),
+        description=(
+            "Give a property that a model only makes required the schema its allOf parents declare, read in the order "
+            "of the class bases from the allOf members the model's fields are read from, so a model written before "
+            "its parents takes the field it takes when written after them."
+        ),
+    ),
 )
 """The 20261112 groups and the opt-in options added after them."""
 
