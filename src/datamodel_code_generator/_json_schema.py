@@ -34,6 +34,7 @@ from __future__ import annotations
 from collections.abc import Callable, Collection, Iterable, Iterator, Mapping
 from copy import deepcopy
 from decimal import Decimal
+from math import isnan
 from types import MappingProxyType
 from typing import Any, Final, Literal, NamedTuple, TypeAlias, overload
 
@@ -278,7 +279,7 @@ def json_value_key(value: Any, /, *, exact_types: bool = False, python_items: bo
     """
     cls = type(value)
     if cls in _KEY_KINDS:
-        return _KEY_KINDS[cls], _JSON_NAN_KEY if value != value else value  # noqa: PLR0124  # only a NaN is not itself
+        return _KEY_KINDS[cls], _JSON_NAN_KEY if cls is float and isnan(value) else value
     item_key = _python_item_key if python_items else json_value_key
     if isinstance(value, list):
         return (cls if exact_types else list), tuple(map(item_key, value))

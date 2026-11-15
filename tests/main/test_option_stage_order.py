@@ -667,6 +667,7 @@ def test_cli_target_warns_once_of_an_option_turned_off_that_a_preset_turns_on(
                 "--preset",
                 PRESET_WITH_COMBINED,
                 "--no-intersect-allof-keywords",
+                *BUILTIN,
             ],
         )
     assert_output(_seen(capsys, exit_code).partition("Add the runtime dependencies")[0])
