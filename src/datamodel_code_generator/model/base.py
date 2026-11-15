@@ -2912,10 +2912,17 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         The models of ``visited`` are left out, with the bases reached only through them; every model yielded from is
         added to it.
         """
-        met = set() if visited is None else visited
+        for model in self._bases_first(set() if visited is None else visited):
+            yield from model.fields
+
+    def _bases_first(self, met: set[ModelKey]) -> list[DataModel]:
+        """Return the model and the generated models it inherits from, each after its bases, so the model last.
+
+        The models of ``met`` are left out, with the bases reached only through them; every model returned is added to
+        it.
+        """
         walk = _base_walk(GraphSnapshot.INHERITED_FIELDS, (self,))
-        for key in walk.graph.postorder(walk.starts[0], EdgeKind.BASE, met):
-            yield from walk.node_of[key].fields
+        return [walk.node_of[key] for key in walk.graph.postorder(walk.starts[0], EdgeKind.BASE, met)]
 
     def get_dedup_key(self, class_name: str | None = None, *, use_default: bool = True) -> tuple[Any, ...]:
         """Generate hashable key for model deduplication.

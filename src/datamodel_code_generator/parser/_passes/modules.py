@@ -131,7 +131,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _assign_module_name,
     _context_models,
     _derived_models,
-    _get_enum_from_base,
     _get_model_module_name,
     _ModelPositions,
     _named_data_types,
@@ -183,8 +182,10 @@ from datamodel_code_generator.parser._tag_plan import (
     UnionTagDecision,
     UnionView,
     VariantTagField,
+    _site_reading,
     appended_takes_struct_tag,
     collapsed_duplicate,
+    collapsed_item_site,
     field_namer,
     has_any_variant,
     has_reused_variant,
@@ -196,10 +197,7 @@ from datamodel_code_generator.parser._tag_plan import (
     nested_variant_tags,
     settle_site,
     shared_site_names,
-    site_mode,
-    site_names,
     site_validity,
-    tag_capabilities,
     tag_msgspec_unions,
     tag_satisfies_pattern,
     taggable_variant,
@@ -1774,30 +1772,27 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                                 model_field,
                                 ConstraintsBase.merge_constraints(root_type_field.constraints, model_field.constraints),
                             )
-                        discriminator = root_type_field.extras.get("discriminator")
+                        item_types = copied_data_type.data_types
                         if (
-                            discriminator
-                            and tag_capabilities(type(root_type_model), type(root_type_field)).writes_argument
-                            and not has_any_variant(copied_data_type.data_types)
-                        ):
-                            names = site_names(
-                                discriminator.get("propertyName") if isinstance(discriminator, dict) else discriminator,
-                                field_namer(parser.model_resolver, parser.field_name_model_type),
-                            )
-                            if (
-                                site_validity(
-                                    copied_data_type.data_types,
-                                    names,
-                                    located_mapping(discriminator.get("mapping"), copied_data_type.data_types)
-                                    if isinstance(discriminator, dict)
-                                    else {},
-                                    field_type=type(root_type_field),
-                                    mode="python-or-original-name",
-                                    reading=tag_reading(parser),
+                            (site := collapsed_item_site(root_type_model, root_type_field, item_types)) is not None
+                            and (
+                                site_reading := _site_reading(
+                                    site,
+                                    field_namer(parser.model_resolver, parser.field_name_model_type),
+                                    row="legacy-collapse-python-name-mode",
                                 )
-                                == "tagged"
-                            ):
-                                graph_builder.set_type_discriminator(copied_data_type, names.field_name)
+                            ).writes_argument
+                            and not has_any_variant(item_types)
+                            and site_validity(
+                                item_types,
+                                site_reading,
+                                site.mapping,
+                                field_type=type(root_type_field),
+                                reading=tag_reading(parser),
+                            )
+                            == "tagged"
+                        ):
+                            graph_builder.set_type_discriminator(copied_data_type, site_reading.names.field_name)
                     replacement_context = generation_store._replace_data_type_and_detach_data_type_ref(  # noqa: SLF001
                         data_type,
                         copied_data_type,
@@ -2181,43 +2176,28 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
     for site in iter_union_sites(models):
         model, field = site.model, site.field
         reading = tag_reading(parser)
-        names = site_names(site.property_name, namer)
+        site_reading = _site_reading(site, namer)
+        names = site_reading.names
         mapping = site.mapping
         discriminator = {**site.discriminator, "propertyName": names.field_name}
         builder.set_field_extra(field, "discriminator", discriminator)
-        writes_argument = tag_capabilities(type(model), type(field)).writes_argument
         plan.unions[id(field)] = decision = UnionTagDecision(
             site,
             names,
-            site_validity(
-                field.data_type.data_types,
-                names,
-                mapping,
-                field_type=type(field),
-                mode=site_mode(writes_argument=writes_argument),
-                reading=reading,
-            ),
+            site_validity(field.data_type.data_types, site_reading, mapping, field_type=type(field), reading=reading),
         )
         if decision.status != "tagged":
             builder.drop_field_discriminator(field)
             continue
         enum_tagged, tag_fields = nested_variant_tags(
-            field.data_type.data_types,
-            names,
-            writes_argument=writes_argument,
-            enum_values=parser.use_enum_values_in_discriminator,
+            field.data_type.data_types, site_reading, enum_values=parser.use_enum_values_in_discriminator
         )
         set_nested_discriminator_literal_defaults(parser, tag_fields)
 
-        if writes_argument:
+        if site_reading.writes_argument:
             decision.names = names = shared_site_names(names, field.data_type.data_types, namer)
             discriminator["propertyName"] = names.field_name
-        view = UnionView(
-            names,
-            mapping,
-            "python-name" if writes_argument else "python-or-original-name",
-            reading,
-        )
+        view = UnionView(names, mapping, site_reading.view_mode, reading)
         field_name = names.field_name
 
         tags: list[DiscriminatorTag] = []
@@ -2310,9 +2290,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                         )
             if not has_one_literal:
                 new_data_type = parser._create_discriminator_data_type(  # noqa: SLF001
-                    base_enum_source := _get_enum_from_base(
-                        discriminator_model, field_name, use_field_name=writes_argument
-                    ),
+                    base_enum_source := view.inherited_enum(discriminator_model),
                     discriminator_values,
                     discriminator_model,
                     imports,
