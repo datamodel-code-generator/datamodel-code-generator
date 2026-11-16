@@ -158,7 +158,6 @@ from datamodel_code_generator.parser._passes._shared import (
     module_member_keys,
     module_members,
     removes_reuse_duplicate,
-    replace_model_in_list,
     require_update_action,
     run_unused_models,
     site_display_name,
@@ -812,20 +811,20 @@ def _keep_model_order_deps(
     return strong_deps, all_deps
 
 
-def _reorder_models_keep_model_order(
-    models: list[DataModel],
+def _kept_model_order(
+    models: Sequence[DataModel],
     imports: Imports,
     *,
     pydantic_v2_root_model_type: type[DataModel] | None,
     use_deferred_annotations: bool,
-) -> None:
-    """Reorder models deterministically based on their dependencies.
+) -> list[DataModel]:
+    """Return the models in a deterministic order based on their dependencies.
 
     Starts from class_name order and only moves models when required to satisfy dependencies.
     Cycles are kept as SCC groups, in the order of their dependencies over the quotient of the snapshot; within each
     SCC, base-class dependencies are prioritized.
     """
-    models.sort(key=lambda x: x.class_name)
+    models = sorted(models, key=lambda x: x.class_name)
     imported: ModelNames = {i for v in imports.values() for i in v}
     model_by_name = {m.class_name: m for m in models}
     order_index = {m.class_name: i for i, m in enumerate(models)}
@@ -872,7 +871,7 @@ def _reorder_models_keep_model_order(
                 )
             ]
         ordered_names.extend(members)
-    models[:] = [model_by_name[name] for name in ordered_names]
+    return [model_by_name[name] for name in ordered_names]
 
 
 def _replace_default_enum_list_members(
@@ -1266,43 +1265,43 @@ def _merged_open_enum_base(enums: Sequence[Enum]) -> str | list[str] | None:
     return enums[0].custom_base_class if all(enum.custom_base_class is not None for enum in enums) else None
 
 
-def extract_inherited_enum(models: list[DataModel]) -> None:
-    for model in models.copy():
-        enums: list[Enum] = []
-        for base_model in model.base_classes:
-            if not base_model.reference:
-                continue
-            source_model = base_model.reference.source
-            if isinstance(source_model, Enum):
-                enums.append(source_model)
-        if enums:
-            value_type = enum_value_base(type(enums[0]), row="legacy-merged-enum-specialized-only")
-            kind = decide_enum_kind("merged", first_specialized=value_type is not None)
-            merged_enum = _build_for_target(
-                model.target_python_version,
-                _enum_class(kind, enums[0].__class__),
-                fields=[
-                    f
-                    for e in enums
-                    for f in e.fields
-                    if value_type is None
-                    or holds_inherited_member_value(value_type, get_raw_enum_member_value(f.default))
-                ],
-                description=model.description,
-                reference=model.reference,
-                custom_base_class=_merged_open_enum_base(enums),
-            )
-            replace_model_in_list(models, model, merged_enum)
+def extract_inherited_enum(model: DataModel) -> DataModel:
+    """Return the enum that merges the Enum bases of ``model`` and takes its place, or ``model`` without such a base."""
+    enums: list[Enum] = []
+    for base_model in model.base_classes:
+        if not base_model.reference:
+            continue
+        source_model = base_model.reference.source
+        if isinstance(source_model, Enum):
+            enums.append(source_model)
+    if not enums:
+        return model
+    value_type = enum_value_base(type(enums[0]), row="legacy-merged-enum-specialized-only")
+    kind = decide_enum_kind("merged", first_specialized=value_type is not None)
+    return _build_for_target(
+        model.target_python_version,
+        _enum_class(kind, enums[0].__class__),
+        fields=[
+            f
+            for e in enums
+            for f in e.fields
+            if value_type is None or holds_inherited_member_value(value_type, get_raw_enum_member_value(f.default))
+        ],
+        description=model.description,
+        reference=model.reference,
+        custom_base_class=_merged_open_enum_base(enums),
+    )
 
 
 def extract_module_inherited_enums(parser: ModulesHost, state: ModuleStateView) -> None:
-    """Merge the enums that subclasses inherit, each merged enum taking the store place of its subclass.
+    """Merge the enums that subclasses inherit, each merged enum taking the list and store place of its subclass.
 
     A class with an Enum base is written as the merged enum whether or not it has fields of its own: an enum with
     members cannot be extended, so such a class fails on import, and object keywords constrain no enum member.
     """
     models = state.model_list.copy()
-    extract_inherited_enum(state.model_list)
+    merged = [extract_inherited_enum(model) for model in models]  # built before the write, outside its scope
+    parser._graph_builder.set_module_models(state.model_list, merged)  # noqa: SLF001
     for model, merged_enum in zip(models, state.model_list, strict=True):
         if merged_enum is not model:
             parser._graph_builder.replace_model(model, merged_enum)  # noqa: SLF001
@@ -1358,8 +1357,7 @@ def reuse_model(parser: ReuseHost, models: list[DataModel], require_update_actio
         elif (updated := subclass_duplicate(parser, model, cached_model, models, models)) is not None:
             updated_models.append(updated)
 
-    for duplicate in duplicates:
-        models.remove(duplicate)
+    parser._graph_builder.set_module_models(models, [model for model in models if model not in duplicates])  # noqa: SLF001
     if updated_models:
         require_update_action(parser, updated_models, require_update_action_models)
 
@@ -2099,12 +2097,13 @@ def sort_models(
     if not parser.keep_model_order:
         return
 
-    _reorder_models_keep_model_order(
+    kept = _kept_model_order(
         models,
         imports,
         pydantic_v2_root_model_type=parser.pydantic_v2_root_model_type,
         use_deferred_annotations=use_deferred_annotations,
     )
+    parser._graph_builder.set_module_models(models, kept)  # noqa: SLF001
 
 
 def change_field_name(
@@ -2747,7 +2746,7 @@ def remove_overridden_models(parser: ModulesHost, state: ModuleStateView) -> Non
             kept.append(model)
     if parser.remove_unused_models_beside_type_overrides:
         state.model_list_before_override_removal = list(models)
-        models[:] = kept
+        parser._graph_builder.set_module_models(models, kept)  # noqa: SLF001
     else:
         state.model_list = kept
 
@@ -2769,8 +2768,8 @@ def _drop_unnamed_python_import_models(parser: ModulesHost, models: list[DataMod
         and model_key_of(model.reference) not in module_bases
         and not has_references(model.reference)
     ]
+    parser._graph_builder.set_module_models(models, [model for model in models if model not in unnamed])  # noqa: SLF001
     for model in unnamed:
-        models.remove(model)
         parser._graph_builder.retire_model(model)  # noqa: SLF001
 
 
@@ -3234,7 +3233,7 @@ def _replace_aliases(
         (prepared.model_list for prepared in parser._prepared_modules),  # noqa: SLF001
         (prepared.model_list_before_override_removal for prepared in parser._prepared_modules),  # noqa: SLF001
     ):
-        model_list[:] = [replacements.get(id(model), model) for model in model_list]
+        parser._graph_builder.set_module_models(model_list, [replacements.get(id(m), m) for m in model_list])  # noqa: SLF001
     for model in aliases:
         parser._graph_builder.replace_model(model, replacements[id(model)])  # noqa: SLF001
     if (identities := run.model_identities) is not None:

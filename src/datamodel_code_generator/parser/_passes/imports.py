@@ -1778,7 +1778,7 @@ def remove_unused_models(parser: ImportsHost[Any], state: _FinalizeState[Any]) -
                     state.model_imports.get(unused_model, unused_model.imports),
                     ImportProducer("unused-models", unused_model),
                 )
-                models.remove(unused_model)
+                parser._graph_builder.set_module_models(models, [m for m in models if m is not unused_model])  # noqa: SLF001
                 if written:
                     parser._graph_builder.retire_model(unused_model)  # noqa: SLF001
 

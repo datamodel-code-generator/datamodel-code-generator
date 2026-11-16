@@ -208,6 +208,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "set_field_extra",
     "set_field_extras",
     "set_field_identity",
+    "set_module_models",
     "set_type_discriminator",
     "set_type_expressions",
     "update_model_reference",
@@ -1481,6 +1482,16 @@ class GenerationStore:  # noqa: PLR0904
         """Record that ``replacement``, built after parsing under the same model key, takes the place of ``model``."""
         self._builder.retire_model(model)
         self._builder.register_model(replacement)
+
+    @staticmethod
+    @deprecated("Use GenerationStore.builder().set_module_models() instead.", category=None)
+    def set_module_models(models: list[DataModel], members: Iterable[DataModel]) -> None:
+        """Make ``models``, the list of the models a module writes, hold ``members`` in their order, in place.
+
+        Every holder of the list sees the change. Nothing the store derives reads a module's list: the emitted models
+        are what ``register_model``, ``retire_model`` and ``replace_model`` record.
+        """
+        models[:] = members
 
     def _universe_facts(self) -> _UniverseFacts:
         """Return the current facts of the parsed models with the ids they record each model under."""
@@ -2932,6 +2943,10 @@ class GraphBuilder:
     def set_fields(self, model: DataModel, fields: Iterable[DataModelFieldBase]) -> None:
         """Replace all fields on ``model`` and invalidate derived facts; the new sites of ``model`` are copied."""
         self._store.set_fields(model, fields)  # ty: ignore[deprecated]
+
+    def set_module_models(self, models: list[DataModel], members: Iterable[DataModel]) -> None:
+        """Make ``models``, the list of the models a module writes, hold ``members`` in their order, in place."""
+        self._store.set_module_models(models, members)  # ty: ignore[deprecated]
 
     def set_nested_data_types(self, data_type: DataType, nested_data_types: Iterable[DataType]) -> None:
         """Replace nested data types and invalidate derived facts; the new sites under ``data_type`` are overridden."""

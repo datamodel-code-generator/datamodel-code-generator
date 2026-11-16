@@ -435,7 +435,7 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
 
     base_class_model.file_path = first_root_file_path
     parser._generic_base_model = base_class_model  # noqa: SLF001
-    first_root_models.insert(0, base_class_model)
+    parser._graph_builder.set_module_models(first_root_models, [base_class_model, *first_root_models])  # noqa: SLF001
     parser._graph_builder.register_model(base_class_model)  # noqa: SLF001
 
     base_class_dt = BaseClassDataType(type=base_class_ref.name, reference=base_class_ref)

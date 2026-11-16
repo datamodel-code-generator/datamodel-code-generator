@@ -1189,6 +1189,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (RenderFact.MODEL_ORDER, RenderFact.MODULE_MEMBERSHIP),
         Phase.IMPORTS,
         FreezePoint.RENDER,
+        store_ops=("set_module_models",),
         access=Access.CONTAINER,
     ),
     AttributeFact(

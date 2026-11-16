@@ -560,17 +560,6 @@ def field_name_model_type_of(data_model_type: type[DataModel]) -> ModelType:
     return model_type if (model_type := data_model_type.FIELD_NAME_MODEL_TYPE) is not None else ModelType.CLASS
 
 
-def replace_model_in_list(
-    models: list[DataModel],
-    original: DataModel,
-    replacement: DataModel,
-) -> None:
-    """Replace model at its position in list."""
-    # Use direct assignment instead of insert+remove for O(n) instead of O(2n)
-    idx = models.index(original)
-    models[idx] = replacement
-
-
 def _distinct_bases(host: GraphBuilderHost, base_dedup: BaseDedup, model: DataModel) -> None:
     """Give each child of a merged model its bases once each, told apart by module and type hint or by reference."""
     for child in model.reference.iter_data_model_children():
@@ -1211,7 +1200,7 @@ def subclass_duplicate(
     builder.redirect_model_reference_users(
         duplicate, users, inherited.reference, keeps_named=host.keep_reference_null_on_merged_models
     )
-    replace_model_in_list(models, duplicate, inherited)
+    builder.set_module_models(models, [inherited if model is duplicate else model for model in models])
     builder.replace_model(duplicate, inherited)
     settle_python_bases(host, inherited.reference)
     return inherited if model_key_of(canonical.reference) in host._recursion_facts["require_update"] else None  # noqa: SLF001
