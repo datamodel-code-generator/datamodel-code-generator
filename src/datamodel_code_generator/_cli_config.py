@@ -29,6 +29,7 @@ from datamodel_code_generator.enums import (
     NamingStrategy,
     OpenAPIScope,
     StrictTypes,
+    _openapi_scopes_or_default,
 )
 
 if TYPE_CHECKING:
@@ -383,7 +384,7 @@ def _get_config_class() -> type[Config]:
         force_optional: bool = False
         url: Optional[ParseResult] = None  # noqa: UP045
         strict_types: list[StrictTypes] = Field(default_factory=list)
-        openapi_scopes: Optional[list[OpenAPIScope]] = Field(default_factory=lambda: [OpenAPIScope.Schemas])  # noqa: UP045
+        openapi_scopes: Optional[list[OpenAPIScope]] = Field(default_factory=lambda: _openapi_scopes_or_default(None))  # noqa: UP045
         custom_formatters_kwargs: Optional[dict[str, str]] = None  # noqa: UP045
         watch: bool = False
         watch_delay: float = DEFAULT_WATCH_DELAY
