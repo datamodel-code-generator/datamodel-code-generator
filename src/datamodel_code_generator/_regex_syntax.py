@@ -189,7 +189,9 @@ _PYTHON_REJECTED_ESCAPES: Final = frozenset("ceghijklmopqyCEFGHIJKLMOPQRTVXY")
 """The letters Python's ``re`` reads after a backslash nowhere, on every Python from 3.10 on, ``p`` and ``P`` too."""
 _BRACED_CODES: Final = frozenset({"x{", "u{", "U{"})
 _PYTHON_CLASS: Final = r"(?<!\\)(?:\\\\)*\[\^?\]?(?:[^\\\]]|\\.)*\]"
-_CLASS_ITEM: Final = r"(?s)\\[pP]\{[^}]*\}|\\.|."
+_CLASS_ITEM: Final = r"(?s:\\(?:[pP](?:\{[^}]*\}|.?)|.?)|.)"
+_CLASS_PART: Final = rf"(?s)({_CLASS_ITEM})(?:-(\\.|[^\\]))?"
+r"""A member of a class: an item (a character or an escape, ``\pL`` and ``\p{L}`` whole) or a range from it."""
 _SIZE_THRESHOLDS: Final = MappingProxyType({
     "w": 218,
     "W": 233,
@@ -237,16 +239,53 @@ r"""The copies of the smallest atom of a kind from which Rust's compiled-size li
 
 A kind is a class escape (``w`` is ``\w``), a major general category (``pL`` is ``\p{L}``, ``PL`` is ``\P{L}``) or
 every character (``dot``). Each count is the first that a pydantic-core release from 2.0 to 2.50 refuses, the largest
-over the releases, for one repetition of the escape alone, of the escape under ``(?i)``, of its class with every
-ASCII character and of its class without any (the smallest class of the kind, as every ASCII range adds to it),
-anchored at either end or not. Rust compiles each copy anew, so the copies of repetitions, each over the count of its
-kind, add up (measured for every pair of kinds on 2.0, 2.3, 2.23 and 2.50). A first refused count bounds one copy
-only up to the few states of the measured pattern around it, and what a copy compiles to moves a little with where
-its states sit, so their sum reports a pattern only past ``_CERTAIN_LIMIT``. An atom of no kind here has no measured
-least size and adds nothing.
+over the releases, for one repetition of the smallest atom of the kind, anchored at either end or not: its class
+without any ASCII character, as each ASCII range adds to a copy (``_RANGE_BYTES``), and for ``dot`` every character,
+which has one. The escape alone, a class of it with ASCII characters and either under ``(?i)`` never compile to less
+(measured). Rust compiles each copy anew, so the copies of repetitions, each over the count of its kind, add up
+(measured for every pair of kinds on 2.0, 2.3, 2.23 and 2.50). A first refused count bounds one copy only up to the
+few states of the measured pattern around it, and what a copy compiles to moves a little with where its states sit,
+so their sum reports a pattern only past ``_CERTAIN_LIMIT``. An atom of no kind here has no measured least size and
+adds nothing.
 """
-_SIZE_LIMIT: Final = math.lcm(*_SIZE_THRESHOLDS.values(), *_CERTAIN_THRESHOLDS.values())
-"""Rust's compiled-size limit, in a unit that makes the size of one copy of an atom of every kind a whole number."""
+_CASED_THRESHOLDS: Final = MappingProxyType({
+    "pLu": 399,
+    "pLl": 385,
+    "pL pN": 229,
+    "pL pN pZ": 228,
+    "pL pM pN pP pS pZ": 215,
+    "pL pM pN pP pS": 215,
+    "d pL pM": 222,
+    "pL pN pP": 217,
+    "pL pM pN pP pS s": 215,
+    "d pL": 243,
+    "pL pN s": 228,
+})
+r"""More kinds of ``_CERTAIN_THRESHOLDS``, measured alike, that count only in a pattern whose flags never fold case.
+
+The uppercase and the lowercase letters (``pLu``, ``pLl``), which ``(?i)`` turns into every cased letter, far
+cheaper, and the unions of general categories and class escapes that schemas write (``pL pN`` is ``[\p{L}\p{N}]``,
+named by its members): a union compiles to more than its largest member, by an amount only a measured row bounds.
+"""
+_LIMIT_BYTES: Final = 10 * 1024 * 1024
+"""Rust's compiled-size limit in bytes, which pydantic-core keeps."""
+_SIZE_LIMIT: Final = math.lcm(
+    _LIMIT_BYTES, *_SIZE_THRESHOLDS.values(), *_CERTAIN_THRESHOLDS.values(), *_CASED_THRESHOLDS.values()
+)
+"""Rust's compiled-size limit, in a unit that makes a byte and the size of one copy of every kind a whole number."""
+_RANGE_BYTES: Final = 34
+r"""The bytes each ASCII range of an atom adds to one copy of it (``\w`` has four: ``0-9``, ``A-Z``, ``_``, ``a-z``).
+
+A range is a byte-range state and an alternative of the class's union in the reverse automaton: 36 bytes on every
+character, ``\s`` and ``\S`` on 2.3 to 2.50, from 34.3 on ``\p{Z}``, the least, and 64 on 2.0. Under the flag ``i``,
+which folds the ASCII letters of a class, no range is counted.
+"""
+_OPTIONAL_BYTES: Final = 38
+r"""The bytes each optional copy of a counted repetition (``a{1,5}`` has four) adds: a union state with two branches.
+
+Measured: 40 on every character on 2.3 to 2.50, from 38.3 on ``\p{Z}``, the least, and 32 on 2.0, whose copies are
+far larger than the counts of ``_CERTAIN_THRESHOLDS`` say.
+"""
 _CERTAIN_LIMIT: Final = _SIZE_LIMIT * 101 // 100
 r"""The certain size from which a pattern passes Rust's compiled-size limit on every release: the limit and 1 %.
 
@@ -262,6 +301,34 @@ _SIZES: Final = MappingProxyType({kind: _SIZE_LIMIT // count for kind, count in 
 """The size one copy of an atom of a kind counts as in a repetition read alone (``_SIZE_THRESHOLDS``)."""
 _CERTAIN_SIZES: Final = MappingProxyType({kind: _SIZE_LIMIT // count for kind, count in _CERTAIN_THRESHOLDS.items()})
 """The size one copy of an atom of a kind compiles to at least (``_CERTAIN_THRESHOLDS``)."""
+_CASED_SIZES: Final = MappingProxyType({
+    **_CERTAIN_SIZES,
+    **{kind: _SIZE_LIMIT // count for kind, count in _CASED_THRESHOLDS.items()},
+})
+"""The least sizes of ``_CERTAIN_SIZES`` and of ``_CASED_THRESHOLDS``, in a pattern whose flags never fold case."""
+_RANGE_SIZE: Final = _SIZE_LIMIT // _LIMIT_BYTES * _RANGE_BYTES
+"""The size an ASCII range adds to one copy of an atom (``_RANGE_BYTES``)."""
+_OPTIONAL_SIZE: Final = _SIZE_LIMIT // _LIMIT_BYTES * _OPTIONAL_BYTES
+"""The size an optional copy adds to a counted repetition (``_OPTIONAL_BYTES``)."""
+_ASCII: Final = (1 << 128) - 1
+"""The ASCII characters as bits, bit ``n`` for code point ``n``."""
+_ASCII_MEMBERS: Final = MappingProxyType({
+    "w": "0-9A-Z_a-z",
+    "d": "0-9",
+    "s": "\t-\r ",
+    "pL": "A-Za-z",
+    "pM": "",
+    "pN": "0-9",
+    "pP": "!-#%-*,-/:;?@[-]_{}",
+    "pS": "$+<->^`|~",
+    "pZ": " ",
+    "pC": "\x00-\x1f\x7f",
+    "pLu": "A-Z",
+    "pLl": "a-z",
+})
+"""The ASCII characters of a class escape or a general category, as a class writes them; its negation has the rest."""
+_CONTROL_ESCAPES: Final = MappingProxyType({"a": 7, "t": 9, "n": 10, "v": 11, "f": 12, "r": 13})
+"""The letters after a backslash that name an ASCII control character."""
 _SIZE_QUANTIFIER: Final = r"\{\s*(?P<lower>[0-9]+)\s*(?:(?P<comma>,)\s*(?P<upper>[0-9]*)\s*)?\}[?+]?|[*+?][?+]?"
 _ASCII_FLAG_GROUP: Final = r"\(\?[A-Za-z]*-[A-Za-z]*u"
 _VERBOSE_FLAG_GROUP: Final = r"\(\?[A-Za-z-]*x"
@@ -272,6 +339,8 @@ _ZERO_WIDTH_ESCAPES: Final = frozenset("bBAzZ<>")
 """The letters after a backslash of an atom that matches no character, which Rust compiles to no copy of one."""
 _ZERO_WIDTH: Final = frozenset("^$")
 """The characters of an atom that matches no character outside an escape; any other one consumes a character."""
+_SEQUENCE_ENDS: Final = frozenset({"", "|", ")"})
+"""What ends a sequence of a pattern: its end, the next branch or the end of its group."""
 _GROUP_PREFIX: Final = r"\((?:\?(?:<?[=!]|P?<[^>]*>|[A-Za-z-]*:|>))?"
 _BRANCH_START: Final = r"[0-9A-Za-z]"
 """The letter or digit a branch of an alternation starts with."""
@@ -301,12 +370,16 @@ def _rust_rejects_property(escape: str) -> bool:
 
 
 def _class_escape_ranges(pattern: str) -> bool:
-    r"""Return whether a class uses a class escape as the start of a range (``[\w- ]``), which both engines reject."""
+    r"""Return whether a class uses a class escape as the start of a range (``[\w- ]``), which both engines reject.
+
+    The start is a class escape or a property in braces (the only items longer than three characters); a property of
+    one letter (``[\pL-_]``) is not read as one, as the check has never read it so.
+    """
     for match in _compiled(_PYTHON_CLASS).finditer(pattern):
         body = match.group()
         tokens = _compiled(_CLASS_ITEM).findall(body[body.index("[") + 1 : -1])
         for index, token in enumerate(tokens[:-2]):
-            if tokens[index + 1] == "-" and token[:1] == "\\" and (token[1] in _CLASS_ESCAPES or token[1] in "pP"):
+            if tokens[index + 1] == "-" and (token[1:] in _CLASS_ESCAPES or token[3:]):
                 return True
     return False
 
@@ -345,68 +418,79 @@ class _SizeScan:
     """Read what Rust compiles for a pattern against its compiled-size limit, in units of ``_SIZE_LIMIT``.
 
     Each part of the pattern has three sizes: its largest atom (``_SIZES``), its largest repetition read alone, and
-    its certain size, the sum of the repetitions of its atoms whose least size is measured (``_CERTAIN_SIZES``).
+    its certain size, the sum of the repetitions of its atoms whose least size is measured (``_CERTAIN_SIZES``, and
+    ``_CASED_SIZES`` where no flag folds case). The flags of the whole pattern decide what ``.`` matches and whether
+    the ASCII ranges of an atom count (``_RANGE_BYTES``).
     """
 
     def __init__(self, pattern: str) -> None:
         self.pattern = pattern
         self.position = 0
+        flags = {letter for group in _compiled(_FLAG_GROUP).finditer(pattern) for letter in group["flags"]}
+        self.cased = "i" not in flags
+        self.sizes = _CASED_SIZES if self.cased else _CERTAIN_SIZES
+        self.dot = _ASCII if "s" in flags else _ASCII & ~(1 << ord("\n"))
 
     def _peek(self) -> str:
         return self.pattern[self.position : self.position + 1]
 
-    def alternation(self) -> tuple[int, int, int]:
-        """Return the three sizes of an alternation.
+    def alternation(self) -> tuple[int, int, int, bool]:
+        """Return the three sizes of an alternation, and whether each branch holds an atom of a kind outside a group.
 
         Rust compiles what every branch starts with once, so only the largest branch is certain, unless two branches
         start with different letters or digits: then no branch shares a part and their certain sizes add up.
         """
         starts: set[str] = set()
         atom = alone = largest = together = 0
+        held = True
         while True:
             if (start := _compiled(_BRANCH_START).match(self.pattern, self.position)) is not None:
                 starts.add(start.group().lower())
-            branch_atom, branch_alone, certain = self._sequence()
+            branch_atom, branch_alone, certain, branch_held = self._sequence()
             atom = max(atom, branch_atom)
             alone = max(alone, branch_alone)
             largest = max(largest, certain)
             together += certain
+            held &= branch_held
             if self._peek() != "|":
-                return atom, alone, together if len(starts) > 1 else largest
+                return atom, alone, together if len(starts) > 1 else largest, held
             self.position += 1
 
-    def _sequence(self) -> tuple[int, int, int]:
-        """Return the three sizes of a sequence.
+    def _sequence(self) -> tuple[int, int, int, bool]:
+        """Return the three sizes of a sequence, and whether it holds an atom of a kind outside a group.
 
         A counted repetition read alone is its copies of the largest atom it repeats. The certain size adds each
-        group, once per copy, and each atom that a repetition copies twice or more: Rust may compile a single copy
-        into one class with its neighbours.
+        group, once per copy, and each atom that a repetition copies twice or more or that another part follows,
+        with each optional copy (``_OPTIONAL_BYTES``): Rust may compile a single copy that ends a branch into one class
+        with the branches beside it.
         """
         atom = alone = certain = 0
-        while (character := self._peek()) not in {"", "|", ")"}:
+        held = False
+        while (character := self._peek()) not in _SEQUENCE_ENDS:
             part, part_alone, part_certain = self._atom()
-            copies, counted = self._quantifier()
+            copies, counted, optional = self._quantifier()
             alone = max(alone, part_alone * copies, part * copies * counted)
-            if character == "(" or copies > 1:
-                certain += part_certain * copies
+            if part_certain and (character == "(" or copies > 1 or self._peek() not in _SEQUENCE_ENDS):
+                certain += part_certain * copies + _OPTIONAL_SIZE * optional
+            held |= character != "(" and part_certain * copies > 0
             atom = max(atom, part * bool(copies))
-        return atom, alone, certain
+        return atom, alone, certain, held
 
-    def _quantifier(self) -> tuple[int, bool]:
-        """Return how many copies of the atom Rust compiles, and whether a counted repetition asks for them.
+    def _quantifier(self) -> tuple[int, bool, int]:
+        """Return how many copies of the atom Rust compiles, whether a count asks for them, and how many are optional.
 
         An open-ended repetition (``a{N,}``) compiles at least its ``N`` mandatory copies.
         """
         if (match := _compiled(_SIZE_QUANTIFIER).match(self.pattern, self.position)) is None:
-            return 1, False
+            return 1, False, 0
         self.position = match.end()
         if match["lower"] is None:
-            return 1, False
+            return 1, False, 0
         if match["comma"] is None:
-            return int(match["lower"]), True
+            return int(match["lower"]), True, 0
         if match["upper"]:
-            return int(match["upper"]), True
-        return max(int(match["lower"]), 1), True
+            return int(match["upper"]), True, int(match["upper"]) - int(match["lower"])
+        return max(int(match["lower"]), 1), True, 0
 
     def _atom(self) -> tuple[int, int, int]:
         """Return the three sizes of one atom, none for one that matches no character.
@@ -420,18 +504,29 @@ class _SizeScan:
             end, _ = _class_end(self.pattern, self.position)
             body = self.pattern[self.position : end]
             self.position = end
-            return _SIZES[_class_kind(body)], 0, _CERTAIN_SIZES.get(_certain_class_kind(body), 0)
+            return _SIZES[_class_kind(body)], 0, self._copy(*_certain_class(body, cased=self.cased))
         if character == "\\":
             escape = cast("re.Match[str]", _compiled(_SIZE_ESCAPE).match(self.pattern, self.position)).group()
             self.position += len(escape)
             letter = escape[1:2]
             if letter in _ZERO_WIDTH_ESCAPES:
                 return 0, 0, 0
-            return _SIZES[letter if letter in _CLASS_ESCAPES else "literal"], 0, _CERTAIN_SIZES.get(_member(escape), 0)
+            kind = _member(escape)
+            return _SIZES[letter if letter in _CLASS_ESCAPES else "literal"], 0, self._copy(kind, _member_ascii(kind))
         self.position += 1
         if character in _ZERO_WIDTH:
             return 0, 0, 0
-        return (_SIZES["dot"], 0, _CERTAIN_SIZES["dot"]) if character == "." else (_SIZES["literal"], 0, 0)
+        return (_SIZES["dot"], 0, self._copy("dot", self.dot)) if character == "." else (_SIZES["literal"], 0, 0)
+
+    def _copy(self, kind: str, characters: int) -> int:
+        """Return the least size of one copy of an atom of a kind that matches the ASCII ``characters`` (bits).
+
+        Each ASCII range counts, past the one of every character for ``dot``, where no flag folds case.
+        """
+        size = self.sizes.get(kind, 0)
+        if size and self.cased:
+            size += _RANGE_SIZE * ((characters & ~(characters << 1)).bit_count() - (kind == "dot"))
+        return size
 
     def _group(self) -> tuple[int, int, int]:
         """Return the three sizes of a group; a group that only sets flags has none."""
@@ -440,9 +535,9 @@ class _SizeScan:
             return 0, 0, 0
         prefix = _compiled(_GROUP_PREFIX).match(self.pattern, self.position)
         self.position = cast("re.Match[str]", prefix).end()
-        sizes = self.alternation()
+        atom, alone, certain, _ = self.alternation()
         self.position += self._peek() == ")"
-        return sizes
+        return atom, alone, certain
 
 
 def _class_kind(body: str) -> str:
@@ -474,37 +569,80 @@ def _negation(kind: str) -> str:
     return kind[:1].swapcase() + kind[1:]
 
 
-def _certain_class_kind(body: str) -> str:
-    r"""Return the kind whose least size a class certainly compiles to (``_CERTAIN_THRESHOLDS``), or no kind.
+def _member_ascii(name: str) -> int:
+    """Return the ASCII characters of a class escape or a general category named as ``_member`` names it, as bits.
 
-    A class of one class escape or major general category and ASCII characters is that kind, its negation if the
-    class is negated (``[^\p{C}]`` is ``\P{C}``): the ASCII characters only change its ASCII ranges, and the count
-    of the kind is that of the class without any. A class that is not negated and holds a member with its negation
-    (``[\s\S]``, ``[\P{M}\p{M}]``) is every character. Beside ``\w``, ``\d`` adds nothing (``[\w\d]`` is ``\w``, as
-    ``\d`` is inside ``\w``), and a class of ``\w`` and ``\s`` that is not negated is at least ``\w`` (measured: every
-    release refuses ``[\w\s]`` from fewer copies than the count of ``w``, also without any ASCII character). Any other
-    class has no kind, as it may compile to less than a member: several members (``[\S ]`` beside ``\S``,
-    ``[\p{L}\p{C}]``), another property, a character beyond ASCII or what ``_UNCERTAIN_CLASS`` reads
-    (``[\w&&[a-z]]``).
+    Any other escape has none.
+    """
+    if name in _ASCII_MEMBERS:
+        return _ascii_characters(_ASCII_MEMBERS[name])
+    if (positive := _negation(name)) in _ASCII_MEMBERS:
+        return _ASCII & ~_ascii_characters(_ASCII_MEMBERS[positive])
+    return 0
+
+
+def _class_character(part: str) -> int | None:
+    """Return the code point a character of a class or its escape names; None for an escape of a set of them."""
+    if len(part) == 1:
+        return ord(part)
+    letter = part[1:]
+    if letter in _CONTROL_ESCAPES:
+        return _CONTROL_ESCAPES[letter]
+    return None if len(letter) != 1 or letter.isalnum() else ord(letter)
+
+
+@cache
+def _ascii_characters(members: str) -> int:
+    """Return the ASCII characters that the members of a class hold, as bits.
+
+    A range with an escape of a set at either end, which Rust refuses, counts its first member alone.
+    """
+    held = 0
+    for part in _compiled(_CLASS_PART).finditer(members):
+        start = _class_character(part[1])
+        end = start if part[2] is None else _class_character(part[2])
+        if start is None or end is None:
+            held |= _member_ascii(_member(part[1]))
+        else:
+            held |= (1 << end + 1) - (1 << start)
+    return held & _ASCII
+
+
+def _certain_class(body: str, *, cased: bool) -> tuple[str, int]:
+    r"""Return the kind whose least size a class certainly compiles to, or no kind, and its ASCII characters (bits).
+
+    A class of one class escape or general category and ASCII characters is that kind, its negation if the class is
+    negated (``[^\p{C}]`` is ``\P{C}``): the ASCII characters only change its ASCII ranges. A class that is not
+    negated and holds a member with its negation (``[\s\S]``, ``[\P{M}\p{M}]``) is every character, and so is a
+    negated class of characters alone (``[^<>]``) that leaves an ASCII character, where no flag folds case
+    (``cased``). Beside ``\w``, ``\d`` adds nothing (``[\w\d]`` is ``\w``, as ``\d`` is inside ``\w``), and a class
+    of ``\w`` and ``\s`` that is not negated is at least ``\w`` (measured: every release refuses ``[\w\s]`` from fewer
+    copies than the count of ``w``, also without any ASCII character). A class of several members that is not negated
+    is the union of ``_CASED_THRESHOLDS`` they name, if any. Any other class has no kind, as it may compile to less
+    than a member: other unions (``[\S ]`` beside ``\S``, ``[\p{L}\p{C}]``), another property, a character beyond
+    ASCII or what ``_UNCERTAIN_CLASS`` reads (``[\w&&[a-z]]``).
     """
     inner = body[1:-1]
     members = {_member(escape) for escape in _escapes(inner)}
-    kinds = members & _CERTAIN_THRESHOLDS.keys()
+    kinds = members & _CASED_SIZES.keys()
     if (
         not inner.isascii()
         or _compiled(_UNCERTAIN_CLASS).search(inner) is not None
         or any(member.startswith(("p", "P")) for member in members - kinds)
     ):
-        return ""
+        return "", 0
     negated = inner.startswith("^")
+    characters = _ascii_characters(inner[negated:]) ^ (_ASCII if negated else 0)
     if not negated and any(_negation(kind) in kinds for kind in kinds):
-        return "dot"
+        return "dot", characters
     if "w" in kinds:
         kinds -= {"d"} if negated else {"d", "s"}
-    if len(kinds) != 1:
-        return ""
-    (kind,) = kinds
-    return _negation(kind) if negated else kind
+    if len(kinds) == 1:
+        (kind,) = kinds
+        return _negation(kind) if negated else kind, characters
+    if negated:
+        return "dot" if cased and not kinds and characters else "", characters
+    return " ".join(sorted(kinds)), characters
 
 
 def _exceeds_compiled_size(pattern: str) -> bool:
@@ -514,15 +652,20 @@ def _exceeds_compiled_size(pattern: str) -> bool:
     repetition inside another multiply, and a repetition of a group counts as its cheapest atom. Several do together
     when their certain sizes pass the limit by its margin (``_CERTAIN_THRESHOLDS``, ``_CERTAIN_LIMIT``,
     ``_SizeScan``): a lower bound of what Rust compiles, which leaves a pattern that passes the limit by what it does
-    not count to fail at import. It counts only where Rust compiles all of the pattern: one anchored at either end, or
-    one without what ``_LITERAL_SEARCH`` reads. It does not model what Rust compiles to nothing: a repetition of no
-    copy (``\w{120}\w{120}{0}``) and a part that matches nothing (``x(?:[^\s\S]\w{120}\w{120})?``). A pattern with a
-    group that turns Unicode off, where ``\w`` and ``.`` are ASCII, is not read.
+    not count to fail at import. It counts only where Rust compiles all of the pattern: one anchored at either end, one
+    without what ``_LITERAL_SEARCH`` reads, or one whose every branch holds an atom of a kind outside any group, whose
+    many characters leave no literal Rust could search alone. It does not model what Rust compiles to nothing: a
+    repetition of no copy (``\w{120}\w{120}{0}``) and a part that matches nothing (``x(?:[^\s\S]\w{120}\w{120})?``).
+    A pattern with a group that turns Unicode off, where ``\w`` and ``.`` are ASCII, is not read.
     """
     if _compiled(_ASCII_FLAG_GROUP).search(pattern) is not None:
         return False
-    _, alone, certain = _SizeScan(pattern).alternation()
-    if _compiled(_ANCHORED).search(pattern) is None and _compiled(_LITERAL_SEARCH).search(pattern) is not None:
+    _, alone, certain, held = _SizeScan(pattern).alternation()
+    if (
+        not held
+        and _compiled(_ANCHORED).search(pattern) is None
+        and _compiled(_LITERAL_SEARCH).search(pattern) is not None
+    ):
         certain = 0
     return alone >= _SIZE_LIMIT or certain >= _CERTAIN_LIMIT
 

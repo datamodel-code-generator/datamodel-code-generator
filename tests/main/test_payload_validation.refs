@@ -1923,6 +1923,11 @@ openapi/pattern.yaml::components.schemas.info	payloads/native_numeric_empty_erro
 openapi/pattern_backreference.yaml::components.schemas.Doubled	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern_backreference.yaml::components.schemas.Plain	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern_lookaround.yaml::components.schemas.info	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/pattern_size_alternation.yaml::components.schemas.Principal	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/pattern_size_any_character.yaml::components.schemas.Comment	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/pattern_size_counted_group.yaml::components.schemas.Address	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/pattern_size_negated_characters.yaml::components.schemas.Text	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/pattern_size_negated_newline.yaml::components.schemas.Line	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern_size_repetitions.yaml::components.schemas.UserArn	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern_size_word_and_digit_class.yaml::components.schemas.ResourceName	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern_size_word_and_space_class.yaml::components.schemas.Title	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -4075,6 +4080,11 @@ openapi/pattern.yaml::components.schemas.info	payloads/native_numeric_empty_erro
 openapi/pattern_backreference.yaml::components.schemas.Doubled	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern_backreference.yaml::components.schemas.Plain	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern_lookaround.yaml::components.schemas.info	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/pattern_size_alternation.yaml::components.schemas.Principal	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/pattern_size_any_character.yaml::components.schemas.Comment	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/pattern_size_counted_group.yaml::components.schemas.Address	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/pattern_size_negated_characters.yaml::components.schemas.Text	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/pattern_size_negated_newline.yaml::components.schemas.Line	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern_size_repetitions.yaml::components.schemas.UserArn	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern_size_word_and_digit_class.yaml::components.schemas.ResourceName	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern_size_word_and_space_class.yaml::components.schemas.Title	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

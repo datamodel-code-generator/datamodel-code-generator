@@ -1,0 +1,3 @@
+text: valid
+10,241 characters: string_pattern_mismatch
+two lines: string_pattern_mismatch

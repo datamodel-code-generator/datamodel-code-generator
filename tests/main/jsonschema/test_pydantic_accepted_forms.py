@@ -84,6 +84,16 @@ SIZE_LIMIT_PAYLOADS = {
     "word_and_digit_class": ("ResourceName", {"name": "my_resource-01", "slash": "a/b"}),
     "word_and_space_class": ("Title", {"title": "Déjà vu - Part 2", "slash": "a/b"}),
     "decimal_number": ("Digits", {"digits": "١٢٣", "letters": "12a"}),
+    "letters": ("Name", {"letters": "Déjà", "digit": "abc1"}),
+    "category_union": ("TagValue", {"tag": "Déjà_vu-2", "punctuation": "!!!"}),
+    "any_character": (
+        "Comment",
+        {"text": "any text", "10,241 characters": "x" * 10241, "two lines": "a\nb"},
+    ),
+    "negated_characters": ("Text", {"text": "a and b", "angle bracket": "a<b", "empty": ""}),
+    "negated_newline": ("Line", {"text": "any text", "two lines": "a\nb"}),
+    "alternation": ("Principal", {"user": "user-alice", "role": "role-admin"}),
+    "counted_group": ("Address", {"address": "first.last@example.com", "no at": "example.com"}),
 }
 
 
@@ -287,13 +297,15 @@ def test_patterns_no_engine_compiles_as_written(
 def test_size_limit_of_repetitions_together_and_of_unicode_classes(
     output_file: Path, recwarn: pytest.WarningsRecorder, document: str
 ) -> None:
-    r"""Write a pattern Rust refuses for several repetitions together or a class of a general category (#6877).
+    r"""Write a pattern Rust refuses for several repetitions together or a class of a general category (#6877, #6908).
 
     AWS documents write them: four counted classes of ``\\w`` that pass Rust's compiled-size limit only together
     select ``python-re``; a counted negated class of ``\\p{C}`` and a counted class of ``\\P{M}`` and ``\\p{M}``,
     which Python's ``re`` rejects too, are left out with a warning, and the model checks the other keywords only
     (``maxLength``). A class of ``\\w`` and ``\\d`` counts as ``\\w``, so does one of ``\\w`` and ``\\s``, and
-    ``\\p{Nd}`` counts as ``\\d``. Each module once failed at import with ``Compiled regex exceeds size limit``.
+    ``\\p{Nd}`` counts as ``\\d``. The ASCII ranges and optional copies of a repetition count too (``\\p{L}``, ``.``,
+    ``[^<>]``), and so do a union of general categories, the single copies of a counted group and the branches of an
+    alternation that each repeat a class. Each module once failed at import with ``Compiled regex exceeds size limit``.
     """
     name, payloads = SIZE_LIMIT_PAYLOADS[document]
     run_main_and_assert(

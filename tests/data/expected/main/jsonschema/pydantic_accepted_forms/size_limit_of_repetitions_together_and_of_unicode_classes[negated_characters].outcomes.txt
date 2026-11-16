@@ -1,0 +1,3 @@
+text: valid
+angle bracket: string_pattern_mismatch
+empty: string_pattern_mismatch

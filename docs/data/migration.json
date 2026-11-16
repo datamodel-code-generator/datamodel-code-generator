@@ -879,6 +879,29 @@
     ]
    },
    "after": "root: str",
+   "before": "root: constr(pattern=r'^\\p{L}{1,256}$')",
+   "id": "regex-size-limit-more-classes",
+   "keep": {
+    "note": "The previous module failed at import; nothing restores it."
+   },
+   "kind": "default-output",
+   "refs": [
+    "#6908"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "A `pattern` that every pydantic-core release from 2.0 to 2.50 refuses for size, but that the size check counted below the limit, was written as the schema writes it, and the module failed at import with `Compiled regex exceeds size limit`: a class of several Unicode general categories (`[\\p{L}\\p{N}_-]{1,256}`, `^[\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]{0,256}$`), `\\p{Lu}` or `\\p{Ll}`, a count that passes the limit only with what the ASCII characters of its atom and its optional copies add (`^\\p{L}{1,256}$`, `^.{0,10240}$`, `^[^<>]{1,10000}$`), a counted group of single atoms (`^(?:[\\w-]\\.?){1,128}@(?:[\\w-]\\.?){1,128}$`) and an alternation without `^` or `$` in which every branch holds at least one copy of these classes or escapes outside a group (`user-[\\w-]{1,128}|group-[\\w-]{1,128}`). The model now selects `regex_engine=\"python-re\"` for it; a pattern Python's `re` rejects too, as it rejects `\\p{...}`, is left out with a warning. Only patterns that every pydantic-core release from 2.0 to 2.50 refuses are read this way. Output that imported before is unchanged.",
+   "title": "More patterns past the regex size limit no longer fail at import, such as `^\\p{L}{1,256}$`, `^.{0,10240}$` and `[\\p{L}\\p{N}_-]{1,256}`"
+  },
+  {
+   "action": "review",
+   "affects": {
+    "output_model_types": [
+     "pydantic_v2.BaseModel",
+     "pydantic_v2.dataclass"
+    ]
+   },
+   "after": "root: str",
    "before": "root: constr(pattern=r'[^\\p{C}]{1,2048}')",
    "id": "regex-size-limit-repetitions-together",
    "keep": {
