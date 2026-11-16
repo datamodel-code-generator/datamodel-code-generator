@@ -26,6 +26,7 @@ from datamodel_code_generator.__main__ import Config, Exit
 from datamodel_code_generator.arguments import arg_parser
 from datamodel_code_generator.config import GenerateConfig
 from datamodel_code_generator.experimental import EXPERIMENTAL_FEATURES
+from datamodel_code_generator.preset import get_preset_infos
 from tests.conftest import MockHttpxResponse, assert_httpx_get_kwargs, assert_output
 from tests.main.conftest import (
     DATA_PATH,
@@ -703,13 +704,25 @@ def _option_fields() -> set[str]:
     return cli_fields | set(GenerateConfig.model_fields) | destinations
 
 
+def _set_by_the_presets() -> set[str]:
+    """Return the configuration fields a dated standard preset sets in every context; they need no registry entry."""
+    return {
+        item.field_name
+        for info in get_preset_infos()
+        if info.name.value.startswith("standard-")
+        for group in info.option_groups
+        if not (group.input_file_types or group.output_model_types or group.requires_python_strenum)
+        for item in group.config.items()
+    }
+
+
 def _listing(title: str, items: Iterable[str]) -> str:
     return f"{title}: {', '.join(sorted(items)) or 'none'}"
 
 
 def test_every_option_is_registered_with_the_recommender() -> None:
     """Every option must be registered with the option recommender, by rule ids or a not-recommended category."""
-    registered = set(_rules_data()["options"])
+    registered = set(_rules_data()["options"]) | _set_by_the_presets()
     fields = _option_fields()
     assert_output(
         "\n".join((
