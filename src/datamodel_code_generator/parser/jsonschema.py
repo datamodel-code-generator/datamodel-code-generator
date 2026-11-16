@@ -8387,11 +8387,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         raw: dict[str, YamlValue] | YamlValue,
         path: list[str],
         validated_obj: JsonSchemaObject | None = None,
+        *,
+        indexed: bool = False,
     ) -> None:
         """Parse a raw schema, reusing a validated object when available.
 
         A schema with ``x-python-import`` is the class it imports, unless --ignore-ref-siblings-by-schema-version reads
-        it as its ``$ref`` alone (``reads_ref_alone``).
+        it as its ``$ref`` alone (``reads_ref_alone``). The schema is indexed (``_index_validated_schema``) unless the
+        caller says it indexed ``validated_obj`` (``indexed``).
         """
         if self._reads_as_python_import(raw, path):
             self.model_resolver.add(path, name, class_name=True, loaded=True)
@@ -8402,10 +8405,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._check_version_specific_features(raw, path)
 
         obj = validated_obj if validated_obj is not None else self._validate_schema_object(raw, path)
-        self._cache_ref_data_type_facts(self.model_resolver.join_path(tuple(path)), obj)
-        # Build $recursiveAnchor / $dynamicAnchor indexes for this schema
-        _schema_refs.build_anchor_indexes(self, obj, path)
+        if not indexed:
+            self._index_validated_schema(obj, path)
         self.parse_obj(name, obj, path)
+
+    def _index_validated_schema(self, obj: JsonSchemaObject, path: list[str], *, ids: list[str] | None = None) -> None:
+        """Record what a reference to the schema ``obj`` at ``path`` reads and the anchors it declares.
+
+        Its ``$recursiveAnchor`` and ``$dynamicAnchor`` get their index entries; with ``ids``, the path its ``$id``
+        fields are read at, those are registered (``parse_id``).
+        """
+        self._cache_ref_data_type_facts(self.model_resolver.join_path(tuple(path)), obj)
+        if ids is not None:
+            self.parse_id(obj, ids)
+        _schema_refs.build_anchor_indexes(self, obj, path)
 
     def _reads_as_python_import(
         self, raw: dict[str, YamlValue] | YamlValue, path: list[str]
@@ -9350,15 +9363,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         and not _schema_validators.customizes_models(self.config)
                     ):
                         self._pattern_validation_document_root = root_obj
-                    self._cache_ref_data_type_facts(self.model_resolver.join_path(tuple(path_parts or ["#"])), root_obj)
-                    self.parse_id(root_obj, [*path_parts, "#"] if path_parts else ["#"])
-                    _schema_refs.build_anchor_indexes(self, root_obj, path_parts)
+                    self._index_validated_schema(root_obj, path_parts, ids=[*path_parts, "#"] if path_parts else ["#"])
                     schema_path, definitions = _schema_documents.first_definitions(self, raw, None)
                     definition_metadata_entries, definition_entries = self._definition_entries_read(
                         schema_path, definitions, path_parts
                     )
                     seen_definition_metadata_paths: set[tuple[str, ...]] = set()
-                    validated_definition_objects: dict[tuple[str, ...], JsonSchemaObject] = {}
+                    indexed_definition_objects: dict[tuple[str, ...], JsonSchemaObject] = {}
                     for _key, model, definition_path in definition_metadata_entries:
                         if (definition_path_key := tuple(definition_path)) in seen_definition_metadata_paths:
                             continue
@@ -9368,10 +9379,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                             definition_path,
                             self._member_location(definitions, *definition_path[len(path_parts) + 1 :]),
                         )
-                        validated_definition_objects[definition_path_key] = obj
-                        self._cache_ref_data_type_facts(self.model_resolver.join_path(tuple(definition_path)), obj)
-                        self.parse_id(obj, definition_path)
-                        _schema_refs.build_anchor_indexes(self, obj, definition_path)
+                        indexed_definition_objects[definition_path_key] = obj
+                        self._index_validated_schema(obj, definition_path, ids=definition_path)
 
                     if object_paths:
                         models = (
@@ -9396,7 +9405,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                                     key,
                                     model,
                                     path,
-                                    validated_definition_objects.get(tuple(path)),
+                                    indexed_definition_objects.get(tuple(path)),
+                                    indexed=tuple(path) in indexed_definition_objects,
                                 )
 
                     self._parse_reserved_targets(raw, path_parts)
