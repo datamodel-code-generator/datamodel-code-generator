@@ -47,6 +47,7 @@ from datamodel_code_generator.model._render_plan import (
     Positional,
     RuleId,
     Why,
+    _package_class,
     frozen_render_plan,
 )
 from datamodel_code_generator.model._render_plan import CallArguments as _FieldArguments
@@ -60,7 +61,6 @@ from datamodel_code_generator.python_literal import represent_python_value
 from datamodel_code_generator.types import (
     DataTypeManager,
     _non_finite_as_written,
-    chain_as_tuple,
 )
 from datamodel_code_generator.types import UnionIntFloat as _UnionIntFloat
 
@@ -787,23 +787,26 @@ class DataModelField(DataModelFieldBase):
             data_type=self.data_type,
         )
 
-    @property
     @override
-    def imports(self) -> tuple[Import, ...]:
-        """Get all required imports including Field if needed.
+    def _hint_imports(self, plan: FieldRenderPlan) -> tuple[Import, ...]:
+        """Return the imports of the type hint, with ``Annotated`` where it writes the ``Field()`` call.
 
-        Computes _has_field_statement() once and derives needs_annotated from it:
-        str(self) is non-empty exactly when _has_field_statement() is true (both
-        come from the same Field() data), so this matches bool(self.annotated)
-        without rebuilding the type hint and Field() string.
+        str(self) is non-empty exactly when the plan has a call (both come from the same Field() data), so this
+        matches bool(self.annotated) without rebuilding the type hint and Field() string. A field class outside the
+        package reads ``_has_field_statement()`` instead, as ``_call_imports`` does.
         """
-        has_field_statement = self._has_field_statement()
-        base_imports = self._collect_field_imports(
-            needs_annotated=self.use_annotated and not self.is_class_var and has_field_statement
+        return self._collect_field_imports(
+            needs_annotated=self.use_annotated
+            and not self.is_class_var
+            and (plan.call is not None if _package_class(type(self)) else self._has_field_statement())
         )
-        if has_field_statement:
-            return chain_as_tuple(base_imports, (IMPORT_FIELD,))
-        return base_imports
+
+    @override
+    def _call_imports(self, plan: FieldRenderPlan) -> tuple[Import, ...]:
+        """Return the call's imports; for a field class outside the package ``Field`` if ``_has_field_statement()``."""
+        if _package_class(type(self)):
+            return super()._call_imports(plan)
+        return (IMPORT_FIELD,) if self._has_field_statement() else ()
 
 
 class BaseModelBase(DataModel, ABC):

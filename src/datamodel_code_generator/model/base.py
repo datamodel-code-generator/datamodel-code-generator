@@ -893,8 +893,17 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
     @property
     def imports(self) -> tuple[Import, ...]:
-        """Get all imports required for this field's type hint."""
+        """Get all imports required for this field: those of its type hint, then those its call needs."""
+        plan = self._render_plan()
+        return (*self._hint_imports(plan), *self._call_imports(plan))
+
+    def _hint_imports(self, plan: FieldRenderPlan) -> tuple[Import, ...]:  # noqa: ARG002
+        """Return the imports the field's type hint needs."""
         return self._collect_field_imports(needs_annotated=self.use_annotated and self.needs_annotated_import)
+
+    def _call_imports(self, plan: FieldRenderPlan) -> tuple[Import, ...]:  # noqa: PLR6301
+        """Return the imports the field's call needs: the ``symbol_imports`` of its render plan."""
+        return tuple(import_ for import_, _ in plan.symbol_imports) if plan.symbol_imports else ()
 
     @property
     def runtime_expression_imports(self) -> tuple[Import, ...]:

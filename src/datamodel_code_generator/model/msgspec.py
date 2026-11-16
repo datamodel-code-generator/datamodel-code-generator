@@ -113,7 +113,6 @@ from datamodel_code_generator.types import (
     _qualified_type_path,
     _takes_json_scalar,
     build_union,
-    chain_as_tuple,
     union_members,
 )
 
@@ -680,18 +679,14 @@ DataModelFieldBaseT = TypeVar("DataModelFieldBaseT", bound=DataModelFieldBase)
 
 
 def import_extender(cls: type[DataModelFieldBaseT]) -> type[DataModelFieldBaseT]:
-    """Extend imports property with msgspec-specific imports."""
+    """Extend imports property with msgspec's rule for class variables: a tag field imports nothing."""
     original_getter: Callable[[DataModelFieldBaseT], tuple[Import, ...]] = cast("Any", cls.imports.fget)
 
     @wraps(original_getter)
     def new_imports(self: DataModelFieldBaseT) -> tuple[Import, ...]:
         if self.is_class_var:
             return ()
-        extra_imports: tuple[Import, ...] = ()
-        if isinstance(self, DataModelField):
-            extra_imports = tuple(import_ for import_, _ in self._render_plan().symbol_imports)
-        imports = original_getter(self)
-        return chain_as_tuple(imports, extra_imports)
+        return original_getter(self)
 
     cls.imports = property(new_imports)  # ty: ignore[invalid-assignment]
     return cls
@@ -1526,10 +1521,9 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         own, meta = self._hint_meta()
         return self._import_state_target(needs_annotated=meta is not None, data_type=self.data_type) if own else None
 
-    @property
     @override
-    def imports(self) -> tuple[Import, ...]:
-        """Get imports from the structurally rendered msgspec annotation."""
+    def _hint_imports(self, plan: FieldRenderPlan) -> tuple[Import, ...]:
+        """Return the imports of the structurally rendered msgspec annotation."""
         if self._get_simple_unset_base_type() is not None:
             imports = self._collect_field_imports(needs_annotated=False, data_type=self.data_type)
             if IMPORT_MSGSPEC_UNSETTYPE not in imports:
@@ -1537,7 +1531,6 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             if not self._use_union_operator and IMPORT_UNION not in imports:
                 imports = (*imports, IMPORT_UNION)
             return imports
-        plan = self._render_plan()
         return self._collect_field_imports(
             needs_annotated=plan.annotated_call is not None,
             data_type=self._imports_data_type(plan),
