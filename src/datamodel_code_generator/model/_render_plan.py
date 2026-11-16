@@ -14,7 +14,8 @@ render preparation ends (B2), and the field's ``field``, ``annotated``, ``type_h
 ``has_default_factory_in_field`` and imports read the frozen plan from then on. Before B2, and for a field that no
 parse froze, they read the plan the parse's memo keeps for the field (``model/base.py:live_render_plan``) while the
 revisions it read hold, and B2 freezes that plan; the field's imports are kept the same way, by the plan they read
-(``model/base.py:field_imports``). One accessor resolves both (``model/base.py:_field_render``).
+(``model/base.py:field_imports``); those of a Pydantic v2 field known to write no call are kept without one
+(``_FieldRender.imports``). One accessor resolves both (``model/base.py:_field_render``).
 A field, model or parser of a class outside this package computes both at each read. A frozen plan keeps its field's
 revisions, or, for such a class or under custom templates, the contents of what it read from its field; a field whose
 revisions or contents differ when its model renders, as a model's ``render`` may change them, renders from a plan

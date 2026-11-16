@@ -585,6 +585,11 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         ]
         | None
     ] = None
+    WRITES_NO_CALL_WITHOUT_PLAN: ClassVar[Callable[[DataModelFieldBase], bool] | None] = None
+    """Return whether a field is known to write no call before its render plan is built (`_FieldRender.writes_no_call`).
+
+    Only a class whose imports then read no plan has it (the Pydantic v2 field); the others build the plan.
+    """
     NEEDS_MODEL_REGEX_ENGINE: ClassVar[Callable[[list[DataModelFieldBase]], bool] | None] = None
     """Return whether a pattern of the fields selects a regex engine in the config of the model that holds them."""
     PATTERN_NEEDS_HOLDER_ENGINE: ClassVar[
@@ -1583,6 +1588,9 @@ construction key does, also where a Pydantic dataclass keeps it for a type rende
 _ORDERS_CONSTRUCTOR_FIELDS: Final[ContextVar[bool]] = ContextVar("orders_constructor_fields", default=False)
 """Whether constructor ordering runs, which leaves out under ``--order-constructor-fields-by written-defaults`` the
 nested factories render preparation has not decided yet."""
+_WITHOUT_PLAN: Final = "without plan"
+"""The first part of the view the memo keeps the imports of a field under when its class knows it writes no call, and
+None for the other fields of such a class, beside those read with its plan (`_FieldRender.imports`)."""
 
 
 @contextmanager
@@ -1655,17 +1663,35 @@ class _FieldRender:
             return live_render_plan(self.field)
         return plan
 
+    def writes_no_call(self) -> bool:
+        """Return whether the field is known to write no call without building a plan.
+
+        The plan the parse froze for the field says it, else its class knows it (``WRITES_NO_CALL_WITHOUT_PLAN``).
+        """
+        field = self.field
+        if (ready := self.ready) is not None and (plan := ready.plan_of(field)) is not None:
+            return plan.call is None
+        return (known := field.WRITES_NO_CALL_WITHOUT_PLAN) is not None and known(field)
+
     @property
     def imports(self) -> tuple[Import, ...]:
         """The field's imports, kept in the parse's memo with ``plan`` while the revisions they read hold.
 
         They are kept for the view the plan is kept for (`_plan_view`); where the memo keeps nothing for the field they
-        are computed at each read.
+        are computed at each read. Those of a field whose class knows it writes no call before building a plan read
+        none: they are kept without one (``_WITHOUT_PLAN``), as the answer, None for the other fields, is kept; both
+        read the field's facts alone, so they hold under the same revisions, also once the plans are frozen.
         """
         field, ready = self.field, self.ready
         if ready is None or (memo := ready.derived_from(field)) is None:
             return field.imports
         view = _plan_view(field, ready)
+        if (known := field.WRITES_NO_CALL_WITHOUT_PLAN) is not None and (
+            kept := memo.derived(
+                MemoTable.FIELD_IMPORTS, field, (_WITHOUT_PLAN, view), lambda: field.imports if known(field) else None
+            )
+        ) is not None:
+            return kept
         return memo.derived(MemoTable.FIELD_IMPORTS, field, view, lambda: field.imports, source=self.plan())
 
 
