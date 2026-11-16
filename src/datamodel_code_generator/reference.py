@@ -1039,6 +1039,38 @@ class _YieldingName(NamedTuple):
     created_name: str
 
 
+def _underscore_prefixed(parent_name: str, name: str, _target_python_version: PythonVersion | None) -> str:
+    """Return ``name`` after ``parent_name`` and ``_``, as ``parent-prefixed`` joins them (``Parent_Name``)."""
+    return f"{parent_name}_{name}"
+
+
+def _camel_prefixed(parent_name: str, name: str, target_python_version: PythonVersion | None) -> str:
+    """Return ``name`` in CamelCase after ``parent_name``, as ``full-path`` and ``enclosing-model`` join them."""
+    return f"{parent_name}{snake_to_upper_camel(name, target_python_version=target_python_version)}"
+
+
+class _NamingStrategyRow(NamedTuple):
+    """What a ``--naming-strategy`` value does with a name, for models and the names of generated API code."""
+
+    prefix: Callable[[str, str, PythonVersion | None], str] | None
+    """How a class name takes the name of its parent before it, or None for a strategy that prefixes none."""
+    every_scope: bool
+    """Whether a derived name of generated API code takes every enclosing scope's name, not only the innermost."""
+    declared_first: bool
+    """Whether the names the root document declares are claimed before those another document declares."""
+
+
+_NAMING_STRATEGIES: Final[Mapping[NamingStrategy, _NamingStrategyRow]] = {
+    NamingStrategy.Numbered: _NamingStrategyRow(None, every_scope=False, declared_first=False),
+    NamingStrategy.ParentPrefixed: _NamingStrategyRow(_underscore_prefixed, every_scope=False, declared_first=False),
+    NamingStrategy.FullPath: _NamingStrategyRow(_camel_prefixed, every_scope=True, declared_first=False),
+    NamingStrategy.PrimaryFirst: _NamingStrategyRow(None, every_scope=False, declared_first=True),
+    NamingStrategy.DefinitionsFirst: _NamingStrategyRow(None, every_scope=False, declared_first=True),
+    NamingStrategy.EnclosingModel: _NamingStrategyRow(_camel_prefixed, every_scope=True, declared_first=False),
+}
+"""The naming strategies, read by the models (``ModelResolver._naming_rows``) and the targets (``TargetNames``)."""
+
+
 def get_relative_path(base_path: PurePath, target_path: PurePath) -> PurePath:
     """Calculate relative path from base to target."""
     if base_path == target_path:
@@ -2040,26 +2072,32 @@ class ModelResolver:  # noqa: PLR0904
             return name
         return self._prefixed_by(parent_ref.name, name)
 
+    def _naming_rows(self) -> tuple[_NamingStrategyRow, ...]:
+        """Return the ``_NAMING_STRATEGIES`` rows that apply: ``--parent-scoped-naming``'s, then the strategy's.
+
+        ``--parent-scoped-naming`` adds the ``parent-prefixed`` row to a strategy that prefixes none; row
+        ``legacy-both-prefixes`` (the models, #5666) adds it to one that prefixes too.
+        """
+        row = _NAMING_STRATEGIES[self.naming_strategy]
+        if self.parent_scoped_naming and (scoped := _NAMING_STRATEGIES[NamingStrategy.ParentPrefixed]) is not row:
+            return scoped, row
+        return (row,)
+
     @property
     def _prefixes_parents(self) -> bool:
         """Whether L1 prefixes a model with the name of its closest parent reference (``_parent_prefixed``)."""
-        return self.parent_scoped_naming or self.naming_strategy in {
-            NamingStrategy.ParentPrefixed,
-            NamingStrategy.FullPath,
-            NamingStrategy.EnclosingModel,
-        }
+        return any(row.prefix for row in self._naming_rows())
 
     def _prefixed_by(self, parent_name: str, name: str) -> str:
         """Return ``name`` with ``parent_name`` before it, as the rows of ``_parent_prefixed`` join them."""
-        if self.parent_scoped_naming or self.naming_strategy == NamingStrategy.ParentPrefixed:
-            name = f"{parent_name}_{name}"
-        if self.naming_strategy in {NamingStrategy.FullPath, NamingStrategy.EnclosingModel}:
-            name = self._camel_prefixed(parent_name, name)
+        for row in self._naming_rows():
+            if row.prefix is not None:
+                name = row.prefix(parent_name, name, self.target_python_version)
         return name
 
     def _camel_prefixed(self, parent_name: str, name: str) -> str:
         """Return ``name`` in CamelCase after ``parent_name``, as ``full-path`` and ``enclosing-model`` join them."""
-        return f"{parent_name}{snake_to_upper_camel(name, target_python_version=self.target_python_version)}"
+        return _camel_prefixed(parent_name, name, self.target_python_version)
 
     @staticmethod
     def _is_primary_definition(path: Sequence[str]) -> bool:

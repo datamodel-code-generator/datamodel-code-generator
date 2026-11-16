@@ -321,6 +321,12 @@ merged-nullable-reference	main/generation_platform/client/packages/merged-nullab
 merged-nullable-reference	main/generation_platform/client/packages/merged-nullable-reference/typing_TypedDict//*.py
 method-collisions	main/generation_platform/client/method-collisions.txt
 method-collisions	main/generation_platform/client/packages/method-collisions/pydantic_v2_BaseModel//*.py
+method-collisions-parent-prefixed	main/generation_platform/client/method-collisions-parent-prefixed.txt
+method-collisions-parent-prefixed	main/generation_platform/client/packages/method-collisions-parent-prefixed/pydantic_v2_BaseModel//*.py
+method-collisions-parent-scoped	main/generation_platform/client/method-collisions-parent-scoped.txt
+method-collisions-parent-scoped	main/generation_platform/client/packages/method-collisions-parent-scoped/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/method-collisions-parent-prefixed/pydantic_v2_BaseModel//*.py
+method-collisions-parent-scoped-full-path	main/generation_platform/client/method-collisions-parent-scoped-full-path.txt
+method-collisions-parent-scoped-full-path	main/generation_platform/client/packages/method-collisions-parent-scoped-full-path/pydantic_v2_BaseModel//*.py
 method-collisions-suffix	main/generation_platform/client/method-collisions-suffix.txt
 method-collisions-suffix	main/generation_platform/client/packages/method-collisions-suffix/pydantic_v2_BaseModel//*.py
 multipart-media-text	main/generation_platform/client/multipart-media-text.txt

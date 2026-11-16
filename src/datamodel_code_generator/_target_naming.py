@@ -22,13 +22,12 @@ from datamodel_code_generator._format_types import PythonVersionMin
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._runtime.model_codecs.parameters import PLACEHOLDER as PATH_PLACEHOLDER
 from datamodel_code_generator._target_unicode import casefold, is_nfkc, is_python_name, nfc, nfkc, target_pattern
-from datamodel_code_generator.enums import NamingStrategy
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
     from datamodel_code_generator._format_types import PythonVersion
-    from datamodel_code_generator.reference import FieldNameResolver, ModelResolver
+    from datamodel_code_generator.reference import FieldNameResolver, ModelResolver, _NamingStrategyRow
 
 __all__ = (
     "WINDOWS_DEVICES",
@@ -44,8 +43,6 @@ __all__ = (
 
 _WORDS_SOURCE: Final = r"(?:(?!_)\w)+"
 _WORDS: Final = re.compile(_WORDS_SOURCE)
-_PREFIXED: Final = frozenset({NamingStrategy.ParentPrefixed, NamingStrategy.FullPath, NamingStrategy.EnclosingModel})
-_DECLARED_FIRST: Final = frozenset({NamingStrategy.PrimaryFirst, NamingStrategy.DefinitionsFirst})
 WINDOWS_DEVICES: Final = frozenset({
     "aux",
     "con",
@@ -155,17 +152,18 @@ Candidate: TypeAlias = tuple[str, bool, tuple[str, ...]]
 class TargetNames:
     """The model generator's configured class-name resolver, applied to the names of generated API code.
 
-    `suffix` is the model's duplicate class name suffix, which `--duplicate-name-suffix` sets, and `strategy` its
-    `--naming-strategy`, which decides how a derived name that its scope already holds is told apart.
+    `suffix` is the model's duplicate class name suffix, which `--duplicate-name-suffix` sets, and `rows` the rows of
+    the model's naming strategy table that its `--naming-strategy` and `--parent-scoped-naming` apply, which decide how
+    a derived name that its scope already holds is told apart.
     """
 
-    __slots__ = ("_function", "_resolver", "strategy", "suffix")
+    __slots__ = ("_function", "_resolver", "rows", "suffix")
 
     def __init__(
         self,
         resolver: FieldNameResolver,
         suffix: str | None = None,
-        strategy: NamingStrategy = NamingStrategy.Numbered,
+        rows: tuple[_NamingStrategyRow, ...] = (),
     ) -> None:
         """Keep the resolver, and a copy of it that snake-cases every name as `--snake-case-field` would."""
         function = copy(resolver)
@@ -174,7 +172,7 @@ class TargetNames:
         self._resolver = resolver
         self._function = function
         self.suffix = suffix or None
-        self.strategy = strategy
+        self.rows = rows
 
     @property
     def python_version(self) -> PythonVersion:
@@ -189,7 +187,7 @@ class TargetNames:
         return cls(
             model_resolver.field_name_resolvers[ModelType.CLASS],
             model_resolver._duplicate_name_suffix("model"),  # noqa: SLF001
-            model_resolver.naming_strategy,
+            model_resolver._naming_rows(),  # noqa: SLF001
         )
 
     def function(self, text: str) -> str:
@@ -209,24 +207,37 @@ class TargetNames:
     def claim(self, scope: NameScope, candidates: Sequence[Candidate], *, camel: bool = False) -> list[str]:
         """Claim derived names in their scope, in order, telling a name the scope already holds apart as models do.
 
-        `numbered` suffixes it; `parent-prefixed` first prefixes it with its innermost enclosing scope, `full-path`
-        and `enclosing-model` with every enclosing scope; `primary-first` and `definitions-first` claim the names
-        declared in the root document before those another document declares, as models claim primary definitions
-        before external ones.
+        `numbered` suffixes it; a strategy that prefixes first prefixes it (`_prefixed`); `primary-first` and
+        `definitions-first` claim the names declared in the root document before those another document declares, as
+        models claim primary definitions before external ones.
         A class takes the duplicate class suffix.
         """
         order: Iterable[int] = range(len(candidates))
-        if self.strategy in _DECLARED_FIRST:
+        if any(row.declared_first for row in self.rows):
             order = sorted(order, key=lambda index: not candidates[index][1])
         names = [""] * len(candidates)
         for index in order:
             name, _, path = candidates[index]
-            base = name
-            if path and base in scope and self.strategy in _PREFIXED:
-                parts = path[-1:] if self.strategy is NamingStrategy.ParentPrefixed else path
-                base = ("" if camel else "_").join((*parts, base))
-            names[index] = scope.claim(base, self.suffix if camel else None, camel=camel)
+            if path and name in scope:
+                name = self._prefixed(name, path, camel=camel)
+            names[index] = scope.claim(name, self.suffix if camel else None, camel=camel)
         return names
+
+    def _prefixed(self, name: str, path: tuple[str, ...], *, camel: bool) -> str:
+        """Return a derived name after the names of its enclosing scopes, as each row that prefixes puts them before it.
+
+        `parent-prefixed` (also `--parent-scoped-naming`) takes the innermost scope, `full-path` and `enclosing-model`
+        every scope. A class name joins them as the models join a parent's name and is cased as their class names are
+        (`ParentName`); any other name with `_`, which the models decide for no function name.
+        """
+        for row in self.rows:
+            if row.prefix is not None:
+                parts = path if row.every_scope else path[-1:]
+                if camel:
+                    name = self.pascal(row.prefix("".join(parts), name, self._resolver.target_python_version))
+                else:
+                    name = "_".join((*parts, name))
+        return name
 
     def alias(self, wire_name: str) -> str | None:
         """Return the flat `--aliases` entry for a wire name, which names its argument as given."""

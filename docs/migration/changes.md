@@ -182,6 +182,14 @@ A `pattern` whose counted repetitions pass the size limit of Pydantic's default 
 +root: str
 ```
 
+### Generated clients and servers name colliding API names as the models' naming strategies do (unreleased) { #target-names-follow-naming-strategy-table }
+
+Two changes, both under `--parent-scoped-naming`. (1) With `--naming-strategy numbered`, `primary-first` or `definitions-first`, a method, handler or class name that another name in its scope already holds now takes the name of its enclosing scope in front of it instead of a number (`get_a_b_1` becomes `default_get_a_b`, `GetAB1` becomes `DefaultGetAB`). (2) With `--naming-strategy full-path`, such a name now takes both prefixes, as the models' class names do (row `legacy-both-prefixes`, #5666): `item_store_get_item` becomes `item_store_item_store_get_item`, `ItemStoreGetItemResponse` becomes `ItemStoreItemStoreGetItemResponse`.
+
+- **Affects:** experimental features: `cli-option.generate-client`, `cli-option.generate-server`
+- **Pull requests and issues:** [#6976](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6976)
+- **Source:** the release notes
+
 ### An argument that turns off an option `pyproject.toml` turned on, whose implied option stays on, emits a `UserWarning` (unreleased) { #argument-does-not-undo-implied-option }
 
 The command line reads the values of `pyproject.toml` before it applies the arguments, so with `use-annotated = true` and `field-constraints = false` there, `--no-use-annotated` turns `--use-annotated` off and leaves `--field-constraints` on, which `use-annotated = true` turned on. Such a run now reports it with a `UserWarning` that names the key and `--read-implied-options-from-merged-values`; the option stays on as before and the generated output is unchanged. A caller that turns warnings into errors gets an error.
