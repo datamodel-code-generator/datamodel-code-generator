@@ -59,7 +59,7 @@ from datamodel_code_generator.parser._rw_split import update_field_refs_for_vari
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import keep_resolved_ref, validate_resolved_ref
 from datamodel_code_generator.parser._schema_object import _has_map_key_keywords, _located_model_schema
-from datamodel_code_generator.parser._schema_refs import ref_file_document
+from datamodel_code_generator.parser._schema_refs import raw_ref_value, ref_file_document  # noqa: F401  # Preserve the established parser.openapi export.
 from datamodel_code_generator.parser.base import Result, get_special_path
 from datamodel_code_generator.parser.jsonschema import (
     Discriminator,
@@ -77,7 +77,7 @@ from datamodel_code_generator.parser.jsonschema import (
     _parse_combined_root,
     _parse_root_type_site,
     _ref_applies,
-    get_model_by_path,
+    get_model_by_path,  # noqa: F401  # Preserve the established parser.openapi export.
 )
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import (
@@ -641,10 +641,10 @@ class OpenAPIParser(JsonSchemaParser):
         """Resolve a reference to its model definition.
 
         ``role`` is the OpenAPI object the reference's position expects, which a document it names at its root holds.
+        The pointer is read by row ``legacy-split-pointer-tokens``.
         """
-        ref_file, ref_path = self._ref_path(ref).split("#", 1)
-        ref_body = ref_file_document(self, ref_file, None if ref_path else role)
-        return cast("dict[str, Any]", get_model_by_path(ref_body, ref_path.split("/")[1:]))
+        value = raw_ref_value(self, self._ref_path(ref), reading="legacy-split-pointer-tokens", role=role)
+        return cast("dict[str, Any]", value)
 
     @contextmanager
     def openapi_self_context(self, specification: dict[str, Any]) -> Generator[None, None, None]:
