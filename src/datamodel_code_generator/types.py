@@ -73,7 +73,7 @@ from datamodel_code_generator._format_types import (
     PythonVersion,
     PythonVersionMin,
 )
-from datamodel_code_generator._graph_links import add_child, drop_child, link_members
+from datamodel_code_generator._graph_links import add_child, drop_child, link_members, type_children
 from datamodel_code_generator._model_keys import NodeKey
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._parse_memo import PARSE_MEMO, rendering_memo
@@ -897,10 +897,8 @@ class DataType(_BaseModel):  # noqa: PLR0904
             return
         visited.add(node_id)
         visitor(self)
-        for child in self.data_types:
+        for child in type_children(self):
             child.walk(visitor, visited)
-        if self.dict_key:
-            self.dict_key.walk(visitor, visited)
 
     def find_source(self, source_type: type[SourceT]) -> SourceT | None:  # ty: ignore[invalid-type-form]
         """Find the first reference source matching the given type from all nested data types."""
@@ -1768,12 +1766,9 @@ def _link_parts(data_type: DataType) -> None:
             data_type.is_optional = True
             data_type.data_types = [data_type.data_types[index] for index in plan.members]
 
-    for member in data_type.data_types:
-        if member.reference or member.data_types:
-            member.parent = data_type
-
-    if data_type.dict_key and (data_type.dict_key.reference or data_type.dict_key.data_types):
-        data_type.dict_key.parent = data_type
+    for child in type_children(data_type):
+        if child.reference or child.data_types:
+            child.parent = data_type
 
     if data_type.reference:
         add_child(data_type.reference, data_type)

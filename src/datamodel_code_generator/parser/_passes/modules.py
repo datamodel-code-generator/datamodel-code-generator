@@ -37,6 +37,7 @@ from datamodel_code_generator._container_kinds import (
     UNHASHABLE_CONTAINERS,
 )
 from datamodel_code_generator._graph import reach
+from datamodel_code_generator._graph_links import type_children
 from datamodel_code_generator._internal_utils import get_most_of_parent
 from datamodel_code_generator._model_keys import (
     ModelKey,
@@ -899,11 +900,7 @@ def _value_positions(field: DataModelFieldBase) -> list[tuple[DataModelFieldBase
     """Return each data type of ``field`` with the field or data type that holds it, the field's type first."""
     return [
         (field, field.data_type),
-        *(
-            (holder, nested)
-            for holder in field.data_type.all_data_types
-            for nested in (*holder.data_types, *((holder.dict_key,) if holder.dict_key is not None else ()))
-        ),
+        *((holder, nested) for holder in field.data_type.all_data_types for nested in type_children(holder)),
     ]
 
 

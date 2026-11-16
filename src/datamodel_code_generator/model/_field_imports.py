@@ -20,6 +20,7 @@ from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeVar
 
 from datamodel_code_generator._container_kinds import container_shape
+from datamodel_code_generator._graph_links import type_children
 from datamodel_code_generator._internal_utils import to_hashable
 from datamodel_code_generator._records import mutable_record
 from datamodel_code_generator._target_unicode import lent_text
@@ -479,10 +480,8 @@ def write_pre_render_nullability(field: FieldImportsHost[_D], data_type: _D) -> 
     if data_type.reference:
         data_type._materialize_render_state("reference-null")  # noqa: SLF001
 
-    for child in data_type.data_types:
+    for child in type_children(data_type):
         field._write_pre_render_nullability(child)  # noqa: SLF001
-    if data_type.dict_key:
-        field._write_pre_render_nullability(data_type.dict_key)  # noqa: SLF001
 
     if not takes_member_null(
         is_container=data_type._is_container,  # noqa: SLF001

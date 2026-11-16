@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from datamodel_code_generator._graph_links import type_children
 from datamodel_code_generator.reference import (
     BINARY_CONTENT_KEY,
     ENUM_LITERAL_KEY,
@@ -55,9 +56,7 @@ def with_type_origin(data_type: DataType, location: SchemaLocation | None) -> Da
         if TYPE_ORIGIN_KEY in (node := pending.pop()).__dict__:
             continue
         node.__dict__[TYPE_ORIGIN_KEY] = location
-        pending.extend(node.data_types)
-        if node.dict_key is not None:
-            pending.append(node.dict_key)
+        pending.extend(type_children(node))
     return data_type
 
 
