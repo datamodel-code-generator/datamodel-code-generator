@@ -944,7 +944,6 @@ __all__ = [
     "OpenAPISchemaFeatures",
     "SchemaFeaturesT",
     "SchemaKind",
-    "configured_version",
     "detect_asyncapi_version",
     "detect_jsonschema_version",
     "detect_openapi_version",
