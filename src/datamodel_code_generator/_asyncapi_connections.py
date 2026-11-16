@@ -97,7 +97,27 @@ _HANDSHAKE_INPUTS: Final[tuple[tuple[str, Literal["query", "header"]], ...]] = (
     ("query", "query"),
     ("headers", "header"),
 )
-_OBJECT_FIELDS: Final = frozenset(("type", "properties", "required", "additionalProperties", "title", "description"))
+_OBJECT_FIELDS: Final = frozenset((
+    "type",
+    "properties",
+    "required",
+    "additionalProperties",
+    "title",
+    "description",
+    "default",
+    "examples",
+    "deprecated",
+    "readOnly",
+    "writeOnly",
+    "minProperties",
+    "maxProperties",
+    "$schema",
+    "$comment",
+    "$id",
+    "$defs",
+    "definitions",
+    "allOf",
+))
 """The keywords of a binding's `query` or `headers` schema that its properties stand for as parameters."""
 _SCHEMES_POINTER: Final = ("components", "securitySchemes")
 _MANAGED_HEADERS: Final = frozenset({
@@ -339,7 +359,7 @@ def _properties(value: YamlValue) -> tuple[dict[str, YamlValue], list[YamlValue]
     """Return the properties of an object schema and the names it requires, or None where it says more of the object.
 
     Only its type `object`, its titles and the keywords of its properties (`_OBJECT_FIELDS`) and extensions may be
-    beside them, and every name it requires must be one of its properties.
+    beside them.
     """
     if not isinstance(value, dict) or value.get("type", "object") != "object":
         return None
@@ -347,11 +367,45 @@ def _properties(value: YamlValue) -> tuple[dict[str, YamlValue], list[YamlValue]
     if (
         not isinstance(properties, dict)
         or not isinstance(required, list)
-        or not all(isinstance(name, str) and name in properties for name in required)
+        or not all(isinstance(name, str) for name in required)
         or not _OBJECT_FIELDS.issuperset(key for key in map(str, value) if not key.startswith("x-"))
     ):
         return None
     return properties, required
+
+
+def _object_properties(
+    document: _Document,
+    value: YamlValue,
+    pointer: Tokens,
+    seen: set[Tokens] | None = None,
+) -> tuple[dict[str, tuple[YamlValue, Tokens]], set[str]] | None:
+    """Resolve `properties` (with their pointers) and `required` names from an object schema, including `allOf`."""
+    if (shape := _properties(value)) is None:
+        return None
+    seen = set() if seen is None else seen
+    if pointer in seen:
+        return {}, set()
+    seen.add(pointer)
+    raw_props, raw_req = shape
+    merged_props: dict[str, tuple[YamlValue, Tokens]] = {
+        str(k): (v, (*pointer, "properties", str(k))) for k, v in raw_props.items()
+    }
+    merged_req: set[str] = {str(r) for r in raw_req}
+    if isinstance(value, dict) and isinstance(all_of := value.get("allOf"), list):
+        for idx, member in enumerate(all_of):
+            if (resolved := document.resolved(member, (*pointer, "allOf", str(idx)))) is None:
+                return None
+            sub = _object_properties(document, resolved[0], resolved[1], seen)
+            if sub is None:
+                return None
+            sub_props, sub_req = sub
+            for k, v in sub_props.items():
+                merged_props.setdefault(k, v)
+            merged_req.update(sub_req)
+    for req_name in merged_req:
+        merged_props.setdefault(req_name, ({}, pointer))
+    return merged_props, merged_req
 
 
 def _combined(parts: list[tuple[Requirement, ...] | None]) -> tuple[Requirement, ...] | None:
@@ -503,10 +557,22 @@ def _offered(document: _Document, value: YamlValue) -> tuple[str, ...]:
 
 
 def _fixed_values(document: _Document, value: YamlValue) -> list[YamlValue]:
-    """Return the values a schema fixes by its `const` or `enum`, in order, else none."""
+    """Return the values a schema fixes by its `const`, `enum`, or `oneOf`/`anyOf` of fixed values, in order, else none."""
     schema = as_mapping(None if (found := document.resolved(value, ())) is None else found[0])
-    written = [schema["const"]] if "const" in schema else schema.get("enum")
-    return written if isinstance(written, list) else []
+    if "const" in schema:
+        return [schema["const"]]
+    if isinstance(enum := schema.get("enum"), list):
+        return enum
+    for key in ("oneOf", "anyOf"):
+        if isinstance(members := schema.get(key), list) and members:
+            collected: list[YamlValue] = []
+            for member in members:
+                fixed = _fixed_values(document, member)
+                if not fixed:
+                    return []
+                collected.extend(fixed)
+            return collected
+    return []
 
 
 class _Reader:
@@ -797,12 +863,12 @@ class _Reader:
             if (target := self.document.resolved(binding[name], (*written, name))) is None:
                 skips.append((None, f"the {name} schema of its {label} references another document"))
                 continue
-            if (shape := _properties(target[0])) is None:
+            if (shape := _object_properties(self.document, target[0], target[1])) is None:
                 message = f"the {name} schema of its {label} is not an object of properties"
                 skips.append((feature, message))
                 continue
             properties, required = shape
-            for key, value in properties.items():
+            for key, (value, _prop_pointer) in properties.items():
                 if location == "header" and (managed := str(key).lower()) in managed_headers:
                     if managed == _SUBPROTOCOL and (offered := _offered(self.document, value)):
                         subprotocols.extend(offered)
