@@ -369,20 +369,39 @@ def _rust_rejects_property(escape: str) -> bool:
     return not escape[2:].isascii() or not escape[2:].isalpha()
 
 
-def _class_escape_ranges(pattern: str) -> bool:
-    r"""Return whether a class uses a class escape as the start of a range (``[\w- ]``), which both engines reject.
+def _is_class_set(item: str) -> bool:
+    r"""Return whether an item of a class is a class escape or a property (``\w``, ``\pL``, ``\p{L}``)."""
+    return item[1:] in _CLASS_ESCAPES or bool(item[2:])
 
-    The start is a class escape or a property, in braces (``[\p{L}-_]``) or of one letter (``[\pL-_]``): the only items
-    longer than two characters. Two hyphens are a difference in Rust (``[\pL\pP--_]`` compiles), so a property of one
-    letter before them starts no range; the other starts keep their answer there (``[\w--_]`` and ``[\p{L}--_]`` compile
-    too, and are read as ranges).
+
+def _class_escape_ranges(pattern: str, *, rust: bool) -> bool:
+    r"""Return whether a class uses a class escape as a boundary of a range (``[\w- ]``, ``[a-\w]``) in an engine.
+
+    A boundary is a class escape or a property, in braces (``[\p{L}-_]``) or of one letter (``[\pL-_]``): the only
+    items longer than two characters. Two hyphens are a difference in Rust (``[\pL\pP--_]`` compiles), so a property of
+    one letter before them starts no range; the other starts keep their answer there (``[\w--_]`` and ``[\p{L}--_]``
+    compile too, and are read as ranges). A range is read from the item after the end of the last one: ``[a-c-\w]``
+    has one range. Rust reads more than that: a doubled ``-``, ``&`` or ``~`` is an operation (``[a-z--\w]`` and
+    ``[a&&-\w]`` have no range), the ``]`` that opens a class is no item, and a ``[`` opens a nested class, with its own
+    ``^`` (``[[-\w]]``); Python's ``re`` reads each of them as a character.
     """
     for match in _compiled(_PYTHON_CLASS).finditer(pattern):
         body = match.group()
-        tokens = _compiled(_CLASS_ITEM).findall(body[body.index("[") + 1 : -1])
-        for start, hyphen, end in zip(tokens, tokens[1:], tokens[2:], strict=False):
-            if hyphen == "-" and (start[1:] in _CLASS_ESCAPES or start[3:] or (start[2:] and end != "-")):
+        members = body[body.index("[") + 1 : -1].removeprefix("^")
+        tokens = _compiled(_CLASS_ITEM).findall(members.removeprefix("]") if rust else members)
+        position = 0
+        while position + 2 < len(tokens):
+            start, hyphen, end = tokens[position : position + 3]
+            if rust and start == hyphen and start in "-&~":
+                position += 2
+            elif rust and start == "[":
+                position += 1 + (hyphen == "^")
+            elif hyphen != "-":
+                position += 1
+            elif start[1:] in _CLASS_ESCAPES or start[3:] or (start[2:] and end != "-") or _is_class_set(end):
                 return True
+            else:
+                position += 3
     return False
 
 
@@ -396,7 +415,7 @@ def python_rejects(pattern: str) -> bool:
     if _compiled(_VERBOSE_FLAG_GROUP).search(pattern) is not None:
         return False
     return (
-        _class_escape_ranges(pattern)
+        _class_escape_ranges(pattern, rust=False)
         or _compiled(_PYTHON_REJECTED_FLAGS).search(pattern) is not None
         or any(escape[1] in _PYTHON_REJECTED_ESCAPES or escape[1:] in _BRACED_CODES for escape in _escapes(pattern))
     )
@@ -411,7 +430,7 @@ def _rust_rejects_beyond_tokens(pattern: str) -> bool:
     """
     return (
         any(escape[1] in "pP" and _rust_rejects_property(escape) for escape in _escapes(pattern))
-        or _class_escape_ranges(pattern)
+        or _class_escape_ranges(pattern, rust=True)
         or _exceeds_compiled_size(pattern)
     )
 

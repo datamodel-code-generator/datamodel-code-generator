@@ -36,6 +36,24 @@ BracedPropertyRange: TypeAlias = str
 OneLetterPropertyDifference: TypeAlias = str
 
 
+WordRangeEnd: TypeAlias = str
+
+
+OneLetterPropertyRangeEnd: TypeAlias = str
+
+
+BracedPropertyRangeEnd: TypeAlias = str
+
+
+HyphenAfterRange: TypeAlias = Annotated[str, Meta(pattern='^[a-z0-9-\\s]+$')]
+
+
+NegatedHyphenFirst: TypeAlias = Annotated[str, Meta(pattern='^[^-\\w]+$')]
+
+
+DifferenceAfterRange: TypeAlias = str
+
+
 Letters: TypeAlias = str
 
 

@@ -50,6 +50,30 @@ class OneLetterPropertyDifference(RootModel[constr(pattern=r'^[\pL\pP--_]+$')]):
     root: constr(pattern=r'^[\pL\pP--_]+$')
 
 
+class WordRangeEnd(RootModel[str]):
+    root: str
+
+
+class OneLetterPropertyRangeEnd(RootModel[str]):
+    root: str
+
+
+class BracedPropertyRangeEnd(RootModel[str]):
+    root: str
+
+
+class HyphenAfterRange(RootModel[constr(pattern=r'^[a-z0-9-\s]+$')]):
+    root: constr(pattern=r'^[a-z0-9-\s]+$')
+
+
+class NegatedHyphenFirst(RootModel[constr(pattern=r'^[^-\w]+$')]):
+    root: constr(pattern=r'^[^-\w]+$')
+
+
+class DifferenceAfterRange(RootModel[constr(pattern=r'^[a-z0-9--\p{N}]+$')]):
+    root: constr(pattern=r'^[a-z0-9--\p{N}]+$')
+
+
 class Letters(RootModel[constr(pattern=r'^\p{L}+$')]):
     root: constr(pattern=r'^\p{L}+$')
 
