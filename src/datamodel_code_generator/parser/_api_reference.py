@@ -13,6 +13,7 @@ from typing_extensions import override
 from datamodel_code_generator import SchemaParseError
 from datamodel_code_generator._json_pointer import (
     decode_token,
+    document_part,
     escape_token,
     fragment_pointer,
     is_pointer_fragment,
@@ -79,7 +80,7 @@ def canonical_ref(ref: str, *, form: KeyForm = "api", strict: bool | None = None
         or (tokens := pointer_tokens(source, strict=form == "api" if strict is None else strict)) is None
     ):
         return ref
-    canonical = source.partition("#")[0] + "#" + _KEY_POINTERS[form](tokens)
+    canonical = document_part(source) + "#" + _KEY_POINTERS[form](tokens)
     return canonical + marker + generated
 
 
@@ -219,10 +220,7 @@ class ApiModelResolver(_CanonicalKeysResolver):
         spellings = self.original_refs.setdefault(resolved, [])
         if original not in spellings:
             spellings.append(original)
-        if (
-            not _is_special_path(original)
-            and (raw := self.loaded_documents.get(resolved.partition("#")[0])) is not None
-        ):
+        if not _is_special_path(original) and (raw := self.loaded_documents.get(document_part(resolved))) is not None:
             check_pointer_interpretation(raw, original, resolved)
 
     @staticmethod

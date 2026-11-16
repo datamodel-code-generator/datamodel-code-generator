@@ -19,7 +19,7 @@ from urllib.parse import unquote, urljoin, urlsplit
 
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend, discriminator_mapping_ref
 from datamodel_code_generator._free_names import first_free
-from datamodel_code_generator._json_pointer import join_pointer, reference_tokens
+from datamodel_code_generator._json_pointer import document_part, join_pointer, reference_tokens
 from datamodel_code_generator._json_schema import INSTANCE_DATA_KEYWORDS, NAMED_SCHEMA_MAPS, subschema_entries
 from datamodel_code_generator._openapi_objects import COMPONENT_KINDS, COMPONENT_ROLES, OBJECT_MEMBERS, object_members
 from datamodel_code_generator._paths import file_uri
@@ -98,7 +98,7 @@ class SourceDocument:
                 continue
             seen.add(identity)
             if role == "schema" and isinstance(own := node.get("$id"), str) and self.version != OpenAPIVersion.V30:
-                around = (urljoin(around[0], own).partition("#")[0],)
+                around = (document_part(urljoin(around[0], own)),)
                 self.resources.setdefault(around[0], (document, at))
             if role in _DECLARING:
                 for keyword in ("$anchor", "$dynamicAnchor"):

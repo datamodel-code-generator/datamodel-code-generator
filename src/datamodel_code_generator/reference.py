@@ -45,7 +45,7 @@ from datamodel_code_generator._format_types import (
 )
 from datamodel_code_generator._free_names import Numbering, candidate_at, first_free, is_numbered
 from datamodel_code_generator._graph_links import data_type_children
-from datamodel_code_generator._json_pointer import is_pointer_fragment, join_pointer
+from datamodel_code_generator._json_pointer import document_part, is_pointer_fragment, join_pointer
 from datamodel_code_generator._message_text import printable_text
 from datamodel_code_generator._model_keys import MODEL_KEY_ATTRIBUTE
 from datamodel_code_generator._python_target_names import target_builtin_type_attributes
@@ -1767,7 +1767,7 @@ class ModelResolver:  # noqa: PLR0904
         It is noted where ``resolve_ref`` returns the URL as a document to fetch, without the option; each one is
         returned once.
         """
-        return self._empty_fragment_id_targets.pop(url.partition("#")[0], None)
+        return self._empty_fragment_id_targets.pop(document_part(url), None)
 
     def registered_id(self, id_: str) -> str | None:
         """Return the resolved reference path an identifier is registered for in the current scope, if any."""
@@ -1939,7 +1939,7 @@ class ModelResolver:  # noqa: PLR0904
         """Check if a reference points to a file loaded after the current one."""
         if is_url(ref) or not self.current_base_path:
             return False
-        file_part, *_ = ref.split("#", 1)
+        file_part = document_part(ref)
         absolute_path = Path(self._base_path, file_part).resolve().as_posix()
         if self.is_external_root_ref(ref) or self.is_external_ref(ref):
             return absolute_path in self.after_load_files
@@ -1973,10 +1973,7 @@ class ModelResolver:  # noqa: PLR0904
 
     def _is_external_path(self, resolved_path: str) -> bool:
         """Check if a resolved path belongs to an external file."""
-        current_root_path = self.join_path(tuple(self._current_root))
-        current_file = current_root_path.split("#")[0]
-        resolved_file = resolved_path.split("#", maxsplit=1)[0]
-        return current_file != resolved_file
+        return document_part(self.join_path(tuple(self._current_root))) != document_part(resolved_path)
 
     def ref_original_name(self, ref: str, path: str) -> str:
         """Return the model name a reference derives before its schema is parsed."""
@@ -2136,8 +2133,8 @@ class ModelResolver:  # noqa: PLR0904
         for ref_path, ref in self.references.items():
             if ref.name == name and ref_path != current_path and not self.is_yielding(ref):
                 # Check if this is an external reference (different file)
-                ref_file = ref_path.split("#")[0]
-                current_file = current_path.split("#", maxsplit=1)[0]
+                ref_file = document_part(ref_path)
+                current_file = document_part(current_path)
                 if ref_file != current_file:  # pragma: no branch
                     new_name = self._get_unique_name(name, camel=True, path=ref_path)
                     self._evict_yielding_reference(new_name)

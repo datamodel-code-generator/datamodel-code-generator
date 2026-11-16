@@ -33,6 +33,7 @@ from datamodel_code_generator import (
 )
 from datamodel_code_generator._document_reader import as_mapping as _as_mapping
 from datamodel_code_generator._document_reader import discriminator_mapping_ref, string_key, string_keys
+from datamodel_code_generator._json_pointer import document_part
 from datamodel_code_generator._openapi_objects import OBJECT_MEMBERS as _OBJECT_MEMBERS
 from datamodel_code_generator._openapi_paths import (
     OPERATION_METHODS,
@@ -898,7 +899,7 @@ class OpenAPIParser(JsonSchemaParser):
             mapping = discriminator.get("mapping", {})
             if mapping:
                 subtypes = [*_union_tags.discriminator_mapping_refs(self, mapping).values()]
-                if subtypes and ref.partition("#")[0] == current_document:
+                if subtypes and document_part(ref) == current_document:
                     return build_union(self.data_type, [self._get_discriminator_subtype_data_type(v) for v in subtypes])
                 subtypes = [keep_resolved_ref(v, self._ref_path(v)) for v in subtypes]
         if not subtypes:
@@ -1134,7 +1135,7 @@ class OpenAPIParser(JsonSchemaParser):
                 methods = self.get_ref_model(item_ref, "pathItem")
                 # Extract base path from reference for external file resolution
                 resolved_ref = self._ref_path(item_ref)
-                ref_file = resolved_ref.split("#")[0] if "#" in resolved_ref else resolved_ref
+                ref_file = document_part(resolved_ref)
                 ref_base_path = Path(ref_file).parent if ref_file and not is_url(ref_file) else None
             else:
                 methods = methods_
@@ -1616,7 +1617,7 @@ class OpenAPIParser(JsonSchemaParser):
             try:
                 with self.model_resolver.current_base_path_context(Path()):
                     for path in sorted({_source_path(path) for path in missing}):
-                        if (root := roots.get(path.split("#", 1)[0])) is None:
+                        if (root := roots.get(document_part(path))) is None:
                             self.resolve_ref(path)
                         else:
                             self.reserved_refs[root].add(path)
@@ -1718,7 +1719,7 @@ class OpenAPIParser(JsonSchemaParser):
             for ref_in_allof in refs:
                 resolved_ref = self._ref_path(ref_in_allof)
                 # External parents may be registered after this child document is read.
-                if resolved_ref in self._discriminator_schemas or resolved_ref.partition("#")[0] != document[:-1]:
+                if resolved_ref in self._discriminator_schemas or document_part(resolved_ref) != document[:-1]:
                     self._discriminator_subtypes[resolved_ref].append(self._schema_key(schema, child, "allOf"))
 
     def _register_discriminator_schema(self, ref: str, schema: dict[str, Any]) -> None:

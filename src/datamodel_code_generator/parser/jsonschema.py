@@ -133,6 +133,7 @@ from datamodel_code_generator._format_types import (
     DatetimeClassType,
 )
 from datamodel_code_generator._json_pointer import (
+    document_part,
     escape_token,  # noqa: F401  # Preserve the established parser.jsonschema export.
     fragment_pointer,
     join_pointer,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -3504,7 +3505,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else None
         )
         with (
-            self._ref_file_context(resolved_ref.partition("#")[0]),
+            self._ref_file_context(document_part(resolved_ref)),
             nullcontext() if bindings is None else self._dynamic_scope_context([resolved_ref], bindings),
         ):
             yield
@@ -8094,7 +8095,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if reference.loaded:
             return reference
         if self.model_resolver.is_after_load(ref):
-            self.reserved_refs[tuple(ref.split("#")[0].split("/"))].add(ref)
+            self.reserved_refs[tuple(document_part(ref).split("/"))].add(ref)
             return reference
 
         with (
@@ -8996,7 +8997,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         source_path = self.current_source_path
         if source_path is not None:
             self.current_source_path = file_path
-        file_part = reference.path.partition("#")[0]
+        file_part = document_part(reference.path)
         try:
             with self._ref_document_context(file_part) as (_, raw):
                 path_parts = list(self.model_resolver.current_root)

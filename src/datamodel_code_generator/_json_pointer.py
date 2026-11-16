@@ -4,9 +4,9 @@ A token is escaped ``~`` as ``~0``, then ``/`` as ``~1``, and unescaped in the r
 part of a pointer but of the URI fragment that writes one, and ``reference_tokens`` reads the fragment of a ``$ref``
 the way the parser does: it splits at each ``/`` first, then decodes each token, strictly or leniently. A caller whose
 text is already decoded hands it to ``fragment_tokens``. Whether a fragment opens a pointer or is a plain name, which
-names an anchor, is told here too (``is_pointer_fragment``, ``pointer_opening``). The generated runtime (``_runtime/``)
-keeps its own copy, as it never imports the generator. This module imports only the standard library, so every layer
-may use it.
+names an anchor, is told here too (``is_pointer_fragment``, ``pointer_opening``), and so is the document part of a
+reference key (``document_part``). The generated runtime (``_runtime/``) keeps its own copy, as it never imports the
+generator. This module imports only the standard library, so every layer may use it.
 """
 
 from __future__ import annotations
@@ -23,6 +23,7 @@ __all__ = [
     "NONCANONICAL_PERCENT",
     "OpeningRow",
     "decode_token",
+    "document_part",
     "escape_token",
     "fragment_pointer",
     "fragment_tokens",
@@ -120,6 +121,11 @@ def reference_tokens(fragment: str, /, *, strict: bool = False) -> tuple[str, ..
     if strict and any(NONCANONICAL_ESCAPE.search(token) for token in tokens):
         raise ValueError(fragment)
     return tuple(map(unescape_token, tokens))
+
+
+def document_part(key: str, /) -> str:
+    """Return the document a reference key, location or URI names: its text before the first ``#``."""
+    return key.partition("#")[0]
 
 
 def is_array_index(token: str, /) -> bool:

@@ -30,6 +30,7 @@ from datamodel_code_generator._constraint_applicability import (
     keyword_kinds,
 )
 from datamodel_code_generator._copy_on_change import unchanged
+from datamodel_code_generator._json_pointer import document_part
 from datamodel_code_generator._json_schema import (
     COMBINATOR_POSITIONS,
     MODELED_SCHEMA_MAPS,
@@ -1654,7 +1655,7 @@ def _read_through_target(parser: InheritedSchemasHost, ref: str, target: JsonSch
     """
     resolved_ref = _schema_refs.ref_path(parser, ref)
     document = current_document(parser)
-    if _schema_refs.schema_location(parser, resolved_ref).partition("#")[0] == document:
+    if document_part(_schema_refs.schema_location(parser, resolved_ref)) == document:
         return target
     return parser._schema_object(_schema_refs.ref_target_dump(parser, ref, resolved_ref)[0])  # noqa: SLF001
 

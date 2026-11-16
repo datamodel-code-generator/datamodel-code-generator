@@ -19,6 +19,7 @@ from typing_extensions import Protocol
 from datamodel_code_generator._alias_generators import generate_alias
 from datamodel_code_generator._constraint_applicability import constrained_type_keyword_order
 from datamodel_code_generator._container_kinds import ARRAYS, ITEM_CONTAINERS, MAPPINGS
+from datamodel_code_generator._json_pointer import document_part
 from datamodel_code_generator._json_schema import MODELED_SCHEMA_MAPS, SCHEMA_MAP_KEYS, admitted_types, schema_positions
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.model import DataModel
@@ -731,8 +732,8 @@ def _iter_all_of_reads(  # noqa: PLR0913
             continue
         target_scope = scope
         if track_scope:
-            file_part = _schema_refs.ref_path(parser, item.ref).split("#", 1)[0]
-            root_file = parser.model_resolver.resolve_ref("#").split("#", 1)[0]
+            file_part = document_part(_schema_refs.ref_path(parser, item.ref))
+            root_file = document_part(parser.model_resolver.resolve_ref("#"))
             target_scope = None if scope is None or scope else ("" if file_part == root_file else file_part)
         if (target := _schema_refs.unmapped_ref_target(parser, item.ref, visited_refs)) is not None:
             yield *target, target_scope, True
