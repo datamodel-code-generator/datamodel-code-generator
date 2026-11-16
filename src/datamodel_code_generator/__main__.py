@@ -1441,13 +1441,8 @@ def _recommend_generation_config(config: Config, namespace: Namespace) -> Callab
             run_config,
             output=run_config.output,
             extra_template_data=copy.deepcopy(extra_template_data),
-            aliases=run_config.aliases,
-            serialization_aliases=run_config.serialization_aliases,
-            command_line=None,
-            custom_formatters_kwargs=None,
             settings_path=run_config.output,
-            validators=run_config.validators,
-            default_value_overrides=run_config.default_values,
+            **_run_values(run_config),
         )
 
     return generation_config
@@ -1608,6 +1603,22 @@ def run_generate_from_config(  # noqa: PLR0913, PLR0917
     )
 
 
+def _run_values(config: Config, args: Sequence[str] | None = None) -> dict[str, Any]:
+    """Return the run values a generation of the config takes from it, by keyword of ``_generation_config``.
+
+    The command header comes from the command's arguments ``args`` where the config enables it; a run without them,
+    such as a trial of ``--recommend-options``, writes none.
+    """
+    return {
+        "aliases": config.aliases,
+        "serialization_aliases": config.serialization_aliases,
+        "command_line": _command_header(args) if args is not None and config.enable_command_header else None,
+        "custom_formatters_kwargs": config.custom_formatters_kwargs,
+        "validators": config.validators,
+        "default_value_overrides": config.default_values,
+    }
+
+
 def _generation_config(  # noqa: PLR0913
     config: Config,
     *,
@@ -1701,13 +1712,8 @@ def _target_settings(config: Config, args: Sequence[str], lockfile: Path | None)
         config,
         output=config.output,
         extra_template_data=_template_data(config),
-        aliases=config.aliases,
-        serialization_aliases=config.serialization_aliases,
-        command_line=_command_header(args) if config.enable_command_header else None,
-        custom_formatters_kwargs=config.custom_formatters_kwargs,
         settings_path=config.output,
-        validators=config.validators,
-        default_value_overrides=config.default_values,
+        **_run_values(config, args),
     )
     values = vars(settings) | {"lockfile": lockfile}
     return GenerateConfig.model_construct(**{
@@ -2762,13 +2768,8 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         run_options: dict[str, Any] = {
             "config": config,
             "extra_template_data": extra_template_data,
-            "aliases": config.aliases,
-            "serialization_aliases": config.serialization_aliases,
-            "command_line": _command_header(args) if config.enable_command_header else None,
-            "custom_formatters_kwargs": config.custom_formatters_kwargs,
             "settings_path": _batch_original_output or config.output,
-            "validators": config.validators,
-            "default_value_overrides": config.default_values,
+            **_run_values(config, args),
         }
         if compare_output is not None:
             from datamodel_code_generator.reference import unmatched_model_name_keys_unreported  # ruff: ignore[import-outside-top-level]
