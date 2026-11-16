@@ -51,3 +51,14 @@ becomes final and where a decision belongs.
   trigger-absent write: ..." means the trigger is false where the pass writes; widen the trigger.
 - For a fix that spans passes, write the design (the facts it reads, where each becomes final, the outputs it changes,
   and since which release) and have it reviewed before implementing.
+
+## Opening issues and pull requests
+
+These rules are for agents working for someone who is not a maintainer of this repository (policy:
+`.github/CONTRIBUTING.md`).
+
+- Open an issue or a pull request only for a problem the person you work for met in their own use, or reproduced on
+  the current `main` after reading the code. Write how they met it, in their words, with the schema and the command.
+- Link every pull request to its issue (`Fixes #<n>`); if there is none, open the issue first. Do not open a pull
+  request for an issue assigned to a maintainer unless a maintainer asked for one in that issue.
+- Do not open issues or pull requests without the person's review of the text and the change.
