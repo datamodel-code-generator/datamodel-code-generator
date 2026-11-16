@@ -797,25 +797,18 @@ PYDANTIC_V2_0_RUNTIME_ROUND_TRIP_EXCLUDED_CASES: dict[PayloadBackend, dict[str, 
     },
 }
 PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
-    PayloadBackend.PYDANTIC_V2: {
-        **dict.fromkeys(
-            (
-                "jsonschema/compound_property_names/enum_oneof.json",
-                "jsonschema/compound_property_names/enum_refs.json",
-                "jsonschema/compound_property_names/extra_enum_disjoint.json",
-            ),
-            "Pydantic before 2.5.0 emits JSON-mode serializer warnings for enum dictionary keys",
+    PayloadBackend.PYDANTIC_V2: dict.fromkeys(
+        (
+            "jsonschema/compound_property_names/enum_oneof.json",
+            "jsonschema/compound_property_names/enum_refs.json",
+            "jsonschema/compound_property_names/extra_enum_disjoint.json",
+            "jsonschema/open_enums_values.json",
+            "jsonschema/property_names_anyof_ref.json",
+            "jsonschema/property_names_ref_enum.json",
+            "jsonschema/type_overrides_dict_key.json",
         ),
-        "jsonschema/property_names_anyof_ref.json": (
-            "Pydantic before 2.5.0 emits JSON-mode serializer warnings for enum dictionary keys"
-        ),
-        "jsonschema/property_names_ref_enum.json": (
-            "Pydantic before 2.5.0 emits JSON-mode serializer warnings for enum dictionary keys"
-        ),
-        "jsonschema/type_overrides_dict_key.json": (
-            "Pydantic before 2.5.0 emits JSON-mode serializer warnings for enum dictionary keys"
-        ),
-    },
+        "Pydantic before 2.5.0 emits JSON-mode serializer warnings for enum dictionary keys",
+    ),
 }
 
 
