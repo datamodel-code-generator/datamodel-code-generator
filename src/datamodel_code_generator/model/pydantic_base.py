@@ -54,6 +54,7 @@ from datamodel_code_generator.model._render_plan import (
 from datamodel_code_generator.model._render_plan import CallArguments as _FieldArguments
 from datamodel_code_generator.model.base import (
     _default_state,
+    _field_render,
     _nested_model_factory,
     _NestedModelFactory,
     _normalized_constraint_kwargs,
@@ -283,8 +284,8 @@ class DataModelField(DataModelFieldBase):
         return plan.assignment, subscript_text("Annotated", (self.type_hint, plan.rendered))
 
     def _has_field_statement(self) -> bool:
-        """Return whether rendering this field will require a Field() call."""
-        return self._render_plan().call is not None
+        """Return whether rendering this field will require a Field() call: by its plan, unless known without one."""
+        return not (render := _field_render(self)).writes_no_call() and render.plan().call is not None
 
     def _may_have_field_statement(self) -> bool:
         """Return whether field metadata may require a Field() call."""
@@ -786,26 +787,22 @@ class DataModelField(DataModelFieldBase):
             data_type=self.data_type,
         )
 
+    @property
     @override
-    def _hint_imports(self, plan: FieldRenderPlan) -> tuple[Import, ...]:
-        """Return the imports of the type hint, with ``Annotated`` where it writes the ``Field()`` call.
+    def imports(self) -> tuple[Import, ...]:
+        """Get the imports of the type hint, with ``Annotated`` where it writes ``Field()``, then those of the call.
 
-        str(self) is non-empty exactly when the plan has a call (both come from the same Field() data), so this
-        matches bool(self.annotated) without rebuilding the type hint and Field() string. A field class outside the
-        package reads ``_has_field_statement()`` instead, as ``_call_imports`` does.
+        Both follow ``_has_field_statement()``, so a field known to write no call reads no plan. str(self) is non-empty
+        exactly when the plan has a call (both come from the same Field() data), so this matches bool(self.annotated)
+        without rebuilding the type hint and Field() string. The call's imports are those of its plan; a field class
+        outside the package imports ``Field``.
         """
-        return self._collect_field_imports(
-            needs_annotated=self.use_annotated
-            and not self.is_class_var
-            and (plan.call is not None if _package_class(type(self)) else self._has_field_statement())
-        )
-
-    @override
-    def _call_imports(self, plan: FieldRenderPlan) -> tuple[Import, ...]:
-        """Return the call's imports; for a field class outside the package ``Field`` if ``_has_field_statement()``."""
+        if not self._has_field_statement():
+            return self._collect_field_imports(needs_annotated=False)
+        hint = self._collect_field_imports(needs_annotated=self.use_annotated and not self.is_class_var)
         if _package_class(type(self)):
-            return super()._call_imports(plan)
-        return (IMPORT_FIELD,) if self._has_field_statement() else ()
+            return (*hint, *self._call_imports(self._render_plan()))
+        return (*hint, IMPORT_FIELD)
 
 
 class BaseModelBase(DataModel, ABC):

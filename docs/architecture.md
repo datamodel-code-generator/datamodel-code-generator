@@ -699,7 +699,8 @@ whose plan gives the member's imports. The last render preparation pass freezes 
 `RenderReady` (B2), and `field`, `annotated`, `type_hint`, `represented_default`, `has_default_factory_in_field`, the
 import collection and the dropped-constraints warnings read the frozen plan; before B2 they read the plan the parse's
 memo keeps for the field (`model/base.py:live_render_plan`), which B2 freezes. One accessor answers which plan a field
-reads now and its imports kept with that plan (`model/base.py:_field_render`). Each frozen plan keeps the revisions of
+reads now and its imports kept with that plan; those of a Pydantic v2 field known to write no call are kept without one
+(`_FieldRender.imports`) (`model/base.py:_field_render`). Each frozen plan keeps the revisions of
 its field (`ParseMemo.revision`), or, for a field, model or parser class outside the package or under custom templates,
 what it read from its field (`DataModelFieldBase._render_inputs`: the field's attributes, and inside its types,
 constraints and containers), and when the model renders (`DataModel._template_fields`) the plan of a field whose

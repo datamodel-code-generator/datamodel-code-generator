@@ -696,6 +696,24 @@ def _prepare_type_alias_field(
     return True
 
 
+def _writes_no_call_without_plan(field: DataModelFieldBase) -> bool:
+    """Return whether ``field`` has nothing a ``Field()`` call could write and needs no null default, so no call.
+
+    Only the Pydantic v2 field class itself answers it, its subclasses build their plans: its plan is then built
+    without a call (``_build_render_plan``) and its imports read no plan (``WRITES_NO_CALL_WITHOUT_PLAN``).
+    """
+    return (
+        type(field) is DataModelField
+        and not field.is_class_var
+        and not field._may_have_field_statement()  # noqa: SLF001
+        and field._alias_generator_name_from_parent() is None  # noqa: SLF001
+        and ((parent := field.parent) is None or not parent._uses_custom_root_template)  # noqa: SLF001
+        and not field._requires_null_default(  # noqa: SLF001
+            missing_sentinel=field._uses_missing_sentinel(factory_present=False)  # noqa: SLF001
+        )
+    )
+
+
 def _needs_model_regex_engine(fields: list[DataModelFieldBase]) -> bool:
     """Return whether a pattern of the fields needs the ``python-re`` engine of the model that holds them."""
     return has_lookaround_pattern(fields)
@@ -735,6 +753,7 @@ class DataModelField(_PydanticBaseDataModelField):
     PREPARE_PYTHON_PATTERNS = staticmethod(_prepare_python_patterns)
     PREPARE_TYPE_ALIAS_FIELD = staticmethod(_prepare_type_alias_field)
     NEEDS_MODEL_REGEX_ENGINE = staticmethod(_needs_model_regex_engine)
+    WRITES_NO_CALL_WITHOUT_PLAN = staticmethod(_writes_no_call_without_plan)
     PATTERN_NEEDS_HOLDER_ENGINE = staticmethod(_pattern_needs_holder_engine)
     _EXCLUDE_FIELD_KEYS: ClassVar[set[str]] = {
         "alias",
@@ -893,22 +912,11 @@ class DataModelField(_PydanticBaseDataModelField):
             return False
         return self.data_type.type == "None"
 
-    def _writes_no_field_metadata(self) -> bool:
-        """Return whether the field has nothing a ``Field()`` call could write, so its plan needs no call."""
-        return (
-            type(self) is DataModelField
-            and not self.is_class_var
-            and not super()._may_have_field_statement()
-            and self._alias_generator_name_from_parent() is None
-            and ((parent := self.parent) is None or not parent._uses_custom_root_template)  # noqa: SLF001
-        )
-
     @override
     def _build_render_plan(self) -> FieldRenderPlan:
         """Include the explicit null default required by Pydantic v2; a field without metadata writes no call."""
-        if self._writes_no_field_metadata() and not self._requires_null_default(
-            missing_sentinel=(missing := self._uses_missing_sentinel(factory_present=False))
-        ):
+        if _writes_no_call_without_plan(self):
+            missing = self._uses_missing_sentinel(factory_present=False)
             return self._field_render_plan(
                 None,
                 FieldDefault(self.default, missing, MISSING_DEFAULT if missing else DEFAULT_VALUE),

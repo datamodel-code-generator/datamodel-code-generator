@@ -365,6 +365,7 @@ class DataModelField(DataModelFieldV2):
     """
 
     _FIELD_ASSIGNMENT_ROW: ClassVar[AssignmentRow] = "pydantic-dataclass"
+    WRITES_NO_CALL_WITHOUT_PLAN = None
 
     _DATACLASS_ASSIGNMENT_KEYS: ClassVar[frozenset[str]] = frozenset({
         "default_factory",
