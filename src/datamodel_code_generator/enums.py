@@ -119,6 +119,14 @@ class OpenAPIScope(Enum):
     Api = "api"
 
 
+_DEFAULT_OPENAPI_SCOPES: Final = (OpenAPIScope.Schemas,)
+
+
+def _openapi_scopes_or_default(scopes: list[OpenAPIScope] | None) -> list[OpenAPIScope]:
+    """Return the OpenAPI scopes a configuration gives, or a new list of the default ones where it gives none."""
+    return scopes or [*_DEFAULT_OPENAPI_SCOPES]
+
+
 class AllExportsScope(Enum):
     """Scope for __all__ exports in __init__.py.
 

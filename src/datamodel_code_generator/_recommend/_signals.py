@@ -963,7 +963,7 @@ def measure_signals(
     document: Mapping[str, Any],
     kind: SchemaKind,
     *,
-    openapi_scopes: AbstractSet[str] = frozenset({"schemas"}),
+    openapi_scopes: AbstractSet[str],
     include_paths: Sequence[str] = (),
     skip_path_extension_keys: bool = False,
 ) -> Signals:

@@ -300,10 +300,11 @@ def implied_target_settings(config: Any, explicit: AbstractSet[str]) -> dict[str
         DataModelType,
         OpenAPIScope,
         TargetPydanticVersion,
+        _openapi_scopes_or_default,
     )
 
     implied: dict[str, Any] = {}
-    scopes = list(config.openapi_scopes or (OpenAPIScope.Schemas,))
+    scopes = _openapi_scopes_or_default(config.openapi_scopes)
     if (
         "openapi_scopes" not in explicit
         and OpenAPIScope.Api not in scopes

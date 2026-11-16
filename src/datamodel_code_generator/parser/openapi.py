@@ -50,7 +50,7 @@ from datamodel_code_generator._runtime.model_codecs.parameters import parameter_
 from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator._user_keys import ClassScope, class_key
 from datamodel_code_generator.deprecations import warn_deprecated
-from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion, VersionMode
+from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion, VersionMode, _openapi_scopes_or_default
 from datamodel_code_generator.parser import _schema_documents, _schema_refs, _union_tags
 from datamodel_code_generator.parser._api_reference import pointer_fragment as _pointer_fragment
 from datamodel_code_generator.parser._naming import composed_name
@@ -607,7 +607,7 @@ class OpenAPIParser(JsonSchemaParser):
         if config is None and options.get("wrap_string_literal") is None:
             options["wrap_string_literal"] = False
         super().__init__(source=source, config=config, **options)
-        self.open_api_scopes: list[OpenAPIScope] = self.config.openapi_scopes or [OpenAPIScope.Schemas]
+        self.open_api_scopes: list[OpenAPIScope] = _openapi_scopes_or_default(self.config.openapi_scopes)
         if OpenAPIScope.Api in self.open_api_scopes and not self._supports_api_scope:
             raise Error(self._api_scope_error)
         self.include_path_parameters: bool = self.config.include_path_parameters
@@ -709,7 +709,7 @@ class OpenAPIParser(JsonSchemaParser):
         paths: dict[str, Any] = specification.get("paths", {})
         security: list[dict[str, list[str]]] | None = specification.get("security")
         # Warn if schemas is empty but paths exist and only Schemas scope is used
-        if not schemas and self.open_api_scopes == [OpenAPIScope.Schemas] and paths:
+        if not schemas and self.open_api_scopes == _openapi_scopes_or_default(None) and paths:
             warn(
                 "No schemas found in components/schemas. If your schemas are defined in "
                 "external files referenced from paths, consider using --openapi-scopes paths",
