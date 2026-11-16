@@ -29,7 +29,7 @@ from datamodel_code_generator import _format_types
 from datamodel_code_generator._module_paths import is_below_name, is_within_name
 from datamodel_code_generator.deprecations import warn_deprecated, warn_legacy_dependency
 from datamodel_code_generator.python_literal import stable_repr
-from datamodel_code_generator.util import load_toml
+from datamodel_code_generator.util import _load_config_toml
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Sequence
@@ -443,10 +443,19 @@ def unsupported_black_message(python_version: PythonVersion) -> str:
 
 
 def black_find_project_root(sources: Sequence[Path]) -> Path:
-    """Find the project root directory for black configuration."""
+    """Find the project root directory for black configuration; an invalid pyproject.toml raises ``Error``."""
     from black import find_project_root as _find_project_root  # noqa: PLC0415
 
-    project_root = _find_project_root(tuple(str(s) for s in sources))
+    try:
+        project_root = _find_project_root(tuple(str(s) for s in sources))
+    except ValueError:
+        # Black (24.2.0 and later) parses each pyproject.toml on its way up without naming it; reading them again in
+        # the same order raises the error of the first invalid one, which names it, and reads no file past it.
+        start = sources[0].resolve()
+        for directory in (start, *start.parents):
+            if (path := directory / "pyproject.toml").is_file():
+                _load_config_toml(path)
+        raise  # pragma: no cover - only a file made valid between Black's read and this one
     if isinstance(project_root, tuple):
         # Black types the root as optional for sources without a common parent; one source always has one.
         return cast("Path", project_root[0])
@@ -556,7 +565,7 @@ class CodeFormatter:
                 builtin_format_line_length, _builtin_formatter_global("_is_valid_builtin_line_length")
             )
             builtin_tool_config = _builtin_formatter_attr("_load_builtin_tool_config")(
-                settings_path, _builtin_formatter_global("_find_pyproject_toml"), load_toml
+                settings_path, _builtin_formatter_global("_find_pyproject_toml"), _load_config_toml
             )
 
         self.builtin_line_length = (
@@ -595,7 +604,7 @@ class CodeFormatter:
             root = black_find_project_root((settings_path,))
             path = root / "pyproject.toml"
             if path.is_file():
-                pyproject_toml = load_toml(path)
+                pyproject_toml = _load_config_toml(path)
                 config = pyproject_toml.get("tool", {}).get("black", {})
             else:
                 config = {}

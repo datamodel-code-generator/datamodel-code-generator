@@ -49,6 +49,22 @@ def load_toml(path: Path) -> dict[str, Any]:
     return deepcopy(_parse_toml(path.read_bytes()))
 
 
+def _load_config_toml(path: Path) -> dict[str, Any]:
+    """Load a configuration file as ``load_toml`` does, raising an ``Error`` that names it where it is not valid TOML.
+
+    A file that is not valid TOML (``TOMLDecodeError``) or not UTF-8 (``UnicodeDecodeError``), both ``ValueError``,
+    is reported as an invalid configuration (#6844). The error is a ``ValueError`` as well, so a caller of
+    ``load_pyproject_config`` catches it as before. ``load_toml`` keeps raising them as it did for its callers.
+    """
+    try:
+        return load_toml(path)
+    except ValueError as exc:
+        from datamodel_code_generator import _InvalidConfigTomlError  # noqa: PLC0415
+
+        msg = f"Invalid TOML in {path}: {exc}"
+        raise _InvalidConfigTomlError(msg) from exc
+
+
 def _find_pyproject_toml(settings_path: Path) -> Path | None:
     """Return the nearest pyproject.toml in ``settings_path`` or one of its parents."""
     for path in (settings_path, *settings_path.parents):

@@ -16,7 +16,7 @@ from datamodel_code_generator._config_fields import (
 )
 from datamodel_code_generator._option_names import FIELD_ALIASES, GENERATE_FIELD_NAMES, field_name
 from datamodel_code_generator._paths import resolved
-from datamodel_code_generator.util import load_toml
+from datamodel_code_generator.util import _load_config_toml
 
 if TYPE_CHECKING:
     from datamodel_code_generator.config import GenerateConfig
@@ -92,7 +92,7 @@ def _find_datamodel_codegen_project_config_with_path(source: Path) -> tuple[Path
     while current_path != current_path.parent:
         pyproject_path = current_path / "pyproject.toml"
         if pyproject_path.is_file():
-            pyproject_toml = load_toml(pyproject_path)
+            pyproject_toml = _load_config_toml(pyproject_path)
             tool_config = pyproject_toml.get("tool", {}).get("datamodel-codegen")
             if isinstance(tool_config, Mapping):
                 return pyproject_path, tool_config

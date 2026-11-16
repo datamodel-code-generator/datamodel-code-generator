@@ -831,7 +831,7 @@ def _record_raw_batch_watch_dependencies(args: Namespace, dependencies: WatchDep
     """Keep the latest invalid batch plan observable until it can be replanned."""
     try:
         project_config = _find_datamodel_codegen_project_config_with_path(Path.cwd())
-    except (OSError, ValueError):
+    except (Error, OSError):
         return
     if project_config is None:
         return
