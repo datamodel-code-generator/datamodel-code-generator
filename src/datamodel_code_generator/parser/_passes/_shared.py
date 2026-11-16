@@ -818,8 +818,6 @@ def override_required_field(
             elif host.apply_default_values_for_required_fields and copied_original_field.has_default:
                 copied_original_field.use_default_with_required = True
             resolved_fields.append(copied_original_field)
-        if model.REQUIRES_UNIQUE_FIELD_ALIASES:
-            _restore_inherited_field_names_for_unique_aliases(builder, resolved_fields, inherited_fields)
         builder.set_fields(model, resolved_fields)
 
 
