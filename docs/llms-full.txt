@@ -96116,6 +96116,11 @@ $ pip install -e datamodel-code-generator
 
 We are waiting for your contributions to `datamodel-code-generator`.
 
+Before you open an issue or a pull request, read the
+[contribution policy](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/main/.github/CONTRIBUTING.md):
+problems from real use are welcome, AI tools are welcome, every pull request links an issue, and planned work stays
+with the maintainers.
+
 ## 📝 How to contribute
 
 ```bash
