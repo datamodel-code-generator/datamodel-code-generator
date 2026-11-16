@@ -537,15 +537,6 @@ class DataModelField(DataModelFieldBase):
         """Check if field should fall back to nullable."""
         return not self._is_optional_typed_dict_key
 
-    @property
-    @override
-    def imports(self) -> tuple[Import, ...]:
-        """Get imports including key-requiredness and ReadOnly qualifiers."""
-        base_imports = super().imports
-        if not (symbol_imports := self._render_plan().symbol_imports):
-            return base_imports
-        return (*base_imports, *(import_ for import_, _ in symbol_imports))
-
 
 class DataModelFieldReadOnlyBackport(DataModelField):
     """Field implementation for TypedDict models using typing_extensions.ReadOnly.

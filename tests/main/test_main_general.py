@@ -3752,6 +3752,48 @@ def test_dataclass_field_type_imports_follow_its_field(override: str) -> None:
         validate_generated_code(output, "<generated>", do_exec=True)
 
 
+@pytest.mark.parametrize("override", ["no-symbol-imports", "field-statement"])
+def test_pydantic_field_type_imports_follow_its_field_statement(override: str) -> None:
+    """A Pydantic field type outside the package imports ``Annotated`` and ``Field`` by ``_has_field_statement()``.
+
+    One whose render plans list no symbol import still imports the ``Field`` it writes; one whose
+    ``_has_field_statement`` is true for every field imports both, though no field writes ``Field()``.
+    """
+    from dataclasses import replace
+
+    from datamodel_code_generator.model import get_data_model_types
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    types = get_data_model_types(DataModelType.PydanticV2BaseModel, PythonVersion.PY_311)
+
+    class NoSymbolImports(types.field_model):
+        def _build_render_plan(self) -> Any:
+            return replace(super()._build_render_plan(), symbol_imports=())
+
+    class FieldStatement(types.field_model):
+        def _has_field_statement(self) -> bool:
+            return True
+
+    schema = _FIELD_TYPE_SCHEMA
+    if override == "no-symbol-imports":
+        schema = '{"title": "M", "type": "object", "properties": {"b": {"type": "string", "description": "bee"}}}'
+    parser = JsonSchemaParser(
+        schema,
+        data_model_type=types.data_model,
+        data_model_root_type=types.root_model,
+        data_model_field_type={"no-symbol-imports": NoSymbolImports, "field-statement": FieldStatement}[override],
+        data_type_manager_type=types.data_type_manager,
+        dump_resolve_reference_action=types.dump_resolve_reference_action,
+        target_python_version=PythonVersion.PY_311,
+        use_annotated=True,
+        field_constraints=True,
+        formatters=[Formatter.BUILTIN],
+    )
+    output = str(parser.parse())
+    assert_output(output)
+    validate_generated_code(output, "<generated>", do_exec=True)
+
+
 @pytest.mark.parametrize(
     ("override", "call"),
     [
