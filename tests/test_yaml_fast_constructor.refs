@@ -670,6 +670,8 @@ openapi/shadowed_imports_base_and_fields.yaml	yaml_fast_constructor/parity.txt
 openapi/shared_enum_discriminator/mapped_first.yaml	yaml_fast_constructor/parity.txt
 openapi/shared_enum_discriminator/repeated.yaml	yaml_fast_constructor/parity.txt
 openapi/shared_enum_discriminator/unmapped_first.yaml	yaml_fast_constructor/parity.txt
+openapi/single_allof_refs/api.yaml	yaml_fast_constructor/parity.txt
+openapi/single_allof_refs/components.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/api.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/common.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/extension_keys.yaml	yaml_fast_constructor/parity.txt

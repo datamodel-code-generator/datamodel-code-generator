@@ -124,6 +124,7 @@ OPT_IN_OPTIONS_20261113: tuple[str, ...] = (
     "--read-ids-with-empty-fragment",
     "--read-yaml-1-1-numbers-as-text",
     "--read-implied-options-from-merged-values",
+    "--read-single-allof-refs-in-their-documents",
 )
 """The options the 20261113 presets set beyond the 20261112 presets."""
 
@@ -515,6 +516,12 @@ CASES_20261113: tuple[pytest.ParameterSet, ...] = (
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="read-yaml-1-1-numbers-as-text",
     ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "single_allof_refs" / "main.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-single-allof-refs-in-their-documents",
+    ),
 )
 """The inputs each opt-in option of the 20261113 presets changes."""
 
@@ -826,6 +833,13 @@ def test_preset_sets_opt_in_option(
             "--read-yaml-1-1-numbers-as-text",
             "--no-read-yaml-1-1-numbers-as-text",
             id="read-yaml-1-1-numbers-as-text",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "single_allof_refs" / "main.json",
+            [],
+            "--read-single-allof-refs-in-their-documents",
+            "--no-read-single-allof-refs-in-their-documents",
+            id="read-single-allof-refs-in-their-documents",
         ),
     ],
 )

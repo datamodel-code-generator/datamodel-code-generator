@@ -4847,7 +4847,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> DataType | None:
         """Return the type of a schema whose allOf is one local `$ref` alone, where its target decides it, else None.
 
-        The target is read by row ``legacy-all-of-ref-in-parsed-document``.
+        The target is read at the reference's key under --read-single-allof-refs-in-their-documents, else by row
+        ``legacy-all-of-ref-in-parsed-document``.
         """
         if len(obj.allOf) != 1 or obj.properties:
             return None
@@ -4865,8 +4866,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ):
             return None
 
-        referenced_schema = _fragment_value(
-            self.raw_obj, f"/{single_obj.ref[2:]}", reading="legacy-split-pointer-tokens"
+        referenced_schema = (
+            self._get_ref_raw_schema(_schema_refs.ref_key(self, single_obj.ref, embedded=False).key)
+            if self.config.read_single_allof_refs_in_their_documents
+            else _fragment_value(self.raw_obj, f"/{single_obj.ref[2:]}", reading="legacy-split-pointer-tokens")
         )
         ref_data_type = self.get_ref_data_type(single_obj.ref)
         if referenced_schema is True:

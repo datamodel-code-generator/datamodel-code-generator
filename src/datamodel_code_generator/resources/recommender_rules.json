@@ -1239,6 +1239,10 @@
         "versions.read-per-document"
       ]
     },
+    "read_single_allof_refs_in_their_documents": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261113 presets; the recommendation starts from a preset."
+    },
     "read_yaml_1_1_numbers_as_text": {
       "not_recommended": "preset",
       "reason": "Set by the 20261113 presets; the recommendation starts from a preset."

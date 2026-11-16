@@ -165,6 +165,8 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
             continue
         if "reference_object_siblings" in file.parts and file.name != "api.yaml":
             continue
+        if "single_allof_refs" in file.parts and file.name != "api.yaml":
+            continue
         if file.name.endswith((
             "aliases.json",
             "extra_data.json",

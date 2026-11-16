@@ -1930,6 +1930,15 @@ _toggle(
 )
 _toggle(
     base_options,
+    "--read-single-allof-refs-in-their-documents",
+    help="Read the target of the one $ref of an allOf as every other $ref is read: in the document that holds the "
+    "schema, a plain-name anchor such as #code included. The target decides whether the schema is typed as the "
+    "referenced enum, as a root model over it, or refused, so a schema of a referenced file takes the form the same "
+    "schemas take in one file; without it the target is read at the same pointer of the input document, where a "
+    "plain-name anchor names nothing, so such a schema can be written as a copy of the enum or refused, as in 0.96.0.",
+)
+_toggle(
+    base_options,
     "--ignore-ref-siblings-by-schema-version",
     help="Read a $ref as its target alone where the schema version ignores the keywords beside it (JSON Schema "
     "draft 4, 6 and 7, OpenAPI 3.0, AsyncAPI 2), as those versions specify: a $ref with a sibling format: binary "
