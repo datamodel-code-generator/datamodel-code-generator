@@ -1,0 +1,44 @@
+openapi: 3.1.0
+info: {title: "diamond variant whose second base restates the tag as optional", version: "1"}
+paths: {}
+components:
+  schemas:
+    E:
+      type: object
+      properties:
+        kind: {const: d}
+        e: {type: string}
+    B:
+      allOf:
+        - $ref: '#/components/schemas/E'
+        - type: object
+          properties:
+            b: {type: string}
+    C:
+      allOf:
+        - $ref: '#/components/schemas/E'
+        - type: object
+          properties:
+            kind: {const: d}
+            c: {type: string}
+    D:
+      allOf:
+        - $ref: '#/components/schemas/B'
+        - $ref: '#/components/schemas/C'
+    Group:
+      oneOf:
+        - $ref: '#/components/schemas/D'
+    Plane:
+      type: object
+      required: [kind]
+      properties:
+        kind: {const: plane}
+    Holder:
+      type: object
+      properties:
+        thing:
+          oneOf:
+            - $ref: '#/components/schemas/Group'
+            - $ref: '#/components/schemas/Plane'
+          discriminator:
+            propertyName: kind

@@ -1,0 +1,12 @@
+[[change]]
+id = "discriminator-nested-variant-diamond"
+kind = "default-output"
+action = "review"
+title = "A union has no `discriminator=` where a nested variant takes an untagged field from the first of two bases"
+summary = "A discriminated union that lists a `oneOf` grouping a variant composed (`allOf`) of two models that share a parent declaring the tag was written with `discriminator=` by the tag field the second model declares again. Pydantic gives the class of the variant the field of its first base that has one, here the one the first model inherits from the shared parent, and refused the union when the module was imported where that field is optional (`needs field 'kind' to be of type Literal`, #6905) or holds a tag another variant holds (`Value ... mapped to multiple choices`, with `--enum-field-as-literal all`), also where `--collapse-root-models` writes that union as the items of a list. Such a union is now written as a plain union, without `discriminator=`; the variants and their tag fields are unchanged, so only the module that holds the union changes. A module that imported before is unchanged."
+affects = { output_model_types = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"] }
+before = "thing: Group | Plane | None = Field(None, discriminator='kind')"
+after = "thing: Group | Plane | None = None"
+keep = { note = "The previous module failed at import; nothing restores it." }
+refs = ["#6905"]
+source = "release-note"

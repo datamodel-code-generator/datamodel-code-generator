@@ -29,6 +29,20 @@ Under `--collapse-root-models`, a discriminated union that is a named schema and
 +pets: list[Annotated[Cat | Dog, Field(discriminator='Kind_1')]] | None = None
 ```
 
+### A union has no `discriminator=` where a nested variant takes an untagged field from the first of two bases (unreleased) { #discriminator-nested-variant-diamond }
+
+A discriminated union that lists a `oneOf` grouping a variant composed (`allOf`) of two models that share a parent declaring the tag was written with `discriminator=` by the tag field the second model declares again. Pydantic gives the class of the variant the field of its first base that has one, here the one the first model inherits from the shared parent, and refused the union when the module was imported where that field is optional (`needs field 'kind' to be of type Literal`, #6905) or holds a tag another variant holds (`Value ... mapped to multiple choices`, with `--enum-field-as-literal all`), also where `--collapse-root-models` writes that union as the items of a list. Such a union is now written as a plain union, without `discriminator=`; the variants and their tag fields are unchanged, so only the module that holds the union changes. A module that imported before is unchanged.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`
+- **Keep the old output:** The previous module failed at import; nothing restores it.
+- **Pull requests and issues:** [#6905](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6905)
+- **Source:** the release notes
+
+```diff
+-thing: Group | Plane | None = Field(None, discriminator='kind')
++thing: Group | Plane | None = None
+```
+
 ### A union has no `discriminator=` where the class of a nested variant has an optional tag field (unreleased) { #discriminator-nested-variant-restated-tag }
 
 A discriminated union that lists a `oneOf` grouping a variant wrote that variant's tag as the default of the tag field of the root-most parent that declares it. Where a nearer parent declares the same optional `const` tag again, the class of the variant has that parent's field, which stays optional, and Pydantic refused the union when the module was imported (`needs field 'kind' to be of type Literal`, #6875); under `--use-enum-values-in-discriminator` the same happened where such a variant keeps an optional tag typed by its Enum. Such a union is now written as a plain union, without `discriminator=`; the variants and their tag fields are unchanged, so only the module that holds the union changes. A module that imported before is unchanged.
