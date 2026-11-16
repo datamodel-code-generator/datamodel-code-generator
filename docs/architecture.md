@@ -255,7 +255,15 @@ relative to `src/datamodel_code_generator/`; names are given as `file:function` 
 data type cycle, yielding names that class-keyed options name, untyped nullable maps, invalid dotted stdout
 modules, and a run that fails after a reference held a document it had prepared as an OpenAPI object of another role,
 which parses again with every role known at L0: `document_roles_to_seed`). These are retries around the whole
-pipeline, not passes inside it.
+pipeline, not passes inside it. A run is prepared once (`_GenerationRun`: its input, its parser options and source,
+`_prepare_parser_common_options`), every parser of it is built from that record (`_build_generation_parser`, with
+its own copy of a mapping source and fresh template data) and every parse again of a run goes through `_parse_again`,
+with the remote text cache and the base path of the parser before it and, but for the read-again of YAML 1.1-only
+numbers, the documents it loaded. Which signal asks for which
+parse again, what it changes in the run context or the config, when the parser before it is disposed and which
+warnings it ignores are the rows of `_parse_first` (collapse, document roles), `_parse_yaml_numbers_again`,
+`_parse_generation_run` (the names, untyped maps, stdout repair), `_parse_with_import_cycle_seeds` and
+`_parse_generation` (the run without the class-name keys of `--model-name-map`, a whole run before the run).
 
 **L0.** `_load_source_dict` calls `parser/_schema_documents.py:read_document`, which keeps the document as written and
 reads it copy-on-write, each schema object after its children through one walk (`_read_schema_objects`, which skips
