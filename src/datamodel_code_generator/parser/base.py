@@ -427,6 +427,7 @@ class ParserRunContext:
     diagnostic_source_path: Path | None = None
     prefetched_source: tuple[Path, bytes] | None = None
     formatter_cwd: Path | None = None
+    custom_formatter_cwd: Path | None = None
     preserve_circular_root_models: bool = False
     suppress_parse_warnings: bool = False
     untyped_nullable_maps: bool = False
@@ -750,6 +751,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         diagnostic_source_path: Path | None = None,
         prefetched_source: tuple[Path, bytes] | None = None,
         formatter_cwd: Path | None = None,
+        custom_formatter_cwd: Path | None = None,
         preserve_circular_root_models: bool = False,
         suppress_parse_warnings: bool = False,
         untyped_nullable_maps: bool = False,
@@ -775,6 +777,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             diagnostic_source_path=diagnostic_source_path,
             prefetched_source=prefetched_source,
             formatter_cwd=formatter_cwd,
+            custom_formatter_cwd=custom_formatter_cwd,
             preserve_circular_root_models=preserve_circular_root_models,
             suppress_parse_warnings=suppress_parse_warnings,
             untyped_nullable_maps=untyped_nullable_maps,
@@ -2256,6 +2259,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             known_third_party=self.known_third_party,
             defer_formatting=self.defer_formatting,
             formatter_cwd=self.run_context.formatter_cwd,
+            custom_formatter_cwd=self.run_context.custom_formatter_cwd,
             **_model_formatter_arguments(
                 self,
                 custom_formatters=self.custom_formatter,

@@ -2756,6 +2756,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0914, PLR0915
         diagnostic_source_path=run.diagnostic_source_path,
         prefetched_source=run.prefetched_source,
         formatter_cwd=None if run.use_output_cwd else run.output_context_path,
+        custom_formatter_cwd=Path.cwd(),
         model_name_keys=model_name_keys,
         records_model_names=records_model_names,
     )

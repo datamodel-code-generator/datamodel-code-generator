@@ -31,6 +31,19 @@ from datamodel_code_generator.deprecations import warn_deprecated, warn_legacy_d
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.util import _load_config_toml
 
+
+@contextmanager
+def _custom_formatter_cwd(path: Path | None) -> Generator[None, None, None]:
+    if path is None:
+        yield
+        return
+    previous = Path.cwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(previous)
+
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Sequence
     from types import CodeType
@@ -495,6 +508,7 @@ class CodeFormatter:
         use_type_checking_imports: bool = True,  # noqa: FBT001, FBT002
         defer_formatting: bool = False,  # noqa: FBT001, FBT002
         formatter_cwd: Path | None = None,
+        custom_formatter_cwd: Path | None = None,
     ) -> None:
         """Initialize code formatter with configuration for black, isort, ruff, and custom formatters."""
         if formatters is None:
@@ -663,8 +677,10 @@ class CodeFormatter:
             self.isort_config_kwargs = {}
             self.isort_config = None
 
+        self._custom_formatter_cwd = custom_formatter_cwd or Path.cwd()
         self.custom_formatters_kwargs = custom_formatters_kwargs or {}
-        self.custom_formatters = self._check_custom_formatters(custom_formatters)
+        with _custom_formatter_cwd(self._custom_formatter_cwd):
+            self.custom_formatters = self._check_custom_formatters(custom_formatters)
 
     def _load_custom_formatter(self, custom_formatter_import: str) -> CustomCodeFormatter:
         """Load and instantiate a custom formatter from a module path."""
@@ -746,8 +762,10 @@ class CodeFormatter:
             elif has_ruff_format:
                 code = self.apply_ruff_formatter(code)
 
-        for formatter in self.custom_formatters:
-            code = formatter.apply(code)
+        if self.custom_formatters:
+            with _custom_formatter_cwd(self._custom_formatter_cwd):
+                for formatter in self.custom_formatters:
+                    code = formatter.apply(code)
 
         return code
 
