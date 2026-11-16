@@ -2,21 +2,18 @@
 
 Every plan frozen at B2, and every plan rebuilt when its model renders, writes or omits each item its field declares,
 and writes or omits no other. When the modules are written, each frozen plan renders as the plan the field's facts give
-then, and the type expression of the field's type hint, kept when the plan was frozen, renders as the type hint then.
+then, and the type expression of the field's type hint, kept with the plan, renders as the type hint then.
 """
 
 from __future__ import annotations
 
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any
 
 from tests.checks.areas import Area, Mode, mode
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-
-_TYPE_EXPRS: Final = "type expressions"
-"""The key of the expression of each frozen field's type hint, by the id of the field, in the state of the parse."""
 
 
 def _violation(plans_mode: Mode, message: str) -> None:
@@ -38,10 +35,7 @@ def _check_accounting(plans_mode: Mode, model: Any, field: Any, plan: Any) -> No
 
 
 def freeze_field_render_plans(original: Callable[[Any], None]) -> Callable[[Any], None]:
-    """Wrap ``render_prep.freeze_field_render_plans``: each plan it froze must account for its field.
-
-    The expression of each frozen field's type hint is kept, for ``check_frozen_render_plans``.
-    """
+    """Wrap ``render_prep.freeze_field_render_plans``: each plan it froze must account for its field."""
 
     @wraps(original)
     def freeze_field_render_plans(state: Any) -> None:
@@ -49,7 +43,6 @@ def freeze_field_render_plans(original: Callable[[Any], None]) -> Callable[[Any]
         if (plans_mode := mode(Area.RENDER_PLANS)) is None:
             return
         from datamodel_code_generator.model._render_plan import RENDER_READY
-        from datamodel_code_generator.types import type_expr_of
 
         plans = RENDER_READY.get()._plans
         for model in state.all_models:
@@ -57,7 +50,6 @@ def freeze_field_render_plans(original: Callable[[Any], None]) -> Callable[[Any]
                 continue
             for field in model.fields:
                 if (entry := plans.get(id(field))) is not None:
-                    plans_mode.state[_TYPE_EXPRS, id(field)] = type_expr_of(field.data_type)
                     _check_accounting(plans_mode, model, field, entry.plan)
 
     return freeze_field_render_plans
@@ -84,7 +76,7 @@ def refresh_field_render_plans(original: Callable[[Any], None]) -> Callable[[Any
 
 
 def check_frozen_render_plans() -> None:
-    """Report a frozen render plan, or the type expression frozen with it, that renders other text than now.
+    """Report a frozen render plan, or the type expression kept with it, that renders other text than now.
 
     The plan is compared with its field's plan rebuilt now, the type expression with the field's type hint now,
     both rendered with a memo of their own, so the check leaves the parse's memo as it was.
@@ -100,7 +92,7 @@ def check_frozen_render_plans() -> None:
         field = entry.field
         with rendering_memo():
             hint = field.data_type.type_hint
-            frozen_hint = render_type_expr(plans_mode.state[_TYPE_EXPRS, id(field)])
+            frozen_hint = render_type_expr(entry.hint)
         if frozen_hint != hint:
             _violation(
                 plans_mode, f"the type expression frozen for field {field.name} renders {frozen_hint}, now {hint}"
