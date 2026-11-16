@@ -296,12 +296,15 @@ def prepare_target(
     ))
 
 
-def implied_conflict(config: Any, implied: dict[str, Any], generator: TargetGenerator) -> None:
-    """Refuse a given target pydantic version older than the MISSING sentinel the target implied needs, saying so."""
+def implied_conflict(config: Any, generator: TargetGenerator) -> None:
+    """Refuse a given target pydantic version older than the MISSING sentinel the target implied needs, saying so.
+
+    The command line's config names the settings its target implied in its record (stage `implied-target`).
+    """
     from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
 
     backend = DataModelType(config.output_model_type).value
-    if "use_missing_sentinel" in implied:
+    if "use_missing_sentinel" in config._run_options.staged_by("implied-target"):  # noqa: SLF001
         _check_pydantic_target(generator, backend, config.target_pydantic_version, sentinel=True, implied=True)
 
 
