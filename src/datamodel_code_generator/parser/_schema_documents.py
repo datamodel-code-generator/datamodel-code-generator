@@ -1328,7 +1328,11 @@ def iter_schema_definition_entry(
     raw: YamlValue,
     path: list[str],
 ) -> Iterator[tuple[str, YamlValue, list[str]]]:
-    if isinstance(raw, dict) and not has_schema_affecting_keywords(parser, raw):
+    if (
+        isinstance(raw, dict)
+        and not has_schema_affecting_keywords(parser, raw)
+        and not any(key in raw for key in ("$id", "id", "$schema", "$anchor", "$dynamicAnchor"))
+    ):
         entries = list(
             iter_definition_namespace_entries(
                 parser,
