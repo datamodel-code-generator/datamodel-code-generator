@@ -34,6 +34,17 @@ JavaPrintable = TypeAliasType("JavaPrintable", str)
 ClassEscapeRange = TypeAliasType("ClassEscapeRange", str)
 
 
+OneLetterPropertyRange = TypeAliasType("OneLetterPropertyRange", str)
+
+
+BracedPropertyRange = TypeAliasType("BracedPropertyRange", str)
+
+
+OneLetterPropertyDifference = TypeAliasType(
+    "OneLetterPropertyDifference", Annotated[str, Field(pattern=r'^[\pL\pP--_]+$')]
+)
+
+
 Letters = TypeAliasType("Letters", Annotated[str, Field(pattern=r'^\p{L}+$')])
 
 

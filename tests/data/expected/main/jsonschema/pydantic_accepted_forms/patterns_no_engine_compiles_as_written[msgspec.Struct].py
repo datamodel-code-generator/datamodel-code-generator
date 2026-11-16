@@ -27,6 +27,15 @@ JavaPrintable: TypeAlias = str
 ClassEscapeRange: TypeAlias = str
 
 
+OneLetterPropertyRange: TypeAlias = str
+
+
+BracedPropertyRange: TypeAlias = str
+
+
+OneLetterPropertyDifference: TypeAlias = str
+
+
 Letters: TypeAlias = str
 
 

@@ -90841,6 +90841,20 @@ Under `--collapse-root-models-name-strategy parent`, a module that named an enum
 +kind: Literal[b.Foo.cat, 'cat']
 ```
 
+### A pattern with a one-letter Unicode property before a hyphen in a class, such as `^[\pL-_]+$`, no longer fails at import (unreleased) { #regex-one-letter-property-range }
+
+A `pattern` whose character class starts a range with a Unicode property of one letter (`^[\pL-_]+$`, `[\PL-_]`) was written as the schema writes it, and the module failed at import with `invalid range boundary, must be a literal`: Pydantic's default regex engine refuses a range that starts with a class, and Python's `re` rejects `\p`. The pattern is now left out with a warning, as `^[\p{L}-_]+$` has been since 0.92.0, and the model checks the other keywords only. Output that imported before is unchanged.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`
+- **Keep the old output:** The previous module failed at import; nothing restores it.
+- **Pull requests and issues:** [#6918](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6918)
+- **Source:** the release notes
+
+```diff
+-one_letter: constr(pattern=r'^[\pL-_]+$') | None = None
++one_letter: str | None = None
+```
+
 ### More patterns past the regex size limit no longer fail at import, such as `^\p{L}{1,256}$`, `^.{0,10240}$` and `[\p{L}\p{N}_-]{1,256}` (unreleased) { #regex-size-limit-more-classes }
 
 A `pattern` that every pydantic-core release from 2.0 to 2.50 refuses for size, but that the size check counted below the limit, was written as the schema writes it, and the module failed at import with `Compiled regex exceeds size limit`: a class of several Unicode general categories (`[\p{L}\p{N}_-]{1,256}`, `^[\p{L}\p{Z}\p{N}_.:/=+\-@]{0,256}$`), `\p{Lu}` or `\p{Ll}`, a count that passes the limit only with what the ASCII characters of its atom and its optional copies add (`^\p{L}{1,256}$`, `^.{0,10240}$`, `^[^<>]{1,10000}$`), a counted group of single atoms (`^(?:[\w-]\.?){1,128}@(?:[\w-]\.?){1,128}$`) and an alternation without `^` or `$` in which every branch holds at least one copy of these classes or escapes outside a group (`user-[\w-]{1,128}|group-[\w-]{1,128}`). The model now selects `regex_engine="python-re"` for it; a pattern Python's `re` rejects too, as it rejects `\p{...}`, is left out with a warning. Only patterns that every pydantic-core release from 2.0 to 2.50 refuses are read this way. Output that imported before is unchanged.

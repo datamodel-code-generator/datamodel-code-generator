@@ -38,6 +38,18 @@ class ClassEscapeRange(RootModel[str]):
     root: str
 
 
+class OneLetterPropertyRange(RootModel[str]):
+    root: str
+
+
+class BracedPropertyRange(RootModel[str]):
+    root: str
+
+
+class OneLetterPropertyDifference(RootModel[constr(pattern=r'^[\pL\pP--_]+$')]):
+    root: constr(pattern=r'^[\pL\pP--_]+$')
+
+
 class Letters(RootModel[constr(pattern=r'^\p{L}+$')]):
     root: constr(pattern=r'^\p{L}+$')
 
