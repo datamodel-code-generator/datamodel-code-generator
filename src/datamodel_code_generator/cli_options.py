@@ -575,6 +575,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = _with_relation_rows({
         _C.GENERAL,
         "--no-untrusted-input --update-lock --locked --ignore-pyproject --generate-cli-command",
         "--generate-pyproject-config --recommend-options",
+        "--read-implied-options-from-merged-values --no-read-implied-options-from-merged-values",
     ),
     **_opts(_C.GENERAL, "--shared-module-name", group=_G.MODEL_REUSE, topic=OptionTopic.MODEL_CUSTOMIZATION),
     **_opts(

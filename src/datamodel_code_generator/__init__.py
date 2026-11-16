@@ -745,10 +745,18 @@ def _missing_sentinel_updates(config: BaseGenerateConfig, _record: RunOptions) -
 
 
 def _implied_model_updates(config: BaseGenerateConfig, record: RunOptions) -> dict[str, Any]:
-    """Return the constraint settings the other settings of a config decide, read with the given fields as set."""
+    """Return the constraint settings the other settings of a config decide, read with the given fields as set.
+
+    Under `--read-implied-options-from-merged-values` an option that was turned off and that only an option now off
+    turned on (`_replaced_options`) is off again, as the merged values say.
+    """
     from datamodel_code_generator.base_config import implied_model_settings  # noqa: PLC0415
 
-    return implied_model_settings(config, record.given)
+    implied = implied_model_settings(config, record.given)
+    if not config.read_implied_options_from_merged_values:
+        return implied
+    replaced = _replaced_options(config, record, record.staged_by("preset"))
+    return {**{name: False for name, option in replaced.items() if not getattr(config, option)}, **implied}
 
 
 _OPTION_STAGES: Final[dict[_OptionStage, Callable[[BaseGenerateConfig, RunOptions], dict[str, Any]]]] = {
@@ -759,24 +767,35 @@ _OPTION_STAGES: Final[dict[_OptionStage, Callable[[BaseGenerateConfig, RunOption
 }
 
 
-def _warn_of_replaced_options(config: BaseGenerateConfig, record: RunOptions, preset_gave: Collection[str]) -> None:
-    """Warn of each option that was turned off and stays on, as an enabled option turns it on (`IMPLIED_OPTIONS`).
+def _replaced_options(config: BaseGenerateConfig, record: RunOptions, preset_gave: Collection[str]) -> dict[str, str]:
+    """Return each option of `IMPLIED_OPTIONS` that was turned off and is on, with the option that turns it on.
 
     An option was turned off where a source of the run gave it False and the preset did not replace that value: a
     preset that an argument selects replaces the values of pyproject.toml (row `preset-over-pyproject`), so a
     pyproject.toml value of an option the preset gave a value (`preset_gave`: the fields the `preset` stage of the
-    call gave, its own items and what they imply) is the preset's to replace and is not reported. The warning names
-    the option that turns it on, with where that one came from (the preset that set it, the output model type it was
-    set for, or that it was given as well), and how to turn both off: the option's argument, or its key where
-    pyproject.toml turns it on (an argument given as well is named by the next run).
+    call gave, its own items and what they imply) is the preset's to replace. The option that turns it on is on, as
+    the table turns its option on over any value given, or off: then the command line's config validator turned it
+    on from the pyproject.toml values alone, before an argument turned that option off (row `validator-stage-rows`).
     """
-    from datamodel_code_generator._option_rules import implying_options  # noqa: PLC0415
+    from datamodel_code_generator._option_rules import enabled_implied_options  # noqa: PLC0415
 
-    replaced = {
+    return {
         implied: option
-        for implied, option in implying_options(config).items()
+        for implied, option in enabled_implied_options(config).items()
         if record.given_value(implied) is False and (implied in record.preset_explicit or implied not in preset_gave)
     }
+
+
+def _warn_of_replaced_options(config: BaseGenerateConfig, record: RunOptions, preset_gave: Collection[str]) -> None:
+    """Warn of each option that was turned off and stays on (`_replaced_options`).
+
+    Where the option that turns it on is on, the warning names that option, with where it came from (the preset that
+    set it, the output model type it was set for, or that it was given as well), and how to turn both off: the
+    option's argument, or its key where pyproject.toml turns it on (an argument given as well is named by the next
+    run). Where that option is off, it names the pyproject.toml value that turned it on and the argument that turned
+    that one off, and how the option is off: the key, or `--read-implied-options-from-merged-values`.
+    """
+    replaced = _replaced_options(config, record, preset_gave)
     if not replaced:
         return
     from datamodel_code_generator._option_names import option_flag  # noqa: PLC0415
@@ -784,22 +803,26 @@ def _warn_of_replaced_options(config: BaseGenerateConfig, record: RunOptions, pr
 
     for implied, option in replaced.items():
         flag = option_flag(option)
+        key = option.replace("_", "-")
         off = _values_arguments([(option, False)])
-        remedy = f"{off[0]} turns both off" if off else f"both are off without {flag}"
-        match record.staged.get(option):
-            case "preset":
-                origin = f", set by --preset {config.preset},"
-            case "implied-model":
-                origin = f", set for --output-model-type {DataModelType(config.output_model_type).value},"
-            case _:
-                origin = ", given as well,"
-                if record.pyproject.get(option):
-                    remedy = f"{option.replace('_', '-')} = false in pyproject.toml turns both off"
-        warnings.warn(
-            f"{option_flag(implied)} was turned off but stays on: {flag}{origin} turns it on; {remedy}",
-            UserWarning,
-            stacklevel=2,
-        )
+        if not getattr(config, option):
+            cause = (
+                f"{key} = true in pyproject.toml turns it on, which {off[0]} does not undo; {key} = false in "
+                f"pyproject.toml or {option_flag('read_implied_options_from_merged_values')} turns it off"
+            )
+        else:
+            remedy = f"{off[0]} turns both off" if off else f"both are off without {flag}"
+            match record.staged.get(option):
+                case "preset":
+                    origin = f", set by --preset {config.preset},"
+                case "implied-model":
+                    origin = f", set for --output-model-type {DataModelType(config.output_model_type).value},"
+                case _:
+                    origin = ", given as well,"
+                    if record.pyproject.get(option):
+                        remedy = f"{key} = false in pyproject.toml turns both off"
+            cause = f"{flag}{origin} turns it on; {remedy}"
+        warnings.warn(f"{option_flag(implied)} was turned off but stays on: {cause}", UserWarning, stacklevel=2)
 
 
 def _run_option_stages(

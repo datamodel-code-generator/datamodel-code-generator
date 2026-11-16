@@ -1,0 +1,10 @@
+[[change]]
+id = "argument-does-not-undo-implied-option"
+kind = "warning"
+action = "warn"
+title = "An argument that turns off an option `pyproject.toml` turned on, whose implied option stays on, emits a `UserWarning`"
+summary = "The command line reads the values of `pyproject.toml` before it applies the arguments, so with `use-annotated = true` and `field-constraints = false` there, `--no-use-annotated` turns `--use-annotated` off and leaves `--field-constraints` on, which `use-annotated = true` turned on. Such a run now reports it with a `UserWarning` that names the key and `--read-implied-options-from-merged-values`; the option stays on as before and the generated output is unchanged. A caller that turns warnings into errors gets an error."
+affects = { options = ["--no-use-annotated"] }
+migrate = "Set `use-annotated = false` in `pyproject.toml` instead of passing `--no-use-annotated`, or pass `--read-implied-options-from-merged-values` (the 20261113 presets turn it on), under which the argument turns `--field-constraints` off as the key does."
+refs = ["#6891"]
+source = "release-note"

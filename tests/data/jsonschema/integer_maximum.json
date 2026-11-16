@@ -1,0 +1,4 @@
+{
+  "type": "object",
+  "properties": {"a": {"type": "integer", "maximum": 10}}
+}

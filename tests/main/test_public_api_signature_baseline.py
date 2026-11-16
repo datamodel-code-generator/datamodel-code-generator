@@ -379,6 +379,7 @@ def _baseline_generate(
     emit_model_metadata: Path | None = None,
     output_model_type: DataModelType = DataModelType.PydanticV2BaseModel,
     preset: PresetName | None = None,
+    read_implied_options_from_merged_values: bool = False,
     target_python_version: PythonVersion = PythonVersionMin,
     target_pydantic_version: TargetPydanticVersion | None = None,
     base_class: str = "",

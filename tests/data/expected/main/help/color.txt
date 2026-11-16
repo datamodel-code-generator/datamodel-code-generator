@@ -1546,6 +1546,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         with --install-skill.
   --profile PROFILE     Use a named profile from pyproject.toml
                         [tool.datamodel-codegen.profiles.<name>]
+  --read-implied-options-from-merged-values, --no-read-implied-options-from-merged-values
+                        Read the options that another option turns on (--use-
+                        annotated turns on --field-constraints) from the
+                        arguments and pyproject.toml together, so --no-use-
+                        annotated over use-annotated = true in pyproject.toml
+                        also leaves --field-constraints off where
+                        pyproject.toml gives it false, as use-annotated =
+                        false there does; without it --field-constraints stays
+                        on, as in 0.96.0.
   --recommend-options   Analyse the input schema and print the options to add
                         on top of the latest dated preset, with the reasons,
                         as a command and a pyproject.toml block, then exit

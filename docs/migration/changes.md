@@ -85,6 +85,15 @@ A `pattern` whose counted repetitions pass the size limit of Pydantic's default 
 +root: str
 ```
 
+### An argument that turns off an option `pyproject.toml` turned on, whose implied option stays on, emits a `UserWarning` (unreleased) { #argument-does-not-undo-implied-option }
+
+The command line reads the values of `pyproject.toml` before it applies the arguments, so with `use-annotated = true` and `field-constraints = false` there, `--no-use-annotated` turns `--use-annotated` off and leaves `--field-constraints` on, which `use-annotated = true` turned on. Such a run now reports it with a `UserWarning` that names the key and `--read-implied-options-from-merged-values`; the option stays on as before and the generated output is unchanged. A caller that turns warnings into errors gets an error.
+
+- **Affects:** only with: `--no-use-annotated`
+- **What to change:** Set `use-annotated = false` in `pyproject.toml` instead of passing `--no-use-annotated`, or pass `--read-implied-options-from-merged-values` (the 20261113 presets turn it on), under which the argument turns `--field-constraints` off as the key does.
+- **Pull requests and issues:** [#6891](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6891)
+- **Source:** the release notes
+
 ### A member of `$defs` that is not a schema is skipped with a `UserWarning` in a draft 7 or older document (unreleased) { #defs-member-not-a-schema }
 
 Draft 7 and older have no `$defs` keyword, so their meta-schemas do not constrain its members. In a document read in one of these versions (the version of the input document, or of each document under `--read-schema-version-per-document`), a member of `$defs` whose value is neither an object nor a boolean, such as a `description` string written beside the definitions, is now skipped with a `UserWarning` that names it, and the document is generated; it was refused before. Such a member is still refused in a document read as 2019-09 or later (a document without `$schema` that holds `$defs` reads as 2020-12) and where a reference names it. A caller that turns warnings into errors gets an error.
@@ -173,6 +182,12 @@ Read an $id that ends with an empty fragment, such as https://example.com/item.j
 
 - **Source:** the command-line options of both releases
 
+### New option `--read-implied-options-from-merged-values` (`--no-read-implied-options-from-merged-values`) (unreleased) { #option-read-implied-options-from-merged-values }
+
+Read the options that another option turns on (--use-annotated turns on --field-constraints) from the arguments and pyproject.toml together, so --no-use-annotated over use-annotated = true in pyproject.toml also leaves --field-constraints off where pyproject.toml gives it false, as use-annotated = false there does; without it --field-constraints stays on, as in 0.96.0.
+
+- **Source:** the command-line options of both releases
+
 ### New option `--read-inherited-property-schemas-in-mro-order` (`--no-read-inherited-property-schemas-in-mro-order`) (unreleased) { #option-read-inherited-property-schemas-in-mro-order }
 
 With --intersect-combined-schema-keywords, give a property that a model only makes required the schema its allOf parents declare, read in the order of the class bases from the allOf members the model's own fields are read from (an alias member followed to the schema it names, the keywords beside a $ref member read with it), so a model written before its parents takes the field it takes when written after them; without it the declaration is looked up in the allOf members as written, and under --intersect-combined-schema-keywords such a field can lose its description or its constraints or become Any, as in 0.96.0
@@ -214,6 +229,7 @@ They keep the options of the 20261112 presets and add:
 - Inherited property schemas read in MRO order (`--read-inherited-property-schemas-in-mro-order`): Give a property that a model only makes required the schema its allOf parents declare, read in the order of the class bases from the allOf members the model's fields are read from, so a model written before its parents takes the field it takes when written after them.
 - Ids with an empty fragment read as their documents (`--read-ids-with-empty-fragment`): Read an absolute-URL $id written with an empty fragment, such as https://example.com/item.json#, as the URI without it, so a $ref to it resolves inside the document that declares it instead of loading the document at that URL from the network. A relative $id is not matched: a $ref to it reads the file.
 - YAML 1.1-only numbers read as text (`--read-yaml-1-1-numbers-as-text`): Read an unquoted YAML value with _ or : that YAML 1.1 reads as a number, such as 16:9 or 18_24, as its text, as YAML 1.2, which OpenAPI names, and the ryaml reader do, so an enum of aspect ratios keeps the values '16:9' and '4:3' instead of the integers 969 and 243.
+- Implied options read from the merged values (`--read-implied-options-from-merged-values`): Read the options that another option turns on from the arguments and pyproject.toml together, so --no-use-annotated over use-annotated = true in pyproject.toml also leaves --field-constraints off where pyproject.toml gives it false, as use-annotated = false there does.
 - Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.
 
 - **Source:** the registry of deprecations, experimental features and dated presets

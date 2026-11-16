@@ -69,6 +69,7 @@ class BaseGenerateConfig(TypedDict):
     emit_model_metadata: NotRequired[Path | None]
     output_model_type: NotRequired[DataModelType]
     preset: NotRequired[PresetName | None]
+    read_implied_options_from_merged_values: NotRequired[bool]
     target_python_version: NotRequired[PythonVersion]
     target_pydantic_version: NotRequired[TargetPydanticVersion | None]
     base_class: NotRequired[str]

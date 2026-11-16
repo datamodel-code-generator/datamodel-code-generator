@@ -15,7 +15,7 @@ This documentation is auto-generated from test cases.
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
-| ⚙️ [General Options](general-options.md) | 26 | Utilities and meta options |
+| ⚙️ [General Options](general-options.md) | 27 | Utilities and meta options |
 | 🚀 [Target Generation Options](target-generation-options.md) | 27 | Server and client generation with the models (experimental) |
 | 📝 [Utility Options](utility-options.md) | 15 | Help, version, debug options |
 
@@ -335,6 +335,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--read-escaped-ref-pointers`](base-options.md#read-escaped-ref-pointers)
 - [`--read-format-as-annotation`](typing-customization.md#read-format-as-annotation)
 - [`--read-ids-with-empty-fragment`](base-options.md#read-ids-with-empty-fragment)
+- [`--read-implied-options-from-merged-values`](general-options.md#read-implied-options-from-merged-values)
 - [`--read-inherited-property-schemas-in-mro-order`](typing-customization.md#read-inherited-property-schemas-in-mro-order)
 - [`--read-input-model-dataclass-fields-by-alias`](base-options.md#read-input-model-dataclass-fields-by-alias)
 - [`--read-kubernetes-extensions`](typing-customization.md#read-kubernetes-extensions)
