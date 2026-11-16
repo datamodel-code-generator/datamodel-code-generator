@@ -151,8 +151,6 @@ def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleMod
     output. A model that a type override replaces has a layout the generator does not know, as a configured base
     class has.
     """
-    if not parser._tag_capabilities.flattens_layouts:  # noqa: SLF001
-        return
     models = [model for _, models in module_models for model in models]
     if not (joins := [model for model in models if len(model.base_classes) > 1]):
         return

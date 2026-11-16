@@ -156,6 +156,7 @@ if TYPE_CHECKING:
         ModuleContextView,
         ModulePath,
         ParseConfigView,
+        PydanticFloors,
         SortedDataModels,
         _FinalizeState,
     )
@@ -1173,8 +1174,7 @@ def _remap_imports(ledger: ModuleImportLedger, imports: Imports, overrides: Mapp
 
 def warn_about_decimal_defaults(parser: FinishHost) -> None:
     """Emit one actionable warning for all Decimal defaults in this generation."""
-    if not (count := parser._decimal_default_warning_count):  # noqa: SLF001
-        return
+    count = parser._decimal_default_warning_count  # noqa: SLF001
     examples = listed_with_more(parser._decimal_default_warning_examples or (), count)  # noqa: SLF001
     values, verb = counted(count, "Decimal default value"), for_count(count, "was", "were")
     if DefaultValueType.Decimal in parser.deserialize_default_value_types:
@@ -1465,8 +1465,7 @@ def record_pydantic_floor(parser: FinishHost, contexts: Sequence[ModuleContextVi
     config selects ``python-re`` for it (#6673), are recorded too. Without an explicit target there is no floor,
     so the constructs are collected only with one.
     """
-    if (record := _PYDANTIC_FLOORS.get()) is None:
-        return
+    record = cast("PydanticFloors", _PYDANTIC_FLOORS.get())
     if not parser.data_model_type._READ_BY_PYDANTIC:  # noqa: SLF001
         record.record(parser, None, ())
         return
@@ -1529,8 +1528,6 @@ def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleCon
     A field whose ``Literal``, or union of ``Literal`` members, holds both bytes and str values, which no msgspec type
     holds, is refused instead (``_refuse_msgspec_bytes_and_str_literal``).
     """
-    if not parser.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
-        return
     from datamodel_code_generator.model.union import _DataTypeUnionBase  # noqa: PLC0415
 
     models = _context_models(contexts)

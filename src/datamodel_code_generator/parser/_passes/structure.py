@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator import AllExportsScope, Error, ModuleSplitMode, ReuseScope
+from datamodel_code_generator import AllExportsScope, Error, ModuleSplitMode
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._parse_memo import MemoTable
@@ -659,9 +659,6 @@ def reuse_model_tree_scope(
     module_split_mode: ModuleSplitMode | None,
 ) -> tuple[tuple[str, ...], list[DataModel]] | None:
     """Deduplicate models across all modules, placing shared models in shared.py."""
-    if not parser.reuse_model or parser.reuse_scope != ReuseScope.Tree:
-        return None
-
     duplicates = find_duplicate_models_across_modules(parser, module_models)
     if parser._reuse_groups.typed_map_values:  # noqa: SLF001
         duplicates = replace_typed_map_value_duplicates(parser, module_models, duplicates)

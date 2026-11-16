@@ -72,6 +72,7 @@ __all__ = [
     "import_enum_member_literal_classes",
     "import_removed_reuse_canonicals",
     "import_renamed_types",
+    "leaves_stale_import",
     "tag_fields_of_tagged_bases",
     "warn_enums_admitting_other_values",
 ]
@@ -272,8 +273,7 @@ def _stale_renamed_import(imports: Imports, data_type: DataType, renamed_types: 
 
 def import_removed_reuse_canonicals(parser: CrossModuleHost, run: CrossModuleRun) -> None:
     """Import the kept model where a module processed earlier imported a duplicate that reuse removed."""
-    if not (users := parser._removed_reuse_users):  # noqa: SLF001
-        return
+    users = parser._removed_reuse_users  # noqa: SLF001
     for ctx in run.contexts:
         if not (
             stale_imports := {
@@ -303,21 +303,28 @@ def import_removed_reuse_canonicals(parser: CrossModuleHost, run: CrossModuleRun
                 )
 
 
+def leaves_stale_import(rename: ModelRename) -> bool:
+    """Return whether a module processed before a rename may still import the old name of the model.
+
+    These are every ``field-type`` rename and each ``collapsed-root`` rename that changed the class name.
+    """
+    return rename.scheme == "field-type" or (
+        rename.scheme == "collapsed-root" and rename.new_class_name != rename.class_name
+    )
+
+
 def _stale_import_renames(
     renames: Iterable[ModelRename],
 ) -> tuple[dict[ModelKey, list[ModelRename]], dict[str, list[ModelRename]]]:
-    """Return the renames that modules processed before them may still import the old name of, by key and by path.
+    """Return the renames that leave a stale import (``leaves_stale_import``), by key and by path.
 
-    These are every ``field-type`` rename and each ``collapsed-root`` rename that changed the class name, under the
-    keys the model had when it was renamed and under its path then: row ``legacy-keyless-reference-by-path`` reads
-    the path for a reference that no model was built with.
+    They are kept under the keys the model had when it was renamed and under its path then: row
+    ``legacy-keyless-reference-by-path`` reads the path for a reference that no model was built with.
     """
     by_key: dict[ModelKey, list[ModelRename]] = {}
     by_path: dict[str, list[ModelRename]] = {}
     for rename in renames:
-        if rename.scheme == "field-type" or (
-            rename.scheme == "collapsed-root" and rename.new_class_name != rename.class_name
-        ):
+        if leaves_stale_import(rename):
             for key in rename.keys:
                 by_key.setdefault(key, []).append(rename)
             by_path.setdefault(rename.path, []).append(rename)
@@ -335,8 +342,6 @@ def import_renamed_types(parser: CrossModuleHost, run: CrossModuleRun) -> None:
     nor a ``from .`` path leads back to the path it was added under.
     """
     by_key, by_path = _stale_import_renames(parser.generation_store.renames)
-    if not by_key:
-        return
     for ctx in run.contexts:
         members = module_members(parser, ctx.models, row="members")
         keyed_members = keyed_module_members(members)
@@ -395,9 +400,6 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
     An earlier attempt of the run that found an import of the class to fail as the output is imported seeds the
     module it goes to (``ImportCycleSeeds.base_class_module``).
     """
-    if not parser.use_generic_base_class or not parser.generic_base_class_config:
-        return
-
     all_target_models: set[DataModel] = set()
     modules_with_targets: list[tuple[tuple[str, ...], list[DataModel], list[DataModel], Imports, bool]] = []
     module_keys: list[ModulePath] = []

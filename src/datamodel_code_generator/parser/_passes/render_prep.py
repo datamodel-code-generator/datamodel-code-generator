@@ -570,8 +570,6 @@ def fix_tag_opt_out_field_ordering(opted_out: list[DataModel], models: list[Data
     declares the tag field as a class variable instead, so a required one can follow a default. Bases are fixed
     before the structs inheriting from them, as their keyword-only fields are not positional there.
     """
-    if not opted_out:
-        return
     opted_out_ids = {id(model) for model in opted_out}
     for model, ancestors in sorted(
         (
@@ -1204,8 +1202,7 @@ def prepare_type_alias_fields(parser: RenderPrepHost, state: _FinalizeState[Any]
     and its constraints use ``Annotated`` because type checkers reject ``con*`` calls in aliases.
     Module imports drop the replaced ``con*`` imports; finalization adds the annotation imports.
     """
-    if (prepare_field := parser.data_model_field_type.PREPARE_TYPE_ALIAS_FIELD) is None:
-        return
+    prepare_field = cast("Callable[..., bool]", parser.data_model_field_type.PREPARE_TYPE_ALIAS_FIELD)
     prepared_patterns: dict[str, PythonRuntimeExpression] = {}
     unused = run_unused_models(parser, state)
     replace_field_type = parser._graph_builder.replace_field_type  # noqa: SLF001
