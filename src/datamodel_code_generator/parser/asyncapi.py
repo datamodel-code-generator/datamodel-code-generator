@@ -64,6 +64,7 @@ ASYNCAPI_SCHEMA_FORMATS: frozenset[str] = frozenset({
     "application/vnd.aai.asyncapi+yaml",
 })
 JSON_SCHEMA_FORMATS: frozenset[str] = frozenset({
+    "application/schema",
     "application/schema+json",
     "application/schema+yaml",
 })
