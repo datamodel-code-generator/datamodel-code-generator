@@ -36,7 +36,7 @@ from datamodel_code_generator._container_kinds import (
 )
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend, document_statuses, string_key
 from datamodel_code_generator._generation_contract import AttemptId
-from datamodel_code_generator._json_pointer import reference_tokens
+from datamodel_code_generator._json_pointer import pointer_tokens, reference_tokens
 from datamodel_code_generator._module_paths import written_path
 from datamodel_code_generator._mro import collect_members, linearize
 from datamodel_code_generator._openapi_paths import inherited_security
@@ -4095,7 +4095,11 @@ class _Contracts(_Octets):
         locate = self.documents.location
         for document in self.documents.walked:
             if document in self.parser._api_roots:  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
-                found = read(self.documents.documents[document], partial(self.loaded_schema, document))
+                found = read(
+                    self.documents.documents[document],
+                    partial(self.loaded_schema, document),
+                    partial(self.handshake_members, document),
+                )
                 contracts.extend(
                     self.channel(document, channel, len(contracts) + index)
                     for index, channel in enumerate(found.channels)
@@ -4261,31 +4265,64 @@ class _Contracts(_Octets):
             schemas,
         )
 
+    def handshake_members(self, document: str, tokens: tuple[str, ...]) -> tuple[ReadMember, ...] | str:
+        """Return the properties the models hold of an object schema a handshake's binding writes, or why none.
+
+        The object's model, or the one a root model or alias of it holds, has a field for each property, its own or
+        one it inherits, declared where the members of a use of the schema are (``members_at``). A mapping has none:
+        like the other properties of a model, its keys stand for no parameter. A schema no model types, or one the
+        models type otherwise, such as a string, gives no parameters.
+        """
+        from datamodel_code_generator._asyncapi_connections import ReadMember  # noqa: PLC0415
+
+        location = SchemaLocation(document, tokens)
+        if self.bound_node(location, "value") is None:
+            return "has no model"
+        value = self.projection(location, "value", "request").value
+        if (symbol := self.held(value)) is None or self.symbol_table[symbol].kind != "model":
+            return () if self.tables.contained(value, "values") is not None else "is not an object of properties"
+        found: list[ReadMember] = []
+        for member in self.members_at(symbol, location, "request"):
+            if member.member_kind != "property" or (slot := member.slot) is None or member.model_facts is None:
+                continue
+            schema = cast("SourceLocation", member.schema)
+            declared = SchemaLocation(self.documents.walked[schema.document], pointer_tokens(schema.pointer))
+            found.append(
+                ReadMember(
+                    cast("str", member.wire_name),
+                    member.model_facts.required,
+                    self.tables.fixed(member.model_facts.type),
+                    self.binder.models[slot.symbol].fields[slot.index].data_type,
+                    declared,
+                    self.documents.borrow(declared),
+                )
+            )
+        return tuple(found)
+
     def handshake_parameter(
         self, owner: OperationId, use_site: SchemaLocation, parameter: ReadHandshakeParameter, binding: str
     ) -> WireDeclaration:
         """Bind a query or header parameter of a channel's handshake, typed as the models type its property.
 
         The binding's object is a model, so each of its properties is a field, whose type is the parameter's, as a
-        model gives an OpenAPI parameter's schema its type, and whose default and keywords are the parameter's. It is
-        used at the channel's binding of its protocol, `binding`.
+        model gives an OpenAPI parameter's schema its type, and whose default, description and keywords, through its
+        reference chain, are the parameter's. It is used at the channel's binding of its protocol, `binding`.
         """
-        declared = SchemaLocation(use_site.document, parameter.schema)
-        self.binder.declaration_types.setdefault(declared, self.property_type(declared))
+        member = parameter.member
+        declared = member.schema
+        self.binder.declaration_types.setdefault(declared, member.type)
         written = self._referenced(declared)
         self.parser.schema_records.setdefault(
             declared, _SchemaRecord(_default(written.get("default")), _keywords(written))
         )
-        used = use_site.child("bindings", binding, parameter.location, parameter.name)
-        use = self.use_id(
-            owner, "parameter", declared, used, declared, location=parameter.location, name=parameter.name
-        )
-        facts: dict[str, YamlValue] = {"name": parameter.name, "in": parameter.location, "required": parameter.required}
-        if parameter.description is not None:
-            facts["description"] = parameter.description
+        used = use_site.child("bindings", binding, parameter.location, member.name)
+        use = self.use_id(owner, "parameter", declared, used, declared, location=parameter.location, name=member.name)
+        facts: dict[str, YamlValue] = {"name": member.name, "in": parameter.location, "required": member.required}
+        if isinstance(description := written.get("description"), str):
+            facts["description"] = description
         return WireDeclaration(
             "parameter",
-            parameter.name,
+            member.name,
             DeclarationId(self.documents.location(declared, "declaration")),
             self.documents.location(used, "use"),
             _facts(facts, _PARAMETER_FACTS, declared),
@@ -4309,23 +4346,6 @@ class _Contracts(_Octets):
             ):
                 return found
             seen.add(location := target)
-
-    def property_type(self, declared: SchemaLocation) -> DataType:
-        """Return the type of the field the models hold a property of an object schema in.
-
-        The object's model holds a field for each property, its own or one it inherits, as a model that reuse made
-        holds those of the model it stands for.
-        """
-        node = self.bound_node(SchemaLocation(declared.document, declared.tokens[:-2]), "value")
-        node = cast("Reference", node.reference if isinstance(node, DataType) else node)
-        symbol = self.binder.symbols[id(cast("Reference", self.binder.final(node)).source)]
-        slots = {
-            member.wire_name: member.slot
-            for member in self.members[symbol]
-            if member.member_kind == "property" and member.slot is not None
-        }
-        slot = slots[declared.tokens[-1]]
-        return self.binder.models[slot.symbol].fields[slot.index].data_type
 
     def security_schemes(self) -> tuple[WireDeclaration, ...]:
         """Bind the security schemes of the documents the walk loaded, loading the documents they reference."""
@@ -4455,6 +4475,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._asyncapi_connections import (
         ReadChannel,
         ReadHandshakeParameter,
+        ReadMember,
         ReadParameter,
         ReadServer,
     )

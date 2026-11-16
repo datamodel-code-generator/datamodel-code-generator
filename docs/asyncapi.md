@@ -195,12 +195,15 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
   all classes, as the union of their types; for the other model types such a channel is left out with a warning, as is
   a channel whose client receives both text and JSON messages.
 - The properties of the channel's WebSocket binding `query` and `headers` objects are query and header parameters of
-  `connect(...)`, typed by the fields the models make of them and required where the object requires them, as OpenAPI
-  query and header parameters are, with the `default` their schema gives, through its `$ref`. A binding that opens the
-  channel with another method than GET, or whose `query` or `headers` schema says more of the object than its
-  properties, leaves the channel out.
-- A `Sec-WebSocket-Protocol` header whose schema fixes its values by `const` or `enum`, each a token, offers them as
-  the subprotocols of the handshake, in the order written; the server selects one. Any other header the handshake
+  `connect(...)`: the fields of the model generated for each object (its own properties and those it inherits, as
+  through `allOf` or a `$ref`), typed and required as the model types and requires them, as OpenAPI query and header
+  parameters are, with the `default` and `description` their schema gives, through its `$ref`. An object the models
+  hold as a mapping gives no parameter. A binding that opens the channel with another method than GET, or whose
+  `query` or `headers` schema the models type as something else than an object, such as a string, leaves the channel
+  out.
+- A `Sec-WebSocket-Protocol` header whose type admits fixed values alone (a `const`, an `enum`, or a `oneOf` of
+  `const`s, as the models type them), each a token, offers them as the subprotocols of the handshake, in order; the
+  server selects one. Any other header the handshake
   writes itself (`Sec-WebSocket-Protocol` without such values, `Connection`, `Upgrade`, `Host`, `Sec-WebSocket-Key`,
   `Sec-WebSocket-Version`, `Sec-WebSocket-Extensions`, ...) is not sent where it is optional, and leaves the channel
   out where it is required.
@@ -224,7 +227,7 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
 - A channel is a server-sent event channel when it carries a `text/event-stream` message, by its own `contentType` or
   a trait's. A channel that no `ws` or `wss` server serves is one as well when an `sse` server serves it, or when the
   HTTP binding of the channel or of an operation on it fixes the `Accept` or `Content-Type` header to
-  `text/event-stream` (by its `const`, or an `enum` of that one value). An operation's HTTP binding may come from one
+  `text/event-stream` (its type admits that one value alone, such as a `const`). An operation's HTTP binding may come from one
   of its traits, which gives it as the document's version merges traits. A server-sent event channel is served on the
   `http`, `https` and `sse` servers that serve it; the others are WebSocket channels, so a channel that lists no
   servers in a document with `ws` and `sse` servers is a WebSocket channel. Its `open(...)` returns the event stream of
@@ -238,8 +241,8 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
   client receives every message of the channel, whatever its operations' `action` and
   `--client-asyncapi-perspective` say. A channel with a message that is neither `text/event-stream` nor JSON, or
   that its HTTP binding opens with another method than GET, is left out with a warning, as is one whose HTTP bindings
-  declare a query or header parameter differently, and one whose AsyncAPI 2 operation's HTTP binding declares `query`
-  or `headers`, which no model types.
+  declare a query or header parameter differently, and one whose `query` or `headers` has no model, as an AsyncAPI 2
+  operation's own HTTP binding (one a trait under `components/operationTraits` gives has one).
 - [`--client-asyncapi-perspective`](cli-reference/target-generation-options.md#client-asyncapi-perspective) says which
   side the document describes on a WebSocket channel: `server` (the default), whose sends the client receives, or
   `client`. It does not apply to a server-sent event channel, whose messages the client always receives.

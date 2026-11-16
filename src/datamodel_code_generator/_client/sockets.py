@@ -26,7 +26,6 @@ from datamodel_code_generator._json_pointer import join_pointer
 from datamodel_code_generator._runtime.model_codecs.media import JSON_MEDIA_TYPE
 from datamodel_code_generator._target_contract import (
     DeclarationId,
-    GeneratedEnumMember,
     GeneratedSymbolType,
     LiteralType,
     TypeUseBinding,
@@ -126,14 +125,7 @@ def _tag_value(facts: ModelFacts, field: ModelField | None) -> str | None:
         return None
     value = facts.plain(field.type)
     if isinstance(value, LiteralType) and len(value.values) == 1:
-        if not isinstance(item := value.values[0], GeneratedEnumMember):
-            return literal_text(item)
-        symbol = facts.symbols[item.symbol]
-        return next(
-            literal_text(member)
-            for slot, member in zip(symbol.fields, symbol.values, strict=True)
-            if slot.field == item.field
-        )
+        return literal_text(facts.tables.scalar(value.values[0]))
     if isinstance(value, GeneratedSymbolType) and len(values := facts.symbols[value.symbol].values) == 1:
         return literal_text(values[0])
     return None

@@ -1,0 +1,4 @@
+# asyncapi-handshake-models pydantic_v2.BaseModel
+    rooms chat.v2
+    server GET /rooms?limit=5&room=lobby [sec-websocket-protocol: chat.v1, chat.v2, x-trace: trace-1] | closed 1000 ''
+    server GET /feeds [] | closed 1000 ''

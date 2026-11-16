@@ -776,6 +776,23 @@
      "cli-option.generate-client"
     ]
    },
+   "id": "asyncapi-client-handshake-models",
+   "kind": "experimental",
+   "refs": [
+    "#6943"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "The query and header parameters of a channel's handshake are now the fields of the models generated for its binding's `query` and `headers` objects, required where the models require them, and the subprotocols a `Sec-WebSocket-Protocol` header offers, or the `Accept` header that makes a channel a server-sent event stream, are the values the header's type admits. A channel is now generated whose `query` or `headers` object is written with `allOf`, or with keywords beside its properties such as `$schema`, `examples`, `default`, `minProperties` or `deprecated`, or that names a required property it does not declare; such channels were skipped as `websocket_bindings` or `server_sent_events`. A `Sec-WebSocket-Protocol` header written as a `oneOf` of `const`s now offers each value, where it offered none (and a required one left the channel out), and an `Accept` header written so now opens the channel as a server-sent event stream. An AsyncAPI 2 operation whose HTTP binding comes from a trait under `components/operationTraits` now gives its parameters, where its channel was skipped; an operation's own binding, which no model types, still leaves the channel out, with the message `the query schema of its HTTP binding has no model`. A parameter written as a `$ref` now takes the `description` of the schema it names. Under `--force-optional` the models require no parameter, so every handshake parameter is now optional; a required header that the client writes itself, on a WebSocket handshake or on the GET that opens a server-sent event stream (such as `Host`, `Upgrade`, or a free-form `Sec-WebSocket-Protocol`, which then offers no subprotocol), no longer leaves the channel out, and two bindings that declare one parameter required and optional now agree, where the channel was skipped.",
+   "title": "Generated AsyncAPI clients read handshake parameters and fixed header values from the models"
+  },
+  {
+   "action": "review",
+   "affects": {
+    "experimental": [
+     "cli-option.generate-client"
+    ]
+   },
    "id": "asyncapi-client-message-codecs",
    "kind": "experimental",
    "refs": [
