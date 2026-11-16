@@ -45,6 +45,30 @@ OneLetterPropertyDifference = TypeAliasType(
 )
 
 
+WordRangeEnd = TypeAliasType("WordRangeEnd", str)
+
+
+OneLetterPropertyRangeEnd = TypeAliasType("OneLetterPropertyRangeEnd", str)
+
+
+BracedPropertyRangeEnd = TypeAliasType("BracedPropertyRangeEnd", str)
+
+
+HyphenAfterRange = TypeAliasType(
+    "HyphenAfterRange", Annotated[str, Field(pattern=r'^[a-z0-9-\s]+$')]
+)
+
+
+NegatedHyphenFirst = TypeAliasType(
+    "NegatedHyphenFirst", Annotated[str, Field(pattern=r'^[^-\w]+$')]
+)
+
+
+DifferenceAfterRange = TypeAliasType(
+    "DifferenceAfterRange", Annotated[str, Field(pattern=r'^[a-z0-9--\p{N}]+$')]
+)
+
+
 Letters = TypeAliasType("Letters", Annotated[str, Field(pattern=r'^\p{L}+$')])
 
 

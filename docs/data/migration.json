@@ -875,6 +875,30 @@
    "affects": {
     "output_model_types": [
      "pydantic_v2.BaseModel",
+     "pydantic_v2.dataclass",
+     "msgspec.Struct"
+    ]
+   },
+   "after": "word: str | None = None",
+   "before": "word: constr(pattern=r'^[a-\\w]+$') | None = None",
+   "id": "regex-class-escape-range-end",
+   "keep": {
+    "note": "The previous module failed at import; nothing restores it."
+   },
+   "kind": "default-output",
+   "refs": [
+    "#6922"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "A `pattern` whose character class ends a range with a class escape or a Unicode property (`^[a-\\w]+$`, `[a-\\pL]`, `[a-\\p{L}]`) was written as the schema writes it, and the module failed at import with `invalid range boundary, must be a literal` (a `msgspec.Struct` failed when it first decoded the type with `bad character range`): Pydantic's default regex engine refuses a range that ends with a class, and Python's `re` rejects it too. The pattern is now left out with a warning, as `^[\\w- ]*$` (a class as the start of a range) has been since 0.92.0, and the model checks the other keywords only. A hyphen that makes no range keeps its pattern (`^[a-z0-9-\\s]+$`, `^[^-\\w]+$`). Output that imported and decoded before is unchanged.",
+   "title": "A pattern with a class escape or a Unicode property at the end of a range in a class, such as `^[a-\\w]+$`, no longer fails at import"
+  },
+  {
+   "action": "review",
+   "affects": {
+    "output_model_types": [
+     "pydantic_v2.BaseModel",
      "pydantic_v2.dataclass"
     ]
    },

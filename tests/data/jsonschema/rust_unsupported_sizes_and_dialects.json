@@ -33,6 +33,30 @@
       "type": "string",
       "pattern": "^[\\pL\\pP--_]+$"
     },
+    "WordRangeEnd": {
+      "type": "string",
+      "pattern": "^[a-\\w]+$"
+    },
+    "OneLetterPropertyRangeEnd": {
+      "type": "string",
+      "pattern": "^[a-\\pL]+$"
+    },
+    "BracedPropertyRangeEnd": {
+      "type": "string",
+      "pattern": "^[a-\\p{L}]+$"
+    },
+    "HyphenAfterRange": {
+      "type": "string",
+      "pattern": "^[a-z0-9-\\s]+$"
+    },
+    "NegatedHyphenFirst": {
+      "type": "string",
+      "pattern": "^[^-\\w]+$"
+    },
+    "DifferenceAfterRange": {
+      "type": "string",
+      "pattern": "^[a-z0-9--\\p{N}]+$"
+    },
     "Letters": {
       "type": "string",
       "pattern": "^\\p{L}+$"
