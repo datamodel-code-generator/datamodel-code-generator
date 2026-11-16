@@ -55,6 +55,11 @@ class ProtocolHelpers:
         return EditsWebsocket(self._core)
 
     @cached_property
+    def drafts(self) -> DraftsWebsocket:
+        """The drafts WebSocket helper."""
+        return DraftsWebsocket(self._core)
+
+    @cached_property
     def alerts(self) -> AlertsWebsocket:
         """The alerts WebSocket helper."""
         return AlertsWebsocket(self._core)
@@ -201,6 +206,29 @@ class EditsWebsocket:
         )
 
 
+class DraftsWebsocket:
+    """The drafts WebSocket helper of channel /v1/drafts."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    def connect(
+        self,
+        *,
+        ws_options: WSOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> WebSocketSession[models.Item, Never]:
+        """Open the WebSocket of channel /v1/drafts, returning once its handshake got a valid 101."""
+        return connect_socket(
+            self._core,
+            _plans.SOCKET_6,
+            (),
+            ws_options=ws_options,
+            options=options,
+        )
+
+
 class AlertsWebsocket:
     """The alerts WebSocket helper of channel /v1/alerts."""
 
@@ -219,7 +247,7 @@ class AlertsWebsocket:
         """Open the WebSocket of channel /v1/alerts, returning once its handshake got a valid 101."""
         return connect_socket(
             self._core,
-            _plans.SOCKET_6,
+            _plans.SOCKET_7,
             (),
             ws_options=ws_options,
             options=options,

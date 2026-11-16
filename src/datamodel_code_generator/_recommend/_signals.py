@@ -22,8 +22,7 @@ from datamodel_code_generator._document_reader import (
     CHANNEL_OPERATIONS,
     as_mapping,
     descend,
-    is_multi_format_schema_object,
-    schema_format_media_type,
+    held_schema,
     string_key,
     string_keys,
 )
@@ -294,18 +293,16 @@ class _ConvertedDocument(dict[str, Any]):  # noqa: FURB189
 def _unwrap(node: object, schema_format: object = None) -> object:
     """Return the schema of an AsyncAPI value as generation reads it: in JSON Schema, from a multi-format object too.
 
-    The ``schemaFormat`` of a multi-format object, or else the one it inherits (a message's, for its payload), selects
-    the format; generation converts an Avro schema to a JSON Schema document of its own, and so does this.
+    The format ``held_schema`` reads a multi-format object in, or the inherited one, selects how; generation converts
+    an Avro schema to a JSON Schema document of its own, and so does this.
     """
-    if is_multi_format_schema_object(node):
-        wrapper = as_mapping(node)
-        schema_format = wrapper.get("schemaFormat") or schema_format
-        node = wrapper.get("schema")
+    if (held := held_schema(node, schema_format)) is not None:
+        node, schema_format = held
     if node is None or not isinstance(schema_format, str):
         return node
-    from datamodel_code_generator.parser.asyncapi import SCHEMA_FORMAT_KIND_BY_MEDIA_TYPE  # noqa: PLC0415
+    from datamodel_code_generator.parser.asyncapi import schema_format_kind  # noqa: PLC0415
 
-    if SCHEMA_FORMAT_KIND_BY_MEDIA_TYPE.get(schema_format_media_type(schema_format)) != "avro":
+    if schema_format_kind(schema_format) != "avro":
         return node
     from datamodel_code_generator.parser.avro import convert_avro_schema_data  # noqa: PLC0415
 

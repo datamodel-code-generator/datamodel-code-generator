@@ -52,3 +52,13 @@ SOCKET_1: Final[ChannelPlan[Never, models.Bid | models.Ask]] = ChannelPlan(
     ),
     discriminator=BodySelector(pointer='/side'),
 )
+
+
+SOCKET_2: Final[ChannelPlan[models.Item, Never]] = ChannelPlan(
+    helper_id='drafts',
+    operation=OperationRef(pointer='/channels/drafts'),
+    call=_operations.OPERATION_2,
+    fingerprint='1e55366889c1d9c1e887d9b61c19533243925cbbd911caaf2ca2de58fdc824fa',
+    encoder=model_bindings.codec_6,
+    receive_codec='none',
+)

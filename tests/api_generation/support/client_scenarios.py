@@ -23,6 +23,7 @@ from tests.api_generation.scenarios.client_asyncapi_sockets import (
     asyncapi_handshake,
     asyncapi_messages,
     asyncapi_perspective,
+    asyncapi_schema_formats,
     asyncapi_serverless,
     asyncapi_sockets,
     asyncapi_subclass_sends,
@@ -989,6 +990,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "asyncapi-sockets": ("asyncapi-market-v3", ("pydantic_v2.BaseModel", "dataclasses.dataclass"), asyncapi_sockets),
     "asyncapi-perspective": ("asyncapi-perspective", ("pydantic_v2.BaseModel",), asyncapi_perspective),
     "asyncapi-serverless": ("asyncapi-serverless", ("pydantic_v2.BaseModel",), asyncapi_serverless),
+    "asyncapi-schema-formats": ("asyncapi-schema-formats", ("pydantic_v2.BaseModel",), asyncapi_schema_formats),
     "asyncapi-messages": (
         "asyncapi-messages",
         ("pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"),

@@ -26,6 +26,7 @@ asyncapi-events	main/generation_platform/client/runtime/asyncapi-events.txt
 asyncapi-handshake	main/generation_platform/client/runtime/asyncapi-handshake.txt
 asyncapi-messages	main/generation_platform/client/runtime/asyncapi-messages.txt
 asyncapi-perspective	main/generation_platform/client/runtime/asyncapi-perspective.txt
+asyncapi-schema-formats	main/generation_platform/client/runtime/asyncapi-schema-formats.txt
 asyncapi-serverless	main/generation_platform/client/runtime/asyncapi-serverless.txt
 asyncapi-sockets	main/generation_platform/client/runtime/asyncapi-sockets.txt
 asyncapi-subclass-sends	main/generation_platform/client/runtime/asyncapi-subclass-sends.txt

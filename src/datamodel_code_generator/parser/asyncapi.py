@@ -19,7 +19,7 @@ from datamodel_code_generator import Error, InputFileType, snooper_to_methods
 from datamodel_code_generator._document_reader import (
     CHANNEL_OPERATIONS,
     as_mapping,
-    is_multi_format_schema_object,
+    held_schema,
     schema_format_media_type,
     string_keys,
 )
@@ -227,14 +227,10 @@ def _escape_context_path_part(part: str) -> str:
     return escape_token(part.removeprefix("#/"))
 
 
-def _parse_multi_format_schema_object(
-    raw_schema: YamlValue,
-    path: list[str],
-) -> MultiFormatSchemaObject | None:
-    if not is_multi_format_schema_object(raw_schema):
-        return None
+def _check_multi_format_schema_object(raw_schema: YamlValue, path: list[str]) -> None:
+    """Refuse a Multi Format Schema Object without a ``schema`` or with a ``schemaFormat`` that is no string."""
     try:
-        return MultiFormatSchemaObject.model_validate(raw_schema)
+        MultiFormatSchemaObject.model_validate(raw_schema)
     except ValidationError as error:
         error_types_by_location = {
             tuple(str(part) for part in detail.get("loc", ())): detail.get("type") for detail in error.errors()
@@ -255,13 +251,11 @@ def _unsupported_schema_format_error(schema_format: str, path: list[str]) -> Err
     return Error(msg)
 
 
-def _schema_format_kind(schema_format: str | None, path: list[str]) -> str:
+def schema_format_kind(schema_format: str | None) -> str | None:
+    """Return the kind of schema an AsyncAPI ``schemaFormat`` names, ``asyncapi`` where none is given, else None."""
     if schema_format is None:
         return "asyncapi"
-    media_type = schema_format_media_type(schema_format)
-    if kind := SCHEMA_FORMAT_KIND_BY_MEDIA_TYPE.get(media_type):
-        return kind
-    raise _unsupported_schema_format_error(schema_format, path)
+    return SCHEMA_FORMAT_KIND_BY_MEDIA_TYPE.get(schema_format_media_type(schema_format))
 
 
 def _move_json_schema_definitions_to_components(
@@ -452,13 +446,13 @@ class AsyncAPIParser(OpenAPIParser):
         """
         string_keys(path, "name", lambda _: _named_path(location, list(map(str, path))))
         schema_format = inherited_schema_format
-        if multi_format_schema := _parse_multi_format_schema_object(raw_schema, path):
-            schema_format = multi_format_schema.schema_format or schema_format
-            raw_schema = multi_format_schema.schema_
+        if (held := held_schema(raw_schema, schema_format)) is not None:
+            _check_multi_format_schema_object(raw_schema, path)
+            raw_schema, schema_format = held[0], cast("str | None", held[1])
             path = [*path, "schema"]
             location = location and location.child("schema")
 
-        match _schema_format_kind(schema_format, path):
+        match schema_format_kind(schema_format):
             case "asyncapi" | "jsonschema" | "openapi":
                 if not isinstance(raw_schema, (dict, bool)):
                     msg = (
@@ -516,7 +510,7 @@ class AsyncAPIParser(OpenAPIParser):
                     include_root_schema=True,
                     location=location,
                 )
-        raise _unsupported_schema_format_error(schema_format or "", path)  # pragma: no cover
+        raise _unsupported_schema_format_error(schema_format or "", path)
 
     def _resolve_ref_object(
         self,
