@@ -304,14 +304,26 @@ class TypeTables:
         """Return the values a type admits where it admits literal values alone, None aside, else None.
 
         A literal admits the values its items stand for (``scalar``), and an enum the values of its members, through
-        aliases and root models (``unwrapped``); any other type, such as a scalar or a model, admits values of its own.
+        aliases and root models (``wrapper_chain``), and a union they stand for the values of its members, read the
+        same way; any other type, such as a scalar or a model, admits values of its own, and so does an alias or root
+        model the union's members reach again.
         """
+        return self._fixed(value, frozenset())
+
+    def _fixed(self, value: TypeView, seen: frozenset[SymbolId]) -> tuple[object, ...] | None:
         found: list[object] = []
-        for member in map(self.unwrapped, present(value)):
+        for present_member in present(value):
+            member, named = self.wrapper_chain(present_member)
             if isinstance(member, LiteralType):
                 found.extend(None if (item := self.scalar(entry)) is None else item.value for entry in member.values)
             elif isinstance(member, GeneratedSymbolType) and (symbol := self.symbols[member.symbol]).kind == "enum":
                 found.extend(None if item is None else item.value for item in symbol.values)
+            elif (
+                isinstance(member, UnionType)
+                and seen.isdisjoint(named)
+                and (values := self._fixed(member, seen.union(named))) is not None
+            ):
+                found.extend(values)
             else:
                 return None
         return tuple(found)

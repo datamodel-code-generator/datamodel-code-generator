@@ -30,3 +30,14 @@ SOCKET_1: Final[ChannelPlan[str, Never]] = ChannelPlan(
     send_codec='utf8',
     receive_codec='none',
 )
+
+
+SOCKET_2: Final[ChannelPlan[str, Never]] = ChannelPlan(
+    helper_id='lobby',
+    operation=OperationRef(pointer='/channels/lobby'),
+    call=_operations.OPERATION_2,
+    fingerprint='76b04e2af8528fb79e363f735af115275f8391300ae05111176640003fc32691',
+    send_codec='utf8',
+    receive_codec='none',
+    subprotocols=('lobby.v1', 'lobby.v2'),
+)

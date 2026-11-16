@@ -4293,6 +4293,7 @@ class _Contracts(_Octets):
                     member.model_facts.required,
                     self.tables.fixed(member.model_facts.type),
                     self.binder.models[slot.symbol].fields[slot.index].data_type,
+                    member.model_facts.type,
                     declared,
                     self.documents.borrow(declared),
                 )

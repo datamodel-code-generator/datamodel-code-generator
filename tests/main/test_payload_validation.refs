@@ -1183,6 +1183,7 @@ openapi/allof_partial_unconstrained_schemas.yaml::components.schemas.ScalarValue
 openapi/allof_property_bool_schema.yaml::components.schemas.Parent	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_required.yaml::components.schemas.Foo	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_required_inherited_collision.yaml::components.schemas.CollisionBase	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/allof_required_inherited_collisions.yaml::components.schemas.CollisionBase	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_required_inherited_dataclass_metadata.yaml::components.schemas.ExplicitInitBase	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_required_inherited_dataclass_metadata.yaml::components.schemas.InitBase	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_required_inherited_dataclass_metadata.yaml::components.schemas.KeywordOverrideBase	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3342,6 +3343,7 @@ openapi/allof_partial_unconstrained_schemas.yaml::components.schemas.ScalarValue
 openapi/allof_property_bool_schema.yaml::components.schemas.Parent	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_required.yaml::components.schemas.Foo	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_required_inherited_collision.yaml::components.schemas.CollisionBase	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/allof_required_inherited_collisions.yaml::components.schemas.CollisionBase	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_required_inherited_dataclass_metadata.yaml::components.schemas.ExplicitInitBase	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_required_inherited_dataclass_metadata.yaml::components.schemas.InitBase	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_required_inherited_dataclass_metadata.yaml::components.schemas.KeywordOverrideBase	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

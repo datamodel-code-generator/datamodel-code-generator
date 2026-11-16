@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 import black
+import msgspec
 import pydantic
 import pytest
 import yaml
@@ -8007,6 +8008,24 @@ def test_main_openapi_allof_required_inherited_collision_msgspec(output_file: Pa
         ],
         force_exec_validation=True,
     )
+
+
+def test_main_openapi_allof_required_inherited_collisions_msgspec(output_file: Path) -> None:
+    """Keep the Python name of every required inherited field that a derived property's name collides with."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_required_inherited_collisions.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", DataModelType.MsgspecStruct.value, "--target-python-version", "3.11"),
+            *("--disable-timestamp", "--formatters", "builtin"),
+        ],
+    )
+    with _generated_model(output_file, "allof_required_inherited_collisions", "CollisionDerived") as derived:
+        decoded = msgspec.json.decode(b'{"x-y":"s","a-b":"t","x_y":1,"a_b":2}', type=derived)
+        with pytest.raises(msgspec.ValidationError) as missing:
+            msgspec.json.decode(b'{"x-y":"s"}', type=derived)
+    assert_output(f"{decoded!r}\n{msgspec.json.encode(decoded).decode()}\n{missing.value}\n", name="payloads")
 
 
 @pytest.mark.parametrize(

@@ -143,7 +143,7 @@ from datamodel_code_generator._json_schema import (
     DEFINITION_KEYS,
     REF_PRE_PASS_FIELDS,
     REF_PRE_PASS_POSITIONS,
-    SCHEMA_MAP_KEYS,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    SCHEMA_MAP_KEYS,
     SCHEMA_POSITIONS,  # noqa: F401  # Preserve the established parser.jsonschema export.
     SCHEMA_SHAPES,  # noqa: F401  # Preserve the established parser.jsonschema export.
     SCHEMA_VALUE_KEYS,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -396,10 +396,10 @@ from datamodel_code_generator.parser._schema_object import (
 )
 from datamodel_code_generator.parser._schema_reading import (
     _ARRAY_ITEMS_CONSTRAINT_FIELDS,
+    _DOCUMENT_KEYWORDS,
     _LIGHTWEIGHT_MAX_DEPTH,
     _LIGHTWEIGHT_MAX_UNION_ELEMENTS,
     _MISSING_JSON_POINTER,
-    _NAMED_ENTRY_MAP_KEYWORDS,
     _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY,
     _AllOfItemGroups,
     _constraint_values,
@@ -1076,7 +1076,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     _cache_parsed_sources_from_path: ClassVar[bool] = True
     _input_file_type: ClassVar[InputFileType] = InputFileType.JsonSchema
     _non_dict_source_is_invalid: ClassVar[bool] = False
-    _named_entry_maps: ClassVar[frozenset[str]] = _NAMED_ENTRY_MAP_KEYWORDS
+    _named_entry_maps: ClassVar[frozenset[str]] = SCHEMA_MAP_KEYS | {
+        key for key, role in _DOCUMENT_KEYWORDS.items() if role == "entries"
+    }
     _component_schemas_are_resources: ClassVar[bool] = False
     _schema_kind: ClassVar[SchemaKind] = "jsonschema"
 

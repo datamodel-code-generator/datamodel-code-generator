@@ -515,11 +515,16 @@ def asyncapi_handshake_models(package: ModuleType, lines: list[str]) -> None:
 
     The rooms query is an `allOf` of a referenced object and its own properties, and its headers object carries
     keywords and other properties beside its properties, which give no parameter; the subprotocols are the constants
-    of a `oneOf`, of which the server selects one. The feeds query is a mapping, which gives no parameter.
+    of a `oneOf`, of which the server selects one. The feeds query is a mapping, which gives no parameter. The lobby
+    subprotocols are the constants of the `oneOf` a referenced schema, a root model, holds.
     """
     server = SocketServer()
     try:
-        rooms, feeds = server.play(Play(subprotocol="chat.v2", talk=_sending()), Play(talk=_sending()))
+        rooms, feeds, lobby = server.play(
+            Play(subprotocol="chat.v2", talk=_sending()),
+            Play(talk=_sending()),
+            Play(subprotocol="lobby.v1", talk=_sending()),
+        )
         with (
             httpx2.Client(verify=client_context()) as http,
             package.Client(base_url=server.url, http_client=http) as client,
@@ -531,6 +536,10 @@ def asyncapi_handshake_models(package: ModuleType, lines: list[str]) -> None:
             with client.feeds.connect() as session:
                 session.send("item")
             lines.append(feeds.report())
+            with client.lobby.connect() as session:
+                session.send("hi")
+                lines.append(f"    lobby {session.subprotocol}")
+            lines.append(lobby.report())
     finally:
         server.stop()
 

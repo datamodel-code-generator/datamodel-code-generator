@@ -32,6 +32,11 @@ class ProtocolHelpers:
         """The feeds WebSocket helper."""
         return FeedsWebsocket(self._core)
 
+    @cached_property
+    def lobby(self) -> LobbyWebsocket:
+        """The lobby WebSocket helper."""
+        return LobbyWebsocket(self._core)
+
 
 class RoomsWebsocket:
     """The rooms WebSocket helper of channel /rooms."""
@@ -76,6 +81,29 @@ class FeedsWebsocket:
         return connect_socket(
             self._core,
             _plans.SOCKET_1,
+            (),
+            ws_options=ws_options,
+            options=options,
+        )
+
+
+class LobbyWebsocket:
+    """The lobby WebSocket helper of channel /lobby."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    def connect(
+        self,
+        *,
+        ws_options: WSOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> WebSocketSession[str, Never]:
+        """Open the WebSocket of channel /lobby, returning once its handshake got a valid 101."""
+        return connect_socket(
+            self._core,
+            _plans.SOCKET_2,
             (),
             ws_options=ws_options,
             options=options,

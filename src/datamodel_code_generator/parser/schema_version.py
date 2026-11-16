@@ -625,7 +625,8 @@ class AsyncAPIClientFeatures:
         doc_name="message content types",
         description="The payloads of messages of AsyncAPI, JSON Schema or OpenAPI schemas; the client codes JSON by "
         "the models, binary media and binary strings as bytes, and text media whose models type a string as UTF-8 "
-        "text, but no form or multipart message",
+        "text; a form or multipart message is carried as bytes where its payload is a binary string, and not where it "
+        "is structured",
         client_status="partial",
     )
     message_payloads: bool = _client_feature(

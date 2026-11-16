@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Mapping, Sequence
 
     from datamodel_code_generator._source import YamlValue
+    from datamodel_code_generator._target_contract import TypeView
     from datamodel_code_generator.reference import SchemaLocation
     from datamodel_code_generator.types import DataType
 
@@ -155,14 +156,16 @@ class ReadMember:
     """A property of an object schema as the models hold it: a field of the object's model.
 
     `required` is whether the model requires the field, `fixed` the values its type admits where it admits literal
-    values alone, else None (``TypeTables.fixed``), `type` the field's type, `schema` where the models declare the
-    property, and `written` its schema there as written.
+    values alone, else None (``TypeTables.fixed``), `type` the field's type, `bound` that type as the models bind it
+    (``ModelFieldFacts.type``), `schema` where the models declare the property, and `written` its schema there as
+    written.
     """
 
     name: str
     required: bool
     fixed: tuple[object, ...] | None
     type: DataType
+    bound: TypeView
     schema: SchemaLocation
     written: YamlValue
 
@@ -389,9 +392,14 @@ def _unordered(security: tuple[Requirement, ...] | None) -> _Unordered | None:
     return frozenset(frozenset((name, frozenset(scopes)) for name, scopes in alternative) for alternative in security)
 
 
-def _declared(parameter: ReadHandshakeParameter) -> tuple[bool, YamlValue]:
-    """Return how a query or header parameter of a handshake is declared, as written but for its description."""
-    return parameter.member.required, _undescribed(parameter.member.written)
+def _declared(parameter: ReadHandshakeParameter) -> tuple[bool, YamlValue, TypeView]:
+    """Return how a query or header parameter of a handshake is declared, as written but for its description.
+
+    The type the models bind tells apart properties written alike whose references name other schemas, such as
+    `#/definitions/Id` in two documents.
+    """
+    member = parameter.member
+    return member.required, _undescribed(member.written), member.bound
 
 
 def _handshake_inputs(document: _Document, channel: ReadChannel) -> tuple[object, ...]:
