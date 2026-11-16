@@ -31,7 +31,7 @@ from datamodel_code_generator.model._decisions.enum_kind import decide_enum_kind
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, UnionPolicy, assemble_union
 from datamodel_code_generator.model.base import TYPENAME_PROPERTY_KEY, _find_base_classes, get_inherited_fields
 from datamodel_code_generator.model.enum import SUBCLASS_BASE_CLASSES, EnumMemberValue, _enum_class
-from datamodel_code_generator.parser._null_facts import NullMode, NullSources, resolve_null_facts
+from datamodel_code_generator.parser._null_facts import NullMode, null_sources, resolve_null_facts
 from datamodel_code_generator.parser.base import (
     DataType,
     Parser,
@@ -386,7 +386,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
         )
         has_schema_default = default is not graphql.pyutils.Undefined
         null_facts = resolve_null_facts(
-            NullSources(nullable=final_data_type.is_optional),
+            null_sources(None, nullable=final_data_type.is_optional),
             "graphql-field",
             self._null_mode,
             has_default=has_schema_default,

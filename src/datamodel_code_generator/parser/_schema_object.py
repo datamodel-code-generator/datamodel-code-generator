@@ -25,7 +25,7 @@ from typing_extensions import override
 
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, non_null_types, schema_positions
 from datamodel_code_generator._regex_syntax import read_pattern
-from datamodel_code_generator.parser._null_facts import NullSources, resolve_null_facts
+from datamodel_code_generator.parser._null_facts import null_sources, resolve_null_facts
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH, canonical_ref_spelling, validate_resolved_ref
 from datamodel_code_generator.parser.base import SPECIAL_PATH_FORMAT
 from datamodel_code_generator.reference import SCHEMA_LOCATION_KEY, is_url
@@ -33,12 +33,13 @@ from datamodel_code_generator.types import FloatConstraint, UnionIntFloat  # noq
 from datamodel_code_generator.util import BaseModel
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Mapping
+    from collections.abc import Container, Mapping, Sequence
 
     from pydantic import GetCoreSchemaHandler, ValidatorFunctionWrapHandler
     from pydantic_core import CoreSchema
     from typing_extensions import Self, TypeIs
 
+    from datamodel_code_generator.parser._null_facts import NullSources
     from datamodel_code_generator.parser._schema_graph import SchemaNodeId
     from datamodel_code_generator.reference import SchemaLocation
 
@@ -212,32 +213,31 @@ def _read_type(obj: JsonSchemaObject) -> str | list[str] | None:
     return obj.type
 
 
-def _type_null_sources(obj: JsonSchemaObject) -> NullSources:
-    """Return the null sources of a schema object without the answer ``JsonSchemaObject.type_has_null`` recorded."""
-    type_ = _read_type(obj)
-    is_list = isinstance(type_, list)
-    enum = obj.enum
+def _type_null_sources(
+    obj: JsonSchemaObject,
+    *,
+    type_has_null: bool = False,
+    enum: Sequence[Any] | None = None,
+    const_support: bool = True,
+) -> NullSources:
+    """Return the null sources of a schema object (``parser/_null_facts.py:null_sources``).
+
+    ``type_has_null`` is the answer ``JsonSchemaObject.type_has_null`` recorded, for the sites that read it; ``enum``
+    the values its ``enum`` is read as, its own by default; without ``const_support`` its ``const`` is not read.
+    """
     extras = obj.extras
-    const_set = "const" in extras
-    return NullSources(
-        type_null=type_ == "null",
-        type_list=is_list,
-        type_lists_null=is_list and "null" in type_,
-        type_lists_object=is_list and "object" in type_,
-        typed=type_ is not None,
-        type_string=type_ == "string",
-        member_null=bool(obj.oneOf or obj.anyOf)
-        and any(
-            isinstance(item, JsonSchemaObject)
-            and (item.type == "null" or (isinstance(item.type, list) and "null" in item.type))
-            for item in (*obj.oneOf, *obj.anyOf)
-        ),
+    return null_sources(
+        _read_type(obj),
         nullable=obj.nullable,
+        type_has_null=type_has_null,
+        member_types=(
+            [item.type for item in (*obj.oneOf, *obj.anyOf) if isinstance(item, JsonSchemaObject)]
+            if obj.oneOf or obj.anyOf
+            else ()
+        ),
         copied_nullable=bool(obj.__dict__.get(_COPIED_NULLABLE_KEY)),
-        enum_null=bool(enum) and None in enum,
-        enum_set=bool(enum),
-        const_set=const_set,
-        const_null=const_set and extras["const"] is None,
+        enum=obj.enum if enum is None else enum,
+        const=(extras["const"],) if const_support and "const" in extras else (),
     )
 
 
