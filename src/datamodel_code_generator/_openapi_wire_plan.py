@@ -7,7 +7,6 @@ from functools import cached_property
 from math import isfinite
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
-from datamodel_code_generator._openapi_codec_plan import keeps_extras
 from datamodel_code_generator._runtime.model_codecs.media import (
     FieldPlan,
     LexicalKind,
@@ -29,7 +28,6 @@ from datamodel_code_generator._target_contract import (
     API_KEY_LOCATIONS,
     BindingReason,
     EncodingFacts,
-    GeneratedSymbolType,
     GeneratedTypeContractBatch,
     KindAt,
     LiteralScalar,
@@ -347,7 +345,7 @@ def _form(
             _encoding(bound, members, declaration, writes=planner.writes, brackets=planner.brackets)
             for declaration in styled.values()
         )
-        encoded = _distinct(planner, bound, [field.name for field in fields], encoded)
+        encoded = _distinct(bound, [field.name for field in fields], encoded)
     except _PlanError as error:
         _refused(planner, error, use.id.owner, (use.id,))
         return None
@@ -368,7 +366,7 @@ def _styles(
         encoded = tuple(_encoding(bound, members, declaration) for declaration in member_encodings(use, encodings))
         styled = {plan.name for plan in encoded}
         names = [member.name for member in form_members(planner.kinds, bound) if member.name not in styled]
-        encoded = _distinct(planner, bound, names, encoded)
+        encoded = _distinct(bound, names, encoded)
     except _PlanError as error:
         _refused(planner, error, use.id.owner, (use.id,))
         return None
@@ -405,15 +403,24 @@ def form_members(kinds: LexicalKinds, use: TypeUseBinding) -> Iterator[FormMembe
             yield FormMember(name, facts.type, *kinds.tables.member_kind(facts.type), shaped.get(name, schema), member)
 
 
-def form_extras(kinds: LexicalKinds, use: TypeUseBinding) -> FormMember | None:
+def form_extras(kinds: LexicalKinds, use: TypeUseBinding, *, loose: bool = False) -> FormMember | None:
     """Return how the other properties of a form are written, by the type of their values.
 
     The type is the one the form's model keeps them as, in a field of its own or one it inherits. A model without
     such a field takes the type its use binds for their schema (`EncodingFacts.extras`). A form whose model keeps
     none as a type, and that allows no other properties, has no schema for them, or binds no type for it, has no such
-    member: its other properties are text as they come.
+    member: its other properties are text as they come. A reader that hands them to the model has none when the model
+    takes none (`PartFacts.extra`, else a form's `TextShape.additional` where it has a builtin encoding); one that
+    keeps the parts itself (`loose`) takes those the schema gives.
     """
-    extras = None if (encoding := use.encoding) is None else encoding.extras
+    encoding, parts = use.encoding, use.parts
+    if not loose and (
+        parts.extra == "closed"
+        if parts is not None
+        else encoding is not None and encoding.form.problem is None and encoding.form.additional is None
+    ):
+        return None
+    extras = None if encoding is None else encoding.extras
     if (kept := kinds.kept(use)) is not None:
         value, declared = kept
         return FormMember("", value, *kinds.tables.member_kind(value), declared if extras is None else extras[0])
@@ -491,16 +498,14 @@ def _refused(planner: _WirePlanner, error: _PlanError, owner: object, uses: tupl
     planner.diagnostics.append(replace(error.diagnostic, operation=operation, uses=uses))
 
 
-def _distinct(
-    planner: _WirePlanner, form: TypeUseBinding, names: list[str], encoded: tuple[ParameterPlan, ...]
-) -> tuple[ParameterPlan, ...]:
+def _distinct(form: TypeUseBinding, names: list[str], encoded: tuple[ParameterPlan, ...]) -> tuple[ParameterPlan, ...]:
     """Refuse a form whose members write a name twice, or whose other names more than one member would take back.
 
     An exploded member's own names count, and an exploded object that allows other properties takes every name no
     other member writes, so the form may have one such member and no deepObject member then, as an operation's query
-    parameters may, nor other properties of its own that its schema allows as `true` or a schema or its model keeps by
-    its configuration. Return the plans with the other exploded members' names reserved from the one that takes the
-    rest.
+    parameters may, nor other properties of its own that its class takes as `true` or a schema or by its
+    configuration (`EncodingFacts.declared`). Return the plans with the other exploded members' names reserved from
+    the one that takes the rest.
     """
     location = _located(form)
     claimed = [
@@ -512,10 +517,7 @@ def _distinct(
         raise _PlanError(location, "Expanded form member names collide")
     absorbing = [plan.name for plan in encoded if plan.additional is not None and _spread(plan)]
     if absorbing and (
-        len(absorbing) > 1
-        or any(plan.style == "deepObject" for plan in encoded)
-        or _encoded(form).declared
-        or planner.kinds.configured(form)
+        len(absorbing) > 1 or any(plan.style == "deepObject" for plan in encoded) or _encoded(form).declared
     ):
         message = (
             f"The exploded form member {stable_repr(absorbing[0])} allows other properties and takes every name no "
@@ -1029,16 +1031,6 @@ class LexicalKinds:
                 if (schema := member.schema) is not None
             ),
             None,
-        )
-
-    def configured(self, use: TypeUseBinding) -> bool:
-        """Return whether the model a use's type stands for keeps its other properties by the configuration it takes.
-
-        The type stands for the model through aliases, root models and a union with None alone, and the model takes
-        its own setting over the one it inherits.
-        """
-        return isinstance(value := self.tables.unwrapped(use.type), GeneratedSymbolType) and keeps_extras(
-            self.tables.symbols, value.symbol
         )
 
     def text(self, use: TypeUseBinding) -> bool:

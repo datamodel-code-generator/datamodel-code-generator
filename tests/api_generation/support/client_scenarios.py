@@ -47,6 +47,7 @@ from tests.api_generation.scenarios.client_deadline_races import deadline_races
 from tests.api_generation.scenarios.client_deadline_streams import deadline_streams
 from tests.api_generation.scenarios.client_fields import fields, optional_models
 from tests.api_generation.scenarios.client_headers import headers, native_boundaries
+from tests.api_generation.scenarios.client_held_extras import held_extras
 from tests.api_generation.scenarios.client_hooks import hooks
 from tests.api_generation.scenarios.client_item_streams import item_streams
 from tests.api_generation.scenarios.client_missing_sentinel import missing_members
@@ -930,6 +931,9 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "multipart-kinds": ("multipart-kinds", ALL_BUT_MSGSPEC, kinded_parts),
     "multipart-text-files": ("multipart-text-files", ("pydantic_v2.BaseModel", "msgspec.Struct"), text_files),
     "multipart-media-text": ("multipart-media-text", ("pydantic_v2.BaseModel", "msgspec.Struct"), media_text_parts),
+    "held-extras": ("held-extras", BACKENDS[:2], held_extras),
+    "held-extras-forbid": ("held-extras-forbid", BACKENDS[:2], held_extras),
+    "held-extras-allow": ("held-extras-allow", BACKENDS[:2], held_extras),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "native-boundaries": ("native-boundaries", BACKENDS, native_boundaries),
     "call-layers": ("call-layers", ("pydantic_v2.BaseModel",), call_layers),

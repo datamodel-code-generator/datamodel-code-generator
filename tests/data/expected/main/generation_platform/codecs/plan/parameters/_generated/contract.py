@@ -83,7 +83,6 @@ class GetOptions:
                     style='form',
                     explode=True,
                     shape='object',
-                    additional=FieldPlan('', 'string'),
                 ),
                 adapter=TypeAdapter(
                     plan_parameters_models.OptionsGetQueryOptsParameter
@@ -117,7 +116,6 @@ class GetMore:
                     style='form',
                     explode=True,
                     shape='object',
-                    additional=FieldPlan('', 'string'),
                 ),
                 adapter=TypeAdapter(plan_parameters_models.MoreGetQueryMoreParameter),
             ),

@@ -64,6 +64,9 @@ fields-optional-models	main/generation_platform/client/runtime/fields-optional-m
 fields-structural	main/generation_platform/client/runtime/fields-structural.txt
 fields-unpack	main/generation_platform/client/runtime/fields-unpack.txt
 headers	main/generation_platform/client/runtime/headers.txt
+held-extras	main/generation_platform/client/runtime/held-extras.txt
+held-extras-allow	main/generation_platform/client/runtime/held-extras-allow.txt
+held-extras-forbid	main/generation_platform/client/runtime/held-extras-forbid.txt
 hooks	main/generation_platform/client/runtime/hooks.txt
 item-or-array	main/generation_platform/client/runtime/item-or-array.txt
 item-streams	main/generation_platform/client/runtime/item-streams.txt

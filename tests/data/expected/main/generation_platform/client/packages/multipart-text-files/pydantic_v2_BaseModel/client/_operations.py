@@ -65,11 +65,7 @@ OPERATION_1: Final[OperationPlan[SendStampResponse]] = OperationPlan(
                 media_type='multipart/form-data',
                 kind='multipart',
                 codec=model_bindings.codec_0,
-                form=MultipartForm(
-                    members=True,
-                    parts=(PartPlan('taken', 'string'),),
-                    additional=PartPlan('', 'json'),
-                ),
+                form=MultipartForm(members=True),
             ),
         ),
         default='multipart/form-data',

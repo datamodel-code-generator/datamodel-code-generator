@@ -76,6 +76,14 @@ forms	main/generation_platform/fastapi/servers/forms.txt
 forms	main/generation_platform/fastapi/servers/packages/forms/
 forms-by-name	main/generation_platform/fastapi/servers/forms-by-name.txt
 forms-by-name	main/generation_platform/fastapi/servers/packages/forms-by-name/
+held-extras	main/generation_platform/fastapi/servers/held-extras.txt
+held-extras	main/generation_platform/fastapi/servers/packages/held-extras/
+held-extras-allow	main/generation_platform/fastapi/servers/held-extras-allow.txt
+held-extras-allow	main/generation_platform/fastapi/servers/packages/held-extras-allow/
+held-extras-forbid	main/generation_platform/fastapi/servers/held-extras-forbid.txt
+held-extras-forbid	main/generation_platform/fastapi/servers/packages/held-extras-forbid/
+held-extras-ignore	main/generation_platform/fastapi/servers/held-extras-ignore.txt
+held-extras-ignore	main/generation_platform/fastapi/servers/packages/held-extras-ignore/
 kinds	main/generation_platform/fastapi/servers/kinds.txt
 kinds	main/generation_platform/fastapi/servers/packages/kinds/
 kinds-annotated	main/generation_platform/fastapi/servers/kinds-annotated.txt

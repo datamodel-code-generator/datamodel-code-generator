@@ -3782,6 +3782,868 @@
     },
     "package_snapshots": []
   },
+  "held-extras": {
+    "input": "held-extras.yaml",
+    "services": "held_extras",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/plain",
+        "/closed",
+        "/open",
+        "/required",
+        "/cookie",
+        "/parts/plain",
+        "/parts/closed",
+        "/parts/open",
+        "/typed",
+        "/parts/typed",
+        "/parts/located",
+        "/two",
+        "/uploads"
+      ]
+    },
+    "package_snapshots": [],
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/plain?count=1&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/plain?count=1&size=2&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/closed?count=1&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/closed?count=1&size=2&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/open?count=1&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/required?foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/required?size=2&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/cookie",
+        "headers": {
+          "Cookie": "_ga=x"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/cookie",
+        "headers": {
+          "Cookie": "session=s; size=3; _ga=x"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/two?size=1&page=2&foo=x"
+      },
+      {
+        "method": "POST",
+        "url": "/parts/plain",
+        "files": [
+          [
+            "size",
+            null,
+            "2",
+            null
+          ],
+          [
+            "foo",
+            null,
+            "1",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/parts/closed",
+        "files": [
+          [
+            "size",
+            null,
+            "2",
+            null
+          ],
+          [
+            "foo",
+            null,
+            "1",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/parts/open",
+        "files": [
+          [
+            "size",
+            null,
+            "2",
+            null
+          ],
+          [
+            "foo",
+            null,
+            "1",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/typed",
+        "content": "size=1&x=5",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/typed",
+        "content": "size=1&x=abc",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/parts/typed",
+        "files": [
+          [
+            "size",
+            null,
+            "1",
+            null
+          ],
+          [
+            "x",
+            null,
+            "abc",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/parts/located",
+        "files": [
+          [
+            "size",
+            null,
+            "1",
+            null
+          ],
+          [
+            "x",
+            null,
+            "{\"lat\": 5}",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/parts/located",
+        "files": [
+          [
+            "size",
+            null,
+            "1",
+            null
+          ],
+          [
+            "x",
+            null,
+            "{\"lat\": \"zz\"}",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/uploads",
+        "files": [
+          [
+            "photo",
+            "a.png",
+            "PNG",
+            "image/png"
+          ],
+          [
+            "note",
+            null,
+            "kept",
+            null
+          ]
+        ]
+      }
+    ]
+  },
+  "held-extras-ignore": {
+    "input": "held-extras.yaml",
+    "services": "held_extras",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/plain",
+        "/closed",
+        "/open",
+        "/required",
+        "/cookie",
+        "/parts/plain",
+        "/parts/closed",
+        "/parts/open",
+        "/typed",
+        "/parts/typed",
+        "/parts/located",
+        "/two",
+        "/uploads"
+      ],
+      "extra_fields": "ignore"
+    },
+    "package_snapshots": [],
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/plain?count=1&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/plain?count=1&size=2&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/closed?count=1&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/closed?count=1&size=2&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/open?count=1&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/required?foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/required?size=2&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/cookie",
+        "headers": {
+          "Cookie": "_ga=x"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/cookie",
+        "headers": {
+          "Cookie": "session=s; size=3; _ga=x"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/two?size=1&page=2&foo=x"
+      },
+      {
+        "method": "POST",
+        "url": "/parts/plain",
+        "files": [
+          [
+            "size",
+            null,
+            "2",
+            null
+          ],
+          [
+            "foo",
+            null,
+            "1",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/parts/closed",
+        "files": [
+          [
+            "size",
+            null,
+            "2",
+            null
+          ],
+          [
+            "foo",
+            null,
+            "1",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/parts/open",
+        "files": [
+          [
+            "size",
+            null,
+            "2",
+            null
+          ],
+          [
+            "foo",
+            null,
+            "1",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/typed",
+        "content": "size=1&x=5",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/typed",
+        "content": "size=1&x=abc",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/parts/typed",
+        "files": [
+          [
+            "size",
+            null,
+            "1",
+            null
+          ],
+          [
+            "x",
+            null,
+            "abc",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/parts/located",
+        "files": [
+          [
+            "size",
+            null,
+            "1",
+            null
+          ],
+          [
+            "x",
+            null,
+            "{\"lat\": 5}",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/parts/located",
+        "files": [
+          [
+            "size",
+            null,
+            "1",
+            null
+          ],
+          [
+            "x",
+            null,
+            "{\"lat\": \"zz\"}",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/uploads",
+        "files": [
+          [
+            "photo",
+            "a.png",
+            "PNG",
+            "image/png"
+          ],
+          [
+            "note",
+            null,
+            "kept",
+            null
+          ]
+        ]
+      }
+    ]
+  },
+  "held-extras-forbid": {
+    "input": "held-extras.yaml",
+    "services": "held_extras",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/plain",
+        "/closed",
+        "/open",
+        "/required",
+        "/cookie",
+        "/parts/plain",
+        "/parts/closed",
+        "/parts/open",
+        "/typed",
+        "/parts/typed",
+        "/parts/located",
+        "/two",
+        "/uploads"
+      ],
+      "extra_fields": "forbid"
+    },
+    "package_snapshots": [],
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/plain?count=1&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/plain?count=1&size=2&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/closed?count=1&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/closed?count=1&size=2&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/open?count=1&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/required?foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/required?size=2&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/cookie",
+        "headers": {
+          "Cookie": "_ga=x"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/cookie",
+        "headers": {
+          "Cookie": "session=s; size=3; _ga=x"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/two?size=1&page=2&foo=x"
+      },
+      {
+        "method": "POST",
+        "url": "/parts/plain",
+        "files": [
+          [
+            "size",
+            null,
+            "2",
+            null
+          ],
+          [
+            "foo",
+            null,
+            "1",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/parts/closed",
+        "files": [
+          [
+            "size",
+            null,
+            "2",
+            null
+          ],
+          [
+            "foo",
+            null,
+            "1",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/parts/open",
+        "files": [
+          [
+            "size",
+            null,
+            "2",
+            null
+          ],
+          [
+            "foo",
+            null,
+            "1",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/typed",
+        "content": "size=1&x=5",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/typed",
+        "content": "size=1&x=abc",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/parts/typed",
+        "files": [
+          [
+            "size",
+            null,
+            "1",
+            null
+          ],
+          [
+            "x",
+            null,
+            "abc",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/parts/located",
+        "files": [
+          [
+            "size",
+            null,
+            "1",
+            null
+          ],
+          [
+            "x",
+            null,
+            "{\"lat\": 5}",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/parts/located",
+        "files": [
+          [
+            "size",
+            null,
+            "1",
+            null
+          ],
+          [
+            "x",
+            null,
+            "{\"lat\": \"zz\"}",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/uploads",
+        "files": [
+          [
+            "photo",
+            "a.png",
+            "PNG",
+            "image/png"
+          ],
+          [
+            "note",
+            null,
+            "kept",
+            null
+          ]
+        ]
+      }
+    ]
+  },
+  "held-extras-allow": {
+    "input": "held-extras.yaml",
+    "services": "held_extras",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/plain",
+        "/closed",
+        "/open",
+        "/required",
+        "/cookie",
+        "/parts/plain",
+        "/parts/closed",
+        "/parts/open",
+        "/typed",
+        "/parts/typed",
+        "/parts/located",
+        "/uploads"
+      ],
+      "extra_fields": "allow"
+    },
+    "package_snapshots": [],
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/plain?count=1&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/plain?count=1&size=2&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/closed?count=1&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/closed?count=1&size=2&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/open?count=1&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/required?foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/required?size=2&foo=bar"
+      },
+      {
+        "method": "GET",
+        "url": "/cookie",
+        "headers": {
+          "Cookie": "_ga=x"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/cookie",
+        "headers": {
+          "Cookie": "session=s; size=3; _ga=x"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/parts/plain",
+        "files": [
+          [
+            "size",
+            null,
+            "2",
+            null
+          ],
+          [
+            "foo",
+            null,
+            "1",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/parts/closed",
+        "files": [
+          [
+            "size",
+            null,
+            "2",
+            null
+          ],
+          [
+            "foo",
+            null,
+            "1",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/parts/open",
+        "files": [
+          [
+            "size",
+            null,
+            "2",
+            null
+          ],
+          [
+            "foo",
+            null,
+            "1",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/typed",
+        "content": "size=1&x=5",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/typed",
+        "content": "size=1&x=abc",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/parts/typed",
+        "files": [
+          [
+            "size",
+            null,
+            "1",
+            null
+          ],
+          [
+            "x",
+            null,
+            "abc",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/parts/located",
+        "files": [
+          [
+            "size",
+            null,
+            "1",
+            null
+          ],
+          [
+            "x",
+            null,
+            "{\"lat\": 5}",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/parts/located",
+        "files": [
+          [
+            "size",
+            null,
+            "1",
+            null
+          ],
+          [
+            "x",
+            null,
+            "{\"lat\": \"zz\"}",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/uploads",
+        "files": [
+          [
+            "photo",
+            "a.png",
+            "PNG",
+            "image/png"
+          ],
+          [
+            "note",
+            null,
+            "kept",
+            null
+          ]
+        ]
+      }
+    ]
+  },
   "responses": {
     "input": "server-responses.yaml",
     "services": "responses",

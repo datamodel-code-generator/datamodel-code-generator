@@ -74,8 +74,6 @@ OPERATION_0: Final[OperationPlan[GetChargesChargeResponse]] = OperationPlan(
                     FieldPlan('lt', 'integer'),
                     FieldPlan('lte', 'integer'),
                 ),
-                additional=FieldPlan('', 'string'),
-                reserved_names=('expand', 'limit'),
                 brackets=True,
             ),
             codec=model_bindings.codec_3,
@@ -128,7 +126,6 @@ OPERATION_2: Final[OperationPlan[PostCustomersResponse]] = OperationPlan(
                 kind='form',
                 codec=model_bindings.codec_6,
                 fields=(FieldPlan('email', 'string'),),
-                additional=FieldPlan('', 'string'),
                 encoded=(
                     ParameterPlan(
                         location='query',
@@ -184,7 +181,6 @@ OPERATION_3: Final[OperationPlan[PostSubscriptionsResponse]] = OperationPlan(
                 kind='form',
                 codec=model_bindings.codec_7,
                 fields=(FieldPlan('customer', 'string'),),
-                additional=FieldPlan('', 'string'),
                 encoded=(
                     ParameterPlan(
                         location='query',
@@ -193,14 +189,6 @@ OPERATION_3: Final[OperationPlan[PostSubscriptionsResponse]] = OperationPlan(
                         explode=True,
                         shape='array',
                         fields=(FieldPlan('coupon', 'string'),),
-                        additional=FieldPlan('', 'string'),
-                        reserved_names=(
-                            'customer',
-                            'items',
-                            'metadata',
-                            'off_session',
-                            'payment_settings',
-                        ),
                         brackets=True,
                     ),
                     ParameterPlan(
@@ -215,14 +203,6 @@ OPERATION_3: Final[OperationPlan[PostSubscriptionsResponse]] = OperationPlan(
                             FieldPlan(
                                 'metadata', 'string', additional=FieldPlan('', 'string')
                             ),
-                        ),
-                        additional=FieldPlan('', 'string'),
-                        reserved_names=(
-                            'customer',
-                            'discounts',
-                            'metadata',
-                            'off_session',
-                            'payment_settings',
                         ),
                         brackets=True,
                     ),
@@ -269,21 +249,11 @@ OPERATION_3: Final[OperationPlan[PostSubscriptionsResponse]] = OperationPlan(
                                                 'request_three_d_secure', 'string'
                                             ),
                                         ),
-                                        additional=FieldPlan('', 'string'),
                                     ),
                                 ),
-                                additional=FieldPlan('', 'string'),
                             ),
                             FieldPlan('payment_method_types', 'string'),
                             FieldPlan('save_default_payment_method', 'string'),
-                        ),
-                        additional=FieldPlan('', 'string'),
-                        reserved_names=(
-                            'customer',
-                            'discounts',
-                            'items',
-                            'metadata',
-                            'off_session',
                         ),
                         brackets=True,
                     ),

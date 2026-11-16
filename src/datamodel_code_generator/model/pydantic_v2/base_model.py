@@ -1854,6 +1854,10 @@ class _PydanticV2Model(DataModel):
         """Return whether the config the model applies selects ``python-re``."""
         return self._applied_config_items().get("regex_engine") == '"python-re"'
 
+    def applied_config_items(self) -> dict[str, str]:
+        """Return the config items Pydantic applies to the model, the bases included."""
+        return self._applied_config_items()
+
     @abstractmethod
     def _applied_config_items(self, visiting: frozenset[int] = frozenset()) -> dict[str, str]:
         """Return the config items Pydantic applies to the model."""

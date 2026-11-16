@@ -265,8 +265,6 @@ OPERATION_11: Final[OperationPlan[CookieParametersResponse]] = OperationPlan(
                 explode=True,
                 shape='object',
                 fields=(FieldPlan('kind', 'string'),),
-                additional=FieldPlan('', 'string'),
-                reserved_names=('page',),
             ),
             codec=model_bindings.codec_3,
         ),

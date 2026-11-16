@@ -1,0 +1,11 @@
+[[change]]
+id = "server-form-by-name-follows-applied-config"
+kind = "experimental"
+action = "review"
+title = "Generated servers read a form member by its field name exactly where the model's applied configuration validates by name, a decorated model included"
+summary = "With `--generate-server`, a form body the server reads through its own adapter (multipart, or URL-encoded with `pydantic_v2.dataclass`) also reads each member by its field name only where the configuration the model applies sets `populate_by_name` or `validate_by_name`, with the bases as Pydantic applies them (a model merges its bases' in order, then its own; a dataclass takes its own, else its first base's). A model whose base sets it while the model turns it off (`--extra-template-data` with `populate_by_name: false`), or a dataclass with a configuration of its own under such a base, no longer lists the field names (`FieldPlan('last_name', ...)` beside `FieldPlan('last-name', ...)`); the model dropped the values read under those names, so requests are handled as before. A class written with `--class-decorators` now counts too: a multipart body `Person` with the property `first-name` under `--allow-population-by-field-name --class-decorators @typing.final --additional-imports typing` lists `FieldPlan('first_name', 'string')`, and a part named `first_name` still reaches `Person(first_name='b')`."
+affects = { experimental = ["cli-option.generate-server"] }
+before = "fields=(FieldPlan(\"first-name\", \"string\"),),"
+after = "fields=(FieldPlan(\"first-name\", \"string\"), FieldPlan(\"first_name\", \"string\")),"
+refs = ["#99902"]
+source = "release-note"

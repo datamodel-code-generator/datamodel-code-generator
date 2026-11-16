@@ -135,6 +135,22 @@
       "pydantic_v2.dataclass"
     ]
   },
+  "applied-config": {
+    "input": "applied-config.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "model": {
+      "allow_population_by_field_name": true,
+      "extra_template_data": {
+        "Person": {"config": {"populate_by_name": false, "validate_by_name": false}}
+      }
+    },
+    "package_snapshots": [
+      "pydantic_v2.dataclass"
+    ]
+  },
   "media-kept": {
     "input": "media-errors.yaml",
     "backends": [
