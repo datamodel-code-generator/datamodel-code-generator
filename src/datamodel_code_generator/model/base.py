@@ -145,7 +145,6 @@ from datamodel_code_generator.types import (
     Nullable,
     _hint_null,
     chain_as_tuple,
-    type_expr_of,
 )
 
 if TYPE_CHECKING:
@@ -859,12 +858,10 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """
         return self._type_hint_from_data_type(self.data_type, expression=frozen_field_hint(self))
 
-    def _type_hint_from_data_type(
-        self, data_type: DataType, *, base: bool = False, expression: _types.TypeExpr | None = None
-    ) -> str:
+    def _type_hint_from_data_type(self, data_type: DataType, *, base: bool = False, expression: object = None) -> str:
         """Get the type hint string, or with ``base`` the base hint, for a field data type, including nullability.
 
-        ``expression`` is the type's expression (``_type_expression``) when it is built already.
+        ``expression`` is the type's expression (``types.type_expr_of``) when it is built already.
         """
         if base:
             type_hint, hint_has_none = data_type.base_type_hint, None
@@ -877,10 +874,6 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         if self._field_null_source(data_type, hint_has_none=hint_has_none) is None:
             return type_hint
         return data_type._optional_hint(type_hint, self._use_union_operator)  # noqa: SLF001
-
-    def _type_expression(self) -> _types.TypeExpr:
-        """Return the expression of the field's type hint, which the parse keeps for the field at B2."""
-        return type_expr_of(self.data_type)
 
     def _field_null_source(
         self,

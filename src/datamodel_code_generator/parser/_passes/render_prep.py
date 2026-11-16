@@ -81,7 +81,7 @@ from datamodel_code_generator.python_literal import (
     _text_constructor_expression,
     represent_python_value,
 )
-from datamodel_code_generator.types import DataType, _copy_data_type
+from datamodel_code_generator.types import DataType, _copy_data_type, type_expr_of
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
@@ -1280,4 +1280,4 @@ def freeze_field_render_plans(state: _FinalizeState[Any]) -> None:
                     if field._render_plan_text(decided) != import_text:  # noqa: SLF001
                         import_plan = plan
                 plan = decided
-            ready.freeze(field, plan, import_plan)
+            ready.freeze(field, plan, import_plan, type_expr_of(model_field.data_type))
