@@ -951,15 +951,19 @@ def get_array_item_schemas(
     *,
     include_true_tail_schema: bool = False,
     force_prefix_items: bool = False,
-) -> tuple[list[JsonSchemaObject | bool], bool, bool, int | None]:
-    """Return item schemas plus tuple/constraint flags and homogeneous tuple length."""
+) -> tuple[list[JsonSchemaObject | bool], bool, int | None]:
+    """Return item schemas, whether the array is a fixed-length tuple, and the length of a homogeneous one.
+
+    The type of a fixed-length tuple fixes its length, so its item counts are dropped
+    (``suppress_array_length_constraints``).
+    """
     if (fixed_items := get_fixed_positional_items(parser, obj)) is not None:
-        return fixed_items, True, True, None
+        return fixed_items, True, None
     if (
         isinstance(item_schema := obj.items, JsonSchemaObject)
         and (tuple_item_count := get_fixed_length_homogeneous_tuple_length(parser, obj)) is not None
     ):
-        return [item_schema] if tuple_item_count else [], True, True, tuple_item_count
+        return [item_schema] if tuple_item_count else [], True, tuple_item_count
     return (
         get_list_item_schemas(
             parser,
@@ -967,7 +971,6 @@ def get_array_item_schemas(
             include_true_tail_schema=include_true_tail_schema,
             force_prefix_items=force_prefix_items,
         ),
-        False,
         False,
         None,
     )
@@ -1136,12 +1139,26 @@ def get_fixed_positional_items(
         return None
     if explicit:
         return items
-    read_ref = canonical_ref or parser.model_resolver.resolve_ref
-    first, *others = (
-        get_position_validation_keywords(parser, schema, read_ref)
-        for schema in [*items, *(get_list_item_schemas(parser, obj) or [True])]
+    return (
+        None
+        if _list_form_is_exact(
+            parser,
+            [*items, *(get_list_item_schemas(parser, obj) or [True])],
+            canonical_ref or parser.model_resolver.resolve_ref,
+        )
+        else items
     )
-    return None if all(other == first for other in others) else items
+
+
+def _list_form_is_exact(
+    parser: ValueKeywordsHost, schemas: Sequence[JsonSchemaObject | bool], canonical_ref: Callable[[str], str]
+) -> bool:
+    """Return whether the list form of an array checks what its positions do: every one of ``schemas`` accepts the same.
+
+    ``schemas`` are the positions the list form stands for, then the schemas of the items it holds.
+    """
+    keywords = [get_position_validation_keywords(parser, schema, canonical_ref) for schema in schemas]
+    return all(other == keywords[0] for other in keywords[1:])
 
 
 def warn_unchecked_prefix_positions(parser: ValueKeywordsHost, obj: JsonSchemaObject) -> None:
@@ -1151,15 +1168,13 @@ def warn_unchecked_prefix_positions(parser: ValueKeywordsHost, obj: JsonSchemaOb
     exact, and no warning is written, where every position and the tail accept the same values; a ``false`` position
     ends the array, so neither it, the positions after it nor the tail are compared.
     """
-    read_ref = parser.model_resolver.resolve_ref
     prefix = obj.prefixItems or []
     schemas = (
         prefix[:false_index]
         if (false_index := get_first_false_schema_index(type(parser), prefix)) is not None
         else [*prefix, *(get_list_item_schemas(parser, obj) or [True])]
     )
-    keywords = [get_position_validation_keywords(parser, schema, read_ref) for schema in schemas]
-    if all(other == keywords[0] for other in keywords[1:]):
+    if _list_form_is_exact(parser, schemas, parser.model_resolver.resolve_ref):
         return
     hint = ""
     if not parser.use_tuple_for_closed_arrays and (length := get_effective_array_length(type(parser), obj)) is not None:
@@ -1230,14 +1245,10 @@ def has_prefix_items_tail_schema_or_boolean(parser: ValueKeywordsHost, obj: Json
     )
 
 
-def suppress_array_length_constraints(
-    parser: ValueKeywordsHost, constraints: dict[str, Any] | None, obj: JsonSchemaObject
-) -> None:
-    if not constraints:
-        return
-    if is_fixed_length_tuple(parser, obj):
-        constraints.pop("minItems", None)
-        constraints.pop("maxItems", None)
+def suppress_array_length_constraints(constraints: dict[str, Any]) -> None:
+    """Drop the item counts of a fixed-length tuple (``is_fixed_length_tuple``), whose type fixes its length."""
+    constraints.pop("minItems", None)
+    constraints.pop("maxItems", None)
 
 
 def resolve_array_field_required_nullable(parser: ValueKeywordsHost, obj: JsonSchemaObject) -> tuple[bool, bool | None]:

@@ -1248,8 +1248,8 @@ class OpenAPIParser(JsonSchemaParser):
         """
         return (
             self.use_enum_field_as_literal_in_operations
-            and self._operation_enum_applies(site)
-            and self.should_parse_enum_as_literal(site.obj, property_name=site.name)
+            and self._reads_enum(site.obj)
+            and self._enum_site_form(site.obj, site.name) == "literal"
         )
 
     def _build_operation_enum(self, site: SchemaSite[JsonSchemaObject]) -> DataType:

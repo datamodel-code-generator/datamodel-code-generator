@@ -3562,7 +3562,7 @@ def test_get_python_type_flags(x_python_type: str, expected: dict[str, bool]) ->
     """Test _get_python_type_flags extracts collection flags correctly."""
     parser = JsonSchemaParser("")
     obj = JsonSchemaObject.model_validate({"x-python-type": x_python_type})
-    result = parser._get_python_type_flags(obj)
+    result = parser._get_python_type_flags(parser._get_x_python_type(obj))
     assert result == expected
 
 

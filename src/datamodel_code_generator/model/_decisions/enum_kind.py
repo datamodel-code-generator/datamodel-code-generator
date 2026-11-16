@@ -10,9 +10,10 @@ output deletes its row.
 The kind of a JSON value (``literal_value_kind``) and its JSON type (``json_type``) are those of ``_json_schema.py``,
 which the parser cores and the targets read too; this module keeps them under their names.
 
-Not routed here yet: the enum branch of ``parser/jsonschema.py:JsonSchemaParser.parse_array_fields`` (a ``type`` list
-holding ``array``) writes an Enum class without asking ``enum_as_literal``, so ``--enum-field-as-literal all`` leaves
-that enum a class.
+``_enum_site_form`` of ``parser/jsonschema.py:JsonSchemaParser`` decides the form an enum site writes (its const, a
+``Literal`` or a class); its row ``legacy-array-enum-class-only`` keeps the enum branch of ``parse_array_fields`` (a
+``type`` list holding ``array``) an Enum class without asking ``enum_as_literal``, so ``--enum-field-as-literal all``
+leaves that enum a class.
 """
 
 from __future__ import annotations
