@@ -2,7 +2,9 @@
 
 ``SchemaGraphBuilder.schema`` validates each JSON object of a loaded document once and gives every reader the same
 object. The wrapper of ``schema`` keeps a fingerprint of each object when it is validated, and the check compares the
-objects with their fingerprints at the end of L1.
+objects with their fingerprints at the end of L1. The wrapper of ``prepare_schema_resources`` keeps the fingerprint of
+each document as the loader read it, when it is first prepared, and the same check compares the documents with them:
+the parser never writes a loaded document.
 
 ``ApiOpenAPIParser._site_facts`` reads the site of a location once, for the target bindings. Its wrapper reads a kept
 site anew from the documents at every read and compares the two, and the wrapper of ``site_facts_of`` reports a string
@@ -22,6 +24,8 @@ if TYPE_CHECKING:
 
 _SHARED: Final = "shared schemas"
 """The schema objects each schema graph validated in the parse, with their fingerprints, by the id of the graph."""
+_LOADED: Final = "loaded documents"
+"""The documents each schema graph prepared as the loader read them, with their names and fingerprints, by identity."""
 
 
 def _fingerprint(value: object, active: frozenset[int] = frozenset()) -> object:
@@ -85,10 +89,32 @@ def schema(original: Callable[..., Any]) -> Callable[..., Any]:
     return schema
 
 
+def prepare_schema_resources(original: Callable[..., Any]) -> Callable[..., Any]:
+    """Wrap ``prepare_schema_resources``: keep the fingerprint of a document the loader read, before it is prepared.
+
+    A document already kept is not taken again; a prepared tree given again is no loaded document.
+    """
+    from datamodel_code_generator.parser._schema_documents import document_key, schema_resource_document
+
+    @wraps(original)
+    def prepare_schema_resources(parser: Any, raw: Any, path_parts: list[str]) -> Any:
+        if (graph_mode := mode(Area.SCHEMA_GRAPH)) is None:
+            return original(parser, raw, path_parts)
+        kept = graph_mode.state.setdefault((_LOADED, id(parser._graph)), {})
+        recorded = None if id(raw) in kept else _fingerprint(raw)
+        prepared = original(parser, raw, path_parts)
+        if recorded is not None and parser._graph.known(schema_resource_document(parser, path_parts)).loaded is raw:
+            kept[id(raw)] = document_key(parser, path_parts), raw, recorded
+        return prepared
+
+    return prepare_schema_resources
+
+
 def check_shared_schemas(parser: Any) -> None:
-    """Report the shared schema objects that changed after validation, at the end of L1."""
+    """Report the shared schema objects that changed after validation, and the loaded documents, at the end of L1."""
     if (graph := parser._schema_graph) is None or (graph_mode := mode(Area.SCHEMA_GRAPH)) is None:
         return
+    from datamodel_code_generator import Error
     from datamodel_code_generator._url_redaction import redact_reference
 
     if changed := [
@@ -96,13 +122,22 @@ def check_shared_schemas(parser: Any) -> None:
         for location, value, recorded in graph_mode.state.get((_SHARED, id(graph)), ())
         if _fingerprint(value) != recorded
     ]:
-        from datamodel_code_generator import Error
-
         graph_mode.violation(
             Error,
             f"shared schema objects changed after validation: {', '.join(changed)}",
             kind="shared-schema",
             locations=changed,
+        )
+    if written := [
+        redact_reference(document)
+        for document, raw, recorded in graph_mode.state.get((_LOADED, id(graph)), {}).values()
+        if _fingerprint(raw) != recorded
+    ]:
+        graph_mode.violation(
+            Error,
+            f"loaded documents changed after their load: {', '.join(written)}",
+            kind="loaded-document",
+            locations=written,
         )
 
 

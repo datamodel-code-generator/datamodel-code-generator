@@ -43,6 +43,7 @@ from datamodel_code_generator.parser._xmlschema_literals import (
 )
 from datamodel_code_generator.parser.base import Source, title_to_class_name
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+from datamodel_code_generator.parser.schema_version import configured_version
 from datamodel_code_generator.python_literal import runtime_expression_imports
 from datamodel_code_generator.util import record_watch_dependency
 
@@ -556,8 +557,8 @@ class _XMLSchemaConverter:
         source_path: Path,
         seen_locations: set[Path] | None = None,
     ) -> XMLSchemaVersion:
-        if self.xmlschema_version is not None and self.xmlschema_version != XMLSchemaVersion.Auto:
-            return self.xmlschema_version
+        if (configured := configured_version(self.xmlschema_version, XMLSchemaVersion.Auto)) is not None:
+            return configured
         version = detect_xmlschema_version(root)
         seen = seen_locations if seen_locations is not None else set()
         for _child, location, included_root in self._included_schemas(root, source_path, seen):

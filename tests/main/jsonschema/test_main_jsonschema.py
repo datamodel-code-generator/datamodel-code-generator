@@ -39765,6 +39765,29 @@ def test_schema_graph_check_of_a_reader_that_writes_a_shared_schema(
         assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
+class _LoadedDocumentWriterParser(JsonSchemaParser):
+    """Writes a definition of the document being parsed when a reference loads: a reader that changes a loaded one."""
+
+    def _load_ref_schema_object(self, ref: str) -> Any:
+        self.raw_obj["$defs"]["Moved"]["description"] = "written"
+        return super()._load_ref_schema_object(ref)
+
+
+def test_schema_graph_check_of_a_reader_that_writes_a_loaded_document(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A reader that writes a document the loader read is reported: the check compares it with its first preparation.
+
+    The prepared tree shares the definitions without a `$ref` with the loaded document, so writing one writes both.
+    """
+    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, "1")
+    parser = _LoadedDocumentWriterParser(
+        JSON_SCHEMA_DATA_PATH / "ref_edges" / "redirect.json", formatters=[Formatter.BUILTIN]
+    )
+    with pytest.raises(
+        Error, match=f"^{CHECK_SCHEMA_GRAPH_ENV}: loaded documents changed after their load: redirect.json$"
+    ):
+        parser.parse()
+
+
 class _NoOneOfMembersParser(JsonSchemaParser):
     """Returns no member types for a `oneOf`: a hook that drops every branch."""
 
