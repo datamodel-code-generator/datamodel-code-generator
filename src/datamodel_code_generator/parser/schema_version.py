@@ -624,8 +624,8 @@ class AsyncAPIClientFeatures:
         introduced="AsyncAPI 2.0",
         doc_name="message content types",
         description="The payloads of messages; the client codes JSON, `text/plain` strings and "
-        "`application/octet-stream` payloads of JSON Schema or AsyncAPI schemas, and no `contentEncoding` string "
-        "outside JSON",
+        "`application/octet-stream` payloads of AsyncAPI, JSON Schema or OpenAPI schemas, and no `contentEncoding` "
+        "string outside JSON",
         client_status="partial",
     )
     message_payloads: bool = _client_feature(

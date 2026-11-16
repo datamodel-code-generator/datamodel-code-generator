@@ -16,6 +16,7 @@ MODELS: Final[dict[type, Model]] = {
     models.Unsubscribe: Model((Field('op', 'op'), Field('channels', 'channels'))),
     models.Trade: Model((Field('event', 'event'), Field('price', 'price'))),
     models.Heartbeat: Model((Field('event', 'event'), Field('at', 'at'))),
+    models.Item: Model((Field('name', 'name'),)),
     models.Bid: Model((Field('side', 'side'), Field('price', 'price'))),
     models.Ask: Model((Field('side', 'side'), Field('price', 'price'))),
 }
@@ -43,3 +44,6 @@ codec_4: Final[TypedDictCodec[models.Bid]] = TypedDictCodec(models.Bid, MODELS)
 
 codec_5: Final[TypedDictCodec[models.Ask]] = TypedDictCodec(models.Ask, MODELS)
 """Codec of /channels/quotes response_body (response application/json)."""
+
+codec_6: Final[TypedDictCodec[models.Item]] = TypedDictCodec(models.Item, MODELS)
+"""Codec of /channels/drafts request_body (request application/json)."""

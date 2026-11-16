@@ -221,6 +221,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "asyncapi-handshake-v2",
         "asyncapi-skips",
         "asyncapi-skips-v2",
+        "asyncapi-schema-formats",
         "asyncapi-relative-v2",
         "asyncapi-serverless",
         "asyncapi-unopened",

@@ -66,3 +66,13 @@ SOCKET_2: Final[ChannelPlan[models.Edit | models.Revision, Never]] = ChannelPlan
         MessageRoute(encoder=model_bindings.codec_8, type=models.Revision),
     ),
 )
+
+
+SOCKET_3: Final[ChannelPlan[models.Item, Never]] = ChannelPlan(
+    helper_id='drafts',
+    operation=OperationRef(pointer='/channels/drafts'),
+    call=_operations.OPERATION_3,
+    fingerprint='1e55366889c1d9c1e887d9b61c19533243925cbbd911caaf2ca2de58fdc824fa',
+    encoder=model_bindings.codec_9,
+    receive_codec='none',
+)

@@ -39,3 +39,6 @@ codec_7: Final[MsgspecCodec[models.Edit]] = MsgspecCodec(models.Edit)
 
 codec_8: Final[MsgspecCodec[models.Revision]] = MsgspecCodec(models.Revision)
 """Codec of /channels/edits request_body (request application/json)."""
+
+codec_9: Final[MsgspecCodec[models.Item]] = MsgspecCodec(models.Item)
+"""Codec of /channels/drafts request_body (request application/json)."""

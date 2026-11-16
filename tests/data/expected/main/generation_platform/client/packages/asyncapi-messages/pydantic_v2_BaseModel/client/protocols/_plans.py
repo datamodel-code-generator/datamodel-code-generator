@@ -106,13 +106,23 @@ SOCKET_5: Final[ChannelPlan[models.Edit | models.Revision, Never]] = ChannelPlan
 )
 
 
-SOCKET_6: Final[
+SOCKET_6: Final[ChannelPlan[models.Item, Never]] = ChannelPlan(
+    helper_id='drafts',
+    operation=OperationRef(pointer='/channels/drafts'),
+    call=_operations.OPERATION_6,
+    fingerprint='1e55366889c1d9c1e887d9b61c19533243925cbbd911caaf2ca2de58fdc824fa',
+    encoder=model_bindings.codec_13,
+    receive_codec='none',
+)
+
+
+SOCKET_7: Final[
     ChannelPlan[Never, models.AlertsRaisedPayload | models.AlertsClearedPayload]
 ] = ChannelPlan(
     helper_id='alerts',
     operation=OperationRef(pointer='/channels/alerts'),
-    call=_operations.OPERATION_6,
+    call=_operations.OPERATION_7,
     fingerprint='4883df08698ef3134940765aa539f446689641ca5ef629672bff85e46981d7fa',
     send_codec='none',
-    decoder=model_bindings.codec_13,
+    decoder=model_bindings.codec_14,
 )

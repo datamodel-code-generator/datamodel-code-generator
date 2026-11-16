@@ -6,6 +6,15 @@ Every change a user meets when upgrading, newest first. To upgrade from a releas
 
 ## Unreleased
 
+### Generated AsyncAPI clients leave out a channel whose payload format generation does not read (unreleased) { #asyncapi-client-unknown-payload-format }
+
+A channel is now left out with a `message_content_types` warning where an AsyncAPI 2 message trait gives a `schemaFormat` that generation does not read, such as `application/schema;version=draft-07`, which generation refuses when the message itself gives it, or where a message's `contentType` is no media type but ends in `+json` (`x+json`). Such channels were generated with a JSON codec.
+
+- **Affects:** experimental features: `cli-option.generate-client`
+- **What to change:** Write the format as the AsyncAPI specification lists it (`application/schema+json;version=draft-07`) and the content type as a media type (`application/x+json`).
+- **Pull requests and issues:** [#6927](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6927)
+- **Source:** the release notes
+
 ### `generate()` with a server or client target raises `Error` for a preset that does not fit (unreleased) { #target-preset-error-class }
 
 With `generate_server` or `generate_client`, a `preset` that does not match `target_python_version` raises `datamodel_code_generator.Error`, as a model-only run does, with the same message. It raised `datamodel_code_generator.preset.PresetError`, which is not an `Error`. The command line is unchanged.
@@ -13,6 +22,14 @@ With `generate_server` or `generate_client`, a `preset` that does not match `tar
 - **Affects:** experimental features: `cli-option.generate-server`, `cli-option.generate-client`
 - **What to change:** Catch `datamodel_code_generator.Error` where the code caught `PresetError` around a target run.
 - **Pull requests and issues:** [#6851](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6851)
+- **Source:** the release notes
+
+### Generated AsyncAPI clients read a payload's schema format and wrapper as the models do (unreleased) { #asyncapi-client-payload-formats }
+
+A channel is now generated whose message payload names its `schemaFormat` in another case or with spaces (`application/SCHEMA+JSON;version=draft-07`, `application/schema+json ; version=draft-07`), in an OpenAPI format (`application/vnd.oai.openapi;version=3.0.0`), or in such a spelling through an AsyncAPI 2 message trait; such channels were skipped as `message_content_types`. A payload written `{schema: ...}` without a `schemaFormat` now binds the model generated for its `schema`: where it was the channel's only message, generation failed (`The use has no generated native type`), and beside another JSON message the channel was skipped as `several_messages` (`a message's payload declares no type`). Avro, Protocol Buffers and XML Schema payloads, also when a trait gives the format, stay left out.
+
+- **Affects:** experimental features: `cli-option.generate-client`
+- **Pull requests and issues:** [#6927](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6927)
 - **Source:** the release notes
 
 ### A union `--collapse-root-models` writes as list items names the tag field its site writes (unreleased) { #discriminator-inlined-list-items }

@@ -24,10 +24,11 @@ import re
 from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
-from datamodel_code_generator._document_reader import as_mapping, descend
+from datamodel_code_generator._document_reader import as_mapping, descend, held_schema, schema_format_media_type
 from datamodel_code_generator._json_pointer import join_pointer, pointer_tokens, reference_tokens
-from datamodel_code_generator._runtime.model_codecs.media import is_token
+from datamodel_code_generator._runtime.model_codecs.media import is_token, media_kind
 from datamodel_code_generator._target_naming import PATH_PLACEHOLDER, path_placeholders
+from datamodel_code_generator.parser.asyncapi import schema_format_kind
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Mapping, Sequence
@@ -76,7 +77,9 @@ _URL_SCHEMES: Final = {"ws": "http", "wss": "https", "http": "http", "https": "h
 WebSocket's `wss` is TLS, as `https` is, and its `ws` plain, as `http` is."""
 _EVENT_STREAM: Final = "text/event-stream"
 _V2_ACTIONS: Final[tuple[tuple[str, Action], ...]] = (("subscribe", "send"), ("publish", "receive"))
-_JSON_FORMATS: Final = re.compile(r"application/(vnd\.aai\.asyncapi|schema)(\+(json|yaml))?(;.*)?")
+_CODED_FORMATS: Final = frozenset(("asyncapi", "jsonschema", "openapi"))
+"""The kinds of `schemaFormat`, the parser's, whose payloads a client codes: those it reads in place, not the Avro,
+Protocol Buffers and XML Schema ones it converts; the format a trait gives, which the parser does not read, too."""
 _SCHEME: Final = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://")
 _DEFAULT_MEDIA: Final = "application/json"
 _TRAIT_FIELDS: Final = frozenset(("contentType", "schemaFormat", "security"))
@@ -252,12 +255,7 @@ class _Document:
 
 def _media(message: Mapping[str, YamlValue], default: str) -> str:
     content = message.get("contentType")
-    return _essence(content if isinstance(content, str) else default)
-
-
-def _essence(media: str) -> str:
-    """Return a media type without its parameters, lowercase."""
-    return media.partition(";")[0].strip().lower()
+    return schema_format_media_type(content if isinstance(content, str) else default)
 
 
 def _scheme_of(url: str) -> tuple[str | None, str]:
@@ -320,10 +318,6 @@ def _opened_at(written: str, variables: YamlValue, scheme: str | None) -> tuple[
 def _revalued(variable: Mapping[str, YamlValue], values: Sequence[YamlValue]) -> dict[str, YamlValue]:
     """Return a server variable with another default, `values[0]`, and other allowed values, the rest."""
     return {**variable, "default": values[0], **({"enum": list(values[1:])} if "enum" in variable else {})}
-
-
-def _json(media: str) -> bool:
-    return media == _DEFAULT_MEDIA or media.endswith("+json")
 
 
 def _unsubstituted(server: ReadServer) -> str | None:
@@ -452,7 +446,7 @@ def _streams(document: _Document, holder: Tokens, owner: Mapping[str, YamlValue]
         str(name).lower() in _NEGOTIATED
         and len(fixed := _fixed_values(document, value)) == 1
         and isinstance(media := fixed[0], str)
-        and _essence(media) == _EVENT_STREAM
+        and schema_format_media_type(media) == _EVENT_STREAM
         for name, value in shape[0].items()
     )
 
@@ -1059,9 +1053,10 @@ class _Reader:
         payload = message.get("payload")
         schema_format = message.get("schemaFormat")
         tokens: Tokens = (*declaration, "payload")
-        if isinstance(payload, dict) and "schemaFormat" in payload and "schema" in payload:
-            schema_format, payload, tokens = payload["schemaFormat"], payload["schema"], (*tokens, "schema")
-        if isinstance(schema_format, str) and not _JSON_FORMATS.fullmatch(schema_format):
+        if (held := held_schema(payload, schema_format)) is not None:
+            payload, schema_format = held
+            tokens = (*tokens, "schema")
+        if isinstance(schema_format, str) and schema_format_kind(schema_format) not in _CODED_FORMATS:
             skips.append(("message_content_types", f"the payload of message {pointer} is a {schema_format} schema"))
             return
         if payload is None:
@@ -1078,11 +1073,11 @@ class _Reader:
         binary = encoding is None and schema.get("format") == "binary"
         if media == _EVENT_STREAM:
             codec: Literal["json", "utf8", "bytes", "event"] = "event"
-        elif media == "application/octet-stream" or (binary and not _json(media)):
+        elif media == "application/octet-stream" or (binary and media_kind(media) != "json"):
             codec = "bytes"
         elif media == "text/plain" and encoding is None and schema.get("type") == "string":
             codec = "utf8"
-        elif _json(media):
+        elif media_kind(media) == "json":
             codec = "json"
         else:
             content = media if encoding is None else f"{media} encoded as {encoding}"
