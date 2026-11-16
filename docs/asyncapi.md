@@ -170,8 +170,8 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
 - Channels at one address on the same servers (in any order; a channel that lists none is served on all of them) are
   one connection: one attribute, named after the words of the address (`root` for `/`), whose `connect(...)` opens the
   handshake of the first of them and sends and receives the messages of them all, told apart as the messages of one
-  channel are. Their handshakes must take the same parameters, in any order, offer the same subprotocols and need the
-  same security (a `description` may differ), or the connection is left out.
+  channel are. Their handshakes must take the same parameters, in any order and of the same model types, offer the
+  same subprotocols and need the same security (a `description` may differ), or the connection is left out.
   `--client-operations` keys it by the reference of its first channel.
 - The messages of an AsyncAPI 3 operation's `reply` go the other way on the operation's connection: the client
   receives the replies to what it sends, or sends those to what it receives, among the other messages, and no request
@@ -184,7 +184,8 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
   `application/octet-stream`, `image/png` or `application/x-msgpack`, as `bytes`; a text message (`text/plain`,
   `text/csv`, ...) whose models type a string, an enum of strings among them, as `str`, as is an
   `application/octet-stream` message whose models type an enum of strings. A text message of another type, and a
-  form or multipart message, leave the channel out. A direction that carries no message is typed `Never`.
+  form or multipart message whose payload is not a binary string, leave the channel out. A direction that carries no
+  message is typed `Never`.
 - A direction of several messages is typed as the union of their types. A received binary frame is the bytes message
   and a text frame the text or JSON message; several JSON messages are told apart by a tag, a property that every
   payload model declares as required with one string value of its own (a `const` or a one-value `enum`), when no
@@ -202,8 +203,8 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
   `query` or `headers` schema the models type as something else than an object, such as a string, leaves the channel
   out.
 - A `Sec-WebSocket-Protocol` header whose type admits fixed values alone (a `const`, an `enum`, or a `oneOf` of
-  `const`s, as the models type them), each a token, offers them as the subprotocols of the handshake, in order; the
-  server selects one. Any other header the handshake
+  `const`s, as the models type them, also through a root model or alias of a union of them), each a token, offers
+  them as the subprotocols of the handshake, in order; the server selects one. Any other header the handshake
   writes itself (`Sec-WebSocket-Protocol` without such values, `Connection`, `Upgrade`, `Host`, `Sec-WebSocket-Key`,
   `Sec-WebSocket-Version`, `Sec-WebSocket-Extensions`, ...) is not sent where it is optional, and leaves the channel
   out where it is required.

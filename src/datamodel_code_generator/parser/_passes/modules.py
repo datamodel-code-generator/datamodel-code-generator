@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast, get_args
 
 from typing_extensions import Protocol, Unpack
 
-from datamodel_code_generator import CollapseRootModelsNameStrategy, FieldTypeCollisionStrategy, ReuseScope
+from datamodel_code_generator import CollapseRootModelsNameStrategy, FieldTypeCollisionStrategy
 from datamodel_code_generator._constraint_applicability import (
     ITEM_COUNT_KEYWORDS,
     STRING_KEYWORDS,
@@ -55,7 +55,6 @@ from datamodel_code_generator._reference_graph import (
 from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator._shared_types import _CollapseRootModelsRecursionError
 from datamodel_code_generator._user_keys import class_field_key, class_key, model_type_override, record_written_as
-from datamodel_code_generator.enums import DefaultValueType
 from datamodel_code_generator.imports import IMPORT_OPTIONAL, IMPORT_UNION, Import
 from datamodel_code_generator.model._decisions.collapse_eligibility import (
     CollapseSiteFacts,
@@ -1110,8 +1109,6 @@ def replace_unique_list_to_set(parser: ModulesHost, models: list[DataModel]) -> 
     list for the decision on the final types (``parser/_unique_sets.py``). The models the items name are read once
     root models collapsed (``replace_unhashable_unique_set_to_list``).
     """
-    if not parser.use_unique_items_as_set or parser.use_unique_items_as_set_by_value:
-        return
     for model in aliases_first(models):
         for model_field in model.fields:
             if (
@@ -1137,8 +1134,6 @@ def replace_merged_unique_list_to_set(parser: ModulesHost, models: list[DataMode
     (``additional_properties_holder``). Under --use-unique-items-as-set-by-value the decision on the final types writes
     them (``parser/_unique_sets.py``).
     """
-    if not parser.use_unique_items_as_set or parser.use_unique_items_as_set_by_value:
-        return
     keeps_tuples = parser.use_tuple_for_closed_arrays
     for model in aliases_first(models):
         merged = merged_models(parser, model)
@@ -1215,8 +1210,6 @@ def replace_unhashable_unique_set_to_list(parser: ModulesHost, models: list[Data
     A field takes a copy of its type tree, as collapse shares the nodes of a root type with every holder, whose sets
     at those paths are lists (``rewrite_field_copy`` by path, as the decision reads where each set sits).
     """
-    if not parser.use_unique_items_as_set or parser.use_unique_items_as_set_by_value:
-        return
     defaults = parser._unique_set_defaults  # noqa: SLF001
     keeps_tuples = parser.use_tuple_for_closed_arrays
     config = generic_base_config(parser)
@@ -1326,8 +1319,6 @@ def set_reference_default_value_to_field(
 
 def reuse_model(parser: ReuseHost, models: list[DataModel], require_update_action_models: list[str]) -> None:
     """Replace the duplicates among the models of a module by empty subclasses of the first, or remove them."""
-    if not parser.reuse_model or parser.reuse_scope == ReuseScope.Tree:
-        return
     duplicates = []
     updated_models: list[DataModel] = []
     reuse_candidates = compared_models(parser, REUSE_MODEL, models.copy())
@@ -1400,9 +1391,6 @@ def collapse_root_models(  # noqa: PLR0913, PLR0917
     internal_modules: set[ModulePath] | None = None,
 ) -> None:
     """Inline the root models that the models of a module reference, under ``--collapse-root-models``."""
-    if not parser.collapse_root_models:
-        return
-
     with parser.generation_store._collapse_root_reference_scope():  # noqa: SLF001
         collapse_root_models_in_scope(
             parser,
@@ -2050,8 +2038,6 @@ def set_default_enum_member(
     models: list[DataModel],
 ) -> None:
     """Convert matching defaults to enum members while preserving unmatched list values."""
-    if not parser.set_default_enum_member and DefaultValueType.Enum not in parser.deserialize_default_value_types:
-        return
     for model in models:
         for model_field in model.fields:
             if model_field.default is None:
@@ -2091,9 +2077,6 @@ def sort_models(
     *,
     use_deferred_annotations: bool,
 ) -> None:
-    if not parser.keep_model_order:
-        return
-
     kept = _kept_model_order(
         models,
         imports,
@@ -2107,9 +2090,6 @@ def change_field_name(
     parser: ModulesHost,
     models: list[DataModel],
 ) -> None:
-    if not (parser.data_model_type.SUPPORTS_FIELD_RENAMING and parser.data_model_type.NORMALIZES_FIELD_NAMES):
-        return
-
     rename_type = renames_colliding_types(parser)
     all_class_names = {cast("str", model.class_name) for model in models if model.class_name} if rename_type else set()
     resolver: ModelResolver | None = None
@@ -2455,8 +2435,6 @@ def type_const_narrowed_values(
     makes it a Literal or None, keeps its type. The values that keep the enum type are warned about once msgspec
     tags are final. A value that collapse shares between the root model and its holders is replaced in each holder.
     """
-    if not parser._const_narrowed_values:  # noqa: SLF001
-        return
     narrowed: dict[int, DataType] = {}
     for model in models:
         for field in model.fields:
@@ -2484,8 +2462,6 @@ def type_const_narrowed_values(
 
 def set_one_literal_on_default(parser: ModulesHost, models: list[DataModel]) -> None:
     """Write the default, required and nullability one literal gives its field (``decide_literal_default``)."""
-    if not parser.use_one_literal_as_default:
-        return
     for model in models:
         for model_field in model.fields:
             if len(literals := model_field.data_type.literals) != 1:
@@ -2668,9 +2644,6 @@ def rename_fields_hiding_types(parser: ModulesHost, models: list[DataModel], *, 
     ``--field-type-collision-strategy rename-type`` every type of the class named like the field gets a new name
     instead: a root model that the ``parent`` strategy kept and the inner model that took its name are two.
     """
-    model_type = parser.data_model_type
-    if not model_type.SUPPORTS_FIELD_RENAMING:
-        return
     declarations = [(model, fields) for model in models if (fields := same_named_fields(parser, model))]
     if not declarations:
         return
@@ -2794,8 +2767,6 @@ def apply_field_type_overrides(parser: ModulesHost, models: list[DataModel]) -> 
 
     Scoped overrides take priority over model-level overrides.
     """
-    if not parser._type_override_imports:  # noqa: SLF001
-        return
     overrides = parser._type_override_imports  # noqa: SLF001
     for model in models:
         derived_import = derived_override_import(parser, model)
@@ -2909,8 +2880,6 @@ def apply_base_class_type_overrides(parser: ModulesHost, models: list[DataModel]
     decision phase, reads it as the only description of the class that replaces it. A base that names a stand-in of
     the parse is left to ``apply_base_stand_in_imports``.
     """
-    if not parser._model_type_override_imports:  # noqa: SLF001
-        return
     stand_ins = parser._base_stand_in_imports  # noqa: SLF001
     _replace_bases_by_imports(
         parser, models, lambda reference: reference is None or model_key_of(reference) not in stand_ins

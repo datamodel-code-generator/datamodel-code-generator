@@ -1,5 +1,7 @@
 # asyncapi-message-codecs pydantic_v2.BaseModel
   warning UserWarning: <root>/asyncapi_message_codecs_pydantic_v2_basemodel: Skipping channel 'counts', which uses message content types (AsyncAPI 2.0) that the client does not support: /channels/counts: message /channels/counts/messages/count has content type text/plain
+  warning UserWarning: <root>/asyncapi_message_codecs_pydantic_v2_basemodel: Skipping channel 'forms', which uses message content types (AsyncAPI 2.0) that the client does not support: /channels/forms: message /channels/forms/messages/form has content type application/x-www-form-urlencoded
+  warning UserWarning: <root>/asyncapi_message_codecs_pydantic_v2_basemodel: Skipping channel 'parts', which uses message content types (AsyncAPI 2.0) that the client does not support: /channels/parts: message /channels/parts/messages/part has content type multipart/form-data
     states 1 text str'running' raw=b'running'
     server GET /states [] | closed 1000 ''
     tables 1 text str'line,count\n1,2\n' raw=b'line,count\n1,2\n'

@@ -102,6 +102,16 @@ COVERAGE_RUNS = (
         "--input tests/data/openapi/incomplete_model_defaults.yaml --input-file-type openapi "
         "--omit-incomplete-model-defaults"
     ),
+    (
+        "--input tests/data/jsonschema/extra_fields.json --input-file-type jsonschema --extra-fields forbid "
+        "--use-generic-base-class --keep-model-order --use-one-literal-as-default --set-default-enum-member "
+        """--use-unique-items-as-set --type-overrides '{"Baz": "decimal.Decimal"}'"""
+    ),
+    "--input tests/data/jsonschema/enum_const_positions.json --input-file-type jsonschema --read-const-beside-enum",
+    (
+        "--input tests/data/openapi/discriminator_msgspec_tagged_base_redefined_field.yaml --input-file-type openapi "
+        "--output-model-type msgspec.Struct"
+    ),
 )
 """Runs that reach the passes no golden run reaches, each under the condition it names."""
 
@@ -348,7 +358,11 @@ def test_decision_phase_runs_the_registry_after_the_generic_base_class(
         )
 
     parser = DecidingParser(
-        DATA / "openapi" / "modular.yaml", collapse_root_models=True, formatters=[Formatter.BUILTIN]
+        DATA / "openapi" / "modular.yaml",
+        collapse_root_models=True,
+        use_generic_base_class=True,
+        extra_fields="forbid",
+        formatters=[Formatter.BUILTIN],
     )
     trace = check_pass_pipeline.call_trace(parser.parse)
     start = trace.index("apply_generic_base_class")

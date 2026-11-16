@@ -19,7 +19,6 @@ from datamodel_code_generator._document_reader import ArrayIndexOutOfRangeError,
 from datamodel_code_generator._json_pointer import decode_token, fragment_pointer, is_pointer_fragment
 from datamodel_code_generator._json_schema import (
     INSTANCE_DATA_KEYWORDS,
-    SCHEMA_MAP_KEYS,
     SCHEMA_POSITIONS,
     admitted_types,
     json_value_type,
@@ -469,9 +468,6 @@ reads it through its view.
 _NON_SCHEMA_KEYWORDS: Final = frozenset(key for key, role in _DOCUMENT_KEYWORDS.items() if role == "data")
 """The keywords whose values hold no schemas (data); the read of a whole document reads every other key (row
 ``legacy-read-document-every-key``), `$ref` edges below the root only those of ``_REF_EDGE_KEYWORDS``."""
-_NAMED_ENTRY_MAP_KEYWORDS: Final = SCHEMA_MAP_KEYS | {
-    key for key, role in _DOCUMENT_KEYWORDS.items() if role == "entries"
-}
 _DocumentEntries = Literal["object", "names", "maps"]
 
 

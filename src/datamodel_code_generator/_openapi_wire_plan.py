@@ -173,7 +173,8 @@ def body_kind(media_type: str, use: TypeUseBinding | None) -> MediaKind:
 def message_kind(media_type: str) -> MediaKind:
     """Return the kind of body a message of a normalized media type is read as: its own, binary for a form or multipart.
 
-    A frame or an event carries no form encoding, so a form or multipart message travels as the octets of its value.
+    A frame or an event carries no form encoding, so a form or multipart message travels as the octets of its value
+    where its models hold it as raw octets, and not at all otherwise (`message_codec`).
     """
     return "binary" if (kind := media_kind(media_type)) in FORMS else kind
 
@@ -182,14 +183,17 @@ def message_codec(media_type: str, *, octets: bool, text: bool, string: bool, st
     """Return how an AsyncAPI message of a media type travels, as its models decide, or None where no codec carries it.
 
     A `text/event-stream` message is a server-sent event, whose data its models decode as JSON. Any other travels as a
-    body of its kind (`message_kind`) does (`body_kind`, by the `octets` and `text` its payload's models give it): JSON
+    body of its kind does (`body_kind`, by the `octets` and `text` its payload's models give it): JSON
     coded by its models, binary as its bytes, and text as UTF-8 where its models type it as a string (`string`, its
-    lexical kind); text of another type has no codec. The data of an event on a server-sent event stream (`stream`)
-    is text, so a JSON message there is coded by its models whatever they hold.
+    lexical kind); text of another type has no codec. A form or multipart message travels as its bytes where its models
+    hold its payload as raw octets, a binary string, and has no codec otherwise: its structured payload needs the form
+    encoding no frame or event gives. The data of an event on a server-sent event stream (`stream`) is text, so a JSON
+    message there is coded by its models whatever they hold.
     """
     if media_type == EVENT_STREAM:
         return "event"
-    kind = message_kind(media_type)
+    if (kind := media_kind(media_type)) in FORMS:
+        return "bytes" if octets else None
     carried = kind if stream and kind == "json" else _carried(kind, octets=octets, text=text)
     return None if carried == "text" and not string else _MESSAGE_CODECS[carried]
 

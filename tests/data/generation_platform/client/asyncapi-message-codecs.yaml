@@ -74,6 +74,27 @@ channels:
         payload:
           type: string
           format: binary
+  forms:
+    address: /forms
+    messages:
+      form:
+        contentType: application/x-www-form-urlencoded
+        payload:
+          type: object
+          properties:
+            line:
+              type: integer
+  parts:
+    address: /parts
+    messages:
+      part:
+        contentType: multipart/form-data
+        payload:
+          type: object
+          properties:
+            file:
+              type: string
+              format: binary
 operations:
   sendState:
     action: send
@@ -103,6 +124,14 @@ operations:
     action: receive
     channel:
       $ref: '#/channels/uploads'
+  sendForm:
+    action: send
+    channel:
+      $ref: '#/channels/forms'
+  receivePart:
+    action: receive
+    channel:
+      $ref: '#/channels/parts'
 components:
   schemas:
     State:

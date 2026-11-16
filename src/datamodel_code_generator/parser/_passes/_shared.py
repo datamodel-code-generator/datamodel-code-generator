@@ -279,7 +279,8 @@ def _restore_inherited_field_names_for_unique_aliases(
     fields: list[DataModelFieldBase],
     inherited_fields: Mapping[str, DataModelFieldBase],
 ) -> bool:
-    """Keep a required inherited field's Python name when wire aliases must be unique."""
+    """Keep the Python name of every required inherited field when wire aliases must be unique; True when one moved."""
+    restored = False
     for field in fields:
         if not (original_name := field.original_name):  # pragma: no cover - msgspec fields come from named properties
             continue
@@ -300,8 +301,9 @@ def _restore_inherited_field_names_for_unique_aliases(
                 continue
             builder.rename_field(colliding_field, field.name, alias=colliding_field.original_name)
             builder.rename_field(field, inherited_name)
-            return True
-    return False
+            restored = True
+            break
+    return restored
 
 
 class GraphBuilderHost(Protocol):

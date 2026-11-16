@@ -2,3 +2,5 @@
     rooms chat.v2
     server GET /rooms?limit=5&room=lobby [sec-websocket-protocol: chat.v1, chat.v2, x-trace: trace-1] | closed 1000 ''
     server GET /feeds [] | closed 1000 ''
+    lobby lobby.v1
+    server GET /lobby [sec-websocket-protocol: lobby.v1, lobby.v2] | closed 1000 ''

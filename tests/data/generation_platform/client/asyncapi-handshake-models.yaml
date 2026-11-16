@@ -52,7 +52,25 @@ channels:
         contentType: text/plain
         payload:
           type: string
+  lobby:
+    address: /lobby
+    bindings:
+      ws:
+        headers:
+          type: object
+          properties:
+            Sec-WebSocket-Protocol:
+              $ref: '#/components/schemas/Protocols'
+    messages:
+      note:
+        contentType: text/plain
+        payload:
+          type: string
 operations:
+  receiveNote:
+    action: receive
+    channel:
+      $ref: '#/channels/lobby'
   receiveLine:
     action: receive
     channel:
@@ -63,6 +81,14 @@ operations:
       $ref: '#/channels/feeds'
 components:
   schemas:
+    Protocols:
+      oneOf:
+        - $ref: '#/components/schemas/LobbyV1'
+        - $ref: '#/components/schemas/LobbyV2'
+    LobbyV1:
+      const: lobby.v1
+    LobbyV2:
+      const: lobby.v2
     Paging:
       type: object
       properties:

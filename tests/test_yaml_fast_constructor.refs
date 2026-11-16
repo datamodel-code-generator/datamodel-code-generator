@@ -98,6 +98,7 @@ openapi/allof_property_bool_schema.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_required.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_required_fields.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_required_inherited_collision.yaml	yaml_fast_constructor/parity.txt
+openapi/allof_required_inherited_collisions.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_required_inherited_dataclass_metadata.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_required_inherited_external/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_required_inherited_external/schemas/inherited.yaml	yaml_fast_constructor/parity.txt

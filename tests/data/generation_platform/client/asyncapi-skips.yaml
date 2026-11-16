@@ -313,7 +313,43 @@ channels:
       line:
         payload:
           type: string
+  localIds:
+    address: /ids
+    servers:
+      - $ref: '#/servers/socket'
+    bindings:
+      ws:
+        headers:
+          type: object
+          properties:
+            X-Id:
+              $ref: '#/components/schemas/Id'
+    messages:
+      line:
+        payload:
+          type: string
+  sharedIds:
+    address: /ids
+    servers:
+      - $ref: '#/servers/socket'
+    bindings:
+      ws:
+        headers:
+          allOf:
+            - $ref: 'asyncapi-other.yaml#/components/schemas/IdHeaders'
+    messages:
+      line:
+        payload:
+          type: string
 operations:
+  receiveLocalIds:
+    action: receive
+    channel:
+      $ref: '#/channels/localIds'
+  receiveSharedIds:
+    action: receive
+    channel:
+      $ref: '#/channels/sharedIds'
   receiveGuarded:
     action: receive
     channel:
@@ -580,6 +616,8 @@ operations:
     security: *either
 components:
   schemas:
+    Id:
+      type: string
     Line:
       allOf:
         - type: string

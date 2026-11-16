@@ -19,6 +19,13 @@ operations:
       $ref: '#/channels/alerts'
 components:
   schemas:
+    Id:
+      type: integer
+    IdHeaders:
+      type: object
+      properties:
+        X-Id:
+          $ref: '#/components/schemas/Id'
     Report:
       type: object
       properties:
