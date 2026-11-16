@@ -56,6 +56,14 @@ A channel is now generated whose message payload names its `schemaFormat` in ano
 - **Pull requests and issues:** [#6927](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6927)
 - **Source:** the release notes
 
+### Generated clients report a name that explicit names take twice once, sorted, as servers do (unreleased) { #client-name-collision-report }
+
+With `--generate-client`, explicit argument names (`parameter_names`, `--aliases`), method names (`name` of `--client-operations`, sorted within each resource) or the `resource` of channel settings that take one name three or more times report it once instead of once per repeat, and several such names are reported in sorted order after the reserved-name and `--aliases` diagnostics of the operation's parameters (`The arguments of GET /items take 'b' twice; ... take 'a' twice` becomes `... take 'a' twice; ... take 'b' twice`); the "names no parameter" error still follows them. An explicit method name that is a reserved member name (`close`) taken twice is reported as reserved only, without the collision line. Servers already reported collisions this way.
+
+- **Affects:** experimental features: `cli-option.generate-client`
+- **Pull requests and issues:** [#6979](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6979)
+- **Source:** the release notes
+
 ### A union `--collapse-root-models` writes as list items names the tag field its site writes (unreleased) { #discriminator-inlined-list-items }
 
 Under `--collapse-root-models`, a discriminated union that is a named schema and is used as the items of an array is written into the list with `discriminator=` by the Python name of the tag property, decided before the union itself is written. Where its variants do not all carry that tag, Pydantic refused the module when it was imported: where the variants name the field otherwise, as a property named like the Enum that types it is renamed (`Kind_1`, #6874), and where the union itself is written without `discriminator=` and a variant keeps an untagged field (#6892). Such a list now names the field the union names where the union is written with `discriminator=`, and else is written without one. A list whose variants carry the tag is unchanged, so output that imported before is unchanged.

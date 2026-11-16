@@ -26,7 +26,7 @@ from datamodel_code_generator._client.sockets import direction_messages
 from datamodel_code_generator._openapi_wire_plan import EVENT_STREAM
 from datamodel_code_generator._target_contract import ChannelSkip
 from datamodel_code_generator._target_naming import NameScope
-from datamodel_code_generator._target_operations import CLIENT, local, resolve_settings
+from datamodel_code_generator._target_operations import CLIENT, claim, local, resolve_settings
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
@@ -38,6 +38,7 @@ if TYPE_CHECKING:
         OperationContract,
         SourceLocation,
     )
+    from datamodel_code_generator._target_naming import Candidate
 
 __all__ = ("channel_protocols", "directed")
 
@@ -122,8 +123,7 @@ def _names(request: TargetRequest, config: ClientGenerationConfig, channels: tup
     names = request.batch.names
     assert names is not None
     given: dict[int, tuple[str, str]] = {}
-    candidates = []
-    taken = NameScope(folded=False, target_python_version=names.python_version)
+    items: list[str | Candidate] = []
     refused: list[Diagnostic] = []
     pointers = [channel.use_site.pointer for channel in channels]
     for index, channel in enumerate(channels):
@@ -131,23 +131,22 @@ def _names(request: TargetRequest, config: ClientGenerationConfig, channels: tup
         assert handshake is not None
         if (found := settings.get(pointers[index])) is not None and (resource := found[1].resource):
             given[index] = resource, (at := f"operations[{found[0]}].resource")
+            items.append(resource)
             if "." in resource:
                 refused.append(_refusal("E_CONFIG_VALUE", at, "A channel's resource must be one Python identifier"))
-            elif not taken.take(resource):
-                message = f"The resource {stable_repr(resource)} names more than one channel"
-                refused.append(_refusal("E_NAME_COLLISION", at, message))
         else:
-            basis = "_".join(_WORDS.findall(channel.name)) or "root"
-            candidates.append((index, (names.function(basis), local(handshake), ())))
-    scope = NameScope(
-        {*RESERVED_MEMBERS, *(name for name, _ in given.values())},
-        folded=False,
-        target_python_version=names.python_version,
+            items.append((names.function("_".join(_WORDS.findall(channel.name)) or "root"), local(handshake), ()))
+    chosen, taken = claim(
+        names, NameScope(), items, RESERVED_MEMBERS, {name for name, _ in given.values() if "." in name}
     )
-    claimed = dict(
-        zip((index for index, _ in candidates), names.claim(scope, [item for _, item in candidates]), strict=True)
+    refused.extend(
+        _refusal(
+            "E_NAME_COLLISION",
+            [at for resource, at in given.values() if resource == name][1],
+            f"The resource {stable_repr(name)} names more than one channel",
+        )
+        for name in taken
     )
-    chosen = [given[index][0] if index in given else claimed[index] for index in range(len(channels))]
     if not refused:
         refused.extend(
             _refusal(

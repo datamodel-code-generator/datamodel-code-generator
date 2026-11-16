@@ -838,6 +838,27 @@
     "model": {"parent_scoped_naming": true, "naming_strategy": "full-path"},
     "modules": [["client", "resources", "default", "_sync.py"], ["client", "types", "default", "_operations.py"]]
   },
+  "name-repeats": {
+    "input": "name-repeats.yaml",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1items/get",
+          "parameter_names": [
+            {"in_": "query", "name": "p1", "python_name": "b"},
+            {"in_": "query", "name": "p2", "python_name": "a"},
+            {"in_": "query", "name": "p3", "python_name": "b"},
+            {"in_": "query", "name": "p4", "python_name": "a"},
+            {"in_": "query", "name": "p5", "python_name": "b"},
+            {"in_": "query", "name": "p6", "python_name": "self"}
+          ]
+        },
+        {"ref": "/paths/~1a/get", "name": "m"},
+        {"ref": "/paths/~1b/get", "name": "m"},
+        {"ref": "/paths/~1c/get", "name": "m"}
+      ]
+    }
+  },
   "child-collision": {
     "input": "names.yaml",
     "config": {
@@ -6427,6 +6448,7 @@
         {"ref": "/channels/market", "resource": "market.feed"},
         {"ref": "/channels/ticker", "resource": "feed"},
         {"ref": "/channels/audio", "resource": "feed"},
+        {"ref": "/channels/status", "resource": "feed"},
         {"ref": "/channels/nope", "resource": "nope"}
       ]
     }
