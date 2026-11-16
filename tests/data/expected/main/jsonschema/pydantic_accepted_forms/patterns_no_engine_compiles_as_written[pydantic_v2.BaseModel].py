@@ -74,6 +74,21 @@ class DifferenceAfterRange(RootModel[constr(pattern=r'^[a-z0-9--\p{N}]+$')]):
     root: constr(pattern=r'^[a-z0-9--\p{N}]+$')
 
 
+class HexEscapeRange(RootModel[constr(pattern=r'^[a-\x7a-\w]+$')]):
+    root: constr(pattern=r'^[a-\x7a-\w]+$')
+
+
+class BracedEscapeRange(RootModel[constr(pattern=r'^[a-\x{7a}-\w]+$')]):
+    root: constr(pattern=r'^[a-\x{7a}-\w]+$')
+
+
+class OctalEscapeRange(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'^[\60-\71-\w]+$')
+
+
 class Letters(RootModel[constr(pattern=r'^\p{L}+$')]):
     root: constr(pattern=r'^\p{L}+$')
 

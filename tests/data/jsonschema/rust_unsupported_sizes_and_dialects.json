@@ -57,6 +57,18 @@
       "type": "string",
       "pattern": "^[a-z0-9--\\p{N}]+$"
     },
+    "HexEscapeRange": {
+      "type": "string",
+      "pattern": "^[a-\\x7a-\\w]+$"
+    },
+    "BracedEscapeRange": {
+      "type": "string",
+      "pattern": "^[a-\\x{7a}-\\w]+$"
+    },
+    "OctalEscapeRange": {
+      "type": "string",
+      "pattern": "^[\\60-\\71-\\w]+$"
+    },
     "Letters": {
       "type": "string",
       "pattern": "^\\p{L}+$"

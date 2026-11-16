@@ -69,6 +69,21 @@ DifferenceAfterRange = TypeAliasType(
 )
 
 
+HexEscapeRange = TypeAliasType(
+    "HexEscapeRange", Annotated[str, Field(pattern=r'^[a-\x7a-\w]+$')]
+)
+
+
+BracedEscapeRange = TypeAliasType(
+    "BracedEscapeRange", Annotated[str, Field(pattern=r'^[a-\x{7a}-\w]+$')]
+)
+
+
+OctalEscapeRange = TypeAliasType(
+    "OctalEscapeRange", Annotated[str, Field(pattern=compile('^[\\60-\\71-\\w]+$'))]
+)
+
+
 Letters = TypeAliasType("Letters", Annotated[str, Field(pattern=r'^\p{L}+$')])
 
 
