@@ -15,6 +15,7 @@ from typing_extensions import override
 
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._constraint_applicability import DROPPED_MULTIPLE_OF_KEY
+from datamodel_code_generator._graph_links import type_children
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
 from datamodel_code_generator._regex_syntax import python_rejects
 from datamodel_code_generator.imports import IMPORT_DECIMAL, _import_key
@@ -417,9 +418,7 @@ class DataModelField(DataModelFieldBase):
             is_container = inside_container or data_type._is_container  # noqa: SLF001
             if data_type.import_ == IMPORT_ANYURL:
                 return not is_container
-            return any(has_anyurl(child, inside_container=is_container) for child in data_type.data_types) or (
-                data_type.dict_key is not None and has_anyurl(data_type.dict_key, inside_container=is_container)
-            )
+            return any(has_anyurl(child, inside_container=is_container) for child in type_children(data_type))
 
         return has_anyurl(self.data_type, inside_container=False)
 

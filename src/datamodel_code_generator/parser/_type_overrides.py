@@ -26,6 +26,7 @@ from datamodel_code_generator._constraint_applicability import (
     untaken_minimums,
 )
 from datamodel_code_generator._container_kinds import ARRAYS, CONTAINER_FLAGS, MAPPINGS
+from datamodel_code_generator._graph_links import type_children
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._requirements import REQUIREMENTS, python_target_meets
@@ -696,8 +697,6 @@ def apply_override_to_data_type(parser: TypeOverridesHost, data_type: DataType) 
         _drop_site_constraints(parser, data_type)
         overridden = True
     # Handle nested types (List[CustomType], Optional[CustomType], etc.)
-    for nested in data_type.data_types:
+    for nested in type_children(data_type):
         overridden = apply_override_to_data_type(parser, nested) or overridden
-    if data_type.dict_key:
-        overridden = apply_override_to_data_type(parser, data_type.dict_key) or overridden
     return overridden

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
+from datamodel_code_generator._graph_links import type_children
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter
 
@@ -35,11 +36,9 @@ class HeldNullWriter(DecisionWriter, Protocol):
 
 
 def _types(data_type: DataTypeView) -> Iterator[DataTypeView]:
-    """Yield ``data_type`` and every type nested in it: members, items and dict keys."""
-    for member in data_type.data_types:
-        yield from _types(member)
-    if (dict_key := data_type.dict_key) is not None:
-        yield from _types(dict_key)
+    """Yield ``data_type`` and every type nested in it (``type_children``), each after the types it holds."""
+    for child in type_children(data_type):
+        yield from _types(child)
     yield data_type
 
 

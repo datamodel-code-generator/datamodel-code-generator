@@ -17,6 +17,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._container_kinds import GENERIC_CONTAINERS, SETS
 from datamodel_code_generator._graph import reach, reaching
+from datamodel_code_generator._graph_links import type_children
 from datamodel_code_generator._message_text import english_list, for_count
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
@@ -253,9 +254,7 @@ def _contains_model_reference(data_type: DataType) -> bool:
             and not resolved.reference.source.is_alias
         ):
             return True
-        if resolved.dict_key:
-            stack.append(resolved.dict_key)
-        stack.extend(resolved.data_types)
+        stack.extend(type_children(resolved))
     return False
 
 
@@ -291,7 +290,7 @@ def _iter_alias_references(data_type: DataType, *, in_container: bool = False) -
         and source.DEFERS_RECURSIVE_TYPE_HINT
     ):
         yield source, in_container
-    for child in (*data_type.data_types, *((data_type.dict_key,) if data_type.dict_key else ())):
+    for child in type_children(data_type):
         yield from _iter_alias_references(child, in_container=in_container)
 
 

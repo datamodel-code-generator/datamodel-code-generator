@@ -65,6 +65,7 @@ from datamodel_code_generator._graph_links import (
     data_type_children,
     drop_child_and_detached,
     nearest_field,
+    type_children,
 )
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, NodeKey, model_key_of
 from datamodel_code_generator._parse_memo import ParseMemo, bump_field, bump_model, bump_node
@@ -273,9 +274,7 @@ def _tree_nodes(roots: Iterable[DataType]) -> Iterator[DataType]:
     stack = list(roots)
     while stack:
         node = stack.pop()
-        stack.extend(node.data_types)
-        if dict_key := node.dict_key:
-            stack.append(dict_key)
+        stack.extend(type_children(node))
         yield node
 
 
@@ -1143,8 +1142,7 @@ class GenerationIndex:
         return tuple(
             owner
             for owner in owners
-            if owner is not parent
-            and (owner.dict_key is data_type or any(member is data_type for member in owner.data_types))
+            if owner is not parent and any(child is data_type for child in type_children(owner))
         )
 
     def root_collapse_reference_usage(
