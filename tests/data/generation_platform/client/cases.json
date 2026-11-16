@@ -823,6 +823,21 @@
     "model": {"duplicate_name_suffix": {"model": "Variant"}},
     "modules": [["client", "types", "default", "_operations.py"]]
   },
+  "method-collisions-parent-prefixed": {
+    "input": "method-collisions.yaml",
+    "model": {"naming_strategy": "parent-prefixed"},
+    "modules": [["client", "resources", "default", "_sync.py"], ["client", "types", "default", "_operations.py"]]
+  },
+  "method-collisions-parent-scoped": {
+    "input": "method-collisions.yaml",
+    "model": {"parent_scoped_naming": true, "naming_strategy": "numbered"},
+    "modules": [["client", "resources", "default", "_sync.py"], ["client", "types", "default", "_operations.py"]]
+  },
+  "method-collisions-parent-scoped-full-path": {
+    "input": "method-collisions.yaml",
+    "model": {"parent_scoped_naming": true, "naming_strategy": "full-path"},
+    "modules": [["client", "resources", "default", "_sync.py"], ["client", "types", "default", "_operations.py"]]
+  },
   "child-collision": {
     "input": "names.yaml",
     "config": {

@@ -28542,6 +28542,25 @@ def test_main_parent_scoped_naming_backward_compat(output_file: Path) -> None:
     )
 
 
+def test_main_parent_scoped_naming_with_primary_first(output_file: Path) -> None:
+    """Prefix an inline model with its parent's name by --parent-scoped-naming beside a strategy that prefixes none."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "naming_strategy" / "input.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--parent-scoped-naming",
+            "--naming-strategy",
+            "primary-first",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--use-root-model-type-alias"],
     option_description="""Generate RootModel as type alias format for better mypy support.
