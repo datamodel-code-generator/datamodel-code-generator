@@ -64,29 +64,27 @@ components:
     )
 
     out_dir = tmp_path / "out"
-    code = main(
-        [
-            "--input",
-            str(spec),
-            "--input-file-type",
-            "asyncapi",
-            "--output",
-            str(out_dir / "models.py"),
-            "--formatters",
-            "builtin",
-            "--target-python-version",
-            "3.11",
-            "--generate-client",
-            "httpx2",
-            "--client-output",
-            str(out_dir / "client"),
-            "--client-package",
-            "client",
-            "--client-model-package",
-            "models",
-            "--ignore-ref-siblings-by-schema-version",
-        ]
-    )
+    code = main([
+        "--input",
+        str(spec),
+        "--input-file-type",
+        "asyncapi",
+        "--output",
+        str(out_dir / "models.py"),
+        "--formatters",
+        "builtin",
+        "--target-python-version",
+        "3.11",
+        "--generate-client",
+        "httpx2",
+        "--client-output",
+        str(out_dir / "client"),
+        "--client-package",
+        "client",
+        "--client-model-package",
+        "models",
+        "--ignore-ref-siblings-by-schema-version",
+    ])
     assert code == Exit.OK
 
     helpers = (out_dir / "client" / "protocols" / "_helpers.py").read_text(encoding="utf-8")

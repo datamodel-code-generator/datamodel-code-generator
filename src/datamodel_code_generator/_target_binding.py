@@ -4291,8 +4291,7 @@ class _Contracts(_Octets):
         while True:
             written = as_mapping(self.documents.borrow(location))
             if not (
-                isinstance(written.get("$ref"), str)
-                and self.parser._ignores_ref_siblings_at(location)  # ruff: ignore[SLF001]
+                isinstance(written.get("$ref"), str) and self.parser._ignores_ref_siblings_at(location)  # ruff: ignore[private-member-access]
             ):
                 found = {**written, **found}
             if (
