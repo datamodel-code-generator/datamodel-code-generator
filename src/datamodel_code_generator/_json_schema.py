@@ -135,26 +135,35 @@ def schema_positions(
 
 @overload
 def subschema_entries(  # noqa: D418 - CodeQL flags an ellipsis body.
-    keyword: str, value: object, *, booleans: Literal[False] = False
+    keyword: str, value: object, *, booleans: Literal[False] = False, whole: Literal[False] = False
 ) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any]]]:
     """Yield the object subschemas ``keyword`` holds."""
 
 
 @overload
 def subschema_entries(  # noqa: D418
-    keyword: str, value: object, *, booleans: Literal[True]
+    keyword: str, value: object, *, booleans: Literal[True], whole: Literal[False] = False
 ) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any] | bool]]:
     """Yield the object and boolean subschemas ``keyword`` holds."""
 
 
+@overload
+def subschema_entries(  # noqa: D418
+    keyword: str, value: object, *, booleans: Literal[False] = False, whole: Literal[True]
+) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any] | list[Any]]]:
+    """Yield the object subschemas of a map ``keyword`` holds, or its object or array value whole."""
+
+
 def subschema_entries(
-    keyword: str, value: object, *, booleans: bool = False
-) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any] | bool]]:
+    keyword: str, value: object, *, booleans: bool = False, whole: bool = False
+) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any] | bool | list[Any]]]:
     """Yield each subschema that ``keyword`` holds in its value, by the keyword's shape, with its path in the schema.
 
     The path is ``(keyword, name)`` in a map (the name as text), ``(keyword, index)`` in a list and ``(keyword,)`` for
     one subschema, in document order; a member that is no JSON object, and a value of another shape, hold none.
-    ``booleans`` also yields the boolean schemas.
+    ``booleans`` also yields the boolean schemas. ``whole`` (row ``legacy-cycle-walk-reads-values-whole``, the check
+    for a `$ref` cycle) yields the value of a keyword of any other shape than a map whole, at ``(keyword,)``, when it
+    is an object or an array, whatever shape the keyword gives it: an array under a keyword of one schema too.
     """
     kinds = (dict, bool) if booleans else dict
     match SCHEMA_SHAPES.get(keyword), value:
@@ -162,6 +171,8 @@ def subschema_entries(
             for name, child in value.items():
                 if isinstance(child, kinds):
                     yield (keyword, str(name)), child
+        case "sequence" | "single" | "single-or-sequence", dict() | list() if whole:
+            yield (keyword,), value
         case "sequence" | "single-or-sequence", list():
             for index, child in enumerate(value):
                 if isinstance(child, kinds):

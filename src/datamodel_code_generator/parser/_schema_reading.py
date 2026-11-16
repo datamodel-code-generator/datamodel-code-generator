@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from functools import partial
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple
 
 from typing_extensions import Protocol, Sentinel
@@ -24,7 +25,7 @@ from datamodel_code_generator._json_schema import (
     json_value_type,
     schema_positions,
 )
-from datamodel_code_generator._openapi_paths import PATH_ITEM_METHODS
+from datamodel_code_generator._openapi_objects import OBJECT_MEMBERS
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator.parser._intersection import ENUM_ENTRY_NAMES, intersect_keywords, kept_enum_entries
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
@@ -436,24 +437,40 @@ def _split_json_pointer(
     return parts, reference_parts
 
 
-_NON_SCHEMA_KEYWORDS = INSTANCE_DATA_KEYWORDS | {
-    "discriminator",
-    "links",
-    "security",
-    "server",
-    "serverVariables",
-    "servers",
-}
-_NAMED_ENTRY_MAP_KEYWORDS = SCHEMA_MAP_KEYS | {
-    "callbacks",
-    "channels",
-    "content",
-    "encoding",
-    "messages",
-    "operations",
-    "parameters",
-    "responses",
-    "webhooks",
+_DOCUMENT_KEYWORDS: Final[Mapping[str, Literal["data", "entries", "edge-entries", "holder"]]] = MappingProxyType({
+    **dict.fromkeys((name for members in OBJECT_MEMBERS.values() for name in members), "holder"),
+    **dict.fromkeys(
+        (*INSTANCE_DATA_KEYWORDS, "discriminator", "links", "security", "server", "serverVariables", "servers"), "data"
+    ),
+    **dict.fromkeys(
+        (
+            *("callbacks", "channels", "content", "encoding", "messages"),
+            *("operations", "parameters", "responses", "webhooks"),
+        ),
+        "entries",
+    ),
+    **dict.fromkeys(("bindings", "paths"), "edge-entries"),
+    **dict.fromkeys(
+        (
+            *("channel", "components", "message", "messageTraits", "operationTraits", "payload", "pathItems"),
+            *("publish", "reply", "requestBodies", "schemas", "subscribe", "traits", "x-propertyNames"),
+        ),
+        "holder",
+    ),
+})
+"""The keywords of a document object beside the subschema keywords (``SCHEMA_POSITIONS``), by what their value holds.
+
+``data``: instance data, discriminator objects, links, security requirements and servers, which hold no schemas.
+``entries``: a map of named entries, whose keys are names. ``edge-entries``: one that only `$ref` edges read as names.
+``holder``: schemas or the objects around them: every member of ``OBJECT_MEMBERS`` that a later group does not list as
+data or entries (later groups win), and the keywords listed last. An extension (``x-``) is data unless listed. Each walk
+reads it through its view.
+"""
+_NON_SCHEMA_KEYWORDS: Final = frozenset(key for key, role in _DOCUMENT_KEYWORDS.items() if role == "data")
+"""The keywords whose values hold no schemas (data); the read of a whole document reads every other key (row
+``legacy-read-document-every-key``), `$ref` edges below the root only those of ``_REF_EDGE_KEYWORDS``."""
+_NAMED_ENTRY_MAP_KEYWORDS: Final = SCHEMA_MAP_KEYS | {
+    key for key, role in _DOCUMENT_KEYWORDS.items() if role == "entries"
 }
 _DocumentEntries = Literal["object", "names", "maps"]
 
@@ -464,7 +481,7 @@ def _document_child_entries(
     """Return how the value under a key of a document object is read, or None when it holds no schemas."""
     if entries == "names":
         return "object"
-    if key in _NON_SCHEMA_KEYWORDS or (isinstance(key, str) and key.startswith("x-") and key != "x-propertyNames"):
+    if key in _NON_SCHEMA_KEYWORDS or (isinstance(key, str) and key.startswith("x-") and key not in _DOCUMENT_KEYWORDS):
         return None
     child: _DocumentEntries = "object"
     match entries, key:
@@ -478,35 +495,10 @@ def _document_child_entries(
 
 
 _RefEdgeEntries = Literal["root", "object", "names", "maps"]
-_REF_EDGE_NAME_MAPS = frozenset({"bindings", "paths"})
-_REF_EDGE_KEYWORDS = (
-    frozenset(SCHEMA_POSITIONS)
-    | _NAMED_ENTRY_MAP_KEYWORDS
-    | _REF_EDGE_NAME_MAPS
-    | {
-        *PATH_ITEM_METHODS,
-        "additionalOperations",
-        "channel",
-        "components",
-        "headers",
-        "message",
-        "messageTraits",
-        "operationTraits",
-        "payload",
-        "pathItems",
-        "publish",
-        "reply",
-        "requestBodies",
-        "requestBody",
-        "schema",
-        "schemas",
-        "itemSchema",
-        "subscribe",
-        "traits",
-        "x-propertyNames",
-    }
-)
-"""The keywords of a schema, path item, operation or message object under which another such object is read."""
+_REF_EDGE_NAME_MAPS: Final = frozenset(key for key, role in _DOCUMENT_KEYWORDS.items() if role == "edge-entries")
+_REF_EDGE_KEYWORDS: Final = frozenset(SCHEMA_POSITIONS).union(_DOCUMENT_KEYWORDS.keys() - _NON_SCHEMA_KEYWORDS)
+"""The view of `$ref` edges: the keywords of a schema, path item, operation or message object under which another such
+object is read, the subschema keywords and every keyword of the table that holds no data."""
 
 
 def _ref_edge_child_entries(
