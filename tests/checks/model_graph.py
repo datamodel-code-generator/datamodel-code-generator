@@ -178,6 +178,15 @@ def collapse_module_root_models(original: Callable[[Any, Any], None]) -> Callabl
     return collapse_module_root_models
 
 
+def _positions_by_target(
+    sites_by_target: Mapping[Any, Iterable[Any]], positions: Mapping[Any, tuple[int, int]]
+) -> dict[Any, list[tuple[int, int]]]:
+    """Return the positions of the sites listed per target, for the targets that list any."""
+    return {
+        key: [positions[site_key] for site_key in site_keys] for key, site_keys in sites_by_target.items() if site_keys
+    }
+
+
 def _fact_record(facts: Any) -> dict[str, object]:
     """Return what ``facts`` record, with each id replaced by the parse order or occurrence position it stands for.
 
@@ -215,11 +224,8 @@ def _fact_record(facts: Any) -> dict[str, object]:
         },
         "paths": {path: parse_orders[model_id] for path, model_id in facts.model_by_path.items()},
         "model keys": {key: parse_orders[model_id] for key, model_id in facts.model_by_ref_id.items()},
-        "sites by target": {
-            key: [positions[site_key] for site_key in site_keys]
-            for key, site_keys in facts.sites_by_target.items()
-            if site_keys
-        },
+        "sites by target": _positions_by_target(facts.sites_by_target, positions),
+        "base sites by target": _positions_by_target(facts.base_sites_by_target, positions),
         "reference sites": {positions[key]: site.occurrence for key, site in facts.sites.items()},
     }
 

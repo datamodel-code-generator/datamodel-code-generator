@@ -142,6 +142,7 @@ _REPLACED = MemberFacts("replaced")
 _REPLACEMENT = MemberFacts("replacement")
 _REPLACEMENT_LAST = UnionPolicy("legacy-replacement-last")
 OrderedSet: TypeAlias = dict[_OrderedSetItem, None]
+_SitesByTarget: TypeAlias = defaultdict[ModelKey, OrderedSet[SiteKey]]
 
 SITE_EFFECTS: Mapping[str, ProvenanceHow] = MappingProxyType({
     "append_field": "copied",
@@ -353,7 +354,8 @@ class GenerationFacts:
 
     A model's data type ids increase in traversal order, so ``(owner parse order, id)`` orders occurrences
     as a full rebuild traverses them. The reference sites of the type trees (`RefSite`) take the id of their
-    occurrence as their key, and ``sites_by_target`` lists them per target in that order.
+    occurrence as their key, and ``sites_by_target`` lists them per target in that order, ``base_sites_by_target``
+    the sites of bases among them.
     """
 
     model_facts: dict[ModelId, ModelFact] = field(default_factory=dict)
@@ -363,7 +365,8 @@ class GenerationFacts:
     model_by_path: dict[str, ModelId] = field(default_factory=dict)
     model_by_ref_id: dict[ModelKey, ModelId] = field(default_factory=dict)
     data_types_by_model: dict[ModelId, tuple[DataTypeId, ...]] = field(default_factory=dict)
-    sites_by_target: defaultdict[ModelKey, OrderedSet[SiteKey]] = field(default_factory=lambda: defaultdict(dict))
+    sites_by_target: _SitesByTarget = field(default_factory=lambda: defaultdict(dict))
+    base_sites_by_target: _SitesByTarget = field(default_factory=lambda: defaultdict(dict))
     shared_data_type_fact_ids: dict[int, list[DataTypeId]] = field(default_factory=dict)
     sites: dict[SiteKey, RefSite] = field(default_factory=dict)
 
@@ -804,16 +807,24 @@ class GenerationIndexBuilder:
         self._facts.data_type_facts[fact.id] = fact
         self._index_data_type_object(fact)
         if fact.reference:
-            self._add_target_site(self._model_key(fact.reference), SiteKey(fact.id))
+            key = self._model_key(fact.reference)
+            for sites_by_target in self._target_site_lists(fact):
+                self._add_target_site(sites_by_target, key, SiteKey(fact.id))
 
     def _forget_fact(self, fact: DataTypeFact) -> None:
         self._forget_data_type_object(fact)
         if fact.reference:
             key = self._model_key(fact.reference)
-            site_keys = self._facts.sites_by_target[key]
-            del site_keys[SiteKey(fact.id)]
-            if not site_keys:
-                del self._facts.sites_by_target[key]
+            for sites_by_target in self._target_site_lists(fact):
+                site_keys = sites_by_target[key]
+                del site_keys[SiteKey(fact.id)]
+                if not site_keys:
+                    del sites_by_target[key]
+
+    def _target_site_lists(self, fact: DataTypeFact) -> tuple[_SitesByTarget, ...]:
+        """Return the per-target site lists that list the site of ``fact``: every site, and the sites of bases."""
+        facts = self._facts
+        return (facts.sites_by_target, facts.base_sites_by_target) if fact.role == "base" else (facts.sites_by_target,)
 
     def _update_base_owners(
         self,
@@ -853,9 +864,9 @@ class GenerationIndexBuilder:
         if facts.data_type_fact_by_object[object_id] is fact:
             facts.data_type_fact_by_object[object_id] = facts.data_type_facts[max(data_type_ids, key=facts.order_key)]
 
-    def _add_target_site(self, key: ModelKey, site_key: SiteKey) -> None:
+    def _add_target_site(self, sites_by_target: _SitesByTarget, key: ModelKey, site_key: SiteKey) -> None:
         facts = self._facts
-        site_keys = facts.sites_by_target[key]
+        site_keys = sites_by_target[key]
         if not site_keys or facts.order_key(next(reversed(site_keys))) < facts.order_key(site_key):
             site_keys[site_key] = None
             return
@@ -1034,9 +1045,8 @@ class GenerationIndex:
         """Return the models whose bases name ``reference``, once each, in the order of those bases."""
         facts = self._view().facts
         owners = (
-            facts.model_facts[fact.owner_model].model
-            for fact in self.data_type_facts_for_reference(reference)
-            if fact.role == "base"
+            facts.model_facts[facts.data_type_facts[site_key].owner_model].model
+            for site_key in facts.base_sites_by_target.get(self._store.model_key(reference), ())
         )
         return list({id(owner): owner for owner in owners}.values())
 

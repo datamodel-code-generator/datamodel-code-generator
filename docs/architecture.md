@@ -1165,7 +1165,8 @@ per `DataType` occurrence, its owner model, field index and role (field, base, n
 `DataType` objects that occur in more than one place (`shared_data_type_fact_ids`), models by path and by model key,
 and every reference occurrence of a type tree as a site (`parser/_sites.py:RefSite`): its owner model, field, position
 in the tree, node, target model key, kind (`type`, `base`, `alias_body`) and provenance, keyed by the id of its
-occurrence and listed per target (`sites_by_target`). Queries refresh the facts when a mutation marked them dirty,
+occurrence and listed per target (`sites_by_target`, and the sites of bases in `base_sites_by_target`, which
+`GenerationIndex.models_inheriting` reads). Queries refresh the facts when a mutation marked them dirty,
 either incrementally for appended and changed models or with a full rebuild. Every store mutation states what it does
 to the sites (`SITE_EFFECTS`, `NO_SITE_EFFECT`): a new site takes the provenance of the mutation that made it
 (`redirected` with the model it named before and the site at its place, `collapsed` with the root model and its site,
