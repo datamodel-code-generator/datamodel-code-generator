@@ -120,6 +120,7 @@ from datamodel_code_generator.model._render_plan import (
     Kwarg,
     RuleId,
     Why,
+    frozen_field_hint,
     visible_nested_factories,
 )
 from datamodel_code_generator.model._rendered_names import (
@@ -144,6 +145,7 @@ from datamodel_code_generator.types import (
     Nullable,
     _hint_null,
     chain_as_tuple,
+    type_expr_of,
 )
 
 if TYPE_CHECKING:
@@ -851,15 +853,23 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
     @property
     def type_hint(self) -> str:
-        """Get the type hint string for this field, including nullability."""
-        return self._type_hint_from_data_type(self.data_type)
+        """Get the type hint string for this field, including nullability.
 
-    def _type_hint_from_data_type(self, data_type: DataType, *, base: bool = False) -> str:
-        """Get the type hint string, or with ``base`` the base hint, for a field data type, including nullability."""
+        From B2 it renders the expression of the hint that the parse kept for the field (``frozen_field_hint``).
+        """
+        return self._type_hint_from_data_type(self.data_type, expression=frozen_field_hint(self))
+
+    def _type_hint_from_data_type(
+        self, data_type: DataType, *, base: bool = False, expression: _types.TypeExpr | None = None
+    ) -> str:
+        """Get the type hint string, or with ``base`` the base hint, for a field data type, including nullability.
+
+        ``expression`` is the type's expression (``_type_expression``) when it is built already.
+        """
         if base:
             type_hint, hint_has_none = data_type.base_type_hint, None
         else:
-            type_hint, hint_null = data_type._type_hint_and_null()  # noqa: SLF001
+            type_hint, hint_null = data_type._type_hint_and_null(expression)  # noqa: SLF001
             hint_has_none = hint_null is not None
 
         if not type_hint:
@@ -867,6 +877,10 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         if self._field_null_source(data_type, hint_has_none=hint_has_none) is None:
             return type_hint
         return data_type._optional_hint(type_hint, self._use_union_operator)  # noqa: SLF001
+
+    def _type_expression(self) -> _types.TypeExpr:
+        """Return the expression of the field's type hint, which the parse keeps for the field at B2."""
+        return type_expr_of(self.data_type)
 
     def _field_null_source(
         self,
@@ -1138,12 +1152,12 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return _classify_field_assignment(self, self._FIELD_ASSIGNMENT_ROW).default_info
 
     def _build_frozen_render_plan(self) -> FieldRenderPlan | None:
-        """Return the render plan the parse freezes for this field at B2, or None when it renders without one.
+        """Build the render plan the parse freezes for this field at B2, or return None when it renders without one.
 
-        A field that renders from a plan (``_FREEZES_RENDER_PLAN``) freezes its live plan (``_render_plan`` before B2),
-        which ``RenderReady`` rebuilds from the field's facts while it compares or refreshes a frozen plan.
+        A field that renders from a plan (``_FREEZES_RENDER_PLAN``) builds it from its facts, final at B2, as
+        ``RenderReady`` rebuilds it while it compares or refreshes a frozen plan.
         """
-        return self._render_plan() if self._FREEZES_RENDER_PLAN else None
+        return self._build_render_plan() if self._FREEZES_RENDER_PLAN else None
 
     def _render_inputs(self) -> RenderInputs:
         """Return what the field's render plan reads from the field, to compare when it renders (``RenderReady``)."""

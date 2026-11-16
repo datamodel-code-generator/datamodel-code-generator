@@ -1260,6 +1260,7 @@ def decide_nested_model_default_factories(parser: RenderPrepHost, state: _Finali
 def freeze_field_render_plans(state: _FinalizeState[Any]) -> None:
     """Freeze one render plan for every field of the models that render fields from plans (B2 follows).
 
+    Each plan is built from the field's facts, final here, and kept with the expression of the field's type hint.
     Under row ``legacy.L-NF`` the plan reads the nested-factory decision, and a field whose factory it changes
     keeps the plan without it for the import snapshot.
     """

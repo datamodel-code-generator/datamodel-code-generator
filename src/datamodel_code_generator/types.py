@@ -59,6 +59,7 @@ from datamodel_code_generator._container_kinds import (
     ARRAYS,
     CONTAINER_FLAGS,
     CONTAINERS,
+    GENERIC_CONTAINERS,
     GIVEN_CONTAINERS,
     MAPPINGS,
     SLOT_CLASSES,
@@ -1287,14 +1288,17 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """Generate the Python type hint string for this DataType."""
         return render_type_expr(_build_type_expr(self, base=False))
 
-    def _type_hint_and_null(self) -> tuple[str, NullSource | None]:
+    def _type_hint_and_null(self, expression: TypeExpr | None = None) -> tuple[str, NullSource | None]:
         """Return ``type_hint`` and why it writes None (``_hint_null``), from one rendering.
 
-        A class that writes its own hint renders it, then the None is asked.
+        A class that writes its own hint renders it, then the None is asked. ``expression`` is the type's expression
+        (``type_expr_of``) when it is built already.
         """
         if type(self).type_hint is not DataType.type_hint:
             return self.type_hint, _hint_null(self)
-        return _render_apply(cast("TypeApply", _build_type_expr(self, base=False)))
+        if expression is None:
+            expression = _build_type_expr(self, base=False)
+        return _render_apply(cast("TypeApply", expression))
 
     @property
     def is_union(self) -> bool:
@@ -1460,6 +1464,8 @@ def _build_type_expr(data_type: DataType, *, base: bool) -> TypeExpr:
             form = "literal"
         elif data_type.reference:
             form, args = "single", (RefLeaf(data_type),)
+    if data_type not in GENERIC_CONTAINERS:
+        return TypeApply(data_type, form, args, base=base)
     order = data_type._BASE_TYPE_HINT_CONTAINER_ORDER if base else data_type._TYPE_HINT_CONTAINER_ORDER  # noqa: SLF001
     for container in order:
         if (name := _container_name(data_type, container)) is not None:
