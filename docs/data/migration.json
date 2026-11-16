@@ -878,6 +878,29 @@
      "pydantic_v2.dataclass"
     ]
    },
+   "after": "one_letter: str | None = None",
+   "before": "one_letter: constr(pattern=r'^[\\pL-_]+$') | None = None",
+   "id": "regex-one-letter-property-range",
+   "keep": {
+    "note": "The previous module failed at import; nothing restores it."
+   },
+   "kind": "default-output",
+   "refs": [
+    "#6918"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "A `pattern` whose character class starts a range with a Unicode property of one letter (`^[\\pL-_]+$`, `[\\PL-_]`) was written as the schema writes it, and the module failed at import with `invalid range boundary, must be a literal`: Pydantic's default regex engine refuses a range that starts with a class, and Python's `re` rejects `\\p`. The pattern is now left out with a warning, as `^[\\p{L}-_]+$` has been since 0.92.0, and the model checks the other keywords only. Output that imported before is unchanged.",
+   "title": "A pattern with a one-letter Unicode property before a hyphen in a class, such as `^[\\pL-_]+$`, no longer fails at import"
+  },
+  {
+   "action": "review",
+   "affects": {
+    "output_model_types": [
+     "pydantic_v2.BaseModel",
+     "pydantic_v2.dataclass"
+    ]
+   },
    "after": "root: str",
    "before": "root: constr(pattern=r'^\\p{L}{1,256}$')",
    "id": "regex-size-limit-more-classes",

@@ -1,6 +1,8 @@
+The pattern '^[\\p{L}-_]+$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/BracedPropertyRange is left out: no regex engine of the output compiles it, so the generated code does not check it.
 The pattern '^[\\w- ]*$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/ClassEscapeRange is left out: no regex engine of the output compiles it, so the generated code does not check it.
 The pattern '^[^\\p\\{C\\}]*$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/ControlFreeJava is left out: no regex engine of the output compiles it, so the generated code does not check it.
 The pattern '^\\p{Print}+$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/JavaPrintable is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^[\\pL-_]+$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/OneLetterPropertyRange is left out: no regex engine of the output compiles it, so the generated code does not check it.
 WordsBeyondTheSizeLimit 'user.name@example (x)': valid
 WordsBeyondTheSizeLimit 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa': string_pattern_mismatch
 WordsBeyondTheSizeLimit value: True
@@ -28,6 +30,9 @@ NoSpacesBeyondTheSizeLimit value: True
 AsciiWordsWithinTheSizeLimit 'abc_1': valid
 AsciiWordsWithinTheSizeLimit 'Déjà': string_pattern_mismatch
 AsciiWordsWithinTheSizeLimit value: True
+OneLetterPropertyDifference 'a-b': valid
+OneLetterPropertyDifference 'a_b': string_pattern_mismatch
+OneLetterPropertyDifference value: True
 AtLeastTwoLetters 'ab': valid
 AtLeastTwoLetters 'a': string_pattern_mismatch
 AtLeastTwoLetters value: True

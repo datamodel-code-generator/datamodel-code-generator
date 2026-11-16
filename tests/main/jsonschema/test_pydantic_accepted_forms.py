@@ -61,6 +61,7 @@ SIZE_AND_DIALECT_PAYLOADS = {
     "AnythingBeyondTheSizeLimit": ("two\nlines", "x" * 20001),
     "NoSpacesBeyondTheSizeLimit": ("abc", "a b"),
     "AsciiWordsWithinTheSizeLimit": ("abc_1", "Déjà"),
+    "OneLetterPropertyDifference": ("a-b", "a_b"),
     "AtLeastTwoLetters": ("ab", "a"),
     "AtLeastWordsBeyondTheSizeLimit": ("a" * 300, "a" * 299),
     "LettersBeyondTheSizeLimit": ("bbb", "bc"),
@@ -268,10 +269,11 @@ def test_patterns_no_engine_compiles_as_written(
 
     A repetition past Rust's compiled-size limit selects ``python-re``; a ``[`` inside a class that only Rust leaves
     open is escaped, which every engine reads alike. A pattern no engine of the output compiles, a Java property, an
-    escaped brace after ``\\p`` or a class escape as the start of a range, and for msgspec, which only runs Python's
-    ``re``, ``\\p{L}`` and a group that turns Unicode off, is left out with a warning; one both engines read stays as
-    written, and so does one only Rust reads where Rust is the engine. Each valid payload keeps its value and each
-    invalid one fails.
+    escaped brace after ``\\p`` or a class escape or property as the start of a range (``[\\w- ]``, ``[\\p{L}-_]``
+    and ``[\\pL-_]``, #6918), and for msgspec, which only runs Python's ``re``, ``\\p{L}`` and a group that turns
+    Unicode off, is left out with a warning; one both engines read stays as written, and so does one only Rust reads
+    where Rust is the engine (``[\\pL\\pP--_]``, a difference). Each valid payload keeps its value and each invalid
+    one fails.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_sizes_and_dialects.json",

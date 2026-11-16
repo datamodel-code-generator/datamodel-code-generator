@@ -372,14 +372,16 @@ def _rust_rejects_property(escape: str) -> bool:
 def _class_escape_ranges(pattern: str) -> bool:
     r"""Return whether a class uses a class escape as the start of a range (``[\w- ]``), which both engines reject.
 
-    The start is a class escape or a property in braces (the only items longer than three characters); a property of
-    one letter (``[\pL-_]``) is not read as one, as the check has never read it so.
+    The start is a class escape or a property, in braces (``[\p{L}-_]``) or of one letter (``[\pL-_]``): the only items
+    longer than two characters. Two hyphens are a difference in Rust (``[\pL\pP--_]`` compiles), so a property of one
+    letter before them starts no range; the other starts keep their answer there (``[\w--_]`` and ``[\p{L}--_]`` compile
+    too, and are read as ranges).
     """
     for match in _compiled(_PYTHON_CLASS).finditer(pattern):
         body = match.group()
         tokens = _compiled(_CLASS_ITEM).findall(body[body.index("[") + 1 : -1])
-        for index, token in enumerate(tokens[:-2]):
-            if tokens[index + 1] == "-" and (token[1:] in _CLASS_ESCAPES or token[3:]):
+        for start, hyphen, end in zip(tokens, tokens[1:], tokens[2:], strict=False):
+            if hyphen == "-" and (start[1:] in _CLASS_ESCAPES or start[3:] or (start[2:] and end != "-")):
                 return True
     return False
 

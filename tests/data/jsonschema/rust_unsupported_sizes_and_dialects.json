@@ -21,6 +21,18 @@
       "type": "string",
       "pattern": "^[\\w- ]*$"
     },
+    "OneLetterPropertyRange": {
+      "type": "string",
+      "pattern": "^[\\pL-_]+$"
+    },
+    "BracedPropertyRange": {
+      "type": "string",
+      "pattern": "^[\\p{L}-_]+$"
+    },
+    "OneLetterPropertyDifference": {
+      "type": "string",
+      "pattern": "^[\\pL\\pP--_]+$"
+    },
     "Letters": {
       "type": "string",
       "pattern": "^\\p{L}+$"
