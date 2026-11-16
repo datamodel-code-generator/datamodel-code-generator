@@ -772,8 +772,10 @@ class DataModelField(DataModelFieldBase):
         dict_key = None if data_type.dict_key is None else self._strip_rejected_python_patterns(data_type.dict_key)
         kwargs = data_type.kwargs
         drop_pattern = bool(kwargs and self._python_engine_rejects(kwargs.get("pattern")))
-        if not drop_pattern and dict_key is data_type.dict_key and all(
-            new is old for new, old in zip(nested, data_type.data_types, strict=True)
+        if (
+            not drop_pattern
+            and dict_key is data_type.dict_key
+            and all(new is old for new, old in zip(nested, data_type.data_types, strict=True))
         ):
             return data_type
         updates: dict[str, Any] = {}
