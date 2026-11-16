@@ -277,6 +277,8 @@ class ApiOpenAPIParser(OpenAPIParser):
         raw: YamlValue,
         path: list[str],
         validated_obj: JsonSchemaObject | None = None,
+        *,
+        indexed: bool = False,
     ) -> None:
         """Carry the actual raw-entry declaration through validation and parsing.
 
@@ -289,7 +291,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 raise SchemaParseError(msg, path=path)
             if validated_obj is None and isinstance(raw, bool):
                 validated_obj = _locate(self._validate_schema_object(raw, path), frame.declaration)
-            super()._parse_raw_or_validated_obj(name, raw, path, validated_obj)  # pyright: ignore[reportUnknownMemberType]
+            super()._parse_raw_or_validated_obj(name, raw, path, validated_obj, indexed=indexed)  # pyright: ignore[reportUnknownMemberType]
         self._mark_processed(frame)
 
     def _mark_processed(self, frame: ApiDeclarationFrame) -> None:

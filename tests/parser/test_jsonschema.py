@@ -1859,7 +1859,7 @@ def test_local_ref_false_schema_preserves_custom_fact_cache_output() -> None:
 
     assert not parser._uses_builtin_false_ref_facts()
     assert "value: Optional[str] = None" in dump_templates(list(parser.results))
-    assert FactCacheOverrideParser.cached_refs == ["#", "#/$defs/Never", "#/$defs/Never"]
+    assert FactCacheOverrideParser.cached_refs == ["#", "#/$defs/Never"]
 
 
 def test_local_ref_false_schema_fast_path_matches_validation_path() -> None:
