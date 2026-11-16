@@ -90,6 +90,7 @@ native-boundaries	main/generation_platform/client/runtime/native-boundaries.txt
 native-codec-backends	main/generation_platform/client/runtime/native-codec-backends.txt
 native-faults	main/generation_platform/client/runtime/native-faults.txt
 native-wire	main/generation_platform/client/runtime/native-wire.txt
+native-wire	main/generation_platform/client/runtime/native-wire.txt	@black=26,formatter=external,isort=8,platform=win32,python=3.14	= main/generation_platform/client/runtime/native-wire@black26-external-isort8-win32-python3.14.txt
 ndjson	main/generation_platform/client/runtime/ndjson.txt
 ndjson-backends	main/generation_platform/client/runtime/ndjson-backends.txt
 ndjson-split	main/generation_platform/client/runtime/ndjson-split.txt

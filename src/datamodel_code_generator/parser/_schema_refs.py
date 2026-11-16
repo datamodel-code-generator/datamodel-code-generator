@@ -37,7 +37,7 @@ from typing_extensions import Protocol, final
 from datamodel_code_generator import Error, ReadOnlyWriteOnlyModelType
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._json_pointer import escape_token, join_pointer
-from datamodel_code_generator._json_schema import REF_PRE_PASS_FIELDS, REF_PRE_PASS_POSITIONS, SCHEMA_SHAPES
+from datamodel_code_generator._json_schema import REF_PRE_PASS_FIELDS, REF_PRE_PASS_POSITIONS, subschema_entries
 from datamodel_code_generator._records import record
 from datamodel_code_generator._scc import find_circular_sccs, strongly_connected_components
 from datamodel_code_generator._url_redaction import named_location
@@ -162,16 +162,6 @@ _REPORTED_VALUE_CONFLICT_KEY = "_reported_value_conflict"
 _VALUE_CONFLICT_KEYWORDS = frozenset({"enum", "const"})
 _ValidatedT = TypeVar("_ValidatedT")
 _REF_PRE_PASS_KEYWORDS = frozenset(REF_PRE_PASS_POSITIONS)
-
-
-def _iter_ref_walk_children(data: dict[str, Any]) -> Iterator[dict[str, Any] | list[Any]]:
-    """Yield the subschemas of a raw schema in keyword order, leaving instance values and metadata out."""
-    for keyword, value in data.items():
-        match SCHEMA_SHAPES.get(keyword), value:
-            case "map", dict():
-                yield from (schema for schema in value.values() if isinstance(schema, dict))
-            case "sequence" | "single" | "single-or-sequence", dict() | list():
-                yield value
 
 
 def _ref_path_parts(file_part: str) -> list[str]:
@@ -953,9 +943,10 @@ def iter_referencing_schemas(
 ) -> Iterator[tuple[str, dict[str, Any]]]:
     """Visit the raw subschemas that the parser follows, with their JSON pointers.
 
-    Keywords are those of the reference pre-pass plus the additionalItems of tuple-style arrays,
-    which array parsing appends as the tail item. References under keywords the parser ignores and
-    definitions that apply only through references are not analyzed.
+    It reads the view of the reference pre-pass (``REF_PRE_PASS_FIELDS``, and ``REF_PRE_PASS_POSITIONS`` under
+    --generate-schema-validators) and the additionalItems of tuple-style arrays, which array parsing appends as the
+    tail item. References under keywords the parser ignores and definitions that apply only through references are
+    not analyzed.
     """
     keywords = _REF_PRE_PASS_KEYWORDS if parser.generate_schema_validators else REF_PRE_PASS_FIELDS
     stack = [(pointer, cast("dict[str, Any]", schema))] if isinstance(schema, dict) else []
@@ -1485,7 +1476,9 @@ def walk_ref_cycle(
         if isinstance(node := nodes.pop(), list):
             nodes.extend(item for item in reversed(node) if isinstance(item, (dict, list)))
             continue
-        nodes.extend(reversed(list(_iter_ref_walk_children(node))))
+        nodes.extend(
+            reversed([child for key, value in node.items() for _, child in subschema_entries(key, value, whole=True)])
+        )
         if isinstance(ref_value := node.get("$ref"), str):
             try:
                 resolved = ref_path(parser, ref_value)
