@@ -300,6 +300,29 @@ class TypeTables:
         """
         return _one_kind(set(self._leaves(value, frozenset())), mixed=True)
 
+    def fixed(self, value: TypeView) -> tuple[object, ...] | None:
+        """Return the values a type admits where it admits literal values alone, None aside, else None.
+
+        A literal admits the values its items stand for (``scalar``), and an enum the values of its members, through
+        aliases and root models (``unwrapped``); any other type, such as a scalar or a model, admits values of its own.
+        """
+        found: list[object] = []
+        for member in map(self.unwrapped, present(value)):
+            if isinstance(member, LiteralType):
+                found.extend(None if (item := self.scalar(entry)) is None else item.value for entry in member.values)
+            elif isinstance(member, GeneratedSymbolType) and (symbol := self.symbols[member.symbol]).kind == "enum":
+                found.extend(None if item is None else item.value for item in symbol.values)
+            else:
+                return None
+        return tuple(found)
+
+    def scalar(self, item: LiteralScalar | GeneratedEnumMember) -> LiteralScalar | None:
+        """Return the value a literal's item stands for: its own, or that of the enum member it names (None aside)."""
+        if not isinstance(item, GeneratedEnumMember):
+            return item
+        symbol = self.symbols[item.symbol]
+        return next(value for slot, value in zip(symbol.fields, symbol.values, strict=True) if slot.field == item.field)
+
     def _leaves(self, value: TypeView | None, seen: frozenset[SymbolId]) -> Iterator[LexicalKind | None]:
         match value:
             case NoneType():

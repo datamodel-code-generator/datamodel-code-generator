@@ -6370,6 +6370,11 @@
     "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
     "modules": [["client", "protocols", "_plans.py"]]
   },
+  "asyncapi-handshake-models": {
+    "input": "asyncapi-handshake-models.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_helpers.py"], ["client", "protocols", "_plans.py"]]
+  },
   "asyncapi-relative-v2": {
     "input": "asyncapi-relative-v2.yaml",
     "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},

@@ -510,6 +510,31 @@ def asyncapi_handshake(package: ModuleType, lines: list[str]) -> None:
         server.stop()
 
 
+def asyncapi_handshake_models(package: ModuleType, lines: list[str]) -> None:
+    """Send the query and header parameters the models give a binding's objects, and offer the subprotocols they fix.
+
+    The rooms query is an `allOf` of a referenced object and its own properties, and its headers object carries
+    keywords and other properties beside its properties, which give no parameter; the subprotocols are the constants
+    of a `oneOf`, of which the server selects one. The feeds query is a mapping, which gives no parameter.
+    """
+    server = SocketServer()
+    try:
+        rooms, feeds = server.play(Play(subprotocol="chat.v2", talk=_sending()), Play(talk=_sending()))
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=server.url, http_client=http) as client,
+        ):
+            with client.rooms.connect(room="lobby", limit=5, X_Trace="trace-1") as session:
+                session.send("hello")
+                lines.append(f"    rooms {session.subprotocol}")
+            lines.append(rooms.report())
+            with client.feeds.connect() as session:
+                session.send("item")
+            lines.append(feeds.report())
+    finally:
+        server.stop()
+
+
 async def _async_partners(package: ModuleType, url: str, lines: list[str]) -> None:
     """Open the partners channel with an OAuth access token through the asyncio client."""
     async with (

@@ -141,6 +141,8 @@ asyncapi-foreign-operations	main/generation_platform/client/asyncapi-foreign-ope
 asyncapi-handshake	main/generation_platform/client/asyncapi-handshake.txt
 asyncapi-handshake	main/generation_platform/client/packages/asyncapi-handshake/msgspec_Struct//*.py
 asyncapi-handshake	main/generation_platform/client/packages/asyncapi-handshake/pydantic_v2_BaseModel//*.py
+asyncapi-handshake-models	main/generation_platform/client/asyncapi-handshake-models.txt
+asyncapi-handshake-models	main/generation_platform/client/packages/asyncapi-handshake-models/pydantic_v2_BaseModel//*.py
 asyncapi-handshake-v2	main/generation_platform/client/asyncapi-handshake-v2.txt
 asyncapi-handshake-v2	main/generation_platform/client/packages/asyncapi-handshake-v2/pydantic_v2_BaseModel//*.py
 asyncapi-mapped-payloads	main/generation_platform/client/asyncapi-mapped-payloads.txt
