@@ -228,10 +228,17 @@ class DataModelField(DataModelFieldBase):
             if overridden.reason == "override-type-does-not-take":
                 reasons.append(f"--type-overrides writes {self.data_type.type_hint} in place of {overridden.detail}")
                 count += cast("int", overridden.value)
-        if rejected := [o.value for o in omitted if o.why.rule == _PYTHON_ENGINE_REJECTS]:
+        if rejected := [
+            *(o.value for o in omitted if o.why.rule == _PYTHON_ENGINE_REJECTS),
+            *(
+                dt.kwargs["pattern"]
+                for dt in self.data_type.all_data_types
+                if dt.kwargs and self._python_engine_rejects(dt.kwargs.get("pattern"))
+            ),
+        ]:
             reasons.append(
                 "Python's regex engine, which the config building it selects, does not compile "
-                + ", ".join(f"pattern={represent_python_value(value)}" for value in rejected)
+                + ", ".join(f"pattern={represent_python_value(value)}" for value in dict.fromkeys(rejected))
             )
             count += len(rejected)
         if non_finite := [
@@ -757,6 +764,32 @@ class DataModelField(DataModelFieldBase):
         """Check if this field is a ClassVar."""
         return self.extras.get("x-is-classvar") is True
 
+    def _strip_rejected_python_patterns(self, data_type: DataType) -> DataType:
+        """Return a copy of ``data_type`` without ``pattern`` args rejected by ``python-re``."""
+        if not getattr(self.parent, "_internal_template_data", {}).get(PYTHON_ENGINE_BUILDS_KEY):
+            return data_type
+        nested = [self._strip_rejected_python_patterns(dt) for dt in data_type.data_types]
+        dict_key = None if data_type.dict_key is None else self._strip_rejected_python_patterns(data_type.dict_key)
+        kwargs = data_type.kwargs
+        drop_pattern = bool(kwargs and self._python_engine_rejects(kwargs.get("pattern")))
+        if not drop_pattern and dict_key is data_type.dict_key and all(
+            new is old for new, old in zip(nested, data_type.data_types, strict=True)
+        ):
+            return data_type
+        updates: dict[str, Any] = {}
+        if any(new is not old for new, old in zip(nested, data_type.data_types, strict=True)):
+            updates["data_types"] = nested
+        if dict_key is not data_type.dict_key:
+            updates["dict_key"] = dict_key
+        if drop_pattern and kwargs is not None:
+            new_kwargs = {k: v for k, v in kwargs.items() if k != "pattern"}
+            updates["kwargs"] = new_kwargs
+            if not new_kwargs and data_type.type == "constr":
+                updates["type"] = "str"
+                updates["is_func"] = False
+                updates["import_"] = None
+        return data_type.model_copy(update=updates)
+
     @property
     @override
     def type_hint(self) -> str:
@@ -765,9 +798,11 @@ class DataModelField(DataModelFieldBase):
             is_class_var = plan.annotation_form == "classvar"
         else:
             is_class_var = self.is_class_var
+        stripped = self._strip_rejected_python_patterns(self.data_type)
+        base_hint = super().type_hint if stripped is self.data_type else self._type_hint_from_data_type(stripped)
         if is_class_var:
-            return subscript_text("ClassVar", (super().type_hint,))
-        return super().type_hint
+            return subscript_text("ClassVar", (base_hint,))
+        return base_hint
 
     @property
     @override
@@ -783,7 +818,7 @@ class DataModelField(DataModelFieldBase):
     def _import_state_data_type(self) -> DataType | None:
         return self._import_state_target(
             needs_annotated=self.use_annotated and not self.is_class_var and self._has_field_statement(),
-            data_type=self.data_type,
+            data_type=self._strip_rejected_python_patterns(self.data_type),
         )
 
     @override
