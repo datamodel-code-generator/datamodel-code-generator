@@ -405,13 +405,14 @@ from datamodel_code_generator.parser._schema_reading import (
     _constraint_values,
     _declares_key_keywords,
     _enum_without_positions,
+    _fragment_value,
     _get_json_value_type,  # noqa: F401  # Preserve the established parser.jsonschema export.
     _get_model_by_decoded_path,
     _intersect_parts,
     _merges_ref_siblings,
     _numeric_type_domain,
     _split_json_pointer,
-    get_model_by_path,
+    get_model_by_path,  # noqa: F401  # Preserve the established parser.jsonschema export.
     split_json_pointer,  # noqa: F401  # Preserve the established parser.jsonschema export.
     unescape_json_pointer_segment,
     unescaped_slash_pointer,
@@ -4844,6 +4845,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         obj: JsonSchemaObject,
         path: list[str],
     ) -> DataType | None:
+        """Return the type of a schema whose allOf is one local `$ref` alone, where its target decides it, else None.
+
+        The target is read by row ``legacy-all-of-ref-in-parsed-document``.
+        """
         if len(obj.allOf) != 1 or obj.properties:
             return None
 
@@ -4860,7 +4865,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ):
             return None
 
-        referenced_schema = get_model_by_path(self.raw_obj, single_obj.ref[2:].split("/"))
+        referenced_schema = _fragment_value(
+            self.raw_obj, f"/{single_obj.ref[2:]}", reading="legacy-split-pointer-tokens"
+        )
         ref_data_type = self.get_ref_data_type(single_obj.ref)
         if referenced_schema is True:
             return self._build_all_of_ref_root_model(name, obj, path, ref_data_type)
@@ -9069,29 +9076,44 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 _schema_documents.parse_source(self, source, raw_obj, path_parts)
 
     def _resolve_unparsed_json_pointer(self) -> None:
-        """Parse the targets each source reserves, in key order, until a round over the sources adds no model.
+        """Parse the targets each source reserves (``_parse_reserved_rounds``).
 
         A target is read from the prepared tree of its source document, the tree the document's models came from, where
         the references an embedded `$id` resolves name their targets in the document.
         """
+        self._parse_reserved_rounds(
+            lambda: ((list(source.path.parts), self._source_tree(source)) for source in self.iter_source)
+        )
+
+    @contextmanager
+    def _source_tree(self, source: Source) -> Generator[dict[str, Any], None, None]:
+        """Yield the prepared tree of a source document, in its resolution context."""
+        if self.current_source_path is not None:
+            self.current_source_path = source.path
+        path_parts = list(source.path.parts)
+        prepared = self._schema_resource_cache[_schema_documents.schema_resource_document(self, path_parts)][1]
+        with (
+            self.model_resolver.current_base_path_context(source.path.parent),
+            self.model_resolver.current_root_context(path_parts),
+        ):
+            yield prepared
+
+    def _parse_reserved_rounds(
+        self, roots: Callable[[], Iterable[tuple[list[str], AbstractContextManager[dict[str, Any]]]]]
+    ) -> None:
+        """Parse the targets each root reserves, in key order, until a round over the roots adds no model.
+
+        ``roots`` gives the parts of each root and the context that yields its tree, entered where it reserves a target.
+        """
         while True:
             model_count = len(self.results)
-            for source in self.iter_source:
-                path_parts = list(source.path.parts)
+            for path_parts, tree_context in roots():
                 if not self.reserved_refs.get(tuple(path_parts)):
                     continue
-                if self.current_source_path is not None:
-                    self.current_source_path = source.path
-                prepared = self._schema_resource_cache[_schema_documents.schema_resource_document(self, path_parts)][1]
-                with (
-                    self.model_resolver.current_base_path_context(source.path.parent),
-                    self.model_resolver.current_root_context(path_parts),
-                ):
-                    for target in _schema_documents.reserved_targets(
-                        self, path_parts, prepared, self._reserved_ref_loaded
-                    ):
-                        self.raw_obj = prepared
-                        self.parse_json_pointer(prepared, target["key"], path_parts)
+                with tree_context as tree:
+                    for target in _schema_documents.reserved_targets(self, path_parts, tree, self._reserved_ref_loaded):
+                        self.raw_obj = tree
+                        self.parse_json_pointer(tree, target["key"], path_parts)
             if model_count == len(self.results):
                 return
 
@@ -9105,13 +9127,31 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def parse_json_pointer(self, raw: dict[str, YamlValue], ref: str, path_parts: list[str]) -> None:
         """Parse a JSON pointer reference into a model."""
-        path = ref.split("#", 1)[-1]
-        object_paths, reference_paths = _split_json_pointer(raw, path, names=self._pointer_slash_names)
-        if not object_paths:  # pragma: no cover
-            self._parse_referenced_root(self.model_resolver.add_ref(ref).name, raw, ref)
+        self._parse_pointer_ref(raw, ref, path_parts, definition=False)
+
+    def _parse_pointer_ref(
+        self, raw: dict[str, YamlValue], ref: str, path_parts: list[str], *, definition: bool
+    ) -> None:
+        """Parse the target the JSON pointer of ``ref`` names in ``raw``, the document read at ``path_parts``.
+
+        A pointer that names no token names the root. A target that the document reserves for after its definitions
+        (``definition``) is parsed as one (``_parse_pointer_definition``) and its root under the reference that reserves
+        it; any other is parsed as a raw schema at its location (``_parse_pointer_target``), its root under the
+        reference ``ref`` adds.
+        """
+        object_paths, reference_paths = _split_json_pointer(raw, ref.split("#", 1)[-1], names=self._pointer_slash_names)
+        if not object_paths:
+            reference = self.model_resolver.references[ref] if definition else self.model_resolver.add_ref(ref)
+            self._parse_referenced_root(reference.name, raw, ref)
             return
         models = self._get_model_by_json_pointer(raw, object_paths, ref)
-        self._parse_pointer_target(models, ref, reference_paths, path_parts, self._member_location(raw, *object_paths))
+        if definition:
+            tokens = self._pointer_path_tokens(ref, reference_paths)
+            path = self._pointer_parse_path(path_parts, tokens)
+            self._parse_pointer_definition(raw, object_paths, models, tokens[-1], path)
+        else:
+            location = self._member_location(raw, *object_paths)
+            self._parse_pointer_target(models, ref, reference_paths, path_parts, location)
 
     def _parse_pointer_target(
         self,
@@ -9265,7 +9305,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         preserve_root_class_name: bool = False,
         ref: str | None = None,
     ) -> None:
-        """Parse a file containing JSON Schema definitions and references."""
+        """Parse a file containing JSON Schema definitions and references.
+
+        The tokens of a reference into the file (``object_paths``) are read without their empty tokens, by row
+        ``legacy-drop-empty-tokens``.
+        """
         with self._detached_naming_frames():  # noqa: PLR1702
             object_paths = [o for o in object_paths or [] if o]
             reference_paths = [r for r in reference_paths or [] if r]
@@ -9326,7 +9370,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
                     if object_paths:
                         models = (
-                            get_model_by_path(raw, object_paths)
+                            _get_model_by_decoded_path(raw, object_paths)
                             if ref is None
                             else self._get_model_by_json_pointer(raw, object_paths, ref)
                         )
@@ -9382,18 +9426,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         while (reserved := self.reserved_refs.get(tuple(path_parts))) and reserved != taken:
             taken = set(reserved)
             for target in _schema_documents.reserved_targets(self, path_parts, raw, self._reserved_ref_settled):
-                reserved_path = target["key"]
-                reference = self.model_resolver.references[reserved_path]
-                object_paths, reference_paths = _split_json_pointer(
-                    raw, reserved_path.split("#", 1)[-1], names=self._pointer_slash_names
-                )
-                if not object_paths:
-                    self._parse_referenced_root(reference.name, raw, reserved_path)
-                    continue
-                models = self._get_model_by_json_pointer(raw, object_paths, reserved_path)
-                tokens = self._pointer_path_tokens(reserved_path, reference_paths)
-                path = self._pointer_parse_path(path_parts, tokens)
-                self._parse_pointer_definition(raw, object_paths, models, tokens[-1], path)
+                self._parse_pointer_ref(raw, target["key"], path_parts, definition=True)
 
     def _pointer_parse_path(self, root: list[str], tokens: list[str]) -> list[str]:
         """Return the parse path of the target that the ``tokens`` of a JSON pointer name below the path ``root``.

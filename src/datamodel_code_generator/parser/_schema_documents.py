@@ -909,7 +909,7 @@ def lenient_pointer_exists(parser: SchemaResourcesHost, document: str, reference
         parser._lenient_documents[document],  # noqa: SLF001
         fragment,
         or_missing=True,
-        names=parser._pointer_slash_names,  # noqa: SLF001
+        reading=parser._pointer_slash_names,  # noqa: SLF001
     )
     return value is not _MISSING_JSON_POINTER
 
@@ -1287,7 +1287,7 @@ def reserved_targets(
     graph = cast("SchemaGraphBuilder", parser._schema_graph)  # noqa: SLF001
     for key in sorted(parser.reserved_refs.get(tuple(path_parts)) or ()):
         if not loaded(key):
-            value = _fragment_value(tree, key.split("#", 1)[-1], or_missing=True, names=parser._pointer_slash_names)  # noqa: SLF001
+            value = _fragment_value(tree, key.split("#", 1)[-1], or_missing=True, reading=parser._pointer_slash_names)  # noqa: SLF001
             yield ReservedTarget(document=document, key=key, node=graph.node(value))
 
 

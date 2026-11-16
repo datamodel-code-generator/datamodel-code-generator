@@ -33,11 +33,12 @@ from datamodel_code_generator._records import record
 from datamodel_code_generator._url_redaction import redact_path
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.parser import _schema_documents, _schema_refs
+from datamodel_code_generator.parser._schema_reading import _get_model_by_decoded_path, ref_fragment_tokens
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaParser,
     _named_path,
-    get_model_by_path,
-    unescape_json_pointer_segment,
+    get_model_by_path,  # noqa: F401  # Preserve the established parser.asyncapi export.
+    unescape_json_pointer_segment,  # noqa: F401  # Preserve the established parser.asyncapi export.
 )
 from datamodel_code_generator.parser.openapi import OpenAPIParser, _DiscriminatorScan
 from datamodel_code_generator.python_literal import stable_repr
@@ -353,7 +354,8 @@ class AsyncAPIParser(OpenAPIParser):
         )
 
     @contextmanager
-    def _asyncapi_context(self, context: AsyncAPIContext) -> Generator[None]:
+    def _asyncapi_context(self, context: AsyncAPIContext) -> Generator[dict[str, Any]]:
+        """Read in an AsyncAPI context: yield its document, which is the one being parsed meanwhile."""
         previous_raw_obj = self.raw_obj
         self.raw_obj = context.raw_obj
         try:
@@ -362,7 +364,7 @@ class AsyncAPIParser(OpenAPIParser):
                 self.model_resolver.base_url_context(context.base_url),
                 self.model_resolver.current_root_context(context.root_parts),
             ):
-                yield
+                yield context.raw_obj
         finally:
             self.raw_obj = previous_raw_obj
 
@@ -580,9 +582,12 @@ class AsyncAPIParser(OpenAPIParser):
         return self._iter_schema_format_schemas(name, holder[key], [*path, key], schema_format, location=location)
 
     def _resolve_asyncapi_ref(self, ref: str) -> AsyncAPIResolvedRef:
-        """Resolve an AsyncAPI Reference Object to raw data and a parser path."""
+        """Resolve an AsyncAPI Reference Object to raw data and a parser path.
+
+        The pointer is read by row ``legacy-drop-empty-tokens``.
+        """
         resolved_ref = self._ref_path(ref)
-        file_part, fragment = ([*resolved_ref.split("#", 1), ""])[:2]
+        file_part, _, fragment = resolved_ref.partition("#")
         if file_part:
             remote = is_url(file_part)
             context = AsyncAPIContext(
@@ -596,12 +601,10 @@ class AsyncAPIParser(OpenAPIParser):
         raw_doc, root_parts = context.raw_obj, context.root_parts
         if not fragment:
             return AsyncAPIResolvedRef(raw_doc, root_parts or [resolved_ref], context)
-        pointer = [p for p in fragment.split("/") if p]
-        path_pointer = [unescape_json_pointer_segment(p) for p in pointer]
-        if not path_pointer:
+        if not (tokens := ref_fragment_tokens(raw_doc, fragment, "legacy-drop-empty-tokens")):
             return AsyncAPIResolvedRef(raw_doc, [*root_parts, "#/"], context)
-        target = get_model_by_path(raw_doc, pointer)
-        return AsyncAPIResolvedRef(target, self._pointer_parse_path(root_parts, path_pointer), context)
+        target = _get_model_by_decoded_path(raw_doc, tokens)
+        return AsyncAPIResolvedRef(target, self._pointer_parse_path(root_parts, tokens), context)
 
     def _iter_message_payload_schemas(
         self,
@@ -879,22 +882,10 @@ class AsyncAPIParser(OpenAPIParser):
         self,
         context_sources: dict[tuple[str, ...], AsyncAPIContext],
     ) -> None:
-        """Parse the targets each AsyncAPI context reserves, in key order, until a round adds no model.
-
-        A target is read from the document of its context.
-        """
-        while True:
-            model_count = len(self.results)
-            for root_key, context in context_sources.items():
-                if not self.reserved_refs.get(root_key):
-                    continue
-                with self._asyncapi_context(context):
-                    for target in _schema_documents.reserved_targets(
-                        self, list(root_key), context.raw_obj, self._reserved_ref_loaded
-                    ):
-                        self.parse_json_pointer(context.raw_obj, target["key"], list(root_key))
-            if model_count == len(self.results):
-                return
+        """Parse the targets each AsyncAPI context reserves (``_parse_reserved_rounds``), from its document."""
+        self._parse_reserved_rounds(
+            lambda: ((list(root), self._asyncapi_context(context)) for root, context in context_sources.items())
+        )
 
     def parse_raw(self) -> None:
         """Parse AsyncAPI component schemas and message payload/header schemas."""
