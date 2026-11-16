@@ -25,7 +25,6 @@ from __future__ import annotations
 import json
 from contextlib import contextmanager
 from copy import copy
-from dataclasses import replace
 from functools import partial
 from itertools import chain
 from operator import is_not
@@ -193,8 +192,7 @@ def _single_value_enum_as_const(schema: dict[str, YamlValue]) -> dict[str, YamlV
         isinstance(enum := schema.get("enum"), list)
         and len(enum) == 1
         and "const" not in schema
-        and resolve_null_facts(replace(dump_null_sources(schema), enum_null=enum[0] is None), "enum-as-const").rule
-        != "nullable-enum-not-const"
+        and resolve_null_facts(dump_null_sources(schema), "enum-as-const").rule != "nullable-enum-not-const"
     ):
         schema = {
             ("const" if key == "enum" else key): enum[0] if key == "enum" else item for key, item in schema.items()

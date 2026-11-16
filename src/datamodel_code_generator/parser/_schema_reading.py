@@ -8,7 +8,6 @@ JSON pointer walk (``get_model_by_path``, ``split_json_pointer``, ``unescape_jso
 
 from __future__ import annotations
 
-from dataclasses import replace
 from functools import partial
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple
@@ -102,17 +101,7 @@ def _dump_parts_admit_null(parts: Sequence[Mapping[str, Any]], *, own_last: bool
 
 def _dump_enum_entries_skip_null(dump: Mapping[str, Any]) -> bool:
     """Return whether the ``x-enum-*`` entries of a dumped schema leave out the null of its enum (site ``enum``)."""
-    return (
-        resolve_null_facts(
-            replace(
-                dump_null_sources(dump),
-                type_string=dump.get("type") == "string",
-                enum_null=None in (dump.get("enum") or ()),
-            ),
-            "enum",
-        ).rule
-        == "enum-null-as-nullable"
-    )
+    return resolve_null_facts(dump_null_sources(dump), "enum").rule == "enum-null-as-nullable"
 
 
 def _intersect_dumps(  # noqa: PLR0913

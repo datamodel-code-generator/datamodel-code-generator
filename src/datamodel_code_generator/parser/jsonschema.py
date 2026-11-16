@@ -321,6 +321,7 @@ from datamodel_code_generator.parser._null_facts import (
     NullSources,
     dump_null_sources,  # noqa: F401  # Preserve the established parser.jsonschema export.
     null_schema,
+    null_sources,
     resolve_null_facts,
 )
 from datamodel_code_generator.parser._object_maps import _schema_assertions, _with_null
@@ -901,8 +902,7 @@ def _null_sources(
     Only the sites that read it ask ``type_has_null`` (``JsonSchemaParser._type_has_null``), which records its first
     answer.
     """
-    sources = _type_null_sources(obj)
-    return replace(sources, type_has_null=type_has_null(obj)) if site in _RECORDED_TYPE_NULL_SITES else sources
+    return _type_null_sources(obj, type_has_null=site in _RECORDED_TYPE_NULL_SITES and type_has_null(obj))
 
 
 def _type_excludes_member_null(obj: JsonSchemaObject, mode: NullMode) -> bool:
@@ -5227,9 +5227,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 answer, cut = target_admits(part.ref, seen)
                 if not answer or not self._ref_siblings_are_parts_of(part):
                     return answer, cut
-            sources = _null_sources(part, "all-of-union", self._type_has_null)
-            if sources.const_set and not self._features_at(part).const_support:
-                sources = replace(sources, const_set=False, const_null=False)
+            sources = _type_null_sources(
+                part, const_support="const" not in part.extras or self._features_at(part).const_support
+            )
             if not resolve_null_facts(sources, "all-of-union", self._null_mode).admits_null:
                 return False, cut
             for branches in (part.anyOf, part.oneOf):
@@ -7560,7 +7560,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and obj.read_as_const
             and "const" in obj.extras
             and (exact := self._exact_const_enum_value(obj))
-            and resolve_null_facts(replace(_type_null_sources(obj), enum_null=exact[0] is None), "enum-as-const").rule
+            and resolve_null_facts(_type_null_sources(obj, enum=exact), "enum-as-const").rule
             != "nullable-enum-not-const"
         )
 
@@ -7604,8 +7604,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _literal_values_type(self, values: list[Any]) -> DataType:
         """Return the Literal type of enum values, joined with the types of values no Literal holds (``_widened``)."""
-        literal_values, non_literal_values, value_null = _value_keywords.partition_enum_values(self, values)
-        has_null = bool(resolve_null_facts(NullSources(enum_null=value_null), "enum-literal").admits_null)
+        literal_values, non_literal_values = _value_keywords.partition_enum_values(self, values)
+        has_null = bool(resolve_null_facts(null_sources(None, enum=values), "enum-literal").admits_null)
         if not non_literal_values:
             return self.data_type(
                 literals=literal_values,

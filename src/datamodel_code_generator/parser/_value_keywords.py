@@ -57,7 +57,7 @@ from datamodel_code_generator.parser._intersection import (
     declared_types,
     inherited_positional_tail,
 )
-from datamodel_code_generator.parser._null_facts import NullSources, dump_null_sources, resolve_null_facts
+from datamodel_code_generator.parser._null_facts import NullSources, null_sources, resolve_null_facts
 from datamodel_code_generator.parser._schema_object import _ANNOTATION_KEYWORDS, JsonSchemaObject, _locate
 from datamodel_code_generator.parser._schema_reading import (
     _constraint_values,
@@ -277,10 +277,6 @@ def _imported_type_paths(data_type: DataType) -> Iterator[str]:
                 yield _import_path(import_)
 
 
-_NULL_TYPE_SOURCES: Final[NullSources] = NullSources(type_null=True)
-"""The null sources of a branch whose ``type`` is null as written, which ``_extract_const_enum_from_combined`` reads."""
-
-
 class ArrayBoundsHost(Protocol):
     """The parser class whose derived array length constraints ``get_effective_array_length`` reads."""
 
@@ -485,8 +481,8 @@ def extract_const_enum_from_combined(  # noqa: PLR0912
             continue
         if item is True:
             return None
-        if item.type == "null" and "const" not in item.extras:
-            null_branches.append(_NULL_TYPE_SOURCES)
+        if "const" not in item.extras and (sources := null_sources(item.type)).type_null:
+            null_branches.append(sources)
             continue
 
         if "const" not in item.extras:
@@ -530,9 +526,7 @@ def extract_const_enum_from_combined(  # noqa: PLR0912
         [item.title for item in branches if item.title],
         [item.description or "" for item in branches],
         final_type,
-        bool(
-            resolve_null_facts(dump_null_sources({"type": parent.type}), "const-enum", parts=null_branches).admits_null
-        ),
+        bool(resolve_null_facts(null_sources(parent.type), "const-enum", parts=null_branches).admits_null),
         values_as_written,
     )
 
@@ -1358,18 +1352,16 @@ def _value_bounds(value: object, obj: JsonSchemaObject) -> dict[str, float]:
 
 def partition_enum_values(
     parser: ValueKeywordsHost, enum_values: list[Any]
-) -> tuple[list[JsonSchemaLiteral], list[object], bool]:
+) -> tuple[list[JsonSchemaLiteral], list[object]]:
     """Split enum values into literal (``is_literal_kind``) and non-literal values."""
     literal_values: list[JsonSchemaLiteral] = []
     non_literal_values: list[object] = []
-    has_null = False
     bool_literals = parser._output_model_context.supports_boolean_literals  # noqa: SLF001
     for enum_value in enum_values:
         if (kind := literal_value_kind(enum_value)) == "none":
-            has_null = True
             non_literal_values.append(enum_value)
         elif is_literal_kind(kind, bool_literals=bool_literals):
             literal_values.append(enum_value)
         else:
             non_literal_values.append(enum_value)
-    return literal_values, non_literal_values, has_null
+    return literal_values, non_literal_values

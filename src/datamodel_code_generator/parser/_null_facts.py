@@ -31,6 +31,7 @@ __all__ = [
     "NullSources",
     "dump_null_sources",
     "null_schema",
+    "null_sources",
     "resolve_null_facts",
     "with_null",
 ]
@@ -101,7 +102,7 @@ NullSite: TypeAlias = Literal[
   (``JsonSchemaParser._enforced_value_keywords``).
 * ``const-enum``: the enum a ``oneOf`` or ``anyOf`` of consts gives, whose ``parts`` are its branches typed null
   without a const; the parent's and the branches' ``type`` are read as written, without the mark of
-  ``legacy-nullable-as-type-list`` (``parser/_value_keywords.py:extract_const_enum_from_combined``).
+  ``legacy-nullable-as-type-list`` (row ``as-written``; ``parser/_value_keywords.py:extract_const_enum_from_combined``).
 * ``enum-as-const``: a one-value enum, or the value a const narrows an enum to, read as that const: ``enum_null`` is
   whether that value is null (``parser/_schema_documents.py:_single_value_enum_as_const``,
   ``JsonSchemaParser._reads_enum_as_const``).
@@ -328,21 +329,52 @@ def with_null(schema: dict[str, Any], form: NullForm) -> dict[str, Any]:
     return {"anyOf": [schema, null_schema()]}
 
 
+def null_sources(  # noqa: PLR0913
+    type_: object,
+    *,
+    nullable: bool | None = None,
+    type_has_null: bool | None = None,
+    member_types: Sequence[object] = (),
+    copied_nullable: bool = False,
+    enum: Sequence[Any] | None = None,
+    const: tuple[()] | tuple[Any] = (),
+) -> NullSources:
+    """Return the null sources of one schema: the one place that reads which ``type`` values and keywords admit null.
+
+    ``type_`` is the ``type`` as the site reads it: ``_read_type`` of a schema object (row
+    ``legacy-nullable-as-type-list``), as written for a dump and for the parent and branches of ``const-enum`` (row
+    ``as-written``). ``type_has_null`` is the answer the schema object
+    recorded (``JsonSchemaObject.type_has_null``); None: the ``schema-type`` answer of ``type_`` itself, a dump's own.
+    ``member_types`` are the ``type`` values of the direct ``anyOf`` and ``oneOf`` members, ``enum`` the values the
+    ``enum`` is read as, ``const`` the ``const`` as a one-tuple, empty when unset or not read by the dialect.
+    """
+    is_list = isinstance(type_, list)
+    lists_null = is_list and "null" in type_
+    return NullSources(
+        type_has_null=lists_null if type_has_null is None else type_has_null,
+        type_null=type_ == "null",
+        type_list=is_list,
+        type_lists_null=lists_null,
+        type_lists_object=is_list and "object" in type_,
+        typed=type_ is not None,
+        type_string=type_ == "string",
+        member_null=bool(member_types)
+        and any(item == "null" or (isinstance(item, list) and "null" in item) for item in member_types),
+        nullable=nullable,
+        copied_nullable=copied_nullable,
+        enum_null=bool(enum) and None in enum,
+        enum_set=bool(enum),
+        const_set=bool(const),
+        const_null=bool(const) and const[0] is None,
+    )
+
+
 def dump_null_sources(dump: Mapping[str, Any]) -> NullSources:
-    """Return the null sources of a dumped schema's own ``type`` and ``nullable``; members and ``enum`` are not read.
+    """Return the null sources of a dumped schema's own ``type``, ``nullable`` and ``enum``, not its members' or const.
 
     ``type_has_null`` is the ``schema-type`` answer of its own ``type`` list.
     """
-    type_ = dump.get("type")
-    lists_null = isinstance(type_, list) and "null" in type_
-    return NullSources(
-        type_has_null=lists_null,
-        type_null=type_ == "null",
-        type_list=isinstance(type_, list),
-        type_lists_null=lists_null,
-        typed=type_ is not None,
-        nullable=dump.get("nullable"),
-    )
+    return null_sources(dump.get("type"), nullable=dump.get("nullable"), enum=dump.get("enum"))
 
 
 @final

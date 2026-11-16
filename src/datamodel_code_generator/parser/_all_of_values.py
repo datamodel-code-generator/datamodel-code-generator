@@ -43,7 +43,7 @@ from datamodel_code_generator.parser._intersection import (
 )
 from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
 from datamodel_code_generator.parser._lightweight_types import LightweightTypesHost
-from datamodel_code_generator.parser._null_facts import dump_null_sources, null_schema
+from datamodel_code_generator.parser._null_facts import null_schema, null_sources
 from datamodel_code_generator.parser._schema_object import (
     _MODELED_POSITIONS,
     JsonSchemaObject,
@@ -1264,7 +1264,7 @@ def merge_all_of_root_schema(parser: AllOfValuesHost, site: ValueSite) -> JsonSc
         merged, obj.model_dump(exclude={"allOf"}, exclude_unset=True, by_alias=True)
     )
     typed = [
-        dump_null_sources({"type": type_})
+        null_sources(type_)
         for type_ in (*sibling_types, *(schema.type for schema in (*mapping_schemas, obj) if schema.type))
     ]
     if parser._null_mode.type_excludes_member_null and any(part.type_lists_null for part in typed):  # noqa: SLF001
