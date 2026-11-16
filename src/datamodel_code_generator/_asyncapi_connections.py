@@ -1070,20 +1070,46 @@ class _Reader:
         media = _media(message, self.default_media)
         schema = as_mapping(target[0])
         encoding = schema.get("contentEncoding")
-        binary = encoding is None and schema.get("format") == "binary"
+        kind = media_kind(media)
+        is_str = _is_string_schema(schema, self.document, target[1], self.loaded)
+        binary = encoding is None and (schema.get("format") == "binary" or (kind == "binary" and is_str))
         if media == _EVENT_STREAM:
             codec: Literal["json", "utf8", "bytes", "event"] = "event"
-        elif media == "application/octet-stream" or (binary and media_kind(media) != "json"):
+        elif media == "application/octet-stream" or (binary and kind != "json"):
             codec = "bytes"
-        elif media == "text/plain" and encoding is None and schema.get("type") == "string":
+        elif kind == "text" and encoding is None and is_str:
             codec = "utf8"
-        elif media_kind(media) == "json":
+        elif kind == "json":
             codec = "json"
         else:
             content = media if encoding is None else f"{media} encoded as {encoding}"
             skips.append(("message_content_types", f"message {pointer} has content type {content}"))
             return
         yield ReadMessage(declaration, "send" if action == "send" else "receive", codec, tokens, payload_ref)
+
+
+def _is_string_schema(
+    schema: Mapping[str, YamlValue],
+    document: _Document,
+    tokens: Tokens,
+    loaded: Callable[[str], YamlValue],
+) -> bool:
+    """Return whether `schema` models a string value (plain, list-typed, enum, const, or allOf)."""
+    schema_type = schema.get("type")
+    if schema_type in ("string", ["string"]):
+        return True
+    if isinstance(schema.get("const"), str):
+        return True
+    enum = schema.get("enum")
+    if isinstance(enum, list) and enum and all(isinstance(item, str) for item in enum):
+        return True
+    all_of = schema.get("allOf")
+    if isinstance(all_of, list) and all_of:
+        for index, member in enumerate(all_of):
+            resolved = document.resolved(member, (*tokens, "allOf", str(index)), loaded)
+            if resolved is not None and _is_string_schema(as_mapping(resolved[0]), document, resolved[1], loaded):
+                return True
+    return False
 
 
 def read(raw: Mapping[str, YamlValue], loaded: Callable[[str], YamlValue]) -> ReadDocument:
