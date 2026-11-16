@@ -868,15 +868,26 @@ SETTLE_DISCRIMINATED_UNIONS = PassDecl(
     Scope.GLOBAL,
     PassKind.TRANSFORM,
     reads=_facts(
-        Fact.DEFAULTS, Fact.DISCRIMINATOR_TAGS, Fact.FIELD_SET, Fact.FIELD_TYPES, Fact.NULLABLE, Fact.REQUIRED
+        Fact.BASES,
+        Fact.DEFAULTS,
+        Fact.DISCRIMINATOR_TAGS,
+        Fact.FIELD_NAMES,
+        Fact.FIELD_SET,
+        Fact.FIELD_TYPES,
+        Fact.MODEL_KIND,
+        Fact.NULLABLE,
+        Fact.REQUIRED,
     ),
     writes=_facts(Fact.DISCRIMINATOR_TAGS),
     summary=(
         "After every module is processed: writes no `discriminator=` for the union of a lone `$ref` variant that has "
         "no tag, which a union of any module may still write into it, nor for a lone variant that is no model (a "
-        "scalar, `Any` or None, as a collapsed alias or an inline schema leaves it), nor for a union that takes a "
-        "root model, or a type alias, with a default as a variant, also where `--collapse-root-models` inlines the "
-        "union into the items of a list."
+        "scalar, `Any` or None, as a collapsed alias or an inline schema leaves it), nor for a union a nested choice "
+        "of which gives it a variant without the tag in the field its class has, nor for a union that takes a "
+        "root model, or a type alias, with a default as a variant, nor for a union two of whose choices hold one tag "
+        "in the tag fields that were written; the last two also where `--collapse-root-models` inlines the union "
+        "into the items of a list, where a union whose choices do not all carry the tag it names takes the name the "
+        "site of its root model writes, or none."
     ),
     condition="the output fields write `discriminator=`",
 )
@@ -1788,6 +1799,16 @@ WARN_ABOUT_MSGSPEC_DECODING = PassDecl(
     writes=_facts(RenderFact.STDERR),
     reads=_facts(Fact.FIELD_TYPES),
     after=(After("warn_about_variant_discriminator_tags", "warnings keep their order"),),
+)
+WARN_ABOUT_UNMATCHED_TYPE_OVERRIDE_KEYS = PassDecl(
+    "warn_about_unmatched_type_override_keys",
+    Phase.IMPORTS,
+    Scope.GLOBAL,
+    PassKind.CHECK,
+    writes=_facts(RenderFact.STDERR),
+    reads=_facts(Fact.TYPE_OVERRIDES, Fact.FIELD_NAMES, RenderFact.CLASS_NAMES),
+    after=(After("warn_about_msgspec_decoding", "warnings keep their order"),),
+    condition="type_overrides",
 )
 SET_NESTED_MODEL_DEFAULT_FACTORY_METADATA = PassDecl(
     "set_nested_model_default_factory_metadata",

@@ -227,7 +227,9 @@ source = "release-note"
   `python-api`, `template`, `runtime`, `warning`, `error`, `experimental` or `preset`.
 - `action`: `required` (users must change something; give `migrate`), `keep` (the output changes and `keep.flags`
   restore it, or `keep.note` says how outside the command line), `review` (the output changes and nothing restores
-  it; `keep.note` may name the nearest tool), `warn` (a new warning) or `none`.
+  it; `keep.note` may name the nearest tool), `warn` (a new warning) or `none`. A `warn` entry is listed under "New
+  warnings" in the guide and "New Warnings" in the release notes; only the `deprecation:<id>` entries are listed as
+  deprecations with their planned removal.
 - `affects` narrows who meets the change: `output_model_types`, `input_file_types`, `options` (only users who pass
   them; their keep flags are listed apart), `python_api`, `templates` and `experimental` (feature ids).
 - `supersedes` drops older entries from the path of a user who meets both; `reverts` drops a change and the entry

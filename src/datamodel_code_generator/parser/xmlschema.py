@@ -118,6 +118,28 @@ class _OccurrenceContext(NamedTuple):
 
 
 DEFAULT_OCCURRENCE = _OccurrenceContext()
+
+
+class _Occurs(NamedTuple):
+    """The `minOccurs` and `maxOccurs` of an element, particle, group or wildcard as written, and what they say.
+
+    Row `legacy-string-occurs-tests`: `may_occur`, `optional` and `repeats` compare the strings "0" and "1", while the
+    bounds that `_apply_occurs` and the combine functions compute read the raw values with `_safe_int` (so "00" is 0
+    there).
+    """
+
+    min_occurs: str | None
+    max_occurs: str | None
+    may_occur: bool
+    optional: bool
+    repeats: bool
+
+
+def _occurs(owner: ET.Element) -> _Occurs:
+    min_occurs, max_occurs = owner.get("minOccurs"), owner.get("maxOccurs")
+    return _Occurs(min_occurs, max_occurs, max_occurs != "0", min_occurs == "0", max_occurs not in {None, "1"})
+
+
 _NUMERIC_FACET_KEYS = {
     "minInclusive": "minimum",
     "maxInclusive": "maximum",
@@ -829,42 +851,54 @@ class _XMLSchemaConverter:
     def _apply_common_element_metadata(self, element: ET.Element, schema: JsonSchema) -> JsonSchema:
         if documentation := _documentation(element):
             schema["description"] = documentation
-        if "default" in element.attrib:
-            default = str(element.get("default"))
-            self._warn_invalid_default(
-                "element",
-                element.get("name"),
-                default,
-                element.get("type"),
-                _first_xsd_child(element, "simpleType"),
-                element,
-            )
-            schema["default"] = self._parse_literal(default, schema, parse_temporal=True)
-        if "fixed" in element.attrib:
-            self._apply_fixed_value(schema, self._parse_literal(str(element.get("fixed")), schema))
+        default = element.get("default")
+        self._apply_value_constraint(
+            schema,
+            "element",
+            element.get("name"),
+            default,
+            element.get("fixed"),
+            element.get("type"),
+            _first_xsd_child(element, "simpleType") if default is not None else None,
+            element,
+        )
         if element.get("nillable") in {"true", "1"}:
             schema = with_null(_copy_schema(schema), "type-list")
         if element.get("abstract") == "true":
             schema["x-xsd-abstract"] = True
         return schema
 
-    @staticmethod
-    def _apply_fixed_value(schema: JsonSchema, fixed_value: Any) -> None:
-        if isinstance(fixed_value, Decimal):
-            schema["x-python-type"] = "Decimal"
-        schema["const"] = fixed_value
-        schema.setdefault("default", fixed_value)
+    def _apply_value_constraint(  # noqa: PLR0913, PLR0917
+        self,
+        schema: JsonSchema,
+        kind: str,
+        name: str | None,
+        default: str | None,
+        fixed: str | None,
+        type_name: str | None,
+        simple_type: ET.Element | None,
+        context: ET.Element,
+    ) -> None:
+        """Write the default and the fixed value of an element or attribute declaration to its schema."""
+        if default is not None:
+            self._warn_invalid_default(kind, name, default, type_name, simple_type, context)
+            schema["default"] = self._parse_literal(default, schema, parse_temporal=True)
+        if fixed is not None:
+            fixed_value = self._parse_literal(fixed, schema)
+            if isinstance(fixed_value, Decimal):
+                schema["x-python-type"] = "Decimal"
+            schema["const"] = fixed_value
+            schema.setdefault("default", fixed_value)
 
     def _apply_occurs(self, element: ET.Element, schema: JsonSchema) -> JsonSchema:  # noqa: PLR6301
-        min_occurs_value = element.get("minOccurs")
-        min_occurs = (_safe_int(min_occurs_value) or 0) if min_occurs_value else 1
-        max_occurs = element.get("maxOccurs")
-        if max_occurs is None or max_occurs == "1":
+        occurs = _occurs(element)
+        if not occurs.repeats:
             return schema
+        min_occurs = (_safe_int(occurs.min_occurs) or 0) if occurs.min_occurs else 1
         array_schema: JsonSchema = {"type": "array", "items": schema}
         if min_occurs:
             array_schema["minItems"] = min_occurs
-        if max_occurs != UNBOUNDED:
+        if (max_occurs := cast("str", occurs.max_occurs)) != UNBOUNDED:  # a repeating particle writes maxOccurs
             max_items = _safe_int(max_occurs)
             if max_items is not None:
                 array_schema["maxItems"] = max_items
@@ -1178,7 +1212,7 @@ class _XMLSchemaConverter:
                 self._apply_group(child, schema, occurrence=occurrence)
             elif particle and _is_xsd_element(child, "element"):
                 self._add_property_from_element(child, schema, occurrence=occurrence)
-            elif particle and _is_xsd_element(child, "any") and child.get("maxOccurs") != "0":
+            elif particle and _is_xsd_element(child, "any") and _occurs(child).may_occur:
                 schema["additionalProperties"] = True
 
     def _apply_particle(self, particle: ET.Element, schema: JsonSchema, *, occurrence: _OccurrenceContext) -> None:
@@ -1197,14 +1231,15 @@ class _XMLSchemaConverter:
 
     def _child_occurrence(self, owner: ET.Element, occurrence: _OccurrenceContext) -> _OccurrenceContext | None:
         """Combine a particle's or group's occurs with its parent's; None when it may not occur."""
-        if (max_occurs := owner.get("maxOccurs")) == "0":
+        occurs = _occurs(owner)
+        if not occurs.may_occur:
             return None
-        required = occurrence.required and owner.get("minOccurs", "1") != "0" and _local_name(owner.tag) != "choice"
-        repeating = max_occurs is not None and max_occurs != "1"
+        required = occurrence.required and not occurs.optional and _local_name(owner.tag) != "choice"
+        repeating = occurs.repeats
         min_items = self._combine_min_items(
-            occurrence.min_items, owner.get("minOccurs") if occurrence.min_items is not None or repeating else None
+            occurrence.min_items, occurs.min_occurs if occurrence.min_items is not None or repeating else None
         )
-        max_items = self._combine_max_items(occurrence.max_items, max_occurs if repeating else None)
+        max_items = self._combine_max_items(occurrence.max_items, occurs.max_occurs if repeating else None)
         return _OccurrenceContext(
             required, occurrence.repeating or repeating, min_items if required else None, max_items
         )
@@ -1231,7 +1266,8 @@ class _XMLSchemaConverter:
         *,
         occurrence: _OccurrenceContext,
     ) -> None:
-        if element.get("maxOccurs") == "0":
+        occurs = _occurs(element)
+        if not occurs.may_occur:
             return
         name = element.get("name") or _local_name(element.get("ref", ""))
         if not name:
@@ -1245,7 +1281,7 @@ class _XMLSchemaConverter:
                 max_items=occurrence.max_items,
             )
         properties[name] = property_schema
-        if occurrence.required and element.get("minOccurs", "1") != "0":
+        if occurrence.required and not occurs.optional:
             schema.setdefault("required", []).append(name)
 
     def _apply_attributes(
@@ -1302,14 +1338,12 @@ class _XMLSchemaConverter:
         default = attribute.get("default")
         if default is None and "default" not in attribute.attrib and "fixed" not in attribute.attrib:
             default = source_attribute.get("default")
-        if default is not None:
-            self._warn_invalid_default("attribute", name, default, type_name, simple_type, attribute)
-            attribute_schema["default"] = self._parse_literal(default, attribute_schema, parse_temporal=True)
         fixed = attribute.get("fixed")
         if fixed is None and "fixed" not in attribute.attrib:
             fixed = source_attribute.get("fixed")
-        if fixed is not None:
-            self._apply_fixed_value(attribute_schema, self._parse_literal(fixed, attribute_schema))
+        self._apply_value_constraint(
+            attribute_schema, "attribute", name, default, fixed, type_name, simple_type, attribute
+        )
         schema.setdefault("properties", {})[name] = attribute_schema
         if use == "required" and (inherited_required is None or name not in inherited_required):
             schema.setdefault("required", []).append(name)

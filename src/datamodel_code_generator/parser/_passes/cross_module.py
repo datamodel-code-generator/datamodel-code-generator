@@ -22,8 +22,6 @@ from datamodel_code_generator.model.base import (
     DataModel,
     _find_base_classes,
 )
-from datamodel_code_generator.model.enum import Enum
-from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._import_binding import (
     ModuleImportTarget,
@@ -40,6 +38,9 @@ from datamodel_code_generator.parser._passes._shared import (
     _context_models,
     _get_model_module_name,
     _named_data_types,
+    enum_member_literal_values,
+    keyed_module_members,
+    module_member_keys,
     module_members,
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
@@ -161,7 +162,7 @@ def _flattener(
             ModuleImportTarget.of(parser.imports, ctx, run),
             model,
             (data_type for field in copied for data_type in field.data_type.all_data_types),
-            members=keyed_models(module_members(parser, ctx.models), "module members"),
+            members=module_member_keys(parser, ctx.models, row="members"),
             producer=ImportProducer(producer, model),
         )
 
@@ -229,14 +230,9 @@ def write_enum_member_tags_as_values(parser: CrossModuleHost, run: CrossModuleRu
     for model in _context_models(run.contexts):
         for field in model.fields:
             data_type = field.data_type
-            if (
-                (reference := data_type._enum_member_literal_reference) is None  # noqa: SLF001
-                or data_type.alias
-                or not isinstance(enum := reference.source, Enum)
-            ):
+            if data_type.alias or (written := enum_member_literal_values(data_type)) is None:
                 continue
-            member_values = {member.name: enum.get_member(member).value for member in enum.fields}
-            values = [member_values[member] for _, member in data_type.enum_member_literals]
+            values = written[1]
             if enum_tag_as_values(values, bool_literals=parser.data_model_type.SUPPORTS_BOOLEAN_LITERAL):
                 parser._graph_builder.replace_field_type(  # noqa: SLF001
                     field, data_type.__class__(literals=values, is_optional=data_type.is_optional)
@@ -288,7 +284,7 @@ def import_removed_reuse_canonicals(parser: CrossModuleHost, run: CrossModuleRun
             }
         ):
             continue
-        members = keyed_models(ctx.models, "module members")
+        members = module_member_keys(parser, ctx.models, row="members")
         module = ModuleImportTarget.of(parser.imports, ctx, run)
         for model in ctx.models:
             for data_type in _named_data_types(model):
@@ -342,8 +338,8 @@ def import_renamed_types(parser: CrossModuleHost, run: CrossModuleRun) -> None:
     if not by_key:
         return
     for ctx in run.contexts:
-        members = module_members(parser, ctx.models)
-        keyed_members = keyed_models(members, "module members")
+        members = module_members(parser, ctx.models, row="members")
+        keyed_members = keyed_module_members(members)
         stale_users = [
             (model, data_type, import_)
             for model in members
@@ -371,7 +367,8 @@ def import_enum_member_literal_classes(parser: CrossModuleHost, run: CrossModule
     changes after the literal is made.
     """
     for ctx in run.contexts:
-        members = keyed_models(ctx.models, "module members")
+        members = module_member_keys(parser, ctx.models, row="members")
+        module = ModuleImportTarget.of(parser.imports, ctx, run)
         for model in ctx.models:
             for data_type in model.all_data_types:
                 if (reference := data_type._enum_member_literal_reference) is None or data_type.alias:  # noqa: SLF001
@@ -383,7 +380,7 @@ def import_enum_member_literal_classes(parser: CrossModuleHost, run: CrossModule
                         reference,
                         _get_model_module_name(model, run.model_path_to_module_name),
                         _module_qualified_name(reference, run.model_path_to_module_name),
-                        ModuleImportTarget.of(parser.imports, ctx, run),
+                        module,
                         producer=ImportProducer("import-enum-member-literal-classes", model),
                         import_ledger=parser._import_ledger,  # noqa: SLF001
                     )
@@ -438,7 +435,7 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
 
     base_class_model.file_path = first_root_file_path
     parser._generic_base_model = base_class_model  # noqa: SLF001
-    first_root_models.insert(0, base_class_model)
+    parser._graph_builder.set_module_models(first_root_models, [base_class_model, *first_root_models])  # noqa: SLF001
     parser._graph_builder.register_model(base_class_model)  # noqa: SLF001
 
     base_class_dt = BaseClassDataType(type=base_class_ref.name, reference=base_class_ref)

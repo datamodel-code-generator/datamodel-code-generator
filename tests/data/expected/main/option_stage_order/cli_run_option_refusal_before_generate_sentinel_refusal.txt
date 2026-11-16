@@ -1,0 +1,2 @@
+Error: --collapse-root-models-name-strategy requires --collapse-root-models
+exit: ERROR

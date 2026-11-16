@@ -6,17 +6,21 @@ import contextlib
 import re
 import sys
 import warnings
+from contextvars import ContextVar
 from copy import deepcopy
-from functools import lru_cache
+from functools import lru_cache, partial
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, Literal, TypeVar
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeVar
 
 from typing_extensions import Sentinel, override
 
+from datamodel_code_generator._context_scope import context_values
+from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator.deprecations import warn_deprecated
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Generator, Iterable, Iterator
     from pathlib import Path
     from types import ModuleType
 
@@ -43,6 +47,22 @@ def load_toml(path: Path) -> dict[str, Any]:
     """Load and parse a TOML file, returning a document the caller owns."""
     record_watch_dependency(path)
     return deepcopy(_parse_toml(path.read_bytes()))
+
+
+def _load_config_toml(path: Path) -> dict[str, Any]:
+    """Load a configuration file as ``load_toml`` does, raising an ``Error`` that names it where it is not valid TOML.
+
+    A file that is not valid TOML (``TOMLDecodeError``) or not UTF-8 (``UnicodeDecodeError``), both ``ValueError``,
+    is reported as an invalid configuration (#6844). The error is a ``ValueError`` as well, so a caller of
+    ``load_pyproject_config`` catches it as before. ``load_toml`` keeps raising them as it did for its callers.
+    """
+    try:
+        return load_toml(path)
+    except ValueError as exc:
+        from datamodel_code_generator import _InvalidConfigTomlError  # noqa: PLC0415
+
+        msg = f"Invalid TOML in {path}: {exc}"
+        raise _InvalidConfigTomlError(msg) from exc
 
 
 def _find_pyproject_toml(settings_path: Path) -> Path | None:
@@ -85,6 +105,151 @@ _YAML_TOKEN_ENDS = f"\0{_YAML_BLANKS}{_YAML_LINE_BREAKS}"
 # Pattern for scientific notation without decimal point (e.g., 1e-5, 1E+10)
 # Standard YAML only matches floats with decimal points, missing patterns like "1e-5"
 _YAML_SCIENTIFIC_NOTATION_PATTERN = re.compile(r"^[-+]?[0-9][0-9_]*[eE][-+]?[0-9]+$")
+_YAML_1_1_NUMBER_TAGS: Final = MappingProxyType({
+    "tag:yaml.org,2002:float": "tag:datamodel-code-generator:yaml-1.1-float",
+    "tag:yaml.org,2002:int": "tag:datamodel-code-generator:yaml-1.1-int",
+})
+"""The tag of a plain scalar that PyYAML reads as a number of the tag it replaces and YAML 1.2 reads as text."""
+_YAML_1_1_NUMBER_LOOKAHEAD: Final = r"(?=[^_:]*[_:])"
+"""What keeps a number pattern of PyYAML to the texts with ``_`` or ``:``: digits joined by ``_`` and base 60, such as
+``18_24`` and ``16:9``, which YAML 1.2 and the ryaml reader read as strings."""
+
+
+@record
+class YamlStringKeywords:
+    """The keywords whose values the document models read as strings: a scalar, the items of a list, a map's values."""
+
+    scalars: frozenset[str]
+    lists: frozenset[str]
+    maps: frozenset[str]
+
+
+@mutable_record(eq=False, slots=True)
+class _YamlNumberReading:
+    """How a generation run reads the plain scalars that YAML 1.1 reads as numbers and YAML 1.2 as text.
+
+    By default as the numbers PyYAML reads, counting them (``held``); as their text (``as_text``); or as their text
+    where a string is required (``strings``) and as their numbers elsewhere.
+    """
+
+    as_text: bool = False
+    strings: YamlStringKeywords | None = None
+    held: int = 0
+
+
+@record(eq=False)
+class _YamlNumberText:
+    """A scalar read where a string may be required, until the document it is in decides (``settle_yaml_numbers``).
+
+    It is a key of its own: two keys of a mapping that spell one text are one key once it becomes its text.
+    """
+
+    text: str
+    number: int | float
+
+
+_OUTSIDE_A_RUN: Final = _YamlNumberReading()
+"""The reading of the YAML loaded outside a generation run: the numbers PyYAML reads, counted as in a run, so that the
+parsed-source cache keeps which of its documents held one."""
+_YAML_NUMBER_READING: Final[ContextVar[_YamlNumberReading]] = ContextVar("yaml_number_reading", default=_OUTSIDE_A_RUN)
+
+
+@contextlib.contextmanager
+def yaml_number_reading(*, as_text: bool) -> Generator[None]:
+    """Read the YAML of a generation run in the block: the YAML 1.1-only numbers as their text with ``as_text``.
+
+    Without ``as_text`` they are the numbers PyYAML reads, and the run counts the ones its documents held
+    (``yaml_numbers_held``). A block inside a run keeps the run's reading, unless it reads them as text and the run does
+    not.
+    """
+    if (reading := _YAML_NUMBER_READING.get()) is not _OUTSIDE_A_RUN and (reading.as_text or not as_text):
+        yield
+        return
+    with context_values({_YAML_NUMBER_READING: _YamlNumberReading(as_text=as_text)}):
+        yield
+
+
+@contextlib.contextmanager
+def yaml_numbers_read_where_strings_required(strings: YamlStringKeywords) -> Generator[None]:
+    """Read in the block a YAML 1.1-only number as its text where a string is required, else as its number.
+
+    A string is required for a mapping key, and for the values of the keywords in ``strings``.
+    """
+    with context_values({_YAML_NUMBER_READING: _YamlNumberReading(strings=strings)}):
+        yield
+
+
+def yaml_numbers_held() -> int:
+    """Return how many YAML 1.1-only numbers the documents read so far held, read as the numbers PyYAML reads."""
+    return _YAML_NUMBER_READING.get().held
+
+
+def note_yaml_numbers_held(count: int) -> None:
+    """Count the YAML 1.1-only numbers that a document read from a cache held when it was read (``count``)."""
+    _YAML_NUMBER_READING.get().held += count
+
+
+def yaml_number_reading_key() -> str:
+    """Return the part of a cache key that tells the readings of the YAML 1.1-only numbers apart."""
+    reading = _YAML_NUMBER_READING.get()
+    return "text" if reading.as_text else "numbers" if reading.strings is None else "strings"
+
+
+def _construct_yaml_1_1_number(construct: Callable[[Any, Any], Any], loader: Any, node: Any) -> Any:
+    """Construct a plain scalar that YAML 1.1 reads as a number and YAML 1.2 as text, as the reading says."""
+    reading = _YAML_NUMBER_READING.get()
+    if reading.as_text:
+        return node.value
+    number = construct(loader, node)
+    if reading.strings is not None:
+        return _YamlNumberText(node.value, number)
+    reading.held += 1
+    return number
+
+
+def settle_yaml_numbers(data: _T) -> _T:
+    """Return a loaded YAML value read where strings are required (``yaml_numbers_read_where_strings_required``).
+
+    Each scalar that the reading kept for the document to decide becomes its text as a mapping key and as the value of a
+    keyword that requires a string (a scalar, an item of a list, a value of a map), and its number anywhere else. An
+    object or array that the document holds twice decides by the keyword of its first place. A tuple, a pair of an
+    ``!!omap`` or ``!!pairs``, decides as a list without a keyword, and stays a tuple. A document that is one such
+    scalar is no schema, and keeps it.
+    """
+    if (strings := _YAML_NUMBER_READING.get().strings) is None:
+        return data
+    pending: list[tuple[Any, object]] = [(data, None)] if isinstance(data, (dict, list)) else []
+    seen: set[int] = set()
+    tuples: list[tuple[Any, Any]] = []
+    while pending:
+        value, keyword = pending.pop()
+        if id(value) in seen:
+            continue
+        seen.add(id(value))
+        if isinstance(value, dict):
+            if any(isinstance(key, _YamlNumberText) for key in value):
+                items = list(value.items())
+                value.clear()
+                value.update((key.text if isinstance(key, _YamlNumberText) else key, item) for key, item in items)
+            entries: Iterable[tuple[Any, Any]] = value.items()
+            text_items = keyword in strings.maps
+        else:
+            entries = enumerate(value)
+            text_items = keyword in strings.lists
+        for key, item in list(entries):
+            if isinstance(item, tuple):
+                value[key] = pair = list(item)
+                tuples.append((value, key))
+                pending.append((pair, None))
+            elif isinstance(item, _YamlNumberText):
+                value[key] = (
+                    item.text if text_items or (isinstance(key, str) and key in strings.scalars) else item.number
+                )
+            elif isinstance(item, (dict, list)):
+                pending.append((item, key if isinstance(value, dict) else None))
+    for holder, key in reversed(tuples):
+        holder[key] = tuple(holder[key])
+    return data
 
 
 def _warning_filter_matches(pattern: Any, text: str) -> bool:
@@ -293,7 +458,9 @@ def _fast_construct_document(loader: Any, root: Any) -> Any:  # noqa: PLR0914, P
 def _custom_safe_loader(base: Any) -> type:
     """Return ``base`` with YAML 1.2 bool handling, timestamps as strings and exponents without a point.
 
-    A plain ``=`` is a string, as in YAML 1.2: the YAML 1.1 ``value`` type it would resolve to has no constructor.
+    A plain ``=`` is a string, as in YAML 1.2: the YAML 1.1 ``value`` type it would resolve to has no constructor. A
+    number with ``_`` or ``:`` reads as the generation run reads it (``yaml_number_reading``): the number PyYAML reads,
+    by default.
     """
 
     class CustomSafeLoader(base):
@@ -340,6 +507,18 @@ def _custom_safe_loader(base: Any) -> type:
             "tag:yaml.org,2002:float",
             _YAML_SCIENTIFIC_NOTATION_PATTERN,
         ))
+
+    # A number that YAML 1.2 reads as text takes the tag of its kind first, in PyYAML's order; it reads as the run says.
+    for resolvers in CustomSafeLoader.yaml_implicit_resolvers.values():
+        resolvers[:0] = [
+            (_YAML_1_1_NUMBER_TAGS[tag], re.compile(_YAML_1_1_NUMBER_LOOKAHEAD + pattern.pattern, pattern.flags))
+            for tag, pattern in resolvers
+            if tag in _YAML_1_1_NUMBER_TAGS
+        ]
+    for tag, number_tag in _YAML_1_1_NUMBER_TAGS.items():
+        CustomSafeLoader.yaml_constructors[number_tag] = partial(
+            _construct_yaml_1_1_number, CustomSafeLoader.yaml_constructors[tag]
+        )
 
     return CustomSafeLoader
 

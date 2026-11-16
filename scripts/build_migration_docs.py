@@ -97,9 +97,13 @@ ACTIONS = {
     "none": "Also changed, no action needed",
 }
 BREAKING_ACTIONS = ("required", "keep", "review")
+NEW_WARNINGS = "New warnings"
+"""The heading of the `warn` entries that deprecate nothing: no removal is planned, unlike `ACTIONS["warn"]`."""
+DEPRECATION_PREFIX = "deprecation:"
 RELEASE_NOTE_SECTIONS = (
     "Deprecations",
     "Scheduled Breaking Changes",
+    "New Warnings",
     "New Options",
     "New Dated Presets",
     "Experimental Features",
@@ -161,7 +165,7 @@ TEXT_KEYS = ("title", "summary", "before", "after", "migrate", "reverts")
 REQUIRED_KEYS = ("kind", "action", "title", "summary", "source")
 KEEP_KEYS = frozenset({"flags", "note"})
 VERIFY_KEYS = frozenset({"schema", "args"})
-DERIVED_PREFIXES = ("deprecation:", "removal:", "experimental:", "preset:", "option:")
+DERIVED_PREFIXES = (DEPRECATION_PREFIX, "removal:", "experimental:", "preset:", "option:")
 JSON_KEYS = (
     "id",
     "release",
@@ -509,7 +513,7 @@ def _derived_changes(
         affects = _registry_affects(item.kind, item.target)
         if release := releases.place(item.warning_since, f"deprecation {item.id}"):
             scheduled = item.status == "scheduled"
-            changes[f"deprecation:{item.id}"] = {
+            changes[f"{DEPRECATION_PREFIX}{item.id}"] = {
                 "release": release,
                 "kind": "warning",
                 "action": "none" if scheduled else "warn",
@@ -980,6 +984,22 @@ def _keep_block(group: Range, latest: str) -> list[str]:
     return lines + notes
 
 
+def _is_deprecation(entry: dict[str, Any]) -> bool:
+    """Return whether an entry is a deprecation of the registry, or a hand entry that extends one by its id."""
+    return entry["id"].startswith(DEPRECATION_PREFIX)
+
+
+def _action_sections(action: str, entries: list[dict[str, Any]]) -> list[tuple[str, list[dict[str, Any]]]]:
+    """Return the headings of one action's entries; the warnings that deprecate nothing get their own heading."""
+    sections = [(ACTIONS[action], entries)]
+    if action == "warn":
+        sections = [
+            (ACTIONS[action], [entry for entry in entries if _is_deprecation(entry)]),
+            (NEW_WARNINGS, [entry for entry in entries if not _is_deprecation(entry)]),
+        ]
+    return [(heading, chosen) for heading, chosen in sections if chosen]
+
+
 def _short_line(entry: dict[str, Any], base: str) -> str:
     release = "unreleased" if entry["release"] == UNRELEASED else entry["release"]
     line = f"- {entry['title']} ({release})"
@@ -1030,15 +1050,14 @@ def guide_page(title: str, intro: str, group: Range, guide: Guide, base: str) ->
         "",
         *_keep_block(group, latest),
     ]
-    for action, heading in ACTIONS.items():
-        if not (entries := [entry for entry in path if entry["action"] == action]):
-            continue
-        lines += [f"## {heading}", ""]
-        if action in {"none", "warn"}:
-            lines += [*(_short_line(entry, base) for entry in entries), ""]
-            continue
-        for entry in entries:
-            lines += entry_markdown(entry)
+    for action in ACTIONS:
+        for heading, entries in _action_sections(action, [entry for entry in path if entry["action"] == action]):
+            lines += [f"## {heading}", ""]
+            if action in {"none", "warn"}:
+                lines += [*(_short_line(entry, base) for entry in entries), ""]
+                continue
+            for entry in entries:
+                lines += entry_markdown(entry)
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -1212,9 +1231,9 @@ def _release_note_section(entry: dict[str, Any]) -> str:
     if entry["action"] in BREAKING_ACTIONS:
         return "Breaking Changes"
     if entry["action"] == "warn":
-        return "Deprecations"
+        return "Deprecations" if _is_deprecation(entry) else "New Warnings"
     match entry["kind"]:
-        case "warning":
+        case "warning" if _is_deprecation(entry):
             return "Scheduled Breaking Changes"
         case "preset":
             return "New Dated Presets"

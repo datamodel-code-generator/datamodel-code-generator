@@ -358,7 +358,9 @@ class ParserConfig(BaseModel):
     read_schema_version_per_document: bool = False
     read_escaped_ref_pointers: bool = False
     read_dynamic_anchors_in_document_order: bool = False
+    read_ids_with_empty_fragment: bool = False
     ignore_ref_siblings_by_schema_version: bool = False
+    read_yaml_1_1_numbers_as_text: bool = False
     use_msgspec_tagged_unions: bool = False
     tag_msgspec_by_payload_name: bool = False
     use_msgspec_nullable_enum_alias: bool = False
@@ -376,6 +378,7 @@ class ParserConfig(BaseModel):
     intersect_combined_schema_keywords: bool = False
     distribute_allof_over_unions: bool = False
     read_allof_parents_in_mro_order: bool = False
+    read_inherited_property_schemas_in_mro_order: bool = False
     read_nullable_beside_type_list: bool = False
     keep_field_defaults_off_branch_roots: bool = False
     keep_enum_member_values: bool = False

@@ -438,6 +438,7 @@ _DICT_INSIDE_ITSELF["self"] = _DICT_INSIDE_ITSELF
         pytest.param(_LIST_INSIDE_ITSELF, id="list-inside-itself"),
         pytest.param(_DICT_INSIDE_ITSELF, id="dict-inside-itself"),
         pytest.param({"key": "word " * 30}, id="long-string-in-a-dict"),
+        pytest.param({"word", "other", ("a", 1)}, id="set-in-iteration-order"),
         pytest.param("short line\n" + "word " * 30, id="long-string-with-a-short-line"),
         pytest.param("x" * 100, id="word-longer-than-a-line"),
         pytest.param(["y" * 100], id="word-longer-than-a-line-in-a-list"),

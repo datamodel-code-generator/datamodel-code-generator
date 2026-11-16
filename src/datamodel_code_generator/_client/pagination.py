@@ -8,7 +8,6 @@ checked against the operation it calls and the request target it writes.
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar
@@ -19,7 +18,7 @@ from datamodel_code_generator._client.protocol_plan import HelperPlanner, missin
 from datamodel_code_generator._client.protocol_plan import _problem as _error
 from datamodel_code_generator._container_kinds import SETS
 from datamodel_code_generator._json_pointer import pointer_tokens
-from datamodel_code_generator._json_schema import admitted_types
+from datamodel_code_generator._json_schema import admitted_types, json_type
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._runtime.client.paths import dot_segment, path_segments
 from datamodel_code_generator._runtime.client.positions import secret_names
@@ -27,13 +26,12 @@ from datamodel_code_generator._runtime.client.retry import body_replay_safe
 from datamodel_code_generator._runtime.model_codecs.errors import ParameterEncodingError
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key, path_text
-from datamodel_code_generator._runtime.protocols.records import canonical_json
 from datamodel_code_generator._target_contract import GeneratedSymbolType, GenericType, UnionType, label
 from datamodel_code_generator._target_types import admits_none, container_slot, sole_present
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Container, Iterable, Iterator
+    from collections.abc import Callable, Container, Iterable, Iterator, Mapping
 
     from typing_extensions import TypeIs
 
@@ -54,7 +52,6 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._target_documents import JSONObject
 
-_INTEGER: Final = re.compile(r"-?[0-9]+")
 _POINTED: Final = frozenset({"body", "querystring"})
 _FOLLOWED: Final = frozenset({"next_url", "link"})
 _URL_TYPES: Final = frozenset({"string", "null"})
@@ -189,23 +186,12 @@ def _problem(code: str, stage: DiagnosticStage, at: str, message: str, spec: Ope
     return _error(code, stage, at, message, OperationRef(pointer=spec.contract.id.use_site.pointer))
 
 
-def _json_type(value: object) -> str:
-    """Return the JSON type of a JSON value, a number being an integer exactly when its canonical JSON is one.
-
-    Runtime end values compare by canonical JSON, where `2.0` stays a number, so it never ends an integer cursor.
-    """
-    if value is None:
-        return "null"
-    if isinstance(value, bool):
-        return "boolean"
-    if isinstance(value, int | float):
-        return "integer" if _INTEGER.fullmatch(canonical_json(value).decode()) else "number"
-    if isinstance(value, str):
-        return "string"
-    return "object" if isinstance(value, Mapping) else "array"
-
-
 def _fits(kind: str, accepted: frozenset[str] | None) -> bool:
+    """Return whether the JSON types `accepted` admit a value of the JSON type `kind` (`json_type` of a literal).
+
+    A float is a number and no integer, also `2.0`: runtime end values compare by canonical JSON, where `2.0` stays a
+    number, so it never ends an integer cursor.
+    """
     return accepted is None or kind in admitted_types(accepted)
 
 
@@ -546,7 +532,7 @@ class _Pages(HelperPlanner):
             message = f"The {what} of {stable_repr(name)} can read null, which no end condition covers"
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.end", message, spec)
         for index, end in enumerate(ends):
-            if end["kind"] == "value" and types is not None and not _fits(kind := _json_type(end["value"]), types):
+            if end["kind"] == "value" and types is not None and not _fits(kind := json_type(end["value"]), types):
                 message = (
                     f"The end value {stable_repr(end['value'])} of {stable_repr(name)} is {kind}, which its {what} "
                     "never reads"
@@ -744,7 +730,7 @@ class _Pages(HelperPlanner):
                     )
                     yield _problem("E_CONFIG_VALUE", "config", f"{where}.value.literal", message, spec)
                     continue
-                types: _Types | Diagnostic = frozenset({_json_type(value["literal"])})
+                types: _Types | Diagnostic = frozenset({json_type(value["literal"])})
             else:
                 types = read(value, f"{where}.value.selector", owner)
             if isinstance(types, Diagnostic):

@@ -14,7 +14,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
-from datamodel_code_generator import Error
+from datamodel_code_generator import Error, _resolve_preset, is_swagger_2
 from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._option_names import CONFIG_TABLE, SENSITIVE_FIELDS, configured_value, option_flag
 from datamodel_code_generator._recommend._rules import Decision, decide, load_rules
@@ -29,7 +29,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._recommend_vocabulary import DisagreementKind, InputSource, OptionValue, RecommendMode
     from datamodel_code_generator.enums import InputFileType
     from datamodel_code_generator.parser.schema_version import SchemaKind
-    from datamodel_code_generator.preset import ResolvedPresetConfig
 
 _ANALYSED_TYPES: dict[str, SchemaKind] = {"openapi": "openapi", "jsonschema": "jsonschema", "asyncapi": "asyncapi"}
 _DOCUMENT_NAMES: dict[SchemaKind, str] = {
@@ -156,6 +155,7 @@ class _Plan:
     preset: str
     family: str
     baseline: dict[str, Any]
+    updates: dict[str, Any]
     delta: list[Option] = field(default_factory=list)
     covers: list[Option] = field(default_factory=list)
     optional: list[Option] = field(default_factory=list)
@@ -262,7 +262,7 @@ def _analyse(request: RecommendRequest) -> _Input:
     if text is None or (kind := _ANALYSED_TYPES.get(file_type or "")) is None:
         return _Input(text, source, stem, file_type, None, None, None)
     document = _document(text, kind, "the input")
-    if kind == "openapi" and "swagger" in document:
+    if kind == "openapi" and is_swagger_2(document):
         return _Input(text, source, stem, file_type, None, document, None, swagger=True)
     return _Input(text, source, stem, file_type, kind, document, _measure(document, kind, request.config))
 
@@ -278,20 +278,6 @@ def _avoided(decision: Decision) -> Option:
     return Option(decision, dict(decision.values), [option_flag(name) for name in decision.values])
 
 
-def _resolve_preset(preset: str, request: RecommendRequest) -> ResolvedPresetConfig:
-    """Resolve a preset for the fields the user left unset, the way ``--preset`` does."""
-    from datamodel_code_generator.preset import _resolve_config_preset  # noqa: PLC0415
-
-    return _resolve_config_preset(preset, request.config, request.explicit_fields)
-
-
-def _preset_values(preset: str, request: RecommendRequest) -> dict[str, Any]:
-    """Return the values a preset gives the fields the user left unset."""
-    from datamodel_code_generator.preset import _pyproject_values  # noqa: PLC0415
-
-    return _pyproject_values(_resolve_preset(preset, request).items)
-
-
 def _plan(
     preset: str,
     family: str,
@@ -302,18 +288,22 @@ def _plan(
 ) -> _Plan:
     """Compare the decisions with what a preset already gives the configuration.
 
-    An optional rule lists the values the user did not set and the preset does not give, for the user to decide.
+    A preset that is not the configured one is resolved here, once, for the fields the user left unset, the way
+    ``--preset`` does; the plan keeps the config updates it makes for the trial. An optional rule lists the values the
+    user did not set and the preset does not give, for the user to decide.
     """
     from datamodel_code_generator.cli_options import _option_arguments  # noqa: PLC0415
+    from datamodel_code_generator.preset import _pyproject_values  # noqa: PLC0415
 
     config = request.config
-    preset_values = {} if configured else _preset_values(preset, request)
+    resolved = None if configured else _resolve_preset(preset, config, request.explicit_fields)
+    preset_values = {} if resolved is None else _pyproject_values(resolved.items)
     baseline = {
         name: preset_values[name] if name in preset_values else configured_value(config, name)
         for decision in decisions
         for name in decision.values
     }
-    plan = _Plan(preset, family, baseline)
+    plan = _Plan(preset, family, baseline, {} if resolved is None else resolved.updates())
     for decision in decisions:
         changes = {
             name: value
@@ -463,11 +453,6 @@ def _applied(options: Sequence[Option]) -> dict[str, Any]:
     return {name: getattr(validated, name) for name in values}
 
 
-def _preset_updates(preset: str, request: RecommendRequest) -> dict[str, Any]:
-    """Return the config updates ``--preset`` makes, including the target and forced field constraints."""
-    return _resolve_preset(preset, request).updates()
-
-
 @dataclass(frozen=True, slots=True)
 class _Candidate:
     """A candidate to compare: the current configuration or the preset, with options on top."""
@@ -571,8 +556,13 @@ def _trial_candidates(
     recommendation: Recommendation,
     candidates: Sequence[_Candidate],
     input_file_type: InputFileType | None,
+    preset: Mapping[str, Any],
 ) -> list[TrialCandidate]:
-    """Return each candidate's generation config: the configuration, the preset, and its options."""
+    """Return each candidate's generation config: the configuration, the preset, and its options.
+
+    ``preset`` holds the config updates ``--preset`` makes for the recommended preset, including the target and forced
+    field constraints, and nothing for a configured preset, which the configuration already has.
+    """
     from datamodel_code_generator import InputFileType  # noqa: PLC0415
     from datamodel_code_generator._recommend._trial import TrialCandidate  # noqa: PLC0415
 
@@ -583,7 +573,6 @@ def _trial_candidates(
         else {}
     )
     configured = config.preset is not None
-    preset = {} if configured else _preset_updates(recommendation.preset, request)
     return [
         TrialCandidate(
             candidate.label,
@@ -630,11 +619,14 @@ def _runner(request: RecommendRequest, analysed: _Input) -> Callable[[Sequence[T
     )
 
 
-def _compare(request: RecommendRequest, recommendation: Recommendation, analysed: _Input) -> None:
+def _compare(
+    request: RecommendRequest, recommendation: Recommendation, analysed: _Input, preset: Mapping[str, Any]
+) -> None:
     """Generate the candidates, rank their class names, and recommend the options of the best one.
 
     When the best candidate is not the rules' recommendation, the configurations next to it that the first candidates
-    did not cover are generated too, so each option is measured on the selected configuration.
+    did not cover are generated too, so each option is measured on the selected configuration. ``preset`` holds the
+    config updates of the recommended preset, and nothing for a configured one.
     """
     from datamodel_code_generator._recommend._trial import rank  # noqa: PLC0415
 
@@ -642,7 +634,7 @@ def _compare(request: RecommendRequest, recommendation: Recommendation, analysed
     delta = recommendation.recommendations
     candidates, dropped = _candidates(delta, configured=request.config.preset is not None)
     known = _known_type(analysed)
-    outcomes, detected = run(_trial_candidates(request, recommendation, candidates, known))
+    outcomes, detected = run(_trial_candidates(request, recommendation, candidates, known, preset))
     by_key = {candidate.key: outcome for candidate, outcome in zip(candidates, outcomes, strict=True)}
     selected = next(
         (outcome for outcome in rank(outcomes) if outcome.error is None and outcome.candidate.selectable), None
@@ -652,7 +644,7 @@ def _compare(request: RecommendRequest, recommendation: Recommendation, analysed
     pairs = _pairs(chosen, delta)
     extra = [] if center is None or center.key == _key(delta) else _remeasure(center, pairs, by_key.keys())
     if extra:
-        more, _ = run(_trial_candidates(request, recommendation, extra, detected))
+        more, _ = run(_trial_candidates(request, recommendation, extra, detected, preset))
         by_key.update((candidate.key, outcome) for candidate, outcome in zip(extra, more, strict=True))
         outcomes = (*outcomes, *more)
     _select(
@@ -793,7 +785,7 @@ def recommend_options(request: RecommendRequest) -> Recommendation:
     if mode_note is not None:
         recommendation.notes.append(mode_note)
     if mode == "full":
-        _compare(request, recommendation, analysed)
+        _compare(request, recommendation, analysed, plan.updates)
     if analysed.swagger:
         recommendation.runnable = False
     else:

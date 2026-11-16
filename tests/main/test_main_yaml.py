@@ -12,13 +12,14 @@ import yaml
 
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.util import get_safe_loader, get_yaml_backend, get_yaml_parse_errors
-from tests.conftest import create_assert_file_content
+from tests.conftest import assert_output, create_assert_file_content
 from tests.main.conftest import (
     EXPECTED_MAIN_PATH,
     OPEN_API_DATA_PATH,
     YAML_DATA_PATH,
     assert_generated_model_json_validation,
     run_main_and_assert,
+    run_main_with_args,
 )
 
 if TYPE_CHECKING:
@@ -303,4 +304,161 @@ def test_main_yaml_error_reads_alike(
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr_contains=f"document.yaml: {error}",
+    )
+
+
+YAML_1_1_NUMBERS_PATH = OPEN_API_DATA_PATH / "yaml_1_1_numbers"
+YAML_1_1_NUMBER_READINGS = {"numbers": (), "text": ("--read-yaml-1-1-numbers-as-text",)}
+
+
+@pytest.mark.cli_doc(
+    options=["--read-yaml-1-1-numbers-as-text"],
+    option_description="""Read the unquoted YAML values that only YAML 1.1 reads as numbers as their text.
+
+PyYAML reads YAML 1.1, where an unquoted value of digits joined by `_` (`18_24`, `1_000`) or by `:` in base 60
+(`16:9` is 969, `00:00:00.00` is 0.0) is a number. OpenAPI names YAML 1.2, which reads such a value as a string, as the
+optional `ryaml` reader does. With this option they are their text everywhere: in `enum`, `default`, `const`,
+`examples`, extensions and YAML data input, so an enum of aspect ratios keeps the values `'16:9'` and `'4:3'`.
+
+Without it they are the numbers YAML 1.1 reads, as before, except in a document that these numbers make invalid: where
+a string is required (a `pattern`, `format`, `title` or `description`, a component, path or property name, an item of
+`required`) such a document is read again with these values as their text, and with the numbers elsewhere.""",
+    input_schema="openapi/yaml_1_1_numbers/ratio.yaml",
+    cli_args=["--read-yaml-1-1-numbers-as-text"],
+    golden_output="main/main_yaml/1_1_numbers[libyaml-pyyaml-ratio-text].py",
+    comparison_output="main/main_yaml/1_1_numbers[libyaml-pyyaml-ratio-numbers].py",
+)
+@pytest.mark.parametrize("reading", YAML_1_1_NUMBER_READINGS)
+@pytest.mark.parametrize("document", ["pattern", "names", "ratio", "quoted", "positions"])
+@pytest.mark.parametrize("yaml_backend", ["pyyaml"], indirect=True)
+@pytest.mark.parametrize("libyaml", ["libyaml", "pure"], indirect=True)
+@pytest.mark.usefixtures("yaml_backend", "libyaml")
+def test_main_yaml_1_1_numbers(output_file: Path, document: str, reading: str) -> None:
+    """Read the unquoted values with `_` or `:` that YAML 1.1 reads as numbers and YAML 1.2 as text (#6879).
+
+    Without the option the pattern `00:00:00.00` (0.0) and the component `18_24` (1824) are read again as text, as when
+    quoted, where they made the document invalid, while the enum `[16:9, 4:3]` stays the integers 969 and 243. In the
+    document of every position, the component names, the property name `10:30`, its `required` item, its `pattern`,
+    the schema `description`, the `x-enum-varnames` and the discriminator mapping are text, so the references and the
+    mapping name the models, while the enum, its default, the example and the pairs of an `!!omap` default stay
+    numbers. With the option every such value is its text, as the quoted document writes it.
+    """
+    run_main_and_assert(
+        input_path=YAML_1_1_NUMBERS_PATH / f"{document}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=list(YAML_1_1_NUMBER_READINGS[reading]),
+    )
+    if document == "positions":
+        ratio = {"numbers": "969", "text": '"16:9"'}[reading]
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"yaml_1_1_numbers_{reading}",
+            model_name="Audience",
+            valid_json=f'{{"group": "young", "10:30": "00:00:00.00", "ratio": {ratio}}}',
+            invalid_json='{"group": "young", "ratio": ' + ratio + "}",
+            expected_error_type="missing",
+            expected_attribute_path=("root", "group"),
+            expected_attribute_value="young",
+        )
+
+
+@pytest.mark.parametrize("reading", YAML_1_1_NUMBER_READINGS)
+@pytest.mark.parametrize("yaml_backend", ["pyyaml"], indirect=True)
+@pytest.mark.usefixtures("yaml_backend")
+def test_main_yaml_1_1_numbers_in_data(output_file: Path, reading: str) -> None:
+    """Read the YAML 1.1-only numbers of YAML data as numbers, or as their text under the option."""
+    run_main_and_assert(
+        input_path=YAML_DATA_PATH / "yaml_1_1_numbers.yaml",
+        output_path=output_file,
+        input_file_type="yaml",
+        extra_args=list(YAML_1_1_NUMBER_READINGS[reading]),
+    )
+
+
+@pytest.mark.parametrize("yaml_backend", ["pyyaml"], indirect=True)
+@pytest.mark.usefixtures("yaml_backend")
+def test_main_yaml_1_1_numbers_still_refused(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Refuse as before a document that its YAML 1.1-only numbers and another error make invalid.
+
+    Read again with the numbers as text where a string is required, the pattern is valid, but the maxLength `ten` is
+    not, so the run ends with the error of its first reading, which names the pattern read as 0.0, and shows no
+    warning of the read-again, such as the one of the format `guidish` that the first reading never reached.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=YAML_1_1_NUMBERS_PATH / "still_refused.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            expected_exit=Exit.ERROR,
+            capsys=capsys,
+            expected_stderr_contains="pattern\n  Input should be a valid string [type=string_type, input_value=0.0",
+        )
+    assert_output(
+        "".join(
+            f"{record.category.__name__}: {record.message}\n"
+            for record in recorded
+            if issubclass(record.category, UserWarning)
+        )
+    )
+
+
+@pytest.mark.parametrize("yaml_backend", ["pyyaml"], indirect=True)
+@pytest.mark.usefixtures("yaml_backend")
+def test_main_yaml_1_1_numbers_document_roles(output_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Read again a split document that its number refused, as the first reading, with the roles its references need.
+
+    A pointer into the parameter document, which holds the pattern `00:00:00.00`, loads it before the reference that
+    holds it as a parameter; the read-again stops there as the first reading does and reads once more with that role,
+    so the run generates as when the pattern is quoted and shows the warning of the format `unknown-format` once. One
+    generation is recorded, so the second one of the formatter parity check is left out.
+    """
+    monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "anchor_object_documents" / "held_after_pointer" / "yaml_numbers_api.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--openapi-scopes",
+                "schemas",
+                "paths",
+                "parameters",
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+            ],
+        )
+    assert_output(
+        "".join(
+            f"{record.category.__name__}: {record.message}\n"
+            for record in recorded
+            if issubclass(record.category, UserWarning)
+        )
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="yaml_1_1_numbers_document_roles",
+        model_name="NotesGetParametersQuery",
+        valid_json='{"page": {"since": "00:00:00.00", "size": 1, "limit": 2}}',
+        invalid_json='{"page": {"since": "16:9"}}',
+        expected_error_type="string_pattern_mismatch",
+    )
+
+
+@pytest.mark.parametrize("yaml_backend", ["pyyaml"], indirect=True)
+@pytest.mark.usefixtures("yaml_backend")
+def test_main_yaml_1_1_numbers_read_again_from_cache(output_file: Path, tmp_path: Path) -> None:
+    """Read again a refused document that the parsed-source cache serves: the cache keeps that it held such numbers.
+
+    The document is cached from its second read and served from the cache from its third, which the third run reads.
+    """
+    args = ["--input", str(YAML_1_1_NUMBERS_PATH / "names.yaml"), "--input-file-type", "openapi"]
+    for index in range(2):
+        run_main_with_args([*args, "--output", str(tmp_path / f"names_{index}.py"), "--disable-timestamp"])
+    run_main_and_assert(
+        input_path=YAML_1_1_NUMBERS_PATH / "names.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
     )

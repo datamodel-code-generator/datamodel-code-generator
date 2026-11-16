@@ -45,12 +45,11 @@ from datamodel_code_generator._target_config import (
 )
 from datamodel_code_generator._target_documents import ROOT_URN, DocumentTable, RootInput, document_identity, shown
 from datamodel_code_generator._target_naming import fold_key
-from datamodel_code_generator.base_config import implied_target_settings as implied_settings
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     import re
-    from collections.abc import Callable, Iterable, Iterator, Sequence
+    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 
     from datamodel_code_generator import _GenerationInput  # pyright: ignore[reportPrivateUsage]
     from datamodel_code_generator._api_types import ArtifactKind, TargetKind
@@ -210,13 +209,17 @@ def prepare_target(
 ) -> GenerateConfig:
     """Validate target settings in the contract order and return the effective model settings.
 
-    A setting the target needs that no option, configuration key, `generate()` argument, or preset set takes the value
-    the target needs, as `implied_settings` says, so a target writes the models a model-only run writes with those
-    settings given; a setting given a value the target cannot use is an `Error` that names the option.
+    The target's row of `_resolve_run_options` resolves the settings: a setting the target needs that no option,
+    configuration key, `generate()` argument, or preset set takes the value the target needs, as
+    `implied_target_settings` says, so a target writes the models a model-only run writes with those settings given; a
+    setting given a value the target cannot use is an `Error` that names the option. The checks after it read the
+    resolved settings.
     """
     from datamodel_code_generator import (  # noqa: PLC0415
         Error,
-        _prepare_generate_facade_config,  # pyright: ignore[reportPrivateUsage]
+        _check_facade_outputs,  # pyright: ignore[reportPrivateUsage]
+        _resolve_run_options,  # pyright: ignore[reportPrivateUsage]
+        _warn_facade_dependencies,  # pyright: ignore[reportPrivateUsage]
     )
     from datamodel_code_generator._target_render import PYDANTIC_TARGET_MINIMUM  # noqa: PLC0415
     from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
@@ -227,18 +230,24 @@ def prepare_target(
             option_path="model_config.output",
             message=f"The {generator.kind} target needs model_config.output",
         )
-    if implied := implied_settings(model_config, _given_fields(model_config)):
-        model_config = model_config.model_copy(update=implied)
-    target = model_config.target_pydantic_version
-    if sentinel := model_config.use_missing_sentinel:
-        _check_pydantic_target(
-            generator,
-            model_config.output_model_type.value,
-            target,
-            sentinel=True,
-            implied="use_missing_sentinel" in implied,
-        )
-    effective = _prepare_generate_facade_config(model_config)
+
+    def after_implied_settings(config: GenerateConfig, implied: Mapping[str, Any]) -> None:
+        if config.use_missing_sentinel:
+            _check_pydantic_target(
+                generator,
+                config.output_model_type.value,
+                config.target_pydantic_version,
+                sentinel=True,
+                implied="use_missing_sentinel" in implied,
+            )
+        _warn_facade_dependencies(config)
+
+    effective = _resolve_run_options(
+        model_config,
+        ("preset", "implied-target", "sentinel", "implied-model"),
+        {"implied-target": after_implied_settings},
+    )
+    _check_facade_outputs(effective)
     if (requirement := model_requirement(effective, generator.selector)) is not None:
         raise Error(requirement)
     if (backend := effective.output_model_type) not in generator.backends:
@@ -252,7 +261,7 @@ def prepare_target(
         )
     if (problem := python_problem(effective, generator.kind)) is not None:
         raise config_error(code="E_CONFIG_VALUE", option_path="model_config.target_python_version", message=problem)
-    if backend is DataModelType.PydanticV2Dataclass and not sentinel:
+    if backend is DataModelType.PydanticV2Dataclass and not effective.use_missing_sentinel:
         raise config_error(
             code="E_CONFIG_VALUE",
             option_path="model_config.use_missing_sentinel",
@@ -262,7 +271,7 @@ def prepare_target(
                 "member from None"
             ),
         )
-    _check_pydantic_target(generator, backend.value, target, sentinel=False)
+    _check_pydantic_target(generator, backend.value, effective.target_pydantic_version, sentinel=False)
     if backend is DataModelType.MsgspecStruct and (
         missing := tuple(
             _diagnostic(
@@ -272,12 +281,8 @@ def prepare_target(
                 f"that their {decoded} can be decoded",
             )
             for enabled, name, decoded in (
-                (model_config.use_msgspec_tagged_unions, "use_msgspec_tagged_unions", "discriminated unions"),
-                (
-                    model_config.use_msgspec_nullable_enum_alias,
-                    "use_msgspec_nullable_enum_alias",
-                    "enums that list null",
-                ),
+                (effective.use_msgspec_tagged_unions, "use_msgspec_tagged_unions", "discriminated unions"),
+                (effective.use_msgspec_nullable_enum_alias, "use_msgspec_nullable_enum_alias", "enums that list null"),
             )
             if not enabled
         )
@@ -298,17 +303,6 @@ def implied_conflict(config: Any, implied: dict[str, Any], generator: TargetGene
     backend = DataModelType(config.output_model_type).value
     if "use_missing_sentinel" in implied:
         _check_pydantic_target(generator, backend, config.target_pydantic_version, sentinel=True, implied=True)
-
-
-def _given_fields(config: GenerateConfig) -> set[str]:
-    """Return the fields a config sets: the ones it was given, and the ones its preset sets, applied later."""
-    if config.preset is None:
-        return set(config.model_fields_set)
-    from datamodel_code_generator.preset import _resolve_config_preset  # noqa: PLC0415
-
-    preset = _resolve_config_preset(config.preset, config, config.model_fields_set)
-    fixed = () if preset.target_python_version is None else ("target_python_version",)
-    return {*config.model_fields_set, *fixed, *(item.field_name for item in preset.items)}
 
 
 def python_problem(config: Any, kind: str) -> str | None:

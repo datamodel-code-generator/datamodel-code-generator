@@ -27,6 +27,42 @@ JavaPrintable: TypeAlias = str
 ClassEscapeRange: TypeAlias = str
 
 
+OneLetterPropertyRange: TypeAlias = str
+
+
+BracedPropertyRange: TypeAlias = str
+
+
+OneLetterPropertyDifference: TypeAlias = str
+
+
+WordRangeEnd: TypeAlias = str
+
+
+OneLetterPropertyRangeEnd: TypeAlias = str
+
+
+BracedPropertyRangeEnd: TypeAlias = str
+
+
+HyphenAfterRange: TypeAlias = Annotated[str, Meta(pattern='^[a-z0-9-\\s]+$')]
+
+
+NegatedHyphenFirst: TypeAlias = Annotated[str, Meta(pattern='^[^-\\w]+$')]
+
+
+DifferenceAfterRange: TypeAlias = str
+
+
+HexEscapeRange: TypeAlias = Annotated[str, Meta(pattern='^[a-\\x7a-\\w]+$')]
+
+
+BracedEscapeRange: TypeAlias = str
+
+
+OctalEscapeRange: TypeAlias = Annotated[str, Meta(pattern='^[\\60-\\71-\\w]+$')]
+
+
 Letters: TypeAlias = str
 
 

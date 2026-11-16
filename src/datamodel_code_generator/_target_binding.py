@@ -1936,10 +1936,11 @@ def _constructor_keywords(field: DataModelFieldBase, backend: BackendName) -> tu
     keywords: list[tuple[str, TypeArgument]] = []
     match field:
         case PydanticField() if backend in {"pydantic", "pydantic_dataclass"}:
-            data, factory = field._get_field_data_and_default_factory()  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
-            items = sorted((name, value) for name, value in data.items() if value is not None)
-            if factory:
-                keywords.append(("default_factory", SourceExpression(str(factory))))
+            if (call := field._render_plan().call) is None:  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+                return ()
+            items = sorted((argument.name, argument.value) for argument in call.kwargs)
+            if call.factory is not None:
+                keywords.append(("default_factory", SourceExpression(str(call.factory.value))))
         case DataclassField() | MsgspecField() if backend in {"dataclass", "msgspec"}:
             items = list(field._get_field_data().items())  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
             if len(items) == 1 and items[0][0] == "default":

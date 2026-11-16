@@ -38,6 +38,57 @@ class ClassEscapeRange(RootModel[str]):
     root: str
 
 
+class OneLetterPropertyRange(RootModel[str]):
+    root: str
+
+
+class BracedPropertyRange(RootModel[str]):
+    root: str
+
+
+class OneLetterPropertyDifference(RootModel[constr(pattern=r'^[\pL\pP--_]+$')]):
+    root: constr(pattern=r'^[\pL\pP--_]+$')
+
+
+class WordRangeEnd(RootModel[str]):
+    root: str
+
+
+class OneLetterPropertyRangeEnd(RootModel[str]):
+    root: str
+
+
+class BracedPropertyRangeEnd(RootModel[str]):
+    root: str
+
+
+class HyphenAfterRange(RootModel[constr(pattern=r'^[a-z0-9-\s]+$')]):
+    root: constr(pattern=r'^[a-z0-9-\s]+$')
+
+
+class NegatedHyphenFirst(RootModel[constr(pattern=r'^[^-\w]+$')]):
+    root: constr(pattern=r'^[^-\w]+$')
+
+
+class DifferenceAfterRange(RootModel[constr(pattern=r'^[a-z0-9--\p{N}]+$')]):
+    root: constr(pattern=r'^[a-z0-9--\p{N}]+$')
+
+
+class HexEscapeRange(RootModel[constr(pattern=r'^[a-\x7a-\w]+$')]):
+    root: constr(pattern=r'^[a-\x7a-\w]+$')
+
+
+class BracedEscapeRange(RootModel[constr(pattern=r'^[a-\x{7a}-\w]+$')]):
+    root: constr(pattern=r'^[a-\x{7a}-\w]+$')
+
+
+class OctalEscapeRange(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'^[\60-\71-\w]+$')
+
+
 class Letters(RootModel[constr(pattern=r'^\p{L}+$')]):
     root: constr(pattern=r'^\p{L}+$')
 

@@ -132,6 +132,7 @@ DEEP_WARNINGS = {
     "parser/jsonschema.py:_build_allof_type": "the parser method that built the allOf (L1)",
     "parser/jsonschema.py:_check_array_version_features": "the parser method that checked the array (L1)",
     "parser/jsonschema.py:_check_version_specific_features": "the parser method that checked the schema (L1)",
+    "parser/jsonschema.py:_get_ref_body": "the caller of Parser.parse() (stacklevel_at_parse_caller)",
     "parser/jsonschema.py:_report_parse_diagnostics": "the caller of Parser.parse() (stacklevel_at_parse_caller)",
     "parser/protobuf.py:_effective_version": "the parser method that read the syntax (L1)",
 }

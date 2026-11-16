@@ -5894,6 +5894,9 @@ use_annotated.py-cli_args1-options1-cli	main/jsonschema/entry_point_constraints/
 	main/jsonschema/enum_field_as_literal_map.py
 [test_main_enum_field_as_literal_map_override_global]
 	main/jsonschema/enum_field_as_literal_map_override.py
+[test_main_enum_literal_of_collapsed_alias_modules]
+const	main/jsonschema/main_jsonschema/main_enum_literal_of_collapsed_alias_modules[const]/
+discriminator	main/jsonschema/main_jsonschema/main_enum_literal_of_collapsed_alias_modules[discriminator]/
 [test_main_exact_imports_collapse_root_models_module_class_collision]
 	main/jsonschema/exact_imports_collapse_root_models//*.py
 [test_main_exact_imports_collapse_root_models_module_split_oneof_imports]
@@ -6122,6 +6125,9 @@ typed-dict	main/jsonschema/additional_properties_value_constraints_annotated_typ
 	main/jsonschema/additional_properties_value_constraints_annotated_pydantic_v2_py312.py	= main/jsonschema/additional_properties_value_constraints_annotated_pydantic_v2.py
 [test_main_jsonschema_additional_properties_value_constraints_schema_validators]
 	main/jsonschema/additional_properties_value_constraints_annotated_schema_validators.py
+[test_main_jsonschema_all_of_union_parsed_from_a_copy]
+all_of_any_of	main/jsonschema/main_jsonschema/all_of_union_parsed_from_a_copy[all_of_any_of].txt
+all_of_one_of	main/jsonschema/main_jsonschema/all_of_union_parsed_from_a_copy[all_of_one_of].txt	= main/jsonschema/main_jsonschema/all_of_union_parsed_from_a_copy[all_of_any_of].txt
 [test_main_jsonschema_allof_any_of_enum_branch_object_keywords]
 dataclasses.dataclass	main/jsonschema/main_jsonschema/allof_any_of_enum_branch_object_keywords[dataclasses.dataclass].py
 msgspec.Struct	main/jsonschema/main_jsonschema/allof_any_of_enum_branch_object_keywords[msgspec.Struct].py
@@ -8064,6 +8070,21 @@ use_annotated	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary_patte
 	main/jsonschema/type_mappings_to_integer.py
 [test_main_jsonschema_type_mappings_with_type_prefix]
 	main/jsonschema/type_mappings.py
+[test_main_jsonschema_type_overrides_warns_on_unmatched_keys]
+close-names	main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[close-names].py
+close-names	main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[close-names].warnings.txt
+dotted-schema-name	main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[dotted-schema-name].warnings.txt
+dotted-schema-name	main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[dotted-schema-name]/
+matched	main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[matched].py
+matched	main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[matched].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+no-close-name	main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[no-close-name].py	= main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[close-names].py
+no-close-name	main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[no-close-name].warnings.txt
+parsed-again	main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[parsed-again].py
+parsed-again	main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[parsed-again].warnings.txt
+schema-name	main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[schema-name].py	= main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[close-names].py
+schema-name	main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[schema-name].warnings.txt
+several	main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[several].py	= main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[close-names].py
+several	main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[several].warnings.txt
 [test_main_jsonschema_typed_map_values_beside_other_types]
 	main/jsonschema/main_jsonschema/typed_map_values_beside_other_types.py
 [test_main_jsonschema_typed_map_values_without_other_types]

@@ -32,7 +32,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeVar, final
 
 from datamodel_code_generator._context_scope import context_values
-from datamodel_code_generator._graph_links import nearest_field
+from datamodel_code_generator._graph_links import nearest_field, type_children
 from datamodel_code_generator._records import mutable_record
 
 if TYPE_CHECKING:
@@ -279,10 +279,9 @@ class ParseMemo:
                 node = stack.pop()
                 if own:
                     readers.setdefault(id(node), {})[field_key] = field
-                if children := node.data_types:
-                    if own:
-                        readers.setdefault(id(children), {})[field_key] = field
-                    stack.extend(children)
+                    if members := node.data_types:
+                        readers.setdefault(id(members), {})[field_key] = field
+                stack.extend(type_children(node))
                 if (reference := node.reference) is not None:
                     model = reference.source
                     references.append((reference, model, deep.get(id(model), 0)))
@@ -291,8 +290,6 @@ class ParseMemo:
                     ):
                         seen.add(id(model))
                         aliases.append(model)
-                if (dict_key := node.dict_key) is not None:
-                    stack.append(dict_key)
             if not aliases:
                 break
             own = False

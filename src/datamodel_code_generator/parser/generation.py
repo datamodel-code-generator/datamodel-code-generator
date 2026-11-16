@@ -65,6 +65,7 @@ from datamodel_code_generator._graph_links import (
     data_type_children,
     drop_child_and_detached,
     nearest_field,
+    type_children,
 )
 from datamodel_code_generator._model_keys import FieldKey, ModelKey, NodeKey, model_key_of
 from datamodel_code_generator._parse_memo import ParseMemo, bump_field, bump_model, bump_node
@@ -83,6 +84,7 @@ from datamodel_code_generator.parser._sites import (
     position_step,
     site_of,
 )
+from datamodel_code_generator.types import _hint_null
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
@@ -207,6 +209,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "set_field_extra",
     "set_field_extras",
     "set_field_identity",
+    "set_module_models",
     "set_type_discriminator",
     "set_type_expressions",
     "update_model_reference",
@@ -271,9 +274,7 @@ def _tree_nodes(roots: Iterable[DataType]) -> Iterator[DataType]:
     stack = list(roots)
     while stack:
         node = stack.pop()
-        stack.extend(node.data_types)
-        if dict_key := node.dict_key:
-            stack.append(dict_key)
+        stack.extend(type_children(node))
         yield node
 
 
@@ -1141,8 +1142,7 @@ class GenerationIndex:
         return tuple(
             owner
             for owner in owners
-            if owner is not parent
-            and (owner.dict_key is data_type or any(member is data_type for member in owner.data_types))
+            if owner is not parent and any(child is data_type for child in type_children(owner))
         )
 
     def root_collapse_reference_usage(
@@ -1481,6 +1481,16 @@ class GenerationStore:  # noqa: PLR0904
         self._builder.retire_model(model)
         self._builder.register_model(replacement)
 
+    @staticmethod
+    @deprecated("Use GenerationStore.builder().set_module_models() instead.", category=None)
+    def set_module_models(models: list[DataModel], members: Iterable[DataModel]) -> None:
+        """Make ``models``, the list of the models a module writes, hold ``members`` in their order, in place.
+
+        Every holder of the list sees the change. Nothing the store derives reads a module's list: the emitted models
+        are what ``register_model``, ``retire_model`` and ``replace_model`` record.
+        """
+        models[:] = members
+
     def _universe_facts(self) -> _UniverseFacts:
         """Return the current facts of the parsed models with the ids they record each model under."""
         return _UniverseFacts(self.current_facts(), self._model_ids_by_object)
@@ -1639,7 +1649,7 @@ class GenerationStore:  # noqa: PLR0904
         Render preparation writes rendered nullability once for every node of every model. A None that is not the
         type's own comes from its nullable model (also marked as not the type's own) or from its union's members.
         """
-        if (null := data_type._hint_null_source()) in {None, "own"}:  # noqa: SLF001
+        if (null := _hint_null(data_type)) in {None, "own"}:
             return
         data_type.is_optional = True
         data_type._update_type_null(  # noqa: SLF001
@@ -2931,6 +2941,10 @@ class GraphBuilder:
     def set_fields(self, model: DataModel, fields: Iterable[DataModelFieldBase]) -> None:
         """Replace all fields on ``model`` and invalidate derived facts; the new sites of ``model`` are copied."""
         self._store.set_fields(model, fields)  # ty: ignore[deprecated]
+
+    def set_module_models(self, models: list[DataModel], members: Iterable[DataModel]) -> None:
+        """Make ``models``, the list of the models a module writes, hold ``members`` in their order, in place."""
+        self._store.set_module_models(models, members)  # ty: ignore[deprecated]
 
     def set_nested_data_types(self, data_type: DataType, nested_data_types: Iterable[DataType]) -> None:
         """Replace nested data types and invalidate derived facts; the new sites under ``data_type`` are overridden."""

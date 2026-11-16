@@ -1,0 +1,3 @@
+exit: OK
+resolved:
+  a: int | None = Field(None, le=10)

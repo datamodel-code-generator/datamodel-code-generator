@@ -38,6 +38,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._container_kinds import ContainerKind, ContainerSlot
     from datamodel_code_generator._runtime.model_codecs.media import LexicalKind
+    from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
     from datamodel_code_generator._target_contract import (
         FieldUseBinding,
         FinalModelSymbol,
@@ -57,6 +58,7 @@ __all__ = [
     "opened",
     "present",
     "sole_present",
+    "styled_without_none",
     "type_identity",
     "without_none",
 ]
@@ -135,6 +137,17 @@ def without_none(value: TypeView) -> TypeView:
         return value
     members = present(value)
     return members[0] if len(members) == 1 else replace(value, members=members, hint=None)
+
+
+def styled_without_none(value: TypeView, plan: ParameterPlan | None) -> TypeView | None:
+    """Return the type of a required parameter its plan writes by its style without None, or None where None stays.
+
+    A query string, header, cookie or path has no spelling for None, so such a parameter never receives it; one with a
+    content media type, an optional one and a type without None keep their type.
+    """
+    if plan is None or not plan.required or plan.content_media_type is not None:
+        return None
+    return without_none(members) if admits_none(members := opened(value)) else None
 
 
 def type_identity(value: TypeView) -> tuple[str | None, str]:

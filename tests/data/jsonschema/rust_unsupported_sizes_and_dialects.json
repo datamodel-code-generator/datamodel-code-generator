@@ -21,6 +21,54 @@
       "type": "string",
       "pattern": "^[\\w- ]*$"
     },
+    "OneLetterPropertyRange": {
+      "type": "string",
+      "pattern": "^[\\pL-_]+$"
+    },
+    "BracedPropertyRange": {
+      "type": "string",
+      "pattern": "^[\\p{L}-_]+$"
+    },
+    "OneLetterPropertyDifference": {
+      "type": "string",
+      "pattern": "^[\\pL\\pP--_]+$"
+    },
+    "WordRangeEnd": {
+      "type": "string",
+      "pattern": "^[a-\\w]+$"
+    },
+    "OneLetterPropertyRangeEnd": {
+      "type": "string",
+      "pattern": "^[a-\\pL]+$"
+    },
+    "BracedPropertyRangeEnd": {
+      "type": "string",
+      "pattern": "^[a-\\p{L}]+$"
+    },
+    "HyphenAfterRange": {
+      "type": "string",
+      "pattern": "^[a-z0-9-\\s]+$"
+    },
+    "NegatedHyphenFirst": {
+      "type": "string",
+      "pattern": "^[^-\\w]+$"
+    },
+    "DifferenceAfterRange": {
+      "type": "string",
+      "pattern": "^[a-z0-9--\\p{N}]+$"
+    },
+    "HexEscapeRange": {
+      "type": "string",
+      "pattern": "^[a-\\x7a-\\w]+$"
+    },
+    "BracedEscapeRange": {
+      "type": "string",
+      "pattern": "^[a-\\x{7a}-\\w]+$"
+    },
+    "OctalEscapeRange": {
+      "type": "string",
+      "pattern": "^[\\60-\\71-\\w]+$"
+    },
     "Letters": {
       "type": "string",
       "pattern": "^\\p{L}+$"

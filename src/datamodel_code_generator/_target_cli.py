@@ -97,7 +97,7 @@ def _implied_notice(  # noqa: PLR0913, PLR0917
         return None
     values = {name: json_ready(value) for name, value in implied.items()}
     lead = f"{_target_side(config)[1]} set the options it needs that you left unset; to set them yourself"
-    selected = any(getattr(namespace, name, None) is not None for name in ("generate_server", "generate_client"))
+    selected = not config._run_options.arguments.keys().isdisjoint(("generate_server", "generate_client"))  # noqa: SLF001
     if pyproject is not None and (job or not selected):
         named = ("jobs", job) if job else profile_table_keys(namespace.profile)
         table = toml_table(config_table(*named), "legacy-ascii-table-keys")
@@ -144,7 +144,7 @@ def _run(  # noqa: PLR0913, PLR0917
     from datamodel_code_generator.reference import unmatched_model_name_keys_unreported  # ruff: ignore[import-outside-top-level]
 
     lockfile = models_lockfile(config, pyproject_path)
-    generator, target = target_of(config, partial(_base, config, namespace, pyproject_path))
+    generator, target = target_of(config, partial(_base, config, pyproject_path))
     effective = _target_settings(config, args, lockfile)
     if batch is not None:
         effective.resolve_remote_lock(lock)
@@ -547,7 +547,7 @@ def _run_commands(app: str, entrypoint: str) -> tuple[str, str]:
     return f"{app_dir}{app}", run
 
 
-def _base(config: Any, namespace: Namespace, pyproject_path: Path | None, field: str) -> Path:
+def _base(config: Any, pyproject_path: Path | None, field: str) -> Path:
     """Return the directory that the documents a setting names resolve against.
 
     A setting read from a JSON file resolves against that file's directory, and against a link's directory when
@@ -557,10 +557,11 @@ def _base(config: Any, namespace: Namespace, pyproject_path: Path | None, field:
     from datamodel_code_generator.json_config import document_base  # noqa: PLC0415
 
     cwd = Path.cwd()
+    record = config._run_options  # noqa: SLF001
     return document_base(
-        config._json_sources.get(field),  # noqa: SLF001
+        record.given_value(field),
         cwd,
-        cwd if pyproject_path is None or getattr(namespace, field) is not None else pyproject_path.parent,
+        cwd if pyproject_path is None or field in record.arguments else pyproject_path.parent,
     )
 
 

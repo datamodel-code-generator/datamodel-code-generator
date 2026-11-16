@@ -8,14 +8,14 @@ This documentation is auto-generated from test cases.
 
 | Category | Options | Description |
 |----------|---------|-------------|
-| 📁 [Base Options](base-options.md) | 19 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 60 | Type annotation and import behavior |
+| 📁 [Base Options](base-options.md) | 21 | Input/output configuration |
+| 🔧 [Typing Customization](typing-customization.md) | 61 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 41 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 73 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
-| ⚙️ [General Options](general-options.md) | 26 | Utilities and meta options |
+| ⚙️ [General Options](general-options.md) | 27 | Utilities and meta options |
 | 🚀 [Target Generation Options](target-generation-options.md) | 27 | Server and client generation with the models (experimental) |
 | 📝 [Utility Options](utility-options.md) | 15 | Help, version, debug options |
 
@@ -334,6 +334,9 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--read-dynamic-anchors-in-document-order`](base-options.md#read-dynamic-anchors-in-document-order)
 - [`--read-escaped-ref-pointers`](base-options.md#read-escaped-ref-pointers)
 - [`--read-format-as-annotation`](typing-customization.md#read-format-as-annotation)
+- [`--read-ids-with-empty-fragment`](base-options.md#read-ids-with-empty-fragment)
+- [`--read-implied-options-from-merged-values`](general-options.md#read-implied-options-from-merged-values)
+- [`--read-inherited-property-schemas-in-mro-order`](typing-customization.md#read-inherited-property-schemas-in-mro-order)
 - [`--read-input-model-dataclass-fields-by-alias`](base-options.md#read-input-model-dataclass-fields-by-alias)
 - [`--read-kubernetes-extensions`](typing-customization.md#read-kubernetes-extensions)
 - [`--read-length-keywords-by-type`](field-customization.md#read-length-keywords-by-type)
@@ -343,6 +346,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type)
 - [`--read-schema-version-per-document`](base-options.md#read-schema-version-per-document)
 - [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties)
+- [`--read-yaml-1-1-numbers-as-text`](base-options.md#read-yaml-1-1-numbers-as-text)
 - [`--recommend-options`](general-options.md#recommend-options)
 - [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix)
 - [`--remove-unused-models-beside-type-overrides`](model-customization.md#remove-unused-models-beside-type-overrides)

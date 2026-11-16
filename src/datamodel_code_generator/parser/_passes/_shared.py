@@ -560,17 +560,6 @@ def field_name_model_type_of(data_model_type: type[DataModel]) -> ModelType:
     return model_type if (model_type := data_model_type.FIELD_NAME_MODEL_TYPE) is not None else ModelType.CLASS
 
 
-def replace_model_in_list(
-    models: list[DataModel],
-    original: DataModel,
-    replacement: DataModel,
-) -> None:
-    """Replace model at its position in list."""
-    # Use direct assignment instead of insert+remove for O(n) instead of O(2n)
-    idx = models.index(original)
-    models[idx] = replacement
-
-
 def _distinct_bases(host: GraphBuilderHost, base_dedup: BaseDedup, model: DataModel) -> None:
     """Give each child of a merged model its bases once each, told apart by module and type hint or by reference."""
     for child in model.reference.iter_data_model_children():
@@ -1211,7 +1200,7 @@ def subclass_duplicate(
     builder.redirect_model_reference_users(
         duplicate, users, inherited.reference, keeps_named=host.keep_reference_null_on_merged_models
     )
-    replace_model_in_list(models, duplicate, inherited)
+    builder.set_module_models(models, [inherited if model is duplicate else model for model in models])
     builder.replace_model(duplicate, inherited)
     settle_python_bases(host, inherited.reference)
     return inherited if model_key_of(canonical.reference) in host._recursion_facts["require_update"] else None  # noqa: SLF001
@@ -1376,13 +1365,6 @@ class ReplacedRootsHost(Protocol):
     @property
     def _replaced_root_models(self) -> dict[int, tuple[DataModel, DataModel]]:
         """The replaced roots by id, with the root and the inner model that replaces it."""
-
-
-def module_members(host: ReplacedRootsHost, models: list[DataModel]) -> list[DataModel]:
-    """Return the models of a module that stay in it: a root replaced by its inner model leaves at the decision."""
-    if not (replaced_root_models := host._replaced_root_models):  # noqa: SLF001
-        return models
-    return [model for model in models if id(model) not in replaced_root_models]
 
 
 def names_left_by_replaced_roots(host: ReplacedRootsHost, models: list[DataModel], members: KeyedModels) -> set[str]:
@@ -1956,6 +1938,38 @@ def without_stand_ins(host: BaseStandInHost, models: list[DataModel]) -> list[Da
     return [model for model in models if model_key_of(model.reference) not in stand_ins]
 
 
+ModuleMembersRow: TypeAlias = Literal["members", "members-without-stand-ins"]
+"""Which models of a module's list ``module_members`` takes for the models the module writes.
+
+``members`` leaves out the roots that collapse replaced by their inner models, which leave the module at the decision.
+``members-without-stand-ins`` also leaves out the stand-ins, which are never written
+(``modules.py:change_from_import``).
+"""
+
+
+class ModuleMembersHost(ReplacedRootsHost, BaseStandInHost, Protocol):
+    """The replaced roots and the stand-ins, which the rows of ``module_members`` leave out of a module."""
+
+
+def module_members(host: ModuleMembersHost, models: list[DataModel], *, row: ModuleMembersRow) -> list[DataModel]:
+    """Return the models of a module's list ``models`` that the module writes, by ``row`` (``ModuleMembersRow``)."""
+    if not (replaced_root_models := host._replaced_root_models):  # noqa: SLF001
+        members = models
+    else:
+        members = [model for model in models if id(model) not in replaced_root_models]
+    return without_stand_ins(host, members) if row == "members-without-stand-ins" else members
+
+
+def keyed_module_members(members: list[DataModel]) -> KeyedModels:
+    """Key ``members``, the models that ``module_members`` took of a module's list, by model key."""
+    return keyed_models(members, "module members")
+
+
+def module_member_keys(host: ModuleMembersHost, models: list[DataModel], *, row: ModuleMembersRow) -> KeyedModels:
+    """Key the models of a module's list ``models`` that the module writes (``module_members``), by model key."""
+    return keyed_module_members(module_members(host, models, row=row))
+
+
 class UnimportedModelsHost(BaseStandInHost, Protocol):
     """The stand-ins and the roots that name themselves, which no module imports."""
 
@@ -2166,50 +2180,22 @@ def enum_discriminator_members(enum_source: Enum, values: Iterable[Discriminator
     )
 
 
+def enum_member_literal_values(data_type: DataType) -> tuple[Enum, list[Any]] | None:
+    """Return the Enum whose members a type writes as ``Literal`` values, with the values of those members, or None."""
+    if (reference := data_type._enum_member_literal_reference) is None or not isinstance(  # noqa: SLF001
+        enum_source := reference.source, Enum
+    ):
+        return None
+    member_values = {member.name: enum_source.get_member(member).value for member in enum_source.fields}
+    return enum_source, [member_values[member] for _, member in data_type.enum_member_literals]
+
+
 def _get_discriminator_field_value(
     discriminator_field: DataModelFieldBase, site: FieldTagSite = "variant-field"
 ) -> DiscriminatorValue | None:
     """Return the one tag a variant's tag field holds (``field_tag``) at ``site``, a variant-field site."""
     tag = field_tag(site, _FieldTagFacts(discriminator_field))
     return None if tag is None else tag.value
-
-
-def _get_enum_from_base(
-    discriminator_model: DataModel, field_name: str, *, use_field_name: bool = False
-) -> Enum | None:
-    """Return the Enum typing the tag field a variant inherits, from the nearest ancestor whose field it types.
-
-    The direct bases come first, in their order, then the ancestors above them in method resolution order, so a
-    variant two levels below the schema whose Enum types the tag property takes that Enum, as a direct subclass does.
-    """
-    match_mode: TagFieldMatch = "python-name" if use_field_name else "python-or-original-name"
-    direct = [
-        base_class.reference.source
-        for base_class in discriminator_model.base_classes
-        if base_class.reference and base_class.reference.source
-    ]
-    return _declared_tag_enum(direct, field_name, match_mode) or _declared_tag_enum(
-        [
-            ancestor
-            for ancestor in linearize_data_models([discriminator_model])[1:]
-            if all(ancestor is not base for base in direct)
-        ],
-        field_name,
-        match_mode,
-    )
-
-
-def _declared_tag_enum(models: Iterable[object], field_name: str, match_mode: TagFieldMatch) -> Enum | None:
-    """Return the Enum typing the first field of ``models`` that holds the tag property, by models that inherit one."""
-    for model in models:
-        if not isinstance(model, DataModel) or not model.SUPPORTS_INHERITED_DISCRIMINATOR_ENUM:
-            continue
-        for field_ in model.fields:
-            if _tag_field_matches(field_, match_mode, field_name) and (
-                enum_source := field_.data_type.find_source(Enum)
-            ):
-                return enum_source
-    return None
 
 
 _STRING_LITERAL_SOURCE: Final = r"""'''[\s\S]*?'''|\"\"\"[\s\S]*?\"\"\"|'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|"""

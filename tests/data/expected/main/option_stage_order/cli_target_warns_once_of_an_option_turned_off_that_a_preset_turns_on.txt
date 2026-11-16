@@ -1,0 +1,3 @@
+UserWarning: --intersect-allof-keywords was turned off but stays on: --intersect-combined-schema-keywords, set by --preset standard-py312-20261104, turns it on; --no-intersect-combined-schema-keywords turns both off
+--generate-server set the options it needs that you left unset; to set them yourself, run:
+  datamodel-codegen --input pets.yaml --output models.py --input-file-type openapi --output-model-type pydantic_v2.BaseModel --disable-timestamp --server-package server --server-model-package models --generate-server fastapi --server-output server --preset standard-py312-20261104 --no-intersect-allof-keywords --formatters builtin --openapi-scopes schemas api

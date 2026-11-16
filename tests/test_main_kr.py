@@ -1516,6 +1516,52 @@ target-python-version = "3.10"
         assert_error_message(capsys, "Profile 'nonexistent' not found in pyproject.toml")
 
 
+# Black 24.2.0 (its changelog, "Configuration") looks for the project root past a pyproject.toml without [tool.black].
+BLACK_SEARCHES_PAST_PYPROJECT_WITHOUT_BLACK_TABLE = version.parse(black.__version__) >= version.parse("24.2.0")
+BLACK_ARGS = ["--input", "schema.json", "--ignore-pyproject", "--formatters", "black"]
+
+
+@pytest.mark.parametrize(
+    ("args", "project_dir"),
+    [
+        pytest.param(["--input", "schema.json"], ".", id="project-configuration"),
+        pytest.param(BLACK_ARGS, ".", id="black"),
+        pytest.param(
+            BLACK_ARGS,
+            "sub/inner",
+            id="black-ancestor",
+            marks=pytest.mark.skipif(
+                not BLACK_SEARCHES_PAST_PYPROJECT_WITHOUT_BLACK_TABLE,
+                reason="Installed black stops at a pyproject.toml without [tool.black]",
+            ),
+        ),
+        pytest.param(["--all-jobs"], ".", id="jobs"),
+    ],
+)
+def test_invalid_pyproject_toml_is_a_configuration_error(
+    args: list[str], project_dir: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Report a pyproject.toml that is not valid TOML as an error naming the file, wherever the run reads it."""
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.datamodel-codegen]\ninput = "schema.json\noutput = "model.py"\n', encoding="utf-8"
+    )
+    (tmp_path / "sub" / "inner").mkdir(parents=True)
+    (tmp_path / "sub" / "pyproject.toml").write_text("[tool.other]\nkey = 1\n", encoding="utf-8")
+    (tmp_path / project_dir / "schema.json").write_text(
+        '{"type": "object", "properties": {"name": {"type": "string"}}}'
+    )
+
+    with chdir(tmp_path / project_dir):
+        run_main_with_args(
+            args,
+            expected_exit=Exit.ERROR,
+            capsys=capsys,
+            expected_stderr_contains="pyproject.toml: Illegal character '\\n' (at line 2, column 21)",
+        )
+
+    _assert_file_does_not_exist(tmp_path / "model.py")
+
+
 @freeze_time("2019-07-26")
 def test_ignore_pyproject_option(output_file: Path, tmp_path: Path) -> None:
     """Test --ignore-pyproject ignores pyproject.toml configuration."""
@@ -2203,6 +2249,11 @@ aliases = "unprofiled-aliases.json"
     assert_error_message(capsys, "Job 'models' must be a table")
     assert invalid_job_dependencies.includes(pyproject_path)
 
+    pyproject_path.write_text('[tool.datamodel-codegen.jobs]\nmodels = "invalid\n', encoding="utf-8")
+    with chdir(tmp_path):
+        assert main_module._main(["--all-jobs"], start_watch=False, dependencies=WatchDependencies()) is Exit.ERROR
+    assert_error_message(capsys, "pyproject.toml: Illegal character")
+
 
 @pytest.mark.parametrize(
     "command_option",
@@ -2323,9 +2374,10 @@ def test_pyproject_job_plan_preserves_watch_provenance(jobs_project: dict[str, P
     assert batch_plan.watch_delay == pytest.approx(0.25)
     assert not plan.config.watch
     assert plan.config.watch_delay == pytest.approx(0.5)
-    assert plan.raw_config["input"] == (JSON_SCHEMA_DATA_PATH / "person.json").as_posix()
-    assert plan.raw_config["output"] == jobs_project["plain"].as_posix()
-    assert plan.cli_config_args["formatters"] == ["builtin"]
+    record = plan.config._run_options
+    assert record.pyproject["input"] == (JSON_SCHEMA_DATA_PATH / "person.json").as_posix()
+    assert record.pyproject["output"] == jobs_project["plain"].as_posix()
+    assert record.arguments["formatters"] == ["builtin"]
     assert plan.pyproject_path == tmp_path / "pyproject.toml"
 
 

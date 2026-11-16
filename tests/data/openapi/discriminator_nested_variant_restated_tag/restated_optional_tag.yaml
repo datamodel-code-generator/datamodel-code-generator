@@ -1,0 +1,39 @@
+openapi: 3.1.0
+info: {title: nested variant restating its tag, version: "1"}
+paths: {}
+components:
+  schemas:
+    Animal:
+      type: object
+      properties:
+        kind: {const: pet}
+    Cat:
+      allOf:
+        - $ref: '#/components/schemas/Animal'
+        - type: object
+          properties:
+            kind: {const: pet}
+            meow: {type: string}
+    Kitten:
+      allOf:
+        - $ref: '#/components/schemas/Cat'
+        - type: object
+          properties:
+            tiny: {type: boolean}
+    Young:
+      oneOf:
+        - $ref: '#/components/schemas/Kitten'
+    Plane:
+      type: object
+      required: [kind]
+      properties:
+        kind: {const: plane}
+    Holder:
+      type: object
+      properties:
+        thing:
+          oneOf:
+            - $ref: '#/components/schemas/Young'
+            - $ref: '#/components/schemas/Plane'
+          discriminator:
+            propertyName: kind

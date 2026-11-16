@@ -23,15 +23,19 @@
 - `--no-ignore-ref-siblings-by-schema-version`
 - `--no-read-dynamic-anchors-in-document-order`
 - `--no-read-escaped-ref-pointers`
+- `--no-read-ids-with-empty-fragment`
 - `--no-read-input-model-dataclass-fields-by-alias`
 - `--no-read-schema-version-per-document`
+- `--no-read-yaml-1-1-numbers-as-text`
 - `--no-reuse-every-reached-input-model-type`
 - `--output`: Specify the destination path for generated Python code.
 - `--preset`: Apply an immutable built-in option preset.
 - `--read-dynamic-anchors-in-document-order`: Resolve a `$dynamicRef` to the first `$dynamicAnchor` of its name ...
 - `--read-escaped-ref-pointers`: Read the escapes of a `$ref` JSON pointer as the characters they encode.
+- `--read-ids-with-empty-fragment`: Read an `$id` that ends with an empty fragment as the document that declares...
 - `--read-input-model-dataclass-fields-by-alias`: Read the fields of a Pydantic dataclass by their aliases with ...
 - `--read-schema-version-per-document`: Read each document by the schema version it declares.
+- `--read-yaml-1-1-numbers-as-text`: Read the unquoted YAML values that only YAML 1.1 reads as numbers as their ...
 - `--reuse-every-reached-input-model-type`: Reach the types to reuse through every model kind and write no copy ...
 - `--schema-version`: Schema version to use for parsing.
 - `--schema-version-mode`: Schema version validation mode.
@@ -58,6 +62,7 @@
 - `--no-read-allof-parents-in-mro-order`
 - `--no-read-const-beside-enum`
 - `--no-read-format-as-annotation`
+- `--no-read-inherited-property-schemas-in-mro-order`
 - `--no-read-kubernetes-extensions`
 - `--no-read-unevaluated-properties`
 - `--no-type-overrides-replace-whole-type`
@@ -89,6 +94,7 @@
 - `--read-allof-parents-in-mro-order`: Read the allOf parents of every inherited schema in the order of the clas...
 - `--read-const-beside-enum`: Read a `const` beside an `enum` as JSON Schema does.
 - `--read-format-as-annotation`: Read the format of a schema as an annotation, as JSON Schema does.
+- `--read-inherited-property-schemas-in-mro-order`: Give a required inherited property the schema its allOf pare...
 - `--read-kubernetes-extensions`: Read the Kubernetes schema extensions as the keywords they stand for.
 - `--read-unevaluated-properties`: Read a schema-valued `unevaluatedProperties` as `additionalProperties`.
 - `--strict-types`: Enable strict type validation for specified Python types.
@@ -379,7 +385,9 @@
 - `--module-split-mode`: Split generated models into separate files, one per model class.
 - `--no-allow-private-network`
 - `--no-allow-remote-refs`
+- `--no-read-implied-options-from-merged-values`
 - `--no-untrusted-input`
+- `--read-implied-options-from-merged-values`: Read the options that another option turns on from the arguments ...
 - `--recommend-options`: Recommend options for the input schema on top of the latest dated preset (experimental).
 - `--shared-module-name`: Customize the name of the shared module for deduplicated models.
 - `--strict-refs`: Treat unresolved local `$ref` JSON pointers as errors.
@@ -588,6 +596,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         definitions a/b and Foo Bar; without it such a
                         reference gets a copy of its target named after the
                         escaped text (A1b, Foo20Bar), as in 0.89.0.
+  --read-ids-with-empty-fragment, --no-read-ids-with-empty-fragment
+                        Read an $id that ends with an empty fragment, such as
+                        https://example.com/item.json#, as the URI without it,
+                        which names the same resource, so a $ref to
+                        https://example.com/item.json# or
+                        https://example.com/item.json#/definitions/Tag in the
+                        document that declares it resolves inside that
+                        document; without it such a $ref loads the document at
+                        that URL, from the network, as in 0.96.0.
   --read-input-model-dataclass-fields-by-alias, --no-read-input-model-dataclass-fields-by-alias
                         With --input-model, read the fields of a Pydantic
                         dataclass by their aliases, as those of a model, so a
@@ -613,6 +630,17 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         gives every document its version; the schema
                         validators then read an OpenAPI or AsyncAPI document
                         by it only with the option, else as draft 7.
+  --read-yaml-1-1-numbers-as-text, --no-read-yaml-1-1-numbers-as-text
+                        Read an unquoted YAML value with _ or : that YAML 1.1
+                        reads as a number, such as 16:9 (969 in base 60),
+                        18_24 or 1_000, as its text, as YAML 1.2, which
+                        OpenAPI names, and the ryaml reader read it, also in
+                        enum, default, const, examples, extensions and YAML
+                        data input. Without it such a value is the number YAML
+                        1.1 reads, as in 0.96.0, except where a string is
+                        required in a document that the number makes invalid
+                        (a pattern, a format, a description, a component or
+                        property name), where it is its text.
   --reuse-every-reached-input-model-type, --no-reuse-every-reached-input-model-type
                         With --input-model-ref-strategy reuse-all or reuse-
                         foreign, reach the types to reuse through the fields
@@ -838,6 +866,19 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         and format: binary stays bytes. Without it each known
                         format selects a type (EmailStr, AwareDatetime, UUID,
                         Decimal, SecretStr, Base64Str, ...), as in 0.96.0
+  --read-inherited-property-schemas-in-mro-order, --no-read-inherited-property-schemas-in-mro-order
+                        With --intersect-combined-schema-keywords, give a
+                        property that a model only makes required the schema
+                        its allOf parents declare, read in the order of the
+                        class bases from the allOf members the model's own
+                        fields are read from (an alias member followed to the
+                        schema it names, the keywords beside a $ref member
+                        read with it), so a model written before its parents
+                        takes the field it takes when written after them;
+                        without it the declaration is looked up in the allOf
+                        members as written, and under --intersect-combined-
+                        schema-keywords such a field can lose its description
+                        or its constraints or become Any, as in 0.96.0
   --read-kubernetes-extensions, --no-read-kubernetes-extensions
                         Read the Kubernetes schema extensions as the keywords
                         they stand for: x-kubernetes-int-or-string (and the
@@ -1937,6 +1978,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         with --install-skill.
   --profile PROFILE     Use a named profile from pyproject.toml
                         [tool.datamodel-codegen.profiles.<name>]
+  --read-implied-options-from-merged-values, --no-read-implied-options-from-merged-values
+                        Read the options that another option turns on (--use-
+                        annotated turns on --field-constraints) from the
+                        arguments and pyproject.toml together, so --no-use-
+                        annotated over use-annotated = true in pyproject.toml
+                        also leaves --field-constraints off where
+                        pyproject.toml gives it false, as use-annotated =
+                        false there does; without it --field-constraints stays
+                        on, as in 0.96.0.
   --recommend-options   Analyse the input schema and print the options to add
                         on top of the latest dated preset, with the reasons,
                         as a command and a pyproject.toml block, then exit

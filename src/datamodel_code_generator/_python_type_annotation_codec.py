@@ -16,6 +16,7 @@ from datamodel_code_generator._python_type_annotation import (
     PythonTypeSubscript,
     PythonTypeTuple,
     PythonTypeUnion,
+    _is_literal_base,
     python_type_name,
 )
 
@@ -54,18 +55,6 @@ def _python_type_union_from_ast(node: ast.BinOp) -> PythonTypeUnion:
         else:
             items.append(_python_type_expr_from_ast(current, allow_literal=False))
     return PythonTypeUnion(tuple(items))
-
-
-def _is_literal_base(base: PythonTypeExpr) -> bool:
-    """Report whether a subscript base is ``Literal`` or a ``….Literal`` alias.
-
-    Only ``Literal[...]`` arguments may carry string/bytes values. Elsewhere a
-    string constant would render as a quoted forward reference, which Pydantic v2
-    evaluates via ``eval()`` during ``model_rebuild()`` — a code-execution sink.
-    """
-    if isinstance(base, PythonTypeQualifiedName):
-        return base.parts[-1] == "Literal"
-    return getattr(base, "value", None) == "Literal"
 
 
 def _python_type_expr_from_ast(  # noqa: PLR0911, PLR0912
@@ -110,7 +99,8 @@ def _python_type_expr_from_ast(  # noqa: PLR0911, PLR0912
         case ast.Constant(value=value) if allow_literal and isinstance(value, (str, bytes)):
             # String/bytes constants are only valid as ``Literal[...]`` members.
             # In any other position they render as a quoted forward reference
-            # that Pydantic v2 later evaluates, so reject them here.
+            # that Pydantic v2 evaluates via ``eval()`` during ``model_rebuild()``
+            # (a code-execution sink), so reject them here.
             if not allow_string_literal:
                 raise _InvalidPythonTypeAnnotationError
             return PythonTypeLiteralValue(value)

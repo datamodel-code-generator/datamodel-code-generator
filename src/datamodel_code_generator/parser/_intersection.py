@@ -53,8 +53,8 @@ from __future__ import annotations
 from copy import copy
 from fractions import Fraction
 from functools import partial
-from itertools import chain, product, starmap
-from math import gcd, isfinite, isnan, lcm, prod
+from itertools import chain, product
+from math import gcd, isfinite, lcm, prod
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, final
 from warnings import warn
 
@@ -66,6 +66,8 @@ from datamodel_code_generator._json_schema import (
     SINGLE_SCHEMA_SHAPES,
     admitted_types,
     declared_types,
+    json_value_key,
+    json_values_equal,
     non_null_types,
     schema_positions,
 )
@@ -101,7 +103,6 @@ __all__ = [
     "intersect_keywords",
     "intersect_multiple_of",
     "intersect_types",
-    "is_hash_safe_json_scalar",
     "json_values_equal",
     "kept_enum_entries",
     "kept_legacy_rows",
@@ -143,7 +144,6 @@ ENUM_ENTRY_NAMES: Final = (
 )
 """The keywords that list one entry per enum value, each with the name of its schema object field."""
 ENUM_METADATA_KEYWORDS: Final = tuple(keyword for keyword, _ in ENUM_ENTRY_NAMES)
-_HASHABLE_SCALAR_TYPES: Final = frozenset({str, int, float, bool, type(None)})
 _REMOVED: Final = Sentinel("_REMOVED")
 INTERSECTED_KEYWORDS: Final = _BOUNDS.union((
     "multipleOf",
@@ -283,63 +283,10 @@ class KeywordIntersection:
     untaken_patterns: tuple[str, ...] = ()
 
 
-def json_values_equal(left: object, right: object) -> bool:  # ruff: ignore[too-many-return-statements]
-    """Compare JSON values as ``enum``, ``const`` and ``uniqueItems`` do: booleans are not numbers, ``1 == 1.0``.
-
-    NaN, which a YAML document can write, equals NaN.
-    """
-    match left:
-        case None:
-            return right is None
-        case bool() as boolean:
-            return isinstance(right, bool) and boolean == right
-        case int() | float() as number:
-            return (
-                not isinstance(right, bool)
-                and isinstance(right, (int, float))
-                and (
-                    number == right
-                    or (isinstance(number, float) and isinstance(right, float) and isnan(number) and isnan(right))
-                )
-            )
-        case str() as string:
-            return isinstance(right, str) and string == right
-        case list() as array:
-            return (
-                isinstance(right, list)
-                and len(array) == len(right)
-                and all(starmap(json_values_equal, zip(array, right, strict=True)))
-            )
-        case dict() as object_:
-            return (
-                isinstance(right, dict)
-                and len(object_) == len(right)
-                and all(key in right and json_values_equal(item, right[key]) for key, item in object_.items())
-            )
-    return False
-
-
-def is_hash_safe_json_scalar(value: object) -> bool:
-    """Return whether a JSON scalar hashes and compares as its base type, so a set can hold it; NaN cannot."""
-    value_type = type(value)
-    if isinstance(value, float) and isnan(value):
-        return False
-    return value_type in _HASHABLE_SCALAR_TYPES or any(
-        isinstance(value, scalar_type)
-        and value_type.__eq__ is scalar_type.__eq__
-        and value_type.__hash__ is scalar_type.__hash__
-        for scalar_type in (str, int, float)
-    )
-
-
 def _retained_indices(first: Sequence[Any], second: Sequence[Any]) -> list[int]:
-    """Return the positions of the values of ``first`` that ``second`` also lists."""
-    if all(map(is_hash_safe_json_scalar, chain(first, second))):
-        keys = {(isinstance(value, bool), value) for value in second}
-        return [index for index, value in enumerate(first) if (isinstance(value, bool), value) in keys]
-    return [
-        index for index, value in enumerate(first) if any(json_values_equal(value, candidate) for candidate in second)
-    ]
+    """Return the positions of the values of ``first`` that ``second`` also lists, by the key of each value."""
+    listed = set(map(json_value_key, second))
+    return [index for index, value in enumerate(first) if json_value_key(value) in listed]
 
 
 def _same_values(first: Sequence[Any], second: Sequence[Any]) -> bool:
@@ -468,11 +415,11 @@ def common_types(first: Sequence[str], second: Sequence[str]) -> tuple[str, ...]
 
 def enum_metadata(enum_parts: Sequence[Mapping[str, Any]], key: str, index: int) -> object:
     """Return the annotation of a retained enum value: the first part's, else that of the next part that has one."""
-    value = enum_parts[0]["enum"][index]
+    value = json_value_key(enum_parts[0]["enum"][index])
     positions = (
         index
         if part is enum_parts[0]
-        else next(i for i, item in enumerate(part["enum"]) if json_values_equal(value, item))
+        else next(i for i, item in enumerate(part["enum"]) if value == json_value_key(item))
         for part in enum_parts
     )
     return next(

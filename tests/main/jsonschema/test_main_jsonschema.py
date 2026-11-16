@@ -13516,6 +13516,73 @@ def test_main_jsonschema_model_name_map_warns_on_unmatched_keys(output_file: Pat
 
 
 @pytest.mark.parametrize(
+    ("type_overrides", "extra_args", "modules"),
+    [
+        pytest.param({"Item.price": "decimal.Decimal"}, (), False, id="schema-name"),
+        pytest.param({"Widget": "decimal.Decimal"}, (), False, id="no-close-name"),
+        pytest.param({"Ordr": "decimal.Decimal", "Order.itme": "decimal.Decimal"}, (), False, id="close-names"),
+        pytest.param({"Widget": "decimal.Decimal", "Item.price": "decimal.Decimal"}, (), False, id="several"),
+        pytest.param({"ItemModel.price": "decimal.Decimal", "Item": "decimal.Decimal"}, (), False, id="matched"),
+        pytest.param(
+            {"Order.item": "decimal.Decimal"},
+            ("--model-name-map", json.dumps({"Order": "Purchase"})),
+            False,
+            id="parsed-again",
+        ),
+        pytest.param({"stats.Rank": "decimal.Decimal"}, (), True, id="dotted-schema-name"),
+    ],
+)
+def test_main_jsonschema_type_overrides_warns_on_unmatched_keys(
+    output_file: Path,
+    output_dir: Path,
+    type_overrides: dict[str, str],
+    extra_args: tuple[str, ...],
+    modules: bool,
+) -> None:
+    """Report once the --type-overrides keys that match no model or field, with the key that would match.
+
+    ``#/$defs/Item`` is written as ``ItemModel``, as the inline object of ``item`` takes ``Item``: a key with the
+    schema's name is given with the class name, another key with the closest name a lookup compared. A run that
+    parses again (a class-name key of ``--model-name-map``) reports the keys once, by the names of the parse it keeps,
+    and a dotted schema name (``stats.Rank``, the class ``Rank`` of module ``stats``) gives its class name.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH
+            / ("type_overrides_unmatched_keys_modules.json" if modules else "type_overrides_unmatched_keys.json"),
+            output_path=output_dir if modules else output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+                "--type-overrides",
+                json.dumps(type_overrides),
+                *extra_args,
+            ],
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning), name="warnings"
+    )
+
+
+def test_main_jsonschema_type_overrides_warns_on_unmatched_keys_of_a_parser() -> None:
+    """Warn from the parse itself about the --type-overrides keys that match nothing outside a generation run."""
+    parser = JsonSchemaParser(
+        (JSON_SCHEMA_DATA_PATH / "type_overrides_unmatched_keys.json").read_text(encoding="utf-8"),
+        type_overrides={"Item.price": "decimal.Decimal"},
+    )
+    message = (
+        "--type-overrides: 1 key matched no generated model or field: 'Item.price' (did you mean 'ItemModel.price'?)"
+    )
+    with pytest.warns(UserWarning, match=re.escape(message)):
+        parser.parse()
+
+
+@pytest.mark.parametrize(
     "model_name_map",
     [
         pytest.param({"#/$defs/A": "Tags", "Tags": "Q", "Labels": "L"}, id="displaced-name"),
@@ -39694,6 +39761,26 @@ def test_main_jsonschema_one_of_without_member_types_beside_properties() -> None
     assert_output(str(parser.parse()))
 
 
+class _UnionCopyParser(JsonSchemaParser):
+    """Parses a copy of the schema of each `anyOf` and `oneOf`: a hook that hands another object to the parser."""
+
+    def parse_any_of(self, name: str, obj: Any, path: list[str]) -> list[Any]:
+        return super().parse_any_of(name, obj.model_copy(), path)
+
+    def parse_one_of(self, name: str, obj: Any, path: list[str]) -> list[Any]:
+        return super().parse_one_of(name, obj.model_copy(), path)
+
+
+@pytest.mark.parametrize("keyword", ["all_of_any_of", "all_of_one_of"])
+def test_main_jsonschema_all_of_union_parsed_from_a_copy(keyword: str) -> None:
+    """An allOf over a union whose `anyOf` or `oneOf` a subclass parses from a copy is the union of its variants.
+
+    Each variant joins one branch with the other part, as the parser builds them without the subclass.
+    """
+    parser = _UnionCopyParser(JSON_SCHEMA_DATA_PATH / keyword / "direct.json", formatters=[Formatter.BUILTIN])
+    assert_output(str(parser.parse()))
+
+
 def test_main_jsonschema_reserved_target_of_a_rewritten_document(tmp_path: Path) -> None:
     """A target another file reserves in a document whose embedded `$id` rewrites a reference is read as prepared.
 
@@ -43089,4 +43176,55 @@ def test_main_naming_strategy_enclosing_model_modules(output_dir: Path, input_di
             "builtin",
         ],
         force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_dir", "extra_args", "model_name", "payload"),
+    [
+        pytest.param(
+            "enum_literal_collapsed_alias",
+            ["--use-enum-values-in-discriminator"],
+            "Pet",
+            {"pet": {"kind": "cat"}},
+            id="discriminator",
+        ),
+        pytest.param(
+            "enum_literal_collapsed_alias_const",
+            ["--read-const-beside-enum", "--use-subclass-enum"],
+            "Holder",
+            {"other": "cat"},
+            id="const",
+        ),
+    ],
+)
+def test_main_enum_literal_of_collapsed_alias_modules(
+    output_dir: Path, input_dir: str, extra_args: list[str], model_name: str, payload: dict[str, Any]
+) -> None:
+    """Import the enum an enum member literal names after the collapsed alias of another module (#6842).
+
+    ``Foo`` of ``a.json`` is an alias of the enum of ``b.json`` that ``parent`` collapse replaces by the enum, which
+    takes its path and its name. ``a.py`` writes ``Literal[b.Foo.cat, 'cat']`` and imports ``b``, as it names
+    ``b.Foo`` in ``Holder``. A const beside the enum makes the same literal without a discriminator
+    (``enum_literal_collapsed_alias_const``): ``a.py`` writes ``Literal[b.Foo.cat]`` and imports ``b``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_dir,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--collapse-root-models",
+            "--collapse-root-models-name-strategy",
+            "parent",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+        runtime_validation_module="a",
+        runtime_validation_model_name=model_name,
+        runtime_validation_data=payload,
     )

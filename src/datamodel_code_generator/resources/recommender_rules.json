@@ -1198,6 +1198,18 @@
         "formats.read-as-annotation"
       ]
     },
+    "read_ids_with_empty_fragment": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261113 presets; the recommendation starts from a preset."
+    },
+    "read_implied_options_from_merged_values": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261113 presets; the recommendation starts from a preset."
+    },
+    "read_inherited_property_schemas_in_mro_order": {
+      "not_recommended": "preset",
+      "reason": "With --intersect-combined-schema-keywords only: set by the 20261113 presets; the recommendation starts from a preset."
+    },
     "read_input_model_dataclass_fields_by_alias": {
       "not_recommended": "preset",
       "reason": "--input-model only: set by the 20261104 presets; the recommendation starts from a preset."
@@ -1226,6 +1238,10 @@
       "rules": [
         "versions.read-per-document"
       ]
+    },
+    "read_yaml_1_1_numbers_as_text": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261113 presets; the recommendation starts from a preset."
     },
     "recommend_options": {
       "not_recommended": "command",

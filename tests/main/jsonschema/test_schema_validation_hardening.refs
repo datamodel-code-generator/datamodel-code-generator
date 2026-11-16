@@ -2,6 +2,14 @@
 # Each line records the expected output a test compares; to accept changed output add --inline-snapshot=fix (see AGENTS.md).
 [test_main_jsonschema_allof_type_list]
 	main/jsonschema/allof_type_list.py
+[test_main_jsonschema_defs_member_that_is_not_a_schema_is_refused]
+2020-12	main/jsonschema/schema_validation_hardening/main_jsonschema_defs_member_that_is_not_a_schema_is_refused[2020-12].txt
+referenced-member	main/jsonschema/schema_validation_hardening/main_jsonschema_defs_member_that_is_not_a_schema_is_refused[referenced-member].txt	= main/jsonschema/schema_validation_hardening/main_jsonschema_defs_member_that_is_not_a_schema_is_refused[2020-12].txt
+[test_main_jsonschema_defs_member_that_is_not_a_schema_is_skipped]
+draft-07	main/jsonschema/schema_validation_hardening/main_jsonschema_defs_member_that_is_not_a_schema_is_skipped[draft-07].py
+draft-07	main/jsonschema/schema_validation_hardening/main_jsonschema_defs_member_that_is_not_a_schema_is_skipped[draft-07].txt
+referenced-draft-07-document	main/jsonschema/schema_validation_hardening/main_jsonschema_defs_member_that_is_not_a_schema_is_skipped[referenced-draft-07-document].py
+referenced-draft-07-document	main/jsonschema/schema_validation_hardening/main_jsonschema_defs_member_that_is_not_a_schema_is_skipped[referenced-draft-07-document].txt
 [test_main_jsonschema_draft4_exclusive_bounds_without_bound]
 	main/jsonschema/draft4_exclusive_without_bound.py
 [test_main_jsonschema_enum_names_allow_null_entries]
@@ -17,3 +25,11 @@ pydantic_v2.BaseModel	main/jsonschema/enum_names_beside_null_warnings.txt
 	main/jsonschema/schema_validators_required_object_type_list.py
 [test_main_jsonschema_required_only_type_list_with_schema_validator]
 	main/jsonschema/schema_validators_required_type_list.py
+[test_main_jsonschema_root_id_object_generates_as_before]
+	main/jsonschema/schema_validation_hardening/main_jsonschema_root_id_object_generates_as_before.py
+[test_main_jsonschema_root_id_of_another_type]
+dollar-id-boolean	main/jsonschema/schema_validation_hardening/main_jsonschema_root_id_of_another_type[dollar-id-boolean].txt
+dollar-id-number	main/jsonschema/schema_validation_hardening/main_jsonschema_root_id_of_another_type[dollar-id-number].txt
+id-boolean	main/jsonschema/schema_validation_hardening/main_jsonschema_root_id_of_another_type[id-boolean].txt
+id-number	main/jsonschema/schema_validation_hardening/main_jsonschema_root_id_of_another_type[id-number].txt
+id-number-in-referenced-document	main/jsonschema/schema_validation_hardening/main_jsonschema_root_id_of_another_type[id-number-in-referenced-document].txt

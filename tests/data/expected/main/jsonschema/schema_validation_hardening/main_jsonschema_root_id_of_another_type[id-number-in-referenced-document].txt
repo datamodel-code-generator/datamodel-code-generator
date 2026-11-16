@@ -1,0 +1,3 @@
+Error at schema path 'other.json#': ValidationError: 1 validation error for JsonSchemaObject
+id
+  Input should be a valid string [type=string_type, input_value=5122, input_type=int]

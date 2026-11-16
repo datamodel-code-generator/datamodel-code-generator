@@ -10,6 +10,7 @@ imported under a stale import (``reimport_module_references``, under a ``Reimpor
 
 from __future__ import annotations
 
+from functools import cached_property
 from typing import TYPE_CHECKING, Literal, TypeAlias, cast
 
 from typing_extensions import Protocol, final
@@ -26,13 +27,12 @@ from datamodel_code_generator._module_paths import (
 from datamodel_code_generator._records import record
 from datamodel_code_generator.imports import Import, _import_bindings, _iter_import_bindings
 from datamodel_code_generator.model.base import BaseClassDataType
-from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._shared import (
-    ReplacedRootsHost,
+    ModuleMembersHost,
     _get_data_type_target_full_name,
     _get_model_module_name,
-    module_members,
+    module_member_keys,
     names_left_by_replaced_roots,
 )
 
@@ -90,36 +90,46 @@ class ReferenceImportTarget:
         return binding if name == self.import_ else f"{binding}.{name}"
 
     def reserve_name(self, resolver: ModelResolver) -> None:
-        """Keep the resolver of the module from giving the import the name that a shared import binds."""
+        """Keep the resolver of the module from giving the import the name that a shared import binds.
+
+        Its own name only: a later import of the module still takes the name of another shared import, as released
+        (``from .User import User`` beside ``--additional-imports mylib.User``), where ``keep_off_shared_bindings``
+        keeps the names a pass gives anew off all of them.
+        """
         if self.beside_shared_import:
             resolver.exclude_names.add(self.import_)
 
 
-def shared_import_bindings(shared_imports: Imports) -> set[str]:
+def shared_import_bindings(shared_imports: Imports) -> frozenset[str]:
     """Return the names that the imports every module shares bind.
 
-    A ``__future__`` import binds a name too, but it is no import of a module's or a model's name.
+    A ``__future__`` import binds a name too (``shared_future_bindings``), but it is no import of a module's or a
+    model's name.
     """
-    return {binding for (from_, _), binding in _import_bindings(shared_imports) if from_ != "__future__"}
+    return frozenset(binding for (from_, _), binding in _import_bindings(shared_imports) if from_ != "__future__")
 
 
-def _is_bound_by_shared_import(shared_imports: Imports | None, name: str) -> bool:
-    """Return whether an import every module shares binds ``name``."""
-    return shared_imports is not None and name in shared_import_bindings(shared_imports)
+def shared_future_bindings(shared_imports: Imports) -> frozenset[str]:
+    """Return the names that the ``__future__`` imports every module shares bind: ``shared_import_bindings`` has none.
+
+    A package's ``__init__`` that writes them hides a submodule of such a name (``submodules_hidden_by_packages``).
+    """
+    return frozenset(binding for (from_, _), binding in _import_bindings(shared_imports) if from_ == "__future__")
 
 
-def _is_module_named_like_shared_import(shared_imports: Imports | None, module: str, name: str) -> bool:
-    """Return whether ``module``, which is not the ``name`` of the model it holds, is bound by a shared import."""
-    return module != name and _is_bound_by_shared_import(shared_imports, module)
+def keep_off_shared_bindings(resolver: ModelResolver, shared_imports: Imports) -> None:
+    """Keep the resolver of a module from giving any of its names a name that an import every module shares binds."""
+    resolver.exclude_names.update(shared_import_bindings(shared_imports))
 
 
 @final
-@record(eq=False)
+@record(eq=False, slots=False)
 class ModuleImportTarget:
     """The module that a pass imports models of other modules into, and what of the run it reads for that.
 
     ``module_names`` gives the module of each model, ``internal_modules`` the ``_internal`` modules of the run and
-    ``shared_imports`` the imports every module writes (``reference_import_target``).
+    ``shared_imports`` the imports every module writes, whose names it reads as ``shared_bindings``; it keeps a
+    ``__dict__`` for them.
     """
 
     imports: Imports
@@ -141,6 +151,17 @@ class ModuleImportTarget:
             shared_imports,
         )
 
+    @cached_property
+    def shared_bindings(self) -> frozenset[str]:
+        """The names the imports every module writes bind (``shared_import_bindings``), taken when first asked for.
+
+        ``reference_import_target`` reads them for each import of the target. The shared imports are written while the
+        schemas are parsed and the parse is configured (``__future__`` only), by ``remap_import_overrides``, a pass of
+        its own, and by ``extract_future`` in ``render_modules`` (``__future__`` only); no pass that holds a target
+        writes them, so the names hold for the target's life.
+        """
+        return shared_import_bindings(self.shared_imports)
+
 
 def reference_import_target(  # ruff: ignore[too-many-arguments]
     name: str,
@@ -151,7 +172,7 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
     init: bool,
     internal_modules: Collection[tuple[str, ...]],
     base_class: bool,
-    shared_imports: Imports | None,
+    shared_bindings: Collection[str],
     row: ImportPathRow = "reference",
     hidden_modules: Collection[tuple[str, ...]] = (),
 ) -> ReferenceImportTarget:
@@ -159,12 +180,13 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
 
     ``use_exact`` imports the model from its module, except from an ancestor package, which keeps the package import.
     The module is imported by the path the output writes it at (``written_name``). A model is imported from its module,
-    not through the module imported from its package, where an import every module shares (``shared_imports``) binds
-    the module's name: every module, a package's ``__init__`` included, writes that import, so the module would bind the
-    name twice and ``from package import module`` would give what the package binds, not the module. The import then
-    binds the model's name, which another shared import may bind too (``beside_shared_import``). So is a model of one of
-    the ``hidden_modules``, whose package binds the module's name itself (``submodules_hidden_by_packages``), and its
-    import keeps off the names of the shared imports in the same way.
+    not through the module imported from its package, where an import every module shares binds the module's name
+    (``shared_bindings``, ``shared_import_bindings``): every module, a package's ``__init__`` included, writes that
+    import, so the module would bind the name twice and ``from package import module`` would give what the package
+    binds, not the module. The import then binds the model's name, which another shared import may bind too
+    (``beside_shared_import``). So is a model of one of the ``hidden_modules``, whose package binds the module's name
+    itself (``submodules_hidden_by_packages``), and its import keeps off the names of the shared imports in the same
+    way.
     """
     beside_shared_import = False
     if base_class:
@@ -187,7 +209,8 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
         named_like_shared_import = (
             imports_module
             and not (is_internal_module or is_module_class_collision)
-            and _is_module_named_like_shared_import(shared_imports, import_, name)
+            and import_ != name
+            and import_ in shared_bindings
         )
 
         hidden_by_package = ref_module in hidden_modules
@@ -197,9 +220,7 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
             from_ = join_module(from_, import_)
             import_ = name
             full_path = from_, import_
-            beside_shared_import = (named_like_shared_import or hidden_by_package) and _is_bound_by_shared_import(
-                shared_imports, name
-            )
+            beside_shared_import = (named_like_shared_import or hidden_by_package) and name in shared_bindings
     from_ = written_name(from_)
     written_from = "." + from_ if init and not target_full_name.startswith(current_module_name + ".") else from_
     return ReferenceImportTarget(full_path, from_, import_, written_from, beside_shared_import)
@@ -231,7 +252,7 @@ def register_reference_import(  # noqa: PLR0913
         init=module.init,
         internal_modules=module.internal_modules,
         base_class=base_class,
-        shared_imports=module.shared_imports,
+        shared_bindings=module.shared_bindings,
         row=row,
         hidden_modules=hidden_modules,
     )
@@ -255,8 +276,8 @@ def register_reference_import(  # noqa: PLR0913
 def generic_base_class_import(module: ModulePath, base_module: ModulePath, name: str, *, init: bool) -> Import:
     """Return the import of the generated base class ``name``, which ``base_module`` writes, into ``module``.
 
-    It is the import of a base class of another module (``reference_import_target``), from the modules' dotted names;
-    ``init`` makes ``module`` a package ``__init__``.
+    It is the import of a base class of another module (``reference_import_target``), from the modules' dotted names,
+    which reads no shared import; ``init`` makes ``module`` a package ``__init__``.
     """
     target = reference_import_target(
         name,
@@ -266,7 +287,7 @@ def generic_base_class_import(module: ModulePath, base_module: ModulePath, name:
         init=init,
         internal_modules=(),
         base_class=True,
-        shared_imports=None,
+        shared_bindings=(),
     )
     return Import(from_=target.written_from, import_=target.import_)
 
@@ -394,7 +415,7 @@ class EmittingModulesHost(Protocol):
         """The module that emits each model found in the live lists, by model id."""
 
 
-class ReimportHost(ReferenceExpressionHost, ReplacedRootsHost, EmittingModulesHost, Protocol):
+class ReimportHost(ReferenceExpressionHost, ModuleMembersHost, EmittingModulesHost, Protocol):
     """What importing again the models a module imported under stale imports reads of the parser."""
 
 
@@ -445,9 +466,7 @@ def reimport_module_references(  # noqa: PLR0913
         ledger.release_names(
             imports,
             module.resolver,
-            released.union(
-                names_left_by_replaced_roots(host, models, keyed_models(module_members(host, models), "module members"))
-            ),
+            released.union(names_left_by_replaced_roots(host, models, module_member_keys(host, models, row="members"))),
         )
     for model, data_type, _ in stale_users:
         producer = ImportProducer(row, model)

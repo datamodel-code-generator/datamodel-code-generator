@@ -21,6 +21,7 @@ from datamodel_code_generator._json_schema import (
     SCHEMA_MAP_KEYS,
     SCHEMA_POSITIONS,
     admitted_types,
+    json_value_type,
     schema_positions,
 )
 from datamodel_code_generator._openapi_paths import PATH_ITEM_METHODS
@@ -61,20 +62,9 @@ def _schema_dump(schema: JsonSchemaObject | bool) -> dict[str, Any] | bool:  # r
     return schema.model_dump(exclude_unset=True, by_alias=True) if isinstance(schema, JsonSchemaObject) else schema
 
 
-_JSON_VALUE_TYPES: Final = (
-    (bool, "boolean"),
-    (int, "integer"),
-    (float, "number"),
-    (str, "string"),
-    (list, "array"),
-    (dict, "object"),
-    (type(None), "null"),
-)
-
-
 def _get_json_value_type(value: object) -> str:
-    """Return a JSON Schema primitive type name for a concrete value."""
-    return next((name for kind, name in _JSON_VALUE_TYPES if isinstance(value, kind)), "")
+    """Return a JSON Schema primitive type name for a concrete value, ``""`` for a value outside JSON."""
+    return json_value_type(value) or ""
 
 
 def _json_value_admitted(schema_types: AbstractSet[str], value: object) -> bool:
@@ -358,14 +348,32 @@ SlashNames = Literal["joined", "uri"]
 """How a JSON pointer reads a ``/`` it writes unescaped inside a name: row ``joined`` joins the parts from a part that
 names no member, the most first, into a key the object holds; row ``uri``, that of --read-escaped-ref-pointers, joins
 them only into a name that holds ``://``, as JSON Pointer reads every other unescaped ``/`` as a separator."""
+PointerReading = (
+    SlashNames | Literal["legacy-split-pointer-tokens", "legacy-drop-empty-tokens", "legacy-cycle-through-scalar"]
+)
+"""How a reader of a reference splits its fragment (``ref_fragment_tokens``): the parser's ``SlashNames``, or the legacy
+row of its call site; ``legacy-cycle-through-scalar`` also refuses a walk through a value that is no container."""
 
 
-def _fragment_value(document: Any, fragment: str, *, or_missing: bool = False, names: SlashNames = "joined") -> Any:
-    """Return the value a JSON pointer fragment names in a loaded document, the document itself for no fragment."""
-    return (
-        _get_model_by_decoded_path(document, split_json_pointer(document, fragment, names=names), or_missing=or_missing)
-        if fragment
-        else document
+def ref_fragment_tokens(document: Any, fragment: str, reading: PointerReading) -> list[str]:
+    """Return the decoded tokens a reference fragment names in a loaded document, as ``reading`` splits it."""
+    match reading:
+        case "joined" | "uri":
+            return split_json_pointer(document, fragment, names=reading)
+        case "legacy-split-pointer-tokens":
+            tokens = fragment.split("/")[1:]
+        case _:
+            tokens = [token for token in fragment.split("/") if token]
+    return list(map(unescape_json_pointer_segment, tokens))
+
+
+def _fragment_value(document: Any, fragment: str, *, or_missing: bool = False, reading: PointerReading) -> Any:
+    """Return the value a reference fragment names in a loaded document, as ``reading`` splits it; ``""`` names it."""
+    if not fragment:
+        return document
+    tokens = ref_fragment_tokens(document, fragment, reading)
+    return _get_model_by_decoded_path(
+        document, tokens, or_missing=or_missing, refuse_scalar=reading == "legacy-cycle-through-scalar"
     )
 
 

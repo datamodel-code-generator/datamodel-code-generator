@@ -94,6 +94,7 @@ from pydantic import BaseModel
 from typing_extensions import Sentinel, TypeIs, final, override
 
 import datamodel_code_generator
+from datamodel_code_generator._graph_links import type_children
 from datamodel_code_generator._parse_memo import PARSE_MEMO
 from datamodel_code_generator._records import record
 from datamodel_code_generator.model.base import (
@@ -370,6 +371,10 @@ class KnownWrite:
 _IMPORTS_CORRECT_WITNESS: Final = (
     "--input tests/data/jsonschema/imports_correct --output-model-type pydantic_v2.BaseModel --formatters builtin"
 )
+_NESTED_TAG_WITNESS: Final = (
+    "--input tests/data/openapi/discriminator_nested_variant_restated_tag/restated_optional_tag_across_modules.yaml "
+    "--input-file-type openapi --formatters builtin"
+)
 
 KNOWN_WRITES: tuple[KnownWrite, ...] = (
     KnownWrite(
@@ -385,6 +390,12 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
     ),
     KnownWrite(
         "apply_discriminator_type", Rule.OTHER_MODULE, "DataModelFieldBase.required", _IMPORTS_CORRECT_WITNESS, "RP17"
+    ),
+    KnownWrite(
+        "apply_discriminator_type", Rule.OTHER_MODULE, "DataModelFieldBase.default", _NESTED_TAG_WITNESS, "RP17"
+    ),
+    KnownWrite(
+        "apply_discriminator_type", Rule.OTHER_MODULE, "DataModelFieldBase.nullable", _NESTED_TAG_WITNESS, "RP17"
     ),
     KnownWrite(
         "apply_discriminator_type",
@@ -1888,9 +1899,7 @@ def _graph_objects(models: Iterable[Any]) -> Iterator[object]:
         elif (data_type := getattr(item, "data_type", None)) is not None:
             pending.append(data_type)
         else:
-            pending.extend(item.data_types)
-            if (dict_key := item.dict_key) is not None:
-                pending.append(dict_key)
+            pending.extend(type_children(item))
 
 
 def _store_operation(checks: ParseChecks, name: str, operation: Callable[..., Any]) -> Callable[..., Any]:

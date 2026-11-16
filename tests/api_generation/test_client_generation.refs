@@ -165,6 +165,8 @@ asyncapi-perspective	main/generation_platform/client/asyncapi-perspective.txt
 asyncapi-perspective	main/generation_platform/client/packages/asyncapi-perspective/pydantic_v2_BaseModel//*.py
 asyncapi-relative-v2	main/generation_platform/client/asyncapi-relative-v2.txt
 asyncapi-relative-v2	main/generation_platform/client/packages/asyncapi-relative-v2/pydantic_v2_BaseModel//*.py
+asyncapi-schema-formats	main/generation_platform/client/asyncapi-schema-formats.txt
+asyncapi-schema-formats	main/generation_platform/client/packages/asyncapi-schema-formats/pydantic_v2_BaseModel//*.py
 asyncapi-server-schemes	main/generation_platform/client/asyncapi-server-schemes.txt
 asyncapi-server-schemes	main/generation_platform/client/packages/asyncapi-server-schemes/pydantic_v2_BaseModel//*.py
 asyncapi-server-schemes-v2	main/generation_platform/client/asyncapi-server-schemes-v2.txt

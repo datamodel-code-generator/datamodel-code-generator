@@ -34,6 +34,56 @@ JavaPrintable = TypeAliasType("JavaPrintable", str)
 ClassEscapeRange = TypeAliasType("ClassEscapeRange", str)
 
 
+OneLetterPropertyRange = TypeAliasType("OneLetterPropertyRange", str)
+
+
+BracedPropertyRange = TypeAliasType("BracedPropertyRange", str)
+
+
+OneLetterPropertyDifference = TypeAliasType(
+    "OneLetterPropertyDifference", Annotated[str, Field(pattern=r'^[\pL\pP--_]+$')]
+)
+
+
+WordRangeEnd = TypeAliasType("WordRangeEnd", str)
+
+
+OneLetterPropertyRangeEnd = TypeAliasType("OneLetterPropertyRangeEnd", str)
+
+
+BracedPropertyRangeEnd = TypeAliasType("BracedPropertyRangeEnd", str)
+
+
+HyphenAfterRange = TypeAliasType(
+    "HyphenAfterRange", Annotated[str, Field(pattern=r'^[a-z0-9-\s]+$')]
+)
+
+
+NegatedHyphenFirst = TypeAliasType(
+    "NegatedHyphenFirst", Annotated[str, Field(pattern=r'^[^-\w]+$')]
+)
+
+
+DifferenceAfterRange = TypeAliasType(
+    "DifferenceAfterRange", Annotated[str, Field(pattern=r'^[a-z0-9--\p{N}]+$')]
+)
+
+
+HexEscapeRange = TypeAliasType(
+    "HexEscapeRange", Annotated[str, Field(pattern=r'^[a-\x7a-\w]+$')]
+)
+
+
+BracedEscapeRange = TypeAliasType(
+    "BracedEscapeRange", Annotated[str, Field(pattern=r'^[a-\x{7a}-\w]+$')]
+)
+
+
+OctalEscapeRange = TypeAliasType(
+    "OctalEscapeRange", Annotated[str, Field(pattern=compile('^[\\60-\\71-\\w]+$'))]
+)
+
+
 Letters = TypeAliasType("Letters", Annotated[str, Field(pattern=r'^\p{L}+$')])
 
 

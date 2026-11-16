@@ -1,0 +1,12 @@
+[[change]]
+id = "discriminator-nested-variant-restated-tag"
+kind = "default-output"
+action = "review"
+title = "A union has no `discriminator=` where the class of a nested variant has an optional tag field"
+summary = "A discriminated union that lists a `oneOf` grouping a variant wrote that variant's tag as the default of the tag field of the root-most parent that declares it. Where a nearer parent declares the same optional `const` tag again, the class of the variant has that parent's field, which stays optional, and Pydantic refused the union when the module was imported (`needs field 'kind' to be of type Literal`, #6875); under `--use-enum-values-in-discriminator` the same happened where such a variant keeps an optional tag typed by its Enum. Such a union is now written as a plain union, without `discriminator=`; the variants and their tag fields are unchanged, so only the module that holds the union changes. A module that imported before is unchanged."
+affects = { output_model_types = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"] }
+before = "thing: Young | Plane | None = Field(None, discriminator='kind')"
+after = "thing: Young | Plane | None = None"
+keep = { note = "The previous module failed at import; nothing restores it." }
+refs = ["#6875"]
+source = "release-note"

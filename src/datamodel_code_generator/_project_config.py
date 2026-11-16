@@ -16,7 +16,7 @@ from datamodel_code_generator._config_fields import (
 )
 from datamodel_code_generator._option_names import FIELD_ALIASES, GENERATE_FIELD_NAMES, field_name
 from datamodel_code_generator._paths import resolved
-from datamodel_code_generator.util import load_toml
+from datamodel_code_generator.util import _load_config_toml
 
 if TYPE_CHECKING:
     from datamodel_code_generator.config import GenerateConfig
@@ -92,7 +92,7 @@ def _find_datamodel_codegen_project_config_with_path(source: Path) -> tuple[Path
     while current_path != current_path.parent:
         pyproject_path = current_path / "pyproject.toml"
         if pyproject_path.is_file():
-            pyproject_toml = load_toml(pyproject_path)
+            pyproject_toml = _load_config_toml(pyproject_path)
             tool_config = pyproject_toml.get("tool", {}).get("datamodel-codegen")
             if isinstance(tool_config, Mapping):
                 return pyproject_path, tool_config
@@ -220,12 +220,12 @@ def load_pyproject_config(
     if not options:
         return _loaded_from(GenerateConfig.model_validate(explicit), pyproject_path)
 
+    from datamodel_code_generator import _run_option_stages  # ruff: ignore[import-outside-top-level]
     from datamodel_code_generator._cli_config import (  # ruff: ignore[import-outside-top-level]
-        _apply_implicit_cli_config_values,
         _get_config_class,
-        _RawConfigValue,
         _template_data,
     )
+    from datamodel_code_generator._run_record import RunOptions  # ruff: ignore[import-outside-top-level]
 
     options = _resolve_pyproject_relative_paths(options, pyproject_path, PYPROJECT_API_PATH_FIELDS)
     config = _get_config_class().model_validate(options)
@@ -236,13 +236,13 @@ def load_pyproject_config(
     for field in ("use_annotated", "field_constraints"):
         if field in explicit:
             setattr(config, field, explicit[field])
-    _apply_implicit_cli_config_values(
-        config, cast("Mapping[str, _RawConfigValue]", options), cast("Mapping[str, _RawConfigValue]", explicit)
-    )
+    # The loader's row of `_run_option_stages`: the implied model settings alone, before any preset. Every setting
+    # the stage gave counts as set on the config that comes back, also one that kept its value.
+    config, record = _run_option_stages(config, RunOptions(pyproject=options, arguments=explicit), ("implied-model",))
     _template_data(config)
     values = {
         name: getattr(config, field)
-        for field in config.model_fields_set
+        for field in config.model_fields_set.union(record.staged)
         if (name := GENERATE_FIELD_NAMES.get(field, field)) in fields
     }
     values.update(explicit)

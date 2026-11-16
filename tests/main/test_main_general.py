@@ -2045,6 +2045,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "intersect_combined_schema_keywords",
         "distribute_allof_over_unions",
         "read_allof_parents_in_mro_order",
+        "read_inherited_property_schemas_in_mro_order",
         "omit_redundant_constraints",
         "read_length_keywords_by_type",
         "read_object_keywords_by_type",
@@ -2106,7 +2107,10 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "read_schema_version_per_document",
         "read_escaped_ref_pointers",
         "read_dynamic_anchors_in_document_order",
+        "read_ids_with_empty_fragment",
         "ignore_ref_siblings_by_schema_version",
+        "read_yaml_1_1_numbers_as_text",
+        "read_implied_options_from_merged_values",
         "server_include_request",
         "client_deep_object_brackets",
     ])
@@ -3748,6 +3752,48 @@ def test_dataclass_field_type_imports_follow_its_field(override: str) -> None:
         validate_generated_code(output, "<generated>", do_exec=True)
 
 
+@pytest.mark.parametrize("override", ["no-symbol-imports", "field-statement"])
+def test_pydantic_field_type_imports_follow_its_field_statement(override: str) -> None:
+    """A Pydantic field type outside the package imports ``Annotated`` and ``Field`` by ``_has_field_statement()``.
+
+    One whose render plans list no symbol import still imports the ``Field`` it writes; one whose
+    ``_has_field_statement`` is true for every field imports both, though no field writes ``Field()``.
+    """
+    from dataclasses import replace
+
+    from datamodel_code_generator.model import get_data_model_types
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    types = get_data_model_types(DataModelType.PydanticV2BaseModel, PythonVersion.PY_311)
+
+    class NoSymbolImports(types.field_model):
+        def _build_render_plan(self) -> Any:
+            return replace(super()._build_render_plan(), symbol_imports=())
+
+    class FieldStatement(types.field_model):
+        def _has_field_statement(self) -> bool:
+            return True
+
+    schema = _FIELD_TYPE_SCHEMA
+    if override == "no-symbol-imports":
+        schema = '{"title": "M", "type": "object", "properties": {"b": {"type": "string", "description": "bee"}}}'
+    parser = JsonSchemaParser(
+        schema,
+        data_model_type=types.data_model,
+        data_model_root_type=types.root_model,
+        data_model_field_type={"no-symbol-imports": NoSymbolImports, "field-statement": FieldStatement}[override],
+        data_type_manager_type=types.data_type_manager,
+        dump_resolve_reference_action=types.dump_resolve_reference_action,
+        target_python_version=PythonVersion.PY_311,
+        use_annotated=True,
+        field_constraints=True,
+        formatters=[Formatter.BUILTIN],
+    )
+    output = str(parser.parse())
+    assert_output(output)
+    validate_generated_code(output, "<generated>", do_exec=True)
+
+
 @pytest.mark.parametrize(
     ("override", "call"),
     [
@@ -4149,6 +4195,9 @@ instead of generating them.
 |--------|-------------|
 | `{"ModelName": "package.Type"}` | Model-level: Skip generation; replace field and inheritance refs |
 | `{"Model.field": "package.Type"}` | Scoped: Override only specific field in specific model |
+
+A key that matches no generated model or field is reported in a warning, with the key that would match where there
+is a close one, such as `ItemModel.price` for `Item.price` when the schema's `Item` is written as `ItemModel`.
 
 !!! note "Model-level overrides skip generation"
     When you specify a model-level override (without a dot in the key), the generator will
@@ -4672,30 +4721,38 @@ def test_type_overrides_model_level_dict_key(output_file: Path) -> None:
     ],
 )
 def test_type_overrides_for_target(output_file: Path, target_python_version: str, expected_file: str) -> None:
-    """Import a typing name newer than the target from its backport, leaving overrides no model uses unchecked."""
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_target.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
-        extra_args=[
-            "--output-model-type",
-            "typing.TypedDict",
-            "--target-python-version",
-            target_python_version,
-            "--formatters",
-            "builtin",
-            "--disable-timestamp",
-            "--type-overrides",
-            json.dumps({
-                "Model.c": "typing.LiteralString",
-                "D": "collections.abc.Buffer",
-                "Missing": "pathlib.types.PathInfo",
-                "Model.missing": "enum.StrEnum",
-            }),
-        ],
-        force_exec_validation=tuple(map(int, target_python_version.split("."))) <= sys.version_info[:2],
+    """Import a typing name newer than the target from its backport, leaving overrides no model uses unchecked.
+
+    The overrides no model uses are reported as keys that matched nothing.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_target.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=expected_file,
+            extra_args=[
+                "--output-model-type",
+                "typing.TypedDict",
+                "--target-python-version",
+                target_python_version,
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+                "--type-overrides",
+                json.dumps({
+                    "Model.c": "typing.LiteralString",
+                    "D": "collections.abc.Buffer",
+                    "Missing": "pathlib.types.PathInfo",
+                    "Model.missing": "enum.StrEnum",
+                }),
+            ],
+            force_exec_validation=tuple(map(int, target_python_version.split("."))) <= sys.version_info[:2],
+        )
+    assert_warnings_contain(
+        recorded, "--type-overrides: 2 keys matched no generated model or field: 'Missing', 'Model.missing'"
     )
 
 

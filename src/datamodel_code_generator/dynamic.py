@@ -29,8 +29,8 @@ from pydantic import BaseModel
 
 from datamodel_code_generator import (
     Error,
-    _apply_generate_config_preset,
     _prepare_generate_facade_config,
+    _resolve_run_options,
     _run_generation_with_metadata,
     generate,
     is_asyncapi,
@@ -511,7 +511,7 @@ def _without_default_formatting(config: GenerateConfig) -> GenerateConfig:
     """
     if config.formatters is not None or config.custom_formatters is not None:
         return config
-    resolved = _apply_generate_config_preset(config)
+    resolved = _resolve_run_options(config, ("preset",))
     if resolved.formatters is not None or resolved.custom_formatters is not None:
         return config
     return config.model_copy(update={"formatters": []})

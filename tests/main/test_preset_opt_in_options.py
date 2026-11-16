@@ -120,6 +120,10 @@ OPT_IN_OPTIONS_20261113: tuple[str, ...] = (
     "extensible",
     "--infer-union-discriminators",
     "--read-kubernetes-extensions",
+    "--read-inherited-property-schemas-in-mro-order",
+    "--read-ids-with-empty-fragment",
+    "--read-yaml-1-1-numbers-as-text",
+    "--read-implied-options-from-merged-values",
 )
 """The options the 20261113 presets set beyond the 20261112 presets."""
 
@@ -493,6 +497,24 @@ CASES_20261113: tuple[pytest.ParameterSet, ...] = (
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="read-kubernetes-extensions",
     ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "inherited_property_schemas" / "sibling.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-inherited-property-schemas-in-mro-order",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "ids_with_empty_fragment" / "ninjs_1_0.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-ids-with-empty-fragment",
+    ),
+    pytest.param(
+        OPEN_API_DATA_PATH / "yaml_1_1_numbers" / "ratio.yaml",
+        "openapi",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-yaml-1-1-numbers-as-text",
+    ),
 )
 """The inputs each opt-in option of the 20261113 presets changes."""
 
@@ -790,6 +812,20 @@ def test_preset_sets_opt_in_option(
             "--read-kubernetes-extensions",
             "--no-read-kubernetes-extensions",
             id="read-kubernetes-extensions",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "inherited_property_schemas" / "sibling.json",
+            [],
+            "--read-inherited-property-schemas-in-mro-order",
+            "--no-read-inherited-property-schemas-in-mro-order",
+            id="read-inherited-property-schemas-in-mro-order",
+        ),
+        pytest.param(
+            OPEN_API_DATA_PATH / "yaml_1_1_numbers" / "ratio.yaml",
+            [],
+            "--read-yaml-1-1-numbers-as-text",
+            "--no-read-yaml-1-1-numbers-as-text",
+            id="read-yaml-1-1-numbers-as-text",
         ),
     ],
 )

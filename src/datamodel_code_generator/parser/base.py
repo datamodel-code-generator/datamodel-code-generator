@@ -114,6 +114,8 @@ from datamodel_code_generator._user_keys import (
     model_level_type_override,
     scoped_key,
 )
+from datamodel_code_generator._user_keys import RecordedOverrides as _RecordedOverrides
+from datamodel_code_generator._user_keys import TypeOverrideLookups as _TypeOverrideLookups
 from datamodel_code_generator._user_keys import class_scope as _class_scope_of
 from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.enums import (
@@ -269,7 +271,7 @@ from datamodel_code_generator.types import (
     build_union,  # noqa: F401  # Preserve the established parser.base export.
     union_members,  # noqa: F401  # Preserve the established parser.base export.
 )
-from datamodel_code_generator.util import record_watch_dependency
+from datamodel_code_generator.util import record_watch_dependency, yaml_number_reading
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Generator, Hashable, Iterable, Iterator, Mapping, Sequence
@@ -430,6 +432,8 @@ class ParserRunContext:
     untyped_nullable_maps: bool = False
     yielding_names: tuple[tuple[str, tuple[str, str | None]], ...] = ()
     document_roles: DocumentRoles = ()
+    read_yaml_numbers_where_strings_required: bool = False
+    """Whether the YAML 1.1-only numbers read as text where a string is required: in a run they refused as numbers."""
     model_name_keys: ModelNameKeys | None = None
     records_model_names: bool = False
     final_name_keys: tuple[tuple[str, tuple[str, ...]], ...] = ()
@@ -751,6 +755,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         untyped_nullable_maps: bool = False,
         yielding_names: tuple[tuple[str, tuple[str, str | None]], ...] = (),
         document_roles: DocumentRoles = (),
+        read_yaml_numbers_where_strings_required: bool = False,
         model_name_keys: ModelNameKeys | None = None,
         records_model_names: bool = False,
         final_name_keys: tuple[tuple[str, tuple[str, ...]], ...] = (),
@@ -775,6 +780,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             untyped_nullable_maps=untyped_nullable_maps,
             yielding_names=yielding_names,
             document_roles=document_roles,
+            read_yaml_numbers_where_strings_required=read_yaml_numbers_where_strings_required,
             model_name_keys=model_name_keys,
             records_model_names=records_model_names,
             final_name_keys=final_name_keys,
@@ -1339,6 +1345,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             skip_affix_for_root=config.class_name is not None,
             default_value_overrides=config.default_value_overrides,
             http_backend=self._source_context.http_backend,
+            read_ids_with_empty_fragment=config.read_ids_with_empty_fragment,
             field_name_resolver_classes=(
                 {self.field_name_model_type: field_name_resolver_class}
                 if (field_name_resolver_class := self.data_model_type.FIELD_NAME_RESOLVER_CLASS) is not None
@@ -1420,6 +1427,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_single_dict_for_object_maps = config.use_single_dict_for_object_maps
         self.read_unevaluated_properties = config.read_unevaluated_properties
         self.read_kubernetes_extensions = config.read_kubernetes_extensions
+        self.read_yaml_1_1_numbers_as_text = config.read_yaml_1_1_numbers_as_text
         self.use_single_value_enum_as_const = config.use_single_value_enum_as_const
         self.read_format_as_annotation = config.read_format_as_annotation
         self.read_const_beside_enum = config.read_const_beside_enum
@@ -1447,6 +1455,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._model_type_override_imports: dict[str, Import] = {
             key: import_ for key, import_ in self._type_override_imports.items() if model_level_type_override(key)
         }
+        self._type_override_lookups: _TypeOverrideLookups | None = None
+        """The lookups of the ``--type-overrides`` keys, which the two dicts above record when the option gives keys."""
+        if self._type_override_imports:
+            self._type_override_lookups = lookups = _TypeOverrideLookups()
+            self._type_override_imports = _RecordedOverrides(self._type_override_imports, lookups)
+            if self._model_type_override_imports:
+                self._model_type_override_imports = _RecordedOverrides(self._model_type_override_imports, lookups)
         self._base_stand_in_imports: dict[ModelKey, Import] = {}
         """The import of the class each stand-in model stands for, by model key: a schema that a base names and the
         output types by an import (``--external-ref-mapping``, ``x-python-import``) is parsed into a model that is
@@ -2868,12 +2883,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             default_build_code_formatter=Parser._build_code_formatter,
             result_type=Result,
         )
-        with context_values({
-            SCHEMA_GRAPH: self._schema_graph,
-            RENDER_READY: RenderReady(type(self), self.generation_store._memo),  # noqa: SLF001
-            PARSE_MEMO: self.generation_store._memo,  # noqa: SLF001
-            PARSE_CALLER: parse_caller(),
-        }):
+        with (
+            context_values({
+                SCHEMA_GRAPH: self._schema_graph,
+                RENDER_READY: RenderReady(type(self), self.generation_store._memo),  # noqa: SLF001
+                PARSE_MEMO: self.generation_store._memo,  # noqa: SLF001
+                PARSE_CALLER: parse_caller(),
+            }),
+            yaml_number_reading(as_text=True) if self.read_yaml_1_1_numbers_as_text else contextlib.nullcontext(),
+        ):
             self.__runner().run_steps(PIPELINE, self, run)
         return run.output
 

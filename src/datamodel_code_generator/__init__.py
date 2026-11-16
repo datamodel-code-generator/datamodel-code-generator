@@ -21,6 +21,9 @@ from typing import (
     IO,
     TYPE_CHECKING,
     Any,
+    Final,
+    Literal,
+    NamedTuple,
     TypeAlias,
     TypeVar,
     cast,
@@ -65,7 +68,7 @@ from datamodel_code_generator._source import (
 )
 from datamodel_code_generator._source import input_text as _input_text
 from datamodel_code_generator._url_redaction import redact_path, redact_url
-from datamodel_code_generator._warning_control import quiet
+from datamodel_code_generator._warning_control import held, quiet
 from datamodel_code_generator.enums import (
     _PYDANTIC_MODEL_TYPES,
     DEFAULT_SHARED_MODULE_NAME,
@@ -123,6 +126,9 @@ from typing import Unpack
 
 if TYPE_CHECKING:
     import tempfile
+    from collections.abc import Collection
+    from collections.abc import Set as AbstractSet
+    from contextlib import AbstractContextManager
     from types import FunctionType
 
     from datamodel_code_generator._format_types import (
@@ -137,6 +143,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._project_config import load_pyproject_config
     from datamodel_code_generator._publication import PublicationAnchor
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
+    from datamodel_code_generator._run_record import RunOptions
     from datamodel_code_generator._types import (
         AsyncAPIParserConfigDict,
         AvroParserConfigDict,
@@ -149,6 +156,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._types.generate_config_dict import GenerateConfigDict
     from datamodel_code_generator._user_keys import ModelNameKeys, ModelNameRecord
+    from datamodel_code_generator.base_config import BaseGenerateConfig
     from datamodel_code_generator.config import (
         GenerateConfig,
         ParserConfig,
@@ -156,10 +164,12 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model import DataModelSet
     from datamodel_code_generator.model_metadata import ModelMetadata
     from datamodel_code_generator.parser.base import ParserRunContext, Result
+    from datamodel_code_generator.preset import PresetName, ResolvedPresetConfig
     from datamodel_code_generator.remote_lock import RemoteReferenceLock
 
 T = TypeVar("T")
 ParserConfigT = TypeVar("ParserConfigT", bound="ParserConfig")
+_RunConfigT = TypeVar("_RunConfigT", bound="BaseGenerateConfig")
 
 # Preserve the historical private facade identity for repr and pickling compatibility.
 _CollapseRootModelsRecursionError.__module__ = __name__
@@ -231,50 +241,24 @@ if TYPE_CHECKING:
         ProtobufVersion,
     )
     _GenerationInput: TypeAlias = Path | str | ParseResult | Mapping[str, Any] | list[Any]
+    _OptionStage: TypeAlias = Literal["preset", "implied-target", "sentinel", "implied-model"]
     _ParserResults: TypeAlias = str | dict[tuple[str, ...], Result]
     _ParserSource: TypeAlias = str | Path | list[Path] | ParseResult | dict[str, Any]
     _PythonTypeExpressions: TypeAlias = Mapping[str, PythonTypeExpr]
-    _PreparedGenerationInput: TypeAlias = tuple[
-        GenerateConfig,
-        _GenerationInput,
-        str | None,
-        InputFileType,
-        DataclassArguments,
-        Mapping[str, Any] | None,
-        Path | None,
-        tuple[Path, bytes] | None,
-        bool,
-        RemoteReferenceLock | None,
-    ]
 
     class _SharedParserConfigDict(ParserConfigDict, closed=True):
         """Parser options every input type accepts, closed so they extend each closed parser config."""
 
     _PreparedParser: TypeAlias = tuple[
         DataModelSet,
-        _ParserSource,
+        _ParserSource | Mapping[str, Any],
         bool,
         _SharedParserConfigDict,
         _PythonTypeExpressions | None,
     ]
-    _ParsedGeneration: TypeAlias = tuple[
-        _ParserResults, ModelMetadata | None, tuple[str, ...], DataModelSet, bool, bool
-    ]
-    _ParsedRun: TypeAlias = tuple[
-        _ParserResults,
-        ModelMetadata | None,
-        tuple[str, ...],
-        DataModelSet,
-        bool,
-        _GenerationInput,
-        GenerateConfig,
-        str | None,
-        Path,
-        RemoteReferenceLock | None,
-        bool,
-        bool,
-        InputFileType,
-    ]
+    _ReparseCaches: TypeAlias = tuple[DefaultPutDict[str, str], Any | None, Path]
+    _Attempt: TypeAlias = tuple[Any, _ParserResults]
+    _ParsedGeneration: TypeAlias = tuple[_ParserResults, ModelMetadata | None, tuple[str, ...], str]
 
 
 GeneratedModules: TypeAlias = dict[tuple[str, ...], str]
@@ -283,22 +267,6 @@ GeneratedModules: TypeAlias = dict[tuple[str, ...], str]
 Maps module path tuples (e.g., ("models", "user.py")) to generated code strings.
 Returned by generate() when output=None and multiple modules are generated, or a server or client package.
 """
-
-
-def _apply_generate_config_preset(config: GenerateConfig) -> GenerateConfig:
-    """Return a generate config with preset defaults applied."""
-    preset_name = config.preset
-    if preset_name is None:
-        return config
-
-    from datamodel_code_generator.preset import PresetError, _resolve_config_preset  # noqa: PLC0415
-
-    try:
-        preset_config = _resolve_config_preset(preset_name, config, config.model_fields_set)
-    except PresetError as e:
-        raise Error(str(e)) from e
-
-    return config.model_copy(update=updates) if (updates := preset_config.updates()) else config
 
 
 DEFAULT_BASE_CLASS: str = "pydantic.BaseModel"
@@ -467,6 +435,11 @@ def is_openapi(data: Mapping[str, Any]) -> bool:
     return "openapi" in data
 
 
+def is_swagger_2(data: Mapping[str, Any]) -> bool:
+    """Check if the data dict is a Swagger 2.0 document: its root has a `swagger` key and no `openapi` key."""
+    return "swagger" in data and not is_openapi(data)
+
+
 def is_asyncapi(data: Mapping[str, Any]) -> bool:
     """Check if the data dict is an AsyncAPI specification."""
     return "asyncapi" in data
@@ -515,6 +488,10 @@ class Error(Exception):
 
 class _StructuredOutputUnavailableError(Error):
     """Raised when the installed Pydantic is too old for the payload models of the JSON output of the CLI."""
+
+
+class _InvalidConfigTomlError(Error, ValueError):
+    """Raised for a configuration file that is not valid TOML: a configuration error, and the ``ValueError`` it was."""
 
 
 def _written_paths(
@@ -678,9 +655,41 @@ def _validate_alias_generator(output_model_type: DataModelType, alias_generator:
     raise Error(msg)
 
 
-def _apply_missing_sentinel_config(config: GenerateConfig) -> GenerateConfig:
+def _resolve_preset(
+    preset: PresetName | str, config: BaseGenerateConfig, given: AbstractSet[str]
+) -> ResolvedPresetConfig:
+    """Resolve a preset for a config, leaving out the fields that are `given`; one that does not fit is an `Error`.
+
+    The one resolution of a preset: the command line, `generate()`, a server or client target, dynamic generation and
+    the recommender read it, so each shows the same refusal.
+    """
+    from datamodel_code_generator.preset import PresetError, _resolve_config_preset  # noqa: PLC0415
+
+    try:
+        return _resolve_config_preset(preset, config, given)
+    except PresetError as e:
+        raise Error(str(e)) from e
+
+
+def _preset_updates(config: BaseGenerateConfig, record: RunOptions) -> dict[str, Any]:
+    """Return the values the preset of a config gives the fields that are not explicit to it."""
+    return {} if config.preset is None else _resolve_preset(config.preset, config, record.preset_explicit).updates()
+
+
+def _implied_target_updates(config: BaseGenerateConfig, record: RunOptions) -> dict[str, Any]:
+    """Return the values a server or client target gives the settings nothing set, the preset included.
+
+    It reads the fields that have a value from a source or from an earlier stage, not only the given ones.
+    """
+    from datamodel_code_generator.base_config import implied_target_settings  # noqa: PLC0415
+
+    return implied_target_settings(config, record.set_fields)
+
+
+def _missing_sentinel_updates(config: BaseGenerateConfig, _record: RunOptions) -> dict[str, Any]:
+    """Return the target pydantic version `--use-missing-sentinel` needs where none is set, refusing an older one."""
     if not config.use_missing_sentinel:
-        return config
+        return {}
 
     if config.output_model_type not in _PYDANTIC_MODEL_TYPES:
         msg = (
@@ -694,9 +703,9 @@ def _apply_missing_sentinel_config(config: GenerateConfig) -> GenerateConfig:
     minimum = TargetPydanticVersion(REQUIREMENTS["pydantic.experimental_missing_sentinel"].minimum)
     match target_version := config.target_pydantic_version:
         case None:
-            return config.model_copy(update={"target_pydantic_version": minimum})
+            return {"target_pydantic_version": minimum}
         case _ if pydantic_target_meets("pydantic.experimental_missing_sentinel", target_version):
-            return config
+            return {}
         case _:
             target_version_value = (
                 target_version.value if isinstance(target_version, TargetPydanticVersion) else target_version
@@ -709,6 +718,170 @@ def _apply_missing_sentinel_config(config: GenerateConfig) -> GenerateConfig:
             )
             raise Error(msg)
     raise AssertionError  # pragma: no cover
+
+
+def _implied_model_updates(config: BaseGenerateConfig, record: RunOptions) -> dict[str, Any]:
+    """Return the constraint settings the other settings of a config decide, read with the given fields as set.
+
+    Under `--read-implied-options-from-merged-values` an option that was turned off and that only an option now off
+    turned on (`_replaced_options`) is off again, as the merged values say.
+    """
+    from datamodel_code_generator.base_config import implied_model_settings  # noqa: PLC0415
+
+    implied = implied_model_settings(config, record.given)
+    if not config.read_implied_options_from_merged_values:
+        return implied
+    replaced = _replaced_options(config, record, record.staged_by("preset"))
+    return {**{name: False for name, option in replaced.items() if not getattr(config, option)}, **implied}
+
+
+_OPTION_STAGES: Final[dict[_OptionStage, Callable[[BaseGenerateConfig, RunOptions], dict[str, Any]]]] = {
+    "preset": _preset_updates,
+    "implied-target": _implied_target_updates,
+    "sentinel": _missing_sentinel_updates,
+    "implied-model": _implied_model_updates,
+}
+
+
+def _replaced_options(config: BaseGenerateConfig, record: RunOptions, preset_gave: Collection[str]) -> dict[str, str]:
+    """Return each option of `IMPLIED_OPTIONS` that was turned off and is on, with the option that turns it on.
+
+    An option was turned off where a source of the run gave it False and the preset did not replace that value: a
+    preset that an argument selects replaces the values of pyproject.toml (row `preset-over-pyproject`), so a
+    pyproject.toml value of an option the preset gave a value (`preset_gave`: the fields the `preset` stage of the
+    call gave, its own items and what they imply) is the preset's to replace. The option that turns it on is on, as
+    the table turns its option on over any value given, or off: then the command line's config validator turned it
+    on from the pyproject.toml values alone, before an argument turned that option off (row `validator-stage-rows`).
+    """
+    from datamodel_code_generator._option_rules import enabled_implied_options  # noqa: PLC0415
+
+    return {
+        implied: option
+        for implied, option in enabled_implied_options(config).items()
+        if record.given_value(implied) is False and (implied in record.preset_explicit or implied not in preset_gave)
+    }
+
+
+def _warn_of_replaced_options(config: BaseGenerateConfig, record: RunOptions, preset_gave: Collection[str]) -> None:
+    """Warn of each option that was turned off and stays on (`_replaced_options`).
+
+    Where the option that turns it on is on, the warning names that option, with where it came from (the preset that
+    set it, the output model type it was set for, or that it was given as well), and how to turn both off: the
+    option's argument, or its key where pyproject.toml turns it on (an argument given as well is named by the next
+    run). Where that option is off, it names the pyproject.toml value that turned it on and the argument that turned
+    that one off, and how the option is off: the key, or `--read-implied-options-from-merged-values`.
+    """
+    replaced = _replaced_options(config, record, preset_gave)
+    if not replaced:
+        return
+    from datamodel_code_generator._option_names import option_flag  # noqa: PLC0415
+    from datamodel_code_generator.cli_options import _values_arguments  # noqa: PLC0415
+
+    for implied, option in replaced.items():
+        flag = option_flag(option)
+        key = option.replace("_", "-")
+        off = _values_arguments([(option, False)])
+        if not getattr(config, option):
+            cause = (
+                f"{key} = true in pyproject.toml turns it on, which {off[0]} does not undo; {key} = false in "
+                f"pyproject.toml or {option_flag('read_implied_options_from_merged_values')} turns it off"
+            )
+        else:
+            remedy = f"{off[0]} turns both off" if off else f"both are off without {flag}"
+            match record.staged.get(option):
+                case "preset":
+                    origin = f", set by --preset {config.preset},"
+                case "implied-model":
+                    origin = f", set for --output-model-type {DataModelType(config.output_model_type).value},"
+                case _:
+                    origin = ", given as well,"
+                    if record.pyproject.get(option):
+                        remedy = f"{key} = false in pyproject.toml turns both off"
+            cause = f"{flag}{origin} turns it on; {remedy}"
+        warnings.warn(f"{option_flag(implied)} was turned off but stays on: {cause}", UserWarning, stacklevel=2)
+
+
+def _run_option_stages(
+    config: _RunConfigT,
+    record: RunOptions,
+    stages: Collection[_OptionStage],
+    checks: Mapping[_OptionStage, Callable[[_RunConfigT, Mapping[str, Any]], object]] | None = None,
+) -> tuple[_RunConfigT, RunOptions]:
+    """Return a config with the values its option stages give it, and the record of the run with what they gave.
+
+    The one resolution of every entry point. The stages run in the order of `_OPTION_STAGES`, each on the config the
+    stages before it left, and an entry point names the ones it runs. What an entry point knows about where its
+    values came from is the record it brings (`_run_record.py:RunOptions`), which the stages read instead of asking
+    who calls: the preset leaves the fields explicit to it alone, the implied target settings leave every field a
+    source or an earlier stage gave a value, and the implied model settings read the given fields as they were before
+    the preset (row `implied-reads-given-before-preset`). The values of a stage that differ from the config's are
+    applied to a copy, so a config that already has them stays the same object, and the record that comes back names
+    every field the stage gave a value: nothing reads the fields a config has set after it came in. A check of the
+    entry point runs after its stage, with the config so far and the values that stage gave, so that what a user
+    sees first stays where the entry point shows it.
+
+    A call that ran `implied-model`, the stage that applies every row of `IMPLIED_OPTIONS` to the final values, ends
+    with a warning for each option that was turned off and stays on (`_warn_of_replaced_options`, which reads the
+    fields the `preset` stage of the call gave), after the checks, so a resolution that is refused reports none. A
+    run shows it once: a later resolution of the same config reads the resolved value as the given one, and a call
+    that runs other stages alone (the command line's late `implied-target`, the preset dynamic generation reads the
+    formatters from) reports nothing.
+
+    The entry points, each with its record, its stages and its own checks in order:
+
+    - `__main__.py:_resolve_cli_config` (a command, each batch job): the arguments and the pyproject.toml values, as
+      they are before validation; `preset`, `implied-model`, then the relation rows that only the merged values
+      decide (`_option_rules.py`, stage `cli-after-preset`). Later, where a target is selected (a run after its
+      option checks, `--recommend-options` after the target's option check): `implied-target`, with the record the
+      config carries. No `sentinel` stage: the config
+      goes to `generate()` without a preset, which runs it after the command's own refusals (row
+      `cli-sentinel-in-generate`).
+    - `_project_config.py:load_pyproject_config`: the pyproject.toml keys it keeps and its overrides; `implied-model`
+      alone. The config it returns keeps its `preset`, which `generate()` resolves (row `loader-applies-no-preset`).
+    - `_resolve_run_options`, which reads no record but the fields the config has set (row `given-is-fields-set`):
+      `_prepare_generate_facade_config` (`generate()`, a trial of the recommender, the metadata run of dynamic
+      generation): the facade's warnings; `preset`, `sentinel`, `implied-model`; the metadata path and the output
+      encoding. `_api_generation.py:prepare_target` (a server or client target): the model output; every stage,
+      with the Pydantic target of a sentinel and then the facade's warnings after `implied-target`; the metadata
+      path and the output encoding; the target's checks, which read the resolved config.
+      `dynamic.py:_without_default_formatting` (the formatters dynamic generation runs with): `preset` alone, so
+      that no later refusal comes before the facade's warnings.
+    """
+    gave: dict[_OptionStage, Mapping[str, Any]] = {}
+    for stage, values_of in _OPTION_STAGES.items():
+        if stage not in stages:
+            continue
+        values = gave[stage] = values_of(config, record)
+        if changed := {name: value for name, value in values.items() if getattr(config, name) != value}:
+            config = config.model_copy(update=changed)
+        record = record.after(stage, values)
+        if checks is not None and (check := checks.get(stage)) is not None:
+            check(config, values)
+    if "implied-model" in stages:
+        _warn_of_replaced_options(config, record, gave.get("preset", ()))
+    return config, record
+
+
+def _resolve_run_options(
+    config: GenerateConfig,
+    stages: Collection[_OptionStage],
+    checks: Mapping[_OptionStage, Callable[[GenerateConfig, Mapping[str, Any]], None]] | None = None,
+) -> GenerateConfig:
+    """Return a config with the values its option stages give it (`_run_option_stages`).
+
+    The fields the config has set are the given ones, with the values they have here (row `given-is-fields-set`). A
+    record the config carries is not read, so a command's config is resolved here again, to the same values. A config
+    that `load_pyproject_config()` returned gives no values: the loader marks as set every field its stage gave, also
+    one that kept its value, so a value of that config does not say that its caller gave it.
+    """
+    from datamodel_code_generator._run_record import RunOptions  # noqa: PLC0415
+
+    fields_set = (
+        {name: getattr(config, name) for name in config.model_fields_set}
+        if config._pyproject_path is None  # noqa: SLF001
+        else dict.fromkeys(config.model_fields_set)
+    )
+    return _run_option_stages(config, RunOptions(fields_set=fields_set), stages, checks)[0]
 
 
 class InvalidFileFormatError(Error):
@@ -1369,18 +1542,15 @@ def _uses_pydantic_v2_schema_validator(config: GenerateConfig) -> bool:
     raise Error(msg)  # pragma: no cover
 
 
-def _prepare_parser_common_options(  # noqa: PLR0912, PLR0913, PLR0917
-    input_: _GenerationInput,
-    input_text: str | None,
-    input_file_type: InputFileType,
-    source_override: Mapping[str, Any] | None,
-    config: GenerateConfig,
-    extra_template_data: defaultdict[str, dict[str, Any]] | None,
-    dataclass_arguments: DataclassArguments,
-    *,
-    skip_root_model: bool,
-    remote_text_cache: DefaultPutDict[str, str],
+def _prepare_parser_common_options(  # noqa: PLR0912
+    prepared: _RunInput, *, remote_text_cache: DefaultPutDict[str, str]
 ) -> _PreparedParser:
+    """Prepare the parser inputs of a run once, for each parser of it: a mapping source as given, no template data.
+
+    Each parser copies a mapping source and takes its own template data (``_build_generation_parser``); nothing here
+    reads what a parse again changes (the run context, ``model_name_map``, the stdout repair).
+    """
+    config, input_, input_file_type = prepared.config, prepared.input_, prepared.input_file_type
     if config.union_mode is not None:
         if config.output_model_type == DataModelType.PydanticV2BaseModel:
             default_field_extras = {"union_mode": config.union_mode}
@@ -1405,18 +1575,19 @@ def _prepare_parser_common_options(  # noqa: PLR0912, PLR0913, PLR0917
     )
 
     python_type_expressions: _PythonTypeExpressions | None = None
-    if source_override is not None:
-        source = dict(source_override)
+    source: _ParserSource | Mapping[str, Any]
+    if prepared.source_override is not None:
+        source = prepared.source_override
     elif isinstance(input_, Mapping) and input_file_type not in RAW_DATA_TYPES:
         from datamodel_code_generator.input_model_result import LoadedInputModelSchema  # noqa: PLC0415
 
         if isinstance(input_, LoadedInputModelSchema):
-            source = dict(input_.schema)
+            source = input_.schema
             python_type_expressions = input_.legacy_python_type_expressions
         else:
-            source = dict(input_)
+            source = input_
     else:
-        source = input_text or input_
+        source = prepared.text or input_
         assert not isinstance(source, Mapping)
 
     from datamodel_code_generator._paths import names_directory  # noqa: PLC0415
@@ -1441,7 +1612,6 @@ def _prepare_parser_common_options(  # noqa: PLR0912, PLR0913, PLR0917
         "data_model_field_type": data_model_types.field_model,
         "data_type_manager_type": data_model_types.data_type_manager,
         "dump_resolve_reference_action": data_model_types.dump_resolve_reference_action,
-        "extra_template_data": extra_template_data,
         "generate_schema_validators": generate_schema_validators,
         "base_path": input_.parent if isinstance(input_, Path) and input_.exists() and not input_.is_dir() else None,
         "remote_text_cache": remote_text_cache,
@@ -1449,7 +1619,7 @@ def _prepare_parser_common_options(  # noqa: PLR0912, PLR0913, PLR0917
         "default_field_extras": default_field_extras,
         "target_datetime_class": target_datetime_class,
         "target_date_class": config.output_date_class,
-        "dataclass_arguments": dataclass_arguments,
+        "dataclass_arguments": prepared.dataclass_arguments,
         "defer_formatting": defer_formatting,
         "enum_field_as_literal": (
             config.enum_field_as_literal
@@ -1459,7 +1629,7 @@ def _prepare_parser_common_options(  # noqa: PLR0912, PLR0913, PLR0917
         "set_default_enum_member": (
             True if config.output_model_type == DataModelType.DataclassesDataclass else config.set_default_enum_member
         ),
-        "skip_root_model": skip_root_model,
+        "skip_root_model": prepared.skip_root_model,
     }
     return data_model_types, source, defer_formatting, additional_options, python_type_expressions
 
@@ -1593,10 +1763,6 @@ def _module_texts(
 
 
 _MODEL_METADATA_OUTPUT_DIRECTORY_ERROR = "Model metadata output requires a file path, not a directory"
-_INLINE_OBJECT_BODIES_HINT = (
-    "request or response bodies of the paths or webhooks scope are typed inline, and "
-    "--openapi-as-definitions paths-bodies gives them the models their schema definitions get"
-)
 
 
 def _refuse_output_layout(layout: OutputLayout | None, destination: Path, *, compares: bool = False) -> None:
@@ -1737,16 +1903,14 @@ def _emit_results(  # noqa: PLR0913
     data_model_types: DataModelSet,
     settings_path: Path,
     allow_empty_api: bool = False,
-    inline_object_bodies: bool = False,
+    models_not_found_hint: str = "",
 ) -> str | GeneratedModules | None:
     if not input_filename:  # pragma: no cover
         input_filename = _default_input_filename(input_)
     if not results:
         if allow_empty_api:
             return None
-        msg = "Models not found in the input data"
-        if inline_object_bodies:
-            msg += f"; {_INLINE_OBJECT_BODIES_HINT}"
+        msg = f"Models not found in the input data{models_not_found_hint}"
         raise Error(msg)
 
     custom_file_header = _read_custom_file_header(custom_file_header, config.custom_file_header_path, config.encoding)
@@ -1869,13 +2033,17 @@ def generate(
 
 
 def _prepare_generate_facade_config(config: GenerateConfig) -> GenerateConfig:
-    """Apply existing facade warnings, presets, sentinels, metadata checks, and the output encoding check in order.
+    """Return the config `generate()` runs with: the `generate()` row of `_resolve_run_options`, in its order."""
+    _warn_facade_dependencies(config)
+    config = _resolve_run_options(config, ("preset", "sentinel", "implied-model"))
+    _check_facade_outputs(config)
+    return config
 
-    The encoding is checked before any input is read with it.
-    """
+
+def _warn_facade_dependencies(config: GenerateConfig) -> None:
+    """Warn of an installed pydantic older than the coming minimum and of a template directory, which needs Jinja2."""
     from pydantic import VERSION as PYDANTIC_VERSION  # ruff: ignore[import-outside-top-level]
 
-    from datamodel_code_generator.base_config import implied_model_settings  # ruff: ignore[import-outside-top-level]
     from datamodel_code_generator.deprecations import (  # ruff: ignore[import-outside-top-level]
         warn_deprecated,
         warn_legacy_dependency,
@@ -1884,19 +2052,13 @@ def _prepare_generate_facade_config(config: GenerateConfig) -> GenerateConfig:
     warn_legacy_dependency("dependency.pydantic-runtime-minimum", PYDANTIC_VERSION, (2, 8, 2))
     if config.custom_template_dir:
         warn_deprecated("dependency.jinja2-optional")
-    given = set(config.model_fields_set)
-    config = _apply_generate_config_preset(config)
-    config = _apply_missing_sentinel_config(config)
-    if implied := {
-        name: value for name, value in implied_model_settings(config, given).items() if getattr(config, name) != value
-    }:
-        config = config.model_copy(update=implied)
 
+
+def _check_facade_outputs(config: GenerateConfig) -> None:
+    """Refuse a metadata path that is a directory, then an unknown output encoding, before any input is read with it."""
     if (metadata_path := config.emit_model_metadata) is not None:
         _ensure_file_output_path(metadata_path, _MODEL_METADATA_OUTPUT_DIRECTORY_ERROR)
     _ensure_output_text_encodable("", config.encoding)
-
-    return config
 
 
 def _prepare_atomic_generation_remote_lock(
@@ -1988,38 +2150,38 @@ def _prepare_generation_extra_template_data(config: GenerateConfig) -> defaultdi
     return data
 
 
-def _build_generation_parser(  # noqa: PLR0913, PLR0917
-    input_: _GenerationInput,
-    input_file_type: InputFileType,
-    parser_source: _ParserSource,
-    config: GenerateConfig,
-    parser_options: _SharedParserConfigDict,
-    data_model_types: DataModelSet,
-    schema_versions: _SchemaVersions,
-    run_context: ParserRunContext,
-    *,
-    reference_cache: Any | None = None,
-    python_type_expressions: _PythonTypeExpressions | None = None,
-    parser_factory: TargetParserFactory | None = None,
+def _build_generation_parser(
+    run: _GenerationRun, run_context: ParserRunContext, caches: _ReparseCaches | None = None
 ) -> Any:
-    """Build one fresh parser using the caller's reference-resolution base, with the settings of its parse."""
-    jsonschema_version, openapi_version, asyncapi_version, xmlschema_version, protobuf_version = schema_versions
+    """Build one fresh parser of a run, with the settings of its parse: the first one, or one that parses again.
+
+    Every parser takes its own copy of a mapping source and fresh template data (the parser copies the template data it
+    is given and never writes it); a parse again takes the ``caches`` it is given (those of the parser before it,
+    ``_reparse_caches``; the read-again of YAML 1.1-only numbers without its documents), the first parser those of
+    the run.
+    """
+    options = run.parser_options.copy()
+    options["extra_template_data"] = _prepare_generation_extra_template_data(run.config)
+    reference_cache = None
+    if caches is not None:
+        options["remote_text_cache"], reference_cache, options["base_path"] = caches
+    jsonschema_version, openapi_version, asyncapi_version, xmlschema_version, protobuf_version = run.schema_versions
     build_parser = _build_parser
-    if parser_factory is not None:
-        build_parser = _partial(_build_parser, parser_factory=parser_factory)
-    with _warn_on_input_string_path_failure(input_):
+    if run.parser_factory is not None:
+        build_parser = _partial(_build_parser, parser_factory=run.parser_factory)
+    with _warn_on_input_string_path_failure(run.input_):
         parser = build_parser(
-            input_file_type,
-            parser_source,
-            config,
-            parser_options,
-            data_model_types,
+            run.input_file_type,
+            dict(source) if isinstance(source := run.source, Mapping) else source,
+            run.config,
+            options,
+            run.data_model_types,
             jsonschema_version=jsonschema_version,
             openapi_version=openapi_version,
             asyncapi_version=asyncapi_version,
             xmlschema_version=xmlschema_version,
             protobuf_version=protobuf_version,
-            python_type_expressions=python_type_expressions,
+            python_type_expressions=run.python_type_expressions,
         )
     if reference_cache is not None and hasattr(parser, "remote_object_cache"):
         parser.remote_object_cache = reference_cache
@@ -2111,6 +2273,51 @@ def _resolve_generation_remote_lock(
     return config
 
 
+class _RunInput(NamedTuple):
+    """The input of a generation run as its preparation leaves it, with the config the preparation resolved."""
+
+    config: GenerateConfig
+    input_: _GenerationInput
+    text: str | None
+    input_file_type: InputFileType
+    dataclass_arguments: DataclassArguments
+    source_override: Mapping[str, Any] | None
+    diagnostic_source_path: Path | None
+    prefetched_source: tuple[Path, bytes] | None
+    skip_root_model: bool
+    owned_remote_lock: RemoteReferenceLock | None
+
+
+class _GenerationRun(NamedTuple):
+    """What one generation run prepared before its first parser, which every parser of the run is built from.
+
+    The parser options are prepared once (``_prepare_parser_common_options``), each parser builds from them
+    (``_build_generation_parser``), and every parse again goes through ``_parse_again``; a parse again that changes the
+    config, or the class-key run of ``_parse_generation``, parses a copy of the run with its own config.
+    """
+
+    config: GenerateConfig
+    input_: _GenerationInput
+    input_file_type: InputFileType
+    source: _ParserSource | Mapping[str, Any]
+    parser_options: _SharedParserConfigDict
+    data_model_types: DataModelSet
+    defer_formatting: bool
+    python_type_expressions: _PythonTypeExpressions | None
+    schema_versions: _SchemaVersions
+    diagnostic_source_path: Path | None
+    prefetched_source: tuple[Path, bytes] | None
+    parser_settings_path: Path | None
+    use_output_cwd: bool
+    output_context_path: Path
+    collect_model_metadata: bool
+    capture: GenerationCaptureSession[object] | None
+    parser_factory: TargetParserFactory | None
+    emit_settings_path: Path
+    owned_remote_lock: RemoteReferenceLock | None
+    allow_empty_api: bool
+
+
 def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     input_: _GenerationInput,
     config: GenerateConfig,
@@ -2120,7 +2327,7 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     input_file_type: InputFileType,
     dataclass_arguments: DataclassArguments | None,
     skip_root_model: bool,
-) -> _PreparedGenerationInput:
+) -> _RunInput:
     """Normalize input, resolve the remote lock, and retain only parse-ready values."""
     if (
         isinstance(input_, list)
@@ -2203,7 +2410,7 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         try:
             with _warn_on_input_string_path_failure(input_):
                 assert isinstance(input_text_, str)
-                input_file_type = infer_input_type(input_text_)
+                input_file_type, swagger_2 = _infer_input(input_text_)
         except Exception as exc:
             raise InvalidFileFormatError(exc) from exc
         else:
@@ -2211,6 +2418,8 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
                 inferred_message.format(input_file_type.value),
                 file=sys.stderr,
             )
+            if swagger_2:
+                print(inferred_swagger_2_message, file=sys.stderr)  # noqa: T201
             # Reuse already-read text for single Path file to avoid re-reading
             # Only for OpenAPI/JsonSchema (RAW_DATA_TYPES are transformed by genson)
             if isinstance(input_, Path) and not input_.is_dir() and input_file_type not in RAW_DATA_TYPES:
@@ -2232,7 +2441,7 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
 
     if isinstance(input_, ParseResult) and input_file_type not in RAW_DATA_TYPES:
         input_text = None
-    return (
+    return _RunInput(
         config,
         input_,
         input_text,
@@ -2246,25 +2455,18 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     )
 
 
-def _parse_with_disposal(  # noqa: PLR0913
-    input_: _GenerationInput,
-    parser: Any,
-    config: GenerateConfig,
-    *,
-    parser_settings_path: Path | None,
-    collect_model_metadata: bool,
-    capture: GenerationCaptureSession[object] | None = None,
-) -> _ParserResults:
-    """Parse with one parser and dispose it if parsing fails."""
+def _parse_with_disposal(run: _GenerationRun, parser: Any) -> _ParserResults:
+    """Parse with one parser of a run and dispose it if parsing fails."""
+    config = run.config
     try:
-        with _warn_on_input_string_path_failure(input_):
+        with _warn_on_input_string_path_failure(run.input_):
             results = parser.parse(
-                settings_path=parser_settings_path,
+                settings_path=run.parser_settings_path,
                 disable_future_imports=config.disable_future_imports,
                 all_exports_scope=config.all_exports_scope,
                 all_exports_collision_strategy=config.all_exports_collision_strategy,
                 module_split_mode=config.module_split_mode,
-                collect_model_metadata=collect_model_metadata,
+                collect_model_metadata=run.collect_model_metadata,
             )
     except BaseException as exc:
         try:
@@ -2275,32 +2477,17 @@ def _parse_with_disposal(  # noqa: PLR0913
                     with contextlib.suppress(BaseException):
                         parser.dispose()
         finally:
-            if capture is not None:
+            if (capture := run.capture) is not None:
                 with contextlib.suppress(BaseException):
                     capture.discard_attempt(parser)
         raise
     return results
 
 
-def _parse_collapse_root_models_retry(  # noqa: PLR0913
-    input_: _GenerationInput,
-    parser: Any,
-    config: GenerateConfig,
-    *,
-    parser_settings_path: Path | None,
-    collect_model_metadata: bool,
-    capture: GenerationCaptureSession[object] | None = None,
-) -> _ParserResults:
+def _parse_collapse_root_models_retry(run: _GenerationRun, parser: Any) -> _ParserResults:
     """Parse the compatibility retry without repeating user-visible warnings."""
     try:
-        return _parse_with_disposal(
-            input_,
-            parser,
-            config,
-            parser_settings_path=parser_settings_path,
-            collect_model_metadata=collect_model_metadata,
-            capture=capture,
-        )
+        return _parse_with_disposal(run, parser)
     except _CollapseRootModelsRecursionError as retry_exc:
         match retry_exc.__cause__:
             case RecursionError() as retry_cause:
@@ -2310,27 +2497,16 @@ def _parse_collapse_root_models_retry(  # noqa: PLR0913
         raise public_error from None
 
 
-def _parse_again(  # noqa: PLR0913, PLR0917
-    input_: _GenerationInput,
-    input_text: str | None,
-    input_file_type: InputFileType,
-    source_override: Mapping[str, Any] | None,
-    dataclass_arguments: DataclassArguments,
-    schema_versions: _SchemaVersions,
-    config: GenerateConfig,
-    extra_template_data: defaultdict[str, dict[str, Any]] | None,
-    caches: tuple[DefaultPutDict[str, str], Any | None, Path],
+def _parse_again(  # noqa: PLR0913
+    run: _GenerationRun,
     run_context: ParserRunContext,
+    caches: _ReparseCaches,
     *,
-    skip_root_model: bool,
-    parser_settings_path: Path | None,
-    collect_model_metadata: bool,
-    capture: GenerationCaptureSession[object] | None,
-    parser_factory: TargetParserFactory | None,
     ignored_warnings: type[Warning] | None = Warning,
     collapse_retry: bool = False,
-) -> tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]:
-    """Parse once more with a fresh parser that reuses the first parse's ``caches`` of documents and base path.
+    as_first: bool = False,
+) -> _Attempt:
+    """Parse once more with a fresh parser that reuses the ``caches`` of documents and base path of a parse before it.
 
     ``run_context`` holds the settings of the run, each reparse replacing those it sets. The values of nullable maps
     are untyped as earlier releases did (``untyped_nullable_maps``), or typed under given names (``yielding_names``).
@@ -2342,135 +2518,134 @@ def _parse_again(  # noqa: PLR0913, PLR0917
 
     A run keeps these values untyped when typing them changes where models are written, the files written, or the
     models a collapse keeps; the decision covers the whole run, so every input of a directory run is then untyped.
-    The first parse already reported its warnings, so this one reports none, and it ignores ``ignored_warnings`` (none
-    are filtered when it is None). The caller disposes the parser it does not keep only after binding the kept one,
-    as both share loaded documents. A ``collapse_retry`` parses through the root-model collapse retry. The roles of
+    It shows none of the L0 and L1 warnings and none of the settle diagnostics that a parse before it showed
+    (``suppress_parse_warnings``), and ignores ``ignored_warnings`` (none are filtered when it is None); any other
+    warning of a later pass is shown again. A parser that failed was disposed by its parse (``_parse_with_disposal``);
+    the name rows dispose the parser before them, and the stdout repair freezes or disposes it, before they parse
+    again, while the import-cycle seeds and the untyped-maps comparison dispose the parsers they do not keep once
+    they chose the kept one. A ``collapse_retry`` parses through the root-model collapse retry. The roles of
     documents that an earlier attempt recorded after preparing them start the parse (``document_roles``); an attempt
     with such roles that fails after recording more of them parses once more with every role, until none is new.
-    ``import_cycle_seeds`` lays out otherwise what an earlier attempt found to fail as its output is imported.
+    ``import_cycle_seeds`` lays out otherwise what an earlier attempt found to fail as its output is imported. A run
+    that its YAML 1.1-only numbers refused reads them as text where a string is required
+    (``read_yaml_numbers_where_strings_required``), in a parse that is a first parse of the run (``as_first``): a parse
+    that fails parses again as the run's first parse does (``_parse_first``).
     """
     from dataclasses import replace  # noqa: PLC0415
 
     run_context = replace(run_context, suppress_parse_warnings=True)
-    remote_text_cache, reference_cache, base_path = caches
-    with contextlib.nullcontext() if ignored_warnings is None else quiet(ignored_warnings):
+    with (
+        contextlib.nullcontext() if ignored_warnings is None else quiet(ignored_warnings),
+        _yaml_numbers_reading(run_context),
+    ):
         while True:
-            data_model_types, parser_source, defer_formatting, parser_options, python_type_expressions = (
-                _reparse_inputs(
-                    input_,
-                    input_text,
-                    input_file_type,
-                    source_override,
-                    config,
-                    extra_template_data,
-                    dataclass_arguments,
-                    skip_root_model=skip_root_model,
-                    remote_text_cache=remote_text_cache,
-                    base_path=base_path,
-                )
-            )
-            parser = _build_generation_parser(
-                input_,
-                input_file_type,
-                parser_source,
-                config,
-                parser_options,
-                data_model_types,
-                schema_versions,
-                run_context,
-                reference_cache=reference_cache,
-                python_type_expressions=python_type_expressions,
-                parser_factory=parser_factory,
-            )
+            parser = _build_generation_parser(run, run_context, caches)
+            if as_first:
+                return _parse_first(run, run_context, parser)
             try:
-                results = (_parse_collapse_root_models_retry if collapse_retry else _parse_with_disposal)(
-                    input_,
-                    parser,
-                    config,
-                    parser_settings_path=parser_settings_path,
-                    collect_model_metadata=collect_model_metadata,
-                    capture=capture,
+                return parser, (_parse_collapse_root_models_retry if collapse_retry else _parse_with_disposal)(
+                    run, parser
                 )
-                break
             except Error:
                 if not run_context.document_roles or not (recorded := parser.document_roles_to_seed):
                     raise
                 run_context = replace(run_context, document_roles=recorded)
-    return parser, results, data_model_types, defer_formatting, extra_template_data
 
 
-def _reparse_inputs(  # noqa: PLR0913, PLR0917
-    input_: _GenerationInput,
-    input_text: str | None,
-    input_file_type: InputFileType,
-    source_override: Mapping[str, Any] | None,
-    config: GenerateConfig,
-    extra_template_data: defaultdict[str, dict[str, Any]] | None,
-    dataclass_arguments: DataclassArguments,
-    *,
-    skip_root_model: bool,
-    remote_text_cache: DefaultPutDict[str, str],
-    base_path: Path | None,
-) -> _PreparedParser:
-    """Prepare the parser inputs of a config for a parse that reuses another's remote text cache and base path."""
-    prepared = _prepare_parser_common_options(
-        input_,
-        input_text,
-        input_file_type,
-        source_override,
-        config,
-        extra_template_data,
-        dataclass_arguments,
-        skip_root_model=skip_root_model,
-        remote_text_cache=remote_text_cache,
-    )
-    prepared[3]["base_path"] = base_path
-    return prepared
+def _yaml_numbers_reading(run_context: ParserRunContext) -> AbstractContextManager[None]:
+    """Return the block in which a parse again reads the YAML 1.1-only numbers as ``run_context`` says.
+
+    A run that they refused as numbers reads them as text where a string is required; any other keeps its reading.
+    """
+    if not run_context.read_yaml_numbers_where_strings_required:
+        return contextlib.nullcontext()
+    from datamodel_code_generator.parser.openapi import yaml_string_keywords  # noqa: PLC0415
+    from datamodel_code_generator.util import yaml_numbers_read_where_strings_required  # noqa: PLC0415
+
+    return yaml_numbers_read_where_strings_required(yaml_string_keywords())
 
 
-def _parse_with_document_roles(
-    parse_again: Callable[..., tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]],
-    config: GenerateConfig,
-    caches: tuple[DefaultPutDict[str, str], Any | None, Path],
-    run_context: ParserRunContext,
-) -> tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]:
-    """Parse again a run that failed after references held documents it had prepared as objects of other roles.
+def _parse_first(run: _GenerationRun, run_context: ParserRunContext, parser: Any) -> _Attempt:
+    """Parse a first parse of a run with ``parser``, built under ``run_context``, and parse again where it fails.
 
-    Such a document was prepared without the schemas its new role holds, so a reference to one failed; the parse starts
-    with every role the failed attempt recorded (``hold_document_root``). Its warnings are shown once: the parse
-    reports none of the parse warnings the failed attempt reported, and every later one. A collapse of root models
-    that needs its circular-reference fallback parses through that retry with the same roles. ``run_context`` holds
-    the roles.
+    A collapse of root models that needs its circular-reference fallback parses again through that retry. A parse that
+    fails after references held documents it had prepared as objects of other roles parses again with every role the
+    failed attempt recorded (``hold_document_root``): such a document was prepared without the schemas its new role
+    holds, so a reference to one failed. Its warnings are shown once: that parse reports none of the parse warnings the
+    failed attempt reported, and every later one; where it needs the collapse fallback it parses through that retry
+    with the same roles. The run's first parse is one, and so is its read-again of the YAML 1.1-only numbers
+    (``_parse_yaml_numbers_again``).
     """
     from dataclasses import replace  # noqa: PLC0415
 
     try:
-        return parse_again(
-            config, _prepare_generation_extra_template_data(config), caches, run_context, ignored_warnings=None
-        )
+        return parser, _parse_with_disposal(run, parser)
     except _CollapseRootModelsRecursionError:
-        return parse_again(
-            config,
-            _prepare_generation_extra_template_data(config),
-            caches,
+        return _parse_again(
+            run,
             replace(run_context, preserve_circular_root_models=True),
+            _reparse_caches(parser),
             ignored_warnings=None,
             collapse_retry=True,
         )
+    except Error:
+        if not (document_roles := parser.document_roles_to_seed):
+            raise
+        caches = _reparse_caches(parser)
+        run_context = replace(run_context, document_roles=document_roles)
+        try:
+            return _parse_again(run, run_context, caches, ignored_warnings=None)
+        except _CollapseRootModelsRecursionError:
+            return _parse_again(
+                run,
+                replace(run_context, preserve_circular_root_models=True),
+                caches,
+                ignored_warnings=None,
+                collapse_retry=True,
+            )
 
 
-def _reparse_caches(parser: Any) -> tuple[DefaultPutDict[str, str], Any | None, Path]:
+def _parse_yaml_numbers_again(
+    run: _GenerationRun, caches: _ReparseCaches, run_context: ParserRunContext
+) -> _Attempt | None:
+    """Parse again a refused run whose documents held YAML 1.1-only numbers, read as text where a string is required.
+
+    Such a number is text in YAML 1.2, which OpenAPI names: ``pattern: 00:00:00.00`` reads 0.0 and a component named
+    ``18_24`` reads 1824, which the run refuses. The parse again reads them as text as mapping keys and as the values of
+    the keywords the document models read as strings, and as numbers anywhere else (``settle_yaml_numbers``). It is a
+    first parse of the run (``_parse_first``), with a reference cache of its own, as the documents read again; its
+    warnings are shown once, as after a parse with document roles, and only where it succeeds. A run whose documents
+    held none, or that reads them as text already, is not parsed again; a parse again that fails gives None, so the
+    refusal stays as it was.
+    """
+    from dataclasses import replace  # noqa: PLC0415
+
+    from datamodel_code_generator.util import yaml_numbers_held  # noqa: PLC0415
+
+    if not yaml_numbers_held():
+        return None
+    remote_text_cache, _, base_path = caches
+    try:
+        with held() as show_warnings:
+            parsed = _parse_again(
+                run,
+                replace(run_context, read_yaml_numbers_where_strings_required=True),
+                (remote_text_cache, None, base_path),
+                ignored_warnings=None,
+                as_first=True,
+            )
+    except Exception:  # noqa: BLE001
+        return None
+    show_warnings()
+    return parsed
+
+
+def _reparse_caches(parser: Any) -> _ReparseCaches:
     """Return the remote text cache, reference cache and base path a parse again of a parser's input reuses."""
     return parser.remote_text_cache, getattr(parser, "remote_object_cache", None), parser.base_path
 
 
-def _parse_with_import_cycle_seeds(
-    parse_again: Callable[..., tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]],
-    config: GenerateConfig,
-    parsed: tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None],
-    capture: GenerationCaptureSession[object] | None,
-    replaced: tuple[Any, ...] = (),
-) -> tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]:
+def _parse_with_import_cycle_seeds(run: _GenerationRun, parsed: _Attempt, replaced: tuple[Any, ...] = ()) -> _Attempt:
     """Parse again, with the same run settings, while a parse's output has a module that fails to import.
 
     The parse seeds what it found (``import_cycle_seeds_to_apply``), which only grows, so this ends. The last parse is
@@ -2487,21 +2662,16 @@ def _parse_with_import_cycle_seeds(
     with contextlib.suppress(Exception):
         while (seeds := (parser := attempts[-1][0]).import_cycle_seeds_to_apply) is not None:
             attempts.append(
-                parse_again(
-                    config,
-                    _prepare_generation_extra_template_data(config),
-                    _reparse_caches(parser),
-                    replace(parser.run_context, import_cycle_seeds=seeds),
-                )
+                _parse_again(run, replace(parser.run_context, import_cycle_seeds=seeds), _reparse_caches(parser))
             )
     kept = attempts[0] if attempts[-1][0].fails_to_import else attempts[-1]
     if (refusal := kept[0].hidden_class_refusal) is not None:
         for disposed in (*(attempt[0] for attempt in attempts), *replaced):
-            _dispose_capture_parser(disposed, capture, discard=True)
+            _dispose_capture_parser(disposed, run.capture, discard=True)
         raise Error(refusal)
     for attempt in attempts:
         if attempt is not kept:
-            _dispose_capture_parser(attempt[0], capture, discard=True)
+            _dispose_capture_parser(attempt[0], run.capture, discard=True)
     return kept
 
 
@@ -2537,131 +2707,36 @@ def _dispose_capture_parser(parser: Any, capture: GenerationCaptureSession[objec
         capture.discard_attempt(parser)
 
 
-def _parse_generation(  # noqa: PLR0913, PLR0917
-    input_: _GenerationInput,
-    input_text: str | None,
-    input_file_type: InputFileType,
-    source_override: Mapping[str, Any] | None,
-    config: GenerateConfig,
-    parser_source: _ParserSource,
-    parser_options: _SharedParserConfigDict,
-    data_model_types: DataModelSet,
-    defer_formatting: bool,  # noqa: FBT001
-    extra_template_data: defaultdict[str, dict[str, Any]] | None,
-    dataclass_arguments: DataclassArguments,
-    *,
-    python_type_expressions: _PythonTypeExpressions | None,
-    skip_root_model: bool,
-    schema_versions: _SchemaVersions,
-    diagnostic_source_path: Path | None,
-    prefetched_source: tuple[Path, bytes] | None,
-    parser_settings_path: Path | None,
-    use_output_cwd: bool,
-    output_context_path: Path,
-    collect_model_metadata: bool,
-    capture: GenerationCaptureSession[object] | None = None,
-    parser_factory: TargetParserFactory | None = None,
-) -> _ParsedGeneration:
+def _parse_generation(run: _GenerationRun) -> _ParsedGeneration:
     """Parse, dispose, and retry narrow compatibility failures inside the output cwd.
 
     When ``--model-name-map`` has class-name keys, the input is first generated without them, quietly, and the keys
     are translated to the models that run names (``_user_keys.translate_class_keys``); a run without them that fails
     leaves the keys as written.
     """
-    run = _partial(
-        _parse_generation_run,
-        input_,
-        input_text,
-        input_file_type,
-        source_override,
-        dataclass_arguments=dataclass_arguments,
-        skip_root_model=skip_root_model,
-        schema_versions=schema_versions,
-        diagnostic_source_path=diagnostic_source_path,
-        prefetched_source=prefetched_source,
-        parser_settings_path=parser_settings_path,
-        use_output_cwd=use_output_cwd,
-        output_context_path=output_context_path,
-        collect_model_metadata=collect_model_metadata,
-        parser_factory=parser_factory,
-    )
     model_name_keys = None
     from datamodel_code_generator._user_keys import class_name_keys, translate_class_keys  # noqa: PLC0415
 
-    if class_keys := class_name_keys(model_name_map := config.model_name_map or {}):
+    if class_keys := class_name_keys(model_name_map := run.config.model_name_map or {}):
         from datamodel_code_generator.reference import unmatched_model_name_keys_unreported  # noqa: PLC0415
 
-        without_class_keys = config.model_copy(
+        without_class_keys = run.config.model_copy(
             update={"model_name_map": {key: value for key, value in model_name_map.items() if key not in class_keys}}
-        )
-        record_template_data = _prepare_generation_extra_template_data(without_class_keys)
-        record_types, record_source, record_defer_formatting, record_options, record_expressions = _reparse_inputs(
-            input_,
-            input_text,
-            input_file_type,
-            source_override,
-            without_class_keys,
-            record_template_data,
-            dataclass_arguments,
-            skip_root_model=skip_root_model,
-            remote_text_cache=DefaultPutDict() if (cache := parser_options.get("remote_text_cache")) is None else cache,
-            base_path=parser_options["base_path"],
         )
         try:
             with quiet(), unmatched_model_name_keys_unreported():
-                _, record = run(
-                    without_class_keys,
-                    record_source,
-                    record_options,
-                    record_types,
-                    record_defer_formatting,
-                    record_template_data,
-                    python_type_expressions=record_expressions,
-                    records_model_names=True,
+                _, record = _parse_generation_run(
+                    run._replace(config=without_class_keys, capture=None), records_model_names=True
                 )
         except Exception:  # noqa: BLE001
             record = None
         if record is not None:
             model_name_keys = translate_class_keys(model_name_map, record)
-    return run(
-        config,
-        parser_source,
-        parser_options,
-        data_model_types,
-        defer_formatting,
-        extra_template_data,
-        python_type_expressions=python_type_expressions,
-        capture=capture,
-        model_name_keys=model_name_keys,
-    )[0]
+    return _parse_generation_run(run, model_name_keys=model_name_keys)[0]
 
 
-def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
-    input_: _GenerationInput,
-    input_text: str | None,
-    input_file_type: InputFileType,
-    source_override: Mapping[str, Any] | None,
-    config: GenerateConfig,
-    parser_source: _ParserSource,
-    parser_options: _SharedParserConfigDict,
-    data_model_types: DataModelSet,
-    defer_formatting: bool,  # noqa: FBT001
-    extra_template_data: defaultdict[str, dict[str, Any]] | None,
-    *,
-    dataclass_arguments: DataclassArguments,
-    python_type_expressions: _PythonTypeExpressions | None,
-    skip_root_model: bool,
-    schema_versions: _SchemaVersions,
-    diagnostic_source_path: Path | None,
-    prefetched_source: tuple[Path, bytes] | None,
-    parser_settings_path: Path | None,
-    use_output_cwd: bool,
-    output_context_path: Path,
-    collect_model_metadata: bool,
-    parser_factory: TargetParserFactory | None,
-    capture: GenerationCaptureSession[object] | None = None,
-    model_name_keys: ModelNameKeys | None = None,
-    records_model_names: bool = False,
+def _parse_generation_run(  # noqa: PLR0912, PLR0914, PLR0915
+    run: _GenerationRun, *, model_name_keys: ModelNameKeys | None = None, records_model_names: bool = False
 ) -> tuple[_ParsedGeneration, ModelNameRecord | None]:
     """Parse one generation run, applying ``model_name_keys`` or recording what it names (``records_model_names``).
 
@@ -2676,132 +2751,64 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         settle_diagnostics_reported_once,
     )
 
+    capture = run.capture
     run_context = ParserRunContext(
-        diagnostic_source_path=diagnostic_source_path,
-        prefetched_source=prefetched_source,
-        formatter_cwd=None if use_output_cwd else output_context_path,
+        diagnostic_source_path=run.diagnostic_source_path,
+        prefetched_source=run.prefetched_source,
+        formatter_cwd=None if run.use_output_cwd else run.output_context_path,
         model_name_keys=model_name_keys,
         records_model_names=records_model_names,
     )
     # Phase 3: build before chdir so initial reference resolution keeps the caller's cwd.
-    parser = _build_generation_parser(
-        input_,
-        input_file_type,
-        parser_source,
-        config,
-        parser_options,
-        data_model_types,
-        schema_versions,
-        run_context,
-        python_type_expressions=python_type_expressions,
-        parser_factory=parser_factory,
-    )
-    parse_again = _partial(
-        _parse_again,
-        input_,
-        input_text,
-        input_file_type,
-        source_override,
-        dataclass_arguments,
-        schema_versions,
-        skip_root_model=skip_root_model,
-        parser_settings_path=parser_settings_path,
-        collect_model_metadata=collect_model_metadata,
-        capture=capture,
-        parser_factory=parser_factory,
-    )
+    parser = _build_generation_parser(run, run_context)
     # Phase 4: initial parse, disposal, and the complete retry flow share the output cwd.
     with (  # noqa: PLR1702
-        chdir(output_context_path if use_output_cwd else None),
+        chdir(run.output_context_path if run.use_output_cwd else None),
         pydantic_floors_recorded() as floors,
         settle_diagnostics_reported_once(),
     ):
         try:
-            results = _parse_with_disposal(
-                input_,
-                parser,
-                config,
-                parser_settings_path=parser_settings_path,
-                collect_model_metadata=collect_model_metadata,
-                capture=capture,
-            )
-        except _CollapseRootModelsRecursionError:
-            caches = _reparse_caches(parser)
-            del parser
-            parser, results, data_model_types, defer_formatting, extra_template_data = parse_again(
-                config,
-                _prepare_generation_extra_template_data(config),
-                caches,
-                replace(run_context, preserve_circular_root_models=True, untyped_nullable_maps=False),
-                ignored_warnings=None,
-                collapse_retry=True,
-            )
+            parser, results = _parse_first(run, run_context, parser)
         except Error:
-            if not (document_roles := parser.document_roles_to_seed):
+            if (read_again := _parse_yaml_numbers_again(run, _reparse_caches(parser), run_context)) is None:
                 raise
-            caches = _reparse_caches(parser)
-            del parser
-            parser, results, data_model_types, defer_formatting, extra_template_data = _parse_with_document_roles(
-                parse_again,
-                config,
-                caches,
-                replace(run_context, untyped_nullable_maps=False, document_roles=document_roles),
-            )
-        if yielding_names := parser.yielding_names_to_assign:
-            caches = _reparse_caches(parser)
-            context = replace(parser.run_context, untyped_nullable_maps=False, yielding_names=yielding_names)
-            _dispose_capture_parser(parser, capture, discard=True)
-            del parser
-            parser, results, data_model_types, defer_formatting, extra_template_data = parse_again(
-                config, _prepare_generation_extra_template_data(config), caches, context
-            )
-        if planned_names := parser.planned_names_to_assign:
-            caches = _reparse_caches(parser)
-            context = replace(
-                parser.run_context, untyped_nullable_maps=False, yielding_names=(), planned_names=planned_names
-            )
-            _dispose_capture_parser(parser, capture, discard=True)
-            del parser
-            parser, results, data_model_types, defer_formatting, extra_template_data = parse_again(
-                config, _prepare_generation_extra_template_data(config), caches, context
-            )
-        if final_name_keys := parser.final_name_keys_to_assign:
-            caches = _reparse_caches(parser)
-            context = replace(parser.run_context, untyped_nullable_maps=False, final_name_keys=final_name_keys)
-            _dispose_capture_parser(parser, capture, discard=True)
-            del parser
-            parser, results, data_model_types, defer_formatting, extra_template_data = parse_again(
-                config, _prepare_generation_extra_template_data(config), caches, context
-            )
-        parser, results, data_model_types, defer_formatting, extra_template_data = _parse_with_import_cycle_seeds(
-            parse_again, config, (parser, results, data_model_types, defer_formatting, extra_template_data), capture
-        )
+            parser, results = read_again
+        for names_of, field, cleared in (
+            ("yielding_names_to_assign", "yielding_names", {}),
+            ("planned_names_to_assign", "planned_names", {"yielding_names": ()}),
+            ("final_name_keys_to_assign", "final_name_keys", {}),
+        ):
+            if names := getattr(parser, names_of):
+                caches = _reparse_caches(parser)
+                context = replace(parser.run_context, **cleared, **{field: names})
+                _dispose_capture_parser(parser, capture, discard=True)
+                del parser
+                parser, results = _parse_again(run, context, caches)
+        parser, results = _parse_with_import_cycle_seeds(run, (parser, results))
         discarded_parser = None
         if parser.typed_nullable_maps and parser.typed_map_values_may_move_models:
             try:
-                untyped_parse = parse_again(
-                    config,
-                    _prepare_generation_extra_template_data(config),
-                    _reparse_caches(parser),
+                untyped_parse = _parse_again(
+                    run,
                     replace(parser.run_context, untyped_nullable_maps=True, yielding_names=()),
+                    _reparse_caches(parser),
                 )
             except BaseException:
                 with contextlib.suppress(BaseException):
                     _dispose_capture_parser(parser, capture, discard=True)
                 raise
-            if _same_model_placement(parser, results, untyped_parse[0], untyped_parse[1]):
+            if _same_model_placement(parser, results, *untyped_parse):
                 discarded_parser = untyped_parse[0]
             else:
                 discarded_parser = parser
-                parser, results, data_model_types, defer_formatting, extra_template_data = (
-                    _parse_with_import_cycle_seeds(parse_again, config, untyped_parse, capture, (discarded_parser,))
-                )
+                parser, results = _parse_with_import_cycle_seeds(run, untyped_parse, (discarded_parser,))
         model_metadata, model_identities = parser.model_metadata, parser.model_metadata_identities
         parser.record_dropped_constraints()
+        unmatched_type_override_keys = floors.unmatched_type_override_keys_of(parser)
         pydantic_floor = floors.of(parser)
         refused_bytes_patterns = floors.refused_bytes_patterns_of(parser)
         class_names = parser.generated_class_names
-        inline_object_bodies: bool = getattr(parser, "inline_object_bodies", False)
+        models_not_found_hint: str = getattr(parser, "models_not_found_hint", "")
         if repair_modules := parser.invalid_dotted_stdout_repair_modules:
             legacy_inventory = parser.generated_model_inventory
             legacy_source_fingerprint = parser.source_data_fingerprint
@@ -2823,18 +2830,21 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         del parser
         if discarded_parser is not None:
             _dispose_capture_parser(discarded_parser, capture, discard=True)
+        floors.report_unmatched_type_override_keys(unmatched_type_override_keys)
 
         if repair_modules:
-            retry_config = config.model_copy(
-                update={
-                    "repair_invalid_dotted_stdout": False,
-                    "forced_invalid_dotted_stdout_repair_modules": repair_modules,
-                }
+            retry_run = run._replace(
+                config=run.config.model_copy(
+                    update={
+                        "repair_invalid_dotted_stdout": False,
+                        "forced_invalid_dotted_stdout_repair_modules": repair_modules,
+                    }
+                )
             )
             retry_completed = False
             with contextlib.suppress(Exception):
-                retry_parser, retry_results, retry_data_model_types, retry_defer_formatting, _ = parse_again(
-                    retry_config, extra_template_data, retry_caches, retry_context, ignored_warnings=DanglingRefWarning
+                retry_parser, retry_results = _parse_again(
+                    retry_run, retry_context, retry_caches, ignored_warnings=DanglingRefWarning
                 )
                 retry_completed = True
 
@@ -2861,8 +2871,6 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                         pydantic_floor = floors.of(retry_parser)
                         refused_bytes_patterns = floors.refused_bytes_patterns_of(retry_parser)
                         class_names = retry_parser.generated_class_names
-                        data_model_types = retry_data_model_types
-                        defer_formatting = retry_defer_formatting
                 finally:
                     _dispose_capture_parser(retry_parser, capture, discard=not retry_accepted)
                 del retry_parser
@@ -2882,8 +2890,10 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         warnings.warn(
             pydantic_floor_message(
                 pydantic_floor,
+                # Row `floor-target-from-by-value`: the source of the target is read from the values, so the
+                # sentinel is named also where an option gave the 2.12 target.
                 target_from="--use-missing-sentinel"
-                if config.use_missing_sentinel and pydantic_floor.target == TargetPydanticVersion.V2_12.value
+                if run.config.use_missing_sentinel and pydantic_floor.target == TargetPydanticVersion.V2_12.value
                 else None,
             ),
             UserWarning,
@@ -2893,57 +2903,38 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         from datamodel_code_generator._requirements import refused_bytes_pattern_message  # noqa: PLC0415
 
         warnings.warn(refused_bytes_pattern_message(refused_bytes_patterns), UserWarning, stacklevel=2)
-    return (
-        results,
-        model_metadata,
-        model_identities,
-        data_model_types,
-        defer_formatting,
-        inline_object_bodies,
-    ), model_name_record
+    return (results, model_metadata, model_identities, models_not_found_hint), model_name_record
 
 
-def _emit_generation(  # noqa: PLR0913
-    results: _ParserResults,
-    input_: _GenerationInput,
-    config: GenerateConfig,
-    model_metadata: ModelMetadata | None,
-    data_model_types: DataModelSet,
-    *,
-    input_filename: str | None,
-    custom_file_header: str | None,
-    defer_formatting: bool,
-    settings_path: Path,
-    owned_remote_lock: RemoteReferenceLock | None,
-    allow_empty_api: bool = False,
-    inline_object_bodies: bool = False,
-) -> str | GeneratedModules | None:
-    """Emit generated artifacts and commit a generation-owned remote lock.
+def _emit_generation(run: _GenerationRun, parsed: _ParsedGeneration) -> str | GeneratedModules | None:
+    """Emit the generated artifacts of a parsed run and commit a generation-owned remote lock.
 
     The model metadata text is encoded before any model file is written, so an encoding that cannot write it writes
     nothing.
     """
+    results, model_metadata, _, models_not_found_hint = parsed
+    config = run.config
     metadata = None
     if (metadata_path := config.emit_model_metadata) is not None:
         metadata = metadata_path, _model_metadata_text(model_metadata, config.encoding)
     emit_results = _emit_results
-    if allow_empty_api:
+    if run.allow_empty_api:
         emit_results = _partial(_emit_results, allow_empty_api=True)
     generated = emit_results(
         results,
-        input_,
-        input_filename,
-        custom_file_header,
+        run.input_,
+        config.input_filename,
+        config.custom_file_header,
         config,
-        defer_formatting=defer_formatting,
-        data_model_types=data_model_types,
-        settings_path=settings_path,
-        inline_object_bodies=inline_object_bodies,
+        defer_formatting=run.defer_formatting,
+        data_model_types=run.data_model_types,
+        settings_path=run.emit_settings_path,
+        models_not_found_hint=models_not_found_hint,
     )
     if metadata is not None:
         _write_model_metadata(*metadata, config.encoding)
-    if owned_remote_lock is not None:
-        owned_remote_lock.commit()
+    if run.owned_remote_lock is not None:
+        run.owned_remote_lock.commit()
     return generated
 
 
@@ -2973,23 +2964,11 @@ def _run_generation_with_metadata(  # noqa: PLR0913
     They are collected when ``collect_model_metadata`` is set or the config emits the metadata; otherwise they are
     None and empty.
     """
+    from datamodel_code_generator.util import yaml_number_reading  # noqa: PLC0415
+
     try:
-        with _tuned_gc():
-            (
-                results,
-                model_metadata,
-                model_identities,
-                data_model_types,
-                defer_formatting,
-                input_,
-                config,
-                input_filename,
-                emit_settings_path,
-                owned_remote_lock,
-                allow_empty_api,
-                inline_object_bodies,
-                _,
-            ) = _parse_run(
+        with _tuned_gc(), yaml_number_reading(as_text=config.read_yaml_1_1_numbers_as_text):
+            run, parsed = _parse_run(
                 input_,
                 config,
                 caller_cwd,
@@ -2998,21 +2977,7 @@ def _run_generation_with_metadata(  # noqa: PLR0913
                 collect_model_metadata=collect_model_metadata or config.emit_model_metadata is not None,
                 capture=capture,
             )
-            generated = _emit_generation(
-                results,
-                input_,
-                config,
-                model_metadata,
-                data_model_types,
-                input_filename=input_filename,
-                custom_file_header=config.custom_file_header,
-                defer_formatting=defer_formatting,
-                settings_path=emit_settings_path,
-                owned_remote_lock=owned_remote_lock,
-                allow_empty_api=allow_empty_api,
-                inline_object_bodies=inline_object_bodies,
-            )
-            return generated, model_metadata, model_identities
+            return _emit_generation(run, parsed), parsed[1], parsed[2]
     except BaseException:
         if capture is not None:
             with contextlib.suppress(BaseException):
@@ -3029,108 +2994,65 @@ def _parse_run(  # noqa: PLR0913, PLR0914
     remote_text_cache: DefaultPutDict[str, str],
     collect_model_metadata: bool,
     capture: GenerationCaptureSession[object] | None = None,
-) -> _ParsedRun:
+) -> tuple[_GenerationRun, _ParsedGeneration]:
     """Prepare one generation run and parse it up to its results and model metadata, writing nothing.
 
-    Returns what emitting needs: the parse results and metadata, the prepared input and config, the emit settings,
-    remote lock and API-scope switch, and whether paths bodies were typed inline that
-    ``--openapi-as-definitions paths-bodies`` models; last, the input file type the run parsed, detected when it was
-    auto.
+    Returns the run, which holds what emitting needs (the prepared input and config, the emit settings, remote lock and
+    API-scope switch) and the input file type the run parsed, detected when it was auto; beside it the parse results
+    and metadata, and whether paths bodies were typed inline that ``--openapi-as-definitions paths-bodies`` models.
     """
     config, output_context_path, emit_settings_path = _prepare_generation_config(config, caller_cwd)
-    input_filename = config.input_filename
-    input_file_type = config.input_file_type
-    extra_template_data = _prepare_generation_extra_template_data(config)
-    dataclass_arguments = config.dataclass_arguments
-    skip_root_model = config.skip_root_model
-    (
-        config,
-        input_,
-        input_text,
-        input_file_type,
-        dataclass_arguments,
-        source_override,
-        diagnostic_source_path,
-        prefetched_source,
-        skip_root_model,
-        owned_remote_lock,
-    ) = _prepare_generation_input(
+    prepared = _prepare_generation_input(
         input_,
         config,
         caller_cwd,
         remote_text_cache,
-        input_file_type=input_file_type,
-        dataclass_arguments=dataclass_arguments,
-        skip_root_model=skip_root_model,
+        input_file_type=config.input_file_type,
+        dataclass_arguments=config.dataclass_arguments,
+        skip_root_model=config.skip_root_model,
     )
-    data_model_types, source, defer_formatting, additional_options, python_type_expressions = (
-        _prepare_parser_common_options(
-            input_,
-            input_text,
-            input_file_type,
-            source_override,
-            config,
-            extra_template_data,
-            dataclass_arguments,
-            skip_root_model=skip_root_model,
-            remote_text_cache=remote_text_cache,
-        )
+    data_model_types, source, defer_formatting, parser_options, python_type_expressions = (
+        _prepare_parser_common_options(prepared, remote_text_cache=remote_text_cache)
     )
-    if additional_options["base_path"] is None and not isinstance(source, Path):
-        match input_:
+    if parser_options["base_path"] is None and not isinstance(source, Path):
+        match prepared.input_:
             case [Path(), *_] as input_paths:
-                additional_options["base_path"] = _path_list_base_path(cast("list[Path]", input_paths), caller_cwd)
+                parser_options["base_path"] = _path_list_base_path(cast("list[Path]", input_paths), caller_cwd)
             case _:
-                additional_options["base_path"] = caller_cwd
-    schema_versions = _resolve_schema_versions(input_file_type, config.schema_version)
-    parser_settings_path = (
-        config.settings_path if use_output_cwd else _settings_path_from(output_context_path, config.settings_path)
+                parser_options["base_path"] = caller_cwd
+    input_file_type = prepared.input_file_type
+    schema_versions = _resolve_schema_versions(input_file_type, prepared.config.schema_version)
+    settings_path = prepared.config.settings_path
+    parser_settings_path = settings_path if use_output_cwd else _settings_path_from(output_context_path, settings_path)
+    allow_empty_api = input_file_type is InputFileType.OpenAPI and OpenAPIScope.Api in (
+        prepared.config.openapi_scopes or ()
     )
-    allow_empty_api = input_file_type is InputFileType.OpenAPI and OpenAPIScope.Api in (config.openapi_scopes or ())
-    parse_generation = _parse_generation
-    if capture is not None and (parser_factory := capture.parser_factory(input_file_type)) is not None:
-        parse_generation = _partial(_parse_generation, parser_factory=parser_factory)
+    parser_factory = None if capture is None else capture.parser_factory(input_file_type)
+    if parser_factory is not None:
         allow_empty_api = allow_empty_api and getattr(parser_factory, "_supports_api_scope", False) is True
-    results, model_metadata, model_identities, data_model_types, defer_formatting, inline_object_bodies = (
-        parse_generation(
-            input_,
-            input_text,
-            input_file_type,
-            source_override,
-            config,
-            source,
-            additional_options,
-            data_model_types,
-            defer_formatting,
-            extra_template_data,
-            dataclass_arguments,
-            python_type_expressions=python_type_expressions,
-            skip_root_model=skip_root_model,
-            schema_versions=schema_versions,
-            diagnostic_source_path=diagnostic_source_path,
-            prefetched_source=prefetched_source,
-            parser_settings_path=parser_settings_path,
-            use_output_cwd=use_output_cwd,
-            output_context_path=output_context_path,
-            collect_model_metadata=collect_model_metadata,
-            capture=capture,
-        )
+    run = _GenerationRun(
+        config=prepared.config,
+        input_=prepared.input_,
+        input_file_type=input_file_type,
+        source=source,
+        parser_options=parser_options,
+        data_model_types=data_model_types,
+        defer_formatting=defer_formatting,
+        python_type_expressions=python_type_expressions,
+        schema_versions=schema_versions,
+        diagnostic_source_path=prepared.diagnostic_source_path,
+        prefetched_source=prepared.prefetched_source,
+        parser_settings_path=parser_settings_path,
+        use_output_cwd=use_output_cwd,
+        output_context_path=output_context_path,
+        collect_model_metadata=collect_model_metadata,
+        capture=capture,
+        parser_factory=parser_factory,
+        emit_settings_path=emit_settings_path,
+        owned_remote_lock=prepared.owned_remote_lock,
+        allow_empty_api=allow_empty_api,
     )
-    return (
-        results,
-        model_metadata,
-        model_identities,
-        data_model_types,
-        defer_formatting,
-        input_,
-        config,
-        input_filename,
-        emit_settings_path,
-        owned_remote_lock,
-        allow_empty_api,
-        inline_object_bodies,
-        input_file_type,
-    )
+    return run, _parse_generation(run)
 
 
 def _collect_model_metadata(
@@ -3148,6 +3070,8 @@ def _collect_model_metadata(
     written. The input type is the one the run parsed, detected when the config's is auto. Runs that share
     ``remote_text_cache`` fetch each remote document once.
     """
+    from datamodel_code_generator.util import yaml_number_reading  # noqa: PLC0415
+
     config = _prepare_generate_facade_config(
         config.model_copy(
             update={
@@ -3160,10 +3084,14 @@ def _collect_model_metadata(
         )
     )
     use_output_cwd = config.output is not None and _uses_legacy_process_state(config)
-    with _tuned_gc(), PROCESS_STATE_LOCK if use_output_cwd else contextlib.nullcontext():
+    with (
+        _tuned_gc(),
+        PROCESS_STATE_LOCK if use_output_cwd else contextlib.nullcontext(),
+        yaml_number_reading(as_text=config.read_yaml_1_1_numbers_as_text),
+    ):
         with PROCESS_STATE_LOCK:
             caller_cwd = Path.cwd()
-        parsed = _parse_run(
+        run, parsed = _parse_run(
             input_,
             config,
             caller_cwd,
@@ -3171,18 +3099,23 @@ def _collect_model_metadata(
             remote_text_cache=remote_text_cache,
             collect_model_metadata=True,
         )
-        return parsed[1], parsed[2], parsed[-1]
+        return parsed[1], parsed[2], run.input_file_type
 
 
-def infer_input_type(text: str) -> InputFileType:  # noqa: PLR0911, PLR0912
+def infer_input_type(text: str) -> InputFileType:
     """Automatically detect the input file type from text content."""
+    return _infer_input(text)[0]
+
+
+def _infer_input(text: str) -> tuple[InputFileType, bool]:  # noqa: PLR0911, PLR0912
+    """Detect the input file type from text content, and whether the input is a Swagger 2.0 document read as data."""
     from datamodel_code_generator.util import get_yaml_parse_errors  # noqa: PLC0415
 
     if _is_xml_text(text):
         from datamodel_code_generator._xmlschema_detection import is_xml_schema_text  # noqa: PLC0415
 
         if is_xml_schema_text(text):
-            return InputFileType.XMLSchema
+            return InputFileType.XMLSchema, False
 
     protobuf_declaration = _has_protobuf_declaration(text)
 
@@ -3191,39 +3124,39 @@ def infer_input_type(text: str) -> InputFileType:  # noqa: PLR0911, PLR0912
             data = load_yaml(text)
         except get_yaml_parse_errors() as exc:
             if not _is_json_text(text) and _looks_like_csv_text(text):
-                return InputFileType.CSV
+                return InputFileType.CSV, False
             if protobuf_declaration:
-                return InputFileType.Protobuf
+                return InputFileType.Protobuf, False
             msg = _infer_input_type_error_message(parse_error=exc)
             raise Error(msg) from exc
     if isinstance(data, dict):
         if is_asyncapi(data):
-            return InputFileType.AsyncAPI
+            return InputFileType.AsyncAPI, False
         if is_openapi(data):
-            return InputFileType.OpenAPI
+            return InputFileType.OpenAPI, False
         from datamodel_code_generator._avro_detection import is_avro_schema_data  # noqa: PLC0415
 
         if is_avro_schema_data(data):
-            return InputFileType.Avro
+            return InputFileType.Avro, False
         if is_schema(data):
-            return InputFileType.JsonSchema
-        return InputFileType.Json if is_json_document else InputFileType.Yaml
+            return InputFileType.JsonSchema, False
+        return (InputFileType.Json if is_json_document else InputFileType.Yaml), is_swagger_2(data)
     if _is_protobuf_text(text):
-        return InputFileType.Protobuf
+        return InputFileType.Protobuf, False
     if isinstance(data, list):
         from datamodel_code_generator._avro_detection import is_avro_schema_data  # noqa: PLC0415
 
         if is_avro_schema_data(data):
-            return InputFileType.Avro
+            return InputFileType.Avro, False
     if isinstance(data, str):
         if _looks_like_csv_text(text):
-            return InputFileType.CSV
+            return InputFileType.CSV, False
         if protobuf_declaration:
-            return InputFileType.Protobuf
+            return InputFileType.Protobuf, False
         from datamodel_code_generator._avro_detection import is_avro_schema_data  # noqa: PLC0415
 
         if is_avro_schema_data(data):
-            return InputFileType.Avro
+            return InputFileType.Avro, False
     msg = _infer_input_type_error_message()
     raise Error(msg)
 
@@ -3259,6 +3192,10 @@ def _looks_like_csv_text(text: str) -> bool:
 inferred_message = (
     "The input file type was determined to be: {}\nThis can be specified explicitly with the "
     "`--input-file-type` option."
+)
+inferred_swagger_2_message = (
+    "The input looks like a Swagger 2.0 document, which is read as data; "
+    "its definitions are read as JSON Schema with `--input-file-type jsonschema`."
 )
 
 

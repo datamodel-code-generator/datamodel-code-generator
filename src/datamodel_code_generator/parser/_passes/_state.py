@@ -19,7 +19,9 @@ from datamodel_code_generator._model_keys import ModelKey, keyed_or_path, model_
 from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator._warning_control import shown_once
 from datamodel_code_generator.model.base import DataModel
+from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser._phases import DecisionOutcome
+from datamodel_code_generator.reference import _UNMATCHED_MODEL_NAME_KEYS_REPORTED
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Generator, Iterable, Mapping, Sequence
@@ -56,6 +58,7 @@ __all__ = [
     "parse_warnings_reported",
     "parse_warnings_shown_once",
     "pydantic_floors_recorded",
+    "report_unmatched_type_override_keys",
     "settle_diagnostics_reported_once",
     "settle_diagnostics_suppressed",
 ]
@@ -308,15 +311,32 @@ class _StructureState:
 class PydanticFloors:
     """The Pydantic floor that each parse of a generation records, so that the generation states its kept parse's.
 
-    Each parse also records the owners of the ``bytes`` patterns that Pydantic 2.14 refuses at import (#6673).
+    Each parse also records the owners of the ``bytes`` patterns that Pydantic 2.14 refuses at import (#6673), and
+    the warning about its ``--type-overrides`` keys that matched nothing, which the generation emits for the parse it
+    keeps.
     """
 
-    __slots__ = ("_floors", "_refused_bytes_patterns")
+    __slots__ = ("_floors", "_refused_bytes_patterns", "_unmatched_type_override_keys")
 
     def __init__(self) -> None:
         """Start with no parse recorded."""
         self._floors: WeakKeyDictionary[object, PydanticFloor] = WeakKeyDictionary()
         self._refused_bytes_patterns: WeakKeyDictionary[object, tuple[str, ...]] = WeakKeyDictionary()
+        self._unmatched_type_override_keys: WeakKeyDictionary[object, str] = WeakKeyDictionary()
+
+    def record_unmatched_type_override_keys(self, parser: object, message: str) -> None:
+        """Record the warning about the ``--type-overrides`` keys of ``parser`` that matched nothing."""
+        self._unmatched_type_override_keys[parser] = message
+
+    def unmatched_type_override_keys_of(self, parser: object) -> str | None:
+        """Return the warning about the ``--type-overrides`` keys that ``parser`` recorded, None when it has none."""
+        return self._unmatched_type_override_keys.get(parser)
+
+    @staticmethod
+    def report_unmatched_type_override_keys(message: str | None) -> None:
+        """Emit the warning that the kept parse recorded, if it recorded one, once its parsers are disposed."""
+        if message is not None:
+            report_unmatched_type_override_keys(message)
 
     def record(self, parser: object, floor: PydanticFloor | None, refused_bytes_patterns: tuple[str, ...]) -> None:
         """Record the floor of the models that ``parser`` emitted, None when they need nothing above the target."""
@@ -333,6 +353,12 @@ class PydanticFloors:
     def refused_bytes_patterns_of(self, parser: object) -> tuple[str, ...]:
         """Return the owners of the ``bytes`` patterns Pydantic 2.14 refuses that ``parser`` recorded."""
         return self._refused_bytes_patterns.get(parser, ())
+
+
+def report_unmatched_type_override_keys(message: str) -> None:
+    """Emit the warning about the ``--type-overrides`` keys that matched nothing, unless a comparison leaves it out."""
+    if _UNMATCHED_MODEL_NAME_KEYS_REPORTED.get():
+        warn_as_parser_base(message, UserWarning, stacklevel=2)
 
 
 _PYDANTIC_FLOORS: ContextVar[PydanticFloors | None] = ContextVar("pydantic_floors", default=None)

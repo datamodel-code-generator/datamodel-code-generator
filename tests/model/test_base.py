@@ -1698,7 +1698,7 @@ def test_pydantic_class_var_factory_state_is_access_order_independent() -> None:
     )
 
     assert field.has_default_factory_in_field is False
-    assert field._get_field_data_and_default_factory() == ({}, None)
+    assert field._render_plan().call is None
     assert field._rendered_field_values() == (None, None)
     assert field.field is None
     assert field.has_default_factory_in_field is False

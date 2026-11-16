@@ -6,6 +6,225 @@ Every change a user meets when upgrading, newest first. To upgrade from a releas
 
 ## Unreleased
 
+### Generated AsyncAPI clients leave out a channel whose payload format generation does not read (unreleased) { #asyncapi-client-unknown-payload-format }
+
+A channel is now left out with a `message_content_types` warning where an AsyncAPI 2 message trait gives a `schemaFormat` that generation does not read, such as `application/schema;version=draft-07`, which generation refuses when the message itself gives it, or where a message's `contentType` is no media type but ends in `+json` (`x+json`). Such channels were generated with a JSON codec.
+
+- **Affects:** experimental features: `cli-option.generate-client`
+- **What to change:** Write the format as the AsyncAPI specification lists it (`application/schema+json;version=draft-07`) and the content type as a media type (`application/x+json`).
+- **Pull requests and issues:** [#6927](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6927)
+- **Source:** the release notes
+
+### `generate()` with a server or client target raises `Error` for a preset that does not fit (unreleased) { #target-preset-error-class }
+
+With `generate_server` or `generate_client`, a `preset` that does not match `target_python_version` raises `datamodel_code_generator.Error`, as a model-only run does, with the same message. It raised `datamodel_code_generator.preset.PresetError`, which is not an `Error`. The command line is unchanged.
+
+- **Affects:** experimental features: `cli-option.generate-server`, `cli-option.generate-client`
+- **What to change:** Catch `datamodel_code_generator.Error` where the code caught `PresetError` around a target run.
+- **Pull requests and issues:** [#6851](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6851)
+- **Source:** the release notes
+
+### Generated AsyncAPI clients read a payload's schema format and wrapper as the models do (unreleased) { #asyncapi-client-payload-formats }
+
+A channel is now generated whose message payload names its `schemaFormat` in another case or with spaces (`application/SCHEMA+JSON;version=draft-07`, `application/schema+json ; version=draft-07`), in an OpenAPI format (`application/vnd.oai.openapi;version=3.0.0`), or in such a spelling through an AsyncAPI 2 message trait; such channels were skipped as `message_content_types`. A payload written `{schema: ...}` without a `schemaFormat` now binds the model generated for its `schema`: where it was the channel's only message, generation failed (`The use has no generated native type`), and beside another JSON message the channel was skipped as `several_messages` (`a message's payload declares no type`). Avro, Protocol Buffers and XML Schema payloads, also when a trait gives the format, stay left out.
+
+- **Affects:** experimental features: `cli-option.generate-client`
+- **Pull requests and issues:** [#6927](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6927)
+- **Source:** the release notes
+
+### A union `--collapse-root-models` writes as list items names the tag field its site writes (unreleased) { #discriminator-inlined-list-items }
+
+Under `--collapse-root-models`, a discriminated union that is a named schema and is used as the items of an array is written into the list with `discriminator=` by the Python name of the tag property, decided before the union itself is written. Where its variants do not all carry that tag, Pydantic refused the module when it was imported: where the variants name the field otherwise, as a property named like the Enum that types it is renamed (`Kind_1`, #6874), and where the union itself is written without `discriminator=` and a variant keeps an untagged field (#6892). Such a list now names the field the union names where the union is written with `discriminator=`, and else is written without one. A list whose variants carry the tag is unchanged, so output that imported before is unchanged.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`; only with: `--collapse-root-models`
+- **Keep the old output:** The previous module failed at import; nothing restores it.
+- **Pull requests and issues:** [#6874](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6874), [#6892](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6892)
+- **Source:** the release notes
+
+```diff
+-pets: list[Annotated[Cat | Dog, Field(discriminator='Kind')]] | None = None
++pets: list[Annotated[Cat | Dog, Field(discriminator='Kind_1')]] | None = None
+```
+
+### A union has no `discriminator=` where a nested variant takes an untagged field from the first of two bases (unreleased) { #discriminator-nested-variant-diamond }
+
+A discriminated union that lists a `oneOf` grouping a variant composed (`allOf`) of two models that share a parent declaring the tag was written with `discriminator=` by the tag field the second model declares again. Pydantic gives the class of the variant the field of its first base that has one, here the one the first model inherits from the shared parent, and refused the union when the module was imported where that field is optional (`needs field 'kind' to be of type Literal`, #6905) or holds a tag another variant holds (`Value ... mapped to multiple choices`, with `--enum-field-as-literal all`), also where `--collapse-root-models` writes that union as the items of a list. Such a union is now written as a plain union, without `discriminator=`; the variants and their tag fields are unchanged, so only the module that holds the union changes. A module that imported before is unchanged.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`
+- **Keep the old output:** The previous module failed at import; nothing restores it.
+- **Pull requests and issues:** [#6905](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6905)
+- **Source:** the release notes
+
+```diff
+-thing: Group | Plane | None = Field(None, discriminator='kind')
++thing: Group | Plane | None = None
+```
+
+### A union has no `discriminator=` where the class of a nested variant has an optional tag field (unreleased) { #discriminator-nested-variant-restated-tag }
+
+A discriminated union that lists a `oneOf` grouping a variant wrote that variant's tag as the default of the tag field of the root-most parent that declares it. Where a nearer parent declares the same optional `const` tag again, the class of the variant has that parent's field, which stays optional, and Pydantic refused the union when the module was imported (`needs field 'kind' to be of type Literal`, #6875); under `--use-enum-values-in-discriminator` the same happened where such a variant keeps an optional tag typed by its Enum. Such a union is now written as a plain union, without `discriminator=`; the variants and their tag fields are unchanged, so only the module that holds the union changes. A module that imported before is unchanged.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`
+- **Keep the old output:** The previous module failed at import; nothing restores it.
+- **Pull requests and issues:** [#6875](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6875)
+- **Source:** the release notes
+
+```diff
+-thing: Young | Plane | None = Field(None, discriminator='kind')
++thing: Young | Plane | None = None
+```
+
+### A union whose variants were written with one tag value has no `discriminator=` (unreleased) { #discriminator-shared-written-tag }
+
+A Pydantic union whose variants ended up with the same value in their tag fields was written with `discriminator=`, which Pydantic refuses when the module is imported (`Value ... mapped to multiple choices`). It happened where a union lists a nested `oneOf` beside the parent of the variant it groups, which has its parent's tag (#6876), also where `--collapse-root-models` writes that union as the items of a list, and under `--use-enum-values-in-discriminator` where the discriminator property is named like the Enum that types it and the variants inherit it, so that every variant takes every member (#6865). The union is now written without `discriminator=`; the tag fields of the variants are unchanged. For #6865 this means that the module imports: its variants still have the tag field with every member of the Enum, and a parsed tag is the text, not the member. Output that imported before is unchanged.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`
+- **Keep the old output:** The previous module failed at import; nothing restores it.
+- **Pull requests and issues:** [#6865](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6865), [#6876](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6876)
+- **Source:** the release notes
+
+```diff
+-guest: Young | Cat | None = Field(None, discriminator='kind')
++guest: Young | Cat | None = None
+```
+
+### A Literal member of an enum named through a collapsed alias imports the enum (unreleased) { #enum-literal-after-collapsed-alias }
+
+Under `--collapse-root-models-name-strategy parent`, a module that named an enum of another module through a collapsed alias wrote the enum without importing it in two places: in an enum member literal (`--use-enum-values-in-discriminator`, or a const beside an enum under `--read-const-beside-enum`) and, under `--reuse-model`, where the enum replaced a duplicate that reuse removed. The models that named it failed when they were used. The module now imports the enum and writes `Literal[b.Foo.cat, 'cat']`. Output that worked before is unchanged.
+
+- **Affects:** only with: `--collapse-root-models-name-strategy parent`
+- **Keep the old output:** The previous module imported, but the models that named the enum failed at first use, as the module did not import it; nothing restores it.
+- **Pull requests and issues:** [#6842](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6842)
+- **Source:** the release notes
+
+```diff
+-kind: Literal[Foo.cat, 'cat']
++kind: Literal[b.Foo.cat, 'cat']
+```
+
+### A pattern with a class escape or a Unicode property at the end of a range in a class, such as `^[a-\w]+$`, no longer fails at import (unreleased) { #regex-class-escape-range-end }
+
+A `pattern` whose character class ends a range with a class escape or a Unicode property (`^[a-\w]+$`, `[a-\pL]`, `[a-\p{L}]`) was written as the schema writes it, and the module failed at import with `invalid range boundary, must be a literal` (a `msgspec.Struct` failed when it first decoded the type with `bad character range`): Pydantic's default regex engine refuses a range that ends with a class, and Python's `re` rejects it too. The pattern is now left out with a warning, as `^[\w- ]*$` (a class as the start of a range) has been since 0.92.0, and the model checks the other keywords only. A hyphen that makes no range keeps its pattern (`^[a-z0-9-\s]+$`, `^[^-\w]+$`). Output that imported and decoded before is unchanged.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`, `msgspec.Struct`
+- **Keep the old output:** The previous module failed at import; nothing restores it.
+- **Pull requests and issues:** [#6922](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6922)
+- **Source:** the release notes
+
+```diff
+-word: constr(pattern=r'^[a-\w]+$') | None = None
++word: str | None = None
+```
+
+### A pattern with a one-letter Unicode property before a hyphen in a class, such as `^[\pL-_]+$`, no longer fails at import (unreleased) { #regex-one-letter-property-range }
+
+A `pattern` whose character class starts a range with a Unicode property of one letter (`^[\pL-_]+$`, `[\PL-_]`) was written as the schema writes it, and the module failed at import with `invalid range boundary, must be a literal`: Pydantic's default regex engine refuses a range that starts with a class, and Python's `re` rejects `\p`. The pattern is now left out with a warning, as `^[\p{L}-_]+$` has been since 0.92.0, and the model checks the other keywords only. Output that imported before is unchanged.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`
+- **Keep the old output:** The previous module failed at import; nothing restores it.
+- **Pull requests and issues:** [#6918](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6918)
+- **Source:** the release notes
+
+```diff
+-one_letter: constr(pattern=r'^[\pL-_]+$') | None = None
++one_letter: str | None = None
+```
+
+### More patterns past the regex size limit no longer fail at import, such as `^\p{L}{1,256}$`, `^.{0,10240}$` and `[\p{L}\p{N}_-]{1,256}` (unreleased) { #regex-size-limit-more-classes }
+
+A `pattern` that every pydantic-core release from 2.0 to 2.50 refuses for size, but that the size check counted below the limit, was written as the schema writes it, and the module failed at import with `Compiled regex exceeds size limit`: a class of several Unicode general categories (`[\p{L}\p{N}_-]{1,256}`, `^[\p{L}\p{Z}\p{N}_.:/=+\-@]{0,256}$`), `\p{Lu}` or `\p{Ll}`, a count that passes the limit only with what the ASCII characters of its atom and its optional copies add (`^\p{L}{1,256}$`, `^.{0,10240}$`, `^[^<>]{1,10000}$`), a counted group of single atoms (`^(?:[\w-]\.?){1,128}@(?:[\w-]\.?){1,128}$`) and an alternation without `^` or `$` in which every branch holds at least one copy of these classes or escapes outside a group (`user-[\w-]{1,128}|group-[\w-]{1,128}`). The model now selects `regex_engine="python-re"` for it; a pattern Python's `re` rejects too, as it rejects `\p{...}`, is left out with a warning. Only patterns that every pydantic-core release from 2.0 to 2.50 refuses are read this way. Output that imported before is unchanged.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`
+- **Keep the old output:** The previous module failed at import; nothing restores it.
+- **Pull requests and issues:** [#6908](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6908)
+- **Source:** the release notes
+
+```diff
+-root: constr(pattern=r'^\p{L}{1,256}$')
++root: str
+```
+
+### A pattern past the regex size limit by repetitions together or by a Unicode class no longer fails at import (unreleased) { #regex-size-limit-repetitions-together }
+
+A `pattern` whose counted repetitions pass the size limit of Pydantic's default regex engine only together (four classes such as `[\w+=,.@-]{1,64}`), that repeats a class of `\w` and `\d` or `\s` (`^[\w\s-]{1,255}$`), or that repeats a class of a major Unicode general category (`[^\p{C}]{1,2048}`, `[\P{M}\p{M}]{0,20000}`), was written as the schema writes it, and the module failed at import with `Compiled regex exceeds size limit`. The model now selects `regex_engine="python-re"` for it; a pattern Python's `re` rejects too, as it rejects `\p{...}`, is left out with a warning. That is what a single repetition past the limit has got since 0.92.0. Only patterns that every pydantic-core release from 2.0 to 2.50 refuses are read this way. Output that imported before is unchanged.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`
+- **Keep the old output:** The previous module failed at import; nothing restores it.
+- **Pull requests and issues:** [#6877](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6877)
+- **Source:** the release notes
+
+```diff
+-root: constr(pattern=r'[^\p{C}]{1,2048}')
++root: str
+```
+
+### An argument that turns off an option `pyproject.toml` turned on, whose implied option stays on, emits a `UserWarning` (unreleased) { #argument-does-not-undo-implied-option }
+
+The command line reads the values of `pyproject.toml` before it applies the arguments, so with `use-annotated = true` and `field-constraints = false` there, `--no-use-annotated` turns `--use-annotated` off and leaves `--field-constraints` on, which `use-annotated = true` turned on. Such a run now reports it with a `UserWarning` that names the key and `--read-implied-options-from-merged-values`; the option stays on as before and the generated output is unchanged. A caller that turns warnings into errors gets an error.
+
+- **Affects:** only with: `--no-use-annotated`
+- **What to change:** Set `use-annotated = false` in `pyproject.toml` instead of passing `--no-use-annotated`, or pass `--read-implied-options-from-merged-values` (the 20261113 presets turn it on), under which the argument turns `--field-constraints` off as the key does.
+- **Pull requests and issues:** [#6891](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6891)
+- **Source:** the release notes
+
+### A member of `$defs` that is not a schema is skipped with a `UserWarning` in a draft 7 or older document (unreleased) { #defs-member-not-a-schema }
+
+Draft 7 and older have no `$defs` keyword, so their meta-schemas do not constrain its members. In a document read in one of these versions (the version of the input document, or of each document under `--read-schema-version-per-document`), a member of `$defs` whose value is neither an object nor a boolean, such as a `description` string written beside the definitions, is now skipped with a `UserWarning` that names it, and the document is generated; it was refused before. Such a member is still refused in a document read as 2019-09 or later (a document without `$schema` that holds `$defs` reads as 2020-12) and where a reference names it. A caller that turns warnings into errors gets an error.
+
+- **Affects:** input types: `jsonschema`
+- **What to change:** Move the value into the definition it belongs to, or remove it.
+- **Pull requests and issues:** [#6880](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6880)
+- **Source:** the release notes
+
+### A `$ref` to its document's `$id` written with an empty fragment emits a `SchemaResourceRefWarning` before the fetch (unreleased) { #id-with-empty-fragment-fetched }
+
+Where a document declares an `$id` with an empty fragment (`https://example.com/item.json#`) and a `$ref` in it names that URI, the generator loads the document at that URL, as before, and now first warns with a `SchemaResourceRefWarning` that names the URL, the `$id` and `--read-ids-with-empty-fragment`, under which the reference resolves inside the document; the generated output is unchanged. A caller that turns warnings into errors gets an error.
+
+- **Affects:** input types: `jsonschema`, `openapi`
+- **What to change:** Pass `--read-ids-with-empty-fragment` (the 20261113 presets turn it on), or write the `$id` without the `#`.
+- **Pull requests and issues:** [#6878](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6878)
+- **Source:** the release notes
+
+### An option that is turned off and that another option turns on emits a `UserWarning` (unreleased) { #implied-option-replaces-given-value }
+
+`--use-annotated` turns `--field-constraints` on, `--use-type-alias-type` turns `--use-type-alias` on and `--intersect-combined-schema-keywords` turns `--intersect-allof-keywords` on, also where a preset sets the first option. A run that turns the second option off (`--no-intersect-allof-keywords`, `false` in `pyproject.toml`, `False` given to `generate()`) is now reported with a `UserWarning` that names both options and how to turn both off; the option stays on as before and the generated output is unchanged. A `false` in `pyproject.toml` is not reported under a `--preset` argument whose preset sets that option, as such a preset replaces the values of `pyproject.toml`. `generate()` does not report `use_type_alias`, nor a value of a config that `load_pyproject_config()` returned. A caller that turns warnings into errors gets an error.
+
+- **Affects:** only with: `--field-constraints`, `--use-type-alias`, `--intersect-allof-keywords`
+- **What to change:** Turn the other option off as the warning says, for example with `--no-intersect-combined-schema-keywords`, or drop the value that turns the option off.
+- **Pull requests and issues:** [#6850](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6850)
+- **Source:** the release notes
+
+### A Swagger 2.0 document is named in the notice of the inferred input type and in the refusal of `--input-file-type openapi` (unreleased) { #swagger-2-named-in-input-messages }
+
+A document whose root has a `swagger` key and no `openapi` key is read as YAML or JSON data when `--input-file-type` is not given, and the OpenAPI reader finds no model in it, as it reads `components/schemas`, not the `definitions` of Swagger 2.0. The notice that names the inferred type now adds a line that the input looks like a Swagger 2.0 document, which is read as data, and that its definitions are read as JSON Schema with `--input-file-type jsonschema`. The refusal `Models not found in the input data` of such a document under `--input-file-type openapi` continues with the cause and what to do. The inferred type, the generated output and every document that generates are unchanged.
+
+- **Affects:** input types: `yaml`, `json`, `openapi`
+- **What to change:** Read the definitions of the document as JSON Schema with `--input-file-type jsonschema`, or convert the document to OpenAPI 3.
+- **Pull requests and issues:** [#6882](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6882)
+- **Source:** the release notes
+
+### `--type-overrides` keys that match no model or field emit a `UserWarning` (unreleased) { #type-overrides-unmatched-keys }
+
+A key of `--type-overrides` that names no generated model or field is reported with a `UserWarning`; the generated output is unchanged. A caller that turns warnings into errors gets an error.
+
+- **Affects:** only with: `--type-overrides`
+- **What to change:** Fix or drop the keys the warning names.
+- **Pull requests and issues:** [#6835](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6835)
+- **Source:** the release notes
+
+### `--field-include-all-keys` writes the contains keywords beside a `$ref` in the order of the schema (unreleased) { #contains-keywords-beside-ref-schema-order }
+
+With `--field-include-all-keys`, a `$ref` to an array schema with `contains` beside it wrote `contains`, `minContains` and `maxContains` into `json_schema_extra` in an order that depended on the hash seed of the process, so one command gave either of two files and `--check` failed at random. They are now written in the order the schema writes them. The models behave the same: only the order of the keys of the `json_schema_extra` dict changes, to one of the two orders earlier runs produced.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`; only with: `--field-include-all-keys`
+- **Pull requests and issues:** [#6866](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6866)
+- **Source:** the release notes
+
+```diff
+-json_schema_extra={'minContains': 0, 'contains': {'const': 'a'}},
++json_schema_extra={'contains': {'const': 'a'}, 'minContains': 0},
+```
+
 ### New option `--infer-union-discriminators` (`--no-infer-union-discriminators`) (unreleased) { #option-infer-union-discriminators }
 
 Write a oneOf or anyOf that declares no discriminator as a discriminated union (Pydantic Field(discriminator=...), msgspec tagged structs) when every branch that is not null requires one property holding one string or integer value (a const or a one-value enum, also through allOf members and local $refs), with no value shared; in Pydantic output a union with a discriminator keyword keeps it. Valid payloads parse the same, except that a tag typed as a one-value enum class becomes its Literal value; with --use-one-literal-as-default a payload without the tag, which the schema requires, is rejected. An invalid payload reports the errors of the branch its tag names, or one tag error. Not applied to dataclasses.dataclass and typing.TypedDict output. Without it these unions are smart unions in Pydantic output, and msgspec output tags only the unions whose tags are written on the branches themselves, as in 0.96.0
@@ -30,9 +249,33 @@ Read the format of a schema as an annotation, as JSON Schema does: a string, int
 
 - **Source:** the command-line options of both releases
 
+### New option `--read-ids-with-empty-fragment` (`--no-read-ids-with-empty-fragment`) (unreleased) { #option-read-ids-with-empty-fragment }
+
+Read an $id that ends with an empty fragment, such as https://example.com/item.json#, as the URI without it, which names the same resource, so a $ref to https://example.com/item.json# or https://example.com/item.json#/definitions/Tag in the document that declares it resolves inside that document; without it such a $ref loads the document at that URL, from the network, as in 0.96.0.
+
+- **Source:** the command-line options of both releases
+
+### New option `--read-implied-options-from-merged-values` (`--no-read-implied-options-from-merged-values`) (unreleased) { #option-read-implied-options-from-merged-values }
+
+Read the options that another option turns on (--use-annotated turns on --field-constraints) from the arguments and pyproject.toml together, so --no-use-annotated over use-annotated = true in pyproject.toml also leaves --field-constraints off where pyproject.toml gives it false, as use-annotated = false there does; without it --field-constraints stays on, as in 0.96.0.
+
+- **Source:** the command-line options of both releases
+
+### New option `--read-inherited-property-schemas-in-mro-order` (`--no-read-inherited-property-schemas-in-mro-order`) (unreleased) { #option-read-inherited-property-schemas-in-mro-order }
+
+With --intersect-combined-schema-keywords, give a property that a model only makes required the schema its allOf parents declare, read in the order of the class bases from the allOf members the model's own fields are read from (an alias member followed to the schema it names, the keywords beside a $ref member read with it), so a model written before its parents takes the field it takes when written after them; without it the declaration is looked up in the allOf members as written, and under --intersect-combined-schema-keywords such a field can lose its description or its constraints or become Any, as in 0.96.0
+
+- **Source:** the command-line options of both releases
+
 ### New option `--read-kubernetes-extensions` (`--no-read-kubernetes-extensions`) (unreleased) { #option-read-kubernetes-extensions }
 
 Read the Kubernetes schema extensions as the keywords they stand for: x-kubernetes-int-or-string (and the int-or-string format) as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as additionalProperties true, and an x-kubernetes-group-version-kind as the const and default of the apiVersion and kind it names; without it they are ignored, as in 0.96.0
+
+- **Source:** the command-line options of both releases
+
+### New option `--read-yaml-1-1-numbers-as-text` (`--no-read-yaml-1-1-numbers-as-text`) (unreleased) { #option-read-yaml-1-1-numbers-as-text }
+
+Read an unquoted YAML value with _ or : that YAML 1.1 reads as a number, such as 16:9 (969 in base 60), 18_24 or 1_000, as its text, as YAML 1.2, which OpenAPI names, and the ryaml reader read it, also in enum, default, const, examples, extensions and YAML data input. Without it such a value is the number YAML 1.1 reads, as in 0.96.0, except where a string is required in a document that the number makes invalid (a pattern, a format, a description, a component or property name), where it is its text.
 
 - **Source:** the command-line options of both releases
 
@@ -56,6 +299,10 @@ They keep the options of the 20261112 presets and add:
 - Extensible enums accept new values (`--open-enums extensible`): Accept the values an API adds to an enum its schema marks extensible (x-extensible-enum: true, x-ms-enum modelAsString: true), written as Literal[...] joined with its type, such as Literal['red', 'green'] | str, instead of rejecting them.
 - Discriminators inferred from tags (`--infer-union-discriminators`): Write a oneOf or anyOf without a discriminator as a discriminated union where every branch that is not null requires one property with one string or integer value, also in its allOf members; valid payloads parse the same, an invalid one reports the errors of the branch its tag names.
 - Kubernetes extensions read (`--read-kubernetes-extensions`): Read x-kubernetes-int-or-string as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties as extra keys kept, and an x-kubernetes-group-version-kind as the one apiVersion and kind a resource takes, so the models accept and keep what Kubernetes does.
+- Inherited property schemas read in MRO order (`--read-inherited-property-schemas-in-mro-order`): Give a property that a model only makes required the schema its allOf parents declare, read in the order of the class bases from the allOf members the model's fields are read from, so a model written before its parents takes the field it takes when written after them.
+- Ids with an empty fragment read as their documents (`--read-ids-with-empty-fragment`): Read an absolute-URL $id written with an empty fragment, such as https://example.com/item.json#, as the URI without it, so a $ref to it resolves inside the document that declares it instead of loading the document at that URL from the network. A relative $id is not matched: a $ref to it reads the file.
+- YAML 1.1-only numbers read as text (`--read-yaml-1-1-numbers-as-text`): Read an unquoted YAML value with _ or : that YAML 1.1 reads as a number, such as 16:9 or 18_24, as its text, as YAML 1.2, which OpenAPI names, and the ryaml reader do, so an enum of aspect ratios keeps the values '16:9' and '4:3' instead of the integers 969 and 243.
+- Implied options read from the merged values (`--read-implied-options-from-merged-values`): Read the options that another option turns on from the arguments and pyproject.toml together, so --no-use-annotated over use-annotated = true in pyproject.toml also leaves --field-constraints off where pyproject.toml gives it false, as use-annotated = false there does.
 - Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.
 
 - **Source:** the registry of deprecations, experimental features and dated presets

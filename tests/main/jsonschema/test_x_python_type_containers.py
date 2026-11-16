@@ -95,3 +95,40 @@ def test_x_python_type_containers(
             expected_attribute_path=("point",),
             expected_attribute_value=(1, 2, 3),
         )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="union_operator"),
+        pytest.param(["--no-use-union-operator"], id="optional"),
+    ],
+)
+def test_x_python_type_sequence_lookaround_items(output_file: Path, extra_args: list[str]) -> None:
+    """Keep the None of the item types in the base type of a root model whose array is a sequence ``x-python-type``.
+
+    The lookaround pattern of the first item makes each root model write its base type in ``RootModel[...]``. That
+    hint writes no ``Sequence``, so the union of the item types of ``Codes`` and ``MutableCodes`` (``items`` as a
+    list) writes its None itself, where the ``list`` of ``ListedCodes`` holds it.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_sequence_lookaround_items.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel"),
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.10"),
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"x_python_type_sequence_lookaround_items_{len(extra_args)}",
+        model_name="Holder",
+        valid_json=json.dumps({"codes": ["abc", None], "mutable_codes": ["abc", None], "listed_codes": ["abc", None]}),
+        invalid_json=json.dumps({"codes": ["xbc"]}),
+        expected_error_type="string_pattern_mismatch",
+        expected_attribute_path=("codes", "root"),
+        expected_attribute_value=["abc", None],
+    )

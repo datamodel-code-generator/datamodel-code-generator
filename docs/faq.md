@@ -92,8 +92,8 @@ With `pip install 'datamodel-code-generator[ryaml]'`, YAML input is read by ryam
 | --- | --- | --- | --- |
 | `<<: *base` (merge key) | keys of `base` are merged in | `<<` stays a key holding `base` | Avoid merge keys; write the keys out |
 | `017` | integer `15` (octal) | string `"017"` | Write `15`, or quote it as a string |
-| `1_000` | integer `1000` | string `"1_000"` | Write `1000` |
-| `1:20` | integer `80` (base 60) | string `"1:20"` | Write `80`, or quote it as a string |
+| `1_000` | integer `1000` | string `"1_000"` | Write `1000`, or pass `--read-yaml-1-1-numbers-as-text` for the string |
+| `1:20` | integer `80` (base 60) | string `"1:20"` | Write `80`, or quote it, or pass `--read-yaml-1-1-numbers-as-text` |
 | `0o17` | string `"0o17"` | integer `15` | Quote it if it is a string |
 | `1.0e3` | string `"1.0e3"` | float `1000.0` | Quote it if it is a string, or write `1000.0` |
 | `12345678901234567890123456789012345678901` (41 digits) | integer | float `1.2345678901234568e+40` | Quote it, or keep integers within 64 bits |
@@ -101,7 +101,7 @@ With `pip install 'datamodel-code-generator[ryaml]'`, YAML input is read by ryam
 | `!!omap [a: 1]` | list of tuples | list of one-key mappings | Write a list of mappings |
 | `!foo bar` (unknown tag) | error | mapping `{"!foo": "bar"}` | Remove the tag |
 
-`!!set` is rejected with either reader. Unquoted `YES`, `no`, `on` and `off` stay strings with both readers. The `True`, `False`, `TRUE` and `FALSE` spellings are read as booleans by both and warn as deprecated; write `true` or `false`.
+Where such a value with `_` or `:` makes a document invalid with PyYAML, because a string is required there (a `pattern: 00:00:00.00`, a component named `18_24`), the document is read again with these values as text where a string is required. `!!set` is rejected with either reader. Unquoted `YES`, `no`, `on` and `off` stay strings with both readers. The `True`, `False`, `TRUE` and `FALSE` spellings are read as booleans by both and warn as deprecated; write `true` or `false`.
 
 📎 Related: [#4511](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4511), [#5546](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5546)
 

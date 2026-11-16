@@ -1027,6 +1027,16 @@ _toggle(
     "of an inner allOf are read in document order and the property can take the farther base's looser constraints, "
     "as in 0.90.0",
 )
+_toggle(
+    typing_options,
+    "--read-inherited-property-schemas-in-mro-order",
+    help="With --intersect-combined-schema-keywords, give a property that a model only makes required the schema its "
+    "allOf parents declare, read in the order of the class bases from the allOf members the model's own fields are "
+    "read from (an alias member followed to the schema it names, the keywords beside a $ref member read with it), so "
+    "a model written before its parents takes the field it takes when written after them; without it the declaration "
+    "is looked up in the allOf members as written, and under --intersect-combined-schema-keywords such a field can "
+    "lose its description or its constraints or become Any, as in 0.96.0",
+)
 _flag(typing_options, "--field-constraints", help="Use field constraints and not con* annotations")
 _toggle(
     typing_options,
@@ -1912,6 +1922,14 @@ _toggle(
 )
 _toggle(
     base_options,
+    "--read-ids-with-empty-fragment",
+    help="Read an $id that ends with an empty fragment, such as https://example.com/item.json#, as the URI without "
+    "it, which names the same resource, so a $ref to https://example.com/item.json# or "
+    "https://example.com/item.json#/definitions/Tag in the document that declares it resolves inside that document; "
+    "without it such a $ref loads the document at that URL, from the network, as in 0.96.0.",
+)
+_toggle(
+    base_options,
     "--ignore-ref-siblings-by-schema-version",
     help="Read a $ref as its target alone where the schema version ignores the keywords beside it (JSON Schema "
     "draft 4, 6 and 7, OpenAPI 3.0, AsyncAPI 2), as those versions specify: a $ref with a sibling format: binary "
@@ -1921,6 +1939,15 @@ _toggle(
     "0.88.0. The version is the one --read-schema-version-per-document reads, else that of the document parsed. A "
     "schema converted from Avro, XML Schema or Protocol Buffers keeps the keywords its converter writes beside a "
     "$ref, such as the default of a field typed by a named type.",
+)
+_toggle(
+    base_options,
+    "--read-yaml-1-1-numbers-as-text",
+    help="Read an unquoted YAML value with _ or : that YAML 1.1 reads as a number, such as 16:9 (969 in base 60), "
+    "18_24 or 1_000, as its text, as YAML 1.2, which OpenAPI names, and the ryaml reader read it, also in enum, "
+    "default, const, examples, extensions and YAML data input. Without it such a value is the number YAML 1.1 reads, "
+    "as in 0.96.0, except where a string is required in a document that the number makes invalid (a pattern, a "
+    "format, a description, a component or property name), where it is its text.",
 )
 
 # ======================================================================================
@@ -2035,6 +2062,14 @@ general_options.add_argument(
     ),
 )
 _flag(general_options, "--ignore-pyproject", help="Ignore pyproject.toml configuration", default=False)
+_toggle(
+    general_options,
+    "--read-implied-options-from-merged-values",
+    help="Read the options that another option turns on (--use-annotated turns on --field-constraints) from the "
+    "arguments and pyproject.toml together, so --no-use-annotated over use-annotated = true in pyproject.toml also "
+    "leaves --field-constraints off where pyproject.toml gives it false, as use-annotated = false there does; "
+    "without it --field-constraints stays on, as in 0.96.0.",
+)
 general_options.add_argument(
     "--install-skill",
     choices=["codex", "claude-code"],

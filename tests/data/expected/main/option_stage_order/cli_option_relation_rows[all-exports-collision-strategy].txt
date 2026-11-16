@@ -1,0 +1,4 @@
+`--all-exports-collision-strategy` can only be used with `--all-exports-scope=recursive`.
+exit: ERROR
+written:
+  header.txt

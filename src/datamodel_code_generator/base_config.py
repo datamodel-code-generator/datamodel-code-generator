@@ -25,7 +25,12 @@ from datamodel_code_generator._format_types import (
 )
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._option_names import option_flag
-from datamodel_code_generator._option_rules import enable_implied_options, implied_options
+from datamodel_code_generator._option_rules import (
+    check_option_relation,
+    enable_implied_options,
+    implied_option_sources,
+    implied_options,
+)
 from datamodel_code_generator._shared_types import LiteralType  # noqa: TC001 - used at runtime by Pydantic
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
@@ -267,8 +272,8 @@ def implied_model_settings(config: Any, explicit: AbstractSet[str]) -> dict[str,
 
     A setting is unset unless `explicit` names it. msgspec models use `Annotated` constraints, `use_annotated` writes
     the constraints as field constraints, and an unset `field_constraints` follows `use_annotated`, so the command
-    line and `generate()` keep the same constraints. `intersect_combined_schema_keywords` turns on
-    `intersect_allof_keywords`, also where a preset sets it.
+    line and `generate()` keep the same constraints. Every other source option of `IMPLIED_OPTIONS` turns on its
+    option, also where a preset sets it.
     """
     use_annotated = config.use_annotated
     implied: dict[str, bool] = {}
@@ -276,12 +281,7 @@ def implied_model_settings(config: Any, explicit: AbstractSet[str]) -> dict[str,
         implied["use_annotated"] = use_annotated = True
     if "field_constraints" not in explicit:
         implied["field_constraints"] = use_annotated
-    implied.update(
-        implied_options({
-            "use_annotated": use_annotated,
-            "intersect_combined_schema_keywords": config.intersect_combined_schema_keywords,
-        })
-    )
+    implied.update(implied_options({**implied_option_sources(config), "use_annotated": use_annotated}))
     return implied
 
 
@@ -355,6 +355,7 @@ class BaseGenerateConfig(BaseModel):
     emit_model_metadata: Path | None = None
     output_model_type: DataModelType = DataModelType.PydanticV2BaseModel
     preset: PresetNameValue | None = None
+    read_implied_options_from_merged_values: bool = False
     target_python_version: PythonVersion = PythonVersionMin
     target_pydantic_version: TargetPydanticVersion | None = None
     base_class: str = ""
@@ -412,7 +413,9 @@ class BaseGenerateConfig(BaseModel):
     read_schema_version_per_document: bool = False
     read_escaped_ref_pointers: bool = False
     read_dynamic_anchors_in_document_order: bool = False
+    read_ids_with_empty_fragment: bool = False
     ignore_ref_siblings_by_schema_version: bool = False
+    read_yaml_1_1_numbers_as_text: bool = False
     use_msgspec_tagged_unions: bool = False
     tag_msgspec_by_payload_name: bool = False
     use_msgspec_nullable_enum_alias: bool = False
@@ -430,6 +433,7 @@ class BaseGenerateConfig(BaseModel):
     intersect_combined_schema_keywords: bool = False
     distribute_allof_over_unions: bool = False
     read_allof_parents_in_mro_order: bool = False
+    read_inherited_property_schemas_in_mro_order: bool = False
     read_nullable_beside_type_list: bool = False
     keep_field_defaults_off_branch_roots: bool = False
     keep_enum_member_values: bool = False
@@ -650,25 +654,24 @@ class BaseGenerateConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_remote_lock_mode(self) -> Self:
-        """Keep lock update and verification modes mutually exclusive."""
-        if self.update_lock and self.locked:
-            msg = "--update-lock and --locked cannot be used together"
-            raise ValueError(msg)
+        """Keep lock update and verification modes mutually exclusive (a relation row of `_option_rules.py`)."""
+        check_option_relation(("--update-lock", "conflicts", "--locked"), self)
         return self
 
     @model_validator(mode="after")
     def validate_target_selection(self) -> Self:
-        """Validate that one run selects at most one generation target."""
-        if self.generate_server is not None and self.generate_client is not None:
-            from datamodel_code_generator import Error  # noqa: PLC0415
-
-            msg = "--generate-server and --generate-client cannot be used together"
-            raise Error(msg)
+        """Validate that one run selects at most one generation target (a relation row of `_option_rules.py`)."""
+        check_option_relation(("--generate-server", "conflicts", "--generate-client"), self)
         return self
 
     @model_validator(mode="after")
     def normalize_use_type_alias_type(self) -> Self:
-        """Enable type aliases when their implementation is explicitly selected."""
+        """Enable type aliases when their implementation is explicitly selected.
+
+        The validator applies this one row of `IMPLIED_OPTIONS` (row `validator-stage-rows`): a frozen
+        `PresetConfig` sets other source options of the table, so the other rows are applied by
+        `implied_model_settings`.
+        """
         enable_implied_options(self, "use_type_alias_type")
         return self
 

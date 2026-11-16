@@ -180,12 +180,12 @@ def load_yaml(stream: str | TextIO) -> YamlValue:
 
 
 def _load_pyyaml(text: str) -> YamlValue:
-    """Load YAML content with PyYAML."""
+    """Load YAML content with PyYAML, its YAML 1.1-only numbers read as the generation run reads them."""
     import yaml  # noqa: PLC0415
 
-    from datamodel_code_generator.util import read_yaml_text  # noqa: PLC0415
+    from datamodel_code_generator.util import read_yaml_text, settle_yaml_numbers  # noqa: PLC0415
 
-    return read_yaml_text(yaml.load, text)
+    return settle_yaml_numbers(read_yaml_text(yaml.load, text))
 
 
 def _expect_dict(result: YamlValue) -> dict[str, YamlValue]:
@@ -201,12 +201,12 @@ def load_yaml_dict(stream: str | TextIO) -> dict[str, YamlValue]:
 
 
 def load_yaml_dict_from_path(path: Path, encoding: str) -> dict[str, YamlValue]:
-    """Load a YAML mapping from a path, caching by path and modification time."""
-    from datamodel_code_generator.util import record_watch_dependency  # noqa: PLC0415
+    """Load a YAML mapping from a path, caching by path, modification time and the reading of YAML 1.1-only numbers."""
+    from datamodel_code_generator.util import record_watch_dependency, yaml_number_reading_key  # noqa: PLC0415
 
     record_watch_dependency(path)
     cache_path = path if path.is_absolute() else path.absolute()
-    return _load_yaml_dict_from_path_cached(cache_path, cache_path.stat().st_mtime, encoding)
+    return _load_yaml_dict_from_path_cached(cache_path, cache_path.stat().st_mtime, encoding, yaml_number_reading_key())
 
 
 @lru_cache(maxsize=128)
@@ -214,6 +214,7 @@ def _load_yaml_dict_from_path_cached(
     path: Path,
     mtime: float,  # noqa: ARG001  # Used as cache key for invalidation
     encoding: str,
+    reading: str,  # noqa: ARG001  # Used as cache key: the reading of YAML 1.1-only numbers
 ) -> dict[str, YamlValue]:
     """Load a YAML mapping from a path after cache-key normalization."""
     with path.open(encoding=encoding) as stream:
@@ -315,21 +316,33 @@ def _load_parser_source_data_from_path_bytes(resolved_path: Path, data: bytes, e
 
 
 def _load_cached_parser_source_data(cache_key: _ParserSourceDataCacheKey) -> YamlValue | None:
+    """Return a cached decode, counting the YAML 1.1-only numbers the document held for the generation run."""
     with _parser_source_data_cache_lock:
         if (cached_data := _parser_source_data_cache.recent(cache_key)) is None:
             return None
 
     import marshal  # noqa: PLC0415
 
+    from datamodel_code_generator.util import note_yaml_numbers_held  # noqa: PLC0415
+
     # Entries are process-local values emitted by marshal.dumps below, never external bytes.
-    return marshal.loads(cached_data)  # noqa: S302
+    held, parsed_data = marshal.loads(cached_data)  # noqa: S302
+    note_yaml_numbers_held(held)
+    return parsed_data
 
 
-def _store_parser_source_data(cache_key: _ParserSourceDataCacheKey, parsed_data: YamlValue) -> YamlValue:
+def _store_parser_source_data(
+    cache_key: _ParserSourceDataCacheKey, load: Callable[[str], YamlValue], text: str
+) -> YamlValue:
+    """Decode ``text`` with ``load`` and cache the value with the count of YAML 1.1-only numbers the document held."""
     import marshal  # noqa: PLC0415
 
+    from datamodel_code_generator.util import yaml_numbers_held  # noqa: PLC0415
+
+    held = yaml_numbers_held()
+    parsed_data = load(text)
     try:
-        cached_data = marshal.dumps(parsed_data)
+        cached_data = marshal.dumps((yaml_numbers_held() - held, parsed_data))
     except Exception:  # noqa: BLE001
         # Values outside the primitive YamlValue shape remain valid uncached input.
         return parsed_data
@@ -339,10 +352,10 @@ def _store_parser_source_data(cache_key: _ParserSourceDataCacheKey, parsed_data:
 
 
 def _load_parser_source_data_from_bytes(path: Path, data: bytes, encoding: str, digest: str | None) -> YamlValue:
-    """Decode JSON by suffix, else YAML; with a ``digest``, memoize each decode per parser backend."""
+    """Decode JSON by suffix, else YAML; with a ``digest``, memoize each decode per parser backend and YAML reading."""
     import json  # noqa: PLC0415
 
-    from datamodel_code_generator.util import get_yaml_backend  # noqa: PLC0415
+    from datamodel_code_generator.util import get_yaml_backend, yaml_number_reading_key  # noqa: PLC0415
 
     text = data.decode(encoding)
 
@@ -352,12 +365,12 @@ def _load_parser_source_data_from_bytes(path: Path, data: bytes, encoding: str, 
         cache_key = (path, digest, encoding, backend())
         if (cached_data := _load_cached_parser_source_data(cache_key)) is not None:
             return cached_data
-        return _store_parser_source_data(cache_key, load(text))
+        return _store_parser_source_data(cache_key, load, text)
 
     if path.suffix.lower() == ".json":
         with contextlib.suppress(json.JSONDecodeError):
             return decode(json.loads, lambda: "json")
-    return decode(load_yaml, lambda: f"yaml:{get_yaml_backend()}")
+    return decode(load_yaml, lambda: f"yaml:{get_yaml_backend()}:{yaml_number_reading_key()}")
 
 
 def _clear_parser_source_data_cache() -> None:

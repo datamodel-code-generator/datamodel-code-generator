@@ -1,0 +1,11 @@
+[[change]]
+id = "contains-keywords-beside-ref-schema-order"
+kind = "output-text"
+action = "none"
+title = "`--field-include-all-keys` writes the contains keywords beside a `$ref` in the order of the schema"
+summary = "With `--field-include-all-keys`, a `$ref` to an array schema with `contains` beside it wrote `contains`, `minContains` and `maxContains` into `json_schema_extra` in an order that depended on the hash seed of the process, so one command gave either of two files and `--check` failed at random. They are now written in the order the schema writes them. The models behave the same: only the order of the keys of the `json_schema_extra` dict changes, to one of the two orders earlier runs produced."
+affects = { output_model_types = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"], options = ["--field-include-all-keys"] }
+before = "json_schema_extra={'minContains': 0, 'contains': {'const': 'a'}},"
+after = "json_schema_extra={'contains': {'const': 'a'}, 'minContains': 0},"
+refs = ["#6866"]
+source = "release-note"

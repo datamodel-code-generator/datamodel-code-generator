@@ -43,6 +43,7 @@ from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, w
 from datamodel_code_generator._requirements import pydantic_floor
 from datamodel_code_generator._target_unicode import is_importable_part
 from datamodel_code_generator._url_redaction import redact_reference
+from datamodel_code_generator._user_keys import closest_type_override_key
 from datamodel_code_generator.enums import DefaultValueType
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATIONS,
@@ -67,8 +68,10 @@ from datamodel_code_generator.parser._imports_plan import Added, Aliased, Import
 from datamodel_code_generator.parser._passes._import_binding import (
     ModuleImportTarget,
     ReferenceExpressionHost,
+    keep_off_shared_bindings,
     reference_import_target,
     register_reference_import,
+    shared_future_bindings,
     shared_import_bindings,
 )
 from datamodel_code_generator.parser._passes._import_edges import (
@@ -113,7 +116,13 @@ from datamodel_code_generator.parser._passes._shared import (
     unique_items_plan,
     unused_model_lists,
 )
-from datamodel_code_generator.parser._passes._state import _PYDANTIC_FLOORS, ConfigT, ContextT, ResultT
+from datamodel_code_generator.parser._passes._state import (
+    _PYDANTIC_FLOORS,
+    ConfigT,
+    ContextT,
+    ResultT,
+    report_unmatched_type_override_keys,
+)
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser._tag_plan import TagPlanHost
 from datamodel_code_generator.python_literal import stable_repr
@@ -129,7 +138,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator._target_unicode import ModulePartRow
-    from datamodel_code_generator._user_keys import ConstructionKeys
+    from datamodel_code_generator._user_keys import ConstructionKeys, TypeOverrideLookups
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.enums import AllExportsScope
     from datamodel_code_generator.imports import Imports, _ImportKey
@@ -184,6 +193,7 @@ __all__ = [
     "render",
     "render_module_models",
     "replan_schema_validators_after_renames",
+    "report_unmatched_type_override_keys",
     "resolve_module_import_conflicts",
     "snapshot_model_imports",
     "submodules_hidden_by_packages",
@@ -192,6 +202,7 @@ __all__ = [
     "warn_about_decimal_defaults",
     "warn_about_dropped_constraints",
     "warn_about_msgspec_decoding",
+    "warn_about_unmatched_type_override_keys",
     "warn_about_variant_discriminator_tags",
 ]
 
@@ -242,6 +253,8 @@ class FinishHost(ReuseOptionsHost, RootModelHost, OutputOptionsHost, TagPlanHost
     _decimal_default_warning_count: int
     _decimal_default_warning_examples: list[str] | None
     _dropped_constraint_fields: frozenset[tuple[ModulePath, str]]
+    _type_override_lookups: TypeOverrideLookups | None
+    type_overrides: dict[str, str]
     final_name_keys_to_assign: tuple[tuple[str, tuple[str, ...]], ...]
     generated_class_names: tuple[tuple[str, str], ...]
     model_placement: dict[ModulePath, frozenset[str]]
@@ -422,7 +435,8 @@ def _alias_reserved_names(
 ) -> set[str]:
     """Return the names an alias that a module imports a name under takes none of.
 
-    The names of its classes and fields, those its imports and the shared imports bind, and ``also``.
+    The names of its classes and fields, those its imports and the shared imports bind, and ``also``: every name the
+    module binds, a ``__future__`` one too, which ``shared_import_bindings`` leaves out.
     """
     return {
         *also,
@@ -561,6 +575,7 @@ def _released_name_imports(  # noqa: PLR0914
         for released_name, name in forwarder.released
     }
     unimported = unimported_model_keys(parser)
+    shared_bindings = shared_import_bindings(parser.imports)
     names: dict[ModulePath, tuple[tuple[ModulePath, str, str], ...]] = {}
     for module, forwarder in forwarder_map.items():
         if not forwarder.released:
@@ -595,7 +610,7 @@ def _released_name_imports(  # noqa: PLR0914
                 init=ctx.is_init,
                 internal_modules=forwarder.released_internal_modules,
                 base_class=isinstance(data_type, BaseClassDataType),
-                shared_imports=parser.imports,
+                shared_bindings=shared_bindings,
             )
             target.reserve_name(resolver)
             binding = resolver.add(target.full_path, target.import_).name
@@ -1484,6 +1499,30 @@ def warn_about_variant_discriminator_tags(parser: FinishHost) -> None:
             warn_as_parser_base(message, UserWarning, stacklevel=2)
 
 
+def warn_about_unmatched_type_override_keys(parser: FinishHost) -> None:
+    """Report the ``--type-overrides`` keys that no lookup found, once every lookup has compared its names.
+
+    The last lookups are those of the module passes (L5) and of render preparation, so the keys are final here. A
+    parse of a generation run records the warning (``PydanticFloors``), which the run emits for the parse it keeps
+    (``__init__.py:_parse_generation_run``); a parse outside one warns.
+    """
+    if (lookups := parser._type_override_lookups) is None or not (  # noqa: SLF001
+        unmatched := sorted(set(parser.type_overrides) - lookups.found)
+    ):
+        return
+    listed = ", ".join(
+        f"{stable_repr(key)} (did you mean {stable_repr(closest)}?)"
+        if (closest := closest_type_override_key(key, lookups)) is not None
+        else stable_repr(key)
+        for key in unmatched
+    )
+    message = f"--type-overrides: {counted(len(unmatched), 'key')} matched no generated model or field: {listed}"
+    if (record := _PYDANTIC_FLOORS.get()) is None:
+        report_unmatched_type_override_keys(message)
+    else:
+        record.record_unmatched_type_override_keys(parser, message)
+
+
 def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleContextView]) -> None:  # noqa: PLR0912
     """Warn once per union and enum of msgspec output that msgspec refuses to decode.
 
@@ -1600,7 +1639,7 @@ def _names_written_as_text(models: Iterable[DataModel]) -> set[str]:
     return names
 
 
-def _imported_names(models: Sequence[DataModel], imports: Imports, shared_names: set[str]) -> set[str]:
+def _imported_names(models: Sequence[DataModel], imports: Imports, shared_names: frozenset[str]) -> set[str]:
     """Return the names the imports of a module bind that a class of the module may not take.
 
     The imports every module writes (``shared_names``) count only where a type of the module writes the name as text.
@@ -1652,7 +1691,7 @@ def change_imported_model_name(parser: ImportsHost[Any], state: _FinalizeState[A
             if model.class_name == IMPORT_LITERAL.import_ and alias_reused_variant_literal(parser, models, imports):
                 continue
 
-            ctx.scoped_model_resolver.exclude_names.update(shared_names)
+            keep_off_shared_bindings(ctx.scoped_model_resolver, parser.imports)
             parser._graph_builder.rename_model(  # noqa: SLF001
                 model,
                 reference_name=parser._import_ledger.add_name(  # noqa: SLF001
@@ -1739,7 +1778,7 @@ def remove_unused_models(parser: ImportsHost[Any], state: _FinalizeState[Any]) -
                     state.model_imports.get(unused_model, unused_model.imports),
                     ImportProducer("unused-models", unused_model),
                 )
-                models.remove(unused_model)
+                parser._graph_builder.set_module_models(models, [m for m in models if m is not unused_model])  # noqa: SLF001
                 if written:
                     parser._graph_builder.retire_model(unused_model)  # noqa: SLF001
 
@@ -1909,7 +1948,7 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
         }
     ):
         return
-    resolver.exclude_names.update(shared_import_bindings(parser.imports))
+    keep_off_shared_bindings(resolver, parser.imports)
     written = {
         name
         for model in ctx.models
@@ -1983,7 +2022,7 @@ def _alias_imports_hidden_by_submodules(
                 continue
             users.setdefault(binding, []).append((data_type, _import_key(import_)))
     if users:
-        resolver.exclude_names.update(shared_import_bindings(parser.imports))
+        keep_off_shared_bindings(resolver, parser.imports)
     _rebind_users(
         parser,
         ctx,
@@ -2089,7 +2128,7 @@ def submodules_hidden_by_packages(
             is not None
         }
 
-    shared_future = {binding for (from_, _), binding in _import_bindings(parser.imports) if from_ == "__future__"}
+    shared_future = shared_future_bindings(parser.imports)
     inits = {
         package: ctx
         for ctx in contexts
@@ -2272,8 +2311,9 @@ def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _Finaliz
     of its import of the module (``_held_count``). The name keeps
     off every name the module's imports bind already: the resolver holds those that no model import took through it,
     such as ``collections.Counter`` beside a model ``Counter``, and the shared ones are kept off as for a module named
-    like a shared import (``ReferenceImportTarget.reserve_name``). The use keeps an expression, the class name where the
-    import binds it, as the field render plans froze it written.
+    like a shared import (``ReferenceImportTarget.reserve_name``); a name that a shared ``__future__`` import binds is
+    left out with them, as released, though that keeps no import off it. The use keeps an expression, the class name
+    where the import binds it, as the field render plans froze it written.
     """
     _alias_imports_hidden_by_loaded_submodules(parser, state)
     by_packages = submodules_hidden_by_packages(parser, state.contexts, state, state.config)
@@ -2305,14 +2345,14 @@ def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _Finaliz
         ledger.release_names(
             imports, resolver, {stale.binding_name for *_, stale in users}.difference(_iter_import_bindings(imports))
         )
+        module = ModuleImportTarget.of(parser.imports, ctx, state)
         for name in sorted(
             {reference.short_name for _, _, reference, _ in users}
             .intersection(_iter_import_bindings(imports))
             .difference(held.name for held in resolver.references.values())
-            .difference(_iter_import_bindings(parser.imports))
+            .difference(module.shared_bindings, shared_future_bindings(parser.imports))
         ):
             ledger.add_name(imports, resolver, get_special_path("import", [name]), name)
-        module = ModuleImportTarget.of(parser.imports, ctx, state)
         for model, data_type, reference, _ in users:
             expression = register_reference_import(
                 reference,

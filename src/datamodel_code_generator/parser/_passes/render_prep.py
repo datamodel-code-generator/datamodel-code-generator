@@ -17,6 +17,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._container_kinds import GENERIC_CONTAINERS, SETS
 from datamodel_code_generator._graph import reach, reaching
+from datamodel_code_generator._graph_links import type_children
 from datamodel_code_generator._message_text import english_list, for_count
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
@@ -49,9 +50,9 @@ from datamodel_code_generator.parser._passes._shared import (
     ConstructorInfoHost,
     GenerationStoreHost,
     ImportOptionsHost,
+    ModuleMembersHost,
     OutputOptionsHost,
     RecursionFactsHost,
-    ReplacedRootsHost,
     RootModelTypeHost,
     RuntimeExpressionFlags,
     UnusedModels,
@@ -66,7 +67,7 @@ from datamodel_code_generator.parser._passes._shared import (
     get_constructor_ordering_conflicts,
     get_inherited_constructor_info,
     has_import_override,
-    module_members,
+    module_member_keys,
     normalize_default_value_constraints,
     required_fields_a_default_lacks,
     resolve_default_value_descriptor,
@@ -143,7 +144,7 @@ class RenderPrepHost(
     ConstructorInfoHost,
     RecursionFactsHost,
     ReferenceExpressionHost,
-    ReplacedRootsHost,
+    ModuleMembersHost,
     RuntimeExpressionFlags,
     GenerationStoreHost,
     OutputOptionsHost,
@@ -253,9 +254,7 @@ def _contains_model_reference(data_type: DataType) -> bool:
             and not resolved.reference.source.is_alias
         ):
             return True
-        if resolved.dict_key:
-            stack.append(resolved.dict_key)
-        stack.extend(resolved.data_types)
+        stack.extend(type_children(resolved))
     return False
 
 
@@ -291,7 +290,7 @@ def _iter_alias_references(data_type: DataType, *, in_container: bool = False) -
         and source.DEFERS_RECURSIVE_TYPE_HINT
     ):
         yield source, in_container
-    for child in (*data_type.data_types, *((data_type.dict_key,) if data_type.dict_key else ())):
+    for child in type_children(data_type):
         yield from _iter_alias_references(child, in_container=in_container)
 
 
@@ -326,7 +325,7 @@ def _only_groups_members(data_type: DataType) -> bool:
     )
 
 
-def _flatten_union_members(data_type: DataType) -> None:
+def _flatten_union_members(data_type: DataType, graph_builder: GraphBuilder) -> None:
     """Hoist grouped members and their ``None`` into the union (row ``flattened``), so ruff finds no nested member.
 
     Ruff rewrites a union with a nested union or a repeated member into a ``|`` chain, which fails at runtime
@@ -337,21 +336,21 @@ def _flatten_union_members(data_type: DataType) -> None:
     facts: list[MemberFacts] = []
     for member in members:
         if grouping := _only_groups_members(member):
-            _flatten_union_members(member)
+            _flatten_union_members(member, graph_builder)
         facts.append(MemberFacts("grouping" if grouping else "member", null=member.is_optional))
     plan = assemble_union(facts, FLATTENED)
     for index in plan.null_moved:
         members[index]._materialize_render_state("null-moved-to-union")  # noqa: SLF001
     if plan.nullable:
         data_type._materialize_render_state("member-null")  # noqa: SLF001
-    flattened = [
-        nested
-        for index in plan.members
-        for nested in (members[index].data_types if index in plan.spread else (members[index],))
-    ]
-    for member in flattened:
-        member.parent = data_type
-    data_type.data_types = flattened
+    graph_builder.set_nested_data_types(
+        data_type,
+        [
+            nested
+            for index in plan.members
+            for nested in (members[index].data_types if index in plan.spread else (members[index],))
+        ],
+    )
 
 
 def _container_item_aliases(model: DataModel) -> Iterator[DataModel]:
@@ -698,7 +697,7 @@ def copy_inherited_conflicts(  # noqa: PLR0913, PLR0917
     """
     if not inherited.inherited_conflicts:
         return []
-    members = keyed_models(module_members(parser, ctx.models), "module members")
+    members = module_member_keys(parser, ctx.models, row="members")
     module = ModuleImportTarget.of(parser.imports, ctx, copies)
     copied_fields: list[DataModelFieldBase] = []
     for field, declaring_model in inherited.inherited_conflicts:
@@ -996,12 +995,12 @@ def defer_recursive_containers(  # noqa: PLR0913
     for container, wrappers in deferred:
         container._set_forward_reference()  # noqa: SLF001
         for quoted in (container, *wrappers):
-            quoted.use_union_operator = False
+            graph_builder.drop_union_operator(quoted)
         for nested in container.all_data_types:
             if (reference := nested.reference) and nested._is_quoted_reference:  # noqa: SLF001
                 graph_builder.name_reference(nested, reference.short_name)
     for root in deferred[0][1][:1]:
-        _flatten_union_members(root)
+        _flatten_union_members(root, graph_builder)
 
 
 def quote_forward_enum_member_literals(  # noqa: PLR0913

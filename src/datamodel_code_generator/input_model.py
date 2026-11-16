@@ -597,27 +597,46 @@ def _model_class(tp: object) -> TypeIs[type[BaseModel]]:
     return isinstance(tp, type) and issubclass(tp, BaseModel)
 
 
+def _annotation_nodes(annotation: object) -> Iterator[tuple[Any, tuple[int, ...]]]:
+    """Yield an annotation, then each argument below it in written order, with the argument indexes that lead to it.
+
+    Every walk of an annotation reads this descent (``get_args``); what it records of the nodes is its own.
+    """
+    pending: list[tuple[Any, tuple[int, ...]]] = [(annotation, ())]
+    while pending:
+        node, indexes = pending.pop()
+        yield node, indexes
+        if arguments := get_args(node):
+            pending.extend(reversed([(argument, (*indexes, index)) for index, argument in enumerate(arguments)]))
+
+
+def _reached_classes(
+    annotations: Iterable[object], visited: set[type], *, every_kind: bool
+) -> Iterator[tuple[type, str]]:
+    """Yield each class the annotations name with its family, a followed class before the classes its fields reach.
+
+    The family is read once for each class met. The walk follows a Pydantic model, with ``every_kind`` every class
+    with typed fields (a dataclass, a TypedDict, a msgspec Struct), where it first meets it: in written order, right
+    after the class itself. ``visited`` takes the classes followed, each of which is yielded once; any other class is
+    yielded wherever an annotation names it.
+    """
+    for annotation in annotations:
+        for node, _ in _annotation_nodes(annotation):
+            if _plain_class(node) and node not in visited:
+                family = _get_type_family(node)
+                yield node, family
+                # A class of no family has no fields to follow.
+                if family != _TYPE_FAMILY_OTHER and (
+                    _model_class(node) or (every_kind and _typed_fields_family(node) is not None)
+                ):
+                    visited.add(node)
+                    yield from _reached_classes(_model_field_annotations(node).values(), visited, every_kind=every_kind)
+
+
 def _collect_core_type_identities(models: Iterable[type], core_types: dict[str, type]) -> None:
     """Recover legacy core-ref identities without discarding same-name types."""
-    pending: list[Any] = list(models)
-    visited: set[type] = set()
-    while pending:
-        annotation = pending.pop()
-        if _plain_class(annotation):
-            if annotation in visited:
-                continue
-            visited.add(annotation)
-            core_types[f"{annotation.__module__}.{annotation.__qualname__}:{id(annotation)}"] = annotation
-            if fields := getattr(annotation, "model_fields", None):
-                pending.extend(field.annotation for field in fields.values())
-            elif _is_model_like(annotation):
-                pending.extend(_get_type_hints_safe(annotation).values())
-        pending.extend(get_args(annotation))
-
-
-def _is_model_like(tp: object) -> bool:
-    """Recognize dataclasses, TypedDicts and msgspec structs: the other classes with typed fields."""
-    return is_dataclass(tp) or hasattr(tp, "__required_keys__") or hasattr(tp, "__struct_fields__")
+    for model, _ in _reached_classes(models, set(), every_kind=True):
+        core_types[f"{model.__module__}.{model.__qualname__}:{id(model)}"] = model
 
 
 def _colliding_type_names(definition_types: Iterable[type | str]) -> set[str]:
@@ -774,7 +793,7 @@ def _add_python_type_for_unserializable(
         visited_defs = set()
 
     if "properties" in schema:
-        for field_info, prop in _iter_owned_properties(schema["properties"], getattr(model, "model_fields", {})):
+        for field_info, prop in _iter_owned_properties(schema["properties"], _pydantic_fields(model) or {}):
             _process_unserializable_property(prop, field_info.annotation, expression_collector)
 
     if "$defs" in schema:
@@ -874,11 +893,7 @@ def _with_full_fallback(
 def _imported_python_type_expr(tp: object) -> PythonTypeExpr:
     """Spell a type of a field by its full runtime name, which the output imports, and note the classes it names."""
     if (imported := _IMPORTED_TYPES.get()) is not None:
-        pending = [tp]
-        while pending:
-            if _plain_class(annotation := pending.pop()):
-                imported.add(annotation)
-            pending.extend(get_args(annotation))
+        imported.update(node for node, _ in _annotation_nodes(tp) if _plain_class(node))
     return _runtime_python_type_expr(tp, full_name=True)
 
 
@@ -905,40 +920,20 @@ def _full_type_name(tp: type) -> str:
 def _collect_nested_models(
     model: type, visited: set[type] | None = None, *, every_kind: bool = False
 ) -> dict[str, type]:
-    """Collect all nested types (BaseModel, Enum, dataclass) from a model's fields.
+    """Collect by name the nested types (BaseModel, Enum, dataclass, TypedDict, msgspec Struct) a model's fields reach.
 
     The fields of nested models are followed; with ``every_kind`` those of dataclasses, TypedDicts and msgspec Structs
-    too.
+    too. Of two classes of one name the one the walk meets later stays. ``visited`` takes the model and the classes
+    followed.
     """
     if visited is None:
         visited = set()
-
-    if model in visited:  # pragma: no cover
-        return {}
     visited.add(model)
-
-    result: dict[str, type] = {}
-    model_fields = getattr(model, "model_fields", None)
-    for tp in (
-        (field_info.annotation for field_info in model_fields.values())
-        if model_fields is not None
-        else _get_type_hints_safe(model).values()
-    ):
-        _find_models_in_type(tp, result, visited, every_kind=every_kind)
-    return result
-
-
-def _find_models_in_type(tp: type, result: dict[str, type], visited: set[type], *, every_kind: bool = False) -> None:
-    """Recursively find BaseModel, Enum, dataclass, TypedDict, and msgspec in a type annotation."""
-    if _plain_class(tp) and tp not in visited:
-        if _model_class(tp) or (every_kind and _is_model_like(tp)):
-            result[tp.__name__] = tp
-            result.update(_collect_nested_models(tp, visited, every_kind=every_kind))
-        elif issubclass(tp, PyEnum) or _is_model_like(tp):
-            result[tp.__name__] = tp
-
-    for arg in get_args(tp):
-        _find_models_in_type(arg, result, visited, every_kind=every_kind)
+    return {
+        nested.__name__: nested
+        for nested, family in _reached_classes(_model_field_annotations(model).values(), visited, every_kind=every_kind)
+        if family != _TYPE_FAMILY_OTHER
+    }
 
 
 def _get_type_hints_safe(obj: type) -> dict[str, Any]:
@@ -947,6 +942,28 @@ def _get_type_hints_safe(obj: type) -> dict[str, Any]:
         return get_type_hints(obj)
     except Exception:  # noqa: BLE001  # pragma: no cover
         return getattr(obj, "__annotations__", {})
+
+
+def _pydantic_fields(model: object, *, dataclass_fields: bool = False) -> dict[str, Any] | None:
+    """Return the fields Pydantic holds for a class by name, None for a class it holds none for.
+
+    They are the ``model_fields`` of a model and, with ``dataclass_fields``, the fields of a Pydantic dataclass. A
+    ``model_fields`` attribute of another class is no such fields: a dataclass may name a field of its own so.
+    """
+    if _model_class(model):
+        return model.model_fields
+    return getattr(model, "__pydantic_fields__", None) if dataclass_fields else None
+
+
+def _model_field_annotations(model: type, *, raw: bool = False) -> dict[str, Any]:
+    """Return the annotation of each field of a class: of the fields of a Pydantic model, else its type hints.
+
+    ``raw`` reads the annotations as the class itself holds them, which is what a native field path evaluates: its
+    own annotations only, ``Annotated`` kept, and strings under ``from __future__ import annotations``.
+    """
+    if (fields := _pydantic_fields(model)) is not None:
+        return {name: field_info.annotation for name, field_info in fields.items()}
+    return getattr(model, "__annotations__", {}) if raw else _get_type_hints_safe(model)
 
 
 def _add_python_type_to_properties(
@@ -992,9 +1009,8 @@ def _add_python_type_to_model_properties(
 
     A Pydantic dataclass is read by its annotations, keyed by field name, unless the load reads its fields by alias.
     """
-    if (model_fields := getattr(model, "model_fields", None)) or (
-        _READ_DATACLASS_FIELDS_BY_ALIAS.get() and (model_fields := getattr(model, "__pydantic_fields__", None))
-    ):
+    model_fields = _pydantic_fields(model, dataclass_fields=_READ_DATACLASS_FIELDS_BY_ALIAS.get())
+    if model_fields is not None:
         _add_python_type_to_properties(properties, model_fields, expression_collector, generic_names)
         return
     for field_name, field_type in _get_type_hints_safe(model).items():
@@ -1031,27 +1047,30 @@ def _add_python_type_info(  # ruff: ignore[too-many-arguments]
     return schema
 
 
-def _get_type_family(tp: type) -> str:  # noqa: PLR0911
-    """Determine the type family of a Python type."""
-    if isinstance(tp, type) and issubclass(tp, PyEnum):
-        return _TYPE_FAMILY_ENUM
+def _typed_fields_family(tp: object) -> _OutputModelFamily | None:
+    """Return the family of a class with typed fields that is no Pydantic model, None for anything else.
 
+    Such a class is a dataclass (one of Pydantic is of the Pydantic family), a TypedDict or a msgspec Struct. An
+    instance of one is no class, as an instance of a Pydantic model is none.
+    """
+    if not isinstance(tp, type):
+        return None
+    if is_dataclass(tp):
+        return _OutputModelFamily.PYDANTIC if hasattr(tp, "__pydantic_fields__") else _OutputModelFamily.DATACLASS
+    if hasattr(tp, "__required_keys__"):
+        return _OutputModelFamily.TYPEDDICT
+    if hasattr(tp, "__struct_fields__"):
+        return _OutputModelFamily.MSGSPEC
+    return None
+
+
+def _get_type_family(tp: type) -> str:
+    """Determine the type family of a class: an enum, a Pydantic model, a class with typed fields or another."""
+    if issubclass(tp, PyEnum):
+        return _TYPE_FAMILY_ENUM
     if _model_class(tp):
         return _OutputModelFamily.PYDANTIC
-
-    if hasattr(tp, "__pydantic_fields__") and is_dataclass(tp):  # pragma: no cover
-        return _OutputModelFamily.PYDANTIC
-
-    if is_dataclass(tp):
-        return _OutputModelFamily.DATACLASS
-
-    if isinstance(tp, type) and hasattr(tp, "__required_keys__"):
-        return _OutputModelFamily.TYPEDDICT
-
-    if isinstance(tp, type) and hasattr(tp, "__struct_fields__"):  # pragma: no cover
-        return _OutputModelFamily.MSGSPEC
-
-    return _TYPE_FAMILY_OTHER  # pragma: no cover
+    return _typed_fields_family(tp) or _TYPE_FAMILY_OTHER
 
 
 def _qualified_type_export(nested_type: type) -> str | None:
@@ -1152,11 +1171,12 @@ def _reused_python_type_expression(tp: object) -> PythonTypeExpr:
         parts = tuple(qualname.split(".")) if (qualname := _qualified_type_export(tp)) else (tp.__name__,)
         return PythonTypeRuntimeSymbol(tp.__module__, parts)
     replacements: dict[PythonTypeExpr, PythonTypeExpr] = {}
-    pending = list(get_args(tp))
-    while pending:
-        argument = pending.pop()
+    arguments = _annotation_nodes(tp)
+    next(arguments)  # the type itself
+    for argument, _ in arguments:
+        # Of two arguments that are spelled alike, the one written first gives the replacement.
         if isinstance(argument, type):
-            replacements[_runtime_python_type_expr(argument)] = _reused_python_type_expression(argument)
+            replacements.setdefault(_runtime_python_type_expr(argument), _reused_python_type_expression(argument))
         elif isinstance(argument, PyEnum):
             owner = _reused_python_type_expression(type(argument))
             if not isinstance(owner, PythonTypeRuntimeSymbol):
@@ -1165,11 +1185,10 @@ def _reused_python_type_expression(tp: object) -> PythonTypeExpr:
                     "regenerate-all."
                 )
                 raise Error(msg)
-            replacements[PythonTypeOpaqueText(str(argument))] = PythonTypeRuntimeSymbol(
-                owner.module, (*owner.qualname_parts, argument.name)
+            replacements.setdefault(
+                PythonTypeOpaqueText(str(argument)),
+                PythonTypeRuntimeSymbol(owner.module, (*owner.qualname_parts, argument.name)),
             )
-        else:
-            pending.extend(get_args(argument))
     return rewrite_python_type_expr(expression, lambda item: replacements.get(item, item))
 
 
@@ -1182,38 +1201,29 @@ def _has_annotated_generic_argument(tp: object) -> bool:
 
 
 def _native_generic_field_paths(models: Sequence[type]) -> dict[type, dict[str, Any]]:
-    """Capture only observed native model_fields paths, retaining exact specialization identity."""
+    """Capture only observed native model_fields paths, retaining exact specialization identity.
+
+    A path is what generated code evaluates, so a class is read as that code reads it: by its raw annotations. The
+    first path found stays: a class's own fields are read before those of the classes they name, the fields in their
+    order and each field from its last argument to its first (row legacy-native-path-last-argument-first), and of
+    the classes a class names the one found last is read first.
+    """
     paths: dict[type, dict[str, Any]] = {}
 
     def visit(item: tuple[type, dict[str, Any]]) -> list[tuple[type, dict[str, Any]]]:
         model, path = item
         found: list[tuple[type, dict[str, Any]]] = []
-        model_fields = getattr(model, "model_fields", None)
-        annotations = (
-            {name: info.annotation for name, info in model_fields.items()}
-            if model_fields is not None
-            else getattr(model, "__annotations__", {})
-        )
-        for name, field_annotation in annotations.items():
-            arguments: list[tuple[object, tuple[int, ...]]] = [(field_annotation, ())]
-            while arguments:
-                annotation, indexes = arguments.pop()
-                field_path = {
-                    **path,
-                    "fields": [
-                        *path["fields"],
-                        {"name": name, "arguments": indexes, "pydantic": model_fields is not None},
-                    ],
-                }
-                if _pydantic_generic_metadata(annotation):
-                    paths.setdefault(cast("type", annotation), field_path)
+        pydantic = _pydantic_fields(model) is not None
+        for name, field_annotation in _model_field_annotations(model, raw=True).items():
+            for annotation, indexes in reversed(tuple(_annotation_nodes(field_annotation))):
                 if _plain_class(annotation):
+                    field_path = {
+                        **path,
+                        "fields": [*path["fields"], {"name": name, "arguments": indexes, "pydantic": pydantic}],
+                    }
+                    if _pydantic_generic_metadata(annotation):
+                        paths.setdefault(annotation, field_path)
                     found.append((annotation, field_path))
-                else:
-                    args = get_args(annotation)
-                    if get_origin(annotation) is Annotated:
-                        args = args[:1]
-                    arguments.extend((argument, (*indexes, index)) for index, argument in enumerate(args))
         return found
 
     reach(
@@ -1804,7 +1814,7 @@ def _load_single_model_schema(
                 generic_definitions=definition_types,
                 schema_types=schema_types,
             )
-        elif (isinstance(obj, type) and hasattr(obj, "__required_keys__")) or is_dataclass(obj):
+        elif _typed_fields_family(obj) not in {None, _OutputModelFamily.MSGSPEC}:
             _require_json_schema_input(input_file_type, "a dataclass or TypedDict")
             from pydantic import TypeAdapter  # noqa: PLC0415
 

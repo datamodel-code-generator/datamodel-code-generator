@@ -304,12 +304,16 @@ class ResolvedPresetConfig:
     force_field_constraints: bool
 
     def updates(self) -> dict[str, PresetConfigValue | PythonVersion]:
-        """Return the config updates a preset makes, in the order they are applied."""
+        """Return the config updates a preset makes, in the order they are applied.
+
+        The updates include the options they imply (`IMPLIED_OPTIONS`), returned as on also where the caller set
+        the option off: the later stage resolves it the same way.
+        """
         updates: dict[str, PresetConfigValue | PythonVersion] = {}
         if self.target_python_version is not None:
             updates["target_python_version"] = self.target_python_version
         updates.update((item.field_name, item.applied_value) for item in self.items)
-        updates.update(implied_options({"use_annotated": self.force_field_constraints}))
+        updates.update(implied_options({**updates, "use_annotated": self.force_field_constraints}))
         return updates
 
 
@@ -1327,6 +1331,42 @@ _STANDARD_20261113_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "resource takes, so the models accept and keep what Kubernetes does."
         ),
     ),
+    PresetOptionGroup(
+        title="Inherited property schemas read in MRO order",
+        config=PresetConfig(read_inherited_property_schemas_in_mro_order=True),
+        description=(
+            "Give a property that a model only makes required the schema its allOf parents declare, read in the order "
+            "of the class bases from the allOf members the model's fields are read from, so a model written before "
+            "its parents takes the field it takes when written after them."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Ids with an empty fragment read as their documents",
+        config=PresetConfig(read_ids_with_empty_fragment=True),
+        description=(
+            "Read an absolute-URL $id written with an empty fragment, such as https://example.com/item.json#, as "
+            "the URI without it, so a $ref to it resolves inside the document that declares it instead of loading "
+            "the document at that URL from the network. A relative $id is not matched: a $ref to it reads the file."
+        ),
+    ),
+    PresetOptionGroup(
+        title="YAML 1.1-only numbers read as text",
+        config=PresetConfig(read_yaml_1_1_numbers_as_text=True),
+        description=(
+            "Read an unquoted YAML value with _ or : that YAML 1.1 reads as a number, such as 16:9 or 18_24, as its "
+            "text, as YAML 1.2, which OpenAPI names, and the ryaml reader do, so an enum of aspect ratios keeps the "
+            "values '16:9' and '4:3' instead of the integers 969 and 243."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Implied options read from the merged values",
+        config=PresetConfig(read_implied_options_from_merged_values=True),
+        description=(
+            "Read the options that another option turns on from the arguments and pyproject.toml together, so "
+            "--no-use-annotated over use-annotated = true in pyproject.toml also leaves --field-constraints off where "
+            "pyproject.toml gives it false, as use-annotated = false there does."
+        ),
+    ),
 )
 """The 20261112 groups and the opt-in options added after them."""
 
@@ -1845,7 +1885,10 @@ def resolve_preset_config_updates(
     use_annotated: bool,
     explicit_fields: set[str],
 ) -> ResolvedPresetConfig:
-    """Resolve preset updates while preserving caller-explicit config fields."""
+    """Resolve preset updates, leaving out the items of caller-explicit config fields.
+
+    The updates still carry the options the items imply, as on also where the caller set the option off.
+    """
     preset_name = _coerce_preset_name(preset)
     info = _get_preset_info(preset_name)
     explicit_field_names = set(explicit_fields)

@@ -5,10 +5,11 @@ header, media type, encoding property, link, scheme or message part must be a st
 must give each response once as text; otherwise it is a schema error. Each reader of a document asks here and passes the
 path its error names, which only the reader can locate, as a function called when the error is raised. The walk of
 JSON pointer tokens through a loaded document is here too, with the rows that say how each reader reads one member,
-the fields of an AsyncAPI channel that each hold an operation, the value that wraps an AsyncAPI schema in a format
-(``is_multi_format_schema_object``), the reference a discriminator mapping value names (``discriminator_mapping_ref``),
-the error a read of nested schemas ends in when it exceeds the Python recursion limit (``nesting_limit``) and the size
-limits of a document under --untrusted-input (``refuse_oversized_document``).
+the fields of an AsyncAPI channel that each hold an operation, the value that wraps an AsyncAPI schema in a format and
+the schema and format it holds (``is_multi_format_schema_object``, ``held_schema``), the reference a discriminator
+mapping value names (``discriminator_mapping_ref``), the error a read of nested schemas ends in when it exceeds the
+Python recursion limit (``nesting_limit``) and the size limits of a document under --untrusted-input
+(``refuse_oversized_document``).
 """
 
 from __future__ import annotations
@@ -41,6 +42,7 @@ __all__ = [
     "descend",
     "discriminator_mapping_ref",
     "document_statuses",
+    "held_schema",
     "is_multi_format_schema_object",
     "member",
     "member_key",
@@ -248,8 +250,19 @@ def is_multi_format_schema_object(value: object) -> bool:
     }
 
 
+def held_schema(value: object, inherited: object = None) -> tuple[YamlValue, object] | None:
+    """Return the schema a Multi Format Schema Object holds and the ``schemaFormat`` it is read in, else None.
+
+    The format is the object's own, else the one it inherits: a message's, for its payload.
+    """
+    if not is_multi_format_schema_object(value):
+        return None
+    wrapper = as_mapping(value)
+    return wrapper.get("schema"), wrapper.get("schemaFormat") or inherited
+
+
 def schema_format_media_type(schema_format: str) -> str:
-    """Return the media type an AsyncAPI ``schemaFormat`` names: its text before any parameter, lowercased."""
+    """Return the media type an AsyncAPI ``schemaFormat`` or ``contentType`` names: its essence, lowercased."""
     return schema_format.split(";", maxsplit=1)[0].strip().lower()
 
 

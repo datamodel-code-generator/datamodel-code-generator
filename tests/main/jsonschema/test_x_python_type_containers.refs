@@ -11,3 +11,6 @@ pydantic_v2-option-generic_unique_sets	main/jsonschema/x_python_type_containers/
 pydantic_v2-option-typing	main/jsonschema/x_python_type_containers/x_python_type_containers[pydantic_v2-option-typing].py
 pydantic_v2-option-unique_sets_by_value	main/jsonschema/x_python_type_containers/x_python_type_containers[pydantic_v2-option-unique_sets_by_value].py
 typed_dict-option	main/jsonschema/x_python_type_containers/x_python_type_containers[typed_dict-option].py
+[test_x_python_type_sequence_lookaround_items]
+optional	main/jsonschema/x_python_type_containers/x_python_type_sequence_lookaround_items[optional].py
+union_operator	main/jsonschema/x_python_type_containers/x_python_type_sequence_lookaround_items[union_operator].py

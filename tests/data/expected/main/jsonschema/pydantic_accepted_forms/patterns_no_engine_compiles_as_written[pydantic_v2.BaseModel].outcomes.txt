@@ -1,6 +1,11 @@
+The pattern '^[\\p{L}-_]+$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/BracedPropertyRange is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^[a-\\p{L}]+$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/BracedPropertyRangeEnd is left out: no regex engine of the output compiles it, so the generated code does not check it.
 The pattern '^[\\w- ]*$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/ClassEscapeRange is left out: no regex engine of the output compiles it, so the generated code does not check it.
 The pattern '^[^\\p\\{C\\}]*$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/ControlFreeJava is left out: no regex engine of the output compiles it, so the generated code does not check it.
 The pattern '^\\p{Print}+$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/JavaPrintable is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^[\\pL-_]+$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/OneLetterPropertyRange is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^[a-\\pL]+$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/OneLetterPropertyRangeEnd is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^[a-\\w]+$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/WordRangeEnd is left out: no regex engine of the output compiles it, so the generated code does not check it.
 WordsBeyondTheSizeLimit 'user.name@example (x)': valid
 WordsBeyondTheSizeLimit 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa': string_pattern_mismatch
 WordsBeyondTheSizeLimit value: True
@@ -28,6 +33,27 @@ NoSpacesBeyondTheSizeLimit value: True
 AsciiWordsWithinTheSizeLimit 'abc_1': valid
 AsciiWordsWithinTheSizeLimit 'Déjà': string_pattern_mismatch
 AsciiWordsWithinTheSizeLimit value: True
+OneLetterPropertyDifference 'a-b': valid
+OneLetterPropertyDifference 'a_b': string_pattern_mismatch
+OneLetterPropertyDifference value: True
+HyphenAfterRange 'ab-1 2': valid
+HyphenAfterRange 'a_b': string_pattern_mismatch
+HyphenAfterRange value: True
+NegatedHyphenFirst '!?': valid
+NegatedHyphenFirst 'a-': string_pattern_mismatch
+NegatedHyphenFirst value: True
+DifferenceAfterRange 'abc': valid
+DifferenceAfterRange 'a1': string_pattern_mismatch
+DifferenceAfterRange value: True
+HexEscapeRange 'ab-1_': valid
+HexEscapeRange 'a b': string_pattern_mismatch
+HexEscapeRange value: True
+BracedEscapeRange 'ab-1_': valid
+BracedEscapeRange 'a b': string_pattern_mismatch
+BracedEscapeRange value: True
+OctalEscapeRange '09-a_': valid
+OctalEscapeRange 'a b': string_pattern_mismatch
+OctalEscapeRange value: True
 AtLeastTwoLetters 'ab': valid
 AtLeastTwoLetters 'a': string_pattern_mismatch
 AtLeastTwoLetters value: True

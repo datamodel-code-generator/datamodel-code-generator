@@ -1,0 +1,5 @@
+--generate-server and --generate-client cannot be used together
+exit: ERROR
+written:
+  header.txt
+  pyproject.toml

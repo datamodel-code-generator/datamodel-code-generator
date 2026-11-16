@@ -9,7 +9,13 @@ import pytest
 from pydantic import ValidationError
 
 from tests.conftest import assert_output
-from tests.main.conftest import JSON_SCHEMA_DATA_PATH, _generated_model, _model_json_validator, run_main_and_assert
+from tests.main.conftest import (
+    JSON_SCHEMA_DATA_PATH,
+    OPEN_API_DATA_PATH,
+    _generated_model,
+    _model_json_validator,
+    run_main_and_assert,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -55,10 +61,46 @@ SIZE_AND_DIALECT_PAYLOADS = {
     "AnythingBeyondTheSizeLimit": ("two\nlines", "x" * 20001),
     "NoSpacesBeyondTheSizeLimit": ("abc", "a b"),
     "AsciiWordsWithinTheSizeLimit": ("abc_1", "Déjà"),
+    "OneLetterPropertyDifference": ("a-b", "a_b"),
+    "HyphenAfterRange": ("ab-1 2", "a_b"),
+    "NegatedHyphenFirst": ("!?", "a-"),
+    "DifferenceAfterRange": ("abc", "a1"),
+    "HexEscapeRange": ("ab-1_", "a b"),
+    "BracedEscapeRange": ("ab-1_", "a b"),
+    "OctalEscapeRange": ("09-a_", "a b"),
     "AtLeastTwoLetters": ("ab", "a"),
     "AtLeastWordsBeyondTheSizeLimit": ("a" * 300, "a" * 299),
     "LettersBeyondTheSizeLimit": ("bbb", "bc"),
     "WordWithinBoundaries": ("abc", "a b"),
+}
+
+SIZE_LIMIT_PAYLOADS = {
+    "repetitions": (
+        "UserArn",
+        {
+            "user": "arn:aws:iam::123456789012:user/alice",
+            "role session": "arn:aws:sts::123456789012:assumed-role/admin/alice@example.com",
+            "group": "arn:aws:iam::123456789012:group/admins",
+        },
+    ),
+    "negated_property": ("Description", {"text": "Déjà vu", "empty": ""}),
+    "property_class": (
+        "TranslatedTextString",
+        {"text": "Déjà vu", "20,001 characters": "x" * 20001},
+    ),
+    "word_and_digit_class": ("ResourceName", {"name": "my_resource-01", "slash": "a/b"}),
+    "word_and_space_class": ("Title", {"title": "Déjà vu - Part 2", "slash": "a/b"}),
+    "decimal_number": ("Digits", {"digits": "١٢٣", "letters": "12a"}),
+    "letters": ("Name", {"letters": "Déjà", "digit": "abc1"}),
+    "category_union": ("TagValue", {"tag": "Déjà_vu-2", "punctuation": "!!!"}),
+    "any_character": (
+        "Comment",
+        {"text": "any text", "10,241 characters": "x" * 10241, "two lines": "a\nb"},
+    ),
+    "negated_characters": ("Text", {"text": "a and b", "angle bracket": "a<b", "empty": ""}),
+    "negated_newline": ("Line", {"text": "any text", "two lines": "a\nb"}),
+    "alternation": ("Principal", {"user": "user-alice", "role": "role-admin"}),
+    "counted_group": ("Address", {"address": "first.last@example.com", "no at": "example.com"}),
 }
 
 
@@ -233,10 +275,14 @@ def test_patterns_no_engine_compiles_as_written(
 
     A repetition past Rust's compiled-size limit selects ``python-re``; a ``[`` inside a class that only Rust leaves
     open is escaped, which every engine reads alike. A pattern no engine of the output compiles, a Java property, an
-    escaped brace after ``\\p`` or a class escape as the start of a range, and for msgspec, which only runs Python's
-    ``re``, ``\\p{L}`` and a group that turns Unicode off, is left out with a warning; one both engines read stays as
-    written, and so does one only Rust reads where Rust is the engine. Each valid payload keeps its value and each
-    invalid one fails.
+    escaped brace after ``\\p`` or a class escape or property as the start of a range (``[\\w- ]``, ``[\\p{L}-_]``
+    and ``[\\pL-_]``, #6918) or as its end (``[a-\\w]``, ``[a-\\pL]`` and ``[a-\\p{L}]``, #6922), and for msgspec, which
+    only runs Python's ``re``, ``\\p{L}`` and a group that turns Unicode off, is left out with a warning; one both
+    engines read stays as written, and so does one only Rust reads where Rust is the engine (``[\\pL\\pP--_]`` and
+    ``[a-z0-9--\\p{N}]``, differences). A hyphen after a range or at the start of a class makes no range with the class
+    escape after it (``[a-z0-9-\\s]``, ``[^-\\w]``), and so does an escape of one character that ends a range
+    (``[a-\\x7a-\\w]``, ``[a-\\x{7a}-\\w]`` for Rust and ``[\\60-\\71-\\w]`` for Python's ``re``). Each valid payload
+    keeps its value and each invalid one fails.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_sizes_and_dialects.json",
@@ -255,6 +301,36 @@ def test_patterns_no_engine_compiles_as_written(
                 outcomes += _outcomes(model, {f"{name} {payload!r}": payload for payload in payloads})
                 value = validate(json.dumps(payloads[0]))
                 outcomes += f"{name} value: {getattr(value, 'root', value) == payloads[0]}\n"
+    assert_output(outcomes, name="outcomes")
+
+
+@pytest.mark.parametrize("document", SIZE_LIMIT_PAYLOADS)
+def test_size_limit_of_repetitions_together_and_of_unicode_classes(
+    output_file: Path, recwarn: pytest.WarningsRecorder, document: str
+) -> None:
+    r"""Write a pattern Rust refuses for several repetitions together or a class of a general category (#6877, #6908).
+
+    AWS documents write them: four counted classes of ``\\w`` that pass Rust's compiled-size limit only together
+    select ``python-re``; a counted negated class of ``\\p{C}`` and a counted class of ``\\P{M}`` and ``\\p{M}``,
+    which Python's ``re`` rejects too, are left out with a warning, and the model checks the other keywords only
+    (``maxLength``). A class of ``\\w`` and ``\\d`` counts as ``\\w``, so does one of ``\\w`` and ``\\s``, and
+    ``\\p{Nd}`` counts as ``\\d``. The ASCII ranges and optional copies of a repetition count too (``\\p{L}``, ``.``,
+    ``[^<>]``), and so do a union of general categories, the single copies of a counted group and the branches of an
+    alternation that each repeat a class. Each module once failed at import with ``Compiled regex exceeds size limit``.
+    """
+    name, payloads = SIZE_LIMIT_PAYLOADS[document]
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"pattern_size_{document}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    outcomes = "".join(
+        f"{warning.message}\n" for warning in recwarn if "no regex engine of the output" in str(warning.message)
+    )
+    with _generated_model(output_file, f"pattern_size_{document}", name) as model:
+        outcomes += _outcomes(model, payloads)
     assert_output(outcomes, name="outcomes")
 
 

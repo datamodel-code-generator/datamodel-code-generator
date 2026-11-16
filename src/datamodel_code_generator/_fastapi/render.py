@@ -72,7 +72,7 @@ from datamodel_code_generator._target_render import (
     parameter_plan,
 )
 from datamodel_code_generator._target_templates import roles, templated
-from datamodel_code_generator._target_types import admits_none, opened, without_none
+from datamodel_code_generator._target_types import admits_none, styled_without_none
 from datamodel_code_generator._target_unicode import casefold
 from datamodel_code_generator.model.pydantic_v2._annotated_types import annotated_constraint_metadata
 from datamodel_code_generator.python_literal import stable_repr
@@ -95,6 +95,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._openapi_codec_plan import PydanticBackend
     from datamodel_code_generator._openapi_wire_plan import WirePlan
+    from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
     from datamodel_code_generator._target_contract import GeneratedTypeContractBatch, TypeView
     from datamodel_code_generator._target_module import TypeNames
     from datamodel_code_generator._target_templates import Role, Templated, TemplateOverlay
@@ -1001,7 +1002,8 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             annotated, depends = module.name("typing", "Annotated"), module.name("fastapi", "Depends")
             return Parameter("principal", subscript_text(annotated, ("object", f"{depends}({principal})")))
         if argument.native is not None:
-            return _native(module, argument.name, argument.native)
+            assert argument.parameter is not None
+            return _native(module, argument.name, argument.native, argument.parameter.plan)
         body = spec.body
         assert body is not None
         annotated = module.name("typing", "Annotated")
@@ -1246,7 +1248,7 @@ def _credential(scheme: SchemeSpec) -> str:
     return f"an API key in the `{scheme.parameter}` {place}"
 
 
-def _native(module: Module, name: str, field: NativeField) -> Parameter:
+def _native(module: Module, name: str, field: NativeField, plan: ParameterPlan | None) -> Parameter:
     keywords = [f"alias={stable_repr(field.alias)}"]
     if field.api == "Header":
         keywords.append("convert_underscores=False")
@@ -1255,7 +1257,7 @@ def _native(module: Module, name: str, field: NativeField) -> Parameter:
         parts: tuple[str, ...] = (_none(module, module.annotation(field.type), field.type),)
         default = "None"
     else:
-        base, metadata = module.parts(_written(field.type) if field.default is Default.REQUIRED else field.type)
+        base, metadata = module.parts(styled_without_none(field.type, plan) or field.type)
         parts = (base, *metadata)
         default = _default_value(module, field.default) or ""
     declaration = call_text(module.name("fastapi", field.api), keywords)
@@ -1317,23 +1319,14 @@ def _default_value(module: Module, default: ParameterDefault) -> str | None:
     return None
 
 
-def _written(value: TypeView) -> TypeView:
-    """Return the type of a required parameter written by its style, without None.
-
-    A query string, header, cookie or path has no spelling for None, so such a parameter never receives it.
-    """
-    return without_none(members) if admits_none(members := opened(value)) else value
-
-
 def _parameter_type(module: Module, parameter: ParameterSpec | None) -> str:
     """Return the type a method receives for a parameter: the model's type, or Any without one, with None if absent.
 
-    A required parameter written by its style receives its type without None.
+    A required parameter written by its style receives its type without None (`styled_without_none`).
     """
     assert parameter is not None
     if parameter.type is not None:
-        styled = parameter.required and parameter.plan is not None and parameter.plan.content_media_type is None
-        text = module.static(_written(parameter.type) if styled else parameter.type)
+        text = module.static(styled_without_none(parameter.type, parameter.plan) or parameter.type)
     elif parameter.plan is not None and media_kind(parameter.plan.content_media_type or "text/plain") == "text":
         text = "str"
     else:

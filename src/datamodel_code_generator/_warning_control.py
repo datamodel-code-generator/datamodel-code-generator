@@ -2,9 +2,10 @@
 
 A retry parse, a recommendation trial and a probe of a type run with their warnings ignored (``quiet``), as the run
 the user sees reports them; a parse again after one that failed shows only the warnings no parse before showed
-(``shown_once``); a warning about a schema is shown once per parse for each key it reports (``first_report``); and a
-warning names the frame its ``stacklevel`` counts without the wrapper frames that ``--debug`` puts around the functions
-it traces (``is_tracer_frame``). ``shown_once`` and ``first_report`` record a warning as it is shown, past the filters
+(``shown_once``); a parse that the run may drop shows its warnings only once it is kept (``held``); a warning about a
+schema is shown once per parse for each key it reports (``first_report``); and a warning names the frame its
+``stacklevel`` counts without the wrapper frames that ``--debug`` puts around the functions it traces
+(``is_tracer_frame``). ``shown_once`` and ``first_report`` record a warning as it is shown, past the filters
 (``_showing``), so a block whose warnings the filters ignore, as inside ``quiet``, leaves its keys to a later report.
 A block checks only the warnings its own thread shows, through one ``warnings.showwarning`` hook that the open blocks of
 every thread share, and the last of them to close puts back the hook it replaced, so generations that overlap in
@@ -26,10 +27,12 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Generator
     from types import FrameType
 
-__all__ = ["first_report", "is_tracer_frame", "quiet", "shown_once"]
+__all__ = ["first_report", "held", "is_tracer_frame", "quiet", "shown_once"]
 
 ShownWarning = tuple[str, type[Warning], str, int]
 """The text, category, file and line of a shown warning."""
+_ShowCall = tuple[Warning | str, type[Warning], str, int, TextIO | None, str | None]
+"""The arguments of a ``warnings.showwarning`` call: a warning's message, category, file, line, stream and source."""
 
 _KeyT = TypeVar("_KeyT")
 _TRACER_MODULE_PREFIX: Final = "pysnooper"
@@ -54,6 +57,28 @@ def shown_once(seen: set[ShownWarning]) -> Generator[None, None, None]:
 
 
 @contextmanager
+def held() -> Generator[Callable[[], None], None, None]:
+    """Hold the warnings the block shows, and yield the function that shows them, once called after the block.
+
+    The blocks open inside it check a warning as the block shows it, the blocks open around it as the function shows
+    it, so a block whose work is dropped, its function never called, shows nothing and leaves those around it as they
+    were.
+    """
+    calls: list[_ShowCall] = []
+
+    def hold(call: _ShowCall) -> bool:
+        calls.append(call)
+        return False
+
+    def show() -> None:
+        for call in calls:
+            warnings.showwarning(*call)
+
+    with _showing(hold):
+        yield show
+
+
+@contextmanager
 def first_report(seen: set[_KeyT], key: _KeyT) -> Generator[bool, None, None]:
     """Yield whether ``key`` is unreported in ``seen``, recording it there once the block shows a warning.
 
@@ -64,7 +89,7 @@ def first_report(seen: set[_KeyT], key: _KeyT) -> Generator[bool, None, None]:
         yield False
         return
 
-    def record(_shown: ShownWarning) -> bool:
+    def record(_call: _ShowCall) -> bool:
         seen.add(key)
         return True
 
@@ -86,13 +111,13 @@ class _SharedHook:
 
 
 _HOOK: Final = _SharedHook()
-_CHECKS: Final[ContextVar[tuple[Callable[[ShownWarning], bool], ...]]] = ContextVar("shown_warning_checks", default=())
+_CHECKS: Final[ContextVar[tuple[Callable[[_ShowCall], bool], ...]]] = ContextVar("shown_warning_checks", default=())
 """The checks of the blocks open in this thread, the outermost first."""
 
 
 @contextmanager
-def _showing(show: Callable[[ShownWarning], bool]) -> Generator[None, None, None]:
-    """Show a warning the block emits only where ``show`` returns True for its text, category and location.
+def _showing(show: Callable[[_ShowCall], bool]) -> Generator[None, None, None]:
+    """Show a warning the block emits only where ``show`` returns True for the call that shows it.
 
     The filters apply first, as to any warning: ``show`` sees only the warnings they leave, the ones shown, and of
     those only the ones its own thread shows (``_show_kept``).
@@ -125,13 +150,15 @@ def _show_kept(  # noqa: PLR0913, PLR0917
 
     A thread with no block open shows each warning as the hook replaced does.
     """
-    if all(show((str(message), category, filename, lineno)) for show in reversed(_CHECKS.get())):
-        _HOOK.replaced(message, category, filename, lineno, file, line)
+    call = (message, category, filename, lineno, file, line)
+    if all(show(call) for show in reversed(_CHECKS.get())):
+        _HOOK.replaced(*call)
 
 
-def _first_record(seen: set[_KeyT], key: _KeyT) -> bool:
-    """Return whether ``key`` is recorded for the first time, recording it in ``seen``."""
-    if key in seen:
+def _first_record(seen: set[ShownWarning], call: _ShowCall) -> bool:
+    """Return whether the warning ``call`` shows is recorded for the first time, recording it in ``seen``."""
+    message, category, filename, lineno, _, _ = call
+    if (key := (str(message), category, filename, lineno)) in seen:
         return False
     seen.add(key)
     return True

@@ -1,0 +1,37 @@
+openapi: 3.1.0
+info: {title: tag property named like its Enum in a union used as array items, version: "1"}
+paths: {}
+components:
+  schemas:
+    Kind:
+      type: string
+      enum: [c, z]
+    Base:
+      type: object
+      required: [Kind]
+      properties:
+        Kind: {$ref: '#/components/schemas/Kind'}
+    C:
+      allOf:
+        - $ref: '#/components/schemas/Base'
+        - type: object
+          properties:
+            one: {type: integer}
+    Z:
+      allOf:
+        - $ref: '#/components/schemas/Base'
+        - type: object
+          properties:
+            two: {type: integer}
+    Pet:
+      oneOf:
+        - $ref: '#/components/schemas/C'
+        - $ref: '#/components/schemas/Z'
+      discriminator:
+        propertyName: Kind
+    Holder:
+      type: object
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/Pet'}

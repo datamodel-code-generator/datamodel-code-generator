@@ -1,0 +1,4 @@
+Error: --target-python-version: The fastapi target needs a target Python version of 3.11 or later, which the preset standard-py310-20260619 sets to 3.10: use a preset for Python 3.11 or later
+exit: ERROR
+written:
+  pets.yaml

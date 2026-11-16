@@ -184,6 +184,33 @@ def test_diff_against_reports_changed_single_file_without_writing_virtual_output
     )
 
 
+def test_diff_against_reports_type_overrides_keys_that_match_nothing_of_the_current_input(
+    output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Report once the --type-overrides keys that match nothing of the current input, whatever the baseline has."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPENAPI_INPUT_DIFF_PATH / "model_name_map_new.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--diff-against",
+                str(OPENAPI_INPUT_DIFF_PATH / "model_name_map_old.yaml"),
+                "--disable-timestamp",
+                "--type-overrides",
+                json.dumps({"Owner.name": "builtins.str", "PetOwner.name": "builtins.str"}),
+            ],
+            expected_exit=Exit.DIFF,
+            output_should_not_exist=True,
+            capsys=capsys,
+            assert_no_stderr=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning), name="warnings"
+    )
+
+
 def test_diff_against_reports_model_name_map_keys_that_match_no_model_of_the_current_input(
     output_file: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
