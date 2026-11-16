@@ -39,7 +39,7 @@ from datamodel_code_generator._json_schema import (
     schema_positions,
 )
 from datamodel_code_generator._mro import linearize, sort_descendants_first
-from datamodel_code_generator._records import mutable_record
+from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
@@ -284,6 +284,21 @@ class _BaseList:
     linearized: tuple[str, ...] | None = None
     required_names: frozenset[str] | None = None
     property_map: Mapping[str, tuple[JsonSchemaObject | bool, str]] | None = None
+
+
+@final
+@record(eq=False)
+class _OverrideFacts:
+    """A property that overrides an inherited schema property, read once by ``get_deferred_inherited_property_names``.
+
+    ``child`` is the property with its constraint-only compositions flattened
+    (``normalize_inherited_constraint_compositions``) and ``partial`` whether it only narrows the inherited property
+    (``is_partial_inherited_property``, the inherited references resolved); ``merge_properties_with_parent_constraints``
+    reads both.
+    """
+
+    child: JsonSchemaObject
+    partial: bool
 
 
 def _reads_schemas_alone(parser: InheritedSchemasHost) -> bool:
@@ -1241,25 +1256,24 @@ def override_row(parser: InheritedSchemasHost, parent: dict[str, Any], child: di
 
 
 def inherited_override_schema(
-    parser: InheritedSchemasHost, parent: JsonSchemaObject, child: JsonSchemaObject, parent_ref: str, where: str
+    parser: InheritedSchemasHost, parent: JsonSchemaObject, override: _OverrideFacts, parent_ref: str, where: str
 ) -> JsonSchemaObject:
-    """Return the schema of a property ``child`` that overrides the inherited property ``parent``.
+    """Return the schema of a property ``child`` (``override``) that overrides the inherited property ``parent``.
 
     The row of ``--allof-merge-mode`` decides: ``none`` writes the child's constraints on the inherited type shape
-    (``merge_inherited_type_shape_dict``) where the child only narrows it, and keeps the child otherwise; ``all``
-    and ``constraints`` give the intersection of both (``intersect_keywords``) over their presentation row
-    (``parser/_intersection.py:inherited_override_row``). A child without constraints that only narrows the inherited
-    property is written on the type shape too, unless ``legacy-type-narrowing-override-deferred`` is kept, where it
-    is the copy of the inherited field and none reaches here (``get_deferred_inherited_property_names``).
+    (``merge_inherited_type_shape_dict``) where the child only narrows it (``override.partial``), and keeps the child
+    otherwise; ``all`` and ``constraints`` give the intersection of both (``intersect_keywords``) over their
+    presentation row (``parser/_intersection.py:inherited_override_row``). A child without constraints that only
+    narrows the inherited property is written on the type shape too, unless ``legacy-type-narrowing-override-deferred``
+    is kept, where it is the copy of the inherited field and none reaches here
+    (``get_deferred_inherited_property_names``).
     """
+    child = override.child
     if parser.allof_merge_mode == AllOfMergeMode.NoMerge:
-        if (
+        if not override.partial or (
             "legacy-type-narrowing-override-deferred" in parser._legacy_intersection  # noqa: SLF001
             and not has_inherited_constraints(parser, child)
         ):
-            return child
-        effective_parent, effective_ref, active = resolve_inherited_parent_property(parser, parent, parent_ref)
-        if not is_partial_inherited_property(parser, child, effective_parent, (effective_ref, active)):
             return child
         child_dict = child.model_dump(exclude_unset=True, by_alias=True)
         merged_dict = merge_inherited_type_shape_dict(
@@ -1350,17 +1364,17 @@ def get_deferred_inherited_property_names(
     parser: InheritedSchemasHost,
     source_obj: JsonSchemaObject,
     parent_properties: Mapping[str, tuple[JsonSchemaObject | bool, str]],
-) -> frozenset[str]:
-    """Find partial properties that need canonical generated-type resolution.
+) -> tuple[frozenset[str], dict[str, _OverrideFacts]]:
+    """Find partial properties that need canonical generated-type resolution, and the facts of each override.
 
     A partial override without constraints is resolved as a copy of the inherited field, unless
     ``legacy-type-narrowing-override-deferred`` is dropped and the copy does not carry it (``copy_carries_override``):
-    such an override is the intersection with the inherited property, as a constrained one is.
+    such an override is the intersection with the inherited property, as a constrained one is. The facts
+    (``_OverrideFacts``) are those of each schema property whose inherited property is a schema, by name.
     """
-    if not source_obj.properties:
-        return frozenset()
     deferred_names: set[str] = set()
-    for field_name, child_property in source_obj.properties.items():
+    overrides: dict[str, _OverrideFacts] = {}
+    for field_name, child_property in (source_obj.properties or {}).items():
         if not (
             (inherited_property := parent_properties.get(field_name))
             and isinstance(parent_property := inherited_property[0], JsonSchemaObject)
@@ -1376,14 +1390,11 @@ def get_deferred_inherited_property_names(
                     parent_property,
                     inherited_property[1],
                 )
-                if not is_partial_inherited_property(
-                    parser,
+                overrides[field_name] = override = _OverrideFacts(
                     normalized_child,
-                    effective_parent,
-                    (effective_ref, active),
-                ):
-                    continue
-                if has_inherited_constraints(parser, normalized_child):
+                    is_partial_inherited_property(parser, normalized_child, effective_parent, (effective_ref, active)),
+                )
+                if not override.partial or has_inherited_constraints(parser, normalized_child):
                     continue
                 if "legacy-type-narrowing-override-deferred" not in parser._legacy_intersection and not (  # noqa: SLF001
                     copy_carries_override(parser, normalized_child, effective_parent, (effective_ref, active))
@@ -1392,7 +1403,7 @@ def get_deferred_inherited_property_names(
                 deferred_names.add(field_name)
             case _:
                 continue
-    return frozenset(deferred_names)
+    return frozenset(deferred_names), overrides
 
 
 def mark_partial_inherited_fields(
@@ -1480,8 +1491,13 @@ def merge_properties_with_parent_constraints(
     child_obj: JsonSchemaObject,
     parent_properties: Mapping[str, tuple[JsonSchemaObject | bool, str]],
     deferred_property_names: frozenset[str],
+    overrides: Mapping[str, _OverrideFacts],
 ) -> JsonSchemaObject:
-    """Merge child properties with parent property constraints for allOf inheritance."""
+    """Merge child properties with parent property constraints for allOf inheritance.
+
+    ``overrides`` holds the facts of each property whose inherited property is a schema
+    (``get_deferred_inherited_property_names``).
+    """
     if not child_obj.properties or not parent_properties:
         return child_obj
 
@@ -1497,7 +1513,10 @@ def merge_properties_with_parent_constraints(
             continue
 
         parent_prop, parent_ref = inherited_property
-        effective_child = normalize_inherited_constraint_compositions(parser, child_prop)
+        override = overrides.get(prop_name)
+        effective_child = (
+            override.child if override else normalize_inherited_constraint_compositions(parser, child_prop)
+        )
         if effective_child is not child_prop:
             merged_changed = True
         if not isinstance(parent_prop, JsonSchemaObject):
@@ -1520,7 +1539,7 @@ def merge_properties_with_parent_constraints(
         merged_property = inherited_override_schema(
             parser,
             parent_prop,
-            effective_child,
+            overrides[prop_name],
             parent_ref,
             named_location(child_prop.schema_location, f"property {stable_repr(prop_name)}"),
         )
@@ -2092,8 +2111,8 @@ def parse_fields_beside_parents(
     A property that only narrows its parent's is parsed without the nested types the parent's type replaces
     and marked for that late resolution.
     """
-    deferred_names = get_deferred_inherited_property_names(parser, source, parent_properties)
-    merged = merge_properties_with_parent_constraints(parser, source, parent_properties, deferred_names)
+    deferred_names, overrides = get_deferred_inherited_property_names(parser, source, parent_properties)
+    merged = merge_properties_with_parent_constraints(parser, source, parent_properties, deferred_names, overrides)
     fields = parser.parse_object_fields(
         get_deferred_inherited_parse_object(parser, merged, deferred_names),
         path,
