@@ -45,8 +45,8 @@ def run_target(  # noqa: PLR0913, PLR0917
     batch: list[tuple[str, PlannedTarget, str | None]] | None = None,
     lock: Any = None,
     job: str = "",
-    implied: dict[str, Any] | None = None,
-    announced: dict[str, Any] | None = None,
+    *,
+    announce: bool = False,
 ) -> int:
     """Generate or check the selected target from the finalized CLI config, reporting errors like model runs.
 
@@ -56,13 +56,13 @@ def run_target(  # noqa: PLR0913, PLR0917
     later jobs are refused the server packages it plans as when they write them. A single run publishes its target as
     a batch of one, so a failed publication is reported as for the model runs that publish through the same journal.
 
-    The config already holds the settings the target `implied`, which no option, key, or preset set; the JSON payloads
-    name them under `target.implied`. After a run that succeeds, stderr shows how to set the `announced` ones: the
-    command as run with their options appended, or the lines of the `pyproject.toml` table that held the settings.
+    The config already holds the settings the target implied, which no option, key, or preset set (`_implied`); the
+    JSON payloads name them under `target.implied`. After a run that succeeds and is to `announce` them, stderr shows
+    how to set them: the command as run with their options appended, or the lines of the `pyproject.toml` table that
+    held the settings.
     """
     from datamodel_code_generator._api_generation import model_requirement, python_problem  # noqa: PLC0415
 
-    implied = implied or {}
     kind, selector = _target_side(config)
     if config.preset is not None and (problem := python_problem(config, kind)) is not None:
         print(f"Error: --target-python-version: {problem}", file=sys.stderr)  # noqa: T201
@@ -71,7 +71,7 @@ def run_target(  # noqa: PLR0913, PLR0917
         print(f"Error: {requirement}", file=sys.stderr)  # noqa: T201
         return _ExitCode.ERROR
     try:
-        return _run(args, namespace, config, pyproject_path, batch, lock, job, implied, announced or {})
+        return _run(args, namespace, config, pyproject_path, batch, lock, job, announce=announce)
     except Exception as error:  # noqa: BLE001
         from datamodel_code_generator._target_selection import keyed  # noqa: PLC0415
 
@@ -84,18 +84,22 @@ def _print_notice(notice: str | None) -> None:
         print(notice, file=sys.stderr)  # noqa: T201
 
 
-def _implied_notice(  # noqa: PLR0913, PLR0917
-    implied: dict[str, Any], args: Sequence[str], config: Any, namespace: Namespace, pyproject: Path | None, job: str
+def _implied(config: Any) -> dict[str, Any]:
+    """Return the settings the target of a run set, with the values the config holds: the record's `implied-target`."""
+    return {name: json_ready(getattr(config, name)) for name in config._run_options.staged_by("implied-target")}  # noqa: SLF001
+
+
+def _implied_notice(  # noqa: PLR0913
+    args: Sequence[str], config: Any, namespace: Namespace, pyproject: Path | None, job: str, *, announce: bool
 ) -> str | None:
     """Return how to set the implied settings: the command with their options, or the lines of the table to add.
 
     A job adds them to its table, and a run whose target the command line selected adds them to its command. Any
     other run that read `pyproject.toml` adds them to the table it read, its profile's when it selected one. A run
-    that implied nothing has no notice.
+    that implied nothing, or that does not `announce` them, has no notice.
     """
-    if not implied:
+    if not announce or not (values := _implied(config)):
         return None
-    values = {name: json_ready(value) for name, value in implied.items()}
     lead = f"{_target_side(config)[1]} set the options it needs that you left unset; to set them yourself"
     selected = not config._run_options.arguments.keys().isdisjoint(("generate_server", "generate_client"))  # noqa: SLF001
     if pyproject is not None and (job or not selected):
@@ -124,8 +128,8 @@ def _run(  # noqa: PLR0913, PLR0917
     batch: list[tuple[str, PlannedTarget, str | None]] | None,
     lock: Any,
     job: str,
-    implied: dict[str, Any],
-    announced: dict[str, Any],
+    *,
+    announce: bool,
 ) -> int:
     from datamodel_code_generator.__main__ import (  # noqa: PLC0415
         _publish_or_error,  # pyright: ignore[reportPrivateUsage]
@@ -151,8 +155,8 @@ def _run(  # noqa: PLR0913, PLR0917
     if (source := config.url or config.input) is None:
         prepare_target("", effective, generator)
         source = sys.stdin.read()
-    implied_conflict(config, implied, generator)
-    notice = _implied_notice(announced, args, config, namespace, pyproject_path, job)
+    implied_conflict(config, generator)
+    notice = _implied_notice(args, config, namespace, pyproject_path, job, announce=announce)
     if config.check or config.diff_against is not None:
         if config.check:
             kind = "check"
@@ -183,7 +187,7 @@ def _run(  # noqa: PLR0913, PLR0917
             comparison,
             namespace.output_format,
             kind=kind,
-            target=_target_payload(namespace.output_format, target, project, implied),
+            target=_target_payload(namespace.output_format, target, project, config),
         )
         _print_notice(notice)
         return _ExitCode.DIFF if comparison.differences else _ExitCode.OK
@@ -195,11 +199,11 @@ def _run(  # noqa: PLR0913, PLR0917
         )
         _join(batch, job, planned, _next_step(target, planned.project, notice))
         if json_output:
-            print(_target_json(planned.project, config.output, config.encoding, target, implied))  # noqa: T201
+            print(_target_json(planned.project, config, target))  # noqa: T201
         return _ExitCode.OK
     planned = plan_target(source, model_config=effective, config=target, generator=generator, publish=True)
     project = planned.project
-    output = _target_json(project, config.output, config.encoding, target, implied) if json_output else None
+    output = _target_json(project, config, target) if json_output else None
     (staged,) = _stage_job_plans((_single_job_plan(config, pyproject_path),))
     cast("list[Any]", staged.targets).append((job, planned, _next_step(target, project, notice)))
     if (failure := _publish_or_error((staged,))) is not None:
@@ -245,7 +249,7 @@ def _payload_base(project: GeneratedProject, models: Path) -> Path:
 
 
 def _target_payload(
-    output_format: str | None, target: TargetConfig, project: GeneratedProject, implied: dict[str, Any]
+    output_format: str | None, target: TargetConfig, project: GeneratedProject, config: Any
 ) -> TargetPayload | None:
     """Name the generated package and the requirements it needs at run time, as the uv add notice does.
 
@@ -256,30 +260,28 @@ def _target_payload(
         return None
     from datamodel_code_generator._structured_output import TargetPayload  # noqa: PLC0415
 
-    return TargetPayload(**_payload_fields(target, project, implied))
+    return TargetPayload(**_payload_fields(target, project, config))
 
 
-def _payload_fields(target: TargetConfig, project: GeneratedProject, implied: dict[str, Any]) -> dict[str, Any]:
+def _payload_fields(target: TargetConfig, project: GeneratedProject, config: Any) -> dict[str, Any]:
     """Return what both JSON reports record of a target: its package, its runtime dependencies and what it implied."""
     return {
         "package": target.package,
         "dependencies": list(project.dependencies),
-        "implied": _implied_payload(implied),
+        "implied": _implied_payload(config),
     }
 
 
-def _implied_payload(implied: dict[str, Any]) -> ImpliedPayload | None:
+def _implied_payload(config: Any) -> ImpliedPayload | None:
     """Return the settings the target implied as the payload records them, or None when it implied none."""
-    if not implied:
+    if not (implied := _implied(config)):
         return None
     from datamodel_code_generator._structured_output import ImpliedPayload  # noqa: PLC0415
 
-    return ImpliedPayload(**{name: json_ready(value) for name, value in implied.items()})
+    return ImpliedPayload(**implied)
 
 
-def _target_json(
-    project: GeneratedProject, models: Path, encoding: str, target: TargetConfig, implied: dict[str, Any]
-) -> str:
+def _target_json(project: GeneratedProject, config: Any, target: TargetConfig) -> str:
     """Emit rendered model and target text, read like their published files, with the existing generation payload.
 
     The files include the initializer of a `services` package a server takes over, whose docstring the run rewrites.
@@ -295,6 +297,7 @@ def _target_json(
         generation_output_json,
     )
 
+    models, encoding = config.output, config.encoding
     taken = _taken_over(project)
     artifacts = (
         artifact
@@ -317,7 +320,7 @@ def _target_json(
             for item in steps.implementations
         ]
     payload = GeneratedTargetPayload(
-        **_payload_fields(target, project, implied),
+        **_payload_fields(target, project, config),
         readme=shown(steps.readme, base).as_posix(),
         entrypoint=entrypoint,
         implementation=implementation,

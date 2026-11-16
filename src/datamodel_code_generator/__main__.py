@@ -375,11 +375,6 @@ def _imply_target_settings(config: Config) -> Config:
     return _run_cli_option_stages(config, config._run_options, ("implied-target",))  # noqa: SLF001
 
 
-def _implied_target_settings(config: Config) -> dict[str, Any]:
-    """Return the settings the target of a config set, with their values."""
-    return {name: getattr(config, name) for name in config._run_options.staged_by("implied-target")}  # noqa: SLF001
-
-
 class JobPlan(NamedTuple):
     """An isolated configuration ready for one named batch job."""
 
@@ -1795,19 +1790,19 @@ def _run_target(  # noqa: PLR0913, PLR0917
     batch: list[Any] | None = None,
     lock: Any = None,
     job: str = "",
-    implied: dict[str, Any] | None = None,
-    announced: dict[str, Any] | None = None,
+    *,
+    announce: bool = False,
 ) -> Exit:
     """Hand the selected generation target to its runner, which reports every diagnostic.
 
     A batch `job` plans the target into `batch` for publication with the batch, recording into the batch's lock.
-    `implied` holds the settings the target set, which the config already has, and `announced` those its notice names:
-    a watch names them on its first run only.
+    `announce` says whether the run's notice names the settings the target set: a watch names them on its first run
+    only.
     """
     from datamodel_code_generator._target_cli import run_target  # noqa: PLC0415
 
     hint = _collect_naming_hint(config, namespace)
-    result = Exit(run_target(args, namespace, config, pyproject_path, batch, lock, job, implied or {}, announced or {}))
+    result = Exit(run_target(args, namespace, config, pyproject_path, batch, lock, job, announce=announce))
     if result is Exit.OK:
         _warn_naming_hint(hint)
     return result
@@ -2636,10 +2631,9 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
 
     if _selected_target(config) is not None:
         config = _imply_target_settings(config)
-        implied = _implied_target_settings(config)
         if (refusal := _apply_model_run_options(config)) is not None:
             return refusal
-        announced = implied if start_watch or not config.watch else {}
+        announce = start_watch or not config.watch
         lock = None
         if _batch_targets is None:
             try:
@@ -2653,13 +2647,13 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             lock = job_locks.collector_for(cast("_RemoteLockPlan", _bound_remote_lock_plan))
         if not config.watch or watch_dependencies is None:
             return _run_target(
-                args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job, implied, announced
+                args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job, announce=announce
             )
         # A batch job never watches (watch is an outer setting), so this run owns its lock plan and its intent.
         _, remote_lock_intent = _watch_remote_lock_setup(config, pyproject_path, watch_dependencies, None)
         with watch_dependencies.generation() as generation:
             result = _run_target(
-                args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job, implied, announced
+                args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job, announce=announce
             )
             generation.failed = result is not Exit.OK
         if _settle_remote_lock_intent(watch_dependencies, remote_lock_intent, result) is not Exit.OK or not start_watch:
