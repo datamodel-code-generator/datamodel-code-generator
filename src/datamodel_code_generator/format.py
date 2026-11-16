@@ -44,6 +44,7 @@ def _custom_formatter_cwd(path: Path | None) -> Generator[None, None, None]:
     finally:
         os.chdir(previous)
 
+
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Sequence
     from types import CodeType
