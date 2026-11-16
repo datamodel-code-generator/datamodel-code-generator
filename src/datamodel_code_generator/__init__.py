@@ -129,6 +129,7 @@ if TYPE_CHECKING:
     from collections.abc import Collection
     from collections.abc import Set as AbstractSet
     from contextlib import AbstractContextManager
+    from enum import Enum
     from types import FunctionType
 
     from datamodel_code_generator._format_types import (
@@ -144,16 +145,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._publication import PublicationAnchor
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._run_record import RunOptions
-    from datamodel_code_generator._types import (
-        AsyncAPIParserConfigDict,
-        AvroParserConfigDict,
-        GraphQLParserConfigDict,
-        JSONSchemaParserConfigDict,
-        OpenAPIParserConfigDict,
-        ParserConfigDict,
-        ProtobufParserConfigDict,
-        XMLSchemaParserConfigDict,
-    )
+    from datamodel_code_generator._types import ParserConfigDict
     from datamodel_code_generator._types.generate_config_dict import GenerateConfigDict
     from datamodel_code_generator._user_keys import ModelNameKeys, ModelNameRecord
     from datamodel_code_generator.base_config import BaseGenerateConfig
@@ -232,14 +224,6 @@ for _public_source_export in (
 del _public_source_export
 
 if TYPE_CHECKING:
-    _SchemaVersion = TypeVar(
-        "_SchemaVersion",
-        JsonSchemaVersion,
-        OpenAPIVersion,
-        AsyncAPIVersion,
-        XMLSchemaVersion,
-        ProtobufVersion,
-    )
     _GenerationInput: TypeAlias = Path | str | ParseResult | Mapping[str, Any] | list[Any]
     _OptionStage: TypeAlias = Literal["preset", "implied-target", "sentinel", "implied-model"]
     _ParserResults: TypeAlias = str | dict[tuple[str, ...], Result]
@@ -465,13 +449,80 @@ def is_schema(data: dict) -> bool:
     return isinstance(data.get("properties"), dict)
 
 
-RAW_DATA_TYPES: list[InputFileType] = [
-    InputFileType.Json,
-    InputFileType.Yaml,
-    InputFileType.Dict,
-    InputFileType.CSV,
-    InputFileType.GraphQL,
-]
+class _InputTypeRow(NamedTuple):
+    """What generation does with one input type (`_INPUT_TYPES`)."""
+
+    parser: str
+    """The parser class, as ``module.Class`` of ``datamodel_code_generator.parser``."""
+    schema_version: tuple[str, type[Enum], str] | str = ("jsonschema_version", JsonSchemaVersion, "JSON Schema")
+    """The parser keyword of ``--schema-version`` with its enum and the label of its error, or why it is refused."""
+    datetime_class: str | None = "AwareDatetime"
+    """The ``DatetimeClassType`` value without ``--output-datetime-class``; None leaves it unset."""
+    dict_refusal: str | None = None
+    """Why ``generate()`` refuses a mapping input of the type; None accepts it."""
+    genson: bool = False
+    """Raw data whose JSON Schema Genson infers."""
+    graphql: bool = False
+    """GraphQL SDL: the GraphQL models, with their scalar and union types, and raw text."""
+    api_parser: str | None = None
+    """The parser class of the ``api`` OpenAPI scope."""
+    skips_root_model: bool = False
+    """Every run skips root models, after the shared options."""
+
+
+def _text_only_dict_refusal(name: str) -> str:
+    return (
+        f"Dict input is not supported for {name}. Use InputFileType.Dict to generate schema from dict data, "
+        f"or provide text/file input for {name} format."
+    )
+
+
+_JSON_SCHEMA_ROW = _InputTypeRow("jsonschema.JsonSchemaParser")
+_INPUT_TYPES: Final[dict[InputFileType, _InputTypeRow]] = {
+    InputFileType.Auto: _JSON_SCHEMA_ROW._replace(
+        dict_refusal=(
+            "input_file_type=Auto is not supported for dict input. "
+            "Please specify input_file_type explicitly (e.g., InputFileType.JsonSchema)."
+        )
+    ),
+    InputFileType.OpenAPI: _InputTypeRow(
+        "openapi.OpenAPIParser",
+        ("openapi_version", OpenAPIVersion, "OpenAPI"),
+        api_parser="openapi_scope.ApiOpenAPIParser",
+    ),
+    InputFileType.AsyncAPI: _InputTypeRow("asyncapi.AsyncAPIParser", ("asyncapi_version", AsyncAPIVersion, "AsyncAPI")),
+    InputFileType.JsonSchema: _JSON_SCHEMA_ROW,
+    InputFileType.MCPTools: _JSON_SCHEMA_ROW,
+    InputFileType.XMLSchema: _InputTypeRow(
+        "xmlschema.XMLSchemaParser",
+        ("xmlschema_version", XMLSchemaVersion, "XML Schema"),
+        datetime_class=None,
+        dict_refusal="Dict input is not supported for xmlschema. Provide XSD text, file path, or URL input.",
+    ),
+    InputFileType.Protobuf: _InputTypeRow(
+        "protobuf.ProtobufParser",
+        ("protobuf_version", ProtobufVersion, "Protobuf"),
+        dict_refusal="Dict input is not supported for protobuf. Provide .proto text, file path, or URL input.",
+        skips_root_model=True,
+    ),
+    InputFileType.Avro: _InputTypeRow(
+        "avro.AvroParser",
+        "--schema-version is not supported for avro because Avro schemas do not carry a version marker",
+    ),
+    InputFileType.Json: _JSON_SCHEMA_ROW._replace(dict_refusal=_text_only_dict_refusal("json"), genson=True),
+    InputFileType.Yaml: _JSON_SCHEMA_ROW._replace(dict_refusal=_text_only_dict_refusal("yaml"), genson=True),
+    InputFileType.Dict: _JSON_SCHEMA_ROW._replace(genson=True),
+    InputFileType.CSV: _JSON_SCHEMA_ROW._replace(dict_refusal=_text_only_dict_refusal("csv"), genson=True),
+    InputFileType.GraphQL: _InputTypeRow(
+        "graphql.GraphQLParser",
+        "--schema-version is not supported for graphql",
+        datetime_class="datetime",
+        dict_refusal="Dict input is not supported for GraphQL. GraphQL requires text input (SDL format).",
+        graphql=True,
+    ),
+}
+
+RAW_DATA_TYPES: list[InputFileType] = [kind for kind, row in _INPUT_TYPES.items() if row.genson or row.graphql]
 
 
 class Error(Exception):
@@ -1345,45 +1396,25 @@ def _create_typed_parser_config(
     return _configure_parser_config_context(parser_config, values, generate_config)
 
 
-_SchemaVersions: TypeAlias = tuple[
-    JsonSchemaVersion | None,
-    OpenAPIVersion | None,
-    AsyncAPIVersion | None,
-    XMLSchemaVersion | None,
-    ProtobufVersion | None,
-]
+def _resolve_schema_version(input_file_type: InputFileType, schema_version: str | None) -> dict[str, Enum | None]:
+    """Return the parser keyword of the type's ``--schema-version`` with the version, None where it is not given.
 
-
-def _parse_schema_version(enum_type: type[_SchemaVersion], schema_version: str, label: str) -> _SchemaVersion:
+    A type without the keyword takes none, and refuses a version that is given.
+    """
+    given = schema_version is not None and schema_version not in {"", "auto"}
+    if isinstance(version := _INPUT_TYPES[input_file_type].schema_version, str):
+        if given:
+            raise Error(version)
+        return {}
+    keyword, enum_type, label = version
+    if not given:
+        return {keyword: None}
     try:
-        return enum_type(schema_version)
+        return {keyword: enum_type(schema_version)}
     except ValueError:
         valid = [v.value for v in enum_type]
         msg = f"Invalid {label} version: {schema_version}. Valid values: {valid}"
         raise Error(msg) from None
-
-
-def _resolve_schema_versions(input_file_type: InputFileType, schema_version: str | None) -> _SchemaVersions:
-    if not schema_version or schema_version == "auto":
-        return None, None, None, None, None
-
-    match input_file_type:
-        case InputFileType.Avro:
-            msg = "--schema-version is not supported for avro because Avro schemas do not carry a version marker"
-            raise Error(msg)
-        case InputFileType.GraphQL:
-            msg = f"--schema-version is not supported for {input_file_type.value}"
-            raise Error(msg)
-        case InputFileType.OpenAPI:
-            return None, _parse_schema_version(OpenAPIVersion, schema_version, "OpenAPI"), None, None, None
-        case InputFileType.AsyncAPI:
-            return None, None, _parse_schema_version(AsyncAPIVersion, schema_version, "AsyncAPI"), None, None
-        case InputFileType.XMLSchema:
-            return None, None, None, _parse_schema_version(XMLSchemaVersion, schema_version, "XML Schema"), None
-        case InputFileType.Protobuf:
-            return None, None, None, None, _parse_schema_version(ProtobufVersion, schema_version, "Protobuf")
-        case _:
-            return _parse_schema_version(JsonSchemaVersion, schema_version, "JSON Schema"), None, None, None, None
 
 
 def _warn_genson_optional() -> None:
@@ -1400,7 +1431,7 @@ def _normalize_raw_input(  # noqa: PLR0912
     config: GenerateConfig,
     read_once_data: bytes | None,
 ) -> str | None:
-    if input_file_type not in RAW_DATA_TYPES or input_file_type == InputFileType.GraphQL:
+    if not _INPUT_TYPES[input_file_type].genson:
         return input_text
 
     import json  # noqa: PLC0415
@@ -1502,30 +1533,8 @@ def _validate_mapping_input(
     input_file_type: InputFileType,
 ) -> None:
     """Reject mapping inputs for formats that require text or a file."""
-    if not isinstance(input_, Mapping):
-        return
-
-    match input_file_type:
-        case InputFileType.Auto:
-            msg = (
-                "input_file_type=Auto is not supported for dict input. "
-                "Please specify input_file_type explicitly (e.g., InputFileType.JsonSchema)."
-            )
-        case InputFileType.GraphQL:
-            msg = "Dict input is not supported for GraphQL. GraphQL requires text input (SDL format)."
-        case InputFileType.XMLSchema:
-            msg = "Dict input is not supported for xmlschema. Provide XSD text, file path, or URL input."
-        case InputFileType.Protobuf:
-            msg = "Dict input is not supported for protobuf. Provide .proto text, file path, or URL input."
-        case InputFileType.Json | InputFileType.Yaml | InputFileType.CSV:
-            msg = (
-                f"Dict input is not supported for {input_file_type.value}. "
-                f"Use InputFileType.Dict to generate schema from dict data, "
-                f"or provide text/file input for {input_file_type.value} format."
-            )
-        case _:
-            return
-    raise Error(msg)
+    if isinstance(input_, Mapping) and (refusal := _INPUT_TYPES[input_file_type].dict_refusal) is not None:
+        raise Error(refusal)
 
 
 def _uses_pydantic_v2_schema_validator(config: GenerateConfig) -> bool:
@@ -1542,7 +1551,7 @@ def _uses_pydantic_v2_schema_validator(config: GenerateConfig) -> bool:
     raise Error(msg)  # pragma: no cover
 
 
-def _prepare_parser_common_options(  # noqa: PLR0912
+def _prepare_parser_common_options(
     prepared: _RunInput, *, remote_text_cache: DefaultPutDict[str, str]
 ) -> _PreparedParser:
     """Prepare the parser inputs of a run once, for each parser of it: a mapping source as given, no template data.
@@ -1570,7 +1579,7 @@ def _prepare_parser_common_options(  # noqa: PLR0912
         use_type_alias=config.use_type_alias,
         use_type_alias_type=config.use_type_alias_type,
         use_root_model_type_alias=config.use_root_model_type_alias,
-        include_graphql_models=input_file_type == InputFileType.GraphQL,
+        include_graphql_models=_INPUT_TYPES[input_file_type].graphql,
         target_pydantic_version=config.target_pydantic_version,
     )
 
@@ -1595,16 +1604,10 @@ def _prepare_parser_common_options(  # noqa: PLR0912
     defer_formatting = config.output is not None and names_directory(config.output)
 
     target_datetime_class = config.output_datetime_class
-    if target_datetime_class is None:
+    if target_datetime_class is None and (default := _INPUT_TYPES[input_file_type].datetime_class) is not None:
         from datamodel_code_generator._format_types import DatetimeClassType  # noqa: PLC0415
 
-        match input_file_type:
-            case InputFileType.GraphQL:
-                target_datetime_class = DatetimeClassType.Datetime
-            case InputFileType.XMLSchema:
-                target_datetime_class = None
-            case _:
-                target_datetime_class = DatetimeClassType.Awaredatetime
+        target_datetime_class = DatetimeClassType(default)
 
     additional_options: _SharedParserConfigDict = {
         "data_model_type": data_model_types.data_model,
@@ -1634,100 +1637,52 @@ def _prepare_parser_common_options(  # noqa: PLR0912
     return data_model_types, source, defer_formatting, additional_options, python_type_expressions
 
 
-def _build_parser(  # noqa: PLR0911, PLR0913
+def _build_parser(  # noqa: PLR0913
     input_file_type: InputFileType,
     source: Any,
     config: GenerateConfig,
     additional_options: _SharedParserConfigDict,
     data_model_types: DataModelSet,
     *,
-    jsonschema_version: JsonSchemaVersion | None,
-    openapi_version: OpenAPIVersion | None,
-    asyncapi_version: AsyncAPIVersion | None,
-    xmlschema_version: XMLSchemaVersion | None,
-    protobuf_version: ProtobufVersion | None,
+    schema_version: Mapping[str, Enum | None],
     python_type_expressions: _PythonTypeExpressions | None = None,
     parser_factory: TargetParserFactory | None = None,
 ) -> Any:
-    match input_file_type:
-        case InputFileType.OpenAPI:
-            from datamodel_code_generator.parser.openapi import OpenAPIParser  # noqa: PLC0415
+    """Build the parser of an input type from its row of `_INPUT_TYPES`, or the target's parser for its input.
 
-            openapi_additional_options: OpenAPIParserConfigDict = {
-                "openapi_version": openapi_version,
-                **additional_options,
-            }
-            parser_config = _create_parser_config(config, openapi_additional_options)
-            if parser_factory is not None:
-                return parser_factory(source=source, config=parser_config)
-            if OpenAPIScope.Api in (config.openapi_scopes or ()):
-                from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser  # noqa: PLC0415
+    The options of a type come before the shared ones, except those of a type that skips root models, which come after
+    them.
+    """
+    row = _INPUT_TYPES[input_file_type]
+    graphql = (
+        {"data_model_scalar_type": data_model_types.scalar_model, "data_model_union_type": data_model_types.union_model}
+        if row.graphql
+        else {}
+    )
+    options = (
+        {**additional_options, **schema_version, "skip_root_model": True}
+        if row.skips_root_model
+        else {**schema_version, **graphql, **additional_options}
+    )
+    parser_config = _create_parser_config(config, cast("ParserConfigDict", options))
+    if parser_factory is not None:
+        return parser_factory(source=source, config=parser_config)
+    name = (
+        row.api_parser
+        if row.api_parser is not None and OpenAPIScope.Api in (config.openapi_scopes or ())
+        else row.parser
+    )
+    module, _, class_name = name.rpartition(".")
+    from importlib import import_module  # noqa: PLC0415
 
-                return ApiOpenAPIParser(source=source, config=parser_config)
-            return OpenAPIParser(source=source, config=parser_config)
-        case InputFileType.AsyncAPI:
-            from datamodel_code_generator.parser.asyncapi import AsyncAPIParser  # noqa: PLC0415
-
-            asyncapi_additional_options: AsyncAPIParserConfigDict = {
-                "asyncapi_version": asyncapi_version,
-                **additional_options,
-            }
-            parser_config = _create_parser_config(config, asyncapi_additional_options)
-            if parser_factory is not None:
-                return parser_factory(source=source, config=parser_config)
-            return AsyncAPIParser(source=source, config=parser_config)
-        case InputFileType.XMLSchema:
-            from datamodel_code_generator.parser.xmlschema import XMLSchemaParser  # noqa: PLC0415
-
-            xmlschema_additional_options: XMLSchemaParserConfigDict = {
-                "xmlschema_version": xmlschema_version,
-                **additional_options,
-            }
-            parser_config = _create_parser_config(config, xmlschema_additional_options)
-            return XMLSchemaParser(source=source, config=parser_config)
-        case InputFileType.Protobuf:
-            from datamodel_code_generator.parser.protobuf import ProtobufParser  # noqa: PLC0415
-
-            protobuf_additional_options: ProtobufParserConfigDict = {
-                **additional_options,
-                "protobuf_version": protobuf_version,
-                "skip_root_model": True,
-            }
-            parser_config = _create_parser_config(config, protobuf_additional_options)
-            return ProtobufParser(source=source, config=parser_config)
-        case InputFileType.Avro:
-            from datamodel_code_generator.parser.avro import AvroParser  # noqa: PLC0415
-
-            avro_additional_options: AvroParserConfigDict = {**additional_options}
-            parser_config = _create_parser_config(config, avro_additional_options)
-            return AvroParser(source=source, config=parser_config)
-        case InputFileType.GraphQL:
-            from datamodel_code_generator.parser.graphql import GraphQLParser  # noqa: PLC0415
-
-            graphql_additional_options: GraphQLParserConfigDict = {
-                "data_model_scalar_type": data_model_types.scalar_model,
-                "data_model_union_type": data_model_types.union_model,
-                **additional_options,
-            }
-            parser_config = _create_parser_config(config, graphql_additional_options)
-            return GraphQLParser(source=source, config=parser_config)
-        case _:
-            from datamodel_code_generator.parser.jsonschema import JsonSchemaParser  # noqa: PLC0415
-
-            jsonschema_additional_options: JSONSchemaParserConfigDict = {
-                "jsonschema_version": jsonschema_version,
-                **additional_options,
-            }
-            parser_config = _create_parser_config(config, jsonschema_additional_options)
-            if python_type_expressions is not None:
-                return JsonSchemaParser._from_python_type_expressions(  # noqa: SLF001
-                    source=source,
-                    python_type_expressions=python_type_expressions,
-                    config=parser_config,
-                )
-            return JsonSchemaParser(source=source, config=parser_config)
-    msg = f"Unsupported input file type: {input_file_type}"
-    raise Error(msg)
+    parser_class = getattr(import_module(f"datamodel_code_generator.parser.{module}"), class_name)
+    if python_type_expressions is not None and row.parser == _JSON_SCHEMA_ROW.parser:
+        return parser_class._from_python_type_expressions(  # noqa: SLF001
+            source=source,
+            python_type_expressions=python_type_expressions,
+            config=parser_config,
+        )
+    return parser_class(source=source, config=parser_config)
 
 
 def _module_texts(
@@ -2165,7 +2120,6 @@ def _build_generation_parser(
     reference_cache = None
     if caches is not None:
         options["remote_text_cache"], reference_cache, options["base_path"] = caches
-    jsonschema_version, openapi_version, asyncapi_version, xmlschema_version, protobuf_version = run.schema_versions
     build_parser = _build_parser
     if run.parser_factory is not None:
         build_parser = _partial(_build_parser, parser_factory=run.parser_factory)
@@ -2176,11 +2130,7 @@ def _build_generation_parser(
             run.config,
             options,
             run.data_model_types,
-            jsonschema_version=jsonschema_version,
-            openapi_version=openapi_version,
-            asyncapi_version=asyncapi_version,
-            xmlschema_version=xmlschema_version,
-            protobuf_version=protobuf_version,
+            schema_version=run.schema_version,
             python_type_expressions=run.python_type_expressions,
         )
     if reference_cache is not None and hasattr(parser, "remote_object_cache"):
@@ -2304,7 +2254,7 @@ class _GenerationRun(NamedTuple):
     data_model_types: DataModelSet
     defer_formatting: bool
     python_type_expressions: _PythonTypeExpressions | None
-    schema_versions: _SchemaVersions
+    schema_version: Mapping[str, Enum | None]
     diagnostic_source_path: Path | None
     prefetched_source: tuple[Path, bytes] | None
     parser_settings_path: Path | None
@@ -3021,7 +2971,7 @@ def _parse_run(  # noqa: PLR0913, PLR0914
             case _:
                 parser_options["base_path"] = caller_cwd
     input_file_type = prepared.input_file_type
-    schema_versions = _resolve_schema_versions(input_file_type, prepared.config.schema_version)
+    schema_version = _resolve_schema_version(input_file_type, prepared.config.schema_version)
     settings_path = prepared.config.settings_path
     parser_settings_path = settings_path if use_output_cwd else _settings_path_from(output_context_path, settings_path)
     allow_empty_api = input_file_type is InputFileType.OpenAPI and OpenAPIScope.Api in (
@@ -3039,7 +2989,7 @@ def _parse_run(  # noqa: PLR0913, PLR0914
         data_model_types=data_model_types,
         defer_formatting=defer_formatting,
         python_type_expressions=python_type_expressions,
-        schema_versions=schema_versions,
+        schema_version=schema_version,
         diagnostic_source_path=prepared.diagnostic_source_path,
         prefetched_source=prepared.prefetched_source,
         parser_settings_path=parser_settings_path,

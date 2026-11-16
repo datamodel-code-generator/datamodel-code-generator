@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from datamodel_code_generator import RAW_DATA_TYPES
+from datamodel_code_generator import _INPUT_TYPES, RAW_DATA_TYPES  # ruff: ignore[import-private-name]
 from datamodel_code_generator.enums import (
     AsyncAPIVersion,
     InputFileType,
@@ -49,7 +49,6 @@ if TYPE_CHECKING:
 
 ROOT = Path(__file__).parent.parent
 SRC = ROOT / "src"
-INIT_PATH = SRC / "datamodel_code_generator" / "__init__.py"
 AVRO_PARSER_PATH = SRC / "datamodel_code_generator" / "parser" / "avro.py"
 GRAPHQL_PARSER_PATH = SRC / "datamodel_code_generator" / "parser" / "graphql.py"
 SUPPORTED_FORMATS_DOCS_PATH = ROOT / "docs" / "supported_formats.md"
@@ -344,62 +343,12 @@ def enum_values_label(enum_type: type[Enum]) -> str:
     return code_list_label(item.value for item in enum_type)
 
 
-def _name_from_expr(node: ast.AST) -> str | None:
-    """Return the visible name represented by a simple expression."""
-    match node:
-        case ast.Name(id=name):
-            return name
-        case ast.Attribute(attr=name):
-            return name
-        case ast.Subscript(value=value):
-            return _name_from_expr(value)
-    return None
-
-
-def _input_file_type_name(pattern: ast.pattern) -> str | None:
-    """Return the InputFileType member name matched by a pattern."""
-    match pattern:
-        case ast.MatchValue(value=ast.Attribute(value=ast.Name(id="InputFileType"), attr=input_type_name)):
-            return input_type_name
-    return None
-
-
-def _returned_parser_name(case: ast.match_case) -> str | None:
-    """Return the parser class name returned by a match case."""
-    for node in ast.walk(ast.Module(body=case.body, type_ignores=[])):
-        if isinstance(node, ast.Return) and isinstance(node.value, ast.Call):
-            return _name_from_expr(node.value.func)
-    return None
-
-
 def parser_routes_from_source() -> dict[InputFileType, str]:
-    """Read _build_parser() and infer InputFileType to parser routes."""
-    tree = ast.parse(INIT_PATH.read_text(encoding="utf-8"))
-    direct_routes: dict[InputFileType, str] = {}
-    default_route = "JsonSchemaParser"
-    found_build_parser = False
-
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.FunctionDef) or node.name != "_build_parser":
-            continue
-        found_build_parser = True
-        for child in ast.walk(node):
-            if not isinstance(child, ast.Match):
-                continue
-            for case in child.cases:
-                if (parser_name := _returned_parser_name(case)) is None:
-                    continue
-                if (input_type_name := _input_file_type_name(case.pattern)) is None:
-                    default_route = parser_name
-                    continue
-                direct_routes[InputFileType[input_type_name]] = parser_name
-
-    if not found_build_parser or not direct_routes:
-        msg = "Could not infer parser routes from _build_parser()"
-        raise RuntimeError(msg)
-
+    """Read the parser class of each InputFileType from its row of `_INPUT_TYPES`."""
     return {
-        input_file_type: PARSER_ROUTE_OVERRIDES.get(input_file_type, direct_routes.get(input_file_type, default_route))
+        input_file_type: PARSER_ROUTE_OVERRIDES.get(
+            input_file_type, _INPUT_TYPES[input_file_type].parser.rpartition(".")[2]
+        )
         for input_file_type in InputFileType
     }
 
