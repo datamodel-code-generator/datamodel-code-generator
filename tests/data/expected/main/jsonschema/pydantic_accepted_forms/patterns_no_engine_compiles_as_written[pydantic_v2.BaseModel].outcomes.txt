@@ -45,6 +45,15 @@ NegatedHyphenFirst value: True
 DifferenceAfterRange 'abc': valid
 DifferenceAfterRange 'a1': string_pattern_mismatch
 DifferenceAfterRange value: True
+HexEscapeRange 'ab-1_': valid
+HexEscapeRange 'a b': string_pattern_mismatch
+HexEscapeRange value: True
+BracedEscapeRange 'ab-1_': valid
+BracedEscapeRange 'a b': string_pattern_mismatch
+BracedEscapeRange value: True
+OctalEscapeRange '09-a_': valid
+OctalEscapeRange 'a b': string_pattern_mismatch
+OctalEscapeRange value: True
 AtLeastTwoLetters 'ab': valid
 AtLeastTwoLetters 'a': string_pattern_mismatch
 AtLeastTwoLetters value: True

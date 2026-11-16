@@ -1,4 +1,5 @@
 The pattern '^(?-u:\\w){1,300}$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/AsciiWordsWithinTheSizeLimit is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^[a-\\x{7a}-\\w]+$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/BracedEscapeRange is left out: no regex engine of the output compiles it, so the generated code does not check it.
 The pattern '^[\\p{L}-_]+$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/BracedPropertyRange is left out: no regex engine of the output compiles it, so the generated code does not check it.
 The pattern '^[a-\\p{L}]+$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/BracedPropertyRangeEnd is left out: no regex engine of the output compiles it, so the generated code does not check it.
 The pattern '^[\\w- ]*$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/ClassEscapeRange is left out: no regex engine of the output compiles it, so the generated code does not check it.

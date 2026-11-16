@@ -65,6 +65,9 @@ SIZE_AND_DIALECT_PAYLOADS = {
     "HyphenAfterRange": ("ab-1 2", "a_b"),
     "NegatedHyphenFirst": ("!?", "a-"),
     "DifferenceAfterRange": ("abc", "a1"),
+    "HexEscapeRange": ("ab-1_", "a b"),
+    "BracedEscapeRange": ("ab-1_", "a b"),
+    "OctalEscapeRange": ("09-a_", "a b"),
     "AtLeastTwoLetters": ("ab", "a"),
     "AtLeastWordsBeyondTheSizeLimit": ("a" * 300, "a" * 299),
     "LettersBeyondTheSizeLimit": ("bbb", "bc"),
@@ -277,7 +280,9 @@ def test_patterns_no_engine_compiles_as_written(
     only runs Python's ``re``, ``\\p{L}`` and a group that turns Unicode off, is left out with a warning; one both
     engines read stays as written, and so does one only Rust reads where Rust is the engine (``[\\pL\\pP--_]`` and
     ``[a-z0-9--\\p{N}]``, differences). A hyphen after a range or at the start of a class makes no range with the class
-    escape after it (``[a-z0-9-\\s]``, ``[^-\\w]``). Each valid payload keeps its value and each invalid one fails.
+    escape after it (``[a-z0-9-\\s]``, ``[^-\\w]``), and so does an escape of one character that ends a range
+    (``[a-\\x7a-\\w]``, ``[a-\\x{7a}-\\w]`` for Rust and ``[\\60-\\71-\\w]`` for Python's ``re``). Each valid payload
+    keeps its value and each invalid one fails.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_sizes_and_dialects.json",

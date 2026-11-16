@@ -54,6 +54,15 @@ NegatedHyphenFirst: TypeAlias = Annotated[str, Meta(pattern='^[^-\\w]+$')]
 DifferenceAfterRange: TypeAlias = str
 
 
+HexEscapeRange: TypeAlias = Annotated[str, Meta(pattern='^[a-\\x7a-\\w]+$')]
+
+
+BracedEscapeRange: TypeAlias = str
+
+
+OctalEscapeRange: TypeAlias = Annotated[str, Meta(pattern='^[\\60-\\71-\\w]+$')]
+
+
 Letters: TypeAlias = str
 
 

@@ -51,8 +51,9 @@ _LOOKAROUND_PATTERN: Final = r"\(\?<?[=!]"
 _WHITE_SPACE_CHARACTERS = "\t-\r \x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000"
 _UNICODE_WHITE_SPACE = f"[{_WHITE_SPACE_CHARACTERS}]*"
 _VERBOSE_SPACE = rf"(?:[{_WHITE_SPACE_CHARACTERS}]|#[^\n]*(?=\n|\Z))*"
+_CODE_ESCAPE: Final = r"\\u[0-9A-Fa-f]{4}|\\U[0-9A-Fa-f]{8}|\\[xuU]\{[0-9A-Fa-f]+\}"
 _REGEX_ESCAPE_TOKENS = (
-    r"(?P<code>\\u[0-9A-Fa-f]{4}|\\U[0-9A-Fa-f]{8}|\\[xuU]\{[0-9A-Fa-f]+\})"
+    rf"(?P<code>{_CODE_ESCAPE})"
     r"|\\[pPxuUbB]\{[^}]*\}?|\\(?P<escape>.)?|(?P<open>\[\^?\]?)"
 )
 
@@ -189,9 +190,12 @@ _PYTHON_REJECTED_ESCAPES: Final = frozenset("ceghijklmopqyCEFGHIJKLMOPQRTVXY")
 """The letters Python's ``re`` reads after a backslash nowhere, on every Python from 3.10 on, ``p`` and ``P`` too."""
 _BRACED_CODES: Final = frozenset({"x{", "u{", "U{"})
 _PYTHON_CLASS: Final = r"(?<!\\)(?:\\\\)*\[\^?\]?(?:[^\\\]]|\\.)*\]"
-_CLASS_ITEM: Final = r"(?s:\\(?:[pP](?:\{[^}]*\}|.?)|.?)|.)"
+_CLASS_ITEM: Final = (
+    rf"(?s:{_CODE_ESCAPE}|"
+    r"\\(?:x[0-9A-Fa-f]{2}|[0-3][0-7]{2}|[0-7]{1,2}|N\{[^}]*\}|[pP](?:\{[^}]*\}|.?)|.?)|.)"
+)
 _CLASS_PART: Final = rf"(?s)({_CLASS_ITEM})(?:-(\\.|[^\\]))?"
-r"""A member of a class: an item (a character or an escape, ``\pL`` and ``\p{L}`` whole) or a range from it."""
+r"""A member of a class: an item (a character or an escape, ``\pL``, ``\p{L}``, ``\x41`` whole) or a range from it."""
 _SIZE_THRESHOLDS: Final = MappingProxyType({
     "w": 218,
     "W": 233,
@@ -371,14 +375,15 @@ def _rust_rejects_property(escape: str) -> bool:
 
 def _is_class_set(item: str) -> bool:
     r"""Return whether an item of a class is a class escape or a property (``\w``, ``\pL``, ``\p{L}``)."""
-    return item[1:] in _CLASS_ESCAPES or bool(item[2:])
+    return item[1:] in _CLASS_ESCAPES or (bool(item[2:]) and item[1] in "pP")
 
 
 def _class_escape_ranges(pattern: str, *, rust: bool) -> bool:
     r"""Return whether a class uses a class escape as a boundary of a range (``[\w- ]``, ``[a-\w]``) in an engine.
 
-    A boundary is a class escape or a property, in braces (``[\p{L}-_]``) or of one letter (``[\pL-_]``): the only
-    items longer than two characters. Two hyphens are a difference in Rust (``[\pL\pP--_]`` compiles), so a property of
+    A boundary is a class escape or a property, in braces (``[\p{L}-_]``) or of one letter (``[\pL-_]``). An escape of
+    one character is an item, whatever its length (``\x7a``, ``\u{7a}``): ``[a-\x7a-\w]`` has one range. Two hyphens are
+    a difference in Rust (``[\pL\pP--_]`` compiles), so a property of
     one letter before them starts no range; the other starts keep their answer there (``[\w--_]`` and ``[\p{L}--_]``
     compile too, and are read as ranges). A range is read from the item after the end of the last one: ``[a-c-\w]``
     has one range. Rust reads more than that: a doubled ``-``, ``&`` or ``~`` is an operation (``[a-z--\w]`` and
@@ -398,7 +403,9 @@ def _class_escape_ranges(pattern: str, *, rust: bool) -> bool:
                 position += 1 + (hyphen == "^")
             elif hyphen != "-":
                 position += 1
-            elif start[1:] in _CLASS_ESCAPES or start[3:] or (start[2:] and end != "-") or _is_class_set(end):
+            elif _is_class_set(end) or (
+                _is_class_set(start) and (start[1:] in _CLASS_ESCAPES or start[3:] or end != "-")
+            ):
                 return True
             else:
                 position += 3
