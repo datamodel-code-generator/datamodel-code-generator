@@ -4290,7 +4290,11 @@ class _Contracts(_Octets):
         location, seen = declared, {declared}
         while True:
             written = as_mapping(self.documents.borrow(location))
-            found = {**written, **found}
+            if not (
+                isinstance(written.get("$ref"), str)
+                and self.parser._ignores_ref_siblings_at(location)  # ruff: ignore[SLF001]
+            ):
+                found = {**written, **found}
             if (
                 not isinstance(ref := written.get("$ref"), str)
                 or (target := self.loaded_target(location.document, ref)) is None
