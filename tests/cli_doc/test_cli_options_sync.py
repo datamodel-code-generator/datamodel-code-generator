@@ -717,7 +717,7 @@ class TestCLIOptionMetaSync:
             pytest.fail(
                 "Options in CLI_OPTION_META but not in argparse:\n"
                 + "\n".join(f"  - {opt}" for opt in sorted(orphan))
-                + "\n\nRemove them from CLI_OPTION_META or add them to arguments.py."
+                + "\n\nRemove them from CLI_OPTION_META or add a row for them to _option_table.py."
             )
 
     def test_manual_doc_options_exist_in_argparse(self) -> None:
@@ -729,7 +729,7 @@ class TestCLIOptionMetaSync:
             pytest.fail(
                 "Options in MANUAL_DOCS but not in argparse:\n"
                 + "\n".join(f"  - {opt}" for opt in sorted(orphan))
-                + "\n\nRemove them from MANUAL_DOCS or add them to arguments.py."
+                + "\n\nRemove them from MANUAL_DOCS or add a row for them to _option_table.py."
             )
 
     def test_no_overlap_between_meta_and_manual(self) -> None:
@@ -767,7 +767,7 @@ class TestCLIOptionMetaSync:
             pytest.fail(
                 "CLI option relation targets missing from argparse:\n"
                 + "\n".join(sorted(missing))
-                + "\n\nRemove the relation or add the target option to arguments.py."
+                + "\n\nRemove the relation or add a row for the target option to _option_table.py."
             )
 
     def test_option_topic_and_group_are_known_and_non_empty(self) -> None:
@@ -816,7 +816,7 @@ class TestCLIOptionMetaSync:
     def test_all_argparse_options_are_documented_or_excluded(self) -> None:
         """Verify that all argparse options are either documented or explicitly excluded.
 
-        This test fails when a new CLI option is added to arguments.py
+        This test fails when a new CLI option is added to _option_table.py
         but not added to CLI_OPTION_META or MANUAL_DOCS.
         """
         argparse_options = get_all_canonical_options()
@@ -829,7 +829,7 @@ class TestCLIOptionMetaSync:
             pytest.fail(
                 "CLI options in argparse but not in CLI_OPTION_META or MANUAL_DOCS:\n"
                 + "\n".join(f"  - {opt}" for opt in sorted(missing))
-                + "\n\nAdd entries to CLI_OPTION_META in cli_options.py, "
+                + "\n\nGive the row of each a category or group in _option_table.py, "
                 "or add to MANUAL_DOCS if they should have manual documentation."
             )
 

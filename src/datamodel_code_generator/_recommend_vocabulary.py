@@ -1,7 +1,7 @@
 """The words of a recommendation that the recommender and the JSON report of it both spell, without importing either.
 
-``arguments.py`` keeps its own copy of the modes, as the argument parser imports neither this module's package nor
-pydantic.
+``_option_table.py`` keeps its own copy of the modes (``_recommend_mode``), as the argument parser imports neither
+this module's package nor pydantic.
 """
 
 from __future__ import annotations
