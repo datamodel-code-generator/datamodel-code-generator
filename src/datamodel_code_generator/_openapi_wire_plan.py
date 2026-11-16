@@ -70,6 +70,7 @@ if TYPE_CHECKING:
         FieldSlot,
         FieldUseBinding,
         MemberShape,
+        MessageCodec,
         SourceDocumentId,
         TypeUseBinding,
         TypeView,
@@ -85,6 +86,11 @@ CodecReason: TypeAlias = (
     ]
 )
 
+EVENT_STREAM: Final = "text/event-stream"
+_MESSAGE_CODECS: Final[dict[MediaKind, MessageCodec]] = {"json": "json", "binary": "bytes", "text": "utf8"}
+"""How a message travels by how a body of its kind is carried (`message_codec`)."""
+FORMS: Final[frozenset[MediaKind]] = frozenset({"form", "multipart"})
+"""The kinds of a form body, URL-encoded or multipart, whose members are encoded one by one."""
 _DEFAULT_STYLES: Final = {"path": "simple", "query": "form", "header": "simple", "cookie": "form"}
 NO_SCALAR_KIND: Final = "A parameter value needs one unambiguous scalar kind"
 STYLED: Final = ("style", "explode", "allowReserved")
@@ -161,12 +167,35 @@ def body_kind(media_type: str, use: TypeUseBinding | None) -> MediaKind:
     A JSON or text body the models type as raw bytes is carried as the raw body, and a binary body written as a binary
     string they type as text, such as an enum of strings, as text.
     """
-    kind = media_kind(media_type)
-    if use is None:
-        return kind
-    if use.octets:
-        return "binary"
-    return "text" if use.text else kind
+    return _carried(media_kind(media_type), octets=use is not None and use.octets, text=use is not None and use.text)
+
+
+def message_kind(media_type: str) -> MediaKind:
+    """Return the kind of body a message of a normalized media type is read as: its own, binary for a form or multipart.
+
+    A frame or an event carries no form encoding, so a form or multipart message travels as the octets of its value.
+    """
+    return "binary" if (kind := media_kind(media_type)) in FORMS else kind
+
+
+def message_codec(media_type: str, *, octets: bool, text: bool, string: bool, stream: bool) -> MessageCodec | None:
+    """Return how an AsyncAPI message of a media type travels, as its models decide, or None where no codec carries it.
+
+    A `text/event-stream` message is a server-sent event, whose data its models decode as JSON. Any other travels as a
+    body of its kind (`message_kind`) does (`body_kind`, by the `octets` and `text` its payload's models give it): JSON
+    coded by its models, binary as its bytes, and text as UTF-8 where its models type it as a string (`string`, its
+    lexical kind); text of another type has no codec. The data of an event on a server-sent event stream (`stream`)
+    is text, so a JSON message there is coded by its models whatever they hold.
+    """
+    if media_type == EVENT_STREAM:
+        return "event"
+    kind = message_kind(media_type)
+    carried = kind if stream and kind == "json" else _carried(kind, octets=octets, text=text)
+    return None if carried == "text" and not string else _MESSAGE_CODECS[carried]
+
+
+def _carried(kind: MediaKind, *, octets: bool, text: bool) -> MediaKind:
+    return "binary" if octets else "text" if text else kind
 
 
 def operation_uses(operation: OperationContract) -> tuple[TypeUseId, ...]:
@@ -262,7 +291,7 @@ def _unnamed(planner: _WirePlanner, operation: OperationContract) -> Iterator[Co
     """
     for media in request_media(operation):
         media_type = declared_media(media.name or "")[0]
-        if media_kind(media_type) not in {"form", "multipart"}:
+        if media_kind(media_type) not in FORMS:
             continue
         use = next((planner.uses[item] for item in media.schemas if item in planner.uses), None)
         names = (

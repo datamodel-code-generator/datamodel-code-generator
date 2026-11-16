@@ -26,6 +26,7 @@ from datamodel_code_generator._fastapi.routes import (
 )
 from datamodel_code_generator._openapi_codec_plan import extras_symbols, named_symbols
 from datamodel_code_generator._openapi_wire_plan import (
+    FORMS,
     NO_SCALAR_KIND,
     body_kind,
     content_types,
@@ -1418,7 +1419,7 @@ class Planner:  # noqa: PLR0904
                 item.declaration.use_site,
             )
             for item in media
-            if item.kind in {"form", "multipart"}
+            if item.kind in FORMS
         )
         status = declaration.name or ""
         spec = ResponseSpec(

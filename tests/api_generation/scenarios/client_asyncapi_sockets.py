@@ -171,6 +171,44 @@ def asyncapi_schema_formats(package: ModuleType, lines: list[str]) -> None:
         server.stop()
 
 
+def asyncapi_message_codecs(package: ModuleType, lines: list[str]) -> None:
+    """Receive text of an enum and of CSV and a msgpack frame, and send JSON and multipart binary strings as bytes."""
+    server = SocketServer()
+    seen: list[str] = []
+    uploaded: list[str] = []
+    try:
+        states, tables, packs, blobs, uploads = server.play(
+            Play(talk=_sending("running", code=1000)),
+            Play(talk=_sending("line,count\n1,2\n", code=1000)),
+            Play(talk=_sending(b"\x81\xa4line\x01", "text", code=1000)),
+            Play(talk=_collecting(seen, 1)),
+            Play(talk=_collecting(uploaded, 1)),
+        )
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=server.url, http_client=http) as client,
+        ):
+            for name, played in (("states", states), ("tables", tables)):
+                with getattr(client, name).connect() as session:
+                    lines.extend(f"    {name} {_message(message)}" for message in session)
+                lines.append(played.report())
+            with client.packs.connect() as session:
+                lines.append(f"    packs {_message(session.receive())}")
+                record(lines, "packs text", session.receive)
+            lines.append(packs.report())
+            with client.blobs.connect() as session:
+                session.send(b"\x00\x01")
+                record(lines, "blobs text", lambda: session.send("text"))
+            report = blobs.report()
+            lines.extend((f"    blobs server saw {', '.join(seen)}", report))
+            with client.uploads.connect() as session:
+                session.send(b"--b\r\n\r\nfile\r\n--b--\r\n")
+            report = uploads.report()
+            lines.extend((f"    uploads server saw {', '.join(uploaded)}", report))
+    finally:
+        server.stop()
+
+
 def _collecting(seen: list[str], count: int, *replies: str | bytes) -> Callable[[ServerConnection], None]:
     """Return a talk that keeps the client's first messages as received, sends replies, and waits for the client."""
 

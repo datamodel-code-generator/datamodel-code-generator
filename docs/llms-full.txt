@@ -17955,7 +17955,7 @@ The AsyncAPI features the generated Python client plans itself; a channel that u
 | `server variables` | AsyncAPI 2.0 | ⚠️ Partial | The variables of a server's URL; the client substitutes each by its `default`, which OpenAPI requires and AsyncAPI does not |
 | `channels without an address` | AsyncAPI 3.0 | ❌ Not Supported | A channel whose `address` is null or absent, which the client cannot open |
 | `WebSocket channel bindings` | AsyncAPI 2.0 | ⚠️ Partial | `bindings.ws` of a channel; the client opens GET handshakes, with the properties of objects `query` and `headers` as parameters, and the values a `Sec-WebSocket-Protocol` header fixes as the subprotocols it offers |
-| `message content types` | AsyncAPI 2.0 | ⚠️ Partial | The payloads of messages; the client codes JSON, `text/plain` strings and `application/octet-stream` payloads of AsyncAPI, JSON Schema or OpenAPI schemas, and no `contentEncoding` string outside JSON |
+| `message content types` | AsyncAPI 2.0 | ⚠️ Partial | The payloads of messages of AsyncAPI, JSON Schema or OpenAPI schemas; the client codes JSON by the models, binary media and binary strings as bytes, and text media whose models type a string as UTF-8 text, but no form or multipart message |
 | `messages without a payload` | AsyncAPI 2.0 | ❌ Not Supported | A message that declares no `payload`, which the client cannot code |
 | `message headers` | AsyncAPI 2.0 | ⚠️ Partial | The `headers` of a message; the client codes its payload but neither sends nor reads headers, which a WebSocket frame does not carry, and opens the channel without a warning |
 | `several messages per direction` | AsyncAPI 2.0 | ⚠️ Partial | More than one message that an application sends, or receives, on one channel; the client tells JSON messages apart by a tag their models declare, else by their class when it sends them, and Pydantic models code them as a union; it does not receive text and JSON messages on one channel |
@@ -18518,7 +18518,7 @@ The AsyncAPI features the generated Python client plans itself; a channel that u
 | `server variables` | AsyncAPI 2.0 | ⚠️ Partial | The variables of a server's URL; the client substitutes each by its `default`, which OpenAPI requires and AsyncAPI does not |
 | `channels without an address` | AsyncAPI 3.0 | ❌ Not Supported | A channel whose `address` is null or absent, which the client cannot open |
 | `WebSocket channel bindings` | AsyncAPI 2.0 | ⚠️ Partial | `bindings.ws` of a channel; the client opens GET handshakes, with the properties of objects `query` and `headers` as parameters, and the values a `Sec-WebSocket-Protocol` header fixes as the subprotocols it offers |
-| `message content types` | AsyncAPI 2.0 | ⚠️ Partial | The payloads of messages; the client codes JSON, `text/plain` strings and `application/octet-stream` payloads of AsyncAPI, JSON Schema or OpenAPI schemas, and no `contentEncoding` string outside JSON |
+| `message content types` | AsyncAPI 2.0 | ⚠️ Partial | The payloads of messages of AsyncAPI, JSON Schema or OpenAPI schemas; the client codes JSON by the models, binary media and binary strings as bytes, and text media whose models type a string as UTF-8 text, but no form or multipart message |
 | `messages without a payload` | AsyncAPI 2.0 | ❌ Not Supported | A message that declares no `payload`, which the client cannot code |
 | `message headers` | AsyncAPI 2.0 | ⚠️ Partial | The `headers` of a message; the client codes its payload but neither sends nor reads headers, which a WebSocket frame does not carry, and opens the channel without a warning |
 | `several messages per direction` | AsyncAPI 2.0 | ⚠️ Partial | More than one message that an application sends, or receives, on one channel; the client tells JSON messages apart by a tag their models declare, else by their class when it sends them, and Pydantic models code them as a union; it does not receive text and JSON messages on one channel |
@@ -19780,11 +19780,13 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
   is correlated with its reply. A reply lists its messages, else carries every message of its channel, which is the
   channel it names, else the operation's own. A reply on a channel at another address or on other servers, or sent to
   an address that a runtime expression gives (`reply.address`), leaves the connection out.
-- The models are the only codec: a JSON message is encoded and decoded by its payload's model, a payload that is only
-  a `$ref` by the model of the schema it names, a `text/plain` string payload as `str`, and an
-  `application/octet-stream` or binary payload as `bytes`. A string with a `contentEncoding` in a media type other
-  than JSON or `application/octet-stream`, such as base64 text, is not coded. A direction that carries no message is
-  typed `Never`.
+- The models are the only codec, as for an OpenAPI body of the message's media type: a JSON message is encoded and
+  decoded by its payload's model, a payload that is only a `$ref` by the model of the schema it names; a payload the
+  models type as raw bytes (a binary string), and any payload of another binary media type such as
+  `application/octet-stream`, `image/png` or `application/x-msgpack`, as `bytes`; a text message (`text/plain`,
+  `text/csv`, ...) whose models type a string, an enum of strings among them, as `str`, as is an
+  `application/octet-stream` message whose models type an enum of strings. A text message of another type, and a
+  form or multipart message, leave the channel out. A direction that carries no message is typed `Never`.
 - A direction of several messages is typed as the union of their types. A received binary frame is the bytes message
   and a text frame the text or JSON message; several JSON messages are told apart by a tag, a property that every
   payload model declares as required with one string value of its own (a `const` or a one-value `enum`), when no
@@ -90913,6 +90915,14 @@ With `generate_server` or `generate_client`, a `preset` that does not match `tar
 - **Affects:** experimental features: `cli-option.generate-server`, `cli-option.generate-client`
 - **What to change:** Catch `datamodel_code_generator.Error` where the code caught `PresetError` around a target run.
 - **Pull requests and issues:** [#6851](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6851)
+- **Source:** the release notes
+
+### Generated AsyncAPI clients code a message as the models type its payload (unreleased) { #asyncapi-client-message-codecs }
+
+How a message travels now follows the models generated for its payload, as an OpenAPI body of its media type does. A text message (`text/plain`, `text/csv`, `text/xml`, `text/html`, ...) whose models type a string, such as an enum of strings, `type: [string]`, a nullable string, a `const` or an `allOf` of a string schema, or a string with `contentEncoding`, is now sent and received as `str`; such channels were skipped as `message_content_types`. A message of another binary media type (`image/png`, `application/xml`, `application/x-msgpack`, ...), or of a form media type (`multipart/form-data`, `application/x-www-form-urlencoded`), which a frame carries as its raw bytes, is now sent and received as `bytes` whatever its schema (as `str` where its models type an enum of strings), where it was skipped unless it was a binary string. A JSON message on a WebSocket channel whose payload is a binary string (`type: string, format: binary`) is now raw `bytes` in a binary frame instead of the payload's model; on a server-sent event channel its data is still decoded by the model. An `application/octet-stream` message whose payload is an enum of strings, and a text message whose binary string the models type as `str` (`--type-mappings binary=string`), are now `str` instead of `bytes`.
+
+- **Affects:** experimental features: `cli-option.generate-client`
+- **Pull requests and issues:** [#6942](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6942)
 - **Source:** the release notes
 
 ### Generated AsyncAPI clients read a payload's schema format and wrapper as the models do (unreleased) { #asyncapi-client-payload-formats }

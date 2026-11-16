@@ -44,6 +44,7 @@ class FieldSlot:
 
 
 Direction: TypeAlias = Literal["request", "response", "neutral"]
+MessageCodec: TypeAlias = Literal["json", "utf8", "bytes", "event"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -629,14 +630,14 @@ class MessageContract:
     """One message of an AsyncAPI channel, which the described application sends or receives.
 
     `payload` is the location of the schema its payload binds as: the payload's own, or the schema a payload that is
-    only a `$ref` names. `codec` is how the message travels: `json` coded by the payload's models, `utf8` text,
-    `bytes`, or `event`, a server-sent event whose data the payload's models decode as JSON.
+    only a `$ref` names. `codec` is how the message travels, as the payload's models decide: `json` coded by them,
+    `utf8` text, `bytes`, or `event`, a server-sent event whose data they decode as JSON.
     """
 
     declaration: SourceLocation
     action: Literal["send", "receive"]
-    codec: Literal["json", "utf8", "bytes", "event"]
-    payload: SourceLocation | None
+    codec: MessageCodec
+    payload: SourceLocation
 
 
 @dataclass(frozen=True, slots=True)

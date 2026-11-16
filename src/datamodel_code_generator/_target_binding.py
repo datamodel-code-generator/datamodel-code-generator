@@ -40,6 +40,7 @@ from datamodel_code_generator._json_pointer import reference_tokens
 from datamodel_code_generator._module_paths import written_path
 from datamodel_code_generator._mro import collect_members, linearize
 from datamodel_code_generator._openapi_paths import inherited_security
+from datamodel_code_generator._openapi_wire_plan import EVENT_STREAM, FORMS, message_codec, message_kind
 from datamodel_code_generator._paths import file_uri
 from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalized
@@ -172,7 +173,6 @@ _ALIASES: Final = frozenset({TypeAliasModel, TypeAliasTypeBackport, TypeStatemen
 _ROOTS: Final = frozenset({pydantic_v2.RootModel, pydantic_v2.RootModelTypeAlias})
 _BUILTINS: Final[dict[str, BuiltinType]] = {name: BuiltinType(name) for name in get_args(BuiltinName)}
 _FILE_TYPES: Final = frozenset({"bytes", "str"})
-_FORMS: Final = frozenset({"form", "multipart"})
 _TEXT_MEDIA: Final = frozenset({"json", "form", "text"})
 _RAW_MEDIA: Final = frozenset({"json", "text", "binary"})
 _HEADER_ROLES: Final[frozenset[TypeUseRole]] = frozenset({
@@ -248,7 +248,6 @@ _SLOT: Final = "\x00"
 _BOUND: Final = {"websocket": "ws", "sse": "http"}
 """The binding of a channel that gives its handshake inputs, by how a client opens the channel."""
 _STREAM_STATUS: Final = "200"
-_EVENT_STREAM: Final = "text/event-stream"
 _STYLE: Final = ("use_union_operator", "use_standard_collections", "use_generic_container", "python_version")
 _UNCHECKED: Final[frozenset[BackendName | None]] = frozenset({"dataclass", "typeddict"})
 _ALONE: Final[dict[str, object]] = {
@@ -2790,7 +2789,7 @@ class _SchemaUses(_Models):
         """Bind a use whose id `use_id` built to the type the models give the schema it reads in its direction."""
         role, media, projection, direction = use.role, use.media, use.projection, use.direction
         locate = self.documents.location
-        form = media is not None and _media_kind(media) in _FORMS
+        form = media is not None and _media_kind(media) in FORMS
         nullable = role != "schema" and not form
         projected = self.projection(schema, projection, direction, nullable=nullable)
         held = (
@@ -3787,8 +3786,8 @@ class _Contracts(_Octets):
         item = schema.tokens[-1] == "itemSchema"
         for use in uses:
             binding = self.uses[use]
-            if text or kind in _FORMS:
-                self.texts[use] = kind in _FORMS
+            if text or kind in FORMS:
+                self.texts[use] = kind in FORMS
             with self.bound(schema, use.projection) as node:
                 parts, refused = self.parts(binding, node, schema) if multipart else (None, None)
                 octets, partly, checked, read = (
@@ -4128,22 +4127,25 @@ class _Contracts(_Octets):
         """Bind one channel: its handshake, a GET of its address on its servers, and its messages.
 
         The handshake of a server-sent event stream declares a 200 response of `text/event-stream`, which its events
-        are read from, as a stream answers the GET that opens it.
+        are read from, as a stream answers the GET that opens it. A message travels as its payload's models decide
+        (`message_codec`); one no codec carries leaves the channel out.
         """
         locate = self.documents.location
         use_site = SchemaLocation(document, read.use_site)
         declaration = SchemaLocation(document, read.declaration)
         identity = OperationId(locate(use_site, "use"), "channel")
-        messages = tuple(
-            MessageContract(
-                locate(SchemaLocation(document, message.declaration), "declaration"),
-                message.action,
-                message.codec,
-                self.payload(document, message.payload, message.payload_ref),
-            )
-            for message in read.messages
-        )
-        skips = tuple(starmap(ChannelSkip, read.skips))
+        found: list[MessageContract] = []
+        refused: list[ChannelSkip] = []
+        for message in read.messages:
+            declared = locate(SchemaLocation(document, message.declaration), "declaration")
+            payload = self.payload(document, message.payload, message.payload_ref)
+            if (codec := self._message_codec(message.media, payload, stream=read.kind == "sse")) is None:
+                why = f"message {declared.pointer} has content type {message.media}"
+                refused.append(ChannelSkip("message_content_types", why))
+            else:
+                found.append(MessageContract(declared, message.action, codec, locate(payload, "schema")))
+        messages = tuple(found)
+        skips = (*starmap(ChannelSkip, read.skips), *refused)
         if read.address is None:
             return ChannelContract(locate(use_site, "use"), read.name, None, messages, skips, kind=read.kind)
         raw = as_mapping(self.documents.borrow(declaration))
@@ -4199,16 +4201,25 @@ class _Contracts(_Octets):
         declared = DeclarationId(locate(declaration, "declaration"))
         response = use_site.child("responses", _STREAM_STATUS)
         media = WireDeclaration(
-            "media", _EVENT_STREAM, declared, locate(response.child("content", _EVENT_STREAM), "use"), ()
+            "media", EVENT_STREAM, declared, locate(response.child("content", EVENT_STREAM), "use"), ()
         )
         return WireDeclaration("response", _STREAM_STATUS, declared, locate(response, "use"), (), children=(media,))
 
-    def payload(self, document: str, tokens: tuple[str, ...], ref: str | None) -> SourceLocation | None:
-        """Return the location of the schema a message's payload binds as: that a lone `$ref` names, or its own."""
-        if ref is None:
-            return self.documents.location(SchemaLocation(document, tokens), "schema")
-        target = self.loaded_target(document, ref)
-        return None if target is None else self.documents.location(target, "schema")
+    def payload(self, document: str, tokens: tuple[str, ...], ref: str | None) -> SchemaLocation:
+        """Return the schema a message's payload binds as: the one a lone `$ref` names, which resolves, or its own."""
+        return (
+            SchemaLocation(document, tokens)
+            if ref is None
+            else cast("SchemaLocation", self.loaded_target(document, ref))
+        )
+
+    def _message_codec(self, media: str, payload: SchemaLocation, *, stream: bool) -> MessageCodec | None:
+        """Return how a message of a media type travels, by the models' type of its payload's value (``whole``)."""
+        with self.bound(payload, "value") as node:
+            octets, _, _, text = self.whole(node, "neutral", message_kind(media))
+            value = None if node is None else self.view(node, "neutral")
+        string = self.tables.lexical_kind(value) == "string"
+        return message_codec(media, octets=octets, text=text, string=string, stream=stream)
 
     def address_parameter(
         self,
@@ -4458,6 +4469,7 @@ if TYPE_CHECKING:
         BackendValue,
         DefaultKind,
         FrozenLiteral,
+        MessageCodec,
         TypeArgument,
         TypeProjectionReason,
         TypeView,

@@ -1,0 +1,9 @@
+[[change]]
+id = "asyncapi-client-message-codecs"
+kind = "experimental"
+action = "review"
+title = "Generated AsyncAPI clients code a message as the models type its payload"
+summary = "How a message travels now follows the models generated for its payload, as an OpenAPI body of its media type does. A text message (`text/plain`, `text/csv`, `text/xml`, `text/html`, ...) whose models type a string, such as an enum of strings, `type: [string]`, a nullable string, a `const` or an `allOf` of a string schema, or a string with `contentEncoding`, is now sent and received as `str`; such channels were skipped as `message_content_types`. A message of another binary media type (`image/png`, `application/xml`, `application/x-msgpack`, ...), or of a form media type (`multipart/form-data`, `application/x-www-form-urlencoded`), which a frame carries as its raw bytes, is now sent and received as `bytes` whatever its schema (as `str` where its models type an enum of strings), where it was skipped unless it was a binary string. A JSON message on a WebSocket channel whose payload is a binary string (`type: string, format: binary`) is now raw `bytes` in a binary frame instead of the payload's model; on a server-sent event channel its data is still decoded by the model. An `application/octet-stream` message whose payload is an enum of strings, and a text message whose binary string the models type as `str` (`--type-mappings binary=string`), are now `str` instead of `bytes`."
+affects = { experimental = ["cli-option.generate-client"] }
+refs = ["#6942"]
+source = "release-note"

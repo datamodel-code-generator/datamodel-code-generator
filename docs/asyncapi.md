@@ -178,11 +178,13 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
   is correlated with its reply. A reply lists its messages, else carries every message of its channel, which is the
   channel it names, else the operation's own. A reply on a channel at another address or on other servers, or sent to
   an address that a runtime expression gives (`reply.address`), leaves the connection out.
-- The models are the only codec: a JSON message is encoded and decoded by its payload's model, a payload that is only
-  a `$ref` by the model of the schema it names, a `text/plain` string payload as `str`, and an
-  `application/octet-stream` or binary payload as `bytes`. A string with a `contentEncoding` in a media type other
-  than JSON or `application/octet-stream`, such as base64 text, is not coded. A direction that carries no message is
-  typed `Never`.
+- The models are the only codec, as for an OpenAPI body of the message's media type: a JSON message is encoded and
+  decoded by its payload's model, a payload that is only a `$ref` by the model of the schema it names; a payload the
+  models type as raw bytes (a binary string), and any payload of another binary media type such as
+  `application/octet-stream`, `image/png` or `application/x-msgpack`, as `bytes`; a text message (`text/plain`,
+  `text/csv`, ...) whose models type a string, an enum of strings among them, as `str`, as is an
+  `application/octet-stream` message whose models type an enum of strings. A text message of another type, and a
+  form or multipart message, leave the channel out. A direction that carries no message is typed `Never`.
 - A direction of several messages is typed as the union of their types. A received binary frame is the bytes message
   and a text frame the text or JSON message; several JSON messages are told apart by a tag, a property that every
   payload model declares as required with one string value of its own (a `const` or a one-value `enum`), when no

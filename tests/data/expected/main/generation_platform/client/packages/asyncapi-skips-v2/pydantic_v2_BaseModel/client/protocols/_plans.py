@@ -47,3 +47,14 @@ SOCKET_2: Final[ChannelPlan[Never, models.GuardedSubscribePayload]] = ChannelPla
     send_codec='none',
     decoder=model_bindings.codec_2,
 )
+
+
+SOCKET_3: Final[ChannelPlan[Never, bytes]] = ChannelPlan(
+    helper_id='packed',
+    operation=OperationRef(pointer='/channels/~1packed'),
+    call=_operations.OPERATION_3,
+    fingerprint='a8c9ec12c0fedf5f8416360674ff4f63ce5ad52ce276b4df90210060341dde43',
+    send_codec='none',
+    receive_codec='bytes',
+    receive_frame='binary',
+)
