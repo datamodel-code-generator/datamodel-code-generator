@@ -53,7 +53,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._parse_memo import ParseMemo
     from datamodel_code_generator.imports import Import
-    from datamodel_code_generator.types import TypeExpr
 
 __all__ = [
     "ANNOTATED_ANNOTATION",
@@ -522,9 +521,6 @@ class PlannedField(Protocol):
     def _render_inputs(self) -> RenderInputs:
         """Return what the field's plan reads from the field, as ``RenderInputs``."""
 
-    def _type_expression(self) -> TypeExpr:
-        """Return the expression of the field's type hint, to keep at B2."""
-
 
 @final
 @record
@@ -544,15 +540,16 @@ class _FrozenPlan(NamedTuple):
 
     ``inputs`` are None for a final plan, the field's revisions (`ParseMemo.revision`) when the plan was frozen for a
     plan that holds a copy of the field's type, or, for a class outside this package or under custom templates, its
-    ``_render_inputs``. ``hint`` is the expression of the field's type hint then, which the field renders unless the
-    plan keeps contents (``RenderReady.hint_of``).
+    ``_render_inputs``. ``hint`` is the expression of the field's type hint then (``types.type_expr_of``), which the
+    field renders unless the plan keeps contents (``RenderReady.hint_of``); this module only keeps it, so it does not
+    import ``types``, which imports the models.
     """
 
     field: object
     plan: FieldRenderPlan
     import_plan: FieldRenderPlan | None
     inputs: _FieldRevision | RenderInputs | None
-    hint: TypeExpr
+    hint: object
 
 
 @final
@@ -582,10 +579,11 @@ class RenderReady:
         self.memo = memo if _package_class(parser_class) else None
         self.nested_factories: NestedFactoryMetadata | None = None
 
-    def freeze(self, field: PlannedField, plan: FieldRenderPlan, import_plan: FieldRenderPlan | None = None) -> None:
+    def freeze(
+        self, field: PlannedField, plan: FieldRenderPlan, import_plan: FieldRenderPlan | None, hint: object
+    ) -> None:
         """Keep the field's plan, the plan the import snapshot reads if different, and the expression of its hint."""
-        inputs = self._frozen_inputs(field, plan)
-        self._plans[id(field)] = _FrozenPlan(field, plan, import_plan, inputs, field._type_expression())  # noqa: SLF001
+        self._plans[id(field)] = _FrozenPlan(field, plan, import_plan, self._frozen_inputs(field, plan), hint)
 
     def plan_of(self, field: object) -> FieldRenderPlan | None:
         """Return the plan frozen for ``field`` in the current view, or None when the parse froze none for it.
@@ -614,7 +612,7 @@ class RenderReady:
         self._plans[id(field)] = entry._replace(plan=plan, inputs=self._frozen_inputs(field, plan))
         return plan
 
-    def hint_of(self, field: object) -> TypeExpr | None:
+    def hint_of(self, field: object) -> object:
         """Return the expression of the field's type hint kept with its plan, or None where it is built at each read.
 
         It is built at each read where the plan keeps the contents it read, which a pass of a class outside this package
@@ -704,7 +702,7 @@ def frozen_render_plan(field: object) -> FieldRenderPlan | None:
     return ready.plan_of(field)
 
 
-def frozen_field_hint(field: object) -> TypeExpr | None:
+def frozen_field_hint(field: object) -> object:
     """Return the expression of the field's type hint the running parse kept at B2 (``RenderReady.hint_of``), or None.
 
     None before B2, outside a parse, and for a field whose expression is built at each read.

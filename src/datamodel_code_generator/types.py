@@ -1288,11 +1288,11 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """Generate the Python type hint string for this DataType."""
         return render_type_expr(_build_type_expr(self, base=False))
 
-    def _type_hint_and_null(self, expression: TypeExpr | None = None) -> tuple[str, NullSource | None]:
+    def _type_hint_and_null(self, expression: object = None) -> tuple[str, NullSource | None]:
         """Return ``type_hint`` and why it writes None (``_hint_null``), from one rendering.
 
         A class that writes its own hint renders it, then the None is asked. ``expression`` is the type's expression
-        (``type_expr_of``) when it is built already.
+        (``type_expr_of``) when it is built already; the models pass it on without importing this module's names.
         """
         if type(self).type_hint is not DataType.type_hint:
             return self.type_hint, _hint_null(self)
