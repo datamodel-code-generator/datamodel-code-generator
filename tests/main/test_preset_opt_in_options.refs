@@ -18,6 +18,8 @@ read-length-keywords-by-type-command-line	main/preset_opt_in_options/preset_opti
 read-length-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].py
 read-object-keywords-by-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-command-line].py
 read-object-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-command-line].py
+read-single-allof-refs-in-their-documents-command-line	main/preset_opt_in_options/preset_option_turned_off[read-single-allof-refs-in-their-documents-command-line].py
+read-single-allof-refs-in-their-documents-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-single-allof-refs-in-their-documents-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-single-allof-refs-in-their-documents-command-line].py
 read-yaml-1-1-numbers-as-text-command-line	main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-command-line].py
 read-yaml-1-1-numbers-as-text-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-command-line].py
 use-bounds-for-float-const-command-line	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].py
@@ -125,6 +127,8 @@ read-object-keywords-by-type-practical	main/preset_opt_in_options/preset_sets_op
 read-object-keywords-by-type-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-object-keywords-by-type-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-object-keywords-by-type-practical].py
 read-schema-version-per-document-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-practical]/
 read-schema-version-per-document-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-standard]/	= main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-practical]/
+read-single-allof-refs-in-their-documents-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-single-allof-refs-in-their-documents-practical].py
+read-single-allof-refs-in-their-documents-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-single-allof-refs-in-their-documents-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-single-allof-refs-in-their-documents-practical].py
 read-unevaluated-properties-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-practical].py
 read-unevaluated-properties-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-practical].py
 read-yaml-1-1-numbers-as-text-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-yaml-1-1-numbers-as-text-practical].py

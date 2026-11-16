@@ -1,0 +1,8 @@
+components:
+  schemas:
+    Status:
+      allOf:
+        - $ref: '#/components/schemas/Code'
+    Code:
+      type: string
+      enum: [a, b]

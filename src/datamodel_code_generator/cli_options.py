@@ -261,6 +261,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = _with_relation_rows({
         "--read-escaped-ref-pointers --no-read-escaped-ref-pointers",
         "--read-dynamic-anchors-in-document-order --no-read-dynamic-anchors-in-document-order",
         "--read-ids-with-empty-fragment --no-read-ids-with-empty-fragment",
+        "--read-single-allof-refs-in-their-documents --no-read-single-allof-refs-in-their-documents",
         "--ignore-ref-siblings-by-schema-version --no-ignore-ref-siblings-by-schema-version",
         "--read-yaml-1-1-numbers-as-text --no-read-yaml-1-1-numbers-as-text",
         "--external-ref-mapping --preset",

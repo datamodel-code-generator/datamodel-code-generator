@@ -1367,6 +1367,17 @@ _STANDARD_20261113_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "pyproject.toml gives it false, as use-annotated = false there does."
         ),
     ),
+    PresetOptionGroup(
+        title="Single allOf references read in their documents",
+        config=PresetConfig(read_single_allof_refs_in_their_documents=True),
+        description=(
+            "Read the target of an allOf of one $ref in the document that holds the schema, a plain-name anchor such "
+            "as #code included, as every other $ref is read, so a schema of a referenced file is typed as a root "
+            "model over the referenced enum, as the same schemas in one file are, instead of a copy of the enum; a "
+            "valid referenced file is no longer refused where the input document holds false at that pointer, and a "
+            "true target there is a root model that accepts every value."
+        ),
+    ),
 )
 """The 20261112 groups and the opt-in options added after them."""
 

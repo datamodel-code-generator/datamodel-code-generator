@@ -273,6 +273,12 @@ Read the Kubernetes schema extensions as the keywords they stand for: x-kubernet
 
 - **Source:** the command-line options of both releases
 
+### New option `--read-single-allof-refs-in-their-documents` (`--no-read-single-allof-refs-in-their-documents`) (unreleased) { #option-read-single-allof-refs-in-their-documents }
+
+Read the target of the one $ref of an allOf as every other $ref is read: in the document that holds the schema, a plain-name anchor such as #code included. The target decides whether the schema is typed as the referenced enum, as a root model over it, or refused, so a schema of a referenced file takes the form the same schemas take in one file; without it the target is read at the same pointer of the input document, where a plain-name anchor names nothing, so such a schema can be written as a copy of the enum or refused, as in 0.96.0.
+
+- **Source:** the command-line options of both releases
+
 ### New option `--read-yaml-1-1-numbers-as-text` (`--no-read-yaml-1-1-numbers-as-text`) (unreleased) { #option-read-yaml-1-1-numbers-as-text }
 
 Read an unquoted YAML value with _ or : that YAML 1.1 reads as a number, such as 16:9 (969 in base 60), 18_24 or 1_000, as its text, as YAML 1.2, which OpenAPI names, and the ryaml reader read it, also in enum, default, const, examples, extensions and YAML data input. Without it such a value is the number YAML 1.1 reads, as in 0.96.0, except where a string is required in a document that the number makes invalid (a pattern, a format, a description, a component or property name), where it is its text.
@@ -303,6 +309,7 @@ They keep the options of the 20261112 presets and add:
 - Ids with an empty fragment read as their documents (`--read-ids-with-empty-fragment`): Read an absolute-URL $id written with an empty fragment, such as https://example.com/item.json#, as the URI without it, so a $ref to it resolves inside the document that declares it instead of loading the document at that URL from the network. A relative $id is not matched: a $ref to it reads the file.
 - YAML 1.1-only numbers read as text (`--read-yaml-1-1-numbers-as-text`): Read an unquoted YAML value with _ or : that YAML 1.1 reads as a number, such as 16:9 or 18_24, as its text, as YAML 1.2, which OpenAPI names, and the ryaml reader do, so an enum of aspect ratios keeps the values '16:9' and '4:3' instead of the integers 969 and 243.
 - Implied options read from the merged values (`--read-implied-options-from-merged-values`): Read the options that another option turns on from the arguments and pyproject.toml together, so --no-use-annotated over use-annotated = true in pyproject.toml also leaves --field-constraints off where pyproject.toml gives it false, as use-annotated = false there does.
+- Single allOf references read in their documents (`--read-single-allof-refs-in-their-documents`): Read the target of an allOf of one $ref in the document that holds the schema, a plain-name anchor such as #code included, as every other $ref is read, so a schema of a referenced file is typed as a root model over the referenced enum, as the same schemas in one file are, instead of a copy of the enum; a valid referenced file is no longer refused where the input document holds false at that pointer, and a true target there is a root model that accepts every value.
 - Untyped values as JSON values (practical presets) (`--untyped-value-type pydantic.JsonValue`): Write each value the schema leaves untyped as pydantic.JsonValue instead of Any, the typed form of the object the practical groups prefer for unconstrained values: a JSON document parses to the same values, and Python values that are no JSON values, such as a datetime or a set, are rejected.
 
 - **Source:** the registry of deprecations, experimental features and dated presets

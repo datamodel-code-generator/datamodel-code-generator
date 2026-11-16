@@ -359,6 +359,7 @@ class ParserConfig(BaseModel):
     read_escaped_ref_pointers: bool = False
     read_dynamic_anchors_in_document_order: bool = False
     read_ids_with_empty_fragment: bool = False
+    read_single_allof_refs_in_their_documents: bool = False
     ignore_ref_siblings_by_schema_version: bool = False
     read_yaml_1_1_numbers_as_text: bool = False
     use_msgspec_tagged_unions: bool = False

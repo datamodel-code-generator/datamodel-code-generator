@@ -24,6 +24,7 @@
 - `--no-read-ids-with-empty-fragment`
 - `--no-read-input-model-dataclass-fields-by-alias`
 - `--no-read-schema-version-per-document`
+- `--no-read-single-allof-refs-in-their-documents`
 - `--no-read-yaml-1-1-numbers-as-text`
 - `--no-reuse-every-reached-input-model-type`
 - `--output`: Specify the destination path for generated Python code.
@@ -33,6 +34,7 @@
 - `--read-ids-with-empty-fragment`: Read an `$id` that ends with an empty fragment as the document that declares...
 - `--read-input-model-dataclass-fields-by-alias`: Read the fields of a Pydantic dataclass by their aliases with ...
 - `--read-schema-version-per-document`: Read each document by the schema version it declares.
+- `--read-single-allof-refs-in-their-documents`: Read the target of an allOf of one `$ref` in the document that ...
 - `--read-yaml-1-1-numbers-as-text`: Read the unquoted YAML values that only YAML 1.1 reads as numbers as their ...
 - `--reuse-every-reached-input-model-type`: Reach the types to reuse through every model kind and write no copy ...
 - `--schema-version`: Schema version to use for parsing.
@@ -628,6 +630,18 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         gives every document its version; the schema
                         validators then read an OpenAPI or AsyncAPI document
                         by it only with the option, else as draft 7.
+  --read-single-allof-refs-in-their-documents, --no-read-single-allof-refs-in-their-documents
+                        Read the target of the one $ref of an allOf as every
+                        other $ref is read: in the document that holds the
+                        schema, a plain-name anchor such as #code included.
+                        The target decides whether the schema is typed as the
+                        referenced enum, as a root model over it, or refused,
+                        so a schema of a referenced file takes the form the
+                        same schemas take in one file; without it the target
+                        is read at the same pointer of the input document,
+                        where a plain-name anchor names nothing, so such a
+                        schema can be written as a copy of the enum or
+                        refused, as in 0.96.0.
   --read-yaml-1-1-numbers-as-text, --no-read-yaml-1-1-numbers-as-text
                         Read an unquoted YAML value with _ or : that YAML 1.1
                         reads as a number, such as 16:9 (969 in base 60),
