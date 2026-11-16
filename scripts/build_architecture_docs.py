@@ -22,14 +22,17 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 DOCS_PATH = ROOT / "docs" / "architecture.md"
-INIT_PATH = SRC / "datamodel_code_generator" / "__init__.py"
 PARSER_DIR = SRC / "datamodel_code_generator" / "parser"
 
 for path in (SRC, ROOT):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
-from datamodel_code_generator import DataModelType, InputFileType  # noqa: E402
+from datamodel_code_generator import (  # noqa: E402
+    _INPUT_TYPES,  # ruff: ignore[import-private-name]
+    DataModelType,
+    InputFileType,
+)
 from datamodel_code_generator.config import (  # noqa: E402
     AsyncAPIParserConfig,
     AvroParserConfig,
@@ -95,53 +98,14 @@ def _name_from_expr(node: ast.AST) -> str | None:
     return None
 
 
-def _input_file_type_name(pattern: ast.pattern) -> str | None:
-    match pattern:
-        case ast.MatchValue(value=ast.Attribute(value=ast.Name(id="InputFileType"), attr=input_type_name)):
-            return input_type_name
-    return None
-
-
-def _returned_parser_name(case: ast.match_case) -> str | None:
-    for node in ast.walk(ast.Module(body=case.body, type_ignores=[])):
-        if isinstance(node, ast.Return) and isinstance(node.value, ast.Call):
-            return _name_from_expr(node.value.func)
-    return None
-
-
 def parser_routes_from_source() -> dict[InputFileType, str]:
-    """Read _build_parser() and infer direct InputFileType -> Parser routes."""
-    tree = ast.parse(INIT_PATH.read_text(encoding="utf-8"))
-    direct_routes: dict[InputFileType, str] = {}
-    default_route = "JsonSchemaParser"
-
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.FunctionDef) or node.name != "_build_parser":
-            continue
-        for child in ast.walk(node):
-            if not isinstance(child, ast.Match):
-                continue
-            for case in child.cases:
-                parser_name = _returned_parser_name(case)
-                if parser_name is None:
-                    continue
-                input_type_name = _input_file_type_name(case.pattern)
-                if input_type_name is None:
-                    default_route = parser_name
-                    continue
-                direct_routes[InputFileType[input_type_name]] = parser_name
-
-    routes: dict[InputFileType, str] = {}
-    for input_file_type in InputFileType:
-        if input_file_type in PARSER_ROUTE_OVERRIDES:
-            routes[input_file_type] = PARSER_ROUTE_OVERRIDES[input_file_type]
-        elif input_file_type in direct_routes:
-            routes[input_file_type] = direct_routes[input_file_type]
-        elif input_file_type in PARSER_ROUTE_NOTES:
-            routes[input_file_type] = default_route
-        else:
-            routes[input_file_type] = default_route
-    return routes
+    """Read the parser class of each InputFileType from its row of `_INPUT_TYPES`."""
+    return {
+        input_file_type: PARSER_ROUTE_OVERRIDES.get(
+            input_file_type, _INPUT_TYPES[input_file_type].parser.rpartition(".")[2]
+        )
+        for input_file_type in InputFileType
+    }
 
 
 def parser_inheritance_edges() -> list[tuple[str, str]]:
