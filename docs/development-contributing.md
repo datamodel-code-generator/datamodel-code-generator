@@ -599,15 +599,19 @@ When adding a new CLI option to `datamodel-code-generator`, follow these steps:
 
 ### Step 1: Implement the option (Required)
 
-Add the option to `src/datamodel_code_generator/arguments.py`:
+Add a row for the option to `OPTIONS` in `src/datamodel_code_generator/_option_table.py`, in the help section it
+belongs to; `arguments.py` adds every row to the argument parser:
 
 ```python
-arg_parser.add_argument(
-    "--my-new-option",
-    help="Description of what this option does",
-    action="store_true",  # or other action type
+OPTIONS: Final[tuple[Option, ...]] = (
+    # existing rows
+    toggle(Section.MODEL, "--my-new-option", help="Description of what this option does"),
 )
 ```
+
+The constructor of a row is its form: `toggle` (a flag with a `--no-` form), `flag` (off unless given), `deprecated`
+(a flag whose help is its message in the deprecation registry), `clear` (the `--no-` form of a list option) or `value`
+(an option that takes a value, with the arguments `argparse` takes, such as `choices=_values(MyEnum)` or `type=int`).
 
 ### Step 2: Add a test with documentation marker (Required)
 

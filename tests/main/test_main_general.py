@@ -13,7 +13,7 @@ import shutil
 import sys
 import tokenize
 import warnings
-from argparse import ArgumentTypeError, BooleanOptionalAction, Namespace
+from argparse import BooleanOptionalAction, Namespace
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
@@ -56,7 +56,7 @@ from datamodel_code_generator.__main__ import (
     _generation_config,
     run_generate_from_config,
 )
-from datamodel_code_generator.arguments import _dataclass_arguments, arg_parser
+from datamodel_code_generator.arguments import arg_parser
 from datamodel_code_generator.config import GenerateConfig
 from datamodel_code_generator.deprecations import DEPRECATIONS, Deprecation
 from datamodel_code_generator.format import CodeFormatter, Formatter, PythonVersion
@@ -3255,7 +3255,7 @@ def test_generate_pyproject_config_json_mapping_option_preserves_value(capsys: p
 )
 def test_dataclass_arguments_valid(json_str: str, expected: dict) -> None:
     """Test that valid JSON is parsed correctly."""
-    assert _dataclass_arguments(json_str) == expected
+    assert arg_parser.parse_args(["--dataclass-arguments", json_str]).dataclass_arguments == expected
 
 
 @pytest.mark.parametrize(
@@ -3269,10 +3269,14 @@ def test_dataclass_arguments_valid(json_str: str, expected: dict) -> None:
         ('{"frozen": "not_bool"}', "Expected bool for 'frozen', got str"),
     ],
 )
-def test_dataclass_arguments_invalid(json_str: str, match: str) -> None:
-    """Test that invalid input raises ArgumentTypeError."""
-    with pytest.raises(ArgumentTypeError, match=match):
-        _dataclass_arguments(json_str)
+def test_dataclass_arguments_invalid(json_str: str, match: str, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test that invalid input is refused as an invalid value of the option."""
+    run_main_with_system_exit(
+        ["--dataclass-arguments", json_str],
+        expected_code=2,
+        capsys=capsys,
+        expected_stderr_contains=f"argument --dataclass-arguments: {match}",
+    )
 
 
 @pytest.mark.cli_doc(
