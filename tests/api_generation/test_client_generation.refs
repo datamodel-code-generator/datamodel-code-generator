@@ -153,6 +153,8 @@ asyncapi-market-v3	main/generation_platform/client/packages/asyncapi-market-v3/m
 asyncapi-market-v3	main/generation_platform/client/packages/asyncapi-market-v3/pydantic_v2_BaseModel//*.py
 asyncapi-market-v3	main/generation_platform/client/packages/asyncapi-market-v3/pydantic_v2_dataclass//*.py
 asyncapi-market-v3	main/generation_platform/client/packages/asyncapi-market-v3/typing_TypedDict//*.py
+asyncapi-message-codecs	main/generation_platform/client/asyncapi-message-codecs.txt
+asyncapi-message-codecs	main/generation_platform/client/packages/asyncapi-message-codecs/pydantic_v2_BaseModel//*.py
 asyncapi-messages	main/generation_platform/client/asyncapi-messages.txt
 asyncapi-messages	main/generation_platform/client/packages/asyncapi-messages/dataclasses_dataclass//*.py
 asyncapi-messages	main/generation_platform/client/packages/asyncapi-messages/msgspec_Struct//*.py

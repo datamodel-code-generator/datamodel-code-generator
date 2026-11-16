@@ -23,6 +23,7 @@ from datamodel_code_generator._client.naming import RESERVED_MEMBERS
 from datamodel_code_generator._client.protocol_plan import Protocols, class_clashes
 from datamodel_code_generator._client.protocols import Helper, Link
 from datamodel_code_generator._client.sockets import direction_messages
+from datamodel_code_generator._openapi_wire_plan import EVENT_STREAM
 from datamodel_code_generator._target_contract import ChannelSkip
 from datamodel_code_generator._target_naming import NameScope
 from datamodel_code_generator._target_operations import CLIENT, local, resolve_settings
@@ -44,7 +45,6 @@ _FRAMES: Final = {"bytes": "binary"}
 _WORDS: Final = re.compile(r"[^\W_]+")
 _SENT: Final = {"server": "receive", "client": "send"}
 """The action of the described application whose messages the client sends, by the side the document describes."""
-_EVENT_STREAM: Final = "text/event-stream"
 _STREAMS: Final = "server_sent_events"
 _EVENTS: Final = frozenset(("json", "event"))
 """The codecs of the messages whose payloads the models decode from JSON: the data of a server-sent event is either."""
@@ -65,7 +65,7 @@ def directed(channels: tuple[ChannelContract, ...]) -> tuple[ChannelContract, ..
                 ChannelSkip(
                     _STREAMS,
                     f"the client receives message {message.declaration.pointer} on it, whose content type is neither "
-                    f"{_EVENT_STREAM} nor JSON",
+                    f"{EVENT_STREAM} nor JSON",
                 )
                 for message in channel.messages
                 if channel.kind == "sse" and message.codec not in _EVENTS
@@ -90,7 +90,8 @@ def _members(messages: tuple[MessageContract, ...], action: str | None) -> list[
 def _definition(message: MessageContract, request: TargetRequest) -> dict[str, Any]:
     """Return the definition of one message: its codec, its frame, and the schema of a JSON message's payload."""
     definition: dict[str, Any] = {"codec": message.codec, "frame": _FRAMES.get(message.codec, "text")}
-    if message.codec == "json" and (payload := message.payload) is not None:
+    if message.codec == "json":
+        payload = message.payload
         definition["schema"] = SchemaRef(pointer=payload.pointer, document=request.documents.pointers[payload.document])
     return definition
 
@@ -179,7 +180,6 @@ def _stream(
     references = [
         SchemaRef(pointer=message.payload.pointer, document=request.documents.pointers[message.payload.document])
         for message in members
-        if message.payload is not None
     ]
     if len(references) == 1:
         schema: object = references[0]
@@ -194,7 +194,7 @@ def _stream(
         "kind": "sse",
         "enabled": True,
         "operation": reference,
-        "media": _EVENT_STREAM,
+        "media": EVENT_STREAM,
         "event_schema": schema,
         "completion": {"kind": "eof"},
         "unknown": "error",
@@ -242,7 +242,6 @@ def channel_protocols(
                     if (schema := definition.get("schema")) is not None
                 )
         for _, schema, message in coded:
-            assert message.payload is not None
             documents[schema] = request.documents.pointers[message.payload.document]
             locations[schema] = message.payload
         helpers.append(

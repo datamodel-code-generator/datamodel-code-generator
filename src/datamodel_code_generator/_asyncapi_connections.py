@@ -26,7 +26,8 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._document_reader import as_mapping, descend, held_schema, schema_format_media_type
 from datamodel_code_generator._json_pointer import join_pointer, pointer_tokens, reference_tokens
-from datamodel_code_generator._runtime.model_codecs.media import is_token, media_kind
+from datamodel_code_generator._openapi_wire_plan import EVENT_STREAM
+from datamodel_code_generator._runtime.model_codecs.media import is_token
 from datamodel_code_generator._target_naming import PATH_PLACEHOLDER, path_placeholders
 from datamodel_code_generator.parser.asyncapi import schema_format_kind
 
@@ -75,7 +76,6 @@ _PROTOCOLS: Final[dict[Kind, str]] = {"websocket": "ws or wss", "sse": "http, ht
 _URL_SCHEMES: Final = {"ws": "http", "wss": "https", "http": "http", "https": "https"}
 """The scheme of the URL a client opens a server's channels at, by the scheme the server's URL is written with: a
 WebSocket's `wss` is TLS, as `https` is, and its `ws` plain, as `http` is."""
-_EVENT_STREAM: Final = "text/event-stream"
 _V2_ACTIONS: Final[tuple[tuple[str, Action], ...]] = (("subscribe", "send"), ("publish", "receive"))
 _CODED_FORMATS: Final = frozenset(("asyncapi", "jsonschema", "openapi"))
 """The kinds of `schemaFormat`, the parser's, whose payloads a client codes: those it reads in place, not the Avro,
@@ -172,16 +172,16 @@ class ReadScheme:
 
 @dataclass(frozen=True, slots=True)
 class ReadMessage:
-    """A message a channel carries: where it is declared, what the application does, its codec, and its payload.
+    """A message a channel carries: where it is declared, what the application does, its media type, and its payload.
 
-    `payload` is where the payload schema is written, and `payload_ref` the `$ref` of a payload that is only one, which
-    the message binds as the schema it names. The codec `event` is a server-sent event's, whose data the payload's
-    models decode as JSON.
+    `media` is the essence of its content type, the document's default where it gives none. `payload` is where the
+    payload schema is written, and `payload_ref` the `$ref` of a payload that is only one, which the message binds as
+    the schema it names. How the message travels is the bound models' to decide (`_target_binding.py`).
     """
 
     declaration: Tokens
     action: Action
-    codec: Literal["json", "utf8", "bytes", "event"]
+    media: str
     payload: Tokens
     payload_ref: str | None
 
@@ -420,7 +420,7 @@ def _kind(
     of an operation on it (`bound`) fixes the `Accept` or `Content-Type` header of its GET to `text/event-stream`.
     Any other is a WebSocket, as a channel of HTTP servers whose GET answers otherwise is no stream a client opens.
     """
-    if any(message.codec == "event" for message in messages):
+    if any(message.media == EVENT_STREAM for message in messages):
         return "sse"
     if any(server.kind == "websocket" for server in served):
         return "websocket"
@@ -446,7 +446,7 @@ def _streams(document: _Document, holder: Tokens, owner: Mapping[str, YamlValue]
         str(name).lower() in _NEGOTIATED
         and len(fixed := _fixed_values(document, value)) == 1
         and isinstance(media := fixed[0], str)
-        and schema_format_media_type(media) == _EVENT_STREAM
+        and schema_format_media_type(media) == EVENT_STREAM
         for name, value in shape[0].items()
     )
 
@@ -1041,7 +1041,7 @@ class _Reader:
         return merged
 
     def message(self, value: YamlValue, written: Tokens, action: object, skips: Skips) -> Iterator[ReadMessage]:
-        """Yield one message as the application sends or receives it, recording why a client cannot code it."""
+        """Yield one message as the application sends or receives it, recording why a client cannot read its payload."""
         if (found := self.document.resolved(value, written)) is None:
             skips.append((None, "a message of it references another document"))
             return
@@ -1064,26 +1064,11 @@ class _Reader:
             return
         ref = as_mapping(payload).get("$ref")
         payload_ref = ref if isinstance(ref, str) and len(as_mapping(payload)) == 1 else None
-        if (target := self.document.resolved(payload, tokens, self.loaded)) is None:
+        if self.document.resolved(payload, tokens, self.loaded) is None:
             skips.append((None, f"the payload of message {pointer} does not resolve in the loaded documents"))
             return
         media = _media(message, self.default_media)
-        schema = as_mapping(target[0])
-        encoding = schema.get("contentEncoding")
-        binary = encoding is None and schema.get("format") == "binary"
-        if media == _EVENT_STREAM:
-            codec: Literal["json", "utf8", "bytes", "event"] = "event"
-        elif media == "application/octet-stream" or (binary and media_kind(media) != "json"):
-            codec = "bytes"
-        elif media == "text/plain" and encoding is None and schema.get("type") == "string":
-            codec = "utf8"
-        elif media_kind(media) == "json":
-            codec = "json"
-        else:
-            content = media if encoding is None else f"{media} encoded as {encoding}"
-            skips.append(("message_content_types", f"message {pointer} has content type {content}"))
-            return
-        yield ReadMessage(declaration, "send" if action == "send" else "receive", codec, tokens, payload_ref)
+        yield ReadMessage(declaration, "send" if action == "send" else "receive", media, tokens, payload_ref)
 
 
 def read(raw: Mapping[str, YamlValue], loaded: Callable[[str], YamlValue]) -> ReadDocument:

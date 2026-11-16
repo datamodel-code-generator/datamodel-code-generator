@@ -16,6 +16,7 @@ from datamodel_code_generator._client.model_facts import ALIASES
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, RESERVED_ARGUMENTS, RESERVED_MEMBERS
 from datamodel_code_generator._client.security import CredentialSpec, SecurityPlanner
 from datamodel_code_generator._openapi_wire_plan import (
+    EVENT_STREAM,
     body_kind,
     content_types,
     form_extras,
@@ -127,7 +128,7 @@ Role: TypeAlias = Literal["success", "error"]
 
 _FORM_DATA: Final = "multipart/form-data"
 STREAM_MEDIA: Final = {
-    "sse": ("text/event-stream",),
+    "sse": (EVENT_STREAM,),
     "ndjson": (
         "application/jsonl",
         "application/jsonlines",

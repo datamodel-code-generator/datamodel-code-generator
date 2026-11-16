@@ -1,0 +1,14 @@
+# asyncapi-message-codecs pydantic_v2.BaseModel
+  warning UserWarning: <root>/asyncapi_message_codecs_pydantic_v2_basemodel: Skipping channel 'counts', which uses message content types (AsyncAPI 2.0) that the client does not support: /channels/counts: message /channels/counts/messages/count has content type text/plain
+    states 1 text str'running' raw=b'running'
+    server GET /states [] | closed 1000 ''
+    tables 1 text str'line,count\n1,2\n' raw=b'line,count\n1,2\n'
+    server GET /tables [] | closed 1000 ''
+    packs 1 binary bytesb'\x81\xa4line\x01' raw=b'\x81\xa4line\x01'
+  packs text ! DecodeError: DecodeError(status_code=101, reason='type', location='message.2') [location=('message', 2), body_bytes=b'text', truncated=False] type
+    server GET /packs [] | closed 1002 ''
+  blobs text ! DecodeError: DecodeError(status_code=101, reason='unencodable', location='message') [location=('message',), body_bytes=b'', truncated=False, cause=TypeError] unencodable
+    blobs server saw b'\x00\x01'
+    server GET /blobs [] | closed 1000 ''
+    uploads server saw b'--b\r\n\r\nfile\r\n--b--\r\n'
+    server GET /uploads [] | closed 1000 ''

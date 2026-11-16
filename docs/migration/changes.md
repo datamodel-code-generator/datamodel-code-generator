@@ -24,6 +24,14 @@ With `generate_server` or `generate_client`, a `preset` that does not match `tar
 - **Pull requests and issues:** [#6851](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6851)
 - **Source:** the release notes
 
+### Generated AsyncAPI clients code a message as the models type its payload (unreleased) { #asyncapi-client-message-codecs }
+
+How a message travels now follows the models generated for its payload, as an OpenAPI body of its media type does. A text message (`text/plain`, `text/csv`, `text/xml`, `text/html`, ...) whose models type a string, such as an enum of strings, `type: [string]`, a nullable string, a `const` or an `allOf` of a string schema, or a string with `contentEncoding`, is now sent and received as `str`; such channels were skipped as `message_content_types`. A message of another binary media type (`image/png`, `application/xml`, `application/x-msgpack`, ...), or of a form media type (`multipart/form-data`, `application/x-www-form-urlencoded`), which a frame carries as its raw bytes, is now sent and received as `bytes` whatever its schema (as `str` where its models type an enum of strings), where it was skipped unless it was a binary string. A JSON message on a WebSocket channel whose payload is a binary string (`type: string, format: binary`) is now raw `bytes` in a binary frame instead of the payload's model; on a server-sent event channel its data is still decoded by the model. An `application/octet-stream` message whose payload is an enum of strings, and a text message whose binary string the models type as `str` (`--type-mappings binary=string`), are now `str` instead of `bytes`.
+
+- **Affects:** experimental features: `cli-option.generate-client`
+- **Pull requests and issues:** [#6942](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6942)
+- **Source:** the release notes
+
 ### Generated AsyncAPI clients read a payload's schema format and wrapper as the models do (unreleased) { #asyncapi-client-payload-formats }
 
 A channel is now generated whose message payload names its `schemaFormat` in another case or with spaces (`application/SCHEMA+JSON;version=draft-07`, `application/schema+json ; version=draft-07`), in an OpenAPI format (`application/vnd.oai.openapi;version=3.0.0`), or in such a spelling through an AsyncAPI 2 message trait; such channels were skipped as `message_content_types`. A payload written `{schema: ...}` without a `schemaFormat` now binds the model generated for its `schema`: where it was the channel's only message, generation failed (`The use has no generated native type`), and beside another JSON message the channel was skipped as `several_messages` (`a message's payload declares no type`). Avro, Protocol Buffers and XML Schema payloads, also when a trait gives the format, stay left out.

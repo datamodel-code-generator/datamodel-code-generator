@@ -37,3 +37,11 @@ OPERATION_2: Final[OperationPlan[None]] = OperationPlan(
     responses=ResponseDecoder((), ()),
     security=security.OPERATION_2,
 )
+
+OPERATION_3: Final[OperationPlan[None]] = OperationPlan(
+    operation_id=None,
+    method='GET',
+    path='/packed',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder((), ()),
+)
