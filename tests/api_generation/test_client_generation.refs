@@ -143,6 +143,10 @@ asyncapi-handshake	main/generation_platform/client/packages/asyncapi-handshake/m
 asyncapi-handshake	main/generation_platform/client/packages/asyncapi-handshake/pydantic_v2_BaseModel//*.py
 asyncapi-handshake-models	main/generation_platform/client/asyncapi-handshake-models.txt
 asyncapi-handshake-models	main/generation_platform/client/packages/asyncapi-handshake-models/pydantic_v2_BaseModel//*.py
+asyncapi-handshake-siblings-v2	main/generation_platform/client/asyncapi-handshake-siblings-v2.txt
+asyncapi-handshake-siblings-v2	main/generation_platform/client/packages/asyncapi-handshake-siblings-v2/pydantic_v2_BaseModel//*.py
+asyncapi-handshake-siblings-v2-ignored	main/generation_platform/client/asyncapi-handshake-siblings-v2-ignored.txt
+asyncapi-handshake-siblings-v2-ignored	main/generation_platform/client/packages/asyncapi-handshake-siblings-v2-ignored/pydantic_v2_BaseModel//*.py
 asyncapi-handshake-v2	main/generation_platform/client/asyncapi-handshake-v2.txt
 asyncapi-handshake-v2	main/generation_platform/client/packages/asyncapi-handshake-v2/pydantic_v2_BaseModel//*.py
 asyncapi-mapped-payloads	main/generation_platform/client/asyncapi-mapped-payloads.txt

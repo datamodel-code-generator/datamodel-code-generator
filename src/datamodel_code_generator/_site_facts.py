@@ -1,9 +1,10 @@
 """The site of a located schema object of a loaded API document: its keywords as written, read once.
 
 The client and server bindings read the default and annotations of a parameter's schema by location while the walk
-acquires it (``_target_binding.py:TargetApiOpenAPIParser._ref_annotations``), through
+acquires it (``_target_binding.py:_TargetRecording.ref_annotations``), through
 ``openapi_scope.py:ApiOpenAPIParser._site_facts``, which builds the site of a location once from the loaded document,
-with the reference it writes resolved as the parser resolves it.
+with the reference it writes resolved as the parser resolves it; an AsyncAPI channel's parameter schemas are read by
+``site_facts_of`` over the documents the attempt loaded.
 No pass writes a site, and no reuse, collapse or merge of models moves one.
 """
 

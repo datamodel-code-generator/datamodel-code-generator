@@ -793,6 +793,23 @@
      "cli-option.generate-client"
     ]
    },
+   "id": "asyncapi-client-handshake-ref-siblings",
+   "kind": "experimental",
+   "refs": [
+    "#6970"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "With `--ignore-ref-siblings-by-schema-version`, an AsyncAPI 2 handshake query or header parameter whose property writes a `default` beside its `$ref` no longer takes that default as its argument default, as the generated models do not; it takes the default the referenced schema gives, or none (`token: str = 'abc'` becomes `token: str | UNSET = UNSET`). Without the option the client keeps the sibling default, as the models do.",
+   "title": "Generated AsyncAPI 2 clients follow the models for a default beside a handshake parameter's `$ref`"
+  },
+  {
+   "action": "review",
+   "affects": {
+    "experimental": [
+     "cli-option.generate-client"
+    ]
+   },
    "id": "asyncapi-client-message-codecs",
    "kind": "experimental",
    "refs": [

@@ -32,6 +32,14 @@ The query and header parameters of a channel's handshake are now the fields of t
 - **Pull requests and issues:** [#6943](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6943)
 - **Source:** the release notes
 
+### Generated AsyncAPI 2 clients follow the models for a default beside a handshake parameter's `$ref` (unreleased) { #asyncapi-client-handshake-ref-siblings }
+
+With `--ignore-ref-siblings-by-schema-version`, an AsyncAPI 2 handshake query or header parameter whose property writes a `default` beside its `$ref` no longer takes that default as its argument default, as the generated models do not; it takes the default the referenced schema gives, or none (`token: str = 'abc'` becomes `token: str | UNSET = UNSET`). Without the option the client keeps the sibling default, as the models do.
+
+- **Affects:** experimental features: `cli-option.generate-client`
+- **Pull requests and issues:** [#6970](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6970)
+- **Source:** the release notes
+
 ### Generated AsyncAPI clients code a message as the models type its payload (unreleased) { #asyncapi-client-message-codecs }
 
 How a message travels now follows the models generated for its payload, as an OpenAPI body of its media type does. A text message (`text/plain`, `text/csv`, `text/xml`, `text/html`, ...) whose models type a string, such as an enum of strings, `type: [string]`, a nullable string, a `const` or an `allOf` of a string schema, or a string with `contentEncoding`, is now sent and received as `str`; such channels were skipped as `message_content_types`. A message of another binary media type (`image/png`, `application/xml`, `application/x-msgpack`, ...), which a frame carries as its raw bytes, is now sent and received as `bytes` whatever its schema (as `str` where its models type an enum of strings), where it was skipped unless it was a binary string. A message of a form media type (`multipart/form-data`, `application/x-www-form-urlencoded`) is still sent and received as `bytes` only where its models type its payload as raw bytes (a binary string), and its channel is still skipped otherwise. A JSON message on a WebSocket channel whose payload is a binary string (`type: string, format: binary`) is now raw `bytes` in a binary frame instead of the payload's model; on a server-sent event channel its data is still decoded by the model. An `application/octet-stream` message whose payload is an enum of strings, and a text message whose binary string the models type as `str` (`--type-mappings binary=string`), are now `str` instead of `bytes`.
