@@ -664,7 +664,7 @@ def field_none_source(
         has_default_factory=field.has_default_factory,
         nullable=field.nullable,
         required=required,
-        type_has_null=required and field.type_has_null,
+        type_has_null=field.type_has_null,
         fall_back_to_nullable=not required and field.fall_back_to_nullable,
         pending_reference_null=pending_reference_null,
     )

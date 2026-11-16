@@ -154,8 +154,10 @@ def field_renders_none(  # noqa: PLR0913
         return "reference"
     if nullable is not None:
         return "nullable" if nullable is True else None
+    if type_has_null:
+        return "type-has-null"
     if required:
-        return "type-has-null" if type_has_null else None
+        return None
     return "fall-back" if fall_back_to_nullable else None
 
 
