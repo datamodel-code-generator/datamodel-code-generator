@@ -6375,6 +6375,20 @@
     "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
     "modules": [["client", "protocols", "_helpers.py"], ["client", "protocols", "_plans.py"]]
   },
+  "asyncapi-handshake-siblings-v2": {
+    "input": "asyncapi-handshake-siblings-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_helpers.py"], ["models.py"]]
+  },
+  "asyncapi-handshake-siblings-v2-ignored": {
+    "input": "asyncapi-handshake-siblings-v2.yaml",
+    "model": {
+      "input_file_type": "asyncapi",
+      "openapi_scopes": ["schemas"],
+      "ignore_ref_siblings_by_schema_version": true
+    },
+    "modules": [["client", "protocols", "_helpers.py"], ["models.py"]]
+  },
   "asyncapi-relative-v2": {
     "input": "asyncapi-relative-v2.yaml",
     "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},

@@ -44,7 +44,7 @@ from datamodel_code_generator._openapi_wire_plan import EVENT_STREAM, FORMS, mes
 from datamodel_code_generator._paths import file_uri
 from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalized
-from datamodel_code_generator._site_facts import ANNOTATION_KEYWORDS
+from datamodel_code_generator._site_facts import ANNOTATION_KEYWORDS, site_facts_of
 from datamodel_code_generator._target_contract import (
     WRAPPER_KINDS,
     BackendFieldFacts,
@@ -419,6 +419,35 @@ class _TargetRecording(OpenAPIParser):
         self.document_versions: dict[str, OpenAPIVersion] = {}
         super().__init__(source, config=config)
 
+    def _reads_ref_siblings_at(self, location: SchemaLocation) -> bool:
+        """Return whether the models read the keywords beside a ``$ref`` at a location with the schema it names.
+
+        They do in every version, unless --ignore-ref-siblings-by-schema-version reads the ``$ref`` alone where the
+        version of the location ignores them (``reads_ref_alone``).
+        """
+        return not self._ignores_ref_siblings_at(location)
+
+    def ref_annotations(
+        self, declaration: SchemaLocation, site_of: Callable[[SchemaLocation], SiteFacts]
+    ) -> dict[str, YamlValue]:
+        """Return the documentation keywords and default a schema gives its values, through its reference chain.
+
+        The schema a chain leads to gives its own, and the keywords beside each reference that the models read add
+        theirs, the nearer one's first (``_reads_ref_siblings_at``). A chain that loops back leads to no schema: the
+        keywords beside its references are all it gives. ``site_of`` reads the site of each location.
+        """
+        location, site = declaration, site_of(declaration)
+        seen = {declaration}
+        found: dict[str, YamlValue] = {}
+        while (target := site.ref) is not None:
+            if self._reads_ref_siblings_at(location):
+                found = {**site.annotations, **found}
+            if target in seen:
+                return found
+            seen.add(target)
+            location, site = target, site_of(target)
+        return {**site.annotations, **found}
+
     def _record_schema_object(self, reference: Reference, obj: JsonSchemaObject) -> None:
         """Record what a model's schema says of its other and pattern properties, as the parser reads them.
 
@@ -571,39 +600,9 @@ class TargetApiOpenAPIParser(_TargetRecording, ApiOpenAPIParser):
         self._callback_origin: SchemaLocation | None = None
         super().__init__(source, config=config)
 
-    def _reads_ref_siblings_at(self, location: SchemaLocation) -> bool:
-        """Return whether the models read the keywords beside a ``$ref`` at a location with the schema it names.
-
-        They do in every version, unless --ignore-ref-siblings-by-schema-version reads the ``$ref`` alone where the
-        version of the location ignores them (``reads_ref_alone``).
-        """
-        return not self._ignores_ref_siblings_at(location)
-
-    def _ref_annotations(self, declaration: SchemaLocation) -> dict[str, YamlValue]:
-        """Return the documentation keywords and default a schema gives its values, through its reference chain.
-
-        The schema a chain leads to gives its own, and the keywords beside each reference that the models read add
-        theirs, the nearer one's first (``_reads_ref_siblings_at``). A chain that loops back leads to no schema: the
-        keywords beside its references are all it gives. Each location is read by its site (``_site_facts``).
-        """
-        location, site = declaration, self._site_facts(declaration)
-        seen = {declaration}
-        found: dict[str, YamlValue] = {}
-        while (target := site.ref) is not None:
-            if self._reads_ref_siblings_at(location):
-                found = {**site.annotations, **found}
-            if target in seen:
-                return found
-            seen.add(target)
-            location, site = target, self._site_facts(target)
-        return {**site.annotations, **found}
-
     def _schema_record(self, declaration: SchemaLocation, role: TypeUseRole) -> _SchemaRecord:
         """Record what an acquired parameter schema says that its model types do not: its default and keywords."""
-        if role != "parameter":
-            return _UNRECORDED
-        annotations = self._ref_annotations(declaration)
-        return _SchemaRecord(_default(annotations.get("default")), _keywords(annotations))
+        return _UNRECORDED if role != "parameter" else _record(self.ref_annotations(declaration, self._site_facts))
 
     def _resolve_local_ref_path(self, path: Path, ref: str) -> Path:
         """Refuse a local file that a served source document would publish, before reading it.
@@ -971,6 +970,11 @@ def _keywords(
             with suppress(_UnsupportedError):
                 found.append((key, _freeze_literal(raw[key], set())))
     return tuple(found)
+
+
+def _record(annotations: Mapping[str, YamlValue]) -> _SchemaRecord:
+    """Return the record of a schema's default and documentation keywords (``ref_annotations``)."""
+    return _SchemaRecord(_default(annotations.get("default")), _keywords(annotations))
 
 
 _UNRECORDED: Final = _SchemaRecord(None, ())
@@ -4249,6 +4253,7 @@ class _Contracts(_Octets):
             facts["description"] = parameter.description
         if parameter is not None and parameter.schema is not None:
             schema = SchemaLocation(channel.document, parameter.schema)
+            self._recorded(schema)
             use = self.use_id(owner, "parameter", declared, used, schema, location="path", name=name)
             schemas = self.media_facts((self.use(use, schema),), schema, "parameter", None)
         else:
@@ -4312,10 +4317,7 @@ class _Contracts(_Octets):
         member = parameter.member
         declared = member.schema
         self.binder.declaration_types.setdefault(declared, member.type)
-        written = self._referenced(declared)
-        self.parser.schema_records.setdefault(
-            declared, _SchemaRecord(_default(written.get("default")), _keywords(written))
-        )
+        written = self._recorded(declared)
         used = use_site.child("bindings", binding, parameter.location, member.name)
         use = self.use_id(owner, "parameter", declared, used, declared, location=parameter.location, name=member.name)
         facts: dict[str, YamlValue] = {"name": member.name, "in": parameter.location, "required": member.required}
@@ -4330,23 +4332,17 @@ class _Contracts(_Octets):
             self.media_facts((self.use(use, declared),), declared, "parameter", None),
         )
 
-    def _referenced(self, declared: SchemaLocation) -> dict[str, YamlValue]:
-        """Return the keywords a schema says through its reference chain, the nearer schema's first.
+    def _recorded(self, declared: SchemaLocation) -> dict[str, YamlValue]:
+        """Record the default and keywords a schema of a channel gives through its reference chain, and return them.
 
-        A chain that loops back, or leaves the loaded documents, ends where it does.
+        Each location is read from its loaded document (``site_facts_of``), its reference resolved as the parser
+        resolves it (``loaded_target``).
         """
-        found: dict[str, YamlValue] = {}
-        location, seen = declared, {declared}
-        while True:
-            written = as_mapping(self.documents.borrow(location))
-            found = {**written, **found}
-            if (
-                not isinstance(ref := written.get("$ref"), str)
-                or (target := self.loaded_target(location.document, ref)) is None
-                or target in seen
-            ):
-                return found
-            seen.add(location := target)
+        written = self.parser.ref_annotations(
+            declared, lambda location: site_facts_of(self.documents.borrow(location), location, self.loaded_target)
+        )
+        self.parser.schema_records.setdefault(declared, _record(written))
+        return written
 
     def security_schemes(self) -> tuple[WireDeclaration, ...]:
         """Bind the security schemes of the documents the walk loaded, loading the documents they reference."""
@@ -4484,7 +4480,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator._runtime.model_codecs.media import LexicalKind, MediaKind
-    from datamodel_code_generator._site_facts import Projection, TypeUseRole
+    from datamodel_code_generator._site_facts import Projection, SiteFacts, TypeUseRole
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._target_contract import (
         BackendName,
