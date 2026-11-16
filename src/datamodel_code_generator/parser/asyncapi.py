@@ -446,6 +446,40 @@ class AsyncAPIParser(OpenAPIParser):
         """
         string_keys(path, "name", lambda _: _named_path(location, list(map(str, path))))
         schema_format = inherited_schema_format
+        if (
+            isinstance(raw_schema, dict)
+            and isinstance(raw_schema.get("$ref"), str)
+            and len(raw_schema) == 1
+            and (resolved := self._resolve_ref_object(raw_schema, set())) is not None
+            and (target_held := held_schema(resolved.value, schema_format)) is not None
+        ):
+            _check_multi_format_schema_object(resolved.value, resolved.path)
+            target_location = self._schema_value_location(resolved.value)
+            if schema_format_kind(cast("str | None", target_held[1])) in {"asyncapi", "jsonschema", "openapi"}:
+                target_schema = target_held[0]
+                if not isinstance(target_schema, (dict, bool)):
+                    msg = (
+                        f"AsyncAPI schemaFormat {stable_repr(cast('str | None', target_held[1]) or 'default AsyncAPI schema')} "
+                        f"requires a schema object at {_path_to_string([*resolved.path, 'schema'])}"
+                    )
+                    raise Error(msg)
+                return [
+                    self._schema(
+                        name,
+                        target_schema,
+                        path,
+                        resolved.context,
+                        location=target_location and target_location.child("schema"),
+                    )
+                ]
+            with self._asyncapi_context(resolved.context):
+                return self._iter_schema_format_schemas(
+                    name,
+                    resolved.value,
+                    resolved.path,
+                    schema_format,
+                    location=target_location,
+                )
         if (held := held_schema(raw_schema, schema_format)) is not None:
             _check_multi_format_schema_object(raw_schema, path)
             raw_schema, schema_format = held[0], cast("str | None", held[1])
