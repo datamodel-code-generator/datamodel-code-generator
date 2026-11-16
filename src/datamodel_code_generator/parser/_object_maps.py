@@ -704,6 +704,15 @@ def parse_string_property_name_union(
 
     ``member`` reads a branch of a union of keys; the one branch an ``anyOf`` keeps is read as the ``anyOf`` is.
     """
+    if member and schema.ref and not (schema.model_fields_set - (parser.STRING_PROPERTY_NAME_FIELDS | {"ref"})):
+        resolved = parser._merge_ref_with_schema(schema)  # noqa: SLF001
+        if resolved is not schema and resolved.ref is None and not (resolved.anyOf or resolved.oneOf or resolved.allOf):
+            if resolved.enum or "const" in resolved.extras:
+                return parse_property_name_key_schema(parser, schema, member=member), False
+            if resolved.type in {None, "string"} and (
+                resolved.pattern is not None or resolved.minLength is not None or resolved.maxLength is not None
+            ):
+                return parse_property_name_key_schema(parser, resolved, member=member), False
     if (
         schema.model_fields_set - parser.STRING_PROPERTY_NAME_FIELDS
         or type(parser)._property_names_forbids_all_keys(schema)  # noqa: SLF001
