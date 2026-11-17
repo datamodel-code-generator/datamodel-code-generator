@@ -18,7 +18,8 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   name given to ``getattr`` and its siblings), ``dynamic-import``, ``filterwarnings-ignore``, ``no-type-check`` and
   ``abnormal-path`` (the test marker), read with ``ast``.
 - Entries: ty rules below error, coverage ``omit`` and ``exclude`` lists (by text), pytest ``ignore`` warning filters
-  and the direct-assert exemption list, the generation store allowlist, the allowlists of the test style and
+  and the direct-assert exemption list, the generation store allowlist, the host baseline
+  (``allowlist:host-private-access``, the sum of its access counts), the allowlists of the test style and
   architecture checks (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot read), and the
   Legacy rows table of ``docs/architecture.md``.
 - ``unreadable:<what>``: a hook setting this script cannot read (no value or a block scalar, a ``--select`` or
@@ -55,6 +56,7 @@ import tomllib
 
 SCRIPT = "scripts/check_ratchets.py"
 STORE_ALLOWLIST = "scripts/generation_store_allowlist.toml"
+HOST_BASELINE = "scripts/host_private_access_baseline.toml"
 AREAS = frozenset({"src", "tests", "scripts"})
 FIX_FLAGS = frozenset({"--fix", "--fix-only", "--unsafe-fixes", "--exit-non-zero-on-fix", "--show-fixes"})
 IGNORE_FLAGS = frozenset({"--ignore", "--extend-ignore"})
@@ -128,6 +130,10 @@ ADVICE = {
         "Route the write through the generation store's mutation APIs (AGENTS.md) instead of listing it."
     ),
     "allowlist": "Allowlist entries only shrink: fix the violation instead of listing it.",
+    "allowlist:host-private-access": (
+        "Host baseline entries only shrink: declare the member on the Host Protocol the function takes, "
+        "or move the code into the class."
+    ),
     "unreadable": (
         "Write the ruff hook's `args:` and `exclude:` as inline values or a block list, without --select or --config "
         "(put those in pyproject.toml), so that the counter can read them."
@@ -537,6 +543,25 @@ def _method_owner(statement: ast.stmt, names: frozenset[str]) -> str:
     return _listed_name(owner, names)
 
 
+def _toml_leaves(root: Path, path: str) -> list[object]:
+    """Return the values of an allowlist file of ``["file"."function"]`` tables, or [] where there is none."""
+    file = root / path
+    tables = tomllib.loads(file.read_text(encoding="utf-8")) if file.is_file() else {}
+    return [value for table in tables.values() for entry in table.values() for value in entry.values()]
+
+
+def _host_baseline_tally(tally: Tally, root: Path) -> None:
+    """Count the accesses of the host baseline; a file that is not tables of integer counts is unreadable."""
+    try:
+        counts = _toml_leaves(root, HOST_BASELINE)
+    except (tomllib.TOMLDecodeError, AttributeError):
+        counts = [None]
+    for count in counts:
+        key = "allowlist:host-private-access" + ("" if type(count) is int else ":unreadable")
+        for _ in range(count if type(count) is int else 1):
+            tally.add(key, HOST_BASELINE)
+
+
 def _config_tally(tally: Tally, root: Path, pyproject: dict) -> None:
     """Count the configuration entries and allowlist entries that switch a check off."""
     tool = pyproject.get("tool", {})
@@ -559,9 +584,8 @@ def _config_tally(tally: Tally, root: Path, pyproject: dict) -> None:
         tally.add("pytest-config:filterwarnings-ignore", "pyproject.toml")
     for _ in pytest.get("ini_options", {}).get("assert_helper_direct_assert_exempt_files", []):
         tally.add("allowlist:direct-assert-exempt-files", "pyproject.toml")
-    store = root / STORE_ALLOWLIST
-    tables = tomllib.loads(store.read_text(encoding="utf-8")) if store.is_file() else {}
-    for value in (value for table in tables.values() for entry in table.values() for value in entry.values()):
+    _host_baseline_tally(tally, root)
+    for value in _toml_leaves(root, STORE_ALLOWLIST):
         counted = isinstance(value, int)
         for _ in range(value if counted else 1):
             tally.add(f"store-allowlist:{'counted' if counted else 'witness'}", STORE_ALLOWLIST)
@@ -638,7 +662,7 @@ def _rise_lines(
 ) -> list[str]:
     """Describe one key that rose: its totals, how to fix it, and each file whose count rose with its sites."""
     before, after = sum(base.get(key, {}).values()), sum(head[key].values())
-    lines = ["", f"{key} rose by {after - before} ({before} -> {after}). {ADVICE.get(_kind(key), '')}"]
+    lines = ["", f"{key} rose by {after - before} ({before} -> {after}). {ADVICE.get(key, ADVICE.get(_kind(key), ''))}"]
     for path, was, now in _file_rises(base.get(key, {}), head[key]):
         at = ", ".join(map(str, sorted(line for line in sites.get(path, []) if line)))
         lines.append(f"  {path}: {was} -> {now}" + (f" (lines {at})" if at else ""))

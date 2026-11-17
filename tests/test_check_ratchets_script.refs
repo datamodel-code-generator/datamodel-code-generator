@@ -18,6 +18,11 @@ fix-enabled	check_ratchets_script/check_ratchets_against_base[fix-enabled].txt
 form-swap	check_ratchets_script/check_ratchets_against_base[form-swap].txt
 hidden-by-config	check_ratchets_script/check_ratchets_against_base[hidden-by-config].txt
 hook-exclude-widened	check_ratchets_script/check_ratchets_against_base[hook-exclude-widened].txt
+host-baseline-grows	check_ratchets_script/check_ratchets_against_base[host-baseline-grows].txt
+host-baseline-shrinks	check_ratchets_script/check_ratchets_against_base[host-baseline-shrinks].txt
+host-baseline-unreadable	check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable].txt
+host-baseline-unreadable-shape	check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable-shape].txt	= check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable].txt
+host-baseline-unreadable-value	check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable-value].txt	= check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable].txt
 moved-line	check_ratchets_script/check_ratchets_against_base[moved-line].txt	= check_ratchets_script/check_ratchets_against_base[form-swap].txt
 nested-ruff-config	check_ratchets_script/check_ratchets_against_base[nested-ruff-config].txt
 other-kinds	check_ratchets_script/check_ratchets_against_base[other-kinds].txt
