@@ -548,12 +548,16 @@ title = "t"
 summary = "s"
 keep = { note = "n" }
 source = "release-note"
+
+[[change]]
+id = "option:--new-flag"
+category = "new-surface"
+title = "t"
 """
         },
         {
             "no-category": '[[change]]\nid = "no-category"\ntitle = "t"\n',
             "odd-category": '[[change]]\nid = "odd-category"\ncategory = "surprise"\ndecision = "#1"\n',
-            "option:--new-flag": '[[change]]\nid = "option:--new-flag"\ncategory = "new-surface"\ntitle = "t"\n',
             "features": """
 [[change]]
 id = "features"
@@ -812,6 +816,33 @@ def test_build_migration_docs_stamp(tmp_path: Path, capsys: pytest.CaptureFixtur
         capsys.readouterr().err.splitlines()[-1],
     ]
     assert_output("\n".join([*output, _files(data), _files(tmp_path / "docs")]))
+
+
+def test_build_migration_docs_stamp_retained_extension(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A fragment merged after the tag that extends one the tag contains is refused before anything is written.
+
+    Once the extension is gone the stamp goes through, also for a fragment whose header carries a comment.
+    """
+    commented = UNRELEASED["custom-template-root"].replace("custom-template-root", "commented-header")
+    commented = commented.replace("[[change]]\n", "[[change]] # kept as written\n")
+    shipped = UNRELEASED | {"new-flag": RECORDS["new-flag"], "commented-header": commented}
+    data = _write_data(tmp_path, CHANGES, shipped | {"more-new-flag-outputs": RECORDS["more-new-flag-outputs"]})
+    tree = tmp_path / "tag"
+    tagged = tree / "docs" / "data" / "migration" / "unreleased"
+    tagged.mkdir(parents=True)
+    for entry_id, text in shipped.items():
+        (tagged / f"{entry_id}.toml").write_text(text, encoding="utf-8")
+    package = tree / "src" / "datamodel_code_generator"
+    (package / "model" / "template").mkdir(parents=True)
+    for name, text in TAG_PACKAGE.items():
+        (package / name).write_text(text, encoding="utf-8")
+    stamp = ["--stamp", "0.5.0", "--tag-tree", str(tree), "--date", "2026-05-01"]
+    refused = main([*_args(tmp_path), *stamp], REGISTRIES)
+    before = _files(data)
+    (data / "unreleased" / "more-new-flag-outputs.toml").unlink()
+    stamped = main([*_args(tmp_path), *stamp], REGISTRIES)
+    printed = capsys.readouterr()
+    assert_output(f"exits {refused}, {stamped}\n{printed.err}{before}{_files(data / 'changes')}")
 
 
 def test_migration_selector_script() -> None:

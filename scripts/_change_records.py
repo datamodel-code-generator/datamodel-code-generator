@@ -114,6 +114,7 @@ REF_PATTERN = re.compile(r"#[1-9]\d*")
 ID_PATTERN = re.compile(r"[a-z0-9][a-z0-9.:_-]*")
 DERIVED_PREFIXES = ("deprecation:", "removal:", "experimental:", "preset:", "option:")
 PRESET_SURFACE = "preset:"
+CHANGE_HEADER = re.compile(r"\[\[\s*change\s*\]\]\s*(#.*)?")
 CLIENT_SERVER_FEATURES = frozenset({"cli-option.generate-client", "cli-option.generate-server"})
 """Experimental features whose output changes need no owner decision (owner, 2026-10-19)."""
 COVERS_INDENT = "    "
@@ -534,17 +535,20 @@ def with_covers(text: str, labels: Collection[str]) -> str:
     lines = stripped.splitlines(keepends=True)
     if lines and not lines[-1].endswith("\n"):
         lines[-1] += "\n"
-    header = next(index for index, line in enumerate(lines) if line.strip() == "[[change]]") + 1
+    if not labels:
+        return "".join(lines)
+    header = next(index for index, line in enumerate(lines) if CHANGE_HEADER.fullmatch(line.strip())) + 1
     after_keys = next((index for index in range(header, len(lines)) if lines[index].startswith("[")), len(lines))
     while after_keys > header and not lines[after_keys - 1].strip():
         after_keys -= 1
-    block = [covers_block(labels)] if labels else []
+    block = [covers_block(labels)]
     candidates = ("".join([*lines[:position], *block, *lines[position:]]) for position in (after_keys, header))
     return next(candidate for candidate in candidates if tomllib.loads(candidate) == wanted)
 
 
 __all__ = [
     "AFFECTS_KEYS",
+    "PRESET_SURFACE",
     "RULES",
     "Action",
     "Category",

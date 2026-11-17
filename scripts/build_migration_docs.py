@@ -1293,7 +1293,7 @@ def stamp(layout: Layout, version: str, tag_tree: Path, date: str, registries: R
     A moved guide entry loses its `covers`, and a record without a guide entry, or one that extends another, is
     deleted: their work, naming the stored outputs a change moves until it is released, is done. Every input is read
     and checked before the first write, so a refused stamp can run again: a fragment edited after the tag is refused,
-    as its release would get text it did not ship.
+    as its release would get text it did not ship, and so is one that extends a record the tag contains.
     """
     guide = load(layout, registries)
     if version_key(version) <= version_key(guide.latest):
@@ -1309,6 +1309,14 @@ def stamp(layout: Layout, version: str, tag_tree: Path, date: str, registries: R
         raise MigrationDataError([
             f"unreleased/{path.name} differs from the tag's; move later edits to a new fragment" for path in edited
         ])
+    if orphaned := [
+        f"unreleased/{path.name} extends {extends}, which the tag contains; its release moves or deletes {extends}"
+        for path in sorted(layout.unreleased.glob("*.toml"))
+        if path not in moved
+        for extends in [tomllib.loads(path.read_text(encoding="utf-8"))["change"][0].get("extends")]
+        if extends and (layout.unreleased / f"{extends}.toml") in moved
+    ]:
+        raise MigrationDataError(orphaned)
     tag_presets, tagged_surface = _tag_facts(tag_tree)
     derived = tomllib.loads(layout.derived.read_text(encoding="utf-8"))
     released_surface = json.loads(layout.surface.read_text(encoding="utf-8"))
