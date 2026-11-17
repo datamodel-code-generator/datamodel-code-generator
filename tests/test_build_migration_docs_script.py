@@ -70,6 +70,13 @@ REGISTRIES = Registries(
             message="Avro input is experimental.",
             since_version="0.3.0",
         ),
+        ExperimentalFeature(
+            id="input-format.toml",
+            kind="input-format",
+            target="--input-file-type toml",
+            message="TOML input is experimental.",
+            since_version="0.5.0",
+        ),
     ),
     preset_dates=(
         PresetDate("20260101", None, ()),
@@ -229,18 +236,22 @@ UNRELEASED = {
     "custom-template-root": """
 [[change]]
 id = "custom-template-root"
+category = "decided-change"
 kind = "template"
 action = "required"
 title = "Custom templates receive `fields` instead of `model_fields`"
 summary = "Templates of `--custom-template-dir` read the fields as `fields`."
 affects = { templates = ["pydantic_v2/BaseModel.jinja2", "Old.jinja2"] }
+keep = { note = "No option keeps `model_fields`." }
 migrate = "Rename `model_fields` to `fields` in your templates."
 refs = ["#5001"]
+decision = ["#5000"]
 source = "release-note"
 """,
     "old-flag-removed": """
 [[change]]
 id = "old-flag-removed"
+category = "api"
 kind = "removal"
 action = "required"
 title = "`--old-flag` is removed"
@@ -248,9 +259,42 @@ summary = "The option did nothing since 0.3.0."
 affects = { options = ["--old-flag"] }
 migrate = "Drop `--old-flag`."
 refs = ["#5002"]
+decision = ["#5000"]
 source = "release-note"
 """,
 }
+RECORDS = {
+    "new-flag": """
+[[change]]
+id = "new-flag"
+category = "new-surface"
+title = "Add --new-flag and the 20260301 presets"
+surface = ["--new-flag", "--output-model-type c", "preset:20260301"]
+covers = [
+    "main/help/new_flag.txt",
+]
+""",
+    "help-wording": """
+[[change]]
+id = "help-wording"
+category = "docs-text"
+title = "Reword the help of --quiet-flag"
+""",
+    "more-new-flag-outputs": """
+[[change]]
+id = "more-new-flag-outputs"
+extends = "new-flag"
+refs = ["#5003"]
+""",
+    "test-input-moved": """
+[[change]]
+id = "test-input-moved"
+category = "harness"
+title = "Move a test input"
+summary = "The test reads its schema from a shared file; the package writes the same output for it."
+""",
+}
+"""Records of categories without a guide entry and one that extends another: the pages and notes leave them out."""
 
 
 def _write_data(
@@ -344,12 +388,13 @@ def test_build_migration_docs_outputs(tmp_path: Path, capsys: pytest.CaptureFixt
 
     The steps from a release older than `complete_from` are marked incomplete with a pointer to the changelog, and a
     hand entry extends the derived entry of an option value by its id. A hand-written new warning is listed apart
-    from the deprecations, under a heading and a release-note section that plan no removal.
+    from the deprecations, under a heading and a release-note section that plan no removal. Records without a guide
+    entry, and one that extends another record, are left out.
     """
     _write_data(
         tmp_path,
         CHANGES | {"0.3.0": CHANGES["0.3.0"] + OPTION_VALUE_ENTRY + NEW_WARNING_ENTRIES},
-        UNRELEASED,
+        UNRELEASED | RECORDS,
         releases=COMPLETE_RELEASES,
         derived=DERIVED + '"--output-model-type=b" = "0.3.0"\n',
     )
@@ -491,6 +536,138 @@ source = "release-note"
         DERIVED,
     ),
     "no releases": ({}, {}, "", DERIVED),
+    "records": (
+        {
+            "0.3.0": """
+[[change]]
+id = "released-notice"
+category = "notice"
+kind = "default-output"
+action = "review"
+title = "t"
+summary = "s"
+keep = { note = "n" }
+source = "release-note"
+"""
+        },
+        {
+            "no-category": '[[change]]\nid = "no-category"\ntitle = "t"\n',
+            "odd-category": '[[change]]\nid = "odd-category"\ncategory = "surprise"\ndecision = "#1"\n',
+            "option:--new-flag": '[[change]]\nid = "option:--new-flag"\ncategory = "new-surface"\ntitle = "t"\n',
+            "features": """
+[[change]]
+id = "features"
+category = "experimental"
+kind = "experimental"
+action = "warn"
+title = "t"
+summary = "s"
+affects = { experimental = ["input-format.avro", "input-format.unknown", "input-format.toml"] }
+surface = ["--new-flag"]
+source = "release-note"
+""",
+            "no-features": """
+[[change]]
+id = "no-features"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "t"
+summary = "s"
+source = "release-note"
+""",
+            "harness-guide": """
+[[change]]
+id = "harness-guide"
+category = "harness"
+kind = "cli"
+action = "none"
+title = "t"
+""",
+            "surfaces": """
+[[change]]
+id = "surfaces"
+category = "new-surface"
+title = "t"
+surface = ["--output-model-type", "--nothing", "preset:20260101", "preset:20260301"]
+""",
+            "extends-missing": '[[change]]\nid = "extends-missing"\nextends = "nothing"\ntitle = "t"\n',
+            "extends-extends": '[[change]]\nid = "extends-extends"\nextends = "extends-missing"\n',
+            "inline-covers": (
+                '[[change]]\nid = "inline-covers"\ncategory = "internal"\ntitle = "t"\ncovers = ["a.txt"]\n'
+            ),
+            "api-scheduled": """
+[[change]]
+id = "api-scheduled"
+category = "api"
+kind = "removal"
+action = "required"
+title = "t"
+summary = "s"
+affects = { options = ["--validation"] }
+migrate = "m"
+refs = ["#1"]
+source = "release-note"
+""",
+            "api-unscheduled": """
+[[change]]
+id = "api-unscheduled"
+category = "api"
+kind = "cli"
+action = "review"
+title = "t"
+summary = "s"
+affects = { options = ["--old-flag"] }
+refs = ["#1"]
+source = "release-note"
+""",
+            "decided-without-keep": """
+[[change]]
+id = "decided-without-keep"
+category = "decided-change"
+kind = "default-output"
+action = "review"
+title = "t"
+summary = "s"
+refs = ["#1"]
+decision = ["#5"]
+source = "release-note"
+""",
+            "bad-tables": """
+[[change]]
+id = "bad-tables"
+category = "default-fix"
+affects = "x"
+keep = { flags = "x", note = 1 }
+verify = { schema = 1, args = "x" }
+""",
+            "fix-without-decision": """
+[[change]]
+id = "fix-without-decision"
+category = "default-fix"
+kind = "default-output"
+action = "keep"
+title = "t"
+summary = "s"
+refs = ["#1"]
+source = "release-note"
+""",
+            "run-without-fixture": """
+[[change]]
+id = "run-without-fixture"
+category = "output-text"
+kind = "output-text"
+action = "none"
+title = "t"
+summary = "s"
+refs = ["#1"]
+source = "run"
+""",
+            "bad-decision": '[[change]]\nid = "bad-decision"\ncategory = "internal"\ntitle = "t"\ndecision = ["5"]\n',
+        },
+        None,
+        DERIVED,
+    ),
     "ranges": (
         {
             "0.2.0": """
@@ -541,6 +718,8 @@ source = "release-note"
             "unreleased-unknown-flag": """
 [[change]]
 id = "unreleased-unknown-flag"
+category = "default-fix"
+decision = ["#5"]
 kind = "default-output"
 action = "keep"
 title = "t"
@@ -583,18 +762,29 @@ arg_parser.add_argument("--quiet-flag", action="store_true")
 def test_build_migration_docs_stamp(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """A stamp moves the fragments the tag contains, adds the release and the preset dates the tag first ships.
 
-    A tag tree whose fragment differs from the branch's, or whose preset names or surface cannot be read, is refused
-    before anything is written, so the stamp runs again once the tree is right.
+    A moved entry loses its covers; records without a guide entry and records that extend another are deleted. A tag
+    tree whose fragment differs from the branch's, or whose preset names or surface cannot be read, is refused before
+    anything is written, so the stamp runs again once the tree is right.
     """
+    shipped = {
+        "covered-template-root": UNRELEASED["custom-template-root"]
+        .replace("custom-template-root", "covered-template-root")
+        .replace('source = "release-note"\n', 'source = "release-note"\ncovers = [\n    "main/template.py",\n]\n'),
+        "new-flag": RECORDS["new-flag"],
+        "more-new-flag-outputs": RECORDS["more-new-flag-outputs"],
+    }
     data = _write_data(
         tmp_path,
         CHANGES,
         UNRELEASED
+        | shipped
         | {"merged-after-tag": UNRELEASED["custom-template-root"].replace("custom-template-root", "merged-after-tag")},
     )
     tree = tmp_path / "tag"
     tagged = tree / "docs" / "data" / "migration" / "unreleased" / "custom-template-root.toml"
     tagged.parent.mkdir(parents=True)
+    for entry_id, text in shipped.items():
+        tagged.with_name(f"{entry_id}.toml").write_text(text, encoding="utf-8")
     package = tree / "src" / "datamodel_code_generator"
     (package / "model" / "template").mkdir(parents=True)
     stamp = ["--stamp", "0.5.0", "--tag-tree", str(tree), "--date", "2026-05-01"]
@@ -738,6 +928,8 @@ RUN_UNRELEASED = {
     "enum-keep-next": f"""
 [[change]]
 id = "enum-keep-next"
+category = "default-fix"
+decision = ["#2515"]
 kind = "default-output"
 action = "keep"
 title = "An unreleased change kept only for Python 3.11 targets"

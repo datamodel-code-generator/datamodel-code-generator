@@ -5,6 +5,7 @@ entries	build_migration_docs_script/build_migration_docs_invalid_data[entries].t
 no releases	build_migration_docs_script/build_migration_docs_invalid_data[no releases].txt
 no surface	build_migration_docs_script/build_migration_docs_invalid_data[no surface].txt
 ranges	build_migration_docs_script/build_migration_docs_invalid_data[ranges].txt
+records	build_migration_docs_script/build_migration_docs_invalid_data[records].txt
 releases	build_migration_docs_script/build_migration_docs_invalid_data[releases].txt
 surface and allowlist	build_migration_docs_script/build_migration_docs_invalid_data[surface and allowlist].txt
 [test_build_migration_docs_outputs]

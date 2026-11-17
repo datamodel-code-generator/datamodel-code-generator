@@ -81,7 +81,7 @@
 ## Breaking Changes
 
 ### Custom Template Update Required
-* Custom templates receive `fields` instead of `model_fields` - Templates of `--custom-template-dir` read the fields as `fields`. Rename `model_fields` to `fields` in your templates. (#5001)
+* Custom templates receive `fields` instead of `model_fields` - Templates of `--custom-template-dir` read the fields as `fields`. No option keeps `model_fields`. Rename `model_fields` to `fields` in your templates. (#5001)
 
 ### API/CLI Changes
 * `--old-flag` is removed - The option did nothing since 0.3.0. Drop `--old-flag`. (#5002)
@@ -99,6 +99,10 @@
 ## New Dated Presets
 
 * `standard-py3XX-20260301` and `practical-py3XX-20260301`: they keep the 20260201 options and add Snake case (`--snake-case-field`): Snake case field names.
+
+## Experimental Features
+
+* `--input-file-type toml` is experimental. TOML input is experimental.
 
 --- data/migration.json ---
 {
@@ -410,6 +414,9 @@
     ]
    },
    "id": "custom-template-root",
+   "keep": {
+    "note": "No option keeps `model_fields`."
+   },
    "kind": "template",
    "migrate": "Rename `model_fields` to `fields` in your templates.",
    "refs": [
@@ -446,6 +453,20 @@
    "source": "registry",
    "summary": "argcomplete will become optional.",
    "title": "argcomplete installation is scheduled to change"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "input-format.toml"
+    ]
+   },
+   "id": "experimental:input-format.toml",
+   "kind": "experimental",
+   "release": "unreleased",
+   "source": "registry",
+   "summary": "TOML input is experimental.",
+   "title": "--input-file-type toml is experimental"
   },
   {
    "action": "none",
@@ -618,6 +639,7 @@ Every change a user meets when upgrading, newest first. To upgrade from a releas
 Templates of `--custom-template-dir` read the fields as `fields`.
 
 - **Affects:** custom templates: `pydantic_v2/BaseModel.jinja2`, `Old.jinja2`
+- **Keep the old output:** No option keeps `model_fields`.
 - **What to change:** Rename `model_fields` to `fields` in your templates.
 - **Pull requests and issues:** [#5001](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5001)
 - **Source:** the release notes
@@ -635,6 +657,13 @@ The option did nothing since 0.3.0.
 
 argcomplete will become optional.
 
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### --input-file-type toml is experimental (unreleased) { #experimental-input-format-toml }
+
+TOML input is experimental.
+
+- **Affects:** experimental features: `input-format.toml`
 - **Source:** the registry of deprecations, experimental features and dated presets
 
 ### New option `--new-flag` (`--no-new-flag`) (unreleased) { #option-new-flag }
