@@ -1,0 +1,39 @@
+{
+  "code": 0,
+  "package": [
+    "datamodel_code_generator",
+    "datamodel_code_generator._caches",
+    "datamodel_code_generator._config_fields",
+    "datamodel_code_generator._context_scope",
+    "datamodel_code_generator._copy_on_change",
+    "datamodel_code_generator._format_types",
+    "datamodel_code_generator._free_names",
+    "datamodel_code_generator._generation_timestamp",
+    "datamodel_code_generator._json_config_fields",
+    "datamodel_code_generator._json_limits",
+    "datamodel_code_generator._json_output",
+    "datamodel_code_generator._message_text",
+    "datamodel_code_generator._module_paths",
+    "datamodel_code_generator._option_names",
+    "datamodel_code_generator._process_state",
+    "datamodel_code_generator._python_syntax",
+    "datamodel_code_generator._records",
+    "datamodel_code_generator._registry_render",
+    "datamodel_code_generator._requirements",
+    "datamodel_code_generator._shared_types",
+    "datamodel_code_generator._source",
+    "datamodel_code_generator._target_unicode",
+    "datamodel_code_generator._url_redaction",
+    "datamodel_code_generator._warning_control",
+    "datamodel_code_generator.deprecations",
+    "datamodel_code_generator.enums",
+    "datamodel_code_generator.imports",
+    "datamodel_code_generator.json_config",
+    "datamodel_code_generator.python_literal",
+    "datamodel_code_generator.validators"
+  ],
+  "heavy_third_party": [
+    "pydantic",
+    "pydantic_core"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "code": null,
+  "package": [
+    "datamodel_code_generator",
+    "datamodel_code_generator._caches",
+    "datamodel_code_generator._generation_timestamp",
+    "datamodel_code_generator._module_paths",
+    "datamodel_code_generator._process_state",
+    "datamodel_code_generator._shared_types",
+    "datamodel_code_generator._source",
+    "datamodel_code_generator._url_redaction",
+    "datamodel_code_generator._warning_control",
+    "datamodel_code_generator.enums"
+  ],
+  "heavy_third_party": []
+}

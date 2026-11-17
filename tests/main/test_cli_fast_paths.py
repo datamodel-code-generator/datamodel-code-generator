@@ -1116,3 +1116,95 @@ def test_cli_generation_with_validated_config_skips_parser_config_import() -> No
 
     assert generated["generated_user"] is True
     assert generated["imported_config"] is False
+
+
+STARTUP_PATHS = {
+    "import": None,
+    "version": ["--version"],
+    "help": ["--help"],
+    "json-schema-config": ["--output-format-json-schema", "config"],
+    "json-schema-config-equals": ["--output-format-json-schema=config"],
+    "json-schema-generation": ["--output-format-json-schema=generation"],
+    "json-schema-model-metadata": ["--output-format-json-schema=model-metadata"],
+    "json-schema-structured-output": ["--output-format-json-schema=structured-output"],
+    "json-schema-generate-prompt": ["--output-format-json-schema=generate-prompt"],
+    "generate-prompt": ["--generate-prompt"],
+    "install-skill": ["--install-skill", "codex"],
+}
+HEAVY_MODULES = frozenset({
+    "argcomplete",
+    "black",
+    "certifi",
+    "genson",
+    "graphql",
+    "grpc_tools",
+    "httpx",
+    "httpx2",
+    "inflect",
+    "isort",
+    "jinja2",
+    "lxml",
+    "msgspec",
+    "openapi_spec_validator",
+    "prance",
+    "pydantic",
+    "pydantic_core",
+    "pysnooper",
+    "ruff",
+    "ryaml",
+    "watchfiles",
+    "yaml",
+})
+
+
+def _run_startup_modules_probe(args: list[str] | None) -> dict[str, object]:
+    return _run_probe(
+        textwrap.dedent(
+            f"""
+            import contextlib
+            import io
+            import json
+            import os
+            import runpy
+            import sys
+            import tempfile
+
+            args = {args!r}
+            loaded_before = set(sys.modules)
+            code = None
+            previous_cwd = os.getcwd()
+            with tempfile.TemporaryDirectory() as directory:
+                os.chdir(directory)
+                os.environ["HOME"] = os.environ["USERPROFILE"] = directory
+                sys.argv = ["datamodel-codegen", *(args or [])]
+                with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                    try:
+                        if args is None:
+                            import datamodel_code_generator
+                        else:
+                            runpy.run_module("datamodel_code_generator.__main__", run_name="__main__", alter_sys=True)
+                    except SystemExit as exc:
+                        code = exc.code
+                os.chdir(previous_cwd)
+            loaded = set(sys.modules) - loaded_before
+            top_level = {{name.partition(".")[0] for name in loaded}}
+            print(json.dumps({{
+                "code": code,
+                "package": sorted(name for name in loaded if name.partition(".")[0] == "datamodel_code_generator"),
+                "heavy_third_party": sorted(top_level.intersection({sorted(HEAVY_MODULES)!r})),
+            }}))
+            """
+        )
+    )
+
+
+@pytest.mark.parametrize("path", STARTUP_PATHS)
+def test_fast_paths_load_these_modules(path: str) -> None:
+    """Record the package and heavy third-party modules a fresh interpreter holds after the import or a fast path.
+
+    The heavy modules are the package's dependencies and extras by import name. ``-V`` and ``-h`` take the paths of
+    ``--version`` and ``--help``. Changes to the import structure are proven against these lists.
+    """
+    result = _run_startup_modules_probe(STARTUP_PATHS[path])
+
+    assert_output(f"{json.dumps(result, indent=2)}\n")

@@ -8,6 +8,18 @@
 	main/cli_fast_paths/empty_formatters.txt
 [test_external_ref_parses_only_external_raw_python_type]
 	main/cli_fast_paths/external_ref_type_transport.txt
+[test_fast_paths_load_these_modules]
+generate-prompt	main/cli_fast_paths/fast_paths_load_these_modules[generate-prompt].txt
+help	main/cli_fast_paths/fast_paths_load_these_modules[help].txt
+import	main/cli_fast_paths/fast_paths_load_these_modules[import].txt
+install-skill	main/cli_fast_paths/fast_paths_load_these_modules[install-skill].txt
+json-schema-config	main/cli_fast_paths/fast_paths_load_these_modules[json-schema-config].txt
+json-schema-config-equals	main/cli_fast_paths/fast_paths_load_these_modules[json-schema-config-equals].txt	= main/cli_fast_paths/fast_paths_load_these_modules[json-schema-config].txt
+json-schema-generate-prompt	main/cli_fast_paths/fast_paths_load_these_modules[json-schema-generate-prompt].txt	= main/cli_fast_paths/fast_paths_load_these_modules[generate-prompt].txt
+json-schema-generation	main/cli_fast_paths/fast_paths_load_these_modules[json-schema-generation].txt
+json-schema-model-metadata	main/cli_fast_paths/fast_paths_load_these_modules[json-schema-model-metadata].txt
+json-schema-structured-output	main/cli_fast_paths/fast_paths_load_these_modules[json-schema-structured-output].txt	= main/cli_fast_paths/fast_paths_load_these_modules[json-schema-generation].txt
+version	main/cli_fast_paths/fast_paths_load_these_modules[version].txt
 [test_file_url_join_skips_http_backend_imports]
 	main/cli_fast_paths/file_url_http_imports.txt
 [test_generate_prompt_fast_path_suggests_invalid_options]
