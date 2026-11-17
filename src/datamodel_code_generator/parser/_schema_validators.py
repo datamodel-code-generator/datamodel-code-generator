@@ -465,7 +465,7 @@ def get_required_groups(
 
     groups: list[tuple[str, ...]] = []
     for item in items:
-        if not parser._is_required_only_schema(item):  # noqa: SLF001
+        if not parser._is_required_only_schema(item):
             return ()
         groups.append(tuple(item.required))
     return tuple(groups)
@@ -474,7 +474,7 @@ def get_required_groups(
 def get_not_required_groups(parser: SchemaValidatorsHost, obj: JsonSchemaObject) -> tuple[tuple[str, ...], ...]:
     """Return the required-only property group `not` forbids, or an empty tuple."""
     not_schema = get_conditional_schema(parser, obj, "not")
-    if not_schema is None or not parser._is_required_only_schema(not_schema, allow_empty=True):  # noqa: SLF001
+    if not_schema is None or not parser._is_required_only_schema(not_schema, allow_empty=True):
         return ()
     return (tuple(not_schema.required),)
 
@@ -498,7 +498,7 @@ def get_conditional_schema(
     if isinstance(item, (JsonSchemaObject, bool)):
         return item
     if isinstance(item, dict):
-        return _schema_refs.shared_object(parser, item, parser.SCHEMA_OBJECT_TYPE, partial(parser._schema_object, item))  # noqa: SLF001
+        return _schema_refs.shared_object(parser, item, parser.SCHEMA_OBJECT_TYPE, partial(parser._schema_object, item))
     return None
 
 
@@ -522,16 +522,15 @@ def has_schema_validator_constraints(parser: SchemaValidatorsHost, obj: JsonSche
     return bool(
         has_required_group_validators(parser, obj)
         or has_conditional_validator(parser, obj)
-        or parser._has_pattern_properties_validator(obj)  # noqa: SLF001
-        or parser._has_property_count_validator(obj)  # noqa: SLF001
+        or parser._has_pattern_properties_validator(obj)
+        or parser._has_property_count_validator(obj)
     )
 
 
 def has_pattern_properties_validator(parser: SchemaValidatorsHost, obj: JsonSchemaObject) -> bool:
     """Return whether schema runtime validation owns patternProperties dispatch."""
     return parser.generate_schema_validators and any(
-        source.patternProperties
-        for source in parser._iter_schema_validation_sources(obj)  # noqa: SLF001
+        source.patternProperties for source in parser._iter_schema_validation_sources(obj)
     )
 
 
@@ -547,7 +546,7 @@ def has_core_schema_runtime_rules(parser: SchemaValidatorsHost, runtime_validati
 
 def has_property_count_validator(parser: SchemaValidatorsHost, obj: JsonSchemaObject) -> bool:
     """Return whether an object or its allOf sources constrain property counts."""
-    return parser._get_property_count_rule(obj) is not None  # noqa: SLF001
+    return parser._get_property_count_rule(obj) is not None
 
 
 def get_property_count_rule(parser: SchemaValidatorsHost, obj: JsonSchemaObject) -> PropertyCountRule | None:
@@ -555,7 +554,7 @@ def get_property_count_rule(parser: SchemaValidatorsHost, obj: JsonSchemaObject)
     if not parser.generate_schema_validators:
         return None
     cache_key = id(obj)
-    if (cached := parser._property_count_rule_cache.get(cache_key)) is not None and cached[0] is obj:  # noqa: SLF001
+    if (cached := parser._property_count_rule_cache.get(cache_key)) is not None and cached[0] is obj:
         return cached[1]
 
     min_properties: int | None = None
@@ -573,7 +572,7 @@ def get_property_count_rule(parser: SchemaValidatorsHost, obj: JsonSchemaObject)
         if min_properties is not None or max_properties is not None
         else None
     )
-    parser._property_count_rule_cache[cache_key] = obj, rule  # noqa: SLF001
+    parser._property_count_rule_cache[cache_key] = obj, rule
     return rule
 
 
@@ -604,7 +603,7 @@ def should_parse_object_with_schema_validators(parser: SchemaValidatorsHost, obj
         return True
     if obj.properties and has_required_group_validators(parser, obj):
         return True
-    if obj.properties and parser._has_property_count_validator(obj):  # noqa: SLF001
+    if obj.properties and parser._has_property_count_validator(obj):
         return True
     has_conditional_properties = any(
         branch.properties or branch.patternProperties for branch in iter_conditional_branches(parser, obj)
@@ -658,7 +657,7 @@ def get_input_names_by_property(
             continue
         property_name = _field_source_name(field)
         if property_name is not None:
-            names_by_property[property_name] = parser._field_input_names(field)  # noqa: SLF001
+            names_by_property[property_name] = parser._field_input_names(field)
 
     for base_class in base_classes:
         data_model = base_class.source if isinstance(base_class.source, DataModel) else None
@@ -668,7 +667,7 @@ def get_input_names_by_property(
                     continue
                 property_name = _field_source_name(field)
                 if property_name is not None:
-                    names_by_property.setdefault(property_name, parser._field_input_names(field))  # noqa: SLF001
+                    names_by_property.setdefault(property_name, parser._field_input_names(field))
             continue
 
         for schema, _, _ in _inherited_schemas.iter_inherited_schema_objects(parser, [base_class], frozenset()):
@@ -726,7 +725,7 @@ def _iter_all_of_reads(  # noqa: PLR0913
         if not item.ref:
             yield item, visited_refs, scope, False
             continue
-        if ref_siblings is None or parser._ref_siblings_apply_to(item, legacy=ref_siblings):  # noqa: SLF001
+        if ref_siblings is None or parser._ref_siblings_apply_to(item, legacy=ref_siblings):
             yield item, visited_refs, scope, False
         if not include_references:
             continue
@@ -812,7 +811,7 @@ def schema_item_may_accept_container(
 
 def schema_literal_values(parser: SchemaValidatorsHost, obj: JsonSchemaObject) -> tuple[object, ...] | None:
     """Return direct const/enum values after their JSON Schema intersection."""
-    has_const = parser._features_at(obj).const_support and "const" in obj.extras  # noqa: SLF001
+    has_const = parser._features_at(obj).const_support and "const" in obj.extras
     const = obj.extras.get("const") if has_const else None
     has_enum = "enum" in obj.model_fields_set
     if not has_const and not has_enum:
@@ -837,19 +836,19 @@ def schema_may_accept_container(
         accepts = (target := _schema_refs.unmapped_ref_target(parser, obj.ref, visited_refs)) is None or (
             schema_may_accept_container(parser, target[0], container_type, target[1])
         )
-        if not (accepts and parser._ref_siblings_apply_to(obj, legacy="first-read")):  # noqa: SLF001
+        if not (accepts and parser._ref_siblings_apply_to(obj, legacy="first-read")):
             return accepts
-    if (values := parser._schema_literal_values(obj)) is not None and not any(  # noqa: SLF001
+    if (values := parser._schema_literal_values(obj)) is not None and not any(
         isinstance(value, list if container_type == "array" else dict) for value in values
     ):
         return False
     if obj.type is not None and container_type not in declared_types(obj.type):
         return False
 
-    if any(not parser._schema_item_may_accept_container(item, container_type, visited_refs) for item in obj.allOf):  # noqa: SLF001
+    if any(not parser._schema_item_may_accept_container(item, container_type, visited_refs) for item in obj.allOf):
         return False
     return all(
-        not items or any(parser._schema_item_may_accept_container(item, container_type, visited_refs) for item in items)  # noqa: SLF001
+        not items or any(parser._schema_item_may_accept_container(item, container_type, visited_refs) for item in items)
         for items in (obj.anyOf, obj.oneOf)
     )
 
@@ -887,7 +886,7 @@ def get_union_unique_items_branch_rules(
             continue
         branch = item
         rules = tuple(
-            parser._iter_unique_items_rules(  # noqa: SLF001
+            parser._iter_unique_items_rules(
                 branch,
                 path,
                 visited_refs,
@@ -902,7 +901,7 @@ def get_union_unique_items_branch_rules(
         ):
             rules = (
                 *rules,
-                *parser._iter_unique_items_rules(  # noqa: SLF001
+                *parser._iter_unique_items_rules(
                     target[0], path, target[1], property_input_names, include_properties=True
                 ),
             )
@@ -920,14 +919,14 @@ def iter_union_unique_items_rules(
     property_input_names: Mapping[str, tuple[str, ...]] | None = None,
 ) -> Iterator[UniqueItemsRule]:
     """Yield paths unconditionally required by every shape-compatible union branch."""
-    branch_rules, candidates = parser._get_union_unique_items_branch_rules(  # noqa: SLF001
+    branch_rules, candidates = parser._get_union_unique_items_branch_rules(
         items, path, visited_refs, property_input_names
     )
 
     for candidate in candidates:
-        container_type = parser._unique_items_path_container_type(candidate.path[len(path) :])  # noqa: SLF001
+        container_type = parser._unique_items_path_container_type(candidate.path[len(path) :])
         for branch, rules in branch_rules:
-            if not parser._schema_item_may_accept_container(branch, container_type, visited_refs):  # noqa: SLF001
+            if not parser._schema_item_may_accept_container(branch, container_type, visited_refs):
                 continue
             if not any(rule.path == candidate.path for rule in rules):
                 break
@@ -945,15 +944,15 @@ def get_common_executable_unique_items_paths(
 ) -> set[UniqueItemsPath]:
     """Return paths every branch delegates to an executable validator."""
     executable_data_types = (
-        tuple(data_type for data_type in data_types if parser._data_type_may_accept_array(data_type))  # noqa: SLF001
+        tuple(data_type for data_type in data_types if parser._data_type_may_accept_array(data_type))
         if filter_array_branches
         else data_types
     )
     if not executable_data_types:
         return set()
-    common_paths = parser._get_executable_unique_items_paths(executable_data_types[0], path, visited)  # noqa: SLF001
+    common_paths = parser._get_executable_unique_items_paths(executable_data_types[0], path, visited)
     for data_type in executable_data_types[1:]:
-        common_paths.intersection_update(parser._get_executable_unique_items_paths(data_type, path, visited))  # noqa: SLF001
+        common_paths.intersection_update(parser._get_executable_unique_items_paths(data_type, path, visited))
         if not common_paths:
             return common_paths
     return common_paths
@@ -978,10 +977,10 @@ def data_type_may_accept_array(
             return bool(
                 source.IS_ROOT_MODEL
                 and source.fields
-                and parser._data_type_may_accept_array(source.fields[0].data_type, visited)  # noqa: SLF001
+                and parser._data_type_may_accept_array(source.fields[0].data_type, visited)
             )
         case DataType(data_types=data_types) if data_types:
-            return any(parser._data_type_may_accept_array(child, visited) for child in data_types)  # noqa: SLF001
+            return any(parser._data_type_may_accept_array(child, visited) for child in data_types)
         case DataType(type="None" | "str" | "int" | "float" | "bool" | "bytes"):
             return False
         case _:
@@ -1022,7 +1021,7 @@ def get_executable_unique_items_paths(  # noqa: PLR0911, PLR0912
 
         match data_type:
             case DataType() if data_type in ITEM_CONTAINERS:
-                return parser._get_common_executable_unique_items_paths(  # noqa: SLF001
+                return parser._get_common_executable_unique_items_paths(
                     data_type.data_types,
                     (*path, None),
                     visited,
@@ -1031,17 +1030,17 @@ def get_executable_unique_items_paths(  # noqa: PLR0911, PLR0912
             case DataType(is_tuple=True, tuple_item_count=int() as item_count):
                 owned_paths = cast("set[UniqueItemsPath]", set())
                 for index, child in enumerate(data_type.data_types[:item_count]):
-                    owned_paths.update(parser._get_executable_unique_items_paths(child, (*path, index), visited))  # noqa: SLF001
+                    owned_paths.update(parser._get_executable_unique_items_paths(child, (*path, index), visited))
                 return owned_paths
             case DataType(is_tuple=True):
-                return parser._get_common_executable_unique_items_paths(  # noqa: SLF001
+                return parser._get_common_executable_unique_items_paths(
                     data_type.data_types,
                     (*path, None),
                     visited,
                     filter_array_branches=False,
                 )
             case DataType() if data_type in MAPPINGS:
-                return parser._get_common_executable_unique_items_paths(  # noqa: SLF001
+                return parser._get_common_executable_unique_items_paths(
                     data_type.data_types,
                     (*path, UNIQUE_ITEMS_MAPPING_VALUES_PATH_STEP),
                     visited,
@@ -1049,7 +1048,7 @@ def get_executable_unique_items_paths(  # noqa: PLR0911, PLR0912
                 )
             case _:
                 pass
-        return parser._get_common_executable_unique_items_paths(data_type.data_types, path, visited)  # noqa: SLF001
+        return parser._get_common_executable_unique_items_paths(data_type.data_types, path, visited)
     finally:
         visited.remove(data_type_id)
 
@@ -1066,10 +1065,10 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
     """Yield compact uniqueItems rules required by all applicable union branches."""
     if obj.ref:
         if parser.collapse_root_models and (target := _schema_refs.unmapped_ref_target(parser, obj.ref, visited_refs)):
-            yield from parser._iter_unique_items_rules(  # noqa: SLF001
+            yield from parser._iter_unique_items_rules(
                 target[0], path, target[1], property_input_names, include_properties=include_properties
             )
-        if not parser._ref_siblings_apply_to(obj, legacy="first-read"):  # noqa: SLF001
+        if not parser._ref_siblings_apply_to(obj, legacy="first-read"):
             return
     if obj.uniqueItems is True:
         yield UniqueItemsRule(path=path)
@@ -1078,7 +1077,7 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
         for node, node_visited_refs, _, _ in _iter_all_of_reads(
             parser, obj, visited_refs, "", include_references=True, ref_siblings=None, track_scope=False
         ):
-            yield from parser._iter_unique_items_rules(  # noqa: SLF001
+            yield from parser._iter_unique_items_rules(
                 node,
                 path,
                 node_visited_refs,
@@ -1088,14 +1087,14 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
 
     for members in (obj.anyOf, obj.oneOf):
         if members:
-            yield from parser._iter_union_unique_items_rules(  # noqa: SLF001
+            yield from parser._iter_union_unique_items_rules(
                 members, path, visited_refs, property_input_names=property_input_names
             )
 
     if include_properties:
         for property_name, property_schema in (obj.properties or {}).items():
             if isinstance(property_schema, JsonSchemaObject):
-                yield from parser._iter_unique_items_rules(  # noqa: SLF001
+                yield from parser._iter_unique_items_rules(
                     property_schema,
                     (*path, _input_names(property_input_names, property_name)),
                     visited_refs,
@@ -1105,27 +1104,27 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
     if isinstance(obj.items, JsonSchemaObject):
         items_path_step: UniqueItemsPathStep = (
             (UNIQUE_ITEMS_ARRAY_TAIL_PATH_STEP, len(obj.prefixItems))
-            if parser._features_at(obj).prefix_items and obj.prefixItems  # noqa: SLF001
+            if parser._features_at(obj).prefix_items and obj.prefixItems
             else None
         )
-        yield from parser._iter_unique_items_rules(  # noqa: SLF001
+        yield from parser._iter_unique_items_rules(
             obj.items, (*path, items_path_step), visited_refs, include_properties=include_properties
         )
     for index, item in chain(
         enumerate(obj.items if isinstance(obj.items, list) else ()),
-        enumerate((obj.prefixItems or ()) if parser._features_at(obj).prefix_items else ()),  # noqa: SLF001
+        enumerate((obj.prefixItems or ()) if parser._features_at(obj).prefix_items else ()),
     ):
         if isinstance(item, JsonSchemaObject):
-            yield from parser._iter_unique_items_rules(  # noqa: SLF001
+            yield from parser._iter_unique_items_rules(
                 item, (*path, index), visited_refs, include_properties=include_properties
             )
 
     if (
-        not parser._features_at(obj).prefix_items  # noqa: SLF001
+        not parser._features_at(obj).prefix_items
         and isinstance(obj.additionalItems, JsonSchemaObject)
         and isinstance(obj.items, list)
     ):
-        yield from parser._iter_unique_items_rules(  # noqa: SLF001
+        yield from parser._iter_unique_items_rules(
             obj.additionalItems,
             (*path, (UNIQUE_ITEMS_ARRAY_TAIL_PATH_STEP, len(obj.items))),
             visited_refs,
@@ -1134,7 +1133,7 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
 
     for pattern, item in (obj.patternProperties or {}).items():
         if isinstance(item, JsonSchemaObject):
-            yield from parser._iter_unique_items_rules(  # noqa: SLF001
+            yield from parser._iter_unique_items_rules(
                 item,
                 (*path, (UNIQUE_ITEMS_MAPPING_PATTERN_VALUES_PATH_STEP, pattern, None)),
                 visited_refs,
@@ -1150,7 +1149,7 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
             )
         else:
             additional_path_step = UNIQUE_ITEMS_MAPPING_VALUES_PATH_STEP
-        yield from parser._iter_unique_items_rules(  # noqa: SLF001
+        yield from parser._iter_unique_items_rules(
             obj.additionalProperties,
             (*path, additional_path_step),
             visited_refs,
@@ -1198,7 +1197,7 @@ def add_unique_items_validator(  # noqa: PLR0913
     def get_data_type_property_input_names(data_type: DataType) -> dict[str, tuple[str, ...]] | None:
         if data_type.reference and isinstance(data_type.reference.source, DataModel):
             return {
-                property_name: parser._field_input_names(field)  # noqa: SLF001
+                property_name: parser._field_input_names(field)
                 for field in data_type.reference.source.iter_all_fields()
                 if (property_name := _field_source_name(field)) is not None
             }
@@ -1210,7 +1209,7 @@ def add_unique_items_validator(  # noqa: PLR0913
         owned_paths: set[UniqueItemsPath] | None = None,
         property_input_names: Mapping[str, tuple[str, ...]] | None = None,
     ) -> None:
-        for rule in parser._iter_unique_items_rules(  # noqa: SLF001
+        for rule in parser._iter_unique_items_rules(
             schema,
             path,
             property_input_names=property_input_names,
@@ -1222,34 +1221,34 @@ def add_unique_items_validator(  # noqa: PLR0913
 
     if is_root_model:
         root_type = fields[0].data_type if fields else None
-        owned_paths = parser._get_executable_unique_items_paths(root_type, ()) if root_type is not None else None  # noqa: SLF001
+        owned_paths = parser._get_executable_unique_items_paths(root_type, ()) if root_type is not None else None
         add_rules(
             obj,
             (),
             owned_paths,
-            parser._get_input_names_by_property(fields, base_classes),  # noqa: SLF001
+            parser._get_input_names_by_property(fields, base_classes),
         )
     else:
-        names_by_property = parser._get_input_names_by_property(fields, base_classes)  # noqa: SLF001
+        names_by_property = parser._get_input_names_by_property(fields, base_classes)
         fields_by_property = {
             property_name: field for field in fields if (property_name := _field_source_name(field)) is not None
         }
         add_rules(obj, (), property_input_names=names_by_property)
         overridden_properties: set[str] = set()
-        for source in parser._iter_schema_validation_sources(obj):  # noqa: SLF001
+        for source in parser._iter_schema_validation_sources(obj):
             if not source.properties:
                 continue
             for property_name, property_schema in source.properties.items():
                 if not isinstance(property_schema, JsonSchemaObject):
                     continue
                 if property_name in overridden_properties:
-                    if next(parser._iter_unique_items_rules(property_schema, ()), None) is not None:  # noqa: SLF001
+                    if next(parser._iter_unique_items_rules(property_schema, ()), None) is not None:
                         replace_inherited_rules = True
                     continue
                 if (input_names := names_by_property.get(property_name)) is not None:
                     field = fields_by_property.get(property_name)
                     owned_paths = (
-                        parser._get_executable_unique_items_paths(field.data_type, (input_names,))  # noqa: SLF001
+                        parser._get_executable_unique_items_paths(field.data_type, (input_names,))
                         if field is not None
                         and any(data_type.reference for data_type in field.data_type.all_data_types)
                         else None
@@ -1266,7 +1265,7 @@ def add_unique_items_validator(  # noqa: PLR0913
 
     if not rules and not replace_inherited_rules:
         return
-    runtime_validation = parser._schema_runtime_validation(reference_path)  # noqa: SLF001
+    runtime_validation = parser._schema_runtime_validation(reference_path)
     runtime_validation.unique_items.extend(rules)
     runtime_validation.replace_unique_items = replace_inherited_rules
 
@@ -1278,7 +1277,7 @@ def first_schema_additional_properties(
 
     It is read from ``obj`` and then its allOf sources (``_iter_schema_validation_sources``).
     """
-    for index, source in enumerate(parser._iter_schema_validation_sources(obj)):  # noqa: SLF001
+    for index, source in enumerate(parser._iter_schema_validation_sources(obj)):
         if isinstance(additional_properties := source.additionalProperties, JsonSchemaObject):
             return index, source, additional_properties
     return None
@@ -1516,7 +1515,7 @@ def add_pattern_properties_validator(
     declared_names = tuple(sorted({name for names in names_by_property.values() for name in names}))
     rule_type = PatternPropertiesRule
     helpers_kept = customizes_models(parser.config)
-    declared_witness = "legacy-validated-pattern-maps" in parser._legacy_object_maps  # noqa: SLF001
+    declared_witness = "legacy-validated-pattern-maps" in parser._legacy_object_maps
     intersection = (
         None
         if helpers_kept
@@ -1524,7 +1523,7 @@ def add_pattern_properties_validator(
             type(parser), obj, pattern_value_types, declared_witness=declared_witness
         )
     )
-    if obj is parser._pattern_validation_document_root:  # noqa: SLF001
+    if obj is parser._pattern_validation_document_root:
         if intersection is None and not parser.force_optional_for_required_fields:
             intersection = pattern_validation_with_undeclared_required(
                 type(parser), obj, pattern_value_types, declared_witness=declared_witness
@@ -1532,7 +1531,7 @@ def add_pattern_properties_validator(
         if (
             intersection is None
             and not obj.extras.keys() <= {"title", "description"}
-            and parser._plain_pattern_root_annotations(obj, pattern_value_types)  # noqa: SLF001
+            and parser._plain_pattern_root_annotations(obj, pattern_value_types)
         ):
             intersection = pattern_validation_intersection(
                 type(parser), obj, pattern_value_types, declared_witness=declared_witness
@@ -1543,7 +1542,7 @@ def add_pattern_properties_validator(
         rule_type = IndependentDeclaredPatternPropertiesRule
     elif intersection == "models":
         rule_type = IndependentModelPatternPropertiesRule
-    parser._schema_runtime_validation(reference_path).pattern_properties.append(  # noqa: SLF001
+    parser._schema_runtime_validation(reference_path).pattern_properties.append(
         rule_type(
             declared_properties=declared_names,
             pattern_properties=tuple(pattern_value_types),
@@ -1552,8 +1551,8 @@ def add_pattern_properties_validator(
             allow_unmatched=allow_unmatched,
         )
     )
-    if obj is parser._pattern_validation_document_root:  # noqa: SLF001
-        parser._pattern_validation_document_root = None  # noqa: SLF001
+    if obj is parser._pattern_validation_document_root:
+        parser._pattern_validation_document_root = None
 
 
 def add_required_groups_validator(
@@ -1569,18 +1568,18 @@ def add_required_groups_validator(
 
     rule = RequiredGroupsRule(
         keyword=keyword,
-        groups=parser._required_group_input_names(groups, names_by_property),  # noqa: SLF001
+        groups=parser._required_group_input_names(groups, names_by_property),
     )
-    runtime_validation = parser._schema_runtime_validation(reference_path)  # noqa: SLF001
+    runtime_validation = parser._schema_runtime_validation(reference_path)
     if rule not in runtime_validation.required_groups:
         runtime_validation.required_groups.append(rule)
 
 
 def add_property_count_validator(parser: SchemaValidatorsHost, reference_path: str, obj: JsonSchemaObject) -> None:
     """Add raw-object property-count rules from this schema and its allOf sources."""
-    if (property_count_rule := parser._get_property_count_rule(obj)) is None:  # noqa: SLF001
+    if (property_count_rule := parser._get_property_count_rule(obj)) is None:
         return
-    parser._schema_runtime_validation(reference_path).property_count = property_count_rule  # noqa: SLF001
+    parser._schema_runtime_validation(reference_path).property_count = property_count_rule
 
 
 def add_conditional_validator(
@@ -1606,10 +1605,10 @@ def add_conditional_validator(
     )
     rule = ConditionalRequiredRule(
         condition=condition,
-        then_groups=parser._required_group_input_names(then_groups, names_by_property),  # noqa: SLF001
-        else_groups=parser._required_group_input_names(else_groups, names_by_property),  # noqa: SLF001
+        then_groups=parser._required_group_input_names(then_groups, names_by_property),
+        else_groups=parser._required_group_input_names(else_groups, names_by_property),
     )
-    runtime_validation = parser._schema_runtime_validation(reference_path)  # noqa: SLF001
+    runtime_validation = parser._schema_runtime_validation(reference_path)
     if rule not in runtime_validation.conditional_required:
         runtime_validation.conditional_required.append(rule)
 
@@ -1629,8 +1628,8 @@ def add_schema_validators(  # noqa: PLR0913, PLR0917
     if not parser.generate_schema_validators:
         return
 
-    pattern_validators = parser._collect_pattern_property_validators(name, obj, path)  # noqa: SLF001
-    names_by_property = parser._get_input_names_by_property(fields, base_classes)  # noqa: SLF001
+    pattern_validators = parser._collect_pattern_property_validators(name, obj, path)
+    names_by_property = parser._get_input_names_by_property(fields, base_classes)
     add_pattern_properties_validator(parser, reference_path, obj, pattern_validators, names_by_property)
     if (
         not parser.force_optional_for_required_fields
@@ -1638,11 +1637,11 @@ def add_schema_validators(  # noqa: PLR0913, PLR0917
         and not customizes_models(parser.config)
         and (missing_required := [name for name in obj.required if name not in names_by_property])
     ):
-        parser._add_required_groups_validator(reference_path, "anyOf", [missing_required], names_by_property)  # noqa: SLF001
+        parser._add_required_groups_validator(reference_path, "anyOf", [missing_required], names_by_property)
     add_group_validators(parser, reference_path, obj, names_by_property)
     if include_property_count:
-        parser._add_property_count_validator(reference_path, obj)  # noqa: SLF001
-    parser._add_unique_items_validator(  # noqa: SLF001
+        parser._add_property_count_validator(reference_path, obj)
+    parser._add_unique_items_validator(
         reference_path,
         obj,
         fields,
@@ -1663,7 +1662,7 @@ def add_schema_validators(  # noqa: PLR0913, PLR0917
                 return
         elif has_core_rules:
             continue
-        for source in parser._iter_schema_validation_sources(obj, include_references=include_references):  # noqa: SLF001
+        for source in parser._iter_schema_validation_sources(obj, include_references=include_references):
             if source is not obj:
                 add_group_validators(parser, reference_path, source, names_by_property)
 
@@ -1676,12 +1675,12 @@ def add_group_validators(
 ) -> None:
     """Register the required-property groups of the oneOf, anyOf and not of ``source``, then its if/then/else."""
     oneof_groups = get_required_groups(parser, source.oneOf)
-    parser._add_required_groups_validator(reference_path, "oneOf", oneof_groups, names_by_property)  # noqa: SLF001
+    parser._add_required_groups_validator(reference_path, "oneOf", oneof_groups, names_by_property)
     anyof_groups = get_required_groups(parser, source.anyOf)
-    parser._add_required_groups_validator(reference_path, "anyOf", anyof_groups, names_by_property)  # noqa: SLF001
+    parser._add_required_groups_validator(reference_path, "anyOf", anyof_groups, names_by_property)
     not_groups = get_not_required_groups(parser, source)
-    parser._add_required_groups_validator(reference_path, "not", not_groups, names_by_property)  # noqa: SLF001
-    parser._add_conditional_validator(reference_path, source, names_by_property)  # noqa: SLF001
+    parser._add_required_groups_validator(reference_path, "not", not_groups, names_by_property)
+    parser._add_conditional_validator(reference_path, source, names_by_property)
 
 
 def is_required_only_schema(
@@ -1718,7 +1717,7 @@ def merge_conditional_properties(parser: SchemaValidatorsHost, obj: JsonSchemaOb
 
     schema_dict = obj.model_dump(exclude_unset=True, by_alias=True)
     schema_dict["properties"] = merged_properties
-    return parser._schema_object(schema_dict)  # noqa: SLF001
+    return parser._schema_object(schema_dict)
 
 
 def collect_pattern_property_validators(
@@ -1731,7 +1730,7 @@ def collect_pattern_property_validators(
     rejected_patterns: list[str] = []
     allow_unmatched = True
 
-    for source_index, source in enumerate(parser._iter_schema_validation_sources(obj)):  # noqa: SLF001
+    for source_index, source in enumerate(parser._iter_schema_validation_sources(obj)):
         if source.additionalProperties is False or source.unevaluatedProperties is False:
             allow_unmatched = False
         if not source.patternProperties:
@@ -1741,7 +1740,7 @@ def collect_pattern_property_validators(
                 case True:
                     pattern_value_types.append((pattern, parser.data_type_manager.get_data_type(Types.any)))
                 case JsonSchemaObject() if not _is_false_all_of(schema):
-                    if schema is parser._root_pattern_string_constraints:  # noqa: SLF001
+                    if schema is parser._root_pattern_string_constraints:
                         value_type = parser.data_type_manager.get_data_type(
                             Types.string,
                             field_constraints=False,
@@ -1752,7 +1751,7 @@ def collect_pattern_property_validators(
                             f"schemaValidators/patternProperties/{source_index}/{pattern_index}", path
                         )
                         value_type = parser.parse_item(name, schema, value_path)
-                        value_type = parser._pattern_value_alias(name, schema, value_type, value_path)  # noqa: SLF001
+                        value_type = parser._pattern_value_alias(name, schema, value_type, value_path)
                     pattern_value_types.append((pattern, value_type))
                 case False | JsonSchemaObject():
                     rejected_patterns.append(pattern)
@@ -1766,7 +1765,7 @@ def collect_pattern_property_validators(
     if _is_false_all_of(additional_properties):
         return pattern_value_types, rejected_patterns, None, False
     additional_property_name = composed_name(name, "additional-property")
-    additional_property_type = parser._parse_additional_properties_value(  # noqa: SLF001
+    additional_property_type = parser._parse_additional_properties_value(
         additional_property_name,
         get_special_path(f"schemaValidators/additionalProperties/{source_index}", path),
         source,

@@ -297,7 +297,7 @@ def renders_as_duplicate(
     nested models it names only become the shared ones as they collapse in the same pass.
     """
     return shapes.key(model) == shapes.key(original_model) or (
-        not parser._merged_copies.isdisjoint((model, original_model))  # noqa: SLF001
+        not parser._merged_copies.isdisjoint((model, original_model))
         and shapes.shape(model)[0] == shapes.shape(original_model)[0]
     )
 
@@ -305,12 +305,12 @@ def renders_as_duplicate(
 def _drop_root_model_bases(parser: StructureHost, model: DataModel) -> None:
     """Remove a root model from the bases of the models that inherit it, which then keep their default base."""
     for child in model.reference.iter_data_model_children():
-        parser._graph_builder.set_base_classes(  # noqa: SLF001
+        parser._graph_builder.set_base_classes(
             child,
             [bc for bc in child.base_classes if bc.reference is not model.reference],
         )
         if not child.base_classes:
-            parser._graph_builder.reset_base_classes(child)  # noqa: SLF001
+            parser._graph_builder.reset_base_classes(child)
 
 
 def _drop_duplicate_root_model(parser: StructureHost, model: DataModel, root_reference: Reference) -> None:
@@ -322,12 +322,12 @@ def _drop_duplicate_root_model(parser: StructureHost, model: DataModel, root_ref
     them ``Any`` where nothing builds from the annotations, and ``reject_alias_cycles_without_schema`` rejects them
     where Pydantic builds or msgspec decodes the output.
     """
-    parser._graph_builder.redirect_reference_users(model.reference, root_reference)  # noqa: SLF001
-    parser._graph_builder.detach_model_data_type_refs(model)  # noqa: SLF001
+    parser._graph_builder.redirect_reference_users(model.reference, root_reference)
+    parser._graph_builder.detach_model_data_type_refs(model)
     if root_reference is model.reference:
-        parser._self_named_root_models.append(model)  # noqa: SLF001
+        parser._self_named_root_models.append(model)
         _drop_root_model_bases(parser, model)
-    parser._graph_builder.retire_model(model)  # noqa: SLF001
+    parser._graph_builder.retire_model(model)
 
 
 def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> None:  # noqa: PLR0912
@@ -335,27 +335,23 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
         return
 
     model_class_names: dict[str, DataModel] = {}
-    shapes = parser._model_shapes(SAME_NAME)  # noqa: SLF001
+    shapes = parser._model_shapes(SAME_NAME)
     model_to_duplicate_models: defaultdict[DataModel, list[DataModel]] = defaultdict(list)
     # Use set for O(1) membership checks and collect removals for batch processing
     models_set = set(models)
     models_to_remove: set[DataModel] = set()
     reuse_constraint = (
-        parser._reuse_optimization_context.allows_model  # noqa: SLF001
-        if parser._reuse_optimization_context.constrains  # noqa: SLF001
-        else None
+        parser._reuse_optimization_context.allows_model if parser._reuse_optimization_context.constrains else None
     )
-    for model in parser._reuse_groups.site_models_last(models):  # noqa: SLF001
+    for model in parser._reuse_groups.site_models_last(models):
         reuse_allowed = reuse_constraint is None or reuse_constraint(model)
-        if parser._is_root_model(model) and (  # noqa: SLF001
-            model_key_of(model.reference) not in parser._declared_class_stand_ins  # noqa: SLF001
-        ):
+        if parser._is_root_model(model) and (model_key_of(model.reference) not in parser._declared_class_stand_ins):
             root_data_type = model.fields[0].data_type
 
             # backward compatible
             # Remove duplicated root model
             if reuse_allowed and (
-                root_reference := parser._get_duplicate_root_reference(model, root_data_type, models_set)  # noqa: SLF001
+                root_reference := parser._get_duplicate_root_reference(model, root_data_type, models_set)
             ):
                 _drop_duplicate_root_model(parser, model, root_reference)
                 models_to_remove.add(model)
@@ -366,7 +362,7 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
         if (
             reuse_allowed
             and (original_model := model_class_names.get(class_name)) is not None
-            and parser._reuse_optimization_context.allows_model(original_model)  # noqa: SLF001
+            and parser._reuse_optimization_context.allows_model(original_model)
             and renders_as_duplicate(parser, model, original_model, shapes)
         ):
             if shapes.references_match(original_model, model):
@@ -380,7 +376,7 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
 
     if parser.reuse_model and parser.collapse_reuse_models:
         max_iterations, iteration = len(models), 0
-        shapes = parser._model_shapes(COLLAPSE_REUSE)  # noqa: SLF001
+        shapes = parser._model_shapes(COLLAPSE_REUSE)
         while True:
             iteration += 1
             if iteration > max_iterations:  # pragma: no cover
@@ -400,7 +396,7 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
                     for group in content_key_to_models.values()
                     if len(group) > 1
                     for canonical, dup in shapes.iter_matching_duplicates(
-                        parser._reuse_groups.typed_map_values_last(group),  # noqa: SLF001
+                        parser._reuse_groups.typed_map_values_last(group),
                         keyed=False,
                     )
                     if dup not in models_to_remove
@@ -413,7 +409,7 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
                 models_to_remove.add(duplicate)
 
     if models_to_remove:
-        parser._graph_builder.set_module_models(models, [m for m in models if m not in models_to_remove])  # noqa: SLF001
+        parser._graph_builder.set_module_models(models, [m for m in models if m not in models_to_remove])
 
 
 def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataModel]) -> None:
@@ -429,13 +425,13 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
     keeps a name from the others, and the class it stands for binds its name as an import of each model that
     inherits it.
     """
-    models = all_models = parser._reuse_groups.typed_map_values_last(models)  # noqa: SLF001
+    models = all_models = parser._reuse_groups.typed_map_values_last(models)
     for model in models:
-        model._write_pre_render_nullability()  # noqa: SLF001
+        model._write_pre_render_nullability()
         remember_nested_factory_order_before_nullability(model)
     models = without_stand_ins(parser, models)
     exclude_names = {i.alias or i.import_ for m in models for i in m.imports}
-    if stand_ins := parser._base_stand_in_imports:  # noqa: SLF001
+    if stand_ins := parser._base_stand_in_imports:
         exclude_names.update(
             import_.alias or import_.import_
             for model in models
@@ -466,10 +462,10 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
             unique=True,
             class_name=True,
             model_type=suffix_kind(model),
-            preserve_class_name=parser._should_preserve_explicit_root_class_name(class_name),  # noqa: SLF001
+            preserve_class_name=parser._should_preserve_explicit_root_class_name(class_name),
         ).name
         if class_name != generated_name:
-            parser._graph_builder.rename_model(model, class_name=generated_name, scheme="module")  # noqa: SLF001
+            parser._graph_builder.rename_model(model, class_name=generated_name, scheme="module")
             renamed = True
         model_names[model.class_name] = model
 
@@ -477,11 +473,11 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
         if name in model_names or scoped_model_resolver.reserved_for_another(name, model.path):
             return False
         del model_names[model.class_name]
-        parser._graph_builder.rename_model(model, class_name=name, scheme="module")  # noqa: SLF001
+        parser._graph_builder.rename_model(model, class_name=name, scheme="module")
         model_names[name] = model
         return True
 
-    plan = parser._naming_plan  # noqa: SLF001
+    plan = parser._naming_plan
     for model in models:
         if (duplicate_name := plan.base_of(model)) and give_back(model, duplicate_name):
             renamed = True
@@ -511,11 +507,11 @@ def find_duplicate_models_across_modules(
     model_modules = {
         model: module for module, models in module_models for model in compared_models(parser, TREE_SCOPE, models)
     }
-    shapes = parser._model_shapes(TREE_SCOPE)  # noqa: SLF001
+    shapes = parser._model_shapes(TREE_SCOPE)
     return [
         (model_modules[model], model, model_modules[canonical], canonical)
         for canonical, model in shapes.iter_matching_duplicates(
-            parser._reuse_groups.typed_map_values_last(list(model_modules)),  # noqa: SLF001
+            parser._reuse_groups.typed_map_values_last(list(model_modules)),
             keyed=True,
         )
     ]
@@ -530,7 +526,7 @@ def replace_typed_map_value_duplicates(
 
     Those other models stay where they are, as they did before map values were typed.
     """
-    groups = parser._reuse_groups  # noqa: SLF001
+    groups = parser._reuse_groups
     module_lists = dict(module_models)
     remaining = []
     for duplicate in duplicates:
@@ -538,7 +534,7 @@ def replace_typed_map_value_duplicates(
         if groups.yields_to(duplicate_model, canonical):
             merge_duplicate(parser, duplicate_model, canonical, TREE_SCOPE, keeps_duplicate_tags=False)
             models = module_lists[duplicate_module]
-            parser._graph_builder.set_module_models(models, [m for m in models if m is not duplicate_model])  # noqa: SLF001
+            parser._graph_builder.set_module_models(models, [m for m in models if m is not duplicate_model])
         else:
             remaining.append(duplicate)
     return remaining
@@ -585,13 +581,13 @@ def create_shared_module_from_duplicates(  # noqa: PLR0912
         if canonical in canonical_models_seen:
             continue
         canonical_models_seen.add(canonical)
-        parser._graph_builder.update_model_reference(canonical, new_file_path=Path(f"{shared_module}.py"))  # noqa: SLF001
+        parser._graph_builder.update_model_reference(canonical, new_file_path=Path(f"{shared_module}.py"))
         shared_models.append(canonical)
     named_models = without_stand_ins(parser, shared_models)
     shared_class_names = _shared_class_names([model.class_name for model in named_models])
     for model, class_name in zip(named_models, shared_class_names, strict=True):
         if model.class_name != class_name:
-            parser._graph_builder.rename_model(model, class_name=class_name, scheme="shared-module")  # noqa: SLF001
+            parser._graph_builder.rename_model(model, class_name=class_name, scheme="shared-module")
 
     inherits = parser.data_model_type.SUPPORTS_TREE_SCOPE_REUSE_MODEL_INHERITANCE
     updated_models: list[DataModel] = []
@@ -600,7 +596,7 @@ def create_shared_module_from_duplicates(  # noqa: PLR0912
         module: set(models) for module, models in module_models
     }
     models_to_remove: dict[tuple[str, ...], set[DataModel]] = defaultdict(set)
-    seeded = {module for merge in parser._import_cycle_seeds.merges for module in merge}  # noqa: SLF001
+    seeded = {module for merge in parser._import_cycle_seeds.merges for module in merge}
 
     def users_of(module: tuple[str, ...], models: list[DataModel]) -> list[DataModel]:
         if reference_models is not None:
@@ -637,7 +633,7 @@ def create_shared_module_from_duplicates(  # noqa: PLR0912
     for module, models in module_models:
         to_remove = models_to_remove.get(module)
         if to_remove:
-            parser._graph_builder.set_module_models(models, [m for m in models if m not in to_remove])  # noqa: SLF001
+            parser._graph_builder.set_module_models(models, [m for m in models if m not in to_remove])
 
     if reference_models is not None:
         # Relocation can introduce forward references after the initial sort.
@@ -660,7 +656,7 @@ def reuse_model_tree_scope(
 ) -> tuple[tuple[str, ...], list[DataModel]] | None:
     """Deduplicate models across all modules, placing shared models in shared.py."""
     duplicates = find_duplicate_models_across_modules(parser, module_models)
-    if parser._reuse_groups.typed_map_values:  # noqa: SLF001
+    if parser._reuse_groups.typed_map_values:
         duplicates = replace_typed_map_value_duplicates(parser, module_models, duplicates)
     if not duplicates:
         return None
@@ -735,11 +731,11 @@ def rename_and_relocate_scc_models(
     original_class_names = [model.class_name for model in named_models]
     new_class_names = dict(zip(map(id, named_models), _merged_class_names(original_class_names), strict=True))
 
-    with parser._graph_builder.defer_refresh():  # noqa: SLF001
+    with parser._graph_builder.defer_refresh():
         for model in all_scc_models:
             original_class_name = model.class_name
             new_class_name = new_class_names.get(id(model), original_class_name)
-            parser._graph_builder.rename_model(  # noqa: SLF001
+            parser._graph_builder.rename_model(
                 model,
                 reference_name=new_class_name,
                 new_path=f"{internal_module_str}.{new_class_name}",
@@ -798,7 +794,7 @@ def _module_merges(
     the run found to fail as the output is imported (``check_import_reads``), which those references do not show, join
     the merges as a failing cycle does.
     """
-    if parser._base_stand_in_imports:  # noqa: SLF001
+    if parser._base_stand_in_imports:
         module_models_list = [(module, without_stand_ins(parser, models)) for module, models in module_models_list]
     module_graph = module_dependency_graph(parser.generation_store.index, module_models_list)
     merges = module_graph.circular_components()
@@ -806,7 +802,7 @@ def _module_merges(
     released = merges
     if seeded := [
         cycle
-        for seed in parser._import_cycle_seeds.merges  # noqa: SLF001
+        for seed in parser._import_cycle_seeds.merges
         if len(cycle := {(module, -1) for module in seed if module in module_graph.edges}) > 1
     ]:
         merges = _joined_merges(merges, seeded)
@@ -959,15 +955,15 @@ def group_models_by_module(parser: StructureHost, state: _StructureState) -> Non
 
 def reset_collapsed_reuse_state(parser: StructureHost, _state: _StructureState) -> None:
     """Forget the models reuse merged or collapsed reuse removed, and the root models deduplication dropped, before."""
-    parser._collapsed_reuse_models.clear()  # noqa: SLF001
-    parser._merged_duplicates.clear()  # noqa: SLF001
-    parser._collapsed_reuse_users.clear()  # noqa: SLF001
-    parser._self_named_root_models.clear()  # noqa: SLF001
+    parser._collapsed_reuse_models.clear()
+    parser._merged_duplicates.clear()
+    parser._collapsed_reuse_users.clear()
+    parser._self_named_root_models.clear()
 
 
 def snapshot_union_tags(parser: StructureHost, state: _StructureState) -> None:
     """Record the tags of each discriminated union before reuse merges any model."""
-    parser._tag_plan.reuse_snapshot = (  # noqa: SLF001
+    parser._tag_plan.reuse_snapshot = (
         {model: tags for _, models in state.module_models for model in models if (tags := declared_union_tags(model))}
         if parser.reuse_model
         else {}
@@ -984,7 +980,7 @@ def _regroup_live_models(parser: StructureHost, state: _StructureState, live_mod
 
 def apply_forced_invalid_dotted_stdout_repair(parser: StructureHost, state: _StructureState) -> None:
     """Apply the repair of invalid dotted stdout modules, and group the models again when it applied."""
-    if not parser._apply_forced_invalid_dotted_stdout_repair(state.module_models, state.module_split_mode):  # noqa: SLF001
+    if not parser._apply_forced_invalid_dotted_stdout_repair(state.module_models, state.module_split_mode):
         return
     _regroup_live_models(parser, state, (model for _, models in state.module_models for model in models))
 
@@ -995,7 +991,7 @@ def _module_segment_renamed(model: DataModel, index: int, segment: str) -> tuple
     The leading segments of a module path come from the model's file path, the others from the dots of its name
     (``get_module_path``).
     """
-    name_segments = len(get_module_path(model.name, None, treat_dot_as_module=model._treat_dot_as_module))  # noqa: SLF001
+    name_segments = len(get_module_path(model.name, None, treat_dot_as_module=model._treat_dot_as_module))
     if index >= (file_segments := len(model.module_path) - name_segments):
         parts = model.name.split(".")
         parts[index - file_segments] = segment
@@ -1018,7 +1014,7 @@ def _rename_module_segment(
     if file_path is not None:
         source = cast("Path", model.file_path)
         inputs[file_path] = inputs.get(source, source)
-    parser._graph_builder.rename_model(model, reference_name=reference_name, new_file_path=file_path)  # noqa: SLF001
+    parser._graph_builder.rename_model(model, reference_name=reference_name, new_file_path=file_path)
 
 
 def _hidden_submodule_renames(
@@ -1063,7 +1059,7 @@ def rename_submodules_hidden_by_classes(parser: StructureHost, state: _Structure
     modules = {id(model): _module_key(model, module_split_mode, target_python_version) for model in live_models}
     paths = {id(model): tuple(model.module_path) for model in live_models}
     class_models = without_stand_ins(parser, live_models)
-    final_classes = dict(parser._import_cycle_seeds.package_classes)  # noqa: SLF001
+    final_classes = dict(parser._import_cycle_seeds.package_classes)
     applied: list[tuple[ModulePath, str]] = []
     inputs: dict[Path, Path] = {}
     renamed: list[DataModel] = []
@@ -1086,7 +1082,7 @@ def rename_submodules_hidden_by_classes(parser: StructureHost, state: _Structure
                     (*key[:depth], segment, *key[depth + 1 :]) for key in (paths[id(model)], modules[id(model)])
                 )
                 renamed.append(model)
-    parser._hidden_submodule_renames, parser._renamed_module_inputs = tuple(applied), inputs  # noqa: SLF001
+    parser._hidden_submodule_renames, parser._renamed_module_inputs = tuple(applied), inputs
     if not renamed:
         return
     parser.model_resolver.refresh_reference_names()
@@ -1132,9 +1128,7 @@ def build_structure(parser: StructureHost, run: StructuredRun[Any]) -> None:
         run.forwarder_map,
         run.model_to_module_models,
         run.model_path_to_module_name,
-    ) = parser._build_module_structure(  # noqa: SLF001
-        run.sorted_data_models, run.args.module_split_mode, run.args.all_exports_scope
-    )
+    ) = parser._build_module_structure(run.sorted_data_models, run.args.module_split_mode, run.args.all_exports_scope)
 
 
 def configure_code_formatter(
@@ -1148,12 +1142,12 @@ def configure_code_formatter(
         case [] if (
             not parser.custom_formatter
             and "_build_code_formatter" not in parser.__dict__
-            and type(parser)._build_code_formatter is default_build_code_formatter  # noqa: SLF001
+            and type(parser)._build_code_formatter is default_build_code_formatter
         ):
             pass
         case _:
             run.config = run.config._replace(
-                code_formatter=parser._build_code_formatter(  # noqa: SLF001
+                code_formatter=parser._build_code_formatter(
                     run.args.settings_path,
                     is_multi_module_output=parser.defer_formatting or len(run.module_models) > 1,
                 ),
@@ -1162,10 +1156,10 @@ def configure_code_formatter(
 
 def detect_standard_generation_templates(parser: StructureHost, run: StructuredRun[ConfigT]) -> None:
     """Decide whether the run renders with the standard templates and the builtin formatter only."""
-    parser._uses_standard_generation_templates = bool(  # noqa: SLF001
+    parser._uses_standard_generation_templates = bool(
         (code_formatter := run.config.code_formatter)
         and code_formatter.use_builtin_formatter
-        and parser._configured_generation_types_are_builtin  # noqa: SLF001
+        and parser._configured_generation_types_are_builtin
         and not (parser_config := parser.config).custom_template_dir
         and not any((
             parser_config.additional_imports,

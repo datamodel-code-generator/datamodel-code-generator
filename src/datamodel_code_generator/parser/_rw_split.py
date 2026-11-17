@@ -474,13 +474,13 @@ def resolve_field_flags(parser: RwSplitHost, obj: JsonSchemaObject, *, either: b
             continue
         with ExitStack() as scope:
             for context in contexts:
-                scope.enter_context(parser._inherited_ref_context(context))  # noqa: SLF001
+                scope.enter_context(parser._inherited_ref_context(context))
             if (
                 node := _schema_refs.key_node(parser, resolved_ref := _schema_refs.ref_path(parser, schema.ref))
             ) in visited:
                 continue
             visited.add(node)
-            pending.append((parser._load_ref_schema_object(schema.ref), (*contexts, resolved_ref)))  # noqa: SLF001
+            pending.append((parser._load_ref_schema_object(schema.ref), (*contexts, resolved_ref)))
     return read_only, write_only
 
 
@@ -495,12 +495,12 @@ def collect_inherited_fields_for_request_response(
 
     winners: dict[str, DataModelFieldBase] = {}
     unnamed_fields: list[DataModelFieldBase] = []
-    for resolved_ref in parser._linearize_inherited_schema_refs(base_classes):  # noqa: SLF001
+    for resolved_ref in parser._linearize_inherited_schema_refs(base_classes):
         reference = parser.model_resolver.add_ref(resolved_ref, resolved=True)
-        own_names = parser._raw_inherited_own_names_cache.get(resolved_ref)  # noqa: SLF001
-        raw_fields = parser._get_raw_inherited_fields(reference, active)  # noqa: SLF001
+        own_names = parser._raw_inherited_own_names_cache.get(resolved_ref)
+        raw_fields = parser._get_raw_inherited_fields(reference, active)
         if own_names is None:
-            own_names = parser._raw_inherited_own_names_cache.get(resolved_ref, frozenset())  # noqa: SLF001
+            own_names = parser._raw_inherited_own_names_cache.get(resolved_ref, frozenset())
         for field in raw_fields:
             if (field_name := _field_source_name(field)) is None:
                 unnamed_fields.append(field)
@@ -509,7 +509,7 @@ def collect_inherited_fields_for_request_response(
 
     result: list[DataModelFieldBase] = []
     emitted_names: set[str] = set()
-    for field_name in parser._get_inherited_property_order(base_classes):  # noqa: SLF001
+    for field_name in parser._get_inherited_property_order(base_classes):
         if (field := winners.get(field_name)) is None:
             continue
         result.append(field)
@@ -517,7 +517,7 @@ def collect_inherited_fields_for_request_response(
     result.extend(field for name, field in winners.items() if name not in emitted_names)
     result.extend(unnamed_fields)
     if not parser.force_optional_for_required_fields:
-        required_names = parser._get_inherited_required_names(base_classes)  # noqa: SLF001
+        required_names = parser._get_inherited_required_names(base_classes)
         for field in result:
             if _field_source_name(field) in required_names:
                 require_field(parser, field)
@@ -552,36 +552,36 @@ def copy_unregistered_fields(
     fields: Iterable[DataModelFieldBase],
 ) -> list[DataModelFieldBase]:
     """Copy fields for temporary inheritance work without registering reverse edges."""
-    return [parser._copy_model_field(field, register_references=False) for field in fields]  # noqa: SLF001
+    return [parser._copy_model_field(field, register_references=False) for field in fields]
 
 
 def clear_inherited_field_caches(parser: RwSplitHost) -> None:
     """Release temporary inheritance state after parsing."""
     for cached_fields in chain(
-        parser._raw_inherited_fields_cache.values(),  # noqa: SLF001
-        parser._request_response_fields.values(),  # noqa: SLF001
+        parser._raw_inherited_fields_cache.values(),
+        parser._request_response_fields.values(),
     ):
         unregister_temporary_field_references(parser, cached_fields)
         for field in cached_fields:
             _detach_deferred_inherited_field_parents(field)
-    parser._raw_inherited_fields_cache.clear()  # noqa: SLF001
-    parser._raw_inherited_own_names_cache.clear()  # noqa: SLF001
-    parser._request_response_fields.clear()  # noqa: SLF001
-    parser._rw_model_field_facts_cache.clear()  # noqa: SLF001
-    parser._rw_model_references_cache.clear()  # noqa: SLF001
-    parser._rw_model_variant_requirement_cache.clear()  # noqa: SLF001
-    parser._rw_model_base_refs.clear()  # noqa: SLF001
-    for cache in parser._rw_imported_field_caches:  # noqa: SLF001
+    parser._raw_inherited_fields_cache.clear()
+    parser._raw_inherited_own_names_cache.clear()
+    parser._request_response_fields.clear()
+    parser._rw_model_field_facts_cache.clear()
+    parser._rw_model_references_cache.clear()
+    parser._rw_model_variant_requirement_cache.clear()
+    parser._rw_model_base_refs.clear()
+    for cache in parser._rw_imported_field_caches:
         cache.clear()
-    parser._rw_model_variant_references.clear()  # noqa: SLF001
-    parser._inherited_schema_records.clear()  # noqa: SLF001
-    parser._inherited_base_lists.clear()  # noqa: SLF001
-    parser._inherited_parent_property_cache.clear()  # noqa: SLF001
-    parser._ref_target_dumps.clear()  # noqa: SLF001
-    parser._unsatisfiable_schemas.clear()  # noqa: SLF001
-    parser._untaken_pattern_schemas.clear()  # noqa: SLF001
+    parser._rw_model_variant_references.clear()
+    parser._inherited_schema_records.clear()
+    parser._inherited_base_lists.clear()
+    parser._inherited_parent_property_cache.clear()
+    parser._ref_target_dumps.clear()
+    parser._unsatisfiable_schemas.clear()
+    parser._untaken_pattern_schemas.clear()
     if parser.generate_schema_validators:
-        parser._property_count_rule_cache.clear()  # noqa: SLF001
+        parser._property_count_rule_cache.clear()
 
 
 def merge_inherited_field_overrides(
@@ -615,10 +615,10 @@ def merge_inherited_field_overrides(
             result.append(field)
             continue
         if scope := field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY):
-            parser._apply_inherited_field_default(resolved_field, inherited_field, scope=scope)  # noqa: SLF001
+            parser._apply_inherited_field_default(resolved_field, inherited_field, scope=scope)
         elif scope := field.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY):
             source = inherited_default_source(parser.allof_merge_mode, field, inherited_field)
-            parser._apply_inherited_field_default(resolved_field, source, scope=scope)  # noqa: SLF001
+            parser._apply_inherited_field_default(resolved_field, source, scope=scope)
         result.append(resolved_field)
     return result
 
@@ -638,7 +638,7 @@ def overlay_inherited_field(
     declares the property (``reference.field_origin_of``): it is the field the override's property schema builds.
     """
     if (
-        resolved_field := parser._copy_inherited_field(  # noqa: SLF001
+        resolved_field := parser._copy_inherited_field(
             field,
             inherited_field,
             force_optional=parser.force_optional_for_required_fields,
@@ -680,18 +680,18 @@ def get_raw_inherited_fields(
 ) -> list[DataModelFieldBase]:
     """Recursively materialize one raw schema's effective fields without live reverse edges."""
     resolved_ref = reference.path
-    if (cached_fields := parser._raw_inherited_fields_cache.get(resolved_ref)) is not None:  # noqa: SLF001
+    if (cached_fields := parser._raw_inherited_fields_cache.get(resolved_ref)) is not None:
         return copy_unregistered_fields(parser, cached_fields)
-    if (cached_fields := parser._request_response_fields.get(resolved_ref)) is not None:  # noqa: SLF001
-        if resolved_ref not in parser._raw_inherited_own_names_cache and not _is_special_path(resolved_ref):  # noqa: SLF001
-            schema = parser._load_inherited_schema_object(resolved_ref)  # noqa: SLF001
-            parser._raw_inherited_own_names_cache[resolved_ref] = parser._get_inline_property_names(schema)  # noqa: SLF001
+    if (cached_fields := parser._request_response_fields.get(resolved_ref)) is not None:
+        if resolved_ref not in parser._raw_inherited_own_names_cache and not _is_special_path(resolved_ref):
+            schema = parser._load_inherited_schema_object(resolved_ref)
+            parser._raw_inherited_own_names_cache[resolved_ref] = parser._get_inline_property_names(schema)
         return copy_unregistered_fields(parser, cached_fields)
     if resolved_ref in active or _is_special_path(resolved_ref):
         return []
 
-    schema = parser._load_inherited_schema_object(resolved_ref)  # noqa: SLF001
-    parent_refs = parser._get_allof_parent_references(  # noqa: SLF001
+    schema = parser._load_inherited_schema_object(resolved_ref)
+    parent_refs = parser._get_allof_parent_references(
         schema,
         defining_ref=resolved_ref,
     )
@@ -703,13 +703,13 @@ def get_raw_inherited_fields(
     if isinstance(reference.source, DataModel):
         own_fields = copy_unregistered_fields(parser, reference.source.fields)
     else:
-        own_fields = parser._parse_inherited_schema_fields(  # noqa: SLF001
+        own_fields = parser._parse_inherited_schema_fields(
             reference,
             schema,
             parent_refs,
             parent_fields,
         )
-    parser._raw_inherited_own_names_cache[resolved_ref] = frozenset(  # noqa: SLF001
+    parser._raw_inherited_own_names_cache[resolved_ref] = frozenset(
         field_name for field in own_fields if (field_name := _field_source_name(field)) is not None
     )
     result = merge_inherited_field_overrides(parser, parent_fields, own_fields)
@@ -719,14 +719,14 @@ def get_raw_inherited_fields(
         for field in parent_fields
         if field.required and (field_name := _field_source_name(field)) is not None
     }
-    required_names.update(parser._get_inline_required_names(schema))  # noqa: SLF001
+    required_names.update(parser._get_inline_required_names(schema))
     if not parser.force_optional_for_required_fields:
         for field in result:
             if _field_source_name(field) in required_names:
                 require_field(parser, field)
             parser.data_model_type.finalize_required_inherited_field(field)
 
-    parser._raw_inherited_fields_cache[resolved_ref] = tuple(result)  # noqa: SLF001
+    parser._raw_inherited_fields_cache[resolved_ref] = tuple(result)
     return copy_unregistered_fields(parser, result)
 
 
@@ -754,7 +754,7 @@ def legacy_rw_errors(parser: RwSplitHost) -> Generator[None]:
     try:
         yield
     except Error as error:
-        if parser._legacy_rw_variants:  # noqa: SLF001
+        if parser._legacy_rw_variants:
             error.message = with_dedupe_request_response_hint(error.message)
         raise
 
@@ -785,9 +785,9 @@ def get_separate_model_fields(
     The model's own fields, the types it writes beside them and the schema facts of its allOf bases decide;
     inherited fields are collected only for a model that may split. A stand-in never splits.
     """
-    if parser.read_only_write_only_model_type is None or parser._is_base_stand_in(reference):  # noqa: SLF001
+    if parser.read_only_write_only_model_type is None or parser._is_base_stand_in(reference):
         return None
-    if "legacy-rw-parsed-facts" in parser._legacy_rw_variants:  # noqa: SLF001
+    if "legacy-rw-parsed-facts" in parser._legacy_rw_variants:
         all_fields = collect_all_fields_for_request_response(parser, fields, base_classes)
         return all_fields if splits_into_rw_model_variants(parser, reference, all_fields, base_classes) else None
     all_fields: list[DataModelFieldBase] | None = None
@@ -810,7 +810,7 @@ def splits_root_model(parser: RwSplitHost, reference: Reference, fields: list[Da
     """
     return (
         parser.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse
-        and not parser._is_base_stand_in(reference)  # noqa: SLF001
+        and not parser._is_base_stand_in(reference)
         and (
             fields_reference_rw_model_variant(parser, fields, "Request")
             or rw_model_writes_variant_beside_fields(parser, reference.path)
@@ -847,11 +847,11 @@ def splits_into_rw_model_variants(
         any(
             rw_model_fields_split(
                 parser,
-                parser._get_raw_inherited_fields(  # noqa: SLF001
+                parser._get_raw_inherited_fields(
                     parser.model_resolver.add_ref(resolved_ref, resolved=True), frozenset()
                 ),
             )
-            for resolved_ref in parser._linearize_inherited_schema_refs(base_classes or [])  # noqa: SLF001
+            for resolved_ref in parser._linearize_inherited_schema_refs(base_classes or [])
         )
         or rw_model_writes_variant_beside_fields(parser, reference.path)
         or any(base_generates_variant(parser, base.path) for base in base_classes or ())
@@ -870,7 +870,7 @@ def rw_model_writes_variant_beside_fields(parser: RwSplitHost, reference_path: s
     data_types: list[DataType] = []
     if _is_internal_schema_runtime_validation(rules := template_data.get("schema_runtime_validation")):
         data_types.extend(rules.data_types)
-    if (source := parser._output_model_context.additional_properties_type_source(template_data)) is not None:  # noqa: SLF001
+    if (source := parser._output_model_context.additional_properties_type_source(template_data)) is not None:
         data_types.append(cast("DataType", source))
     return data_types_reference_rw_model_variant(parser, data_types, "Request")
 
@@ -901,19 +901,19 @@ def get_ref_schema_rw_model_field_facts(
     declaration count as unflagged fields; nothing is parsed. Under ``legacy-rw-parsed-facts`` the facts of a
     temporary parse, ``None`` where it gives none (``_get_parsed_ref_schema_rw_model_field_facts``).
     """
-    if (cached := parser._rw_model_field_facts_cache.get(resolved_ref)) is not None:  # noqa: SLF001
+    if (cached := parser._rw_model_field_facts_cache.get(resolved_ref)) is not None:
         return cached
-    if "legacy-rw-parsed-facts" in parser._legacy_rw_variants:  # noqa: SLF001
+    if "legacy-rw-parsed-facts" in parser._legacy_rw_variants:
         return get_parsed_ref_schema_rw_model_field_facts(parser, resolved_ref)
     flags: dict[str, tuple[bool, bool]] = {}
     reference = parser.model_resolver.add_ref(resolved_ref, resolved=True)
-    for ref in reversed(parser._linearize_inherited_schema_refs([reference])):  # noqa: SLF001
+    for ref in reversed(parser._linearize_inherited_schema_refs([reference])):
         join_rw_model_property_flags(parser, ref, flags)
     if not parser.force_optional_for_required_fields:
-        for name in parser._get_inherited_required_names([reference]):  # noqa: SLF001
+        for name in parser._get_inherited_required_names([reference]):
             flags.setdefault(name, (False, False))
     result = _rw_flag_facts(flags.values())
-    parser._rw_model_field_facts_cache[resolved_ref] = result  # noqa: SLF001
+    parser._rw_model_field_facts_cache[resolved_ref] = result
     return result
 
 
@@ -927,18 +927,18 @@ def get_parsed_ref_schema_rw_model_field_facts(
     meets. A key whose parse is already in progress, reached again through the models that parse builds, has no
     facts, so the parse never re-enters itself; ``None`` also for a key that names no loadable schema.
     """
-    if resolved_ref in parser._rw_model_field_facts_in_progress:  # noqa: SLF001
+    if resolved_ref in parser._rw_model_field_facts_in_progress:
         return None
-    parser._rw_model_field_facts_in_progress.add(resolved_ref)  # noqa: SLF001
+    parser._rw_model_field_facts_in_progress.add(resolved_ref)
     try:
         reference = parser.model_resolver.add_ref(resolved_ref, resolved=True)
-        fields = parser._get_raw_inherited_fields(reference, frozenset())  # noqa: SLF001
+        fields = parser._get_raw_inherited_fields(reference, frozenset())
     except (Error, OSError):
         return None
     finally:
-        parser._rw_model_field_facts_in_progress.discard(resolved_ref)  # noqa: SLF001
+        parser._rw_model_field_facts_in_progress.discard(resolved_ref)
     result = get_rw_model_field_facts(parser, fields)
-    parser._rw_model_field_facts_cache[resolved_ref] = result  # noqa: SLF001
+    parser._rw_model_field_facts_cache[resolved_ref] = result
     return result
 
 
@@ -948,8 +948,8 @@ def join_rw_model_property_flags(parser: RwSplitHost, resolved_ref: str, flags: 
     The properties of inline allOf members as written count as its own. Inherited fields collect them so only where
     ``_inherited_schemas.all_of_members`` reads the members as written: this join does not ask it yet.
     """
-    pending = [parser._load_inherited_schema_object(resolved_ref)]  # noqa: SLF001
-    with parser._inherited_ref_context(resolved_ref):  # noqa: SLF001
+    pending = [parser._load_inherited_schema_object(resolved_ref)]
+    with parser._inherited_ref_context(resolved_ref):
         while pending:
             schema = pending.pop()
             for name, prop in (schema.properties or {}).items():
@@ -965,7 +965,7 @@ def join_rw_model_property_flags(parser: RwSplitHost, resolved_ref: str, flags: 
 def ref_schema_has_rw_model_facts(parser: RwSplitHost, resolved_ref: str) -> bool:
     """Return whether inheriting the schema at ``resolved_ref`` can bring read/write facts into a model."""
     if parser.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
-        return parser._ref_schema_generates_variant(resolved_ref, "Request")  # noqa: SLF001
+        return parser._ref_schema_generates_variant(resolved_ref, "Request")
     facts = get_ref_schema_rw_model_field_facts(parser, resolved_ref)
     return facts is not None and (facts[0] or facts[1])
 
@@ -977,30 +977,30 @@ def ref_schema_generates_variant(
 ) -> bool:
     """Check whether a referenced schema generates the requested read/write variant."""
     cache_key = resolved_ref, suffix
-    if (cached := parser._rw_model_variant_requirement_cache.get(cache_key)) is not None:  # noqa: SLF001
+    if (cached := parser._rw_model_variant_requirement_cache.get(cache_key)) is not None:
         return cached
     if _rw_variant_of(resolved_ref):
         return False
     if parser.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
-        return parser._request_response_ref_schema_generates_variant(resolved_ref)  # noqa: SLF001
+        return parser._request_response_ref_schema_generates_variant(resolved_ref)
     if (facts := get_ref_schema_rw_model_field_facts(parser, resolved_ref)) is None:
         return False
     result = _rw_facts_need_variant(facts, suffix)
-    parser._rw_model_variant_requirement_cache[cache_key] = result  # noqa: SLF001
+    parser._rw_model_variant_requirement_cache[cache_key] = result
     return result
 
 
 def _cache_request_response_split(parser: RwSplitHost, resolved_ref: str, *, splits: bool) -> None:
     """Record whether the schema at a key splits under ``request-response``: for both variants, which split together."""
     for suffix in ("Request", "Response"):
-        parser._rw_model_variant_requirement_cache[resolved_ref, suffix] = splits  # noqa: SLF001
+        parser._rw_model_variant_requirement_cache[resolved_ref, suffix] = splits
 
 
 def record_rw_model_split(parser: RwSplitHost, resolved_ref: str) -> None:
     """Record that the model parsed at a key splits, for both readings of the walk (``imported_field_reading``)."""
     _cache_request_response_split(parser, resolved_ref, splits=True)
     for suffix in ("Request", "Response"):
-        parser._rw_imported_field_caches[1][resolved_ref, suffix] = True  # noqa: SLF001
+        parser._rw_imported_field_caches[1][resolved_ref, suffix] = True
 
 
 def request_response_ref_schema_generates_variant(
@@ -1013,7 +1013,7 @@ def request_response_ref_schema_generates_variant(
     matched_ref: str | None = None
     while pending:
         current_ref = pending.pop()
-        match parser._rw_model_variant_requirement_cache.get((current_ref, "Request")):  # noqa: SLF001
+        match parser._rw_model_variant_requirement_cache.get((current_ref, "Request")):
             case True:
                 matched_ref = current_ref
                 break
@@ -1021,11 +1021,10 @@ def request_response_ref_schema_generates_variant(
                 continue
         if _rw_variant_of(current_ref):
             continue
-        has_direct_variant, nested_refs = parser._get_rw_model_variant_graph_node(current_ref)  # noqa: SLF001
+        has_direct_variant, nested_refs = parser._get_rw_model_variant_graph_node(current_ref)
         if not has_direct_variant and reads_bases_with_imported_fields(parser):
             has_direct_variant = any(
-                base_generates_variant(parser, base)
-                for base in parser._rw_model_base_refs.get(current_ref, ())  # noqa: SLF001
+                base_generates_variant(parser, base) for base in parser._rw_model_base_refs.get(current_ref, ())
             )
         if has_direct_variant:
             matched_ref = current_ref
@@ -1054,21 +1053,21 @@ def get_rw_model_variant_graph_node(parser: RwSplitHost, resolved_ref: str) -> t
     and the models its parsed fields reference are edges too, except one an import types in their place
     (``_imports_type_reference``).
     """
-    if "legacy-rw-parsed-facts" not in parser._legacy_rw_variants:  # noqa: SLF001
-        return parser._get_ref_schema_rw_model_reference_facts(resolved_ref)  # noqa: SLF001
+    if "legacy-rw-parsed-facts" not in parser._legacy_rw_variants:
+        return parser._get_ref_schema_rw_model_reference_facts(resolved_ref)
     facts = get_ref_schema_rw_model_field_facts(parser, resolved_ref)
-    fields = parser._raw_inherited_fields_cache.get(resolved_ref)  # noqa: SLF001
+    fields = parser._raw_inherited_fields_cache.get(resolved_ref)
     if fields is None:
-        fields = parser._request_response_fields.get(resolved_ref, ())  # noqa: SLF001
+        fields = parser._request_response_fields.get(resolved_ref, ())
     nested_refs = {
         reference.path: None
         for field in fields
         for data_type in field.data_type.all_data_types
         if (reference := data_type.reference) is not None
-        and (parser._rw_walk_reads_imported_fields or not parser._imports_type_reference(reference.path))  # noqa: SLF001
+        and (parser._rw_walk_reads_imported_fields or not parser._imports_type_reference(reference.path))
     }
     with legacy_rw_errors(parser):
-        has_inline_variant, raw_refs = parser._get_ref_schema_rw_model_reference_facts(resolved_ref)  # noqa: SLF001
+        has_inline_variant, raw_refs = parser._get_ref_schema_rw_model_reference_facts(resolved_ref)
     nested_refs.update(dict.fromkeys(raw_refs))
     return (facts is not None and (facts[0] or facts[1])) or has_inline_variant, tuple(nested_refs)
 
@@ -1102,11 +1101,11 @@ def type_names_rw_variant(parser: RwSplitHost, reference: Reference, suffix: Lit
     schema (``_imports_type_reference``): that import types the type, which names no model. A schema whose variant it
     names keeps its model (``_keep_python_import_model``).
     """
-    if not parser._ref_schema_generates_variant(reference.path, suffix) or parser._imports_type_reference(  # noqa: SLF001
+    if not parser._ref_schema_generates_variant(reference.path, suffix) or parser._imports_type_reference(
         reference.path
     ):
         return False
-    parser._keep_python_import_model(reference.path)  # noqa: SLF001
+    parser._keep_python_import_model(reference.path)
     return True
 
 
@@ -1117,7 +1116,7 @@ def writes_extra_items_type(parser: RwSplitHost) -> bool:
     and generates none.
     """
     return (
-        parser.use_closed_typed_dict and parser._output_model_context.requires_additional_properties_reference_classes  # noqa: SLF001
+        parser.use_closed_typed_dict and parser._output_model_context.requires_additional_properties_reference_classes
     )
 
 
@@ -1135,10 +1134,10 @@ def get_ref_schema_rw_model_reference_facts(
     """
     if _is_special_path(resolved_ref):
         return False, ()
-    if (cached := parser._rw_model_references_cache.get(resolved_ref)) is not None:  # noqa: SLF001
+    if (cached := parser._rw_model_references_cache.get(resolved_ref)) is not None:
         return cached
     try:
-        root_schema = parser._load_inherited_schema_object(resolved_ref)  # noqa: SLF001
+        root_schema = parser._load_inherited_schema_object(resolved_ref)
     except (Error, OSError):
         return False, ()
 
@@ -1149,19 +1148,19 @@ def get_ref_schema_rw_model_reference_facts(
         [] if _is_imported_ref(parser, root_schema, resolved_ref) else [SchemaSite("", root_schema, [resolved_ref])]
     )
     while stack:
-        for child in parser._DEFINITION_TABLE.typed_children(parser, stack.pop()):  # noqa: SLF001
+        for child in parser._DEFINITION_TABLE.typed_children(parser, stack.pop()):
             match child.position:
                 case "fields":
                     if has_inline_variant or not schema_has_rw_model_fields(
                         parser, cast("JsonSchemaObject", child.schema), resolved_ref
                     ):
                         continue
-                    if "legacy-rw-parsed-facts" not in parser._legacy_rw_variants:  # noqa: SLF001
-                        parser._rw_model_references_cache[resolved_ref] = result = (True, ())  # noqa: SLF001
+                    if "legacy-rw-parsed-facts" not in parser._legacy_rw_variants:
+                        parser._rw_model_references_cache[resolved_ref] = result = (True, ())
                         return result
                     has_inline_variant = True
                 case "ref":
-                    if nested_ref := parser._resolve_rw_model_reference(cast("str", child.reference), resolved_ref):  # noqa: SLF001
+                    if nested_ref := parser._resolve_rw_model_reference(cast("str", child.reference), resolved_ref):
                         references.setdefault(nested_ref, None)
                 case "key":
                     references.setdefault(cast("str", child.reference), None)
@@ -1176,8 +1175,8 @@ def get_ref_schema_rw_model_reference_facts(
                             root=child.position == "root",
                         )
                     )
-    parser._rw_model_base_refs[resolved_ref] = tuple(base_refs)  # noqa: SLF001
-    parser._rw_model_references_cache[resolved_ref] = result = (has_inline_variant, tuple(references))  # noqa: SLF001
+    parser._rw_model_base_refs[resolved_ref] = tuple(base_refs)
+    parser._rw_model_references_cache[resolved_ref] = result = (has_inline_variant, tuple(references))
     return result
 
 
@@ -1187,7 +1186,7 @@ def _member_base_refs(parser: RwSplitHost, child: TypedChild[JsonSchemaObject], 
         return
     schema = cast("JsonSchemaObject", child.schema)
     for ref in (schema.ref, schema.recursiveRef, schema.dynamicRef):
-        if ref and (nested_ref := parser._resolve_rw_model_reference(ref, defining_ref)):  # noqa: SLF001
+        if ref and (nested_ref := parser._resolve_rw_model_reference(ref, defining_ref)):
             yield nested_ref
 
 
@@ -1199,8 +1198,8 @@ def reads_bases_with_imported_fields(parser: RwSplitHost) -> bool:
     types, as in 0.96.0 (``imported_field_reading``); a type names the variant only of a model that splits.
     """
     return (
-        not parser._rw_walk_reads_imported_fields  # noqa: SLF001
-        and "legacy-rw-base-reads-imported-fields" in parser._legacy_python_import_rows  # noqa: SLF001
+        not parser._rw_walk_reads_imported_fields
+        and "legacy-rw-base-reads-imported-fields" in parser._legacy_python_import_rows
     )
 
 
@@ -1211,27 +1210,27 @@ def imported_field_reading(parser: RwSplitHost) -> Generator[None]:
     The facts of this reading are kept apart from those of the reading in which the import types those fields; a
     base is read in it only from the other reading (``reads_bases_with_imported_fields``).
     """
-    caches = parser._rw_model_references_cache, parser._rw_model_variant_requirement_cache, parser._rw_model_base_refs  # noqa: SLF001
+    caches = parser._rw_model_references_cache, parser._rw_model_variant_requirement_cache, parser._rw_model_base_refs
     (
-        parser._rw_model_references_cache,  # noqa: SLF001
-        parser._rw_model_variant_requirement_cache,  # noqa: SLF001
-        parser._rw_model_base_refs,  # noqa: SLF001
-    ) = parser._rw_imported_field_caches  # noqa: SLF001
-    parser._rw_imported_field_caches, parser._rw_walk_reads_imported_fields = caches, True  # noqa: SLF001
+        parser._rw_model_references_cache,
+        parser._rw_model_variant_requirement_cache,
+        parser._rw_model_base_refs,
+    ) = parser._rw_imported_field_caches
+    parser._rw_imported_field_caches, parser._rw_walk_reads_imported_fields = caches, True
     try:
         yield
     finally:
-        parser._rw_imported_field_caches = (  # noqa: SLF001
-            parser._rw_model_references_cache,  # noqa: SLF001
-            parser._rw_model_variant_requirement_cache,  # noqa: SLF001
-            parser._rw_model_base_refs,  # noqa: SLF001
+        parser._rw_imported_field_caches = (
+            parser._rw_model_references_cache,
+            parser._rw_model_variant_requirement_cache,
+            parser._rw_model_base_refs,
         )
         (
-            parser._rw_model_references_cache,  # noqa: SLF001
-            parser._rw_model_variant_requirement_cache,  # noqa: SLF001
-            parser._rw_model_base_refs,  # noqa: SLF001
+            parser._rw_model_references_cache,
+            parser._rw_model_variant_requirement_cache,
+            parser._rw_model_base_refs,
         ) = caches
-        parser._rw_walk_reads_imported_fields = False  # noqa: SLF001
+        parser._rw_walk_reads_imported_fields = False
 
 
 def _base_reading(parser: RwSplitHost) -> AbstractContextManager[None]:
@@ -1248,12 +1247,12 @@ def base_has_rw_model_facts(parser: RwSplitHost, resolved_ref: str) -> bool:
 def base_generates_variant(parser: RwSplitHost, resolved_ref: str) -> bool:
     """Return whether the schema at ``resolved_ref``, read as an allOf base, generates a Request variant."""
     with _base_reading(parser):
-        return parser._ref_schema_generates_variant(resolved_ref, "Request")  # noqa: SLF001
+        return parser._ref_schema_generates_variant(resolved_ref, "Request")
 
 
 def _is_imported_ref(parser: RwSplitHost, schema: JsonSchemaObject, defining_ref: str) -> bool:
     """Return whether a schema is a ``$ref``, read as written, that an import types in place of a model."""
-    return bool(schema.ref) and not _merges_ref_siblings(schema) and parser._import_types_ref(schema.ref, defining_ref)  # noqa: SLF001
+    return bool(schema.ref) and not _merges_ref_siblings(schema) and parser._import_types_ref(schema.ref, defining_ref)
 
 
 def lightweight_type_keys(parser: RwSplitHost, data_type: DataType | None) -> tuple[str, ...]:
@@ -1285,14 +1284,14 @@ def typed_field_site(
         return ()
     site = SchemaSite("", item, [defining_ref], parent=parent)
     if not _merges_ref_siblings(item):
-        return parser._FIELD_TABLE.typed_children(parser, site)  # noqa: SLF001
-    with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
+        return parser._FIELD_TABLE.typed_children(parser, site)
+    with parser._inherited_ref_context(defining_ref):
         as_parsed = (
-            SchemaSite("", parser._merge_ref_with_schema(item), [defining_ref], parent=parent)  # noqa: SLF001
+            SchemaSite("", parser._merge_ref_with_schema(item), [defining_ref], parent=parent)
             if merges_ref_first
             else None
         )
-        return parser._FIELD_TABLE.typed_children(parser, site, as_parsed=as_parsed)  # noqa: SLF001
+        return parser._FIELD_TABLE.typed_children(parser, site, as_parsed=as_parsed)
 
 
 def merged_ref_model_schemas(
@@ -1307,7 +1306,7 @@ def merged_ref_model_schemas(
     """
     schema, model_schema = merged_ref_sibling_schemas(parser, schema, defining_ref)
     if schema is model_schema and schema.allOf:
-        with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
+        with parser._inherited_ref_context(defining_ref):
             if merged := _all_of_values.merge_all_of_object(parser, schema):
                 return merged, merged
     return schema, model_schema
@@ -1326,17 +1325,17 @@ def merged_ref_sibling_schemas(
     """
     if not _merges_ref_siblings(schema):
         return schema, schema
-    with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
+    with parser._inherited_ref_context(defining_ref):
         if _schema_refs.is_ref_circular(
             parser,
             resolved_ref := _schema_refs.ref_path(parser, ref := lenient_ref(parser, cast("str", schema.ref))),
         ):
             return schema, schema
-        target = parser._schema_object(_schema_refs.ref_target_dump(parser, ref, resolved_ref)[0])  # noqa: SLF001
+        target = parser._schema_object(_schema_refs.ref_target_dump(parser, ref, resolved_ref)[0])
         target_builds_map = _has_map_keywords(target) and schema_builds_map_model(parser, target, defining_ref)
         if not (target_builds_map or _has_map_keywords(schema)):
             return schema, schema
-        merged = parser._merge_ref_with_schema(schema)  # noqa: SLF001
+        merged = parser._merge_ref_with_schema(schema)
     if target_builds_map and not schema_builds_map_model(parser, merged, defining_ref):
         return merged, merged
     return schema, merged
@@ -1355,12 +1354,12 @@ def schema_builds_map_model(parser: RwSplitHost, schema: JsonSchemaObject, defin
         return True
     if _declares_key_keywords(schema):
         return False
-    with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
+    with parser._inherited_ref_context(defining_ref):
         return all(
             isinstance(item, JsonSchemaObject)
             and _all_of_values.is_all_of_mapping_item(
                 parser,
-                parser._load_ref_schema_object(item.ref) if item.ref else item,  # noqa: SLF001
+                parser._load_ref_schema_object(item.ref) if item.ref else item,
             )
             for item in schema.allOf
         )
@@ -1368,8 +1367,8 @@ def schema_builds_map_model(parser: RwSplitHost, schema: JsonSchemaObject, defin
 
 def resolve_rw_model_reference(parser: RwSplitHost, ref: str, defining_ref: str) -> str | None:
     """Resolve a type-producing ref while keeping configured imports as graph leaves."""
-    with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
-        if parser._resolve_external_ref_mapping(ref) is not None:  # noqa: SLF001
+    with parser._inherited_ref_context(defining_ref):
+        if parser._resolve_external_ref_mapping(ref) is not None:
             return None
         return _schema_refs.ref_path(parser, ref)
 
@@ -1384,8 +1383,8 @@ def get_rw_property_name_sources(
     if not isinstance(property_names, JsonSchemaObject):
         return (), ()
     if _merges_ref_siblings(property_names):
-        with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
-            property_names = parser._merge_ref_with_schema(property_names)  # noqa: SLF001
+        with parser._inherited_ref_context(defining_ref):
+            property_names = parser._merge_ref_with_schema(property_names)
     combined = tuple(
         item
         for item in chain(property_names.anyOf, property_names.oneOf, property_names.allOf)
@@ -1402,7 +1401,7 @@ def schema_has_rw_model_fields(
     defining_ref: str,
 ) -> bool:
     """Resolve read/write flags on fields exactly as object parsing does."""
-    with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
+    with parser._inherited_ref_context(defining_ref):
         return any(
             isinstance(prop, JsonSchemaObject) and any(resolve_field_flags(parser, prop, either=True))
             for prop in (schema.properties or {}).values()
@@ -1420,12 +1419,12 @@ def get_rw_model_variant_reference(
     cache_key: tuple[str, str] | None = None
     if parser.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
         cache_key = base_reference.path, suffix
-        if (reference := parser._rw_model_variant_references.get(cache_key)) is not None:  # noqa: SLF001
+        if (reference := parser._rw_model_variant_references.get(cache_key)) is not None:
             reference.loaded |= loaded
             return reference
 
     with legacy_rw_errors(parser):
-        source_variant_exists = parser._ref_schema_exists(  # noqa: SLF001
+        source_variant_exists = parser._ref_schema_exists(
             source_variant_ref := _get_rw_model_variant_source_path(base_reference, suffix)
         )
     if source_variant_exists:
@@ -1450,7 +1449,7 @@ def get_rw_model_variant_reference(
         yields=yielding or None,
     )
     if cache_key is not None:
-        parser._rw_model_variant_references[cache_key] = reference  # noqa: SLF001
+        parser._rw_model_variant_references[cache_key] = reference
     return reference
 
 
@@ -1463,8 +1462,8 @@ def update_data_type_ref_for_variant(
     for nested_data_type in data_type.all_data_types:
         if (reference := nested_data_type.reference) and type_names_rw_variant(parser, reference, suffix):
             base_reference = parser.model_resolver.add_ref(reference.path, resolved=True)
-            variant_ref = parser._get_rw_model_variant_reference(base_reference, suffix)  # noqa: SLF001
-            parser._graph_builder.replace_data_type_ref(nested_data_type, variant_ref)  # noqa: SLF001
+            variant_ref = parser._get_rw_model_variant_reference(base_reference, suffix)
+            parser._graph_builder.replace_data_type_ref(nested_data_type, variant_ref)
 
 
 def update_field_refs_for_variant(
@@ -1502,7 +1501,7 @@ def store_extra_items_type(
         if reference_classes_required
         else None
     )
-    parser._output_model_context.store_additional_properties_type(  # noqa: SLF001
+    parser._output_model_context.store_additional_properties_type(
         metadata,
         _make_referencing_type_expression(data_type) if reference_classes is not None else data_type.type_hint,
         reference_classes,
@@ -1545,12 +1544,12 @@ def prepare_rw_model_variant(  # noqa: PLR0913
     The variant takes the schema object, the additional properties metadata and the runtime validation rules of
     the model.
     """
-    variant_fields = [parser._copy_model_field(field) for field in fields]  # noqa: SLF001
-    reference = parser._get_rw_model_variant_reference(base_reference, suffix, loaded=True)  # noqa: SLF001
+    variant_fields = [parser._copy_model_field(field) for field in fields]
+    reference = parser._get_rw_model_variant_reference(base_reference, suffix, loaded=True)
     update_field_refs_for_variant(parser, variant_fields, suffix)
-    parser._record_schema_object(reference, obj)  # noqa: SLF001
-    parser._update_variant_additional_properties_metadata(reference.path, obj, suffix)  # noqa: SLF001
-    parser._copy_schema_runtime_validation_for_variant(  # noqa: SLF001
+    parser._record_schema_object(reference, obj)
+    parser._update_variant_additional_properties_metadata(reference.path, obj, suffix)
+    parser._copy_schema_runtime_validation_for_variant(
         base_reference.path,
         reference.path,
         variant_fields,
@@ -1573,24 +1572,24 @@ def create_object_model(  # noqa: PLR0913
     nullable: bool | None = None,
 ) -> DataModel:
     """Create and register the model of an object schema, nullable as given or else where the schema admits null."""
-    model = parser._create_data_model(  # noqa: SLF001
+    model = parser._create_data_model(
         model_type=model_type,
         reference=reference,
         fields=fields,
         base_classes=base_classes,
-        custom_base_class=parser._resolve_base_class(  # noqa: SLF001
+        custom_base_class=parser._resolve_base_class(
             parser.model_resolver.class_scope("reference-name", reference, reference.path), obj.custom_base_path
         ),
         custom_template_dir=parser.custom_template_dir,
         extra_template_data=parser.extra_template_data,
         path=parser.current_source_path,
         description=obj.description if parser.use_schema_description else None,
-        nullable=parser._object_nullable(obj) if nullable is None else nullable,  # noqa: SLF001
+        nullable=parser._object_nullable(obj) if nullable is None else nullable,
         keyword_only=parser.keyword_only,
         treat_dot_as_module=parser.treat_dot_as_module,
         dataclass_arguments=parser.dataclass_arguments,
     )
-    parser._graph_builder.register_model(model)  # noqa: SLF001
+    parser._graph_builder.register_model(model)
     return model
 
 
@@ -1636,11 +1635,11 @@ def create_request_response_models(  # noqa: PLR0913, PLR0917
     """Generate Request and Response model variants."""
     facts = get_rw_model_field_facts(parser, all_fields)
     if request_response := parser.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
-        if "legacy-rw-parsed-facts" in parser._legacy_rw_variants:  # noqa: SLF001
-            parser._rw_model_field_facts_cache[reference.path] = facts  # noqa: SLF001
+        if "legacy-rw-parsed-facts" in parser._legacy_rw_variants:
+            parser._rw_model_field_facts_cache[reference.path] = facts
         record_rw_model_split(parser, reference.path)
-        parser._request_response_fields[reference.path] = tuple(copy_unregistered_fields(parser, all_fields))  # noqa: SLF001
-        parser._raw_inherited_own_names_cache[reference.path] = frozenset(  # noqa: SLF001
+        parser._request_response_fields[reference.path] = tuple(copy_unregistered_fields(parser, all_fields))
+        parser._raw_inherited_own_names_cache[reference.path] = frozenset(
             field_name for field in own_fields if (field_name := _field_source_name(field)) is not None
         )
     variants: list[tuple[Literal["Request", "Response"], list[DataModelFieldBase]]] = [
@@ -1649,7 +1648,7 @@ def create_request_response_models(  # noqa: PLR0913, PLR0917
         if request_response or _rw_facts_need_variant(facts, suffix)
     ]
     for suffix, model_fields in variants:
-        parser._create_variant_model(  # noqa: SLF001
+        parser._create_variant_model(
             reference,
             suffix,
             model_fields,

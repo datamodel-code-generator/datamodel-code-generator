@@ -177,8 +177,8 @@ def tag_fields_of_tagged_bases(parser: TaggedBasesHost, run: CrossModuleRun) -> 
     names them.
     """
     flatten = _flattener(parser, run, "tag-fields-of-tagged-bases")
-    builder = parser._graph_builder  # noqa: SLF001
-    decisions = parser._tag_plan.struct_tags  # noqa: SLF001
+    builder = parser._graph_builder
+    decisions = parser._tag_plan.struct_tags
     for decision in iter_struct_tag_decisions(_context_models(run.contexts)):
         model = decision.model
         match decision.kind:
@@ -216,7 +216,7 @@ def flatten_narrowed_inherited_fields(parser: FlattenAcrossModulesHost, run: Cro
         [model for ctx in run.contexts for model in ctx.models],
         bases_of=lambda model: [base for base in _find_base_classes(model) if id(base) in written],
     ):
-        if model._declares_inherited_fields():  # noqa: SLF001
+        if model._declares_inherited_fields():
             flatten(model)
 
 
@@ -234,7 +234,7 @@ def write_enum_member_tags_as_values(parser: CrossModuleHost, run: CrossModuleRu
                 continue
             values = written[1]
             if enum_tag_as_values(values, bool_literals=parser.data_model_type.SUPPORTS_BOOLEAN_LITERAL):
-                parser._graph_builder.replace_field_type(  # noqa: SLF001
+                parser._graph_builder.replace_field_type(
                     field, data_type.__class__(literals=values, is_optional=data_type.is_optional)
                 )
 
@@ -244,7 +244,7 @@ def warn_enums_admitting_other_values(parser: CrossModuleHost) -> None:
 
     Runs once msgspec tags are final, as a field that becomes its struct's tag is no value and admits only its tag.
     """
-    values = (narrowing for field, narrowing in parser._enum_admits_other_values if not field.is_class_var)  # noqa: SLF001
+    values = (narrowing for field, narrowing in parser._enum_admits_other_values if not field.is_class_var)
     for narrowing in {narrowing.location: narrowing for narrowing in values}.values():
         warn_as_parser_base(
             f"The schema at {narrowing.location} admits only its const {stable_repr(narrowing.const)} of its enum "
@@ -272,7 +272,7 @@ def _stale_renamed_import(imports: Imports, data_type: DataType, renamed_types: 
 
 def import_removed_reuse_canonicals(parser: CrossModuleHost, run: CrossModuleRun) -> None:
     """Import the kept model where a module processed earlier imported a duplicate that reuse removed."""
-    users = parser._removed_reuse_users  # noqa: SLF001
+    users = parser._removed_reuse_users
     for ctx in run.contexts:
         if not (
             stale_imports := {
@@ -375,7 +375,7 @@ def import_enum_member_literal_classes(parser: CrossModuleHost, run: CrossModule
         module = ModuleImportTarget.of(parser.imports, ctx, run)
         for model in ctx.models:
             for data_type in model.all_data_types:
-                if (reference := data_type._enum_member_literal_reference) is None or data_type.alias:  # noqa: SLF001
+                if (reference := data_type._enum_member_literal_reference) is None or data_type.alias:
                     continue
                 enum_class = (
                     reference.short_name
@@ -386,11 +386,11 @@ def import_enum_member_literal_classes(parser: CrossModuleHost, run: CrossModule
                         _module_qualified_name(reference, run.model_path_to_module_name),
                         module,
                         producer=ImportProducer("import-enum-member-literal-classes", model),
-                        import_ledger=parser._import_ledger,  # noqa: SLF001
+                        import_ledger=parser._import_ledger,
                     )
                     or reference.short_name
                 )
-                parser._graph_builder.name_enum_member_literal_class(data_type, enum_class)  # noqa: SLF001
+                parser._graph_builder.name_enum_member_literal_class(data_type, enum_class)
 
 
 def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> None:
@@ -403,7 +403,7 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
     modules_with_targets: list[tuple[tuple[str, ...], list[DataModel], list[DataModel], Imports, bool]] = []
     module_keys: list[ModulePath] = []
     for ctx in run.contexts:
-        if target_models := [m for m in ctx.models if m.SUPPORTS_GENERIC_BASE_CLASS and not parser._is_root_model(m)]:  # noqa: SLF001
+        if target_models := [m for m in ctx.models if m.SUPPORTS_GENERIC_BASE_CLASS and not parser._is_root_model(m)]:
             modules_with_targets.append((ctx.module, ctx.models, target_models, ctx.imports, ctx.is_init))
             module_keys.append(ctx.module_key)
             all_target_models.update(target_models)
@@ -415,14 +415,14 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
         generic_base_class_module(
             [entry[2] for entry in modules_with_targets],
             module_keys,
-            parser._import_cycle_seeds.base_class_module,  # noqa: SLF001
+            parser._import_cycle_seeds.base_class_module,
         )
     ]
     first_root_file_path = first_root_target_models[0].file_path
 
     base_class_ref = Reference(path=GENERIC_BASE_CLASS_PATH, name=GENERIC_BASE_CLASS_NAME)
 
-    base_class_model = parser._new_model(  # noqa: SLF001
+    base_class_model = parser._new_model(
         parser.data_model_type.create_base_class_model,
         config=parser.generic_base_class_config,
         reference=base_class_ref,
@@ -435,9 +435,9 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
         return
 
     base_class_model.file_path = first_root_file_path
-    parser._generic_base_model = base_class_model  # noqa: SLF001
-    parser._graph_builder.set_module_models(first_root_models, [base_class_model, *first_root_models])  # noqa: SLF001
-    parser._graph_builder.register_model(base_class_model)  # noqa: SLF001
+    parser._generic_base_model = base_class_model
+    parser._graph_builder.set_module_models(first_root_models, [base_class_model, *first_root_models])
+    parser._graph_builder.register_model(base_class_model)
 
     base_class_dt = BaseClassDataType(type=base_class_ref.name, reference=base_class_ref)
 
@@ -446,17 +446,17 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
     for module, _, target_models, imports, init in modules_with_targets:
         for model in target_models:
             if original_import:  # pragma: no branch
-                additional_imports = model._additional_imports  # noqa: SLF001
-                model._additional_imports = [i for i in additional_imports if i != original_import]  # noqa: SLF001
+                additional_imports = model._additional_imports
+                model._additional_imports = [i for i in additional_imports if i != original_import]
             if inherits_one_of(model, all_target_models):
                 continue
             if any(bc.reference for bc in model.base_classes):  # pragma: no cover
-                parser._graph_builder.set_base_classes(model, [base_class_dt, *model.base_classes])  # noqa: SLF001
+                parser._graph_builder.set_base_classes(model, [base_class_dt, *model.base_classes])
             else:
-                parser._graph_builder.set_base_classes(model, [base_class_dt])  # noqa: SLF001
+                parser._graph_builder.set_base_classes(model, [base_class_dt])
         if module != first_root_module and original_import:
-            parser._import_ledger.remove(imports, original_import, _GENERIC_BASE_CLASS)  # noqa: SLF001
-            parser._import_ledger.append(  # noqa: SLF001
+            parser._import_ledger.remove(imports, original_import, _GENERIC_BASE_CLASS)
+            parser._import_ledger.append(
                 imports,
                 generic_base_class_import(module, first_root_module, base_class_ref.name, init=init),
                 _GENERIC_BASE_CLASS,

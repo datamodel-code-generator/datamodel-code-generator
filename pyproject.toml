@@ -259,6 +259,15 @@ lint.per-file-ignores."src/datamodel_code_generator/_runtime/server/*.py" = [
 lint.per-file-ignores."src/datamodel_code_generator/model/_compiled_templates/*.py" = [
   "ALL", # Generated sources are checked by compile_builtin_templates.py.
 ]
+lint.per-file-ignores."src/datamodel_code_generator/model/_field_imports.py" = [
+  "private-member-access", # check_architecture_boundaries.py owns it here (host-private-access).
+]
+lint.per-file-ignores."src/datamodel_code_generator/parser/_*.py" = [
+  "private-member-access", # check_architecture_boundaries.py owns it here (host-private-access).
+]
+lint.per-file-ignores."src/datamodel_code_generator/parser/_passes/*.py" = [
+  "private-member-access", # check_architecture_boundaries.py owns it here (host-private-access).
+]
 lint.per-file-ignores."tests/**/*.py" = [
   "FBT",                                # don't care about booleans as positional arguments in tests
   "implicit-namespace-package",         # no implicit namespace

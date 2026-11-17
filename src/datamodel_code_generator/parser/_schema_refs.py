@@ -437,9 +437,9 @@ def hold_document_root(parser: SchemaRefsHost, file_part: str, role: str) -> Non
     from the start (``document_roles_to_seed``).
     """
     document = schema_resource_document(parser, [file_part])
-    roles = parser._document_roles.setdefault(document, {})  # noqa: SLF001
-    if role not in roles and parser._graph.known(document).tree is not None:  # noqa: SLF001
-        parser._roles_recorded_after_preparation = True  # noqa: SLF001
+    roles = parser._document_roles.setdefault(document, {})
+    if role not in roles and parser._graph.known(document).tree is not None:
+        parser._roles_recorded_after_preparation = True
     roles[role] = None
 
 
@@ -453,7 +453,7 @@ def ref_file_document(parser: SchemaRefsHost, file_part: str, role: str | None =
         return parser.raw_obj
     if role is not None:
         hold_document_root(parser, file_part, role)
-    return parser._get_ref_body(file_part)  # noqa: SLF001
+    return parser._get_ref_body(file_part)
 
 
 def read_ref_value(  # noqa: PLR0913
@@ -488,18 +488,18 @@ def read_ref_value(  # noqa: PLR0913
 def read_as_schema(parser: SchemaRefsHost, raw: YamlValue) -> YamlValue:
     """Return a value of a loaded document that a reference names, with the references it holds as a schema."""
     if (
-        (graph := parser._schema_graph) is None  # noqa: SLF001
+        (graph := parser._schema_graph) is None
         or not isinstance(raw, dict)
         or (location := graph.locations.get(id(raw))) is None
     ):
         return raw
     document = located_document(parser, location)
-    return graph.read_as_schema(raw, location, document, parser._ref_reading("object"))  # noqa: SLF001
+    return graph.read_as_schema(raw, location, document, parser._ref_reading("object"))
 
 
 def ref_reading(parser: SchemaRefsHost, root: Literal["root", "object"]) -> RefReading:
     """Return how ``SchemaGraphBuilder.with_ref_edges`` reads a document (``root``) or a schema (``object``)."""
-    return RefReading(partial(_ref_edge_child_entries, named_entry_maps=parser._named_entry_maps), "object", root)  # noqa: SLF001
+    return RefReading(partial(_ref_edge_child_entries, named_entry_maps=parser._named_entry_maps), "object", root)
 
 
 def ref_schema_exists(parser: SchemaRefsHost, resolved_ref: str) -> bool:
@@ -530,16 +530,16 @@ def reads_as_unread_mapped_document(parser: SchemaRefsHost, error: RefDocumentNo
 
     Under --strict-refs it is an error, as before.
     """
-    if parser.strict_refs or (document := error.document) not in parser._external_ref_mapping:  # noqa: SLF001
+    if parser.strict_refs or (document := error.document) not in parser._external_ref_mapping:
         return False
-    parser._unread_mapped_documents.add(document)  # noqa: SLF001
+    parser._unread_mapped_documents.add(document)
     return True
 
 
 def load_ref_schema_object(parser: SchemaRefsHost, ref: str) -> JsonSchemaObject:
     """Load a JsonSchemaObject from a $ref using standard resolve/load pipeline."""
     resolved_ref = ref_path(parser, ref)
-    return shared_schema_object(parser, parser._get_ref_raw_schema(resolved_ref), [resolved_ref])  # noqa: SLF001
+    return shared_schema_object(parser, parser._get_ref_raw_schema(resolved_ref), [resolved_ref])
 
 
 def key_node(parser: SchemaRefsHost, resolved_ref: str) -> _TargetNode:
@@ -547,7 +547,7 @@ def key_node(parser: SchemaRefsHost, resolved_ref: str) -> _TargetNode:
 
     The value is read as ``_load_ref_schema_object`` reads it, without validating it.
     """
-    return parser._graph.node(read_ref_value(parser, resolved_ref, as_schema=True)) or resolved_ref  # noqa: SLF001
+    return parser._graph.node(read_ref_value(parser, resolved_ref, as_schema=True)) or resolved_ref
 
 
 def unvisited_ref_target(
@@ -556,7 +556,7 @@ def unvisited_ref_target(
     """Return the schema ``ref`` names with ``visited_refs`` and its node, or None when its node was visited."""
     if (node := key_node(parser, ref_path(parser, ref))) in visited_refs:
         return None
-    return parser._load_ref_schema_object(ref), visited_refs | {node}  # noqa: SLF001
+    return parser._load_ref_schema_object(ref), visited_refs | {node}
 
 
 def unmapped_ref_target(
@@ -568,7 +568,7 @@ def unmapped_ref_target(
     is the class its mapping imports and has no document to read, so a fact of the referring schema reads it as an
     opaque class, as a visited node.
     """
-    if parser._resolve_external_ref_mapping(ref) is not None:  # noqa: SLF001
+    if parser._resolve_external_ref_mapping(ref) is not None:
         return None
     return unvisited_ref_target(parser, ref, visited_refs)
 
@@ -580,14 +580,14 @@ def shared_schema_object(
 
     ``path`` names the reference in the error of a value that does not validate.
     """
-    return shared_object(parser, raw, parser.SCHEMA_OBJECT_TYPE, partial(parser._validate_schema_object, raw, path))  # noqa: SLF001
+    return shared_object(parser, raw, parser.SCHEMA_OBJECT_TYPE, partial(parser._validate_schema_object, raw, path))
 
 
 def shared_object(
     parser: SchemaRefsHost, raw: object, kind: type[_ValidatedT], validate: Callable[[], _ValidatedT]
 ) -> _ValidatedT:
     """Return the ``kind`` object a value of a loaded document validates to, validated once by the schema graph."""
-    return parser._graph.schema(raw, kind, validate)  # noqa: SLF001
+    return parser._graph.schema(raw, kind, validate)
 
 
 def derived_ref(parser: SchemaRefsHost, value: str, source: SchemaLocation | None, keyword: str, ref: str) -> str:
@@ -608,7 +608,7 @@ def compute_edge_key(parser: SchemaRefsHost, edge: RefEdge) -> RefKey:
     A plain name resolves in the schema resource enclosing the edge's source; one in a document of its own (``home``)
     in that document's root resource.
     """
-    with parser._home_context(edge.home or edge.source.document):  # noqa: SLF001
+    with parser._home_context(edge.home or edge.source.document):
         return compute_ref_key(parser, edge.spelling, embedded=True, pointer="" if edge.home else edge.source.pointer)
 
 
@@ -619,18 +619,18 @@ def compute_ref_key(parser: SchemaRefsHost, ref: str, *, embedded: bool, pointer
     plain name left after that names the anchor of its schema resource (``plain_name_ref``), the one enclosing
     ``pointer`` of the current document, where the reference is written.
     """
-    if (mapping := parser._resolve_external_ref_mapping(ref)) is not None:  # noqa: SLF001
+    if (mapping := parser._resolve_external_ref_mapping(ref)) is not None:
         return RefKey(parser.model_resolver.resolve_ref(ref), ref, mapping)
-    if embedded and parser._schema_resource_registry.embeds:  # noqa: SLF001
+    if embedded and parser._schema_resource_registry.embeds:
         document = current_document(parser)
         ref = resolve_schema_resource_ref(
             parser,
             ref,
-            parser._schema_resource_registry.root_bases.get(document, document),  # noqa: SLF001
+            parser._schema_resource_registry.root_bases.get(document, document),
             document,
             nested_scope=False,
         )
-    ref = parser._normalize_external_ref(ref)  # noqa: SLF001
+    ref = parser._normalize_external_ref(ref)
     if _is_plain_name_fragment(ref):
         ref = plain_name_ref(parser, ref, pointer)
     return RefKey(parser.model_resolver.resolve_ref(ref), ref)
@@ -642,7 +642,7 @@ def ref_key(parser: SchemaRefsHost, ref: str, *, embedded: bool = True) -> RefKe
     A plain string has no edge: it resolves in the current context (``_compute_ref_key``).
     """
     if isinstance(ref, ResolvedRef):
-        return parser._graph.edge_key(ref.edge, partial(compute_edge_key, parser))  # noqa: SLF001
+        return parser._graph.edge_key(ref.edge, partial(compute_edge_key, parser))
     return compute_ref_key(parser, ref, embedded=embedded)
 
 
@@ -669,14 +669,14 @@ def is_local_ref_false_schema(
 ) -> bool:
     """Return whether a local ref targets false without repeating default validation."""
     if not use_builtin_facts:
-        return parser._load_ref_schema_object(ref).is_boolean_schema_false  # noqa: SLF001
+        return parser._load_ref_schema_object(ref).is_boolean_schema_false
 
     resolved_ref = ref_path(parser, ref)
-    if (false_schema_refs := parser._false_schema_refs) is not None and resolved_ref in false_schema_refs:  # noqa: SLF001
+    if (false_schema_refs := parser._false_schema_refs) is not None and resolved_ref in false_schema_refs:
         return True
-    if resolved_ref in parser._ref_data_type_facts:  # noqa: SLF001
+    if resolved_ref in parser._ref_data_type_facts:
         return False
-    return parser._load_ref_schema_object(ref).is_boolean_schema_false  # noqa: SLF001
+    return parser._load_ref_schema_object(ref).is_boolean_schema_false
 
 
 def anchor_ref_path(parser: SchemaRefsHost, root_key: tuple[str, ...], path: list[str]) -> str:  # noqa: ARG001
@@ -696,23 +696,23 @@ def build_anchor_indexes(parser: SchemaRefsHost, obj: JsonSchemaObject, path: li
     root_key = tuple(parser.model_resolver.current_root)
     ref_path = anchor_ref_path(parser, root_key, path)
     if obj.recursiveAnchor:
-        anchors = parser._recursive_anchor_index.setdefault(root_key, [])  # noqa: SLF001
+        anchors = parser._recursive_anchor_index.setdefault(root_key, [])
         if ref_path not in anchors:
             anchors.append(ref_path)
     if obj.dynamicAnchor:
-        parser._dynamic_anchor_index.setdefault(root_key, {}).setdefault(obj.dynamicAnchor, ref_path)  # noqa: SLF001
+        parser._dynamic_anchor_index.setdefault(root_key, {}).setdefault(obj.dynamicAnchor, ref_path)
 
 
 def enclosing_unanchored_resource_ref(parser: SchemaRefsHost) -> str | None:
     """Return the nearest $id resource enclosing the schema being parsed, when it has no $recursiveAnchor."""
     if (
-        not parser._schema_resource_registry.embeds  # noqa: SLF001
-        or (raw := parser._graph.known(current_dynamic_document(parser)).tree) is None  # noqa: SLF001
+        not parser._schema_resource_registry.embeds
+        or (raw := parser._graph.known(current_dynamic_document(parser)).tree) is None
     ):
         return None
     return _unanchored_resource_ref(
         raw,
-        ref_pointer_parts(parser, raw, f"#{parser._dynamic_scope_pointer}")[0],  # noqa: SLF001
+        ref_pointer_parts(parser, raw, f"#{parser._dynamic_scope_pointer}")[0],
     )
 
 
@@ -731,7 +731,7 @@ def resolve_recursive_ref(parser: SchemaRefsHost, item: JsonSchemaObject, path: 
         return resource
     root_key = tuple(parser.model_resolver.current_root)
     current_ref = anchor_ref_path(parser, root_key, path)
-    return _nearest_recursive_anchor(parser._recursive_anchor_index.get(root_key, ()), current_ref)  # noqa: SLF001
+    return _nearest_recursive_anchor(parser._recursive_anchor_index.get(root_key, ()), current_ref)
 
 
 def resolve_dynamic_ref(parser: SchemaRefsHost, item: JsonSchemaObject) -> str | None:
@@ -744,7 +744,7 @@ def resolve_dynamic_ref(parser: SchemaRefsHost, item: JsonSchemaObject) -> str |
     """
     if not (ref := item.dynamicRef) or not ref.startswith("#"):
         return None
-    return parser._dynamic_anchor_index.get(tuple(parser.model_resolver.current_root), {}).get(ref[1:])  # noqa: SLF001
+    return parser._dynamic_anchor_index.get(tuple(parser.model_resolver.current_root), {}).get(ref[1:])
 
 
 def document_dynamic_anchor(parser: SchemaRefsHost, ref: str) -> str | None:
@@ -753,7 +753,7 @@ def document_dynamic_anchor(parser: SchemaRefsHost, ref: str) -> str | None:
     The document is that of the dynamic scope (``_current_dynamic_document``), read as loaded (L0), so the answer does
     not depend on the order the parse meets its schemas in.
     """
-    anchors = parser._schema_resource_registry.first_dynamic_anchors.get(current_dynamic_document(parser), {})  # noqa: SLF001
+    anchors = parser._schema_resource_registry.first_dynamic_anchors.get(current_dynamic_document(parser), {})
     return anchors.get(ref[1:]) if ref.startswith("#") else None
 
 
@@ -765,7 +765,7 @@ def lexical_dynamic_anchor(parser: SchemaRefsHost, document: str, pointer: str, 
     """
     if not ref.startswith("#"):
         return None
-    registry = parser._schema_resource_registry  # noqa: SLF001
+    registry = parser._schema_resource_registry
     return registry.resource_entries(registry.dynamic_anchors, document, pointer, {}).get(ref[1:])
 
 
@@ -777,13 +777,13 @@ def dynamic_anchor_bindings(
     Outer bindings come from the schemas that referenced the model being parsed, which entered the
     dynamic scope first; the schema resource enclosing the location declares the others.
     """
-    registry = parser._schema_resource_registry  # noqa: SLF001
+    registry = parser._schema_resource_registry
     return {**registry.resource_entries(registry.dynamic_anchors, document, pointer, {}), **outer}
 
 
 def current_dynamic_document(parser: SchemaRefsHost) -> str:
     """Return the document of the model root whose dynamic scope is being resolved."""
-    if (document := parser._dynamic_document) is not None:  # noqa: SLF001
+    if (document := parser._dynamic_document) is not None:
         return document
     return current_document(parser)
 
@@ -793,8 +793,8 @@ def current_dynamic_scope(parser: SchemaRefsHost) -> dict[str, str]:
     return dynamic_anchor_bindings(
         parser,
         current_dynamic_document(parser),
-        parser._dynamic_scope_pointer,  # noqa: SLF001
-        parser._dynamic_bindings,  # noqa: SLF001
+        parser._dynamic_scope_pointer,
+        parser._dynamic_bindings,
     )
 
 
@@ -805,9 +805,9 @@ def bound_dynamic_anchor(parser: SchemaRefsHost, ref: str) -> str | None:
     in the dynamic scope that declares the same anchor name.
     """
     document = current_dynamic_document(parser)
-    if (location := lexical_dynamic_anchor(parser, document, parser._dynamic_scope_pointer, ref)) is None:  # noqa: SLF001
+    if (location := lexical_dynamic_anchor(parser, document, parser._dynamic_scope_pointer, ref)) is None:
         return None
-    return parser._dynamic_bindings.get(ref[1:], location)  # noqa: SLF001
+    return parser._dynamic_bindings.get(ref[1:], location)
 
 
 def schema_location(parser: SchemaRefsHost, resolved_ref: str) -> str:
@@ -819,7 +819,7 @@ def schema_location(parser: SchemaRefsHost, resolved_ref: str) -> str:
 def location_ref(parser: SchemaRefsHost, location: str) -> str:
     """Return the resolved reference of a registry location in a registered document."""
     document, _, pointer = location.partition("#")
-    path_parts = cast("list[str]", parser._graph.known(document).path_parts)  # noqa: SLF001
+    path_parts = cast("list[str]", parser._graph.known(document).path_parts)
     return f"{document_key(parser, path_parts)}#{pointer}"
 
 
@@ -830,7 +830,7 @@ def dynamic_target_bindings(parser: SchemaRefsHost, resolved_ref: str) -> dict[s
     count when a $dynamicRef reachable from it resolves to them, following each bound anchor to the
     schema it names, and a binding that matches the schema's own resource keeps the shared model.
     """
-    if not parser._schema_resource_registry.dynamic_anchors or not (scope := current_dynamic_scope(parser)):  # noqa: SLF001
+    if not parser._schema_resource_registry.dynamic_anchors or not (scope := current_dynamic_scope(parser)):
         return {}
     if not (used := dynamic_anchors_used(parser, resolved_ref)):
         return {}
@@ -854,12 +854,12 @@ def dynamic_ref_edges(parser: SchemaRefsHost, resolved_ref: str) -> _DynamicEdge
     The schema is read from the prepared tree of its document; a key whose value the graph does not locate is its
     own node, and the first key that reaches a node gives the node its analysis.
     """
-    if (node := parser._dynamic_ref_nodes.get(resolved_ref)) is not None:  # noqa: SLF001
-        return parser._dynamic_ref_graph[node]  # noqa: SLF001
+    if (node := parser._dynamic_ref_nodes.get(resolved_ref)) is not None:
+        return parser._dynamic_ref_graph[node]
     file_part, _, fragment = resolved_ref.partition("#")
     document, raw = prepared_ref_document(parser, file_part)
     schema = ref_value_in(parser, raw, resolved_ref, or_missing=True)
-    node = parser._dynamic_ref_nodes[resolved_ref] = parser._graph.node(schema) or resolved_ref  # noqa: SLF001
+    node = parser._dynamic_ref_nodes[resolved_ref] = parser._graph.node(schema) or resolved_ref
     anchors: set[str] = set()
     targets: list[str] = []
     for pointer, subschema in iter_referencing_schemas(parser, schema, fragment):
@@ -872,7 +872,7 @@ def dynamic_ref_edges(parser: SchemaRefsHost, resolved_ref: str) -> _DynamicEdge
             ):
                 anchors.add(dynamic_ref[1:])
                 targets.append(location_ref(parser, location))
-    return parser._dynamic_ref_graph.setdefault(node, _DynamicEdges(node, frozenset(anchors), tuple(targets)))  # noqa: SLF001
+    return parser._dynamic_ref_graph.setdefault(node, _DynamicEdges(node, frozenset(anchors), tuple(targets)))
 
 
 def dynamic_anchors_used(parser: SchemaRefsHost, resolved_ref: str) -> frozenset[str]:
@@ -882,19 +882,19 @@ def dynamic_anchors_used(parser: SchemaRefsHost, resolved_ref: str) -> frozenset
     graph, so each schema is analyzed once however many references, under whichever key, reach it.
     """
     start = dynamic_ref_edges(parser, resolved_ref)
-    if (cached := parser._dynamic_anchor_usage.get(start.node)) is not None:  # noqa: SLF001
+    if (cached := parser._dynamic_anchor_usage.get(start.node)) is not None:
         return cached
     successors: dict[_TargetNode, set[_TargetNode]] = {start.node: set()}
     work = [(start.node, iter(start.targets))]
     while work:
         node, targets = work[-1]
         for target in targets:
-            if (successor := dynamic_ref_edges(parser, target).node) in parser._dynamic_anchor_usage:  # noqa: SLF001
+            if (successor := dynamic_ref_edges(parser, target).node) in parser._dynamic_anchor_usage:
                 continue
             successors[node].add(successor)
             if successor not in successors:
                 successors[successor] = set()
-                work.append((successor, iter(parser._dynamic_ref_graph[successor].targets)))  # noqa: SLF001
+                work.append((successor, iter(parser._dynamic_ref_graph[successor].targets)))
                 break
         else:
             work.pop()
@@ -905,25 +905,25 @@ def dynamic_anchors_used(parser: SchemaRefsHost, resolved_ref: str) -> frozenset
         members = {nodes[index] for index in component}
         anchors: set[str] = set()
         for node in members:
-            edges = parser._dynamic_ref_graph[node]  # noqa: SLF001
+            edges = parser._dynamic_ref_graph[node]
             anchors |= edges.anchors
             anchors.update(
                 *(
-                    parser._dynamic_anchor_usage[successor]  # noqa: SLF001
+                    parser._dynamic_anchor_usage[successor]
                     for target in edges.targets
-                    if (successor := parser._dynamic_ref_nodes[target]) not in members  # noqa: SLF001
+                    if (successor := parser._dynamic_ref_nodes[target]) not in members
                 )
             )
-        parser._dynamic_anchor_usage.update(dict.fromkeys(members, frozenset(anchors)))  # noqa: SLF001
-    return parser._dynamic_anchor_usage[start.node]  # noqa: SLF001
+        parser._dynamic_anchor_usage.update(dict.fromkeys(members, frozenset(anchors)))
+    return parser._dynamic_anchor_usage[start.node]
 
 
 def prepared_ref_document(parser: SchemaRefsHost, file_part: str) -> tuple[str, dict[str, Any]]:
     """Return the document a resolved reference points into and its prepared schema, loading it once."""
     document = schema_resource_document(parser, _ref_path_parts(file_part))
-    if (tree := parser._graph.known(document).tree) is not None:  # noqa: SLF001
+    if (tree := parser._graph.known(document).tree) is not None:
         return document, tree
-    with parser._ref_document_context(file_part) as prepared:  # noqa: SLF001
+    with parser._ref_document_context(file_part) as prepared:
         return prepared
 
 
@@ -962,12 +962,12 @@ def analysis_ref_target(parser: SchemaRefsHost, document: str, file_part: str, r
     """
     if ref.startswith("#") and not _is_plain_name_fragment(ref):
         return f"{file_part}{ref}"
-    if parser._resolve_external_ref_mapping(ref) is not None:  # noqa: SLF001
+    if parser._resolve_external_ref_mapping(ref) is not None:
         return None
-    registry = parser._schema_resource_registry  # noqa: SLF001
+    registry = parser._schema_resource_registry
     if location := registry.locations.get(urljoin(registry.root_bases[document], ref)):
         return location_ref(parser, location)
-    with parser._ref_document_context(file_part):  # noqa: SLF001
+    with parser._ref_document_context(file_part):
         return ref_key(parser, ref, embedded=False).key
 
 
@@ -976,7 +976,7 @@ def schema_document_directory(parser: SchemaRefsHost, document: str) -> Path | N
     if is_url(document):
         return None
     resolve = partial(parser.model_resolver.document_directory, document)
-    return parser._graph.document_directory(document, resolve)  # noqa: SLF001
+    return parser._graph.document_directory(document, resolve)
 
 
 @contextmanager
@@ -1007,16 +1007,16 @@ def dynamic_specialization_reference(parser: SchemaRefsHost, ref: str, resolved_
     if not (bindings := dynamic_target_bindings(parser, resolved_ref)):
         return None
     key = (dynamic_ref_edges(parser, resolved_ref).node, frozenset(bindings.items()))
-    if (reference := parser._dynamic_specializations.get(key)) is not None:  # noqa: SLF001
+    if (reference := parser._dynamic_specializations.get(key)) is not None:
         return reference
-    shared = parser._add_ref(ref)  # noqa: SLF001
-    path = get_special_path(f"dynamic-scope-{len(parser._dynamic_specializations)}", list(parser._dynamic_scope_path))  # noqa: SLF001
+    shared = parser._add_ref(ref)
+    path = get_special_path(f"dynamic-scope-{len(parser._dynamic_specializations)}", list(parser._dynamic_scope_path))
     reference = parser.model_resolver.add(
         path, parser.model_resolver.ref_original_name(ref, resolved_ref) or shared.original_name, class_name=True
     )
-    parser._dynamic_specializations[key] = reference  # noqa: SLF001
-    parser._dynamic_specialization_paths.add(tuple(path))  # noqa: SLF001
-    parser._dynamic_specialization_worklist.pending.append(  # noqa: SLF001
+    parser._dynamic_specializations[key] = reference
+    parser._dynamic_specialization_paths.add(tuple(path))
+    parser._dynamic_specialization_worklist.pending.append(
         _DynamicSpecialization(resolved_ref, bindings, reference, tuple(path))
     )
     return reference
@@ -1035,17 +1035,17 @@ def ref_site_reference(parser: SchemaRefsHost, site: SchemaSite[JsonSchemaObject
     so is a site met by the parse of inherited fields at no owner's path (row ``legacy-rw-unowned-parent-fields``),
     whose models no other parse names.
     """
-    if parser._parses_unowned_fields:  # noqa: SLF001
+    if parser._parses_unowned_fields:
         return None
     obj = site.obj
     location = cast("SchemaLocation", obj.schema_location)
     dump = obj.model_dump(exclude_unset=True, by_alias=True)
     key = (location, frozenset(current_dynamic_scope(parser).items()))
-    if (known := parser._ref_site_models.get(key)) is None:  # noqa: SLF001
+    if (known := parser._ref_site_models.get(key)) is None:
         _, document = prepared_ref_document(parser, location.document)
         holder = shared_schema_object(parser, _get_model_by_decoded_path(document, location.tokens), [str(location)])
         if (
-            parser._merge_field_ref(SchemaSite(site.name, holder, site.path)).obj.model_dump(  # noqa: SLF001
+            parser._merge_field_ref(SchemaSite(site.name, holder, site.path)).obj.model_dump(
                 exclude_unset=True, by_alias=True
             )
             != dump
@@ -1054,26 +1054,26 @@ def ref_site_reference(parser: SchemaRefsHost, site: SchemaSite[JsonSchemaObject
         path = get_special_path("object", site.path)
         reference = parser.model_resolver.add(
             path,
-            parser._apply_title_as_name(site.name, obj),  # noqa: SLF001
+            parser._apply_title_as_name(site.name, obj),
             class_name=True,
             singular_name=site.singular_name,
         )
-        known = parser._ref_site_models[key] = reference, dump  # noqa: SLF001
+        known = parser._ref_site_models[key] = reference, dump
         if parser.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
             parser.parse_object(site.name, obj, path, singular_name=site.singular_name)
             return reference
         resolver = parser.model_resolver
-        parser._ref_site_worklist.pending.append(  # noqa: SLF001
+        parser._ref_site_worklist.pending.append(
             _RefSite(
                 replace(site, path=path, scope=None),
                 tuple(resolver.current_root),
                 resolver.current_base_path,
                 resolver.base_url,
                 (
-                    parser._dynamic_document,  # noqa: SLF001
-                    parser._dynamic_scope_path,  # noqa: SLF001
-                    parser._dynamic_scope_pointer,  # noqa: SLF001
-                    parser._dynamic_bindings,  # noqa: SLF001
+                    parser._dynamic_document,
+                    parser._dynamic_scope_path,
+                    parser._dynamic_scope_pointer,
+                    parser._dynamic_bindings,
                 ),
                 parser.raw_obj,
             )
@@ -1091,27 +1091,27 @@ def parse_ref_sites(parser: SchemaRefsHost) -> None:
             resolver.current_root_context(pending.root),
             base_path_context(parser, pending.base_path),
             resolver.base_url_context(pending.base_url),
-            parser._dynamic_scope_context(path, bindings, pointer, document),  # noqa: SLF001
+            parser._dynamic_scope_context(path, bindings, pointer, document),
             context_variable(partial(setattr, parser, "raw_obj"), parser.raw_obj, pending.raw_obj),
         ):
             parser.parse_object(site.name, site.obj, site.path, singular_name=site.singular_name)
 
-    parser._ref_site_worklist.drain(parse)  # noqa: SLF001
+    parser._ref_site_worklist.drain(parse)
 
 
 def parse_dynamic_specializations(parser: SchemaRefsHost) -> None:
     """Parse pending specialized models iteratively, outside of any specialization being parsed."""
-    parser._dynamic_specialization_worklist.drain(partial(parse_dynamic_specialization, parser))  # noqa: SLF001
+    parser._dynamic_specialization_worklist.drain(partial(parse_dynamic_specialization, parser))
 
 
 def parse_dynamic_specialization(parser: SchemaRefsHost, specialization: _DynamicSpecialization) -> None:
     """Parse a referenced schema again under the $dynamicAnchor bindings of its dynamic scope."""
     file_part, _, fragment = specialization.target.partition("#")
-    with parser._ref_document_context(file_part) as (_, raw):  # noqa: SLF001
+    with parser._ref_document_context(file_part) as (_, raw):
         value = ref_value_in(parser, raw, specialization.target)
-        obj = parser._validate_schema_object(value, list(specialization.path))  # noqa: SLF001
-        with parser._dynamic_scope_context(specialization.path, specialization.bindings, fragment):  # noqa: SLF001
-            parser._parse_schema_obj(specialization.reference.name, obj, list(specialization.path))  # noqa: SLF001
+        obj = parser._validate_schema_object(value, list(specialization.path))
+        with parser._dynamic_scope_context(specialization.path, specialization.bindings, fragment):
+            parser._parse_schema_obj(specialization.reference.name, obj, list(specialization.path))
 
 
 def dynamic_scope_target(parser: SchemaRefsHost, item: JsonSchemaObject, path: list[str]) -> _DynamicTarget | None:
@@ -1132,7 +1132,7 @@ def dynamic_scope_target(parser: SchemaRefsHost, item: JsonSchemaObject, path: l
         return _DynamicTarget(resolve_recursive_ref(parser, item, path) or "#")
     if not (dynamic_ref := item.dynamicRef):
         return None
-    first = note_plain_name(parser, current_dynamic_document(parser), parser._dynamic_scope_pointer, dynamic_ref)  # noqa: SLF001
+    first = note_plain_name(parser, current_dynamic_document(parser), parser._dynamic_scope_pointer, dynamic_ref)
     if (location := bound_dynamic_anchor(parser, dynamic_ref)) is not None:
         return _DynamicTarget(location=location)
     if parser.config.read_dynamic_anchors_in_document_order:
@@ -1147,7 +1147,7 @@ def get_dynamic_scope_data_type(parser: SchemaRefsHost, item: JsonSchemaObject, 
     """Return the data type of a `$recursiveRef` or `$dynamicRef` (rule DS, ``_dynamic_scope_target``)."""
     if (target := dynamic_scope_target(parser, item, path)) is None:
         return parser.get_ref_data_type(cast("str", item.dynamicRef))
-    with parser._dynamic_target_ref(target) as ref:  # noqa: SLF001
+    with parser._dynamic_target_ref(target) as ref:
         return parser.get_ref_data_type(ref)
 
 
@@ -1163,7 +1163,7 @@ def subschema_scope(parser: SchemaRefsHost, obj: JsonSchemaObject) -> AbstractCo
     resolve within that resource, while the $dynamicAnchor bindings of the enclosing resources and the
     referencing schemas stay in effect, so the outermost declaration wins.
     """
-    registry = parser._schema_resource_registry  # noqa: SLF001
+    registry = parser._schema_resource_registry
     if (resolved_ref := obj.__dict__.get(_MERGED_REF_TARGET_KEY)) is not None:
         if not registry.dynamic_anchors:
             return None
@@ -1171,20 +1171,20 @@ def subschema_scope(parser: SchemaRefsHost, obj: JsonSchemaObject) -> AbstractCo
         pointer = unquote(pointer)
     elif (identifier := obj.id) and registry.embedded:
         document = current_dynamic_document(parser)
-        embedded = registry.resource_entries(registry.embedded, document, parser._dynamic_scope_pointer, {})  # noqa: SLF001
+        embedded = registry.resource_entries(registry.embedded, document, parser._dynamic_scope_pointer, {})
         if (pointer := embedded.get(identifier)) is None:
             return None
     else:
         return None
-    return parser._dynamic_scope_context(parser._dynamic_scope_path, current_dynamic_scope(parser), pointer, document)  # noqa: SLF001
+    return parser._dynamic_scope_context(parser._dynamic_scope_path, current_dynamic_scope(parser), pointer, document)
 
 
 def get_contains_bounds(parser: SchemaRefsHost, obj: JsonSchemaObject) -> JsonSchemaObject | None:
     """Return the item bounds that the contains keywords of a schema imply, as a schema of those bounds alone."""
     if not (keys := _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS & obj.extras.keys()):
         return None
-    contains = parser._schema_object({key: obj.extras[key] for key in keys})  # noqa: SLF001
-    return parser._schema_object(type(parser)._get_array_items_constraints(contains))  # noqa: SLF001
+    contains = parser._schema_object({key: obj.extras[key] for key in keys})
+    return parser._schema_object(type(parser)._get_array_items_constraints(contains))
 
 
 def ref_target_dump(parser: SchemaRefsHost, ref: str, resolved_ref: str) -> tuple[dict[str, Any], str]:
@@ -1199,11 +1199,11 @@ def ref_target_dump(parser: SchemaRefsHost, ref: str, resolved_ref: str) -> tupl
     document = current_document(parser)
     key = node, _ = key_node(parser, resolved_ref), document
     chain: list[tuple[str, _TargetNode, dict[str, Any], JsonSchemaObject | None]] = []
-    while (node, document) not in parser._ref_target_dumps:  # noqa: SLF001
-        ref_dict = parser._load_ref_schema_object(ref).model_dump(exclude_unset=True, by_alias=True)  # noqa: SLF001
+    while (node, document) not in parser._ref_target_dumps:
+        ref_dict = parser._load_ref_schema_object(ref).model_dump(exclude_unset=True, by_alias=True)
         if document_part(schema_location(parser, resolved_ref)) != document:
             pin_recursive_refs(parser, ref_dict, resolved_ref)
-        alias = parser._schema_object(ref_dict) if isinstance(ref_dict.get("$ref"), str) else None  # noqa: SLF001
+        alias = parser._schema_object(ref_dict) if isinstance(ref_dict.get("$ref"), str) else None
         chain.append((resolved_ref, node, ref_dict, alias))
         if (
             alias is None
@@ -1215,11 +1215,11 @@ def ref_target_dump(parser: SchemaRefsHost, ref: str, resolved_ref: str) -> tupl
     for chain_ref, chain_node, ref_dict, alias in reversed(chain):
         dump, target_ref = ref_dict, chain_ref
         if alias is not None:
-            target = parser._merge_ref_with_schema(alias)  # noqa: SLF001
+            target = parser._merge_ref_with_schema(alias)
             dump = target.model_dump(exclude_unset=True, by_alias=True)
             target_ref = target.__dict__.get(_MERGED_REF_TARGET_KEY, chain_ref)
-        parser._ref_target_dumps[chain_node, document] = dump, target_ref  # noqa: SLF001
-    cached = parser._ref_target_dumps[key]  # noqa: SLF001
+        parser._ref_target_dumps[chain_node, document] = dump, target_ref
+    cached = parser._ref_target_dumps[key]
     return deepcopy(cached[0]), cached[1]
 
 
@@ -1240,7 +1240,7 @@ def intersect_ref_siblings(  # noqa: PLR0913
     keywords and the keywords with no value in common. Under ``legacy-merge-row`` the earlier merge alone, unless the
     siblings are parts of a ``conjunction`` the document writes around the $ref (``_CONJUNCTION_PARTS_KEY``).
     """
-    legacy_rows = parser._legacy_intersection  # noqa: SLF001
+    legacy_rows = parser._legacy_intersection
     intersection = _intersect_parts(
         parser,
         [target, siblings],
@@ -1281,15 +1281,15 @@ def intersect_ref_siblings_schema(  # noqa: PLR0913
     if (
         holder is not None
         and "contains" in holder.extras
-        and (contains_bounds := get_contains_bounds(parser, parser._schema_object(target))) is not None  # noqa: SLF001
+        and (contains_bounds := get_contains_bounds(parser, parser._schema_object(target))) is not None
     ):
         extras_key = JsonSchemaObject.__extra_key__
         merged[extras_key] = {
             **_without_contains_keywords(merged[extras_key]),
             **{key: value for key, value in holder.extras.items() if key in _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS},
         }
-        parser._merge_schema_constraints(merged, [contains_bounds], intersect=True)  # noqa: SLF001
-    merged_schema = parser._schema_object(merged)  # noqa: SLF001
+        parser._merge_schema_constraints(merged, [contains_bounds], intersect=True)
+    merged_schema = parser._schema_object(merged)
     mark_reported_value_conflict(parser, merged_schema, unsatisfiable)
     if target_ref is not None:
         merged_schema.__dict__[_MERGED_REF_TARGET_KEY] = target_ref
@@ -1336,7 +1336,7 @@ def merge_ref_with_schema(parser: SchemaRefsHost, obj: JsonSchemaObject, where: 
         ref_dict,
         current_dict,
         where or named_location(obj.schema_location, obj.ref),
-        siblings_are_parts=parser._ref_siblings_are_parts_of(obj),  # noqa: SLF001
+        siblings_are_parts=parser._ref_siblings_are_parts_of(obj),
         holder=obj,
         target_ref=resolved_ref,
     )
@@ -1359,7 +1359,7 @@ def recursive_ref_target(parser: SchemaRefsHost, defining_ref: str, path: tuple[
         target = _nearest_recursive_anchor(anchors, current_ref)
         if (target != "#" or "#" in anchors) and declares_recursive_anchor(parser):
             return None
-    with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
+    with parser._inherited_ref_context(defining_ref):
         location = schema_location(parser, parser.model_resolver.resolve_ref(target))
     return derived_ref(parser, location, SchemaLocation(file_part, tuple(parts)), "$recursiveRef", target)
 
@@ -1384,7 +1384,7 @@ def pin_recursive_refs(parser: SchemaRefsHost, schema: dict[str, Any], defining_
 
 def declares_recursive_anchor(parser: SchemaRefsHost) -> bool:
     """Return whether the document being parsed has registered a `$recursiveAnchor` so far."""
-    return bool(parser._recursive_anchor_index.get(tuple(parser.model_resolver.current_root)))  # noqa: SLF001
+    return bool(parser._recursive_anchor_index.get(tuple(parser.model_resolver.current_root)))
 
 
 def document_recursive_anchors(
@@ -1411,16 +1411,16 @@ def is_ref_circular(parser: SchemaRefsHost, resolved_ref: str) -> bool:
 
     A target whose references reach a document or pointer that cannot be loaded counts as circular.
     """
-    if resolved_ref in parser._circular_ref_cache:  # noqa: SLF001
-        return parser._circular_ref_cache[resolved_ref]  # noqa: SLF001
+    if resolved_ref in parser._circular_ref_cache:
+        return parser._circular_ref_cache[resolved_ref]
     result = has_ref_cycle(parser, resolved_ref)
-    parser._circular_ref_cache[resolved_ref] = result  # noqa: SLF001
+    parser._circular_ref_cache[resolved_ref] = result
     return result
 
 
 def ref_cycle_document(parser: SchemaRefsHost, ref_to_check: str) -> Generator[object, None, None]:
     """Yield the value ref_to_check names, resolving references relative to its document until closed."""
-    with parser._ref_file_context(document_part(ref_to_check)):  # noqa: SLF001
+    with parser._ref_file_context(document_part(ref_to_check)):
         yield read_ref_value(parser, ref_to_check, reading="legacy-cycle-through-scalar")
 
 
@@ -1451,7 +1451,7 @@ def has_ref_cycle(parser: SchemaRefsHost, target: str) -> bool:
         stack = [frame.ref for frame in frames]
         while frames:
             frames.pop().document.close()
-    cache = parser._circular_ref_cache  # noqa: SLF001
+    cache = parser._circular_ref_cache
     if circular:
         cache.update(dict.fromkeys(stack, True))
     else:
@@ -1468,7 +1468,7 @@ def walk_ref_cycle(
     A frame per followed reference sits on an explicit stack, so any chain length works. ``edges`` collects the
     references each followed reference holds, except those recorded as not circular, which no cycle passes through.
     """
-    cache = parser._circular_ref_cache  # noqa: SLF001
+    cache = parser._circular_ref_cache
     if push_ref_cycle_frame(parser, target, edges, frames):
         return True
     while frames:
@@ -1521,7 +1521,7 @@ def traverse_schema_objects(
 ) -> None:
     """Traverse schema objects recursively and apply callback, within the schema resources they declare."""
     with NO_SCOPE if (scope := subschema_scope(parser, obj)) is None else scope:
-        parser._walk_schema_objects(obj, path, callback)  # noqa: SLF001
+        parser._walk_schema_objects(obj, path, callback)
 
 
 def resolve_ref_callback(parser: SchemaRefsHost, obj: JsonSchemaObject, path: list[str]) -> None:
@@ -1538,5 +1538,5 @@ def resolve_ref_callback(parser: SchemaRefsHost, obj: JsonSchemaObject, path: li
         if obj.dynamicRef:
             parser.resolve_ref(obj.dynamicRef)
     elif obj.recursiveRef or target.location is not None:
-        with parser._dynamic_target_ref(target) as ref:  # noqa: SLF001
+        with parser._dynamic_target_ref(target) as ref:
             parser.resolve_ref(ref)

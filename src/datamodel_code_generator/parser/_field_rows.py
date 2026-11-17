@@ -252,7 +252,7 @@ def require_field(parser: RequiredFieldHost, field: DataModelFieldBase, *, inher
     with ``--keep-defaults-of-inherited-required-fields``. The fields a read/write variant collects from its bases and
     those a flattened model adopts from its bases keep it with ``--use-default`` alone.
     """
-    parser._graph_builder.require_field(  # noqa: SLF001
+    parser._graph_builder.require_field(
         field,
         use_default_with_required=uses_default_with_required(
             required=True,

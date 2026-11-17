@@ -193,7 +193,7 @@ PARSE_CALLER: Final[ContextVar[FrameType | None]] = ContextVar("parse_caller", d
 
 def parse_caller() -> FrameType | None:
     """Return the frame that called the ``Parser.parse()`` calling this, past the wrapper frames of ``--debug``."""
-    frame = sys._getframe(2)  # noqa: SLF001
+    frame = sys._getframe(2)
     while frame is not None and is_tracer_frame(frame):
         frame = frame.f_back
     return frame
@@ -205,7 +205,7 @@ def stacklevel_at_parse_caller() -> int:
     Outside ``Parser.parse()`` there is no such caller, and the warning names the outermost frame.
     """
     anchor = PARSE_CALLER.get()
-    frame: FrameType | None = sys._getframe(1)  # noqa: SLF001
+    frame: FrameType | None = sys._getframe(1)
     level = 1
     while frame is not None and frame is not anchor:
         frame = frame.f_back

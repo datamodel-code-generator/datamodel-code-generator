@@ -53,7 +53,7 @@ class _RefSiblingsMerger(Protocol):
 
 def _with_ref_siblings(parser: _RefSiblingsMerger, schema: JsonSchemaObject) -> JsonSchemaObject:
     """Return ``schema`` merged with the keywords beside its `$ref` where they are parts of it, else itself."""
-    return parser._merge_ref_with_schema(schema) if _merges_ref_siblings(schema) else schema  # noqa: SLF001
+    return parser._merge_ref_with_schema(schema) if _merges_ref_siblings(schema) else schema
 
 
 def _schema_dump(schema: JsonSchemaObject | bool) -> dict[str, Any] | bool:  # ruff: ignore[boolean-type-hint-positional-argument]
@@ -162,11 +162,11 @@ def _intersect_parts(  # noqa: PLR0913
         row,
         ref_siblings_are_parts=ref_siblings_are_parts,
         legacy_rows=legacy_rows,
-        removes_enum_outside_type="legacy-enum-outside-type-kept" not in parser._legacy_intersection,  # noqa: SLF001
+        removes_enum_outside_type="legacy-enum-outside-type-kept" not in parser._legacy_intersection,
         own_last=own_last,
     )
     if where is not None:
-        parser._warn_intersection(where, intersection, *parts)  # noqa: SLF001
+        parser._warn_intersection(where, intersection, *parts)
     return intersection
 
 

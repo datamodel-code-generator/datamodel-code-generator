@@ -85,10 +85,10 @@ def merge_primitive_schemas(parser: LightweightTypesHost, items: list[JsonSchema
     if len(items) == 1:
         return items[0]
 
-    base_dict = type(parser)._first_typed_schema_dict(items)  # noqa: SLF001
-    parser._merge_schema_constraints(base_dict, items, intersect=True)  # noqa: SLF001
+    base_dict = type(parser)._first_typed_schema_dict(items)
+    parser._merge_schema_constraints(base_dict, items, intersect=True)
 
-    return parser._schema_object(base_dict)  # noqa: SLF001
+    return parser._schema_object(base_dict)
 
 
 def merge_primitive_schemas_for_allof(
@@ -105,11 +105,11 @@ def merge_primitive_schemas_for_allof(
     if intersects_all_of_constraints(parser.allof_merge_mode.value):
         base_dict = merge_primitive_schemas(parser, items).model_dump(exclude_unset=True, by_alias=True)
     else:
-        base_dict = type(parser)._first_typed_schema_dict(items)  # noqa: SLF001
-        parser._merge_schema_constraints(base_dict, items, intersect=False)  # noqa: SLF001
+        base_dict = type(parser)._first_typed_schema_dict(items)
+        parser._merge_schema_constraints(base_dict, items, intersect=False)
     if formats:
         base_dict["format"] = formats.pop()
-    return parser._schema_object(base_dict)  # noqa: SLF001
+    return parser._schema_object(base_dict)
 
 
 def _schema_constraint_value(parser: LightweightTypesHost, item: JsonSchemaObject, field: str) -> Any:  # noqa: ARG001
@@ -149,7 +149,7 @@ def merge_schema_constraints(
             else:
                 base_dict[field] = value
     if patterns:
-        base_dict["pattern"] = parser._conjoined_pattern(  # noqa: SLF001
+        base_dict["pattern"] = parser._conjoined_pattern(
             patterns,
             _ALL_OF_MEMBER_SUFFIX.sub(
                 "",
@@ -195,7 +195,7 @@ def build_lightweight_array_type(  # noqa: PLR0913, PLR0917
             item_type
             for item_schema in item_schemas
             if (
-                item_type := parser._build_lightweight_item_type(  # noqa: SLF001
+                item_type := parser._build_lightweight_item_type(
                     item_schema, depth, visited, max_depth, max_union_elements
                 )
             )
@@ -214,14 +214,13 @@ def build_lightweight_array_type(  # noqa: PLR0913, PLR0917
         schema.uniqueItems,
     )
     other_types = [
-        parser._get_format_data_type(schema, type_)  # noqa: SLF001
-        for type_ in parser._get_array_union_non_array_types(schema)  # noqa: SLF001
+        parser._get_format_data_type(schema, type_) for type_ in parser._get_array_union_non_array_types(schema)
     ]
     return build_union(
         parser.data_type,
         [array_type, *other_types],
         "legacy-non-array-first",
-        nullable=bool(parser._null_facts(schema, "type-union").admits_null),  # noqa: SLF001
+        nullable=bool(parser._null_facts(schema, "type-union").admits_null),
         roles=("member", *("non-array",) * len(other_types)),
     )
 
@@ -240,7 +239,7 @@ def is_list_with_any_item_type(parser: LightweightTypesHost, data_type: DataType
         return False
 
     candidate = data_type
-    if candidate._wraps_one_list:  # noqa: SLF001
+    if candidate._wraps_one_list:
         candidate = candidate.data_types[0]
 
     if not candidate.is_list or len(candidate.data_types) != 1:
@@ -249,7 +248,7 @@ def is_list_with_any_item_type(parser: LightweightTypesHost, data_type: DataType
     item_type = candidate.data_types[0]
     while len(item_type.data_types) == 1:
         inner = item_type.data_types[0]
-        if item_type.is_list or item_type._wraps_one_list:  # noqa: SLF001
+        if item_type.is_list or item_type._wraps_one_list:
             item_type = inner
         else:
             break

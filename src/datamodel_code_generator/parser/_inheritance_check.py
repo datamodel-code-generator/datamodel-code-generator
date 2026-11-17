@@ -70,7 +70,7 @@ def check_model_inheritance(parser: InheritanceCheckHost, contexts: Sequence[Mod
 
     def builtin(model: DataModel) -> bool:
         return type(model) is parser.data_model_type and not (
-            parser.custom_template_dir is not None and model._uses_custom_root_template  # noqa: SLF001
+            parser.custom_template_dir is not None and model._uses_custom_root_template
         )
 
     def emitted_bases(model: DataModel) -> list[BaseClassDataType]:
@@ -99,7 +99,7 @@ def check_model_inheritance(parser: InheritanceCheckHost, contexts: Sequence[Mod
         paths[model.path].append(model)
     parents: list[list[int]] = [[] for _ in models]
     closed = [backend in ordinary_backends and builtin(model) for model in models]
-    overrides = parser._import_overrides or {}  # noqa: SLF001
+    overrides = parser._import_overrides or {}
     ordered = True
     for index, model in enumerate(models):
         ctx_index, _ = positions[identities[id(model)]]

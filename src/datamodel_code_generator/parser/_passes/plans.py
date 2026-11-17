@@ -135,15 +135,15 @@ class PlansHost(RecursionFactsHost, FlattenHost, ReuseOptionsHost, DataModelType
 
 def reset_per_run_state(parser: PlansHost, _run: StructuredRun[Any]) -> None:
     """Forget what the passes of an earlier parse recorded on the parser."""
-    parser._hidden_named_types.clear()  # noqa: SLF001
-    parser._hiding_field_names.clear()  # noqa: SLF001
-    parser._tag_plan.reset()  # noqa: SLF001
-    parser._prepared_modules.clear()  # noqa: SLF001
-    parser._base_stand_ins.clear()  # noqa: SLF001
-    parser._generic_base_model = None  # noqa: SLF001
-    parser._removed_reuse_users.clear()  # noqa: SLF001
-    parser._replaced_root_models.clear()  # noqa: SLF001
-    parser._kept_parent_roots.clear()  # noqa: SLF001
+    parser._hidden_named_types.clear()
+    parser._hiding_field_names.clear()
+    parser._tag_plan.reset()
+    parser._prepared_modules.clear()
+    parser._base_stand_ins.clear()
+    parser._generic_base_model = None
+    parser._removed_reuse_users.clear()
+    parser._replaced_root_models.clear()
+    parser._kept_parent_roots.clear()
 
 
 def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleModels) -> None:
@@ -169,11 +169,11 @@ def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleMod
 
     layout_models = reach(joins, layout_targets, key=id)
     tag_names = possible_tag_names(
-        iter_union_sites(chain(models, chain.from_iterable(parser._collapsed_reuse_models.values()))),  # noqa: SLF001
+        iter_union_sites(chain(models, chain.from_iterable(parser._collapsed_reuse_models.values()))),
         layout_models,
         field_namer(parser.model_resolver, parser.field_name_model_type),
     )
-    overrides = parser._model_type_override_imports  # noqa: SLF001
+    overrides = parser._model_type_override_imports
 
     def is_slot(field: DataModelFieldBase) -> bool:
         names = tag_names.get(id(field.parent), frozenset())
@@ -200,18 +200,18 @@ def flatten_base_layouts(parser: FlattenHost, model: DataModel) -> None:
 
     def adopt(field: DataModelFieldBase, required: bool) -> DataModelFieldBase:  # noqa: FBT001
         if id(field) not in own_fields:
-            field = parser._copy_model_field(field)  # noqa: SLF001
+            field = parser._copy_model_field(field)
         if required and not field.required:
             require_field(parser, field)
         return field
 
-    parser._graph_builder.adopt_base_options(model)  # noqa: SLF001
+    parser._graph_builder.adopt_base_options(model)
     fields = model.flatten_base_layouts(adopt)
-    with parser._graph_builder.defer_refresh():  # noqa: SLF001
+    with parser._graph_builder.defer_refresh():
         for base_class in model.base_classes:
-            parser._graph_builder.detach_data_type_ref(base_class)  # noqa: SLF001
-        parser._graph_builder.set_fields(model, fields)  # noqa: SLF001
-        parser._graph_builder.reset_base_classes(model)  # noqa: SLF001
+            parser._graph_builder.detach_data_type_ref(base_class)
+        parser._graph_builder.set_fields(model, fields)
+        parser._graph_builder.reset_base_classes(model)
 
 
 def find_possible_reuse_duplicates(parser: PlansHost, module_models: ModuleModels) -> dict[int, DataModel]:
@@ -244,7 +244,7 @@ def unconstrain_union_members_in_modules(parser: PlansHost, run: StructuredRun[A
     options = parser.data_type_manager.constraint_options
     for _, models in run.module_models:
         for field in (field for model in models for field in model.fields):
-            parser._graph_builder.drop_union_member_constraints(field, refresh="deferred", options=options)  # noqa: SLF001
+            parser._graph_builder.drop_union_member_constraints(field, refresh="deferred", options=options)
 
 
 def set_circular_root_model_paths(
@@ -256,7 +256,7 @@ def set_circular_root_model_paths(
     """Record the root models in circular components before collapsing them."""
     snapshot = GraphSnapshot.CIRCULAR_ROOT_MODELS
     keyed = keyed_models(
-        (model for _, models in module_models for model in models if parser._is_root_model(model)),  # noqa: SLF001
+        (model for _, models in module_models for model in models if parser._is_root_model(model)),
         snapshot.value,
     )
     index = parser.generation_store.index
@@ -285,8 +285,8 @@ def set_circular_root_model_paths(
         if require_dict_key_edge
         else frozenset(key for component in components for key in component)
     )
-    recursion_facts = parser._recursion_facts  # noqa: SLF001
-    parser._recursion_facts = RecursionFacts(  # noqa: SLF001
+    recursion_facts = parser._recursion_facts
+    parser._recursion_facts = RecursionFacts(
         require_update=recursion_facts["require_update"], circular_roots=circular_roots
     )
 
@@ -303,13 +303,11 @@ def root_dict_key_references(model: DataModel) -> list[Reference]:
 
 def record_emitting_modules(parser: PlansHost, run: StructuredRun[Any]) -> None:
     """Record the module that writes each model, for ``--collapse-root-models-name-strategy``."""
-    parser._emitting_module_lists = (  # noqa: SLF001
+    parser._emitting_module_lists = (
         [(dotted_module(module_), models) for module_, models in run.module_models]
         if parser.collapse_root_models and parser.collapse_root_models_name_strategy is not None
         else []
     )
-    parser._emitting_module_names = {  # noqa: SLF001
-        id(model): module_name
-        for module_name, models in parser._emitting_module_lists  # noqa: SLF001
-        for model in models
+    parser._emitting_module_names = {
+        id(model): module_name for module_name, models in parser._emitting_module_lists for model in models
     }

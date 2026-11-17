@@ -198,7 +198,7 @@ def inspect_invalid_dotted_stdout(
     if parser.repair_invalid_dotted_stdout and not invalid_modules:
         return
 
-    defect_models = type(parser)._find_stdout_defect_models(  # noqa: SLF001
+    defect_models = type(parser)._find_stdout_defect_models(
         contexts,
         results,
         parser.imports,
@@ -220,7 +220,7 @@ def inspect_invalid_dotted_stdout(
     parser.stdout_result_usable = not defect_models
     if parser.forced_invalid_dotted_stdout_repair_modules:
         parser.generated_model_inventory = model_inventory(parser, live_models)
-        parser.source_data_fingerprint = parser._get_source_data_fingerprint()  # noqa: SLF001
+        parser.source_data_fingerprint = parser._get_source_data_fingerprint()
         return
     if not defect_models or config.module_split_mode is not None:
         return
@@ -237,7 +237,7 @@ def inspect_invalid_dotted_stdout(
 
     if not repair_modules or any(model.file_path is not None for model in live_models):
         return
-    if (source_fingerprint := parser._get_source_data_fingerprint()) is None:  # noqa: SLF001
+    if (source_fingerprint := parser._get_source_data_fingerprint()) is None:
         return
     # The retry flattens every stdout model. Pass every non-canonical inferred
     # module so canonical modules reserve their existing names before any of them.
@@ -248,7 +248,7 @@ def inspect_invalid_dotted_stdout(
 
 def model_inventory(parser: StdoutRepairHost[ContextT, ResultT], models: list[DataModel]) -> tuple[str, ...]:
     """Return the paths of the models other than typed map values, which a retry with untyped values omits."""
-    groups = parser._reuse_groups  # noqa: SLF001
+    groups = parser._reuse_groups
     return tuple(sorted(model.path for model in models if not groups.is_typed_map_value(model)))
 
 
@@ -290,7 +290,7 @@ def flatten_invalid_modules(
         )
 
     for model, new_name in new_names.items():
-        parser._graph_builder.rename_model(  # noqa: SLF001
+        parser._graph_builder.rename_model(
             model, reference_name=new_name, clear_duplicate_name=True, scheme="flattened-module"
         )
     resolver.refresh_reference_names()

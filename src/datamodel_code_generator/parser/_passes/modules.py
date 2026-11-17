@@ -1059,7 +1059,7 @@ def tag_reading(parser: InlineVariantHost) -> TagReading:
     The inline variants that may take the tag they inherit are asked first (``inline_variant_tags``), then the merged
     tags of the variants unions tag differently (``merged_variant_tags``), none without ``--merge-shared-variant-tags``.
     """
-    plan = parser._tag_plan  # noqa: SLF001
+    plan = parser._tag_plan
     namer = field_namer(parser.model_resolver, parser.field_name_model_type)
     enum_member_tags = parser.use_enum_values_in_discriminator
     return TagReading(
@@ -1070,7 +1070,7 @@ def tag_reading(parser: InlineVariantHost) -> TagReading:
             parser.results,
             namer,
             enum_member_tags=enum_member_tags,
-            collapsed_users=parser._collapsed_reuse_users,  # noqa: SLF001
+            collapsed_users=parser._collapsed_reuse_users,
         )
         if parser.merge_shared_variant_tags
         else {},
@@ -1096,7 +1096,7 @@ def _get_single_discriminator_default(
 
 def record_decimal_alias_models(parser: ModulesHost, state: ModuleStateView) -> None:
     """Remember the models of a module where a field named ``Decimal`` may shadow the type."""
-    parser._constrained_decimal_alias_model_ids.update(map(id, state.model_list))  # noqa: SLF001
+    parser._constrained_decimal_alias_model_ids.update(map(id, state.model_list))
 
 
 def replace_unique_list_to_set(parser: ModulesHost, models: list[DataModel]) -> None:
@@ -1156,7 +1156,7 @@ def replace_merged_unique_list_to_set(parser: ModulesHost, models: list[DataMode
             )
         ).sets:
             rewrite_additional_properties(
-                parser._graph_builder,  # noqa: SLF001
+                parser._graph_builder,
                 _copy_data_type,
                 model,
                 plan.sets,
@@ -1180,11 +1180,11 @@ def _write_unique_sets(parser: ModulesHost, model_field: DataModelFieldBase, pla
     it: a field's type holds its arrays, as the union an array's type is built in does (``legacy-non-array-first``).
     The field's list default is kept for ``replace_unhashable_unique_set_to_list``.
     """
-    builder = parser._graph_builder  # noqa: SLF001
+    builder = parser._graph_builder
     for list_type in plan.sets:
         builder.swap_data_type(list_type, _unique_items_copy(list_type), refresh="deferred")
     if plan.default is not None:
-        parser._unique_set_defaults[id(model_field)] = (model_field, model_field.default)  # noqa: SLF001
+        parser._unique_set_defaults[id(model_field)] = (model_field, model_field.default)
         builder.set_field_default(model_field, plan.default)
     builder.replace_field_type(model_field, model_field.data_type)
 
@@ -1210,7 +1210,7 @@ def replace_unhashable_unique_set_to_list(parser: ModulesHost, models: list[Data
     A field takes a copy of its type tree, as collapse shares the nodes of a root type with every holder, whose sets
     at those paths are lists (``rewrite_field_copy`` by path, as the decision reads where each set sits).
     """
-    defaults = parser._unique_set_defaults  # noqa: SLF001
+    defaults = parser._unique_set_defaults
     keeps_tuples = parser.use_tuple_for_closed_arrays
     config = generic_base_config(parser)
     for model in aliases_first(models):
@@ -1220,7 +1220,7 @@ def replace_unhashable_unique_set_to_list(parser: ModulesHost, models: list[Data
                 model_field, keeps_tuples=keeps_tuples, generic_base_config=config, lists=lists
             ):
                 rewrite_field_copy(
-                    parser._graph_builder,  # noqa: SLF001
+                    parser._graph_builder,
                     _copy_data_type,
                     model_field,
                     partial(_unique_items_copy, is_set=False),
@@ -1228,7 +1228,7 @@ def replace_unhashable_unique_set_to_list(parser: ModulesHost, models: list[Data
                 )
                 lists.update(paths)
             if id(model_field) in defaults and not holds_own_unique_items_set(model_field):
-                parser._graph_builder.set_field_default(model_field, defaults.pop(id(model_field))[1])  # noqa: SLF001
+                parser._graph_builder.set_field_default(model_field, defaults.pop(id(model_field))[1])
         reverted: set[tuple[int, ...]] = set()
         while (holder := additional_properties_holder(model)) is not None and (
             paths := unhashable_unique_sets(
@@ -1237,7 +1237,7 @@ def replace_unhashable_unique_set_to_list(parser: ModulesHost, models: list[Data
         ):
             nodes = dict(_nodes_with_paths(holder.data_type, ()))
             rewrite_additional_properties(
-                parser._graph_builder,  # noqa: SLF001
+                parser._graph_builder,
                 _copy_data_type,
                 model,
                 (nodes[path] for path in paths),
@@ -1291,10 +1291,10 @@ def extract_module_inherited_enums(parser: ModulesHost, state: ModuleStateView) 
     """
     models = state.model_list.copy()
     merged = [extract_inherited_enum(model) for model in models]  # built before the write, outside its scope
-    parser._graph_builder.set_module_models(state.model_list, merged)  # noqa: SLF001
+    parser._graph_builder.set_module_models(state.model_list, merged)
     for model, merged_enum in zip(models, state.model_list, strict=True):
         if merged_enum is not model:
-            parser._graph_builder.replace_model(model, merged_enum)  # noqa: SLF001
+            parser._graph_builder.replace_model(model, merged_enum)
 
 
 def mark_unused_models_start(state: ModuleStateView) -> None:
@@ -1314,7 +1314,7 @@ def set_reference_default_value_to_field(
                 and isinstance(source := reference.source, DataModel)
                 and source.default != UNDEFINED
             ):
-                parser._graph_builder.set_field_default(model_field, source.default)  # noqa: SLF001
+                parser._graph_builder.set_field_default(model_field, source.default)
 
 
 def reuse_model(parser: ReuseHost, models: list[DataModel], require_update_action_models: list[str]) -> None:
@@ -1322,9 +1322,9 @@ def reuse_model(parser: ReuseHost, models: list[DataModel], require_update_actio
     duplicates = []
     updated_models: list[DataModel] = []
     reuse_candidates = compared_models(parser, REUSE_MODEL, models.copy())
-    groups = parser._reuse_groups  # noqa: SLF001
+    groups = parser._reuse_groups
     canonical_models: dict[int, DataModel] = {}
-    shapes = parser._model_shapes(REUSE_MODEL)  # noqa: SLF001
+    shapes = parser._model_shapes(REUSE_MODEL)
     for first_model, duplicate_model in shapes.iter_matching_duplicates(reuse_candidates, keyed=True):
         cached_model, model = groups.canonical_pair(canonical_models.get(id(first_model), first_model), duplicate_model)
         if model is not duplicate_model:
@@ -1345,7 +1345,7 @@ def reuse_model(parser: ReuseHost, models: list[DataModel], require_update_actio
         elif (updated := subclass_duplicate(parser, model, cached_model, models, models)) is not None:
             updated_models.append(updated)
 
-    parser._graph_builder.set_module_models(models, [model for model in models if model not in duplicates])  # noqa: SLF001
+    parser._graph_builder.set_module_models(models, [model for model in models if model not in duplicates])
     if updated_models:
         require_update_action(parser, updated_models, require_update_action_models)
 
@@ -1355,7 +1355,7 @@ def redirect_removed_reuse_users(parser: ReuseHost, duplicate: DataModel, canoni
 
     Modules processed earlier already imported the duplicate, so their imports are corrected after processing.
     """
-    users = parser._removed_reuse_users  # noqa: SLF001
+    users = parser._removed_reuse_users
     for user in merge_duplicate(parser, duplicate, canonical, REUSE_MODEL, keeps_duplicate_tags=True):
         users.setdefault(id(user), (user, []))[1].append(duplicate.reference.path)
 
@@ -1391,7 +1391,7 @@ def collapse_root_models(  # noqa: PLR0913, PLR0917
     internal_modules: set[ModulePath] | None = None,
 ) -> None:
     """Inline the root models that the models of a module reference, under ``--collapse-root-models``."""
-    with parser.generation_store._collapse_root_reference_scope():  # noqa: SLF001
+    with parser.generation_store._collapse_root_reference_scope():
         collapse_root_models_in_scope(
             parser,
             models,
@@ -1488,7 +1488,7 @@ def collapse_site_facts(
     return CollapseSiteFacts(
         has_root_field=True,
         type_overridden=model_type_override(
-            parser._model_type_override_imports,  # noqa: SLF001
+            parser._model_type_override_imports,
             root_model.reference,
             row="class-name",
         )
@@ -1498,7 +1498,7 @@ def collapse_site_facts(
         unhashable_set_item=isinstance(holder := data_type.parent, DataType)
         and holder in SETS
         and not root_model.IS_ALIAS
-        and not root_model._instances_never_hash(generic_base_config(parser))  # noqa: SLF001
+        and not root_model._instances_never_hash(generic_base_config(parser))
         and not takes_hashable_value(
             root_data_type,
             keeps_tuples=parser.use_tuple_for_closed_arrays,
@@ -1530,7 +1530,7 @@ def collapse_site_facts(
             for member in model_field.data_type.all_data_types
         ),
         list_item=isinstance(parent := data_type.parent, DataType) and parent.is_list,
-        collapses_list_items=parser._collapses_list_item_root_models,  # noqa: SLF001
+        collapses_list_items=parser._collapses_list_item_root_models,
     )
 
 
@@ -1562,7 +1562,7 @@ def annotated_member_type(parser: CollapseHost, root_field: DataModelFieldBase) 
 def has_other_root_references(parser: CollapseHost, reference: Reference, data_type: DataType) -> bool:
     """Return whether data types other than ``data_type`` name the root model of ``reference``."""
     store = parser.generation_store
-    if (answer := store._root_collapse_has_data_type_references(reference, excluded_data_type=data_type)) is None:  # noqa: SLF001
+    if (answer := store._root_collapse_has_data_type_references(reference, excluded_data_type=data_type)) is None:
         answer = store.index.has_data_type_references_other_than(reference, data_type)
     return answer
 
@@ -1591,15 +1591,15 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
     imports, model_path_to_module_name = module.imports, module.module_names
     generation_store = parser.generation_store
     generation_index = generation_store.index
-    graph_builder = parser._graph_builder  # noqa: SLF001
-    circular_root_models = parser._recursion_facts["circular_roots"]  # noqa: SLF001
+    graph_builder = parser._graph_builder
+    circular_root_models = parser._recursion_facts["circular_roots"]
     rule_named_roots = frozenset(
         model_key_of(reference)
         for holder in (parser.results if parser.generate_schema_validators else ())
         for rule_data_type in _rule_data_types(holder, unwritable=True)
         if (reference := rule_data_type.reference) is not None
     )
-    is_root_model = parser._is_root_model  # noqa: SLF001
+    is_root_model = parser._is_root_model
     redirected_holders: list[tuple[DataModel, DataType, Import | None]] = []
 
     for model in models:  # noqa: PLR1702
@@ -1623,7 +1623,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                 if (inner_reference := _wrapped_model_reference(root_type_field.data_type)) is not None:
                     inner_model = cast("DataModel", inner_reference.source)
 
-                    if (kept_root := parser._kept_parent_roots.get(id(root_type_model))) is not None:  # noqa: SLF001
+                    if (kept_root := parser._kept_parent_roots.get(id(root_type_model))) is not None:
                         kept_root.holders.append(
                             _KeptHolder(
                                 model,
@@ -1635,7 +1635,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                         continue
                     if first_parent_holder := (
                         parser.collapse_root_models_name_strategy == CollapseRootModelsNameStrategy.Parent
-                        and id(root_type_model) not in parser._replaced_root_models  # noqa: SLF001
+                        and id(root_type_model) not in parser._replaced_root_models
                     ):
                         root_model_wrappers, direct_refs = generation_index.root_collapse_reference_usage(
                             inner_reference,
@@ -1678,7 +1678,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                             )
                             is None
                         ):
-                            parser._kept_parent_roots[id(root_type_model)] = _KeptParentRoot(  # noqa: SLF001
+                            parser._kept_parent_roots[id(root_type_model)] = _KeptParentRoot(
                                 root_type_model, inner_model, [], later_holder_facts
                             )
                         else:
@@ -1693,7 +1693,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                         imports.reference_paths.get(root_type_model.path),
                     ))
                     if not has_remaining_root_references and (
-                        id(root_type_model) in parser._replaced_root_models  # noqa: SLF001
+                        id(root_type_model) in parser._replaced_root_models
                         or model_key_of(root_type_model.reference) not in rule_named_roots
                     ):
                         unused_models.append(root_type_model)
@@ -1705,12 +1705,11 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                 if site_facts.member_carries_constraints:
                     copied_data_type = cast("DataType", annotated_member_type(parser, root_type_field))
                 elif isinstance(data_type.parent, DataType) and any(
-                    dropped is root_type_model
-                    for dropped in parser._self_named_root_models  # noqa: SLF001
+                    dropped is root_type_model for dropped in parser._self_named_root_models
                 ):
                     copied_data_type = parser.data_type_manager.get_data_type(Types.null)
                 elif source_module_name != target_module_name:
-                    copied_data_type = parser._copy_model_type(root_type_field.data_type)  # noqa: SLF001
+                    copied_data_type = parser._copy_model_type(root_type_field.data_type)
                 else:
                     copied_data_type = graph_builder.inline_shared(root_type_field.data_type, data_type)
                 carry_const_narrowings(parser, root_type_field.data_type, copied_data_type)
@@ -1724,12 +1723,10 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                     # override empty field by root-type field
                     graph_builder.set_field_extras(model_field, {**root_type_field.extras, **model_field.extras})
                     if root_type_field.runtime_expression_imports:
-                        model_field._set_runtime_expression_imports(  # noqa: SLF001
-                            (
-                                *model_field.runtime_expression_imports,
-                                *runtime_expression_imports(model_field.extras),
-                            )
-                        )
+                        model_field._set_runtime_expression_imports((
+                            *model_field.runtime_expression_imports,
+                            *runtime_expression_imports(model_field.extras),
+                        ))
                     graph_builder.apply_const(model_field, refresh="deferred")
 
                     if parser.field_constraints:
@@ -1744,7 +1741,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                             or None,
                         )
 
-                    replacement_context = generation_store._replace_data_type_and_detach_data_type_ref(  # noqa: SLF001
+                    replacement_context = generation_store._replace_data_type_and_detach_data_type_ref(
                         data_type,
                         copied_data_type,
                         owner=field_,
@@ -1782,7 +1779,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                         ):
                             graph_builder.set_type_discriminator(copied_data_type, site_reading.names.field_name)
                             with_inlined_site(copied_data_type, site)
-                    replacement_context = generation_store._replace_data_type_and_detach_data_type_ref(  # noqa: SLF001
+                    replacement_context = generation_store._replace_data_type_and_detach_data_type_ref(
                         data_type,
                         copied_data_type,
                         owner=parent_data_type,
@@ -1822,11 +1819,11 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                         # Use list instead of set because Import is not hashable
                         excluded_imports = [IMPORT_OPTIONAL, IMPORT_UNION]
                         field_imports = [i for i in original_field.imports if i not in excluded_imports]
-                        parser._import_ledger.append(  # noqa: SLF001
+                        parser._import_ledger.append(
                             imports, field_imports, ImportProducer("collapse-root-models", model, original_field)
                         )
 
-                parser._import_ledger.remove_referenced_imports(imports, root_type_model.path, producer)  # noqa: SLF001
+                parser._import_ledger.remove_referenced_imports(imports, root_type_model.path, producer)
                 keep_root_null(parser, root_type_field, copied_data_type, shared_holders)
                 if (
                     not has_remaining_root_references
@@ -1871,7 +1868,7 @@ def keep_root_null(
     """
     if not parser.keep_reference_null_on_collapsed_root_models or root_field.nullable is not True or site.is_optional:
         return
-    graph_builder = parser._graph_builder  # noqa: SLF001
+    graph_builder = parser._graph_builder
     holder = parser.data_type_manager.data_type(is_optional=True)
     graph_builder.swap_data_type(site, holder)
     for shared_holder in shared_holders:
@@ -1886,11 +1883,11 @@ def carry_const_narrowings(parser: CollapseHost, source: DataType, copied: DataT
 
     A copy has the shape of its source; a node that the copy shares with its source already has its narrowing.
     """
-    if not parser._const_narrowed_values:  # noqa: SLF001
+    if not parser._const_narrowed_values:
         return
     for source_node, copied_node in zip(source.all_data_types, copied.all_data_types, strict=True):
-        if (entry := parser._const_narrowed_values.get(id(source_node))) is not None and entry[0] is source_node:  # noqa: SLF001
-            parser._const_narrowed_values[id(copied_node)] = (copied_node, entry[1])  # noqa: SLF001
+        if (entry := parser._const_narrowed_values.get(id(source_node))) is not None and entry[0] is source_node:
+            parser._const_narrowed_values[id(copied_node)] = (copied_node, entry[1])
 
 
 def carry_site_constraints(parser: CollapseHost, replaced: DataType, copied: DataType) -> None:
@@ -1901,7 +1898,7 @@ def carry_site_constraints(parser: CollapseHost, replaced: DataType, copied: Dat
     schema among them.
     """
     if site := site_constraints(replaced):
-        parser._graph_builder.record_site_constraints(copied, {**site_constraints(copied), **site})  # noqa: SLF001
+        parser._graph_builder.record_site_constraints(copied, {**site_constraints(copied), **site})
 
 
 def take_recursion_facts(parser: CollapseHost, model: DataModel, path_owner: DataModel) -> None:
@@ -1910,7 +1907,7 @@ def take_recursion_facts(parser: CollapseHost, model: DataModel, path_owner: Dat
     Legacy row ``legacy-recursion-follows-path``: the facts were reference paths that only the relocation into
     ``_internal`` modules followed, so a model that took another model's path took that model's facts.
     """
-    recursion_facts = parser._recursion_facts  # noqa: SLF001
+    recursion_facts = parser._recursion_facts
     key, owner_key = model_key_of(model.reference), model_key_of(path_owner.reference)
 
     def taken(keys: frozenset[ModelKey]) -> frozenset[ModelKey]:
@@ -1918,7 +1915,7 @@ def take_recursion_facts(parser: CollapseHost, model: DataModel, path_owner: Dat
             return keys
         return keys ^ {key}
 
-    parser._recursion_facts = RecursionFacts(  # noqa: SLF001
+    parser._recursion_facts = RecursionFacts(
         require_update=taken(recursion_facts["require_update"]),
         circular_roots=taken(recursion_facts["circular_roots"]),
     )
@@ -1937,7 +1934,7 @@ def name_inner_after_root(
     """
     inner_module_name = emitting_module_name(parser, inner_model, model_path_to_module_name)
     _share_path_identity(root_model, inner_model)
-    parser._graph_builder.rename_model(  # noqa: SLF001
+    parser._graph_builder.rename_model(
         inner_model,
         class_name=root_model.class_name,
         new_path=root_model.reference.path,
@@ -1955,7 +1952,7 @@ def retire_root(
     model_path_to_module_name: dict[str, str],
 ) -> None:
     """Make the inner model that took the root model's name replace it: the root model leaves its module."""
-    parser._replaced_root_models[id(root_model)] = root_model, inner_model  # noqa: SLF001
+    parser._replaced_root_models[id(root_model)] = root_model, inner_model
     _assign_module_name(
         model_path_to_module_name,
         root_model,
@@ -1998,8 +1995,8 @@ def settle_kept_parent_roots(parser: CollapseHost, run: ModulesRun) -> None:
     """
     contexts = {id(model): ctx for ctx in run.contexts for model in ctx.models}
     model_path_to_module_name = run.model_path_to_module_name
-    graph_builder = parser._graph_builder  # noqa: SLF001
-    for kept_root in parser._kept_parent_roots.values():  # noqa: SLF001
+    graph_builder = parser._graph_builder
+    for kept_root in parser._kept_parent_roots.values():
         root_model, inner_model = kept_root.root, kept_root.inner
         if not later_holders_follow(
             replace(kept_root.facts, renamed_apart=root_model.class_name != inner_model.class_name)
@@ -2067,7 +2064,7 @@ def set_default_enum_member(
             default = enum_members or default
             if default is model_field.default:
                 continue
-            parser._graph_builder.set_field_default(model_field, default)  # noqa: SLF001
+            parser._graph_builder.set_field_default(model_field, default)
 
 
 def sort_models(
@@ -2083,7 +2080,7 @@ def sort_models(
         pydantic_v2_root_model_type=parser.pydantic_v2_root_model_type,
         use_deferred_annotations=use_deferred_annotations,
     )
-    parser._graph_builder.set_module_models(models, kept)  # noqa: SLF001
+    parser._graph_builder.set_module_models(models, kept)
 
 
 def change_field_name(
@@ -2117,15 +2114,15 @@ def change_field_name(
                 rename_named_type(parser, field, colliding_reference, all_class_names, (), {})
             elif not rename_type:
                 resolver = resolver or _field_type_resolver(parser)
-                resolver._reset_for_reuse(reference_type_names)  # noqa: SLF001
-                new_field_name = resolver._get_unique_field_name(cast("str", field_name))  # noqa: SLF001
+                resolver._reset_for_reuse(reference_type_names)
+                new_field_name = resolver._get_unique_field_name(cast("str", field_name))
                 if field_name != new_field_name:
-                    parser._graph_builder.rename_field(field, new_field_name, alias=field.name)  # noqa: SLF001
+                    parser._graph_builder.rename_field(field, new_field_name, alias=field.name)
 
             if (current_name := field.name) in parser.builtin_names and any(
                 _is_builtin_type_collision(current_name, dt) for dt in field.data_type.all_data_types
             ):
-                parser._graph_builder.rename_field(field, f"{current_name}_", alias=field_name)  # noqa: SLF001
+                parser._graph_builder.rename_field(field, f"{current_name}_", alias=field_name)
 
 
 def restore_inherited_field_names_for_unique_aliases(parser: ModulesHost, models: list[DataModel]) -> None:
@@ -2133,7 +2130,7 @@ def restore_inherited_field_names_for_unique_aliases(parser: ModulesHost, models
     for model in models:
         if model.REQUIRES_UNIQUE_FIELD_ALIASES:
             _restore_inherited_field_names_for_unique_aliases(
-                parser._graph_builder,  # noqa: SLF001
+                parser._graph_builder,
                 model.fields,
                 get_inherited_fields(_find_base_classes(model)),
             )
@@ -2152,8 +2149,8 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
     tagged_unions = parser.use_msgspec_tagged_unions
     tag_by_payload_name = tagged_unions or parser.tag_msgspec_by_payload_name
     unions: list[MsgspecUnion] = []
-    plan = parser._tag_plan  # noqa: SLF001
-    builder = parser._graph_builder  # noqa: SLF001
+    plan = parser._tag_plan
+    builder = parser._graph_builder
     namer = field_namer(parser.model_resolver, parser.field_name_model_type)
     for site in iter_union_sites(models):
         model, field = site.model, site.field
@@ -2206,7 +2203,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                     *collapsed_unions,
                 ):
                     if (
-                        removed := collapsed_duplicate(parser._collapsed_reuse_users, collapsed_types[index])  # noqa: SLF001
+                        removed := collapsed_duplicate(parser._collapsed_reuse_users, collapsed_types[index])
                     ) is not None:
                         plan.record_collapsed_tags(
                             discriminator_model,
@@ -2243,7 +2240,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                             if field_data_type.reference:  # pragma: no cover
                                 builder.detach_data_type_ref(field_data_type)
 
-                        new_discriminator_data_type = parser._create_discriminator_data_type(  # noqa: SLF001
+                        new_discriminator_data_type = parser._create_discriminator_data_type(
                             enum_source,
                             discriminator_values,
                             discriminator_model,
@@ -2265,13 +2262,13 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                                 new_discriminator_data_type, enum_source, decided.first_tag
                             )
                         set_tag_literal_default(parser, discriminator_field, literal_default, "written-tag")
-                        parser._import_ledger.append(  # noqa: SLF001
+                        parser._import_ledger.append(
                             imports,
                             discriminator_field.imports,
                             ImportProducer("discriminator", discriminator_model, discriminator_field),
                         )
             if not has_one_literal:
-                new_data_type = parser._create_discriminator_data_type(  # noqa: SLF001
+                new_data_type = parser._create_discriminator_data_type(
                     base_enum_source := view.inherited_enum(discriminator_model),
                     discriminator_values,
                     discriminator_model,
@@ -2280,7 +2277,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                 builder.append_field(
                     discriminator_model,
                     discriminator_field := with_field_origin(
-                        parser._build_field(  # noqa: SLF001
+                        parser._build_field(
                             "legacy-alias-option-only",
                             new_data_type,
                             name=field_name,
@@ -2358,7 +2355,7 @@ def set_tag_literal_default(
         missing_sentinel=discriminator_field.use_missing_sentinel,
         discriminator_argument=discriminator_field.SUPPORTS_DISCRIMINATOR,
     )
-    parser._graph_builder.apply_literal_default(discriminator_field, decision)  # noqa: SLF001
+    parser._graph_builder.apply_literal_default(discriminator_field, decision)
 
 
 def set_nested_discriminator_literal_defaults(parser: DiscriminatorHost, tag_fields: Iterable[VariantTagField]) -> None:
@@ -2376,7 +2373,7 @@ def get_collapsed_unions(
     Users of a removed duplicate use the kept model, so their union decodes only the tags the kept one gives.
     """
     unions: list[tuple[str, list[DataType], dict[str, str]]] = []
-    if not (duplicates := parser._collapsed_reuse_models.get(id(model))):  # noqa: SLF001
+    if not (duplicates := parser._collapsed_reuse_models.get(id(model))):
         return unions
     index = model.fields.index(field)
     for duplicate in duplicates:
@@ -2407,7 +2404,7 @@ def const_narrowed_data_type(
         enum_member_literals=[(enum.reference.short_name, cast("str", member.field.name))],
         is_optional=data_type.is_optional,
     )
-    new_data_type._set_enum_member_literal_reference(enum.reference)  # noqa: SLF001
+    new_data_type._set_enum_member_literal_reference(enum.reference)
     return new_data_type
 
 
@@ -2439,25 +2436,25 @@ def type_const_narrowed_values(
     for model in models:
         for field in model.fields:
             for owner, data_type in _value_positions(field):
-                entry = parser._const_narrowed_values.get(id(data_type))  # noqa: SLF001
+                entry = parser._const_narrowed_values.get(id(data_type))
                 if entry is None or entry[0] is not data_type or data_type.reference is None:
                     continue
                 narrowing = entry[1]
                 if (enum := _named_enum(cast("DataModel", data_type.reference.source))) is None:
                     continue
                 if (new_data_type := const_narrowed_data_type(parser, data_type, narrowing, enum)) is None:
-                    parser._enum_admits_other_values.append((field, narrowing))  # noqa: SLF001
+                    parser._enum_admits_other_values.append((field, narrowing))
                     continue
                 narrowed[id(data_type)] = data_type
                 if owner is field:
-                    parser._graph_builder.replace_field_type(field, new_data_type)  # noqa: SLF001
+                    parser._graph_builder.replace_field_type(field, new_data_type)
                 else:
-                    _replace_in_place(parser._graph_builder, cast("DataType", owner), data_type, new_data_type)  # noqa: SLF001
-                parser._import_ledger.append(  # noqa: SLF001
+                    _replace_in_place(parser._graph_builder, cast("DataType", owner), data_type, new_data_type)
+                parser._import_ledger.append(
                     imports, new_data_type.imports, ImportProducer("const-narrowed-values", model, field)
                 )
     for data_type in narrowed.values():
-        parser._graph_builder.detach_data_type_ref(data_type)  # noqa: SLF001
+        parser._graph_builder.detach_data_type_ref(data_type)
 
 
 def set_one_literal_on_default(parser: ModulesHost, models: list[DataModel]) -> None:
@@ -2473,7 +2470,7 @@ def set_one_literal_on_default(parser: ModulesHost, models: list[DataModel]) -> 
                 nullable=model_field.nullable,
                 type_has_null=model_field.type_has_null,
             )
-            parser._graph_builder.apply_literal_default(model_field, decision)  # noqa: SLF001
+            parser._graph_builder.apply_literal_default(model_field, decision)
 
 
 def same_named_fields(parser: ModulesHost, model: DataModel) -> list[DataModelFieldBase]:
@@ -2558,7 +2555,7 @@ def _adopt_keyless_references(
     models = [
         model
         for model in _parsed_and_module_models(parser, all_models)
-        if id(model) not in parser._replaced_root_models  # noqa: SLF001
+        if id(model) not in parser._replaced_root_models
     ]
     keyed = keyed_models(models, "renamed types")
     if (source := keyed.models.get(keyed.key_at(reference.path))) is None:
@@ -2570,7 +2567,7 @@ def _adopt_keyless_references(
         if (named := data_type.reference) is not None and names_by_path(named) and named.path == reference.path
     }
     for data_type in keyless.values():
-        parser._graph_builder.replace_data_type_ref(data_type, source.reference)  # noqa: SLF001
+        parser._graph_builder.replace_data_type_ref(data_type, source.reference)
     return source
 
 
@@ -2604,7 +2601,7 @@ def rename_named_type(  # noqa: PLR0913, PLR0917
         )
         for name in _family_field_names(_model_family(user, derived_models))
     )
-    parser._graph_builder.rename_model(  # noqa: SLF001
+    parser._graph_builder.rename_model(
         source, class_name=resolver.add(["type"], source.class_name).name, scheme="field-type"
     )
     class_names.add(source.class_name)
@@ -2623,7 +2620,7 @@ def family_hides_named_type(  # noqa: PLR0913
 
     The classes of one family write the field under one name, so one decision covers all of them.
     """
-    if (hidden := parser._hidden_named_types.get((model_key_of(model.reference), field_name))) is not None:  # noqa: SLF001
+    if (hidden := parser._hidden_named_types.get((model_key_of(model.reference), field_name))) is not None:
         return hidden
     family = _model_family(model, derived_models)
     hidden = any(
@@ -2632,7 +2629,7 @@ def family_hides_named_type(  # noqa: PLR0913
         for member in family.values()
         for field in same_named_fields(parser, member)
     )
-    parser._hidden_named_types.update(dict.fromkeys(((key, field_name) for key in family), hidden))  # noqa: SLF001
+    parser._hidden_named_types.update(dict.fromkeys(((key, field_name) for key in family), hidden))
     return hidden
 
 
@@ -2675,13 +2672,13 @@ def rename_fields_hiding_types(parser: ModulesHost, models: list[DataModel], *, 
                 }.values():
                     rename_named_type(parser, field, named, class_names, all_models, derived_models)
                 continue
-            if (new_name := parser._hiding_field_names.get((model_key_of(model.reference), field_name))) is None:  # noqa: SLF001
+            if (new_name := parser._hiding_field_names.get((model_key_of(model.reference), field_name))) is None:
                 family = _model_family(model, derived_models)
-                new_name = _field_type_resolver(parser, _family_field_names(family))._get_unique_field_name(  # noqa: SLF001
+                new_name = _field_type_resolver(parser, _family_field_names(family))._get_unique_field_name(
                     cast("str", field_name)
                 )
-                parser._hiding_field_names.update(dict.fromkeys(((key, field_name) for key in family), new_name))  # noqa: SLF001
-            parser._graph_builder.rename_field(field, new_name, alias=field.name)  # noqa: SLF001
+                parser._hiding_field_names.update(dict.fromkeys(((key, field_name) for key in family), new_name))
+            parser._graph_builder.rename_field(field, new_name, alias=field.name)
 
 
 def remove_overridden_models(parser: ModulesHost, state: ModuleStateView) -> None:
@@ -2695,13 +2692,13 @@ def remove_overridden_models(parser: ModulesHost, state: ModuleStateView) -> Non
     Imports replace the stand-ins, and the unnamed empty models of ``x-python-import`` schemas leave first
     (``_drop_unnamed_python_import_models``).
     """
-    if imported := parser._python_import_target_paths:  # noqa: SLF001
+    if imported := parser._python_import_target_paths:
         _drop_unnamed_python_import_models(parser, state.model_list, imported)
     state.model_list_before_override_removal = models = state.model_list
-    if all_overrides := parser._type_override_imports:  # noqa: SLF001
+    if all_overrides := parser._type_override_imports:
         for model in models:
             record_written_as(all_overrides, model.reference.original_name, class_key("class-name", model.reference))
-    overrides, stand_ins = parser._model_type_override_imports, parser._base_stand_in_imports  # noqa: SLF001
+    overrides, stand_ins = parser._model_type_override_imports, parser._base_stand_in_imports
     if not (overrides or stand_ins):
         return
     kept: list[DataModel] = []
@@ -2711,12 +2708,12 @@ def remove_overridden_models(parser: ModulesHost, state: ModuleStateView) -> Non
             or enum_site_override_import(parser, model.reference) is not None
             or model_key_of(model.reference) in stand_ins
         ):
-            parser._graph_builder.retire_model(model)  # noqa: SLF001
+            parser._graph_builder.retire_model(model)
         else:
             kept.append(model)
     if parser.remove_unused_models_beside_type_overrides:
         state.model_list_before_override_removal = list(models)
-        parser._graph_builder.set_module_models(models, kept)  # noqa: SLF001
+        parser._graph_builder.set_module_models(models, kept)
     else:
         state.model_list = kept
 
@@ -2738,9 +2735,9 @@ def _drop_unnamed_python_import_models(parser: ModulesHost, models: list[DataMod
         and model_key_of(model.reference) not in module_bases
         and not has_references(model.reference)
     ]
-    parser._graph_builder.set_module_models(models, [model for model in models if model not in unnamed])  # noqa: SLF001
+    parser._graph_builder.set_module_models(models, [model for model in models if model not in unnamed])
     for model in unnamed:
-        parser._graph_builder.retire_model(model)  # noqa: SLF001
+        parser._graph_builder.retire_model(model)
 
 
 def derived_override_import(parser: ModulesHost, model: DataModel) -> Import | None:
@@ -2755,7 +2752,7 @@ def derived_override_import(parser: ModulesHost, model: DataModel) -> Import | N
         or (target := model.reference.__dict__.get(_DERIVED_FROM_KEY)) is None
     ):
         return None
-    return model_type_override(parser._model_type_override_imports, target, row="class-name")  # noqa: SLF001
+    return model_type_override(parser._model_type_override_imports, target, row="class-name")
 
 
 def apply_field_type_overrides(parser: ModulesHost, models: list[DataModel]) -> None:
@@ -2767,7 +2764,7 @@ def apply_field_type_overrides(parser: ModulesHost, models: list[DataModel]) -> 
 
     Scoped overrides take priority over model-level overrides.
     """
-    overrides = parser._type_override_imports  # noqa: SLF001
+    overrides = parser._type_override_imports
     for model in models:
         derived_import = derived_override_import(parser, model)
         for field in model.fields:
@@ -2775,7 +2772,7 @@ def apply_field_type_overrides(parser: ModulesHost, models: list[DataModel]) -> 
             record_written_as(overrides, class_field_key(model.reference.original_name, field.name), key)
             if override_import := overrides.get(key) or derived_import:
                 apply_override_to_field(parser, field, override_import)
-            elif parser._model_type_override_imports:  # noqa: SLF001
+            elif parser._model_type_override_imports:
                 apply_override_to_data_type(parser, field.data_type)
 
 
@@ -2803,7 +2800,7 @@ def root_key_data_type(parser: ModulesHost, root_model: DataModel) -> DataType |
             **keywords,
         )
     key_type = _copy_data_type(root_type)
-    if parser._model_type_override_imports:  # noqa: SLF001
+    if parser._model_type_override_imports:
         apply_override_to_data_type(parser, key_type)
     return key_type
 
@@ -2838,7 +2835,7 @@ def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) ->
                     continue
                 if (
                     not isinstance(root_model := reference.source, DataModel)
-                    or not root_model._keys_take_root_type  # ruff: ignore[private-member-access]
+                    or not root_model._keys_take_root_type
                     or model_key_of(root_model.reference) in expanded
                     or (root_type := root_key_data_type(parser, root_model)) is None
                 ):
@@ -2847,8 +2844,8 @@ def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) ->
                     holder is not parent and isinstance(holder, DataType)
                     for holder in (data_type.parent, *index.inlined_holders_of(data_type))
                 ):
-                    parser._graph_builder.detach_data_type_ref(data_type)  # noqa: SLF001
-                _replace_in_place(parser._graph_builder, parent, data_type, root_type)  # noqa: SLF001
+                    parser._graph_builder.detach_data_type_ref(data_type)
+                _replace_in_place(parser._graph_builder, parent, data_type, root_type)
                 producer = ImportProducer("type-dict-keys-by-root-types", model, field)
                 import_references(
                     parser,
@@ -2859,11 +2856,11 @@ def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) ->
                     producer=producer,
                     row="legacy-collapse-internal-module-import",
                 )
-                parser._import_ledger.append(imports, root_type.imports, producer)  # noqa: SLF001
+                parser._import_ledger.append(imports, root_type.imports, producer)
                 pending.append((root_type, parent, expanded | {model_key_of(root_model.reference)}))
                 changed = True
         if changed:
-            parser._graph_builder.note_changed_models(model)  # noqa: SLF001
+            parser._graph_builder.note_changed_models(model)
             model.refresh_field_config()
 
 
@@ -2880,7 +2877,7 @@ def apply_base_class_type_overrides(parser: ModulesHost, models: list[DataModel]
     decision phase, reads it as the only description of the class that replaces it. A base that names a stand-in of
     the parse is left to ``apply_base_stand_in_imports``.
     """
-    stand_ins = parser._base_stand_in_imports  # noqa: SLF001
+    stand_ins = parser._base_stand_in_imports
     _replace_bases_by_imports(
         parser, models, lambda reference: reference is None or model_key_of(reference) not in stand_ins
     )
@@ -2900,12 +2897,12 @@ def settle_discriminated_unions(parser: ModulesHost, run: ModulesRun) -> None:
     (``settle_site``, ``iter_unbuildable_inlined_unions``); this pass writes what it decides and records the drops of
     union sites.
     """
-    builder = parser._graph_builder  # noqa: SLF001
+    builder = parser._graph_builder
     for ctx in run.contexts:
         for model in ctx.models:
             for field in model.fields:
                 if (site := union_site(model, field)) is not None and (status := settle_site(site)) != "tagged":
-                    parser._tag_plan.record_settled(site, status)  # noqa: SLF001
+                    parser._tag_plan.record_settled(site, status)
                     builder.drop_field_discriminator(field)
                 if parser.collapse_root_models:
                     for nested, discriminator in iter_unbuildable_inlined_unions(field):
@@ -2932,8 +2929,8 @@ def constrain_fields_by_their_reference_sites(parser: ModulesHost, run: ModulesR
     and a field that writes one takes them in it: the field keeps the place, the default and the positional use it has
     in the constructor without them.
     """
-    builder = parser._graph_builder  # noqa: SLF001
-    layers = parser._output_model_context.layers_repeated_constraints  # noqa: SLF001
+    builder = parser._graph_builder
+    layers = parser._output_model_context.layers_repeated_constraints
     version = parser.target_python_version.version_key
     for ctx in run.contexts:
         for model in ctx.models:
@@ -3014,7 +3011,7 @@ def type_users_of_looping_ref_chains_by_any(parser: DroppedRootModelUsersHost, r
     any_type = partial(parser.data_type_manager.get_data_type, Types.any)
     models = _context_models(run.contexts)
     chains = [
-        *((dropped, frozenset[int]()) for dropped in parser._self_named_root_models),  # noqa: SLF001
+        *((dropped, frozenset[int]()) for dropped in parser._self_named_root_models),
         *((loop[0], frozenset(map(id, loop))) for loop in alias_loops(models, ()).values()),
     ]
     for head, members in chains:
@@ -3034,7 +3031,7 @@ def apply_base_stand_in_imports(parser: ModulesHost, run: ModulesRun) -> None:
     when they walk the bases of a model of another module; constructor ordering reads it afterwards as model-level
     overrides keep it.
     """
-    stand_ins = parser._base_stand_in_imports  # noqa: SLF001
+    stand_ins = parser._base_stand_in_imports
     for ctx in run.contexts:
         _replace_bases_by_imports(
             parser, ctx.models, lambda reference: reference is not None and model_key_of(reference) in stand_ins
@@ -3049,9 +3046,9 @@ def _replace_bases_by_imports(
         for base_class in model.base_classes:
             reference = base_class.reference
             if replaces(reference) and apply_override_to_data_type(parser, base_class):
-                parser._base_stand_ins[id(base_class)] = reference  # noqa: SLF001
+                parser._base_stand_ins[id(base_class)] = reference
                 for import_ in base_class.all_imports:
-                    parser._graph_builder.add_model_import(model, import_)  # noqa: SLF001
+                    parser._graph_builder.add_model_import(model, import_)
 
 
 def name_inner_models_in_rules(parser: CollapseHost, run: ModulesRun) -> None:
@@ -3065,7 +3062,7 @@ def name_inner_models_in_rules(parser: CollapseHost, run: ModulesRun) -> None:
     unused = run_unused_models(parser, run)
     inner_references = {
         model_key_of(root_model.reference): inner_model.reference
-        for root_model, inner_model in parser._replaced_root_models.values()  # noqa: SLF001
+        for root_model, inner_model in parser._replaced_root_models.values()
         if root_model in unused
     }
     for ctx in run.contexts:
@@ -3077,7 +3074,7 @@ def name_inner_models_in_rules(parser: CollapseHost, run: ModulesRun) -> None:
             and (inner_reference := inner_references.get(model_key_of(reference))) is not None
         ]
         for _, data_type, inner_reference, _ in rule_users:
-            parser._graph_builder.collapse_root_data_type(data_type, inner_reference)  # noqa: SLF001
+            parser._graph_builder.collapse_root_data_type(data_type, inner_reference)
         reimport_module_references(
             parser,
             ModuleImportTarget.of(parser.imports, ctx, run),
@@ -3100,7 +3097,7 @@ def change_from_import(parser: ImportFromHost, state: ModuleStateView) -> None:
     module = ModuleImportTarget.of(parser.imports, state, state)
     imports = module.imports
 
-    ledger = parser._import_ledger  # noqa: SLF001
+    ledger = parser._import_ledger
     for model in models:
         ledger.add_name(imports, module.resolver, [model.path], model.class_name)
     for model in models:
@@ -3128,13 +3125,13 @@ def process_each_module(
 ) -> None:
     """Process every output module through ``_process_single_module``, in module order."""
     module_models = run.module_models
-    require_update = parser._recursion_facts["require_update"]  # noqa: SLF001
+    require_update = parser._recursion_facts["require_update"]
     require_update_action_models = [
         model.path for _, models in module_models for model in models if model_key_of(model.reference) in require_update
     ]
     for position, (module_, models) in enumerate(module_models, 1):
-        parser._tag_plan.defers_related = position < len(module_models)  # noqa: SLF001
-        ctx = parser._process_single_module(  # noqa: SLF001
+        parser._tag_plan.defers_related = position < len(module_models)
+        ctx = parser._process_single_module(
             module_,
             models,
             run.module_results,
@@ -3156,10 +3153,10 @@ def settle_update_actions(parser: RecursionFactsHost, listed_paths: Iterable[str
     parser extension lists, names the model at it (row ``legacy-keyless-reference-by-path``).
     """
     keyed = keyed_models(models, "listed reference update actions")
-    recursion_facts = parser._recursion_facts  # noqa: SLF001
+    recursion_facts = parser._recursion_facts
     require_update = recursion_facts["require_update"]
     held = {keyed.models[key].path for key in require_update & keyed.models.keys()}
-    parser._recursion_facts = RecursionFacts(  # noqa: SLF001
+    parser._recursion_facts = RecursionFacts(
         require_update=require_update.union(
             keyed.resolve(path for path in listed_paths if path not in held) - {UNRESOLVED_MODEL_KEY}
         ),
@@ -3169,7 +3166,7 @@ def settle_update_actions(parser: RecursionFactsHost, listed_paths: Iterable[str
 
 def _rebuilt_as(parser: RuleAliasHost, model: DataModel, model_type: type[DataModel]) -> DataModel:
     """Return a model of ``model_type`` built from ``model``: its reference, fields, options and template data."""
-    return parser._create_data_model(  # noqa: SLF001
+    return parser._create_data_model(
         model_type=model_type,
         reference=model.reference,
         fields=model.fields,
@@ -3196,12 +3193,12 @@ def _replace_aliases(
     for model_list in chain(
         (ctx.models for ctx in run.contexts),
         (models for _, models in run.module_models),
-        (prepared.model_list for prepared in parser._prepared_modules),  # noqa: SLF001
-        (prepared.model_list_before_override_removal for prepared in parser._prepared_modules),  # noqa: SLF001
+        (prepared.model_list for prepared in parser._prepared_modules),
+        (prepared.model_list_before_override_removal for prepared in parser._prepared_modules),
     ):
-        parser._graph_builder.set_module_models(model_list, [replacements.get(id(m), m) for m in model_list])  # noqa: SLF001
+        parser._graph_builder.set_module_models(model_list, [replacements.get(id(m), m) for m in model_list])
     for model in aliases:
-        parser._graph_builder.replace_model(model, replacements[id(model)])  # noqa: SLF001
+        parser._graph_builder.replace_model(model, replacements[id(model)])
     if (identities := run.model_identities) is not None:
         run.model_identities = {replacements.get(id(model), model): identity for model, identity in identities.items()}
 
@@ -3212,7 +3209,7 @@ def _recursive_class_of_alias(model: DataModel) -> DataModel | None:
     The value may carry metadata (``Annotated``). A class whose fields name the alias as well builds it through its own
     cycle; it is no such class.
     """
-    if not isinstance(model, TypeAliasBase) or not model._WRITES_REFERENCE_ALIAS_TYPE or len(model.fields) != 1:  # noqa: SLF001
+    if not isinstance(model, TypeAliasBase) or not model._WRITES_REFERENCE_ALIAS_TYPE or len(model.fields) != 1:
         return None
     data_type = model.fields[0].data_type
     if (
@@ -3286,7 +3283,7 @@ def write_rule_aliases_as_classes(parser: RuleAliasHost, run: ProcessingRun[Any,
         aliases := [
             model
             for model in run_unused_models(parser, run).written(_context_models(run.contexts))
-            if model._unwritable_runtime_rules  # noqa: SLF001
+            if model._unwritable_runtime_rules
         ]
     ):
         return

@@ -338,13 +338,13 @@ def set_reference_expression(  # noqa: PLR0913
             module,
             base_class=isinstance(data_type, BaseClassDataType),
             producer=producer,
-            import_ledger=host._import_ledger,  # noqa: SLF001
+            import_ledger=host._import_ledger,
             row=row,
         )
     )
     if expression == data_type.alias:
         return False
-    host._graph_builder.name_reference(data_type, expression)  # noqa: SLF001
+    host._graph_builder.name_reference(data_type, expression)
     return True
 
 
@@ -427,11 +427,11 @@ def emitting_module_name(
     A model that a module's processing puts into its list after modules are structured, such as a reuse subclass,
     is looked up in the live lists and remembered.
     """
-    if (module_name := parser._emitting_module_names.get(id(model))) is not None:  # noqa: SLF001
+    if (module_name := parser._emitting_module_names.get(id(model))) is not None:
         return module_name
-    for module_name, module_models in parser._emitting_module_lists:  # noqa: SLF001
+    for module_name, module_models in parser._emitting_module_lists:
         if any(module_model is model for module_model in module_models):
-            parser._emitting_module_names[id(model)] = module_name  # noqa: SLF001
+            parser._emitting_module_names[id(model)] = module_name
             return module_name
     return _get_model_module_name(model, model_path_to_module_name)
 
@@ -452,7 +452,7 @@ def reimport_module_references(  # noqa: PLR0913
     """
     if not stale_users:
         return
-    ledger, imports, model_path_to_module_name = host._import_ledger, module.imports, module.module_names  # noqa: SLF001
+    ledger, imports, model_path_to_module_name = host._import_ledger, module.imports, module.module_names
     stale = [(model, stale_import) for model, _, stale_import in stale_users if stale_import is not None]
     if row == "collapse-root-models":
         ledger.remove(imports, [stale_import for _, stale_import in stale], ImportProducer(row))

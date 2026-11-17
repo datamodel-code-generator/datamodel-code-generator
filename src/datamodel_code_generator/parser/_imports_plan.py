@@ -315,7 +315,7 @@ class _KeyState:
         )
 
 
-_storage_key = Imports._storage_key  # ruff: ignore[private-member-access]
+_storage_key = Imports._storage_key
 
 _NAME_KEEPING_PASSES: frozenset[ImportPass] = frozenset({"external-ref-mapping", "x-python-import"})
 """The passes whose shared imports keep their names in every module and that no module writes from there (#6787)."""
@@ -331,7 +331,7 @@ def _without_unrendered(entry: LedgerEntry) -> LedgerEntry:
         return LedgerEntry(Added(()), entry.producer)
     if model is None or not isinstance(operation, Added | Removed):
         return entry
-    if not (unrendered := model._unrendered_imports()):  # ruff: ignore[private-member-access]
+    if not (unrendered := model._unrendered_imports()):
         return entry
     left = Counter(map(_storage_key, unrendered))
     kept: list[Import] = []

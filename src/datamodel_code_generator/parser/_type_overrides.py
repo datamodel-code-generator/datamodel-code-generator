@@ -163,7 +163,7 @@ def get_emitted_python_type_path(parser: TypeOverridesHost, path: str) -> str:
         return get_target_python_type_path(parser, path)
     except Error as exc:
         import_ = Import.from_full_path(path)
-        parser._unavailable_imports[_import_key(import_)] = str(exc)  # noqa: SLF001
+        parser._unavailable_imports[_import_key(import_)] = str(exc)
         return path
 
 
@@ -173,7 +173,7 @@ def reject_unavailable_imports(parser: TypeOverridesHost, contexts: Sequence[Mod
     The first such type in schema order is reported, so the message does not depend on set iteration order.
     """
     all_imports = (parser.imports, *(ctx.imports for ctx in contexts))
-    for (from_, name), message in parser._unavailable_imports.items():  # noqa: SLF001
+    for (from_, name), message in parser._unavailable_imports.items():
         if any(name in imports.get(from_, ()) for imports in all_imports):
             raise Error(message)
 
@@ -286,12 +286,12 @@ def bind_python_type(parser: TypeOverridesHost, expression: PythonTypeExpr) -> B
                 is_builtin = is_target_python_builtin_type(parser, name)
                 import_ = None if is_builtin else resolve_type_import(parser, name)
             except Error:
-                if not (import_ := parser._resolve_type_import_from_defs(name)):  # noqa: SLF001
+                if not (import_ := parser._resolve_type_import_from_defs(name)):
                     raise
                 resolved_name_imports[name] = import_
             else:
                 resolved_name_imports[name] = (
-                    None if is_builtin else import_ or parser._resolve_type_import_from_defs(name)  # noqa: SLF001
+                    None if is_builtin else import_ or parser._resolve_type_import_from_defs(name)
                 )
         return resolved_name_imports[name]
 
@@ -454,7 +454,7 @@ def apply_override_to_field(parser: TypeOverridesHost, field: DataModelFieldBase
             field,
             partial(parser.data_type_manager.constraint_keywords, data_type, parser.target_python_version.version_key),
         )
-        parser._graph_builder.replace_field_type(field, data_type)  # noqa: SLF001
+        parser._graph_builder.replace_field_type(field, data_type)
         return
     from datamodel_code_generator._python_type_import_registry import (  # noqa: PLC0415
         is_known_python_type_path,
@@ -473,9 +473,9 @@ def apply_override_to_field(parser: TypeOverridesHost, field: DataModelFieldBase
         field,
         partial(parser.data_type_manager.type_constraint_keywords, path, parser.target_python_version.version_key),
     )
-    parser._graph_builder.replace_field_type(field, data_type)  # noqa: SLF001
-    parser._graph_builder.detach_data_type_ref(field.data_type)  # noqa: SLF001
-    parser._graph_builder.set_nested_data_types(field.data_type, [])  # noqa: SLF001
+    parser._graph_builder.replace_field_type(field, data_type)
+    parser._graph_builder.detach_data_type_ref(field.data_type)
+    parser._graph_builder.set_nested_data_types(field.data_type, [])
 
 
 _WITHOUT_CONTAINER: Final[Mapping[str, Any]] = MappingProxyType({
@@ -490,7 +490,7 @@ _WITHOUT_CONTAINER: Final[Mapping[str, Any]] = MappingProxyType({
 def _drop_site_constraints(parser: TypeOverridesHost, data_type: DataType) -> None:
     """Drop the constraints the allOf site of ``data_type`` adds to the target it named, which leave with it."""
     if site_constraints(data_type):
-        parser._graph_builder.record_site_constraints(data_type, {})  # noqa: SLF001
+        parser._graph_builder.record_site_constraints(data_type, {})
 
 
 def _override_node(data_type: DataType, *, whole_type: bool) -> DataType:
@@ -593,9 +593,7 @@ def decide_overridden_constraints(
     mark_untaken_constraints(
         parser, field, untaken, lambda minimum: keywords(number_values=True, target_model_version=minimum)
     )
-    parser._graph_builder.set_field_constraints(  # noqa: SLF001
-        field, type(constraints).model_validate(values) if is_model else values
-    )
+    parser._graph_builder.set_field_constraints(field, type(constraints).model_validate(values) if is_model else values)
 
 
 def mark_untaken_constraints(
@@ -673,8 +671,8 @@ def apply_override_to_data_type(parser: TypeOverridesHost, data_type: DataType) 
     """
     overridden = False
     if (reference := data_type.reference) and (
-        override_import := parser._base_stand_in_imports.get(model_key_of(reference))  # noqa: SLF001
-        or model_type_override(parser._model_type_override_imports, reference, row="class-name")  # noqa: SLF001
+        override_import := parser._base_stand_in_imports.get(model_key_of(reference))
+        or model_type_override(parser._model_type_override_imports, reference, row="class-name")
         or enum_site_override_import(parser, reference)
     ):
         annotation = override_annotation(parser, override_import)
@@ -685,13 +683,13 @@ def apply_override_to_data_type(parser: TypeOverridesHost, data_type: DataType) 
             msg = f"--type-overrides {name}: {value} {refusal}, so it cannot replace {reference.name} as a base class"
             raise Error(msg)
         if annotation is None:
-            parser._graph_builder.override_type_import(data_type, override_import)  # noqa: SLF001
-            parser._graph_builder.name_reference(data_type, override_import.binding_name)  # noqa: SLF001
-            parser._graph_builder.detach_data_type_ref(data_type)  # noqa: SLF001
+            parser._graph_builder.override_type_import(data_type, override_import)
+            parser._graph_builder.name_reference(data_type, override_import.binding_name)
+            parser._graph_builder.detach_data_type_ref(data_type)
         else:
-            parser._graph_builder.name_reference(data_type, annotation.type_hint)  # noqa: SLF001
-            parser._graph_builder.detach_data_type_ref(data_type)  # noqa: SLF001
-            parser._graph_builder.set_type_expressions(  # noqa: SLF001
+            parser._graph_builder.name_reference(data_type, annotation.type_hint)
+            parser._graph_builder.detach_data_type_ref(data_type)
+            parser._graph_builder.set_type_expressions(
                 data_type, type_=annotation.type, python_type=annotation.python_type
             )
         _drop_site_constraints(parser, data_type)
