@@ -1462,6 +1462,18 @@
    "source": "release-note",
    "summary": "Whether a form body, a client's form or query object parameter, or a multipart body typed by a Pydantic model or dataclass takes members besides its properties now also follows the configuration the model applies, with its bases as Pydantic applies them: where it says `extra='forbid'` or `'ignore'` (a class that sets no `extra` ignores them) the body takes none; otherwise, `--extra-fields allow` included, it takes what the first `additionalProperties` among its schema and its bases' gives, as before, and nothing changes under `--extra-fields allow`. An object without `additionalProperties`, or any object under `--extra-fields forbid` or `ignore`, no longer has `additional=FieldPlan('', 'string')` in a client's form or query plan, `additional=PartPlan('', 'json')` (and its `parts=`) in a client's multipart body sent whole, nor `additional=JsonPart('', TypeAdapter(object), untyped=True)` in a server's; the model held no other members to write, and unknown parts still reach it on a server (`forbid` answers 422, `ignore` drops them), so the requests sent and the values handled do not change, and a client call option no longer counts the undeclared names of such an object as written by its pagination. With `--extra-fields ignore` or `forbid`, a server no longer checks other members against the type their `additionalProperties` gives them: under `ignore` the model drops them and the request is served, under `forbid` it is still answered with 422 (`extra_forbidden` or `unexpected_keyword_argument`). With both backends, a multipart body whose other members are typed as an object gets `x=abc` served under `ignore` (before 422 `json_invalid`, and `model_type` or `dict_type` for `x=5`); with `pydantic_v2.dataclass`, a URL-encoded or multipart body typed `{type: integer}` gets `x=abc` served too (before 422 `int_parsing`). Three refusals go. A URL-encoded body whose `additionalProperties` is an object, refused under `ignore` and `forbid` (\"A parameter value needs one unambiguous scalar kind\"), now generates. Under the default options, `ignore` and `forbid`, a URL-encoded or multipart body with an exploded object member without `additionalProperties` beside another such member or beside a member that allows other properties (such as a map), and one beside a `deepObject` member, which were refused (\"The exploded form member ... allows other properties ...\"), now generate: `size=1&k=v&j=w` reaches the handler as `page=Page(size=1)`, `filter={'k': 'v', 'j': 'w'}`. Under `--extra-fields ignore` and `forbid` this also holds for exploded members typed by a model whose schema says `additionalProperties: true` or gives a schema. A multipart body the client sends as parts (`MultipartBody`) and a multipart response it reads into `MultipartData` keep the other parts the schema allows, as before. With `pydantic_v2.dataclass`, a dataclass with a configuration of its own that sets no `extra` no longer takes the typed other members of a base's schema.",
    "title": "Generated clients and servers no longer take other members of a form or multipart body, or a client query object, that the model drops"
+  },
+  {
+   "action": "none",
+   "id": "read-the-write-walk-from-the-parse-main",
+   "kind": "default-output",
+   "refs": [
+    "#7051"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "Generation of request and response models with an intersect option no longer fails with \"A Parser can not resolve classes\" for a $ref to a closed object beside a schema-valued additionalProperties.",
+   "title": "Request/response models no longer crash on a $ref to a closed object beside a schema-valued additionalProperties"
   }
  ],
  "complete_from": "0.95.0",

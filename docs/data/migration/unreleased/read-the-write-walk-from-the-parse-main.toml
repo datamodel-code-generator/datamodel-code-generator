@@ -1,6 +1,9 @@
 [[change]]
 id = "read-the-write-walk-from-the-parse-main"
 category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
 title = "Request/response models no longer crash on a $ref to a closed object beside a schema-valued additionalProperties"
 summary = "Generation of request and response models with an intersect option no longer fails with \"A Parser can not resolve classes\" for a $ref to a closed object beside a schema-valued additionalProperties."
 refs = ["#7051"]
