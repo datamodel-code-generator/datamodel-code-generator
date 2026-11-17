@@ -93,6 +93,7 @@ from datamodel_code_generator._target_operations import (
     alias,
     argument_names,
     binding_problem,
+    claim,
     declared_by,
     declared_in,
     declared_media_type,
@@ -714,28 +715,19 @@ class Planner:  # noqa: PLR0904
 
     def operation_names(self, operations: tuple[OperationContract, ...]) -> list[str]:
         """Name each operation's handler: explicit names first, which must differ, then derived ones suffixed apart."""
-        explicit = [name for operation in operations if (name := self.names.get(operation.id.use_site.pointer))]
+        names, taken = claim(
+            self.target_names,
+            NameScope(),
+            [
+                self.names.get(operation.id.use_site.pointer)
+                or (derived_name(self.target_names, operation), local(operation), (self.group_name(operation),))
+                for operation in operations
+            ],
+        )
         self.problems.extend(
-            _problem("F_NAME_CONFLICT", f"Several operation names become {stable_repr(name)}")
-            for name, count in sorted(Counter(explicit).items())
-            if count > 1
+            _problem("F_NAME_CONFLICT", f"Several operation names become {stable_repr(name)}") for name in taken
         )
-        derived = [operation for operation in operations if operation.id.use_site.pointer not in self.names]
-        bases = [derived_name(self.target_names, operation) for operation in derived]
-        claimed = dict(
-            zip(
-                (operation.id for operation in derived),
-                self.target_names.claim(
-                    NameScope(explicit),
-                    [
-                        (base, local(operation), (self.group_name(operation),))
-                        for operation, base in zip(derived, bases, strict=True)
-                    ],
-                ),
-                strict=True,
-            )
-        )
-        return [self.names.get(operation.id.use_site.pointer) or claimed[operation.id] for operation in operations]
+        return names
 
     def groups(self, specs: tuple[OperationSpec, ...]) -> tuple[GroupSpec, ...]:
         """Group operations by first tag in first-occurrence order, naming router files and services apart.
@@ -747,27 +739,22 @@ class Planner:  # noqa: PLR0904
         members: dict[str, list[OperationSpec]] = {}
         for spec in specs:
             members.setdefault(spec.group, []).append(spec)
-        scope = NameScope(
-            (*BUILDER_NAMES, *EXPORTED_NAMES), folded=True, target_python_version=self.target_names.python_version
+        version = self.target_names.python_version
+        claimed, taken = claim(
+            self.target_names,
+            NameScope((*BUILDER_NAMES, *EXPORTED_NAMES), folded=True, target_python_version=version),
+            [
+                self.config.router_names.get(key)
+                or (self.target_names.function(group_basis(key)), local(members[key][0].contract), ())
+                for key in members
+            ],
+            refused={name for name in self.config.router_names.values() if _file_stem_conflict(name, version)},
         )
-        conflicts = {
-            name
-            for key in members
-            if (name := self.config.router_names.get(key)) is not None
-            and (_file_stem_conflict(name, self.target_names.python_version) or not scope.take(name))
-        }
-        derived = [key for key in members if key not in self.config.router_names]
-        bases = [self.target_names.function(group_basis(key)) for key in derived]
-        claimed = self.target_names.claim(
-            scope, [(base, local(members[key][0].contract), ()) for key, base in zip(derived, bases, strict=True)]
-        )
-        stems = {
-            key: self.config.router_names.get(key) or dict(zip(derived, claimed, strict=True))[key] for key in members
-        }
-        conflicts.update(stem for stem in stems.values() if _file_stem_conflict(stem, self.target_names.python_version))
+        stems = dict(zip(members, claimed, strict=True))
+        taken.extend(stem for stem in claimed if _file_stem_conflict(stem, version))
         self.problems.extend(
             _problem("F_NAME_CONFLICT", f"Several router groups or reserved names take {stable_repr(stem)}")
-            for stem in sorted(conflicts)
+            for stem in sorted(set(taken))
         )
         named = [key for key in members if stems[key] != "service"]
         services = dict(
@@ -1530,20 +1517,15 @@ class Planner:  # noqa: PLR0904
             support.append(Argument(name="body", kind="body", location="body"))
             if len(body.media) > 1:
                 support.append(Argument(name="media_type", kind="media_type", location="media_type"))
-        self.problems.extend(
-            _problem(
-                "F_NAME_CONFLICT",
-                f"The arguments of {label(operation)} take {stable_repr(name)} twice",
-                operation.id.use_site,
-            )
-            for name, count in sorted(Counter([*filter(None, given), "self", *(item.name for item in support)]).items())
-            if count > 1
-        )
         python_names = argument_names(
+            SERVER,
             self.target_names,
-            NameScope((*RESERVED, *filter(None, given))),
+            operation,
             [(parameter.wire_name, name, parameter.local) for parameter, name in zip(ordered, given, strict=True)],
             scopes,
+            held=("self", *(item.name for item in support)),
+            reserved=RESERVED,
+            problems=self.problems,
         )
         arguments = [
             Argument(

@@ -344,6 +344,7 @@ multipart-union-parts	main/generation_platform/client/packages/multipart-union-p
 multipart-union-parts	main/generation_platform/client/packages/multipart-union-parts/pydantic_v2_BaseModel//*.py
 multipart-union-parts-errors	main/generation_platform/client/multipart-union-parts-errors.txt
 name-errors	main/generation_platform/client/name-errors.txt
+name-repeats	main/generation_platform/client/name-repeats.txt
 names	main/generation_platform/client/names.txt
 names	main/generation_platform/client/packages/names/pydantic_v2_BaseModel//*.py
 names-unpack	main/generation_platform/client/names-unpack.txt

@@ -42,7 +42,7 @@ if TYPE_CHECKING:
         TypeView,
         WireDeclaration,
     )
-    from datamodel_code_generator._target_naming import TargetNames
+    from datamodel_code_generator._target_naming import Candidate, TargetNames
     from datamodel_code_generator._target_types import TypeTables
 
 SettingT = TypeVar("SettingT")
@@ -58,7 +58,7 @@ class TargetPolicy:
     option and the quoted operation key, of two settings of one option that select one operation; `path_code` the
     code of a path placeholder without a path parameter and of a path parameter without a placeholder, and
     `placeholder_label` whether the first names its operation; `media_code` the code of a media key that no
-    Content-Type header carries.
+    Content-Type header carries; `name_code` the code of an explicit name that its scope already holds.
     """
 
     stage: Callable[[str], DiagnosticStage]
@@ -66,6 +66,7 @@ class TargetPolicy:
     path_code: str
     placeholder_label: bool
     media_code: str
+    name_code: str
 
     def problem(  # ruff: ignore[too-many-arguments]
         self,
@@ -99,6 +100,7 @@ CLIENT: Final = TargetPolicy(
     path_code="E_METADATA_REQUIRED",
     placeholder_label=True,
     media_code="E_METADATA_REQUIRED",
+    name_code="E_NAME_COLLISION",
 )
 SERVER: Final = TargetPolicy(
     stage=lambda code: "config" if code.startswith("E_") else "binding" if code.startswith("MC_") else "target",
@@ -106,6 +108,7 @@ SERVER: Final = TargetPolicy(
     path_code="F_ROUTE_INVALID",
     placeholder_label=False,
     media_code="F_MEDIA_UNSUPPORTED",
+    name_code="F_NAME_CONFLICT",
 )
 
 
@@ -287,22 +290,55 @@ def type_names(names: TargetNames, items: Iterable[tuple[str, OperationContract,
     )
 
 
-def argument_names(
-    names: TargetNames, scope: NameScope, arguments: Sequence[tuple[str, str | None, bool]], scopes: tuple[str, ...]
+def claim(
+    names: TargetNames,
+    scope: NameScope,
+    items: Sequence[str | Candidate],
+    reserved: Iterable[str] = (),
+    refused: Container[str] = (),
+) -> tuple[list[str], list[str]]:
+    """Name each item: an explicit name, taken first in order, or a derived one, claimed in order after `reserved`.
+
+    Also return, sorted, each explicit name that the scope or an earlier explicit name already holds, which the
+    target reports once. An explicit name in `refused`, which the target reports itself, is not taken.
+    """
+    held = sorted({item for item in items if isinstance(item, str) and item not in refused and not scope.take(item)})
+    for name in reserved:
+        scope.take(name)
+    claimed = iter(names.claim(scope, [item for item in items if not isinstance(item, str)]))
+    return [item if isinstance(item, str) else next(claimed) for item in items], held
+
+
+def argument_names(  # noqa: PLR0913
+    policy: TargetPolicy,
+    names: TargetNames,
+    operation: OperationContract,
+    arguments: Sequence[tuple[str, str | None, bool]],
+    scopes: tuple[str, ...],
+    *,
+    held: Iterable[str] = (),
+    reserved: Iterable[str],
+    refused: Container[str] = (),
+    problems: list[Diagnostic],
 ) -> list[str]:
     """Name each argument: its given name, or one claimed in order after its wire name as a model field's.
 
-    Each argument is its wire name, its given name or None, and whether the operation's document declares it.
+    Each argument is its wire name, its given name or None, and whether the operation's document declares it. A given
+    name that the `held` names or another given name take is reported once, one in `refused` by the target itself;
+    derived names keep apart from `reserved`.
     """
-    bases = {index: names.argument(wire_name) for index, (wire_name, given, _) in enumerate(arguments) if given is None}
-    claimed = dict(
-        zip(
-            bases,
-            names.claim(scope, [(base, arguments[index][2], scopes) for index, base in bases.items()]),
-            strict=True,
-        )
+    python_names, taken = claim(
+        names,
+        NameScope(held),
+        [given or (names.argument(wire_name), declared, scopes) for wire_name, given, declared in arguments],
+        reserved,
+        refused,
     )
-    return [given or claimed[index] for index, (_, given, _) in enumerate(arguments)]
+    head = f"The arguments of {label(operation)} take"
+    problems.extend(
+        policy.problem(policy.name_code, f"{head} {stable_repr(name)} twice", operation.id.use_site) for name in taken
+    )
+    return python_names
 
 
 def alias(  # noqa: PLR0913

@@ -840,6 +840,23 @@
   {
    "action": "review",
    "affects": {
+    "experimental": [
+     "cli-option.generate-client"
+    ]
+   },
+   "id": "client-name-collision-report",
+   "kind": "experimental",
+   "refs": [
+    "#6979"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "With `--generate-client`, explicit argument names (`parameter_names`, `--aliases`), method names (`name` of `--client-operations`, sorted within each resource) or the `resource` of channel settings that take one name three or more times report it once instead of once per repeat, and several such names are reported in sorted order after the reserved-name and `--aliases` diagnostics of the operation's parameters (`The arguments of GET /items take 'b' twice; ... take 'a' twice` becomes `... take 'a' twice; ... take 'b' twice`); the \"names no parameter\" error still follows them. An explicit method name that is a reserved member name (`close`) taken twice is reported as reserved only, without the collision line. Servers already reported collisions this way.",
+   "title": "Generated clients report a name that explicit names take twice once, sorted, as servers do"
+  },
+  {
+   "action": "review",
+   "affects": {
     "options": [
      "--collapse-root-models"
     ],

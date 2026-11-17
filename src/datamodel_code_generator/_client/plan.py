@@ -75,6 +75,7 @@ from datamodel_code_generator._target_operations import (
     CLIENT,
     alias,
     argument_names,
+    claim,
     coded_use,
     declared_by,
     declared_media_type,
@@ -593,24 +594,19 @@ class Planner:
         namespaces = {namespace for resource in members for namespace in _opened(resource)}
         named = list(specs)
         for namespace, operations in members.items():
-            scope = NameScope(child.rpartition(".")[2] for child in namespaces if child.rpartition(".")[0] == namespace)
-            explicit = {spec.index for spec in operations if self._explicit_method(spec.contract)}
-            for spec in operations:
-                if spec.index in explicit and not scope.take(spec.name):
-                    message = f"The resource {stable_repr(namespace)} takes the name {stable_repr(spec.name)} twice"
-                    self.problems.append(_problem("E_NAME_COLLISION", message))
-            for name in RESERVED_MEMBERS:
-                scope.take(name)
             parts = _namespace_parts(namespace)
-            derived = [spec for spec in operations if spec.index not in explicit]
-            claimed = dict(
-                zip(
-                    (spec.index for spec in derived),
-                    self.names.claim(scope, [(spec.name, local(spec.contract), parts) for spec in derived]),
-                    strict=True,
-                )
+            methods, taken = claim(
+                self.names,
+                NameScope(child.rpartition(".")[2] for child in namespaces if child.rpartition(".")[0] == namespace),
+                [
+                    spec.name if self._explicit_method(spec.contract) else (spec.name, local(spec.contract), parts)
+                    for spec in operations
+                ],
+                RESERVED_MEMBERS,
+                refused=RESERVED_MEMBERS,
             )
-            methods = [claimed.get(spec.index, spec.name) for spec in operations]
+            head = f"The resource {stable_repr(namespace)} takes the name"
+            self.problems.extend(_problem("E_NAME_COLLISION", f"{head} {stable_repr(name)} twice") for name in taken)
             prefix = (self._resource_pascal(namespace),)
             pascals = type_names(
                 self.names, ((name, spec.contract, prefix) for spec, name in zip(operations, methods, strict=True))
@@ -632,7 +628,6 @@ class Planner:
         explicit = {(item.in_, item.name): item.python_name for item in names}
         plans = self.parameter_plans.get(operation.id, {})
         declared: list[tuple[WireDeclaration, ParameterLocation, str, ParameterPlan, str | None]] = []
-        scope = NameScope()
         for declaration in operation.parameters:
             location, wire_name = parameter_place(declaration)
             if (plan := plans.get((location, wire_name))) is None:
@@ -641,27 +636,24 @@ class Planner:
                 CLIENT, self.names, operation, location, wire_name, source=declaration.use_site, problems=self.problems
             )
             declared.append((declaration, location, wire_name, plan, given))
-            if given is None:
-                continue
             if given in RESERVED_ARGUMENTS:
                 message = (
                     f"The {location} parameter {stable_repr(wire_name)} of {label(operation)} cannot take the name "
                     f"{stable_repr(given)}"
                 )
                 self.problems.append(_problem("E_RESERVED_NAME", message, declaration.use_site))
-            elif not scope.take(given):
-                message = f"The arguments of {label(operation)} take {stable_repr(given)} twice"
-                self.problems.append(_problem("E_NAME_COLLISION", message, operation.id.use_site))
-        for name in (*RESERVED_ARGUMENTS, *(HELPER_ARGUMENTS if operation.id in self.helpers else ())):
-            scope.take(name)
         python_names = argument_names(
+            CLIENT,
             self.names,
-            scope,
+            operation,
             [
                 (wire_name, given, declared_by(declaration, operation))
                 for declaration, _, wire_name, _, given in declared
             ],
             path,
+            reserved=(*RESERVED_ARGUMENTS, *(HELPER_ARGUMENTS if operation.id in self.helpers else ())),
+            refused=RESERVED_ARGUMENTS,
+            problems=self.problems,
         )
         specs: list[ParameterSpec] = []
         for (declaration, location, wire_name, plan, _), python_name in zip(declared, python_names, strict=True):

@@ -87,6 +87,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "method-collisions-parent-scoped",
         "method-collisions-parent-scoped-full-path",
         "child-collision",
+        "name-repeats",
         "media-errors",
         "response-keys",
         "form-name-errors",
