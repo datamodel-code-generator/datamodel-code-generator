@@ -128,7 +128,8 @@ from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum, get_raw_
 from datamodel_code_generator.model.msgspec import DataModelField as MsgspecField
 from datamodel_code_generator.model.pydantic_v2 import DataModelField as PydanticField
 from datamodel_code_generator.model.pydantic_v2 import dataclass as pydantic_dataclass
-from datamodel_code_generator.model.pydantic_v2.base_model import _ANNOTATED_CONSTRAINT_BASES, _PydanticV2Model
+from datamodel_code_generator.model.pydantic_v2.base_model import _constraint_base as _model_constraint_base
+from datamodel_code_generator.model.pydantic_v2.base_model import _PydanticV2Model
 from datamodel_code_generator.model.pydantic_v2.imports import IMPORT_FIELD, IMPORT_SERIALIZE_AS_ANY
 from datamodel_code_generator.model.pydantic_v2.type_alias import TypeAlias as PydanticCompatibleTypeAlias
 from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType, _writes_serialize_as_any
@@ -1128,15 +1129,8 @@ def _ordered_union(
 
 
 def _constraint_base(data_type: DataType, *, encoded: bool = False) -> str | None:
-    """Return the name of the scalar a constrained scalar constrains, as the model generator reads it, or None.
-
-    With ``encoded``, a value decoded from base64 text with constraints constrains the type its decoding writes.
-    """
-    if getattr(data_type, "annotated_string", False):
-        return "str"
-    if encoded and (base := getattr(data_type, "encoded_base", None)):
-        return base
-    return None if (import_ := data_type.import_) is None else _ANNOTATED_CONSTRAINT_BASES.get(_identity(import_))
+    """Return the name of the scalar a constrained scalar constrains, as the model generator reads it, or None."""
+    return _model_constraint_base(data_type, annotated_string=True, encoded=encoded)
 
 
 def _constrained_base(data_type: DataType) -> BuiltinType | ImportedType | None:
