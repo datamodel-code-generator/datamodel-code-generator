@@ -1,9 +1,0 @@
-[[change]]
-id = "target-names-follow-naming-strategy-table"
-kind = "experimental"
-action = "review"
-title = "Generated clients and servers name colliding API names as the models' naming strategies do"
-summary = "Two changes, both under `--parent-scoped-naming`. (1) With `--naming-strategy numbered`, `primary-first` or `definitions-first`, a method, handler or class name that another name in its scope already holds now takes the name of its enclosing scope in front of it instead of a number (`get_a_b_1` becomes `default_get_a_b`, `GetAB1` becomes `DefaultGetAB`). (2) With `--naming-strategy full-path`, such a name now takes both prefixes, as the models' class names do (row `legacy-both-prefixes`, #5666): `item_store_get_item` becomes `item_store_item_store_get_item`, `ItemStoreGetItemResponse` becomes `ItemStoreItemStoreGetItemResponse`."
-affects = { experimental = ["cli-option.generate-client", "cli-option.generate-server"] }
-refs = ["#6976"]
-source = "release-note"

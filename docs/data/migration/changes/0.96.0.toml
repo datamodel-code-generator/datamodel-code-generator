@@ -69,3 +69,20 @@ affects = { python_api = ["warnings filters with module=\"datamodel_code_generat
 migrate = "Filter the notices by category and message, or by your calling module, for example `warnings.filterwarnings(\"ignore\", category=FutureWarning, module=\"mypackage.models\")`."
 refs = ["#6793"]
 source = "release-note"
+
+[[change]]
+id = "graphql-typename-property"
+kind = "default-output"
+action = "keep"
+title = "GraphQL object models gain a read-only `__typename` property"
+summary = "Each model generated from a GraphQL object type has a `__typename` property that returns its `typename__` field, so graphql-core's default type resolver resolves unions and interfaces from model instances without a `resolve_type` function. The property is written for `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`, `dataclasses.dataclass` and `msgspec.Struct` output; input and interface types, `typing.TypedDict` output and custom model templates do not get it. Fields, aliases and validation are unchanged."
+affects = { input_file_types = ["graphql"], output_model_types = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "msgspec.Struct"] }
+before = "typename__: Literal['A'] | None = Field('A', alias='__typename')"
+after = """typename__: Literal['A'] | None = Field('A', alias='__typename')
+
+    @property
+    def __typename(self) -> Literal['A'] | None:
+        return self.typename__"""
+keep = { flags = ["--graphql-no-typename"] }
+refs = ["#6792"]
+source = "release-note"

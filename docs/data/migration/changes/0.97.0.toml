@@ -1,0 +1,279 @@
+# The changes of 0.97.0, moved from docs/data/migration/unreleased/ when the release was stamped.
+
+[[change]]
+id = "argument-does-not-undo-implied-option"
+kind = "warning"
+action = "warn"
+title = "An argument that turns off an option `pyproject.toml` turned on, whose implied option stays on, emits a `UserWarning`"
+summary = "The command line reads the values of `pyproject.toml` before it applies the arguments, so with `use-annotated = true` and `field-constraints = false` there, `--no-use-annotated` turns `--use-annotated` off and leaves `--field-constraints` on, which `use-annotated = true` turned on. Such a run now reports it with a `UserWarning` that names the key and `--read-implied-options-from-merged-values`; the option stays on as before and the generated output is unchanged. A caller that turns warnings into errors gets an error."
+affects = { options = ["--no-use-annotated"] }
+migrate = "Set `use-annotated = false` in `pyproject.toml` instead of passing `--no-use-annotated`, or pass `--read-implied-options-from-merged-values` (the 20261113 presets turn it on), under which the argument turns `--field-constraints` off as the key does."
+refs = ["#6891"]
+source = "release-note"
+
+[[change]]
+id = "asyncapi-client-handshake-models"
+kind = "experimental"
+action = "review"
+title = "Generated AsyncAPI clients read handshake parameters and fixed header values from the models"
+summary = "The query and header parameters of a channel's handshake are now the fields of the models generated for its binding's `query` and `headers` objects, required where the models require them, and the subprotocols a `Sec-WebSocket-Protocol` header offers, or the `Accept` header that makes a channel a server-sent event stream, are the values the header's type admits. A channel is now generated whose `query` or `headers` object is written with `allOf`, or with keywords beside its properties such as `$schema`, `examples`, `default`, `minProperties` or `deprecated`, or that names a required property it does not declare; such channels were skipped as `websocket_bindings` or `server_sent_events`. Channels at one address whose handshakes write a parameter alike but whose models type it differently, such as a `$ref` that names a schema of another document through an `allOf`, are still left out as `shared_addresses`. A `Sec-WebSocket-Protocol` header written as a `oneOf` of `const`s, also one a referenced schema holds whose models are a root model or alias of a union of `Literal`s (a `oneOf` of `$ref`s to `const` schemas), now offers each value, where it offered none (and a required one left the channel out), and an `Accept` header written so now opens the channel as a server-sent event stream. An AsyncAPI 2 operation whose HTTP binding comes from a trait under `components/operationTraits` now gives its parameters, where its channel was skipped; an operation's own binding, which no model types, still leaves the channel out, with the message `the query schema of its HTTP binding has no model`. A parameter written as a `$ref` now takes the `description` of the schema it names. Under `--force-optional` the models require no parameter, so every handshake parameter is now optional; a required header that the client writes itself, on a WebSocket handshake or on the GET that opens a server-sent event stream (such as `Host`, `Upgrade`, or a free-form `Sec-WebSocket-Protocol`, which then offers no subprotocol), no longer leaves the channel out, and two bindings that declare one parameter required and optional now agree, where the channel was skipped."
+affects = { experimental = ["cli-option.generate-client"] }
+refs = ["#6943"]
+source = "release-note"
+
+[[change]]
+id = "asyncapi-client-handshake-ref-siblings"
+kind = "experimental"
+action = "review"
+title = "Generated AsyncAPI 2 clients follow the models for a default beside a handshake parameter's `$ref`"
+summary = "With `--ignore-ref-siblings-by-schema-version`, an AsyncAPI 2 handshake query or header parameter whose property writes a `default` beside its `$ref` no longer takes that default as its argument default, as the generated models do not; it takes the default the referenced schema gives, or none (`token: str = 'abc'` becomes `token: str | UNSET = UNSET`). Without the option the client keeps the sibling default, as the models do."
+affects = { experimental = ["cli-option.generate-client"] }
+refs = ["#6970"]
+source = "release-note"
+
+[[change]]
+id = "asyncapi-client-message-codecs"
+kind = "experimental"
+action = "review"
+title = "Generated AsyncAPI clients code a message as the models type its payload"
+summary = "How a message travels now follows the models generated for its payload, as an OpenAPI body of its media type does. A text message (`text/plain`, `text/csv`, `text/xml`, `text/html`, ...) whose models type a string, such as an enum of strings, `type: [string]`, a nullable string, a `const` or an `allOf` of a string schema, or a string with `contentEncoding`, is now sent and received as `str`; such channels were skipped as `message_content_types`. A message of another binary media type (`image/png`, `application/xml`, `application/x-msgpack`, ...), which a frame carries as its raw bytes, is now sent and received as `bytes` whatever its schema (as `str` where its models type an enum of strings), where it was skipped unless it was a binary string. A message of a form media type (`multipart/form-data`, `application/x-www-form-urlencoded`) is still sent and received as `bytes` only where its models type its payload as raw bytes (a binary string), and its channel is still skipped otherwise. A JSON message on a WebSocket channel whose payload is a binary string (`type: string, format: binary`) is now raw `bytes` in a binary frame instead of the payload's model; on a server-sent event channel its data is still decoded by the model. An `application/octet-stream` message whose payload is an enum of strings, and a text message whose binary string the models type as `str` (`--type-mappings binary=string`), are now `str` instead of `bytes`."
+affects = { experimental = ["cli-option.generate-client"] }
+refs = ["#6942"]
+source = "release-note"
+
+[[change]]
+id = "asyncapi-client-payload-formats"
+kind = "experimental"
+action = "review"
+title = "Generated AsyncAPI clients read a payload's schema format and wrapper as the models do"
+summary = "A channel is now generated whose message payload names its `schemaFormat` in another case or with spaces (`application/SCHEMA+JSON;version=draft-07`, `application/schema+json ; version=draft-07`), in an OpenAPI format (`application/vnd.oai.openapi;version=3.0.0`), or in such a spelling through an AsyncAPI 2 message trait; such channels were skipped as `message_content_types`. A payload written `{schema: ...}` without a `schemaFormat` now binds the model generated for its `schema`: where it was the channel's only message, generation failed (`The use has no generated native type`), and beside another JSON message the channel was skipped as `several_messages` (`a message's payload declares no type`). Avro, Protocol Buffers and XML Schema payloads, also when a trait gives the format, stay left out."
+affects = { experimental = ["cli-option.generate-client"] }
+refs = ["#6927"]
+source = "release-note"
+
+[[change]]
+id = "asyncapi-client-unknown-payload-format"
+kind = "experimental"
+action = "required"
+title = "Generated AsyncAPI clients leave out a channel whose payload format generation does not read"
+summary = "A channel is now left out with a `message_content_types` warning where an AsyncAPI 2 message trait gives a `schemaFormat` that generation does not read, such as `application/schema;version=draft-07`, which generation refuses when the message itself gives it, or where a message's `contentType` is no media type but ends in `+json` (`x+json`). Such channels were generated with a JSON codec."
+affects = { experimental = ["cli-option.generate-client"] }
+migrate = "Write the format as the AsyncAPI specification lists it (`application/schema+json;version=draft-07`) and the content type as a media type (`application/x+json`)."
+refs = ["#6927"]
+source = "release-note"
+
+[[change]]
+id = "contains-keywords-beside-ref-schema-order"
+kind = "output-text"
+action = "none"
+title = "`--field-include-all-keys` writes the contains keywords beside a `$ref` in the order of the schema"
+summary = "With `--field-include-all-keys`, a `$ref` to an array schema with `contains` beside it wrote `contains`, `minContains` and `maxContains` into `json_schema_extra` in an order that depended on the hash seed of the process, so one command gave either of two files and `--check` failed at random. They are now written in the order the schema writes them. The models behave the same: only the order of the keys of the `json_schema_extra` dict changes, to one of the two orders earlier runs produced."
+affects = { output_model_types = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"], options = ["--field-include-all-keys"] }
+before = "json_schema_extra={'minContains': 0, 'contains': {'const': 'a'}},"
+after = "json_schema_extra={'contains': {'const': 'a'}, 'minContains': 0},"
+refs = ["#6866"]
+source = "release-note"
+
+[[change]]
+id = "defs-member-not-a-schema"
+kind = "warning"
+action = "warn"
+title = "A member of `$defs` that is not a schema is skipped with a `UserWarning` in a draft 7 or older document"
+summary = "Draft 7 and older have no `$defs` keyword, so their meta-schemas do not constrain its members. In a document read in one of these versions (the version of the input document, or of each document under `--read-schema-version-per-document`), a member of `$defs` whose value is neither an object nor a boolean, such as a `description` string written beside the definitions, is now skipped with a `UserWarning` that names it, and the document is generated; it was refused before. Such a member is still refused in a document read as 2019-09 or later (a document without `$schema` that holds `$defs` reads as 2020-12) and where a reference names it. A caller that turns warnings into errors gets an error."
+affects = { input_file_types = ["jsonschema"] }
+migrate = "Move the value into the definition it belongs to, or remove it."
+refs = ["#6880"]
+source = "release-note"
+
+[[change]]
+id = "discriminator-inlined-list-items"
+kind = "default-output"
+action = "review"
+title = "A union `--collapse-root-models` writes as list items names the tag field its site writes"
+summary = "Under `--collapse-root-models`, a discriminated union that is a named schema and is used as the items of an array is written into the list with `discriminator=` by the Python name of the tag property, decided before the union itself is written. Where its variants do not all carry that tag, Pydantic refused the module when it was imported: where the variants name the field otherwise, as a property named like the Enum that types it is renamed (`Kind_1`, #6874), and where the union itself is written without `discriminator=` and a variant keeps an untagged field (#6892). Such a list now names the field the union names where the union is written with `discriminator=`, and else is written without one. A list whose variants carry the tag is unchanged, so output that imported before is unchanged."
+affects = { output_model_types = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"], options = ["--collapse-root-models"] }
+before = "pets: list[Annotated[Cat | Dog, Field(discriminator='Kind')]] | None = None"
+after = "pets: list[Annotated[Cat | Dog, Field(discriminator='Kind_1')]] | None = None"
+keep = { note = "The previous module failed at import; nothing restores it." }
+refs = ["#6874", "#6892"]
+source = "release-note"
+
+[[change]]
+id = "discriminator-nested-variant-diamond"
+kind = "default-output"
+action = "review"
+title = "A union has no `discriminator=` where a nested variant takes an untagged field from the first of two bases"
+summary = "A discriminated union that lists a `oneOf` grouping a variant composed (`allOf`) of two models that share a parent declaring the tag was written with `discriminator=` by the tag field the second model declares again. Pydantic gives the class of the variant the field of its first base that has one, here the one the first model inherits from the shared parent, and refused the union when the module was imported where that field is optional (`needs field 'kind' to be of type Literal`, #6905) or holds a tag another variant holds (`Value ... mapped to multiple choices`, with `--enum-field-as-literal all`), also where `--collapse-root-models` writes that union as the items of a list. Such a union is now written as a plain union, without `discriminator=`; the variants and their tag fields are unchanged, so only the module that holds the union changes. A module that imported before is unchanged."
+affects = { output_model_types = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"] }
+before = "thing: Group | Plane | None = Field(None, discriminator='kind')"
+after = "thing: Group | Plane | None = None"
+keep = { note = "The previous module failed at import; nothing restores it." }
+refs = ["#6905"]
+source = "release-note"
+
+[[change]]
+id = "discriminator-nested-variant-restated-tag"
+kind = "default-output"
+action = "review"
+title = "A union has no `discriminator=` where the class of a nested variant has an optional tag field"
+summary = "A discriminated union that lists a `oneOf` grouping a variant wrote that variant's tag as the default of the tag field of the root-most parent that declares it. Where a nearer parent declares the same optional `const` tag again, the class of the variant has that parent's field, which stays optional, and Pydantic refused the union when the module was imported (`needs field 'kind' to be of type Literal`, #6875); under `--use-enum-values-in-discriminator` the same happened where such a variant keeps an optional tag typed by its Enum. Such a union is now written as a plain union, without `discriminator=`; the variants and their tag fields are unchanged, so only the module that holds the union changes. A module that imported before is unchanged."
+affects = { output_model_types = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"] }
+before = "thing: Young | Plane | None = Field(None, discriminator='kind')"
+after = "thing: Young | Plane | None = None"
+keep = { note = "The previous module failed at import; nothing restores it." }
+refs = ["#6875"]
+source = "release-note"
+
+[[change]]
+id = "discriminator-shared-written-tag"
+kind = "default-output"
+action = "review"
+title = "A union whose variants were written with one tag value has no `discriminator=`"
+summary = "A Pydantic union whose variants ended up with the same value in their tag fields was written with `discriminator=`, which Pydantic refuses when the module is imported (`Value ... mapped to multiple choices`). It happened where a union lists a nested `oneOf` beside the parent of the variant it groups, which has its parent's tag (#6876), also where `--collapse-root-models` writes that union as the items of a list, and under `--use-enum-values-in-discriminator` where the discriminator property is named like the Enum that types it and the variants inherit it, so that every variant takes every member (#6865). The union is now written without `discriminator=`; the tag fields of the variants are unchanged. For #6865 this means that the module imports: its variants still have the tag field with every member of the Enum, and a parsed tag is the text, not the member. Output that imported before is unchanged."
+affects = { output_model_types = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"] }
+before = "guest: Young | Cat | None = Field(None, discriminator='kind')"
+after = "guest: Young | Cat | None = None"
+keep = { note = "The previous module failed at import; nothing restores it." }
+refs = ["#6865", "#6876"]
+source = "release-note"
+
+[[change]]
+id = "enum-literal-after-collapsed-alias"
+kind = "default-output"
+action = "review"
+title = "A Literal member of an enum named through a collapsed alias imports the enum"
+summary = "Under `--collapse-root-models-name-strategy parent`, a module that named an enum of another module through a collapsed alias wrote the enum without importing it in two places: in an enum member literal (`--use-enum-values-in-discriminator`, or a const beside an enum under `--read-const-beside-enum`) and, under `--reuse-model`, where the enum replaced a duplicate that reuse removed. The models that named it failed when they were used. The module now imports the enum and writes `Literal[b.Foo.cat, 'cat']`. Output that worked before is unchanged."
+affects = { options = ["--collapse-root-models-name-strategy parent"] }
+before = "kind: Literal[Foo.cat, 'cat']"
+after = "kind: Literal[b.Foo.cat, 'cat']"
+keep = { note = "The previous module imported, but the models that named the enum failed at first use, as the module did not import it; nothing restores it." }
+refs = ["#6842"]
+source = "release-note"
+
+[[change]]
+id = "id-with-empty-fragment-fetched"
+kind = "warning"
+action = "warn"
+title = "A `$ref` to its document's `$id` written with an empty fragment emits a `SchemaResourceRefWarning` before the fetch"
+summary = "Where a document declares an `$id` with an empty fragment (`https://example.com/item.json#`) and a `$ref` in it names that URI, the generator loads the document at that URL, as before, and now first warns with a `SchemaResourceRefWarning` that names the URL, the `$id` and `--read-ids-with-empty-fragment`, under which the reference resolves inside the document; the generated output is unchanged. A caller that turns warnings into errors gets an error."
+affects = { input_file_types = ["jsonschema", "openapi"] }
+migrate = "Pass `--read-ids-with-empty-fragment` (the 20261113 presets turn it on), or write the `$id` without the `#`."
+refs = ["#6878"]
+source = "release-note"
+
+[[change]]
+id = "implied-option-replaces-given-value"
+kind = "warning"
+action = "warn"
+title = "An option that is turned off and that another option turns on emits a `UserWarning`"
+summary = "`--use-annotated` turns `--field-constraints` on, `--use-type-alias-type` turns `--use-type-alias` on and `--intersect-combined-schema-keywords` turns `--intersect-allof-keywords` on, also where a preset sets the first option. A run that turns the second option off (`--no-intersect-allof-keywords`, `false` in `pyproject.toml`, `False` given to `generate()`) is now reported with a `UserWarning` that names both options and how to turn both off; the option stays on as before and the generated output is unchanged. A `false` in `pyproject.toml` is not reported under a `--preset` argument whose preset sets that option, as such a preset replaces the values of `pyproject.toml`. `generate()` does not report `use_type_alias`, nor a value of a config that `load_pyproject_config()` returned. A caller that turns warnings into errors gets an error."
+affects = { options = ["--field-constraints", "--use-type-alias", "--intersect-allof-keywords"] }
+migrate = "Turn the other option off as the warning says, for example with `--no-intersect-combined-schema-keywords`, or drop the value that turns the option off."
+refs = ["#6850"]
+source = "release-note"
+
+[[change]]
+id = "regex-class-escape-range-end"
+kind = "default-output"
+action = "review"
+title = "A pattern with a class escape or a Unicode property at the end of a range in a class, such as `^[a-\\w]+$`, no longer fails at import"
+summary = "A `pattern` whose character class ends a range with a class escape or a Unicode property (`^[a-\\w]+$`, `[a-\\pL]`, `[a-\\p{L}]`) was written as the schema writes it, and the module failed at import with `invalid range boundary, must be a literal` (a `msgspec.Struct` failed when it first decoded the type with `bad character range`): Pydantic's default regex engine refuses a range that ends with a class, and Python's `re` rejects it too. The pattern is now left out with a warning, as `^[\\w- ]*$` (a class as the start of a range) has been since 0.92.0, and the model checks the other keywords only. A hyphen that makes no range keeps its pattern (`^[a-z0-9-\\s]+$`, `^[^-\\w]+$`). Output that imported and decoded before is unchanged."
+affects = { output_model_types = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"] }
+before = "word: constr(pattern=r'^[a-\\w]+$') | None = None"
+after = "word: str | None = None"
+keep = { note = "The previous module failed at import; nothing restores it." }
+refs = ["#6922"]
+source = "release-note"
+
+[[change]]
+id = "regex-one-letter-property-range"
+kind = "default-output"
+action = "review"
+title = "A pattern with a one-letter Unicode property before a hyphen in a class, such as `^[\\pL-_]+$`, no longer fails at import"
+summary = "A `pattern` whose character class starts a range with a Unicode property of one letter (`^[\\pL-_]+$`, `[\\PL-_]`) was written as the schema writes it, and the module failed at import with `invalid range boundary, must be a literal`: Pydantic's default regex engine refuses a range that starts with a class, and Python's `re` rejects `\\p`. The pattern is now left out with a warning, as `^[\\p{L}-_]+$` has been since 0.92.0, and the model checks the other keywords only. Output that imported before is unchanged."
+affects = { output_model_types = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"] }
+before = "one_letter: constr(pattern=r'^[\\pL-_]+$') | None = None"
+after = "one_letter: str | None = None"
+keep = { note = "The previous module failed at import; nothing restores it." }
+refs = ["#6918"]
+source = "release-note"
+
+[[change]]
+id = "regex-size-limit-more-classes"
+kind = "default-output"
+action = "review"
+title = "More patterns past the regex size limit no longer fail at import, such as `^\\p{L}{1,256}$`, `^.{0,10240}$` and `[\\p{L}\\p{N}_-]{1,256}`"
+summary = "A `pattern` that every pydantic-core release from 2.0 to 2.50 refuses for size, but that the size check counted below the limit, was written as the schema writes it, and the module failed at import with `Compiled regex exceeds size limit`: a class of several Unicode general categories (`[\\p{L}\\p{N}_-]{1,256}`, `^[\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]{0,256}$`), `\\p{Lu}` or `\\p{Ll}`, a count that passes the limit only with what the ASCII characters of its atom and its optional copies add (`^\\p{L}{1,256}$`, `^.{0,10240}$`, `^[^<>]{1,10000}$`), a counted group of single atoms (`^(?:[\\w-]\\.?){1,128}@(?:[\\w-]\\.?){1,128}$`) and an alternation without `^` or `$` in which every branch holds at least one copy of these classes or escapes outside a group (`user-[\\w-]{1,128}|group-[\\w-]{1,128}`). The model now selects `regex_engine=\"python-re\"` for it; a pattern Python's `re` rejects too, as it rejects `\\p{...}`, is left out with a warning. Only patterns that every pydantic-core release from 2.0 to 2.50 refuses are read this way. Output that imported before is unchanged."
+affects = { output_model_types = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"] }
+before = "root: constr(pattern=r'^\\p{L}{1,256}$')"
+after = "root: str"
+keep = { note = "The previous module failed at import; nothing restores it." }
+refs = ["#6908"]
+source = "release-note"
+
+[[change]]
+id = "regex-size-limit-repetitions-together"
+kind = "default-output"
+action = "review"
+title = "A pattern past the regex size limit by repetitions together or by a Unicode class no longer fails at import"
+summary = "A `pattern` whose counted repetitions pass the size limit of Pydantic's default regex engine only together (four classes such as `[\\w+=,.@-]{1,64}`), that repeats a class of `\\w` and `\\d` or `\\s` (`^[\\w\\s-]{1,255}$`), or that repeats a class of a major Unicode general category (`[^\\p{C}]{1,2048}`, `[\\P{M}\\p{M}]{0,20000}`), was written as the schema writes it, and the module failed at import with `Compiled regex exceeds size limit`. The model now selects `regex_engine=\"python-re\"` for it; a pattern Python's `re` rejects too, as it rejects `\\p{...}`, is left out with a warning. That is what a single repetition past the limit has got since 0.92.0. Only patterns that every pydantic-core release from 2.0 to 2.50 refuses are read this way. Output that imported before is unchanged."
+affects = { output_model_types = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"] }
+before = "root: constr(pattern=r'[^\\p{C}]{1,2048}')"
+after = "root: str"
+keep = { note = "The previous module failed at import; nothing restores it." }
+refs = ["#6877"]
+source = "release-note"
+
+[[change]]
+id = "swagger-2-named-in-input-messages"
+kind = "warning"
+action = "warn"
+title = "A Swagger 2.0 document is named in the notice of the inferred input type and in the refusal of `--input-file-type openapi`"
+summary = "A document whose root has a `swagger` key and no `openapi` key is read as YAML or JSON data when `--input-file-type` is not given, and the OpenAPI reader finds no model in it, as it reads `components/schemas`, not the `definitions` of Swagger 2.0. The notice that names the inferred type now adds a line that the input looks like a Swagger 2.0 document, which is read as data, and that its definitions are read as JSON Schema with `--input-file-type jsonschema`. The refusal `Models not found in the input data` of such a document under `--input-file-type openapi` continues with the cause and what to do. The inferred type, the generated output and every document that generates are unchanged."
+affects = { input_file_types = ["yaml", "json", "openapi"] }
+migrate = "Read the definitions of the document as JSON Schema with `--input-file-type jsonschema`, or convert the document to OpenAPI 3."
+refs = ["#6882"]
+source = "release-note"
+
+[[change]]
+id = "target-names-follow-naming-strategy-table"
+kind = "experimental"
+action = "review"
+title = "Generated clients and servers name colliding API names as the models' naming strategies do"
+summary = "Two changes, both under `--parent-scoped-naming`. (1) With `--naming-strategy numbered`, `primary-first` or `definitions-first`, a method, handler or class name that another name in its scope already holds now takes the name of its enclosing scope in front of it instead of a number (`get_a_b_1` becomes `default_get_a_b`, `GetAB1` becomes `DefaultGetAB`). (2) With `--naming-strategy full-path`, such a name now takes both prefixes, as the models' class names do (row `legacy-both-prefixes`, #5666): `item_store_get_item` becomes `item_store_item_store_get_item`, `ItemStoreGetItemResponse` becomes `ItemStoreItemStoreGetItemResponse`."
+affects = { experimental = ["cli-option.generate-client", "cli-option.generate-server"] }
+refs = ["#6976"]
+source = "release-note"
+
+[[change]]
+id = "target-preset-error-class"
+kind = "experimental"
+action = "required"
+title = "`generate()` with a server or client target raises `Error` for a preset that does not fit"
+summary = "With `generate_server` or `generate_client`, a `preset` that does not match `target_python_version` raises `datamodel_code_generator.Error`, as a model-only run does, with the same message. It raised `datamodel_code_generator.preset.PresetError`, which is not an `Error`. The command line is unchanged."
+affects = { experimental = ["cli-option.generate-server", "cli-option.generate-client"] }
+migrate = "Catch `datamodel_code_generator.Error` where the code caught `PresetError` around a target run."
+refs = ["#6851"]
+source = "release-note"
+
+[[change]]
+id = "type-overrides-unmatched-keys"
+kind = "warning"
+action = "warn"
+title = "`--type-overrides` keys that match no model or field emit a `UserWarning`"
+summary = "A key of `--type-overrides` that names no generated model or field is reported with a `UserWarning`; the generated output is unchanged. A caller that turns warnings into errors gets an error."
+affects = { options = ["--type-overrides"] }
+migrate = "Fix or drop the keys the warning names."
+refs = ["#6835"]
+source = "release-note"
+
+[[change]]
+id = "msgspec-inherited-required-collision"
+kind = "default-output"
+action = "review"
+title = "A msgspec struct no longer fails at import when an inherited required property collides with a renamed one"
+summary = "For `msgspec.Struct` output, a model that repeats an inherited property as required (`allOf` with a base and `required`) and also declares a property whose Python name collides with it (`x-y` required beside a new `x_y`) failed at import with `Multiple fields rename to the same name`. The inherited property now keeps its Python name (`a_b`) and the colliding property takes the suffixed one (`a_b_1`), where the class had the names the other way round and `kw_only=True`. Output that imported before is unchanged."
+affects = { output_model_types = ["msgspec.Struct"] }
+keep = { note = "The previous module failed at import; nothing restores it." }
+refs = ["#6959"]
+source = "release-note"

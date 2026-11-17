@@ -96,6 +96,7 @@
   "ignore_ref_siblings_by_schema_version",
   "import_overrides",
   "include_path_parameters",
+  "infer_union_discriminators",
   "infer_union_variant_names",
   "input_file_type",
   "input_filename",
@@ -130,6 +131,8 @@
   "omit_incomplete_model_defaults",
   "omit_redundant_constraints",
   "omit_redundant_reference_null",
+  "open_enum_base_class_map",
+  "open_enums",
   "openapi_as_definitions",
   "openapi_include_info_version",
   "openapi_include_paths",
@@ -147,14 +150,21 @@
   "read_const_beside_enum",
   "read_dynamic_anchors_in_document_order",
   "read_escaped_ref_pointers",
+  "read_format_as_annotation",
+  "read_ids_with_empty_fragment",
+  "read_implied_options_from_merged_values",
+  "read_inherited_property_schemas_in_mro_order",
   "read_input_model_dataclass_fields_by_alias",
+  "read_kubernetes_extensions",
   "read_length_keywords_by_type",
   "read_msgspec_union_bounds_exactly",
   "read_nullable_beside_type_list",
   "read_object_keywords_by_type",
   "read_only_write_only_model_type",
   "read_schema_version_per_document",
+  "read_single_allof_refs_in_their_documents",
   "read_unevaluated_properties",
+  "read_yaml_1_1_numbers_as_text",
   "remove_special_field_name_prefix",
   "remove_unused_models_beside_type_overrides",
   "rename_submodules_hidden_by_classes",
@@ -201,6 +211,7 @@
   "type_overrides_replace_whole_type",
   "union_mode",
   "untrusted_input",
+  "untyped_value_type",
   "update_lock",
   "use_annotated",
   "use_attribute_docstrings",
@@ -265,6 +276,7 @@
   "use_union_operator",
   "use_unique_items_as_set",
   "use_unique_items_as_set_by_value",
+  "use_x_python_import_for_every_ref",
   "use_x_python_type_as_written",
   "validation",
   "validators",
@@ -778,6 +790,12 @@
    "aliases": [],
    "choices": null
   },
+  "--infer-union-discriminators": {
+   "aliases": [
+    "--no-infer-union-discriminators"
+   ],
+   "choices": null
+  },
   "--infer-union-variant-names": {
    "aliases": [],
    "choices": null
@@ -1030,6 +1048,18 @@
    ],
    "choices": null
   },
+  "--open-enum-base-class-map": {
+   "aliases": [],
+   "choices": null
+  },
+  "--open-enums": {
+   "aliases": [],
+   "choices": [
+    "all",
+    "extensible",
+    "none"
+   ]
+  },
   "--openapi-as-definitions": {
    "aliases": [],
    "choices": [
@@ -1145,6 +1175,7 @@
     "practical-py310-20261106",
     "practical-py310-20261111",
     "practical-py310-20261112",
+    "practical-py310-20261113",
     "practical-py311-20260619",
     "practical-py311-20260826",
     "practical-py311-20260909",
@@ -1155,6 +1186,7 @@
     "practical-py311-20261106",
     "practical-py311-20261111",
     "practical-py311-20261112",
+    "practical-py311-20261113",
     "practical-py312-20260619",
     "practical-py312-20260826",
     "practical-py312-20260909",
@@ -1165,6 +1197,7 @@
     "practical-py312-20261106",
     "practical-py312-20261111",
     "practical-py312-20261112",
+    "practical-py312-20261113",
     "practical-py313-20260619",
     "practical-py313-20260826",
     "practical-py313-20260909",
@@ -1175,6 +1208,7 @@
     "practical-py313-20261106",
     "practical-py313-20261111",
     "practical-py313-20261112",
+    "practical-py313-20261113",
     "practical-py314-20260619",
     "practical-py314-20260826",
     "practical-py314-20260909",
@@ -1185,6 +1219,7 @@
     "practical-py314-20261106",
     "practical-py314-20261111",
     "practical-py314-20261112",
+    "practical-py314-20261113",
     "practical-py315-20261015",
     "practical-py315-20261017",
     "practical-py315-20261027",
@@ -1192,6 +1227,7 @@
     "practical-py315-20261106",
     "practical-py315-20261111",
     "practical-py315-20261112",
+    "practical-py315-20261113",
     "standard-py310-20260619",
     "standard-py310-20260826",
     "standard-py310-20260909",
@@ -1202,6 +1238,7 @@
     "standard-py310-20261106",
     "standard-py310-20261111",
     "standard-py310-20261112",
+    "standard-py310-20261113",
     "standard-py311-20260619",
     "standard-py311-20260826",
     "standard-py311-20260909",
@@ -1212,6 +1249,7 @@
     "standard-py311-20261106",
     "standard-py311-20261111",
     "standard-py311-20261112",
+    "standard-py311-20261113",
     "standard-py312-20260619",
     "standard-py312-20260826",
     "standard-py312-20260909",
@@ -1222,6 +1260,7 @@
     "standard-py312-20261106",
     "standard-py312-20261111",
     "standard-py312-20261112",
+    "standard-py312-20261113",
     "standard-py313-20260619",
     "standard-py313-20260826",
     "standard-py313-20260909",
@@ -1232,6 +1271,7 @@
     "standard-py313-20261106",
     "standard-py313-20261111",
     "standard-py313-20261112",
+    "standard-py313-20261113",
     "standard-py314-20260619",
     "standard-py314-20260826",
     "standard-py314-20260909",
@@ -1242,13 +1282,15 @@
     "standard-py314-20261106",
     "standard-py314-20261111",
     "standard-py314-20261112",
+    "standard-py314-20261113",
     "standard-py315-20261015",
     "standard-py315-20261017",
     "standard-py315-20261027",
     "standard-py315-20261104",
     "standard-py315-20261106",
     "standard-py315-20261111",
-    "standard-py315-20261112"
+    "standard-py315-20261112",
+    "standard-py315-20261113"
    ]
   },
   "--profile": {
@@ -1279,9 +1321,39 @@
    ],
    "choices": null
   },
+  "--read-format-as-annotation": {
+   "aliases": [
+    "--no-read-format-as-annotation"
+   ],
+   "choices": null
+  },
+  "--read-ids-with-empty-fragment": {
+   "aliases": [
+    "--no-read-ids-with-empty-fragment"
+   ],
+   "choices": null
+  },
+  "--read-implied-options-from-merged-values": {
+   "aliases": [
+    "--no-read-implied-options-from-merged-values"
+   ],
+   "choices": null
+  },
+  "--read-inherited-property-schemas-in-mro-order": {
+   "aliases": [
+    "--no-read-inherited-property-schemas-in-mro-order"
+   ],
+   "choices": null
+  },
   "--read-input-model-dataclass-fields-by-alias": {
    "aliases": [
     "--no-read-input-model-dataclass-fields-by-alias"
+   ],
+   "choices": null
+  },
+  "--read-kubernetes-extensions": {
+   "aliases": [
+    "--no-read-kubernetes-extensions"
    ],
    "choices": null
   },
@@ -1322,9 +1394,21 @@
    ],
    "choices": null
   },
+  "--read-single-allof-refs-in-their-documents": {
+   "aliases": [
+    "--no-read-single-allof-refs-in-their-documents"
+   ],
+   "choices": null
+  },
   "--read-unevaluated-properties": {
    "aliases": [
     "--no-read-unevaluated-properties"
+   ],
+   "choices": null
+  },
+  "--read-yaml-1-1-numbers-as-text": {
+   "aliases": [
+    "--no-read-yaml-1-1-numbers-as-text"
    ],
    "choices": null
   },
@@ -1583,6 +1667,10 @@
    "aliases": [
     "--no-untrusted-input"
    ],
+   "choices": null
+  },
+  "--untyped-value-type": {
+   "aliases": [],
    "choices": null
   },
   "--update-lock": {
@@ -1923,6 +2011,12 @@
    ],
    "choices": null
   },
+  "--use-x-python-import-for-every-ref": {
+   "aliases": [
+    "--no-use-x-python-import-for-every-ref"
+   ],
+   "choices": null
+  },
   "--use-x-python-type-as-written": {
    "aliases": [
     "--no-use-x-python-type-as-written"
@@ -2006,6 +2100,7 @@
   "OpenAPIAsDefinitions",
   "OpenAPIScope",
   "OpenAPIVersion",
+  "OpenEnums",
   "ProtobufVersion",
   "PythonVersion",
   "PythonVersionMin",
