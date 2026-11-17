@@ -286,6 +286,16 @@ composition root, and move reusable helpers to a neutral package module. Do not
 add an allowlist entry for new code. Existing entries document compatibility debt,
 have bounded occurrence counts, and fail when stale.
 
+In the parser concern modules (`parser/_*.py`, `parser/_passes/` and
+`model/_field_imports.py`) the guard owns private access in place of ruff's
+`SLF001`: a private member is reached only through `self`, `cls` or a parameter
+typed as a `*Host` Protocol that declares it, which ty checks against the parser
+passed in. Declare the member on the Host the function takes instead of adding a
+`noqa` comment. The other private access there is counted in
+`scripts/host_private_access_baseline.toml`, which only shrinks. Runtime modules
+(`_runtime/`), which generated packages copy, import only the standard library,
+the third-party packages generated code depends on, and each other relatively.
+
 Tests for the checker use source fixtures and expected reports under
 `tests/data/architecture_boundaries/` and
 `tests/data/expected/architecture_boundaries/`. Keep diagnostics specific enough

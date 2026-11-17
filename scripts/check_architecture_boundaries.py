@@ -5,14 +5,21 @@ from __future__ import annotations
 import argparse
 import ast
 import importlib.util
+import json
 import sys
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+
+import tomllib
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = ROOT / "src" / "datamodel_code_generator"
+HOST_BASELINE_PATH = ROOT / "scripts" / "host_private_access_baseline.toml"
 
 Layer: TypeAlias = Literal[
     "entrypoint",
@@ -42,6 +49,7 @@ Layer: TypeAlias = Literal[
     "requirements",
     "constraints",
     "regex",
+    "runtime",
     "shared",
 ]
 SharedModelAliasState: TypeAlias = tuple[set[str], set[str], set[str], set[str], dict[str, str]]
@@ -255,6 +263,28 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
             "typing_extensions and datamodel_code_generator._json_pointer"
         ),
     ),
+    "runtime": (
+        frozenset({
+            *sys.stdlib_module_names,
+            "annotationlib",
+            "anyio",
+            "cryptography",
+            "fastapi",
+            "httpcore2",
+            "httpx2",
+            "msgspec",
+            "pydantic",
+            "pydantic_core",
+            "python_multipart",
+            "starlette",
+            "typing_extensions",
+            "wsproto",
+        }),
+        (
+            "the runtime is copied into the generated packages: import only the standard library (annotationlib from "
+            "Python 3.14), the third-party packages generated code depends on and other runtime modules, relatively"
+        ),
+    ),
     "parser-core": (
         frozenset({
             *sys.stdlib_module_names,
@@ -272,6 +302,8 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
     ),
 }
 """Leaf layers: the modules (with their submodules) each may import, and the reason shown on a violation."""
+_RUNTIME_PACKAGE: Final = "datamodel_code_generator._runtime"
+"""The runtime package: the generated packages copy it, so its modules import each other only relatively."""
 _PARSER_LAYERS: Final = frozenset({"parser", "parser-passes"})
 """Layers of parser code: the parser modules and the pass modules under ``parser/_passes/``."""
 _PARSER_PASS_IMPORTS: Final = frozenset({
@@ -479,6 +511,7 @@ def _module_name(path: Path, layer: Layer) -> str:
             "requirements": "datamodel_code_generator.requirements_fixture",
             "constraints": "datamodel_code_generator.constraints_fixture",
             "regex": "datamodel_code_generator.regex_fixture",
+            "runtime": f"{_RUNTIME_PACKAGE}.fixture",
             "shared": "datamodel_code_generator.shared_fixture",
         }[layer]
 
@@ -496,6 +529,10 @@ def _normalize_import(module: str | None, level: int, current_module: str, path:
     package_parts = module_parts if path.name == "__init__.py" else module_parts[:-1]
     keep = max(0, len(package_parts) - level + 1)
     return ".".join((*package_parts[:keep], *((module or "").split(".") if module else ())))
+
+
+def _is_below(module: str, package: str) -> bool:
+    return module == package or module.startswith(f"{package}.")
 
 
 def _concrete_backend_module(target: str) -> str | None:
@@ -728,6 +765,8 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         """Check absolute, relative, and package-root import forms."""
         module = _normalize_import(node.module, node.level, self.current_module, self.path)
+        if self.layer == "runtime" and node.level and _is_below(module, _RUNTIME_PACKAGE):
+            return
         for alias in node.names:
             target = f"{module}.{alias.name}" if module else alias.name
             alias_name = alias.asname or alias.name
@@ -1252,7 +1291,7 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
     def _check_import(self, node: ast.AST, target: str) -> None:
         if (leaf := _LEAF_LAYER_IMPORTS.get(self.layer)) is not None:
             allowed, reason = leaf
-            if not any(target == module or target.startswith(f"{module}.") for module in allowed):
+            if not any(_is_below(target, module) for module in allowed):
                 self._add(node, f"{self.layer}-import", target, reason)
             return
         self._check_parser_pass_import(node, target)
@@ -1333,6 +1372,315 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
         )
 
 
+_HOST_RULE: Final = "host-private-access"
+_HOST_MESSAGE: Final = (
+    "concern modules reach private members only through self, cls or a parameter typed as a *Host Protocol that "
+    "declares them: declare the member on the Host the function takes, or move the code into the class"
+)
+_HOST_BASELINE_REASON: Final = "private access that predates the host-private-access rule; the baseline only shrinks"
+_HOST_BASELINE_HEADER: Final = """\
+# Private member access in the parser concern modules that the host-private-access rule of
+# scripts/check_architecture_boundaries.py does not allow: a receiver other than self, cls or a parameter typed as a
+# *Host Protocol that declares the member. Tables are ["path"."function"] with 'receiver.member' = count; no line
+# numbers. Generated by `python scripts/check_architecture_boundaries.py --write-host-baseline`; later changes only
+# remove entries or lower counts. A new access fails the check, and so does an entry that no longer matches.
+"""
+_PRIVATE_NAMES_OF_PUBLIC_APIS: Final = frozenset({
+    "_asdict",
+    "_field_defaults",
+    "_fields",
+    "_make",
+    "_name_",
+    "_replace",
+    "_value_",
+})
+"""Underscore names that are public API (``namedtuple``, ``enum``), as ruff's ``flake8-self.ignore-names`` default."""
+
+
+def is_private_member(name: str) -> bool:
+    """Return whether an attribute name is private: one leading underscore or more, no trailing one."""
+    return name.startswith("_") and not name.endswith("_") and name not in _PRIVATE_NAMES_OF_PUBLIC_APIS
+
+
+def _in_host_scope(path: Path) -> bool:
+    """Return whether the host rule (and not ruff's SLF001, see pyproject.toml) owns private access in a source file."""
+    try:
+        relative = path.resolve().relative_to(SOURCE_ROOT).parts
+    except ValueError:
+        return False
+    match relative:
+        case ("parser", filename) if filename.startswith("_"):
+            return True
+        case ("parser", "_passes", *_) | ("model", "_field_imports.py"):
+            return True
+    return False
+
+
+def _annotation_chain(annotation: ast.expr | None) -> tuple[str, ...]:
+    """Return the dotted name a ``Host``, ``module.Host``, ``Host[...]`` or ``"Host"`` annotation reads, else ()."""
+    match annotation:
+        case ast.Subscript(value=value):
+            return _annotation_chain(value)
+        case ast.Constant(value=str() as text):
+            return _annotation_chain(ast.parse(text, mode="eval").body)
+        case ast.Name() | ast.Attribute():
+            return _attribute_chain(annotation)
+    return ()
+
+
+def _is_protocol_base(base: ast.expr) -> bool:
+    match base:
+        case ast.Name(id="Protocol") | ast.Subscript(value=ast.Name(id="Protocol")):
+            return True
+    return False
+
+
+def _declared_names(node: ast.ClassDef) -> Iterator[str]:
+    """Yield the names a class body declares: annotated and assigned attributes, methods and properties."""
+    for statement in node.body:
+        match statement:
+            case ast.AnnAssign(target=ast.Name(id=name)) | ast.FunctionDef(name=name) | ast.AsyncFunctionDef(name=name):
+                yield name
+            case ast.Assign(targets=targets):
+                yield from (target.id for target in targets if isinstance(target, ast.Name))
+
+
+def _parse(path: Path) -> ast.Module:
+    return ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+
+
+def _module_level_statements(statements: list[ast.stmt]) -> Iterator[ast.stmt]:
+    """Yield the statements of a module body in order, those of its ``if`` and ``try`` blocks included."""
+    for statement in statements:
+        yield statement
+        match statement:
+            case ast.If(body=body, orelse=orelse):
+                yield from _module_level_statements([*body, *orelse])
+            case ast.Try(body=body, handlers=handlers, orelse=orelse, finalbody=finalbody):
+                yield from _module_level_statements([
+                    *body,
+                    *(s for h in handlers for s in h.body),
+                    *orelse,
+                    *finalbody,
+                ])
+
+
+class HostIndex:
+    """The members each ``*Host`` Protocol declares, its Host bases' included, found through the imports."""
+
+    def __init__(self) -> None:
+        """Start with no module read."""
+        self._parsed: dict[Path, ast.Module] = {}
+        self._trees: dict[str, ast.Module | None] = {}
+        self._bindings: dict[str, dict[str, tuple[str, str]]] = {}
+        self._members: dict[tuple[str, str], frozenset[str] | None] = {}
+
+    def parse(self, path: Path) -> ast.Module:
+        """Return the syntax tree of a file, read once for both the rules and the Host lookups."""
+        if path not in self._parsed:
+            self._parsed[path] = _parse(path)
+        return self._parsed[path]
+
+    def add(self, module: str, path: Path) -> None:
+        """Register a module's file, so that its own Host classes and imports resolve."""
+        tree = self._trees[module] = self.parse(path)
+        self._bindings[module] = self._read_bindings(module, path, tree)
+
+    def _tree(self, module: str) -> ast.Module | None:
+        if module not in self._trees:
+            package, *parts = module.split(".")
+            relative = SOURCE_ROOT.joinpath(*parts)
+            for path in (relative.with_name(f"{relative.name}.py"), relative / "__init__.py"):
+                if package == "datamodel_code_generator" and path.is_file():
+                    self.add(module, path.resolve())
+                    break
+            else:
+                self._trees[module] = None
+        return self._trees[module]
+
+    @staticmethod
+    def _read_bindings(module: str, path: Path, tree: ast.Module) -> dict[str, tuple[str, str]]:
+        """Map each name a module imports from a module, or defines as a class, to that module and name.
+
+        Module-level imports count, those under ``if TYPE_CHECKING:`` (or another ``if`` or ``try``) included.
+        """
+        bindings: dict[str, tuple[str, str]] = {}
+        for node in _module_level_statements(tree.body):
+            if isinstance(node, ast.ImportFrom):
+                source = _normalize_import(node.module, node.level, module, path)
+                bindings.update({alias.asname or alias.name: (source, alias.name) for alias in node.names})
+        bindings.update({node.name: (module, node.name) for node in tree.body if isinstance(node, ast.ClassDef)})
+        return bindings
+
+    def members(self, module: str, chain: tuple[str, ...]) -> frozenset[str] | None:
+        """Return the members the Host Protocol that ``chain`` names in ``module`` declares, else None."""
+        if (
+            not chain
+            or (tree := self._tree(module)) is None
+            or (binding := self._bindings[module].get(chain[0])) is None
+        ):
+            return None
+        if len(chain) > 1:
+            return self.members(".".join(binding), chain[1:])
+        if binding != (module, chain[0]):
+            return self.members(binding[0], binding[1:])
+        if binding not in self._members:
+            self._members[binding] = None
+            node = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == chain[0])
+            self._members[binding] = self._class_members(module, node)
+        return self._members[binding]
+
+    def _class_members(self, module: str, node: ast.ClassDef) -> frozenset[str] | None:
+        if not node.name.endswith("Host") or not any(_is_protocol_base(base) for base in node.bases):
+            return None
+        inherited = (
+            self.members(module, _annotation_chain(base)) for base in node.bases if not _is_protocol_base(base)
+        )
+        return frozenset(_declared_names(node)).union(*(members for members in inherited if members is not None))
+
+
+def _bound_names(statements: list[ast.stmt]) -> set[str]:
+    """Return the names a function body binds, which hide the parameters of the functions around it."""
+    names: set[str] = set()
+    stack: list[ast.AST] = list(statements)
+    while stack:
+        match node := stack.pop():
+            case ast.FunctionDef(name=name) | ast.AsyncFunctionDef(name=name) | ast.ClassDef(name=name):
+                names.add(name)
+            case ast.Name(id=name, ctx=ast.Store()):
+                names.add(name)
+            case ast.Lambda():
+                pass
+            case _:
+                stack.extend(ast.iter_child_nodes(node))
+    return names
+
+
+def _receiver_text(node: ast.expr) -> str:
+    """Return the receiver of a private access as its baseline key writes it, with calls and subscripts elided."""
+    match node:
+        case ast.Name(id=name):
+            return name
+        case ast.Attribute(value=value, attr=attr):
+            return f"{_receiver_text(value)}.{attr}"
+        case ast.Call(func=func):
+            return f"{_receiver_text(func)}(...)"
+        case ast.Subscript(value=value):
+            return f"{_receiver_text(value)}[...]"
+    return "(...)"
+
+
+class HostPrivateAccessVisitor(ast.NodeVisitor):
+    """Find private member access through anything but self, cls or a parameter typed as a declaring Host Protocol."""
+
+    def __init__(self, path: Path, module: str, hosts: HostIndex) -> None:
+        """Create a visitor for one concern module."""
+        self.display_path = _display_path(path)
+        self.module = module
+        self.hosts = hosts
+        self.qualnames: list[str] = []
+        self.scopes: list[dict[str, frozenset[str] | None]] = []
+        self.violations: list[Violation] = []
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        """Track class context for stable baseline keys."""
+        for expression in (*node.decorator_list, *node.bases, *node.keywords):
+            self.visit(expression)
+        self.qualnames.append(node.name)
+        for statement in node.body:
+            self.visit(statement)
+        self.qualnames.pop()
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        """Read the Host parameters of a function."""
+        self._visit_function(node)
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        """Read the Host parameters of an async function."""
+        self._visit_function(node)
+
+    def visit_Lambda(self, node: ast.Lambda) -> None:
+        """Hide the names of the lambda's parameters, which no annotation types."""
+        for default in (*node.args.defaults, *node.args.kw_defaults):
+            if default is not None:
+                self.visit(default)
+        self.scopes.append({argument.arg: None for argument in self._arguments(node.args)})
+        self.visit(node.body)
+        self.scopes.pop()
+
+    @staticmethod
+    def _arguments(arguments: ast.arguments) -> list[ast.arg]:
+        variadic = [argument for argument in (arguments.vararg, arguments.kwarg) if argument is not None]
+        return [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs, *variadic]
+
+    def _visit_function(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        for name, value in ast.iter_fields(node):
+            if name != "body":
+                for child in value if isinstance(value, list) else [value]:
+                    if isinstance(child, ast.AST):
+                        self.visit(child)
+        scope: dict[str, frozenset[str] | None] = dict.fromkeys(_bound_names(node.body))
+        for argument in self._arguments(node.args):
+            scope[argument.arg] = self.hosts.members(self.module, _annotation_chain(argument.annotation))
+        self.qualnames.append(node.name)
+        self.scopes.append(scope)
+        for statement in node.body:
+            self.visit(statement)
+        self.scopes.pop()
+        self.qualnames.pop()
+
+    def visit_Attribute(self, node: ast.Attribute) -> None:
+        """Check a private member access against its receiver."""
+        if is_private_member(node.attr) and not self._allows(node.value, node.attr):
+            self.violations.append(
+                Violation(
+                    path=self.display_path,
+                    line=node.lineno,
+                    column=node.col_offset + 1,
+                    qualname=".".join(self.qualnames) or "<module>",
+                    rule=_HOST_RULE,
+                    target=f"{_receiver_text(node.value)}.{node.attr}",
+                    message=_HOST_MESSAGE,
+                )
+            )
+        self.generic_visit(node)
+
+    def _allows(self, receiver: ast.expr, member: str) -> bool:
+        match receiver:
+            case ast.Name(id="self" | "cls") | ast.Call(func=ast.Name(id="super"), args=[]):
+                return True
+            case ast.Name(id=name):
+                members = next((scope[name] for scope in reversed(self.scopes) if name in scope), None)
+                return members is not None and member in members
+        return False
+
+
+def load_host_baseline(path: Path = HOST_BASELINE_PATH) -> dict[BoundaryKey, AllowlistEntry]:
+    """Read the host-private-access baseline as allowlist entries keyed by path, function and access."""
+    if not path.is_file():
+        return {}
+    tables = tomllib.loads(path.read_text(encoding="utf-8"))
+    return {
+        BoundaryKey(source, function, _HOST_RULE, target): AllowlistEntry(_HOST_BASELINE_REASON, count)
+        for source, functions in tables.items()
+        for function, targets in functions.items()
+        for target, count in targets.items()
+    }
+
+
+def format_host_baseline(violations: list[Violation]) -> str:
+    """Return the baseline file text that allows exactly the host-private-access findings given."""
+    counts = Counter(violation.key for violation in violations if violation.rule == _HOST_RULE)
+    lines = [_HOST_BASELINE_HEADER.rstrip("\n")]
+    section: tuple[str, str] | None = None
+    for key, count in sorted(counts.items()):
+        if section != (key.path, key.qualname):
+            section = (key.path, key.qualname)
+            lines.extend(("", f"[{json.dumps(key.path)}.{json.dumps(key.qualname)}]"))
+        lines.append(f"{json.dumps(key.target)} = {count}")
+    return "\n".join(lines) + "\n"
+
+
 def _classify_source_path(path: Path) -> Layer:
     relative = path.resolve().relative_to(SOURCE_ROOT)
     layer: Layer = "shared"
@@ -1385,6 +1733,8 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "module-paths"
         case ("_openapi_paths.py",):
             layer = "openapi-paths"
+        case ("_runtime", *_):
+            layer = "runtime"
         case ("_client" | "_fastapi", *_):
             layer = "target"
         case (filename,) if f"datamodel_code_generator.{filename.removesuffix('.py')}" in _TARGET_MODULES:
@@ -1415,18 +1765,17 @@ def check_files(
     files: list[tuple[Path, Layer]],
     *,
     allowlist: dict[BoundaryKey, AllowlistEntry] | None = None,
+    host_files: list[Path] | None = None,
 ) -> list[Violation]:
-    """Check explicitly classified files and apply a bounded, stale-aware allowlist."""
-    active_allowlist = DEFAULT_ALLOWLIST if allowlist is None else allowlist
-    raw_violations: list[Violation] = []
-    scanned_paths: set[str] = set()
-    for path, layer in files:
-        display_path = _display_path(path)
-        scanned_paths.add(display_path)
-        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        visitor = ArchitectureBoundaryVisitor(path, layer, tree)
-        visitor.visit(tree)
-        raw_violations.extend(visitor.violations)
+    """Check explicitly classified files and apply a bounded, stale-aware allowlist.
+
+    The host rule checks ``host_files``, by default the files of ``files`` in its scope (the parser concern modules);
+    the default allowlist adds the rule's baseline.
+    """
+    active_allowlist = {**DEFAULT_ALLOWLIST, **load_host_baseline()} if allowlist is None else allowlist
+    host_paths = [path for path, _ in files if _in_host_scope(path)] if host_files is None else host_files
+    raw_violations = _raw_violations(files, host_paths)
+    scanned_paths = {_display_path(path) for path in (*(path for path, _ in files), *host_paths)}
 
     found_counts = Counter(violation.key for violation in raw_violations)
     allowed_counts = Counter({key: entry.count for key, entry in active_allowlist.items()})
@@ -1461,6 +1810,27 @@ def check_files(
     return sorted(violations, key=lambda item: (item.path, item.line, item.column, item.rule, item.target))
 
 
+def _raw_violations(files: list[tuple[Path, Layer]], host_files: list[Path]) -> list[Violation]:
+    """Return every finding of the layer rules on ``files`` and of the host rule on ``host_files``."""
+    layers = dict(files)
+    host_scope = set(host_files)
+    hosts = HostIndex()
+    raw_violations: list[Violation] = []
+    for path in dict.fromkeys((*layers, *host_files)):
+        tree = hosts.parse(path) if path in host_scope else _parse(path)
+        if (layer := layers.get(path)) is not None:
+            visitor = ArchitectureBoundaryVisitor(path, layer, tree)
+            visitor.visit(tree)
+            raw_violations.extend(visitor.violations)
+        if path in host_scope:
+            module = _module_name(path, layer or "parser")
+            hosts.add(module, path)
+            host_visitor = HostPrivateAccessVisitor(path, module, hosts)
+            host_visitor.visit(tree)
+            raw_violations.extend(host_visitor.violations)
+    return raw_violations
+
+
 def check_paths(
     paths: list[Path],
     *,
@@ -1482,8 +1852,15 @@ def main(argv: list[str] | None = None) -> int:
     """Run the architecture boundary guard."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("paths", nargs="*", type=Path, default=[SOURCE_ROOT])
+    parser.add_argument(
+        "--write-host-baseline",
+        action="store_true",
+        help=f"write {_display_path(HOST_BASELINE_PATH)} from the host-private-access findings of the source tree",
+    )
     args = parser.parse_args(argv)
 
+    if args.write_host_baseline:
+        HOST_BASELINE_PATH.write_text(format_host_baseline(check_paths([SOURCE_ROOT], allowlist={})), encoding="utf-8")
     violations = check_paths(args.paths)
     if violations:
         print(format_report(violations), end="", file=sys.stderr)

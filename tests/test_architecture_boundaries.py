@@ -47,6 +47,7 @@ def test_architecture_boundary_detector_reports_cross_layer_dependencies() -> No
         (FIXTURE_ROOT / "requirements" / "forbidden.py", "requirements"),
         (FIXTURE_ROOT / "constraints" / "forbidden.py", "constraints"),
         (FIXTURE_ROOT / "regex" / "forbidden.py", "regex"),
+        (FIXTURE_ROOT / "runtime" / "forbidden.py", "runtime"),
     ]
     violations = check_architecture_boundaries.check_files(files, allowlist={})
 
@@ -111,6 +112,7 @@ def test_architecture_boundary_source_classification() -> None:
         source_root / "_constraint_applicability.py",
         source_root / "_regex_syntax.py",
         source_root / "types.py",
+        source_root / "_runtime" / "client" / "client.py",
     )
     classification = "".join(
         f"{path.relative_to(source_root).as_posix()}: {check_architecture_boundaries._classify_source_path(path)}\n"
@@ -118,6 +120,66 @@ def test_architecture_boundary_source_classification() -> None:
     )
 
     assert_output(classification, EXPECTED_ROOT / "classifications.txt")
+
+
+def test_host_private_access_allows_only_declared_host_members() -> None:
+    """Pass self, cls and Host parameters that declare the member; fail other receivers, aliases and members."""
+    fixture = FIXTURE_ROOT / "host_private_access" / "concern.py"
+    violations = check_architecture_boundaries.check_files([], allowlist={}, host_files=[fixture])
+
+    assert_output(check_architecture_boundaries.format_report(violations))
+
+
+def test_host_private_access_baseline_only_shrinks(tmp_path: Path) -> None:
+    """Allow exactly the accesses the baseline counts and report the entries the code no longer has."""
+    fixture = FIXTURE_ROOT / "host_private_access" / "concern.py"
+    baseline = tmp_path / "baseline.toml"
+    baseline.write_text(
+        check_architecture_boundaries.format_host_baseline(
+            check_architecture_boundaries.check_files([], allowlist={}, host_files=[fixture])
+        ),
+        encoding="utf-8",
+    )
+    allowlist = check_architecture_boundaries.load_host_baseline(baseline)
+    grown = {
+        key: check_architecture_boundaries.AllowlistEntry(entry.reason, entry.count + 1)
+        for key, entry in allowlist.items()
+        if key.target == "sys._getframe"
+    }
+    reports = [
+        check_architecture_boundaries.format_report(
+            check_architecture_boundaries.check_files([], allowlist=entries, host_files=[fixture])
+        )
+        for entries in (allowlist, {**allowlist, **grown})
+    ]
+    missing = check_architecture_boundaries.load_host_baseline(tmp_path / "missing.toml")
+
+    assert_output(
+        f"{baseline.read_text(encoding='utf-8')}baseline: {reports[0]}grown: {reports[1]}missing: {missing}\n"
+    )
+
+
+def test_host_private_access_cli_writes_the_baseline(tmp_path: Path) -> None:
+    """Write the baseline of a source tree from the executable guard, after which the tree checks clean."""
+    script_path = tmp_path / "scripts" / "check_architecture_boundaries.py"
+    source_path = tmp_path / "src" / "datamodel_code_generator" / "parser" / "_concern.py"
+    script_path.parent.mkdir()
+    source_path.parent.mkdir(parents=True)
+    copyfile(ROOT / "scripts" / "check_architecture_boundaries.py", script_path)
+    copyfile(FIXTURE_ROOT / "host_private_access" / "concern.py", source_path)
+
+    completed = subprocess.run(
+        [sys.executable, str(script_path), "--write-host-baseline"],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert_output(
+        f"exit: {completed.returncode}\nstderr: {completed.stderr!r}\n"
+        f"{(script_path.parent / 'host_private_access_baseline.toml').read_text(encoding='utf-8')}"
+    )
 
 
 def test_architecture_boundary_detector_allows_shared_and_composition_model_dependencies() -> None:
