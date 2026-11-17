@@ -532,6 +532,7 @@ class SchemaGraphBuilder:
     """
 
     __slots__ = (
+        "_base_directory",
         "_directories",
         "_documents",
         "_edge_keys",
@@ -560,6 +561,7 @@ class SchemaGraphBuilder:
         self._mount_containers: dict[int, Any] = {}
         self._edge_keys: dict[RefEdge, RefKey] = {}
         self._directories: dict[str, Path] = {}
+        self._base_directory: Path | None = None
         self._schema_reads: dict[int, Any] = {}
         self._schemas: dict[tuple[int, type[Any]], Any] = {}
 
@@ -597,6 +599,12 @@ class SchemaGraphBuilder:
         """
         if (directory := self._directories.get(document)) is None:
             directory = self._directories[document] = resolve()
+        return directory
+
+    def base_directory(self, resolve: Callable[[], Path]) -> Path:
+        """Return the directory entering the resolver's base path sets, which ``resolve`` reads at the first call."""
+        if (directory := self._base_directory) is None:
+            directory = self._base_directory = resolve()
         return directory
 
     def schema(self, raw: object, kind: type[SchemaT], validate: Callable[[], SchemaT]) -> SchemaT:

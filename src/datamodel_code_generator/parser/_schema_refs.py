@@ -23,7 +23,7 @@ document reading (``parser/_schema_documents.py``) shares.
 from __future__ import annotations
 
 from collections import deque
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from copy import deepcopy
 from dataclasses import replace
 from functools import partial
@@ -45,6 +45,7 @@ from datamodel_code_generator.parser._intersection import concatenating_row
 from datamodel_code_generator.parser._schema_dispatch import SchemaSite
 from datamodel_code_generator.parser._schema_documents import (
     SchemaResourcesHost,
+    base_path_context,
     current_document,
     definition_entries,
     document_key,
@@ -144,6 +145,7 @@ __all__ = [
     "resolve_recursive_ref",
     "resolve_ref_callback",
     "schema_document_context",
+    "schema_document_directory",
     "schema_location",
     "shared_object",
     "shared_schema_object",
@@ -969,17 +971,30 @@ def analysis_ref_target(parser: SchemaRefsHost, document: str, file_part: str, r
         return ref_key(parser, ref, embedded=False).key
 
 
-def schema_document_context(parser: SchemaRefsHost, path_parts: list[str]) -> AbstractContextManager[None]:
-    """Resolve references relative to the document identified by model resolver root parts."""
+def schema_document_directory(parser: SchemaRefsHost, document: str) -> Path | None:
+    """Return the directory references from ``document``, named as reference paths do, resolve from; None for a URL."""
+    if is_url(document):
+        return None
+    resolve = partial(parser.model_resolver.document_directory, document)
+    return parser._graph.document_directory(document, resolve)  # noqa: SLF001
+
+
+@contextmanager
+def schema_document_context(
+    parser: SchemaRefsHost, path_parts: list[str], *, root: Sequence[str] | None = None, local_base_url: bool = False
+) -> Generator[None, None, None]:
+    """Resolve references relative to the document identified by model resolver root parts.
+
+    ``root`` keeps another current root. With ``local_base_url``, a local document entered where a base URL is set
+    takes its own name as the base URL instead of none.
+    """
     resolver = parser.model_resolver
     document = document_key(parser, path_parts)
-    if is_url(document):
-        return resolver.document_context(document, path_parts, None)
-    resolve = partial(resolver.document_directory, document)
-    graph = parser._schema_graph  # noqa: SLF001
-    return resolver.document_context(
-        document, path_parts, resolve() if graph is None else graph.document_directory(document, resolve)
-    )
+    directory = schema_document_directory(parser, document)
+    sets_base_url = local_base_url and directory is not None and bool(resolver.base_url)
+    local_name = context_variable(resolver.set_base_url, None, document) if sets_base_url else nullcontext()
+    with resolver.document_context(document, path_parts if root is None else root, directory), local_name:
+        yield
 
 
 def dynamic_specialization_reference(parser: SchemaRefsHost, ref: str, resolved_ref: str) -> Reference | None:
@@ -1074,7 +1089,7 @@ def parse_ref_sites(parser: SchemaRefsHost) -> None:
         site, (document, path, pointer, bindings) = pending.site, pending.dynamic
         with (
             resolver.current_root_context(pending.root),
-            resolver.current_base_path_context(pending.base_path),
+            base_path_context(parser, pending.base_path),
             resolver.base_url_context(pending.base_url),
             parser._dynamic_scope_context(path, bindings, pointer, document),  # noqa: SLF001
             context_variable(partial(setattr, parser, "raw_obj"), parser.raw_obj, pending.raw_obj),

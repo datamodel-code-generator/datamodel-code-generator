@@ -3206,17 +3206,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     @contextmanager
     def _ref_file_context(self, file_part: str) -> Generator[None, None, None]:
         """Resolve references relative to the file or URL a reference key names, or to the current one without it."""
-        if file_part and is_url(file_part):
-            base_path = None
-            root_path = [file_part]
-        else:
-            base_path = Path(file_part).parent if file_part else self.model_resolver.current_base_path
-            root_path = file_part.split("/") if file_part else self.model_resolver.current_root
-        with (
-            self.model_resolver.current_base_path_context(base_path),
-            self.model_resolver.base_url_context(file_part or self.model_resolver.base_url),
-            _schema_documents.referenced_document_context(self, self.model_resolver.current_root_context(root_path)),
-        ):
+        resolver = self.model_resolver
+        context = (
+            _schema_refs.schema_document_context(self, _ref_path_parts(file_part), local_base_url=True)
+            if file_part
+            else _schema_documents.base_path_context(self, resolver.current_base_path)
+        )
+        with _schema_documents.referenced_document_context(self, context):
             yield
 
     def _merge_primitive_schemas_for_allof(self, items: list[JsonSchemaObject]) -> JsonSchemaObject | None:
@@ -4407,7 +4403,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 and not self._keeps_schema_validator_model(obj)
             ):
                 if not self._adds_required_names([*required, *obj.required], inherited_required_names):
-                    with self.model_resolver.current_base_path_context(self.model_resolver._base_path):  # noqa: SLF001
+                    with _schema_documents.base_path_context(self, self.model_resolver._base_path):  # noqa: SLF001
                         self.model_resolver.delete(path)
                         return frame.built(self.data_type(reference=base_classes[0]))
                 nullable = nullable or (
@@ -8080,17 +8076,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self.reserved_refs[tuple(self.model_resolver.current_root)].add(ref)
             return reference
 
-        if is_url(ref):
-            relative_path, _ = ref.split("#", 1)
-            relative_paths = [relative_path]
-            base_path = None
-        else:
-            if self.model_resolver.is_external_root_ref(ref):
-                relative_path = ref[:-1]
-            else:
-                relative_path, _ = ref.split("#", 1)
-            relative_paths = relative_path.split("/")
-            base_path = Path(*relative_paths).parent
+        relative_path = document_part(ref)
+        relative_paths = _ref_path_parts(relative_path)
         reference = self.model_resolver.add_ref(ref, resolved=True)
         if reference.loaded:
             return reference
@@ -8098,9 +8085,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self.reserved_refs[tuple(document_part(ref).split("/"))].add(ref)
             return reference
 
-        with (
-            self.model_resolver.current_base_path_context(base_path),
-            self.model_resolver.base_url_context(relative_path),
+        with _schema_refs.schema_document_context(
+            self, relative_paths, root=self.model_resolver.current_root, local_base_url=True
         ):
             ref_body = self._get_ref_body(relative_path)
             object_paths, reference_paths = ref_pointer_parts(self, ref_body, ref)
@@ -9125,10 +9111,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         path_parts = list(source.path.parts)
         document = _schema_documents.schema_resource_document(self, path_parts)
         prepared = cast("dict[str, Any]", self._graph.known(document).tree)
-        with (
-            self.model_resolver.current_base_path_context(source.path.parent),
-            self.model_resolver.current_root_context(path_parts),
-        ):
+        with _schema_documents.source_context(self, source, path_parts):
             yield prepared
 
     def _parse_reserved_rounds(
