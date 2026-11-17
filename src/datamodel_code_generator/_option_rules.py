@@ -25,8 +25,15 @@ order, each stage where it sees its values:
   and the implied settings applied (``__main__.py:_resolve_cli_config``).
 - ``run-options``: a command's model or target run, its config resolved and the record of where its values came from,
   after the run's other checks and warnings (``__main__.py:_apply_model_run_options``).
+- ``sentinel``: the stage of ``generate()`` that gives ``--use-missing-sentinel`` its target pydantic version, which
+  every command runs too (``__init__.py:_missing_sentinel_updates``).
+- ``parser-options``: ``generate()`` as it prepares the options of its parsers
+  (``__init__.py:_prepare_parser_common_options``).
 
-``generate()`` checks the rows of ``base-validator`` alone (row ``cli-only-refusals``).
+``generate()`` checks the rows of ``base-validator``, ``sentinel`` and ``parser-options`` alone (row
+``cli-only-refusals``). The options and the input kinds a server or client target requires
+(``TARGET_REQUIRED_OPTIONS``, ``TARGET_INPUTS``) are refused by ``base_config.py:_target_options_error`` and stated
+by the CLI reference.
 """
 
 from __future__ import annotations
@@ -36,7 +43,13 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
 
 from datamodel_code_generator._requirements import REQUIREMENTS, python_target_meets
-from datamodel_code_generator.enums import AllExportsScope, ReuseScope
+from datamodel_code_generator.enums import (
+    _PYDANTIC_MODEL_TYPES,
+    AllExportsScope,
+    DataModelType,
+    InputFileType,
+    ReuseScope,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -48,9 +61,18 @@ IMPLIED_OPTIONS: Final[dict[str, str]] = {
 }
 """The option each option turns on when it is enabled, over any value given for that option."""
 
-RelationStage: TypeAlias = Literal["base-validator", "cli-validator", "cli-after-preset", "run-options"]
+RelationStage: TypeAlias = Literal[
+    "base-validator", "cli-validator", "cli-after-preset", "run-options", "sentinel", "parser-options"
+]
 _KW_ONLY = REQUIREMENTS["python.kw_only_dataclass"].minimum
 _STRENUM = REQUIREMENTS["python.strenum"].minimum
+TARGET_REQUIRED_OPTIONS: Final[tuple[str, ...]] = ("output", "package", "model_package")
+"""The options every server or client target requires, after the prefix of its options."""
+TARGET_INPUTS: Final[dict[str, tuple[InputFileType, ...]]] = {
+    "generate_server": (InputFileType.OpenAPI,),
+    "generate_client": (InputFileType.OpenAPI, InputFileType.AsyncAPI),
+}
+"""The input kinds each target reads operations from, by the field that selects it."""
 
 
 def implied_options(values: Mapping[str, object]) -> dict[str, bool]:
@@ -204,6 +226,25 @@ OPTION_RELATIONS: Final[tuple[OptionRelation, ...]] = (
         "Current target version: {config.target_python_version.value}\n"
         "StrEnum is only available in Python 3.11+.",
     ),
+    OptionRelation(
+        ("--use-missing-sentinel", "requires", "--output-model-type"),
+        "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` "
+        "or `pydantic_v2.dataclass`.",
+        stage="sentinel",
+        applies=lambda config, _: config.use_missing_sentinel and config.output_model_type not in _PYDANTIC_MODEL_TYPES,
+        text="`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` "
+        "or `pydantic_v2.dataclass`",
+    ),
+    OptionRelation(
+        ("--union-mode", "requires", "--output-model-type"),
+        "`--union-mode` is only supported for `--output-model-type pydantic_v2.BaseModel`.",
+        DataModelType.PydanticV2BaseModel.value,
+        stage="parser-options",
+        applies=lambda config, _: (
+            config.union_mode is not None and config.output_model_type != DataModelType.PydanticV2BaseModel
+        ),
+        text="union_mode is only supported for pydantic_v2.BaseModel",
+    ),
 )
 """The relations between options, each stated once for the CLI reference and for the run that checks it."""
 
@@ -244,6 +285,8 @@ def check_option_relation(pair: tuple[str, str, str], config: Any) -> None:
 __all__ = [
     "IMPLIED_OPTIONS",
     "OPTION_RELATIONS",
+    "TARGET_INPUTS",
+    "TARGET_REQUIRED_OPTIONS",
     "OptionRelation",
     "check_option_relation",
     "check_option_relations",

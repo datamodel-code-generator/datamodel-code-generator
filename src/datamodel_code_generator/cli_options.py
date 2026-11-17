@@ -23,7 +23,12 @@ from datamodel_code_generator._format_types import PythonVersion  # noqa: F401  
 from datamodel_code_generator._option_names import option_arguments as _arguments_negated_by
 from datamodel_code_generator._option_names import option_flag
 from datamodel_code_generator._option_names import values_arguments as _values_arguments_negated_by
-from datamodel_code_generator._option_rules import IMPLIED_OPTIONS, OPTION_RELATIONS
+from datamodel_code_generator._option_rules import (
+    IMPLIED_OPTIONS,
+    OPTION_RELATIONS,
+    TARGET_INPUTS,
+    TARGET_REQUIRED_OPTIONS,
+)
 from datamodel_code_generator._option_table import (
     OPTIONS,
     CLIOptionRelation,
@@ -143,7 +148,8 @@ def _documented_options(options: tuple[Option, ...]) -> dict[str, CLIOptionMeta]
     ``meta_on_negative_only``), unless the manual documents it. Its category is that of its help section unless the
     row names another, and a group takes the topic of its category unless the row names one. The relations of a row
     start from its positive flag, which also implies the option it turns on (``IMPLIED_OPTIONS``); every spelling of a
-    target's option requires the option that selects the target.
+    target's option requires the option that selects the target, which requires the options and an input kind the
+    target needs (``TARGET_REQUIRED_OPTIONS``, ``TARGET_INPUTS``; the kind as the value where the target reads one).
     An option is deprecated, with its message, when the deprecation registry has an entry for it.
     """
     prefixes = {option_flag(field): option_flag(prefix) for field, prefix in TARGET_SELECTORS}
@@ -153,6 +159,20 @@ def _documented_options(options: tuple[Option, ...]) -> dict[str, CLIOptionMeta]
         if (selector := option.flags[0]) in prefixes
     }
     implied = {option_flag(option): option_flag(other) for option, other in IMPLIED_OPTIONS.items()}
+    needs = {  # what each option that selects a target requires
+        (flag := option_flag(field)): (
+            *(
+                CLIOptionRelation(required, message=f"`{flag}` requires `{required}`.")
+                for required in (option_flag(f"{prefix}{name}") for name in TARGET_REQUIRED_OPTIONS)
+            ),
+            CLIOptionRelation(
+                "--input-file-type",
+                kinds[0].value if len(kinds := TARGET_INPUTS[field]) == 1 else None,
+                message=f"`{flag}` requires {' or '.join(f'`--input-file-type {kind.value}`' for kind in kinds)}.",
+            ),
+        )
+        for field, prefix in TARGET_SELECTORS
+    }
     documented: dict[str, CLIOptionMeta] = {}
     for option in options:
         if (name := max(option.flags, key=_canonical_option_key)) in MANUAL_DOCS:
@@ -164,7 +184,9 @@ def _documented_options(options: tuple[Option, ...]) -> dict[str, CLIOptionMeta]
         target = next((target for prefix, target in targets.items() if name.startswith(prefix)), None)
         for spelling in names[option.meta_on_negative_only :]:
             implies, requires, conflicts = (
-                (option.implies, option.requires, option.conflicts) if spelling == name else ((), (), ())
+                (option.implies, (*option.requires, *needs.get(name, ())), option.conflicts)
+                if spelling == name
+                else ((), (), ())
             )
             if target is not None:
                 selector, values = target

@@ -1,0 +1,4 @@
+union_mode is only supported for pydantic_v2.BaseModel
+exit: ERROR
+written:
+  header.txt
