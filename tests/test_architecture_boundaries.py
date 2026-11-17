@@ -141,12 +141,15 @@ def test_host_private_access_follows_the_binding_rules() -> None:
 
 
 @pytest.mark.skipif(sys.version_info < (3, 12), reason="type parameter syntax needs Python 3.12 or later")
-def test_host_private_access_follows_type_parameter_scopes() -> None:
+def test_host_private_access_follows_type_parameter_scopes(tmp_path: Path) -> None:
     """Hide a Host parameter behind a type parameter or a type statement of the same name."""
-    fixture = FIXTURE_ROOT / "host_private_access" / "type_parameters.py"
+    stored = FIXTURE_ROOT / "host_private_access" / "type_parameters.py.txt"
+    fixture = tmp_path / "type_parameters.py"
+    copyfile(stored, fixture)
     violations = check_architecture_boundaries.check_files([], allowlist={}, host_files=[fixture])
+    report = check_architecture_boundaries.format_report(violations)
 
-    assert_output(check_architecture_boundaries.format_report(violations))
+    assert_output(report.replace(fixture.as_posix(), stored.relative_to(ROOT).as_posix().removesuffix(".txt")))
 
 
 def test_host_private_access_exempts_only_method_receivers() -> None:
