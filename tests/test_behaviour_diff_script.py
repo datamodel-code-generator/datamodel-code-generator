@@ -1052,7 +1052,7 @@ def test_signature(case: str, tmp_path: Path) -> None:
     assert_output(json.dumps(json.loads(result.stdout), indent=2, sort_keys=True) + "\n")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")
+@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
 def test_gate(tmp_path: Path) -> None:
     """The gate generates the selected fixtures on both sides; the PR tier judges no stale entry."""
     allowlist = tmp_path / "allowlist.toml"
@@ -1090,7 +1090,7 @@ def test_gate(tmp_path: Path) -> None:
     assert_output("\n".join(outputs))
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")
+@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
 def test_gate_skips_the_release_on_a_listed_input(tmp_path: Path) -> None:
     """A release that `[[base_skip]]` names does not run for the input: its cells are `base-skipped`."""
     allowlist = tmp_path / "allowlist.toml"
@@ -1129,7 +1129,7 @@ def test_gate_skips_the_release_on_a_listed_input(tmp_path: Path) -> None:
     assert_output(f"exit={code}\n" + "\n".join([*skipped, *cells]) + "\n")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")
+@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
 def test_gate_shards_judge_the_stale_entries_of_an_unsharded_run(tmp_path: Path) -> None:
     """The shards of a run report the stale entries the unsharded run reports, each from the shard of its cells."""
     allowlist = tmp_path / "allowlist.toml"
@@ -1456,7 +1456,7 @@ def test_project_cell_problems_are_violations(case: str, tmp_path: Path) -> None
     )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")
+@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
 def test_gate_projects_and_option_sets(tmp_path: Path) -> None:
     """The nightly tier adds option sets, TypedDict payload cells and the projects of a manifest.
 
@@ -1787,7 +1787,7 @@ REVISION_CASES = {
 }
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")
+@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
 @pytest.mark.parametrize("case", sorted(REVISION_CASES))
 def test_gate_against_a_git_revision(case: str, tmp_path: Path) -> None:
     """A git revision as BASE: its `src/` runs from the candidate's interpreter, and `--identity` fails on any change.
@@ -1840,7 +1840,7 @@ def main(argv):
 )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")
+@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
 def test_identity_compares_the_output_of_runs_that_fail_alike(tmp_path: Path) -> None:
     """Two sides that fail with the same status and message but wrote different files are a difference."""
     repo = tmp_path / "repo"
@@ -1858,7 +1858,7 @@ def test_identity_compares_the_output_of_runs_that_fail_alike(tmp_path: Path) ->
     assert_output("\n".join(_gate_lines(argv, tmp_path / "cells.jsonl")).replace(commits[0][:9], "<sha>") + "\n")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")
+@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
 def test_gate_refuses_a_side_that_is_no_revision(tmp_path: Path) -> None:
     """A BASE or CANDIDATE that names no release, directory or revision stops the gate.
 
@@ -1897,7 +1897,7 @@ def test_gate_refuses_a_side_that_is_no_revision(tmp_path: Path) -> None:
     assert_output("\n".join([*refusals, f"a candidate that does not import: {crashed.value}"]) + "\n")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")
+@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
 def test_gate_identity_of_a_candidate_revision(tmp_path: Path) -> None:
     """A CANDIDATE revision of this repository runs from its extracted `src` and `tests`.
 
@@ -1965,7 +1965,7 @@ def _tree(directory: Path) -> dict[str, str]:
     }
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")
+@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
 def test_record_shards_merge_into_the_unsharded_record(tmp_path: Path) -> None:
     """The records of `record --shard I/N` merge into the unsharded record; a missing shard fails the merge."""
     common = [

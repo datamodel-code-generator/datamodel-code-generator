@@ -23,7 +23,9 @@ IMPORTED = re.compile(r"from \S+,")
 """Where a refused side imported datamodel-code-generator from: the interpreter's own installation."""
 EXPECTED = ROOT / "tests/data/expected/compare_release"
 
-pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="compare_release.py forks its workers")
+pytestmark = pytest.mark.skipif(
+    sys.platform == "win32", reason="compare_release.py needs POSIX (SIGALRM, resource, fork)"
+)
 
 
 @pytest.mark.parametrize(
@@ -234,6 +236,78 @@ def test_the_record_is_published_by_a_replace(monkeypatch: pytest.MonkeyPatch, t
     monkeypatch.setattr(os, "replace", lambda *_: (_ for _ in ()).throw(KeyboardInterrupt))
     with contextlib.suppress(KeyboardInterrupt):
         compare_release._generate_recorded({"record": str(record), "args": []}, lambda _: 0)
-    if monitoring := getattr(sys, "monitoring", None):
-        monitoring.free_tool_id(compare_release.HANDLED_TOOL)
     assert_output(repr(record.read_text(encoding="utf-8")))
+
+
+FAKE_RECORDED_MAIN = """import re
+import warnings
+from pathlib import Path
+
+MODEL = '''import resource
+
+if resource.getrlimit(resource.RLIMIT_DATA)[0] == 3000 << 20:
+    raise ImportError("the cap of the run stayed")
+'''
+
+
+def main(argv):
+    kind = Path(argv[argv.index("--input") + 1]).read_text(encoding="utf-8")
+    if kind == "memory":
+        bytearray(64 << 20)
+    warnings.warn("an old option", DeprecationWarning, stacklevel=1)
+    re.compile("[[a]")
+    broken = "raise ImportError('broken')\\n" if kind == "broken" else ""
+    Path(argv[argv.index("--output") + 1]).write_text(MODEL + broken, encoding="utf-8")
+    return 0
+"""
+Step = tuple[dict[str, int], str, tuple[str, ...]]
+"""What one run of `_worker_runs` changes on the runner first, its input and its options."""
+
+
+def _fake_runner(tmp_path: Path, memory_mb: int, *, import_check: bool) -> compare_release.Runner:
+    """Return a runner of a stand-in generator that warns and writes a model; its inputs name what it writes."""
+    package = tmp_path / "fake" / "datamodel_code_generator"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("", encoding="utf-8")
+    (package / "__main__.py").write_text(FAKE_RECORDED_MAIN, encoding="utf-8")
+    for kind in ("plain", "broken", "memory"):
+        (tmp_path / f"{kind}.txt").write_text(kind, encoding="utf-8")
+    side = compare_release.Side("fake", Path(sys.executable), package.parent)
+    env = compare_release.run_environment(package.parent)
+    return compare_release.Runner(side, env, import_check=import_check, timeout=60, memory_mb=memory_mb)
+
+
+def _worker_runs(runner: compare_release.Runner, tmp_path: Path, steps: list[Step]) -> str:
+    """Generate each step's input in order; each line names the worker its runs ended on, counted from 1."""
+    pids: list[int] = []
+    lines = []
+    for number, (settings, kind, options) in enumerate(steps):
+        for name, value in settings.items():
+            setattr(runner, name, value)
+        (tmp := tmp_path / f"run-{number}").mkdir()
+        outcome = runner.generate(["--input", str(tmp_path / f"{kind}.txt"), *options], tmp)
+        pid = next(iter(runner.workers.values())).process.pid
+        pids += [pid] if pid not in pids else []
+        label = " ".join([*(f"{name}={value}" for name, value in settings.items()), kind, *options])
+        facts = f"code={outcome.code} warnings={outcome.warnings} import_error={outcome.import_error!r}"
+        lines.append(f"{label}: worker {pids.index(pid) + 1}, {facts}")
+    runner.close()
+    return "\n".join(lines) + "\n"
+
+
+def test_a_worker_runs_each_job_as_a_fresh_process(tmp_path: Path) -> None:
+    """Later runs of a worker record the warnings, import checks and memory cap a fresh process would.
+
+    A run that turns on process state (`--debug`) closes its worker, and a worker runs at most `recycle` jobs.
+    """
+    runner = _fake_runner(tmp_path, 3000, import_check=True)
+    steps: list[Step] = [({}, "plain", ()), ({}, "broken", ()), ({}, "plain", ("--debug",)), ({}, "plain", ())]
+    steps += [({"recycle": 1}, "plain", ()), ({}, "plain", ())]
+    assert_output(_worker_runs(runner, tmp_path, steps))
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="RLIMIT_DATA caps the memory of a run on Linux only")
+def test_a_run_out_of_memory_closes_its_worker(tmp_path: Path) -> None:
+    """The worker of a run that ran out of its memory cap is replaced: the next run starts in a fresh one."""
+    runner = _fake_runner(tmp_path, 1, import_check=False)
+    assert_output(_worker_runs(runner, tmp_path, [({}, "memory", ()), ({"memory_mb": 0}, "plain", ())]))

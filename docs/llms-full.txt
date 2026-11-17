@@ -96733,13 +96733,13 @@ release over the test inputs and the option sets your change touches:
   tests/data/openapi/*.yaml
 ```
 
-The script installs the release once into a cached virtual environment with `uv`, next to the same versions
-of every other package in your environment, and caches the release's outputs, so later runs only generate
-your side. A cached output is reused while the input's directory, the local files it references through `$ref`, the
-files named by arguments and the arguments stay the same; pass `--no-cache` to regenerate it. Old environments and outputs are not removed;
-delete the cache directory (`~/.cache/datamodel-code-generator/compare-release` by default) to reclaim space.
-Every run goes through warm worker processes that fork a fresh child per generation in a temporary working
-directory, so give files in `--options` and `--extra` as absolute paths.
+The script installs the release once into a cached virtual environment with `uv`, next to the same versions of every
+other package in your environment, and caches the release's outputs, so later runs only generate your side. A cached
+output is reused while the input's directory, the local files it references through `$ref`, the files named by arguments
+and the arguments stay the same; pass `--no-cache` to regenerate it. Old environments and outputs are not removed;
+delete the cache directory (`~/.cache/datamodel-code-generator/compare-release` by default) to reclaim space. Every run
+goes through warm worker processes that import the generator once and generate in a temporary working directory, so give
+files in `--options` and `--extra` as absolute paths.
 
 The script prints one line for each run that differs, fails on either side, or imports on one side only,
 then a summary. It exits with 1 when any run differs, fails only on your side or imports only on the release

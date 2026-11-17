@@ -1,0 +1,2 @@
+memory: worker 1, code=125 warnings=[] import_error=''
+memory_mb=0 plain: worker 2, code=0 warnings=[['builtins.DeprecationWarning', 'an old option', 'datamodel_code_generator.__main__'], ['builtins.FutureWarning', 'Possible nested set at position 1', 'datamodel_code_generator.__main__']] import_error=''

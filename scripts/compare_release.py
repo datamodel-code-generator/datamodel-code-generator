@@ -13,16 +13,19 @@ differences; any other base is a git revision of this repository (`main~1`, a co
 with `git archive` and run with the candidate's interpreter, as the candidate is (`resolve_base`). Base outputs are
 cached as well, so reruns only generate the candidate side.
 
-Generation runs in warm worker processes: each worker imports datamodel-code-generator once and forks a fresh
-child per run, so runs do not pay interpreter start-up and import time and do not share state. POSIX only. Both
-sides run in an environment built from scratch (`run_environment`), and each worker refuses to run a package
-imported from outside the tree its side names. A run shows its warnings under Python's default filters with
-`DeprecationWarning` and `PendingDeprecationWarning` shown too, and records each as its category, message and the
-module the filters match it with (`Outcome.warnings`), so a warning whose call moves keeps its record;
-`Outcome.handled` are the classes of the exceptions the code of `datamodel_code_generator.__main__` caught and did
-not raise again (Python 3.12+); `Outcome.messages` is what the run printed, with the frames of tracebacks left out,
-so an error is its class and message. A run that refuses a single output file for a modular one is run again into a
-directory, and `Outcome.first` keeps the refusal (its exit status, messages, warnings and handled exceptions).
+Generation runs in warm worker processes: each worker imports datamodel-code-generator once and generates in itself,
+`RECYCLE` runs before a new worker takes its place, so runs pay neither interpreter start-up nor imports. Each run
+has its own log for its output and errors, working directory, warning filters, timeout (which ends the worker, as a
+crash does) and memory cap; what a run records does not depend on the runs its worker ran before it. An import check
+runs the generated code, in a fresh child of the worker. POSIX only. Both sides run in an environment built from
+scratch (`run_environment`), and each worker refuses to run a package imported from outside the tree its side names.
+A run shows its warnings under Python's default filters with `DeprecationWarning` and `PendingDeprecationWarning`
+shown too, and records each as its category, message and the module the filters match it with (`Outcome.warnings`),
+so a warning whose call moves keeps its record; `Outcome.handled` are the classes of the exceptions the code of
+`datamodel_code_generator.__main__` caught and did not raise again (Python 3.12+); `Outcome.messages` is what the run
+printed, with the frames of tracebacks left out, so an error is its class and message. A run that refuses a single
+output file for a modular one is run again into a directory, and `Outcome.first` keeps the refusal (its exit status,
+messages, warnings and handled exceptions).
 
 Prints one line per differing or failing run and a summary; exits 1 when any run differs or fails on the
 candidate only.
@@ -56,7 +59,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Generator
     from types import CodeType
 
 Record = dict[str, Any]
@@ -74,6 +77,11 @@ MODULAR_OUTPUT_ERRORS = ("--output <directory>", "require an output directory")
 # The exit code of a run that hit its memory cap, also reported for a run whose own handler printed the MemoryError:
 # like a timeout it is not cached, since another cap may let it finish.
 OUT_OF_MEMORY = 125
+PROCESS_STATE_OPTIONS = frozenset({"--debug"})
+"""Options that turn on state for the rest of the process (`--debug`: tracing in every parser imported after it): the
+worker of such a run is closed after it, as after running out of memory, so later runs do not inherit it."""
+RECYCLE = 200
+"""Jobs a worker runs before a new one takes its place, which bounds the memory and the state a worker gathers."""
 CACHE_FORMAT = 4
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = re.compile(r"\d+(?:\.\d+)+")
@@ -183,11 +191,13 @@ def _track(
             caught.remove(exception)
 
 
-def _handled_exceptions(filename: str) -> list[BaseException]:
-    """Return the list that collects the exceptions the code of `filename` catches and does not raise again.
+@contextlib.contextmanager
+def _handled_exceptions(filename: str) -> Generator[list[BaseException], None, None]:
+    """Collect, while the block runs, the exceptions the code of `filename` catches and does not raise again.
 
     A handler that only cleans up (`finally`, `with`, an `except` that does not match or re-raises) raises the
-    exception again, which takes it out. Python 3.12+ (`sys.monitoring`); earlier the list stays empty.
+    exception again, which takes it out. Python 3.12+ (`sys.monitoring`); earlier the list stays empty. The tool is
+    freed at the end, so the next run of a worker starts again.
     """
     caught: list[BaseException] = []
     if monitoring := getattr(sys, "monitoring", None):
@@ -199,52 +209,107 @@ def _handled_exceptions(filename: str) -> list[BaseException]:
             HANDLED_TOOL, monitoring.events.RERAISE, functools.partial(_track, caught, filename, handled=False)
         )
         monitoring.set_events(HANDLED_TOOL, monitoring.events.EXCEPTION_HANDLED | monitoring.events.RERAISE)
-    return caught
+    try:
+        yield caught
+    finally:
+        if monitoring:
+            monitoring.set_events(HANDLED_TOOL, 0)
+            monitoring.free_tool_id(HANDLED_TOOL)
 
 
 def _generate_recorded(job: Record, main: Callable[[list[str]], object]) -> int:
     """Run one generation and write what it showed and handled to `job["record"]` (see `Outcome`).
 
-    Warnings show under Python's default filters with deprecations shown too. The record starts empty, like the log,
-    so a run that dies or runs out of memory leaves no record of an earlier run: its exit status says what happened.
+    Warnings show under Python's default filters with deprecations shown too; entering the filters again per run
+    resets the registries of warnings already shown, and emptying the cache of `re` makes a pattern an earlier run
+    compiled warn again. The memory cap holds while the generator runs, so memory runs
+    out in the run, which reports it, and not in the recording around it. The record starts empty, like the log, so
+    a run that dies or runs out of memory leaves no record of an earlier run: its exit status says what happened.
     """
     record = Path(job["record"])
     record.write_text("", encoding="utf-8")
-    caught = _handled_exceptions(sys.modules["datamodel_code_generator.__main__"].__file__ or "")
+    re.purge()
     recorder = _WarningRecorder()
-    with warnings.catch_warnings():
+    main_file = sys.modules["datamodel_code_generator.__main__"].__file__ or ""
+    with _handled_exceptions(main_file) as caught, warnings.catch_warnings():
         warnings.simplefilter("default", PendingDeprecationWarning)
         warnings.simplefilter("default", DeprecationWarning)
         warnings.filters.insert(0, ("always", None, Warning, recorder, 0))
         warnings.showwarning = recorder.show
-        code = _exit_code(main, job["args"])
-    handled = [f"{type(exception).__module__}.{type(exception).__qualname__}" for exception in caught]
-    with contextlib.suppress(MemoryError):
-        partial = record.with_name(record.name + ".tmp")
-        partial.write_text(json.dumps({"warnings": recorder.records, "handled": handled}), encoding="utf-8")
-        partial.replace(record)
+        with _memory_cap(job.get("memory_mb", 0)):
+            code = _exit_code(main, job["args"])
+        handled = [f"{type(exception).__module__}.{type(exception).__qualname__}" for exception in caught]
+    partial = record.with_name(record.name + ".tmp")
+    partial.write_text(json.dumps({"warnings": recorder.records, "handled": handled}), encoding="utf-8")
+    partial.replace(record)
     return code
 
 
-def _run_child(job: Record, main: Callable[[list[str]], object]) -> int:
-    signal.signal(signal.SIGINT, signal.SIG_DFL)
-    signal.alarm(job["timeout"])
+@contextlib.contextmanager
+def _memory_cap(limit_mb: int) -> Generator[None, None, None]:
+    """Cap the data memory of this process (`RLIMIT_DATA`) at `limit_mb` while the block runs (0: no cap).
+
+    The cap counts the whole worker, which recycling bounds; where the platform refuses it (macOS), the run goes
+    uncapped.
+    """
+    if not limit_mb:
+        yield
+        return
+    import resource  # ruff: ignore[import-outside-top-level] - POSIX only, like the fork of an import check
+
+    limits = resource.getrlimit(resource.RLIMIT_DATA)
+    with contextlib.suppress(ValueError, OSError):
+        resource.setrlimit(resource.RLIMIT_DATA, (limit_mb << 20, limits[1]))
+    try:
+        yield
+    finally:
+        resource.setrlimit(resource.RLIMIT_DATA, limits)
+
+
+@contextlib.contextmanager
+def _job_scope(job: Record) -> Generator[None, None, None]:
+    """Run a job with its output and errors in its log, in its directory and under its timeout.
+
+    All of it is restored at the end, so the worker runs its next job as it ran this one. The timeout is `SIGALRM` at
+    its default action: a run that hangs, in C code too, ends the process, and the driver reads the signal as the
+    run's exit status.
+    """
+    saved = [os.dup(1), os.dup(2)]
     log = os.open(job["log"], os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     os.dup2(log, 1)
     os.dup2(log, 2)
     os.close(log)
+    cwd = Path.cwd()
     os.chdir(job["cwd"])
-    if limit := job.get("memory_mb"):
-        import resource  # ruff: ignore[import-outside-top-level] - POSIX only, like the fork that runs this child
+    signal.alarm(job["timeout"])
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os.chdir(cwd)
+        for fd, copy in enumerate(saved, start=1):
+            os.dup2(copy, fd)
+            os.close(copy)
 
-        # A run that grows without bound fails with MemoryError in its own child instead of taking the host down;
-        # where the platform refuses the cap (macOS), the run goes uncapped. The log is open first, so a failure
-        # caused by the cap always leaves one.
-        with contextlib.suppress(ValueError, OSError):
-            resource.setrlimit(resource.RLIMIT_DATA, (limit << 20, limit << 20))
-    if job["kind"] == "import":
-        return _import_modules(job["out"])
-    return _generate_recorded(job, main)
+
+def _run_job(job: Record, main: Callable[[list[str]], object]) -> int:
+    """Run one job and return its exit code: a generation in this worker, an import check in a fresh child.
+
+    An import check runs the generated code, which has to leave nothing behind, so it gets a child of its own.
+    """
+    if job["kind"] == "generate":
+        with _job_scope(job):
+            return _generate_recorded(job, main)
+    if (pid := os.fork()) == 0:  # pragma: no cover - child process
+        code = 1
+        try:
+            with _job_scope(job):
+                code = _import_modules(job["out"])
+        finally:
+            os._exit(code)
+    return os.waitstatus_to_exitcode(os.waitpid(pid, 0)[1])
 
 
 def _worker() -> None:
@@ -256,23 +321,13 @@ def _worker() -> None:
         for name in WARM_IMPORTS:
             with contextlib.suppress(ImportError):
                 importlib.import_module(name)
-    # Importing the CLI installs its own SIGINT handler; the driver stops workers by closing their stdin.
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    # Importing the CLI installs its own SIGINT handler; a worker stops on SIGINT, the driver by closing its stdin.
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
     sys.stdout.write(json.dumps({"package": sys.modules["datamodel_code_generator"].__file__}) + "\n")
     sys.stdout.flush()
     for line in sys.stdin:
-        job = json.loads(line)
-        pid = os.fork()
-        if pid == 0:  # pragma: no cover - child process
-            code = 1
-            try:
-                code = _run_child(job, main)
-            finally:
-                sys.stdout.flush()
-                sys.stderr.flush()
-                os._exit(code)
-        _, status = os.waitpid(pid, 0)
-        sys.stdout.write(json.dumps({"rc": os.waitstatus_to_exitcode(status)}) + "\n")
+        code = _run_job(json.loads(line), main)
+        sys.stdout.write(json.dumps({"rc": code}) + "\n")
         sys.stdout.flush()
 
 
@@ -291,7 +346,7 @@ def run_environment(source: Path | None) -> dict[str, str]:
 
 
 class Worker:
-    """A warm worker process for one interpreter."""
+    """A warm worker process for one interpreter; `jobs` counts the jobs it was given."""
 
     def __init__(self, python: Path, env: dict[str, str], package: Path | None) -> None:
         """Start the worker with Python's default warning filters, which its runs show warnings under.
@@ -306,27 +361,32 @@ class Worker:
             text=True,
             env={name: value for name, value in env.items() if name != "PYTHONWARNINGS"},
         )
-        self.package = Path(os.path.normpath(Path(self._reply()["package"]).absolute())).parent
+        self.jobs = 0
+        if (ready := self._reply()) is None:
+            msg = f"worker exited with {self.process.wait()}"
+            raise RuntimeError(msg)
+        self.package = Path(os.path.normpath(Path(ready["package"]).absolute())).parent
         if package is not None and not self.package.is_relative_to(os.path.normpath(package.absolute())):
             self.close()
             msg = f"{python} imports datamodel_code_generator from {self.package}, not from below {package}"
             raise SystemExit(msg)
 
-    def _reply(self) -> Record:
+    def _reply(self) -> Record | None:
         stdout = self.process.stdout
         assert stdout is not None
-        if not (reply := stdout.readline()):
-            msg = f"worker exited with {self.process.wait()}"
-            raise RuntimeError(msg)
-        return json.loads(reply)
+        return json.loads(reply) if (reply := stdout.readline()) else None
 
     def run(self, job: Record) -> int:
-        """Run one job in a fresh child of the worker and return its exit code."""
+        """Run one job and return its exit code; a job that ended the worker returns the worker's exit status.
+
+        Such a job hit its timeout or crashed the interpreter, as it would have ended a process of its own.
+        """
         stdin = self.process.stdin
         assert stdin is not None
         stdin.write(json.dumps(job) + "\n")
         stdin.flush()
-        return self._reply()["rc"]
+        self.jobs += 1
+        return self.process.wait() if (reply := self._reply()) is None else reply["rc"]
 
     def close(self) -> None:
         """Stop the worker."""
@@ -636,28 +696,30 @@ def _attempt(rc: int, log: Path, record: Path, paths: tuple[Path, Path, Path]) -
 
 
 class Runner:
-    """Runs one side of the matrix through per-thread warm workers."""
+    """Runs one side of the matrix through per-thread warm workers, each replaced after `recycle` jobs."""
 
     def __init__(
         self, side: Side, env: dict[str, str], *, import_check: bool, timeout: int, memory_mb: int = 0
     ) -> None:
-        """Prepare a runner; workers start lazily. `memory_mb` caps the data memory of one run (0: no cap)."""
+        """Prepare a runner; workers start lazily. `memory_mb` caps the data memory of a worker's run (0: no cap)."""
         self.side = side
         self.env = env
         self.import_check = import_check
         self.timeout = timeout
         self.memory_mb = memory_mb
-        self.local = threading.local()
-        self.workers: list[Worker] = []
+        self.recycle = RECYCLE
+        self.workers: dict[int, Worker] = {}
         self.lock = threading.Lock()
 
     def _worker(self) -> Worker:
-        worker = getattr(self.local, "worker", None)
-        if worker is None:
+        """Return this thread's worker: a new one in place of one that ran `recycle` jobs or has ended."""
+        worker = self.workers.get(thread := threading.get_ident())
+        if worker is None or worker.jobs >= self.recycle or worker.process.poll() is not None:
+            if worker is not None:
+                worker.close()
             worker = Worker(self.side.python, self.env, self.side.package)
-            self.local.worker = worker
             with self.lock:
-                self.workers.append(worker)
+                self.workers[thread] = worker
         return worker
 
     def generate(self, args: list[str], tmp: Path) -> Outcome:
@@ -666,7 +728,6 @@ class Runner:
         out.mkdir()
         log = tmp / f"{self.side.name}.log"
         record = tmp / f"{self.side.name}-record.json"
-        worker = self._worker()
         job = {
             "kind": "generate",
             "cwd": str(tmp),
@@ -676,14 +737,16 @@ class Runner:
             "memory_mb": self.memory_mb,
             "args": [*args, "--output", str(out / "model.py")],
         }
-        rc = worker.run(job)
+        rc = (worker := self._worker()).run(job)
         first: Record = {}
         if rc != 0 and any(text in log.read_text(encoding="utf-8", errors="replace") for text in MODULAR_OUTPUT_ERRORS):
             first = _attempt(rc, log, record, (out, tmp, worker.package))
             job["args"] = [*args, "--output", str(out / "pkg")]
-            rc = worker.run(job)
+            rc = (worker := self._worker()).run(job)
         if rc > 0 and self.memory_mb and ran_out_of_memory(_last_line(log)):
             rc = OUT_OF_MEMORY
+        if rc == OUT_OF_MEMORY or PROCESS_STATE_OPTIONS.intersection(args):
+            worker.close()
         facts = _attempt(rc, log, record, (out, tmp, worker.package)) | {"first": first}
         if rc != 0:
             return Outcome(
@@ -698,7 +761,7 @@ class Runner:
         if self.import_check:
             import_log = tmp / f"{self.side.name}-import.log"
             job = {"kind": "import", "cwd": str(tmp), "log": str(import_log), "timeout": self.timeout, "out": str(out)}
-            if (rc := worker.run(job)) != 0:
+            if (rc := self._worker().run(job)) != 0:
                 import_error = self._error(rc, import_log)
         return Outcome(ok=True, error="", tree=_tree(out), import_error=import_error, cacheable=rc >= 0, **facts)
 
@@ -711,7 +774,7 @@ class Runner:
 
     def close(self) -> None:
         """Stop all workers."""
-        for worker in self.workers:
+        for worker in self.workers.values():
             worker.close()
 
 
