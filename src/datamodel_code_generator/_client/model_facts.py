@@ -15,7 +15,6 @@ from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._container_kinds import MAPPINGS
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._target_contract import (
-    WRAPPER_KINDS,
     BuiltinType,
     ConstructorType,
     GeneratedEnumMember,
@@ -33,13 +32,15 @@ from datamodel_code_generator._target_types import (
     CONSTRAINED_SCALARS,
     TypeTables,
     container_slot,
+    is_alias,
+    is_wrapper,
     sole_present,
     without_none,
 )
 from datamodel_code_generator.imports import _import_path
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
     from datamodel_code_generator._target_contract import (
         FieldUseBinding,
@@ -49,7 +50,7 @@ if TYPE_CHECKING:
         TypeView,
     )
 
-__all__ = ("ALIASES", "ItemStep", "JSONTypes", "ModelFacts", "ModelField", "StepKind")
+__all__ = ("ItemStep", "JSONTypes", "ModelFacts", "ModelField", "StepKind")
 
 StepKind: TypeAlias = Literal["attr", "key", "get", "root"]
 JSONTypes: TypeAlias = frozenset[str] | None
@@ -87,7 +88,6 @@ _EXTRAS: Final = "__pydantic_extra__"
 _WRAPPER: Final = "pydantic.SerializeAsAny"
 _FALSE: Final = KnownBackendValue(LiteralScalar(kind="bool", value=False))
 _MODELS: Final = frozenset({"model", "root"})
-ALIASES: Final = frozenset({"alias"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,6 +122,11 @@ class ModelField:
     member: FieldUseBinding
     missing: bool = False
     explicit: bool = False
+
+
+def _declared_root(symbol: FinalModelSymbol) -> bool:
+    """Return whether a symbol is a root model its backend declares."""
+    return symbol.kind == "root" and symbol.facts is not None
 
 
 def _partial(symbol: FinalModelSymbol) -> bool:
@@ -202,23 +207,22 @@ class ModelFacts:
         return wrapped_type(self.members, symbol)
 
     def argument(
-        self, value: TypeView, kinds: frozenset[str] = WRAPPER_KINDS, seen: frozenset[SymbolId] = frozenset()
+        self,
+        value: TypeView,
+        through: Callable[[FinalModelSymbol], bool] = is_wrapper,
+        seen: frozenset[SymbolId] = frozenset(),
     ) -> TypeView:
-        """Return the type an argument of a model type takes: each symbol of the kinds by the type it stands for."""
+        """Return the type an argument of a model type takes: each symbol `through` names by the type it stands for."""
         match value:
-            case GeneratedSymbolType() if (
-                value.symbol not in seen
-                and self.symbols[value.symbol].kind in kinds
-                and (root := self.root(value.symbol)) is not None
-            ):
-                return self.argument(root, kinds, seen | {value.symbol})
+            case GeneratedSymbolType() if (facts := self.tables.wrapped(value, seen, through)) is not None:
+                return self.argument(facts.type, through, seen | {value.symbol})
             case GenericType():
                 return replace(
-                    value, arguments=tuple(self.argument(item, kinds, seen) for item in value.arguments), hint=None
+                    value, arguments=tuple(self.argument(item, through, seen) for item in value.arguments), hint=None
                 )
             case UnionType():
                 return replace(
-                    value, members=tuple(self.argument(item, kinds, seen) for item in value.members), hint=None
+                    value, members=tuple(self.argument(item, through, seen) for item in value.members), hint=None
                 )
             case _:
                 pass
@@ -226,13 +230,11 @@ class ModelFacts:
 
     def _aliased(self, symbol: FinalModelSymbol) -> bool:
         """Return whether a symbol is an alias the batch binds a type to."""
-        return symbol.kind == "alias" and self.root(symbol.id) is not None
+        return is_alias(symbol) and self.root(symbol.id) is not None
 
     def _stepped(self, symbol: FinalModelSymbol) -> bool:
         """Return whether a symbol is such an alias, or a root model its backend declares and the batch binds."""
-        return self._aliased(symbol) or (
-            symbol.kind == "root" and symbol.facts is not None and self.root(symbol.id) is not None
-        )
+        return (is_alias(symbol) or _declared_root(symbol)) and self.root(symbol.id) is not None
 
     def plain(self, value: TypeView) -> TypeView:
         """Return the type an alias stands for, through aliases of aliases, or any other type itself."""
@@ -254,15 +256,14 @@ class ModelFacts:
         A root model whose root is such a model, as a Pydantic body of an object or null is, stands for that model.
         """
         value = self.plain(value)
-        if (
-            (symbol := self.symbol(value)) is not None
-            and symbol.kind == "root"
-            and (root := self.root(symbol.id)) is not None
-        ):
-            value = self.plain(root)
-        if (member := sole_present(value)) is not None:
-            value = self.plain(member)
-        return symbol if (symbol := self.symbol(value)) is not None and symbol.kind == "model" else None
+        if (facts := self.tables.wrapped(value, through=_declared_root)) is not None:
+            value = facts.type
+        return symbol if (symbol := self.symbol(self.present(value))) is not None and symbol.kind == "model" else None
+
+    def present(self, value: TypeView) -> TypeView:
+        """Return a type without None, through its aliases (``plain``)."""
+        value = self.plain(value)
+        return value if (member := sole_present(value)) is None else self.plain(member)
 
     def json_types(self, value: TypeView, seen: frozenset[SymbolId] = frozenset()) -> JSONTypes:
         """Return the JSON types the values of a type are, or None when they can be any value.
@@ -291,12 +292,8 @@ class ModelFacts:
                 )
             case GeneratedSymbolType() if (symbol := self.symbols[value.symbol]).kind == "enum":
                 types = frozenset(symbol.value_types)
-            case GeneratedSymbolType() if (
-                self.symbols[value.symbol].kind in WRAPPER_KINDS
-                and value.symbol not in seen
-                and (root := self.root(value.symbol)) is not None
-            ):
-                types = self.json_types(root, seen | {value.symbol})
+            case GeneratedSymbolType() if (facts := self.tables.wrapped(value, seen)) is not None:
+                types = self.json_types(facts.type, seen | {value.symbol})
             case GeneratedSymbolType() if self.symbols[value.symbol].kind == "model":
                 types = frozenset({"object"})
             case GenericType() if _name(value.base) == _WRAPPER and len(value.arguments) == 1:

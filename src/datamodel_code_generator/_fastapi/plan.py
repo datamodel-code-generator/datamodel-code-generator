@@ -52,7 +52,6 @@ from datamodel_code_generator._runtime.model_codecs.media import (
 )
 from datamodel_code_generator._target_contract import (
     OAUTH_SCHEMES,
-    WRAPPER_KINDS,
     BuiltinType,
     ConstructorType,
     GeneratedSymbolType,
@@ -108,7 +107,7 @@ from datamodel_code_generator._target_operations import (
     response_bodyless,
     type_names,
 )
-from datamodel_code_generator._target_types import present, sole_present
+from datamodel_code_generator._target_types import is_alias, present, sole_present
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DataModelType, OpenAPIVersion
 from datamodel_code_generator.imports import Import
@@ -990,9 +989,7 @@ class Planner:  # noqa: PLR0904
         factory: TypeView | None = None
         while (
             isinstance(value, GeneratedSymbolType)
-            and value.symbol not in seen
-            and self.symbols[value.symbol].kind in WRAPPER_KINDS
-            and (facts := wrapped_facts(self.members, value.symbol)) is not None
+            and (facts := self.tables.wrapped(value, seen)) is not None
             and (plain := self.plain(value.symbol, facts, frozenset(seen))) is not None
         ):
             seen.add(value.symbol)
@@ -1055,12 +1052,9 @@ class Planner:  # noqa: PLR0904
         A tuple keeps its members, as FastAPI reads none natively.
         """
         match value:
-            case GeneratedSymbolType() if (
-                value.symbol not in seen
-                and self.symbols[value.symbol].kind == "alias"
-                and (facts := wrapped_facts(self.members, value.symbol)) is not None
-                and (plain := self.plain(value.symbol, facts, seen)) is not None
-            ):
+            case GeneratedSymbolType() if (facts := self.tables.wrapped(value, seen, is_alias)) is not None and (
+                plain := self.plain(value.symbol, facts, seen)
+            ) is not None:
                 return plain
             case GenericType():
                 fixed = value.tuple_form == "fixed"
@@ -1106,11 +1100,7 @@ class Planner:  # noqa: PLR0904
                 return any(self.strict_bytes(item, seen) for item in value.arguments)
             case ImportedType():
                 return (value.import_.from_, value.import_.import_) == _STRICT_BYTES
-            case GeneratedSymbolType() if (
-                value.symbol not in seen
-                and self.symbols[value.symbol].kind in WRAPPER_KINDS
-                and (facts := wrapped_facts(self.members, value.symbol)) is not None
-            ):
+            case GeneratedSymbolType() if (facts := self.tables.wrapped(value, seen)) is not None:
                 return self.strict_bytes(facts.type, seen | {value.symbol})
             case _:
                 pass

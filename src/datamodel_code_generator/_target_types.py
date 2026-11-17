@@ -34,7 +34,7 @@ from datamodel_code_generator.model._decisions.nullability import imported_name_
 from datamodel_code_generator.model._decisions.tag_value import PYDANTIC_SCALAR_KINDS
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Container, Iterable, Iterator, Mapping, Sequence
 
     from datamodel_code_generator._container_kinds import ContainerKind, ContainerSlot
     from datamodel_code_generator._runtime.model_codecs.media import LexicalKind
@@ -45,6 +45,7 @@ if TYPE_CHECKING:
         GeneratedTypeContractBatch,
         LeafStep,
         LiteralScalar,
+        ModelFieldFacts,
         SymbolId,
         TypeView,
     )
@@ -54,7 +55,9 @@ __all__ = [
     "TypeTables",
     "admits_none",
     "container_slot",
+    "is_alias",
     "is_none",
+    "is_wrapper",
     "opened",
     "present",
     "sole_present",
@@ -81,9 +84,14 @@ _ANY: Final = frozenset({("typing", "Any"), ("typing_extensions", "Any")})
 _ARGUMENTS: Final[dict[LeafStep, tuple[int, ContainerKind]]] = {"items": (1, ITEM_CONTAINERS), "values": (2, MAPPINGS)}
 
 
-def _wraps(symbol: FinalModelSymbol) -> bool:
+def is_wrapper(symbol: FinalModelSymbol) -> bool:
     """Return whether a symbol only stands for another type, as an alias or a root model does."""
     return symbol.kind in WRAPPER_KINDS
+
+
+def is_alias(symbol: FinalModelSymbol) -> bool:
+    """Return whether a symbol is an alias of another type, which a root model is not."""
+    return symbol.kind == "alias"
 
 
 def is_none(value: TypeView) -> bool:
@@ -206,11 +214,7 @@ class TypeTables:
                 null = any(self.takes_null(member, seen) for member in value.members)
             case GeneratedSymbolType() if (declared := self.symbols[value.symbol]).kind == "enum":
                 null = "null" in declared.value_types
-            case GeneratedSymbolType() if (
-                value.symbol not in seen
-                and self.symbols[value.symbol].kind in WRAPPER_KINDS
-                and (facts := wrapped_facts(self.members, value.symbol)) is not None
-            ):
+            case GeneratedSymbolType() if (facts := self.wrapped(value, seen)) is not None:
                 null = facts.annotation_null or self.takes_null(facts.type, seen | {value.symbol})
             case _:
                 pass
@@ -220,7 +224,7 @@ class TypeTables:
         self,
         value: TypeView | None,
         *,
-        through: Callable[[FinalModelSymbol], bool] = _wraps,
+        through: Callable[[FinalModelSymbol], bool] = is_wrapper,
         nullable: bool = True,
     ) -> tuple[TypeView | None, list[SymbolId]]:
         """Return the type a type stands for, through aliases, root models and a union with None alone, and the symbols.
@@ -241,6 +245,21 @@ class TypeTables:
                 value = wrapped_type(self.members, value.symbol)
             else:
                 return value, named
+
+    def wrapped(
+        self,
+        value: TypeView | None,
+        seen: Container[SymbolId] = frozenset(),
+        through: Callable[[FinalModelSymbol], bool] = is_wrapper,
+    ) -> ModelFieldFacts | None:
+        """Return the facts of the value an alias or root model stands for, one step, or None for any other type.
+
+        It steps through the symbols ``through`` names, as ``wrapper_chain`` does, but not through one in ``seen`` or
+        one the batch binds no type to, which ``wrapper_chain`` ends at None.
+        """
+        if isinstance(value, GeneratedSymbolType) and value.symbol not in seen and through(self.symbols[value.symbol]):
+            return wrapped_facts(self.members, value.symbol)
+        return None
 
     def unwrapped(self, value: TypeView | None) -> TypeView | None:
         """Return the type a type stands for, through aliases, root models and a union with None alone."""
@@ -357,22 +376,16 @@ class TypeTables:
                     },
                     mixed=False,
                 )
-            case GeneratedSymbolType():
-                yield from self._symbol(self.symbols[value.symbol], seen)
+            case GeneratedSymbolType() if (facts := self.wrapped(value, seen)) is not None:
+                yield from self._leaves(facts.type, seen | {value.symbol})
+            case GeneratedSymbolType() if (symbol := self.symbols[value.symbol]).kind == "enum":
+                yield _one_kind({kind for item in symbol.values for kind in _literal_kinds(item)}, mixed=False)
             case BuiltinType() | ImportedType():
                 yield _LEXICAL_KINDS.get(type_identity(value), "string")
-            case None | GenericType():
+            case None | GenericType() | GeneratedSymbolType():
                 yield None
             case _:
                 yield "string"
-
-    def _symbol(self, symbol: FinalModelSymbol, seen: frozenset[SymbolId]) -> Iterator[LexicalKind | None]:
-        if symbol.kind == "enum":
-            yield _one_kind({kind for item in symbol.values for kind in _literal_kinds(item)}, mixed=False)
-        elif symbol.kind in WRAPPER_KINDS and symbol.id not in seen:
-            yield from self._leaves(wrapped_type(self.members, symbol.id), seen | {symbol.id})
-        else:
-            yield None
 
 
 def _literal_kinds(value: LiteralScalar | None) -> Iterator[LexicalKind | None]:

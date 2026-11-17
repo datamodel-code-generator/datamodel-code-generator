@@ -14,7 +14,6 @@ from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic
 from datamodel_code_generator._python_type_annotation import render_python_type_expr
 from datamodel_code_generator._runtime.model_codecs.media import JSONKind
 from datamodel_code_generator._target_contract import (
-    WRAPPER_KINDS,
     BoundType,
     GeneratedEnumMember,
     GeneratedSymbolType,
@@ -25,7 +24,7 @@ from datamodel_code_generator._target_contract import (
     literal_text,
 )
 from datamodel_code_generator._target_operations import UNSPELLABLE, Refusal, native_type
-from datamodel_code_generator._target_types import container_slot, is_none
+from datamodel_code_generator._target_types import container_slot, is_none, is_wrapper, present
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator
@@ -254,15 +253,14 @@ class _Planner:
             return self.union(value, schema, declared or value.discriminator)
         if isinstance(value, GeneratedSymbolType):
             symbol = self.symbols[value.symbol]
-            if symbol.kind in WRAPPER_KINDS:
-                if value.symbol in self.aliases:
-                    return None
-                root = self.root(symbol.id)
+            if (facts := self.facts.tables.wrapped(value, self.aliases)) is not None:
                 self.aliases.add(value.symbol)
                 try:
-                    return self.shape(root, schema, declared or symbol.discriminator)
+                    return self.shape(facts.type, schema, declared or symbol.discriminator)
                 finally:
                     self.aliases.remove(value.symbol)
+            if is_wrapper(symbol):
+                return None
             if symbol.kind == "enum":
                 return Class(value)
             if symbol.id not in self.models and symbol.id not in self.building:
@@ -308,23 +306,13 @@ class _Planner:
         self.unsupported(value, schema)
         return None
 
-    def root(self, symbol: SymbolId) -> TypeView:
-        """Return the type an alias or root model stands for, which the binder binds for each one a codec reaches."""
-        root = self.facts.root(symbol)
-        assert root is not None
-        return root
-
     def flattened(self, members: tuple[TypeView, ...], seen: frozenset[SymbolId] = frozenset()) -> Iterator[TypeView]:
         for member in members:
             if (
                 isinstance(member, GeneratedSymbolType)
-                and member.symbol not in seen
-                and self.symbols[member.symbol].kind == "alias"
+                and (facts := self.facts.tables.wrapped(member, seen)) is not None
             ):
-                root = self.root(member.symbol)
-                yield from self.flattened(
-                    root.members if isinstance(root, UnionType) else (root,), seen | {member.symbol}
-                )
+                yield from self.flattened(present(facts.type), seen | {member.symbol})
             elif not is_none(member):
                 yield member
 
