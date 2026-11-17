@@ -393,7 +393,7 @@ MODULE_RENDER_PREPARATION_BODY: tuple[StepLike[PipelineHost, _PreparedModule[Any
     ),
     PassSpec(
         "warn_required_assignments_after_defaults",
-        lambda _, s: render_prep.warn_required_assignments_after_defaults(s.live_models),
+        lambda self, s: render_prep.warn_required_assignments_after_defaults(self, s.live_models),
     ),
 )
 """The render preparation of one output module, after the constructor order of every module."""
@@ -775,7 +775,7 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
             PassSpec(
                 "fix_tag_opt_out_field_ordering",
                 lambda self, run: render_prep.fix_tag_opt_out_field_ordering(
-                    self._tag_plan.opted_out, _context_models(run.contexts)
+                    self, self._tag_plan.opted_out, _context_models(run.contexts)
                 ),
                 when=lambda self, _: self._tag_capabilities.struct_tags,
                 trigger=lambda self, _: bool(self._tag_plan.opted_out),
