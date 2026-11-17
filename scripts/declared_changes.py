@@ -243,7 +243,7 @@ class Side:
             stem = path.removeprefix(FRAGMENTS).removesuffix(".toml")
             if not path.startswith(FRAGMENTS) or not path.endswith(".toml") or "/" in stem:
                 continue
-            text, where = self.read(path).decode("utf-8"), f"unreleased/{stem}.toml"
+            text, where = self.read(path).decode("utf-8").replace("\r\n", "\n"), f"unreleased/{stem}.toml"
             try:
                 entries = tomllib.loads(text).get("change", [])
             except tomllib.TOMLDecodeError as error:
@@ -739,7 +739,7 @@ def declare(repo: Path, ns: argparse.Namespace) -> int:
             raise CheckError(msg)
         text = _new_fragment(ns, labels)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
+    path.write_text(text, encoding="utf-8", newline="\n")
     record, _ = parse_entry(tomllib.loads(text)["change"][0], path.name)
     print(f"{path.relative_to(repo).as_posix()} covers {len(labels)} more stored outputs")
     print("".join(f"  still needed: {problem}\n" for problem in rule_problems(record, fragment=True)), end="")
@@ -757,7 +757,7 @@ def prune(repo: Path, ns: argparse.Namespace) -> int:
         if drop:
             text = head.records[stem][1]
             (repo / FRAGMENTS / f"{stem}.toml").write_text(
-                with_covers(text, set(record.covers) - drop), encoding="utf-8"
+                with_covers(text, set(record.covers) - drop), encoding="utf-8", newline="\n"
             )
             print(f"unreleased/{stem}.toml: dropped {', '.join(sorted(drop))}")
     return 0

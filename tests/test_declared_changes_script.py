@@ -70,7 +70,7 @@ def _write(repository: Path, files: dict[str, str | None]) -> None:
             path.unlink()
             continue
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text, encoding="utf-8")
+        path.write_text(text, encoding="utf-8", newline="\r\n")
 
 
 def _commit(repository: Path, message: str) -> None:
