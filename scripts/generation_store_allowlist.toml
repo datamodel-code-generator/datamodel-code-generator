@@ -122,10 +122,6 @@ base_classes = "--input tests/data/jsonschema/use_generic_base_class_simple.json
 ["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel._neutralize_generic_extra_config_for_runtime_root_models"]
 '_additional_imports.append()' = "--input tests/data/jsonschema/schema_validators_property_count_root_collapse.json --input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --collapse-root-models --generate-schema-validators --use-generic-base-class --extra-fields forbid --enable-faux-immutability"
 
-["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel._set_config"]
-'_additional_imports.append()' = 1
-'extra_template_data["config"]' = 1
-
 ["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel.create_base_class_model"]
 _additional_imports = "--input tests/data/jsonschema/schema_validators_property_count_root_collapse.json --input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --collapse-root-models --generate-schema-validators --use-generic-base-class --extra-fields forbid --enable-faux-immutability"
 base_classes = "--input tests/data/jsonschema/schema_validators_property_count_root_collapse.json --input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --collapse-root-models --generate-schema-validators --use-generic-base-class --extra-fields forbid --enable-faux-immutability"
@@ -135,6 +131,10 @@ base_classes = "--input tests/data/jsonschema/schema_validators_property_count_r
 
 ["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel.invalidate_render_caches"]
 '__dict__.pop(_SCHEMA_RUNTIME_VALIDATION_MODULE_PLAN_CACHE_KEY)' = 1
+
+["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."_PydanticV2Model._store_config"]
+'_additional_imports.append()' = 1
+'extra_template_data["config"]' = 1
 
 ["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."_copy_alias_data_type"]
 data_types = "--input tests/data/openapi/nullable_map_value_types.yaml --input-file-type openapi --output-model-type pydantic_v2.dataclass --openapi-scopes schemas api --use-typed-nullable-map-values --disable-timestamp --formatters builtin"
@@ -149,10 +149,6 @@ _lookaround_regex_engine_checked = 1
 
 ["src/datamodel_code_generator/model/pydantic_v2/dataclass.py"."DataClass._apply_lookaround_regex_engine"]
 _lookaround_regex_engine_checked = 1
-
-["src/datamodel_code_generator/model/pydantic_v2/dataclass.py"."DataClass._select_python_regex_engine"]
-'_additional_imports.append()' = 1
-'extra_template_data["config"]' = 1
 
 ["src/datamodel_code_generator/model/pydantic_v2/root_model.py"."RootModel._keep_string_pattern_aliases_out_of_bases"]
 '_additional_imports.append()' = 1

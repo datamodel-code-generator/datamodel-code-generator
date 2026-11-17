@@ -61,6 +61,7 @@ from datamodel_code_generator.model._decisions.union_assembly import join_union
 from datamodel_code_generator.model._render_plan import (
     DEFAULT_VALUE,
     MISSING_DEFAULT,
+    RENDER_READY,
     CallPlan,
     FieldDefault,
     FieldRenderPlan,
@@ -1797,6 +1798,9 @@ class _PydanticV2Model(DataModel):
     """The config items, constructs, type alias users and forward references of the Pydantic BaseModel and dataclass."""
 
     WRITES_CLOSED_ADDITIONAL_PROPERTIES: ClassVar[bool] = True
+    _CONFIG_ITEMS_KEY: ClassVar[str] = _CONFIG_ITEMS_TEMPLATE_DATA_KEY
+    _CONFIG_AS_CONFIG_DICT: ClassVar[bool] = True
+    _OVERWRITES_REGEX_ENGINE: ClassVar[bool] = False
 
     @override
     def assigns_forward_reference_field(
@@ -1856,13 +1860,50 @@ class _PydanticV2Model(DataModel):
     def _keep_string_pattern_aliases_out_of_bases(self) -> None:
         """Keep the bases free of types Pydantic builds before the config applies; a model names none there."""
 
-    @abstractmethod
     def _select_python_regex_engine(self) -> None:
-        """Set ``regex_engine`` in the config the model renders."""
+        """Set ``regex_engine`` in the config the model renders, unless the config already names an engine.
+
+        Row ``legacy-dataclass-overwrites-engine`` (``_OVERWRITES_REGEX_ENGINE``): a dataclass replaces an engine its
+        config names (#5637) and keeps its render caches. The model gets a config of its own: the one in the template
+        data may be shared with every model of the same name (``--extra-template-data``). It reads the items of that
+        config, so a config that is no mapping adds none.
+        """
+        config_parameters = dict(_config_dict_items(self.extra_template_data.get("config")))
+        if "regex_engine" in config_parameters and not self._OVERWRITES_REGEX_ENGINE:
+            return
+        config_parameters["regex_engine"] = '"python-re"'
+        self._store_config(config_parameters)
+        if not self._OVERWRITES_REGEX_ENGINE:
+            self.invalidate_render_caches()
+
+    def _store_config(self, config_parameters: dict[str, Any]) -> None:
+        """Store the config the model renders with the items the template writes, and import ``ConfigDict``.
+
+        A model validates it as a ``ConfigDict``; a dataclass keeps the mapping (``_CONFIG_AS_CONFIG_DICT``), so the
+        keys ``ConfigDict`` leaves out stay.
+        """
+        from datamodel_code_generator.model.pydantic_v2 import ConfigDict  # noqa: PLC0415
+
+        self.extra_template_data["config"] = (
+            ConfigDict.model_validate(config_parameters) if self._CONFIG_AS_CONFIG_DICT else config_parameters
+        )
+        self._set_internal_template_data(self._CONFIG_ITEMS_KEY, self._config_items())
+        if IMPORT_CONFIG_DICT not in self._additional_imports:
+            self._additional_imports.append(IMPORT_CONFIG_DICT)
+
+    def _config_items(self) -> list[tuple[str, str]]:
+        """Return the ``ConfigDict`` items of the model's config, which the built-in templates write for the target."""
+        return _template_config_items(self.extra_template_data, self.target_python_version)
 
     def _rendered_config_items(self) -> list[tuple[str, str]]:
-        """Return the ``ConfigDict`` items the built-in template writes; imports and alias decisions read them too."""
-        return _template_config_items(self.extra_template_data, self.target_python_version)
+        """Return the ``ConfigDict`` items the built-in template writes; imports and alias decisions read them too.
+
+        In a parse they are the items stored with the config (``_store_config``); outside one a caller may change the
+        config after ``__init__``, so they are read from it.
+        """
+        if RENDER_READY.get() is None or (stored := self._internal_template_data.get(self._CONFIG_ITEMS_KEY)) is None:
+            return self._config_items()
+        return stored
 
     @override
     def _pydantic_constructs(self) -> Iterator[tuple[PydanticConstruct, str | None]]:
@@ -2137,16 +2178,6 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             self._select_python_regex_engine()
 
     @override
-    def _select_python_regex_engine(self) -> None:
-        """Set ``regex_engine`` unless the config already names an engine."""
-        config_parameters = dict(_config_dict_items(self.extra_template_data.get("config")))
-        if "regex_engine" in config_parameters:
-            return
-        config_parameters["regex_engine"] = '"python-re"'
-        self._set_config(config_parameters)
-        self.invalidate_render_caches()
-
-    @override
     def _applied_config_items(self, visiting: frozenset[int] = frozenset()) -> dict[str, str]:
         """Return the config items Pydantic applies: those of the bases merged in order, then the model's own.
 
@@ -2174,15 +2205,6 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             rule.python_regex_types for rule in validation.pattern_properties
         ):
             yield from _config_constructs((("regex_engine", '"python-re"'),))
-
-    def _set_config(self, config_parameters: dict[str, Any]) -> None:
-        """Store the ConfigDict rendered as ``model_config``."""
-        from datamodel_code_generator.model.pydantic_v2 import ConfigDict  # noqa: PLC0415
-
-        self.extra_template_data["config"] = ConfigDict.model_validate(config_parameters)
-        self._set_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY, self._rendered_config_items())
-        if IMPORT_CONFIG_DICT not in self._additional_imports:
-            self._additional_imports.append(IMPORT_CONFIG_DICT)
 
     @classmethod
     @override
@@ -2541,7 +2563,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             config_parameters["json_schema_extra"] = {**existing, **model_extras}
 
         if config_parameters:
-            self._set_config(config_parameters)
+            self._store_config(config_parameters)
             _import_rendered_alias_generator(self, self._rendered_config_items())
         else:
             self.extra_template_data.pop("config", None)
