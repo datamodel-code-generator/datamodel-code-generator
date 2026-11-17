@@ -140,7 +140,6 @@ STREAM_MEDIA: Final = {
 }
 """The media types a stream helper reads, by its kind: an event stream for SSE, JSON lines for NDJSON."""
 STREAMED: Final = frozenset(media for kinds in STREAM_MEDIA.values() for media in kinds)
-_NULL: Final = frozenset({"null"})
 _UNDECLARED: Final = PartFacts(object=True, members=(), extra=None)
 _DEFAULTS: Final = {"bool": ("bool",), "int": ("int",), "float": ("int", "float"), "str": ("str",)}
 

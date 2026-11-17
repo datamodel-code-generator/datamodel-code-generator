@@ -11,6 +11,5 @@ ellipsis-statement	source_rules/rule_reports_its_site_and_not_the_near_miss[elli
 globals-registry	source_rules/rule_reports_its_site_and_not_the_near_miss[globals-registry].txt
 hash-split	source_rules/rule_reports_its_site_and_not_the_near_miss[hash-split].txt
 private-reexport	source_rules/rule_reports_its_site_and_not_the_near_miss[private-reexport].txt
-pyright-outside-runtime	source_rules/rule_reports_its_site_and_not_the_near_miss[pyright-outside-runtime].txt
 redundant-local-import	source_rules/rule_reports_its_site_and_not_the_near_miss[redundant-local-import].txt
 unused-private-global	source_rules/rule_reports_its_site_and_not_the_near_miss[unused-private-global].txt

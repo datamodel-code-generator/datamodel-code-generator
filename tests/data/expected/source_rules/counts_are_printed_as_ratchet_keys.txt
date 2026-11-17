@@ -11,6 +11,5 @@ exit: 0
   "source-rule:globals-registry": {},
   "source-rule:unused-private-global": {},
   "source-rule:redundant-local-import": {},
-  "source-rule:clone-bodies": {},
-  "source-rule:pyright-outside-runtime": {}
+  "source-rule:clone-bodies": {}
 }

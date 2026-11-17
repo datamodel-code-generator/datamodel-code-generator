@@ -10,7 +10,8 @@ a site.
 
 ``lost-last-caller`` compares the tree with ``--base`` (a git revision of the same repository) and runs only with it.
 It cannot tell from the source whether tests reach every branch of a callable, so it reports each candidate with the
-command that shows its coverage.
+command that shows its coverage, and every run prints how many public callables it cannot decide (``coverage:``; on
+stderr with ``--count``).
 """
 
 from __future__ import annotations
@@ -38,7 +39,6 @@ if TYPE_CHECKING:
 PACKAGE = "src/datamodel_code_generator"
 PACKAGE_NAME = "datamodel_code_generator"
 GENERATED = "_compiled_templates"
-RUNTIME = f"{PACKAGE}/_runtime/"
 ARCHITECTURE_DOCS = "docs/architecture.md"
 REFERENCE_HOME = f"{PACKAGE}/_json_pointer.py"
 CLONE_MIN_NODES = 11
@@ -46,12 +46,16 @@ CLONE_SKIPPED = (f"{PACKAGE}/_types/",)
 NAMESPACE_HOOKS = frozenset({"__getattr__", "__dir__"})
 CUT_METHODS = frozenset({"split", "rsplit", "partition", "rpartition", "find", "rfind", "index", "rindex"})
 ENUMERATING_METHODS = frozenset({"values", "items", "keys", "copy"})
-_NOQA = re.compile(r"#\s*noqa(?![\w-])(?::\s*(?P<codes>[A-Z0-9]+(?:[\s,]+[A-Z0-9]+)*))?", re.IGNORECASE)
-_PYRIGHT_IGNORE = re.compile(r"\bpyright:\s*ignore\b")
+UNUSED_IMPORT = ("F401", "unused-import")
+_CODES = r"(?::\s*(?P<codes>[A-Z0-9]+(?:[\s,]+[A-Z0-9]+)*))?"
+_NOQA = re.compile(rf"#\s*noqa(?![\w-]){_CODES}", re.IGNORECASE)
+_FILE_NOQA = re.compile(rf"#\s*(?:ruff|flake8):\s*noqa(?![\w-]){_CODES}")
+_RUFF_RULES = re.compile(r"#\s*ruff:\s*(?P<action>ignore|disable|enable)\[(?P<rules>[^\]]*)\]")
 _FILE_CITATION = re.compile(r"`([A-Za-z_][\w/]*\.py):([A-Za-z_][\w.]*)")
 _CLASS_CITATION = re.compile(r"`([A-Z][A-Za-z0-9_]*)\.([A-Za-z_]\w*)")
 _WORD = re.compile(r"\w+")
 _DOTTED_PATH = re.compile(r"[A-Za-z_]\w*(?:[.:][A-Za-z_]\w*)*")
+_STRING_PATH = re.compile(r"(?P<module>[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)[.:](?P<name>[A-Za-z_]\w*)")
 
 
 @dataclass(frozen=True)
@@ -112,6 +116,7 @@ class Tree:
     def __init__(self, root: Path) -> None:
         """Index the tree at ``root``."""
         self.root = root
+        self._parsed: dict[str, Module] = {}
 
     def _modules(self, top: str) -> list[Module]:
         return [
@@ -132,14 +137,22 @@ class Tree:
 
     @cached_property
     def words(self) -> dict[str, frozenset[str]]:
-        """Return the words of every Python file of the package and the tests (test data aside) by path."""
+        """Return the words of every Python file that can import the package (test data aside) by path."""
         found: dict[str, frozenset[str]] = {}
-        for top in ("src", "tests"):
+        for top in ("src", "scripts", "tests"):
             for path in sorted((self.root / top).rglob("*.py")):
                 rel = path.relative_to(self.root).as_posix()
                 if not rel.startswith("tests/data/"):
                     found[rel] = frozenset(_WORD.findall(path.read_text(encoding="utf-8", errors="replace")))
         return found
+
+    def module(self, rel: str) -> Module:
+        """Return the parsed file ``rel``, read once."""
+        if not self._parsed:
+            self._parsed.update((module.rel, module) for module in (*self.package, *self.scripts))
+        if rel not in self._parsed:
+            self._parsed[rel] = Module(self.root, rel)
+        return self._parsed[rel]
 
 
 @dataclass(frozen=True)
@@ -151,6 +164,7 @@ class Rule:
     fix: str
     absolute: bool = False
     needs_base: bool = False
+    coverage: Callable[[Tree], str] | None = None
 
 
 def _targets(node: ast.AST) -> list[ast.expr]:
@@ -273,28 +287,88 @@ def ellipsis_statement(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
                 yield Finding(module.rel, node.lineno, "ellipsis-statement", "...")
 
 
-def _suppresses_unused_import(comment: str | None) -> bool:
-    if comment is None or (match := _NOQA.search(comment)) is None:
-        return False
-    return match["codes"] is None or "F401" in re.split(r"[\s,]+", match["codes"].upper())
+def _names_rule(codes: str | None, rule: tuple[str, str]) -> bool:
+    """Return whether the code list of a ``noqa`` comment (None: no list, every rule) names ``rule``."""
+    return codes is None or rule[0] in re.split(r"[\s,]+", codes.upper())
+
+
+def _next_code_line(module: Module, line: int) -> int:
+    """Return the first line after ``line`` that holds code (``line`` itself when none follows)."""
+    for number in range(line + 1, len(module.lines) + 1):
+        if (text := module.lines[number - 1].strip()) and not text.startswith("#"):
+            return number
+    return line
+
+
+def _rule_items(match: re.Match[str]) -> set[str]:
+    return {item.strip() for item in match["rules"].split(",")}
+
+
+def _range_end(module: Module, line: int, spellings: set[str]) -> int:
+    """Return the line that ends a ``ruff: disable`` at ``line``.
+
+    That is an ``enable`` at the same indentation that spells the rule as the ``disable`` does, or the end of the block
+    or of the file.
+    """
+    indent = len(module.lines[line - 1]) - len(module.lines[line - 1].lstrip())
+    for number in range(line + 1, len(module.lines) + 1):
+        text = module.lines[number - 1]
+        if not (stripped := text.lstrip()):
+            continue
+        column = len(text) - len(stripped)
+        if not stripped.startswith("#"):
+            if column < indent:
+                return number
+        elif column == indent and any(
+            match["action"] == "enable" and spellings & _rule_items(match) for match in _RUFF_RULES.finditer(stripped)
+        ):
+            return number
+    return len(module.lines) + 1
+
+
+def suppressed_lines(module: Module, rule: tuple[str, str]) -> frozenset[int]:
+    """Return the lines on which ruff does not report ``rule`` (its code and its name), from every comment form.
+
+    The forms: ``# noqa`` (bare or naming the code) on the line; ``# ruff: ignore[...]`` naming the code or the name,
+    on the line or on its own line before it; ``# ruff: disable[...]`` up to its ``enable`` or the end of its block;
+    a file-level ``# ruff: noqa`` or ``# flake8: noqa`` (bare or naming the code) on its own line.
+    """
+    lines: set[int] = set()
+    for number, comment in module.comments.items():
+        own_line = module.lines[number - 1].lstrip().startswith("#")
+        if (match := _NOQA.search(comment)) is not None and _names_rule(match["codes"], rule):
+            lines.add(number)
+        if own_line and (match := _FILE_NOQA.match(comment)) is not None and _names_rule(match["codes"], rule):
+            return frozenset(range(1, len(module.lines) + 1))
+        for match in _RUFF_RULES.finditer(comment):
+            if not (spellings := set(rule) & _rule_items(match)):
+                continue
+            if match["action"] == "ignore":
+                lines.add(_next_code_line(module, number) if own_line else number)
+            elif match["action"] == "disable" and own_line:
+                lines.update(range(number, _range_end(module, number, spellings)))
+    return frozenset(lines)
 
 
 def private_reexport(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
-    """Report an import of a private name that only a ``noqa: F401`` keeps: a re-export of something private.
+    """Report an import of a private name that only a suppression of unused imports keeps: a private re-export.
+
+    Every comment form counts (``suppressed_lines``), on the name's line or on the first line of its statement.
 
     Review class: a copy of the step's decision left outside the routed sites (a second reader through an old path).
     """
     for module in tree.package:
+        suppressed: frozenset[int] | None = None
         for node in module.nodes:
             if not isinstance(node, (ast.Import, ast.ImportFrom)):
                 continue
             for alias in node.names:
                 bound = (alias.asname or alias.name).split(".")[0]
-                if (
-                    bound.startswith("_")
-                    and not bound.startswith("__")
-                    and _suppresses_unused_import(module.comments.get(alias.lineno))
-                ):
+                if not bound.startswith("_") or bound.startswith("__"):
+                    continue
+                if suppressed is None:
+                    suppressed = suppressed_lines(module, UNUSED_IMPORT)
+                if {node.lineno, alias.lineno} & suppressed:
                     yield Finding(module.rel, alias.lineno, "private-reexport", bound)
 
 
@@ -336,41 +410,111 @@ def globals_registry(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
                 yield Finding(module.rel, node.lineno, "globals-registry", module.lines[node.lineno - 1].strip())
 
 
+def _dotted(node: ast.expr) -> str | None:
+    """Return ``a.b.c`` for a chain of attribute reads on a name (None for any other expression)."""
+    parts: list[str] = []
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
+    if not isinstance(node, ast.Name):
+        return None
+    return ".".join([node.id, *reversed(parts)])
+
+
+def _module_reads(module: Module, names: set[str]) -> set[tuple[str, str]]:
+    """Return the ``(module, name)`` pairs of ``names`` that ``module`` reads from a module by its name.
+
+    A read is an import of the name (``from m import _x``), an attribute read on an imported module (``import m``
+    then ``m._x``) or a string holding its dotted path (``"m._x"``, ``"m:_x"``).
+    """
+    reads: set[tuple[str, str]] = set()
+    bound: dict[str, set[str]] = defaultdict(set)
+    for node in module.nodes:
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                head = alias.name.split(".")[0]
+                bound[alias.asname or head].add(alias.name if alias.asname else head)
+        elif isinstance(node, ast.ImportFrom) and (not node.level or module.rel.startswith("src/")):
+            source = _from_module(module, node)
+            for alias in node.names:
+                bound[alias.asname or alias.name].add(f"{source}.{alias.name}")
+                reads.add((source, alias.name))
+    for node in module.nodes:
+        if (
+            isinstance(node, ast.Attribute)
+            and node.attr in names
+            and not isinstance(node.ctx, ast.Store)
+            and (chain := _dotted(node.value)) is not None
+        ):
+            head, _, rest = chain.partition(".")
+            reads |= {(".".join(filter(None, (target, rest))), node.attr) for target in bound.get(head, ())}
+        elif (
+            isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
+            and (path := _STRING_PATH.fullmatch(node.value)) is not None
+        ):
+            reads.add((path["module"], path["name"]))
+    return reads
+
+
 def unused_private_global(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
-    """Report a module-level private name (``_NAME = ...``) that its module never reads and no other file names.
+    """Report a module-level private name (``_NAME = ...``) that nothing which can reach it reads.
+
+    What can reach it: a read in its module, and from any other file of the package, the scripts or the tests, an
+    import of it, an attribute read on its module or a string holding its dotted path. The same name in another module
+    is another global.
 
     Review class: dead code left by a move (a CodeQL unused global).
     """
-    words = tree.words
+    unread: dict[tuple[str, str], tuple[Module, int]] = {}
     for module in tree.package:
         loads = {node.id for node in module.nodes if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)}
-        assigned: dict[str, int] = {}
         for node in module.tree.body:
             for target in _targets(node):
-                if isinstance(target, ast.Name) and target.id.startswith("_") and not target.id.startswith("__"):
-                    assigned.setdefault(target.id, node.lineno)
-        for name, line in assigned.items():
-            if name not in loads and not any(name in found for path, found in words.items() if path != module.rel):
-                yield Finding(module.rel, line, "unused-private-global", name)
+                if (
+                    isinstance(target, ast.Name)
+                    and target.id.startswith("_")
+                    and not target.id.startswith("__")
+                    and target.id not in loads
+                ):
+                    unread.setdefault((module.name, target.id), (module, node.lineno))
+    names = {name for _, name in unread}
+    for rel, words in tree.words.items():
+        if names & words:
+            for read in _module_reads(tree.module(rel), names):
+                unread.pop(read, None)
+    for (_, name), (module, line) in unread.items():
+        yield Finding(module.rel, line, "unused-private-global", name)
+
+
+def _from_module(module: Module, node: ast.ImportFrom) -> str:
+    """Return the dotted name of the module ``from ... import`` reads, relative forms resolved."""
+    base = node.module or ""
+    if not node.level:
+        return base
+    package = module.name.split(".") if module.is_package else module.name.split(".")[:-1]
+    package = package[: len(package) - (node.level - 1)]
+    return ".".join([*package, base] if base else package)
 
 
 def _import_targets(module: Module, node: ast.Import | ast.ImportFrom, names: set[str]) -> list[str]:
     if isinstance(node, ast.Import):
         return [alias.name for alias in node.names]
-    base = node.module or ""
-    if node.level:
-        package = module.name.split(".") if module.is_package else module.name.split(".")[:-1]
-        package = package[: len(package) - (node.level - 1)]
-        base = ".".join([*package, base] if base else package)
+    base = _from_module(module, node)
     return [candidate if (candidate := f"{base}.{alias.name}") in names else base for alias in node.names]
 
 
-def _is_type_checking(node: ast.AST) -> bool:
-    return isinstance(node, ast.If) and "TYPE_CHECKING" in ast.unparse(node.test)
+def _is_guard(node: ast.AST) -> bool:
+    """Return whether ``node`` is an ``if`` whose body may not run on import: any test but a ``version_info`` one."""
+    return isinstance(node, ast.If) and not any(
+        (isinstance(sub, ast.Attribute) and sub.attr == "version_info")
+        or (isinstance(sub, ast.Name) and sub.id == "version_info")
+        for sub in ast.walk(node.test)
+    )
 
 
 class _ImportGraph:
-    """The module-level imports of the package (``TYPE_CHECKING`` blocks aside) and the function-level ones."""
+    """The module-level imports of the package outside guards (see ``_is_guard``) and the function-level ones."""
 
     def __init__(self, modules: list[Module]) -> None:
         self.names = {module.name for module in modules}
@@ -395,7 +539,7 @@ class _ImportGraph:
                 module,
                 child,
                 in_function=in_function or isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)),
-                guarded=guarded or _is_type_checking(child),
+                guarded=guarded or _is_guard(child),
             )
 
     def _parents(self, name: str) -> list[str]:
@@ -419,6 +563,10 @@ class _ImportGraph:
 
 def redundant_local_import(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
     """Report a function-level import of package modules that the importer already loads at module level.
+
+    An import inside a module-level ``if`` loads nothing for certain (a ``TYPE_CHECKING`` block, a fast path on
+    ``sys.argv``), so only imports outside such a guard count; a ``sys.version_info`` test is no guard, as one of its
+    branches always runs.
 
     Review class: a local import kept for no reason (it defers nothing and closes no cycle). Imports of the root
     package are left out: they wait for its names to move to leaf modules, not for a hoist.
@@ -469,7 +617,7 @@ def _body_key(node: ast.FunctionDef | ast.AsyncFunctionDef) -> str | None:
 
 
 def clone_bodies(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
-    """Report function bodies equal up to the names of parameters and locals in two or more modules.
+    """Report function bodies equal up to the names of parameters and locals, in one module or in several.
 
     Review class: a copy of a decision outside its home (two functions that are one decision).
     """
@@ -481,23 +629,10 @@ def clone_bodies(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and (key := _body_key(node)) is not None:
                 groups[key].append((module.rel, node.lineno, node.name))
     for members in groups.values():
-        if len({rel for rel, _, _ in members}) > 1:
+        if len(members) > 1:
             (rel, line, name), *others = members
             copies = "; ".join(f"{other}:{other_line} {other_name}" for other, other_line, other_name in others)
             yield Finding(rel, line, "clone-bodies", f"{name} = {copies}")
-
-
-def pyright_outside_runtime(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
-    """Report a ``pyright: ignore`` comment in a package module outside ``_runtime/``.
-
-    Review class: an escape hatch nothing checks (pyright reads generated packages, which copy ``_runtime/`` only).
-    """
-    for module in tree.package:
-        if module.rel.startswith(RUNTIME):
-            continue
-        for line, comment in module.comments.items():
-            if _PYRIGHT_IGNORE.search(comment):
-                yield Finding(module.rel, line, "pyright-outside-runtime", comment)
 
 
 def _is_public_module(rel: str) -> bool:
@@ -569,6 +704,22 @@ def _callers(
     return callables, counts
 
 
+def undecided_callers(tree: Tree) -> str:
+    """Return how many public callables ``lost-last-caller`` cannot follow, and why."""
+    callables = _public_callables(tree.package)
+    defined = Counter(
+        node.name
+        for module in tree.package
+        for node in module.nodes
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+    )
+    shared = sum(1 for _, qualname in callables if defined[qualname.rpartition(".")[2]] > 1)
+    return (
+        f"{shared} of {len(callables)} public callables undecided: each shares its name with another function or "
+        "class of the package and uses are counted by name, so the loss of its last caller may go unseen"
+    )
+
+
 def lost_last_caller(tree: Tree, base: Tree | None) -> Iterator[Finding]:
     """Report a public callable the package used on the base and no longer uses: only tests reach its branches now.
 
@@ -621,7 +772,8 @@ RULES: tuple[Rule, ...] = (
     Rule(
         "redundant-local-import",
         redundant_local_import,
-        "import at module level: the importer already loads these modules there, so the local import defers nothing",
+        "import at module level: the importer already loads these modules there (outside any `if` but a "
+        "`sys.version_info` test), so the local import defers nothing",
     ),
     Rule(
         "clone-bodies",
@@ -629,16 +781,12 @@ RULES: tuple[Rule, ...] = (
         "keep one body in the module that owns the decision and call it from the others",
     ),
     Rule(
-        "pyright-outside-runtime",
-        pyright_outside_runtime,
-        "delete the comment: no pyright run reads this module (ty checks it; use `ty: ignore[<rule>]` if needed)",
-    ),
-    Rule(
         "lost-last-caller",
         lost_last_caller,
         "test every branch of the callable directly (run the command shown and add cases for the missing lines), "
         "or route its tests through the code that replaced the callers",
         needs_base=True,
+        coverage=undecided_callers,
     ),
 )
 
@@ -663,8 +811,8 @@ def run(tree: Tree, rules: Iterable[Rule], base: Tree | None) -> dict[str, list[
     }
 
 
-def format_report(rules: Iterable[Rule], findings: dict[str, list[Finding]]) -> str:
-    """Return every site, then the count and fix of each rule (or why it did not run)."""
+def format_report(rules: Iterable[Rule], findings: dict[str, list[Finding]], notes: dict[str, str]) -> str:
+    """Return every site, then the count and fix of each rule (or why it did not run) and what it could not decide."""
     lines = [
         f"{finding.path}:{finding.line}: {finding.rule}: {finding.detail}"
         for found in findings.values()
@@ -675,6 +823,8 @@ def format_report(rules: Iterable[Rule], findings: dict[str, list[Finding]]) -> 
         if rule.name in findings:
             kind = "absolute" if rule.absolute else "report only" if rule.needs_base else "ratchet"
             lines.append(f"  {rule.name}: {len(findings[rule.name])} ({kind}); fix: {rule.fix}")
+            if rule.name in notes:
+                lines.append(f"    coverage: {notes[rule.name]}")
         else:
             lines.append(f"  {rule.name}: not run (needs --base)")
     return "\n".join(lines) + "\n"
@@ -698,10 +848,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--count", action="store_true", help="print the counts as JSON ratchet keys")
     args = parser.parse_args(argv)
     rules = [rule for rule in RULES if args.rule is None or rule.name in args.rule]
+    tree = Tree(args.root)
     with tempfile.TemporaryDirectory() as temporary:
         base = _extract(args.root, args.base, Path(temporary)) if args.base else None
-        findings = run(Tree(args.root), rules, base)
-    sys.stdout.write(format_counts(findings) if args.count else format_report(rules, findings))
+        findings = run(tree, rules, base)
+    notes = {rule.name: rule.coverage(tree) for rule in rules if rule.coverage is not None and rule.name in findings}
+    if args.count:
+        sys.stdout.write(format_counts(findings))
+        sys.stderr.writelines(f"{name}: coverage: {note}\n" for name, note in notes.items())
+    else:
+        sys.stdout.write(format_report(rules, findings, notes))
     return int(any(findings.get(rule.name) for rule in RULES if rule.absolute))
 
 

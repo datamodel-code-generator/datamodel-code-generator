@@ -95,6 +95,70 @@ TREES: dict[str, dict[str, str]] = {
 
             print(_z)
         """,
+        f"{PACKAGE}/ignores.py": """
+            from .home import _x  # ruff: ignore[unused-import]
+            from .home import _y  # type: ignore  #ruff: ignore[E501, F401]
+            from .home import _z  # ruff: ignore[import-private-name]
+            from .home import _w  # see ruff: ignore[unused-import]
+            # ruff: ignore[unused-import]
+
+            # the export
+            from .home import (
+                _q,
+                public as _public,
+            )
+            from .home import (  # noqa: F401
+                _x as _first,
+                _y as _second,
+            )
+            from .home import (
+                _z as _closing,
+            )  # noqa: F401
+            from .home import (
+                # ruff: ignore[F401]
+                _w as _inner,
+                _q as _after,
+            )
+            value = 1  # ruff: ignore[unused-import]
+            from .home import _x as _next
+            # ruff: ignore[unused-import]
+        """,
+        f"{PACKAGE}/ranges.py": """
+            from .home import _x  # ruff: disable[unused-import]
+            # ruff: disable[unused-import]
+
+            from .home import _y
+                # ruff: enable[unused-import]
+            # ruff: enable[import-private-name]
+            from .home import _z
+            # ruff: enable[F401]
+            from .home import _w as _spelled
+            # ruff: enable[unused-import]
+            from .home import _w
+
+            if _w:
+                # ruff: disable[F401]
+                from .home import _q
+            from .home import public as _public
+            # ruff: disable[unused-import]
+            from .home import __version__ as _version
+        """,
+        f"{PACKAGE}/exempt.py": """
+            \"\"\"A module whose unused imports ruff never reports.\"\"\"
+
+            from .home import _x
+            #ruff:noqa:E501,F401
+        """,
+        f"{PACKAGE}/flake8.py": """
+            # flake8: noqa
+            from .home import _x
+        """,
+        f"{PACKAGE}/other_rules.py": """
+            # ruff: noqa: E402
+            from .home import _x
+            x = 1  # ruff: noqa
+            from .home import _y
+        """,
     },
     "globals-registry": {
         f"{PACKAGE}/lazy.py": """
@@ -121,6 +185,7 @@ TREES: dict[str, dict[str, str]] = {
         """,
     },
     "unused-private-global": {
+        f"{PACKAGE}/__init__.py": "",
         f"{PACKAGE}/constants.py": """
             _UNUSED = 1
             _READ = 2
@@ -128,13 +193,38 @@ TREES: dict[str, dict[str, str]] = {
             _TYPED: int = 4
             __version__ = "1"
             PUBLIC = _READ
+            _SHARED = 5
+            _IMPORTED = _ALIASED = _RELATIVE = _ATTRIBUTE = _CHAINED = _PATCHED = _PACKED = 6
+            _STORED = _FOREIGN = _CALLED = 7
+        """,
+        f"{PACKAGE}/other.py": """
+            from datamodel_code_generator.constants import _IMPORTED
+            from . import constants as consts
+            import datamodel_code_generator.constants
+            import datamodel_code_generator.constants as aliased
+
+            _SHARED = 8
+            print(_SHARED, _IMPORTED, consts._ATTRIBUTE, datamodel_code_generator.constants._CHAINED, aliased._ALIASED)
+            consts._STORED = 9
+            print(datetime._FOREIGN, make()._CALLED, "plain words")
+        """,
+        f"{PACKAGE}/sub/__init__.py": """
+            from ..constants import _RELATIVE
         """,
         "tests/test_constants.py": """
+            from . import _UNUSED
+
+            TARGET = "datamodel_code_generator.constants._PATCHED"
+            LAZY = "datamodel_code_generator.constants:_PACKED"
+
             def test_elsewhere():
-                assert "_ELSEWHERE"
+                assert "_ELSEWHERE", "other._SHARED"
         """,
         "tests/data/sample.py": """
-            _TYPED = 4
+            from datamodel_code_generator.constants import _TYPED
+        """,
+        "scripts/tool.py": """
+            print("nothing private")
         """,
     },
     "redundant-local-import": {
@@ -143,6 +233,8 @@ TREES: dict[str, dict[str, str]] = {
                 pass
         """,
         f"{PACKAGE}/app.py": """
+            import sys
+            from sys import version_info
             from typing import TYPE_CHECKING
 
             import datamodel_code_generator.sub.inner
@@ -150,6 +242,29 @@ TREES: dict[str, dict[str, str]] = {
 
             if TYPE_CHECKING:
                 from datamodel_code_generator.typing_only import Hint
+
+            if sys.argv[1:] == ["--fast"]:
+                from datamodel_code_generator.fast import run
+            else:
+                from datamodel_code_generator.slow import walk
+
+            if sys.version_info >= (3, 12):
+                from datamodel_code_generator.versioned import feature
+
+            if version_info < (3, 12):
+                from datamodel_code_generator.legacy import fallback
+
+            def fast_paths():
+                from datamodel_code_generator.fast import run
+                from datamodel_code_generator.slow import walk
+
+                return run, walk
+
+            def versioned():
+                from datamodel_code_generator.versioned import feature
+                from datamodel_code_generator.legacy import fallback
+
+                return feature, fallback
 
             def loaded():
                 from datamodel_code_generator.helpers import helper
@@ -175,6 +290,10 @@ TREES: dict[str, dict[str, str]] = {
         """,
         f"{PACKAGE}/config.py": "",
         f"{PACKAGE}/heavy.py": "",
+        f"{PACKAGE}/fast.py": "",
+        f"{PACKAGE}/slow.py": "",
+        f"{PACKAGE}/versioned.py": "",
+        f"{PACKAGE}/legacy.py": "",
         f"{PACKAGE}/typing_only.py": "",
         f"{PACKAGE}/sub/__init__.py": """
             from .. import config
@@ -257,15 +376,12 @@ TREES: dict[str, dict[str, str]] = {
                 for value in values:
                     count += value * 4
                 return count
-        """,
-    },
-    "pyright-outside-runtime": {
-        f"{PACKAGE}/binding.py": """
-            value = int("1")  # pyright: ignore[reportArgumentType]
-            text = "# pyright: ignore"  # a string, not a comment
-        """,
-        f"{PACKAGE}/_runtime/client.py": """
-            value = int("1")  # pyright: ignore[reportArgumentType]
+
+            def tripled(values):
+                count = 0
+                for value in values:
+                    count += value * 5
+                return count
         """,
     },
 }
@@ -299,6 +415,9 @@ LOST_BASE = {
     f"{PACKAGE}/_hidden.py": """
         def internal():
             return 4
+
+        def context():
+            return 5
     """,
     f"{PACKAGE}/user.py": """
         from datamodel_code_generator._hidden import internal
