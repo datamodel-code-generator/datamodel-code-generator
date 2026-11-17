@@ -166,8 +166,7 @@ class _Sockets(_Streams):
         self, protocols: Protocols, plan: ClientPlan, request: TargetRequest, facts: ModelFacts, backend: CodecBackend
     ) -> None:
         """Keep the models' facts and backend, which tell several messages of a direction apart."""
-        super().__init__(protocols, plan, request)
-        self.facts = facts
+        super().__init__(protocols, plan, request, facts)
         self.backend = backend
 
     def socket(self, helper: Helper, spec: OperationSpec) -> tuple[SocketSpec | None, list[Diagnostic]]:
@@ -306,26 +305,21 @@ class _Sockets(_Streams):
 
 
 def socket_uses(
-    protocols: Protocols | None, plan: ClientPlan, request: TargetRequest, facts: ModelFacts, backend: CodecBackend
+    sockets: _Sockets | None,
 ) -> tuple[tuple[SocketSpec, ...], tuple[TypeUseBinding, ...], dict[str, list[Diagnostic]]]:
     """Check every enabled WebSocket helper before its codecs are planned, returning the helpers, uses, and problems.
 
     Each use appears once, however many helpers code its schema through the same operation.
     """
-    if protocols is None or not any(helper.enabled and helper.kind == "websocket" for helper in protocols.helpers):
+    if sockets is None or not any(
+        helper.enabled and helper.kind == "websocket" for helper in sockets.protocols.helpers
+    ):
         return (), (), {}
-    sockets = _Sockets(protocols, plan, request, facts, backend)
     return sockets.coded(("websocket",), sockets.socket)
 
 
-def routed_streams(  # noqa: PLR0913, PLR0917
-    specs: tuple[StreamSpec, ...],
-    protocols: Protocols | None,
-    plan: ClientPlan,
-    request: TargetRequest,
-    facts: ModelFacts,
-    backend: CodecBackend,
-    problems: dict[str, list[Diagnostic]],
+def routed_streams(
+    specs: tuple[StreamSpec, ...], sockets: _Sockets | None, problems: dict[str, list[Diagnostic]]
 ) -> tuple[tuple[StreamSpec, ...], tuple[TypeUseBinding, ...]]:
     """Tell apart the events of each server-sent event channel that receives several, returning the helpers and uses.
 
@@ -333,9 +327,8 @@ def routed_streams(  # noqa: PLR0913, PLR0917
     as the received messages of a WebSocket are, else decoded as one union by Pydantic models; a channel neither tells
     apart is left out with its problem. Each use appears once.
     """
-    if protocols is None or not specs:
+    if sockets is None or not specs:
         return specs, ()
-    sockets = _Sockets(protocols, plan, request, facts, backend)
     routed: list[StreamSpec] = []
     for spec in specs:
         selector = discriminator(spec.helper)

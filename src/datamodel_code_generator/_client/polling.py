@@ -8,6 +8,7 @@ Typed accessors the package generates read a result through the fields of its re
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import cached_property
 from typing import TYPE_CHECKING, Any, Final, Literal, cast
 
 from datamodel_code_generator._api_types import Diagnostic
@@ -28,15 +29,13 @@ from datamodel_code_generator._target_types import without_none
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterator, Mapping
+    from collections.abc import Iterator, Mapping
 
-    from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._client.model_facts import ItemStep, ModelFacts
+    from datamodel_code_generator._client.model_facts import ItemStep
     from datamodel_code_generator._client.pagination import _Reached, _Types
-    from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ResponseSpec
-    from datamodel_code_generator._client.protocol_plan import Protocols
+    from datamodel_code_generator._client.plan import OperationSpec, ResponseSpec
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId, TypeView
+    from datamodel_code_generator._target_contract import TypeUseBinding, TypeView
 
 STATES: Final = ("pending", "succeeded", "failed", "cancelled")
 
@@ -100,9 +99,13 @@ class _Polls:
     """Check and plan every enabled polling helper of a client target."""
 
     def __init__(self, pages: _Pages) -> None:
-        """Keep the shared pagination checks and a static type speller."""
+        """Keep the shared pagination checks."""
         self.pages = pages
-        self.spelling = TargetModule(TypeNames(pages.request.batch), qualified=True)
+
+    @cached_property
+    def spelling(self) -> TargetModule:
+        """Return the static type speller that compares the types of an immediate result, built when first read."""
+        return TargetModule(TypeNames(self.pages.request.batch), qualified=True)
 
     def model(self, response: ResponseSpec) -> TypeView | None:
         """Return the type of a response's one JSON media with a codec, or None for any other response."""
@@ -405,15 +408,8 @@ class _Polls:
         return reached.steps
 
 
-def plan_polling(
-    protocols: Protocols | None,
-    plan: ClientPlan,
-    facts: ModelFacts,
-    codecs: Container[TypeUseId],
-    request: TargetRequest,
-) -> tuple[tuple[PollingSpec, ...], dict[str, list[Diagnostic]]]:
+def plan_polling(polls: _Polls | None) -> tuple[tuple[PollingSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled polling helper, returning them and each checked helper's problems."""
-    if protocols is None:
+    if polls is None:
         return (), {}
-    polls = _Polls(_Pages(protocols, plan, facts, codecs, request))
     return polls.pages.each(("polling",), polls.helper)

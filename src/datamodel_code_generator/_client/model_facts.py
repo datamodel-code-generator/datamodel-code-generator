@@ -8,6 +8,7 @@ symbols and field bindings alone, never from a codec.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from functools import cached_property
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
 from datamodel_code_generator._target_contract import (
@@ -18,6 +19,7 @@ from datamodel_code_generator._target_contract import (
     KnownBackendValue,
     LiteralScalar,
     UnionType,
+    schema_uses,
     wrapped_type,
 )
 from datamodel_code_generator._target_types import (
@@ -32,13 +34,16 @@ from datamodel_code_generator._target_types import (
 from datamodel_code_generator.imports import _import_path
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Iterator, Sequence
 
     from datamodel_code_generator._target_contract import (
+        Direction,
         FieldUseBinding,
         FinalModelSymbol,
         ModelFieldFacts,
+        SourceDocumentId,
         SymbolId,
+        TypeUseBinding,
         TypeView,
     )
 
@@ -114,14 +119,23 @@ def _required(consumer: FinalModelSymbol, owner: FinalModelSymbol, facts: ModelF
 
 
 class ModelFacts:
-    """The generated models of a batch: their symbols, their fields by consumer, and the types they stand for."""
+    """The generated models of a batch: their symbols, their fields by consumer, and the types they stand for.
 
-    def __init__(self, tables: TypeTables) -> None:
+    `schemas` holds the value use of each schema occurrence among the batch's type uses (``schema_uses``).
+    """
+
+    def __init__(self, tables: TypeTables, uses: Sequence[TypeUseBinding]) -> None:
         """Read the batch's symbols by identity and its field bindings by consuming symbol from its tables."""
         self.tables = tables
         self.symbols = tables.symbols
         self.members = tables.members
+        self._uses = uses
         self.planned: dict[SymbolId, tuple[ModelField, ...]] = {}
+
+    @cached_property
+    def schemas(self) -> dict[tuple[SourceDocumentId, str, Direction], TypeUseBinding]:
+        """Return the value use of each schema occurrence by its location and direction, indexed when first read."""
+        return schema_uses(self._uses)
 
     def symbol(self, value: TypeView) -> FinalModelSymbol | None:
         """Return the model or root model a type names when its backend declares it, or None for any other type."""

@@ -120,11 +120,16 @@ class WirePlan:
 
     parameters: tuple[tuple[OperationId, tuple[tuple[tuple[ParameterLocation, str], ParameterPlan], ...]], ...]
     diagnostics: tuple[CodecDiagnostic, ...]
-    kinds: LexicalKinds
+    tables: BatchTables
     versions: OpenAPIVersions
     headers: tuple[tuple[TypeUseId, ParameterPlan], ...] = ()
     forms: tuple[tuple[TypeUseId, tuple[FieldPlan, ...], FieldPlan | None, tuple[ParameterPlan, ...]], ...] = ()
     styles: tuple[tuple[TypeUseId, tuple[ParameterPlan, ...]], ...] = ()
+
+    @property
+    def kinds(self) -> LexicalKinds:
+        """Return the reader of the bound lexical kinds of the batch."""
+        return self.tables.kinds
 
 
 class _PlanError(Exception):
@@ -135,17 +140,33 @@ class _PlanError(Exception):
         self.diagnostic = CodecDiagnostic("MC_PARAMETER_ENCODING", source, message, feature=feature)
 
 
-class _WirePlanner:
-    def __init__(self, batch: GeneratedTypeContractBatch, *, writes: bool = False, brackets: bool = False) -> None:
+class BatchTables:
+    """The indexes of a batch that the planners of one target read, built once per target.
+
+    `kinds` reads the batch's type tables (``TypeTables.of``), `uses` and `order` give its type uses by identity and
+    their order, and `schemes` the security schemes of each document (``scheme_catalogues``).
+    """
+
+    def __init__(self, batch: GeneratedTypeContractBatch) -> None:
+        """Index the batch's types, type uses and security schemes."""
         self.batch = batch
-        self.writes = writes
-        self.brackets = brackets
-        self.kinds = LexicalKinds(batch)
-        self.diagnostics: list[CodecDiagnostic] = []
-        self.versions = batch.versions
+        self.kinds = LexicalKinds(batch, TypeTables.of(batch))
         self.uses = uses_by_id(batch)
         self.order = {use: index for index, use in enumerate(self.uses)}
         self.schemes = scheme_catalogues(batch)
+
+
+class _WirePlanner:
+    def __init__(self, tables: BatchTables, *, writes: bool = False, brackets: bool = False) -> None:
+        self.tables = tables
+        self.writes = writes
+        self.brackets = brackets
+        self.kinds = tables.kinds
+        self.diagnostics: list[CodecDiagnostic] = []
+        self.versions = tables.batch.versions
+        self.uses = tables.uses
+        self.order = tables.order
+        self.schemes = tables.schemes
 
 
 def declared_media(name: str) -> tuple[str, str | None]:
@@ -217,6 +238,7 @@ def plan_wire(  # noqa: PLR0913
     batch: GeneratedTypeContractBatch,
     uses: Sequence[TypeUseId] | None = None,
     *,
+    tables: BatchTables | None = None,
     operations: Collection[OperationId] | None = None,
     forms: Mapping[TypeUseId, tuple[WireDeclaration, ...]] | None = None,
     styles: Mapping[TypeUseId, tuple[WireDeclaration, ...]] | None = None,
@@ -230,11 +252,12 @@ def plan_wire(  # noqa: PLR0913
     encodings give a style. A requested use that carries a raw binary string as text is refused, since the model
     backends write bytes as different text. An operation parameter that is an item or an array of items is planned
     only when the operations' parameters are written (`writes`), since text read back cannot tell the two apart.
-    With `brackets`, a written deepObject query parameter is written in the bracket form (`_brackets`).
+    With `brackets`, a written deepObject query parameter is written in the bracket form (`_brackets`). `tables` are
+    the target's indexes of the batch, which differs from it at most in its operations; without them it is indexed.
     """
     forms = forms or {}
     styles = styles or {}
-    planner = _WirePlanner(batch, writes=writes, brackets=brackets)
+    planner = _WirePlanner(tables or BatchTables(batch), writes=writes, brackets=brackets)
     requested = None if uses is None else frozenset(uses)
     planned = [operation for operation in batch.operations if operations is None or operation.id in operations]
     parameters = tuple((operation.id, _parameters(planner, operation)) for operation in planned)
@@ -257,7 +280,7 @@ def plan_wire(  # noqa: PLR0913
     return WirePlan(
         parameters,
         tuple(planner.diagnostics),
-        planner.kinds,
+        planner.tables,
         planner.versions,
         headers,
         planned_forms,
@@ -371,6 +394,15 @@ def _styles(
         _refused(planner, error, use.id.owner, (use.id,))
         return None
     return use.id, encoded
+
+
+def plan_styles(
+    tables: BatchTables, use: TypeUseBinding, encodings: tuple[WireDeclaration, ...]
+) -> tuple[tuple[ParameterPlan, ...], tuple[CodecDiagnostic, ...]]:
+    """Return the plans of a form-data use's members that its encodings give a style (``_styles``), and its refusals."""
+    planner = _WirePlanner(tables)
+    styled = _styles(planner, use, encodings)
+    return () if styled is None else styled[1], tuple(planner.diagnostics)
 
 
 @dataclass(frozen=True, slots=True)
@@ -999,14 +1031,10 @@ def _field(member: MemberShape) -> FieldPlan:
 class LexicalKinds:
     """Read the lexical kind of a form member (``TypeTables.member_kind``) and the other properties its model keeps."""
 
-    def __init__(self, batch: GeneratedTypeContractBatch) -> None:
-        """Keep the batch whose tables and root values the first lookups index."""
+    def __init__(self, batch: GeneratedTypeContractBatch, tables: TypeTables) -> None:
+        """Keep the batch's tables, and the batch whose root values the first lookup indexes."""
         self._batch = batch
-
-    @cached_property
-    def tables(self) -> TypeTables:
-        """Return the batch's symbols and field bindings, indexed once (``TypeTables.of``)."""
-        return TypeTables.of(self._batch)
+        self.tables = tables
 
     @cached_property
     def _extras(self) -> dict[FieldSlot | None, SourceLocation]:
