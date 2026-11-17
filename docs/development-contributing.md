@@ -286,15 +286,26 @@ composition root, and move reusable helpers to a neutral package module. Do not
 add an allowlist entry for new code. Existing entries document compatibility debt,
 have bounded occurrence counts, and fail when stale.
 
-In the parser concern modules (`parser/_*.py`, `parser/_passes/` and
-`model/_field_imports.py`) the guard owns private access in place of ruff's
-`SLF001`: a private member is reached only through `self`, `cls` or a parameter
-typed as a `*Host` Protocol that declares it, which ty checks against the parser
-passed in. Declare the member on the Host the function takes instead of adding a
-`noqa` comment. The other private access there is counted in
-`scripts/host_private_access_baseline.toml`, which only shrinks. Runtime modules
-(`_runtime/`), which generated packages copy, import only the standard library,
-the third-party packages generated code depends on, and each other relatively.
+In the parser concern modules (every module below a `parser/_*` module or
+package, and `model/_field_imports.py`: the files where the `pyproject.toml`
+per-file ignores turn off ruff's `SLF001`) the guard owns private access: a
+private member is reached only through a method's receiver or a parameter typed
+as a `*Host` Protocol (or `type[...]` of one) that declares it, which ty checks
+against the parser passed in. A method's receiver is the first parameter, `self`
+or `cls`, of a function defined directly in a class body that is not a
+`staticmethod`, also inside the closures and lambdas nested in it; elsewhere
+`self` and `cls` are ordinary parameters. Names follow Python's binding rules: a
+nested function, lambda, class body or comprehension that binds the parameter's
+name (by any binding form: assignment, `for`, `with`, `except`, `import`, `def`,
+`class`, a `match` capture, a walrus target, a type parameter or `global`) hides
+the parameter. Declare the member on the Host the function takes instead of
+adding a `noqa` comment. The other private access there is counted in
+`scripts/host_private_access_baseline.toml`, which only shrinks: route a new
+access through a Host instead of regenerating the file. The private names the
+Host Protocols declare are counted as `host-friend-names` by
+`scripts/check_ratchets.py`. Runtime modules (`_runtime/`), which generated
+packages copy, import only the standard library, the third-party packages
+generated code depends on, and each other relatively.
 
 Tests for the checker use source fixtures and expected reports under
 `tests/data/architecture_boundaries/` and

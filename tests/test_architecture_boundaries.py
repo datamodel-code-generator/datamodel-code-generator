@@ -5,10 +5,12 @@ from __future__ import annotations
 import runpy
 import subprocess
 import sys
+from fnmatch import fnmatchcase
 from pathlib import Path
 from shutil import copyfile
 
 import pytest
+import tomllib
 
 from scripts import check_architecture_boundaries
 from tests.conftest import assert_output
@@ -128,6 +130,63 @@ def test_host_private_access_allows_only_declared_host_members() -> None:
     violations = check_architecture_boundaries.check_files([], allowlist={}, host_files=[fixture])
 
     assert_output(check_architecture_boundaries.format_report(violations))
+
+
+def test_host_private_access_follows_the_binding_rules() -> None:
+    """Report a private read through a name an inner scope or a comprehension rebinds, not the Host read beside it."""
+    fixture = FIXTURE_ROOT / "host_private_access" / "bindings.py"
+    violations = check_architecture_boundaries.check_files([], allowlist={}, host_files=[fixture])
+
+    assert_output(check_architecture_boundaries.format_report(violations))
+
+
+@pytest.mark.skipif(sys.version_info < (3, 12), reason="type parameter syntax needs Python 3.12 or later")
+def test_host_private_access_follows_type_parameter_scopes() -> None:
+    """Hide a Host parameter behind a type parameter or a type statement of the same name."""
+    fixture = FIXTURE_ROOT / "host_private_access" / "type_parameters.py"
+    violations = check_architecture_boundaries.check_files([], allowlist={}, host_files=[fixture])
+
+    assert_output(check_architecture_boundaries.format_report(violations))
+
+
+def test_host_private_access_exempts_only_method_receivers() -> None:
+    """Exempt self and cls of a method and its closures; treat them elsewhere as ordinary parameters."""
+    fixture = FIXTURE_ROOT / "host_private_access" / "receivers.py"
+    violations = check_architecture_boundaries.check_files([], allowlist={}, host_files=[fixture])
+
+    assert_output(check_architecture_boundaries.format_report(violations))
+
+
+def test_host_private_access_scope_equals_the_slf001_ignores() -> None:
+    """Check with the host rule exactly the files where the ruff per-file ignores turn SLF001 off."""
+    ignores = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["tool"]["ruff"]["lint"][
+        "per-file-ignores"
+    ]
+    globs = [glob for glob, rules in ignores.items() if glob.startswith("src/") and "private-member-access" in rules]
+    source_root = ROOT / "src" / "datamodel_code_generator"
+    named = [
+        source_root.joinpath(*relative.split("/"))
+        for relative in (
+            "parser/_new/x.py",
+            "parser/_new/sub/y.py",
+            "parser/_passes/sub/z.py",
+            "parser/base.py",
+            "parser/jsonschema.py",
+            "model/_field_imports.py",
+            "model/base.py",
+        )
+    ]
+
+    def scopes(path: Path) -> tuple[bool, bool]:
+        relative = path.relative_to(ROOT).as_posix()
+        return any(fnmatchcase(relative, glob) for glob in globs), check_architecture_boundaries._in_host_scope(path)
+
+    differing = [
+        path.relative_to(ROOT).as_posix() for path in sorted((ROOT / "src").rglob("*.py")) if len(set(scopes(path))) > 1
+    ]
+    lines = [f"{path.relative_to(source_root).as_posix()}: ignored, checked = {scopes(path)}" for path in named]
+
+    assert_output("\n".join([*globs, *lines, f"src files where they differ: {differing}", ""]))
 
 
 def test_host_private_access_baseline_only_shrinks(tmp_path: Path) -> None:
