@@ -3782,6 +3782,84 @@
     },
     "package_snapshots": []
   },
+  "forms-by-alias": {
+    "input": "server-forms.yaml",
+    "services": "forms",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "requests": [
+      {
+        "method": "POST",
+        "url": "/extras",
+        "files": [
+          [
+            "maxAge",
+            null,
+            "3",
+            null
+          ],
+          [
+            "first",
+            null,
+            "{\"color\": \"blue\"}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extras",
+        "files": [
+          [
+            "max_age",
+            null,
+            "3",
+            null
+          ],
+          [
+            "first",
+            null,
+            "{\"color\": \"blue\"}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extras",
+        "files": [
+          [
+            "max_age",
+            null,
+            "two",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extra-scores",
+        "content": "maxAge=1&max_age=2",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      }
+    ],
+    "model": {
+      "snake_case_field": true,
+      "allow_population_by_field_name": true,
+      "extra_template_data": {
+        "ExtrasPostRequest": {
+          "config": {
+            "validate_by_name": false
+          }
+        }
+      }
+    },
+    "package_snapshots": []
+  },
   "held-extras": {
     "input": "held-extras.yaml",
     "services": "held_extras",
@@ -4638,6 +4716,188 @@
             "note",
             null,
             "kept",
+            null
+          ]
+        ]
+      }
+    ]
+  },
+  "held-extras-base": {
+    "input": "held-extras.yaml",
+    "services": "held_extras",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/plain",
+        "/parts/plain",
+        "/typed"
+      ],
+      "base_class": "tests.data.python.fastapi_handlers.held_extras.AllowBase"
+    },
+    "package_snapshots": [],
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/plain?count=1&foo=bar"
+      },
+      {
+        "method": "POST",
+        "url": "/parts/plain",
+        "files": [
+          [
+            "size",
+            null,
+            "2",
+            null
+          ],
+          [
+            "foo",
+            null,
+            "1",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/typed",
+        "content": "size=1&x=5",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/typed",
+        "content": "size=1&x=abc",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      }
+    ]
+  },
+  "held-extras-base-dataclass": {
+    "input": "held-extras.yaml",
+    "services": "held_extras",
+    "backends": [
+      "pydantic_v2.dataclass"
+    ],
+    "model": {
+      "openapi_include_paths": [
+        "/plain",
+        "/parts/plain",
+        "/typed"
+      ],
+      "base_class": "tests.data.python.fastapi_handlers.held_extras.AllowDataclassBase"
+    },
+    "package_snapshots": [],
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/plain?count=1&foo=bar"
+      },
+      {
+        "method": "POST",
+        "url": "/parts/plain",
+        "files": [
+          [
+            "size",
+            null,
+            "2",
+            null
+          ],
+          [
+            "foo",
+            null,
+            "1",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/typed",
+        "content": "size=1&x=5",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/typed",
+        "content": "size=1&x=abc",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      }
+    ]
+  },
+  "held-bases": {
+    "input": "held-bases.yaml",
+    "services": "held_extras",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "model": {
+      "base_class_map": {
+        "Root": "tests.data.python.fastapi_handlers.held_extras.AllowBase"
+      },
+      "extra_template_data": {
+        "Strict": {
+          "config": {
+            "extra": "forbid"
+          }
+        }
+      }
+    },
+    "package_snapshots": [],
+    "requests": [
+      {
+        "method": "POST",
+        "url": "/parts/plain",
+        "files": [
+          [
+            "size",
+            null,
+            "2",
+            null
+          ],
+          [
+            "name",
+            null,
+            "a",
+            null
+          ],
+          [
+            "foo",
+            null,
+            "1",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/parts/closed",
+        "files": [
+          [
+            "size",
+            null,
+            "2",
+            null
+          ],
+          [
+            "page",
+            null,
+            "3",
+            null
+          ],
+          [
+            "foo",
+            null,
+            "1",
             null
           ]
         ]

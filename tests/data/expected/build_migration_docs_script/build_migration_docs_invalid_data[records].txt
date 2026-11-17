@@ -2,6 +2,7 @@ exit 1
 Invalid migration data:
 - entry released-notice has no refs
 - entry released-notice: category notice has no kind default-output with action review, only error/none, error/required, error/warn, warning/none, warning/required, warning/warn
+- entry option:--new-flag: an entry that extends a derived entry has no category
 - entry api-unscheduled has no decision
 - entry bad-decision: decision '5' is not #<number>
 - entry bad-tables: affects is not a table
@@ -27,7 +28,6 @@ Invalid migration data:
 - entry no-features has no refs
 - entry odd-category: category 'surprise' is not one of new-surface, experimental, crash-fix, output-text, default-fix, decided-change, notice, api, docs-text, internal, harness
 - entry odd-category: decision is not a list of strings
-- entry option:--new-flag: an entry that extends a derived entry has no category
 - entry surfaces: surface item --output-model-type is not new: the latest release has it
 - entry surfaces: surface item --nothing is not in this source tree
 - entry surfaces: surface item preset:20260101 is not new: the latest release has it

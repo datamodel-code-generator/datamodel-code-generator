@@ -241,8 +241,8 @@ _PYDANTIC_CONFIGURATION: Final = (
     "alias_generator",
     "regex_engine",
 )
-_BY_NAME: Final = ("validate_by_name", "populate_by_name")
 _TRUE: Final = LiteralScalar("bool", value=True)
+_FALSE: Final = LiteralScalar("bool", value=False)
 _EXTRAS: Final[dict[object, Literal["allow", "forbid"]]] = {
     LiteralScalar("str", "allow"): "allow",
     LiteralScalar("str", "forbid"): "forbid",
@@ -2039,17 +2039,23 @@ def _model_facts(model: DataModel, policy: _Policy) -> BackendModelFacts | None:
 def _applied_configuration(model: DataModel) -> tuple[Literal["allow", "forbid", "ignore"] | None, bool]:
     """Return the `extra` and the validation by field name of the configuration a Pydantic class applies.
 
-    The model layer reads it with the bases as Pydantic applies them (``_applied_config_items``); a class that sets no
-    `extra` ignores extra members. Any other declaration has no `extra` and validates by alias only, a root model too,
-    which Pydantic gives no extra members.
+    The model layer reads it with the bases as Pydantic applies them (``applied_config``); a class that sets no
+    `extra` ignores extra members, and one whose `extra` a configured base class the generator does not read may set
+    has none (None). It validates by field name as Pydantic settles it from what the class applies: by
+    `validate_by_name`, else by `populate_by_name`, else where `validate_by_alias` is false. Any other declaration has
+    no `extra` and validates by alias only, a root model too, which Pydantic gives no extra members.
     """
     if not isinstance(model, pydantic_v2.BaseModel | pydantic_dataclass.DataClass) or isinstance(
         model, pydantic_v2.RootModel
     ):
         return None, False
-    items = model.applied_config_items()
-    extra = _EXTRAS.get(_syntax_value(items["extra"]).value, "ignore") if "extra" in items else "ignore"
-    return extra, any(_syntax_value(items[name]).value == _TRUE for name in _BY_NAME if name in items)
+    items, known = model.applied_config()
+    extra: Literal["allow", "forbid", "ignore"] | None = "ignore" if known is None else None
+    if "extra" in (items if known is None else known):
+        extra = _EXTRAS.get(_syntax_value(items["extra"]).value, "ignore")
+    if (by_name := items.get("validate_by_name", items.get("populate_by_name"))) is not None:
+        return extra, _syntax_value(by_name).value == _TRUE
+    return extra, "validate_by_alias" in items and _syntax_value(items["validate_by_alias"]).value == _FALSE
 
 
 @dataclass(frozen=True, slots=True)
