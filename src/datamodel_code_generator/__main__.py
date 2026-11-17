@@ -144,6 +144,7 @@ from datamodel_code_generator._option_names import (
     values_arguments,  # noqa: F401  # Preserve the established __main__ export.
 )
 from datamodel_code_generator._option_names import json_ready as _json_ready
+from datamodel_code_generator._option_table import COMMAND_DESTS
 from datamodel_code_generator._paths import (
     layout_refusal,
     names_directory,
@@ -211,34 +212,17 @@ if TYPE_CHECKING:
 
     Config: TypeAlias = Any
 
-# Options that should be excluded from pyproject.toml config generation
-EXCLUDED_CONFIG_OPTIONS: frozenset[str] = frozenset({
+EXCLUDED_CONFIG_OPTIONS: frozenset[str] = COMMAND_DESTS | {
     "check",
     "diff_against",
-    "generate_pyproject_config",
-    "generate_cli_command",
-    "generate_prompt",
-    "recommend_options",
-    "ignore_pyproject",
-    "install_skill",
-    "skill_scope",
-    "overwrite_skill",
-    "profile",
-    "job",
-    "all_jobs",
-    "version",
-    "help",
     "debug",
-    "no_color",
-    "output_format",
-    "output_format_json_schema",
-    "fail_on_multi_module_stdout",
     "disable_warnings",
     "list_deprecations",
     "list_experimental",
     "watch",
     "watch_delay",
-})
+}
+"""The options ``--generate-pyproject-config`` leaves out: those of a command and the config fields of a run mode."""
 
 SENSITIVE_COMMAND_OPTIONS: frozenset[str] = frozenset(map(option_flag, SENSITIVE_FIELDS))
 REDACTED_COMMAND_ARGUMENT = "<redacted>"
