@@ -82,10 +82,12 @@ __all__ = [
     "resolve",
     "split_label",
     "stored_digest",
+    "stored_member",
     "tree_label",
     "tree_member",
     "uncollected_items",
     "unit_digest",
+    "unit_value",
     "unrecorded_files",
     "unrecorded_files_message",
     "write_files",
@@ -195,23 +197,31 @@ def _tree_files(directory: Path, pattern: str) -> dict[str, str]:
     if not directory.is_dir():
         return {}
     return {
-        path.relative_to(directory).as_posix(): _normalize(path.read_bytes().decode("utf-8"))
+        path.relative_to(directory).as_posix(): unit_value(path.name, path.read_bytes(), in_tree=True)
         for path in sorted(directory.rglob(pattern))
         if tree_member(path, directory)
     }
 
 
-def tree_member(path: Path, directory: Path) -> bool:
-    """Return whether a path belongs to a stored tree: any file, hidden files included, outside caches.
+def unit_value(name: str, data: bytes, *, in_tree: bool = False) -> object:
+    """Return the value a stored file holds: its text, or the decoded value of a JSON file that is not in a tree."""
+    text = _normalize(data.decode("utf-8"))
+    return _normalize_value(json.loads(text)) if PurePosixPath(name).suffix == ".json" and not in_tree else text
 
-    Bytecode and hidden directories (tool caches such as ``.ruff_cache``) are not output.
+
+def stored_member(relative: PurePosixPath) -> bool:
+    """Return whether a file at a path relative to a stored tree is output: not bytecode, not in a hidden directory.
+
+    Hidden files count; hidden directories are tool caches such as ``.ruff_cache``.
     """
-    folders = path.relative_to(directory).parts[:-1]
-    return (
-        path.is_file()
-        and path.suffix != ".pyc"
-        and not any(part == "__pycache__" or part.startswith(".") for part in folders)
+    return relative.suffix != ".pyc" and not any(
+        part == "__pycache__" or part.startswith(".") for part in relative.parts[:-1]
     )
+
+
+def tree_member(path: Path, directory: Path) -> bool:
+    """Return whether a path belongs to a stored tree: any file, hidden files included, outside caches."""
+    return path.is_file() and stored_member(PurePosixPath(path.relative_to(directory).as_posix()))
 
 
 def _occupied(path: Path) -> bool:
@@ -227,10 +237,10 @@ def read_unit(path: Path, pattern: str | None) -> object | None:
     if pattern is not None:
         return _tree_files(path, pattern)
     try:
-        text = _normalize(path.read_bytes().decode("utf-8"))
+        data = path.read_bytes()
     except OSError:
         return None
-    return _normalize_value(json.loads(text)) if path.suffix == ".json" else text
+    return unit_value(path.name, data)
 
 
 class UnsafeWriteError(ValueError):

@@ -1,0 +1,9 @@
+exit 1
+declared changes: HEAD against base, release since 0.1.0
+1 stored outputs this change moves are not declared:
+  changed  models/c.py  tests/test_models.py::test_model[c]
+Declare them:
+  python scripts/declared_changes.py declare a-two --rest --base base
+Categories: docs/development-contributing.md#declared-changes
+1 stored outputs moved since 0.1.0 with no record before this change
+failed

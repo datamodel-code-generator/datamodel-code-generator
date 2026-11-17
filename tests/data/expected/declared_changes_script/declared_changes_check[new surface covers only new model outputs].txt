@@ -1,0 +1,4 @@
+exit 1
+declared changes: HEAD against base, release since 0.1.0
+record problem: unreleased/opt.toml: covers models/b.py, models output that 0.1.0 has, which category new-surface does not cover: give it a record of its own
+failed
