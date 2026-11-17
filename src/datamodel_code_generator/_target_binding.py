@@ -128,7 +128,7 @@ from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum, get_raw_
 from datamodel_code_generator.model.msgspec import DataModelField as MsgspecField
 from datamodel_code_generator.model.pydantic_v2 import DataModelField as PydanticField
 from datamodel_code_generator.model.pydantic_v2 import dataclass as pydantic_dataclass
-from datamodel_code_generator.model.pydantic_v2.base_model import _ANNOTATED_CONSTRAINT_BASES
+from datamodel_code_generator.model.pydantic_v2.base_model import _ANNOTATED_CONSTRAINT_BASES, _PydanticV2Model
 from datamodel_code_generator.model.pydantic_v2.imports import IMPORT_FIELD, IMPORT_SERIALIZE_AS_ANY
 from datamodel_code_generator.model.pydantic_v2.type_alias import TypeAlias as PydanticCompatibleTypeAlias
 from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType, _writes_serialize_as_any
@@ -2017,8 +2017,11 @@ def _model_facts(model: DataModel, policy: _Policy) -> BackendModelFacts | None:
     parameters = _BACKEND_PARAMETERS.get(backend, ())
     configuration: tuple[BackendSetting, ...] = ()
     if backend in {"pydantic", "pydantic_dataclass"}:
-        key = "config_items" if backend == "pydantic" else "_safe_config_items"
-        items: list[tuple[str, str]] = model._internal_template_data.get(key, [])  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+        items: list[tuple[str, str]] = (
+            model._internal_template_data.get(model._CONFIG_ITEMS_KEY, [])  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+            if isinstance(model, _PydanticV2Model)
+            else []
+        )
         configuration = _settings(
             _PYDANTIC_CONFIGURATION,
             {name: _syntax_value(value) for name, value in items if name in _PYDANTIC_CONFIGURATION},

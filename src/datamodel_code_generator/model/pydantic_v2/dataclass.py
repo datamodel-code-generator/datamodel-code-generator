@@ -42,10 +42,8 @@ from datamodel_code_generator.model.pydantic_v2._output_context import (
 from datamodel_code_generator.model.pydantic_v2.base_model import (
     _ALIAS_GENERATOR_TEMPLATE_DATA_KEY,
     _config_dict_items,
-    _followed_fields,
     _import_rendered_alias_generator,
     _PydanticV2Model,
-    has_lookaround_pattern,
 )
 from datamodel_code_generator.model.pydantic_v2.base_model import (
     Constraints as _Constraints,
@@ -94,7 +92,7 @@ def _pydantic_dataclass_field_participates_in_constructor(field: DataModelFieldB
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Mapping
     from pathlib import Path
 
     from datamodel_code_generator import DataclassArguments
@@ -140,6 +138,7 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
     _CONFIG_ITEMS_KEY: ClassVar[str] = "_safe_config_items"
     _CONFIG_AS_CONFIG_DICT: ClassVar[bool] = False
     _OVERWRITES_REGEX_ENGINE: ClassVar[bool] = True
+    _FOLLOWS_PATTERN_REFERENCES: ClassVar[bool] = True
 
     def __init__(  # noqa: PLR0913
         self,
@@ -251,20 +250,14 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
     def _apply_lookaround_regex_engine(self) -> None:
         """Force the python-re regex engine when a lookaround pattern is reachable.
 
-        The patterns of every model the fields reach count (``has_lookaround_pattern``, row
-        ``legacy-dataclass-follows-every-reference``). Runs lazily because referenced patterns are only linked after
-        ``__init__``; the result is memoized to keep ``imports`` cheap.
+        The patterns of every model the fields reach count (``_own_patterns_select_python``). Runs lazily because
+        referenced patterns are only linked after ``__init__``; the result is memoized to keep ``imports`` cheap.
         """
         if self._lookaround_regex_engine_checked:
             return
         self._lookaround_regex_engine_checked = True
-        if has_lookaround_pattern(self.fields, follow_references=True, surrogates=False):
+        if self._own_patterns_select_python():
             self._select_python_regex_engine()
-
-    @override
-    def _surrogate_pattern_scopes(self) -> Iterator[list[DataModelFieldBase]]:
-        """Yield its fields and those of every model they reach, as a lookaround counts them (``_followed_fields``)."""
-        return _followed_fields(self.fields)
 
     @override
     def _takes_config_of(self, base: DataModel) -> bool:
