@@ -36,7 +36,7 @@ from datamodel_code_generator.model.runtime_validation import (
 )
 from datamodel_code_generator.parser.base import Parser
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-from datamodel_code_generator.reference import Reference, model_key_of
+from datamodel_code_generator.reference import Reference
 from datamodel_code_generator.types import DataType
 from tests.conftest import assert_output
 
@@ -105,36 +105,6 @@ def test_schema_runtime_validation_unique_items_follows_model_description() -> N
     model.invalidate_render_caches()
 
     assert_output(model.render(), expected)
-
-
-@pytest.mark.allow_direct_assert
-def test_schema_runtime_validation_base_inheritance_detects_transitive_base() -> None:
-    """Detect inherited runtime validation bases through non-runtime intermediate models."""
-    runtime_base = BaseModel(
-        fields=[],
-        reference=Reference(name="RuntimeBase", path="#/RuntimeBase"),
-        extra_template_data=defaultdict(
-            dict,
-            {"#/RuntimeBase": {"schema_runtime_validation": _schema_runtime_validation()}},
-        ),
-    )
-
-    intermediate = BaseModel(
-        fields=[],
-        reference=Reference(name="Intermediate", path="#/Intermediate"),
-        base_classes=[runtime_base.reference],
-    )
-    runtime_leaf = BaseModel(
-        fields=[],
-        reference=Reference(name="RuntimeLeaf", path="#/RuntimeLeaf"),
-        base_classes=[intermediate.reference],
-    )
-
-    assert BaseModel._inherits_schema_runtime_validation_base(runtime_leaf, seen=set())
-    assert not BaseModel._inherits_schema_runtime_validation_base(
-        runtime_leaf,
-        seen={model_key_of(runtime_leaf.reference)},
-    )
 
 
 @pytest.mark.allow_direct_assert

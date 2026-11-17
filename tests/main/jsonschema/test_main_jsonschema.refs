@@ -9441,6 +9441,8 @@ msgspec	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_defaul
 msgspec	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_defaults[msgspec].txt
 pydantic	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_defaults[pydantic].py
 pydantic	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_defaults[pydantic].txt	= main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_defaults[msgspec].txt
+[test_main_unique_items_as_set_by_value_inherited_fields]
+	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_inherited_fields.py
 [test_main_unique_items_as_set_by_value_long_alias_chain]
 	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_long_alias_chain.py
 [test_main_unique_items_as_set_by_value_python_types]
@@ -14240,6 +14242,8 @@ cli-external	payloads/mapping_schema_validators/Pattern_valid.txt
 cli-external	payloads/mapping_schema_validators/Unique_invalid.txt
 cli-external	payloads/mapping_schema_validators/Unique_valid.txt
 cli-external	payloads/mapping_schema_validators/native.txt
+[test_schema_validators_inherit_runtime_base_through_plain_model]
+	main/jsonschema/schema_validators_inherit_runtime_base_through_plain_model.py
 [test_standard_frozen_unhashable_subclass]
 bound_union-1-None	main/jsonschema/explicit_frozen_sets/bound_union.py
 bound_union-1-None	main/jsonschema/explicit_frozen_sets/subclass_identity.txt

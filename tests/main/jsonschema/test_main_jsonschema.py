@@ -8999,6 +8999,32 @@ def test_main_unique_items_as_set_by_value(extra_args: list[str], expected_repr:
     )
 
 
+def test_main_unique_items_as_set_by_value_inherited_fields(output_file: Path) -> None:
+    """Read the fields a frozen dataclass set item inherits nearest first, each model once, under by-value sets.
+
+    Row ``legacy-unique-sets-level-order``: ``Levels`` inherits ``x`` from ``B``, a direct base, and from ``Z``, the
+    base of ``A``; the fields are read nearest first, so ``x`` is ``B``'s string and ``levels`` is a set, where the
+    class takes ``Z``'s list (C3). ``Diamond`` reaches ``Y`` through ``P`` and ``Q`` and reads it once; its fields hash,
+    so ``diamond`` is a set.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "unique_items_by_value_inherited_fields.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "dataclasses.dataclass",
+            "--frozen-dataclasses",
+            "--use-unique-items-as-set",
+            "--use-unique-items-as-set-by-value",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [pytest.param([], id="without-option"), pytest.param(["--use-unique-items-as-set-by-value"], id="option")],
@@ -39172,6 +39198,36 @@ def test_conditional_json_equality(
 
 
 INLINE_ALLOF_SHARED_PAYLOADS = dict.fromkeys(("conditional", "count", "nested", "referenced"), "core")
+
+
+def test_schema_validators_inherit_runtime_base_through_plain_model(output_file: Path) -> None:
+    """Inherit the runtime validation base through a base that validates nothing itself.
+
+    ``Leaf`` and ``Parent`` each check an if/then rule; ``Middle``, between them, checks none. ``Leaf`` inherits the
+    runtime validation base through ``Middle`` and ``Parent``, so it lists only ``Middle`` and checks both rules.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "schema_validators_transitive_base.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--generate-schema-validators",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="schema_validators_transitive_base",
+        model_name="Leaf",
+        valid_json='{"mode": "a", "a-name": "n", "kind": "b", "b": "x"}',
+        invalid_json='{"mode": "a", "kind": "b", "b": "x"}',
+        expected_error_type="value_error",
+    )
 
 
 @pytest.mark.parametrize("formatter", ["builtin", "external"])

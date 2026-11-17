@@ -23,7 +23,7 @@ from datamodel_code_generator._graph_links import clear_parents, link_members
 from datamodel_code_generator._mro import resolve_members
 from datamodel_code_generator._python_syntax import holds_lone_surrogate, keyword_argument, subscript_text
 from datamodel_code_generator._records import record
-from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
+from datamodel_code_generator._reference_graph import EdgeKind
 from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import IMPORT_UNION, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
@@ -71,6 +71,7 @@ from datamodel_code_generator.model.base import (
     BaseClassDataType,
     BaseLayoutView,
     _apply_literal_default,
+    _base_walk,
     _default_factory_type_name,
     _default_state,
     _field_source_name,
@@ -78,7 +79,6 @@ from datamodel_code_generator.model.base import (
     _forbids_unknown_fields_marked,
     _has_opaque_custom_base,
     _keeps_stripped_place,
-    _model_key_of_model,
     _ModelKeys,
     _nested_model_factory,
     _NestedModelFactory,
@@ -559,11 +559,14 @@ def _reads_arrays(struct: Struct) -> bool:
 
 
 def _struct_chain(struct: Struct, *, order: Literal["listed", "graph"]) -> list[Struct]:
-    """Return the struct and its generated bases, each once before its bases, in ``listed`` or ``graph`` order."""
-    if order == "listed":
-        return reach((struct,), lambda current: reversed(_struct_bases(current)), key=id)
-    walk = walk_graph(GraphSnapshot.SET_ITEM_CLASSES, EdgeKind.BASE, (struct,), _model_key_of_model, _struct_bases)
-    return [walk.node_of[key] for key in walk.graph.preorder(walk.starts[0], EdgeKind.BASE)]
+    """Return the struct and its generated bases, each once before its bases, in ``listed`` or ``graph`` order.
+
+    Both are a stack walk of the bases (`ReferenceGraph.preorder`): ``listed`` takes the first base of each struct
+    first, ``graph`` the last.
+    """
+    walk = _base_walk((struct,), bases_of=_struct_bases)
+    preorder = walk.graph.preorder(walk.starts[0], EdgeKind.BASE, first_target_first=order == "listed")
+    return [walk.node_of[key] for key in preorder]
 
 
 def _first_struct_flag(options: Iterable[Mapping[str, Any]], name: str, *, default: bool) -> bool:
@@ -1038,7 +1041,7 @@ class Struct(DataModel):
         component of structs that inherit from one another in a cycle as one unit: the bases a struct takes options
         from are those outside its component. The generated code cannot define such a cycle, which L6 reports.
         """
-        walk = walk_graph(GraphSnapshot.STRUCT_TAGS, EdgeKind.BASE, (self,), _model_key_of_model, _struct_bases)
+        walk = _base_walk((self,), bases_of=_struct_bases)
         graph = walk.graph
         options: dict[ModelKey, tuple[Any, Any]] = {}
         for component in graph.components((EdgeKind.BASE,)):
@@ -1059,7 +1062,10 @@ class Struct(DataModel):
         """Return how the struct hashes: by value where it compares by value (``eq`` on, the default) and is frozen.
 
         Each option is the one of the first struct of the chain of order ``graph`` (``_struct_chain``), then the generic
-        base class all of them inherit from, that sets it.
+        base class all of them inherit from, that sets it. Row ``legacy-struct-hash-last-base-first``: msgspec itself
+        takes the options from the ``listed`` chain, first base first, so where two bases set one option differently
+        the struct may hash in msgspec while the set of it is not written, or the reverse. That is today's order, kept:
+        the two orders differ only in a configuration nobody writes (opposite ``frozen`` on two parents of one struct).
         """
         chain = _struct_chain(self, order="graph")
         options = [_user_struct_options(struct) for struct in chain]
