@@ -1,0 +1,16 @@
+exit=0
+summary: same=7, no-behaviour=1, crash-fix=0, accepted=0, violation=0, both-fail=4, opt-in=0, base-skipped=0
+tests/data/jsonschema/caught.json | default | both-fail | []
+tests/data/jsonschema/crashes.json | default | both-fail | []
+tests/data/jsonschema/deprecated.json | default | same | []
+tests/data/jsonschema/fails.json | default | both-fail | []
+tests/data/jsonschema/filtered.json | default | same | []
+tests/data/jsonschema/memory.json | default | both-fail | []
+tests/data/jsonschema/modular.json | default | same | []
+tests/data/jsonschema/order.json | default | same | []
+tests/data/jsonschema/paths.json | default | same | []
+tests/data/jsonschema/plain.json | default | no-behaviour | []
+tests/data/jsonschema/set.json | default | same | []
+tests/data/jsonschema/warns.json | default | same | []
+second run, from the extracted tree and the cached base outputs: same
+__version__ = '0.1.1.dev1+g<sha>'

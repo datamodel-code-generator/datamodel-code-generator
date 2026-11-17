@@ -1367,17 +1367,16 @@ class Generations:
     def _runner(self, version: str) -> Any:
         with self.lock:
             if version not in self.runners:
-                env = {key: value for key, value in os.environ.items() if key != "PYTHONPATH"}
-                env |= {"PYTHONWARNINGS": "ignore", "OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
+                source = SRC_PATH if version == HEAD else None
                 if version == HEAD:
-                    python, env["PYTHONPATH"] = Path(sys.executable), str(SRC_PATH)
+                    python = Path(sys.executable)
                 elif not (python := self.pythons.get(version)):
                     python = self.compare_release._base_python(  # ruff: ignore[private-member-access]
                         version, Path(sys.executable), self.cache_dir
                     )
-                side = self.compare_release.Side(version, python)
+                side = self.compare_release.Side(version, python, source)
                 self.runners[version] = self.compare_release.Runner(
-                    side, env, import_check=False, timeout=GENERATION_TIMEOUT
+                    side, self.compare_release.run_environment(source), import_check=False, timeout=GENERATION_TIMEOUT
                 )
             return self.runners[version]
 

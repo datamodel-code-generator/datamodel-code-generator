@@ -1,0 +1,4 @@
+exit=1
+summary: same=0, no-behaviour=0, crash-fix=0, accepted=0, violation=1, both-fail=0, opt-in=0, base-skipped=0
+not compared: 0 of the 0 cells that fail on both sides
+tests/data/jsonschema/plain.json | default | violation | ['output differs: model.py']

@@ -1,0 +1,17 @@
+exit=0
+summary: same=8, no-behaviour=0, crash-fix=0, accepted=0, violation=0, both-fail=4, opt-in=0, base-skipped=0
+not compared: 4 of the 4 cells that fail on both sides
+tests/data/jsonschema/caught.json | default | both-fail | ['not compared: every cell of the input fails on both sides']
+tests/data/jsonschema/crashes.json | default | both-fail | ['not compared: every cell of the input fails on both sides']
+tests/data/jsonschema/deprecated.json | default | same | []
+tests/data/jsonschema/fails.json | default | both-fail | ['not compared: every cell of the input fails on both sides']
+tests/data/jsonschema/filtered.json | default | same | []
+tests/data/jsonschema/memory.json | default | both-fail | ['not compared: the timeout or the memory cap stopped both sides', 'not compared: every cell of the input fails on both sides']
+tests/data/jsonschema/modular.json | default | same | []
+tests/data/jsonschema/order.json | default | same | []
+tests/data/jsonschema/paths.json | default | same | []
+tests/data/jsonschema/plain.json | default | same | []
+tests/data/jsonschema/set.json | default | same | []
+tests/data/jsonschema/warns.json | default | same | []
+second run, from the extracted tree and the cached base outputs: same
+__version__ = '0.0.0+g<sha>'

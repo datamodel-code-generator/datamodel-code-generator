@@ -8,6 +8,7 @@ change the owner accepted, and the behaviour changes the gate has to stop.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from contextlib import redirect_stderr, redirect_stdout
@@ -1539,6 +1540,421 @@ def test_gate_projects_and_option_sets(tmp_path: Path) -> None:
         if path.is_file() and ".git" not in path.parts
     )
     assert_output(f"exit={code}\n" + "\n".join([*cells, *checkout]).replace(sha[:12], "<sha>") + "\n")
+
+
+FAKE_ARGUMENTS = """import argparse
+
+arg_parser = argparse.ArgumentParser()
+for option in ("--input", "--input-file-type", "--output-model-type", "--output"):
+    arg_parser.add_argument(option)
+arg_parser.add_argument("--disable-timestamp", action="store_true")
+arg_parser.add_argument("--formatters", nargs="*")
+arg_parser.add_argument("--mode", choices=("a", "b"))
+"""
+FAKE_HEAD = """import json
+import os
+import warnings
+from pathlib import Path
+
+from datamodel_code_generator.arguments import arg_parser
+
+MODEL = "from pydantic import BaseModel\\n\\n\\nclass Model(BaseModel):\\n    a: {}\\n"
+REFUSAL = "modular references require an output directory"
+"""
+FAKE_FIRST = (
+    FAKE_HEAD
+    + """
+
+def main(argv):
+    ns = arg_parser.parse_args(argv)
+    spec = json.loads(Path(ns.input).read_text(encoding="utf-8"))
+    out = Path(ns.output)
+    if "warn" in spec:
+        warnings.warn(spec["warn"], UserWarning, stacklevel=1)
+    for text in spec.get("warns", []):
+        warnings.warn(text, UserWarning, stacklevel=1)
+    for text in set(spec.get("names", [])):
+        warnings.warn(text, UserWarning, stacklevel=1)
+    if "deprecated" in spec:
+        warnings.warn(spec["deprecated"], DeprecationWarning, stacklevel=1)
+    if "filtered" in spec:
+        warnings.warn(spec["filtered"], UserWarning, stacklevel=1)
+    if "say" in spec:
+        print(f"writing {out} with the templates of {Path(__file__).parent}")
+    if "memory" in spec:
+        raise MemoryError
+    if "fail" in spec:
+        try:
+            raise ValueError(spec["fail"])
+        finally:
+            out.unlink(missing_ok=True)
+    if "catch" in spec:
+        try:
+            raise ValueError(spec["catch"])
+        except (ValueError, TypeError) as error:
+            print(error)
+            return 1
+    if "modular" in spec:
+        if out.suffix == ".py":
+            print(f"Error: {REFUSAL}")
+            return 1
+        if "crash" in spec:
+            os._exit(3)
+        out.mkdir()
+        out /= "__init__.py"
+    out.write_text(MODEL.format(spec["type"]), encoding="utf-8")
+    return 0
+"""
+)
+FAKE_MOVED = (
+    FAKE_HEAD
+    + """
+from datamodel_code_generator._helper import warn_for_main
+
+
+def _check(spec, out):
+    \"\"\"The checks of a schema, moved out of main: the warnings and the errors now come from other lines.\"\"\"
+    if "warn" in spec:
+        warnings.warn(spec["warn"], UserWarning, stacklevel=1)
+    for text in spec.get("warns", []):
+        warnings.warn(text, UserWarning, stacklevel=1)
+    for text in set(spec.get("names", [])):
+        warnings.warn(text, UserWarning, stacklevel=1)
+    if "deprecated" in spec:
+        warnings.warn(spec["deprecated"], DeprecationWarning, stacklevel=1)
+    if "filtered" in spec:
+        warn_for_main(spec["filtered"])
+    if "say" in spec:
+        print(f"writing {out} with the templates of {Path(__file__).parent}")
+    if "memory" in spec:
+        raise MemoryError
+    if "fail" in spec:
+        raise ValueError(spec["fail"])
+
+
+def _caught(spec):
+    try:
+        raise ValueError(spec["catch"])
+    except (ValueError, TypeError) as error:
+        print(error)
+        return 1
+
+
+def _package(spec, out):
+    if out.suffix == ".py":
+        print(f"Error: {REFUSAL}")
+        return None
+    if "crash" in spec:
+        os._exit(3)
+    out.mkdir()
+    return out / "__init__.py"
+
+
+def main(argv):
+    ns = arg_parser.parse_args(argv)
+    spec = json.loads(Path(ns.input).read_text(encoding="utf-8"))
+    out = Path(ns.output)
+    _check(spec, out)
+    if "catch" in spec:
+        return _caught(spec)
+    if "modular" in spec and (out := _package(spec, out)) is None:
+        return 1
+    out.write_text(MODEL.format(spec["type"]), encoding="utf-8")
+    return 0
+"""
+)
+FAKE_HELPER = """import warnings
+
+
+def warn_for_main(text):
+    \"\"\"Warn as the CLI module does, so the filters on that module still match.\"\"\"
+    warnings.warn_explicit(text, UserWarning, __file__, 1, module="datamodel_code_generator.__main__")
+"""
+FAKE_CHANGED = (
+    FAKE_HEAD
+    + """
+
+def main(argv):
+    ns = arg_parser.parse_args(argv)
+    spec = json.loads(Path(ns.input).read_text(encoding="utf-8"))
+    out = Path(ns.output)
+    if "warn" in spec:
+        warnings.warn(spec["warn"] + "!", UserWarning, stacklevel=1)
+    for text in reversed(spec.get("warns", [])):
+        warnings.warn(text, UserWarning, stacklevel=1)
+    for text in set(spec.get("names", [])):
+        warnings.warn(text, UserWarning, stacklevel=1)
+    if "filtered" in spec:
+        warnings.warn_explicit(spec["filtered"], UserWarning, __file__, 1, module="datamodel_code_generator.other")
+    if "say" in spec:
+        print(f"writing {out} with the templates of {Path(__file__).parent}")
+    if "memory" in spec:
+        raise MemoryError
+    if "fail" in spec:
+        print(f"Error: {spec['fail']}")
+        return 2
+    if "catch" in spec:
+        try:
+            raise TypeError(spec["catch"])
+        except (ValueError, TypeError) as error:
+            print(error)
+            return 1
+    if "modular" in spec:
+        if out.suffix == ".py":
+            print(f"Refused: {REFUSAL}")
+            return 2
+        if "crash" in spec:
+            os._exit(3)
+        out.mkdir()
+        out /= "__init__.py"
+    model = MODEL.format(spec["type"])
+    out.write_text(model.replace(": str", ": str  # text"), encoding="utf-8")
+    return 0
+"""
+)
+FAKE_VERSIONS = {
+    "first": {"arguments.py": FAKE_ARGUMENTS, "__main__.py": FAKE_FIRST},
+    "moved": {"arguments.py": FAKE_ARGUMENTS, "__main__.py": FAKE_MOVED, "_helper.py": FAKE_HELPER},
+    "changed": {
+        "arguments.py": FAKE_ARGUMENTS.replace('("a", "b")', '("a", "b", "c")')
+        + 'arg_parser.add_argument("--strip-default-none", action="store_true")\n',
+        "__main__.py": FAKE_CHANGED,
+    },
+}
+FAKE_INPUTS = {
+    "caught.json": {"type": "int", "catch": "bad schema"},
+    "crashes.json": {"type": "int", "modular": True, "crash": True, "warn": "careful"},
+    "deprecated.json": {"type": "int", "deprecated": "old option"},
+    "fails.json": {"type": "int", "fail": "boom"},
+    "filtered.json": {"type": "int", "filtered": "kept for filters"},
+    "memory.json": {"type": "int", "memory": True},
+    "modular.json": {"type": "int", "modular": True},
+    "order.json": {"type": "int", "warns": ["one", "two"]},
+    "paths.json": {"type": "int", "say": True},
+    "plain.json": {"type": "str"},
+    "set.json": {"type": "int", "names": ["alpha", "beta", "gamma", "delta", "epsilon", "zeta"]},
+    "warns.json": {"type": "int", "warn": "careful"},
+}
+
+
+def _fake_generator(repo: Path, versions: list[str], tag: str | None) -> list[str]:
+    """Commit a stand-in generator in `versions` order (tagging the first) and return the commits."""
+    package = repo / "src" / "datamodel_code_generator"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("", encoding="utf-8")
+    for name, spec in FAKE_INPUTS.items():
+        path = repo / "tests" / "data" / "jsonschema" / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(spec), encoding="utf-8")
+    _git("init", "-q", cwd=repo)
+    commits = []
+    for version in versions:
+        for stale in package.glob("_helper.py"):
+            stale.unlink()
+        for name, text in FAKE_VERSIONS[version].items():
+            (package / name).write_text(text, encoding="utf-8")
+        _git("add", "-A", ".", cwd=repo)
+        _git("commit", "-qm", version, cwd=repo)
+        commits.append(_git("rev-parse", "HEAD", cwd=repo))
+        if tag and len(commits) == 1:
+            _git("tag", tag, cwd=repo)
+    return commits
+
+
+def _gate_lines(argv: list[str], cells: Path) -> list[str]:
+    """Run the gate and return its exit status, summary and allowlist lines, and each cell's class and notes."""
+    stdout = StringIO()
+    with redirect_stdout(stdout), redirect_stderr(StringIO()):
+        code = behaviour_diff.main(argv)
+    rows = [json.loads(line) for line in cells.read_text(encoding="utf-8").splitlines()]
+    lines = [line for line in stdout.getvalue().splitlines() if line.startswith(("summary:", "allowlist:", "not "))]
+    return [
+        f"exit={code}",
+        *lines,
+        *sorted(f"{row['input']} | {row['options']} | {row['class']} | {row['notes']}" for row in rows),
+    ]
+
+
+REVISION_CASES = {
+    "gate_against_a_revision": (["first", "moved", "changed"], "0.1.0", 1, ["--check"]),
+    "identity_fails_on_any_difference": (
+        ["first", "moved", "changed"],
+        "0.1.0",
+        0,
+        ["--identity", "--tier", "nightly"],
+    ),
+    "identity_keeps_a_moved_warning_and_error": (["first", "moved"], None, 0, ["--identity"]),
+}
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")
+@pytest.mark.parametrize("case", sorted(REVISION_CASES))
+def test_gate_against_a_git_revision(case: str, tmp_path: Path) -> None:
+    """A git revision as BASE: its `src/` runs from the candidate's interpreter, and `--identity` fails on any change.
+
+    The gate classifies by behaviour (a comment is `no-behaviour`, warnings and messages are not compared). Identity
+    fails without `--check` too; it compares output, warnings as records (category, message and the module filters
+    match, deprecations included), the exceptions the CLI module handled, messages without traceback frames, exit
+    status, the refusal before a modular run and the option surface, and a cell with an option only the candidate
+    has is a violation. So the warnings and errors a refactor moved to other lines or modules (keeping the module of
+    a warning for filters, dropping a cleanup handler) stay equal; a changed warning, its order or module, a dropped
+    deprecation, another exception class behind the same message, another refusal, error or output is a violation.
+    Paths of the output and the package read the same on both sides, as does the order of a set; a run the memory
+    cap stopped, and an input that fails on both sides in every cell, are not compared. A retry that crashed leaves
+    no record of the refused attempt. A cache directory given with `..` holds the base tree the base runs.
+    """
+    versions, tag, base, mode = REVISION_CASES[case]
+    repo = tmp_path / "repo"
+    commits = _fake_generator(repo, versions, tag)
+    allowlist = tmp_path / "allowlist.toml"
+    allowlist.write_text('base = "0.1.0"\n[[accepted]]\ninput = "*"\nreason = "r"\ndecision = "#1"\n', encoding="utf-8")
+    argv = ["gate", commits[base], str(repo), "--types", "pydantic_v2.BaseModel", "--candidate-python", sys.executable]
+    argv += [
+        "--cache-dir",
+        str(tmp_path / "repo" / ".." / "cache"),
+        "--allowlist",
+        str(allowlist),
+        "--select",
+        "tests/data/jsonschema/*",
+    ]
+    argv += ["--json", str(tmp_path / "cells.jsonl"), "-j", "2", *mode]
+    runs = [_gate_lines(argv, tmp_path / "cells.jsonl") for _ in range(2)]
+    trees = sorted((tmp_path / "cache" / "trees").glob("*/src/datamodel_code_generator/_version.py"))
+    rerun = (
+        f"second run, from the extracted tree and the cached base outputs: {'same' if runs[1] == runs[0] else runs[1]}"
+    )
+    text = "\n".join([*runs[0], rerun, *(tree.read_text(encoding="utf-8") for tree in trees)])
+    assert_output(text.replace(commits[base][:9], "<sha>").replace(commits[base][:7], "<sha>"))
+
+
+FAKE_FAILS_AFTER_WRITING = (
+    FAKE_HEAD
+    + """
+
+def main(argv):
+    ns = arg_parser.parse_args(argv)
+    Path(ns.output).write_text(MODEL.format("%s"), encoding="utf-8")
+    print("Error: boom")
+    return 2
+"""
+)
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")
+def test_identity_compares_the_output_of_runs_that_fail_alike(tmp_path: Path) -> None:
+    """Two sides that fail with the same status and message but wrote different files are a difference."""
+    repo = tmp_path / "repo"
+    _fake_generator(repo, ["first"], None)
+    package = repo / "src" / "datamodel_code_generator"
+    commits = []
+    for kind in ("int", "str"):
+        (package / "__main__.py").write_text(FAKE_FAILS_AFTER_WRITING % kind, encoding="utf-8")
+        _git("add", "-A", ".", cwd=repo)
+        _git("commit", "-qm", kind, cwd=repo)
+        commits.append(_git("rev-parse", "HEAD", cwd=repo))
+    argv = ["gate", commits[0], str(repo), "--types", "pydantic_v2.BaseModel", "--candidate-python", sys.executable]
+    argv += ["--cache-dir", str(tmp_path / "cache"), "--select", "tests/data/jsonschema/plain.json", "--identity"]
+    argv += ["--json", str(tmp_path / "cells.jsonl"), "-j", "1"]
+    assert_output("\n".join(_gate_lines(argv, tmp_path / "cells.jsonl")).replace(commits[0][:9], "<sha>") + "\n")
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")
+def test_gate_refuses_a_side_that_is_no_revision(tmp_path: Path) -> None:
+    """A BASE or CANDIDATE that names no release, directory or revision stops the gate.
+
+    BASE is a released version or a revision of the candidate's repository, CANDIDATE a directory or a revision of
+    this repository. A CANDIDATE directory whose `src` holds no package stops the gate too: the interpreter would run
+    its own package instead; one whose package does not import stops it with the exit status of its worker.
+    """
+    repo = tmp_path / "repo"
+    _fake_generator(repo, ["first"], None)
+    empty = tmp_path / "empty"
+    (empty / "tests" / "data" / "jsonschema").mkdir(parents=True)
+    (empty / "tests" / "data" / "jsonschema" / "plain.json").write_text("{}", encoding="utf-8")
+    installed = ["--base-python", sys.executable, "--types", "pydantic_v2.BaseModel"]
+    cases = (("no-such-revision", str(repo), []), ("0.0.0", "no-such-revision", []), ("0.0.0", str(empty), installed))
+    refusals = []
+    for base, candidate, extra in cases:
+        with pytest.raises(SystemExit) as error, redirect_stderr(StringIO()), redirect_stdout(StringIO()):
+            behaviour_diff.main([
+                "gate",
+                base,
+                candidate,
+                "--candidate-python",
+                sys.executable,
+                "--cache-dir",
+                str(tmp_path / "cache"),
+                *extra,
+            ])
+        refusal = re.sub(r"from \S+,", "from <package>,", str(error.value.code).replace(sys.executable, "<python>"))
+        refusals.append(refusal.replace(str(tmp_path), "<tmp>").replace(str(ROOT), "<root>"))
+    broken = empty / "src" / "datamodel_code_generator"
+    broken.mkdir(parents=True)
+    (broken / "__init__.py").write_text('raise ImportError("a broken checkout")\n', encoding="utf-8")
+    gate = ["gate", "0.0.0", str(empty), "--candidate-python", sys.executable, "--cache-dir", str(tmp_path / "cache")]
+    with pytest.raises(RuntimeError) as crashed, redirect_stdout(StringIO()):
+        behaviour_diff.main([*gate, *installed])
+    assert_output("\n".join([*refusals, f"a candidate that does not import: {crashed.value}"]) + "\n")
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")
+def test_gate_identity_of_a_candidate_revision(tmp_path: Path) -> None:
+    """A CANDIDATE revision of this repository runs from its extracted `src` and `tests`.
+
+    `HEAD` is identical to the installed checkout on a fixture.
+    """
+    stdout = StringIO()
+    with redirect_stdout(stdout), redirect_stderr(StringIO()):
+        code = behaviour_diff.main([
+            "gate",
+            "0.0.0",
+            "HEAD",
+            "--base-python",
+            sys.executable,
+            "--types",
+            "pydantic_v2.BaseModel",
+            "--cache-dir",
+            str(tmp_path / "cache"),
+            "--select",
+            "tests/data/jsonschema/person.json",
+            "--identity",
+            "--check",
+            "-j",
+            "1",
+        ])
+    summary = [line for line in stdout.getvalue().splitlines() if line.startswith(("summary:", "cells:"))]
+    assert_output("\n".join([f"exit={code}", *summary]) + "\n")
+
+
+def test_guide_writes_the_page_of_gate_cells(tmp_path: Path) -> None:
+    """`guide` reads the cells of a gate run (`--cells`) and writes the page data of the release they compare."""
+    cells = tmp_path / "cells.jsonl"
+    row = {"input": "tests/data/jsonschema/person.json", "file_type": "jsonschema", "type": "pydantic_v2.BaseModel"}
+    row |= {"options": "default", "kind": "default", "class": "same", "notes": [], "accepted_by": []}
+    cells.write_text(json.dumps(row) + "\n", encoding="utf-8")
+    allowlist = tmp_path / "allowlist.toml"
+    allowlist.write_text('base = "0.0.0"\n', encoding="utf-8")
+    code = behaviour_diff.main([
+        "guide",
+        "0.0.0",
+        "0.0.1",
+        "--base-python",
+        sys.executable,
+        "--candidate-python",
+        sys.executable,
+        "--cache-dir",
+        str(tmp_path / "cache"),
+        "--allowlist",
+        str(allowlist),
+        "--cells",
+        str(cells),
+        "--docs",
+        str(tmp_path / "page.json"),
+        "--notes",
+        str(tmp_path / "notes.md"),
+    ])
+    page = (tmp_path / "page.json").read_text(encoding="utf-8")
+    assert_output(f"exit={code}\n{page}{(tmp_path / 'notes.md').read_text(encoding='utf-8')}")
 
 
 def _tree(directory: Path) -> dict[str, str]:
