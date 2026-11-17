@@ -28,7 +28,7 @@ from datamodel_code_generator.parser._passes._shared import (
     RootModelTypeHost,
     _runtime_validation_reference_keys,
     _sort_models_by_class_body_references,
-    definition_reads,
+    class_body_references,
     with_dedupe_request_response_hint,
 )
 from datamodel_code_generator.parser._passes._state import (
@@ -263,18 +263,14 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
             # Build lookup dict for O(1) index access instead of O(n) list.index()
             key_to_index = {model_key_of(m.reference): idx for idx, m in enumerate(unresolved_references)}
             for model in unresolved_references:
-                fields = definition_reads(
-                    model, row="legacy-class-body-without-alias-values", root_model_type=pydantic_v2_root_model_type
-                )
-                references = (
-                    (t.reference for f in fields for t in f.data_type.all_data_types)
-                    if fields is not None
-                    else (b.reference for b in model.base_classes)
-                )
                 indexes = [
                     key_to_index[reference_key]
-                    for reference in references
-                    if reference and (reference_key := universe.key_of(reference)) in key_to_index
+                    for _, reference in class_body_references(
+                        model,
+                        row="legacy-class-body-without-alias-values",
+                        root_model_type=pydantic_v2_root_model_type,
+                    )
+                    if (reference_key := universe.key_of(reference)) in key_to_index
                 ]
                 ordered_models.append((max(indexes, default=-1), model))
 

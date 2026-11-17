@@ -979,6 +979,28 @@ def definition_reads(
     return model.fields if reads_own_fields or _is_pydantic_v2_root_model(model, root_model_type) else None
 
 
+def class_body_references(
+    model: DataModel,
+    *,
+    row: DefinitionReadsRow,
+    root_model_type: type[DataModel] | None,
+    evaluates_annotations: bool = False,
+) -> Iterator[tuple[Literal["base", "field"], Reference]]:
+    """Yield the references the statement defining ``model`` needs defined first, each with its edge.
+
+    They are its bases and the types of the fields its definition reads (``definition_reads`` with ``row``). The types
+    of schema validator rules are keyed by the caller's run (``_runtime_validation_reference_keys``).
+    """
+    fields = definition_reads(
+        model, row=row, root_model_type=root_model_type, evaluates_annotations=evaluates_annotations
+    )
+    yield from (("base", base.reference) for base in model.base_classes if base.reference)
+    for field in fields or ():
+        yield from (
+            ("field", data_type.reference) for data_type in field.data_type.all_data_types if data_type.reference
+        )
+
+
 @record
 class _ReuseOptimizationContext:
     """Parser-owned semantic constraints for model reuse optimizations."""
@@ -1041,18 +1063,12 @@ def _sort_models_by_class_body_references(
     targets: dict[ModelKey, set[ModelKey]] = {}
     for model_key, model in keyed.models.items():
         model_targets = targets[model_key] = {
-            keyed.key_of(base_class.reference) for base_class in model.base_classes if base_class.reference
-        }
-        model_targets.update(runtime_validation_references.get(model_key, ()))
-        model_targets.update(
-            keyed.key_of(data_type.reference)
-            for field in definition_reads(
+            keyed.key_of(reference)
+            for _, reference in class_body_references(
                 model, row="legacy-class-body-without-alias-values", root_model_type=pydantic_v2_root_model_type
             )
-            or ()
-            for data_type in field.data_type.all_data_types
-            if data_type.reference
-        )
+        }
+        model_targets.update(runtime_validation_references.get(model_key, ()))
         model_targets.discard(model_key)
     graph = reference_graph(GraphSnapshot.CLASS_BODY_ORDER, keyed.models, {EdgeKind.CLASS_BODY: targets})
     sorted_keys = graph.dependency_order((EdgeKind.CLASS_BODY,), list(order_index), order_index.__getitem__)

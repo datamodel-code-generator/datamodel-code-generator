@@ -146,8 +146,8 @@ from datamodel_code_generator.parser._passes._shared import (
     _written_type_names,
     additional_properties_holder,
     aliases_first,
+    class_body_references,
     compared_models,
-    definition_reads,
     enum_site_override_import,
     generic_base_config,
     get_constructor_field_adjustment,
@@ -788,21 +788,16 @@ def _keep_model_order_deps(
 
     for model in models:
         class_name = model.class_name
-        base_class_references = [b.reference for b in model.base_classes if b.reference]
-        field_references = [
-            t.reference
-            for f in definition_reads(
+        references = list(
+            class_body_references(
                 model,
                 row="legacy-keep-order-type-statement",
                 root_model_type=pydantic_v2_root_model_type,
                 evaluates_annotations=not use_deferred_annotations,
             )
-            or ()
-            for t in f.data_type.all_data_types
-            if t.reference
-        ]
-        strong = names_by_short_name(base_class_references, class_name)
-        deps = names_by_short_name([*base_class_references, *field_references], class_name)
+        )
+        strong = names_by_short_name((reference for edge, reference in references if edge == "base"), class_name)
+        deps = names_by_short_name((reference for _, reference in references), class_name)
         if reference_keys := runtime_validation_references.get(model_key_of(model.reference)):
             runtime_validation_deps = {class_names[reference_key] for reference_key in reference_keys} - imported
             strong |= runtime_validation_deps
