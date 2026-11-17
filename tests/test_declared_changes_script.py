@@ -230,6 +230,49 @@ CASES: dict[str, dict[str, Any]] = {
             )
         },
     },
+    "a source-added reference stays a gap": {
+        "base": SRC
+        | {
+            "tests/test_models.refs": _sidecar(REFS | {"test_new": ["\tmodels/new.py"]}),
+            f"{EXPECTED}/models/new.py": "N = 1\n",
+        },
+        "args": ["--main"],
+    },
+    "a source-added reference is backfilled": {
+        "base": SRC
+        | {
+            "tests/test_models.refs": _sidecar(REFS | {"test_new": ["\tmodels/new.py"]}),
+            f"{EXPECTED}/models/new.py": "N = 1\n",
+        },
+        "head": _record("backfill-new", ["models/new.py"]),
+    },
+    "a later layer deletes the record of a source-added reference": {
+        "base": SRC
+        | {
+            "tests/test_models.refs": _sidecar(REFS | {"test_new": ["\tmodels/new.py"]}),
+            f"{EXPECTED}/models/new.py": "N = 1\n",
+        }
+        | _record("new-output", ["models/new.py"], **OUTPUT_TEXT),
+        "head": {f"{FRAGMENTS}/new-output.toml": None},
+    },
+    "a record changes its category over covered models": {
+        "base": {f"{EXPECTED}/models/b.py": "B = 2\n", f"{EXPECTED}/models/d.json": "{}"}
+        | _record("lower", ["models/b.py"])
+        | {
+            f"{FRAGMENTS}/more.toml": (
+                '[[change]]\nid = "more"\nextends = "lower"\ncovers = [\n    "models/d.json",\n]\n'
+            )
+        },
+        "head": _record(
+            "lower",
+            ["models/b.py"],
+            category="notice",
+            kind="warning",
+            action="warn",
+            source="release-note",
+            refs=["#1"],
+        ),
+    },
     "reverted to the tag and pruned": {
         "base": {f"{EXPECTED}/models/b.py": "B = 2\n"}
         | _record("lower", ["models/a.py", "models/b.py"])
@@ -359,6 +402,10 @@ PRINTED: dict[str, dict[str, Any]] = {
         "head": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("b-two", ["models/b.py"], **OUTPUT_TEXT),
         "worktree": {f"{EXPECTED}/models/a.py": "A = 2\n"},
     },
+    "an output text record does not take a warning": {
+        "head": {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("b-text", ["models/b.py"], **OUTPUT_TEXT),
+        "worktree": {f"{EXPECTED}/models/w.warnings.txt": "UserWarning: other\n"},
+    },
     "the branch's record among others": {
         "head": SRC
         | {f"{EXPECTED}/models/b.py": "B = 2\n", f"{EXPECTED}/models/d.json": "{}"}
@@ -463,6 +510,32 @@ def test_declared_changes_declare_and_prune(tmp_path: Path, capsys: pytest.Captu
     output += [
         _run(repository, capsys, ["prune", *base]),
         _run(repository, capsys, ["check", *base]),
+        _fragments(repository),
+    ]
+    assert_output("\n".join(output))
+
+
+def test_declared_changes_declare_backfill(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """`--labels` and `--tests` declare the gaps of the base that the head still moves; `--rest` leaves them alone."""
+    repository = _repository(
+        tmp_path,
+        {
+            "base": SRC
+            | {
+                f"{EXPECTED}/models/a.py": "A = 2\n",
+                f"{EXPECTED}/models/b.py": "B = 2\n",
+                f"{EXPECTED}/models/d.json": "{}",
+            },
+        },
+    )
+    base = ["--base", "base"]
+    record = ["--category", "harness", "--title", "t", "--summary", "s"]
+    output = [
+        _run(repository, capsys, ["declare", "backfill-b", *record, "--labels", "models/b.py", *base]),
+        _run(repository, capsys, ["declare", "backfill-a", *record, "--tests", "*::test_model[[]a]", *base]),
+        _run(repository, capsys, ["declare", "backfill-d", *record, "--rest", *base]),
+        _run(repository, capsys, ["check", *base]),
+        _run(repository, capsys, ["check", *base, "--main"]),
         _fragments(repository),
     ]
     assert_output("\n".join(output))

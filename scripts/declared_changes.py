@@ -26,8 +26,10 @@ not contain, and every covered label still differs from the tag (`prune` drops t
 change added that it may not cover). A change is told only of the gaps it adds; with `--main` every gap counts, and
 so does a tag that `releases.toml` does not list yet (stamp pending). `--report-only` prints the same and exits 0.
 `status` reports the working tree against the merge base with origin/main, and `declare` writes the `covers` of a
-record from that diff, or from `--base` (a stack layer passes the layer below): never write them by hand. The check
-prints one `declare` command per kind of undeclared output, with `--base` unless the base is that merge base.
+record from that diff, or from `--base` (a stack layer passes the layer below): never write them by hand. `--labels`
+and `--tests` also take the gaps of the base that the head still moves from the tag; `--rest` only what this change
+moves. The check prints one `declare` command per kind of undeclared output, with `--base` unless the base is that
+merge base.
 """
 
 from __future__ import annotations
@@ -351,6 +353,7 @@ class Report:
     problems: list[str] = field(default_factory=list)
     moves: int = 0
     gaps: list[str] = field(default_factory=list)
+    backfill: dict[str, list[tuple[str, Reference]]] = field(default_factory=dict)
     stale: list[str] = field(default_factory=list)
     older_gaps: int = 0
     stamp: str | None = None
@@ -394,10 +397,28 @@ def _refused(category: Category, surface: tuple[str, ...] | None, kinds: set[Own
     return kinds - owners
 
 
+def _revalidated(stem: str, records: dict[str, Record], base_records: dict[str, Record]) -> set[str]:
+    """Return the labels a record's category must cover again: all of its record's when the category or surface changed.
+
+    The labels are those of the record and of the records that extend it; a record the base does not have, one that
+    extends another and a fragment without a record only have the labels they add.
+    """
+    record, before = records.get(stem), base_records.get(stem)
+    if record is None or before is None or record.extends is not None:
+        return set()
+    if (record.category, record.surface) == (before.category, before.surface):
+        return set()
+    return {label for other in records.values() if other is record or other.extends == stem for label in other.covers}
+
+
 def _record_problems(
     stem: str, sides: tuple[Side, Side, Side], records: dict[str, Record], added: set[str]
 ) -> list[str]:
-    """Return how one record the change adds or edits breaks the rules the static check reads."""
+    """Return how one record the change adds or edits breaks the rules the static check reads.
+
+    `added` are the labels the record's category must cover: those the record adds, and those its category change
+    puts under a new rule.
+    """
     base, head, tag = sides
     record, text, problems = head.records[stem]
     if record is None:
@@ -423,15 +444,18 @@ def _record_problems(
     return problems
 
 
-def _release(tag: Side, side: Side) -> tuple[set[str], set[str], set[str]]:
-    """Return the labels that moved since the tag, the gaps among them and the stale covered labels.
+def _release(tag: Side, side: Side) -> tuple[set[str], dict[str, list[tuple[str, Reference]]], set[str]]:
+    """Return the labels that moved since the tag, the gaps among them with their references, and the stale ones.
 
-    A gap moved and no unreleased record covers it; a stale label is covered and did not move.
+    A gap moved and no unreleased record covers it; a reference added since the tag counts as moved only when `src/`
+    or `uv.lock` differs from the tag's, as in `evaluate`. A stale label is covered and did not move.
     """
-    moved = diff(tag, side)
+    generator = tag.generator() != side.generator()
+    moved = diff(tag, side, pair=not generator)
     moving = moved.moving()
     covered = {label for record in _unreleased(side, tag).values() for label in record.covers}
-    return moving, {ref.label for _, ref in moved.rows(added=False)} - covered, covered - moving
+    gaps = _by_label((state, ref) for state, ref in moved.rows(added=generator) if ref.label not in covered)
+    return moving, gaps, covered - moving
 
 
 def _branch(repo: Path) -> str:
@@ -467,8 +491,9 @@ def evaluate(repo: Path, base: Side, head: Side, tag: Side, *, main: bool = Fals
     added = {stem: set(record.covers) - _covers_of(base_records, stem) for stem, record in head_records.items()}
     coverage = set().union(*added.values())
     covered = {label for record in head_records.values() for label in record.covers}
-    since, head_gaps, head_stale = _release(tag, head)
-    _, base_gaps, base_stale = _release(tag, base)
+    since, head_rows, head_stale = _release(tag, head)
+    _, base_rows, base_stale = _release(tag, base)
+    head_gaps, base_gaps = set(head_rows), set(base_rows)
     rows = moved.rows(added=generator)
     at_tag = {ref.label for _, ref in rows} - since
     report.returned = {
@@ -477,6 +502,9 @@ def evaluate(repo: Path, base: Side, head: Side, tag: Side, *, main: bool = Fals
     }
     report.undeclared = _by_label((state, ref) for state, ref in rows if ref.label not in coverage | at_tag)
     report.over_claimed = sorted(coverage - _claimable(moved, base_gaps))
+    report.backfill = {
+        label: rows for label, rows in base_rows.items() if label in since - covered and label not in report.undeclared
+    }
     for stem in sorted(head.records):
         text = head.records[stem][1]
         if stem in tag.records:
@@ -485,7 +513,8 @@ def evaluate(repo: Path, base: Side, head: Side, tag: Side, *, main: bool = Fals
                     f"unreleased/{stem}.toml shipped in {tag.name}; move later edits to a new fragment"
                 )
         elif stem not in base.records or text != base.records[stem][1]:
-            report.problems += _record_problems(stem, (base, head, tag), head_records, added.get(stem, set()))
+            checked = added.get(stem, set()) | _revalidated(stem, head_records, base_records)
+            report.problems += _record_problems(stem, (base, head, tag), head_records, checked)
     older = set() if main else base_gaps
     report.gaps = sorted(head_gaps - older - set(report.undeclared))
     report.stale = sorted(head_stale - base_stale - set(report.over_claimed))
@@ -537,9 +566,10 @@ def _commands(
         groups.setdefault((target, *kinds), []).append(label)
     taken = set(head.records) | set(tag.records)
     commands = []
-    for (extends, *kinds), labels in groups.items():
+    for (extends, *_), labels in groups.items():
         released = any(label in tag.by_label for label in labels)
-        admissible = _admissible({Owner(kind) for kind in kinds}, released=released, generator=report.generator)
+        owners = set().union(*(_kinds(label, old, head) for label in labels))
+        admissible = _admissible(owners, released=released, generator=report.generator)
         fits = [
             stem
             for stem, record in sorted(fresh.items())
@@ -660,13 +690,15 @@ def _sides(repo: Path, ns: argparse.Namespace) -> tuple[Side, Side, Side]:
 
 
 def _select(report: Report, ns: argparse.Namespace) -> list[str]:
+    """Return the labels a selector picks: `--rest` the undeclared ones, the others also the gaps of the base."""
     if ns.rest:
         return list(report.undeclared)
+    eligible = report.undeclared | report.backfill
     if ns.labels:
-        return [label for label in report.undeclared if any(fnmatch.fnmatchcase(label, glob) for glob in ns.labels)]
+        return [label for label in eligible if any(fnmatch.fnmatchcase(label, glob) for glob in ns.labels)]
     return [
         label
-        for label, rows in report.undeclared.items()
+        for label, rows in eligible.items()
         if any(fnmatch.fnmatchcase(ref.nodeid, glob) for _, ref in rows for glob in ns.tests)
     ]
 
@@ -717,7 +749,7 @@ def declare(repo: Path, ns: argparse.Namespace) -> int:
 def prune(repo: Path, ns: argparse.Namespace) -> int:
     """Drop the covered labels that do not move against the base (added here) or no longer differ from the tag."""
     base, head, tag = _sides(repo, ns)
-    claimable, since = _claimable(diff(base, head), _release(tag, base)[1]), _release(tag, head)[0]
+    claimable, since = _claimable(diff(base, head), set(_release(tag, base)[1])), _release(tag, head)[0]
     base_records = _unreleased(base, tag)
     for stem, record in _unreleased(head, tag).items():
         added = set(record.covers) - _covers_of(base_records, stem)
