@@ -1425,7 +1425,9 @@ def _nested_model_has_required_constructor_fields(source: DataModel) -> bool:
             or _has_opaque_custom_base(model, model.BASE_CLASS)
         ):
             return False
-    fields = get_effective_fields(source) if inherited else source.fields
+    fields = (
+        [field for _, field in _effective_field_owners(source, models[1:]).values()] if inherited else source.fields
+    )
     return any(
         (field.required or field.should_strip_default_none())
         and (source.USES_DATACLASS_ARGUMENTS or not field.is_class_var)
@@ -1438,6 +1440,11 @@ def _nested_model_has_required_constructor_fields(source: DataModel) -> bool:
         )
         for field in fields
     )
+
+
+def _written_name(data_type: DataType, reference: Reference) -> str:
+    """Return the name the annotation of ``data_type`` writes for the type ``reference``: its alias, else short name."""
+    return data_type.alias or reference.short_name
 
 
 def _default_factory_type_name(data_type: DataType) -> str:

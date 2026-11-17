@@ -19,7 +19,7 @@ from datamodel_code_generator._config_fields import DEFAULT_ENCODING, DEFAULT_WA
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, Formatter, PythonVersion
 from datamodel_code_generator._json_output import JSON_SCHEMA_NAMES
 from datamodel_code_generator._message_text import extra_requirement, install_command
-from datamodel_code_generator._option_names import option_flags, split_external_ref_mapping
+from datamodel_code_generator._option_names import field_name, option_flags, split_external_ref_mapping
 from datamodel_code_generator._records import record
 from datamodel_code_generator._shared_types import LiteralType
 from datamodel_code_generator.deprecations import DeprecationFormat, cli_deprecations
@@ -159,7 +159,8 @@ class Option:
     """A command-line option: its flags, where the parser adds it, the arguments argparse takes for it, and its cells.
 
     The cells are those of its documentation: its category, unset where it is that of its help section, its group
-    and topic, the relations that start from its positive flag, and whether only its --no- form is documented.
+    and topic, the relations that start from its positive flag, and whether only its --no- form is documented; and
+    whether a config carries its value (``config``), false for the options of a command, such as ``--help``.
     """
 
     flags: tuple[str, ...]
@@ -172,14 +173,20 @@ class Option:
     requires: tuple[CLIOptionRelation, ...] = ()
     conflicts: tuple[CLIOptionRelation, ...] = ()
     meta_on_negative_only: bool = False
+    config: bool = True
 
     @property
     def section(self) -> Section:
         """The help section of the option."""
         return self.place if isinstance(self.place, Section) else self.place.section
 
+    @property
+    def dest(self) -> str:
+        """The name argparse stores the value under: the ``dest`` given, or the field its first long flag names."""
+        return self.arguments.get("dest") or field_name(next(f for f in self.flags if f.startswith("--"))[2:])
 
-_CELLS: Final = frozenset({"implies", "requires", "conflicts", "meta_on_negative_only"})
+
+_CELLS: Final = frozenset({"implies", "requires", "conflicts", "meta_on_negative_only", "config"})
 
 
 _DOC_CELLS: Final = {OptionCategory: "category", OptionGroup: "group", OptionTopic: "topic"}
@@ -2097,20 +2104,28 @@ OPTIONS: Final[tuple[Option, ...]] = (
     flag(Section.GENERAL, "--disable-warnings", help="disable warnings"),
     *_list_options(),
     value(
-        Section.GENERAL, "-h", "--help", action="help", default="==SUPPRESS==", help="show this help message and exit"
+        Section.GENERAL,
+        "-h",
+        "--help",
+        action="help",
+        default="==SUPPRESS==",
+        help="show this help message and exit",
+        config=False,
     ),
-    flag(Section.GENERAL, "--no-color", help="disable colorized output", default=False),
+    flag(Section.GENERAL, "--no-color", help="disable colorized output", default=False, config=False),
     value(
         Section.GENERAL,
         "--output-format",
         choices=["text", "json"],
         help="Format for command output (default: text). Use json for structured output when supported.",
+        config=False,
     ),
     flag(
         Section.GENERAL,
         "--fail-on-multi-module-stdout",
         help="Return an error instead of concatenating multiple generated modules in text stdout. "
         "This does not affect single-module, JSON, or file output.",
+        config=False,
     ),
     value(
         Section.GENERAL,
@@ -2118,16 +2133,19 @@ OPTIONS: Final[tuple[Option, ...]] = (
         choices=list(JSON_SCHEMA_NAMES),
         metavar=f"{{{','.join(JSON_SCHEMA_NAMES)}}}",
         help="Output JSON Schema for the selected JSON output or JSON configuration format and exit.",
+        config=False,
     ),
     flag(
         Section.GENERAL,
         "--generate-pyproject-config",
         help="Generate pyproject.toml configuration from the provided CLI arguments and exit",
+        config=False,
     ),
     flag(
         Section.GENERAL,
         "--generate-cli-command",
         help="Generate CLI command from pyproject.toml configuration and exit",
+        config=False,
     ),
     value(
         Section.GENERAL,
@@ -2140,6 +2158,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "Optionally provide your question as an argument. "
         "Pipe to CLI tools (e.g., `| claude -p`, `| codex exec`) "
         "or copy to clipboard (e.g., `| pbcopy`, `| xclip`) for web LLM chats.",
+        config=False,
     ),
     value(
         Section.GENERAL,
@@ -2152,8 +2171,11 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "reasons, as a command and a pyproject.toml block, then exit (experimental). Schemas of up to 3000 estimated "
         "models are also compared by generating the candidate configurations in memory. With --generate-prompt, the "
         "prompt includes the recommendation instead.",
+        config=False,
     ),
-    flag(Section.GENERAL, "--ignore-pyproject", help="Ignore pyproject.toml configuration", default=False),
+    flag(
+        Section.GENERAL, "--ignore-pyproject", help="Ignore pyproject.toml configuration", default=False, config=False
+    ),
     toggle(
         Section.GENERAL,
         "--read-implied-options-from-merged-values",
@@ -2169,6 +2191,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         metavar="{codex,claude-code}",
         help="Install the bundled datamodel-code-generator Agent Skill and exit (experimental). "
         "Use --skill-scope to select a project or personal installation.",
+        config=False,
     ),
     value(
         Section.GENERAL,
@@ -2177,17 +2200,20 @@ OPTIONS: Final[tuple[Option, ...]] = (
         metavar="{project,user}",
         help="Installation scope for --install-skill (default: project). "
         "Project installs use .agents/skills or .claude/skills; user installs use the matching home directory.",
+        config=False,
     ),
     flag(
         Section.GENERAL,
         "--overwrite-skill",
         help="Replace an existing regular skill directory when used with --install-skill.",
         default=False,
+        config=False,
     ),
     value(
         Section.GENERAL,
         "--profile",
         help="Use a named profile from pyproject.toml [tool.datamodel-codegen.profiles.<name>]",
+        config=False,
     ),
     value(
         Exclusive.JOB_SELECTION,
@@ -2196,11 +2222,13 @@ OPTIONS: Final[tuple[Option, ...]] = (
         metavar="NAME",
         help="Run a named job from pyproject.toml [tool.datamodel-codegen.jobs.<name>] (experimental). Can be "
         "repeated.",
+        config=False,
     ),
     flag(
         Exclusive.JOB_SELECTION,
         "--all-jobs",
         help="Run every named job from pyproject.toml in declaration order (experimental).",
+        config=False,
     ),
     flag(Section.GENERAL, "--watch", help="Watch input file(s) for changes and regenerate output automatically"),
     value(
@@ -2209,7 +2237,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         type=float,
         help=f"Debounce delay in seconds for watch mode (default: {DEFAULT_WATCH_DELAY})",
     ),
-    flag(Section.GENERAL, "--version", help="show version", default=False),
+    flag(Section.GENERAL, "--version", help="show version", default=False, config=False),
     # Target generation options
     value(
         Exclusive.TARGET_SELECTION,
@@ -2349,3 +2377,5 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "JSON file path (experimental).",
     ),
 )
+COMMAND_DESTS: Final = frozenset(option.dest for option in OPTIONS if not option.config)
+"""The names argparse stores the options of a command under, which no config carries."""

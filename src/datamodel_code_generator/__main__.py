@@ -144,6 +144,7 @@ from datamodel_code_generator._option_names import (
     values_arguments,  # noqa: F401  # Preserve the established __main__ export.
 )
 from datamodel_code_generator._option_names import json_ready as _json_ready
+from datamodel_code_generator._option_table import COMMAND_DESTS
 from datamodel_code_generator._paths import (
     layout_refusal,
     names_directory,
@@ -161,8 +162,8 @@ from datamodel_code_generator._project_config import (
     _resolve_pyproject_relative_paths,
     _resolve_relative_paths_from,
     names_profile,
+    profile_table_keys,
 )
-from datamodel_code_generator._project_config import profile_table_keys as _profile_table_keys
 from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._run_record import RunOptions
 from datamodel_code_generator._url_redaction import is_url, redact_url
@@ -211,34 +212,17 @@ if TYPE_CHECKING:
 
     Config: TypeAlias = Any
 
-# Options that should be excluded from pyproject.toml config generation
-EXCLUDED_CONFIG_OPTIONS: frozenset[str] = frozenset({
+EXCLUDED_CONFIG_OPTIONS: frozenset[str] = COMMAND_DESTS | {
     "check",
     "diff_against",
-    "generate_pyproject_config",
-    "generate_cli_command",
-    "generate_prompt",
-    "recommend_options",
-    "ignore_pyproject",
-    "install_skill",
-    "skill_scope",
-    "overwrite_skill",
-    "profile",
-    "job",
-    "all_jobs",
-    "version",
-    "help",
     "debug",
-    "no_color",
-    "output_format",
-    "output_format_json_schema",
-    "fail_on_multi_module_stdout",
     "disable_warnings",
     "list_deprecations",
     "list_experimental",
     "watch",
     "watch_delay",
-})
+}
+"""The options ``--generate-pyproject-config`` leaves out: those of a command and the config fields of a run mode."""
 
 SENSITIVE_COMMAND_OPTIONS: frozenset[str] = frozenset(map(option_flag, SENSITIVE_FIELDS))
 REDACTED_COMMAND_ARGUMENT = "<redacted>"
@@ -476,21 +460,33 @@ def _validate_remote_lock_policies(
                 raise Error(msg)
 
 
+def _config_artifacts(
+    config: Config, *, sources: bool = True, roots: tuple[Path | None, Path | None] | None = None
+) -> Iterator[tuple[str, Path]]:
+    """Yield the kind and resolved path of what a run of the config writes: its output, target output, model metadata.
+
+    With ``sources``, what it reads that a remote lock must not overlap comes first: its input path and diff input.
+    ``roots`` are the planned output and model metadata roots that replace the two paths resolved from the config.
+    """
+    output, metadata = roots or (config.output, config.emit_model_metadata)
+    read = (("input", config.input if isinstance(config.input, Path) else None), ("diff input", config.diff_against))
+    for kind, path in (
+        *(read if sources else ()),
+        ("output", output),
+        _target_output(config) or ("target output", None),
+        ("model metadata", metadata),
+    ):
+        if path is not None:
+            yield kind, path if roots and kind in {"output", "model metadata"} else resolved(path)
+
+
 def _validate_remote_lock_artifacts(
     planned_entries: Sequence[tuple[tuple[str, Config, Path | None], _RemoteLockPlan]],
 ) -> None:
     """Reject locks that overlap any source or generated artifact."""
-    artifacts: list[tuple[str, str, Path]] = []
-    for (name, config, _), _plan in planned_entries:
-        for kind, path in (
-            ("input", config.input if isinstance(config.input, Path) else None),
-            ("diff input", config.diff_against),
-            ("output", config.output),
-            _target_output(config) or ("target output", None),
-            ("model metadata", config.emit_model_metadata),
-        ):
-            if path is not None:
-                artifacts.append((name, kind, resolved(path)))
+    artifacts = [
+        (name, kind, path) for (name, config, _), _ in planned_entries for kind, path in _config_artifacts(config)
+    ]
     for (name, _, _), plan in planned_entries:
         if not plan.active:
             continue
@@ -739,11 +735,12 @@ def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
             raise Error(msg)
         _validate_generation_path_conflicts(config.input, config.output, config.emit_model_metadata)
         inputs.append((plan.name, resolved(config.input)))
-        artifacts.append((plan.name, "output", cast("Path", plan.resolved_output_root)))
-        if (target := _target_output(config)) is not None:
-            artifacts.append((plan.name, target[0], resolved(target[1])))
-        if plan.resolved_model_metadata_root is not None:
-            artifacts.append((plan.name, "model metadata", plan.resolved_model_metadata_root))
+        artifacts.extend(
+            (plan.name, kind, path)
+            for kind, path in _config_artifacts(
+                config, sources=False, roots=(plan.resolved_output_root, plan.resolved_model_metadata_root)
+            )
+        )
 
     for index, first_artifact in enumerate(artifacts):
         first_job, first_kind, first_path = first_artifact
@@ -2088,11 +2085,13 @@ def _run_staged_job(
     remote_lock_plan: _RemoteLockPlan,
 ) -> Exit:
     """Run one batch job through the command with its staged config, recording into the batch's locks."""
-    return _main(
+    config, watch_dependencies = _rerun_copy(staged_plan.config, None)
+    return _run_config(
         args,
+        config,
+        staged_plan.plan.pyproject_path,
+        watch_dependencies,
         start_watch=False,
-        _batch_config=staged_plan.config,
-        _batch_pyproject_path=staged_plan.plan.pyproject_path,
         _batch_original_output=staged_plan.output,
         _batch_output_is_staged=staged_plan.output is not None,
         _batch_targets=staged_plan.targets,
@@ -2208,12 +2207,13 @@ def _run_single_remote_transaction(  # noqa: PLR0913
                     if staged_plans
                     else (config, None, False)
                 )
-                result = _main(
+                rerun_config, watch_dependencies = _rerun_copy(run_config, dependencies)
+                result = _run_config(
                     args,
+                    rerun_config,
+                    pyproject_path,
+                    watch_dependencies,
                     start_watch=False,
-                    dependencies=dependencies,
-                    _batch_config=run_config,
-                    _batch_pyproject_path=pyproject_path,
                     _batch_original_output=original_output,
                     _batch_output_is_staged=output_is_staged,
                     _remote_locks=remote_locks,
@@ -2405,21 +2405,15 @@ def _watch_and_regenerate(
         return Exit.ERROR
 
 
-def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
-    args: Sequence[str] | None = None,
-    *,
-    start_watch: bool,
-    dependencies: WatchDependencies | None = None,
-    _batch_config: Config | None = None,
-    _batch_pyproject_path: Path | None = None,
-    _batch_original_output: Path | None = None,
-    _batch_output_is_staged: bool = False,
-    _batch_targets: list[Any] | None = None,
-    _batch_job: str = "",
-    _remote_locks: _RemoteLockTransaction | _UnresolvedRemoteLocks | None = _UNRESOLVED_REMOTE_LOCKS,
-    _bound_remote_lock_plan: _RemoteLockPlan | None = None,
+def _main(
+    args: Sequence[str] | None = None, *, start_watch: bool, dependencies: WatchDependencies | None = None
 ) -> Exit:
-    """Execute datamodel code generation from command-line arguments."""
+    """Execute datamodel code generation from command-line arguments.
+
+    A command that only prints (``--version``, ``--generate-prompt``, ...) and a batch of jobs end before the config of
+    the command is resolved; otherwise the config is run with the pyproject.toml it was read with and the dependencies
+    ``--watch`` watches.
+    """
     _reset_namespace(namespace)
 
     if "_ARGCOMPLETE" in os.environ:  # pragma: no cover
@@ -2441,6 +2435,38 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
 
         import_module("datamodel_code_generator._structured_output")
 
+    if (printed := _command_output(namespace)) is not None:
+        return printed
+    if namespace.job or namespace.all_jobs:
+        return _run_batch_command(args, start_watch=start_watch, dependencies=dependencies)
+    if isinstance(project := _command_pyproject(namespace), Exit):
+        return project
+    pyproject_config, pyproject_path = project
+
+    record = RunOptions(pyproject=pyproject_config, arguments=_explicit_config_args(namespace))
+    watch_values = record.merged
+    if dependencies is not None:
+        dependencies.stage_raw_config(watch_values)
+    try:
+        config = _resolve_cli_config(record)
+    except Exception as e:
+        from pydantic import ValidationError  # noqa: PLC0415
+
+        if not isinstance(e, Error | ValidationError):
+            raise
+        print(e if isinstance(e, Error) else f"Invalid configuration: {e}", file=sys.stderr)  # noqa: T201
+        return Exit.ERROR
+    return _run_config(
+        args, config, pyproject_path, _watch_dependencies(config, dependencies, watch_values), start_watch=start_watch
+    )
+
+
+def _command_output(namespace: Namespace) -> Exit | None:
+    """Run a command that installs a skill or prints and exits, or None for a command that generates.
+
+    Such a command installs the agent skill, prints the version, a JSON Schema, the pyproject.toml configuration of
+    the arguments or a prompt; the options of ``--install-skill`` without it are refused.
+    """
     if (agent := namespace.install_skill) is not None:
         from datamodel_code_generator._agent_skill_cli import install_agent_skill_command  # noqa: PLC0415
 
@@ -2480,54 +2506,15 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         prompt_output = generate_prompt(namespace, help_text, arg_parser)
         print(prompt_output)  # noqa: T201
         return Exit.OK
+    return None
 
-    if _batch_config is None and (namespace.job or namespace.all_jobs):
-        try:
-            batch_plan = _plan_jobs(namespace)
-        except Error as e:
-            if dependencies is not None:
-                _record_raw_batch_watch_dependencies(namespace, dependencies)
-            print(str(e), file=sys.stderr)  # noqa: T201
-            return Exit.ERROR
-        if namespace.recommend_options is not None:
-            (job_plan,) = batch_plan.jobs
-            return _run_recommend_options(
-                namespace,
-                job_plan.config,
-                job_plan.pyproject_path,
-                table=config_table("jobs", job_plan.name),
-                selector=("--job", job_plan.name),
-            )
-        if not batch_plan.watch:
-            return _run_jobs(args, batch_plan.jobs)
-        if conflict := _first_conflict((
-            (any(plan.config.check for plan in batch_plan.jobs), _WATCH_CHECK_CONFLICT),
-            (namespace.output_format == "json", _WATCH_JSON_CONFLICT),
-        )):
-            print(f"Error: {conflict}", file=sys.stderr)  # noqa: T201
-            return Exit.ERROR
 
-        from datamodel_code_generator.watch_dependencies import WatchDependencies  # noqa: PLC0415
+def _command_pyproject(namespace: Namespace) -> Exit | tuple[Mapping[str, object], Path | None]:
+    """Return the pyproject.toml values of the command, their paths resolved, and the file that gives them.
 
-        watch_dependencies = dependencies or WatchDependencies()
-        result = _run_watched_jobs(args, batch_plan, watch_dependencies)
-        if result is not Exit.OK or not start_watch:
-            return result
-        return _watch_and_regenerate(
-            args,
-            batch_plan.jobs[0].config,
-            watch_dependencies,
-            watch_path=batch_plan.pyproject_path,
-            watch_delay=batch_plan.watch_delay,
-        )
-
-    # Handle --ignore-pyproject and --profile options
-    if _batch_config is not None:
-        # The run enters the command again with the config it resolved, a batch job or the transaction of a lock:
-        # the pyproject.toml values are the ones that config was resolved from.
-        pyproject_config = dict(_batch_config._run_options.pyproject)  # noqa: SLF001
-        pyproject_path = _batch_pyproject_path
-    elif namespace.ignore_pyproject:
+    Or the exit of ``--generate-cli-command``, which prints them as a command, or of a file that cannot be read.
+    """
+    if namespace.ignore_pyproject:
         pyproject_config: dict[str, Any] = {}
         pyproject_path = None
     else:
@@ -2558,39 +2545,90 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     except Error as e:
         print(e.message, file=sys.stderr)  # noqa: T201
         return Exit.ERROR
+    return pyproject_config, pyproject_path
 
-    if _batch_config is not None:
-        # Generation adjusts a few Config fields while resolving templates and
-        # stdout behaviour. Each batch job therefore receives a fresh copy.
-        config = _batch_config.model_copy(deep=True)
-        # Row `lock-reentry-watch-values-pyproject-only`: the transaction of a lock configures the watch again, from
-        # the pyproject.toml values alone, so a path an argument gives is watched where pyproject.toml names it.
-        watch_values: Mapping[str, Any] = pyproject_config
-    else:
-        record = RunOptions(pyproject=pyproject_config, arguments=_explicit_config_args(namespace))
-        watch_values = record.merged
+
+def _run_batch_command(args: Sequence[str], *, start_watch: bool, dependencies: WatchDependencies | None) -> Exit:
+    """Run the jobs ``--job`` or ``--all-jobs`` selects, watching them where the batch sets ``watch``."""
+    try:
+        batch_plan = _plan_jobs(namespace)
+    except Error as e:
         if dependencies is not None:
-            dependencies.stage_raw_config(watch_values)
-        try:
-            config = _resolve_cli_config(record)
-        except Error as e:
-            print(str(e), file=sys.stderr)  # noqa: T201
-            return Exit.ERROR
-        except Exception as e:
-            from pydantic import ValidationError  # noqa: PLC0415
+            _record_raw_batch_watch_dependencies(namespace, dependencies)
+        print(str(e), file=sys.stderr)  # noqa: T201
+        return Exit.ERROR
+    if namespace.recommend_options is not None:
+        (job_plan,) = batch_plan.jobs
+        return _run_recommend_options(
+            namespace,
+            job_plan.config,
+            job_plan.pyproject_path,
+            table=config_table("jobs", job_plan.name),
+            selector=("--job", job_plan.name),
+        )
+    if not batch_plan.watch:
+        return _run_jobs(args, batch_plan.jobs)
+    if conflict := _first_conflict((
+        (any(plan.config.check for plan in batch_plan.jobs), _WATCH_CHECK_CONFLICT),
+        (namespace.output_format == "json", _WATCH_JSON_CONFLICT),
+    )):
+        print(f"Error: {conflict}", file=sys.stderr)  # noqa: T201
+        return Exit.ERROR
 
-            if not isinstance(e, ValidationError):
-                raise
-            print(f"Invalid configuration: {e}", file=sys.stderr)  # noqa: T201
-            return Exit.ERROR
+    from datamodel_code_generator.watch_dependencies import WatchDependencies  # noqa: PLC0415
 
-    watch_dependencies = dependencies
-    if config.watch:
-        from datamodel_code_generator.watch_dependencies import WatchDependencies  # noqa: PLC0415
+    watch_dependencies = dependencies or WatchDependencies()
+    result = _run_watched_jobs(args, batch_plan, watch_dependencies)
+    if result is not Exit.OK or not start_watch:
+        return result
+    return _watch_and_regenerate(
+        args,
+        batch_plan.jobs[0].config,
+        watch_dependencies,
+        watch_path=batch_plan.pyproject_path,
+        watch_delay=batch_plan.watch_delay,
+    )
 
-        watch_dependencies = watch_dependencies or WatchDependencies()
-        watch_dependencies.configure(config, config_values=watch_values)
 
+def _watch_dependencies(
+    config: Config, dependencies: WatchDependencies | None, watch_values: Mapping[str, Any]
+) -> WatchDependencies | None:
+    """Return the dependencies ``--watch`` watches for the config, configured from the values it reads paths from."""
+    if not config.watch:
+        return dependencies
+    from datamodel_code_generator.watch_dependencies import WatchDependencies  # noqa: PLC0415
+
+    watch_dependencies = dependencies or WatchDependencies()
+    watch_dependencies.configure(config, config_values=watch_values)
+    return watch_dependencies
+
+
+def _rerun_copy(config: Config, dependencies: WatchDependencies | None) -> tuple[Config, WatchDependencies | None]:
+    """Return the copy of a resolved config that runs once more, as a batch job or in the transaction of a remote lock.
+
+    Generation adjusts a few fields while it resolves templates and stdout behaviour, so each run takes a copy. Row
+    `lock-reentry-watch-values-pyproject-only`: ``--watch`` is configured again from the pyproject.toml values alone, so
+    a path an argument gives is watched where pyproject.toml names it.
+    """
+    copy = config.model_copy(deep=True)
+    return copy, _watch_dependencies(copy, dependencies, config._run_options.pyproject)  # noqa: SLF001
+
+
+def _run_config(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
+    args: Sequence[str],
+    config: Config,
+    pyproject_path: Path | None,
+    watch_dependencies: WatchDependencies | None,
+    *,
+    start_watch: bool,
+    _batch_original_output: Path | None = None,
+    _batch_output_is_staged: bool = False,
+    _batch_targets: list[Any] | None = None,
+    _batch_job: str = "",
+    _remote_locks: _RemoteLockTransaction | _UnresolvedRemoteLocks | None = _UNRESOLVED_REMOTE_LOCKS,
+    _bound_remote_lock_plan: _RemoteLockPlan | None = None,
+) -> Exit:
+    """Run a resolved config: generate, check or compare its output, then watch it where it says so."""
     if config.list_deprecations:
         return _print_registry("deprecations", render_deprecations, config.list_deprecations)
     if config.list_experimental:
@@ -2623,7 +2661,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             config,
             pyproject_path,
             selector=("--profile", namespace.profile) if names_profile(namespace.profile) else (),
-            table=config_table(*_profile_table_keys(namespace.profile)),
+            table=config_table(*profile_table_keys(namespace.profile)),
         )
 
     _imply_remote_refs(config)
@@ -2756,14 +2794,6 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
                 config.input_file_type = InputFileType.JsonSchema
         else:
             input_ = config.url or config.input or sys.stdin.read()
-
-        if writes_json_output_file:
-            _validate_generation_path_conflicts(
-                input_,
-                config.output,
-                config.emit_model_metadata,
-                active_lockfile,
-            )
 
         run_options: dict[str, Any] = {
             "config": config,

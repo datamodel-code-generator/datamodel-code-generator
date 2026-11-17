@@ -86,6 +86,7 @@ from datamodel_code_generator.model.base import (
     _has_opaque_custom_base,
     _ModelKeys,
     _uses_original_template_loader,
+    _written_name,
     overrides_builtin_templates,
 )
 from datamodel_code_generator.model.field_name import PYDANTIC_BASE_MODEL_ATTRIBUTES, PydanticFieldNameResolver
@@ -1399,7 +1400,7 @@ def _only_describes_own_named_type(field: DataModelFieldBase) -> bool:
     from ``Annotated``.
     """
     if not any(
-        (reference := data_type.reference) is not None and (data_type.alias or reference.short_name) == field.name
+        (reference := data_type.reference) is not None and _written_name(data_type, reference) == field.name
         for data_type in field.data_type.all_data_types
     ):
         return False

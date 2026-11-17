@@ -682,6 +682,12 @@ The constructor of a row is its form: `toggle` (a flag with a `--no-` form), `fl
 (a flag whose help is its message in the deprecation registry), `clear` (the `--no-` form of a list option) or `value`
 (an option that takes a value, with the arguments `argparse` takes, such as `choices=_values(MyEnum)` or `type=int`).
 
+The value of a row reaches the run through the config field its dest names (`my_new_option`): add the field to the
+config models. A row marked `config=False` is the option of a command that no config carries, such as `--help`.
+`test_option_table_matches_the_config_models` (`tests/cli_doc/test_cli_options_sync.py`) fails for a row without its
+field and for a config field without a row; a field that no option sets is listed in `CONFIG_ONLY_FIELDS` there, with
+the reason.
+
 ### Step 2: Add a test with documentation marker (Required)
 
 Create a test that demonstrates the option and add the `@pytest.mark.cli_doc()` marker:
