@@ -10,3 +10,4 @@ site/
 tests/cli_doc/.cli_doc_collection.json
 docs/assets/playground/generated/
 docs/migration/from-*.md
+docs/llms-full.txt
