@@ -460,20 +460,24 @@ def _validate_remote_lock_policies(
                 raise Error(msg)
 
 
-def _config_artifacts(config: Config, *, sources: bool = True) -> Iterator[tuple[str, Path]]:
+def _config_artifacts(
+    config: Config, *, sources: bool = True, roots: tuple[Path | None, Path | None] | None = None
+) -> Iterator[tuple[str, Path]]:
     """Yield the kind and resolved path of what a run of the config writes: its output, target output, model metadata.
 
     With ``sources``, what it reads that a remote lock must not overlap comes first: its input path and diff input.
+    ``roots`` are the planned output and model metadata roots that replace the two paths resolved from the config.
     """
+    output, metadata = roots or (config.output, config.emit_model_metadata)
     read = (("input", config.input if isinstance(config.input, Path) else None), ("diff input", config.diff_against))
     for kind, path in (
         *(read if sources else ()),
-        ("output", config.output),
+        ("output", output),
         _target_output(config) or ("target output", None),
-        ("model metadata", config.emit_model_metadata),
+        ("model metadata", metadata),
     ):
         if path is not None:
-            yield kind, resolved(path)
+            yield kind, path if roots and kind in {"output", "model metadata"} else resolved(path)
 
 
 def _validate_remote_lock_artifacts(
@@ -731,7 +735,12 @@ def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
             raise Error(msg)
         _validate_generation_path_conflicts(config.input, config.output, config.emit_model_metadata)
         inputs.append((plan.name, resolved(config.input)))
-        artifacts.extend((plan.name, kind, path) for kind, path in _config_artifacts(config, sources=False))
+        artifacts.extend(
+            (plan.name, kind, path)
+            for kind, path in _config_artifacts(
+                config, sources=False, roots=(plan.resolved_output_root, plan.resolved_model_metadata_root)
+            )
+        )
 
     for index, first_artifact in enumerate(artifacts):
         first_job, first_kind, first_path = first_artifact
