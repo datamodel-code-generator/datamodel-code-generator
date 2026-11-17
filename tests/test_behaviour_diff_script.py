@@ -1827,6 +1827,37 @@ def test_gate_against_a_git_revision(case: str, tmp_path: Path) -> None:
     assert_output(text.replace(commits[base][:9], "<sha>").replace(commits[base][:7], "<sha>"))
 
 
+FAKE_FAILS_AFTER_WRITING = (
+    FAKE_HEAD
+    + """
+
+def main(argv):
+    ns = arg_parser.parse_args(argv)
+    Path(ns.output).write_text(MODEL.format("%s"), encoding="utf-8")
+    print("Error: boom")
+    return 2
+"""
+)
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")
+def test_identity_compares_the_output_of_runs_that_fail_alike(tmp_path: Path) -> None:
+    """Two sides that fail with the same status and message but wrote different files are a difference."""
+    repo = tmp_path / "repo"
+    _fake_generator(repo, ["first"], None)
+    package = repo / "src" / "datamodel_code_generator"
+    commits = []
+    for kind in ("int", "str"):
+        (package / "__main__.py").write_text(FAKE_FAILS_AFTER_WRITING % kind, encoding="utf-8")
+        _git("add", "-A", ".", cwd=repo)
+        _git("commit", "-qm", kind, cwd=repo)
+        commits.append(_git("rev-parse", "HEAD", cwd=repo))
+    argv = ["gate", commits[0], str(repo), "--types", "pydantic_v2.BaseModel", "--candidate-python", sys.executable]
+    argv += ["--cache-dir", str(tmp_path / "cache"), "--select", "tests/data/jsonschema/plain.json", "--identity"]
+    argv += ["--json", str(tmp_path / "cells.jsonl"), "-j", "1"]
+    assert_output("\n".join(_gate_lines(argv, tmp_path / "cells.jsonl")).replace(commits[0][:9], "<sha>") + "\n")
+
+
 def test_gate_refuses_a_side_that_is_no_revision(tmp_path: Path) -> None:
     """A BASE or CANDIDATE that names no release, directory or revision stops the gate.
 

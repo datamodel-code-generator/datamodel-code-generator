@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
+import json
+import os
 import re
 import sys
 from contextlib import redirect_stderr, redirect_stdout
@@ -11,6 +14,7 @@ from pathlib import Path
 import pytest
 
 import datamodel_code_generator
+import datamodel_code_generator.__main__  # noqa: F401
 from scripts import compare_release
 from tests.conftest import assert_output
 
@@ -211,3 +215,25 @@ def test_compare_release_resolves_the_base(tmp_path: Path, monkeypatch: pytest.M
         installed = compare_release.main(["--base-python", sys.executable, "--no-cache", *common])
     text = IMPORTED.sub("from <package>,", "\n".join(refusals).replace(str(unpacked), "<release>"))
     assert_output(f"exit={code}, {installed}\n{stdout.getvalue()}{text.replace(str(ROOT), '<root>')}\n")
+
+
+def test_the_environment_keeps_what_windows_needs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """A side keeps the variables Python needs on Windows, and still not the caller's PYTHONPATH."""
+    for name in compare_release.PASSED_VARIABLES:
+        monkeypatch.setenv(name, f"<{name}>")
+    monkeypatch.setenv("PYTHONPATH", "elsewhere")
+    monkeypatch.setenv("VIRTUAL_ENV", "elsewhere")
+    assert_output(
+        json.dumps(compare_release.run_environment(tmp_path), indent=1, sort_keys=True).replace(str(tmp_path), "<src>")
+    )
+
+
+def test_the_record_is_published_by_a_replace(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """The record of a run stays empty until it is complete: an interrupted publication leaves no partial JSON."""
+    record = tmp_path / "record.json"
+    monkeypatch.setattr(os, "replace", lambda *_: (_ for _ in ()).throw(KeyboardInterrupt))
+    with contextlib.suppress(KeyboardInterrupt):
+        compare_release._generate_recorded({"record": str(record), "args": []}, lambda _: 0)
+    if monitoring := getattr(sys, "monitoring", None):
+        monitoring.free_tool_id(compare_release.HANDLED_TOOL)
+    assert_output(repr(record.read_text(encoding="utf-8")))

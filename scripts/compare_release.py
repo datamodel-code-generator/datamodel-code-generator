@@ -79,10 +79,22 @@ ROOT = Path(__file__).resolve().parents[1]
 RELEASE = re.compile(r"\d+(?:\.\d+)+")
 """A base that is a released version, installed from the package index; any other base is a git revision."""
 TRACEBACK_FRAMES = re.compile(r"^Traceback \(most recent call last\):\n(?:[ \t].*(?:\n|\Z))*", re.MULTILINE)
-PASSED_VARIABLES = ("PATH", "HOME", "TMPDIR", "COVERAGE_PROCESS_START", "COVERAGE_PROCESS_CONFIG")
-"""The caller's variables a side's processes see: where programs, the home and temporary files are, and coverage's
-measurement of subprocesses. Any other (PYTHONPATH, PYTHONWARNINGS, the test suite's checks) could change what a
-side runs or how."""
+PASSED_VARIABLES = (
+    "PATH",
+    "HOME",
+    "TMPDIR",
+    "TEMP",
+    "TMP",
+    "SYSTEMROOT",
+    "WINDIR",
+    "PATHEXT",
+    "COMSPEC",
+    "COVERAGE_PROCESS_START",
+    "COVERAGE_PROCESS_CONFIG",
+)
+"""The caller's variables a side's processes see: where programs, the home and temporary files are, what Windows needs
+to start a Python process (its sockets fail without `SYSTEMROOT`) and coverage's measurement of subprocesses. Any other
+(PYTHONPATH, PYTHONWARNINGS, the test suite's checks) could change what a side runs or how."""
 HANDLED_TOOL = 3
 """The `sys.monitoring` tool id that records the exceptions `datamodel_code_generator.__main__` handles."""
 
@@ -208,7 +220,9 @@ def _generate_recorded(job: Record, main: Callable[[list[str]], object]) -> int:
         code = _exit_code(main, job["args"])
     handled = [f"{type(exception).__module__}.{type(exception).__qualname__}" for exception in caught]
     with contextlib.suppress(MemoryError):
-        record.write_text(json.dumps({"warnings": recorder.records, "handled": handled}), encoding="utf-8")
+        partial = record.with_name(record.name + ".tmp")
+        partial.write_text(json.dumps({"warnings": recorder.records, "handled": handled}), encoding="utf-8")
+        partial.replace(record)
     return code
 
 
@@ -675,7 +689,7 @@ class Runner:
             return Outcome(
                 ok=False,
                 error=self._error(rc, log),
-                tree={},
+                tree=_tree(out),
                 import_error="",
                 cacheable=rc > 0 and rc != OUT_OF_MEMORY,
                 **facts,
