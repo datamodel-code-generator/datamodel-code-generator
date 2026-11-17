@@ -251,7 +251,7 @@ class Module(TargetModule):
             case ConstructorType() if value.hint is None and value.base is not None:
                 return self.hint(value.base)
             case UnionType() | GenericType() if value.hint is None:
-                return self.composed(value, static=True)
+                return self.composed(value, self.static)
             case _:
                 pass
         return self.hint(value)
@@ -274,20 +274,10 @@ class Module(TargetModule):
             case ConstructorType() if value.base is not None:
                 return self.annotation(value)
             case UnionType() | GenericType() if value.hint is None or _constrained(value):
-                return self.composed(value, static=False)
+                return self.composed(value, self.validating)
             case _:
                 pass
         return self.hint(value, static=False)
-
-    def composed(self, value: UnionType | GenericType, *, static: bool) -> str:
-        """Return a union or container of spelled parts, as the model generator writes one.
-
-        A generic of no container, such as the `SerializeAsAny` of a model type, is its class of the spelled parts.
-        """
-        spell = self.static if static else self.validating
-        if isinstance(value, UnionType):
-            return self.union(*map(spell, value.members))
-        return self.generic(value, [spell(item) for item in value.arguments])
 
     def constraints(self, value: ConstructorType, base: BuiltinType | ImportedType) -> tuple[str, ...]:
         """Return the metadata of a constrained scalar's keywords, split as the model generator splits them."""
