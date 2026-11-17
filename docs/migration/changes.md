@@ -408,7 +408,7 @@ Notices of the deprecation registry are attributed to the outermost frame outsid
 Each model generated from a GraphQL object type has a `__typename` property that returns its `typename__` field, so graphql-core's default type resolver resolves unions and interfaces from model instances without a `resolve_type` function. The property is written for `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`, `dataclasses.dataclass` and `msgspec.Struct` output; input and interface types, `typing.TypedDict` output and custom model templates do not get it. Fields, aliases and validation are unchanged.
 
 - **Affects:** input types: `graphql`; output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`, `dataclasses.dataclass`, `msgspec.Struct`
-- **Keep the old output:** `--graphql-no-typename`
+- **Keep the old output:** No option writes the old output without the property: `--graphql-no-typename` also removes the `typename__` field, which the 0.95.0 output had, so serialization and validation change with it.
 - **Pull requests and issues:** [#6792](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6792)
 - **Source:** the release notes
 

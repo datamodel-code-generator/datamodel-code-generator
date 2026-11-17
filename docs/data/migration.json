@@ -692,7 +692,7 @@
    "title": "Deprecation and migration notices name the code that called datamodel-code-generator"
   },
   {
-   "action": "keep",
+   "action": "review",
    "affects": {
     "input_file_types": [
      "graphql"
@@ -708,9 +708,7 @@
    "before": "typename__: Literal['A'] | None = Field('A', alias='__typename')",
    "id": "graphql-typename-property",
    "keep": {
-    "flags": [
-     "--graphql-no-typename"
-    ]
+    "note": "No option writes the old output without the property: `--graphql-no-typename` also removes the `typename__` field, which the 0.95.0 output had, so serialization and validation change with it."
    },
    "kind": "default-output",
    "refs": [
@@ -1493,12 +1491,8 @@
    "complete": false,
    "from": "0.20.0",
    "keep_conditional": {},
-   "keep_flags": [
-    "--graphql-no-typename"
-   ],
-   "keep_pyproject": {
-    "graphql-no-typename": true
-   },
+   "keep_flags": [],
+   "keep_pyproject": {},
    "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.20.0/",
    "sources": [
     "0.20.0",
@@ -1615,12 +1609,8 @@
    "complete": false,
    "from": "0.24.0",
    "keep_conditional": {},
-   "keep_flags": [
-    "--graphql-no-typename"
-   ],
-   "keep_pyproject": {
-    "graphql-no-typename": true
-   },
+   "keep_flags": [],
+   "keep_pyproject": {},
    "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.24.0/",
    "sources": [
     "0.24.0",
@@ -1759,12 +1749,8 @@
    "complete": false,
    "from": "0.31.0",
    "keep_conditional": {},
-   "keep_flags": [
-    "--graphql-no-typename"
-   ],
-   "keep_pyproject": {
-    "graphql-no-typename": true
-   },
+   "keep_flags": [],
+   "keep_pyproject": {},
    "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.31.0/",
    "sources": [
     "0.31.0",
@@ -1889,12 +1875,8 @@
    "complete": false,
    "from": "0.48.0",
    "keep_conditional": {},
-   "keep_flags": [
-    "--graphql-no-typename"
-   ],
-   "keep_pyproject": {
-    "graphql-no-typename": true
-   },
+   "keep_flags": [],
+   "keep_pyproject": {},
    "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.48.0/",
    "sources": [
     "0.48.0",
@@ -2000,12 +1982,8 @@
    "complete": false,
    "from": "0.52.0",
    "keep_conditional": {},
-   "keep_flags": [
-    "--graphql-no-typename"
-   ],
-   "keep_pyproject": {
-    "graphql-no-typename": true
-   },
+   "keep_flags": [],
+   "keep_pyproject": {},
    "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.52.0/",
    "sources": [
     "0.52.0"
@@ -2106,12 +2084,8 @@
    "complete": false,
    "from": "0.52.1",
    "keep_conditional": {},
-   "keep_flags": [
-    "--graphql-no-typename"
-   ],
-   "keep_pyproject": {
-    "graphql-no-typename": true
-   },
+   "keep_flags": [],
+   "keep_pyproject": {},
    "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.52.1/",
    "sources": [
     "0.52.1",
@@ -2211,12 +2185,8 @@
    "complete": false,
    "from": "0.53.0",
    "keep_conditional": {},
-   "keep_flags": [
-    "--graphql-no-typename"
-   ],
-   "keep_pyproject": {
-    "graphql-no-typename": true
-   },
+   "keep_flags": [],
+   "keep_pyproject": {},
    "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.53.0/",
    "sources": [
     "0.53.0",
@@ -2317,12 +2287,8 @@
    "complete": false,
    "from": "0.56.0",
    "keep_conditional": {},
-   "keep_flags": [
-    "--graphql-no-typename"
-   ],
-   "keep_pyproject": {
-    "graphql-no-typename": true
-   },
+   "keep_flags": [],
+   "keep_pyproject": {},
    "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.56.0/",
    "sources": [
     "0.56.0",
@@ -2426,12 +2392,8 @@
    "complete": false,
    "from": "0.65.0",
    "keep_conditional": {},
-   "keep_flags": [
-    "--graphql-no-typename"
-   ],
-   "keep_pyproject": {
-    "graphql-no-typename": true
-   },
+   "keep_flags": [],
+   "keep_pyproject": {},
    "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.65.0/",
    "sources": [
     "0.65.0",
@@ -2531,12 +2493,8 @@
    "complete": false,
    "from": "0.78.0",
    "keep_conditional": {},
-   "keep_flags": [
-    "--graphql-no-typename"
-   ],
-   "keep_pyproject": {
-    "graphql-no-typename": true
-   },
+   "keep_flags": [],
+   "keep_pyproject": {},
    "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.78.0/",
    "sources": [
     "0.78.0",
@@ -2614,12 +2572,8 @@
    "complete": false,
    "from": "0.84.0",
    "keep_conditional": {},
-   "keep_flags": [
-    "--graphql-no-typename"
-   ],
-   "keep_pyproject": {
-    "graphql-no-typename": true
-   },
+   "keep_flags": [],
+   "keep_pyproject": {},
    "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.84.0/",
    "sources": [
     "0.84.0",
@@ -2689,12 +2643,8 @@
    "complete": false,
    "from": "0.93.0",
    "keep_conditional": {},
-   "keep_flags": [
-    "--graphql-no-typename"
-   ],
-   "keep_pyproject": {
-    "graphql-no-typename": true
-   },
+   "keep_flags": [],
+   "keep_pyproject": {},
    "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.93.0/",
    "sources": [
     "0.93.0",
@@ -2752,12 +2702,8 @@
    "complete": true,
    "from": "0.95.0",
    "keep_conditional": {},
-   "keep_flags": [
-    "--graphql-no-typename"
-   ],
-   "keep_pyproject": {
-    "graphql-no-typename": true
-   },
+   "keep_flags": [],
+   "keep_pyproject": {},
    "page": "https://datamodel-code-generator.koxudaxi.dev/migration/from-0.95.0/",
    "sources": [
     "0.95.0"

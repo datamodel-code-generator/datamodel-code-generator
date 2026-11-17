@@ -8,6 +8,9 @@ src/datamodel_code_generator/ignores.py:10: private-reexport: _public
 src/datamodel_code_generator/ignores.py:13: private-reexport: _first
 src/datamodel_code_generator/ignores.py:14: private-reexport: _second
 src/datamodel_code_generator/ignores.py:21: private-reexport: _inner
+src/datamodel_code_generator/lists.py:3: private-reexport: _first
+src/datamodel_code_generator/lists.py:5: private-reexport: _second
+src/datamodel_code_generator/lists.py:7: private-reexport: _third
 src/datamodel_code_generator/ranges.py:4: private-reexport: _y
 src/datamodel_code_generator/ranges.py:7: private-reexport: _z
 src/datamodel_code_generator/ranges.py:9: private-reexport: _spelled
@@ -17,6 +20,8 @@ src/datamodel_code_generator/reexports.py:1: private-reexport: _x
 src/datamodel_code_generator/reexports.py:3: private-reexport: _alias
 src/datamodel_code_generator/reexports.py:4: private-reexport: _q
 src/datamodel_code_generator/reexports.py:10: private-reexport: _os
+src/datamodel_code_generator/used.py:2: private-reexport: _y
+src/datamodel_code_generator/used.py:3: private-reexport: _z
 
 rule counts:
-  private-reexport: 18 (ratchet); fix: import the private name from the module that defines it in every importer, then delete this import
+  private-reexport: 23 (ratchet); fix: import the private name from the module that defines it in every importer, then delete this import

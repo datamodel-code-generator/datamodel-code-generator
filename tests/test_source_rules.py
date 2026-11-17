@@ -26,8 +26,14 @@ TREES: dict[str, dict[str, str]] = {
             def document(ref):
                 return ref.rsplit("#", 1)[0]
 
+            def keyword(ref):
+                return ref.split(sep="#", maxsplit=1)[0], ref.rsplit(maxsplit=1, sep="#")
+
+            def unbound(ref):
+                return str.split(ref, "#")[0], str.partition(ref, "#")
+
             def path_parts(ref):
-                return ref.startswith("#"), ref.split("/"), ref.find(sep="#")
+                return ref.startswith("#"), ref.split("/"), ref.split(sep="/"), str.split(ref, "/"), ref.find("/")
         """,
     },
     "doc-citations": {
@@ -47,8 +53,13 @@ TREES: dict[str, dict[str, str]] = {
                 kind = "json"
 
                 def parse(self):
-                    self.results = []
+                    self.results, (self.extra, *self.rest) = [], (0, 1)
+                    [self.first, self.second] = 1, 2
                     self.counter: int = 0
+                    for self.cursor in range(3):
+                        pass
+                    with open("x") as self.handle:
+                        pass
         """,
         f"{PACKAGE}/model/pydantic_v2/base_model.py": """
             class DataModel:
@@ -58,6 +69,7 @@ TREES: dict[str, dict[str, str]] = {
             # Architecture
 
             Resolved: `parser/base.py:build`, `parser/base.py:Parser.parse`, `base.py:LIMIT`, `Parser.results`,
+            `Parser.rest`, `Parser.extra`, `Parser.second`, `Parser.cursor`, `Parser.handle`,
             `pydantic_v2/base_model.py:DataModel`, `parser/base.py:Sequence`, `parser/base.py:build.inner`,
             `parser/base.py:Parser.counter`, `Parser.kind`.
             Not checked: `scripts/build.py:main`, `tests/test_a.py:test_b`, `Enum.value`, `parser/base.py:has_`.
@@ -143,6 +155,36 @@ TREES: dict[str, dict[str, str]] = {
             # ruff: disable[unused-import]
             from .home import __version__ as _version
         """,
+        f"{PACKAGE}/lists.py": """
+            from .home import _x, _y, _z, _w, _q
+            # ruff: disable[F401, E501]
+            from .home import _x as _first
+            # ruff: enable[F401]
+            from .home import _y as _second
+            # ruff: enable[E501, F401]
+            from .home import _z as _third
+            # ruff: enable[F401, E501]
+            from .home import _w as _fourth
+        """,
+        f"{PACKAGE}/used.py": """
+            from .home import _x  # noqa: F401
+            from .home import _y  # noqa: F401
+            from .home import _z  # noqa: F401
+            from .home import _w  # noqa: F401
+
+            print(_x, [_y for _y in range(3)])
+
+            def reads():
+                from .home import _q  # noqa: F401
+
+                return _q
+
+            def shadows(_z):
+                return _z
+
+            def deferred():
+                return _w
+        """,
         f"{PACKAGE}/exempt.py": """
             \"\"\"A module whose unused imports ruff never reports.\"\"\"
 
@@ -181,7 +223,7 @@ TREES: dict[str, dict[str, str]] = {
                 pass
         """,
         "scripts/decls.py": """
-            TABLE = tuple(globals().items())
+            TABLE = tuple(globals ().items())
         """,
     },
     "unused-private-global": {
@@ -192,10 +234,56 @@ TREES: dict[str, dict[str, str]] = {
             _ELSEWHERE = 3
             _TYPED: int = 4
             __version__ = "1"
-            PUBLIC = _READ
+            PUBLIC = _READ, _FIRST, _KEPT
+
+            def shadow(_SHADOWED):
+                _LOCAL = 1
+                return _SHADOWED, _LOCAL, [_TARGET for _TARGET in range(3)]
+
+            def bindings(data):
+                import os as _IMP
+
+                try:
+                    pass
+                except ValueError as _ERR:
+                    print(_ERR)
+                match data:
+                    case {"key": _KEY, **_EXTRA}:
+                        print(_KEY, _EXTRA)
+                    case [_HEAD, *_TAIL]:
+                        print(_HEAD, _TAIL)
+                    case _CAPTURED:
+                        print(_CAPTURED)
+                return _IMP
+
+            def declared():
+                global _DECLARED
+                _DECLARED = 1
+                return _DECLARED
+
+            def comprehensions(rows):
+                return {key: value for row in rows for key, value in row if _OUTER}, [_ITEM for _ITEM in rows]
+
+            @_DECO
+            def decorated(value: _ANN = _DEFAULT, *, other=_LDEF) -> _RET:
+                return lambda item=_LDEF: item
+
+            class Child(_BASE, metaclass=_META):
+                pass
+
+            class Holder:
+                _KEPT = 1
+
+                def read(self):
+                    return _KEPT, _SECOND
             _SHARED = 5
             _IMPORTED = _ALIASED = _RELATIVE = _ATTRIBUTE = _CHAINED = _PATCHED = _PACKED = 6
             _STORED = _FOREIGN = _CALLED = 7
+            _SHADOWED = _LOCAL = _TARGET = _KEPT = 10
+            _FIRST, (_SECOND, *_REST) = 11, (12, 13)
+            [_THIRD, _FOURTH] = 14, 15
+            _IMP = _ERR = _KEY = _EXTRA = _HEAD = _TAIL = _CAPTURED = 16
+            _DECLARED = _OUTER = _DECO = _ANN = _DEFAULT = _RET = _BASE = _META = _LDEF = _ITEM = 17
         """,
         f"{PACKAGE}/other.py": """
             from datamodel_code_generator.constants import _IMPORTED
@@ -359,6 +447,13 @@ TREES: dict[str, dict[str, str]] = {
                 count = 0
                 for value in values:
                     count += value * 2
+                return count
+        """,
+        f"{PACKAGE}/fourth.py": """
+            def quadruple(values):
+                count = 0
+                for value in values:
+                    count += value * 4
                 return count
         """,
         f"{PACKAGE}/third.py": """

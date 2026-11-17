@@ -19,13 +19,11 @@ ruff:PLC0415@src                                   1       1       0
 allowlist:FROZEN_VIOLATIONS rose by 1 (0 -> 1). Allowlist entries only shrink: fix the violation instead of listing it.
   tests/assert_helper_allowlists.py: 0 -> 1 (lines 5)
 
-allowlist:FROZEN_VIOLATIONS:unreadable rose by 1 (0 -> 1). Allowlist entries only shrink: fix the violation instead of listing it.
-  tests/assert_helper_allowlists.py: 0 -> 1 (lines 6)
-
 allowlist:JUSTIFIED_VIOLATIONS rose by 4 (0 -> 4). Allowlist entries only shrink: fix the violation instead of listing it.
   tests/assert_helper_allowlists.py: 0 -> 4 (lines 2, 3, 4, 4)
 
-allowlist:LEGACY_VIOLATIONS:unreadable rose by 1 (0 -> 1). Allowlist entries only shrink: fix the violation instead of listing it.
-  tests/assert_helper_allowlists.py: 0 -> 1 (lines 8)
+allowlist:FROZEN_VIOLATIONS:unreadable in tests/assert_helper_allowlists.py: the counter cannot read it. Write the allowlist or baseline in the plain form its checker reads (literal entries, tables of integer counts), so that the counter can read it.
+
+allowlist:LEGACY_VIOLATIONS:unreadable in tests/assert_helper_allowlists.py: the counter cannot read it. Write the allowlist or baseline in the plain form its checker reads (literal entries, tables of integer counts), so that the counter can read it.
 
 Some keys rose: the budget is the base. Exit status 0 unless --enforce is given. Re-run with `python scripts/check_ratchets.py --base base`.

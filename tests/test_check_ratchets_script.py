@@ -114,6 +114,10 @@ FROZEN_EXEMPT_FILES = frozenset({Path("test_d.py")})
 """,
     "scripts/check_architecture_boundaries.py": 'DEFAULT_ALLOWLIST = {("a", "b"): "reason"}\n',
 }
+HOST_BASELINE = """["src/pkg/a.py"."run"]
+"host._cache" = 1
+"host._size" = 1
+"""
 ALLOWLIST = 'FROZEN_EXEMPT_FILES = frozenset({"a.py"})\n'
 HOOK_START = """repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -239,6 +243,31 @@ def show(flag: bool) -> None:
             "pyproject.toml": PYPROJECT
             + '\n[tool.pytest]\nini_options.assert_helper_direct_assert_exempt_files = ["a.py", "b.py"]\n'
         },
+        "args": ["--enforce"],
+    },
+    "host-baseline-grows": {
+        "base": {"scripts/host_private_access_baseline.toml": HOST_BASELINE},
+        "head": {
+            "scripts/host_private_access_baseline.toml": HOST_BASELINE.replace("= 1", "= 3")
+            + '\n["src/pkg/b.py"."run"]\n"host._cache" = 2\n'
+        },
+        "args": ["--enforce"],
+    },
+    "host-baseline-shrinks": {
+        "base": {"scripts/host_private_access_baseline.toml": HOST_BASELINE},
+        "head": {"scripts/host_private_access_baseline.toml": HOST_BASELINE.replace("= 1", "= 0")},
+        "args": ["--enforce"],
+    },
+    "host-baseline-unreadable": {
+        "head": {"scripts/host_private_access_baseline.toml": 'x = 1\n["src/pkg/a.py"."run"\n'},
+        "args": ["--enforce"],
+    },
+    "host-baseline-unreadable-shape": {
+        "head": {"scripts/host_private_access_baseline.toml": "count = 1\n"},
+        "args": ["--enforce"],
+    },
+    "host-baseline-unreadable-value": {
+        "head": {"scripts/host_private_access_baseline.toml": '["src/pkg/a.py"."run"]\n"host._x" = "two"\n'},
         "args": ["--enforce"],
     },
     "allowlist-unreadable": {

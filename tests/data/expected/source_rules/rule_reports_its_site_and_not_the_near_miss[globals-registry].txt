@@ -1,5 +1,5 @@
 exit: 0
-scripts/decls.py:1: globals-registry: TABLE = tuple(globals().items())
+scripts/decls.py:1: globals-registry: TABLE = tuple(globals ().items())
 src/datamodel_code_generator/registry.py:1: globals-registry: ENTRIES = [value for value in globals().values() if isinstance(value, int)]
 src/datamodel_code_generator/registry.py:2: globals-registry: NAMES = [*globals()]
 src/datamodel_code_generator/registry.py:3: globals-registry: KEYS = {name for name in globals()}
