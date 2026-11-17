@@ -35036,6 +35036,54 @@ def test_main_read_only_write_only_pattern_map_extras(
 
 
 @pytest.mark.parametrize(
+    ("output_model_type", "error_type"),
+    [
+        pytest.param("pydantic_v2.BaseModel", "extra_forbidden", id="pydantic_v2.BaseModel"),
+        pytest.param("pydantic_v2.dataclass", "unexpected_keyword_argument", id="pydantic_v2.dataclass"),
+    ],
+)
+@pytest.mark.parametrize("merge_option", ["--intersect-combined-schema-keywords", "--intersect-allof-keywords"])
+def test_main_read_only_write_only_closed_ref_beside_map_value(
+    output_file: Path, output_model_type: str, error_type: str, merge_option: str
+) -> None:
+    """Keep one class for a reference to a closed object beside a map value that names a readOnly model.
+
+    ``Holder`` is a $ref to ``Closed``, which admits no key, beside an additionalProperties naming the readOnly
+    ``Item``. The merge option intersects the two into a closed object whose builder types no value, so ``Holder``
+    keeps one class and the variants of the root model name it.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_closed_ref_beside_map_value.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            merge_option,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {"holder": {}, "count": 1}
+    invalid = {"holder": {"k": {"name": "n"}}}
+    validator = Draft202012Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="rw_closed_ref_beside_map_value",
+        model_name="ModelRequest",
+        valid_json=json.dumps(valid),
+        invalid_json=json.dumps(invalid),
+        expected_error_type=error_type,
+    )
+
+
+@pytest.mark.parametrize(
     "output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"]
 )
 @pytest.mark.parametrize(

@@ -1860,9 +1860,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         (``_value_keywords.get_array_item_schemas``), not the entries it leaves untyped. A model types the
         additionalProperties its builder types: those the patternProperties rules pick
         (``_pattern_rule_additional_properties``), as its values where it is a map
-        (``_schema_builds_map_model``) except where patternProperties give the values and ``_other_keys_schema`` types
-        no other key, and in its typed extra field otherwise (``_typed_extra_field_schema``); those of an inline allOf
-        member type something only where the allOf merges into a map. TypedDict also records those of the key's model
+        (``_schema_builds_map_model``) whose builder types its values (``_object_maps.map_value_schema``), and in its
+        typed extra field otherwise (``_typed_extra_field_schema``); those of an inline allOf member type something only
+        where the allOf merges into a map. TypedDict also records those of the key's model
         and of each inline model with fields, unless an inline allOf member closes it
         (``_model_additional_properties``), as their extra_items type (``set_additional_properties``); that type
         generates no model, so the site names the keys of the models it names (``_extra_items_type``, row
@@ -1895,7 +1895,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 elif (
                     (site.root or _object_maps.typed_extra_field_schema(self, model_schema) is None)
                     if not builds_map
-                    else model_schema.patternProperties and self._other_keys_schema(model_schema) is None
+                    else _object_maps.map_value_schema(self, model_schema) is None
                 ):
                     extras = None
             if (

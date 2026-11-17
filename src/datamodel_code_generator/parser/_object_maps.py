@@ -39,6 +39,7 @@ __all__ = [
     "get_typed_additional_properties_field",
     "is_direct_key_schema",
     "legacy_object_maps",
+    "map_value_schema",
     "object_map_admits_null",
     "other_keys_schema",
     "parse_additional_properties_map",
@@ -580,6 +581,17 @@ def other_keys_schema(parser: ObjectMapsHost, obj: JsonSchemaObject) -> JsonSche
     ):
         return additional_properties
     return None
+
+
+def map_value_schema(parser: ObjectMapsHost, obj: JsonSchemaObject) -> JsonSchemaObject | None:
+    """Return the schema that types the values of the object map built from ``obj`` (``_parse_object_map``), or None.
+
+    Beside patternProperties it types the keys no pattern matches (``_other_keys_schema``); without them it is a
+    schema-valued additionalProperties.
+    """
+    if obj.patternProperties:
+        return parser._other_keys_schema(obj)  # noqa: SLF001
+    return obj.additionalProperties if isinstance(obj.additionalProperties, JsonSchemaObject) else None
 
 
 def is_direct_key_schema(
