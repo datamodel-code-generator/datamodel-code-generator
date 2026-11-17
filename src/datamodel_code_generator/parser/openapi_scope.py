@@ -167,7 +167,7 @@ class ApiOpenAPIParser(OpenAPIParser):
     ) -> dict[tuple[str, ...], Result]:
         if not results:
             return results
-        return super()._result_modules_postprocessor(results, empty_init=empty_init)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        return super()._result_modules_postprocessor(results, empty_init=empty_init)
 
     def __init__(
         self,
@@ -189,7 +189,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         self._active_api_objects: set[SchemaLocation] = set()
         self._completed_api_objects: set[SchemaLocation] = set()
         # Parser._iter_source_uncached supports mappings; the legacy constructor annotation omits them.
-        super().__init__(  # pyright: ignore[reportUnknownMemberType]
+        super().__init__(
             source,  # type: ignore[arg-type]
             config=config,
             **options,
@@ -292,7 +292,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 raise SchemaParseError(msg, path=path)
             if validated_obj is None and isinstance(raw, bool):
                 validated_obj = _locate(self._validate_schema_object(raw, path), frame.declaration)
-            super()._parse_raw_or_validated_obj(name, raw, path, validated_obj, indexed=indexed)  # pyright: ignore[reportUnknownMemberType]
+            super()._parse_raw_or_validated_obj(name, raw, path, validated_obj, indexed=indexed)
         self._mark_processed(frame)
 
     def _mark_processed(self, frame: ApiDeclarationFrame) -> None:
@@ -311,7 +311,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         if self.declaration_frames and self.model_resolver.join_path(
             (frame := self.declaration_frames[-1]).engine_path
         ) == self.model_resolver.join_path(tuple(path)):
-            super().parse_obj(frame.candidate_name, obj, path)  # pyright: ignore[reportUnknownMemberType]
+            super().parse_obj(frame.candidate_name, obj, path)
             self._mark_processed(frame)
             return
         ref = canonical_ref(ModelResolver.join_path(tuple(path)))
@@ -322,7 +322,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             candidate = tokens[-1] if tokens else name
             declaration = self._declared(raw).child(*tokens)
             with self._schema_frame(candidate, reserved_path, raw, declaration=declaration):
-                super().parse_obj(candidate, obj, reserved_path)  # pyright: ignore[reportUnknownMemberType]
+                super().parse_obj(candidate, obj, reserved_path)
             self._processed_declarations.add(declaration)
             return
         msg = "API_DECLARATION_CONTEXT_REQUIRED"
@@ -455,7 +455,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         canonical = self.model_resolver.join_path(tuple(path))
         self._checked_pointer(raw, ref or canonical)
         with self._schema_frame(obj_name, path, raw, phase="file", declaration=self._declared(raw).child(*tokens)):
-            super()._parse_file(  # pyright: ignore[reportUnknownMemberType]
+            super()._parse_file(
                 raw,
                 obj_name,
                 path_parts,
@@ -661,7 +661,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         """Extend ordinary identity only for version-permitted nameless querystrings."""
         if isinstance(parameter, dict) and parameter.get("in") == "querystring" and "name" not in parameter:
             return "", "querystring"
-        return super()._parameter_key(parameter)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        return super()._parameter_key(parameter)
 
     def _walk_content(
         self, name: str, target: _ApiObject, *, owner: MediaOwner, role: SchemaRole | None = None
@@ -846,7 +846,7 @@ class ApiOpenAPIParser(OpenAPIParser):
     def dispose(self) -> None:
         """Release API-only borrowed documents and use types with the parser graph."""
         try:
-            super().dispose()  # pyright: ignore[reportUnknownMemberType]
+            super().dispose()
         finally:
             self.declaration_frames.clear()
             self.declaration_uses.clear()

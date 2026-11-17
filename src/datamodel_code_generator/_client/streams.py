@@ -15,16 +15,16 @@ from typing import TYPE_CHECKING, Any, Final, cast
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.config import OPTION_PREFIX
 from datamodel_code_generator._client.naming import HELPER_KINDS
-from datamodel_code_generator._client.pagination import (  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._client.pagination import (
     _label,
     _Pages,
     _problem,
     _target_key,
 )
 from datamodel_code_generator._client.plan import STREAM_MEDIA, STREAMED, schema_use, success_media
-from datamodel_code_generator._client.polling import _Polls, _Source  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._client.polling import _Polls, _Source
 from datamodel_code_generator._client.protocol_plan import HelperPlanner, Protocols, missing_schema
-from datamodel_code_generator._client.protocols import Helper, Link, _collides  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._client.protocols import Helper, Link, _collides
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._runtime.model_codecs.media import essence
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key

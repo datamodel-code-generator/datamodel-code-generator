@@ -121,7 +121,7 @@ class TargetGenerationSession:
             )
             self._model_imports = frozenset(target.model_imports)
         except MetadataCycleError as error:
-            if error.document in target._api_roots:  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+            if error.document in target._api_roots:  # noqa: SLF001
                 error.document = self._root_selector_document
             raise
         finally:
@@ -177,7 +177,7 @@ class ModelGenerationProduct:
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from datamodel_code_generator import _ParserSource  # pyright: ignore[reportPrivateUsage]
+    from datamodel_code_generator import _ParserSource
     from datamodel_code_generator._generation_contract import TargetParserFactory
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._target_binding import BoundAttempt, TargetParser

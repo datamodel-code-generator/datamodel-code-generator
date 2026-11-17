@@ -16,7 +16,7 @@ from datamodel_code_generator._runtime.client.retry import RetrySafety
 from datamodel_code_generator._runtime.model_codecs.media import REDIRECT_STATUSES, normalize_media_type, normalized
 from datamodel_code_generator._target_config import (
     TargetConfig,
-    _diagnostic,  # pyright: ignore[reportPrivateUsage]
+    _diagnostic,
 )
 from datamodel_code_generator._target_contract import parameter_name_key
 from datamodel_code_generator._target_naming import explicit_name

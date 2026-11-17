@@ -22,7 +22,7 @@ from datamodel_code_generator._module_paths import is_within_name
 from datamodel_code_generator._runtime.client.timing import usable_seconds
 from datamodel_code_generator._runtime.model_codecs.media import STATUSES, normalized
 from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
-from datamodel_code_generator._target_config import _diagnostic  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._target_config import _diagnostic
 from datamodel_code_generator._target_documents import canonical_bytes
 from datamodel_code_generator._target_naming import fold_key
 from datamodel_code_generator.python_literal import stable_repr

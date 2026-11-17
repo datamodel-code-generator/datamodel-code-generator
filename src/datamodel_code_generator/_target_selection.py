@@ -18,7 +18,7 @@ from datamodel_code_generator.python_literal import stable_repr
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from datamodel_code_generator import GeneratedModules, _GenerationInput  # pyright: ignore[reportPrivateUsage]
+    from datamodel_code_generator import GeneratedModules, _GenerationInput
     from datamodel_code_generator._api_generation import TargetGenerator
     from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._client.config import ClientGenerationConfig
@@ -183,7 +183,7 @@ def generate_selected_target(input_: _GenerationInput, config: GenerateConfig) -
         raise Error(problem)
     with PROCESS_STATE_LOCK:
         cwd = Path.cwd()
-    bases = config._target_document_bases or {}  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+    bases = config._target_document_bases or {}  # noqa: SLF001
     try:
         if config.output is not None:
             _generate(input_, config, cwd, bases)

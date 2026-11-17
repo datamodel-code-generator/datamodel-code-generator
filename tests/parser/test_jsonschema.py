@@ -3722,7 +3722,7 @@ def test_resolve_type_import_from_defs_exception_handling() -> None:
     schema_dict: dict[str, Any] = {"type": "object", "properties": {"name": {"type": "string"}}}
     parser = JsonSchemaParser(json.dumps(schema_dict))
     # Set raw_obj to None to trigger exception in _load_ref_schema_object
-    parser.raw_obj = None  # pyright: ignore[reportAttributeAccessIssue]
+    parser.raw_obj = None
 
     result = parser._resolve_type_import_from_defs("SomeType")
     assert result is None

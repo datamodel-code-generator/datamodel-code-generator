@@ -71,10 +71,10 @@ from datamodel_code_generator._runtime.client.retry import IdempotencyPlan
 from datamodel_code_generator._runtime.model_codecs.media import NO_CONTENT, media_kind, media_range
 from datamodel_code_generator._runtime.model_codecs.parameters import PATH_SAFE, percent_encoded
 from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
-from datamodel_code_generator._runtime.protocols.options import _KIND_OPTIONS  # pyright: ignore[reportPrivateUsage]
-from datamodel_code_generator._runtime.protocols.pagination import _DEFAULTS as _PAGE_LIMITS  # pyright: ignore[reportPrivateUsage]
-from datamodel_code_generator._runtime.protocols.polling import _DEFAULTS as _POLL_LIMITS  # pyright: ignore[reportPrivateUsage]
-from datamodel_code_generator._runtime.protocols.uploads import _DEFAULTS as _UPLOAD_LIMITS  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._runtime.protocols.options import _KIND_OPTIONS
+from datamodel_code_generator._runtime.protocols.pagination import _DEFAULTS as _PAGE_LIMITS
+from datamodel_code_generator._runtime.protocols.polling import _DEFAULTS as _POLL_LIMITS
+from datamodel_code_generator._runtime.protocols.uploads import _DEFAULTS as _UPLOAD_LIMITS
 from datamodel_code_generator._target_contract import UnionType
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_module import TargetModule

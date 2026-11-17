@@ -489,15 +489,13 @@ class _TargetRecording(OpenAPIParser):
         self.unions.update((id(member), union) for member in members)
         return members
 
-    def _copy_model_field(  # pyright: ignore[reportIncompatibleMethodOverride]
-        self, field: DataModelFieldBase, **options: Any
-    ) -> DataModelFieldBase:
+    def _copy_model_field(self, field: DataModelFieldBase, **options: Any) -> DataModelFieldBase:
         """Record the field a copy of a field is of, as inherited fields and read or write variants copy."""
         copied = super()._copy_model_field(field, **options)
         self.copies[id(copied)] = (copied, field)
         return copied
 
-    def _copy_inherited_field(  # pyright: ignore[reportIncompatibleMethodOverride]
+    def _copy_inherited_field(
         self, field: DataModelFieldBase, inherited_field: DataModelFieldBase, **options: Any
     ) -> DataModelFieldBase | None:
         """Record the inherited field a resolved copy of an inherited field is of."""
@@ -523,7 +521,7 @@ class _TargetRecording(OpenAPIParser):
         key = self.model_resolver.join_path(tuple(_rw_variant_path(base_reference.path, _rw_direction(suffix))))
         self.left_out[key] = tuple(source_fields), tuple(field for field in source_fields if id(field) not in kept)
 
-    def get_object_field(self, **options: Any) -> DataModelFieldBase:  # pyright: ignore[reportIncompatibleMethodOverride]
+    def get_object_field(self, **options: Any) -> DataModelFieldBase:
         """Record a field whose own schema says it is nullable, which strict nullability alone puts on the field."""
         field = super().get_object_field(**options)
         if isinstance(schema := options.get("field"), JsonSchemaObject) and schema.nullable is True:
@@ -1206,7 +1204,7 @@ class _Binder:
         self.hints = _Hints(manager.data_type)
         self.projectors: dict[tuple[Direction, bool], _Projector] = {}
         self.finals: dict[tuple[int, Direction], tuple[Reference | None, bool | None]] = {}
-        self.declaration_types = dict(parser._declaration_types)  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+        self.declaration_types = dict(parser._declaration_types)  # noqa: SLF001
 
     def identity(self, node: object) -> GraphObjectId:
         if (identity := self.identities.get(id(node))) is None:
@@ -1668,7 +1666,7 @@ class _Projector:
                 return LiteralScalar("str", str(value))
 
     def _enum_members(self, data_type: DataType) -> tuple[SymbolId, tuple[GeneratedEnumMember, ...]]:
-        reference = data_type._enum_member_literal_reference or data_type.reference  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+        reference = data_type._enum_member_literal_reference or data_type.reference  # noqa: SLF001
         model = _source(cast("Reference", self.binder.final(cast("Reference", reference))))
         fields = {field.name: field for field in model.fields}
         symbol = self.binder.symbols[id(model)]
@@ -1908,12 +1906,12 @@ def _emitted_default(  # ruff: ignore[too-many-return-statements]
         return "absent", None
     if getattr(field, "use_missing_sentinel_default", False):
         return "pydantic_missing", None
-    has_default, has_value = field._get_constructor_default_info()  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+    has_default, has_value = field._get_constructor_default_info()  # ruff: ignore[private-member-access]
     if not has_default:
         return "absent", None
     if not has_value:
         return "factory", None
-    if isinstance(field, MsgspecField) and field._get_field_data().get("default") is msgspec.UNSET:  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+    if isinstance(field, MsgspecField) and field._get_field_data().get("default") is msgspec.UNSET:  # ruff: ignore[private-member-access]
         return "msgspec_unset", None
     if field.default is None or field.default is UNDEFINED:
         return "none", LiteralScalar("none", None)
@@ -1930,13 +1928,13 @@ def _constructor_keywords(field: DataModelFieldBase, backend: BackendName) -> tu
     keywords: list[tuple[str, TypeArgument]] = []
     match field:
         case PydanticField() if backend in {"pydantic", "pydantic_dataclass"}:
-            if (call := field._render_plan().call) is None:  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+            if (call := field._render_plan().call) is None:  # ruff: ignore[private-member-access]
                 return ()
             items = sorted((argument.name, argument.value) for argument in call.kwargs)
             if call.factory is not None:
                 keywords.append(("default_factory", SourceExpression(str(call.factory.value))))
         case DataclassField() | MsgspecField() if backend in {"dataclass", "msgspec"}:
-            items = list(field._get_field_data().items())  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+            items = list(field._get_field_data().items())  # ruff: ignore[private-member-access]
             if len(items) == 1 and items[0][0] == "default":
                 return ()
         case _:
@@ -1972,7 +1970,7 @@ def _setting(name: str, keywords: tuple[tuple[str, TypeArgument], ...], *, fallb
 
 
 def _model_settings(model: DataModel, backend: BackendName) -> dict[str, BackendValue] | None:
-    internal: dict[str, object] = model._internal_template_data  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+    internal: dict[str, object] = model._internal_template_data  # noqa: SLF001
     match backend:
         case "dataclass" | "pydantic_dataclass":
             return {name: _backend_value(value) for name, value in model.written_dataclass_arguments.items()}
@@ -2012,7 +2010,7 @@ def _model_facts(model: DataModel, policy: _Policy) -> BackendModelFacts | None:
     configuration: tuple[BackendSetting, ...] = ()
     if backend in {"pydantic", "pydantic_dataclass"}:
         items: list[tuple[str, str]] = (
-            model._internal_template_data.get(model._CONFIG_ITEMS_KEY, [])  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+            model._internal_template_data.get(model._CONFIG_ITEMS_KEY, [])  # noqa: SLF001
             if isinstance(model, _PydanticV2Model)
             else []
         )
@@ -2086,14 +2084,14 @@ def _annotation_null(field: DataModelFieldBase, type_value: TypeView) -> bool:
     """Return whether the emitted field annotation accepts None, as the field's type hint decides."""
     if admits_none(type_value):
         return True
-    return field._field_null_source(field.data_type) is not None  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+    return field._field_null_source(field.data_type) is not None  # noqa: SLF001
 
 
 def _members_of(data_type: DataType) -> list[DataType]:
     """Return the types a type holds as items, values or union members, below the wrappers that hold one type."""
     inner = data_type
     while (
-        len(inner.data_types) == 1 and inner.reference is None and not inner._is_container  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+        len(inner.data_types) == 1 and inner.reference is None and not inner._is_container  # noqa: SLF001
     ):
         inner = inner.data_types[0]
     return inner.data_types
@@ -2129,8 +2127,8 @@ class _Documents:
     """
 
     def __init__(self, parser: TargetParser) -> None:
-        loaded = parser._api_documents  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
-        roots = [document for document in loaded if document in parser._api_roots]  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+        loaded = parser._api_documents  # ruff: ignore[private-member-access]
+        roots = [document for document in loaded if document in parser._api_roots]  # ruff: ignore[private-member-access]
         self.documents: dict[str, dict[str, YamlValue]] = {}
         self.ids: dict[str, SourceDocumentId] = {}
         self.unloadable: set[str] = set()
@@ -2250,13 +2248,13 @@ class _Models:
         schema = parser.free_schemas[declaration]
         if (
             schema.ref is not None
-            and (target := parser._schema_reference_location(declaration.document, schema.ref)) is not None  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+            and (target := parser._schema_reference_location(declaration.document, schema.ref)) is not None  # noqa: SLF001
             and (reference := parser.model_resolver.references.get(self.reference_key(target))) is not None
         ):
             yield reference
             return
         with parser.model_resolver.current_root_context(declaration.document.split("/")):
-            data_type = parser._build_lightweight_type(schema)  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+            data_type = parser._build_lightweight_type(schema)  # noqa: SLF001
         from datamodel_code_generator._graph_links import drop_tree  # noqa: PLC0415
 
         try:
@@ -2413,12 +2411,12 @@ class _Models:
         pending = [data_type]
         references: dict[int, tuple[Reference, bool]] = {}
         opaque = False
-        python_imports = self.parser._python_imports  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+        python_imports = self.parser._python_imports  # noqa: SLF001
         while pending:
             current = pending.pop()
             if current.is_optional or current.type == "None":
                 return True
-            if current._is_container:  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+            if current._is_container:  # noqa: SLF001
                 continue
             if (reference := current.reference) is not None:
                 named = references.get(id(reference), (reference, False))[1]
@@ -4092,7 +4090,7 @@ class _Contracts(_Octets):
         schemes: list[WireDeclaration] = []
         locate = self.documents.location
         for document in self.documents.walked:
-            if document in self.parser._api_roots:  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+            if document in self.parser._api_roots:  # noqa: SLF001
                 found = read(
                     self.documents.documents[document],
                     partial(self.loaded_schema, document),
@@ -4122,7 +4120,7 @@ class _Contracts(_Octets):
 
     def loaded_target(self, document: str, ref: str) -> SchemaLocation | None:
         """Return where the schema a `$ref` of a document names is, as the parser resolves it, in a loaded document."""
-        target = self.parser._schema_reference_location(document, ref)  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
+        target = self.parser._schema_reference_location(document, ref)  # noqa: SLF001
         return None if target is None or target.document not in self.documents.ids else target
 
     def channel(self, document: str, read: ReadChannel, order: int) -> ChannelContract:
@@ -4394,7 +4392,7 @@ def bind_operations(
     security_schemes = security_schemes if asyncapi else builder.security_schemes()
     documents = builder.documents
     root = next(iter(documents.ids), "")
-    graph = parser._graph  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+    graph = parser._graph  # ruff: ignore[private-member-access]
     dialect = None if asyncapi else graph.known(graph.names.get(root, root)).dialect
     version = OpenAPIVersion.V31 if dialect is None else cast("OpenAPIVersion", dialect.version)
     return BoundAttempt(
@@ -4431,7 +4429,7 @@ def _own_versions(
     return tuple(
         (identity, version)
         for uri, identity in documents.ids.items()
-        if (dialect := parser._dialect_at(SchemaLocation(uri, ()))) is not None  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+        if (dialect := parser._dialect_at(SchemaLocation(uri, ()))) is not None  # ruff: ignore[private-member-access]
         and (version := cast("OpenAPIVersion", dialect.version)) != root
     )
 
@@ -4445,8 +4443,8 @@ def _pristine(
     walks a rebased copy of a document with nested `$id` resources and keeps the loaded one beside it, and keeps a
     document as written beside the one --use-single-value-enum-as-const read.
     """
-    graph = parser._graph  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
-    as_written = parser._document_as_written  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+    graph = parser._graph  # ruff: ignore[private-member-access]
+    as_written = parser._document_as_written  # ruff: ignore[private-member-access]
     prepared = [(name, record) for name, record in graph.documents.items() if record.tree is not None]
     located = {id(record.tree): (name or _unnamed(parser), record.loaded) for name, record in prepared}
     walked = [located.get(id(document), (uri or _unnamed(parser), document)) for uri, document in documents.items()]
