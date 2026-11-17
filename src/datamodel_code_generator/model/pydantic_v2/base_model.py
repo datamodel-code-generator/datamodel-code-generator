@@ -83,6 +83,7 @@ from datamodel_code_generator.model.base import (
     _default_state,
     _find_base_classes,
     _get_template_with_custom_dir,
+    _has_opaque_custom_base,
     _ModelKeys,
     _uses_original_template_loader,
     overrides_builtin_templates,
@@ -1854,13 +1855,21 @@ class _PydanticV2Model(DataModel):
         """Return whether the config the model applies selects ``python-re``."""
         return self._applied_config_items().get("regex_engine") == '"python-re"'
 
-    def applied_config_items(self) -> dict[str, str]:
-        """Return the config items Pydantic applies to the model, the bases included."""
-        return self._applied_config_items()
+    def applied_config(self) -> tuple[dict[str, str], frozenset[str] | None]:
+        """Return the config items Pydantic applies to the model, the bases included, and which of them are known.
+
+        A configured base class the generator does not read may set any item; the second value names the items set
+        after the last such base, or is None where the model has none.
+        """
+        return self._applied_config()
+
+    def _applied_config_items(self) -> dict[str, str]:
+        """Return the config items Pydantic applies to the model that the generator reads."""
+        return self._applied_config()[0]
 
     @abstractmethod
-    def _applied_config_items(self, visiting: frozenset[int] = frozenset()) -> dict[str, str]:
-        """Return the config items Pydantic applies to the model."""
+    def _applied_config(self, visiting: frozenset[int] = frozenset()) -> tuple[dict[str, str], frozenset[str] | None]:
+        """Return the config items Pydantic applies to the model and which of them are known (``applied_config``)."""
 
     def _own_patterns_select_python(self) -> bool:
         """Return whether the model's own patterns select ``python-re`` (``has_lookaround_pattern``).
@@ -2203,21 +2212,31 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             self._select_python_regex_engine()
 
     @override
-    def _applied_config_items(self, visiting: frozenset[int] = frozenset()) -> dict[str, str]:
+    def _applied_config(self, visiting: frozenset[int] = frozenset()) -> tuple[dict[str, str], frozenset[str] | None]:
         """Return the config items Pydantic applies: those of the bases merged in order, then the model's own.
 
-        A base on an inheritance cycle, which generation rejects later, adds nothing.
+        A configured base class the generator does not read comes first and leaves every item unknown, and a base
+        that has one leaves unknown the items it does not set. A base on an inheritance cycle, which generation
+        rejects later, adds nothing.
         """
         visiting |= {id(self)}
         items: dict[str, str] = {}
-        for base in _find_base_classes(self):
-            items.update(
-                base._applied_config_items(visiting)  # noqa: SLF001
-                if isinstance(base, BaseModel) and id(base) not in visiting
-                else {}
-            )
-        items.update(self._rendered_config_items())
-        return items
+        known: set[str] | None = set() if _has_opaque_custom_base(self, self.BASE_CLASS) else None
+        for inherited, settled in (
+            base._applied_config(visiting)  # noqa: SLF001
+            for base in _find_base_classes(self)
+            if isinstance(base, BaseModel) and id(base) not in visiting
+        ):
+            items.update(inherited)
+            if settled is not None:
+                known = set(settled)
+            elif known is not None:
+                known.update(inherited)
+        items.update(own := self._rendered_config_items())
+        if known is None:
+            return items, None
+        known.update(name for name, _ in own)
+        return items, frozenset(known)
 
     @override
     def _pydantic_constructs(self) -> Iterator[tuple[PydanticConstruct, str | None]]:
