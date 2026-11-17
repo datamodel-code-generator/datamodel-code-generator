@@ -371,6 +371,9 @@ class FinalModelSymbol:
 
     `source` is the path of the schema the declaration is generated from, and `discriminator` the one the schema of a
     union that reuse replaced with an equal union declares. An enum's `value_types` are the JSON types of its values.
+    A Pydantic model's or dataclass's `extra` and `by_name` are what the configuration it applies, its bases' as
+    Pydantic applies them included, says of extra members and of validation by field name; `extra` is None where a
+    configured base class the generator does not read may set it, and for any other declaration.
     """
 
     id: SymbolId
@@ -389,6 +392,8 @@ class FinalModelSymbol:
     source: str = ""
     discriminator: UnionDiscriminator | None = None
     value_types: tuple[str, ...] = ()
+    extra: Literal["allow", "forbid", "ignore"] | None = None
+    by_name: bool = False
 
 
 WRAPPER_KINDS: Final = frozenset({"alias", "root"})
@@ -448,12 +453,14 @@ class PartFacts:
 
     `object` says its type is one object, a union of objects that agree on the parts of each property, or takes any
     value; `members` gives each property's encoding by wire name, and `extra` that of any other property: none when
-    its model allows no others, None when any value.
+    its schema allows no others or the model the parts are read into or written from drops them, None when any value.
+    `loose` is that of any other part the schema allows, which a reader that keeps the parts itself takes.
     """
 
     object: bool
     members: tuple[tuple[str, PartSchema], ...]
     extra: PartSchema | Literal["closed"] | None
+    loose: PartSchema | Literal["closed"] | None = None
 
 
 LeafStep: TypeAlias = Literal["items", "values"]
@@ -513,7 +520,8 @@ class EncodingFacts:
     `value` is its shape as one parameter value, `form` as URL-encoded members, and `members` each property's shape
     as one parameter value, by the property's wire name. `extras` is where the schema of a form's other properties
     is, and the type of their values, when the model it holds, or a base of it, types them, or its mapping does.
-    `declared` says that model allows them as `true` or a schema, where one that leaves them unsaid allows them by
+    `declared` says the class it holds takes them by the configuration it applies, or as its schema's `true` or a
+    schema where that configuration does not drop them, where one whose schema leaves them unsaid takes them by
     default.
     """
 

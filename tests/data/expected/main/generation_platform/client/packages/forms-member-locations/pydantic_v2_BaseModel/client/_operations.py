@@ -17,7 +17,6 @@ from ._runtime.client.operations import (
     ServerPlan,
     empty_branch,
 )
-from ._runtime.client.parts import PartPlan
 from .types.default import SendLoopResponse, SendShapeResponse
 
 _SERVERS_0: Final = (ServerPlan(url='https://example.com'),)
@@ -34,15 +33,7 @@ OPERATION_0: Final[OperationPlan[SendLoopResponse]] = OperationPlan(
                 media_type='multipart/form-data',
                 kind='multipart',
                 codec=model_bindings.codec_0,
-                form=MultipartForm(
-                    members=True,
-                    parts=(
-                        PartPlan('c', 'string'),
-                        PartPlan('a', 'string'),
-                        PartPlan('d', 'string'),
-                    ),
-                    additional=PartPlan('', 'json'),
-                ),
+                form=MultipartForm(members=True),
             ),
         ),
         default='multipart/form-data',
@@ -62,11 +53,7 @@ OPERATION_1: Final[OperationPlan[SendShapeResponse]] = OperationPlan(
                 media_type='multipart/form-data',
                 kind='multipart',
                 codec=model_bindings.codec_1,
-                form=MultipartForm(
-                    members=True,
-                    parts=(PartPlan('name', 'string'),),
-                    additional=PartPlan('', 'json'),
-                ),
+                form=MultipartForm(members=True),
             ),
         ),
         default='multipart/form-data',

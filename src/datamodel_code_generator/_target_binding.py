@@ -241,6 +241,12 @@ _PYDANTIC_CONFIGURATION: Final = (
     "alias_generator",
     "regex_engine",
 )
+_TRUE: Final = LiteralScalar("bool", value=True)
+_FALSE: Final = LiteralScalar("bool", value=False)
+_EXTRAS: Final[dict[object, Literal["allow", "forbid"]]] = {
+    LiteralScalar("str", "allow"): "allow",
+    LiteralScalar("str", "forbid"): "forbid",
+}
 _SEQUENCES: Final = cast(
     "dict[type, Literal['list', 'tuple', 'set', 'frozenset']]",
     {kind: kind.__name__ for kind in (list, tuple, set, frozenset)},
@@ -917,6 +923,15 @@ class _Others:
     values: TypeView | None = None
     kept: FieldUseBinding | None = None
     free: SchemaLocation | None = None
+
+
+def _held(others: _Others, extra: Literal["allow", "forbid", "ignore"] | None) -> _Others:
+    """Return what the readers of a class take of the other properties a schema gives (``others``) by its `extra`.
+
+    They take none where a Pydantic class drops them (`forbid`, `ignore`), and what the schema gives otherwise, under
+    `allow` too, so that no reader takes a member the schema leaves out.
+    """
+    return _Others("closed", others.patterns) if extra in {"forbid", "ignore"} else others
 
 
 @dataclass(frozen=True, slots=True)
@@ -2021,6 +2036,28 @@ def _model_facts(model: DataModel, policy: _Policy) -> BackendModelFacts | None:
     return BackendModelFacts(backend, _settings(parameters, values), configuration, policy.functional_typeddict)
 
 
+def _applied_configuration(model: DataModel) -> tuple[Literal["allow", "forbid", "ignore"] | None, bool]:
+    """Return the `extra` and the validation by field name of the configuration a Pydantic class applies.
+
+    The model layer reads it with the bases as Pydantic applies them (``applied_config``); a class that sets no
+    `extra` ignores extra members, and one whose `extra` a configured base class the generator does not read may set
+    has none (None). It validates by field name as Pydantic settles it from what the class applies: by
+    `validate_by_name`, else by `populate_by_name`, else where `validate_by_alias` is false. Any other declaration has
+    no `extra` and validates by alias only, a root model too, which Pydantic gives no extra members.
+    """
+    if not isinstance(model, pydantic_v2.BaseModel | pydantic_dataclass.DataClass) or isinstance(
+        model, pydantic_v2.RootModel
+    ):
+        return None, False
+    items, known = model.applied_config()
+    extra: Literal["allow", "forbid", "ignore"] | None = "ignore" if known is None else None
+    if "extra" in (items if known is None else known):
+        extra = _EXTRAS.get(_syntax_value(items["extra"]).value, "ignore")
+    if (by_name := items.get("validate_by_name", items.get("populate_by_name"))) is not None:
+        return extra, _syntax_value(by_name).value == _TRUE
+    return extra, "validate_by_alias" in items and _syntax_value(items["validate_by_alias"]).value == _FALSE
+
+
 @dataclass(frozen=True, slots=True)
 class _FieldContext:
     """Producer facts of a property field: whether its schema is nullable, and whether its own type accepts None.
@@ -2306,6 +2343,7 @@ class _Models:
                         binder.source(model.reference),
                         self.reused_discriminator(model),
                         tuple(map(json_type, values)),
+                        *_applied_configuration(model),
                     )
                 )
         return tuple(symbols), tuple(artifacts)
@@ -3017,7 +3055,7 @@ class _UseFacts(_SchemaUses):
         it, as the parser reads that schema (``_ObjectFacts``); any of them with pattern properties gives the type
         them. A mapping no model says anything for types them by its values. Typed ones are the values of the field
         the model keeps them in, else of the model-free type their schema has in the use's direction, else of its
-        mapping.
+        mapping. What the class takes of them is ``held_others``.
         """
         facts = [
             (symbol, found)
@@ -3044,6 +3082,14 @@ class _UseFacts(_SchemaUses):
         ) or mapping
         source = self.documents.location(declaration, "schema")
         return _Others(said, patterns, source, values, None if kept is None else kept[0], free)
+
+    def applied_extra(self, value: TypeView | None) -> Literal["allow", "forbid", "ignore"] | None:
+        """Return the `extra` the class a type holds applies (``FinalModelSymbol.extra``), or None."""
+        return None if (symbol := self.held(value)) is None else self.symbol_table[symbol].extra
+
+    def held_others(self, value: TypeView | None, others: _Others) -> _Others:
+        """Return what the class a type holds takes of the other properties its schema gives (``_held``)."""
+        return _held(others, self.applied_extra(value))
 
     def member_shape(  # noqa: PLR0913
         self,
@@ -3129,7 +3175,7 @@ class _UseFacts(_SchemaUses):
         if isinstance(found, UnionType):
             return self.union_shape(present(found), source, direction, form=form, seen=seen)
         if others is None:
-            others = self.others(value, members, holder, direction)
+            others = self.held_others(value, self.others(value, members, holder, direction))
         if others.patterns:
             return TextShape("object", problem=(holder, _PATTERNS))
         additional = (
@@ -3217,9 +3263,10 @@ class _UseFacts(_SchemaUses):
         extras: tuple[SourceLocation, TypeView] | None = None
         declared = False
         if (others := self.use_others(use) if members else None) is not None:
-            declared = others.said in {"allowed", "schema"}
             if others.source is not None and others.values is not None:
                 extras = self.repeated(others.values, others.source), others.values
+            others = _held(others, extra := self.applied_extra(value))
+            declared = extra == "allow" or others.said in {"allowed", "schema"}
         return EncodingFacts(
             self.shape(value, source, use.members, direction, form=False, others=others),
             self.shape(value, source, use.members, direction, form=True, others=others),
@@ -3438,17 +3485,19 @@ class _Octets(_UseFacts):
         members = [(name, member, self.part(member)) for name, _, member in property_members(use.members)]
         refused = self._text_binary(members, schema)
         named = tuple((name, part) for name, _, part in members)
-        extra: PartSchema | Literal["closed"] | None = None
-        if (others := self.use_others(use)) is not None:
-            if others.said == "closed":
-                extra = "closed"
-            elif others.source is not None:
-                with self.values_node(others, node, direction) as values:
-                    typed = others.values if values is None else self.view(values, direction, inline=False)
-                    extra = self.part_of(values, typed, direction)
-                    if refused is None and not extra.file and values is not None:
-                        refused = self.first(values, direction, others.free or schema)
-        return PartFacts(self.takes_object(use.type), named, extra), refused
+        loose: PartSchema | Literal["closed"] | None = None
+        if (others := self.use_others(use)) is None:
+            return PartFacts(self.takes_object(use.type), named, None), refused
+        if others.said == "closed":
+            loose = "closed"
+        elif others.source is not None:
+            with self.values_node(others, node, direction) as values:
+                typed = others.values if values is None else self.view(values, direction, inline=False)
+                loose = self.part_of(values, typed, direction)
+                if refused is None and not loose.file and values is not None:
+                    refused = self.first(values, direction, others.free or schema)
+        extra = "closed" if self.held_others(use.type, others).said == "closed" else loose
+        return PartFacts(self.takes_object(use.type), named, extra, loose), refused
 
     def _text_binary(
         self, members: Iterable[tuple[str, FieldUseBinding, PartSchema]], schema: SchemaLocation
@@ -3504,17 +3553,18 @@ class _Octets(_UseFacts):
             if len(shapes) > 1 or len(kinds) > 1 or len(whole) > 1:
                 return PartFacts(object=False, members=(), extra=None), None
             named.append((name, replace(parts[0], value=_joined(tuple(part.value for part in parts if part.value)))))
-        closed = all(
-            self.others(
+        reads = [
+            (
                 item := GeneratedSymbolType(symbol),
-                members,
-                self.holder(item, use.schema or use.id.schema_site),
-                direction,
-            ).said
-            == "closed"
+                self.others(item, members, self.holder(item, use.schema or use.id.schema_site), direction),
+            )
             for symbol, members in zip(union, declared, strict=True)
-        )
-        return PartFacts(object=True, members=tuple(named), extra="closed" if closed else None), refused
+        ]
+        closed = all(self.held_others(item, found).said == "closed" for item, found in reads)
+        loose = all(found.said == "closed" for _, found in reads)
+        return PartFacts(
+            object=True, members=tuple(named), extra="closed" if closed else None, loose="closed" if loose else None
+        ), refused
 
     def _union_alternatives(self, use: TypeUseBinding) -> list[SymbolId] | None:
         """Return the models of a multipart use whose type is a union of models it merges the members of, or None."""

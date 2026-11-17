@@ -64,8 +64,6 @@ OPERATION_0: Final[OperationPlan[GetChargesChargeResponse]] = OperationPlan(
                 explode=True,
                 shape='object',
                 fields=(FieldPlan('gt', 'integer'),),
-                additional=FieldPlan('', 'string'),
-                reserved_names=('expand', 'limit'),
                 brackets=True,
             ),
             codec=model_bindings.codec_3,

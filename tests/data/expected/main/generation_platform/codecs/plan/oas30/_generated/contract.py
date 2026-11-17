@@ -86,7 +86,6 @@ class GetItems:
                     explode=True,
                     shape='object',
                     fields=(FieldPlan('theme', 'string'),),
-                    additional=FieldPlan('', 'string'),
                 ),
                 adapter=TypeAdapter(plan_oas30_models.ItemsGetCookiePrefParameter),
             ),

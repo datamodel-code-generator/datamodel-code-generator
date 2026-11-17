@@ -838,6 +838,32 @@
     "model": {"parent_scoped_naming": true, "naming_strategy": "full-path"},
     "modules": [["client", "resources", "default", "_sync.py"], ["client", "types", "default", "_operations.py"]]
   },
+  "applied-config": {
+    "input": "applied-config.yaml",
+    "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],
+    "model": {
+      "allow_population_by_field_name": true,
+      "extra_template_data": {"Person": {"config": {"populate_by_name": false, "validate_by_name": false}}}
+    },
+    "modules": [["models.py"], ["client", "_operations.py"], ["client", "_generated", "model_bindings.py"]]
+  },
+  "held-extras": {
+    "input": "held-extras.yaml",
+    "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],
+    "modules": [["models.py"], ["client", "_operations.py"]]
+  },
+  "held-extras-forbid": {
+    "input": "held-extras.yaml",
+    "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],
+    "model": {"extra_fields": "forbid"},
+    "modules": [["models.py"], ["client", "_operations.py"]]
+  },
+  "held-extras-allow": {
+    "input": "held-extras.yaml",
+    "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],
+    "model": {"extra_fields": "allow"},
+    "modules": [["models.py"], ["client", "_operations.py"]]
+  },
   "name-repeats": {
     "input": "name-repeats.yaml",
     "config": {

@@ -870,7 +870,7 @@ class Planner:
         which every declared member's plan then tells apart from them.
         """
         parts = _parts(use)
-        declared_extra = parts.extra
+        declared_extra = parts.loose
         additional: PartSpec | None = PartSpec(plan=PartPlan("", "json" if declared_extra is None else "string"))
         if declared_extra == "closed":
             additional = None
@@ -878,7 +878,7 @@ class Planner:
             additional = PartSpec(
                 plan=PartPlan("", repeated=declared_extra.repeated, text=declared_extra.text), file=True
             )
-        elif (extras := form_extras(self.wire.kinds, use)) is not None:
+        elif (extras := form_extras(self.wire.kinds, use, loose=True)) is not None:
             text = not part_json(self.wire.kinds, extras.type, None, self.wire.versions)
             additional = PartSpec(
                 plan=PartPlan("", "string" if text else "json", repeated=extras.repeated),
@@ -909,6 +909,8 @@ class Planner:
             )
         if any(spec.file for spec in specs) or (additional is not None and additional.file):
             return tuple(specs), additional, (), None
+        if parts.extra == "closed":
+            additional = None
         others = None if additional is None or additional.plan.kind != "json" else additional.plan
         written = tuple(
             PartPlan(spec.plan.name, spec.plan.kind, repeated=spec.plan.repeated)
@@ -929,13 +931,13 @@ class Planner:
         parts = _parts(use)
         declared = dict(parts.members)
         members = _members(use)
-        declared_extra = parts.extra
+        declared_extra = parts.loose
         if not any(declared[name].file for name, _, _ in members) and not (
             isinstance(declared_extra, PartSchema) and declared_extra.file
         ):
             return None, None
         additional: PartSpec | None = PartSpec(plan=PartPlan("", repeated=True), file=True)
-        extras = form_extras(self.wire.kinds, use)
+        extras = form_extras(self.wire.kinds, use, loose=True)
         if declared_extra == "closed":
             additional = None
         elif extras is not None and not (isinstance(declared_extra, PartSchema) and declared_extra.file):

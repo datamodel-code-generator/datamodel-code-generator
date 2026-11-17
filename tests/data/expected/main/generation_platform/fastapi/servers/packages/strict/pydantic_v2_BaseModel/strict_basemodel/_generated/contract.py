@@ -19,7 +19,6 @@ from .._runtime.server.requests import (
     BodyAdapter,
     BodyMedia,
     FilePart,
-    JsonPart,
     ParameterAdapter,
     ParameterArgument,
     RawPath,
@@ -231,7 +230,6 @@ class Upload:
                     FieldPlan('counts', 'integer', repeated=True),
                 ),
                 file_parts=(FilePart('file'),),
-                additional=JsonPart('', TypeAdapter(object), untyped=True),
             ),
         ),
     )
@@ -265,7 +263,6 @@ class Search:
                         FieldPlan('note', 'string'),
                         FieldPlan('name', 'string'),
                     ),
-                    additional=FieldPlan('', 'string'),
                 ),
                 adapter=TypeAdapter(
                     strict_basemodel_models.BySize | strict_basemodel_models.ByName
