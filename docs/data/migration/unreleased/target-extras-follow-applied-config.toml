@@ -1,5 +1,6 @@
 [[change]]
 id = "target-extras-follow-applied-config"
+category = "experimental"
 kind = "experimental"
 action = "review"
 title = "Generated clients and servers write the extra members of a Pydantic dataclass exactly where the configuration it applies keeps them, a decorated one included"

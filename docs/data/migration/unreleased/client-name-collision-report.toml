@@ -1,5 +1,6 @@
 [[change]]
 id = "client-name-collision-report"
+category = "experimental"
 kind = "experimental"
 action = "review"
 title = "Generated clients report a name that explicit names take twice once, sorted, as servers do"

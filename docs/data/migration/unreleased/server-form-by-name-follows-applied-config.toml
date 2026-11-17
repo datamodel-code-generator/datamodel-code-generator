@@ -1,5 +1,6 @@
 [[change]]
 id = "server-form-by-name-follows-applied-config"
+category = "experimental"
 kind = "experimental"
 action = "review"
 title = "Generated servers read a form member by its field name exactly where the model's applied configuration validates by name, a decorated model included"

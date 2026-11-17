@@ -1,5 +1,5 @@
 exits [1, 1, 1, 0, 1], without --tag-tree 2
-stamped 0.5.0: custom-template-root
+stamped 0.5.0: covered-template-root, custom-template-root, more-new-flag-outputs, new-flag
 
 Invalid migration data:
 - unreleased/custom-template-root.toml differs from the tag's; move later edits to a new fragment
@@ -128,14 +128,31 @@ source = "release-note"
 # The changes of 0.5.0, moved from docs/data/migration/unreleased/ when the release was stamped.
 
 [[change]]
-id = "custom-template-root"
+id = "covered-template-root"
+category = "decided-change"
 kind = "template"
 action = "required"
 title = "Custom templates receive `fields` instead of `model_fields`"
 summary = "Templates of `--custom-template-dir` read the fields as `fields`."
 affects = { templates = ["pydantic_v2/BaseModel.jinja2", "Old.jinja2"] }
+keep = { note = "No option keeps `model_fields`." }
 migrate = "Rename `model_fields` to `fields` in your templates."
 refs = ["#5001"]
+decision = ["#5000"]
+source = "release-note"
+
+[[change]]
+id = "custom-template-root"
+category = "decided-change"
+kind = "template"
+action = "required"
+title = "Custom templates receive `fields` instead of `model_fields`"
+summary = "Templates of `--custom-template-dir` read the fields as `fields`."
+affects = { templates = ["pydantic_v2/BaseModel.jinja2", "Old.jinja2"] }
+keep = { note = "No option keeps `model_fields`." }
+migrate = "Rename `model_fields` to `fields` in your templates."
+refs = ["#5001"]
+decision = ["#5000"]
 source = "release-note"
 --- derived.toml ---
 # Facts the source tree cannot know, written by `scripts/build_migration_docs.py --stamp`: the first release of
@@ -216,18 +233,22 @@ date = "2026-05-01"
 
 [[change]]
 id = "merged-after-tag"
+category = "decided-change"
 kind = "template"
 action = "required"
 title = "Custom templates receive `fields` instead of `model_fields`"
 summary = "Templates of `--custom-template-dir` read the fields as `fields`."
 affects = { templates = ["pydantic_v2/BaseModel.jinja2", "Old.jinja2"] }
+keep = { note = "No option keeps `model_fields`." }
 migrate = "Rename `model_fields` to `fields` in your templates."
 refs = ["#5001"]
+decision = ["#5000"]
 source = "release-note"
 --- unreleased/old-flag-removed.toml ---
 
 [[change]]
 id = "old-flag-removed"
+category = "api"
 kind = "removal"
 action = "required"
 title = "`--old-flag` is removed"
@@ -235,6 +256,7 @@ summary = "The option did nothing since 0.3.0."
 affects = { options = ["--old-flag"] }
 migrate = "Drop `--old-flag`."
 refs = ["#5002"]
+decision = ["#5000"]
 source = "release-note"
 
 --- data/migration.json ---
@@ -506,7 +528,32 @@ source = "release-note"
      "Old.jinja2"
     ]
    },
+   "id": "covered-template-root",
+   "keep": {
+    "note": "No option keeps `model_fields`."
+   },
+   "kind": "template",
+   "migrate": "Rename `model_fields` to `fields` in your templates.",
+   "refs": [
+    "#5001"
+   ],
+   "release": "0.5.0",
+   "source": "release-note",
+   "summary": "Templates of `--custom-template-dir` read the fields as `fields`.",
+   "title": "Custom templates receive `fields` instead of `model_fields`"
+  },
+  {
+   "action": "required",
+   "affects": {
+    "templates": [
+     "pydantic_v2/BaseModel.jinja2",
+     "Old.jinja2"
+    ]
+   },
    "id": "custom-template-root",
+   "keep": {
+    "note": "No option keeps `model_fields`."
+   },
    "kind": "template",
    "migrate": "Rename `model_fields` to `fields` in your templates.",
    "refs": [
@@ -525,6 +572,20 @@ source = "release-note"
    "source": "registry",
    "summary": "argcomplete will become optional.",
    "title": "argcomplete installation is scheduled to change"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "input-format.toml"
+    ]
+   },
+   "id": "experimental:input-format.toml",
+   "kind": "experimental",
+   "release": "0.5.0",
+   "source": "registry",
+   "summary": "TOML input is experimental.",
+   "title": "--input-file-type toml is experimental"
   },
   {
    "action": "none",
@@ -571,6 +632,9 @@ source = "release-note"
     ]
    },
    "id": "merged-after-tag",
+   "keep": {
+    "note": "No option keeps `model_fields`."
+   },
    "kind": "template",
    "migrate": "Rename `model_fields` to `fields` in your templates.",
    "refs": [
@@ -619,8 +683,10 @@ source = "release-note"
     "preset:20260201",
     "refuse-empty-enum",
     "removal:cli.validation",
+    "covered-template-root",
     "custom-template-root",
     "deprecation:dependency.argcomplete-optional",
+    "experimental:input-format.toml",
     "option:--new-flag",
     "option:--output-model-type=c",
     "option:--quiet-flag",
@@ -660,8 +726,10 @@ source = "release-note"
     "preset:20260201",
     "refuse-empty-enum",
     "removal:cli.validation",
+    "covered-template-root",
     "custom-template-root",
     "deprecation:dependency.argcomplete-optional",
+    "experimental:input-format.toml",
     "option:--new-flag",
     "option:--output-model-type=c",
     "option:--quiet-flag",
@@ -692,8 +760,10 @@ source = "release-note"
     "refuse-empty-enum",
     "removal:cli.validation",
     "docstrings-unwrapped",
+    "covered-template-root",
     "custom-template-root",
     "deprecation:dependency.argcomplete-optional",
+    "experimental:input-format.toml",
     "option:--new-flag",
     "option:--output-model-type=c",
     "option:--quiet-flag",
@@ -712,8 +782,10 @@ source = "release-note"
   },
   {
    "changes": [
+    "covered-template-root",
     "custom-template-root",
     "deprecation:dependency.argcomplete-optional",
+    "experimental:input-format.toml",
     "option:--new-flag",
     "option:--output-model-type=c",
     "option:--quiet-flag",
@@ -770,6 +842,7 @@ Every change a user meets when upgrading, newest first. To upgrade from a releas
 Templates of `--custom-template-dir` read the fields as `fields`.
 
 - **Affects:** custom templates: `pydantic_v2/BaseModel.jinja2`, `Old.jinja2`
+- **Keep the old output:** No option keeps `model_fields`.
 - **What to change:** Rename `model_fields` to `fields` in your templates.
 - **Pull requests and issues:** [#5001](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5001)
 - **Source:** the release notes
@@ -785,11 +858,22 @@ The option did nothing since 0.3.0.
 
 ## 0.5.0 (2026-05-01)
 
+### Custom templates receive `fields` instead of `model_fields` (0.5.0) { #covered-template-root }
+
+Templates of `--custom-template-dir` read the fields as `fields`.
+
+- **Affects:** custom templates: `pydantic_v2/BaseModel.jinja2`, `Old.jinja2`
+- **Keep the old output:** No option keeps `model_fields`.
+- **What to change:** Rename `model_fields` to `fields` in your templates.
+- **Pull requests and issues:** [#5001](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5001)
+- **Source:** the release notes
+
 ### Custom templates receive `fields` instead of `model_fields` (0.5.0) { #custom-template-root }
 
 Templates of `--custom-template-dir` read the fields as `fields`.
 
 - **Affects:** custom templates: `pydantic_v2/BaseModel.jinja2`, `Old.jinja2`
+- **Keep the old output:** No option keeps `model_fields`.
 - **What to change:** Rename `model_fields` to `fields` in your templates.
 - **Pull requests and issues:** [#5001](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5001)
 - **Source:** the release notes
@@ -798,6 +882,13 @@ Templates of `--custom-template-dir` read the fields as `fields`.
 
 argcomplete will become optional.
 
+- **Source:** the registry of deprecations, experimental features and dated presets
+
+### --input-file-type toml is experimental (0.5.0) { #experimental-input-format-toml }
+
+TOML input is experimental.
+
+- **Affects:** experimental features: `input-format.toml`
 - **Source:** the registry of deprecations, experimental features and dated presets
 
 ### New option `--new-flag` (`--no-new-flag`) (0.5.0) { #option-new-flag }
@@ -989,10 +1080,10 @@ Pick the release you use now. Its page lists, for that release only, the options
 
 | Your release | Required | Kept by an option | Not kept | New warnings | Page |
 |---|---|---|---|---|---|
-| 0.4.0 | 1 | 0 | 0 | 0 | [from-0.4.0](from-0.4.0.md) |
-| 0.3.0 | 3 | 0 | 0 | 0 | [from-0.3.0](from-0.3.0.md) |
-| 0.2.0 | 4 | 3 | 0 | 1 | [from-0.2.0](from-0.2.0.md) |
-| 0.1.0 | 4 | 4 | 1 | 2 | [from-0.1.0](from-0.1.0.md) |
+| 0.4.0 | 2 | 0 | 0 | 0 | [from-0.4.0](from-0.4.0.md) |
+| 0.3.0 | 4 | 0 | 0 | 0 | [from-0.3.0](from-0.3.0.md) |
+| 0.2.0 | 5 | 3 | 0 | 1 | [from-0.2.0](from-0.2.0.md) |
+| 0.1.0 | 5 | 4 | 1 | 2 | [from-0.1.0](from-0.1.0.md) |
 
 Releases before 0.1.0: start from the 0.1.0 page and read the older entries of the [changelog](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/main/CHANGELOG.md).
 

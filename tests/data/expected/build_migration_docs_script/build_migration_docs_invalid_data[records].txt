@@ -1,0 +1,42 @@
+exit 1
+Invalid migration data:
+- entry released-notice has no refs
+- entry released-notice: category notice has no kind default-output with action review, only error/none, error/required, error/warn, warning/none, warning/required, warning/warn
+- entry api-unscheduled has no decision
+- entry bad-decision: decision '5' is not #<number>
+- entry bad-tables: affects is not a table
+- entry bad-tables: keep.flags is not a list of strings
+- entry bad-tables: keep.note is not a string
+- entry bad-tables: verify.schema is not a string
+- entry bad-tables: verify.args is not a list
+- entry decided-without-keep has no keep
+- entry extends-missing: an extending record holds only extends, covers and refs, not title
+- entry features has no refs
+- entry features has no decision
+- entry features: category experimental has no kind experimental with action warn, only experimental/none, experimental/required, experimental/review
+- entry features: only category new-surface names surface items
+- entry features: input-format.unknown is not an experimental feature
+- entry features: input-format.toml is not released yet; its output is new surface
+- entry features: surface item --new-flag is not new: the latest release has it
+- entry fix-without-decision has no decision
+- entry harness-guide has no summary
+- entry harness-guide: category harness has no guide entry, so no action, kind
+- unreleased/inline-covers.toml: covers are written by 'python scripts/declared_changes.py declare' only
+- entry no-category: a fragment needs a category (new-surface, experimental, crash-fix, output-text, default-fix, decided-change, notice, api, docs-text, internal, harness)
+- entry no-features has no affects.experimental
+- entry no-features has no refs
+- entry odd-category: category 'surprise' is not one of new-surface, experimental, crash-fix, output-text, default-fix, decided-change, notice, api, docs-text, internal, harness
+- entry odd-category: decision is not a list of strings
+- entry option:--new-flag: an entry that extends a derived entry has no category
+- entry surfaces: surface item --output-model-type is not new: the latest release has it
+- entry surfaces: surface item --nothing is not in this source tree
+- entry surfaces: surface item preset:20260101 is not new: the latest release has it
+- entry extends-extends: extends extends-missing, which is not an unreleased record of its own
+- entry extends-missing: extends nothing, which is not an unreleased record of its own
+- entry fix-without-decision: action keep needs keep.flags or keep.note
+- entry no-category: missing kind
+- entry no-category: missing action
+- entry no-category: missing summary
+- entry no-category: missing source
+- entry run-without-fixture: source run needs verify.schema and verify.args
+written: []

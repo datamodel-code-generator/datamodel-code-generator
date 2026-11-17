@@ -2,6 +2,7 @@
 
 [[change]]
 id = "argument-does-not-undo-implied-option"
+category = "notice"
 kind = "warning"
 action = "warn"
 title = "An argument that turns off an option `pyproject.toml` turned on, whose implied option stays on, emits a `UserWarning`"
@@ -13,6 +14,7 @@ source = "release-note"
 
 [[change]]
 id = "asyncapi-client-handshake-models"
+category = "experimental"
 kind = "experimental"
 action = "review"
 title = "Generated AsyncAPI clients read handshake parameters and fixed header values from the models"
@@ -23,6 +25,7 @@ source = "release-note"
 
 [[change]]
 id = "asyncapi-client-handshake-ref-siblings"
+category = "experimental"
 kind = "experimental"
 action = "review"
 title = "Generated AsyncAPI 2 clients follow the models for a default beside a handshake parameter's `$ref`"
@@ -33,6 +36,7 @@ source = "release-note"
 
 [[change]]
 id = "asyncapi-client-message-codecs"
+category = "experimental"
 kind = "experimental"
 action = "review"
 title = "Generated AsyncAPI clients code a message as the models type its payload"
@@ -43,6 +47,7 @@ source = "release-note"
 
 [[change]]
 id = "asyncapi-client-payload-formats"
+category = "experimental"
 kind = "experimental"
 action = "review"
 title = "Generated AsyncAPI clients read a payload's schema format and wrapper as the models do"
@@ -53,6 +58,7 @@ source = "release-note"
 
 [[change]]
 id = "asyncapi-client-unknown-payload-format"
+category = "experimental"
 kind = "experimental"
 action = "required"
 title = "Generated AsyncAPI clients leave out a channel whose payload format generation does not read"
@@ -64,6 +70,7 @@ source = "release-note"
 
 [[change]]
 id = "contains-keywords-beside-ref-schema-order"
+category = "output-text"
 kind = "output-text"
 action = "none"
 title = "`--field-include-all-keys` writes the contains keywords beside a `$ref` in the order of the schema"
@@ -76,6 +83,7 @@ source = "release-note"
 
 [[change]]
 id = "defs-member-not-a-schema"
+category = "notice"
 kind = "warning"
 action = "warn"
 title = "A member of `$defs` that is not a schema is skipped with a `UserWarning` in a draft 7 or older document"
@@ -152,6 +160,7 @@ source = "release-note"
 
 [[change]]
 id = "id-with-empty-fragment-fetched"
+category = "notice"
 kind = "warning"
 action = "warn"
 title = "A `$ref` to its document's `$id` written with an empty fragment emits a `SchemaResourceRefWarning` before the fetch"
@@ -163,6 +172,7 @@ source = "release-note"
 
 [[change]]
 id = "implied-option-replaces-given-value"
+category = "notice"
 kind = "warning"
 action = "warn"
 title = "An option that is turned off and that another option turns on emits a `UserWarning`"
@@ -226,6 +236,7 @@ source = "release-note"
 
 [[change]]
 id = "swagger-2-named-in-input-messages"
+category = "notice"
 kind = "warning"
 action = "warn"
 title = "A Swagger 2.0 document is named in the notice of the inferred input type and in the refusal of `--input-file-type openapi`"
@@ -237,6 +248,7 @@ source = "release-note"
 
 [[change]]
 id = "target-names-follow-naming-strategy-table"
+category = "experimental"
 kind = "experimental"
 action = "review"
 title = "Generated clients and servers name colliding API names as the models' naming strategies do"
@@ -247,6 +259,7 @@ source = "release-note"
 
 [[change]]
 id = "target-preset-error-class"
+category = "experimental"
 kind = "experimental"
 action = "required"
 title = "`generate()` with a server or client target raises `Error` for a preset that does not fit"
@@ -258,6 +271,7 @@ source = "release-note"
 
 [[change]]
 id = "type-overrides-unmatched-keys"
+category = "notice"
 kind = "warning"
 action = "warn"
 title = "`--type-overrides` keys that match no model or field emit a `UserWarning`"
