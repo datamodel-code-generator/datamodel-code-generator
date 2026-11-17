@@ -1397,7 +1397,7 @@
    "id": "server-form-by-name-follows-applied-config",
    "kind": "experimental",
    "refs": [
-    "#99902"
+    "#7061"
    ],
    "release": "unreleased",
    "source": "release-note",
@@ -1436,7 +1436,7 @@
    "id": "target-extras-follow-applied-config",
    "kind": "experimental",
    "refs": [
-    "#99901"
+    "#7060"
    ],
    "release": "unreleased",
    "source": "release-note",
@@ -1456,7 +1456,7 @@
    "id": "target-other-members-follow-applied-config",
    "kind": "experimental",
    "refs": [
-    "#99903"
+    "#7038"
    ],
    "release": "unreleased",
    "source": "release-note",

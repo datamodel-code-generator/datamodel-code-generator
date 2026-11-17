@@ -8,5 +8,5 @@ summary = "With `--output-model-type pydantic_v2.dataclass`, a dataclass keeps e
 affects = { experimental = ["cli-option.generate-client", "cli-option.generate-server"] }
 before = "responses={\"200\": Declared(media_type=\"application/json\", model=models.Thing)},"
 after = "responses={\"200\": Declared(media_type=\"application/json\", model=models.Thing, dump=extras_json)}, primary=200,"
-refs = ["#99901"]
+refs = ["#7060"]
 source = "release-note"
