@@ -1,6 +1,6 @@
 """Tests to track CLI documentation coverage.
 
-These tests verify that all CLI options (defined in arguments.py) have
+These tests verify that all CLI options (rows of _option_table.py) have
 a cli_doc marker in tests (unless in MANUAL_DOCS).
 
 This ensures that every CLI option has corresponding test documentation.

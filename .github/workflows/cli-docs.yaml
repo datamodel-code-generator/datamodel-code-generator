@@ -8,6 +8,7 @@ on:
       - 'tests/test_main_kr.py'
       - 'src/datamodel_code_generator/arguments.py'
       - 'src/datamodel_code_generator/cli_options.py'
+      - 'src/datamodel_code_generator/_option_table.py'
       - 'scripts/build_cli_docs.py'
       - 'scripts/build_prompt_data.py'
       - 'docs/cli-reference/**'

@@ -44,7 +44,7 @@ RELEASES = (
                 '    "behavior.old": ExperimentalFeature(id="behavior.old", target="--old"),\n'
                 "}\n"
             ),
-            f"{PACKAGE}/cli_options.py": 'OPTIONS = ["--old", "--keep"]\n',
+            "tests/data/expected/main/help/no_color.txt": 'OPTIONS = ["--old", "--keep"]\n',
             f"{PACKAGE}/__init__.py": '__all__ = ["generate"]\n',
         },
     ),
@@ -58,7 +58,7 @@ RELEASES = (
                 '    "Not An Id": ExperimentalFeature(id="Not An Id"),\n'
                 "}\n"
             ),
-            f"{PACKAGE}/cli_options.py": 'OPTIONS = ["--old", "--keep", "--new", "--no-new"]\n',
+            "tests/data/expected/main/help/no_color.txt": 'OPTIONS = ["--old", "--keep", "--new", "--no-new"]\n',
             f"{PACKAGE}/preset_names.py": (
                 'PresetName = Literal[\n    "standard-20260101",\n    "standard-20261106",\n]\n'
             ),

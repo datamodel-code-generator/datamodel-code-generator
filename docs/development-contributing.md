@@ -640,19 +640,19 @@ def test_my_new_option(output_file: Path) -> None:
 
 ### Step 3: Categorize the option (Optional)
 
-By default, new options appear in "General Options". To place in a specific category, add to `src/datamodel_code_generator/cli_options.py`:
+The CLI reference documents a new option in the category of its help section (`Section.MODEL` gives "Model
+Customization"). `src/datamodel_code_generator/cli_options.py` derives the documentation rows (`CLI_OPTION_META`) from
+the cells of the option's row in `_option_table.py`: a category, group or topic written after the section in the
+place argument puts it in another category or in a focused documentation page (a topic only where it is not that of
+the category), and the cells `implies`, `requires` and `conflicts` document its relations to other options:
 
 ```python
-CLI_OPTION_META: dict[str, CLIOptionMeta] = {
+OPTIONS: Final[tuple[Option, ...]] = (
     # existing rows
-    **_opts(_C.MODEL, "--my-new-option"),  # or _C.FIELD, _C.TYPING, _C.TEMPLATE, etc.
-}
+    toggle((Section.MODEL, _C.TEMPLATE, _G.GENERATED_OUTPUT), "--my-new-option", help="..."),
+    value(Section.MODEL, "--my-other-option", help="...", requires=_relations("--other-option", message="...")),
+)
 ```
-
-`_opts(category, *names, group=..., topic=..., **fields)` builds the rows of every option in `names` (space-separated
-names share the category, group and fields), so a new option can also be appended to the row of its category and group.
-`fields` sets the other `CLIOptionMeta` attributes, for example
-`requires=_relations("--other-option", value=True, message="...")`.
 
 ### Step 4: Register the option in the recommender (Required)
 

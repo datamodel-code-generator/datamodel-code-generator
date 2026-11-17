@@ -2,16 +2,18 @@
 
 ``arguments.py`` adds each row to the argument parser, in its help section or its set of mutually exclusive options.
 A row holds the flags of the option and the arguments argparse takes for it, written by the constructor of its form
-(``toggle``, ``flag``, ``deprecated``, ``clear`` or ``value``).
+(``toggle``, ``flag``, ``deprecated``, ``clear`` or ``value``), and the cells of its documentation, from which
+``cli_options.py`` derives ``CLI_OPTION_META``.
 """
 
 from __future__ import annotations
 
 import json
 from argparse import ArgumentTypeError, BooleanOptionalAction
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final, cast, get_args
+from typing import TYPE_CHECKING, Any, Final, Unpack, cast, get_args
 
 from datamodel_code_generator._config_fields import DEFAULT_ENCODING, DEFAULT_WATCH_DELAY
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, Formatter, PythonVersion
@@ -67,6 +69,63 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
 
+class OptionCategory(str, Enum):
+    """Categories for organizing CLI options in documentation."""
+
+    BASE = "Base Options"
+    TYPING = "Typing Customization"
+    FIELD = "Field Customization"
+    MODEL = "Model Customization"
+    TEMPLATE = "Template Customization"
+    OPENAPI = "OpenAPI-only Options"
+    GRAPHQL = "GraphQL-only Options"
+    GENERAL = "General Options"
+    TARGET = "Target Generation Options"
+
+
+class OptionTopic(str, Enum):
+    """Optional topics for linking CLI options to focused documentation areas."""
+
+    MODEL_CUSTOMIZATION = "model-customization"
+    TEMPLATE_CUSTOMIZATION = "template-customization"
+    TYPING_CUSTOMIZATION = "typing-customization"
+    OPENAPI = "openapi"
+
+
+class OptionGroup(str, Enum):
+    """Optional subgroups within CLI option topics."""
+
+    MODEL_NAMING = "model-naming"
+    MODEL_REUSE = "model-reuse"
+    MODEL_SHAPE = "model-shape"
+    ROOT_MODEL = "root-model"
+    CUSTOM_TEMPLATES = "custom-templates"
+    GENERATED_OUTPUT = "generated-output"
+    IMPORTS = "imports"
+    OUTPUT_FORMATTING = "output-formatting"
+    COLLECTION_TYPES = "collection-types"
+    TYPE_ALIAS = "type-alias"
+    TYPE_MAPPING = "type-mapping"
+    TYPE_SYNTAX = "type-syntax"
+    OPENAPI_NAMING = "openapi-naming"
+    OPENAPI_PATHS = "openapi-paths"
+    OPENAPI_SCOPES = "openapi-scopes"
+    READ_ONLY_WRITE_ONLY = "read-only-write-only"
+
+
+@dataclass(frozen=True)
+class CLIOptionRelation:
+    """A documented relationship from one CLI option to another.
+
+    ``when=None`` means the relation applies whenever the source option is enabled.
+    """
+
+    option: str
+    value: Any = None
+    when: Any = None
+    message: str | None = None
+
+
 class Section(Enum):
     """A help section of the command line, by its title, in the order the help lists them."""
 
@@ -91,46 +150,84 @@ class Exclusive(Enum):
 
     @property
     def section(self) -> Section:
-        """Return the help section of the options of the set."""
+        """The help section of the options of the set."""
         return self.value[1]
 
 
 @record
 class Option:
-    """A command-line option: its flags, where the parser adds it, and the arguments argparse takes for it."""
+    """A command-line option: its flags, where the parser adds it, the arguments argparse takes for it, and its cells.
+
+    The cells are those of its documentation: its category, unset where it is that of its help section, its group
+    and topic, the relations that start from its positive flag, and whether only its --no- form is documented.
+    """
 
     flags: tuple[str, ...]
     place: Section | Exclusive
     arguments: Mapping[str, Any]
+    category: OptionCategory | None = None
+    group: OptionGroup | None = None
+    topic: OptionTopic | None = None
+    implies: tuple[CLIOptionRelation, ...] = ()
+    requires: tuple[CLIOptionRelation, ...] = ()
+    conflicts: tuple[CLIOptionRelation, ...] = ()
+    meta_on_negative_only: bool = False
+
+    @property
+    def section(self) -> Section:
+        """The help section of the option."""
+        return self.place if isinstance(self.place, Section) else self.place.section
 
 
-def toggle(place: Section | Exclusive, *flags: str, help: str) -> Option:  # noqa: A002
+_CELLS: Final = frozenset({"implies", "requires", "conflicts", "meta_on_negative_only"})
+
+
+_DOC_CELLS: Final = {OptionCategory: "category", OptionGroup: "group", OptionTopic: "topic"}
+Place = Section | Exclusive | tuple[Section | Exclusive, Unpack[tuple[OptionCategory | OptionGroup | OptionTopic, ...]]]
+
+
+def _option(flags: tuple[str, ...], place: Place, arguments: Mapping[str, Any], **cells: Any) -> Option:
+    """Return the row; a place written as a tuple also names the documentation category, group or topic."""
+    if isinstance(place, tuple):
+        place, *doc = place
+        cells |= {_DOC_CELLS[type(cell)]: cell for cell in doc}
+    return Option(flags, place, arguments, **cells)
+
+
+def toggle(place: Place, *flags: str, help: str, **cells: Any) -> Option:  # noqa: A002
     """Return a flag with a --no- form for each of its flags, whose default is unset (None).
 
     An unset default lets a configuration file or a preset supply the value, which the --no- form turns off.
     """
-    return Option(flags, place, {"action": BooleanOptionalAction, "default": None, "help": help})
+    return _option(flags, place, {"action": BooleanOptionalAction, "default": None, "help": help}, **cells)
 
 
-def flag(place: Section | Exclusive, *flags: str, help: str, default: bool | None = None) -> Option:  # noqa: A002
+def flag(place: Place, *flags: str, help: str, default: bool | None = None, **cells: Any) -> Option:  # noqa: A002
     """Return a flag that is off unless given; an unset default (None) lets a configuration file supply it."""
-    return Option(flags, place, {"action": "store_true", "default": default, "help": help})
+    return _option(flags, place, {"action": "store_true", "default": default, "help": help}, **cells)
 
 
-def deprecated(place: Section | Exclusive, name: str) -> Option:
+def deprecated(place: Place, name: str, **cells: Any) -> Option:
     """Return a deprecated flag, whose help is its message in the deprecation registry."""
-    return flag(place, name, help=f"Deprecated: {_DEPRECATED_OPTIONS[name]}")
+    return flag(place, name, help=f"Deprecated: {_DEPRECATED_OPTIONS[name]}", **cells)
 
 
-def clear(place: Section | Exclusive, name: str, *, help: str) -> Option:  # noqa: A002
+def clear(place: Place, name: str, *, help: str, **cells: Any) -> Option:  # noqa: A002
     """Return the --no- form of a list option, which sets it to no items, clearing what a configuration gives it."""
     dest = name.removeprefix("--no-").replace("-", "_")
-    return Option((name,), place, {"dest": dest, "action": "store_const", "const": (), "default": None, "help": help})
+    arguments = {"dest": dest, "action": "store_const", "const": (), "default": None, "help": help}
+    return _option((name,), place, arguments, **cells)
 
 
-def value(place: Section | Exclusive, *flags: str, help: str, **arguments: Any) -> Option:  # noqa: A002
+def value(place: Place, *flags: str, help: str, **arguments: Any) -> Option:  # noqa: A002
     """Return an option that takes a value, with argparse's ``arguments``; unless given, its value is unset (None)."""
-    return Option(flags, place, {"help": help, **arguments})
+    cells = {name: arguments.pop(name) for name in _CELLS & arguments.keys()}
+    return _option(flags, place, {"help": help, **arguments}, **cells)
+
+
+def _relations(names: str, **fields: Any) -> tuple[CLIOptionRelation, ...]:
+    """Build one relation with the same ``fields`` to each option in the space-separated ``names``."""
+    return tuple(CLIOptionRelation(name, **fields) for name in names.split())
 
 
 def _values(kind: type[Enum]) -> list[Any]:
@@ -222,12 +319,15 @@ def _list_options() -> tuple[Option, ...]:
     )
 
 
+_C = OptionCategory
+_G = OptionGroup
+_T = OptionTopic
 _DEPRECATED_OPTIONS = cli_deprecations()
 
 OPTIONS: Final[tuple[Option, ...]] = (
     # Base options for input/output
     toggle(
-        Section.BASE,
+        (Section.BASE, _C.GENERAL),
         "--allow-remote-refs",
         help="Allow fetching remote $ref references over HTTP/HTTPS. "
         "Currently remote fetching is allowed by default but emits a deprecation warning. "
@@ -236,12 +336,12 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "In a future version, remote fetching will be disabled by default.",
     ),
     flag(
-        Section.BASE,
+        (Section.BASE, _C.GENERAL),
         "--strict-refs",
         help="Treat unresolved local $ref JSON pointers as errors instead of generating fallback Any models.",
     ),
     toggle(
-        Section.BASE,
+        (Section.BASE, _C.GENERAL),
         "--untrusted-input",
         help="Treat the input as a schema from an untrusted source (experimental): read no file or URL but the input, "
         "so every $ref and XML Schema include must name a location in the input; refuse the schema keywords whose "
@@ -249,9 +349,10 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "customTypePath, customBasePath), Protocol Buffers input, --validation and a schema nested more than 100 "
         "levels deep or holding more than 2,000,000 objects and arrays. Implies --no-allow-remote-refs. Pass "
         "--no-untrusted-input to override a configuration file that enables it.",
+        implies=_relations("--allow-remote-refs", value=False),
     ),
     toggle(
-        Section.BASE,
+        (Section.BASE, _C.GENERAL),
         "--allow-private-network",
         help="Allow HTTP(S) schema requests to private, loopback, link-local, or otherwise non-public network hosts. "
         "By default these targets are blocked to reduce server-side request forgery (SSRF) risk. "
@@ -268,34 +369,38 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "exact backend. Explicit selections and paired dependency errors do not fall back.",
     ),
     value(
-        Section.BASE,
+        (Section.BASE, _C.GENERAL),
         "--http-headers",
         nargs="+",
         metavar="HTTP_HEADER",
         help='Set headers in HTTP requests to the remote host. (example: "Authorization: Basic dXNlcjpwYXNz")',
     ),
     value(
-        Section.BASE,
+        (Section.BASE, _C.GENERAL),
         "--http-query-parameters",
         nargs="+",
         metavar="HTTP_QUERY_PARAMETERS",
         help='Set query parameters in HTTP requests to the remote host. (example: "ref=branch")',
     ),
-    flag(Section.BASE, "--http-ignore-tls", help="Disable verification of the remote host's TLS certificate"),
+    flag(
+        (Section.BASE, _C.GENERAL),
+        "--http-ignore-tls",
+        help="Disable verification of the remote host's TLS certificate",
+    ),
     value(
-        Section.BASE,
+        (Section.BASE, _C.GENERAL),
         "--http-timeout",
         type=float,
         help="Timeout in seconds for HTTP requests to remote hosts (default: 30)",
     ),
     value(
-        Section.BASE,
+        (Section.BASE, _C.GENERAL),
         "--http-local-ref-path",
         help="Resolve HTTP(S) JSON Schema $ref URLs from a local directory instead of fetching them. "
         "URLs are mapped under the directory by host and path; extensionless refs also try '.json'.",
     ),
     value(
-        Section.BASE,
+        (Section.BASE, _C.GENERAL),
         "--lockfile",
         help="Select the remote reference integrity lock file (experimental). "
         "An existing selected lock is verified automatically; "
@@ -304,12 +409,12 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "directory when no project is found. Explicit relative paths resolve from the invocation working directory.",
     ),
     flag(
-        Exclusive.REMOTE_LOCK,
+        (Exclusive.REMOTE_LOCK, _C.GENERAL),
         "--update-lock",
         help="Create or atomically update the selected remote lock after generation (experimental).",
     ),
     flag(
-        Exclusive.REMOTE_LOCK,
+        (Exclusive.REMOTE_LOCK, _C.GENERAL),
         "--locked",
         help="Require an existing remote lock and validate each fetched resource against it (experimental).",
     ),
@@ -343,10 +448,11 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "schemas; module and class name identify a model.",
     ),
     value(
-        Section.BASE,
+        (Section.BASE, _C.MODEL, _G.MODEL_SHAPE),
         "--output-model-type",
         help="Output model type (default: pydantic_v2.BaseModel)",
         choices=_values(DataModelType),
+        implies=_relations("--use-annotated", value=True, when=DataModelType.MsgspecStruct.value),
     ),
     value(
         Section.BASE,
@@ -402,37 +508,37 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "Pydantic models only and such a copy is written (ItemModel beside Mapping[str, Item]), as in 0.89.0",
     ),
     # Customization options for generated models
-    deprecated(Exclusive.EXTRA_FIELDS, "--allow-extra-fields"),
+    deprecated(Exclusive.EXTRA_FIELDS, "--allow-extra-fields", implies=_relations("--extra-fields", value="allow")),
     toggle(Section.MODEL, "--allow-population-by-field-name", help="Allow population by field name"),
-    value(Section.MODEL, "--class-name", help="Set class name of root model"),
+    value((Section.MODEL, _G.MODEL_NAMING), "--class-name", help="Set class name of root model"),
     value(
-        Section.MODEL,
+        (Section.MODEL, _G.MODEL_NAMING),
         "--model-name-map",
         help="Rename generated model classes by schema ref or current generated class name "
         "using a JSON object or JSON file.",
         type=_json_value_or_file,
     ),
     flag(
-        Section.MODEL,
+        (Section.MODEL, _G.MODEL_NAMING),
         "--allow-leading-underscore-class-name",
         help="Allow an explicitly specified root class name to start with an underscore",
     ),
     value(
-        Section.MODEL,
+        (Section.MODEL, _G.MODEL_NAMING),
         "--class-name-prefix",
         help="Prefix to add to generated class names (e.g., 'Api' produces 'ApiUser'). "
         "Does not apply to root model when --class-name is specified.",
         type=str,
     ),
     value(
-        Section.MODEL,
+        (Section.MODEL, _G.MODEL_NAMING),
         "--class-name-suffix",
         help="Suffix to add to generated class names (e.g., 'Schema' produces 'UserSchema'). "
         "Does not apply to root model when --class-name is specified.",
         type=str,
     ),
     value(
-        Section.MODEL,
+        (Section.MODEL, _G.MODEL_NAMING),
         "--class-name-affix-scope",
         help="Scope for applying --class-name-prefix/--class-name-suffix. "
         "'all': Apply to all classes including enums (default). "
@@ -441,12 +547,12 @@ OPTIONS: Final[tuple[Option, ...]] = (
         choices=_values(ClassNameAffixScope),
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _G.ROOT_MODEL),
         "--collapse-root-models",
         help="Models generated with a root-type field will be merged into the models using that root-type model",
     ),
     value(
-        Section.MODEL,
+        (Section.MODEL, _G.ROOT_MODEL),
         "--collapse-root-models-name-strategy",
         help="Strategy for naming when collapsing root models that reference other models. "
         "'child': Keep inner model's name (default). 'parent': Use wrapper's name for inner model. "
@@ -454,7 +560,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         choices=_values(CollapseRootModelsNameStrategy),
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _G.ROOT_MODEL),
         "--collapse-shared-parent-wrappers",
         help="Under --collapse-root-models-name-strategy parent, make every model that references a wrapper reference "
         "the inner model that takes its name, as its first model does; without it, where "
@@ -462,7 +568,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "module, the later models keep the wrapper",
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _G.ROOT_MODEL),
         "--keep-constrained-root-models-in-every-container",
         help="Under --collapse-root-models with --field-constraints, keep a root model whose root field has "
         "constraints named inside any container of its holder, a set, frozen set, Sequence or Mapping as well as a "
@@ -470,21 +576,21 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "those containers and its constraints are lost, as in 0.89.0",
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _G.ROOT_MODEL),
         "--keep-enum-literal-aliases",
         help="Under --collapse-root-models, keep a named enum that the output writes as a `Literal` type alias named "
         "at its uses (`Status = Literal['open', 'resolved']`, `a: Status`); without it every use repeats the "
         "`Literal`, as in 0.89.0",
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _G.ROOT_MODEL),
         "--keep-reference-null-on-collapsed-root-models",
         help="Under --collapse-root-models, keep the null of a root model that admits null where a field, item or map "
         "value that names it takes its type (an OpenAPI 3.0 `nullable: true` root: `list[str] | None`), as the root "
         "model admits it; without it the inlined type rejects null, as in 0.89.0",
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _G.ROOT_MODEL),
         "--keep-shared-members-on-collapsed-root-models",
         help="Under --collapse-root-models, keep each member of a root type that collapse inlined at several sites at "
         "every site when a root model that member names is collapsed later, as a recursive union reaches its plain "
@@ -492,21 +598,21 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "`Any` where no member is left, as in 0.90.0",
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _G.ROOT_MODEL),
         "--collapse-constrained-root-models-as-annotated",
         help="Under --collapse-root-models with --use-annotated, inline a root model of a string with constraints into "
         "the union, list, dict or other container of its holder as `Annotated[str, Field(...)]`, which keeps the "
         "constraints on that member; without it such a root model stays named there, as in 0.90.0",
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _G.ROOT_MODEL),
         "--remove-unused-models-beside-type-overrides",
         help="Remove the models that nothing uses, such as a root model --collapse-root-models inlined, also from a "
         "module a model-level --type-overrides key takes a model out of, as from every other module; without it they "
         "stay written there, as in 0.90.0",
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _G.ROOT_MODEL),
         "--keep-self-referencing-array-items",
         help="Keep the items of an array whose items name the array itself (`Node = array of Node | Leaf`: "
         "`RootModel[list[Node | Leaf]]`), and serialize the root of a type list that lists such an array as any "
@@ -514,39 +620,57 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "`list`; without it the array is written as a bare `list`, as in 0.90.0",
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _G.MODEL_REUSE),
         "--collapse-reuse-models",
         help="When used with --reuse-model, collapse duplicate models by replacing references instead of creating "
         "empty inheritance subclasses. This eliminates 'class Foo(Bar): pass' patterns",
     ),
-    flag(Section.MODEL, "--skip-root-model", help="Skip generating the model for the root schema element"),
     flag(
-        Section.MODEL,
+        (Section.MODEL, _G.ROOT_MODEL),
+        "--skip-root-model",
+        help="Skip generating the model for the root schema element",
+    ),
+    flag(
+        (Section.MODEL, _G.ROOT_MODEL),
         "--use-root-model-sequence-interface",
         help="Make non-null sequence-like Pydantic v2 RootModel classes implement collections.abc.Sequence by adding "
         "Sequence[T] inheritance and root-delegating __iter__, __getitem__, and __len__ methods",
     ),
     flag(
-        Section.MODEL,
+        (Section.MODEL, _C.TEMPLATE),
         "--disable-appending-item-suffix",
         help="Disable appending `Item` suffix to model name in an array",
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _G.MODEL_NAMING),
         "--singularize-last-word-of-item-names",
         help="Name the item model of an array by singularizing only the last word of its name (actions_caches gives "
         "ActionsCache, payment_status gives PaymentStatusItem); without it the whole name is singularized as one word "
         "(ActionsCach, PaymentStatu), as in 0.88.0",
     ),
-    toggle(Section.MODEL, "--disable-timestamp", help="Disable timestamp on file headers"),
-    flag(Section.MODEL, "--enable-faux-immutability", help="Enable faux immutability"),
-    flag(Section.MODEL, "--enable-version-header", help="Enable package version on file headers"),
-    flag(
-        Section.MODEL, "--enable-command-header", help="Enable command-line options on file headers for reproducibility"
+    toggle(
+        (Section.MODEL, _C.TEMPLATE, _G.GENERATED_OUTPUT),
+        "--disable-timestamp",
+        help="Disable timestamp on file headers",
     ),
-    flag(Section.MODEL, "--enable-generated-header-marker", help="Enable @generated marker on file headers"),
+    flag(Section.MODEL, "--enable-faux-immutability", help="Enable faux immutability"),
+    flag(
+        (Section.MODEL, _C.TEMPLATE, _G.GENERATED_OUTPUT),
+        "--enable-version-header",
+        help="Enable package version on file headers",
+    ),
+    flag(
+        (Section.MODEL, _C.TEMPLATE, _G.GENERATED_OUTPUT),
+        "--enable-command-header",
+        help="Enable command-line options on file headers for reproducibility",
+    ),
+    flag(
+        (Section.MODEL, _C.TEMPLATE, _G.GENERATED_OUTPUT),
+        "--enable-generated-header-marker",
+        help="Enable @generated marker on file headers",
+    ),
     value(
-        Exclusive.EXTRA_FIELDS,
+        (Exclusive.EXTRA_FIELDS, _C.FIELD),
         "--extra-fields",
         help="Set the generated models to allow, forbid, or ignore extra fields.",
         choices=_values(ExtraFields),
@@ -632,26 +756,31 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "it and, as its one type rejects null, without the alias.",
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _G.MODEL_REUSE),
         "--reuse-model",
         help="Reuse models on the field when a module has the model with the same content",
     ),
     value(
-        Section.MODEL,
+        (Section.MODEL, _G.MODEL_REUSE),
         "--reuse-scope",
         help="Scope for model reuse deduplication: module (per-file, default) or tree (cross-file with shared module). "
         "Only effective when --reuse-model is set.",
         choices=_values(ReuseScope),
     ),
     value(
-        Section.MODEL,
+        (Section.MODEL, _C.GENERAL, _G.MODEL_REUSE, _T.MODEL_CUSTOMIZATION),
         "--shared-module-name",
         help=f'Name of the shared module for --reuse-scope=tree (default: "{DEFAULT_SHARED_MODULE_NAME}"). '
         f'Use this option if your schema has a file named "{DEFAULT_SHARED_MODULE_NAME}".',
     ),
-    value(Section.MODEL, "--target-python-version", help="target python version", choices=_values(PythonVersion)),
     value(
-        Section.MODEL,
+        (Section.MODEL, _G.MODEL_SHAPE),
+        "--target-python-version",
+        help="target python version",
+        choices=_values(PythonVersion),
+    ),
+    value(
+        (Section.MODEL, _G.MODEL_SHAPE),
         "--target-pydantic-version",
         help="Oldest Pydantic version the generated code must support. "
         "Unset: the newest supported feature forms, with populate_by_name config like '2' "
@@ -683,21 +812,22 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "keeps the alias it has without the generator, which the config then replaces.",
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _C.TEMPLATE),
         "--treat-dot-as-module",
         help="Treat dotted schema names as module paths, creating nested directory structures (e.g., 'foo.bar.Model' "
         "becomes 'foo/bar.py'). Use --no-treat-dot-as-module to keep dots in names as underscores for single-file "
         "output.",
+        meta_on_negative_only=True,
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _C.TEMPLATE, _G.GENERATED_OUTPUT),
         "--strict-dotted-module-names",
         help="Only infer dotted schema names as module paths when every segment is a canonical Python identifier. "
         "This applies only to automatic inference and does not override --treat-dot-as-module or "
         "--no-treat-dot-as-module.",
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _C.TEMPLATE, _G.IMPORTS),
         "--rename-submodules-hidden-by-classes",
         help="Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of "
         "pkg/__init__.py, to the first free name with trailing underscores (pkg/Warn_.py), with the modules below it; "
@@ -705,28 +835,30 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "that use either fail to decode",
     ),
     flag(
-        Section.MODEL,
+        (Section.MODEL, _G.MODEL_SHAPE),
         "--use-generic-base-class",
         help="Generate a shared base class with model configuration (e.g., extra='forbid') "
         "instead of repeating the configuration in each model. Keeps code DRY.",
     ),
-    toggle(Section.MODEL, "--use-schema-description", help="Use schema description to populate class docstring"),
-    toggle(Section.MODEL, "--use-title-as-name", help="use titles as class names of models"),
+    toggle(
+        (Section.MODEL, _C.FIELD), "--use-schema-description", help="Use schema description to populate class docstring"
+    ),
+    toggle((Section.MODEL, _C.FIELD), "--use-title-as-name", help="use titles as class names of models"),
     flag(
-        Section.MODEL,
+        (Section.MODEL, _C.FIELD),
         "--infer-union-variant-names",
         help='Name inline oneOf/anyOf branch models after the value of their tag field (Pet + type: "cat" -> PetCat) '
         "instead of Pet1, Pet2",
     ),
     flag(
-        Section.MODEL,
+        (Section.MODEL, _C.FIELD),
         "--use-tag-as-union-variant-name",
         help="Name inline oneOf/anyOf branch models after their tag: what --infer-union-variant-names does, skipping "
         'tags whose class names collide, plus single-branch unions (type: "exec" -> LocalShellActionExec) and '
         'single-key branches ({"granular": ...} -> AskForApprovalGranular)',
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _C.FIELD),
         "--infer-union-discriminators",
         help="Write a oneOf or anyOf that declares no discriminator as a discriminated union (Pydantic "
         "Field(discriminator=...), msgspec tagged structs) when every branch that is not null requires one property "
@@ -740,7 +872,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "0.96.0",
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _C.FIELD),
         "--name-allof-union-members-after-branches",
         help="Name the classes an allOf gives the branches of a oneOf or anyOf it holds after the branch: the holder "
         "and the branch's tag (with --infer-union-variant-names or --use-tag-as-union-variant-name), its $ref class or "
@@ -748,37 +880,41 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "shared part after the holder (EventBase); without it every class is numbered after the holder (Event1 to "
         "Event5), as in 0.89.0",
     ),
-    flag(Section.MODEL, "--use-pendulum", help="use pendulum instead of datetime"),
+    flag((Section.MODEL, _C.TYPING, _G.TYPE_MAPPING), "--use-pendulum", help="use pendulum instead of datetime"),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _C.TYPING, _G.TYPE_MAPPING),
         "--use-standard-primitive-types",
         help="Use Python standard library types for string formats (UUID, IPv4Address, etc.) "
         "instead of str. Affects dataclass, msgspec, TypedDict output. "
         "Pydantic already uses these types by default.",
     ),
     flag(
-        Section.MODEL,
+        (Section.MODEL, _C.TEMPLATE, _G.IMPORTS),
         "--use-exact-imports",
         help='import exact types instead of modules, for example: "from .foo import Bar" instead of '
         '"from . import foo" with "foo.Bar"',
     ),
     value(
-        Section.MODEL,
+        (Section.MODEL, _C.TYPING, _G.TYPE_MAPPING),
         "--output-datetime-class",
         help="Choose Datetime class between AwareDatetime, NaiveDatetime, PastDatetime, FutureDatetime or datetime. "
         "Each output model has its default mapping (for example pydantic: datetime, dataclass: str, ...)",
         choices=_values(DatetimeClassType),
     ),
     value(
-        Section.MODEL,
+        (Section.MODEL, _C.TYPING, _G.TYPE_MAPPING),
         "--output-date-class",
         help="Choose Date class between PastDate, FutureDate or date. (Pydantic v2 only) "
         "Each output model has its default mapping.",
         choices=_values(DateClassType),
     ),
-    deprecated(Section.MODEL, "--parent-scoped-naming"),
+    deprecated(
+        (Section.MODEL, _G.MODEL_NAMING),
+        "--parent-scoped-naming",
+        implies=_relations("--naming-strategy", value=NamingStrategy.ParentPrefixed.value),
+    ),
     value(
-        Section.MODEL,
+        (Section.MODEL, _G.MODEL_NAMING),
         "--naming-strategy",
         help="Strategy for naming models and telling duplicate model names apart. 'numbered' (default): Append numeric "
         "suffix (Address, Address1, Address2). Simple but names don't indicate context. 'parent-prefixed': Prefix "
@@ -798,7 +934,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         choices=_values(NamingStrategy),
     ),
     value(
-        Section.MODEL,
+        (Section.MODEL, _G.MODEL_NAMING),
         "--duplicate-name-suffix",
         help="JSON mapping of type to suffix for resolving duplicate name conflicts. "
         'Example: \'{"model": "Schema"}\' changes Address1 to AddressSchema. '
@@ -807,14 +943,14 @@ OPTIONS: Final[tuple[Option, ...]] = (
         type=str,
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _G.MODEL_NAMING),
         "--use-duplicate-name-suffix-for-every-collision",
         help="Give the --duplicate-name-suffix suffix also to a model renamed because its name is taken in its module, "
         "by another model or by a name the module imports (an inline Item beside a definition Item, a definition "
         "AnyUrl beside a uri field); without it such a model takes the suffix Model, as in 0.88.0",
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _G.MODEL_NAMING),
         "--name-converted-payloads-by-message",
         help="AsyncAPI only: name a payload that an Avro or XML Schema converter gives no name of its own, such as an "
         "Avro string or array, after its message, as a JSON Schema payload is, and drop the placeholder title Model "
@@ -822,7 +958,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "the placeholder stays, as in 0.88.0",
     ),
     toggle(
-        Section.MODEL,
+        (Section.MODEL, _G.MODEL_SHAPE),
         "--merge-message-trait-headers",
         help="AsyncAPI only: give a message the headers of all its traits, merged in order as AsyncAPI 2 and 3 apply "
         "traits (a JSON Merge Patch each, a trait that is a $ref read as its target), and then its own headers, which "
@@ -830,7 +966,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "headers, and a second inline trait with headers is an error, as in 0.90.0",
     ),
     value(
-        Section.MODEL,
+        (Section.MODEL, _C.GENERAL),
         "--all-exports-scope",
         help="Generate __all__ in __init__.py with re-exports. "
         "'children': export from direct child modules only. "
@@ -838,7 +974,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         choices=_values(AllExportsScope),
     ),
     value(
-        Section.MODEL,
+        (Section.MODEL, _C.GENERAL),
         "--all-exports-collision-strategy",
         help="Strategy for name collisions when using --all-exports-scope=recursive. "
         "'error': raise an error (default). "
@@ -847,15 +983,20 @@ OPTIONS: Final[tuple[Option, ...]] = (
         choices=_values(AllExportsCollisionStrategy),
     ),
     value(
-        Section.MODEL,
+        (Section.MODEL, _C.GENERAL),
         "--module-split-mode",
         help="Split generated models into separate files. 'single': generate one file per model class.",
         choices=_values(ModuleSplitMode),
     ),
     # Typing options for generated models
-    value(Section.TYPING, "--base-class", help="Base Class (default: pydantic.BaseModel)", type=str),
     value(
-        Section.TYPING,
+        (Section.TYPING, _C.MODEL, _G.MODEL_SHAPE),
+        "--base-class",
+        help="Base Class (default: pydantic.BaseModel)",
+        type=str,
+    ),
+    value(
+        (Section.TYPING, _C.MODEL, _G.MODEL_SHAPE),
         "--base-class-map",
         help="Model-specific base class mapping (JSON or JSON file path). "
         'Example: \'{"MyModel": "custom.BaseA", "OtherModel": "custom.BaseB"}\'. '
@@ -976,15 +1117,15 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "declaration is looked up in the allOf members as written, and under --intersect-combined-schema-keywords such "
         "a field can lose its description or its constraints or become Any, as in 0.96.0",
     ),
-    flag(Section.TYPING, "--field-constraints", help="Use field constraints and not con* annotations"),
+    flag((Section.TYPING, _C.FIELD), "--field-constraints", help="Use field constraints and not con* annotations"),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _C.FIELD),
         "--omit-redundant-constraints",
         help="Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class "
         "such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _C.FIELD),
         "--read-length-keywords-by-type",
         help="Read minLength, maxLength and pattern for strings only and minItems, maxItems and uniqueItems for arrays "
         "only, as JSON Schema does, so a maxLength beside an array leaves the list unbounded and a maxItems beside a "
@@ -992,7 +1133,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "string minItems/maxItems as their length bounds, as in 0.88.0",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _C.FIELD),
         "--read-object-keywords-by-type",
         help="Read the keywords that constrain objects only (properties, patternProperties, additionalProperties, "
         "propertyNames, unevaluatedProperties, required, minProperties, maxProperties) beside an `anyOf` or `oneOf` as "
@@ -1002,7 +1143,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "every branch takes them, as in 0.93.0",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _C.FIELD),
         "--read-msgspec-union-bounds-exactly",
         help="msgspec.Struct output only: decide whether the int member of a union with a number member drops its Meta "
         "bounds on the bounds the schema writes, exactly; without it a number member's bound past 2**53 is read as the "
@@ -1010,13 +1151,13 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "as in 0.88.0",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _C.FIELD),
         "--use-site-models-for-constrained-refs",
         help="Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the "
         "values all parts admit, instead of the referenced type, which leaves the added assertions out",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _C.FIELD),
         "--use-bounds-for-float-const",
         help="Type a finite float const, which no Literal holds, as a float whose minimum and maximum both equal it, "
         "written as the output writes number bounds (confloat, Field() or Annotated for Pydantic, Meta for msgspec), "
@@ -1024,27 +1165,33 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "with a warning; without it the const is typed float, which accepts any number, as in 0.93.0",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _C.FIELD),
         "--use-one-model-per-ref-site",
         help="Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy "
         "of that place shares, and parse such chains without nesting; without it each path that reaches the place gets "
         "a model of its own (N(N-1)/2 site models for a chain of N definitions), as in 0.89.0.",
     ),
-    deprecated(Section.TYPING, "--set-default-enum-member"),
-    value(Section.TYPING, "--strict-types", help="Use strict types", choices=_values(StrictTypes), nargs="+"),
+    deprecated((Section.TYPING, _C.FIELD), "--set-default-enum-member"),
+    value(
+        (Section.TYPING, _G.TYPE_MAPPING),
+        "--strict-types",
+        help="Use strict types",
+        choices=_values(StrictTypes),
+        nargs="+",
+    ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_SYNTAX),
         "--use-annotated",
         help="Use typing.Annotated for Field(). Also, `--field-constraints` option will be enabled. "
         "Will become default for Pydantic v2 in a future version.",
     ),
     flag(
-        Section.TYPING,
+        (Section.TYPING, _C.MODEL),
         "--use-serialize-as-any",
         help="Use pydantic.SerializeAsAny for fields with types that have subtypes (Pydantic v2 only)",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _C.MODEL),
         "--use-serialize-as-any-for-every-subclass",
         help="Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the "
         "generated output adds fields: at any depth, after --reuse-model or --collapse-reuse-models merges the model, "
@@ -1052,7 +1199,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "subclass is wrapped, as in 0.88.0 (Pydantic v2 only)",
     ),
     flag(
-        Section.TYPING,
+        (Section.TYPING, _G.COLLECTION_TYPES),
         "--use-generic-container-types",
         help="Use generic container types for type hinting (typing.Sequence, typing.Mapping). "
         "If `--use-standard-collections` option is set, then import from collections.abc instead of typing",
@@ -1063,20 +1210,20 @@ OPTIONS: Final[tuple[Option, ...]] = (
         help="Use the Non{Positive,Negative}{FloatInt} types instead of the corresponding con* constrained types.",
     ),
     flag(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_MAPPING),
         "--use-decimal-for-multiple-of",
         help="Use condecimal instead of confloat for float/number fields with multipleOf constraint "
         "(Pydantic only). Avoids floating-point precision issues in validation.",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_MAPPING),
         "--use-decimal-in-field-forms",
         help="Under --use-decimal-for-multiple-of, also write Decimal for a number with multipleOf in the field forms "
         "(--field-constraints, --use-annotated), with the constraints in Field(), and make the Decimal strict under "
         "--strict-types float (Pydantic only)",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_MAPPING),
         "--use-encoded-str-for-constrained-base64",
         help="Write a format: byte string with pattern, minLength or maxLength in the field forms "
         "(--field-constraints, --use-annotated) as Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)], so "
@@ -1085,21 +1232,25 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "in 0.88.0 (Pydantic v2 only)",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_MAPPING),
         "--use-strict-str-for-base64",
         help="Under --strict-types str, write a format: byte string as the StrictStr that EncodedStr decodes "
         "(Annotated[StrictStr, EncodedStr(encoder=Base64Encoder)]), so Pydantic 2.10 or later refuses bytes for it as "
         "for any other strict string; without it the string is Base64Str, or the str of "
         "--use-encoded-str-for-constrained-base64, which accept bytes, as in 0.90.0 (Pydantic v2 only)",
     ),
-    flag(Section.TYPING, "--use-one-literal-as-default", help="Use one literal as default value for one literal field"),
     flag(
-        Section.TYPING,
+        (Section.TYPING, _C.MODEL),
+        "--use-one-literal-as-default",
+        help="Use one literal as default value for one literal field",
+    ),
+    flag(
+        (Section.TYPING, _C.FIELD),
         "--use-enum-values-in-discriminator",
         help="Use enum member literals in discriminator fields instead of string literals",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _C.FIELD),
         "--merge-shared-variant-tags",
         help="Give a variant that several discriminated unions tag differently (for example one by a mapping key, one "
         "by the schema name) every tag they give it, so each union decodes the documents its discriminator selects; "
@@ -1108,17 +1259,17 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "tag, and msgspec Structs, which take one tag, keep it too.",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.COLLECTION_TYPES),
         "--use-standard-collections",
         help="Use standard collections for type hinting (list, dict). Default: enabled",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_MAPPING),
         "--use-object-type",
         help="Use object instead of Any for unspecified JSON Schema object and array values",
     ),
     value(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_MAPPING),
         "--untyped-value-type",
         help="Write each value the schema leaves untyped ({}, true, a schema whose keywords give it no type, the "
         "values of an object without properties and the items of an array without items) as this type instead of Any: "
@@ -1130,26 +1281,26 @@ OPTIONS: Final[tuple[Option, ...]] = (
         type=str,
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_MAPPING),
         "--use-typed-nullable-map-values",
         help="Type the values of nullable maps, schemas whose type array lists object alone or with null, such as "
         "[object, null] or [object], with additionalProperties, as their schema says, with a model for object values. "
         "Without it the 0.83.0 form is kept, dict[str, Any] | None, or dict[str, Any] without null.",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_MAPPING),
         "--use-typed-map-values-beside-other-types",
         help="With --use-typed-nullable-map-values, also type the map values of type arrays that list object beside "
         "other types, such as [object, string], as dict[str, int] | str instead of dict[str, Any] | str",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_MAPPING),
         "--read-unevaluated-properties",
         help="Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the "
         "object in place, so it types the extra keys of a model and makes an object without properties a map",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_MAPPING),
         "--read-kubernetes-extensions",
         help="Read the Kubernetes schema extensions as the keywords they stand for: x-kubernetes-int-or-string (and "
         "the int-or-string format) as an integer or a string, x-kubernetes-preserve-unknown-fields beside properties "
@@ -1157,19 +1308,19 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "apiVersion and kind it names; without it they are ignored, as in 0.96.0",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_MAPPING),
         "--use-single-dict-for-object-maps",
         help="Type an object map, an object without properties whose keys patternProperties or propertyNames "
         "constrain, as one dict whose keys are those of every key class and whose value is the union of their values, "
         "beside the null and the other types of its type array",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _C.MODEL),
         "--use-subclass-enum",
         help="Define generic Enum class as subclass with field type when enum has type (int, float, bytes, str)",
     ),
     value(
-        Section.TYPING,
+        (Section.TYPING, _C.MODEL),
         "--open-enum-base-class-map",
         help="Base classes that open the Enum classes of open enums (--open-enums), by the class the enum is written "
         'on (JSON or JSON file path). Keys: Enum, StrEnum, IntEnum. Example: \'{"StrEnum": "mypkg.OpenStrEnum", '
@@ -1191,14 +1342,18 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "would change a member value, such as 2.5 in an IntEnum; without it the base follows the schema type, as in "
         "0.86.0",
     ),
-    toggle(Section.TYPING, "--use-union-operator", help="Use | operator for Union type (PEP 604). Default: enabled"),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_SYNTAX),
+        "--use-union-operator",
+        help="Use | operator for Union type (PEP 604). Default: enabled",
+    ),
+    toggle(
+        (Section.TYPING, _G.COLLECTION_TYPES),
         "--use-unique-items-as-set",
         help="define field type as `set` when the field attribute has `uniqueItems`",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.COLLECTION_TYPES),
         "--use-unique-items-as-set-by-value",
         help="Under --use-unique-items-as-set, decide each set once the item types are final (after "
         "--collapse-root-models, --type-overrides and every module) and write a set only where every value of its "
@@ -1208,20 +1363,20 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "set item models hash by identity and such models merge, as in 0.89.0",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.COLLECTION_TYPES),
         "--use-tuple-for-fixed-items",
         help="Generate tuple types for arrays with items array syntax when minItems equals maxItems equals items "
         "length",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.COLLECTION_TYPES),
         "--use-tuple-for-closed-arrays",
         help="Generate tuple types for positional arrays that no other item can follow: a closed prefixItems tail "
         "(items, unevaluatedItems or additionalItems false) whose length the length keywords fix, so that each "
         "position keeps its own type",
     ),
     flag(
-        Section.TYPING,
+        (Section.TYPING, _G.COLLECTION_TYPES),
         "--use-tuple-for-fixed-length-arrays",
         help="Generate tuple types for fixed-length arrays with a single items schema",
     ),
@@ -1253,29 +1408,31 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "'always': always create subclasses. ",
         choices=_values(AllOfClassHierarchy),
     ),
-    flag(Section.TYPING, "--use-type-alias", help="Use TypeAlias instead of root models (experimental)"),
     flag(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_ALIAS), "--use-type-alias", help="Use TypeAlias instead of root models (experimental)"
+    ),
+    flag(
+        (Section.TYPING, _G.TYPE_ALIAS),
         "--use-type-alias-type",
         help="Use TypeAliasType for type aliases on Python 3.10 and 3.11 (implies --use-type-alias; experimental)",
     ),
     flag(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_ALIAS),
         "--use-root-model-type-alias",
         help="Use type alias format for RootModel (e.g., Foo = RootModel[Bar]) "
         "instead of class inheritance (Pydantic v2 only)",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_ALIAS),
         "--use-plain-alias-for-recursive-models",
         help="Pydantic output only: write a type alias whose whole value is a model that names itself as `Alias: "
         "TypeAlias = Node`, which Pydantic builds for every model that uses it; without it the alias is "
         '`TypeAliasType("Alias", Node)` (or `type Alias = Node`) as in 0.89.0, which Pydantic 2 refuses once two '
         "models use it. The alias then has no entry of its own in `model_json_schema()` `$defs`",
     ),
-    flag(Section.TYPING, "--disable-future-imports", help="Disable __future__ imports"),
+    flag((Section.TYPING, _G.IMPORTS), "--disable-future-imports", help="Disable __future__ imports"),
     value(
-        Section.TYPING,
+        (Section.TYPING, _G.IMPORTS),
         "--import-overrides",
         help="Override modules for generated imports by symbol name. "
         "Format: JSON object mapping symbols to module paths. "
@@ -1283,7 +1440,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         type=str,
     ),
     value(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_MAPPING),
         "--type-mappings",
         help="Override default type mappings. "
         'Format: "type+format=target" (e.g., "string+binary=string" to map binary format to string type) '
@@ -1293,7 +1450,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         type=str,
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_MAPPING),
         "--read-format-as-annotation",
         help="Read the format of a schema as an annotation, as JSON Schema does: a string, integer or number schema "
         "takes the type its type keyword gives (str, int, float), with its own length, pattern and bound keywords, so "
@@ -1303,7 +1460,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "format selects a type (EmailStr, AwareDatetime, UUID, Decimal, SecretStr, Base64Str, ...), as in 0.96.0",
     ),
     value(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_MAPPING),
         "--type-overrides",
         help="Replace schema model types with custom Python types. "
         "Format: JSON object mapping model names to Python import paths. "
@@ -1312,7 +1469,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         type=str,
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_MAPPING),
         "--type-overrides-replace-whole-type",
         help="Make every --type-overrides value of a field replace the field's whole type: a class path replaces an "
         "object map itself, as an annotation already does (dict for builtins.dict, not dict[str, dict]), and the item "
@@ -1321,7 +1478,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "dict of a map around the class and every override keeps those counts whatever its type, as in 0.89.0",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_MAPPING),
         "--use-x-python-type-as-written",
         help="Write a field's x-python-type as given: a union spelled Optional[...] or Union[...], such as "
         "Optional[Literal['a', 'b']], types the field as one spelled X | Y already does, and a container class "
@@ -1331,7 +1488,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "as in 0.90.0",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_MAPPING),
         "--use-x-python-import-for-every-ref",
         help="Type every reference to a schema with x-python-import by the class it imports, as a $ref to it at a "
         "field is: also an allOf of it beside keywords that add no field where a JSON pointer into another document or "
@@ -1340,7 +1497,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "one; without it such a reference keeps the model of its schema and those models split, as in 0.96.0",
     ),
     toggle(
-        Section.TYPING,
+        (Section.TYPING, _G.TYPE_MAPPING),
         "--use-bytes-for-content-media-type",
         help="Type a string of an OpenAPI document that has a contentMediaType and no contentEncoding as bytes, as a "
         "format: binary string is: OpenAPI 3.1 writes raw binary content so, and the generated clients and servers "
@@ -1366,21 +1523,21 @@ OPTIONS: Final[tuple[Option, ...]] = (
     ),
     flag(Section.FIELD, "--field-include-all-keys", help="Add all keys to field parameters"),
     value(
-        Section.FIELD,
+        (Section.FIELD, _C.MODEL),
         "--model-extra-keys",
         help="Add extra keys from schema extensions (x-* fields) to model_config json_schema_extra",
         type=str,
         nargs="+",
     ),
     value(
-        Section.FIELD,
+        (Section.FIELD, _C.MODEL),
         "--model-extra-keys-without-x-prefix",
         help="Add extra keys with `x-` prefix to model_config json_schema_extra. "
         "The extra keys are stripped of the `x-` prefix.",
         type=str,
         nargs="+",
     ),
-    flag(Section.FIELD, "--force-optional", help="Force optional for required fields"),
+    flag((Section.FIELD, _C.MODEL), "--force-optional", help="Force optional for required fields"),
     value(
         Section.FIELD,
         "--original-field-name-delimiter",
@@ -1398,16 +1555,16 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "--special-field-name-prefix",
         help="Set field name prefix when first character can't be used as Python field name (default:  `field`)",
     ),
-    toggle(Section.FIELD, "--strict-nullable", help="Treat default field as a non-nullable field"),
+    toggle((Section.FIELD, _C.MODEL), "--strict-nullable", help="Treat default field as a non-nullable field"),
     toggle(
-        Section.FIELD,
+        (Section.FIELD, _C.MODEL),
         "--omit-redundant-reference-null",
         help="Do not write None again where a field, item or member references a model that holds null itself (a root "
         "model or type alias whose type admits None, or an enum with a None member), so that a null parses to that "
         "model",
     ),
     toggle(
-        Section.FIELD,
+        (Section.FIELD, _C.MODEL),
         "--keep-reference-null-on-merged-models",
         help="Keep the null that the schema of a field, item or member admits where the model it references is merged "
         "into an equal model that rejects null (deduplication of equal models, --reuse-model, --collapse-reuse-models, "
@@ -1415,33 +1572,33 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "null of the model it names after the merge, as in 0.88.0",
     ),
     flag(
-        Section.FIELD,
+        (Section.FIELD, _C.MODEL),
         "--strip-default-none",
         help="Strip default None on fields (no effect on msgspec.Struct: it defaults an omitted field to UNSET, and to "
         "None only when the type admits None)",
     ),
-    flag(Section.FIELD, "--use-default", help="Use default value even if a field is required"),
+    flag((Section.FIELD, _C.MODEL), "--use-default", help="Use default value even if a field is required"),
     toggle(
-        Section.FIELD,
+        (Section.FIELD, _C.MODEL),
         "--keep-defaults-of-inherited-required-fields",
         help="With --use-default, keep the default a schema gives a property that only a schema it inherits from "
         "(allOf) lists as required, as --use-default keeps that of a property the schema lists itself (`a: str = "
         "'x'`); without it the field is written without its default, as in 0.90.0",
     ),
     toggle(
-        Section.FIELD,
+        (Section.FIELD, _C.MODEL),
         "--omit-incomplete-model-defaults",
         help="Write a property whose object default lacks required fields of its model (`default: {}`) without that "
         "default (`spec: PodSpec | None = None`), so input that leaves the property out is valid; without it the "
         "default is written and validated, which rejects such input, as in 0.90.0",
     ),
     toggle(
-        Section.FIELD,
+        (Section.FIELD, _C.MODEL),
         "--use-default-kwarg",
         help="Use `default=` instead of a positional argument for Fields that have default values.",
     ),
     toggle(
-        Section.FIELD,
+        (Section.FIELD, _C.MODEL),
         "--apply-field-options-to-every-field",
         help="Apply the field options to every kind of field: a GraphQL field, a property whose schema is `true` or "
         "`false`, a required name without a property and the tag field a discriminator appends take the field options "
@@ -1449,22 +1606,30 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "--use-default-factory-for-optional-nested-models; without it they leave them out, as in 0.90.0",
     ),
     flag(
-        Section.FIELD,
+        (Section.FIELD, _C.MODEL),
         "--use-missing-sentinel",
         help="Use pydantic.experimental.missing_sentinel.MISSING for optional fields without defaults (Pydantic "
         "v2.12+), or pydantic.MISSING with --target-pydantic-version 2.14 or later, which --generate-server and "
         "--generate-client require with this option. Supports pydantic_v2.BaseModel and pydantic_v2.dataclass, whose "
         "server and client generation requires it.",
+        implies=_relations("--target-pydantic-version", value=TargetPydanticVersion.V2_12.value),
+        requires=_relations(
+            "--output-model-type",
+            message=(
+                "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` "
+                "or `pydantic_v2.dataclass`."
+            ),
+        ),
     ),
     toggle(
-        Section.FIELD,
+        (Section.FIELD, _C.MODEL),
         "--read-nullable-beside-type-list",
         help="Write the null that `nullable: true` declares beside a `type` list with an object into the root model of "
         "that schema under --strict-nullable or --use-missing-sentinel, as a declared field does; without it only a "
         "`type` list holding null makes that root admit None",
     ),
     toggle(
-        Section.FIELD,
+        (Section.FIELD, _C.MODEL),
         "--keep-field-defaults-off-branch-roots",
         help="Leave the default of a property off the root models extracted from the branches of its `anyOf` or "
         "`oneOf`, which then require their value; without it each such root takes the property's default",
@@ -1484,7 +1649,17 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "--use-single-line-docstring",
         help="Use single-line docstrings when the content fits on one line",
     ),
-    value(Section.FIELD, "--union-mode", help="Union mode for only pydantic v2 field", choices=_values(UnionMode)),
+    value(
+        (Section.FIELD, _C.MODEL),
+        "--union-mode",
+        help="Union mode for only pydantic v2 field",
+        choices=_values(UnionMode),
+        requires=_relations(
+            "--output-model-type",
+            value=DataModelType.PydanticV2BaseModel.value,
+            message="`--union-mode` is only supported for `--output-model-type pydantic_v2.BaseModel`.",
+        ),
+    ),
     flag(
         Section.FIELD,
         "--no-alias",
@@ -1507,9 +1682,13 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "Scoped: {'User.name': 'fullName'} applies to specific class.",
         type=str,
     ),
-    toggle(Section.FIELD, "--use-frozen-field", help="Use Field(frozen=True) for readOnly fields (Pydantic v2)."),
+    toggle(
+        (Section.FIELD, _C.MODEL, _G.READ_ONLY_WRITE_ONLY, _T.OPENAPI),
+        "--use-frozen-field",
+        help="Use Field(frozen=True) for readOnly fields (Pydantic v2).",
+    ),
     flag(
-        Section.FIELD,
+        (Section.FIELD, _C.MODEL),
         "--use-default-factory-for-optional-nested-models",
         help="Use default_factory for optional nested model fields instead of None default. "
         "E.g., `field: Model | None = Field(default_factory=Model)` instead of `field: Model | None = None`",
@@ -1524,7 +1703,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
     ),
     # Options for templating output
     value(
-        Section.TEMPLATE,
+        (Section.TEMPLATE, _C.FIELD),
         "--aliases",
         help="Alias mapping as inline JSON or a JSON file path for renaming fields. "
         "Format: {'<schema_field>': '<python_name>'} - the schema field name becomes the Pydantic alias. "
@@ -1537,7 +1716,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         type=str,
     ),
     value(
-        Section.TEMPLATE,
+        (Section.TEMPLATE, _C.FIELD),
         "--default-values",
         help="Default value overrides as inline JSON or a JSON file path. "
         "Supports hierarchical formats: "
@@ -1550,31 +1729,44 @@ OPTIONS: Final[tuple[Option, ...]] = (
         type=str,
     ),
     value(
-        Section.TEMPLATE,
+        (Section.TEMPLATE, _C.FIELD),
         "--deserialize-default-values",
         help="Deserialize serialized schema defaults for selected generated types. Supported values: decimal, enum.",
         choices=_values(DefaultValueType),
         nargs="+",
     ),
-    clear(Section.TEMPLATE, "--no-deserialize-default-values", help="Disable schema default value deserialization."),
-    value(Section.TEMPLATE, "--custom-file-header", help="Custom file header", type=str),
-    value(Section.TEMPLATE, "--custom-file-header-path", help="Custom file header file path", type=str),
+    clear(
+        (Section.TEMPLATE, _C.FIELD),
+        "--no-deserialize-default-values",
+        help="Disable schema default value deserialization.",
+    ),
+    value((Section.TEMPLATE, _G.GENERATED_OUTPUT), "--custom-file-header", help="Custom file header", type=str),
     value(
-        Section.TEMPLATE,
+        (Section.TEMPLATE, _G.GENERATED_OUTPUT),
+        "--custom-file-header-path",
+        help="Custom file header file path",
+        type=str,
+    ),
+    value(
+        (Section.TEMPLATE, _G.GENERATED_OUTPUT),
         "--custom-file-header-mode",
         help="How to combine a custom file header with the generated header (default: replace)",
         choices=_values(CustomFileHeaderMode),
     ),
     value(
-        Section.TEMPLATE,
+        (Section.TEMPLATE, _G.CUSTOM_TEMPLATES),
         "--custom-template-dir",
         help="Custom template directory. Jinja2 renders custom templates and will become optional: "
         "declare the jinja2 extra.",
         type=str,
     ),
-    value(Section.TEMPLATE, "--encoding", help=f"The encoding of input and output (default: {DEFAULT_ENCODING})"),
     value(
-        Section.TEMPLATE,
+        (Section.TEMPLATE, _C.BASE),
+        "--encoding",
+        help=f"The encoding of input and output (default: {DEFAULT_ENCODING})",
+    ),
+    value(
+        (Section.TEMPLATE, _G.CUSTOM_TEMPLATES),
         "--extra-template-data",
         help="Extra template data for output models as inline JSON or a JSON file path. "
         "For OpenAPI and Jsonschema the keys are the spec path of the object, or the name of the object if you want to "
@@ -1584,7 +1776,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         type=str,
     ),
     value(
-        Section.TEMPLATE,
+        (Section.TEMPLATE, _G.CUSTOM_TEMPLATES),
         "--validators",
         help="Validators configuration as inline JSON or a JSON file path. "
         "Defines field validators for Pydantic v2 models. "
@@ -1618,7 +1810,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         type=str,
     ),
     toggle(
-        Section.TEMPLATE,
+        (Section.TEMPLATE, _G.IMPORTS),
         "--use-type-checking-imports",
         help="Allow Ruff to move typing-only imports into TYPE_CHECKING blocks. "
         "By default this stays enabled, except for multi-module Ruff formatting of modular Pydantic output "
@@ -1626,25 +1818,25 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "Use --no-use-type-checking-imports to force runtime imports.",
     ),
     flag(
-        Section.TEMPLATE,
+        (Section.TEMPLATE, _G.OUTPUT_FORMATTING),
         "--use-double-quotes",
         help="Model generated with double quotes. Single quotes or "
         "your black config skip_string_normalization value will be used without this option.",
     ),
     flag(
-        Section.TEMPLATE,
+        (Section.TEMPLATE, _G.OUTPUT_FORMATTING),
         "--wrap-string-literal",
         help="Wrap string literal by using black `experimental-string-processing` option (require black 20.8b0 or "
         "later)",
     ),
     value(
-        Section.BASE,
+        (Section.BASE, _C.TEMPLATE, _G.IMPORTS),
         "--additional-imports",
         help='Custom imports for output (delimited list input). For example "datetime.date,datetime.datetime"',
         type=str,
     ),
     value(
-        Section.BASE,
+        (Section.BASE, _C.TEMPLATE, _G.GENERATED_OUTPUT),
         "--class-decorators",
         help="Custom decorators for generated model classes (delimited list input). "
         'For example "@dataclass_json(letter_case=LetterCase.CAMEL)". '
@@ -1652,7 +1844,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         type=str,
     ),
     value(
-        Section.BASE,
+        (Section.BASE, _C.TEMPLATE, _G.OUTPUT_FORMATTING),
         "--formatters",
         help="Formatters (current default: black, isort; future default: builtin). "
         "For Ruff projects, use --formatters ruff-check ruff-format "
@@ -1668,38 +1860,42 @@ OPTIONS: Final[tuple[Option, ...]] = (
         nargs="+",
     ),
     clear(
-        Section.BASE,
+        (Section.BASE, _C.TEMPLATE, _G.OUTPUT_FORMATTING),
         "--no-formatters",
         help="Select no formatter, not even the default or a preset's formatters; --custom-formatters still run.",
     ),
     value(
-        Section.BASE,
+        (Section.BASE, _C.TEMPLATE, _G.OUTPUT_FORMATTING),
         "--custom-formatters",
         help="List of modules with custom formatter (delimited list input).",
         type=str,
     ),
     value(
-        Section.TEMPLATE,
+        (Section.TEMPLATE, _G.OUTPUT_FORMATTING),
         "--custom-formatters-kwargs",
         help="Custom formatter kwargs as inline JSON or a JSON file path.",
         type=str,
     ),
     # Options specific to OpenAPI input schemas
     value(
-        Section.OPENAPI,
+        (Section.OPENAPI, _G.OPENAPI_SCOPES),
         "--openapi-scopes",
         help="Scopes of OpenAPI model generation (default: schemas)",
         choices=_values(OpenAPIScope),
         nargs="+",
     ),
-    flag(Section.OPENAPI, "--use-operation-id-as-name", help="use operation id of OpenAPI as class names of models"),
     flag(
-        Section.OPENAPI,
+        (Section.OPENAPI, _G.OPENAPI_NAMING),
+        "--use-operation-id-as-name",
+        help="use operation id of OpenAPI as class names of models",
+    ),
+    flag(
+        (Section.OPENAPI, _G.OPENAPI_PATHS),
         "--include-path-parameters",
         help="Include path parameters in generated parameter models in addition to query parameters (Only OpenAPI)",
     ),
     value(
-        Section.OPENAPI,
+        (Section.OPENAPI, _G.OPENAPI_PATHS),
         "--openapi-include-paths",
         nargs="+",
         metavar="PATTERN",
@@ -1714,7 +1910,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         help="Emit OpenAPI info.version as OPENAPI_INFO_VERSION in generated models",
     ),
     value(
-        Section.OPENAPI,
+        (Section.OPENAPI, _G.OPENAPI_SCOPES),
         "--openapi-as-definitions",
         help="Give each given kind of OpenAPI schema the model a definitions entry of the same schema gets. "
         "paths-bodies: the request and response bodies of the paths and webhooks scopes, so an object body with a type "
@@ -1727,7 +1923,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
     ),
     deprecated(Section.OPENAPI, "--validation"),
     value(
-        Section.OPENAPI,
+        (Section.OPENAPI, _G.READ_ONLY_WRITE_ONLY),
         "--read-only-write-only-model-type",
         help="Model generation for readOnly/writeOnly fields: "
         "'request-response' = Request/Response models only (no base model), "
@@ -1735,33 +1931,33 @@ OPTIONS: Final[tuple[Option, ...]] = (
         choices=_values(ReadOnlyWriteOnlyModelType),
     ),
     toggle(
-        Section.OPENAPI,
+        (Section.OPENAPI, _G.READ_ONLY_WRITE_ONLY),
         "--dedupe-request-response-variants",
         help="Decide Request/Response variants from the schema graph and build each inline model once, without the "
         "unreferenced duplicate classes and shifted class numbers of 0.86.0",
     ),
     toggle(
-        Section.OPENAPI,
+        (Section.OPENAPI, _G.READ_ONLY_WRITE_ONLY),
         "--dedupe-numbered-request-response-variants",
         help="Deduplicate a Request or Response variant of a numbered model (Page1Request of an inline copy Page1 of "
         "Page) by the variant name of the name its model was numbered from, so it merges into PageRequest where it "
         "renders the same; without it such a variant stays a class of its own, as in 0.90.0",
     ),
     flag(
-        Section.OPENAPI,
+        (Section.OPENAPI, _G.OPENAPI_NAMING),
         "--use-status-code-in-response-name",
         help="Include HTTP status code in response model names (e.g., ResourceGetResponse200, "
         "ResourceGetResponseDefault)",
     ),
     toggle(
-        Section.OPENAPI,
+        (Section.OPENAPI, _G.OPENAPI_PATHS),
         "--keep-first-character-of-path-keys",
         help="Strip only a leading slash from a paths key when naming its operation models, as webhook names are, so "
         "the key pets gives PetsGetResponse; without it the first character is dropped whatever it is "
         "(EtsGetResponse), as in 0.88.0",
     ),
     toggle(
-        Section.OPENAPI,
+        (Section.OPENAPI, _G.OPENAPI_PATHS),
         "--keep-content-parameter-refs",
         help="Type a parameter whose content media schema is a $ref by the model the $ref names, its Request variant "
         "under --read-only-write-only-model-type request-response, as a schema parameter is; without it the parameter "
@@ -1769,14 +1965,14 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "default and description), as in 0.89.0",
     ),
     toggle(
-        Section.OPENAPI,
+        (Section.OPENAPI, _G.OPENAPI_PATHS),
         "--skip-path-extension-keys",
         help="In the paths scope, skip a key of paths that begins with x-, a specification extension and no path item, "
         "as the api scope does; without it such a key that holds an object is read as a path and its operations get "
         "models, as in 0.89.0",
     ),
     toggle(
-        Section.OPENAPI,
+        (Section.OPENAPI, _G.OPENAPI_PATHS),
         "--use-enum-field-as-literal-in-operations",
         help="Write the enum of an operation's request body or response as a root model of a Literal where "
         "x-enum-field-as-literal, --enum-field-as-literal-map or --enum-field-as-literal would write a definition's "
@@ -1894,6 +2090,20 @@ OPTIONS: Final[tuple[Option, ...]] = (
         help="Generate BASELINE_INPUT and the current --input into temporary outputs, then show the generated-code "
         "diff from baseline to current. Requires --input and --output; --output is a virtual output path that selects "
         "file or directory layout and is never modified. Exits with code 1 when generated outputs differ.",
+        requires=(
+            CLIOptionRelation(
+                "--input", message="`--diff-against` requires --input with the current local schema path."
+            ),
+            CLIOptionRelation(
+                "--output", message="`--diff-against` requires --output to select file or directory output layout."
+            ),
+        ),
+        conflicts=(
+            *_relations("--check --watch --url --input-model --emit-model-metadata --fail-on-multi-module-stdout"),
+            *_relations(
+                "--job --all-jobs", message="`--diff-against` compares one profile or input and cannot run named jobs."
+            ),
+        ),
     ),
     flag(Section.GENERAL, "--debug", help=f'show debug message (require "debug". {install_command("debug")})'),
     flag(Section.GENERAL, "--disable-warnings", help="disable warnings"),
@@ -2018,6 +2228,18 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "--generate-server",
         choices=_values(ServerType),
         help="Generate a FastAPI server package for the models; the --server-* options configure it (experimental).",
+        requires=(
+            CLIOptionRelation("--server-output", message="`--generate-server` requires `--server-output`."),
+            CLIOptionRelation("--server-package", message="`--generate-server` requires `--server-package`."),
+            CLIOptionRelation(
+                "--server-model-package", message="`--generate-server` requires `--server-model-package`."
+            ),
+            CLIOptionRelation(
+                "--input-file-type",
+                value=InputFileType.OpenAPI.value,
+                message="`--generate-server` requires `--input-file-type openapi`.",
+            ),
+        ),
     ),
     *_package_options("server"),
     value(
@@ -2089,6 +2311,17 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "--generate-client",
         choices=_values(ClientType),
         help="Generate an HTTPX2 client package for the models; the --client-* options configure it (experimental).",
+        requires=(
+            CLIOptionRelation("--client-output", message="`--generate-client` requires `--client-output`."),
+            CLIOptionRelation("--client-package", message="`--generate-client` requires `--client-package`."),
+            CLIOptionRelation(
+                "--client-model-package", message="`--generate-client` requires `--client-model-package`."
+            ),
+            CLIOptionRelation(
+                "--input-file-type",
+                message="`--generate-client` requires `--input-file-type openapi` or `--input-file-type asyncapi`.",
+            ),
+        ),
     ),
     *_package_options("client"),
     value(

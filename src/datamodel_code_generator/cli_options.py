@@ -2,9 +2,9 @@
 
 This module provides metadata for CLI options used in documentation generation
 and the browser playground.
-The argparse definitions in arguments.py remain the source of truth for CLI behavior.
-This module only adds metadata that must be shared outside argparse, such as
-categories, deprecation messages, and option relationships.
+The option table (_option_table.py) is the source of truth for CLI behavior and for this
+metadata: this module derives the documentation row of each option from its row, such as
+its category, deprecation message and option relationships.
 
 Synchronization between this module and argparse is verified by tests in
 tests/cli_doc/test_cli_options_sync.py.
@@ -15,17 +15,24 @@ from __future__ import annotations
 import re
 from argparse import BooleanOptionalAction
 from dataclasses import dataclass, replace
-from enum import Enum
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
+from datamodel_code_generator._config_fields import TARGET_SELECTORS
 from datamodel_code_generator._format_types import PythonVersion  # noqa: F401  # Preserve the established cli_options export.
 from datamodel_code_generator._option_names import option_arguments as _arguments_negated_by
 from datamodel_code_generator._option_names import option_flag
 from datamodel_code_generator._option_names import values_arguments as _values_arguments_negated_by
 from datamodel_code_generator._option_rules import IMPLIED_OPTIONS, OPTION_RELATIONS
+from datamodel_code_generator._option_table import (
+    OPTIONS,
+    CLIOptionRelation,
+    OptionCategory,
+    OptionGroup,
+    OptionTopic,
+)
 from datamodel_code_generator.deprecations import cli_deprecations
-from datamodel_code_generator.enums import (
+from datamodel_code_generator.enums import (  # noqa: F401  # Preserve the established cli_options exports.
     DataModelType,
     InputFileType,
     NamingStrategy,
@@ -37,62 +44,7 @@ if TYPE_CHECKING:
     from argparse import Action, ArgumentParser
     from collections.abc import Iterable
 
-
-class OptionCategory(str, Enum):
-    """Categories for organizing CLI options in documentation."""
-
-    BASE = "Base Options"
-    TYPING = "Typing Customization"
-    FIELD = "Field Customization"
-    MODEL = "Model Customization"
-    TEMPLATE = "Template Customization"
-    OPENAPI = "OpenAPI-only Options"
-    GRAPHQL = "GraphQL-only Options"
-    GENERAL = "General Options"
-    TARGET = "Target Generation Options"
-
-
-class OptionTopic(str, Enum):
-    """Optional topics for linking CLI options to focused documentation areas."""
-
-    MODEL_CUSTOMIZATION = "model-customization"
-    TEMPLATE_CUSTOMIZATION = "template-customization"
-    TYPING_CUSTOMIZATION = "typing-customization"
-    OPENAPI = "openapi"
-
-
-class OptionGroup(str, Enum):
-    """Optional subgroups within CLI option topics."""
-
-    MODEL_NAMING = "model-naming"
-    MODEL_REUSE = "model-reuse"
-    MODEL_SHAPE = "model-shape"
-    ROOT_MODEL = "root-model"
-    CUSTOM_TEMPLATES = "custom-templates"
-    GENERATED_OUTPUT = "generated-output"
-    IMPORTS = "imports"
-    OUTPUT_FORMATTING = "output-formatting"
-    COLLECTION_TYPES = "collection-types"
-    TYPE_ALIAS = "type-alias"
-    TYPE_MAPPING = "type-mapping"
-    TYPE_SYNTAX = "type-syntax"
-    OPENAPI_NAMING = "openapi-naming"
-    OPENAPI_PATHS = "openapi-paths"
-    OPENAPI_SCOPES = "openapi-scopes"
-    READ_ONLY_WRITE_ONLY = "read-only-write-only"
-
-
-@dataclass(frozen=True)
-class CLIOptionRelation:
-    """A documented relationship from one CLI option to another.
-
-    ``when=None`` means the relation applies whenever the source option is enabled.
-    """
-
-    option: str
-    value: Any = None
-    when: Any = None
-    message: str | None = None
+    from datamodel_code_generator._option_table import Option
 
 
 @dataclass(frozen=True)
@@ -100,7 +52,7 @@ class CLIOptionMeta:
     """Shared metadata for a CLI option.
 
     This is NOT the argparse definition - it only contains metadata.
-    The actual CLI behavior is defined in arguments.py.
+    The actual CLI behavior is defined by the option table (_option_table.py).
     """
 
     name: str
@@ -176,64 +128,61 @@ _CATEGORY_TOPIC = {
     OptionCategory.TEMPLATE: OptionTopic.TEMPLATE_CUSTOMIZATION,
     OptionCategory.OPENAPI: OptionTopic.OPENAPI,
 }
-_C = OptionCategory
-_G = OptionGroup
 _DEPRECATED_OPTIONS = cli_deprecations()
 
 
-def _words(chunks: tuple[str, ...]) -> list[str]:
-    """Split space-separated chunks of option names into one list."""
-    return [word for chunk in chunks for word in chunk.split()]
+def _canonical_option_key(option: str) -> tuple[int, str]:
+    """Sort key of the canonical option: the longest option string (--help over -h), then the lexicographically last."""
+    return (len(option), option)
 
 
-def _opts(
-    category: OptionCategory,
-    *names: str,
-    group: OptionGroup | None = None,
-    topic: OptionTopic | None = None,
-    **fields: Any,
-) -> dict[str, CLIOptionMeta]:
-    """Build the rows of the options in ``names`` that share a category, group and the other metadata.
+def _documented_options(options: tuple[Option, ...]) -> dict[str, CLIOptionMeta]:
+    """Build the documentation rows of the options of the option table, in its order.
 
-    A group takes the topic of its category unless ``topic`` is given. An option is deprecated, with its message, when
-    the deprecation registry has an entry for it.
+    A row documents the canonical one of its flags and, for a flag with a --no- form, that form (only that form when
+    ``meta_on_negative_only``), unless the manual documents it. Its category is that of its help section unless the
+    row names another, and a group takes the topic of its category unless the row names one. The relations of a row
+    start from its positive flag, which also implies the option it turns on (``IMPLIED_OPTIONS``); every spelling of a
+    target's option requires the option that selects the target.
+    An option is deprecated, with its message, when the deprecation registry has an entry for it.
     """
-    if group and topic is None:
-        topic = _CATEGORY_TOPIC[category]
-    return {
-        name: CLIOptionMeta(
-            name,
-            category,
-            topic,
-            group,
-            deprecated=(message := _DEPRECATED_OPTIONS.get(name)) is not None,
-            deprecated_message=message,
-            **fields,
-        )
-        for name in _words(names)
+    prefixes = {option_flag(field): option_flag(prefix) for field, prefix in TARGET_SELECTORS}
+    targets = {  # the prefix of each target's options, the option that selects the target and its values
+        prefixes[selector]: (selector, " or ".join(f"`{selector} {value}`" for value in option.arguments["choices"]))
+        for option in options
+        if (selector := option.flags[0]) in prefixes
     }
-
-
-def _relations(names: str, **fields: Any) -> tuple[CLIOptionRelation, ...]:
-    """Build one relation with the same ``fields`` to each option in the space-separated ``names``."""
-    return tuple(CLIOptionRelation(name, **fields) for name in names.split())
-
-
-def _implied(field: str) -> tuple[CLIOptionRelation, ...]:
-    """Build the relation to the option that the option of ``field`` turns on (``IMPLIED_OPTIONS``)."""
-    return _relations(option_flag(IMPLIED_OPTIONS[field]), value=True)
-
-
-def _target_options(generate: str, value: str, *names: str) -> dict[str, CLIOptionMeta]:
-    """Build the rows of the target options in ``names`` that only apply with ``generate value``."""
-    return {
-        name: CLIOptionMeta(
-            name,
-            OptionCategory.TARGET,
-            requires=_relations(generate, message=f"`{name}` requires `{generate} {value}`."),
-        )
-        for name in _words(names)
-    }
+    implied = {option_flag(option): option_flag(other) for option, other in IMPLIED_OPTIONS.items()}
+    documented: dict[str, CLIOptionMeta] = {}
+    for option in options:
+        if (name := max(option.flags, key=_canonical_option_key)) in MANUAL_DOCS:
+            continue
+        category = option.category or OptionCategory[option.section.name]
+        topic = option.topic or (_CATEGORY_TOPIC[category] if option.group else None)
+        toggle = option.arguments.get("action") is BooleanOptionalAction
+        names = [name, f"--no-{name.removeprefix('--')}"] if toggle else [name]
+        target = next((target for prefix, target in targets.items() if name.startswith(prefix)), None)
+        for spelling in names[option.meta_on_negative_only :]:
+            implies, requires, conflicts = (
+                (option.implies, option.requires, option.conflicts) if spelling == name else ((), (), ())
+            )
+            if target is not None:
+                selector, values = target
+                requires = (*requires, CLIOptionRelation(selector, message=f"`{spelling}` requires {values}."))
+            if spelling == name and name in implied:
+                implies = (*implies, CLIOptionRelation(implied[name], value=True))
+            documented[spelling] = CLIOptionMeta(
+                spelling,
+                category,
+                topic,
+                option.group,
+                deprecated=(message := _DEPRECATED_OPTIONS.get(spelling)) is not None,
+                deprecated_message=message,
+                implies=implies,
+                requires=requires,
+                conflicts=conflicts,
+            )
+    return documented
 
 
 def _with_relation_rows(options: dict[str, CLIOptionMeta]) -> dict[str, CLIOptionMeta]:
@@ -248,390 +197,8 @@ def _with_relation_rows(options: dict[str, CLIOptionMeta]) -> dict[str, CLIOptio
     return options
 
 
-# Documentation metadata for CLI options
-# Sync is verified by tests/cli_doc/test_cli_options_sync.py
-CLI_OPTION_META: dict[str, CLIOptionMeta] = _with_relation_rows({
-    **_opts(
-        _C.BASE,
-        "--input --output --emit-model-metadata --http-backend --url --input-model --input-model-ref-strategy",
-        "--read-input-model-dataclass-fields-by-alias --no-read-input-model-dataclass-fields-by-alias",
-        "--reuse-every-reached-input-model-type --no-reuse-every-reached-input-model-type",
-        "--input-file-type --encoding --schema-version --schema-version-mode",
-        "--read-schema-version-per-document --no-read-schema-version-per-document",
-        "--read-escaped-ref-pointers --no-read-escaped-ref-pointers",
-        "--read-dynamic-anchors-in-document-order --no-read-dynamic-anchors-in-document-order",
-        "--read-ids-with-empty-fragment --no-read-ids-with-empty-fragment",
-        "--read-single-allof-refs-in-their-documents --no-read-single-allof-refs-in-their-documents",
-        "--ignore-ref-siblings-by-schema-version --no-ignore-ref-siblings-by-schema-version",
-        "--read-yaml-1-1-numbers-as-text --no-read-yaml-1-1-numbers-as-text",
-        "--external-ref-mapping --preset",
-    ),
-    **_opts(
-        _C.MODEL,
-        "--output-model-type",
-        group=_G.MODEL_SHAPE,
-        implies=_relations("--use-annotated", value=True, when=DataModelType.MsgspecStruct.value),
-    ),
-    **_opts(
-        _C.MODEL,
-        "--target-python-version --target-pydantic-version --base-class --base-class-map",
-        group=_G.MODEL_SHAPE,
-    ),
-    **_opts(
-        _C.MODEL,
-        "--class-name --model-name-map --allow-leading-underscore-class-name --class-name-prefix",
-        "--class-name-suffix --class-name-affix-scope",
-        group=_G.MODEL_NAMING,
-    ),
-    **_opts(_C.MODEL, "--frozen-dataclasses --keyword-only"),
-    **_opts(_C.MODEL, "--reuse-model --no-reuse-model --reuse-scope", group=_G.MODEL_REUSE),
-    **_opts(
-        _C.MODEL,
-        "--collapse-root-models --no-collapse-root-models --collapse-root-models-name-strategy",
-        "--collapse-shared-parent-wrappers --no-collapse-shared-parent-wrappers",
-        "--keep-constrained-root-models-in-every-container --no-keep-constrained-root-models-in-every-container",
-        "--keep-enum-literal-aliases --no-keep-enum-literal-aliases",
-        "--keep-reference-null-on-collapsed-root-models --no-keep-reference-null-on-collapsed-root-models",
-        "--keep-shared-members-on-collapsed-root-models --no-keep-shared-members-on-collapsed-root-models",
-        "--collapse-constrained-root-models-as-annotated --no-collapse-constrained-root-models-as-annotated",
-        "--remove-unused-models-beside-type-overrides --no-remove-unused-models-beside-type-overrides",
-        "--keep-self-referencing-array-items --no-keep-self-referencing-array-items",
-        group=_G.ROOT_MODEL,
-    ),
-    **_opts(_C.MODEL, "--collapse-reuse-models --no-collapse-reuse-models", group=_G.MODEL_REUSE),
-    **_opts(_C.MODEL, "--keep-model-order --order-constructor-fields-by"),
-    **_opts(_C.MODEL, "--allow-extra-fields", implies=_relations("--extra-fields", value="allow")),
-    **_opts(
-        _C.MODEL,
-        "--allow-population-by-field-name --no-allow-population-by-field-name --enable-faux-immutability",
-        "--use-subclass-enum --no-use-subclass-enum --force-optional --strict-nullable --no-strict-nullable",
-        "--omit-redundant-reference-null --no-omit-redundant-reference-null",
-        "--keep-reference-null-on-merged-models --no-keep-reference-null-on-merged-models --use-default",
-        "--keep-defaults-of-inherited-required-fields --no-keep-defaults-of-inherited-required-fields",
-        "--omit-incomplete-model-defaults --no-omit-incomplete-model-defaults",
-        "--use-default-kwarg --no-use-default-kwarg",
-        "--apply-field-options-to-every-field --no-apply-field-options-to-every-field",
-    ),
-    **_opts(_C.MODEL, "--open-enum-base-class-map"),
-    **_opts(
-        _C.MODEL,
-        "--use-missing-sentinel",
-        implies=_relations("--target-pydantic-version", value=TargetPydanticVersion.V2_12.value),
-        requires=_relations(
-            "--output-model-type",
-            message=(
-                "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` "
-                "or `pydantic_v2.dataclass`."
-            ),
-        ),
-    ),
-    **_opts(
-        _C.MODEL,
-        "--strip-default-none --dataclass-arguments",
-        "--keep-false-dataclass-arguments --no-keep-false-dataclass-arguments",
-        "--use-msgspec-tagged-unions --tag-msgspec-by-payload-name",
-        "--no-tag-msgspec-by-payload-name",
-        "--use-msgspec-nullable-enum-alias --use-msgspec-meta-for-map-keys --no-use-msgspec-meta-for-map-keys",
-        "--use-msgspec-forbid-unknown-fields --no-use-msgspec-forbid-unknown-fields",
-    ),
-    **_opts(
-        _C.MODEL, "--use-frozen-field --no-use-frozen-field", group=_G.READ_ONLY_WRITE_ONLY, topic=OptionTopic.OPENAPI
-    ),
-    **_opts(_C.MODEL, "--use-default-factory-for-optional-nested-models"),
-    **_opts(
-        _C.MODEL,
-        "--union-mode",
-        requires=_relations(
-            "--output-model-type",
-            value=DataModelType.PydanticV2BaseModel.value,
-            message="`--union-mode` is only supported for `--output-model-type pydantic_v2.BaseModel`.",
-        ),
-    ),
-    **_opts(
-        _C.MODEL,
-        "--parent-scoped-naming",
-        group=_G.MODEL_NAMING,
-        implies=_relations("--naming-strategy", value=NamingStrategy.ParentPrefixed.value),
-    ),
-    **_opts(
-        _C.MODEL,
-        "--naming-strategy --duplicate-name-suffix --use-duplicate-name-suffix-for-every-collision",
-        "--no-use-duplicate-name-suffix-for-every-collision",
-        "--name-converted-payloads-by-message --no-name-converted-payloads-by-message",
-        "--singularize-last-word-of-item-names --no-singularize-last-word-of-item-names",
-        group=_G.MODEL_NAMING,
-    ),
-    **_opts(
-        _C.MODEL,
-        "--use-one-literal-as-default --use-serialize-as-any --use-serialize-as-any-for-every-subclass",
-        "--no-use-serialize-as-any-for-every-subclass",
-    ),
-    **_opts(_C.MODEL, "--skip-root-model --use-root-model-sequence-interface", group=_G.ROOT_MODEL),
-    **_opts(_C.MODEL, "--use-generic-base-class", group=_G.MODEL_SHAPE),
-    **_opts(_C.MODEL, "--merge-message-trait-headers --no-merge-message-trait-headers", group=_G.MODEL_SHAPE),
-    **_opts(_C.MODEL, "--model-extra-keys --model-extra-keys-without-x-prefix"),
-    **_opts(
-        _C.FIELD,
-        "--snake-case-field --no-snake-case-field --original-field-name-delimiter",
-        "--capitalize-enum-members --capitalize-numbered-enum-members --no-capitalize-numbered-enum-members",
-        "--special-field-name-prefix",
-        "--remove-special-field-name-prefix --empty-enum-field-name",
-    ),
-    **_opts(_C.FIELD, "--set-default-enum-member"),
-    **_opts(
-        _C.FIELD,
-        "--aliases --serialization-aliases --default-values --deserialize-default-values",
-        "--no-deserialize-default-values",
-    ),
-    **_opts(_C.MODEL, "--alias-generator --pin-aliases-with-alias-generator --no-pin-aliases-with-alias-generator"),
-    **_opts(
-        _C.FIELD,
-        "--no-alias --use-serialization-alias --use-title-as-name --no-use-title-as-name --infer-union-variant-names",
-        "--use-tag-as-union-variant-name --infer-union-discriminators --no-infer-union-discriminators",
-        "--name-allof-union-members-after-branches",
-        "--no-name-allof-union-members-after-branches --use-schema-description --no-use-schema-description",
-        "--use-field-description --no-use-field-description",
-        "--use-field-description-example --no-use-field-description-example --use-attribute-docstrings",
-        "--use-inline-field-description",
-        "--use-single-line-docstring --no-use-single-line-docstring --field-constraints",
-        "--omit-redundant-constraints --no-omit-redundant-constraints --read-length-keywords-by-type",
-        "--no-read-length-keywords-by-type",
-        "--read-object-keywords-by-type --no-read-object-keywords-by-type",
-        "--read-msgspec-union-bounds-exactly --no-read-msgspec-union-bounds-exactly",
-        "--use-site-models-for-constrained-refs --no-use-site-models-for-constrained-refs",
-        "--use-bounds-for-float-const --no-use-bounds-for-float-const",
-        "--use-one-model-per-ref-site --no-use-one-model-per-ref-site --field-extra-keys",
-        "--field-extra-keys-without-x-prefix",
-        "--field-include-all-keys --extra-fields --use-enum-values-in-discriminator",
-        "--merge-shared-variant-tags --no-merge-shared-variant-tags",
-        "--field-type-collision-strategy",
-    ),
-    **_opts(_C.TYPING, "--use-union-operator --no-use-union-operator", group=_G.TYPE_SYNTAX),
-    **_opts(
-        _C.TYPING,
-        "--use-standard-collections --no-use-standard-collections --use-generic-container-types",
-        group=_G.COLLECTION_TYPES,
-    ),
-    **_opts(_C.TYPING, "--use-annotated", group=_G.TYPE_SYNTAX, implies=_implied("use_annotated")),
-    **_opts(_C.TYPING, "--no-use-annotated", group=_G.TYPE_SYNTAX),
-    **_opts(_C.TYPING, "--use-type-alias", group=_G.TYPE_ALIAS),
-    **_opts(_C.TYPING, "--use-type-alias-type", group=_G.TYPE_ALIAS, implies=_implied("use_type_alias_type")),
-    **_opts(_C.TYPING, "--use-root-model-type-alias", group=_G.TYPE_ALIAS),
-    **_opts(
-        _C.TYPING,
-        "--use-plain-alias-for-recursive-models --no-use-plain-alias-for-recursive-models",
-        group=_G.TYPE_ALIAS,
-    ),
-    **_opts(_C.TYPING, "--strict-types", group=_G.TYPE_MAPPING),
-    **_opts(
-        _C.TYPING,
-        "--enum-field-as-literal --enum-field-as-literal-map --open-enums --ignore-enum-constraints",
-        "--use-single-value-enum-as-const --no-use-single-value-enum-as-const --read-const-beside-enum",
-        "--no-read-const-beside-enum --filter-literal-values --no-filter-literal-values",
-        "--intersect-allof-keywords --no-intersect-allof-keywords",
-    ),
-    **_opts(
-        _C.TYPING,
-        "--intersect-combined-schema-keywords",
-        implies=_implied("intersect_combined_schema_keywords"),
-    ),
-    **_opts(_C.TYPING, "--no-intersect-combined-schema-keywords"),
-    **_opts(
-        _C.TYPING,
-        "--distribute-allof-over-unions --no-distribute-allof-over-unions",
-        "--read-allof-parents-in-mro-order --no-read-allof-parents-in-mro-order",
-        "--read-inherited-property-schemas-in-mro-order --no-read-inherited-property-schemas-in-mro-order",
-    ),
-    **_opts(
-        _C.MODEL,
-        "--read-nullable-beside-type-list --no-read-nullable-beside-type-list",
-        "--keep-field-defaults-off-branch-roots --no-keep-field-defaults-off-branch-roots",
-    ),
-    **_opts(_C.TYPING, "--disable-future-imports", group=_G.IMPORTS),
-    **_opts(
-        _C.TYPING,
-        "--use-pendulum --use-standard-primitive-types --no-use-standard-primitive-types --use-object-type",
-        "--no-use-object-type --untyped-value-type",
-        "--use-typed-nullable-map-values --no-use-typed-nullable-map-values",
-        "--use-typed-map-values-beside-other-types --no-use-typed-map-values-beside-other-types",
-        group=_G.TYPE_MAPPING,
-    ),
-    **_opts(_C.TYPING, "--keep-enum-member-values --no-keep-enum-member-values"),
-    **_opts(
-        _C.TYPING,
-        "--read-unevaluated-properties --no-read-unevaluated-properties --read-kubernetes-extensions",
-        "--no-read-kubernetes-extensions --use-single-dict-for-object-maps --no-use-single-dict-for-object-maps",
-        group=_G.TYPE_MAPPING,
-    ),
-    **_opts(_C.TEMPLATE, "--use-type-checking-imports --no-use-type-checking-imports", group=_G.IMPORTS),
-    **_opts(
-        _C.TEMPLATE,
-        "--generate-schema-validators --check-pattern-maps-strictly --no-check-pattern-maps-strictly",
-        "--schema-validator-type",
-        "--schema-validator-base-class-name",
-    ),
-    **_opts(
-        _C.TYPING,
-        "--output-datetime-class --output-date-class --use-decimal-for-multiple-of",
-        "--use-decimal-in-field-forms --no-use-decimal-in-field-forms",
-        "--use-encoded-str-for-constrained-base64 --no-use-encoded-str-for-constrained-base64",
-        "--use-strict-str-for-base64 --no-use-strict-str-for-base64",
-        group=_G.TYPE_MAPPING,
-    ),
-    **_opts(_C.TYPING, "--use-non-positive-negative-number-constrained-types"),
-    **_opts(
-        _C.TYPING,
-        "--use-unique-items-as-set --no-use-unique-items-as-set --use-unique-items-as-set-by-value",
-        "--no-use-unique-items-as-set-by-value --use-tuple-for-fixed-items",
-        "--no-use-tuple-for-fixed-items --use-tuple-for-closed-arrays --no-use-tuple-for-closed-arrays",
-        "--use-tuple-for-fixed-length-arrays",
-        group=_G.COLLECTION_TYPES,
-    ),
-    **_opts(_C.TYPING, "--use-total-false-for-typed-dict --use-closed-typed-dict --no-use-closed-typed-dict"),
-    **_opts(_C.TYPING, "--import-overrides", group=_G.IMPORTS),
-    **_opts(
-        _C.TYPING,
-        "--type-mappings --read-format-as-annotation --no-read-format-as-annotation --type-overrides "
-        "--type-overrides-replace-whole-type --no-type-overrides-replace-whole-type "
-        "--use-x-python-type-as-written --no-use-x-python-type-as-written --use-x-python-import-for-every-ref "
-        "--no-use-x-python-import-for-every-ref --use-bytes-for-content-media-type "
-        "--no-use-bytes-for-content-media-type",
-        group=_G.TYPE_MAPPING,
-    ),
-    **_opts(_C.TYPING, "--use-specialized-enum --no-use-specialized-enum --allof-merge-mode --allof-class-hierarchy"),
-    **_opts(_C.TEMPLATE, "--wrap-string-literal", group=_G.OUTPUT_FORMATTING),
-    **_opts(_C.TEMPLATE, "--custom-template-dir --extra-template-data --validators", group=_G.CUSTOM_TEMPLATES),
-    **_opts(
-        _C.TEMPLATE,
-        "--custom-file-header --custom-file-header-path --custom-file-header-mode",
-        group=_G.GENERATED_OUTPUT,
-    ),
-    **_opts(_C.TEMPLATE, "--additional-imports", group=_G.IMPORTS),
-    **_opts(_C.TEMPLATE, "--class-decorators", group=_G.GENERATED_OUTPUT),
-    **_opts(_C.TEMPLATE, "--use-double-quotes", group=_G.OUTPUT_FORMATTING),
-    **_opts(
-        _C.TEMPLATE,
-        "--use-exact-imports --rename-submodules-hidden-by-classes --no-rename-submodules-hidden-by-classes",
-        group=_G.IMPORTS,
-    ),
-    **_opts(_C.TEMPLATE, "--disable-appending-item-suffix --no-treat-dot-as-module"),
-    **_opts(
-        _C.TEMPLATE,
-        "--strict-dotted-module-names --no-strict-dotted-module-names --disable-timestamp --no-disable-timestamp",
-        "--enable-version-header --enable-command-header --enable-generated-header-marker",
-        group=_G.GENERATED_OUTPUT,
-    ),
-    **_opts(
-        _C.TEMPLATE,
-        "--formatters --no-formatters --custom-formatters --custom-formatters-kwargs",
-        group=_G.OUTPUT_FORMATTING,
-    ),
-    **_opts(_C.OPENAPI, "--openapi-scopes", group=_G.OPENAPI_SCOPES),
-    **_opts(_C.OPENAPI, "--use-operation-id-as-name --use-status-code-in-response-name", group=_G.OPENAPI_NAMING),
-    **_opts(
-        _C.OPENAPI,
-        "--read-only-write-only-model-type --dedupe-request-response-variants --no-dedupe-request-response-variants",
-        "--dedupe-numbered-request-response-variants --no-dedupe-numbered-request-response-variants",
-        group=_G.READ_ONLY_WRITE_ONLY,
-    ),
-    **_opts(
-        _C.OPENAPI,
-        "--include-path-parameters --openapi-include-paths --keep-first-character-of-path-keys",
-        "--no-keep-first-character-of-path-keys --keep-content-parameter-refs --no-keep-content-parameter-refs",
-        "--skip-path-extension-keys --no-skip-path-extension-keys",
-        "--use-enum-field-as-literal-in-operations --no-use-enum-field-as-literal-in-operations",
-        group=_G.OPENAPI_PATHS,
-    ),
-    **_opts(_C.OPENAPI, "--openapi-include-info-version"),
-    **_opts(_C.OPENAPI, "--openapi-as-definitions", group=_G.OPENAPI_SCOPES),
-    **_opts(_C.OPENAPI, "--validation"),
-    **_opts(_C.GRAPHQL, "--graphql-no-typename"),
-    **_opts(_C.GENERAL, "--check"),
-    **_opts(
-        _C.GENERAL,
-        "--diff-against",
-        requires=(
-            CLIOptionRelation(
-                "--input", message="`--diff-against` requires --input with the current local schema path."
-            ),
-            CLIOptionRelation(
-                "--output", message="`--diff-against` requires --output to select file or directory output layout."
-            ),
-        ),
-        conflicts=(
-            *_relations("--check --watch --url --input-model --emit-model-metadata --fail-on-multi-module-stdout"),
-            *_relations(
-                "--job --all-jobs", message="`--diff-against` compares one profile or input and cannot run named jobs."
-            ),
-        ),
-    ),
-    **_opts(
-        _C.GENERAL,
-        "--fail-on-multi-module-stdout --allow-remote-refs --no-allow-remote-refs --strict-refs",
-        "--allow-private-network --no-allow-private-network --http-headers --http-local-ref-path",
-        "--http-ignore-tls --http-query-parameters --http-timeout --lockfile",
-    ),
-    **_opts(_C.GENERAL, "--untrusted-input", implies=_relations("--allow-remote-refs", value=False)),
-    **_opts(
-        _C.GENERAL,
-        "--no-untrusted-input --update-lock --locked --ignore-pyproject --generate-cli-command",
-        "--generate-pyproject-config --recommend-options",
-        "--read-implied-options-from-merged-values --no-read-implied-options-from-merged-values",
-    ),
-    **_opts(_C.GENERAL, "--shared-module-name", group=_G.MODEL_REUSE, topic=OptionTopic.MODEL_CUSTOMIZATION),
-    **_opts(
-        _C.GENERAL,
-        "--all-exports-scope --all-exports-collision-strategy --module-split-mode --disable-warnings --watch",
-        "--watch-delay",
-    ),
-    **_opts(
-        _C.TARGET,
-        "--generate-server",
-        requires=(
-            CLIOptionRelation("--server-output", message="`--generate-server` requires `--server-output`."),
-            CLIOptionRelation("--server-package", message="`--generate-server` requires `--server-package`."),
-            CLIOptionRelation(
-                "--server-model-package", message="`--generate-server` requires `--server-model-package`."
-            ),
-            CLIOptionRelation(
-                "--input-file-type",
-                value=InputFileType.OpenAPI.value,
-                message="`--generate-server` requires `--input-file-type openapi`.",
-            ),
-        ),
-    ),
-    **_target_options(
-        "--generate-server",
-        "fastapi",
-        "--server-output --server-package --server-model-package --server-layout --server-handler-mode",
-        "--server-handler-modes --server-include-request --no-server-include-request --server-body-mode",
-        "--server-body-modes --server-primary-responses --server-operation-names --server-router-names",
-        "--server-parameter-names",
-    ),
-    **_opts(
-        _C.TARGET,
-        "--generate-client",
-        requires=(
-            CLIOptionRelation("--client-output", message="`--generate-client` requires `--client-output`."),
-            CLIOptionRelation("--client-package", message="`--generate-client` requires `--client-package`."),
-            CLIOptionRelation(
-                "--client-model-package", message="`--generate-client` requires `--client-model-package`."
-            ),
-            CLIOptionRelation(
-                "--input-file-type",
-                message="`--generate-client` requires `--input-file-type openapi` or `--input-file-type asyncapi`.",
-            ),
-        ),
-    ),
-    **_target_options(
-        "--generate-client",
-        "httpx2",
-        "--client-output --client-package --client-model-package --client-signature-style --client-body-arguments",
-        "--client-resource-names --client-operations --client-default-base-url --client-server-base-url",
-        "--client-protocols --client-deep-object-brackets --no-client-deep-object-brackets",
-        "--client-asyncapi-perspective",
-    ),
-})
+# Documentation metadata for CLI options, derived from the option table
+CLI_OPTION_META: dict[str, CLIOptionMeta] = _with_relation_rows(_documented_options(OPTIONS))
 
 
 def _validate_option_topic_groups() -> None:
@@ -652,11 +219,6 @@ def _validate_option_topic_groups() -> None:
 
 
 _validate_option_topic_groups()
-
-
-def _canonical_option_key(option: str) -> tuple[int, str]:
-    """Sort key of the canonical option: the longest option string (--help over -h), then the lexicographically last."""
-    return (len(option), option)
 
 
 @dataclass(frozen=True, slots=True)
