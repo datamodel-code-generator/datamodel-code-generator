@@ -16,8 +16,6 @@ from datamodel_code_generator._target_contract import (
     GeneratedSymbolType,
     GenericType,
     ImportedType,
-    KnownBackendValue,
-    LiteralScalar,
     UnionType,
     schema_uses,
     wrapped_type,
@@ -51,7 +49,6 @@ __all__ = ("ItemStep", "ModelFacts", "ModelField", "StepKind")
 
 StepKind: TypeAlias = Literal["attr", "key", "get", "root"]
 _EXTRAS: Final = "__pydantic_extra__"
-_FALSE: Final = KnownBackendValue(LiteralScalar(kind="bool", value=False))
 _MODELS: Final = frozenset({"model", "root"})
 
 
@@ -74,8 +71,9 @@ class ItemStep:
 class ModelField:
     """A field of a generated model by its wire name: its attribute, or key, its type, and what its model gives it.
 
-    `required` says the model's constructor needs the field, and `missing` that it defaults to Pydantic's MISSING;
-    `explicit` that an `--aliases` entry of its class gave its name; `member` is the field's binding in its consumer.
+    `required` says the model's constructor needs the field, `missing` that it defaults to Pydantic's MISSING and
+    `annotation_null` that its annotation accepts None; `explicit` that an `--aliases` entry of its class gave its
+    name; `member` is the field's binding in its consumer.
     """
 
     wire_name: str
@@ -87,35 +85,12 @@ class ModelField:
     member: FieldUseBinding
     missing: bool = False
     explicit: bool = False
+    annotation_null: bool = False
 
 
 def _declared_root(symbol: FinalModelSymbol) -> bool:
     """Return whether a symbol is a root model its backend declares."""
     return symbol.kind == "root" and symbol.facts is not None
-
-
-def _partial(symbol: FinalModelSymbol) -> bool:
-    """Return whether a TypedDict class declares `total=False`."""
-    parameters = () if symbol.facts is None else symbol.facts.parameters
-    return next((item.value for item in parameters if item.name == "total" and item.present), None) == _FALSE
-
-
-def _required(consumer: FinalModelSymbol, owner: FinalModelSymbol, facts: ModelFieldFacts) -> bool:
-    """Return whether a model's constructor requires a field, by the rules of the consumer's backend.
-
-    Pydantic requires a required field without a default, a dataclass or Struct an initialized field without an emitted
-    default, and a TypedDict a key its qualifiers or its declaring class's totality require.
-    """
-    backend = facts.backend
-    match consumer.backend:
-        case "pydantic" | "pydantic_dataclass":
-            required = facts.required and backend.emitted.emitted_default_kind == "absent"
-        case "typeddict":
-            qualifiers = backend.emitted.qualifiers
-            required = "Required" in qualifiers or (not _partial(owner) and "NotRequired" not in qualifiers)
-        case _:
-            required = backend.constructor_init != _FALSE and backend.emitted.emitted_default_kind == "absent"
-    return required
 
 
 class ModelFacts:
@@ -168,12 +143,13 @@ class ModelFacts:
                 wire_name=wire_name,
                 name=wire_name if functional else slot.name,
                 type=facts.type,
-                required=_required(consumer, owner, facts),
+                required=facts.constructor_required,
                 read_only=facts.read_only,
                 write_only=facts.write_only,
                 member=member,
                 missing=facts.backend.emitted.emitted_default_kind == "pydantic_missing",
                 explicit=facts.explicit_name,
+                annotation_null=facts.annotation_null,
             )
 
     def root(self, symbol: SymbolId) -> TypeView | None:

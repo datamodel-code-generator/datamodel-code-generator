@@ -349,7 +349,9 @@ class ModelFieldFacts:
     `schema_null` says the None the field's annotation accepts comes from its schema's nullability or its own type,
     rather than from an optional fallback or the model configuration. `annotation_null` says the emitted annotation
     accepts None at all, whether its type holds None or the field adds it. `explicit_name` says an `--aliases` entry
-    of the field's class scope gave its name, which is never renamed.
+    of the field's class scope gave its name, which is never renamed. `constructor_required` says the model's
+    constructor requires the field, and `in_init` that the field takes part in it, as the model's assignment facts
+    tell.
     """
 
     required: bool
@@ -363,6 +365,8 @@ class ModelFieldFacts:
     schema_null: bool
     annotation_null: bool
     explicit_name: bool
+    constructor_required: bool
+    in_init: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -1028,22 +1032,14 @@ class KnownBackendValue:
 
 
 @dataclass(frozen=True, slots=True)
-class RuntimeBackendValue:
-    """Identify an effect that generation must never execute to discover."""
-
-    reason: Literal["expression"]
-    state: Literal["runtime"] = "runtime"
-
-
-@dataclass(frozen=True, slots=True)
 class OpaqueBackendValue:
     """Keep unavailable semantics distinct from builtin defaults."""
 
-    reason: Literal["custom_origin", "unsupported_value", "model_policy_required"]
+    reason: Literal["custom_origin", "unsupported_value"]
     state: Literal["opaque"] = "opaque"
 
 
-BackendValue: TypeAlias = KnownBackendValue | RuntimeBackendValue | OpaqueBackendValue
+BackendValue: TypeAlias = KnownBackendValue | OpaqueBackendValue
 
 
 @dataclass(frozen=True, slots=True)
@@ -1052,7 +1048,6 @@ class BackendFieldFacts:
 
     backend: BackendName
     emitted: EmittedFieldFacts
-    constructor_init: BackendValue
 
 
 @dataclass(frozen=True, slots=True)

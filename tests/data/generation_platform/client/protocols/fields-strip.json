@@ -1,0 +1,15 @@
+{
+  "pages.all": {
+    "kind": "pagination",
+    "operation": "/paths/~1pages/get",
+    "items": {"from": "body", "pointer": "/wrap/data"},
+    "item_schema": {"pointer": "/components/schemas/Pet"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next"},
+      "write": {"in": "query", "name": "cursor"},
+      "end": [{"kind": "missing"}, {"kind": "null"}],
+      "empty_string": "end"
+    }
+  }
+}

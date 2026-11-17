@@ -1,0 +1,5 @@
+# asyncapi-optional-tags pydantic_v2.BaseModel, dataclasses.dataclass
+    room 1 text RoomJoinPayload{'kind': 'join', 'who': 'ann'} raw=b'{"kind": "join", "who": "ann"}'
+    room 2 text RoomLeavePayload{'kind': 'leave', 'who': 'bob'} raw=b'{"kind": "leave", "who": "bob"}'
+  room without a kind ! DecodeError: DecodeError(status_code=101, reason='missing', location='message.3') [location=('message', 3), body_bytes=b'{"who": "cid"}', truncated=False] missing
+    server GET /room [] | closed 1002 ''

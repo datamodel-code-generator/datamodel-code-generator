@@ -89,7 +89,6 @@ from datamodel_code_generator._target_contract import (
     OperationId,
     PartFacts,
     PartSchema,
-    RuntimeBackendValue,
     SourceDocument,
     SourceDocumentId,
     SourceExpression,
@@ -118,9 +117,9 @@ from datamodel_code_generator.model._decisions.nullability import reference_null
 from datamodel_code_generator.model._decisions.tag_value import field_source_name
 from datamodel_code_generator.model._decisions.union_assembly import WrittenMember, merge_members
 from datamodel_code_generator.model.base import (
-    UNDEFINED,
     DataModel,
     DataModelFieldBase,
+    _default_state,
     _has_root_field_constraints,
 )
 from datamodel_code_generator.model.dataclass import DataModelField as DataclassField
@@ -1914,21 +1913,24 @@ def _frozen_or_source(value: object) -> TypeArgument:
 
 
 def _emitted_default(  # ruff: ignore[too-many-return-statements]
-    field: DataModelFieldBase, backend: BackendName
+    field: DataModelFieldBase, backend: BackendName, assignment: AssignmentFacts
 ) -> tuple[DefaultKind, FrozenLiteral | SourceExpression | None]:
-    """Return the default kind and value that the builtin backend renders for a field."""
+    """Return the default kind and value that the builtin backend renders for a field, by its assignment facts.
+
+    A ``MISSING`` default is none of the constructor defaults the assignment facts tell.
+    """
     if backend == "typeddict":
         return "absent", None
     if getattr(field, "use_missing_sentinel_default", False):
         return "pydantic_missing", None
-    has_default, has_value = field._get_constructor_default_info()  # ruff: ignore[private-member-access]
+    has_default, has_value = assignment.default_info
     if not has_default:
         return "absent", None
     if not has_value:
         return "factory", None
     if isinstance(field, MsgspecField) and field._get_field_data().get("default") is msgspec.UNSET:  # ruff: ignore[private-member-access]
         return "msgspec_unset", None
-    if field.default is None or field.default is UNDEFINED:
+    if _default_state(field.default) != "value":
         return "none", LiteralScalar("none", None)
     if isinstance(value := _frozen_or_source(field.default), (SourceExpression, ImportedExpression)):
         return "expression", SourceExpression(stable_repr(field.default))
@@ -1971,17 +1973,6 @@ def _qualifiers(field: DataModelFieldBase, backend: BackendName) -> tuple[str, .
     if getattr(field, "_read_only", False):
         qualifiers.append("ReadOnly")
     return tuple(qualifiers)
-
-
-def _setting(name: str, keywords: tuple[tuple[str, TypeArgument], ...], *, fallback: bool | None) -> BackendValue:
-    for key, value in reversed(keywords):
-        if key == name:
-            return (
-                RuntimeBackendValue("expression")
-                if isinstance(value, SourceExpression | ImportedExpression)
-                else KnownBackendValue(value)
-            )
-    return _backend_value(fallback) if fallback is not None else OpaqueBackendValue("model_policy_required")
 
 
 def _model_settings(model: DataModel, backend: BackendName) -> dict[str, BackendValue] | None:
@@ -2073,15 +2064,19 @@ def _field_facts(  # noqa: PLR0913
     field: DataModelFieldBase,
     type_value: TypeView,
     backend: BackendName,
-    model_facts: BackendModelFacts | None,
+    assignment: AssignmentFacts,
     context: _FieldContext | None,
     *,
     explicit_name: bool,
 ) -> ModelFieldFacts:
-    """Read a field's model and builtin backend facts from the final field and its render data."""
+    """Read a field's model and builtin backend facts from the final field, its render data and its assignment facts.
+
+    The constructor requires a field that takes part in it without an emitted default; a TypedDict requires the keys
+    its qualifiers require, which the field's requiredness decides.
+    """
     emitted = not (backend == "msgspec" and field.extras.get("is_classvar") is True)
     qualifiers = _qualifiers(field, backend)
-    default_kind, default_value = _emitted_default(field, backend)
+    default_kind, default_value = _emitted_default(field, backend, assignment)
     keywords = _constructor_keywords(field, backend)
     null_in_annotation = _annotation_null(field, type_value)
     emitted_facts = EmittedFieldFacts(
@@ -2091,13 +2086,7 @@ def _field_facts(  # noqa: PLR0913
         qualifiers=qualifiers,
         constructor_keywords=keywords if backend != "typeddict" else (),
     )
-    constructor_init = (
-        _backend_value(None)
-        if backend == "typeddict"
-        else _backend_value(value=False)
-        if not emitted or "ClassVar" in qualifiers
-        else _setting("init", keywords, fallback=None if model_facts is None else True)
-    )
+    in_init = assignment.participates_in_constructor
     return ModelFieldFacts(
         field.required,
         field.nullable,
@@ -2106,7 +2095,7 @@ def _field_facts(  # noqa: PLR0913
         field.read_only,
         field.write_only,
         type_value,
-        BackendFieldFacts(backend, emitted_facts, constructor_init),
+        BackendFieldFacts(backend, emitted_facts),
         context is not None
         and (
             context.preexisting_null is True
@@ -2114,6 +2103,8 @@ def _field_facts(  # noqa: PLR0913
         ),
         null_in_annotation,
         explicit_name,
+        field.required if backend == "typeddict" else in_init and default_kind == "absent",
+        in_init,
     )
 
 
@@ -2374,7 +2365,7 @@ class _Models:
                     field,
                     projected,
                     backend,
-                    symbol.facts,
+                    model._field_assignment_facts(field),  # ruff: ignore[private-member-access]
                     self.context(model, field)[3],
                     explicit_name=explicit is not None and explicit[0] == field.name,
                 )
@@ -4539,6 +4530,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator.config import AsyncAPIParserConfig, OpenAPIParserConfig
     from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.model._render_plan import AssignmentFacts
     from datamodel_code_generator.parser.base import ForwarderMap, ModuleContext, ModulePath, ParseConfig, Result
     from datamodel_code_generator.parser.openapi_media import MediaOwner
     from datamodel_code_generator.parser.openapi_scope import (

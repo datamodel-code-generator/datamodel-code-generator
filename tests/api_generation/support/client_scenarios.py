@@ -24,6 +24,7 @@ from tests.api_generation.scenarios.client_asyncapi_sockets import (
     asyncapi_handshake_models,
     asyncapi_message_codecs,
     asyncapi_messages,
+    asyncapi_optional_tags,
     asyncapi_perspective,
     asyncapi_schema_formats,
     asyncapi_serverless,
@@ -45,7 +46,7 @@ from tests.api_generation.scenarios.client_deadline_cleanup import deadline_clea
 from tests.api_generation.scenarios.client_deadline_options import deadline_options
 from tests.api_generation.scenarios.client_deadline_races import deadline_races
 from tests.api_generation.scenarios.client_deadline_streams import deadline_streams
-from tests.api_generation.scenarios.client_fields import fields, optional_models
+from tests.api_generation.scenarios.client_fields import fields, optional_models, stripped_fields, stripped_nullable
 from tests.api_generation.scenarios.client_headers import headers, native_boundaries
 from tests.api_generation.scenarios.client_held_extras import held_extras
 from tests.api_generation.scenarios.client_hooks import hooks
@@ -1004,6 +1005,11 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
         ("pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"),
         asyncapi_messages,
     ),
+    "asyncapi-optional-tags": (
+        "asyncapi-optional-tags",
+        ("pydantic_v2.BaseModel", "dataclasses.dataclass"),
+        asyncapi_optional_tags,
+    ),
     "asyncapi-union-sends": ("asyncapi-messages-aliases", ("pydantic_v2.BaseModel",), asyncapi_union_sends),
     "asyncapi-subclass-sends": (
         "asyncapi-messages",
@@ -1029,6 +1035,12 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "fields": ("fields", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), fields),
     "fields-structural": ("fields-structural", ("dataclasses.dataclass", "typing.TypedDict"), fields),
     "fields-unpack": ("fields-unpack", ("pydantic_v2.BaseModel",), fields),
+    "fields-strip": ("fields-strip", ("pydantic_v2.BaseModel", "dataclasses.dataclass"), stripped_fields),
+    "fields-strip-nullable": (
+        "fields-strip-nullable",
+        ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"),
+        stripped_nullable,
+    ),
     "fields-optional-models": (
         "fields-optional-models",
         ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"),
