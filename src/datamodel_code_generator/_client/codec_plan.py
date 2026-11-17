@@ -6,9 +6,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, get_args
 
 from datamodel_code_generator._client.model_facts import _FALSE, _name
-from datamodel_code_generator._container_kinds import CONTAINER_CLASSES, MAPPINGS
+from datamodel_code_generator._container_kinds import MAPPINGS
 from datamodel_code_generator._message_text import english_list
-from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._openapi_codec_plan import codec_file, extras_symbols, named_symbols
 from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic
 from datamodel_code_generator._python_type_annotation import render_python_type_expr
@@ -74,17 +73,6 @@ _PLAIN: Final = frozenset({
     "dict",
 })
 _ALL_KINDS: Final[tuple[JSONKind, ...]] = get_args(JSONKind)
-_JSON_KINDS: Final[dict[str | None, tuple[JSONKind, ...]]] = {
-    **{
-        dotted_name(*key): ("object",) if slot in MAPPINGS.slots else ("array",)
-        for key, slot in CONTAINER_CLASSES.items()
-    },
-    **dict.fromkeys(("typing.List", "tuple"), ("array",)),
-    "bool": ("boolean",),
-    "int": ("number",),
-    "float": ("number",),
-    "decimal.Decimal": ("string", "number"),
-}
 
 
 @dataclass(frozen=True, slots=True)
@@ -208,11 +196,6 @@ class ClientCodecs:
         return any(item.extras for item in self.uses)
 
 
-def _literal_kind(value: LiteralType) -> str | None:
-    kinds = {item.kind if isinstance(item, LiteralScalar) else "enum" for item in value.values}
-    return next(iter(kinds)) if len(kinds) == 1 and kinds <= {"str", "int", "none"} else None
-
-
 class _Planner:
     """Plan the conversions of the emitted models' types, reporting where a use's field has no conversion.
 
@@ -316,22 +299,6 @@ class _Planner:
             elif not is_none(member):
                 yield member
 
-    def kinds(self, value: TypeView) -> tuple[JSONKind, ...]:
-        if isinstance(value, GeneratedSymbolType):
-            if (symbol := self.symbols[value.symbol]).kind == "enum":
-                kinds = {item.kind for item in symbol.values if item is not None}
-                return tuple(kind for kind, native in (("string", "str"), ("number", "int")) if native in kinds)
-            return ("object",)
-        if isinstance(value, GenericType):
-            return ("object",) if container_slot(value) in MAPPINGS.slots else ("array",)
-        if isinstance(value, LiteralType):
-            native = _literal_kind(value)
-            return ("string",) if native == "str" else ("number",) if native == "int" else ()
-        name = _name(value)
-        if name in {"object", "typing.Any"}:
-            return _ALL_KINDS
-        return _JSON_KINDS.get(name, ("string",))
-
     def union(self, value: UnionType, schema: SourceLocation | None, declared: UnionDiscriminator | None) -> Shape:
         members = tuple(dict.fromkeys(self.flattened(value.members)))
         shapes = [(member, self.shape(member, schema)) for member in members]
@@ -347,7 +314,8 @@ class _Planner:
         model_shapes = [Class(GeneratedSymbolType(symbol)) for symbol in models]
         kinds: dict[JSONKind, Shape] = {}
         for member, shape in shapes:
-            for kind in self.kinds(member):
+            found = self.facts.tables.json_kinds(member, "codec")
+            for kind in (kind for kind in _ALL_KINDS if found is None or kind in found):
                 if (
                     kind in kinds
                     and (shape is not None or kinds[kind] is not None)
