@@ -12,7 +12,6 @@ from typing_extensions import TypeIs
 
 from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._client.config import absolute
-from datamodel_code_generator._client.model_facts import ALIASES
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, RESERVED_ARGUMENTS, RESERVED_MEMBERS
 from datamodel_code_generator._client.security import CredentialSpec, SecurityPlanner
 from datamodel_code_generator._openapi_wire_plan import (
@@ -90,7 +89,7 @@ from datamodel_code_generator._target_operations import (
     response_bodyless,
     type_names,
 )
-from datamodel_code_generator._target_types import present
+from datamodel_code_generator._target_types import is_alias, present
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import _rw_variant_flag
 
@@ -672,7 +671,7 @@ class Planner:
                     default=None if required or plan.credential else _default(use, argument),
                     converts=use is not None
                     and use.type is not None
-                    and argument != self.facts.argument(use.type, ALIASES),
+                    and argument != self.facts.argument(use.type, is_alias),
                 )
             )
         self.problems.extend(

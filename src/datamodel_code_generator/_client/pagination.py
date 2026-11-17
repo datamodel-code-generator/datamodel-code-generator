@@ -26,8 +26,8 @@ from datamodel_code_generator._runtime.client.retry import body_replay_safe
 from datamodel_code_generator._runtime.model_codecs.errors import ParameterEncodingError
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key, path_text
-from datamodel_code_generator._target_contract import GeneratedSymbolType, GenericType, UnionType, label
-from datamodel_code_generator._target_types import admits_none, container_slot, sole_present
+from datamodel_code_generator._target_contract import GenericType, UnionType, label
+from datamodel_code_generator._target_types import admits_none, container_slot
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
@@ -308,19 +308,9 @@ class _Pages(HelperPlanner):
 
         A root model also reads as its root, as the model of a schema that only refers to another one does.
         """
-        read = self.present(expected)
-        if (
-            isinstance(read, GeneratedSymbolType)
-            and self.facts.symbols[read.symbol].kind == "root"
-            and (root := self.facts.root(read.symbol)) is not None
-        ):
-            return read, self.present(root)
-        return (read,)
-
-    def present(self, value: TypeView) -> TypeView:
-        """Return a type without None, through its aliases."""
-        value = self.facts.plain(value)
-        return value if (member := sole_present(value)) is None else self.facts.plain(member)
+        read = self.facts.present(expected)
+        facts = self.facts.tables.wrapped(read)
+        return (read,) if facts is None else (read, self.facts.present(facts.type))
 
     def single(
         self, spec: OperationSpec, at: str, what: str
@@ -352,7 +342,7 @@ class _Pages(HelperPlanner):
         """
         if (expected := self.schema_type(reference, direction)) == "missing":
             message = missing_schema(helper, noun, reference)
-        elif value is None or expected is None or self.present(value) not in self.read_as(expected):
+        elif value is None or expected is None or self.facts.present(value) not in self.read_as(expected):
             message = f"The {noun} {stable_repr(reference.pointer)} of {stable_repr(helper.name)} is not {mismatch}"
         else:
             return None
