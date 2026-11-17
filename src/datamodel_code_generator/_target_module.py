@@ -35,7 +35,7 @@ from datamodel_code_generator.imports import Import
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Callable, Iterable, Iterator, Mapping
 
     from typing_extensions import Self
 
@@ -348,7 +348,7 @@ class TargetModule:
             case ModelHint():
                 hint: ModelHint | None = value
             case UnionType() | GenericType() if value.hint is None:
-                return self.composed(value, static=static)
+                return self.composed(value, lambda part: self.hint(part, static=static))
             case _:
                 hint = value.hint
         assert hint is not None, "a type view without a hint is a union a target composed"
@@ -394,11 +394,11 @@ class TargetModule:
         members = tuple(dict.fromkeys(parts))
         return "".join(members) if len(members) < 2 else self._composed("union", *members)  # noqa: PLR2004
 
-    def composed(self, value: UnionType | GenericType, *, static: bool) -> str:
-        """Return a union or container of spelled parts, as the model generator writes one."""
+    def composed(self, value: UnionType | GenericType, spell: Callable[[TypeView], str]) -> str:
+        """Return a union or container of parts spelled by ``spell``, as the model generator writes one."""
         if isinstance(value, UnionType):
-            return self.union(*(self.hint(member, static=static) for member in _composed_members(value)))
-        return self.generic(value, [self.hint(item, static=static) for item in value.arguments])
+            return self.union(*map(spell, _composed_members(value)))
+        return self.generic(value, list(map(spell, value.arguments)))
 
     def generic(self, value: GenericType, arguments: list[str]) -> str:
         """Return a container of spelled arguments, as the model generator writes one.
