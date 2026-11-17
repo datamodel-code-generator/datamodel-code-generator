@@ -2025,6 +2025,48 @@ jobs:
 
           exit "$failed"
 
+  ratchets:
+    name: ratchets
+    # Every stack layer runs this job, so a rise is attributed to the layer that adds it.
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Resolve the base revision
+        id: base
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PULL_REQUEST_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          case "$EVENT_NAME" in
+            pull_request) base="$PULL_REQUEST_BASE" ;;
+            push) base="$PUSH_BEFORE" ;;
+            *) base="" ;;
+          esac
+          case "$base" in
+            *[!0]*) ;;
+            *) base="" ;;
+          esac
+          echo "sha=${base}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.base.outputs.sha != ''
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Install the latest version of uv
+        if: steps.base.outputs.sha != ''
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - name: Count escape hatches against the base
+        if: steps.base.outputs.sha != ''
+        env:
+          BASE: ${{ steps.base.outputs.sha }}
+          UV_PYTHON_PREFERENCE: "only-managed"
+        run: |
+          set -euo pipefail
+          pin="$(uv run --no-project --python 3.13 python scripts/check_ratchets.py --ruff-pin)"
+          uv run --no-project --python 3.13 --with "ruff==${pin}" \
+            python scripts/check_ratchets.py --base "$BASE" --enforce
+
   test-gate:
     name: test-gate
     if: always()
@@ -2042,6 +2084,7 @@ jobs:
       - coverage
       - check
       - e2e
+      - ratchets
     steps:
       - name: Fail if any test workflow job failed
         env:
@@ -2051,6 +2094,7 @@ jobs:
             || github.event.pull_request.stack.base.ref == github.event.pull_request.base.ref
             || github.event.pull_request.stack.position == github.event.pull_request.stack.size }}
           MAIN_ONLY_JOBS: ${{ github.event_name == 'pull_request' && 'test-shard-main test-shard-nocov-main' || '' }}
+          ALWAYS_ON_JOBS: ratchets
         run: |
           import json
           import os
@@ -2060,8 +2104,12 @@ jobs:
           print(json.dumps(results, sort_keys=True))
           expected = "success" if os.environ.get("FULL_TEST_RUN", "true") == "true" else "skipped"
           main_only = set(os.environ.get("MAIN_ONLY_JOBS", "").split())
-          sys.exit(
-              not results
-              or any(result != ("skipped" if name in main_only else expected) for name, result in results.items())
-          )
+          always_on = set(os.environ.get("ALWAYS_ON_JOBS", "").split())
+
+          def wanted(name):
+              if name in always_on:
+                  return "success"
+              return "skipped" if name in main_only else expected
+
+          sys.exit(not results or any(result != wanted(name) for name, result in results.items()))
         shell: python
