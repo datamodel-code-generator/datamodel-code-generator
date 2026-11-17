@@ -11,6 +11,7 @@ records of any revision the same way. Standard library only, so the static check
 
 from __future__ import annotations
 
+import fnmatch
 import json
 import re
 from dataclasses import dataclass
@@ -271,13 +272,83 @@ RULES: Mapping[Category, Rule] = MappingProxyType({
 })
 """The rule of each category.
 
-`new-surface` covers listings and the model output of runs that set a surface item the latest release lacks; a dated
-preset only bundles released options, so a `preset:` item covers listings only and the model output a new preset
-changes carries the category of the released option's change. `notice` covers warnings, standard error and error
-messages, `api` the public API output and listings; a model change beside either needs its own record. An
-`experimental` change of a feature other than the generated clients and servers, and an `api` change the deprecation
-registry does not schedule, need the owner's `decision`.
+`new-surface` covers listings and the model output of runs that set a surface item the latest release lacks, so only
+model outputs the latest release does not have; a dated preset only bundles released options, so a `preset:` item
+covers listings only and the model output a new preset changes carries the category of the released option's change.
+`notice` covers warnings, standard error and error messages, `api` the public API output and listings; a model change
+beside either needs its own record. An `experimental` change of a feature other than the generated clients and
+servers, and an `api` change the deprecation registry does not schedule, need the owner's `decision`.
+
+`crash-fix`: the previous package failed generation, import or decoding of the output; for an added stored output, the
+previous package fails to generate it or writes a unit the behaviour classifier (`scripts/_behaviour_classify.py`)
+calls unusable. `output-text`: the text changes and the models behave the same, that is the modules' syntax trees are
+equal apart from docstrings, comments and the order of imports, or else their signatures are equal and no changed node
+is in a function body, a decorator or a configuration key the signature does not list.
 """
+
+
+OWNERS: tuple[tuple[str, str, Owner], ...] = (
+    ("*", "*.warnings.txt", Owner.NOTICE),
+    ("*", "*.stderr.txt", Owner.NOTICE),
+    ("*", "*.notices.txt", Owner.NOTICE),
+    ("tests/main/test_error_messages.py::*", "*", Owner.NOTICE),
+    ("tests/main/test_migration_warnings.py::*", "*", Owner.NOTICE),
+    ("tests/main/test_main_general.py::test_show_help*", "*", Owner.LISTING),
+    ("tests/main/test_main_general.py::test_list_experimental*", "*", Owner.LISTING),
+    ("tests/main/test_main_general.py::test_invalid_cli_option_suggestions*", "*", Owner.LISTING),
+    ("tests/main/test_main_recommend_options.py::*", "*", Owner.LISTING),
+    ("tests/main/test_option_stage_order.py::test_cli_option_relation_rows*", "*", Owner.LISTING),
+    ("tests/main/test_agent_skill.py::*", "*", Owner.LISTING),
+    ("tests/skills/*", "*", Owner.LISTING),
+    ("tests/test_build_preset_docs_script.py::*", "*", Owner.LISTING),
+    ("tests/test_build_schema_docs_script.py::*", "*", Owner.LISTING),
+    ("tests/test_build_docs_examples_script.py::*", "*", Owner.LISTING),
+    ("tests/test_docs_formatting.py::*", "*", Owner.LISTING),
+    ("tests/test_recommender_calibrate_script.py::*", "*", Owner.LISTING),
+    ("tests/test_prompt.py::*", "*", Owner.LISTING),
+    ("tests/test_main_kr.py::*", "*", Owner.LISTING),
+    ("tests/test_package_metadata.py::*", "*", Owner.LISTING),
+    ("tests/test_input_model.py::test_input_model_config_class*", "*", Owner.LISTING),
+    ("tests/parser/test_builtin_formatter_contract.py::*", "*", Owner.LISTING),
+    ("tests/main/test_public_api_signature_baseline.py::*", "*", Owner.API),
+    ("tests/parser/test_pipeline.py::*", "*", Owner.INTERNAL),
+    ("tests/parser/test_generation_store_usage.py::*", "*", Owner.INTERNAL),
+    ("tests/parser/test_fact_finality.py::*", "*", Owner.INTERNAL),
+    ("tests/main/test_generation_observation.py::*", "*", Owner.INTERNAL),
+    ("tests/checks/*", "*", Owner.INTERNAL),
+    ("tests/test_architecture_boundaries.py::*", "*", Owner.INTERNAL),
+    ("tests/test_source_rules.py::*", "*", Owner.INTERNAL),
+    ("*", "payloads/*", Owner.MODELS),
+    ("*", "*native*error*", Owner.MODELS),
+    ("*", "*generated*error*", Owner.MODELS),
+    ("*", "*warn*.txt", Owner.NOTICE),
+    ("*", "*refus*.txt", Owner.NOTICE),
+    ("*", "*error*.txt", Owner.NOTICE),
+)
+"""The stored outputs that are not model output, as (nodeid glob, label glob, kind) rows; the first match decides.
+
+Warnings, standard error and error messages are notices; help, listings, documentation, prompts and recommender
+output are listings; traces and reports of internals, and the checks that read the repository's source, are internal.
+Every other stored output is model output. This table and `RULES` judge the records, so a change to either is a change
+of the check.
+
+Notices are told from model output by their labels for now: a text output named for a warning, a refusal or an error
+is a notice, except payload outputs and the runtime errors of generated models against the native types, which are
+behaviour. The exact kind, the one the ledger captured (warnings, standard error or error text) written into the
+`.refs` line, comes with the replay.
+"""
+
+
+def owner_of(nodeid: str, label: str) -> Owner:
+    """Return the kind of the stored output a test item compares at a label."""
+    return next(
+        (
+            owner
+            for nodes, labels, owner in OWNERS
+            if fnmatch.fnmatchcase(nodeid, nodes) and fnmatch.fnmatchcase(label, labels)
+        ),
+        Owner.MODELS,
+    )
 
 
 @dataclass(frozen=True)
@@ -333,7 +404,7 @@ def _shape_problems(where: str, entry: Mapping[str, Any]) -> list[str]:
             problems.append(f"{where}: {key} is not a table")
             continue
         problems.extend(f"{where}: unknown {key} key {name}" for name in sorted(set(table) - allowed))
-    keep, verify = _table(entry, "keep"), _table(entry, "verify")
+    keep, verify = entry_table(entry, "keep"), entry_table(entry, "verify")
     if "flags" in keep and not _strings(keep["flags"]):
         problems.append(f"{where}: keep.flags is not a list of strings")
     if "note" in keep and not isinstance(keep["note"], str):
@@ -353,7 +424,8 @@ def _shape_problems(where: str, entry: Mapping[str, Any]) -> list[str]:
     return problems
 
 
-def _table(entry: Mapping[str, Any], key: str) -> dict[str, Any]:
+def entry_table(entry: Mapping[str, Any], key: str) -> dict[str, Any]:
+    """Return a table of an entry, or an empty one where the entry holds something else (a reported problem)."""
     return value if isinstance(value := entry.get(key), dict) else {}
 
 
@@ -368,7 +440,7 @@ def parse_entry(entry: Mapping[str, Any], where: str) -> tuple[Record | None, li
         return None, [f"{where}: id {entry_id!r} is not a lower-case slug"]
     if problems := _shape_problems(f"entry {entry_id}", entry):
         return None, problems
-    keep, verify = _table(entry, "keep"), _table(entry, "verify")
+    keep, verify = entry_table(entry, "keep"), entry_table(entry, "verify")
     record = Record(
         id=entry_id,
         keys=frozenset(entry) - {"id"},
@@ -476,14 +548,14 @@ def guide_problems(entry: Mapping[str, Any]) -> list[str]:
     """Return what a guide entry lacks, once a hand entry has extended the derived entry of its id."""
     where = f"entry {entry['id']}"
     problems = [f"{where}: missing {key}" for key in REQUIRED_KEYS if not entry.get(key)]
-    keep = _table(entry, "keep")
+    keep = entry_table(entry, "keep")
     if entry.get("action") == Action.KEEP and not (keep.get("flags") or keep.get("note")):
         problems.append(f"{where}: action keep needs keep.flags or keep.note")
     if keep.get("flags") and entry.get("action") != Action.KEEP:
         problems.append(f"{where}: keep.flags belong to an entry with action keep")
     if entry.get("action") == Action.REQUIRED and not entry.get("migrate"):
         problems.append(f"{where}: action required needs migrate")
-    verify = _table(entry, "verify")
+    verify = entry_table(entry, "verify")
     if entry.get("source") == Source.RUN and not (
         isinstance(verify.get("schema"), str) and isinstance(verify.get("args"), list)
     ):
@@ -545,6 +617,7 @@ def with_covers(text: str, labels: Collection[str]) -> str:
 
 __all__ = [
     "AFFECTS_KEYS",
+    "OWNERS",
     "RULES",
     "Action",
     "Category",
@@ -559,6 +632,7 @@ __all__ = [
     "covers_block",
     "covers_written",
     "guide_problems",
+    "owner_of",
     "parse_entry",
     "rule_problems",
     "stamp_pending",

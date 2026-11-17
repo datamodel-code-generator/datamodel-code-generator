@@ -79,6 +79,7 @@ from scripts._change_records import (  # ruff: ignore[module-import-not-at-top-o
     Kind,
     Source,
     covers_written,
+    entry_table,
     guide_problems,
     parse_entry,
     rule_problems,
@@ -631,11 +632,6 @@ def _hand_changes(
     )
 
 
-def _table(entry: dict[str, Any], key: str) -> dict[str, Any]:
-    """Return a table of an entry, or an empty one where the entry holds something else (a reported problem)."""
-    return value if isinstance(value := entry.get(key), dict) else {}
-
-
 def _check_links(changes: dict[str, dict[str, Any]], order: dict[str, int], problems: list[str]) -> None:
     for entry in changes.values():
         supersedes = entry.get("supersedes", [])
@@ -861,7 +857,7 @@ def load(layout: Layout | None = None, registries: Registries | None = None, *, 
         entry["id"] = entry_id
         entry["anchor"] = _anchor(entry_id)
         entry["index"] = order[entry["release"]]
-        entry["affects"] = {key: values for key, values in _table(entry, "affects").items() if values}
+        entry["affects"] = {key: values for key, values in entry_table(entry, "affects").items() if values}
         problems += guide_problems(entry)
     _check_links(changes, order, problems)
     _check_removals(registries.surface, released_surface, changes, problems)

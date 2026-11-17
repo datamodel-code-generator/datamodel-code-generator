@@ -1,0 +1,24 @@
+$ check --base nothing
+exit 2
+scripts/declared_changes.py: nothing is not a revision
+
+$ check --base base --head nothing
+exit 2
+scripts/declared_changes.py: nothing is not a revision
+
+$ check --base base --tag 0.9.9
+exit 2
+scripts/declared_changes.py: 0.9.9 is not a revision
+
+$ check --base base --tag 0.1.0
+exit 0
+declared changes: the working tree against base, release since 0.1.0
+ok
+
+$ status
+exit 2
+scripts/declared_changes.py: no merge base with origin/main; pass --base
+
+$ check --base base
+exit 2
+scripts/declared_changes.py: no release tag is reachable; pass --tag

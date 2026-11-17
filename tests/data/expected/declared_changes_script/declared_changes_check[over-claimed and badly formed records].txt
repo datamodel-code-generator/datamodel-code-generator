@@ -1,0 +1,16 @@
+exit 1
+declared changes: HEAD against base, release since 0.1.0
+2 labels this change adds to covers do not move in it:
+  ../x
+  help/help.txt
+  python scripts/declared_changes.py prune
+record problem: unreleased/broken.toml: Expected ']]' at the end of an array declaration (at line 1, column 9)
+record problem: unreleased/inline.toml: its covers are not written as 'scripts/declared_changes.py declare' writes them
+record problem: unreleased/inline.toml: '../x' is not a relative path below tests/data/expected
+record problem: unreleased/inline.toml: covers models/b.py, models output, which category internal does not cover: give it a record of its own
+record problem: unreleased/notice-models.toml: covers models/b.py, models output, which category notice does not cover: give it a record of its own
+record problem: unreleased/orphan.toml: extends nothing, which is not an unreleased record of its own
+record problem: entry plain: a fragment needs a category (new-surface, experimental, crash-fix, output-text, default-fix, decided-change, notice, api, docs-text, internal, harness)
+record problem: unreleased/presets.toml: covers models/b.py, models output that 0.1.0 has, which category new-surface does not cover: give it a record of its own
+record problem: unreleased/two.toml: a fragment holds exactly one [[change]] whose id is the file name
+failed

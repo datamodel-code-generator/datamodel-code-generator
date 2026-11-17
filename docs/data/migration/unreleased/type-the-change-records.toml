@@ -1,0 +1,11 @@
+[[change]]
+id = "type-the-change-records"
+category = "harness"
+title = "Type the upgrade guide entries as change records"
+summary = "The builder's tests gain categories, records without a guide entry and a stamp that drops covers; the package's output is the same."
+covers = [
+    "build_migration_docs_script/build_migration_docs_invalid_data[entries].txt",
+    "build_migration_docs_script/build_migration_docs_invalid_data[surface and allowlist].txt",
+    "build_migration_docs_script/build_migration_docs_outputs.txt",
+    "build_migration_docs_script/build_migration_docs_stamp.txt",
+]
