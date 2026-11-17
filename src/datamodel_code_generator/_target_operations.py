@@ -58,7 +58,8 @@ class TargetPolicy:
     option and the quoted operation key, of two settings of one option that select one operation; `path_code` the
     code of a path placeholder without a path parameter and of a path parameter without a placeholder, and
     `placeholder_label` whether the first names its operation; `media_code` the code of a media key that no
-    Content-Type header carries; `name_code` the code of an explicit name that its scope already holds.
+    Content-Type header carries; `name_code` the code of an explicit name that its scope already holds; `verb` the
+    word an operation's docstring names its route after.
     """
 
     stage: Callable[[str], DiagnosticStage]
@@ -67,6 +68,7 @@ class TargetPolicy:
     placeholder_label: bool
     media_code: str
     name_code: str
+    verb: str
 
     def problem(  # ruff: ignore[too-many-arguments]
         self,
@@ -101,6 +103,7 @@ CLIENT: Final = TargetPolicy(
     placeholder_label=True,
     media_code="E_METADATA_REQUIRED",
     name_code="E_NAME_COLLISION",
+    verb="Call",
 )
 SERVER: Final = TargetPolicy(
     stage=lambda code: "config" if code.startswith("E_") else "binding" if code.startswith("MC_") else "target",
@@ -109,6 +112,7 @@ SERVER: Final = TargetPolicy(
     placeholder_label=False,
     media_code="F_MEDIA_UNSUPPORTED",
     name_code="F_NAME_CONFLICT",
+    verb="Handle",
 )
 
 
@@ -200,6 +204,17 @@ def described(operation: OperationContract) -> str:
     """
     texts = (fact(operation, name) for name in ("summary", "description"))
     return "\n\n".join(text.strip() for text in texts if isinstance(text, str) and text.strip())
+
+
+def operation_docstring(
+    operation: OperationContract, *, schema: bool, verb: str, description: str | None = None
+) -> str:
+    """Return the text of an operation's docstring: its configured `description`, else its route after `verb`.
+
+    With `schema`, as `--use-schema-description` sets it, the operation's summary and description (`described`) come
+    before the route.
+    """
+    return description or (schema and described(operation)) or f"{verb} {label(operation)}."
 
 
 def response_bodyless(operation: OperationContract, key: str) -> bool:

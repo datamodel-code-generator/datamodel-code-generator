@@ -25,7 +25,13 @@ import re
 from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
-from datamodel_code_generator._document_reader import as_mapping, descend, held_schema, schema_format_media_type
+from datamodel_code_generator._document_reader import (
+    as_mapping,
+    descend,
+    held_schema,
+    schema_format_media_type,
+    trait_layers,
+)
 from datamodel_code_generator._json_pointer import join_pointer, pointer_tokens, reference_tokens
 from datamodel_code_generator._openapi_wire_plan import EVENT_STREAM
 from datamodel_code_generator._runtime.model_codecs.media import is_token
@@ -63,6 +69,8 @@ _Unordered: TypeAlias = frozenset[frozenset[tuple[str, frozenset[str]]]]
 Skips: TypeAlias = "list[tuple[str | None, str]]"
 _Operation: TypeAlias = "tuple[Tokens, str, Mapping[str, YamlValue]]"
 """An AsyncAPI 3 operation: the pointer of its channel, its own pointer, and the operation as written."""
+_Layers: TypeAlias = "list[tuple[Mapping[str, YamlValue], Tokens]]"
+"""An operation or a message and its traits, each with its pointer, in the order they apply (`_layers`)."""
 
 Kind: TypeAlias = Literal["websocket", "sse"]
 """How a client opens a channel: as a WebSocket, or as a server-sent event stream."""
@@ -465,44 +473,55 @@ def _streams(document: _Document, members: Members, holder: Tokens, owner: Mappi
     )
 
 
-def _layers(
-    document: _Document, written: Mapping[str, YamlValue], tokens: Tokens, *, v2: bool
-) -> list[tuple[Mapping[str, YamlValue], Tokens]] | None:
+def _layers(document: _Document, written: Mapping[str, YamlValue], tokens: Tokens, *, v2: bool) -> _Layers | None:
     """Return an operation or a message at `tokens` and its traits, each with its pointer, the strongest last.
 
-    AsyncAPI 2 (`v2`) merges each trait into the object in order, by JSON Merge Patch, so a trait's field wins over the
-    object's; AsyncAPI 3 applies the traits in order and then the object, whose own fields win. None is a trait that
-    does not resolve.
+    They are in the order of `trait_layers`, the object's own fields winning except under AsyncAPI 2 (`v2`). None is a
+    trait that does not resolve.
     """
     if not isinstance(traits := written.get("traits"), list):
         return [(written, tokens)]
-    layers: list[tuple[Mapping[str, YamlValue], Tokens]] = []
+    layers: _Layers = []
     for index, trait in enumerate(traits):
         if (found := document.resolved(trait, (*tokens, "traits", str(index)))) is None:
             return None
         layers.append((as_mapping(found[0]), found[1]))
-    return [(written, tokens), *layers] if v2 else [*layers, (written, tokens)]
+    return trait_layers((written, tokens), layers, own_wins=not v2)
 
 
 def _bound(
-    document: _Document, written: Mapping[str, YamlValue], tokens: Tokens, *, v2: bool
+    document: _Document, written: Mapping[str, YamlValue], tokens: Tokens, layers: _Layers | None
 ) -> tuple[Tokens, Mapping[str, YamlValue]]:
     """Return where the bindings of an operation at `tokens` that give it its HTTP binding are, and their holder.
 
-    That is the strongest of its `_layers` whose bindings set the `http` one, which Merge Patch keeps whatever bindings
+    That is the strongest of its `layers` whose bindings set the `http` one, which Merge Patch keeps whatever bindings
     for other protocols a stronger layer has, or clear it (a null, which removes it); one whose bindings reference
     another document is taken as well, as the handshake then leaves the channel out. Without such a layer, or where a
     trait does not resolve, it is the operation's own.
     """
     protocol = _BINDINGS["sse"][0]
     chosen = (written, tokens)
-    for layer, at in _layers(document, written, tokens, v2=v2) or ():
+    for layer, at in layers or ():
         if "bindings" not in layer:
             continue
         found = document.resolved(layer["bindings"], (*at, "bindings"))
         if found is None or found[0] is None or protocol in as_mapping(found[0]):
             chosen = (layer, at)
     return (*chosen[1], "bindings"), chosen[0]
+
+
+def _traited(written: Mapping[str, YamlValue], layers: _Layers | None) -> Mapping[str, YamlValue] | None:
+    """Return an operation or a message with the fields its `layers` give it, or None when a trait does not resolve.
+
+    Only the fields the reader decides on are merged (`_TRAIT_FIELDS`), each from the strongest layer that has it. A
+    null field, which Merge Patch removes, reads as an absent one.
+    """
+    if layers is None:
+        return None
+    merged = dict(written)
+    for layer, _ in layers:
+        merged.update((key, layer[key]) for key in _TRAIT_FIELDS & layer.keys())
+    return merged
 
 
 def _offered(fixed: tuple[object, ...] | None) -> tuple[str, ...]:
@@ -906,8 +925,7 @@ class _Reader:
         for name, action in _V2_ACTIONS:
             if not isinstance(written := channel.get(name), dict):
                 continue
-            operations.append(_bound(self.document, written, (*declaration, name), v2=True))
-            if (operation := self.traited(written)) is None:
+            if (operation := self.operation(written, (*declaration, name), operations)) is None:
                 skips.append((None, f"a trait of its {name} operation references another document"))
                 continue
             securities.append(self.requirements(operation.get("security"), f"its {name} operation", skips))
@@ -944,8 +962,7 @@ class _Reader:
             action = written.get("action")
             if action not in {"send", "receive"}:
                 continue
-            operations.append(_bound(self.document, written, pointer_tokens(pointer), v2=False))
-            if (operation := self.traited(written)) is None:
+            if (operation := self.operation(written, pointer_tokens(pointer), operations)) is None:
                 skips.append((None, f"a trait of operation {pointer} references another document"))
                 continue
             securities.append(self.requirements(operation.get("security"), f"operation {pointer}", skips))
@@ -1010,18 +1027,16 @@ class _Reader:
             reply.get("messages"), holder, own, "receive" if operation["action"] == "send" else "send", skips
         )
 
-    def traited(self, written: Mapping[str, YamlValue]) -> Mapping[str, YamlValue] | None:
-        """Return an operation or a message with the fields its traits give it, or None when a trait does not resolve.
+    def operation(
+        self, written: Mapping[str, YamlValue], tokens: Tokens, operations: list[tuple[Tokens, Mapping[str, YamlValue]]]
+    ) -> Mapping[str, YamlValue] | None:
+        """Return an operation at `tokens` with the fields its traits give it, None when a trait does not resolve.
 
-        Only the fields the reader decides on are merged (`_TRAIT_FIELDS`), each from the strongest of its `_layers`
-        that has it. A null field, which Merge Patch removes, reads as an absent one.
+        Where the bindings that give it its HTTP binding are, and their holder, are added to `operations` (`_bound`).
         """
-        if (layers := _layers(self.document, written, (), v2=self.v2)) is None:
-            return None
-        merged = dict(written)
-        for layer, _ in layers:
-            merged.update((key, layer[key]) for key in _TRAIT_FIELDS & layer.keys())
-        return merged
+        layers = _layers(self.document, written, tokens, v2=self.v2)
+        operations.append(_bound(self.document, written, tokens, layers))
+        return _traited(written, layers)
 
     def message(self, value: YamlValue, written: Tokens, action: object, skips: Skips) -> Iterator[ReadMessage]:
         """Yield one message as the application sends or receives it, recording why a client cannot read its payload."""
@@ -1030,7 +1045,7 @@ class _Reader:
             return
         message, declaration = as_mapping(found[0]), found[1]
         pointer = join_pointer(declaration)
-        if (message := self.traited(message)) is None:
+        if (message := _traited(message, _layers(self.document, message, declaration, v2=self.v2))) is None:
             skips.append((None, f"a trait of message {pointer} references another document"))
             return
         payload = message.get("payload")

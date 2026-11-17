@@ -64,7 +64,7 @@ from datamodel_code_generator._target_contract import (
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_naming import NameScope
-from datamodel_code_generator._target_operations import coded_use, described, tags
+from datamodel_code_generator._target_operations import SERVER, coded_use, operation_docstring, tags
 from datamodel_code_generator._target_render import (
     Keyword,
     Parameter,
@@ -1082,15 +1082,11 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             parameters=tuple(self.parameters(module, spec, principal)),
             returns=_chain(module, self.results(module, spec)),
             docstring=format_docstring(
-                self.docstring(spec), 8, use_single_line_docstring=self.use_single_line_docstring
+                operation_docstring(spec.contract, schema=self.use_schema_description, verb=SERVER.verb),
+                8,
+                use_single_line_docstring=self.use_single_line_docstring,
             ),
         )
-
-    def docstring(self, spec: OperationSpec) -> str:
-        """Return an operation's docstring text: its summary and description, as the models document, or its route."""
-        if self.use_schema_description and (text := described(spec.contract)):
-            return text
-        return f"Handle {_label(spec.contract)}."
 
     def parameters(self, module: Module, spec: OperationSpec, principal: str) -> list[Parameter]:
         """Return the keyword-only parameters of one operation's method, typed as the endpoint passes them."""
