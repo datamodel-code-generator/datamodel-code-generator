@@ -329,3 +329,33 @@ def test_interrupted_publication_restores_every_output(tmp_path: Path, monkeypat
             update_lock=True,
         )
     assert_output("".join(f"{path.name}: {path.read_text(encoding='utf-8')}" for path in sorted(tmp_path.iterdir())))
+
+
+@pytest.mark.abnormal_path(
+    "only another process retargets an output directory between planning the jobs and checking them"
+)
+def test_batch_preflight_checks_the_planned_output_roots(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The batch preflight checks the output roots the jobs were planned with, which publication writes to."""
+    monkeypatch.chdir(tmp_path)
+    Path("pyproject.toml").write_text(
+        "[tool.datamodel-codegen.jobs.first]\n"
+        f"input = '{PERSON.as_posix()}'\ninput-file-type = 'jsonschema'\noutput = 'first.py'\n"
+        "[tool.datamodel-codegen.jobs.second]\n"
+        f"input = '{PERSON.as_posix()}'\ninput-file-type = 'jsonschema'\noutput = 'second.py'\n",
+        encoding="utf-8",
+    )
+
+    def retargeted(output: Path | None, _metadata: Path | None) -> Any:
+        root = (Path("second.py") if output and output.name == "first.py" else output).resolve()
+        return root, root.parent, None, None
+
+    monkeypatch.setattr("datamodel_code_generator._publication.artifact_roots", retargeted)
+    run_main_with_args(
+        ["--all-jobs", "--formatters", "builtin"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains="overlapping output paths",
+    )
+    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n")
