@@ -3,13 +3,13 @@
 A YAML key such as ``1`` or ``200`` loads as a number. A key that names a component, path, webhook, callback, method,
 header, media type, encoding property, link, scheme or message part must be a string, and the keys of a response map
 must give each response once as text; otherwise it is a schema error. Each reader of a document asks here and passes the
-path its error names, which only the reader can locate, as a function called when the error is raised. The walk of
-JSON pointer tokens through a loaded document is here too, with the rows that say how each reader reads one member,
-the fields of an AsyncAPI channel that each hold an operation, the value that wraps an AsyncAPI schema in a format and
-the schema and format it holds (``is_multi_format_schema_object``, ``held_schema``), the reference a discriminator
-mapping value names (``discriminator_mapping_ref``), the error a read of nested schemas ends in when it exceeds the
-Python recursion limit (``nesting_limit``) and the size limits of a document under --untrusted-input
-(``refuse_oversized_document``).
+path its error names, which only the reader can locate, as a function called when the error is raised. The walk of JSON
+pointer tokens through a loaded document is here too, with the rows that say how each reader reads one member, the
+fields of an AsyncAPI channel that each hold an operation, the value that wraps an AsyncAPI schema in a format and the
+schema and format it holds (``is_multi_format_schema_object``, ``held_schema``), the order an AsyncAPI operation or
+message and its traits apply in (``trait_layers``), the reference a discriminator mapping value names
+(``discriminator_mapping_ref``), the error a read of nested schemas ends in when it exceeds the Python recursion limit
+(``nesting_limit``) and the size limits of a document under --untrusted-input (``refuse_oversized_document``).
 """
 
 from __future__ import annotations
@@ -52,6 +52,7 @@ __all__ = [
     "string_key",
     "string_keyed",
     "string_keys",
+    "trait_layers",
 ]
 
 MISSING: Final = cast("YamlValue", Sentinel("MISSING"))
@@ -259,6 +260,15 @@ def held_schema(value: object, inherited: object = None) -> tuple[YamlValue, obj
         return None
     wrapper = as_mapping(value)
     return wrapper.get("schema"), wrapper.get("schemaFormat") or inherited
+
+
+def trait_layers(own: _T, traits: Iterable[_T], *, own_wins: bool) -> list[_T]:
+    """Return an AsyncAPI operation or message and its traits in the order they apply, the strongest last.
+
+    The traits apply in their order. AsyncAPI 3 then applies the object, whose own fields win (`own_wins`); AsyncAPI 2
+    merges each trait into the object by JSON Merge Patch, so a trait's field wins over the object's.
+    """
+    return [*traits, own] if own_wins else [own, *traits]
 
 
 def schema_format_media_type(schema_format: str) -> str:

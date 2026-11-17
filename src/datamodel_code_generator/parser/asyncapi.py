@@ -21,6 +21,7 @@ from datamodel_code_generator._document_reader import (
     held_schema,
     schema_format_media_type,
     string_keys,
+    trait_layers,
 )
 from datamodel_code_generator._json_pointer import escape_token
 from datamodel_code_generator._json_schema import definition_ref
@@ -624,7 +625,7 @@ class AsyncAPIParser(OpenAPIParser):
         )
         headers_name = _make_model_name(name, "Headers")
         trait_headers_name = None if "headers" in message else headers_name
-        if self.config.merge_message_trait_headers and len(headers := self._message_headers(message, path)) > 1:
+        if self.config.merge_message_trait_headers and len(headers := self._message_headers(message)) > 1:
             trait_headers_name = None
             if (merged := reduce(partial(_merge_patch, deref=self._dereferenced), headers)) is not None:
                 schemas.extend(self._merged_headers_schemas(headers_name, merged, message, path))
@@ -636,19 +637,16 @@ class AsyncAPIParser(OpenAPIParser):
         schemas.extend(_member_schemas(message, "bindings", self._iter_binding_schemas, name, path, seen_paths))
         return schemas
 
-    def _message_headers(self, message: dict[str, Any], path: list[str]) -> list[YamlValue]:
+    def _message_headers(self, message: dict[str, Any]) -> list[YamlValue]:
         """Return the headers of each trait of a message that defines them, in order, then the message's own.
 
-        Under ``--merge-message-trait-headers`` they are merged in this order, as the traits of AsyncAPI 2 and 3 are
-        (a JSON Merge Patch each, the message's own fields winning); a trait that is a reference is its target.
+        Under ``--merge-message-trait-headers`` they are merged in this order (``trait_layers``), a JSON Merge Patch
+        each; a trait that is a reference is its target. The message's own headers win under AsyncAPI 2 as well (row
+        ``legacy-own-headers-win-v2``), where AsyncAPI 2 lets each trait's win over the message's.
         """
-        headers: list[YamlValue] = []
-        for trait, _ in _iter_trait_items(message.get("traits"), [*path, "traits"]):
-            if isinstance(resolved := self._dereferenced(trait, siblings=True), dict) and "headers" in resolved:
-                headers.append(resolved["headers"])
-        if "headers" in message:
-            headers.append(message["headers"])
-        return headers
+        traits = (self._dereferenced(trait, siblings=True) for trait, _ in _iter_trait_items(message.get("traits"), []))
+        layers = trait_layers(message, (trait for trait in traits if isinstance(trait, dict)), own_wins=True)
+        return [layer["headers"] for layer in layers if "headers" in layer]
 
     def _merged_headers_schemas(
         self, name: str, merged: YamlValue, message: dict[str, Any], path: list[str]
