@@ -590,7 +590,7 @@ def map_value_schema(parser: ObjectMapsHost, obj: JsonSchemaObject) -> JsonSchem
     schema-valued additionalProperties.
     """
     if obj.patternProperties:
-        return parser._other_keys_schema(obj)  # noqa: SLF001
+        return parser._other_keys_schema(obj)
     return obj.additionalProperties if isinstance(obj.additionalProperties, JsonSchemaObject) else None
 
 
