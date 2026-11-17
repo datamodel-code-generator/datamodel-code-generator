@@ -1426,8 +1426,8 @@ def _annotation_chain(annotation: ast.expr | None) -> tuple[str, ...]:
     match annotation:
         case ast.Subscript(value=ast.Name(id="type"), slice=inner):
             return _annotation_chain(inner)
-        case ast.Subscript(value=value):
-            return _annotation_chain(value)
+        case ast.Subscript():
+            return _annotation_chain(annotation.value)
         case ast.Constant(value=str() as text):
             return _annotation_chain(ast.parse(text, mode="eval").body)
         case ast.Name() | ast.Attribute():
