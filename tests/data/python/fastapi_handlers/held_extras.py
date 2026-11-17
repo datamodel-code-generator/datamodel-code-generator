@@ -1,6 +1,7 @@
 """Services of the held extras server: they record the objects each endpoint receives, with the members they keep.
 
-A dataclass keeps other members as attributes beside its fields, and a model in its extra members.
+A dataclass keeps other members as attributes beside its fields, and a model in its extra members. `AllowBase` and
+`AllowDataclassBase` are base classes outside the schema (`--base-class`) whose configuration allows extra members.
 """
 
 from __future__ import annotations
@@ -8,8 +9,20 @@ from __future__ import annotations
 from dataclasses import asdict, is_dataclass
 from typing import TYPE_CHECKING
 
+from pydantic import BaseModel, ConfigDict
+from pydantic.dataclasses import dataclass
+
 if TYPE_CHECKING:
     from types import ModuleType
+
+
+class AllowBase(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+
+@dataclass(config=ConfigDict(extra="allow"))
+class AllowDataclassBase:
+    pass
 
 
 def _describe(value: object) -> str:

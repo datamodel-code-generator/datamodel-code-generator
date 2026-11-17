@@ -25,6 +25,7 @@ from datamodel_code_generator.model.base import (
     UNDEFINED,
     _classify_field_assignment,
     _find_base_classes,
+    _has_opaque_custom_base,
     _nested_model_factory,
     _NestedModelFactory,
     _order_refusals,
@@ -285,21 +286,22 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
         return super()._builds_patterns_with_python_engine()
 
     @override
-    def _applied_config_items(self, visiting: frozenset[int] = frozenset()) -> dict[str, str]:
+    def _applied_config(self, visiting: frozenset[int] = frozenset()) -> tuple[dict[str, str], frozenset[str] | None]:
         """Return the config items Pydantic applies: the dataclass's own, else all of its first dataclass base's.
 
-        A base on an inheritance cycle, which generation rejects later, adds nothing.
+        Without either, a configured base class the generator does not read may give them all. A base on an
+        inheritance cycle, which generation rejects later, adds nothing.
         """
         if own := self._rendered_config_items():
-            return dict(own)
+            return dict(own), None
         visiting |= {id(self)}
         return next(
             (
-                base._applied_config_items(visiting)  # noqa: SLF001
+                base._applied_config(visiting)  # noqa: SLF001
                 for base in _find_base_classes(self)
                 if isinstance(base, DataClass) and id(base) not in visiting
             ),
-            {},
+            ({}, frozenset() if _has_opaque_custom_base(self, self.BASE_CLASS) else None),
         )
 
     @property

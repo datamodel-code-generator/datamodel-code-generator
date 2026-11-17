@@ -372,8 +372,8 @@ class FinalModelSymbol:
     `source` is the path of the schema the declaration is generated from, and `discriminator` the one the schema of a
     union that reuse replaced with an equal union declares. An enum's `value_types` are the JSON types of its values.
     A Pydantic model's or dataclass's `extra` and `by_name` are what the configuration it applies, its bases' as
-    Pydantic applies them included, says of extra members and of validation by field name; `extra` is None for any
-    other declaration.
+    Pydantic applies them included, says of extra members and of validation by field name; `extra` is None where a
+    configured base class the generator does not read may set it, and for any other declaration.
     """
 
     id: SymbolId
