@@ -134,6 +134,26 @@ def keep(value: Any, other: "dict[str, Any]", odd: "a b") -> typing.Any:
     return cast("dict[str, Any]", cast(typing.Any, local)), other, odd
 """
 )
+ANY_VALUES = (
+    FUTURE
+    + """
+from typing import Annotated, Literal, cast
+
+
+def keep(value: Literal["Any"], other: Annotated[int, "Any"], third: Annotated["Any", "Any"]) -> "Literal['Any']":
+    return cast("Literal['Any'] | Annotated[int, 'Any']", value), other, third
+"""
+)
+LOCAL_IMPORT = (
+    FUTURE
+    + """
+
+def show() -> None:
+    import json
+
+    json.dumps(1)
+"""
+)
 DODGES = (
     FUTURE
     + """
@@ -230,7 +250,55 @@ def show(flag: bool) -> None:
         "args": ["--enforce"],
     },
     "any-uses": {"head": {"src/pkg/c.py": ANY_USES}, "args": ["--enforce"]},
+    "any-values": {"head": {"src/pkg/c.py": ANY_VALUES}, "args": ["--enforce"]},
     "dodges": {"head": {"src/pkg/c.py": DODGES}, "args": ["--enforce"]},
+    "fix-enabled": {
+        "head": {
+            "pyproject.toml": BASE["pyproject.toml"].replace("lint.select", "fix = true\nlint.select"),
+            "src/pkg/b.py": "import os  # noqa: F401\n",
+        },
+        "args": ["--enforce"],
+    },
+    "extended-per-file-ignores": {
+        "head": {
+            "pyproject.toml": BASE["pyproject.toml"].replace(
+                "lint.per-file-ignores.",
+                'lint.extend-per-file-ignores."src/pkg/b.py" = ["PLC0415"]\n'
+                'lint.extend-per-file-ignores."src/**/*.py" = ["FBT001"]\nextend = "base.toml"\nlint.per-file-ignores.',
+            ),
+            "base.toml": "line-length = 100\n",
+            "src/pkg/b.py": LOCAL_IMPORT,
+        },
+        "args": ["--enforce"],
+    },
+    "top-level-extended-ignores": {
+        "head": {
+            "pyproject.toml": BASE["pyproject.toml"].replace(
+                "lint.per-file-ignores.",
+                'extend-per-file-ignores."src/pkg/b.py" = ["PLC0415"]\nlint.per-file-ignores.',
+            ),
+            "src/pkg/b.py": LOCAL_IMPORT,
+        },
+        "args": ["--enforce"],
+    },
+    "quoted-hook-id": {
+        "head": {
+            ".pre-commit-config.yaml": HOOK_START.replace("id: ruff", 'id: "ruff"')
+            + '    exclude: "^src/pkg/generated/"\n    args: ["--extend-ignore", "T201"]\n'
+        },
+        "args": ["--enforce"],
+    },
+    "allowlist-subscript-writes": {
+        "base": {"tests/assert_helper_allowlists.py": ALLOWLIST},
+        "head": {
+            "tests/assert_helper_allowlists.py": ALLOWLIST
+            + 'JUSTIFIED_VIOLATIONS = {"g": ("a",)}\nJUSTIFIED_VIOLATIONS["g"] += ("b",)\n'
+            'JUSTIFIED_VIOLATIONS["h"] = ("c", "d")\nFROZEN_VIOLATIONS = {"g": ["a"]}\n'
+            'FROZEN_VIOLATIONS["g"].append("x")\nLEGACY_VIOLATIONS = {}\n'
+            'LEGACY_VIOLATIONS["g"] += FROZEN_VIOLATIONS["g"]\n'
+        },
+        "args": ["--enforce"],
+    },
     "explicit-preview-rules": {
         "base": {
             "src/pkg/m.py": FUTURE + "\n\nclass M:\n    def run(self) -> int:\n        return 1\n",
@@ -296,6 +364,18 @@ def show(flag: bool) -> None:
             ),
             "src/pkg/a.py": FUTURE + SIZE + NAME.replace("-> str:", "-> str:  # pragma: no cover"),
         },
+        "subprocess": True,
+    },
+    "weakened-counter-unreadable": {
+        "base": {"scripts/check_ratchets.py": SCRIPT},
+        "head": {
+            "scripts/check_ratchets.py": SCRIPT.replace(
+                'HOOK_UNREADABLE_FLAGS = frozenset({"--select", "--config"})',
+                'HOOK_UNREADABLE_FLAGS = frozenset({"--select"})',
+            ),
+            ".pre-commit-config.yaml": HOOK_START + '    args: ["--config", "lint.preview = true"]\n',
+        },
+        "args": ["--enforce"],
         "subprocess": True,
     },
 }

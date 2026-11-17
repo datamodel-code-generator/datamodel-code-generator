@@ -56,7 +56,7 @@ import tomllib
 SCRIPT = "scripts/check_ratchets.py"
 STORE_ALLOWLIST = "scripts/generation_store_allowlist.toml"
 AREAS = frozenset({"src", "tests", "scripts"})
-FIX_FLAGS = frozenset({"--fix", "--unsafe-fixes", "--exit-non-zero-on-fix", "--show-fixes"})
+FIX_FLAGS = frozenset({"--fix", "--fix-only", "--unsafe-fixes", "--exit-non-zero-on-fix", "--show-fixes"})
 IGNORE_FLAGS = frozenset({"--ignore", "--extend-ignore"})
 RAW_FLAGS = (
     "--ignore-noqa",
@@ -65,8 +65,6 @@ RAW_FLAGS = (
     "--preview",
     "--config",
     "lint.explicit-preview-rules = false",
-    "--config",
-    "lint.extend-per-file-ignores = {}",
 )
 PREVIEW_FLAGS = frozenset({"--preview", "--no-preview"})
 UNCHECKED = ("tests/data/",)
@@ -231,7 +229,7 @@ def _ruff_hook(root: Path) -> Hook:
         elif match := re.match(r"\s*rev:\s*(.+)", line):
             rev = str(_yaml_value(match[1])) if "ruff-pre-commit" in repo else rev
         elif match := re.match(r"\s*-\s*id:\s*(\S+)", line):
-            hook = match[1]
+            hook = str(_yaml_value(match[1]))
         elif (match := re.match(r"(\s*)(exclude|args):\s*(.*)", line)) and "ruff-pre-commit" in repo and hook == "ruff":
             value = _hook_value(match[3], lines[number + 1 :], len(match[1]))
             if isinstance(value, list if match[2] == "args" else str):
@@ -266,12 +264,38 @@ def _ignore_flags(rules: list[str]) -> list[str]:
 def _ruff_json(ruff: list[str], root: Path, flags: list[str], files: list[str]) -> list[dict[str, object]]:
     findings: list[dict[str, object]] = []
     for start in range(0, len(files), CHUNK):
-        command = [*ruff, "check", "--no-cache", "--exit-zero", "--output-format", "json", "--force-exclude", *flags]
+        command = [
+            *ruff,
+            "check",
+            "--no-cache",
+            "--exit-zero",
+            "--output-format",
+            "json",
+            "--force-exclude",
+            *flags,
+            "--no-fix",
+        ]
         output = subprocess.run(
             [*command, *files[start : start + CHUNK]], cwd=root, capture_output=True, text=True, check=True
         )
         findings.extend(json.loads(output.stdout))
     return findings
+
+
+def _toml(value: object) -> str:
+    """Write a value read from a TOML file back as TOML: JSON scalars and lists, inline tables for dicts."""
+    if isinstance(value, dict):
+        return "{" + ", ".join(f"{json.dumps(key)} = {_toml(item)}" for key, item in value.items()) + "}"
+    return "[" + ", ".join(map(_toml, value)) + "]" if isinstance(value, list) else json.dumps(value)
+
+
+def _without_extended_ignores(config: dict, root: Path) -> dict:
+    """Return the ruff settings without ``extend-per-file-ignores``, which no override can clear: it is additive."""
+    lint = {key: value for key, value in config.get("lint", {}).items() if key != "extend-per-file-ignores"}
+    kept = {key: value for key, value in config.items() if key not in {"extend-per-file-ignores", "lint"}}
+    if "extend" in kept:
+        kept["extend"] = str(root / kept["extend"])
+    return {**kept, "lint": lint}
 
 
 def _relative(root: Path, name: str) -> str:
@@ -328,7 +352,18 @@ def _ruff_tally(tally: Tally, root: Path, files: list[str], ruff: list[str], pyp
     kept = ", ".join(f"{json.dumps(glob)} = {json.dumps(rules)}" for glob, rules in area_policies.items() if rules)
     raw_flags = [*RAW_FLAGS, "--config", f"lint.per-file-ignores = {{{kept}}}"]
     raw_flags += [arg for arg in hook_args if arg not in PREVIEW_FLAGS]
-    raw = _ruff_json(ruff, root, [*raw_flags, *_ignore_flags(policy)], checked)
+    with tempfile.TemporaryDirectory() as directory:
+        if config.get("extend-per-file-ignores") or lint.get("extend-per-file-ignores"):
+            settings = Path(directory) / "ruff.toml"
+            settings.write_text(
+                "\n".join(
+                    f"{json.dumps(key)} = {_toml(value)}"
+                    for key, value in _without_extended_ignores(config, root).items()
+                ),
+                encoding="utf-8",
+            )
+            raw_flags += ["--config", str(settings)]
+        raw = _ruff_json(ruff, root, [*raw_flags, *_ignore_flags(policy)], checked)
     normal = _ruff_json(ruff, root, [*hook_args, *_ignore_flags(hook_ignores)], checked)
 
     def sites(findings: list[dict[str, object]]) -> Counter[tuple[str, str, int]]:
@@ -378,19 +413,28 @@ def _name(node: ast.AST) -> str:
     return node.id if isinstance(node, ast.Name) else getattr(node, "attr", "")
 
 
-def _any_lines(annotation: ast.expr) -> list[int]:
+def _type_positions(node: ast.AST) -> list[ast.AST]:
+    """Return the parts of an annotation that are types, not ``Literal`` values or ``Annotated`` metadata."""
+    if not isinstance(node, ast.Subscript):
+        return list(ast.iter_child_nodes(node))
+    kind = _name(node.value)
+    if kind == "Literal":
+        return [node.value]
+    if kind == "Annotated" and isinstance(node.slice, ast.Tuple):
+        return [node.value, *node.slice.elts[:1]]
+    return list(ast.iter_child_nodes(node))
+
+
+def _any_lines(node: ast.AST) -> list[int]:
     """Return the lines of the ``Any`` names in an annotation, string annotations included."""
-    lines: list[int] = []
-    for node in ast.walk(annotation):
-        if isinstance(node, ast.Constant) and isinstance(node.value, str):
-            try:
-                inner = ast.parse(node.value.strip(), mode="eval").body
-            except (SyntaxError, ValueError):
-                continue
-            lines += [node.lineno] * len(_any_lines(inner))
-        elif _name(node) == "Any":
-            lines.append(node.lineno)
-    return lines
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        try:
+            inner = ast.parse(node.value.strip(), mode="eval").body
+        except (SyntaxError, ValueError):
+            return []
+        return [node.lineno] * len(_any_lines(inner))
+    lines = [node.lineno] if _name(node) == "Any" else []
+    return lines + [line for part in _type_positions(node) for line in _any_lines(part)]
 
 
 def _annotation(node: ast.AST) -> ast.expr | None:
@@ -479,11 +523,18 @@ def _entries(node: ast.expr) -> list[ast.expr] | None:
     return list(value.elts) if isinstance(value, (ast.Tuple, ast.List, ast.Set)) else None
 
 
+def _listed_name(node: ast.AST | None, names: frozenset[str]) -> str:
+    """Return the listed name a target or owner expression is, or subscripts (``X["g"]``), or an empty string."""
+    while isinstance(node, ast.Subscript):
+        node = node.value
+    return node.id if isinstance(node, ast.Name) and node.id in names else ""
+
+
 def _method_owner(statement: ast.stmt, names: frozenset[str]) -> str:
     """Return the listed name a statement calls a method on (``update``, ``add``, ...), or an empty string."""
     call = statement.value if isinstance(statement, ast.Expr) else None
     owner = call.func.value if isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute) else None
-    return owner.id if isinstance(owner, ast.Name) and owner.id in names else ""
+    return _listed_name(owner, names)
 
 
 def _config_tally(tally: Tally, root: Path, pyproject: dict) -> None:
@@ -523,12 +574,12 @@ def _config_tally(tally: Tally, root: Path, pyproject: dict) -> None:
             value = getattr(statement, "value", None)
             if owner := _method_owner(statement, names):
                 tally.add(f"allowlist:{owner}:unreadable", path, statement.lineno)
-            elif isinstance(target, ast.Name) and target.id in names and value is not None:
+            elif (listed := _listed_name(target, names)) and value is not None:
                 entries = _entries(value)
                 for entry in entries or []:
-                    tally.add(f"allowlist:{target.id}", path, entry.lineno)
+                    tally.add(f"allowlist:{listed}", path, entry.lineno)
                 if entries is None:
-                    tally.add(f"allowlist:{target.id}:unreadable", path, statement.lineno)
+                    tally.add(f"allowlist:{listed}:unreadable", path, statement.lineno)
     architecture = root / "docs/architecture.md"
     text = architecture.read_text(encoding="utf-8") if architecture.is_file() else ""
     for match in LEGACY_ROW.finditer(text):
@@ -614,23 +665,23 @@ def _copy_counts(copy: Path, root: Path, ruff_args: list[str], what: str, base: 
     return json.loads(output.stdout)
 
 
-def _report_copy(
-    base_root: Path, head_root: Path, ruff_args: list[str], head_rises: set[str], base_commit: str
-) -> list[str]:
+def _report_copy(base_root: Path, head_root: Path, ruff_args: list[str], seen: set[str], base_commit: str) -> list[str]:
     """Count both trees with the base revision's copy of this script and report the rises only it sees."""
     copy = base_root / SCRIPT
     if not copy.is_file():
         return []
     base = _copy_counts(copy, base_root, ruff_args, "the base revision", base_commit)
     head = _copy_counts(copy, head_root, ruff_args, "the working tree", base_commit)
-    unseen = [key for key in _rises(base, head) if key not in head_rises]
+    unseen = [key for key in _rises(base, head) if key not in seen]
+    hidden = {key: files for key, files in head.items() if key not in seen}
     header = [
         "",
         f"The base revision's {SCRIPT} also counts these rises, which this copy does not: the change weakens the",
         "counter that judges it. Keep the counter's rules (changes to it are reviewed) and fix the hatches:",
     ]
     body = [line for key in unseen for line in _rise_lines(key, base, head, {})]
-    return [*header, *body] if unseen else []
+    body += _unreadable_lines(hidden)
+    return [*header, *body] if body else []
 
 
 def _unreadable_lines(counts: dict[str, dict[str, int]]) -> list[str]:
@@ -659,7 +710,8 @@ def _compare(base_ref: str, head_root: Path, ruff: list[str], ruff_args: list[st
         lines += _report_rises(base, head)
         unreadable = _unreadable_lines(head.counts())
         lines += unreadable
-        copy_lines = _report_copy(base_root, head_root, ruff_args, head_rises, fork)
+        seen = head_rises | {key for key in head.counts() if _kind(key) == "unreadable"}
+        copy_lines = _report_copy(base_root, head_root, ruff_args, seen, fork)
     rose = bool(head_rises or copy_lines or unreadable)
     verdict = (
         "Some keys rose: the budget is the base. Exit status 0 unless --enforce is given. "
