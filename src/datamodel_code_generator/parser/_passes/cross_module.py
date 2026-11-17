@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any, Final, cast
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator._graph import post_order
 from datamodel_code_generator._model_keys import keyed_or_path
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator.imports import Import
@@ -21,6 +20,7 @@ from datamodel_code_generator.model.base import (
     BaseClassDataType,
     DataModel,
     _find_base_classes,
+    _walk_bases_first,
 )
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._passes._import_binding import (
@@ -212,10 +212,9 @@ def flatten_narrowed_inherited_fields(parser: FlattenAcrossModulesHost, run: Cro
     """
     flatten = _flattener(parser, run, "flatten-narrowed-inherited-fields")
     written = {id(model) for ctx in run.contexts for model in ctx.models}
-    for model in post_order(
+    for model in _walk_bases_first(
         [model for ctx in run.contexts for model in ctx.models],
-        lambda model: [base for base in _find_base_classes(model) if id(base) in written],
-        id,
+        bases_of=lambda model: [base for base in _find_base_classes(model) if id(base) in written],
     ):
         if model._declares_inherited_fields():  # noqa: SLF001
             flatten(model)

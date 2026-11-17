@@ -30,6 +30,7 @@ from datamodel_code_generator._container_kinds import (
 )
 from datamodel_code_generator._graph import post_order
 from datamodel_code_generator._model_keys import model_key_of
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator.model._decisions.hashability import (
     ValueHashItem,
     every_value_hashes,
@@ -281,19 +282,17 @@ class _ByValue:
         """Yield the fields of a model and of the live models it inherits from, each model once and each name once.
 
         A name is the field of the first model that declares it, the model before its bases, as a field a model
-        declares again replaces the one it inherits in its instances. The members of an enum are no fields of its
-        instances, which are the members themselves.
+        declares again replaces the one it inherits in its instances. Row ``legacy-unique-sets-level-order``: the models
+        are read nearest first (`ReferenceGraph.level_order`), so a name declared by a base two levels up and by a later
+        direct base is the later base's field, where the class's C3 order takes the first. The members of an enum are
+        no fields of its instances, which are the members themselves.
         """
-        seen: dict[int, ModelView] = {}
-        found = {} if model.form == "enum" else {id(model): model}
-        while found:
-            seen |= found
-            found = {
-                id(base): base for current in found.values() for base in self._bases(current) if id(base) not in seen
-            }
+        if model.form == "enum":
+            return
+        walk = walk_graph(GraphSnapshot.BASES, EdgeKind.BASE, (model,), _view_key, self._bases)
         names: set[str | None] = set()
-        for current in seen.values():
-            for field in current.fields:
+        for key in walk.graph.level_order(walk.starts[0], EdgeKind.BASE):
+            for field in walk.node_of[key].fields:
                 if field.name is None or field.name not in names:
                     names.add(field.name)
                     yield field
@@ -362,6 +361,11 @@ def _write_unique_items_as_sets(facts: FinalFacts, writer: UniqueSetsWriter) -> 
             writer.write_sets(model, field, plan.sets, default)
     for model, plan in additional:
         writer.write_additional_properties_sets(model, plan.sets)
+
+
+def _view_key(model: ModelView) -> ModelKey:
+    """Return the model key of a live model, by which the walk of its bases tells models apart."""
+    return model_key_of(model.reference)
 
 
 def _item_types(node: Any, index: int) -> Sequence[Any]:

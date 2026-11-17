@@ -32,10 +32,9 @@ from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._model_keys import (
     FIELDLESS_SITE_KEY,  # noqa: F401  # Preserve the established model.pydantic_v2.base_model export.
     is_fieldless_site,
-    model_key_of,
 )
 from datamodel_code_generator._python_syntax import call_text, holds_lone_surrogate
-from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
+from datamodel_code_generator._reference_graph import EdgeKind
 from datamodel_code_generator._regex_syntax import (
     pattern_engine,
     selects_python_engine,
@@ -78,11 +77,11 @@ from datamodel_code_generator.model.base import (
     BaseClassDataType,
     DataModel,
     DataModelFieldBase,
+    _base_walk,
     _builtin_renderer,
     _default_state,
     _find_base_classes,
     _get_template_with_custom_dir,
-    _model_key_of_model,
     _ModelKeys,
     _uses_original_template_loader,
     overrides_builtin_templates,
@@ -1510,6 +1509,20 @@ def _internal_runtime_validation(model: DataModel) -> SchemaRuntimeValidation | 
     return validation if _is_internal_schema_runtime_validation(validation) and validation else None
 
 
+def _inherits_schema_runtime_validation_base(model: DataModel, local_model_ids: Collection[int]) -> bool:
+    """Return whether a model already inherits the generated runtime validation base.
+
+    It does where one of the generated models it inherits from through models of ``local_model_ids``, however distant,
+    has runtime validation (``_internal_runtime_validation``).
+    """
+    walk = _base_walk(
+        (model,), bases_of=lambda current: [base for base in _find_base_classes(current) if id(base) in local_model_ids]
+    )
+    return any(
+        _internal_runtime_validation(walk.node_of[key]) for key in walk.graph.reached(walk.starts[0], (EdgeKind.BASE,))
+    )
+
+
 def _helper_template_facts(runtime_validations: list[SchemaRuntimeValidation]) -> dict[str, bool]:
     """Return what the schema validator helpers write for the rules of a module's models; imports read it too."""
     facts = {
@@ -1620,8 +1633,9 @@ def _config_scopes(model: DataModel) -> Iterator[tuple[DataModel, bool]]:
     """
     from datamodel_code_generator.model.type_alias import TypeAliasBase  # noqa: PLC0415
 
-    for current in reach((model,), _find_base_classes, key=id):
-        yield current, False
+    walk = _base_walk((model,))
+    for key in walk.graph.preorder(walk.starts[0], EdgeKind.BASE):
+        yield walk.node_of[key], False
     reached = reach(
         (model,),
         lambda current: [
@@ -1744,9 +1758,7 @@ def _explicit_alias_conflicts_with_pydantic(field: DataModelFieldBase, name: str
                 return False
         return name.startswith(namespaces)
 
-    walk = walk_graph(
-        GraphSnapshot.PROTECTED_NAMESPACES, EdgeKind.BASE, (model,), _model_key_of_model, _find_base_classes
-    )
+    walk = _base_walk((model,))
     graph = walk.graph
     return conflicts(
         (walk.node_of[key], bool(graph.ordered_targets(key, EdgeKind.BASE)))
@@ -2031,11 +2043,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
                 )
                 model._set_internal_template_data(  # noqa: SLF001
                     "schema_runtime_validation_use_base",
-                    not cls._inherits_schema_runtime_validation_base(
-                        model,
-                        seen=set(),
-                        local_model_ids=local_model_ids,
-                    ),
+                    not _inherits_schema_runtime_validation_base(model, local_model_ids),
                 )
             module_plan = SchemaRuntimeValidationModulePlan(base_class_name, has_property_count=False)
         else:
@@ -2451,31 +2459,6 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             custom_template_dir,
         )
         return template.render(**context)
-
-    @classmethod
-    def _inherits_schema_runtime_validation_base(
-        cls,
-        model: DataModel,
-        *,
-        seen: set[ModelKey],
-        local_model_ids: set[int] | None = None,
-    ) -> bool:
-        """Return whether a model already inherits the generated runtime validation base; ``seen`` holds model keys."""
-        if (key := model_key_of(model.reference)) in seen:
-            return False
-        seen.add(key)
-        for base_model in _find_base_classes(model):
-            if local_model_ids is not None and id(base_model) not in local_model_ids:
-                continue
-            if _internal_runtime_validation(base_model):
-                return True
-            if cls._inherits_schema_runtime_validation_base(
-                base_model,
-                seen=seen,
-                local_model_ids=local_model_ids,
-            ):
-                return True
-        return False
 
     @classmethod
     @override

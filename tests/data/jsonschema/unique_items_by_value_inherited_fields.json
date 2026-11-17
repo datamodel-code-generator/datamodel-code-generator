@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "levels": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/Levels"}},
+    "diamond": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/Diamond"}}
+  },
+  "definitions": {
+    "Z": {"type": "object", "properties": {"x": {"type": "array", "items": {"type": "string"}}}},
+    "A": {"allOf": [{"$ref": "#/definitions/Z"}], "properties": {"a": {"type": "string"}}},
+    "B": {"type": "object", "properties": {"x": {"type": "string"}}},
+    "Levels": {"allOf": [{"$ref": "#/definitions/A"}, {"$ref": "#/definitions/B"}]},
+    "Y": {"type": "object", "properties": {"y": {"type": "string"}}},
+    "P": {"allOf": [{"$ref": "#/definitions/Y"}], "properties": {"p": {"type": "string"}}},
+    "Q": {"allOf": [{"$ref": "#/definitions/Y"}], "properties": {"q": {"type": "string"}}},
+    "Diamond": {"allOf": [{"$ref": "#/definitions/P"}, {"$ref": "#/definitions/Q"}]}
+  }
+}

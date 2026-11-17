@@ -805,7 +805,6 @@ LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "marker-reason:tests/model/pydantic_v2/test_base_model.py::test_property_count_inherited_capability_skips_unused_local_helper",
         "marker-reason:tests/model/pydantic_v2/test_base_model.py::test_property_count_inherits_external_core_pattern_type_import",
         "marker-reason:tests/model/pydantic_v2/test_base_model.py::test_runtime_root_model_extra_config_is_idempotent",
-        "marker-reason:tests/model/pydantic_v2/test_base_model.py::test_schema_runtime_validation_base_inheritance_detects_transitive_base",
         "marker-reason:tests/model/pydantic_v2/test_base_model.py::test_schema_runtime_validation_base_planner_handles_cyclic_models",
         "marker-reason:tests/model/pydantic_v2/test_base_model.py::test_schema_runtime_validation_helpers_are_gated_by_parser_option",
         "marker-reason:tests/model/pydantic_v2/test_base_model.py::test_schema_runtime_validation_module_plan_skips_leading_generic_model",

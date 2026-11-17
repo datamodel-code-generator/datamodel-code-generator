@@ -67,7 +67,7 @@ from datamodel_code_generator import Error
 from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAKEN_KEYWORD
 from datamodel_code_generator._model_keys import model_key_of, ref_branch_schema_of
 from datamodel_code_generator._records import mutable_record, record
-from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
+from datamodel_code_generator._reference_graph import EdgeKind
 from datamodel_code_generator.model._decisions.enum_kind import values_no_literal_holds
 from datamodel_code_generator.model._decisions.tag_value import (
     SCALAR_TAG_TYPES,
@@ -87,9 +87,10 @@ from datamodel_code_generator.model._decisions.tag_value import (
 from datamodel_code_generator.model.base import (
     ConstraintsBase,
     DataModel,
+    _base_walk,
     _find_base_classes,
-    _model_key_of_model,
     _ModelKeys,
+    _walk_bases_first,
     linearize_data_models,
 )
 from datamodel_code_generator.model.enum import Enum
@@ -503,7 +504,7 @@ TagFieldOrder: TypeAlias = Literal["nearest-first", "legacy-root-most-first", "l
 def _inherited_models(variant: DataModel, order: TagFieldOrder) -> Iterator[DataModel]:
     """Yield the models a variant inherits from, each once, in ``order`` (:data:`TagFieldOrder`)."""
     if order == "legacy-root-most-first":
-        yield from variant._bases_first(set())[:-1]  # noqa: SLF001
+        yield from _walk_bases_first((variant,), set())[:-1]
     else:
         direct = _find_base_classes(variant) if order == "legacy-direct-bases-first" else []
         yield from direct
@@ -1661,7 +1662,7 @@ def _structs_sharing_a_union(models: Iterable[DataModel]) -> set[int]:
 
 def _has_cyclic_ancestry(model: DataModel) -> bool:
     """Return whether the base classes of a model, however distant, inherit from one another in a cycle."""
-    walk = walk_graph(GraphSnapshot.CYCLIC_ANCESTRY, EdgeKind.BASE, (model,), _model_key_of_model, _find_base_classes)
+    walk = _base_walk((model,))
     return walk.graph.acyclic_order((EdgeKind.BASE,)) is None
 
 
@@ -1672,7 +1673,7 @@ def _bases_first(models: Sequence[DataModel]) -> list[DataModel]:
     reaches wait for their own turn. L6 changes the bases of a model only once its turn has come, so the order is
     that of the snapshot of ``models`` and the models they inherit from, taken before.
     """
-    walk = walk_graph(GraphSnapshot.TAGGED_BASES, EdgeKind.BASE, models, _model_key_of_model, _find_base_classes)
+    walk = _base_walk(models)
     met = set(walk.node_of).difference(walk.starts)
     order: list[ModelKey] = []
     for model, key in zip(models, walk.starts, strict=True):
