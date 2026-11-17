@@ -656,6 +656,10 @@ Every option needs a decision in the [option recommender](recommend-options.md).
 (the snake_case name, such as `my_new_option` for `--my-new-option`) to the `options` table of
 `src/datamodel_code_generator/resources/recommender_rules.json`, in alphabetical order.
 
+An option that a dated standard preset sets for every input, output model type and Python target needs no entry: the
+recommendation starts from a preset, so the preset decides it. Add an entry only when a rule decides it or its reason
+says more, such as the outputs the option applies to.
+
 If a recommender rule decides the option, list the rule ids. Each rule must supply the field through `set` or
 `value_from` (see [Writing a recommender rule](#writing-a-recommender-rule)):
 
@@ -675,11 +679,11 @@ release it must be decided by in `release`, such as `"release": "0.86.0"`. Once 
 the registry test fails until the entry gets a rule or a category.
 
 `test_every_option_is_registered_with_the_recommender` in `tests/main/test_main_recommend_options.py` fails when a
-config field or CLI option has no entry (`Options missing from the recommender registry: ...`) or an entry has no
-option. `test_recommender_rules_match_the_option_registry` fails when an entry names a rule that does not set that
-field, when a rule sets a field whose entry does not list it or that has no CLI option, or when a `pending` entry
-lacks `follow_up` and `release` or outlives its release (`Rule data problems: ...`). Both failures show the entry
-format above.
+config field or CLI option has neither an entry nor a dated preset that sets it (`Options missing from the recommender
+registry: ...`) or an entry has no option. `test_recommender_rules_match_the_option_registry` fails when an entry names
+a rule that does not set that field, when a rule sets a field whose entry does not list it or that has no CLI option, or
+when a `pending` entry lacks `follow_up` and `release` or outlives its release (`Rule data problems: ...`). Both
+failures show the entry format above.
 
 ### Step 5: Generate and verify documentation
 

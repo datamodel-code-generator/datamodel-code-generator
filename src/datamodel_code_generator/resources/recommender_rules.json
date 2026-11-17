@@ -535,10 +535,6 @@
       "not_recommended": "runtime-behaviour",
       "reason": "Python API spelling of --use-default; changes validation."
     },
-    "apply_field_options_to_every_field": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261106 presets; the recommendation starts from a preset."
-    },
     "base_class": {
       "not_recommended": "style",
       "reason": "The project's own base class."
@@ -562,10 +558,6 @@
     "check": {
       "not_recommended": "command",
       "reason": "Compares generated output with files on disk."
-    },
-    "check_pattern_maps_strictly": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "class_decorators": {
       "not_recommended": "style",
@@ -649,10 +641,6 @@
       "not_recommended": "style",
       "reason": "Which name survives --collapse-root-models; a naming preference."
     },
-    "collapse_shared_parent_wrappers": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
-    },
     "command_line": {
       "not_recommended": "formatting",
       "reason": "Python API only: the command shown in file headers."
@@ -697,10 +685,6 @@
       "not_recommended": "preset",
       "reason": "--read-only-write-only-model-type only: set by the 20261106 presets; the recommendation starts from a preset."
     },
-    "dedupe_request_response_variants": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
-    },
     "default_value_overrides": {
       "not_recommended": "runtime-behaviour",
       "reason": "Python API spelling of --default-values; only the project knows the values."
@@ -732,10 +716,6 @@
     "disable_warnings": {
       "not_recommended": "debug",
       "reason": "Hides warnings; it does not change the models."
-    },
-    "distribute_allof_over_unions": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
     },
     "duplicate_name_suffix": {
       "not_recommended": "style",
@@ -813,10 +793,6 @@
     "field_type_collision_strategy": {
       "not_recommended": "style",
       "reason": "Which name changes when a field and its type share a name; a project convention."
-    },
-    "filter_literal_values": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "force_optional": {
       "not_recommended": "runtime-behaviour",
@@ -903,10 +879,6 @@
       "not_recommended": "command",
       "reason": "Ignores pyproject.toml configuration."
     },
-    "ignore_ref_siblings_by_schema_version": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
-    },
     "import_overrides": {
       "not_recommended": "style",
       "reason": "Imports symbols from the project's modules."
@@ -914,10 +886,6 @@
     "include_path_parameters": {
       "not_recommended": "style",
       "reason": "Adds path parameters to parameter models; the project decides which models it needs."
-    },
-    "infer_union_discriminators": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261113 presets; the recommendation starts from a preset."
     },
     "infer_union_variant_names": {
       "rules": [
@@ -948,14 +916,6 @@
       "not_recommended": "command",
       "reason": "Installs the Agent Skill and exits."
     },
-    "intersect_allof_keywords": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
-    },
-    "intersect_combined_schema_keywords": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
-    },
     "job": {
       "not_recommended": "command",
       "reason": "Selects a pyproject.toml job; the recommendation keeps it."
@@ -984,25 +944,13 @@
       "not_recommended": "preset",
       "reason": "With model-level --type-overrides only: set by the 20261106 presets; the recommendation starts from a preset."
     },
-    "keep_self_referencing_array_items": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261106 presets; the recommendation starts from a preset."
-    },
     "keep_defaults_of_inherited_required_fields": {
       "not_recommended": "preset",
       "reason": "With --use-default only: set by the 20261106 presets; the recommendation starts from a preset."
     },
-    "keep_enum_member_values": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
-    },
     "keep_false_dataclass_arguments": {
       "not_recommended": "preset",
       "reason": "With --dataclass-arguments only: set by the 20261106 presets; the recommendation starts from a preset."
-    },
-    "keep_field_defaults_off_branch_roots": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "keep_content_parameter_refs": {
       "not_recommended": "preset",
@@ -1015,10 +963,6 @@
     "keep_model_order": {
       "not_recommended": "style",
       "reason": "Keeps the schema order of models in the output."
-    },
-    "keep_reference_null_on_merged_models": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
     },
     "keyword_only": {
       "not_recommended": "style",
@@ -1086,18 +1030,10 @@
       "not_recommended": "command",
       "reason": "Disables colored help."
     },
-    "omit_incomplete_model_defaults": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261106 presets; the recommendation starts from a preset."
-    },
     "omit_redundant_constraints": {
       "rules": [
         "constraints.omit-redundant"
       ]
-    },
-    "omit_redundant_reference_null": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "open_enum_base_class_map": {
       "not_recommended": "style",
@@ -1176,35 +1112,15 @@
       "not_recommended": "command",
       "reason": "Selects a pyproject.toml profile; the recommendation keeps it."
     },
-    "read_allof_parents_in_mro_order": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261106 presets; the recommendation starts from a preset."
-    },
     "read_const_beside_enum": {
       "rules": [
         "enums.read-as-their-const"
       ]
     },
-    "read_dynamic_anchors_in_document_order": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
-    },
-    "read_escaped_ref_pointers": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
-    },
     "read_format_as_annotation": {
       "rules": [
         "formats.read-as-annotation"
       ]
-    },
-    "read_ids_with_empty_fragment": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261113 presets; the recommendation starts from a preset."
-    },
-    "read_implied_options_from_merged_values": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261113 presets; the recommendation starts from a preset."
     },
     "read_inherited_property_schemas_in_mro_order": {
       "not_recommended": "preset",
@@ -1214,21 +1130,9 @@
       "not_recommended": "preset",
       "reason": "--input-model only: set by the 20261104 presets; the recommendation starts from a preset."
     },
-    "read_length_keywords_by_type": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
-    },
     "read_msgspec_union_bounds_exactly": {
       "not_recommended": "preset",
       "reason": "msgspec.Struct output only: set by the 20261104 presets; the recommendation starts from a preset."
-    },
-    "read_nullable_beside_type_list": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
-    },
-    "read_object_keywords_by_type": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261112 presets; the recommendation starts from a preset."
     },
     "read_only_write_only_model_type": {
       "not_recommended": "style",
@@ -1239,14 +1143,6 @@
         "versions.read-per-document"
       ]
     },
-    "read_single_allof_refs_in_their_documents": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261113 presets; the recommendation starts from a preset."
-    },
-    "read_yaml_1_1_numbers_as_text": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261113 presets; the recommendation starts from a preset."
-    },
     "recommend_options": {
       "not_recommended": "command",
       "reason": "Prints these recommendations and exits."
@@ -1254,10 +1150,6 @@
     "remove_special_field_name_prefix": {
       "not_recommended": "style",
       "reason": "Removes leading underscores of field names; a project convention."
-    },
-    "rename_submodules_hidden_by_classes": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
     },
     "reuse_every_reached_input_model_type": {
       "not_recommended": "preset",
@@ -1356,10 +1248,6 @@
       "not_recommended": "style",
       "reason": "Module name for models shared across modules; a package layout choice."
     },
-    "singularize_last_word_of_item_names": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
-    },
     "skill_scope": {
       "not_recommended": "command",
       "reason": "Scope of --install-skill."
@@ -1426,10 +1314,6 @@
       "not_recommended": "style",
       "reason": "Replaces models with the project's own types."
     },
-    "type_overrides_replace_whole_type": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
-    },
     "union_mode": {
       "not_recommended": "runtime-behaviour",
       "reason": "pydantic union validation mode; changes validation."
@@ -1458,14 +1342,6 @@
       "not_recommended": "style",
       "reason": "Attribute docstrings in pydantic configuration; a documentation choice."
     },
-    "use_bounds_for_float_const": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261111 presets; the recommendation starts from a preset."
-    },
-    "use_bytes_for_content_media_type": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261106 presets; the recommendation starts from a preset."
-    },
     "use_closed_typed_dict": {
       "not_recommended": "runtime-behaviour",
       "reason": "Closed TypedDicts reject extra keys in type checking; the project decides."
@@ -1473,10 +1349,6 @@
     "use_decimal_for_multiple_of": {
       "not_recommended": "style",
       "reason": "Decimal instead of float for numbers with multipleOf; a typing choice of the project."
-    },
-    "use_decimal_in_field_forms": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "use_default": {
       "not_recommended": "runtime-behaviour",
@@ -1570,10 +1442,6 @@
       "not_recommended": "style",
       "reason": "Defaults one-value literals; an API choice of the project."
     },
-    "use_one_model_per_ref_site": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
-    },
     "use_operation_id_as_name": {
       "not_recommended": "style",
       "reason": "Names operation models; the schemas scope the recommender analyses has none."
@@ -1609,18 +1477,6 @@
     "use_serialize_as_any_for_every_subclass": {
       "not_recommended": "preset",
       "reason": "Pydantic v2 output under --use-serialize-as-any only: set by the 20261104 presets; the recommendation starts from a preset."
-    },
-    "read_kubernetes_extensions": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261113 presets; the recommendation starts from a preset."
-    },
-    "read_unevaluated_properties": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
-    },
-    "use_single_dict_for_object_maps": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "use_single_line_docstring": {
       "not_recommended": "preset",
@@ -1674,10 +1530,6 @@
       "not_recommended": "style",
       "reason": "TypedDict totality spelling; a typing style choice."
     },
-    "use_tuple_for_closed_arrays": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
-    },
     "use_tuple_for_fixed_items": {
       "not_recommended": "preset",
       "reason": "Typing style chosen by the practical presets; the recommendation starts from a preset."
@@ -1698,14 +1550,6 @@
       "not_recommended": "style",
       "reason": "Import style for typing-only imports."
     },
-    "use_typed_map_values_beside_other_types": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
-    },
-    "use_typed_nullable_map_values": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261106 presets; the recommendation starts from a preset."
-    },
     "use_union_operator": {
       "not_recommended": "preset",
       "reason": "Set by every dated preset; the recommendation starts from the preset."
@@ -1717,14 +1561,6 @@
     "use_unique_items_as_set_by_value": {
       "not_recommended": "preset",
       "reason": "Under --use-unique-items-as-set only: set by the 20261104 presets; the recommendation starts from a preset."
-    },
-    "use_x_python_import_for_every_ref": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261113 presets; the recommendation starts from a preset."
-    },
-    "use_x_python_type_as_written": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261106 presets; the recommendation starts from a preset."
     },
     "validation": {
       "not_recommended": "compat",

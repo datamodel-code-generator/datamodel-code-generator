@@ -359,9 +359,9 @@ Every candidate is then generated for both versions, and the Trial table gains a
 - **Rules are data.** The rules ship in the package as `recommender_rules.json`. Each rule maps schema signals to
   option values and carries its reason, caveats, and evidence. Rule values are validated through the same model as
   presets, so a rule cannot name an option that does not exist.
-- **Every option is registered.** Each option has an entry in the rule data: either the rules that decide it or the
-  reason the recommender leaves it to you (input/output paths, the target, runtime behaviour, formatting, and so on).
-  A new option cannot be released without that decision.
+- **Every option is registered.** Each option is set by the dated presets or has an entry in the rule data: either
+  the rules that decide it or the reason the recommender leaves it to you (input/output paths, the target, runtime
+  behaviour, formatting, and so on). A new option cannot be released without that decision.
 - **Calibration.** The rules were derived from measurements of class names on public API descriptions and
   schemas, and rule changes go through normal reviewed pull requests. The report notes when the rules were
   calibrated on other presets than the one it starts from.
