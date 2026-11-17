@@ -25,7 +25,7 @@ from itertools import accumulate, takewhile
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._python_decorator import string_token_spans
-from datamodel_code_generator._records import mutable_record
+from datamodel_code_generator._records import mutable_record, record
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Container, Iterable, Iterator, Sequence
@@ -418,6 +418,17 @@ def _is_name(leaf: _Leaf, value: str) -> bool:
     return leaf.type == token.NAME and leaf.value == value
 
 
+def _keyword_index(leaves: Sequence[_Leaf]) -> int:
+    """Return the index of the keyword that leads ``leaves``: 1 after an ``async``, else 0."""
+    return int(bool(leaves) and _is_name(leaves[0], "async"))
+
+
+def _starts_with_keyword(leaves: Sequence[_Leaf], name: str) -> bool:
+    """Return whether the keyword ``name`` leads ``leaves``, also after an ``async``."""
+    first = _keyword_index(leaves)
+    return len(leaves) > first and _is_name(leaves[first], name)
+
+
 @mutable_record(slots=True)
 class _Line:
     """One logical line being split: its leaves at an indentation depth and their brackets."""
@@ -450,10 +461,7 @@ class _Line:
 
     @property
     def is_def(self) -> bool:
-        return bool(self.leaves) and (
-            _is_name(self.leaves[0], "def")
-            or (_is_name(self.leaves[0], "async") and len(self.leaves) > 1 and _is_name(self.leaves[1], "def"))
-        )
+        return _starts_with_keyword(self.leaves, "def")
 
     @property
     def is_chained_assignment(self) -> bool:
@@ -712,11 +720,7 @@ def _can_omit_invisible_parens(rhs: _RHSResult, line_length: int) -> bool:  # no
 
 def _is_with_statement(line: _Line) -> bool:
     """Return whether ``line`` starts a ``with`` or ``async with`` statement."""
-    leaves = line.leaves
-    return bool(leaves) and (
-        _is_name(leaves[0], "with")
-        or (_is_name(leaves[0], "async") and len(leaves) > 1 and _is_name(leaves[1], "with"))
-    )
+    return _starts_with_keyword(line.leaves, "with")
 
 
 def _prefer_split_rhs_oop_over_rhs(rhs_oop: _RHSResult, rhs: _RHSResult, mode: _Mode) -> bool:  # noqa: PLR0911
@@ -1632,8 +1636,40 @@ def _operand_end(leaf: _Leaf | None) -> bool:
     return leaf.type in {token.NUMBER, token.STRING, token.ELLIPSIS} or leaf.type in CLOSING_BRACKETS
 
 
-def _read_leaves(tokens: Iterable[tokenize.TokenInfo]) -> tuple[list[_Leaf], int]:  # noqa: PLR0912, PLR0915
-    """Turn the tokens of one logical line into leaves with the facts black reads from its tree; give its last row."""
+@record(eq=False)
+class _Brackets:
+    """The brackets of one leaf list: the depth of each leaf, the opener each leaf is inside and each opener's closer.
+
+    A bracket's depth is the depth outside it. ``openers`` holds the innermost opener open at each leaf, a closer's
+    own one, ``-1`` outside brackets.
+    """
+
+    depths: list[int]
+    openers: list[int]
+    closers: dict[int, int]
+
+
+def _index_brackets(leaves: Sequence[_Leaf]) -> _Brackets:
+    """Index the brackets of ``leaves``, whose brackets match; a ``_wrap*`` that inserts leaves needs a new index."""
+    depths: list[int] = []
+    openers: list[int] = []
+    closers: dict[int, int] = {}
+    stack: list[int] = []
+    for index, leaf in enumerate(leaves):
+        openers.append(stack[-1] if stack else -1)
+        if leaf.type in CLOSING_BRACKETS:
+            closers[stack.pop()] = index
+        depths.append(len(stack))
+        if leaf.type in OPENING_BRACKETS:
+            stack.append(index)
+    return _Brackets(depths, openers, closers)
+
+
+def _read_leaves(tokens: Iterable[tokenize.TokenInfo]) -> tuple[list[_Leaf], _Brackets, int]:  # noqa: PLR0912, PLR0915
+    """Turn the tokens of one logical line into leaves with the facts black reads from its tree; give its last row.
+
+    The brackets of the leaves are indexed once here, for the readers before the first ``_wrap*``.
+    """
     leaves: list[_Leaf] = []
     stack: list[tuple[_Leaf, list[str]]] = []
     top_level_seen: list[str] = []
@@ -1713,16 +1749,17 @@ def _read_leaves(tokens: Iterable[tokenize.TokenInfo]) -> tuple[list[_Leaf], int
             leaf.unary = not leaf.comparator
         elif leaf.value == "lambda" and index + 1 < len(leaves) and leaves[index + 1].type != token.COLON:
             raise _Unsupported
+    brackets = _index_brackets(leaves)
     if leaves[0].value in _SOFT_KEYWORD_HEADERS and leaves[0].type == token.NAME and leaves[-1].type == token.COLON:
-        _read_soft_keyword_header(leaves)
-    return leaves, previous_row
+        _read_soft_keyword_header(leaves, brackets)
+    return leaves, brackets, previous_row
 
 
 _LISTMAKER: Final = frozenset({token.COMMA, "for"})
 _DICTSETMAKER: Final = frozenset({token.COMMA, token.COLON, token.DOUBLESTAR, "for"})
 
 
-def _mark_element_facts(leaves: list[_Leaf]) -> None:  # noqa: PLR0912
+def _mark_element_facts(leaves: list[_Leaf], brackets: _Brackets) -> None:  # noqa: PLR0912
     """Mark the facts black's string transformers read from the parents and siblings of a leaf.
 
     ``assign_like`` names the parent of a name that black may find an assigned string after: ``"argument"`` for a
@@ -1730,34 +1767,25 @@ def _mark_element_facts(leaves: list[_Leaf]) -> None:  # noqa: PLR0912
     or attribute starts with. ``wrap_element`` marks a string, or a parenthesized atom, that is a whole element of a
     list, set or tuple display; ``dict_entry`` the first leaf of a dictionary entry.
     """
-    closers: dict[int, int] = {}
-    contents: dict[int, set[int | str]] = {}
-    stack: list[int] = []
-    for index, leaf in enumerate(leaves):
-        if leaf.type in OPENING_BRACKETS:
-            stack.append(index)
-            contents[index] = set()
-        elif leaf.type in CLOSING_BRACKETS:
-            closers[stack.pop()] = index
-        elif stack and leaf.type in {token.COMMA, token.COLON, token.DOUBLESTAR}:
-            contents[stack[-1]].add(leaf.type)
-        elif stack and _is_name(leaf, "for"):
-            contents[stack[-1]].add("for")
+    closers, openers = brackets.closers, brackets.openers
+    contents: dict[int, set[int | str]] = {opener: set() for opener in closers}
+    for leaf, opener in zip(leaves, openers, strict=True):
+        if opener < 0:
+            continue
+        if leaf.type in {token.COMMA, token.COLON, token.DOUBLESTAR}:
+            contents[opener].add(leaf.type)
+        elif _is_name(leaf, "for"):
+            contents[opener].add("for")
     starts = {opener + 1 for opener in closers} | {
         index + 1 for index, leaf in enumerate(leaves) if leaf.type == token.COMMA
     }
-    stack = []
     for index, leaf in enumerate(leaves):
-        opener = stack[-1] if stack else None
-        if leaf.type in OPENING_BRACKETS:
-            stack.append(index)
-        elif leaf.type in CLOSING_BRACKETS:
-            stack.pop()
+        opener = openers[index]
         following = leaves[index + 1] if index + 1 < len(leaves) else None
         if leaf.type == token.NAME and following is not None:
             if (
                 following.type == token.EQUAL
-                and opener is not None
+                and opener >= 0
                 and leaves[opener].kind
                 in {
                     _Kind.TRAILER,
@@ -1774,7 +1802,7 @@ def _mark_element_facts(leaves: list[_Leaf]) -> None:  # noqa: PLR0912
             ):
                 leaf.assign_like = "power"
         if (
-            opener is None
+            opener < 0
             or index not in starts
             or leaf.type in CLOSING_BRACKETS
             or leaves[opener].kind is not _Kind.ATOM
@@ -1802,7 +1830,7 @@ def _mark_element_facts(leaves: list[_Leaf]) -> None:  # noqa: PLR0912
 _SOFT_KEYWORD_HEADERS: Final = frozenset({"match", "case"})
 
 
-def _read_soft_keyword_header(leaves: list[_Leaf]) -> None:
+def _read_soft_keyword_header(leaves: list[_Leaf], brackets: _Brackets) -> None:
     """Read a ``match`` or ``case`` header as black's tree has it: its keyword is no operand of a bracket or sign.
 
     The guard ``if`` of a ``case``, its first ``if`` outside brackets, is no conditional expression.
@@ -1810,31 +1838,25 @@ def _read_soft_keyword_header(leaves: list[_Leaf]) -> None:
     if leaves[1].type in OPENING_BRACKETS:
         leaves[1].kind = _Kind.ATOM
     leaves[1].unary = leaves[1].unary or leaves[1].type in _UNARY_CANDIDATES
-    depth = 0
-    for leaf in leaves:
-        if leaf.type in OPENING_BRACKETS:
-            depth += 1
-        elif leaf.type in CLOSING_BRACKETS:
-            depth -= 1
-        elif not depth and _is_name(leaf, "if"):
+    for leaf, depth in zip(leaves, brackets.depths, strict=True):
+        if not depth and _is_name(leaf, "if"):
             leaf.priority_name = 0
             return
 
 
-def _set_whitespace(leaves: list[_Leaf]) -> None:
+def _set_whitespace(leaves: list[_Leaf], brackets: _Brackets) -> None:
     """Give each leaf the whitespace black puts before it.
 
     In a definition's parameters a default takes spaces around its ``=`` when its parameter is annotated, and the
     commas inside an annotation are marked, as black reads both from its tree.
     """
-    stack: list[_Leaf] = []
     annotated = False
     returned = False
     previous: _Leaf | None = None
-    for leaf in leaves:
-        enclosing = stack[-1] if stack else None
-        returned = returned or (leaf.type == token.RARROW and not stack)
-        leaf.in_annotation = returned or (annotated and any(item.kind is _Kind.PARAMETERS for item in stack))
+    for leaf, opener in zip(leaves, brackets.openers, strict=True):
+        enclosing = leaves[opener] if opener >= 0 else None
+        returned = returned or (leaf.type == token.RARROW and enclosing is None)
+        leaf.in_annotation = returned or (annotated and _inside_parameters(leaves, brackets, opener))
         in_parameters = enclosing is not None and enclosing.kind is _Kind.PARAMETERS
         if in_parameters and leaf.type == token.COMMA:
             annotated = False
@@ -1848,14 +1870,24 @@ def _set_whitespace(leaves: list[_Leaf]) -> None:
         if in_parameters and leaf.type == token.EQUAL:
             annotated = False
             leaf.parameter_default = True
-        if leaf.type == token.COMMA and annotated and any(item.kind is _Kind.PARAMETERS for item in stack[:-1]):
+        if (
+            leaf.type == token.COMMA
+            and annotated
+            and opener >= 0
+            and _inside_parameters(leaves, brackets, brackets.openers[opener])
+        ):
             leaf.annotation = True
         leaf.prefix = leaf.whitespace
-        if leaf.type in OPENING_BRACKETS:
-            stack.append(leaf)
-        elif leaf.type in CLOSING_BRACKETS:
-            stack.pop()
         previous = leaf
+
+
+def _inside_parameters(leaves: list[_Leaf], brackets: _Brackets, opener: int) -> bool:
+    """Return whether the opener at ``opener``, or one around it, opens the parameters of a definition."""
+    while opener >= 0:
+        if leaves[opener].kind is _Kind.PARAMETERS:
+            return True
+        opener = brackets.openers[opener]
+    return False
 
 
 def _whitespace(leaf: _Leaf, previous: _Leaf | None, enclosing: _Leaf | None) -> str:  # noqa: PLR0911
@@ -1904,7 +1936,7 @@ def _ends_keyword_child(leaf: _Leaf, parens_after: frozenset[str], *, last: bool
     return (leaf.type == token.COLON and last) or (_is_name(leaf, "as") and "except" in parens_after)
 
 
-def _keyword_children(leaves: list[_Leaf]) -> list[tuple[int, int]]:
+def _keyword_children(leaves: list[_Leaf], brackets: _Brackets) -> list[tuple[int, int]]:
     """Return the spans black wraps in invisible parentheses in a statement led by a keyword (black's ``parens``).
 
     A span starts after the keyword that leads the statement, the ``in`` of a ``for`` (its first one outside brackets),
@@ -1913,26 +1945,21 @@ def _keyword_children(leaves: list[_Leaf]) -> list[tuple[int, int]]:
     statement are one span, and so is a ``case`` pattern. ``except*`` is not laid out, and neither is a ``del`` of
     several targets: black's parentheses around them would delete one tuple instead.
     """
-    first = int(_is_name(leaves[0], "async"))
+    first = _keyword_index(leaves)
     if (parens_after := _PARENS_AFTER.get(leaves[first].value)) is None or (
         _is_name(leaves[0], "case") and leaves[-1].type != token.COLON
     ):
         return []
     if (_is_name(leaves[first], "except") and len(leaves) > first + 1 and leaves[first + 1].type == token.STAR) or (
-        _is_name(leaves[first], "del") and token.COMMA in _top_level_types(leaves)
+        _is_name(leaves[first], "del") and _at_top_level(leaves, brackets, 0, len(leaves), token.COMMA)
     ):
         raise _Unsupported
     spans: list[tuple[int, int]] = []
     start: int | None = None
-    depth = 0
     last = len(leaves) - 1
     loop_in = "in" in parens_after
     for index, leaf in enumerate(leaves[first:], start=first):
-        if leaf.type in OPENING_BRACKETS:
-            depth += 1
-        elif leaf.type in CLOSING_BRACKETS:
-            depth -= 1
-        elif depth == 0 and (
+        if not brackets.depths[index] and (
             (opens := _opens_keyword_child(leaf, parens_after, first=index == first, loop_in=loop_in))
             or _ends_keyword_child(leaf, parens_after, last=index == last)
         ):
@@ -1945,77 +1972,53 @@ def _keyword_children(leaves: list[_Leaf]) -> list[tuple[int, int]]:
     return spans
 
 
-def _statement_children(leaves: list[_Leaf]) -> list[tuple[int, int]]:
+def _statement_children(leaves: list[_Leaf], brackets: _Brackets) -> list[tuple[int, int]]:
     """Return the spans black wraps in invisible parentheses: after an annotation colon and after each ``=``.
 
     An annotation that holds a lambda before the value's ``=`` is not laid out.
     """
-    depth = 0
     boundaries: list[int] = []
     annotation_seen = False
     lambda_seen = False
     for index, leaf in enumerate(leaves):
-        if leaf.type in OPENING_BRACKETS:
-            depth += 1
-        elif leaf.type in CLOSING_BRACKETS:
-            depth -= 1
-        elif depth == 0:
-            if leaf.type == token.EQUAL or leaf.type in _AUGMENTED_ASSIGNMENTS:
-                if lambda_seen:
-                    raise _Unsupported
-                boundaries.append(index)
-            elif leaf.type == token.COLON and not boundaries and not annotation_seen:
-                annotation_seen = True
-                boundaries.append(index)
-            elif _is_name(leaf, "lambda"):
-                lambda_seen = True
+        if brackets.depths[index]:
+            continue
+        if leaf.type == token.EQUAL or leaf.type in _AUGMENTED_ASSIGNMENTS:
+            if lambda_seen:
+                raise _Unsupported
+            boundaries.append(index)
+        elif leaf.type == token.COLON and not boundaries and not annotation_seen:
+            annotation_seen = True
+            boundaries.append(index)
+        elif _is_name(leaf, "lambda"):
+            lambda_seen = True
     ends = [*boundaries[1:], len(leaves)]
     return [(boundary + 1, end) for boundary, end in zip(boundaries, ends, strict=True)]
 
 
-def _is_parenthesized_atom(leaves: list[_Leaf], start: int, end: int) -> bool:
+def _is_parenthesized_atom(leaves: list[_Leaf], brackets: _Brackets, start: int, end: int) -> bool:
     """Return whether the balanced ``leaves[start:end]`` is an atom in parentheses that close at its end."""
-    return leaves[start].type == token.LPAR and leaves[start].kind is _Kind.ATOM and _closes_at_end(leaves, start, end)
+    return leaves[start].type == token.LPAR and leaves[start].kind is _Kind.ATOM and brackets.closers[start] == end - 1
 
 
-def _closes_at_end(leaves: list[_Leaf], start: int, end: int) -> bool:
-    """Return whether the bracket that opens the balanced ``leaves[start:end]`` closes at its end."""
-    depth = 0
-    for leaf in leaves[start : end - 1]:
-        if leaf.type in OPENING_BRACKETS:
-            depth += 1
-        elif leaf.type in CLOSING_BRACKETS:
-            depth -= 1
-            if not depth:
-                return False
-    return True
-
-
-def _definition_annotation_spans(leaves: list[_Leaf]) -> list[tuple[int, int]]:
+def _definition_annotation_spans(leaves: list[_Leaf], brackets: _Brackets) -> list[tuple[int, int]]:
     """Return the spans black wraps in invisible parentheses in a ``def`` line.
 
     They are the return annotation and each parameter annotation that is a ``|`` union.
     """
     spans: list[tuple[int, int]] = []
-    depth = 0
     annotation_start: int | None = None
     for index, leaf in enumerate(leaves):
-        if (
-            depth == 1
-            and annotation_start is not None
-            and (leaf.type in {token.COMMA, token.EQUAL} or leaf.type in CLOSING_BRACKETS)
+        depth = brackets.depths[index]
+        if annotation_start is not None and (
+            (depth == 1 and leaf.type in {token.COMMA, token.EQUAL}) or (not depth and leaf.type in CLOSING_BRACKETS)
         ):
-            span = leaves[annotation_start:index]
-            if _top_level_types(span) & {token.VBAR}:
+            if _at_top_level(leaves, brackets, annotation_start, index, token.VBAR):
                 spans.append((annotation_start, index))
             annotation_start = None
-        if leaf.type in OPENING_BRACKETS:
-            depth += 1
-        elif leaf.type in CLOSING_BRACKETS:
-            depth -= 1
-        elif depth == 1 and leaf.type == token.COLON:
+        if depth == 1 and leaf.type == token.COLON:
             annotation_start = index + 1
-        elif depth == 0 and leaf.type == token.RARROW:
+        elif not depth and leaf.type == token.RARROW:
             spans.append((index + 1, _header_colon(leaves)))
             break
     return spans
@@ -2026,30 +2029,26 @@ def _header_colon(leaves: list[_Leaf]) -> int:
     return len(leaves) - 1 if leaves[-1].type == token.COLON else len(leaves) - 2
 
 
-def _top_level_types(leaves: list[_Leaf]) -> set[int]:
-    depth = 0
-    types: set[int] = set()
-    for leaf in leaves:
-        if leaf.type in OPENING_BRACKETS:
-            depth += 1
-        elif leaf.type in CLOSING_BRACKETS:
-            depth -= 1
-        elif not depth:
-            types.add(leaf.type)
-    return types
+def _at_top_level(leaves: list[_Leaf], brackets: _Brackets, start: int, end: int, type_: int) -> bool:
+    """Return whether a leaf of the type ``type_``, no bracket, is outside the brackets of the balanced span."""
+    depth = brackets.depths[start]
+    return any(leaves[index].type == type_ and brackets.depths[index] == depth for index in range(start, end))
 
 
-def _wrap_spans(leaves: list[_Leaf], spans: list[tuple[int, int]]) -> list[_Leaf]:
-    """Wrap each span in invisible parentheses, or make the parentheses of a span that is one atom invisible."""
+def _wrap_spans(leaves: list[_Leaf], brackets: _Brackets, spans: list[tuple[int, int]]) -> list[_Leaf]:
+    """Wrap each span in invisible parentheses, or make the parentheses of a span that is one atom invisible.
+
+    The spans are disjoint and in order; wrapping them from the last keeps ``brackets`` right for the ones before it.
+    """
     for start, end in reversed(spans):
-        if _is_parenthesized_atom(leaves, start, end):
-            _make_parens_invisible(leaves, start, end)
+        if _is_parenthesized_atom(leaves, brackets, start, end):
+            _make_parens_invisible(leaves, brackets, start, end)
         else:
             leaves = _wrap(leaves, start, end)
     return leaves
 
 
-def _make_parens_invisible(leaves: list[_Leaf], start: int, end: int) -> None:
+def _make_parens_invisible(leaves: list[_Leaf], brackets: _Brackets, start: int, end: int) -> None:
     """Make the parentheses of the atom ``leaves[start:end]`` invisible.
 
     They stay when they hold a tuple, a walrus, a yield or nothing.
@@ -2066,7 +2065,7 @@ def _make_parens_invisible(leaves: list[_Leaf], start: int, end: int) -> None:
         middle[0], "yield"
     ):
         return
-    if _is_parenthesized_atom(middle, 0, len(middle)):
+    if _is_parenthesized_atom(leaves, brackets, start + 1, end - 1):
         raise _Unsupported
     leaves[start].value = ""
     leaves[end - 1].value = ""
@@ -2105,35 +2104,25 @@ def _ternary_bound(leaf: _Leaf, *, before: bool) -> bool:
     return leaf.priority_name == COMPREHENSION_PRIORITY or leaf.value in {"as", "from"}
 
 
-def _ternary_span(leaves: list[_Leaf], index: int) -> tuple[int, int]:
-    """Return the span of the conditional expression whose ``if`` is ``leaves[index]``."""
-    start, depth = index, 0
-    while start > 0:
+def _ternary_span(leaves: list[_Leaf], brackets: _Brackets, index: int) -> tuple[int, int]:
+    """Return the span of the conditional expression whose ``if`` is ``leaves[index]``, inside its brackets."""
+    depths = brackets.depths
+    depth = depths[index]
+    start = index
+    while start > 0 and depths[start - 1] >= depth:
         leaf = leaves[start - 1]
-        if leaf.type in CLOSING_BRACKETS:
-            depth += 1
-        elif leaf.type in OPENING_BRACKETS:
-            if not depth:
-                break
-            depth -= 1
-        elif not depth and (
+        if depths[start - 1] == depth and (
             _ternary_bound(leaf, before=True)
             or (start == 1 and _is_name(leaf, "case") and leaves[-1].type == token.COLON)
         ):
             break
         start -= 1
-    end, depth = index + 1, 0
-    while end < len(leaves):
+    end = index + 1
+    while end < len(leaves) and depths[end] >= depth:
         leaf = leaves[end]
-        if leaf.type in OPENING_BRACKETS:
-            depth += 1
-        elif leaf.type in CLOSING_BRACKETS:
-            if not depth:
-                break
-            depth -= 1
-        elif _is_name(leaf, "lambda"):
+        if _is_name(leaf, "lambda"):
             raise _Unsupported
-        elif not depth and _ternary_bound(leaf, before=False):
+        if depths[end] == depth and _ternary_bound(leaf, before=False):
             break
         end += 1
     return start, end
@@ -2145,7 +2134,8 @@ def _wrap_conditional_expressions(leaves: list[_Leaf]) -> list[_Leaf]:
     A lambda in one is not laid out.
     """
     for if_leaf in [leaf for leaf in reversed(leaves) if leaf.priority_name == TERNARY_PRIORITY and leaf.value == "if"]:
-        start, end = _ternary_span(leaves, next(index for index, leaf in enumerate(leaves) if leaf is if_leaf))
+        index = next(index for index, leaf in enumerate(leaves) if leaf is if_leaf)
+        start, end = _ternary_span(leaves, _index_brackets(leaves), index)
         if not (
             start > 0 and end < len(leaves) and leaves[start - 1].type == token.LPAR and leaves[end].type == token.RPAR
         ):
@@ -2162,40 +2152,33 @@ def _wrap(leaves: list[_Leaf], start: int, end: int) -> list[_Leaf]:
     return [*leaves[:start], lpar, *leaves[start:end], rpar, *leaves[end:]]
 
 
-def _dict_value_spans(leaves: list[_Leaf]) -> list[tuple[int, int]]:
+def _dict_value_spans(leaves: list[_Leaf], brackets: _Brackets) -> list[tuple[int, int]]:
     """Return the spans of the values of the dictionary displays in ``leaves``."""
     spans: list[tuple[int, int]] = []
-    stack: list[tuple[int, int | None]] = []
-    for index, leaf in enumerate(leaves):
-        if leaf.type in OPENING_BRACKETS:
-            stack.append((index, None))
+    value_starts: dict[int, int] = {}
+    for index, (leaf, opener) in enumerate(zip(leaves, brackets.openers, strict=True)):
+        if leaf.type in OPENING_BRACKETS or opener < 0:
             continue
-        if not stack:
-            continue
-        opener, value_start = stack[-1]
-        ends_value = (
+        if (
             leaf.type in CLOSING_BRACKETS
             or leaf.type == token.COMMA
             or _is_name(leaf, "for")
             or _is_name(leaf, "async")
-        )
-        if value_start is not None and ends_value:
-            spans.append((value_start, index))
-            stack[-1] = (opener, None)
-        if leaf.type in CLOSING_BRACKETS:
-            stack.pop()
+        ):
+            if (value_start := value_starts.pop(opener, None)) is not None:
+                spans.append((value_start, index))
         elif (
             leaf.type == token.COLON
-            and value_start is None
+            and opener not in value_starts
             and leaves[opener].type == token.LBRACE
             and leaves[opener].kind is _Kind.ATOM
             and not any(_is_name(item, "lambda") for item in leaves[opener + 1 : index])
         ):
-            stack[-1] = (opener, index + 1)
+            value_starts[opener] = index + 1
     return spans
 
 
-def _wrap_dict_values(leaves: list[_Leaf]) -> list[_Leaf]:
+def _wrap_dict_values(leaves: list[_Leaf], brackets: _Brackets) -> list[_Leaf]:
     """Put each dictionary value in invisible parentheses, or make its own parentheses invisible.
 
     Black's preview ``wrap_long_dict_values_in_parens``, which ``--wrap-string-literal`` turns on; a value that is a
@@ -2203,13 +2186,13 @@ def _wrap_dict_values(leaves: list[_Leaf]) -> list[_Leaf]:
     """
     before: dict[int, list[_Leaf]] = {}
     after: dict[int, list[_Leaf]] = {}
-    for start, end in sorted(_dict_value_spans(leaves), key=lambda span: (span[1], -span[0])):
+    for start, end in sorted(_dict_value_spans(leaves, brackets), key=lambda span: (span[1], -span[0])):
         first = leaves[start]
-        if _is_parenthesized_atom(leaves, start, end):
-            _make_parens_invisible(leaves, start, end)
+        if _is_parenthesized_atom(leaves, brackets, start, end):
+            _make_parens_invisible(leaves, brackets, start, end)
             first.dict_value = not first.value
             continue
-        if first.type in OPENING_BRACKETS and first.kind is _Kind.ATOM and _closes_at_end(leaves, start, end):
+        if first.type in OPENING_BRACKETS and first.kind is _Kind.ATOM and brackets.closers[start] == end - 1:
             continue
         lpar = _Leaf(token.LPAR, "")
         lpar.whitespace = lpar.prefix = first.whitespace
@@ -2312,21 +2295,22 @@ def _lay_out_logical_line(
     if indent % 4 or source[indent : indent + 1] == "\t":
         return None
     try:
-        leaves, rows = _read_leaves(_source_tokens(source[indent:]))
+        leaves, brackets, rows = _read_leaves(_source_tokens(source[indent:]))
         tokens = [(leaf.type, leaf.value) for leaf in leaves]
-        _set_whitespace(leaves)
-        if _Line(leaves=leaves).is_def:
+        _set_whitespace(leaves, brackets)
+        if _starts_with_keyword(leaves, "def"):
             if len(leaves) > 2 and leaves[2].type == token.LSQB:  # noqa: PLR2004
                 return None
-            leaves = _wrap_spans(leaves, _definition_annotation_spans(leaves))
+            leaves = _wrap_spans(leaves, brackets, _definition_annotation_spans(leaves, brackets))
         elif assignment:
             is_type_statement = _is_name(leaves[0], "type") and len(leaves) > 1 and leaves[1].type == token.NAME
-            leaves = _wrap_spans(leaves, [] if is_type_statement else _statement_children(leaves))
+            leaves = _wrap_spans(leaves, brackets, [] if is_type_statement else _statement_children(leaves, brackets))
         else:
-            leaves = _wrap_spans(leaves, _keyword_children(leaves))
+            leaves = _wrap_spans(leaves, brackets, _keyword_children(leaves, brackets))
         if wrap_string_literal:
-            _mark_element_facts(leaves)
-            leaves = _wrap_dict_values(leaves)
+            brackets = _index_brackets(leaves)
+            _mark_element_facts(leaves, brackets)
+            leaves = _wrap_dict_values(leaves, brackets)
         leaves = _wrap_conditional_expressions(leaves)
     except (_Unsupported, tokenize.TokenError, SyntaxError):
         return None
