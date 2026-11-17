@@ -584,13 +584,13 @@ def other_keys_schema(parser: ObjectMapsHost, obj: JsonSchemaObject) -> JsonSche
 
 
 def map_value_schema(parser: ObjectMapsHost, obj: JsonSchemaObject) -> JsonSchemaObject | None:
-    """Return the schema that types the values of the object map built from ``obj`` (``_parse_object_map``), or None.
+    """Return the schema that types the values of the object map built from ``obj``, or None.
 
     Beside patternProperties it types the keys no pattern matches (``_other_keys_schema``); without them it is a
-    schema-valued additionalProperties.
+    schema-valued additionalProperties. The map builder (``_parse_object_map``) and the request/response walk read it.
     """
     if obj.patternProperties:
-        return parser._other_keys_schema(obj)  # noqa: SLF001
+        return other_keys_schema(parser, obj)
     return obj.additionalProperties if isinstance(obj.additionalProperties, JsonSchemaObject) else None
 
 
@@ -798,8 +798,8 @@ def typed_extra_field_schema(parser: ObjectMapsHost, obj: JsonSchemaObject) -> J
     """Return the additionalProperties schema the typed extra field of the model built from ``obj`` types.
 
     None where the output model has no typed extra field, additionalProperties is no schema, the patternProperties
-    rules of --generate-schema-validators type it (``_pattern_rule_additional_properties``) or it is an allOf with a
-    false schema. A $ref with sibling keywords is read merged with them.
+    rules of --generate-schema-validators type it (``_schema_validators.pattern_rule_additional_properties``) or it is
+    an allOf with a false schema. A $ref with sibling keywords is read merged with them.
     """
     if (
         parser.data_model_type.TYPED_EXTRA_FIELD_NAME is None
