@@ -1,0 +1,4 @@
+The base revision's scripts/check_ratchets.py cannot count the base revision:
+cannot read
+
+To reproduce, run `python <(git show <commit>:scripts/check_ratchets.py) --count .` at the root of that tree, and change the head so that the base revision's counter can read it (a hook or configuration form it does not know).

@@ -1,0 +1,102 @@
+exit status 0
+Escape hatches: base (merge-base <commit>) -> working tree
+
+key                                             base    head  change
+abnormal-path@tests                                0       1      +1
+allowlist:DEFAULT_ALLOWLIST                        0       1      +1
+allowlist:FROZEN_EXEMPT_FILES                      0       1      +1
+allowlist:JUSTIFIED_VIOLATIONS                     0       1      +1
+cast@src                                           0       1      +1
+coverage-config:exclude:if TYPE_CHECKING:          0       1      +1
+coverage-config:omit:src/pkg/d.py                  0       1      +1
+dynamic-import@src                                 0       1      +1
+filterwarnings-ignore@src                          0       2      +2
+getattr-private@src                                0       1      +1
+legacy-rows                                        0       1      +1
+pragma:conditional-cover@src                       0       1      +1
+pragma:no-branch@src                               0       1      +1
+pragma:no-cover@src                                0       1      +1
+pyright-ignore:reportPrivateUsage@src              0       1      +1
+pytest-config:filterwarnings-ignore                0       1      +1
+ruff-config:exclude:scripts                        1       1       0
+ruff-config:hook-exclude:^src/pkg/generated/       1       1       0
+ruff-config:ignore:CPY                             1       1       0
+ruff-config:ignore:D                               1       1       0
+ruff-config:ignore:ERA001                          1       1       0
+ruff-config:ignore:INP                             1       1       0
+ruff-config:per-file:tests/**/*.py:S101            1       1       0
+ruff:PLC0415@src                                   1       1       0
+store-allowlist:counted                            0       2      +2
+store-allowlist:witness                            0       1      +1
+ty-config:deprecated                               0       1      +1
+ty-config:unresolved-import                        0       1      +1
+ty-ignore:unresolved-import@src                    0       1      +1
+type-ignore:return-value@src                       0       1      +1
+
+abnormal-path@tests rose by 1 (0 -> 1). Reach the path end to end through the public entry points instead of marking it abnormal.
+  tests/test_d.py: 0 -> 1 (lines 6)
+
+allowlist:DEFAULT_ALLOWLIST rose by 1 (0 -> 1). Allowlist entries only shrink: fix the violation instead of listing it.
+  scripts/check_architecture_boundaries.py: 0 -> 1 (lines 1)
+
+allowlist:FROZEN_EXEMPT_FILES rose by 1 (0 -> 1). Allowlist entries only shrink: fix the violation instead of listing it.
+  tests/assert_helper_allowlists.py: 0 -> 1 (lines 6)
+
+allowlist:JUSTIFIED_VIOLATIONS rose by 1 (0 -> 1). Allowlist entries only shrink: fix the violation instead of listing it.
+  tests/assert_helper_allowlists.py: 0 -> 1 (lines 5)
+
+cast@src rose by 1 (0 -> 1). Narrow the type with isinstance, an annotation or a TypeGuard instead of cast().
+  src/pkg/d.py: 0 -> 1 (lines 14)
+
+coverage-config:exclude:if TYPE_CHECKING: rose by 1 (0 -> 1). An omitted or excluded file is never measured: reach it with tests instead.
+  pyproject.toml: 0 -> 1
+
+coverage-config:omit:src/pkg/d.py rose by 1 (0 -> 1). An omitted or excluded file is never measured: reach it with tests instead.
+  pyproject.toml: 0 -> 1
+
+dynamic-import@src rose by 1 (0 -> 1). importlib and __import__ hide an import from the lint and the cycle checks: import it by name.
+  src/pkg/d.py: 0 -> 1 (lines 12)
+
+filterwarnings-ignore@src rose by 2 (0 -> 2). Fix the warning's cause, or assert it with pytest.warns, instead of ignoring it.
+  src/pkg/d.py: 0 -> 2 (lines 10, 11)
+
+getattr-private@src rose by 1 (0 -> 1). A private name read through getattr() hides it from SLF001: give its owner a method instead.
+  src/pkg/d.py: 0 -> 1 (lines 13)
+
+legacy-rows rose by 1 (0 -> 1). A new legacy row keeps a difference: route the case through the home's main rule instead.
+  docs/architecture.md: 0 -> 1 (lines 3)
+
+pragma:conditional-cover@src rose by 1 (0 -> 1). Reach the line with a test, or delete the code if no input reaches it; if the pragma must stay, remove another one in the same area.
+  src/pkg/d.py: 0 -> 1 (lines 14)
+
+pragma:no-branch@src rose by 1 (0 -> 1). Reach the line with a test, or delete the code if no input reaches it; if the pragma must stay, remove another one in the same area.
+  src/pkg/d.py: 0 -> 1 (lines 9)
+
+pragma:no-cover@src rose by 1 (0 -> 1). Reach the line with a test, or delete the code if no input reaches it; if the pragma must stay, remove another one in the same area.
+  src/pkg/d.py: 0 -> 1 (lines 8)
+
+pyright-ignore:reportPrivateUsage@src rose by 1 (0 -> 1). pyright checks only generated packages: drop the comment outside `_runtime`, or fix the type.
+  src/pkg/d.py: 0 -> 1 (lines 13)
+
+pytest-config:filterwarnings-ignore rose by 1 (0 -> 1). Fix the warning's cause, or assert it with pytest.warns, instead of filtering it for all tests.
+  pyproject.toml: 0 -> 1
+
+store-allowlist:counted rose by 2 (0 -> 2). Route the write through the generation store's mutation APIs (AGENTS.md) instead of listing it.
+  scripts/generation_store_allowlist.toml: 0 -> 2
+
+store-allowlist:witness rose by 1 (0 -> 1). Route the write through the generation store's mutation APIs (AGENTS.md) instead of listing it.
+  scripts/generation_store_allowlist.toml: 0 -> 1
+
+ty-config:deprecated rose by 1 (0 -> 1). A ty rule set below error hides its findings: fix them and keep the rule an error.
+  pyproject.toml: 0 -> 1
+
+ty-config:unresolved-import rose by 1 (0 -> 1). A ty rule set below error hides its findings: fix them and keep the rule an error.
+  pyproject.toml: 0 -> 1
+
+ty-ignore:unresolved-import@src rose by 1 (0 -> 1). Fix the type error or the annotation instead of ignoring it.
+  src/pkg/d.py: 0 -> 1 (lines 12)
+
+type-ignore:return-value@src rose by 1 (0 -> 1). Fix the type error or the annotation instead of ignoring it.
+  src/pkg/d.py: 0 -> 1 (lines 14)
+
+Some keys rose: the budget is the base. Exit status 0 unless --enforce is given. Re-run with `python scripts/check_ratchets.py --base base`.

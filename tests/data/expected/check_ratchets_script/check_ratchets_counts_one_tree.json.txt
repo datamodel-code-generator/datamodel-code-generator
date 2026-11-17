@@ -1,0 +1,93 @@
+exit status 0
+{
+ "abnormal-path@tests": {
+  "tests/test_d.py": 1
+ },
+ "allowlist:DEFAULT_ALLOWLIST": {
+  "scripts/check_architecture_boundaries.py": 1
+ },
+ "allowlist:FROZEN_EXEMPT_FILES": {
+  "tests/assert_helper_allowlists.py": 1
+ },
+ "allowlist:JUSTIFIED_VIOLATIONS": {
+  "tests/assert_helper_allowlists.py": 1
+ },
+ "cast@src": {
+  "src/pkg/d.py": 1
+ },
+ "coverage-config:exclude:if TYPE_CHECKING:": {
+  "pyproject.toml": 1
+ },
+ "coverage-config:omit:src/pkg/d.py": {
+  "pyproject.toml": 1
+ },
+ "dynamic-import@src": {
+  "src/pkg/d.py": 1
+ },
+ "filterwarnings-ignore@src": {
+  "src/pkg/d.py": 2
+ },
+ "getattr-private@src": {
+  "src/pkg/d.py": 1
+ },
+ "legacy-rows": {
+  "docs/architecture.md": 1
+ },
+ "pragma:conditional-cover@src": {
+  "src/pkg/d.py": 1
+ },
+ "pragma:no-branch@src": {
+  "src/pkg/d.py": 1
+ },
+ "pragma:no-cover@src": {
+  "src/pkg/d.py": 1
+ },
+ "pyright-ignore:reportPrivateUsage@src": {
+  "src/pkg/d.py": 1
+ },
+ "pytest-config:filterwarnings-ignore": {
+  "pyproject.toml": 1
+ },
+ "ruff-config:exclude:scripts": {
+  "pyproject.toml": 1
+ },
+ "ruff-config:hook-exclude:^src/pkg/generated/": {
+  ".pre-commit-config.yaml": 1
+ },
+ "ruff-config:ignore:CPY": {
+  "pyproject.toml": 1
+ },
+ "ruff-config:ignore:D": {
+  "pyproject.toml": 1
+ },
+ "ruff-config:ignore:ERA001": {
+  ".pre-commit-config.yaml": 1
+ },
+ "ruff-config:ignore:INP": {
+  "pyproject.toml": 1
+ },
+ "ruff-config:per-file:tests/**/*.py:S101": {
+  "pyproject.toml": 1
+ },
+ "ruff:PLC0415@src": {
+  "src/pkg/a.py": 1
+ },
+ "store-allowlist:counted": {
+  "scripts/generation_store_allowlist.toml": 2
+ },
+ "store-allowlist:witness": {
+  "scripts/generation_store_allowlist.toml": 1
+ },
+ "ty-config:deprecated": {
+  "pyproject.toml": 1
+ },
+ "ty-config:unresolved-import": {
+  "pyproject.toml": 1
+ },
+ "ty-ignore:unresolved-import@src": {
+  "src/pkg/d.py": 1
+ },
+ "type-ignore:return-value@src": {
+  "src/pkg/d.py": 1
+ }
+}

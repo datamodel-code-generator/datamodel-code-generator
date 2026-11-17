@@ -1,0 +1,20 @@
+exit status 0
+Escape hatches: base (merge-base <commit>) -> working tree
+
+key                                             base    head  change
+ruff-config:exclude:scripts                        1       1       0
+ruff-config:hook-exclude:^src/pkg/generated/       1       1       0
+ruff-config:ignore:CPY                             1       1       0
+ruff-config:ignore:D                               1       1       0
+ruff-config:ignore:ERA001                          1       1       0
+ruff-config:ignore:INP                             1       1       0
+ruff-config:per-file:tests/**/*.py:S101            1       1       0
+ruff:PLC0415@src                                   1       1       0
+
+The base revision's scripts/check_ratchets.py also counts these rises, which this copy does not: the change weakens the
+counter that judges it. Keep the counter's rules (changes to it are reviewed) and fix the hatches:
+
+pragma:no-cover@src rose by 1 (0 -> 1). Reach the line with a test, or delete the code if no input reaches it; if the pragma must stay, remove another one in the same area.
+  src/pkg/a.py: 0 -> 1
+
+Some keys rose: the budget is the base. Exit status 0 unless --enforce is given. Re-run with `python scripts/check_ratchets.py --base base`.

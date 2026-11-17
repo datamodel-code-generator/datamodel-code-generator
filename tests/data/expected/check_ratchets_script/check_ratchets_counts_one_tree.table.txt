@@ -1,0 +1,32 @@
+exit status 0
+key                                            count
+abnormal-path@tests                                1
+allowlist:DEFAULT_ALLOWLIST                        1
+allowlist:FROZEN_EXEMPT_FILES                      1
+allowlist:JUSTIFIED_VIOLATIONS                     1
+cast@src                                           1
+coverage-config:exclude:if TYPE_CHECKING:          1
+coverage-config:omit:src/pkg/d.py                  1
+dynamic-import@src                                 1
+filterwarnings-ignore@src                          2
+getattr-private@src                                1
+legacy-rows                                        1
+pragma:conditional-cover@src                       1
+pragma:no-branch@src                               1
+pragma:no-cover@src                                1
+pyright-ignore:reportPrivateUsage@src              1
+pytest-config:filterwarnings-ignore                1
+ruff-config:exclude:scripts                        1
+ruff-config:hook-exclude:^src/pkg/generated/       1
+ruff-config:ignore:CPY                             1
+ruff-config:ignore:D                               1
+ruff-config:ignore:ERA001                          1
+ruff-config:ignore:INP                             1
+ruff-config:per-file:tests/**/*.py:S101            1
+ruff:PLC0415@src                                   1
+store-allowlist:counted                            2
+store-allowlist:witness                            1
+ty-config:deprecated                               1
+ty-config:unresolved-import                        1
+ty-ignore:unresolved-import@src                    1
+type-ignore:return-value@src                       1
