@@ -32,7 +32,7 @@ def test_build_llms_txt_writes_both_files_and_checks_only_the_index(
     (tmp_path / "llms-full.txt").unlink()
     monkeypatch.setattr(sys, "argv", ["build_llms_txt.py", "--check", "--output-dir", str(tmp_path)])
     codes.append(build_llms_txt.main())
-    printed = capsys.readouterr().out.replace(str(tmp_path), "<output dir>")
+    printed = capsys.readouterr().out.replace(str(tmp_path), "<output dir>").replace("\\", "/")
     assert_output(f"exit codes {codes}\nwritten {written}\n{printed}")
 
 
