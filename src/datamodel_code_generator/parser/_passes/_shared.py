@@ -216,8 +216,8 @@ def required_fields_a_default_lacks(
         return model if (model := model_of(reference)) is not None and model.form == "alias" else None
 
     data_type: DataTypeView = follow_type_aliases(field.data_type, alias_of)
-    if data_type._writes_nothing_of_its_own:  # noqa: SLF001
-        members = [member for member in data_type.data_types if not member._renders_none]  # noqa: SLF001
+    if data_type._writes_nothing_of_its_own:
+        members = [member for member in data_type.data_types if not member._renders_none]
         if len(members) != 1:
             return None
         data_type = follow_type_aliases(members[0], alias_of)
@@ -238,7 +238,7 @@ def _unwrap_default_scalar_data_type(data_type: DataType) -> DataType:
         data_type.type is None
         and data_type.reference is None
         and len(data_type.data_types) == 1
-        and not data_type._is_container  # noqa: SLF001
+        and not data_type._is_container
         and not data_type.literals
         and not data_type.enum_member_literals
     ):
@@ -248,14 +248,14 @@ def _unwrap_default_scalar_data_type(data_type: DataType) -> DataType:
 
 def _resolve_default_scalar_data_type(data_type: DataType) -> DataType | None:
     """Resolve one backend-neutral scalar leaf without traversing unions or containers."""
-    if data_type._is_container:  # noqa: SLF001
+    if data_type._is_container:
         return None
     if data_type.reference or data_type.data_types:
         data_type = _unwrap_default_scalar_data_type(data_type)
     if (
         data_type.reference
         or data_type.data_types
-        or data_type._is_container  # noqa: SLF001
+        or data_type._is_container
         or data_type.literals
         or data_type.enum_member_literals
     ):
@@ -404,7 +404,7 @@ class RootModelHost(Protocol):
 
 def site_display_name(host: RootModelHost, model: DataModel, field: DataModelFieldBase) -> str:
     """Return the name warnings and tag plans give a field's site: the class of a root model, else ``Class.field``."""
-    return model.class_name if host._is_root_model(model) else class_field_key(model.class_name, field.name)  # noqa: SLF001
+    return model.class_name if host._is_root_model(model) else class_field_key(model.class_name, field.name)
 
 
 class CollapseRootModelsHost(Protocol):
@@ -549,7 +549,7 @@ class RuntimeExpressionFlags(GraphBuilderHost, Protocol):
 
 def register_runtime_expression(host: RuntimeExpressionFlags) -> None:
     """Mark a parser-owned expression created after the initial import scan."""
-    host._has_runtime_expressions = True  # noqa: SLF001
+    host._has_runtime_expressions = True
 
 
 def field_name_model_type_of(data_model_type: type[DataModel]) -> ModelType:
@@ -566,7 +566,7 @@ def _distinct_bases(host: GraphBuilderHost, base_dedup: BaseDedup, model: DataMo
     """Give each child of a merged model its bases once each, told apart by module and type hint or by reference."""
     for child in model.reference.iter_data_model_children():
         bases = child.base_classes
-        host._graph_builder.set_base_classes(  # noqa: SLF001
+        host._graph_builder.set_base_classes(
             child,
             {f"{base.module_name}.{base.type_hint}": base for base in bases}.values()
             if base_dedup == "by-type-hint"
@@ -585,7 +585,7 @@ def settle_python_bases(host: GenerationStoreHost, reference: Reference) -> None
     refused = [model for model in descendants if python_base_classes(model) is not None]
     for model in reversed(sort_data_models_for_mro(refused)):
         if (bases := python_base_classes(model)) is not None:
-            host._graph_builder.set_base_classes(model, bases)  # noqa: SLF001
+            host._graph_builder.set_base_classes(model, bases)
 
 
 def merge_duplicate(
@@ -601,16 +601,16 @@ def merge_duplicate(
     tells them (``ShapeRow.base_dedup``; None keeps them as redirected). The caller drops the duplicate from its
     module's models. The canonical model records the duplicate (``merged_models``). Return the redirected users.
     """
-    builder = host._graph_builder  # noqa: SLF001
-    host._merged_duplicates.setdefault(id(canonical), []).append(duplicate)  # noqa: SLF001
+    builder = host._graph_builder
+    host._merged_duplicates.setdefault(id(canonical), []).append(duplicate)
     users = builder.redirect_reference_users(
         duplicate.reference, canonical.reference, merged=True, keeps_named=host.keep_reference_null_on_merged_models
     )
     if keeps_duplicate_tags:
-        collapsed_users = host._collapsed_reuse_users  # noqa: SLF001
+        collapsed_users = host._collapsed_reuse_users
         for user in users:
             collapsed_users.setdefault(id(user), (user, duplicate.reference))
-        host._collapsed_reuse_models.setdefault(id(canonical), []).append(duplicate)  # noqa: SLF001
+        host._collapsed_reuse_models.setdefault(id(canonical), []).append(duplicate)
     if (base_dedup := row.base_dedup) is not None:
         _distinct_bases(host, base_dedup, duplicate)
     settle_python_bases(host, canonical.reference)
@@ -623,7 +623,7 @@ def merged_models(host: MergedDuplicatesHost, model: DataModel) -> list[DataMode
     merged: list[DataModel] = []
     pending = [model]
     while pending:
-        merged.extend(found := host._merged_duplicates.get(id(pending.pop()), []))  # noqa: SLF001
+        merged.extend(found := host._merged_duplicates.get(id(pending.pop()), []))
         pending.extend(found)
     return merged
 
@@ -662,7 +662,7 @@ def normalize_default_value_constraints(
             kwargs[key] = _text_constructor_expression(descriptor.constructor_import, str(value))
         if kwargs is data_type.kwargs:
             continue
-        host._graph_builder.set_type_expressions(  # noqa: SLF001
+        host._graph_builder.set_type_expressions(
             data_type,
             kwargs=kwargs,
             runtime_expression_imports=(*data_type.runtime_expression_imports, descriptor.constructor_import),
@@ -766,7 +766,7 @@ def override_required_field(
     pending_models = (
         model
         for model in models
-        if not (isinstance(model, Enum) or host._is_root_model(model))  # noqa: SLF001
+        if not (isinstance(model, Enum) or host._is_root_model(model))
         and any(_inherited_placeholder_name(field) is not None for field in model.fields)
     )
     if (first_model := next(pending_models, None)) is None:
@@ -793,7 +793,7 @@ def override_required_field(
             if not original_field:
                 continue
             if (
-                copied_original_field := host._copy_inherited_field(  # noqa: SLF001
+                copied_original_field := host._copy_inherited_field(
                     model_field,
                     original_field,
                     force_optional=host.force_optional_for_required_fields,
@@ -801,7 +801,7 @@ def override_required_field(
                     reserved_names=reserved_names,
                 )
             ) is None:
-                copied_original_field = host._copy_model_field(  # noqa: SLF001
+                copied_original_field = host._copy_model_field(
                     original_field, identity=placeholder_identity(model_field), required=True
                 )
             default_source = original_field
@@ -866,7 +866,7 @@ def get_constructor_ordering_conflicts(
     ordering_conflicts: set[str] = set()
     inherited_conflicts: list[tuple[DataModelFieldBase, DataModel]] = []
     for field_name, (field, declaring_model, inherited_has_default) in effective_fields.items():
-        if not takes_positional_place(facts := model._field_assignment_facts(field), field, declaring_model):  # noqa: SLF001
+        if not takes_positional_place(facts := model._field_assignment_facts(field), field, declaring_model):
             continue
         required_assignment_is_constructor_default = (
             model.REQUIRED_ASSIGNMENT_COUNTS_AS_CONSTRUCTOR_DEFAULT
@@ -997,9 +997,9 @@ def compared_models(host: DeduplicationHost, row: ShapeRow, models: Iterable[Dat
     leaves the root models out (``skips_root_model``). The filters run as the result is read, so a caller that changes
     ``models`` meanwhile passes a copy.
     """
-    candidates = host._reuse_optimization_context.eligible_models(models)  # noqa: SLF001
+    candidates = host._reuse_optimization_context.eligible_models(models)
     if skips_root_model(row, collapse_root_models=host.collapse_root_models):
-        return (model for model in candidates if not host._is_root_model(model))  # noqa: SLF001
+        return (model for model in candidates if not host._is_root_model(model))
     return candidates
 
 
@@ -1067,7 +1067,7 @@ def _rule_data_types(model: DataModel, *, unwritable: bool = False) -> Iterator[
 
     With ``unwritable``, a type alias yields them too until the parser writes it as a class that writes them.
     """
-    if rules := model.schema_runtime_validation or (unwritable and model._unwritable_runtime_rules):  # noqa: SLF001
+    if rules := model.schema_runtime_validation or (unwritable and model._unwritable_runtime_rules):
         for rule_data_type in rules.data_types:
             yield from rule_data_type.all_data_types
 
@@ -1078,7 +1078,7 @@ def _data_types_beside_fields(model: DataModel) -> Iterator[DataType]:
     Those are the types of its schema validator rules and of its backend settings, such as TypedDict ``extra_items``.
     """
     yield from _rule_data_types(model)
-    yield from model._setting_data_types()  # ruff: ignore[private-member-access]
+    yield from model._setting_data_types()
 
 
 def _named_data_types(model: DataModel) -> Iterator[DataType]:
@@ -1160,10 +1160,10 @@ def require_update_action(
 
     ``require_update_action_models`` is the list of their paths that ``_process_single_module`` takes.
     """
-    recursion_facts = host._recursion_facts  # noqa: SLF001
+    recursion_facts = host._recursion_facts
     for model in models:
         add_model_path_to_list(require_update_action_models, model)
-    host._recursion_facts = RecursionFacts(  # noqa: SLF001
+    host._recursion_facts = RecursionFacts(
         require_update=recursion_facts["require_update"].union(
             model_key_of(model.reference) for model in models if not model.is_alias
         ),
@@ -1196,8 +1196,8 @@ def subclass_duplicate(
     duplicate (``merged_models``). Return the subclass when the canonical model needs a reference update action, which
     the caller adds once with ``require_update_action``.
     """
-    builder = host._graph_builder  # noqa: SLF001
-    host._merged_duplicates.setdefault(id(canonical), []).append(duplicate)  # noqa: SLF001
+    builder = host._graph_builder
+    host._merged_duplicates.setdefault(id(canonical), []).append(duplicate)
     inherited = duplicate.create_reuse_model(canonical.reference)
     builder.redirect_model_reference_users(
         duplicate, users, inherited.reference, keeps_named=host.keep_reference_null_on_merged_models
@@ -1205,7 +1205,7 @@ def subclass_duplicate(
     builder.set_module_models(models, [inherited if model is duplicate else model for model in models])
     builder.replace_model(duplicate, inherited)
     settle_python_bases(host, inherited.reference)
-    return inherited if model_key_of(canonical.reference) in host._recursion_facts["require_update"] else None  # noqa: SLF001
+    return inherited if model_key_of(canonical.reference) in host._recursion_facts["require_update"] else None
 
 
 DiscriminatorValue: TypeAlias = str | int | bool
@@ -1375,7 +1375,7 @@ def names_left_by_replaced_roots(host: ReplacedRootsHost, models: list[DataModel
     A root keeps its name for the inner model when the inner model, which takes the root's path, is in the same
     module.
     """
-    replaced_root_models = host._replaced_root_models  # noqa: SLF001
+    replaced_root_models = host._replaced_root_models
     return {
         model.class_name
         for model in models
@@ -1854,7 +1854,7 @@ def _set_item_step(
         reading.reads_classes
         and (reference := data_type.reference) is not None
         and isinstance(model := reference.source, DataModel)
-        and model._instances_never_hash(reading.generic_base_config)  # noqa: SLF001
+        and model._instances_never_hash(reading.generic_base_config)
     ):
         return SetItemFacts(unhashable=True)
     if data_type.is_tuple:
@@ -1870,7 +1870,7 @@ def _set_item_step(
 
 def _annotated_reference(data_type: DataType) -> Reference | None:
     """Return the type that the annotation of ``data_type`` names: its reference, or the enum of its enum members."""
-    return data_type.reference or data_type._enum_member_literal_reference  # noqa: SLF001
+    return data_type.reference or data_type._enum_member_literal_reference
 
 
 def _annotated_references(model: DataModel) -> Iterator[tuple[DataType, Reference]]:
@@ -1935,7 +1935,7 @@ class BaseStandInHost(Protocol):
 
 def without_stand_ins(host: BaseStandInHost, models: list[DataModel]) -> list[DataModel]:
     """Return ``models`` without the stand-ins, which are never written: a stand-in is no member of its module."""
-    if not (stand_ins := host._base_stand_in_imports):  # noqa: SLF001
+    if not (stand_ins := host._base_stand_in_imports):
         return models
     return [model for model in models if model_key_of(model.reference) not in stand_ins]
 
@@ -1955,7 +1955,7 @@ class ModuleMembersHost(ReplacedRootsHost, BaseStandInHost, Protocol):
 
 def module_members(host: ModuleMembersHost, models: list[DataModel], *, row: ModuleMembersRow) -> list[DataModel]:
     """Return the models of a module's list ``models`` that the module writes, by ``row`` (``ModuleMembersRow``)."""
-    if not (replaced_root_models := host._replaced_root_models):  # noqa: SLF001
+    if not (replaced_root_models := host._replaced_root_models):
         members = models
     else:
         members = [model for model in models if id(model) not in replaced_root_models]
@@ -1987,8 +1987,8 @@ def unimported_model_keys(host: UnimportedModelsHost) -> set[ModelKey]:
     module to import from.
     """
     return {
-        *host._base_stand_in_imports,  # noqa: SLF001
-        *(model_key_of(model.reference) for model in host._self_named_root_models),  # noqa: SLF001
+        *host._base_stand_in_imports,
+        *(model_key_of(model.reference) for model in host._self_named_root_models),
     }
 
 
@@ -2008,7 +2008,7 @@ def enum_site_override_import(host: TypeOverrideHost, reference: Reference) -> I
     """
     if (target := reference.__dict__.get(_DERIVED_FROM_KEY)) is None or not isinstance(reference.source, Enum):
         return None
-    return model_type_override(host._model_type_override_imports, target, row="class-name")  # noqa: SLF001
+    return model_type_override(host._model_type_override_imports, target, row="class-name")
 
 
 _ConstructorFieldAdjustment: TypeAlias = Literal["assignment", "keyword_only"]
@@ -2041,11 +2041,11 @@ def constructor_base_models(host: ConstructorInfoHost, model: DataModel, *, earl
     """
     if not model.base_classes:
         return []
-    stand_ins = {} if early else host._base_stand_ins  # noqa: SLF001
+    stand_ins = {} if early else host._base_stand_ins
     return [
         base
         for base in linearize_data_models(direct_base_models(model, stand_ins), stand_ins)
-        if base is not host._generic_base_model  # noqa: SLF001
+        if base is not host._generic_base_model
     ]
 
 
@@ -2072,7 +2072,7 @@ def get_inherited_constructor_info(
             for field in inherited_model.fields:
                 if not (field_name := field.name):
                     continue
-                facts = model._field_assignment_facts(field)  # noqa: SLF001
+                facts = model._field_assignment_facts(field)
                 has_default, has_value_default = facts.default_info
                 inherited_defaults[id(field)] = has_default
                 if has_value_default or (has_default and model.REQUIRES_EXPLICIT_INHERITED_FACTORY_OVERRIDE):
@@ -2086,7 +2086,7 @@ def get_inherited_constructor_info(
         for name, (owner, field) in _effective_field_owners(
             model,
             inherited_models,
-            stand_ins={} if early else host._base_stand_ins,  # noqa: SLF001
+            stand_ins={} if early else host._base_stand_ins,
         ).items()
     }
     conflicts = get_constructor_ordering_conflicts(model, effective_fields, required_assignment_names)
@@ -2106,7 +2106,7 @@ def get_constructor_field_adjustment(
     supports_inherited_override: bool,
 ) -> _ConstructorFieldAdjustment | None:
     """Return the exact explicit assignment needed for a required child field."""
-    facts = model._field_assignment_facts(field)  # noqa: SLF001
+    facts = model._field_assignment_facts(field)
     if not facts.participates_in_constructor:
         return None
     if field.name in inherited.ordering_conflicts:
@@ -2184,7 +2184,7 @@ def enum_discriminator_members(enum_source: Enum, values: Iterable[Discriminator
 
 def enum_member_literal_values(data_type: DataType) -> tuple[Enum, list[Any]] | None:
     """Return the Enum whose members a type writes as ``Literal`` values, with the values of those members, or None."""
-    if (reference := data_type._enum_member_literal_reference) is None or not isinstance(  # noqa: SLF001
+    if (reference := data_type._enum_member_literal_reference) is None or not isinstance(
         enum_source := reference.source, Enum
     ):
         return None
@@ -2234,8 +2234,7 @@ def _forward_enum_member_literals(field: DataModelFieldBase, positions: _ModelPo
     return [
         data_type
         for data_type in field.data_type.all_data_types
-        if (reference := data_type._enum_member_literal_reference) is not None  # noqa: SLF001
-        and positions.rank(reference) >= index
+        if (reference := data_type._enum_member_literal_reference) is not None and positions.rank(reference) >= index
     ]
 
 
@@ -2312,7 +2311,7 @@ def unused_model_lists(
             for model in ctx.models
             if id(model) in replaced_root_models
         }
-        if (replaced_root_models := host._replaced_root_models)  # noqa: SLF001
+        if (replaced_root_models := host._replaced_root_models)
         else {}
     )
     for unused_model in state.unused_models:

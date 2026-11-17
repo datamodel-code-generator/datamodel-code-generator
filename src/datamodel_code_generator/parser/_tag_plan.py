@@ -281,7 +281,7 @@ def tag_capabilities(model_type: type[DataModel], field_type: type[DataModelFiel
         writes_argument=field_type.SUPPORTS_DISCRIMINATOR,
         struct_tags=model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR,
         bool_tags=model_type.SUPPORTS_BOOLEAN_LITERAL,
-        literal_holds_members=model_type._LITERAL_HOLDS_ENUM_MEMBERS,  # noqa: SLF001
+        literal_holds_members=model_type._LITERAL_HOLDS_ENUM_MEMBERS,
         flattens_layouts=model_type.FLATTENS_CONFLICTING_BASE_LAYOUTS,
     )
 
@@ -328,7 +328,7 @@ def writes_member_values(variant: DataModel, enum_source: Enum) -> bool:
     model_type = type(variant)
     return (
         enum_source.value_base is None
-        and model_type._LITERAL_HOLDS_ENUM_MEMBERS  # noqa: SLF001
+        and model_type._LITERAL_HOLDS_ENUM_MEMBERS
         and not values_no_literal_holds(
             (enum_source.get_member(member).value for member in enum_source.fields),
             bool_literals=model_type.SUPPORTS_BOOLEAN_LITERAL,
@@ -1118,7 +1118,7 @@ def _site_tag_keys(
     for data_type, can_update_discriminator, owner in _iter_discriminator_data_types(data_types):
         if not data_type.reference and data_type.type == NONE:
             continue
-        if data_type._is_container or not data_type.reference:  # noqa: SLF001
+        if data_type._is_container or not data_type.reference:
             return "dropped-invalid"
         if (taggable := taggable_variant(data_type, field_type)) is None:
             return "dropped-invalid"
@@ -1458,7 +1458,7 @@ def _variant_carries_tag(
     if not data_type.reference:
         return data_type.type == NONE
     return isinstance(source := data_type.reference.source, DataModel) and any(
-        _is_tag_type(tag_field.data_type) and not tag_field._admits_none()  # noqa: SLF001
+        _is_tag_type(tag_field.data_type) and not tag_field._admits_none()
         for tag_field in islice(
             _class_tag_field(source, field_name)
             if order == "collected"
@@ -1478,7 +1478,7 @@ def _root_writes_default(wrapper: DataModel) -> bool:
     leaves it out.
     """
     root = wrapper.fields[0]
-    call = root._render_plan().call  # noqa: SLF001
+    call = root._render_plan().call
     call_default = call is not None and (
         call.factory is not None or (call.positional is not None and call.positional.kind == "default")
     )
@@ -1486,7 +1486,7 @@ def _root_writes_default(wrapper: DataModel) -> bool:
         return not wrapper.IS_ROOT_MODEL and (
             call_default or (call is None and not root.use_annotated and validates_structured_default(root))
         )
-    return call_default or wrapper._field_assignment_facts(root).has_default  # noqa: SLF001
+    return call_default or wrapper._field_assignment_facts(root).has_default
 
 
 def _written_tag_keys(variant: DataModel, field_name: str) -> list[object]:

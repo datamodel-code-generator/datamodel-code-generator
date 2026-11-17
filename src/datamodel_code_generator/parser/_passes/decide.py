@@ -60,7 +60,7 @@ class DecideHost(ReplacedRootsHost, GenerationStoreHost, TargetPythonVersionHost
 
 def decide(parser: DecideHost, runner: Runner, run: FinishRun[Any, Any, Any]) -> None:
     """Seal the facts final at B1 and run the decisions of the registry on them in its order, when it holds any."""
-    if not (decisions := tuple(d for d in parser._DECISION_PASSES if d.when is None or d.when(parser))):  # noqa: SLF001
+    if not (decisions := tuple(d for d in parser._DECISION_PASSES if d.when is None or d.when(parser))):
         return
     unused = run_unused_models(parser, run)
     modules = [(ctx.module_key, unused.written(ctx.models)) for ctx in run.contexts]
@@ -76,7 +76,7 @@ def decide(parser: DecideHost, runner: Runner, run: FinishRun[Any, Any, Any]) ->
         ),
         lambda member, member_keywords: manager.constrained_string_member(member, member_keywords, **member_options),
     )
-    writer = _DecisionWriter(parser._graph_builder, _copy_data_type)  # noqa: SLF001
+    writer = _DecisionWriter(parser._graph_builder, _copy_data_type)
     for decision in decisions:
         runner.run_decision(decision, facts, writer)
     run.decisions = writer.outcome(model for _, models in modules for model in models)

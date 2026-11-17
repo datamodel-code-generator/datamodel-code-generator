@@ -212,7 +212,7 @@ def _assigned_key(model: DataModel) -> Callable[[DataModelFieldBase], bool]:
 
     A field counts as it takes its place in the constructor (``AssignmentFacts.place_assigned``).
     """
-    return lambda field: model._field_assignment_facts(field).place_assigned  # noqa: SLF001
+    return lambda field: model._field_assignment_facts(field).place_assigned
 
 
 def _apply_constructor_field_adjustments(
@@ -309,7 +309,7 @@ def _only_groups_members(data_type: DataType) -> bool:
     """Return whether the type only groups its members, so an enclosing union can hold them directly."""
     return (
         bool(data_type.data_types)
-        and data_type._writes_nothing_of_its_own  # noqa: SLF001
+        and data_type._writes_nothing_of_its_own
         and not (
             data_type.is_func
             or data_type.kwargs
@@ -320,7 +320,7 @@ def _only_groups_members(data_type: DataType) -> bool:
             or data_type.discriminator
             or data_type.use_serialize_as_any
             or data_type.is_custom_type
-            or data_type._is_forward_reference  # noqa: SLF001
+            or data_type._is_forward_reference
         )
     )
 
@@ -340,9 +340,9 @@ def _flatten_union_members(data_type: DataType, graph_builder: GraphBuilder) -> 
         facts.append(MemberFacts("grouping" if grouping else "member", null=member.is_optional))
     plan = assemble_union(facts, FLATTENED)
     for index in plan.null_moved:
-        members[index]._materialize_render_state("null-moved-to-union")  # noqa: SLF001
+        members[index]._materialize_render_state("null-moved-to-union")
     if plan.nullable:
-        data_type._materialize_render_state("member-null")  # noqa: SLF001
+        data_type._materialize_render_state("member-null")
     graph_builder.set_nested_data_types(
         data_type,
         [
@@ -430,7 +430,7 @@ def mark_set_item_models_hashable(parser: RenderPrepHost, models: list[DataModel
     ]
     builtin_hash_keys: set[ModelKey] = set()
     if (
-        field_value_hashes := parser.data_model_type._FIELD_VALUE_HASHES  # noqa: SLF001
+        field_value_hashes := parser.data_model_type._FIELD_VALUE_HASHES
     ) is not None and set_items_may_keep_builtin_hash(user_imports=bool(parser.config.additional_imports)):
         builtin_hash_keys = set_item_models_keeping_builtin_hash(set_item_models, field_value_hashes)
     for model in set_item_models:
@@ -469,13 +469,13 @@ def set_validate_default_on_fields(
                 or deserialized_default
             )
             if _needs_validate_default(model_field.data_type) and model_field.enable_structured_default_validation():
-                parser._graph_builder.set_field_extra(model_field, "validate_default", value=True)  # noqa: SLF001
+                parser._graph_builder.set_field_extra(model_field, "validate_default", value=True)
     if deserialized_default:
         normalize_default_value_constraints(
             parser,
             models,
             data_type_manager=parser.data_type_manager,
-            import_overrides=parser._import_overrides,  # noqa: SLF001
+            import_overrides=parser._import_overrides,
         )
     if incomplete:
         warn_as_parser_base(_incomplete_model_defaults_message(incomplete), UserWarning, stacklevel=2)
@@ -519,7 +519,7 @@ def deserialize_default_value(
     if (resolved := resolve_default_value_descriptor(parser.data_type_manager, field.data_type)) is None:
         return False
     annotation_import, descriptor = resolved
-    if has_import_override(parser._import_overrides, annotation_import, descriptor.constructor_import):  # noqa: SLF001
+    if has_import_override(parser._import_overrides, annotation_import, descriptor.constructor_import):
         return False
     return deserialize_decimal_default(parser, model, field, descriptor)
 
@@ -546,19 +546,17 @@ def deserialize_decimal_default(
         except (InvalidOperation, TypeError, ValueError):
             record_decimal_default_warning(parser, model, field)
             return False
-    parser._graph_builder.set_field_default(  # noqa: SLF001
-        field, _text_constructor_expression(descriptor.constructor_import, value)
-    )
-    field._set_runtime_expression_imports((descriptor.constructor_import,))  # noqa: SLF001
-    parser._register_runtime_expression()  # noqa: SLF001
+    parser._graph_builder.set_field_default(field, _text_constructor_expression(descriptor.constructor_import, value))
+    field._set_runtime_expression_imports((descriptor.constructor_import,))
+    parser._register_runtime_expression()
     return True
 
 
 def record_decimal_default_warning(parser: RenderPrepHost, model: DataModel, field: DataModelFieldBase) -> None:
     """Record a bounded example set without retaining every affected field."""
-    parser._decimal_default_warning_count += 1  # noqa: SLF001
-    if (examples := parser._decimal_default_warning_examples) is None:  # noqa: SLF001
-        examples = parser._decimal_default_warning_examples = []  # noqa: SLF001
+    parser._decimal_default_warning_count += 1
+    if (examples := parser._decimal_default_warning_examples) is None:
+        examples = parser._decimal_default_warning_examples = []
     if len(examples) < _DECIMAL_WARNING_EXAMPLE_LIMIT:
         examples.append(f"{model.class_name}.{field.name or '<root>'}")
 
@@ -640,20 +638,19 @@ def fix_constructor_field_ordering_of(
         restored_inherited_state = False
         for field in model.fields:
             restored_inherited_state = (
-                parser._graph_builder.restore_required_inherited_field(model, field)  # noqa: SLF001
-                or restored_inherited_state
+                parser._graph_builder.restore_required_inherited_field(model, field) or restored_inherited_state
             )
 
         if (inherited := get_inherited_constructor_info(parser, model, early=early)) is None:
             if (order_key := get_local_constructor_ordering_key(model)) is not None:
-                parser._graph_builder.set_fields(model, sorted(model.fields, key=order_key))  # noqa: SLF001
+                parser._graph_builder.set_fields(model, sorted(model.fields, key=order_key))
             continue
         if (
             copies is not None
             and (ctx := written.get(id(model))) is not None
             and (copied := copy_inherited_conflicts(parser, model, inherited, ctx, written, copies))
         ):
-            parser._graph_builder.set_fields(model, [*copied, *model.fields])  # noqa: SLF001
+            parser._graph_builder.set_fields(model, [*copied, *model.fields])
             inherited = cast("_InheritedConstructorInfo", get_inherited_constructor_info(parser, model))
         field_adjustments: Iterator[tuple[DataModelFieldBase, _ConstructorFieldAdjustment]] = (
             (field, adjustment)
@@ -673,9 +670,9 @@ def fix_constructor_field_ordering_of(
             None,
         )
         if first_adjustment is not None:
-            _apply_constructor_field_adjustments(parser._graph_builder, model, first_adjustment, field_adjustments)  # noqa: SLF001
+            _apply_constructor_field_adjustments(parser._graph_builder, model, first_adjustment, field_adjustments)
         if first_adjustment is not None or restored_inherited_state:
-            parser._graph_builder.set_fields(model, sorted(model.fields, key=_assigned_key(model)))  # noqa: SLF001
+            parser._graph_builder.set_fields(model, sorted(model.fields, key=_assigned_key(model)))
 
 
 def copy_inherited_conflicts(  # noqa: PLR0913, PLR0917
@@ -701,7 +698,7 @@ def copy_inherited_conflicts(  # noqa: PLR0913, PLR0917
     for field, declaring_model in inherited.inherited_conflicts:
         if id(declaring_model) not in written:
             continue
-        copied = parser._copy_model_field(field)  # noqa: SLF001
+        copied = parser._copy_model_field(field)
         import_references(
             parser,
             module,
@@ -727,7 +724,7 @@ def get_local_constructor_ordering_key(
     """
     if not model.SUPPORTS_KW_ONLY:
         return None
-    facts = {id(field): model._field_assignment_facts(field) for field in model.fields}  # noqa: SLF001
+    facts = {id(field): model._field_assignment_facts(field) for field in model.fields}
     if model.orders_required_assignments_before_defaults():
 
         def written_key(field: DataModelFieldBase, field_facts: AssignmentFacts) -> tuple[bool, bool]:  # noqa: ARG001
@@ -780,7 +777,7 @@ def has_required_assignment_after_default(model: DataModel) -> bool:
     """Return whether a positional field without a signature default follows one with a default."""
     seen_default = False
     for owner, field in _effective_field_owners(model, linearize_data_models(_find_base_classes(model))).values():
-        if not takes_positional_place(facts := model._field_assignment_facts(field), field, owner):  # noqa: SLF001
+        if not takes_positional_place(facts := model._field_assignment_facts(field), field, owner):
             continue
         has_default = facts.has_default
         if seen_default and not has_default:
@@ -819,11 +816,11 @@ def disable_union_operator_for_forward_ref(
     while pending:
         node, writes_name = pending.pop()
         for holder in (node.parent, *inlined_holders(node)):
-            if not isinstance(holder, DataType) or id(holder) in seen or holder._own_text:  # noqa: SLF001
+            if not isinstance(holder, DataType) or id(holder) in seen or holder._own_text:
                 continue
             seen.add(id(holder))
             joins_members = holder.is_union and not holder.is_tuple
-            wraps_members = holder._is_container  # noqa: SLF001
+            wraps_members = holder._is_container
             if joins_members or (writes_name and not wraps_members):
                 graph_builder.drop_union_operator(holder)
             if use_typing_generics and node is data_type:
@@ -888,7 +885,7 @@ def quote_forward_rule_types(model: DataModel, model_index: Mapping[str, int], i
         ):
             return data_type
         forward = type(data_type)(data_types=[_copy_data_type(data_type)])
-        forward._set_forward_reference()  # noqa: SLF001
+        forward._set_forward_reference()
         return forward
 
     rules = [
@@ -907,9 +904,9 @@ def quote_forward_rule_types(model: DataModel, model_index: Mapping[str, int], i
         for new_type, old_type in zip(rule.data_types, old_rule.data_types, strict=True)
     ):
         return
-    model._set_internal_template_data(  # noqa: SLF001
+    model._set_internal_template_data(
         "schema_runtime_validation",
-        runtime_validation._replace_pattern_properties(rules),  # noqa: SLF001
+        runtime_validation._replace_pattern_properties(rules),
     )
 
 
@@ -991,11 +988,11 @@ def defer_recursive_containers(  # noqa: PLR0913
         if True in kinds
     ]
     for container, wrappers in deferred:
-        container._set_forward_reference()  # noqa: SLF001
+        container._set_forward_reference()
         for quoted in (container, *wrappers):
             graph_builder.drop_union_operator(quoted)
         for nested in container.all_data_types:
-            if (reference := nested.reference) and nested._is_quoted_reference:  # noqa: SLF001
+            if (reference := nested.reference) and nested._is_quoted_reference:
                 graph_builder.name_reference(nested, reference.short_name)
     for root in deferred[0][1][:1]:
         _flatten_union_members(root, graph_builder)
@@ -1013,7 +1010,7 @@ def quote_forward_enum_member_literals(  # noqa: PLR0913
     """Write each enum member literal of the field whose enum is defined later as a string; return whether any."""
     member_literals = _forward_enum_member_literals(field, positions, index)
     for member_literal in member_literals:
-        member_literal._set_forward_reference()  # noqa: SLF001
+        member_literal._set_forward_reference()
         disable_union_operator_for_forward_ref(
             member_literal, graph_builder, inlined_holders, use_typing_generics=use_typing_generics
         )
@@ -1142,14 +1139,14 @@ def assign_module_forward_reference_fields(parser: RenderPrepHost, models: list[
     """
     positions = {model.path: index for index, model in enumerate(models)}
     for index, model in enumerate(models):
-        parser._graph_builder.use_assignment_for_forward_references(model, positions, index, refresh="deferred")  # noqa: SLF001
+        parser._graph_builder.use_assignment_for_forward_references(model, positions, index, refresh="deferred")
 
 
 def unbind_hidden_type_fields(parser: RenderPrepHost, state: _PreparedModule[Any]) -> None:
     """Leave fields unbound where they hide a type of their class's annotations and the model can."""
     for model in state.model_list:
         if (names := _hidden_type_names(model)) and model.unbind_fields(names):
-            parser._graph_builder.note_changed_models(model)  # noqa: SLF001
+            parser._graph_builder.note_changed_models(model)
 
 
 def update_module_type_aliases(parser: RenderPrepHost, state: _PreparedModule[Any]) -> None:
@@ -1164,10 +1161,10 @@ def update_module_type_aliases(parser: RenderPrepHost, state: _PreparedModule[An
         defers_recursive_containers=pydantic_target_meets(
             "pydantic.type_alias_module_namespace", parser.target_pydantic_version
         ),
-        graph_builder=parser._graph_builder,  # noqa: SLF001
+        graph_builder=parser._graph_builder,
         inlined_holders=parser.generation_store.index.inlined_holders_of,
-        hidden_type_names=_hidden_type_names if parser._quotes_hidden_types else lambda _: (),  # noqa: SLF001
-        quotes_forward_enum_member_literals=parser._quotes_hidden_types,  # noqa: SLF001
+        hidden_type_names=_hidden_type_names if parser._quotes_hidden_types else lambda _: (),
+        quotes_forward_enum_member_literals=parser._quotes_hidden_types,
         use_typing_generics=not python_target_meets(
             "python.builtin_generic_strings", parser.target_python_version.version_key
         ),
@@ -1205,7 +1202,7 @@ def prepare_type_alias_fields(parser: RenderPrepHost, state: _FinalizeState[Any]
     prepare_field = cast("Callable[..., bool]", parser.data_model_field_type.PREPARE_TYPE_ALIAS_FIELD)
     prepared_patterns: dict[str, PythonRuntimeExpression] = {}
     unused = run_unused_models(parser, state)
-    replace_field_type = parser._graph_builder.replace_field_type  # noqa: SLF001
+    replace_field_type = parser._graph_builder.replace_field_type
     for ctx in state.contexts:
         for model in ctx.models:
             if not isinstance(model, TypeAliasBase) or model in unused or not model.fields:
@@ -1214,12 +1211,12 @@ def prepare_type_alias_fields(parser: RenderPrepHost, state: _FinalizeState[Any]
             if prepare_field(field := model.fields[0], prepared_patterns, replace_field_type):
                 field.invalidate_semantic_caches()
                 current_imports = model.imports
-                parser._import_ledger.remove(  # noqa: SLF001
+                parser._import_ledger.remove(
                     ctx.imports,
                     [import_ for import_ in previous_imports if import_ not in current_imports],
                     ImportProducer("type-alias-fields", model, field),
                 )
-                parser._register_runtime_expression()  # noqa: SLF001
+                parser._register_runtime_expression()
 
 
 def finalize_rendered_nullability(parser: RenderPrepHost, state: _FinalizeState[Any]) -> None:
@@ -1234,7 +1231,7 @@ def finalize_rendered_nullability(parser: RenderPrepHost, state: _FinalizeState[
             for data_type in field.data_type.all_data_types:
                 if id(data_type) not in seen:
                     seen.add(id(data_type))
-                    parser._graph_builder.write_rendered_null(data_type)  # noqa: SLF001
+                    parser._graph_builder.write_rendered_null(data_type)
 
 
 def collect_all_models(state: _FinalizeState[Any]) -> None:
@@ -1251,9 +1248,9 @@ def finalize_sequence_interface(state: _FinalizeState[Any]) -> None:
 def decide_nested_model_default_factories(parser: RenderPrepHost, state: _FinalizeState[Any]) -> None:
     """Decide the nested models' default factories over the model lists the modules write, unused models gone."""
     leaving = run_unused_models(parser, state)
-    cast("RenderReady", RENDER_READY.get()).nested_factories = parser._nested_model_default_factory_decision(  # noqa: SLF001
+    cast("RenderReady", RENDER_READY.get()).nested_factories = parser._nested_model_default_factory_decision(
         [leaving.written(ctx.models) for ctx in state.contexts],
-        parser._recursion_facts["require_update"],  # noqa: SLF001
+        parser._recursion_facts["require_update"],
     )
 
 
@@ -1266,18 +1263,18 @@ def freeze_field_render_plans(state: _FinalizeState[Any]) -> None:
     """
     ready = cast("RenderReady", RENDER_READY.get())
     for model in state.all_models:
-        if not model._FREEZES_FIELD_RENDER_PLANS:  # noqa: SLF001
+        if not model._FREEZES_FIELD_RENDER_PLANS:
             continue
         for model_field in model.fields:
-            if (plan := model_field._build_frozen_render_plan()) is None:  # noqa: SLF001
+            if (plan := model_field._build_frozen_render_plan()) is None:
                 continue
             field = cast("PlannedField", model_field)
             import_plan = None
             if ready.nested_factories is not None:
-                import_text = field._render_plan_text(plan)  # noqa: SLF001
+                import_text = field._render_plan_text(plan)
                 with ready.nested_factories_decided():
-                    decided = cast("FieldRenderPlan", field._build_frozen_render_plan())  # noqa: SLF001
-                    if field._render_plan_text(decided) != import_text:  # noqa: SLF001
+                    decided = cast("FieldRenderPlan", field._build_frozen_render_plan())
+                    if field._render_plan_text(decided) != import_text:
                         import_plan = plan
                 plan = decided
             ready.freeze(field, plan, import_plan, type_expr_of(model_field.data_type))

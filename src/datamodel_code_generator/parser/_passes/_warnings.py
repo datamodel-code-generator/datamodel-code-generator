@@ -33,9 +33,9 @@ def warn_as_module(module: str, message: str, category: type[Warning], *, stackl
     depth = 1
     for _ in range(stacklevel - 1):
         depth += 1
-        while is_tracer_frame(sys._getframe(depth)):  # noqa: SLF001
+        while is_tracer_frame(sys._getframe(depth)):
             depth += 1
-    frame = sys._getframe(depth)  # noqa: SLF001
+    frame = sys._getframe(depth)
     warn_explicit(
         message,
         category,

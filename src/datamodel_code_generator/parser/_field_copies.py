@@ -59,7 +59,7 @@ def _get_inherited_type_modifiers(
     drops_null_members: bool = False,
 ) -> _InheritedTypeModifiers:
     """Compress a partial type before replacing its forward placeholder."""
-    list_wrapper = _copy_data_type(data_type, register_references=False) if data_type._wraps_one_list else None  # noqa: SLF001
+    list_wrapper = _copy_data_type(data_type, register_references=False) if data_type._wraps_one_list else None
     return _InheritedTypeModifiers(
         null_rule=null_rule,
         is_optional=data_type.is_optional,
@@ -105,7 +105,7 @@ def _merge_data_type_modifiers(
         new_type.is_optional = new_type.is_optional or current_type.is_optional
     if isinstance(current_type, _InheritedTypeModifiers) and current_type.excludes_null:
         new_type.is_optional = False
-    if preserve_container_shape or new_type._is_container or not (new_type.reference or new_type.type):  # noqa: SLF001
+    if preserve_container_shape or new_type._is_container or not (new_type.reference or new_type.type):
         new_type.is_dict = new_type.is_dict or current_type.is_dict
         new_type.is_list = new_type.is_list or current_type.is_list
         new_type.is_set = new_type.is_set or current_type.is_set
@@ -202,7 +202,7 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913
             wrapper_template = (
                 current_type.list_wrapper
                 if isinstance(current_type, _InheritedTypeModifiers)
-                else (current_type if current_type._wraps_one_list else None)  # noqa: SLF001
+                else (current_type if current_type._wraps_one_list else None)
             )
             if wrapper_template is not None and copied_data_type.is_list:
                 wrapper = _copy_data_type(wrapper_template, register_references=register_references)

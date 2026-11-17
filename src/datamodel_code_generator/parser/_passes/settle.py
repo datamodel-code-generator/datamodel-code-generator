@@ -414,26 +414,26 @@ def settle_yielding_names(parser: SettleHost[Any], _run: SettleRun[Any]) -> None
     follows the renames of the yielding names; the names the generation store renames after them
     (``GenerationStore.renames``) are given by path to the parse again of ``imports.translate_final_name_keys``.
     """
-    parser._reuse_groups = ReuseGroups(  # noqa: SLF001
-        site_models=frozenset(parser._site_model_keys),  # noqa: SLF001
+    parser._reuse_groups = ReuseGroups(
+        site_models=frozenset(parser._site_model_keys),
         typed_map_values=frozenset(parser.model_resolver.settle_yielding_names()),
     )
-    if (changes := parser.model_resolver.yielding_name_changes) and parser._construction_keys.name_any(changes):  # noqa: SLF001
+    if (changes := parser.model_resolver.yielding_name_changes) and parser._construction_keys.name_any(changes):
         parser.yielding_names_to_assign = tuple(parser.model_resolver.final_yielding_names.items())
 
 
 def report_parse_diagnostics(parser: SettleHost[Any], run: SettleRun[Any]) -> None:
     """Report the parse diagnostics once per generation run: a retry repeats none that an earlier parse reported."""
     if run.suppress_settle_diagnostics:
-        parser._run_with_suppressed_warnings(parser._report_parse_diagnostics)  # noqa: SLF001
+        parser._run_with_suppressed_warnings(parser._report_parse_diagnostics)
     else:
-        parser._report_parse_diagnostics()  # noqa: SLF001
+        parser._report_parse_diagnostics()
         mark_settle_diagnostics_reported()
 
 
 def prepare_run_parse_config(parser: SettleHost[ConfigT], run: SettleRun[ConfigT]) -> None:
     """Prepare the configuration of output modules from the arguments of ``parse()``."""
-    run.config = parser._prepare_parse_config(  # noqa: SLF001
+    run.config = parser._prepare_parse_config(
         run.args.with_import,
         run.args.disable_future_imports,
         run.args.all_exports_scope,
@@ -458,11 +458,11 @@ def sort_parsed_models(parser: SettleHost[Any], run: SettleRun[Any]) -> None:
             parser.read_only_write_only_model_type is not None and not parser.dedupe_request_response_variants
         ),
     )
-    parser._recursion_facts = RecursionFacts(require_update=frozenset(require_update), circular_roots=frozenset())  # noqa: SLF001
+    parser._recursion_facts = RecursionFacts(require_update=frozenset(require_update), circular_roots=frozenset())
     sorted_model_ids = {id(model) for model in run.sorted_data_models.values()}
     for model in parser.results:
         if id(model) not in sorted_model_ids:
-            parser._graph_builder.retire_model(model)  # noqa: SLF001
+            parser._graph_builder.retire_model(model)
 
 
 def record_source_reference_paths(run: SettleRun[Any]) -> None:
@@ -479,23 +479,23 @@ def parse_raw(parser: ParseHost, run: SettleRun[Any]) -> None:
     The HTTP session closes either way. A parse that exceeds the recursion limit on deeply nested schemas stops with
     an error, not a partial result.
     """
-    parser._start_naming_frames()  # noqa: SLF001
+    parser._start_naming_frames()
     try:
         with nesting_limit():
             if run.suppress_parse_warnings and parse_warnings_reported():
-                parser._run_with_suppressed_warnings(parser.parse_raw)  # noqa: SLF001
+                parser._run_with_suppressed_warnings(parser.parse_raw)
             else:
                 with parse_warnings_shown_once():
                     parser.parse_raw()
     finally:
-        parser._close_http_fetch_session()  # noqa: SLF001
+        parser._close_http_fetch_session()
 
 
 def index_const_narrowed_values(parser: ParseHost, _run: SettleRun[Any]) -> None:
     """Index the data types whose value a const narrows, by data type."""
-    parser._const_narrowed_values = {  # noqa: SLF001
+    parser._const_narrowed_values = {
         id(fact.data_type): (fact.data_type, narrowing)
-        for reference, narrowing in parser._const_narrowed_references  # noqa: SLF001
+        for reference, narrowing in parser._const_narrowed_references
         for fact in parser.generation_store.index.data_type_facts_for_reference(reference)
         if fact.role != "base"
     }

@@ -371,7 +371,7 @@ def first_definitions(
     ``_schema_paths_at``); ``""`` and the last value read, an empty one, when none holds an entry.
     """
     definitions: dict[str, YamlValue] = {}
-    for schema_path, split_schema_path in parser._schema_paths_at(location):  # noqa: SLF001
+    for schema_path, split_schema_path in parser._schema_paths_at(location):
         if definitions := cast("dict[str, YamlValue]", get_model_by_path(raw, split_schema_path)):
             return schema_path, definitions
     return "", definitions
@@ -553,12 +553,12 @@ def lenient_ref(parser: SchemaResourcesHost, ref: str) -> str:
     """
     if isinstance(ref, ResolvedRef):
         return ref
-    record = parser._graph.known(document := current_document(parser))  # noqa: SLF001
+    record = parser._graph.known(document := current_document(parser))
     if not (record.implicit if _is_plain_name_fragment(ref) else record.lenient is not None):
         return ref
     return keep_resolved_ref(
         ref,
-        resolve_lenient_resource_ref(parser, ref, parser._schema_resource_registry.root_bases[document], document),  # noqa: SLF001
+        resolve_lenient_resource_ref(parser, ref, parser._schema_resource_registry.root_bases[document], document),
     )
 
 
@@ -580,12 +580,12 @@ def normalize_external_ref(parser: SchemaDocumentsHost, ref: str) -> str:
     if not separator or not object_path or object_path.startswith("/"):
         return ref
 
-    ref_body = parser._get_ref_body(relative_path)  # noqa: SLF001
+    ref_body = parser._get_ref_body(relative_path)
     document = schema_resource_document(parser, [relative_path])
     file_part = document_part(ref)
     if location := duplicate_name_location(
         parser,
-        parser._schema_resource_registry.plain_name_uri(document, "", f"#{object_path}"),  # noqa: SLF001
+        parser._schema_resource_registry.plain_name_uri(document, "", f"#{object_path}"),
     ):
         return keep_resolved_ref(ref, f"{file_part}#{location.partition('#')[2]}")
     if (anchor_pointer := _find_json_schema_anchor_pointer(ref_body, object_path)) is not None:
@@ -630,9 +630,9 @@ def read_document(
         )
     if not readings:
         return document
-    read = cast("dict[str, YamlValue]", _read_schema_objects(document, parser._named_entry_maps, readings))  # noqa: SLF001
+    read = cast("dict[str, YamlValue]", _read_schema_objects(document, parser._named_entry_maps, readings))
     if read is not document:
-        parser._documents_as_written[id(read)] = read, document  # noqa: SLF001
+        parser._documents_as_written[id(read)] = read, document
     return read
 
 
@@ -640,16 +640,16 @@ def _reads_const(
     parser: SchemaDocumentsHost, document: dict[str, YamlValue], root: dict[str, YamlValue] | None
 ) -> bool:
     """Whether const is a keyword where ``read_document`` reads a document, as its docstring says."""
-    if parser._reads_schema_version_per_document:  # noqa: SLF001
+    if parser._reads_schema_version_per_document:
         inherited = None if root is None else loading_document_dialect(parser)
-        return parser._read_dialect(document, inherited=inherited).features.const_support  # noqa: SLF001
-    features = parser.__dict__.get("schema_features") or parser._schema_features_for(root or document)  # noqa: SLF001
+        return parser._read_dialect(document, inherited=inherited).features.const_support
+    features = parser.__dict__.get("schema_features") or parser._schema_features_for(root or document)
     return features.const_support
 
 
 def document_as_written(parser: SchemaDocumentsHost, document: dict[str, YamlValue]) -> dict[str, YamlValue]:
     """Return a document as written, before the options that read documents read it (``read_document``)."""
-    entry = parser._documents_as_written.get(id(document))  # noqa: SLF001
+    entry = parser._documents_as_written.get(id(document))
     return entry[1] if entry is not None and entry[0] is document else document
 
 
@@ -658,23 +658,23 @@ def load_ref_data_from_text(parser: SchemaDocumentsHost, text: str, source: str)
     try:
         return read_document(parser, load_data(text), parser.raw_obj)
     except (json.JSONDecodeError, TypeError, *get_yaml_parse_errors()) as exc:
-        raise InvalidFileFormatError(exc, parser._input_file_type, source=source) from exc  # noqa: SLF001
+        raise InvalidFileFormatError(exc, parser._input_file_type, source=source) from exc
 
 
 def load_ref_data_from_local_http_file(parser: SchemaDocumentsHost, path: Path, ref: str) -> dict[str, YamlValue]:
     """Decode a local HTTP mirror while locking the same raw bytes as HTTP."""
-    if parser._remote_response_observer is None:  # noqa: SLF001
-        return parser._load_ref_data_from_path(path)  # noqa: SLF001
+    if parser._remote_response_observer is None:
+        return parser._load_ref_data_from_path(path)
     data = path.read_bytes()
-    parser._remote_response_observer(ref, parser.http_headers, parser.http_query_parameters, data)  # noqa: SLF001
+    parser._remote_response_observer(ref, parser.http_headers, parser.http_query_parameters, data)
     try:
         result = _load_parser_source_data_from_path_bytes(path, data, parser.encoding)
     except (UnicodeDecodeError, json.JSONDecodeError, TypeError, *get_yaml_parse_errors()) as exc:
-        raise InvalidFileFormatError(exc, parser._input_file_type, source=path) from exc  # noqa: SLF001
+        raise InvalidFileFormatError(exc, parser._input_file_type, source=path) from exc
     if isinstance(result, dict):
         return read_document(parser, result, parser.raw_obj)
     msg = f"Expected dict, got {type(result).__name__}"
-    raise InvalidFileFormatError(TypeError(msg), parser._input_file_type, source=path)  # noqa: SLF001
+    raise InvalidFileFormatError(TypeError(msg), parser._input_file_type, source=path)
 
 
 def get_ref_body_from_local_http_path(parser: SchemaDocumentsHost, ref: str) -> dict[str, YamlValue]:
@@ -702,7 +702,7 @@ def get_ref_body_from_local_http_path(parser: SchemaDocumentsHost, ref: str) -> 
 
     for file_path in file_paths:
         if file_path.is_file():
-            cache_key = f"{file_path}\x00{ref}" if parser._remote_response_observer is not None else str(file_path)  # noqa: SLF001
+            cache_key = f"{file_path}\x00{ref}" if parser._remote_response_observer is not None else str(file_path)
             return parser.remote_object_cache.get_or_put(
                 # Several remote identities may intentionally share one
                 # checked-in mirror. Include the logical request only when
@@ -725,7 +725,7 @@ def document_key(parser: DocumentNamesHost, path_parts: Sequence[str]) -> str:
 def schema_resource_document(parser: DocumentNamesHost, path_parts: list[str]) -> str:
     """Identify one physical schema document without changing its public reference names."""
     document = document_key(parser, path_parts)
-    if (location := (names := parser._graph.names).get(document)) is None:  # noqa: SLF001
+    if (location := (names := parser._graph.names).get(document)) is None:
         location = document if not document or is_url(document) else (parser.base_path / document).resolve().as_posix()
         names[document] = location
     return location
@@ -770,9 +770,7 @@ def schema_resource_identifier(
     ):
         version = _detect_declared_jsonschema_version(schema)
         id_field = JsonSchemaFeatures.from_version(version).id_field if version is not None else None
-    if isinstance(schema.get("$ref"), str) and parser._ignores_ref_siblings_at(  # noqa: SLF001
-        SchemaLocation(document, ())
-    ):
+    if isinstance(schema.get("$ref"), str) and parser._ignores_ref_siblings_at(SchemaLocation(document, ())):
         return id_field, None
     identifier = schema.get(id_field or document_id_field(parser, document))
     if not identifier and (is_root or id_field is None):
@@ -786,8 +784,8 @@ def document_id_field(parser: SchemaDocumentsHost, document: str) -> str:
     It is that of the version the document is read by under --read-schema-version-per-document, else that of
     ``schema_features`` (row ``legacy-first-read-dialect``).
     """
-    if parser._reads_schema_version_per_document:  # noqa: SLF001
-        return cast("DocumentDialect", parser._graph.known(document).dialect).features.id_field  # noqa: SLF001
+    if parser._reads_schema_version_per_document:
+        return cast("DocumentDialect", parser._graph.known(document).dialect).features.id_field
     return parser.schema_features.id_field
 
 
@@ -802,7 +800,7 @@ def plain_name_ref(parser: SchemaResourcesHost, ref: str, pointer: str) -> str:
     declares stays as written.
     """
     document = current_document(parser)
-    registry = parser._schema_resource_registry  # noqa: SLF001
+    registry = parser._schema_resource_registry
     uri = registry.plain_name_uri(document, pointer, ref)
     if (location := duplicate_name_location(parser, uri)) is None and (
         parser.model_resolver.registered_id(ref) is not None or (location := registry.locations.get(uri)) is None
@@ -818,7 +816,7 @@ def note_plain_name(parser: SchemaResourcesHost, document: str, pointer: str, re
     """
     if not _is_plain_name_fragment(ref):
         return None
-    return duplicate_name_location(parser, parser._schema_resource_registry.plain_name_uri(document, pointer, ref))  # noqa: SLF001
+    return duplicate_name_location(parser, parser._schema_resource_registry.plain_name_uri(document, pointer, ref))
 
 
 def duplicate_name_location(parser: SchemaResourcesHost, uri: str) -> str | None:
@@ -829,7 +827,7 @@ def duplicate_name_location(parser: SchemaResourcesHost, uri: str) -> str | None
     once the schemas are parsed. Under --read-dynamic-anchors-in-document-order it names the first declaration in
     document order; without it, and for a name only one schema declares, the reader resolves it as before (None).
     """
-    registry = parser._schema_resource_registry  # noqa: SLF001
+    registry = parser._schema_resource_registry
     if (declared := registry.locations.get(uri)) is None or (
         locations := registry.duplicate_names.get(document := document_part(declared), {}).get(uri)
     ) is None:
@@ -838,7 +836,7 @@ def duplicate_name_location(parser: SchemaResourcesHost, uri: str) -> str | None
     source = document_source(parser, document)
     declarations = ", ".join(stable_repr(redact_url(_document_location(location, document))) for location in locations)
     first = parser.config.read_dynamic_anchors_in_document_order
-    parser._resource_ref_warnings.add(  # noqa: SLF001
+    parser._resource_ref_warnings.add(
         f"The anchor {stable_repr(name)} is declared by more than one schema in {source} ({declarations}), so a "
         f"reference to {stable_repr(f'#{name}')} names {'the first' if first else 'one'} of them, which JSON Schema "
         "leaves undefined. Give each schema an anchor of its own."
@@ -848,8 +846,8 @@ def duplicate_name_location(parser: SchemaResourcesHost, uri: str) -> str | None
 
 def document_source(parser: SchemaResourcesHost, document: str) -> str:
     """Return how diagnostics name a registered document: its redacted path, else the input's diagnostics path."""
-    path_parts = cast("list[str]", parser._graph.known(document).path_parts)  # noqa: SLF001
-    return redact_url("/".join(path_parts) or parser._source_path_for_diagnostics())  # noqa: SLF001
+    path_parts = cast("list[str]", parser._graph.known(document).path_parts)
+    return redact_url("/".join(path_parts) or parser._source_path_for_diagnostics())
 
 
 def declared_location(parser: SchemaResourcesHost, absolute: str) -> str | None:
@@ -858,14 +856,14 @@ def declared_location(parser: SchemaResourcesHost, absolute: str) -> str | None:
     A plain name several schemas of a document declare names the first under --read-dynamic-anchors-in-document-order
     (``duplicate_name_location``).
     """
-    return duplicate_name_location(parser, absolute) or parser._schema_resource_registry.location(absolute)  # noqa: SLF001
+    return duplicate_name_location(parser, absolute) or parser._schema_resource_registry.location(absolute)
 
 
 def resolve_schema_resource_ref(
     parser: SchemaResourcesHost, reference: str, base: str, document: str, *, nested_scope: bool
 ) -> str:
     """Resolve registered resources before considering a physical document fetch."""
-    if parser._graph.known(document).lenient is not None:  # noqa: SLF001
+    if parser._graph.known(document).lenient is not None:
         return resolve_lenient_resource_ref(parser, reference, base, document)
     absolute = urljoin(base, reference)
     resource, _, fragment = absolute.partition("#")
@@ -873,7 +871,7 @@ def resolve_schema_resource_ref(
         return _document_location(location, document)
     if (
         not is_pointer_fragment(fragment)
-        and (root := parser._schema_resource_registry.locations.get(resource)) is not None  # noqa: SLF001
+        and (root := parser._schema_resource_registry.locations.get(resource)) is not None
         and root.split("#", 1)[1]
     ):
         msg = f"Embedded schema resource has no anchor {stable_repr(fragment)}: {stable_repr(redact_url(reference))}"
@@ -893,7 +891,7 @@ def resolve_lenient_resource_ref(parser: SchemaResourcesHost, reference: str, ba
     if _is_plain_name_fragment(reference):
         location = declared_location(parser, urljoin(base, reference))
         return reference if location is None else _document_location(location, document)
-    if (location := parser._schema_resource_registry.location(urljoin(base, reference))) is None:  # noqa: SLF001
+    if (location := parser._schema_resource_registry.location(urljoin(base, reference))) is None:
         return reference
     if (target := _document_location(location, document)) == reference or not target.startswith("#"):
         return reference
@@ -907,19 +905,19 @@ def resolve_lenient_resource_ref(parser: SchemaResourcesHost, reference: str, ba
             f"{stable_repr(redact_url(target))}."
         )
     else:
-        if not loads_document(parser, urljoin(parser._schema_resource_registry.root_bases[document], reference)):  # noqa: SLF001
+        if not loads_document(parser, urljoin(parser._schema_resource_registry.root_bases[document], reference)):
             return target
         message = (
             f"$ref {stable_repr(redact_url(reference))} in {source} loads the referenced document for compatibility, "
             f"but JSON Schema resolves it to the schema with that $id at {stable_repr(redact_url(target))}."
         )
-    parser._resource_ref_warnings.add(f"{message} Update the reference or the $id so that both name one schema.")  # noqa: SLF001
+    parser._resource_ref_warnings.add(f"{message} Update the reference or the $id so that both name one schema.")
     return reference
 
 
 def ref_pointer_parts(parser: SchemaResourcesHost, tree: Any, key: str) -> tuple[list[str], list[str]]:
     """Return the lookup and reference parts of the pointer of a reference key in ``tree``, by the parser's reading."""
-    return _split_json_pointer(tree, key.partition("#")[2], names=parser._pointer_slash_names)  # noqa: SLF001
+    return _split_json_pointer(tree, key.partition("#")[2], names=parser._pointer_slash_names)
 
 
 def ref_value_in(
@@ -932,7 +930,7 @@ def ref_value_in(
     """
     if not (fragment := key.partition("#")[2]):
         return tree
-    reading = reading or parser._pointer_slash_names  # noqa: SLF001
+    reading = reading or parser._pointer_slash_names
     tokens = ref_fragment_tokens(tree, fragment, reading)
     return _get_model_by_decoded_path(
         tree, tokens, or_missing=or_missing, refuse_scalar=reading == "legacy-cycle-through-scalar"
@@ -941,7 +939,7 @@ def ref_value_in(
 
 def lenient_pointer_exists(parser: SchemaResourcesHost, document: str, reference: str) -> bool:
     """Return whether a local JSON pointer reference names a location in a lenient document."""
-    lenient = parser._graph.known(document).lenient  # noqa: SLF001
+    lenient = parser._graph.known(document).lenient
     return ref_value_in(parser, lenient, reference, or_missing=True) is not _MISSING_JSON_POINTER
 
 
@@ -1002,13 +1000,13 @@ def implicit_schema_resources(
     Formats such as OpenAPI evaluate each component schema independently, and each schema of the object a reference
     names the document's root as (``_schema_refs.hold_document_root``), such as the schema of a Parameter Object.
     """
-    if parser._component_schemas_are_resources:  # noqa: SLF001
+    if parser._component_schemas_are_resources:
         match raw.get("components"):
             case {"schemas": dict() as schemas}:
                 for name, schema in schemas.items():
                     if isinstance(schema, dict):
                         yield ("components", "schemas", name), schema
-    roles = parser._document_roles.get(document, ())  # noqa: SLF001
+    roles = parser._document_roles.get(document, ())
     yield from {path: schema for role in roles for path, schema in held_schemas(raw, role)}.items()
 
 
@@ -1021,8 +1019,8 @@ def record_document_dialect(parser: SchemaDocumentsHost, raw: dict[str, Any], do
     """
     inherited = None
     if raw is not parser.raw_obj and document not in parser.model_resolver.after_load_files:
-        inherited = parser._graph.known(document).dialect or loading_document_dialect(parser)  # noqa: SLF001
-    parser._graph.record(document).dialect = parser._read_dialect(raw, inherited=inherited)  # noqa: SLF001
+        inherited = parser._graph.known(document).dialect or loading_document_dialect(parser)
+    parser._graph.record(document).dialect = parser._read_dialect(raw, inherited=inherited)
 
 
 def loading_document_dialect(parser: SchemaDocumentsHost) -> DocumentDialect | None:
@@ -1032,7 +1030,7 @@ def loading_document_dialect(parser: SchemaDocumentsHost) -> DocumentDialect | N
     yet, which a reference entered to load it, that of the document the reference is in.
     """
     current = current_document(parser)
-    return parser._graph.known(current).dialect or parser._referring_dialect  # noqa: SLF001
+    return parser._graph.known(current).dialect or parser._referring_dialect
 
 
 @contextmanager
@@ -1044,9 +1042,9 @@ def referenced_document_context(
     The version of the document the reference is in is read before the switch, so a document the context loads
     takes it when it declares none (``loading_document_dialect``).
     """
-    referring = loading_document_dialect(parser) if parser._reads_schema_version_per_document else None  # noqa: SLF001
+    referring = loading_document_dialect(parser) if parser._reads_schema_version_per_document else None
     setter = partial(setattr, parser, "_referring_dialect")
-    with context, context_variable(setter, parser._referring_dialect, referring):  # noqa: SLF001
+    with context, context_variable(setter, parser._referring_dialect, referring):
         yield
 
 
@@ -1058,12 +1056,12 @@ def prepare_schema_resources(parser: SchemaDocumentsHost, raw: dict[str, Any], p
     are rewritten copy-on-write, and the prepared document is indexed.
     """
     document = schema_resource_document(parser, path_parts)
-    if (record := parser._graph.record(document)).path_parts is None:  # noqa: SLF001
+    if (record := parser._graph.record(document)).path_parts is None:
         record.path_parts = path_parts
     if (tree := record.tree) is not None and (raw is record.loaded or raw is tree):
         return tree
     record_document_dialect(parser, raw, document)
-    registry = parser._schema_resource_registry  # noqa: SLF001
+    registry = parser._schema_resource_registry
     registry.forget(document)
     record.lenient = None
     base = document if is_url(document) else file_uri(Path(document)) if document else f"{file_uri(parser.base_path)}/"
@@ -1090,7 +1088,7 @@ def prepare_schema_resources(parser: SchemaDocumentsHost, raw: dict[str, Any], p
         prepared = rewrite_schema_resource_refs(
             parser, raw, document, base, resources.root_base, id_field, is_root=True
         )
-    prepared = parser._index_document(prepared, path_parts)  # noqa: SLF001
+    prepared = parser._index_document(prepared, path_parts)
     record.loaded, record.tree = raw, prepared
     return prepared
 
@@ -1101,16 +1099,16 @@ def index_document(parser: SchemaDocumentsHost, raw: dict[str, Any], path_parts:
     The document is named as reference paths name it. A copy of the root keeps the document as written that
     ``_document_as_written`` returns for the loaded one. A mounted converted schema keeps its locations.
     """
-    if (graph := parser._schema_graph) is None or graph.is_mounted(raw):  # noqa: SLF001
+    if (graph := parser._schema_graph) is None or graph.is_mounted(raw):
         return raw
     indexed = graph.index_document(
         raw,
         document_root(parser, path_parts),
         DocumentId(schema_resource_document(parser, path_parts)),
-        parser._ref_reading("root"),  # noqa: SLF001
+        parser._ref_reading("root"),
     )
-    if (entry := parser._documents_as_written.get(id(raw))) is not None and entry[0] is raw:  # noqa: SLF001
-        parser._documents_as_written[id(indexed)] = indexed, entry[1]  # noqa: SLF001
+    if (entry := parser._documents_as_written.get(id(raw))) is not None and entry[0] is raw:
+        parser._documents_as_written[id(indexed)] = indexed, entry[1]
     return indexed
 
 
@@ -1125,7 +1123,7 @@ def document_root(parser: SchemaDocumentsHost, path_parts: Sequence[str]) -> Sch
 def note_converted_document(parser: SchemaDocumentsHost, path_parts: list[str]) -> None:
     """Record that the document read at ``path_parts`` is a schema converted from another format (L0)."""
     root = document_root(parser, path_parts)
-    parser._graph.record(schema_resource_document(parser, path_parts)).converted.add(root)  # noqa: SLF001
+    parser._graph.record(schema_resource_document(parser, path_parts)).converted.add(root)
 
 
 def mount_converted_schema(
@@ -1141,7 +1139,7 @@ def mount_converted_schema(
     to its own root. Their edges name the locations their targets are mounted at, and resolve in ``home``, the
     document the parser keeps the schema in when that is not the document of the value.
     """
-    if location is None or (graph := parser._schema_graph) is None:  # noqa: SLF001
+    if location is None or (graph := parser._schema_graph) is None:
         return converted  # pragma: no cover - the values a parser converts are in documents it has indexed
 
     def mounted_ref(ref: str) -> str:
@@ -1149,7 +1147,7 @@ def mount_converted_schema(
 
     document = located_document(parser, location)
     graph.record(document).converted.add(location)
-    return graph.mount(converted, location, document, parser._ref_reading("object"), ConvertedRefs(mounted_ref, home))  # noqa: SLF001
+    return graph.mount(converted, location, document, parser._ref_reading("object"), ConvertedRefs(mounted_ref, home))
 
 
 def add_id_callback(parser: SchemaDocumentsHost, obj: JsonSchemaObject, path: list[str]) -> None:
@@ -1162,25 +1160,24 @@ def add_id_callback(parser: SchemaDocumentsHost, obj: JsonSchemaObject, path: li
 
 def parse_ref(parser: SchemaDocumentsHost, obj: JsonSchemaObject, path: list[str]) -> None:
     """Recursively parse all $ref references in a schema object, unless only the used ones are loaded."""
-    if parser._loads_only_used_references:  # noqa: SLF001
+    if parser._loads_only_used_references:
         return
-    parser._traverse_schema_objects(obj, path, parser._resolve_ref_callback)  # noqa: SLF001
-    parser._parse_dynamic_specializations()  # noqa: SLF001
+    parser._traverse_schema_objects(obj, path, parser._resolve_ref_callback)
+    parser._parse_dynamic_specializations()
 
 
 def parse_id(parser: SchemaDocumentsHost, obj: JsonSchemaObject, path: list[str]) -> None:
     """Recursively parse all $id fields in a schema object."""
-    parser._traverse_schema_objects(obj, path, partial(add_id_callback, parser))  # noqa: SLF001
+    parser._traverse_schema_objects(obj, path, partial(add_id_callback, parser))
 
 
 def get_context_source_path_parts(parser: SchemaDocumentsHost) -> Iterator[tuple[Source, list[str]]]:
     """Get source and path parts for each input file with context managers."""
     if isinstance(parser.source, list) or (isinstance(parser.source, Path) and parser.source.is_dir()):
         parser.current_source_path = Path()
-        parser._cache_local_sources = parser._cache_local_sources_during_parse  # noqa: SLF001
+        parser._cache_local_sources = parser._cache_local_sources_during_parse
         parser.model_resolver.after_load_files = {
-            path.resolve().as_posix()
-            for path in parser._iter_local_source_paths()  # noqa: SLF001
+            path.resolve().as_posix() for path in parser._iter_local_source_paths()
         }
 
     for source in parser.iter_source:
@@ -1203,7 +1200,7 @@ def source_context(parser: SchemaDocumentsHost, source: Source, path_parts: list
     """
     resolver = parser.model_resolver
     document = source.path.as_posix()
-    directory = parser._graph.document_directory(document, partial(resolver.document_directory, document))  # noqa: SLF001
+    directory = parser._graph.document_directory(document, partial(resolver.document_directory, document))
     with base_path_context(parser, directory), resolver.current_root_context(path_parts):
         yield
 
@@ -1215,8 +1212,8 @@ def base_path_context(parser: DocumentNamesHost, base_path: Path | None) -> Abst
     read once per parse: the resolved base path where it is absolute, as in every ``generate()`` run.
     """
     resolver = parser.model_resolver
-    if base_path == (resolver_base_path := resolver._base_path):  # noqa: SLF001
-        base_path = parser._graph.base_directory((resolver_base_path / resolver_base_path).resolve)  # noqa: SLF001
+    if base_path == (resolver_base_path := resolver._base_path):
+        base_path = parser._graph.base_directory((resolver_base_path / resolver_base_path).resolve)
     return context_variable(resolver.set_current_base_path, resolver.current_base_path, base_path)
 
 
@@ -1241,9 +1238,9 @@ def is_input_document_root(parser: SchemaDocumentsHost, key: str) -> bool:
 
 
 def iter_local_source_paths(parser: SchemaDocumentsHost) -> Iterator[Path]:
-    if parser._cache_local_sources and parser._source_context.directory_input_filter is not None:  # noqa: SLF001
-        parser._local_source_cache = tuple(parser._iter_source_uncached())  # noqa: SLF001
-        yield from (parser.base_path / source.path for source in parser._local_source_cache)  # noqa: SLF001
+    if parser._cache_local_sources and parser._source_context.directory_input_filter is not None:
+        parser._local_source_cache = tuple(parser._iter_source_uncached())
+        yield from (parser.base_path / source.path for source in parser._local_source_cache)
         return
     match parser.source:
         case Path() as path if path.is_dir():
@@ -1258,22 +1255,22 @@ def load_source_dict(parser: SchemaDocumentsHost, source: Source) -> dict[str, Y
         try:
             return read_document(parser, load_data(source.text))
         except (json.JSONDecodeError, *get_yaml_parse_errors()) as exc:
-            source_path = parser._source_path_for_diagnostics(source.path)  # noqa: SLF001
-            raise InvalidFileFormatError(exc, parser._input_file_type, source=source_path) from exc  # noqa: SLF001
+            source_path = parser._source_path_for_diagnostics(source.path)
+            raise InvalidFileFormatError(exc, parser._input_file_type, source=source_path) from exc
         except TypeError as exc:
-            if not parser._non_dict_source_is_invalid:  # noqa: SLF001
+            if not parser._non_dict_source_is_invalid:
                 raise
-            source_path = parser._source_path_for_diagnostics(source.path)  # noqa: SLF001
-            raise InvalidFileFormatError(exc, parser._input_file_type, source=source_path) from exc  # noqa: SLF001
+            source_path = parser._source_path_for_diagnostics(source.path)
+            raise InvalidFileFormatError(exc, parser._input_file_type, source=source_path) from exc
     if isinstance(source.raw_data, dict):
         return read_document(parser, {**source.raw_data})
 
     msg = f"Expected dict, got {type(source.raw_data).__name__}"
     error = TypeError(msg)
-    if not parser._non_dict_source_is_invalid:  # noqa: SLF001
+    if not parser._non_dict_source_is_invalid:
         raise error
-    source_path = parser._source_path_for_diagnostics(source.path)  # noqa: SLF001
-    raise InvalidFileFormatError(error, parser._input_file_type, source=source_path) from error  # noqa: SLF001
+    source_path = parser._source_path_for_diagnostics(source.path)
+    raise InvalidFileFormatError(error, parser._input_file_type, source=source_path) from error
 
 
 def cache_source_ref_body(parser: SchemaDocumentsHost, source: Source, raw_obj: dict[str, YamlValue]) -> None:
@@ -1292,7 +1289,7 @@ def resolve_root_model_name(parser: SchemaDocumentsHost, raw_obj: dict[str, Any]
     if class_name := parser.class_name:
         if not parser.model_resolver.validate_name(class_name, parser.target_python_version):
             raise InvalidClassNameError(class_name)
-        return class_name, parser._should_preserve_explicit_root_class_name(class_name)  # noqa: SLF001
+        return class_name, parser._should_preserve_explicit_root_class_name(class_name)
 
     obj_name = title_str
     if not parser.model_resolver.validate_name(obj_name, parser.target_python_version):
@@ -1307,11 +1304,11 @@ def parse_source(parser: SchemaDocumentsHost, source: Source, raw_obj: dict[str,
     cache_source_ref_body(parser, source, raw_obj)
     parser.raw_obj = raw_obj
     obj_name, preserve_root_class_name = resolve_root_model_name(parser, raw_obj)
-    parser._parse_file(raw_obj, obj_name, path_parts, preserve_root_class_name=preserve_root_class_name)  # noqa: SLF001
+    parser._parse_file(raw_obj, obj_name, path_parts, preserve_root_class_name=preserve_root_class_name)
 
 
 def parse_converted_sources(parser: SchemaDocumentsHost, make_converter: Callable[[], Any]) -> None:
-    with parser._parsing_session():  # noqa: SLF001
+    with parser._parsing_session():
         for source, path_parts in get_context_source_path_parts(parser):
             raw_obj = source.raw_data = make_converter().convert(source)
             if parser.untrusted_input:
@@ -1330,7 +1327,7 @@ def reserved_targets(
     object its key names in ``tree``, the document's prepared tree.
     """
     document = DocumentId(schema_resource_document(parser, path_parts))
-    graph = cast("SchemaGraphBuilder", parser._schema_graph)  # noqa: SLF001
+    graph = cast("SchemaGraphBuilder", parser._schema_graph)
     for key in sorted(parser.reserved_refs.get(tuple(path_parts)) or ()):
         if not loaded(key):
             value = ref_value_in(parser, tree, key, or_missing=True)
@@ -1338,11 +1335,11 @@ def reserved_targets(
 
 
 def known_schema_object_raw_keys(parser: SchemaResourcesHost) -> frozenset[str]:
-    return type(parser)._schema_object_raw_key_sets(parser.SCHEMA_OBJECT_TYPE)[0]  # noqa: SLF001
+    return type(parser)._schema_object_raw_key_sets(parser.SCHEMA_OBJECT_TYPE)[0]
 
 
 def has_schema_affecting_keywords(parser: SchemaResourcesHost, raw: dict[str, Any]) -> bool:
-    schema_affecting_keys = type(parser)._schema_object_raw_key_sets(parser.SCHEMA_OBJECT_TYPE)[1]  # noqa: SLF001
+    schema_affecting_keys = type(parser)._schema_object_raw_key_sets(parser.SCHEMA_OBJECT_TYPE)[1]
     return any(str(key) in schema_affecting_keys for key in raw)
 
 
@@ -1380,7 +1377,7 @@ def iter_schema_definition_entry(
                 parser,
                 raw,
                 path,
-                include_direct_children=parser._is_version_definition_namespace_name(name),  # noqa: SLF001
+                include_direct_children=parser._is_version_definition_namespace_name(name),
             )
         )
         if entries:

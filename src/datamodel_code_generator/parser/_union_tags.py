@@ -201,7 +201,7 @@ def get_referenced_single_literal_value(
     """Return the one value the schema a ``$ref`` names admits as a tag, reading each schema node once."""
     if not obj.ref or (target := _schema_refs.unmapped_ref_target(parser, obj.ref, seen_refs)) is None:
         return None
-    return parser._get_single_literal_value(*target)  # noqa: SLF001
+    return parser._get_single_literal_value(*target)
 
 
 def get_union_variant_literal_values(
@@ -224,7 +224,7 @@ def get_union_variant_literal_values(
         field = item.properties.get(field_name)
         if not isinstance(field, JsonSchemaObject):
             return None
-        value = parser._get_single_literal_value(field)  # noqa: SLF001
+        value = parser._get_single_literal_value(field)
         if value is None:
             return None
         values[index] = value
@@ -267,7 +267,7 @@ def is_null_only_schema(
 
 def is_single_literal_schema(parser: UnionTagsHost, obj: JsonSchemaObject | bool | None) -> bool:  # noqa: FBT001
     """Return whether a property schema admits a single literal value."""
-    return isinstance(obj, JsonSchemaObject) and parser._get_single_literal_value(obj) is not None  # noqa: SLF001
+    return isinstance(obj, JsonSchemaObject) and parser._get_single_literal_value(obj) is not None
 
 
 def all_of_adds_properties(parser: UnionTagsHost, items: Iterable[JsonSchemaObject | bool]) -> bool:
@@ -396,7 +396,7 @@ def infer_union_variant_names(
 def _branch_own_tag_schema(parser: UnionTagsHost, item: JsonSchemaObject) -> JsonSchemaObject:
     """Return the schema a branch reads its own tag from: the one its local ``$ref`` names, else the branch itself."""
     if (ref := item.ref) and _schema_refs.is_local_ref(parser, ref):
-        return parser._load_ref_schema_object(ref)  # noqa: SLF001
+        return parser._load_ref_schema_object(ref)
     return item
 
 
@@ -420,7 +420,7 @@ def _branch_tag_parts(
 
 def _pinned_value(parser: UnionTagsHost, schema: JsonSchemaObject | bool) -> JsonSchemaLiteral | None:  # noqa: FBT001
     """Return the one value a property schema admits as a tag, None for a boolean schema."""
-    return parser._get_single_literal_value(schema) if isinstance(schema, JsonSchemaObject) else None  # noqa: SLF001
+    return parser._get_single_literal_value(schema) if isinstance(schema, JsonSchemaObject) else None
 
 
 def _part_property_schema(
@@ -501,9 +501,9 @@ def discriminator_mapping_refs(parser: UnionTagsHost, mapping: Mapping[str, Any]
     declares the mapping resolves its references, whichever document holds the union. A mapping the schema graph does
     not locate gives references without an edge, which resolve in the current context, as every such reference does.
     """
-    location = parser._raw_location(mapping)  # noqa: SLF001
+    location = parser._raw_location(mapping)
     return {
-        tag: parser._discriminator_mapping_ref(tag, value, location)  # noqa: SLF001
+        tag: parser._discriminator_mapping_ref(tag, value, location)
         for tag, value in mapping.items()
         if isinstance(value, str)
     }
@@ -547,7 +547,7 @@ def discriminator_inference(parser: UnionTagsHost, obj: JsonSchemaObject) -> Uni
     ``discriminator=`` (Pydantic); dataclasses and TypedDicts validate nothing, so the option leaves them alone.
     """
     infers = parser.config.infer_union_discriminators
-    context = parser._output_model_context  # noqa: SLF001
+    context = parser._output_model_context
     if context.requires_tagged_union_discriminator:
         return "branch-and-all-of-tags" if infers else "legacy-branch-own-tags"
     if infers and context.writes_discriminator_argument and "discriminator" not in obj.extras:
@@ -587,7 +587,7 @@ def parse_combined_schema_items(  # noqa: PLR0913, PLR0917
     if variant_names:
         for index, key in variant_keys.items():
             location = combined_schemas[index].schema_location
-            parser._tag_key_variants[location] = (key, variant_names[index] or parent_name)  # noqa: SLF001
+            parser._tag_key_variants[location] = (key, variant_names[index] or parent_name)
     data_types: list[DataType] = []
     for index, item in enumerate(combined_schemas):
         variant_name = variant_names[index] if variant_names else None
@@ -598,7 +598,7 @@ def parse_combined_schema_items(  # noqa: PLR0913, PLR0917
             if (tag := union_variant_tag(name, variant_name))
             else None
         )
-        with parser._claiming(claim) as claimed:  # noqa: SLF001
+        with parser._claiming(claim) as claimed:
             data_types.append(
                 claimed.built(
                     parser.parse_item(

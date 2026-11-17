@@ -380,7 +380,7 @@ MODULE_FORWARD_REFERENCE_ASSIGNMENT: tuple[StepLike[PipelineHost, _PreparedModul
 
 
 def _models_before_override_removal(parser: PipelineHost, _: object) -> list[DataModel]:
-    return [model for prepared in parser._prepared_modules for model in prepared.model_list_before_override_removal]  # noqa: SLF001
+    return [model for prepared in parser._prepared_modules for model in prepared.model_list_before_override_removal]
 
 
 MODULE_RENDER_PREPARATION_BODY: tuple[StepLike[PipelineHost, _PreparedModule[Any]], ...] = (
@@ -679,7 +679,7 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
             PassSpec(
                 "write_plain_aliases_for_recursive_models",
                 late(modules.write_plain_aliases_for_recursive_models),
-                when=lambda self, _: self.data_model_type._READ_BY_PYDANTIC,  # noqa: SLF001
+                when=lambda self, _: self.data_model_type._READ_BY_PYDANTIC,
             ),
         ),
     ),
@@ -696,7 +696,7 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
             PassSpec(
                 "flatten_narrowed_inherited_fields",
                 cross_module.flatten_narrowed_inherited_fields,
-                when=lambda self, _: self.data_model_type._KEEPS_INHERITED_FIELD_TYPES,  # noqa: SLF001
+                when=lambda self, _: self.data_model_type._KEEPS_INHERITED_FIELD_TYPES,
             ),
             PassSpec(
                 "write_enum_member_tags_as_values",
@@ -831,7 +831,7 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
             PassSpec(
                 "reject_lone_surrogates_pydantic_reads",
                 lambda self, run: imports.reject_lone_surrogates_pydantic_reads(self, run.contexts),
-                when=lambda self, _: self.data_model_type._READ_BY_PYDANTIC,  # noqa: SLF001
+                when=lambda self, _: self.data_model_type._READ_BY_PYDANTIC,
             ),
             PassSpec(
                 "warn_about_dropped_constraints",

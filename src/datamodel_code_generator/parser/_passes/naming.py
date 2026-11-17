@@ -143,7 +143,7 @@ def _claims(references: Sequence[Any], resolver: ModelResolver) -> list[NameClai
                 cls=cls,
                 base=numbered_class(reference.duplicate_name) or cls,
                 kind="model" if request is None else request.model_type,
-                keyed=resolver._named_by_model_name_map(reference.path),  # noqa: SLF001
+                keyed=resolver._named_by_model_name_map(reference.path),
             )
         )
     return claims
@@ -169,12 +169,12 @@ class _ResolverNamer:
         resolver = self._resolver
         return (
             cls in resolver.exclude_names
-            or cls in resolver._released_model_names  # noqa: SLF001
-            or (bool(resolver._reserved_names) and resolver.reserved_for_another(f"{module}{cls}", path))  # noqa: SLF001
+            or cls in resolver._released_model_names
+            or (bool(resolver._reserved_names) and resolver.reserved_for_another(f"{module}{cls}", path))
         )
 
     def suffix(self, kind: str) -> str | None:
-        return self._resolver._duplicate_name_suffix(kind)  # noqa: SLF001
+        return self._resolver._duplicate_name_suffix(kind)
 
     def composed(self, claim: NameClaim, base: str, *, affixed: bool = True) -> tuple[str, str]:
         resolver = self._resolver
@@ -189,7 +189,7 @@ class _ResolverNamer:
         return self._class_name(claim, self._requests[claim.key].original_name, affixed=False)
 
     def prefixed(self, claim: NameClaim, owner: str) -> str:
-        name = self._resolver._camel_prefixed(owner, claim.local or self._requests[claim.key].original_name)  # noqa: SLF001
+        name = self._resolver._camel_prefixed(owner, claim.local or self._requests[claim.key].original_name)
         return self._class_name(claim, name, affixed=False)[1]
 
     def camel(self, text: str) -> str:
@@ -197,12 +197,12 @@ class _ResolverNamer:
 
     def prefixed_as_written(self, claim: NameClaim, owner: str) -> tuple[str, str] | None:
         resolver = self._resolver
-        if not resolver._prefixes_parents or (request := self._requests.get(claim.key)) is None:  # noqa: SLF001
+        if not resolver._prefixes_parents or (request := self._requests.get(claim.key)) is None:
             return None
-        return self._class_name(claim, resolver._prefixed_by(owner, request.original_name), affixed=True)  # noqa: SLF001
+        return self._class_name(claim, resolver._prefixed_by(owner, request.original_name), affixed=True)
 
     def affixed(self, claim: NameClaim, cls: str) -> str:
-        return self._resolver._apply_class_name_affix(cls, model_type=claim.kind, is_root=_is_root_path(claim.path))  # noqa: SLF001
+        return self._resolver._apply_class_name_affix(cls, model_type=claim.kind, is_root=_is_root_path(claim.path))
 
     def stem(self, claim: NameClaim, cls: str) -> str:
         if claim.keyed:
@@ -238,16 +238,14 @@ def name_models(parser: NamingHost, _run: SettleRun[Any]) -> None:
     records what it names for the class-name keys of ``--model-name-map`` records the planned names as the names its
     models are given and had at the settle, so the keys name the models of the output (``_record_planned_names``).
     """
-    rules = parser._naming_rules  # noqa: SLF001
+    rules = parser._naming_rules
     resolver = parser.model_resolver
     if rules.legacy:
-        parser._naming_plan = NamingPlan(rules)  # noqa: SLF001
+        parser._naming_plan = NamingPlan(rules)
         return
     results = parser.results
     references = _claimed_references(results)
-    parser._naming_plan = plan = plan_names(  # noqa: SLF001
-        rules, _claims(references, resolver), _ResolverNamer(resolver, references)
-    )
+    parser._naming_plan = plan = plan_names(rules, _claims(references, resolver), _ResolverNamer(resolver, references))
     if not plan.names:
         return
     renamed = {
@@ -262,16 +260,16 @@ def name_models(parser: NamingHost, _run: SettleRun[Any]) -> None:
             name := planned.name
         ) != model.reference.name:
             renamed.add(model.class_name)
-            parser._graph_builder.rename_model(model, reference_name=name, scheme="plan")  # noqa: SLF001
+            parser._graph_builder.rename_model(model, reference_name=name, scheme="plan")
     resolver.refresh_reference_names()
     if (record := resolver.model_name_record) is not None:
         _record_planned_names(record, plan, resolver)
-    if parser._construction_keys.name_any(renamed):  # noqa: SLF001
+    if parser._construction_keys.name_any(renamed):
         parser.yielding_names_to_assign = ()
         parser.planned_names_to_assign = tuple(
             (path, _assigned_name(plan, reference))
             for path, reference in resolver.references.items()
-            if not resolver._named_by_model_name_map(path)  # noqa: SLF001
+            if not resolver._named_by_model_name_map(path)
         )
 
 

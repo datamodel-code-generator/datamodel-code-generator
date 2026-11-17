@@ -1,0 +1,11 @@
+src/datamodel_code_generator/model/_field_imports.py
+src/datamodel_code_generator/parser/_*.py
+src/datamodel_code_generator/parser/_passes/*.py
+parser/_new/x.py: ignored, checked = (True, True)
+parser/_new/sub/y.py: ignored, checked = (True, True)
+parser/_passes/sub/z.py: ignored, checked = (True, True)
+parser/base.py: ignored, checked = (False, False)
+parser/jsonschema.py: ignored, checked = (False, False)
+model/_field_imports.py: ignored, checked = (True, True)
+model/base.py: ignored, checked = (False, False)
+src files where they differ: []
