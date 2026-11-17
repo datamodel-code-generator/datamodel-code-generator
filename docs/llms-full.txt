@@ -90963,6 +90963,13 @@ Whether a form body, a client's form or query object parameter, or a multipart b
 +form=MultipartForm(members=True),
 ```
 
+### Request/response models no longer crash on a $ref to a closed object beside a schema-valued additionalProperties (unreleased) { #read-the-write-walk-from-the-parse-main }
+
+Generation of request and response models with an intersect option no longer fails with "A Parser can not resolve classes" for a $ref to a closed object beside a schema-valued additionalProperties.
+
+- **Pull requests and issues:** [#7051](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7051)
+- **Source:** the release notes
+
 ## 0.97.0 (2026-11-17)
 
 ### Generated AsyncAPI clients leave out a channel whose payload format generation does not read (0.97.0) { #asyncapi-client-unknown-payload-format }
