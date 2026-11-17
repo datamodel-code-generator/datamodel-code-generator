@@ -548,13 +548,21 @@ def _import_runs(body: list[ast.stmt], lines: list[str]) -> Iterator[list[ast.Im
         yield run
 
 
+_DECORATOR_AT = re.compile(r"\s*@")
+_CASE_KEYWORD = re.compile(r"\s*case\b")
+
+
+def _keyword_line(line: int, lines: list[str], keyword: re.Pattern[str]) -> int:
+    """Return ``line`` or the nearest line above it that starts with ``keyword``: a decorator's ``@`` or a ``case``."""
+    while not keyword.match(lines[line - 1]):
+        line -= 1
+    return line
+
+
 def _statement_start(statement: ast.stmt, lines: list[str]) -> int:
     if not (decorators := getattr(statement, "decorator_list", None)):
         return statement.lineno
-    start = decorators[0].lineno
-    while not lines[start - 1].lstrip().startswith("@"):
-        start -= 1
-    return start
+    return _keyword_line(decorators[0].lineno, lines, _DECORATOR_AT)
 
 
 _ASSIGNMENTS = (ast.Assign, ast.AnnAssign, ast.AugAssign)
@@ -630,9 +638,7 @@ def _statement_replacement(
     A statement that shares its lines with another one, after a ``;`` or a compound statement's ``:``, stays as it is
     too.
     """
-    if not isinstance(statement, _SIMPLE_STATEMENTS) or (
-        isinstance(statement, ast.Expr) and _is_string_constant(statement.value)
-    ):
+    if not isinstance(statement, _SIMPLE_STATEMENTS) or _docstring_node(statement) is not None:
         return None
     if not _is_type_alias_placeholder(statement) and not _takes_own_lines(statement, lines):
         return None
@@ -699,8 +705,7 @@ def _collect_header_replacements(
 ) -> Iterator[_LineReplacement]:
     """Lay out the decorators of a definition and the header of each clause of a compound statement as black does.
 
-    A definition's stub body ``...`` on its header line is laid out with the header, as black keeps it there. Another
-    header with its body on the same line stays as it is.
+    A decorator is laid out from its expression's line; the headers are those the clause record marks laid out.
     """
     if not isinstance(statement, _CLAUSE_STATEMENTS):
         return
@@ -715,37 +720,9 @@ def _collect_header_replacements(
     for decorator in getattr(statement, "decorator_list", ()):
         if (replacement := lay_out(decorator.lineno, decorator.end_lineno or decorator.lineno)) is not None:
             yield replacement
-    for start, next_line, body in _clause_headers(statement, lines):
-        if body is not None and _is_stub_body(body, lines):
-            end = body[0].end_lineno or body[0].lineno
-        elif next_line > start:
-            end = _header_end(lines, start, next_line)
-        else:
-            continue
-        if (replacement := lay_out(start, end)) is not None:
+    for clause in _clauses(statement, lines, 0):
+        if clause.laid_out and (replacement := lay_out(clause.start, clause.end)) is not None:
             yield replacement
-
-
-def _clause_headers(
-    statement: _ClauseStatement | ast.Match, lines: list[str]
-) -> Iterator[tuple[int, int, list[ast.stmt] | None]]:
-    """Yield the first line of each clause header of ``statement``, the line after it starts on and a definition's body.
-
-    A ``match`` statement's header is followed by its first ``case``, whose header starts on its pattern's line.
-    """
-    if isinstance(statement, ast.Match):
-        yield statement.lineno, statement.cases[0].pattern.lineno, None
-        for case in statement.cases:
-            if lines[case.pattern.lineno - 1].lstrip().startswith("case"):
-                yield case.pattern.lineno, _statement_start(case.body[0], lines), None
-        return
-    yield (
-        statement.lineno,
-        _statement_start(statement.body[0], lines),
-        statement.body if isinstance(statement, _DEFINITIONS) else None,
-    )
-    for handler in getattr(statement, "handlers", ()):
-        yield handler.lineno, _statement_start(handler.body[0], lines), None
 
 
 def _import_run_replacements(  # noqa: PLR0913
@@ -839,7 +816,6 @@ _DECORATOR, _DEF, _CLASS, _IMPORT, _COMMENT, _DOCSTRING, _STUB_DEF, _OPENS_BLOCK
 )
 _INDEPENDENT_CLAUSES = frozenset({"with", "try", "for", "while", "if", "match"})
 _FIRST_WORD = re.compile(r"\s*(\w*)")
-_CASE_KEYWORD = re.compile(r"\s*case\b")
 _DOCSTRING_STARTS = frozenset(b"\"'rRuU")
 _LogicalLine: TypeAlias = tuple[int, int, int, int]
 
@@ -865,20 +841,19 @@ def _logical_lines(body: list[ast.stmt], lines: list[str], depth: int) -> Iterat
     """Yield black's logical lines of ``body`` in source order, each as its first and last line, depth and kind."""
     for index, statement in enumerate(body):
         for decorator in getattr(statement, "decorator_list", ()):
-            start = decorator.lineno
-            while not lines[start - 1].lstrip().startswith("@"):
-                start -= 1
+            start = _keyword_line(decorator.lineno, lines, _DECORATOR_AT)
             yield start, decorator.end_lineno or decorator.lineno, depth, _DECORATOR
         if isinstance(statement, _CLAUSE_STATEMENTS):
-            for start, clause_body, clause_depth, flags in _clauses(statement, lines, depth):
-                yield from _clause_lines(start, clause_body, lines, clause_depth, flags)
+            for clause in _clauses(statement, lines, depth):
+                yield clause.start, clause.end, clause.depth, clause.flags
+                if clause.body is not None:
+                    yield from _logical_lines(clause.body, lines, clause.depth + 1)
             continue
         if isinstance(statement, (ast.Import, ast.ImportFrom)):
             flags = _IMPORT
         elif (
             not index
-            and isinstance(statement, ast.Expr)
-            and _is_string_constant(statement.value)
+            and _docstring_node(statement) is not None
             and lines[statement.lineno - 1].encode()[statement.col_offset] in _DOCSTRING_STARTS
         ):
             flags = _DOCSTRING
@@ -887,72 +862,78 @@ def _logical_lines(body: list[ast.stmt], lines: list[str], depth: int) -> Iterat
         yield statement.lineno, _statement_end(statement, lines), depth, flags
 
 
-def _clauses(
-    statement: _ClauseStatement | ast.Match, lines: list[str], depth: int
-) -> Iterator[tuple[int, list[ast.stmt] | None, int, int]]:
-    """Yield the clauses of a compound statement: the first line of each header, its body, depth and kind.
+class _Clause(NamedTuple):
+    """One clause of a compound statement: the first and last line of its header, depth and kind.
 
-    A ``match`` header has no body of its own; its ``case`` clauses are one level deeper.
+    ``body`` is the body read below the header as black's logical lines, ``None`` for a ``match`` header and for a
+    definition's ``...`` on its header's line. ``laid_out`` tells whether the header layout takes the header: not an
+    ``elif``, laid out as the ``if`` of its ``else``, nor an ``else`` or ``finally``, nor a header with its body on its
+    line other than a definition's ``...``, nor a ``case`` above its pattern's line.
+    """
+
+    start: int
+    end: int
+    body: list[ast.stmt] | None
+    depth: int
+    flags: int
+    laid_out: bool
+
+
+def _clauses(statement: _ClauseStatement | ast.Match, lines: list[str], depth: int) -> Iterator[_Clause]:
+    """Yield the clauses of a compound statement in source order.
+
+    A ``match`` header has no body of its own and ends above its first ``case``; its ``case`` clauses are one level
+    deeper.
     """
     if isinstance(statement, ast.Match):
-        yield statement.lineno, None, depth, 0
-        for case in statement.cases:
-            case_line = case.pattern.lineno
-            while not _CASE_KEYWORD.match(lines[case_line - 1]):
-                case_line -= 1
-            yield case_line, case.body, depth + 1, 0
+        case_lines = [_keyword_line(case.pattern.lineno, lines, _CASE_KEYWORD) for case in statement.cases]
+        end = _header_end(lines, statement.lineno, case_lines[0])
+        yield _Clause(statement.lineno, end, None, depth, _BODY_BELOW | _OPENS_BLOCK, laid_out=True)
+        for case, line in zip(statement.cases, case_lines, strict=True):
+            yield _clause(line, case.body, lines, depth + 1, 0, laid_out=line == case.pattern.lineno)
         return
     flags = 0
     if isinstance(statement, ast.ClassDef):
         flags = _CLASS
     elif isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
         flags = _DEF | (_STUB_DEF if _is_stub_body(statement.body, lines) else 0)
-    yield statement.lineno, statement.body, depth, flags
+    yield _clause(statement.lineno, statement.body, lines, depth, flags, laid_out=True)
     orelse = getattr(statement, "orelse", [])
     while (
         len(orelse) == 1
         and isinstance(elif_ := orelse[0], ast.If)
         and lines[elif_.lineno - 1].encode()[elif_.col_offset :].startswith(b"elif")
     ):
-        yield elif_.lineno, elif_.body, depth, 0
+        yield _clause(elif_.lineno, elif_.body, lines, depth, 0, laid_out=False)
         orelse = elif_.orelse
     for handler in getattr(statement, "handlers", ()):
-        yield handler.lineno, handler.body, depth, 0
+        yield _clause(handler.lineno, handler.body, lines, depth, 0, laid_out=True)
     for body in (orelse, getattr(statement, "finalbody", None)):
         if body:
-            if _body_on_header_line(body, lines):
-                yield body[0].lineno, body, depth, 0
-            else:
-                yield _header_end(lines, 1, _statement_start(body[0], lines)), body, depth, 0
+            start = body[0].lineno
+            if not _body_on_header_line(body, lines):
+                start = _header_end(lines, 1, _statement_start(body[0], lines))
+            yield _clause(start, body, lines, depth, 0, laid_out=False)
 
 
-def _clause_lines(
-    start: int, body: list[ast.stmt] | None, lines: list[str], depth: int, flags: int
-) -> Iterator[_LogicalLine]:
-    """Yield a clause header that starts on ``start`` and the logical lines of its body.
+def _clause(  # noqa: PLR0913
+    start: int, body: list[ast.stmt], lines: list[str], depth: int, flags: int, *, laid_out: bool
+) -> _Clause:
+    """Return the clause whose header starts on ``start``, before ``body``.
 
     A body on the header's line is read from that line, after the header, as black splits it there, but a definition's
-    ``...`` stays on the header's line. The header of a ``match`` statement ends above its first ``case``.
+    ``...`` stays on the header's line.
     """
-    if body is None:
-        case_line = start + 1
-        while not _CASE_KEYWORD.match(lines[case_line - 1]):
-            case_line += 1
-        end = _header_end(lines, start, case_line)
-        flags |= _BODY_BELOW
-    elif _body_on_header_line(body, lines):
-        if _is_stub_body(body, lines) and flags & (_CLASS | _DEF):
-            yield start, _statement_end(body[0], lines), depth, flags
-            return
-        end = body[0].lineno
+    if _body_on_header_line(body, lines):
+        if flags & (_CLASS | _DEF) and _is_stub_body(body, lines):
+            return _Clause(start, _statement_end(body[0], lines), None, depth, flags, laid_out)
+        end, laid_out = body[0].lineno, False
     else:
         end = _header_end(lines, start, _statement_start(body[0], lines))
         flags |= _BODY_BELOW
     if (match := _FIRST_WORD.match(lines[start - 1])) is not None and match[1] not in _INDEPENDENT_CLAUSES:
         flags |= _DEPENDENT_CLAUSE
-    yield start, end, depth, flags | _OPENS_BLOCK
-    if body is not None:
-        yield from _logical_lines(body, lines, depth + 1)
+    return _Clause(start, end, body, depth, flags | _OPENS_BLOCK, laid_out)
 
 
 _LeadingComment: TypeAlias = "tuple[list[int], int | None, int]"
