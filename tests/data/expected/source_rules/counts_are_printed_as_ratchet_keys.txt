@@ -1,7 +1,7 @@
 exit: 0
 {
   "source-rule:hash-split": {
-    "src/datamodel_code_generator/reader.py": 1
+    "src/datamodel_code_generator/reader.py": 5
   },
   "source-rule:doc-citations": {},
   "source-rule:ellipsis-statement": {

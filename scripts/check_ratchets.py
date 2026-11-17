@@ -22,8 +22,9 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   (``allowlist:host-private-access``, the sum of its access counts), the allowlists of the test style and
   architecture checks (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot read), and the
   Legacy rows table of ``docs/architecture.md``.
-- ``unreadable:<what>``: a hook setting this script cannot read (no value or a block scalar, a ``--select`` or
-  ``--config`` argument). It always fails under ``--enforce``, because what it hides cannot be counted.
+- ``unreadable:<what>`` and ``allowlist:<NAME>:unreadable``: a hook setting (no value or a block scalar, a ``--select``
+  or ``--config`` argument) or an allowlist or host baseline this script cannot read. Such a key always fails under
+  ``--enforce``, because what it hides cannot be counted.
 
 The source comments and calls are counted in every ``.py`` and ``.pyi`` file outside ``tests/data``, whether ruff
 checks it or not; ruff findings only in the files the hook checks. ``--base <ref>`` counts the merge-base of ``<ref>``
@@ -137,6 +138,10 @@ ADVICE = {
     "unreadable": (
         "Write the ruff hook's `args:` and `exclude:` as inline values or a block list, without --select or --config "
         "(put those in pyproject.toml), so that the counter can read them."
+    ),
+    "unreadable-allowlist": (
+        "Write the allowlist or baseline in the plain form its checker reads (literal entries, tables of integer "
+        "counts), so that the counter can read it."
     ),
     "legacy-rows": "A new legacy row keeps a difference: route the case through the home's main rule instead.",
 }
@@ -641,6 +646,8 @@ def _file_rises(base: dict[str, int], head: dict[str, int]) -> list[tuple[str, i
 
 
 def _kind(key: str) -> str:
+    if key.endswith(":unreadable"):
+        return "unreadable"
     return re.split(r"[:@]", key, maxsplit=1)[0]
 
 
@@ -714,7 +721,13 @@ def _unreadable_lines(counts: dict[str, dict[str, int]]) -> list[str]:
         line
         for key, files in counts.items()
         if _kind(key) == "unreadable"
-        for line in ("", f"{key} in {', '.join(files)}: the counter cannot read it. {ADVICE['unreadable']}")
+        for line in (
+            "",
+            (
+                f"{key} in {', '.join(files)}: the counter cannot read it. "
+                f"{ADVICE['unreadable-allowlist' if key.startswith('allowlist:') else 'unreadable']}"
+            ),
+        )
     ]
 
 

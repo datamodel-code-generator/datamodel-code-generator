@@ -31,7 +31,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
@@ -101,6 +101,11 @@ class Module:
         return list(ast.walk(self.tree))
 
     @cached_property
+    def bindings(self) -> _Bindings:
+        """Return which scope binds each name the file reads."""
+        return _Bindings(self.tree)
+
+    @cached_property
     def comments(self) -> dict[int, str]:
         """Return the comments of the file by line."""
         found: dict[int, str] = {}
@@ -167,13 +172,36 @@ class Rule:
     coverage: Callable[[Tree], str] | None = None
 
 
+def _leaves(target: ast.expr) -> Iterator[ast.expr]:
+    """Yield the names, attributes and subscripts a target assigns, those inside tuples, lists and ``*`` included."""
+    if isinstance(target, (ast.Tuple, ast.List)):
+        for element in target.elts:
+            yield from _leaves(element)
+    elif isinstance(target, ast.Starred):
+        yield from _leaves(target.value)
+    else:
+        yield target
+
+
 def _targets(node: ast.AST) -> list[ast.expr]:
-    """Return the targets of an assignment statement (none for any other node)."""
+    """Return what an assignment statement assigns, destructuring unpacked (nothing for any other node)."""
     if isinstance(node, ast.Assign):
-        return node.targets
+        return [leaf for target in node.targets for leaf in _leaves(target)]
     if isinstance(node, (ast.AnnAssign, ast.AugAssign)):
-        return [node.target]
+        return list(_leaves(node.target))
     return []
+
+
+def _cuts_at_hash(call: ast.Call) -> bool:
+    """Return whether ``call`` cuts at ``#``: ``s.split("#")``, ``str.split(s, "#")`` or ``s.split(sep="#")``."""
+    if not isinstance(call.func, ast.Attribute) or call.func.attr not in CUT_METHODS:
+        return False
+    unbound = isinstance(call.func.value, ast.Name) and call.func.value.id == "str"
+    position = 1 if unbound else 0
+    separators = call.args[position : position + 1]
+    if call.func.attr in {"split", "rsplit"}:
+        separators += [keyword.value for keyword in call.keywords if keyword.arg == "sep"]
+    return any(isinstance(item, ast.Constant) and item.value == "#" for item in separators)
 
 
 def hash_split(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
@@ -185,11 +213,8 @@ def hash_split(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
         if module.rel == REFERENCE_HOME:
             continue
         for node in module.nodes:
-            match node:
-                case ast.Call(func=ast.Attribute(attr=method), args=[ast.Constant(value="#"), *_]) if (
-                    method in CUT_METHODS
-                ):
-                    yield Finding(module.rel, node.lineno, "hash-split", ast.unparse(node))
+            if isinstance(node, ast.Call) and _cuts_at_hash(node):
+                yield Finding(module.rel, node.lineno, "hash-split", ast.unparse(node))
 
 
 class _CitationIndex:
@@ -230,10 +255,8 @@ class _CitationIndex:
 def _bound(node: ast.stmt) -> set[str]:
     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
         return {node.name}
-    if isinstance(node, ast.Assign):
-        return {target.id for target in node.targets if isinstance(target, ast.Name)}
-    if isinstance(node, (ast.AnnAssign, ast.AugAssign)) and isinstance(node.target, ast.Name):
-        return {node.target.id}
+    if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+        return {target.id for target in _targets(node) if isinstance(target, ast.Name)}
     if isinstance(node, (ast.Import, ast.ImportFrom)):
         return {(alias.asname or alias.name).split(".")[0] for alias in node.names}
     if isinstance(node, ast.If):  # TYPE_CHECKING blocks, version branches
@@ -246,14 +269,14 @@ def _members(node: ast.ClassDef) -> set[str]:
     for item in node.body:
         members |= _bound(item)
         if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            for sub in ast.walk(item):
-                members |= {
-                    target.attr
-                    for target in _targets(sub)
-                    if isinstance(target, ast.Attribute)
-                    and isinstance(target.value, ast.Name)
-                    and target.value.id == "self"
-                }
+            members |= {
+                sub.attr
+                for sub in ast.walk(item)
+                if isinstance(sub, ast.Attribute)
+                and isinstance(sub.ctx, ast.Store)
+                and isinstance(sub.value, ast.Name)
+                and sub.value.id == "self"
+            }
     return members
 
 
@@ -300,15 +323,15 @@ def _next_code_line(module: Module, line: int) -> int:
     return line
 
 
-def _rule_items(match: re.Match[str]) -> set[str]:
-    return {item.strip() for item in match["rules"].split(",")}
+def _rule_items(match: re.Match[str]) -> tuple[str, ...]:
+    return tuple(item.strip() for item in match["rules"].split(","))
 
 
-def _range_end(module: Module, line: int, spellings: set[str]) -> int:
+def _range_end(module: Module, line: int, listed: tuple[str, ...]) -> int:
     """Return the line that ends a ``ruff: disable`` at ``line``.
 
-    That is an ``enable`` at the same indentation that spells the rule as the ``disable`` does, or the end of the block
-    or of the file.
+    That is an ``enable`` at the same indentation with the identical list of rules in the same order (ruff 0.17.4
+    ends a range on nothing else), or the end of the block or of the file.
     """
     indent = len(module.lines[line - 1]) - len(module.lines[line - 1].lstrip())
     for number in range(line + 1, len(module.lines) + 1):
@@ -320,7 +343,7 @@ def _range_end(module: Module, line: int, spellings: set[str]) -> int:
             if column < indent:
                 return number
         elif column == indent and any(
-            match["action"] == "enable" and spellings & _rule_items(match) for match in _RUFF_RULES.finditer(stripped)
+            match["action"] == "enable" and _rule_items(match) == listed for match in _RUFF_RULES.finditer(stripped)
         ):
             return number
     return len(module.lines) + 1
@@ -341,19 +364,152 @@ def suppressed_lines(module: Module, rule: tuple[str, str]) -> frozenset[int]:
         if own_line and (match := _FILE_NOQA.match(comment)) is not None and _names_rule(match["codes"], rule):
             return frozenset(range(1, len(module.lines) + 1))
         for match in _RUFF_RULES.finditer(comment):
-            if not (spellings := set(rule) & _rule_items(match)):
+            if not set(rule) & set(listed := _rule_items(match)):
                 continue
             if match["action"] == "ignore":
                 lines.add(_next_code_line(module, number) if own_line else number)
             elif match["action"] == "disable" and own_line:
-                lines.update(range(number, _range_end(module, number, spellings)))
+                lines.update(range(number, _range_end(module, number, listed)))
     return frozenset(lines)
+
+
+_COMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
+_FUNCTIONS = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
+
+
+class _Scope(NamedTuple):
+    node: ast.AST
+    names: frozenset[str]
+    is_class: bool
+
+
+def _own_names(
+    scope: ast.FunctionDef
+    | ast.AsyncFunctionDef
+    | ast.Lambda
+    | ast.ClassDef
+    | ast.ListComp
+    | ast.SetComp
+    | ast.DictComp
+    | ast.GeneratorExp,
+) -> frozenset[str]:
+    """Return the names a function, lambda, class or comprehension binds in its own scope."""
+    names: set[str] = set()
+    todo: list[ast.AST] = []
+    if isinstance(scope, _FUNCTIONS):
+        arguments = scope.args
+        names |= {arg.arg for arg in (*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs)}
+        names |= {arg.arg for arg in (arguments.vararg, arguments.kwarg) if arg is not None}
+        todo += scope.body if isinstance(scope.body, list) else [scope.body]
+    elif isinstance(scope, ast.ClassDef):
+        todo += scope.body
+    else:
+        todo += [generator.target for generator in scope.generators]
+    declared: set[str] = set()
+    while todo:
+        node = todo.pop()
+        if isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
+            names.add(node.id)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            names.add(node.name)
+            continue
+        elif isinstance(node, (ast.Import, ast.ImportFrom)):
+            names |= {(alias.asname or alias.name).split(".")[0] for alias in node.names}
+        elif isinstance(node, (ast.ExceptHandler, ast.MatchAs, ast.MatchStar)) and node.name:
+            names.add(node.name)
+        elif isinstance(node, ast.MatchMapping) and node.rest:
+            names.add(node.rest)
+        elif isinstance(node, (ast.Global, ast.Nonlocal)):
+            declared.update(node.names)
+        if not isinstance(node, (*_FUNCTIONS, *_COMPREHENSIONS)):
+            todo += ast.iter_child_nodes(node)
+    return frozenset(names - declared)
+
+
+class _Bindings:
+    """Which scope binds each name a file reads, and the scope of each import: the one resolver of the rules.
+
+    A scope is the module tree, a function, a lambda, a class or a comprehension. A name that no enclosing function
+    scope (nor the class body that reads it) binds belongs to the module.
+    """
+
+    def __init__(self, tree: ast.Module) -> None:
+        self.tree = tree
+        self.reads: set[tuple[ast.AST, str]] = set()
+        self.scope_of: dict[ast.AST, ast.AST] = {}
+        self._visit(tree, (_Scope(tree, frozenset(), is_class=False),))
+
+    def global_reads(self) -> set[str]:
+        """Return the names the file reads as module-level bindings."""
+        return {name for scope, name in self.reads if scope is self.tree}
+
+    def import_is_read(self, node: ast.Import | ast.ImportFrom, name: str) -> bool:
+        """Return whether the scope that holds the import ``node`` reads the ``name`` it binds."""
+        return (self.scope_of[node], name) in self.reads
+
+    def _enter(
+        self,
+        node: ast.FunctionDef
+        | ast.AsyncFunctionDef
+        | ast.Lambda
+        | ast.ClassDef
+        | ast.ListComp
+        | ast.SetComp
+        | ast.DictComp
+        | ast.GeneratorExp,
+        chain: tuple[_Scope, ...],
+    ) -> None:
+        """Visit what a scope node evaluates in the scope around it, then its body in its own scope."""
+        inner = (*chain, _Scope(node, _own_names(node), isinstance(node, ast.ClassDef)))
+        outside: list[ast.AST | None] = []
+        body: list[ast.AST] = []
+        if isinstance(node, _FUNCTIONS):
+            arguments = node.args
+            outside += [*arguments.defaults, *arguments.kw_defaults]
+            if not isinstance(node, ast.Lambda):
+                outside += [*node.decorator_list, node.returns]
+                outside += [arg.annotation for arg in ast.walk(arguments) if isinstance(arg, ast.arg)]
+            body += node.body if isinstance(node.body, list) else [node.body]
+        elif isinstance(node, ast.ClassDef):
+            outside += [*node.decorator_list, *node.bases, *(keyword.value for keyword in node.keywords)]
+            body += node.body
+        else:
+            first, *later = node.generators
+            outside.append(first.iter)
+            body += [first.target, *first.ifs]
+            for generator in later:
+                body += [generator.target, generator.iter, *generator.ifs]
+            body += [node.key, node.value] if isinstance(node, ast.DictComp) else [node.elt]
+        for item in outside:
+            if item is not None:
+                self._visit(item, chain)
+        for item in body:
+            self._visit(item, inner)
+
+    def _visit(self, node: ast.AST, chain: tuple[_Scope, ...]) -> None:
+        if isinstance(node, (*_FUNCTIONS, *_COMPREHENSIONS, ast.ClassDef)):
+            self._enter(node, chain)
+            return
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+            self.reads.add((self._scope(node.id, chain), node.id))
+        elif isinstance(node, (ast.Import, ast.ImportFrom)):
+            self.scope_of[node] = chain[-1].node
+        for child in ast.iter_child_nodes(node):
+            self._visit(child, chain)
+
+    @staticmethod
+    def _scope(name: str, chain: tuple[_Scope, ...]) -> ast.AST:
+        for index in range(len(chain) - 1, 0, -1):
+            if name in chain[index].names and (not chain[index].is_class or index == len(chain) - 1):
+                return chain[index].node
+        return chain[0].node
 
 
 def private_reexport(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
     """Report an import of a private name that only a suppression of unused imports keeps: a private re-export.
 
-    Every comment form counts (``suppressed_lines``), on the name's line or on the first line of its statement.
+    Every comment form counts (``suppressed_lines``), on the name's line or on the first line of its statement. An
+    import that its own scope reads is no re-export.
 
     Review class: a copy of the step's decision left outside the routed sites (a second reader through an old path).
     """
@@ -368,7 +524,7 @@ def private_reexport(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
                     continue
                 if suppressed is None:
                     suppressed = suppressed_lines(module, UNUSED_IMPORT)
-                if {node.lineno, alias.lineno} & suppressed:
+                if {node.lineno, alias.lineno} & suppressed and not module.bindings.import_is_read(node, bound):
                     yield Finding(module.rel, alias.lineno, "private-reexport", bound)
 
 
@@ -396,17 +552,14 @@ def globals_registry(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
     Review class: a CodeQL alert group (every entry of such a registry reads as an unused global).
     """
     for module in (*tree.package, *tree.scripts):
-        if "globals(" not in module.text:
-            continue
-        parents = _parents(module.tree)
-        for node in module.nodes:
-            if (
-                isinstance(node, ast.Call)
-                and isinstance(node.func, ast.Name)
-                and node.func.id == "globals"
-                and _enumerates(node, parents)
-                and _enclosing_function(node, parents) not in NAMESPACE_HOOKS
-            ):
+        calls = [
+            node
+            for node in module.nodes
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "globals"
+        ]
+        parents = _parents(module.tree) if calls else {}
+        for node in calls:
+            if _enumerates(node, parents) and _enclosing_function(node, parents) not in NAMESPACE_HOOKS:
                 yield Finding(module.rel, node.lineno, "globals-registry", module.lines[node.lineno - 1].strip())
 
 
@@ -468,7 +621,7 @@ def unused_private_global(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
     """
     unread: dict[tuple[str, str], tuple[Module, int]] = {}
     for module in tree.package:
-        loads = {node.id for node in module.nodes if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)}
+        loads = module.bindings.global_reads()
         for node in module.tree.body:
             for target in _targets(node):
                 if (
@@ -504,17 +657,8 @@ def _import_targets(module: Module, node: ast.Import | ast.ImportFrom, names: se
     return [candidate if (candidate := f"{base}.{alias.name}") in names else base for alias in node.names]
 
 
-def _is_guard(node: ast.AST) -> bool:
-    """Return whether ``node`` is an ``if`` whose body may not run on import: any test but a ``version_info`` one."""
-    return isinstance(node, ast.If) and not any(
-        (isinstance(sub, ast.Attribute) and sub.attr == "version_info")
-        or (isinstance(sub, ast.Name) and sub.id == "version_info")
-        for sub in ast.walk(node.test)
-    )
-
-
 class _ImportGraph:
-    """The module-level imports of the package outside guards (see ``_is_guard``) and the function-level ones."""
+    """The module-level imports of the package outside any ``if`` and the function-level ones."""
 
     def __init__(self, modules: list[Module]) -> None:
         self.names = {module.name for module in modules}
@@ -539,7 +683,7 @@ class _ImportGraph:
                 module,
                 child,
                 in_function=in_function or isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)),
-                guarded=guarded or _is_guard(child),
+                guarded=guarded or isinstance(child, ast.If),
             )
 
     def _parents(self, name: str) -> list[str]:
@@ -565,8 +709,8 @@ def redundant_local_import(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
     """Report a function-level import of package modules that the importer already loads at module level.
 
     An import inside a module-level ``if`` loads nothing for certain (a ``TYPE_CHECKING`` block, a fast path on
-    ``sys.argv``), so only imports outside such a guard count; a ``sys.version_info`` test is no guard, as one of its
-    branches always runs.
+    ``sys.argv``, a ``sys.version_info`` branch that another interpreter skips), so only imports outside such a guard
+    count.
 
     Review class: a local import kept for no reason (it defers nothing and closes no cycle). Imports of the root
     package are left out: they wait for its names to move to leaf modules, not for a hoist.
@@ -617,7 +761,9 @@ def _body_key(node: ast.FunctionDef | ast.AsyncFunctionDef) -> str | None:
 
 
 def clone_bodies(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
-    """Report function bodies equal up to the names of parameters and locals, in one module or in several.
+    """Report each function body beyond the first of a group of bodies equal up to the names of parameters and locals.
+
+    A group grows by one site for every copy added, in one module or in several.
 
     Review class: a copy of a decision outside its home (two functions that are one decision).
     """
@@ -629,10 +775,9 @@ def clone_bodies(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and (key := _body_key(node)) is not None:
                 groups[key].append((module.rel, node.lineno, node.name))
     for members in groups.values():
-        if len(members) > 1:
-            (rel, line, name), *others = members
-            copies = "; ".join(f"{other}:{other_line} {other_name}" for other, other_line, other_name in others)
-            yield Finding(rel, line, "clone-bodies", f"{name} = {copies}")
+        first, *others = members
+        for rel, line, name in others:
+            yield Finding(rel, line, "clone-bodies", f"{name} = {first[0]}:{first[1]} {first[2]}")
 
 
 def _is_public_module(rel: str) -> bool:
@@ -772,8 +917,8 @@ RULES: tuple[Rule, ...] = (
     Rule(
         "redundant-local-import",
         redundant_local_import,
-        "import at module level: the importer already loads these modules there (outside any `if` but a "
-        "`sys.version_info` test), so the local import defers nothing",
+        "import at module level: the importer already loads these modules there (outside any `if`), so the local "
+        "import defers nothing",
     ),
     Rule(
         "clone-bodies",

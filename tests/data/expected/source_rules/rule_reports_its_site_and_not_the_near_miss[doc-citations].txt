@@ -1,8 +1,8 @@
 exit: 0
-docs/architecture.md:7: doc-citations: `Parser.missing`
-docs/architecture.md:7: doc-citations: `gone.py:build`
-docs/architecture.md:7: doc-citations: `parser/base.py:Parser.gone`
-docs/architecture.md:7: doc-citations: `parser/base.py:gone`
+docs/architecture.md:8: doc-citations: `Parser.missing`
+docs/architecture.md:8: doc-citations: `gone.py:build`
+docs/architecture.md:8: doc-citations: `parser/base.py:Parser.gone`
+docs/architecture.md:8: doc-citations: `parser/base.py:gone`
 
 rule counts:
   doc-citations: 4 (ratchet); fix: cite the current name of the code in docs/architecture.md, or drop the citation if the code is gone

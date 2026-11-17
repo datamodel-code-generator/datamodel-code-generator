@@ -2,10 +2,24 @@ exit: 1
 src/datamodel_code_generator/constants.py:1: unused-private-global: _UNUSED
 src/datamodel_code_generator/constants.py:3: unused-private-global: _ELSEWHERE
 src/datamodel_code_generator/constants.py:4: unused-private-global: _TYPED
-src/datamodel_code_generator/constants.py:7: unused-private-global: _SHARED
-src/datamodel_code_generator/constants.py:9: unused-private-global: _STORED
-src/datamodel_code_generator/constants.py:9: unused-private-global: _FOREIGN
-src/datamodel_code_generator/constants.py:9: unused-private-global: _CALLED
+src/datamodel_code_generator/constants.py:48: unused-private-global: _SHARED
+src/datamodel_code_generator/constants.py:50: unused-private-global: _STORED
+src/datamodel_code_generator/constants.py:50: unused-private-global: _FOREIGN
+src/datamodel_code_generator/constants.py:50: unused-private-global: _CALLED
+src/datamodel_code_generator/constants.py:51: unused-private-global: _SHADOWED
+src/datamodel_code_generator/constants.py:51: unused-private-global: _LOCAL
+src/datamodel_code_generator/constants.py:51: unused-private-global: _TARGET
+src/datamodel_code_generator/constants.py:52: unused-private-global: _REST
+src/datamodel_code_generator/constants.py:53: unused-private-global: _THIRD
+src/datamodel_code_generator/constants.py:53: unused-private-global: _FOURTH
+src/datamodel_code_generator/constants.py:54: unused-private-global: _IMP
+src/datamodel_code_generator/constants.py:54: unused-private-global: _ERR
+src/datamodel_code_generator/constants.py:54: unused-private-global: _KEY
+src/datamodel_code_generator/constants.py:54: unused-private-global: _EXTRA
+src/datamodel_code_generator/constants.py:54: unused-private-global: _HEAD
+src/datamodel_code_generator/constants.py:54: unused-private-global: _TAIL
+src/datamodel_code_generator/constants.py:54: unused-private-global: _CAPTURED
+src/datamodel_code_generator/constants.py:55: unused-private-global: _ITEM
 
 rule counts:
-  unused-private-global: 7 (absolute); fix: delete the unused name (a move left it behind)
+  unused-private-global: 21 (absolute); fix: delete the unused name (a move left it behind)
