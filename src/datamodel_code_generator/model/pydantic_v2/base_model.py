@@ -14,7 +14,7 @@ from dataclasses import replace
 from itertools import chain
 from pathlib import Path
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, cast
 from warnings import warn
 
 from pydantic import Field, ValidationError, field_validator, model_validator
@@ -715,8 +715,11 @@ def _writes_no_call_without_plan(field: DataModelFieldBase) -> bool:
 
 
 def _needs_model_regex_engine(fields: list[DataModelFieldBase]) -> bool:
-    """Return whether a pattern of the fields needs the ``python-re`` engine of the model that holds them."""
-    return has_lookaround_pattern(fields)
+    """Return whether a pattern of the fields needs the ``python-re`` engine of the model that holds them.
+
+    A lone surrogate is left to ``_select_surrogate_regex_engines``.
+    """
+    return has_lookaround_pattern(fields, surrogates=False)
 
 
 def _pattern_needs_holder_engine(
@@ -789,20 +792,18 @@ class DataModelField(_PydanticBaseDataModelField):
         if any(data_type.import_ == _IMPORT_JSON_VALUE for data_type in self.data_type.all_data_types):
             constructs.append("pydantic.json_value")
         if pattern is not None:
-            if self._constrains_bytes_only():
-                constructs.append("pydantic.bytes_pattern")
-            elif _pattern_data_type(self.data_type, includes_bytes=False) is not None and any(
-                member.type in _BYTES_PATTERN_TYPES for member in self.data_type.data_types
-            ):
-                constructs.append("pydantic.str_bytes_union_pattern")
+            match self._pattern_member_kind():
+                case "bytes":
+                    constructs.append("pydantic.bytes_pattern")
+                case "string" if any(member.type in _BYTES_PATTERN_TYPES for member in self.data_type.data_types):
+                    constructs.append("pydantic.str_bytes_union_pattern")
         return tuple(constructs)
 
-    def _constrains_bytes_only(self) -> bool:
-        """Return whether a pattern of the field constrains a ``bytes`` type and no string type."""
-        return (
-            _pattern_data_type(self.data_type, includes_bytes=False) is None
-            and _pattern_data_type(self.data_type, includes_bytes=True) is not None
-        )
+    def _pattern_member_kind(self) -> Literal["string", "bytes"] | None:
+        """Return what a pattern of the field constrains: a string type, else only a ``bytes`` type, else neither."""
+        if _pattern_data_type(self.data_type, includes_bytes=False) is not None:
+            return "string"
+        return "bytes" if _pattern_data_type(self.data_type, includes_bytes=True) is not None else None
 
     @override
     def _writes_bytes_pattern_rust_rejects(self) -> bool:
@@ -811,7 +812,7 @@ class DataModelField(_PydanticBaseDataModelField):
         Pydantic compiles it from 2.14 on, with the default engine unless the config selects ``python-re``; the
         decision is ``pattern_engine``'s, as for a string pattern Pydantic compiles.
         """
-        if not self._constrains_bytes_only():
+        if self._pattern_member_kind() != "bytes":
             return False
         call = self._render_plan().call
         return call is not None and any(
@@ -1801,6 +1802,7 @@ class _PydanticV2Model(DataModel):
     _CONFIG_ITEMS_KEY: ClassVar[str] = _CONFIG_ITEMS_TEMPLATE_DATA_KEY
     _CONFIG_AS_CONFIG_DICT: ClassVar[bool] = True
     _OVERWRITES_REGEX_ENGINE: ClassVar[bool] = False
+    _FOLLOWS_PATTERN_REFERENCES: ClassVar[bool] = False
 
     @override
     def assigns_forward_reference_field(
@@ -1814,27 +1816,29 @@ class _PydanticV2Model(DataModel):
     def finalize_type_alias_users(cls, models: list[DataModel]) -> None:
         """Select Python's regex engine where the patterns ask for it, once every model and its patterns are final.
 
-        A BaseModel whose own patterns need the engine selects it (``has_lookaround_pattern``); a config that already
-        names an engine is kept. So does a model that reaches a string pattern type alias: the references of its fields
-        count, and those of the bases whose config it does not take (``_bases_without_inherited_config``). A lone
-        surrogate selects it where the config allows it (``_select_surrogate_regex_engines``). Every model whose
+        A BaseModel whose own patterns need the engine selects it (``_own_patterns_select_python``); a config that
+        already names an engine is kept. So does a model that reaches a string pattern type alias: the references of
+        its fields count, and those of the bases whose config it does not take (``_bases_without_inherited_config``). A
+        lone surrogate selects it where the config allows it (``_select_surrogate_regex_engines``). Every model whose
         patterns a config selecting it builds (``_config_scopes``), a dataclass's once it selected its engine, is
-        marked (``PYTHON_ENGINE_BUILDS_KEY``), so its fields leave out a pattern Python's ``re`` rejects (#6593).
+        marked once (``PYTHON_ENGINE_BUILDS_KEY``), so its fields leave out a pattern Python's ``re`` rejects (#6593).
         """
         for model in models:
-            if isinstance(model, BaseModel) and has_lookaround_pattern(model.fields, surrogates=False):
+            if isinstance(model, BaseModel) and model._own_patterns_select_python():  # noqa: SLF001
                 model._select_python_regex_engine()  # noqa: SLF001
         if reached := models_reaching_string_pattern_aliases(models):
             for model in models:
                 if isinstance(model, cls) and _uses_reached_alias(model, reached):
                     _select_python_engine(model, through_alias=True)
         _select_surrogate_regex_engines(models, cls)
+        built: dict[int, DataModel] = {}
         for model in models:
             if isinstance(model, _PydanticV2Model) and model._builds_patterns_with_python_engine():  # noqa: SLF001
-                for current, _ in _config_scopes(model):
-                    current._set_internal_template_data(PYTHON_ENGINE_BUILDS_KEY, value=True)  # noqa: SLF001
-                    for field in current.fields:
-                        field.invalidate_semantic_caches()
+                built.update((id(current), current) for current, _ in _config_scopes(model))
+        for current in built.values():
+            current._set_internal_template_data(PYTHON_ENGINE_BUILDS_KEY, value=True)  # noqa: SLF001
+            for field in current.fields:
+                field.invalidate_semantic_caches()
 
     @override
     def _builds_patterns_with_python_engine(self) -> bool:
@@ -1845,9 +1849,18 @@ class _PydanticV2Model(DataModel):
     def _applied_config_items(self, visiting: frozenset[int] = frozenset()) -> dict[str, str]:
         """Return the config items Pydantic applies to the model."""
 
+    def _own_patterns_select_python(self) -> bool:
+        """Return whether the model's own patterns select ``python-re`` (``has_lookaround_pattern``).
+
+        The rule of ``_needs_model_regex_engine`` (a lone surrogate is left to ``_select_surrogate_regex_engines``).
+        A dataclass's own are also those of every model its fields reach (``_FOLLOWS_PATTERN_REFERENCES``, row
+        ``legacy-dataclass-follows-every-reference``).
+        """
+        return has_lookaround_pattern(self.fields, follow_references=self._FOLLOWS_PATTERN_REFERENCES, surrogates=False)
+
     def _surrogate_pattern_scopes(self) -> Iterator[list[DataModelFieldBase]]:
-        """Yield the fields whose lone surrogates ask for the model's engine: its own."""
-        yield self.fields
+        """Yield the fields whose lone surrogates ask for the model's engine: those its other patterns count in."""
+        return _followed_fields(self.fields) if self._FOLLOWS_PATTERN_REFERENCES else iter((self.fields,))
 
     def _takes_config_of(self, base: DataModel) -> bool:  # noqa: ARG002, PLR6301
         """Return whether the model applies the config of a base it names: a model merges the config of every base."""
@@ -1864,17 +1877,16 @@ class _PydanticV2Model(DataModel):
         """Set ``regex_engine`` in the config the model renders, unless the config already names an engine.
 
         Row ``legacy-dataclass-overwrites-engine`` (``_OVERWRITES_REGEX_ENGINE``): a dataclass replaces an engine its
-        config names (#5637) and keeps its render caches. The model gets a config of its own: the one in the template
-        data may be shared with every model of the same name (``--extra-template-data``). It reads the items of that
-        config, so a config that is no mapping adds none.
+        config names (#5637). The model gets a config of its own: the one in the template data may be shared with
+        every model of the same name (``--extra-template-data``). It reads the items of that config, so a config that
+        is no mapping adds none.
         """
         config_parameters = dict(_config_dict_items(self.extra_template_data.get("config")))
         if "regex_engine" in config_parameters and not self._OVERWRITES_REGEX_ENGINE:
             return
         config_parameters["regex_engine"] = '"python-re"'
         self._store_config(config_parameters)
-        if not self._OVERWRITES_REGEX_ENGINE:
-            self.invalidate_render_caches()
+        self.invalidate_render_caches()
 
     def _store_config(self, config_parameters: dict[str, Any]) -> None:
         """Store the config the model renders with the items the template writes, and import ``ConfigDict``.
@@ -2174,7 +2186,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         later passes give the fields select it once every model is final (``finalize_type_alias_users``), and so does a
         lone surrogate (``_select_surrogate_regex_engines``).
         """
-        if has_lookaround_pattern(self.fields, surrogates=False):
+        if self._own_patterns_select_python():
             self._select_python_regex_engine()
 
     @override
