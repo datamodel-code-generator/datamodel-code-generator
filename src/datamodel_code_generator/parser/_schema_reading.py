@@ -356,16 +356,6 @@ def ref_fragment_tokens(document: Any, fragment: str, reading: PointerReading) -
     return list(map(unescape_json_pointer_segment, tokens))
 
 
-def _fragment_value(document: Any, fragment: str, *, or_missing: bool = False, reading: PointerReading) -> Any:
-    """Return the value a reference fragment names in a loaded document, as ``reading`` splits it; ``""`` names it."""
-    if not fragment:
-        return document
-    tokens = ref_fragment_tokens(document, fragment, reading)
-    return _get_model_by_decoded_path(
-        document, tokens, or_missing=or_missing, refuse_scalar=reading == "legacy-cycle-through-scalar"
-    )
-
-
 def split_json_pointer(
     schema: dict[str, YamlValue] | list[YamlValue], pointer: str, *, names: SlashNames = "joined"
 ) -> list[str]:

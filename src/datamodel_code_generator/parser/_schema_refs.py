@@ -54,6 +54,8 @@ from datamodel_code_generator.parser._schema_documents import (
     located_document,
     note_plain_name,
     plain_name_ref,
+    ref_pointer_parts,
+    ref_value_in,
     resolve_schema_resource_ref,
     schema_resource_document,
 )
@@ -69,13 +71,11 @@ from datamodel_code_generator.parser._schema_object import JSONReference, JsonSc
 from datamodel_code_generator.parser._schema_reading import (
     _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS,
     _MISSING_JSON_POINTER,
-    _fragment_value,
     _get_model_by_decoded_path,
     _intersect_parts,
     _is_plain_name_fragment,
     _ref_edge_child_entries,
     _without_contains_keywords,
-    split_json_pointer,
 )
 from datamodel_code_generator.parser.base import get_special_path
 from datamodel_code_generator.reference import Reference, SchemaLocation, context_variable, is_url
@@ -454,39 +454,33 @@ def ref_file_document(parser: SchemaRefsHost, file_part: str, role: str | None =
     return parser._get_ref_body(file_part)  # noqa: SLF001
 
 
-def raw_ref_value(
+def read_ref_value(  # noqa: PLR0913
     parser: SchemaRefsHost,
     resolved_ref: str,
     *,
     reading: PointerReading | None = None,
     role: str | None = None,
     or_missing: bool = False,
+    as_schema: bool = False,
 ) -> YamlValue:
-    """Return the value of the loaded document a reference key names at its fragment, as ``_fragment_value`` reads it.
+    """Return the value of the loaded document a reference key names at its fragment, as ``ref_value_in`` reads it.
 
     The document is that of ``ref_file_document``, with ``role`` for a key that names its root; the fragment is read by
-    ``reading``, by default the parser's.
+    ``reading``, by default the parser's. ``as_schema`` reads the value with the references it holds as a schema
+    (``read_as_schema``), and a document that ``--external-ref-mapping`` maps describes the classes the mapping
+    imports, which need no document: when it does not exist, every value in it reads as an object without properties
+    (``UNREAD_MAPPED_SCHEMA``), so a model that inherits such a class is written from its own keywords, and the run
+    warns once per document (an error under --strict-refs, as before).
     """
     file_part, _, fragment = resolved_ref.partition("#")
-    document = ref_file_document(parser, file_part, None if fragment else role)
-    return _fragment_value(document, fragment, or_missing=or_missing, reading=reading or parser._pointer_slash_names)  # noqa: SLF001
-
-
-def read_ref_value(parser: SchemaRefsHost, resolved_ref: str) -> dict[str, YamlValue] | YamlValue:
-    """Return the value of a loaded document at a reference key, with the references it holds as a schema.
-
-    A document that ``--external-ref-mapping`` maps describes the classes the mapping imports, which need no document:
-    when it does not exist, every value in it reads as an object without properties (``UNREAD_MAPPED_SCHEMA``), so a
-    model that inherits such a class is written from its own keywords, and the run warns once per document (an error
-    under --strict-refs, as before).
-    """
     try:
-        value = raw_ref_value(parser, resolved_ref)
+        document = ref_file_document(parser, file_part, None if fragment else role)
     except RefDocumentNotFoundError as exc:
-        if not reads_as_unread_mapped_document(parser, exc):
+        if not as_schema or not reads_as_unread_mapped_document(parser, exc):
             raise
         return dict(UNREAD_MAPPED_SCHEMA)
-    return read_as_schema(parser, value)
+    value = ref_value_in(parser, document, resolved_ref, reading=reading, or_missing=or_missing)
+    return read_as_schema(parser, value) if as_schema else value
 
 
 def read_as_schema(parser: SchemaRefsHost, raw: YamlValue) -> YamlValue:
@@ -508,7 +502,7 @@ def ref_reading(parser: SchemaRefsHost, root: Literal["root", "object"]) -> RefR
 
 def ref_schema_exists(parser: SchemaRefsHost, resolved_ref: str) -> bool:
     """Return whether a resolved JSON pointer identifies a source schema."""
-    return raw_ref_value(parser, resolved_ref, or_missing=True) is not _MISSING_JSON_POINTER
+    return read_ref_value(parser, resolved_ref, or_missing=True) is not _MISSING_JSON_POINTER
 
 
 UNREAD_MAPPED_SCHEMA: Final = MappingProxyType({"type": "object"})
@@ -551,7 +545,7 @@ def key_node(parser: SchemaRefsHost, resolved_ref: str) -> _TargetNode:
 
     The value is read as ``_load_ref_schema_object`` reads it, without validating it.
     """
-    return parser._graph.node(read_ref_value(parser, resolved_ref)) or resolved_ref  # noqa: SLF001
+    return parser._graph.node(read_ref_value(parser, resolved_ref, as_schema=True)) or resolved_ref  # noqa: SLF001
 
 
 def unvisited_ref_target(
@@ -716,7 +710,7 @@ def enclosing_unanchored_resource_ref(parser: SchemaRefsHost) -> str | None:
         return None
     return _unanchored_resource_ref(
         raw,
-        split_json_pointer(raw, parser._dynamic_scope_pointer, names=parser._pointer_slash_names),  # noqa: SLF001
+        ref_pointer_parts(parser, raw, f"#{parser._dynamic_scope_pointer}")[0],  # noqa: SLF001
     )
 
 
@@ -862,7 +856,7 @@ def dynamic_ref_edges(parser: SchemaRefsHost, resolved_ref: str) -> _DynamicEdge
         return parser._dynamic_ref_graph[node]  # noqa: SLF001
     file_part, _, fragment = resolved_ref.partition("#")
     document, raw = prepared_ref_document(parser, file_part)
-    schema = _fragment_value(raw, fragment, or_missing=True, reading=parser._pointer_slash_names)  # noqa: SLF001
+    schema = ref_value_in(parser, raw, resolved_ref, or_missing=True)
     node = parser._dynamic_ref_nodes[resolved_ref] = parser._graph.node(schema) or resolved_ref  # noqa: SLF001
     anchors: set[str] = set()
     targets: list[str] = []
@@ -1099,7 +1093,7 @@ def parse_dynamic_specialization(parser: SchemaRefsHost, specialization: _Dynami
     """Parse a referenced schema again under the $dynamicAnchor bindings of its dynamic scope."""
     file_part, _, fragment = specialization.target.partition("#")
     with parser._ref_document_context(file_part) as (_, raw):  # noqa: SLF001
-        value = _fragment_value(raw, fragment, reading=parser._pointer_slash_names)  # noqa: SLF001
+        value = ref_value_in(parser, raw, specialization.target)
         obj = parser._validate_schema_object(value, list(specialization.path))  # noqa: SLF001
         with parser._dynamic_scope_context(specialization.path, specialization.bindings, fragment):  # noqa: SLF001
             parser._parse_schema_obj(specialization.reference.name, obj, list(specialization.path))  # noqa: SLF001
@@ -1341,9 +1335,9 @@ def recursive_ref_target(parser: SchemaRefsHost, defining_ref: str, path: tuple[
     $recursiveAnchor of the dynamic scope extends an anchored target, so the reference is left to it
     when the document the schema is merged into declares $recursiveAnchor.
     """
-    file_part, _, pointer = defining_ref.partition("#")
+    file_part = document_part(defining_ref)
     _, document = prepared_ref_document(parser, file_part)
-    parts = [*split_json_pointer(document, pointer, names=parser._pointer_slash_names), *map(str, path)]  # noqa: SLF001
+    parts = [*ref_pointer_parts(parser, document, defining_ref)[0], *map(str, path)]
     if (target := _unanchored_resource_ref(document, parts)) is None:
         anchors = document_recursive_anchors(parser, document, SchemaLocation(file_part, ()) if file_part else None)
         current_ref = _pointer_ref(parts)
@@ -1412,7 +1406,7 @@ def is_ref_circular(parser: SchemaRefsHost, resolved_ref: str) -> bool:
 def ref_cycle_document(parser: SchemaRefsHost, ref_to_check: str) -> Generator[object, None, None]:
     """Yield the value ref_to_check names, resolving references relative to its document until closed."""
     with parser._ref_file_context(document_part(ref_to_check)):  # noqa: SLF001
-        yield raw_ref_value(parser, ref_to_check, reading="legacy-cycle-through-scalar")
+        yield read_ref_value(parser, ref_to_check, reading="legacy-cycle-through-scalar")
 
 
 class _RefCycleFrame(NamedTuple):
