@@ -13,6 +13,7 @@ from typing_extensions import Unpack, override
 
 from datamodel_code_generator import Error, OpenAPIScope, SchemaParseError
 from datamodel_code_generator._document_reader import descend, string_key
+from datamodel_code_generator._json_pointer import document_part
 from datamodel_code_generator._openapi_objects import COMPONENT_ROLES
 from datamodel_code_generator._openapi_paths import (
     PATHS_PARAMETERS,
@@ -315,7 +316,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             return
         ref = canonical_ref(ModelResolver.join_path(tuple(path)))
         if ref in self.reserved_refs.get(tuple(self.model_resolver.current_root), ()):
-            raw = self._api_documents.get(ref.partition("#")[0], self.raw_obj)
+            raw = self._api_documents.get(document_part(ref), self.raw_obj)
             tokens = self._checked_pointer(raw, ref)
             reserved_path = [*self.model_resolver.current_root, "#", *tokens]
             candidate = tokens[-1] if tokens else name
@@ -530,7 +531,7 @@ class ApiOpenAPIParser(OpenAPIParser):
     @override
     def _note_scanned_document(self, document: str, raw: dict[str, YamlValue]) -> None:
         """Hold a document whose discriminators are collected among the API documents, by its canonical path."""
-        self._api_documents[document.partition("#")[0]] = raw
+        self._api_documents[document_part(document)] = raw
 
     def _acquire_schema(
         self, name: str, raw: YamlValue, path: list[str], *, declaration: SchemaLocation, role: SchemaRole

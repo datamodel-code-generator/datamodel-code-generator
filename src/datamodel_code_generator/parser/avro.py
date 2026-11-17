@@ -18,6 +18,7 @@ from datamodel_code_generator._avro_detection import NAMED_TYPES, PRIMITIVE_TYPE
 from datamodel_code_generator._avro_detection import (
     is_avro_schema_data as _is_avro_schema_data,
 )
+from datamodel_code_generator._json_pointer import document_part
 from datamodel_code_generator._json_schema import definition_ref
 from datamodel_code_generator._name_words import first_upper
 from datamodel_code_generator._source import YamlValue, load_yaml
@@ -837,7 +838,7 @@ class AvroParser(JsonSchemaParser):
 
             for context in contexts:
                 for model in context.models:
-                    converter = self._default_converters.get(model.reference.path.partition("#")[0] or ".")
+                    converter = self._default_converters.get(document_part(model.reference.path) or ".")
                     fullname = model.extra_template_data.get("extensions", {}).get("x-avro-fullname")
                     if converter is None or not converter.overridden_defaults:
                         continue

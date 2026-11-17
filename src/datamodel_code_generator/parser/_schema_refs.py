@@ -36,7 +36,7 @@ from typing_extensions import Protocol, final
 
 from datamodel_code_generator import Error, ReadOnlyWriteOnlyModelType
 from datamodel_code_generator._graph import reach
-from datamodel_code_generator._json_pointer import escape_token, join_pointer
+from datamodel_code_generator._json_pointer import document_part, join_pointer
 from datamodel_code_generator._json_schema import REF_PRE_PASS_FIELDS, REF_PRE_PASS_POSITIONS, subschema_entries
 from datamodel_code_generator._records import record
 from datamodel_code_generator._scc import find_circular_sccs, strongly_connected_components
@@ -47,6 +47,7 @@ from datamodel_code_generator.parser._schema_documents import (
     SchemaResourcesHost,
     current_document,
     definition_entries,
+    document_key,
     first_definitions,
     iter_schema_resource_children,
     lenient_ref,
@@ -696,7 +697,7 @@ def anchor_ref_path(parser: SchemaRefsHost, root_key: tuple[str, ...], path: lis
     first = suffix_parts[0]
     if first.startswith("#"):
         suffix_parts = [first[1:].lstrip("/"), *suffix_parts[1:]]
-    return "#/" + "/".join(escape_token(part) for part in suffix_parts if part)
+    return "#" + (join_pointer(part for part in suffix_parts if part) or "/")
 
 
 def build_anchor_indexes(parser: SchemaRefsHost, obj: JsonSchemaObject, path: list[str]) -> None:
@@ -772,10 +773,10 @@ def lexical_dynamic_anchor(parser: SchemaRefsHost, document: str, pointer: str, 
     Plain-name fragments resolve within the enclosing schema resource, so embedded resources
     that reuse an anchor name keep their own targets.
     """
-    registry = parser._schema_resource_registry  # noqa: SLF001
-    if not ref.startswith("#") or (resource := registry.enclosing_resource(document, pointer)) is None:
+    if not ref.startswith("#"):
         return None
-    return registry.dynamic_anchors.get((document, resource), {}).get(ref[1:])
+    registry = parser._schema_resource_registry  # noqa: SLF001
+    return registry.resource_entries(registry.dynamic_anchors, document, pointer, {}).get(ref[1:])
 
 
 def dynamic_anchor_bindings(
@@ -787,9 +788,7 @@ def dynamic_anchor_bindings(
     dynamic scope first; the schema resource enclosing the location declares the others.
     """
     registry = parser._schema_resource_registry  # noqa: SLF001
-    if (resource := registry.enclosing_resource(document, pointer)) is None:
-        return dict(outer)
-    return {**registry.dynamic_anchors.get((document, resource), {}), **outer}
+    return {**registry.resource_entries(registry.dynamic_anchors, document, pointer, {}), **outer}
 
 
 def current_dynamic_document(parser: SchemaRefsHost) -> str:
@@ -831,7 +830,7 @@ def location_ref(parser: SchemaRefsHost, location: str) -> str:
     """Return the resolved reference of a registry location in a registered document."""
     document, _, pointer = location.partition("#")
     path_parts = parser._schema_resource_path_parts[document]  # noqa: SLF001
-    return f"{parser.model_resolver.join_path(tuple(path_parts)).partition('#')[0]}#{pointer}"
+    return f"{document_key(parser, path_parts)}#{pointer}"
 
 
 def dynamic_target_bindings(parser: SchemaRefsHost, resolved_ref: str) -> dict[str, str]:
@@ -985,7 +984,7 @@ def analysis_ref_target(parser: SchemaRefsHost, document: str, file_part: str, r
 def schema_document_context(parser: SchemaRefsHost, path_parts: list[str]) -> AbstractContextManager[None]:
     """Resolve references relative to the document identified by model resolver root parts."""
     resolver = parser.model_resolver
-    document = resolver.join_path(tuple(path_parts)).partition("#")[0]
+    document = document_key(parser, path_parts)
     if is_url(document):
         return resolver.document_context(document, path_parts, None)
     resolve = partial(resolver.document_directory, document)
@@ -1169,8 +1168,8 @@ def subschema_scope(parser: SchemaRefsHost, obj: JsonSchemaObject) -> AbstractCo
         pointer = unquote(pointer)
     elif (identifier := obj.id) and registry.embedded:
         document = current_dynamic_document(parser)
-        resource = registry.enclosing_resource(document, parser._dynamic_scope_pointer)  # noqa: SLF001
-        if (pointer := registry.embedded.get((document, resource or ""), {}).get(identifier)) is None:
+        embedded = registry.resource_entries(registry.embedded, document, parser._dynamic_scope_pointer, {})  # noqa: SLF001
+        if (pointer := embedded.get(identifier)) is None:
             return None
     else:
         return None
@@ -1199,7 +1198,7 @@ def ref_target_dump(parser: SchemaRefsHost, ref: str, resolved_ref: str) -> tupl
     chain: list[tuple[str, _TargetNode, dict[str, Any], JsonSchemaObject | None]] = []
     while (node, document) not in parser._ref_target_dumps:  # noqa: SLF001
         ref_dict = parser._load_ref_schema_object(ref).model_dump(exclude_unset=True, by_alias=True)  # noqa: SLF001
-        if schema_location(parser, resolved_ref).partition("#")[0] != document:
+        if document_part(schema_location(parser, resolved_ref)) != document:
             pin_recursive_refs(parser, ref_dict, resolved_ref)
         alias = parser._schema_object(ref_dict) if isinstance(ref_dict.get("$ref"), str) else None  # noqa: SLF001
         chain.append((resolved_ref, node, ref_dict, alias))
@@ -1418,7 +1417,7 @@ def is_ref_circular(parser: SchemaRefsHost, resolved_ref: str) -> bool:
 
 def ref_cycle_document(parser: SchemaRefsHost, ref_to_check: str) -> Generator[object, None, None]:
     """Yield the value ref_to_check names, resolving references relative to its document until closed."""
-    with parser._ref_file_context(ref_to_check.partition("#")[0]):  # noqa: SLF001
+    with parser._ref_file_context(document_part(ref_to_check)):  # noqa: SLF001
         yield raw_ref_value(parser, ref_to_check, reading="legacy-cycle-through-scalar")
 
 

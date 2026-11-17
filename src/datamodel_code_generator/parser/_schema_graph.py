@@ -29,7 +29,13 @@ from urllib.parse import urljoin
 
 from typing_extensions import ReadOnly, Self, TypedDict, final, override
 
-from datamodel_code_generator._json_pointer import is_pointer_fragment, join_pointer, pointer_opening, pointer_tokens
+from datamodel_code_generator._json_pointer import (
+    document_part,
+    is_pointer_fragment,
+    join_pointer,
+    pointer_opening,
+    pointer_tokens,
+)
 from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator.reference import SchemaLocation
 
@@ -85,6 +91,7 @@ REF_KEYWORDS: Final = ("$ref", "$dynamicRef")
 """The keywords whose values become ``ResolvedRef``s."""
 
 SchemaT = TypeVar("SchemaT")
+_T = TypeVar("_T")
 
 
 @final
@@ -325,7 +332,7 @@ def walk_schema_resources(  # noqa: PLR0913
         embeds = False
         if isinstance(identifier_value, str):
             name(absolute := urljoin(base, identifier_value), location, pointer)
-            base = absolute.split("#", 1)[0]
+            base = document_part(absolute)
             if embeds := bool(pointer) and not identifier_value.startswith("#"):
                 embedded.setdefault(resource, {}).setdefault(identifier_value, pointer)
         if not pointer:
@@ -409,7 +416,7 @@ class ResourceRegistry:
     def forget(self, document: str) -> None:
         """Drop what an earlier registration of a document left, before it is registered again."""
         for key in self.keys.get(document, ()):
-            if self.locations.get(key, "").split("#", 1)[0] == document:
+            if document_part(self.locations.get(key, "")) == document:
                 self.locations.pop(key, None)
         for resource in self.resources.pop(document, ()):
             self.bases.pop((document, resource), None)
@@ -438,13 +445,17 @@ class ResourceRegistry:
             self.embedded[document, resource] = dict(identifiers)
         self.keys[document] = set(resources.names)
 
-    def enclosing_resource(self, document: str, pointer: str) -> str | None:
-        """Return the root pointer of the schema resource enclosing a location in a registered document."""
+    def resource_entries(self, entries: Mapping[tuple[str, str], _T], document: str, pointer: str, default: _T) -> _T:
+        """Return what a map of the registry holds for the schema resource enclosing a location, else ``default``.
+
+        The enclosing resource is rooted at the location or its nearest ancestor that roots one; a document that is not
+        registered has none, and no map holds an entry for it.
+        """
         if (resources := self.resources.get(document)) is None:
-            return None
+            return default
         while pointer and pointer not in resources:
             pointer = pointer.rpartition("/")[0]
-        return pointer
+        return entries.get((document, pointer), default)
 
     def plain_name_uri(self, document: str, pointer: str, ref: str) -> str:
         """Return the URI a plain-name fragment at a location in a document names.
@@ -452,7 +463,7 @@ class ResourceRegistry:
         A plain name resolves against the base URI of the schema resource enclosing the location; in a document that
         is not registered it stays as written.
         """
-        return urljoin(self.bases.get((document, self.enclosing_resource(document, pointer)), ""), ref)
+        return urljoin(self.resource_entries(self.bases, document, pointer, ""), ref)
 
     def location(self, absolute: str) -> str | None:
         """Return the location an absolute reference names in a registered schema resource, if any."""

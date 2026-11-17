@@ -36,7 +36,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator import Error, InvalidClassNameError, InvalidFileFormatError, JsonSchemaVersion
 from datamodel_code_generator._document_reader import member_key, refuse_oversized_document
-from datamodel_code_generator._json_pointer import escape_token, is_pointer_fragment
+from datamodel_code_generator._json_pointer import document_part, is_pointer_fragment, join_pointer
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, subschema_entries
 from datamodel_code_generator._openapi_objects import held_schemas
 from datamodel_code_generator._paths import file_uri, file_uri_path, files_under
@@ -332,7 +332,7 @@ def _find_json_schema_anchor_pointer(schema: YamlValue, anchor: str) -> str | No
         if path and "$id" in value:
             continue
         if value.get("$anchor") == anchor:
-            return "/" + "/".join(escape_token(part) for part in path)
+            return join_pointer(path) or "/"
         for keyword, child in value.items():
             pending.extend(
                 (subschema, (*path, *map(str, entry))) for entry, subschema in subschema_entries(keyword, child)
@@ -574,7 +574,7 @@ def normalize_external_ref(parser: SchemaDocumentsHost, ref: str) -> str:
 
     ref_body = parser._get_ref_body(relative_path)  # noqa: SLF001
     document = schema_resource_document(parser, [relative_path])
-    file_part = ref.partition("#")[0]
+    file_part = document_part(ref)
     if location := duplicate_name_location(
         parser,
         parser._schema_resource_registry.plain_name_uri(document, "", f"#{object_path}"),  # noqa: SLF001
@@ -709,9 +709,14 @@ def get_ref_body_from_local_http_path(parser: SchemaDocumentsHost, ref: str) -> 
     raise Error(msg)
 
 
+def document_key(parser: DocumentNamesHost, path_parts: Sequence[str]) -> str:
+    """Return the reference-path name of the document read at ``path_parts`` (``document_part`` of its joined path)."""
+    return document_part(parser.model_resolver.join_path(tuple(path_parts)))
+
+
 def schema_resource_document(parser: DocumentNamesHost, path_parts: list[str]) -> str:
     """Identify one physical schema document without changing its public reference names."""
-    document = parser.model_resolver.join_path(tuple(path_parts)).split("#", 1)[0]
+    document = document_key(parser, path_parts)
     if (location := parser._schema_resource_document_aliases.get(document)) is None:  # noqa: SLF001
         location = document if not document or is_url(document) else (parser.base_path / document).resolve().as_posix()
         parser._schema_resource_document_aliases[document] = location  # noqa: SLF001
@@ -815,7 +820,7 @@ def duplicate_name_location(parser: SchemaResourcesHost, uri: str) -> str | None
     """
     registry = parser._schema_resource_registry  # noqa: SLF001
     if (declared := registry.locations.get(uri)) is None or (
-        locations := registry.duplicate_names.get(document := declared.partition("#")[0], {}).get(uri)
+        locations := registry.duplicate_names.get(document := document_part(declared), {}).get(uri)
     ) is None:
         return None
     name = uri.partition("#")[2]
@@ -916,7 +921,7 @@ def loads_document(parser: SchemaResourcesHost, absolute: str) -> bool:
     """Return whether loading an absolute reference as a document would find one."""
     if not absolute.startswith("file://"):
         return is_url(absolute) and parser.allow_remote_refs is not False
-    return file_uri_path(absolute.partition("#")[0]).is_file()
+    return file_uri_path(document_part(absolute)).is_file()
 
 
 def rewrite_schema_resource_refs(  # noqa: PLR0913, PLR0917
@@ -936,7 +941,7 @@ def rewrite_schema_resource_refs(  # noqa: PLR0913, PLR0917
     """
     id_field, identifier = schema_resource_identifier(parser, schema, id_field, is_root=is_root, document=document)
     if isinstance(identifier, str):
-        base = urljoin(base, identifier).split("#", 1)[0]
+        base = document_part(urljoin(base, identifier))
     result = schema
     if isinstance(reference := schema.get("$ref"), str):
         reference = pointer_ref_spelling(reference)
@@ -1095,7 +1100,7 @@ def document_root(parser: SchemaDocumentsHost, path_parts: Sequence[str]) -> Sch
 
     The document whose schemas are being parsed is read at ``model_resolver.current_root``.
     """
-    return SchemaLocation(parser.model_resolver.join_path(tuple(path_parts)).partition("#")[0], ())
+    return SchemaLocation(document_key(parser, path_parts), ())
 
 
 def note_converted_document(parser: SchemaDocumentsHost, path_parts: list[str]) -> None:

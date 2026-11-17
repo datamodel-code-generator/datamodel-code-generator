@@ -467,7 +467,7 @@ class AsyncAPIParser(OpenAPIParser):
                 converted_schema = convert_avro_schema_data(raw_schema, placeholder_title=self._placeholder_titles)
                 if self._placeholder_titles:
                     converted_schema.setdefault("title", name)
-                home = self.model_resolver.join_path(tuple(self._converted_schema_root_parts(path))).partition("#")[0]
+                home = _schema_documents.document_key(self, self._converted_schema_root_parts(path))
                 converted_schema = _schema_documents.mount_converted_schema(self, converted_schema, location, home=home)
                 context = replace(
                     self._current_asyncapi_context(),

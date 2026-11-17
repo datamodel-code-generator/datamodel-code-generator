@@ -36,7 +36,7 @@ from datamodel_code_generator._container_kinds import (
 )
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend, document_statuses, string_key
 from datamodel_code_generator._generation_contract import AttemptId
-from datamodel_code_generator._json_pointer import pointer_tokens, reference_tokens
+from datamodel_code_generator._json_pointer import document_part, pointer_tokens, reference_tokens
 from datamodel_code_generator._module_paths import written_path
 from datamodel_code_generator._mro import collect_members, linearize
 from datamodel_code_generator._openapi_paths import inherited_security
@@ -774,7 +774,7 @@ class TargetApiOpenAPIParser(_TargetRecording, ApiOpenAPIParser):
         """
         try:
             with self._home_context(document):
-                return self.model_resolver.resolve_ref(f"{ref.partition('#')[0]}#").partition("#")[0]
+                return document_part(self.model_resolver.resolve_ref(f"{document_part(ref)}#"))
         except ValueError:
             return None
 
@@ -828,7 +828,7 @@ class TargetAsyncAPIParser(_TargetRecording, AsyncAPIParser):
     def _note_scanned_document(self, document: str, raw: dict[str, YamlValue]) -> None:
         """Hold each document the parser loads, which it scans once for discriminators, by its path."""
         super()._note_scanned_document(document, raw)
-        self._api_documents[document.partition("#")[0]] = raw
+        self._api_documents[document_part(document)] = raw
 
     @override
     def _collect_discriminator_schemas(self) -> None:
@@ -2231,7 +2231,7 @@ class _Models:
     def spelled_keys(self) -> dict[SchemaLocation, str]:
         """Return the key of each reference the parser filed under a JSON pointer, by the location it names."""
         return {
-            SchemaLocation(key.partition("#")[0], tokens): key
+            SchemaLocation(document_part(key), tokens): key
             for key in self.parser.model_resolver.references
             if (tokens := _pointer_tokens(key)) is not None
         }
