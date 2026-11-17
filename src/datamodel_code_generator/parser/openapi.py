@@ -14,7 +14,6 @@ from dataclasses import replace
 from enum import Enum
 from functools import cache, cached_property, partial
 from operator import getitem
-from pathlib import Path
 from re import Pattern
 from types import UnionType
 from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Final, Optional, TypeVar, Union, cast, get_args, get_origin
@@ -86,7 +85,6 @@ from datamodel_code_generator.reference import (
     SCHEMA_LOCATION_KEY,
     FieldNameResolver,
     _source_path,
-    is_url,
     snake_to_upper_camel,
 )
 from datamodel_code_generator.types import (
@@ -99,6 +97,7 @@ from datamodel_code_generator.util import BaseModel, YamlStringKeywords
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterator, Sequence
     from contextlib import AbstractContextManager
+    from pathlib import Path
     from urllib.parse import ParseResult
 
     from pydantic import GetCoreSchemaHandler, ValidatorFunctionWrapHandler
@@ -909,7 +908,7 @@ class OpenAPIParser(JsonSchemaParser):
             document, _, fragment = subtype.partition("#")
             if document != current_document:
                 with (
-                    self.model_resolver.current_base_path_context(self.base_path),
+                    _schema_documents.base_path_context(self, self.base_path),
                     self.model_resolver.base_url_context(None),
                     self.root_id_context({}),
                 ):
@@ -1136,7 +1135,7 @@ class OpenAPIParser(JsonSchemaParser):
                 # Extract base path from reference for external file resolution
                 resolved_ref = self._ref_path(item_ref)
                 ref_file = document_part(resolved_ref)
-                ref_base_path = Path(ref_file).parent if ref_file and not is_url(ref_file) else None
+                ref_base_path = _schema_refs.schema_document_directory(self, ref_file) if ref_file else None
             else:
                 methods = methods_
                 ref_base_path = None
@@ -1153,7 +1152,7 @@ class OpenAPIParser(JsonSchemaParser):
             path = [*scope_path, relative_name] if relative_name else get_special_path("root", scope_path)
 
             base_path_context = (
-                self.model_resolver.current_base_path_context(ref_base_path) if ref_base_path else nullcontext()
+                _schema_documents.base_path_context(self, ref_base_path) if ref_base_path else nullcontext()
             )
             with base_path_context:
                 for operation_name, raw_operation_ in methods.items():
@@ -1615,7 +1614,7 @@ class OpenAPIParser(JsonSchemaParser):
             attempted |= missing
             self._loads_only_used_references = True
             try:
-                with self.model_resolver.current_base_path_context(Path()):
+                with _schema_documents.base_path_context(self, self.model_resolver._resolved_base_path()):  # noqa: SLF001
                     for path in sorted({_source_path(path) for path in missing}):
                         if (root := roots.get(document_part(path))) is None:
                             self.resolve_ref(path)

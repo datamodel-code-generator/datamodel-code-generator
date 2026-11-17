@@ -99,6 +99,7 @@ __all__ = [
     "SchemaDocumentsHost",
     "SchemaPathsHost",
     "add_id_callback",
+    "base_path_context",
     "cache_source_ref_body",
     "declared_location",
     "document_as_written",
@@ -146,6 +147,7 @@ __all__ = [
     "rewrite_schema_resource_refs",
     "schema_resource_document",
     "schema_resource_identifier",
+    "source_context",
 ]
 
 
@@ -1188,11 +1190,34 @@ def get_context_source_path_parts(parser: SchemaDocumentsHost) -> Iterator[tuple
             path_parts = list(source.path.parts)
         if parser.current_source_path is not None:
             parser.current_source_path = source.path
-        with (
-            parser.model_resolver.current_base_path_context(source.path.parent),
-            parser.model_resolver.current_root_context(path_parts),
-        ):
+        with source_context(parser, source, path_parts):
             yield source, path_parts
+
+
+@contextmanager
+def source_context(parser: SchemaDocumentsHost, source: Source, path_parts: list[str]) -> Generator[None, None, None]:
+    """Resolve references from an input source with root parts ``path_parts``: from its directory, read once per parse.
+
+    The directory is that of the source's path, which names a local source as reference paths do; for a URL input it is
+    the URL's path read as a local path.
+    """
+    resolver = parser.model_resolver
+    document = source.path.as_posix()
+    directory = parser._graph.document_directory(document, partial(resolver.document_directory, document))  # noqa: SLF001
+    with base_path_context(parser, directory), resolver.current_root_context(path_parts):
+        yield
+
+
+def base_path_context(parser: DocumentNamesHost, base_path: Path | None) -> AbstractContextManager[None]:
+    """Set the current base path that ``current_base_path_context`` sets for ``base_path``, without the file system.
+
+    ``base_path`` is None, a resolved path, or the resolver's base path, which enters joined to itself and resolved,
+    read once per parse: the resolved base path where it is absolute, as in every ``generate()`` run.
+    """
+    resolver = parser.model_resolver
+    if base_path == (resolver_base_path := resolver._base_path):  # noqa: SLF001
+        base_path = parser._graph.base_directory((resolver_base_path / resolver_base_path).resolve)  # noqa: SLF001
+    return context_variable(resolver.set_current_base_path, resolver.current_base_path, base_path)
 
 
 def is_input_document_root(parser: SchemaDocumentsHost, key: str) -> bool:

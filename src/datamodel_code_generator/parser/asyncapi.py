@@ -9,7 +9,6 @@ from __future__ import annotations
 from contextlib import contextmanager
 from dataclasses import replace
 from functools import partial, reduce
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from pydantic import Field, StrictStr, ValidationError
@@ -34,6 +33,7 @@ from datamodel_code_generator._url_redaction import redact_path
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.parser import _schema_documents, _schema_refs
 from datamodel_code_generator.parser._schema_reading import _get_model_by_decoded_path, ref_fragment_tokens
+from datamodel_code_generator.parser._schema_refs import _ref_path_parts
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaParser,
     _named_path,
@@ -42,11 +42,11 @@ from datamodel_code_generator.parser.jsonschema import (
 )
 from datamodel_code_generator.parser.openapi import OpenAPIParser, _DiscriminatorScan
 from datamodel_code_generator.python_literal import stable_repr
-from datamodel_code_generator.reference import is_url
 from datamodel_code_generator.util import BaseModel, create_module_getattr
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterator
+    from pathlib import Path
     from urllib.parse import ParseResult
 
     from datamodel_code_generator._source import YamlValue
@@ -354,7 +354,7 @@ class AsyncAPIParser(OpenAPIParser):
         self.raw_obj = context.raw_obj
         try:
             with (
-                self.model_resolver.current_base_path_context(context.base_path),
+                _schema_documents.base_path_context(self, context.base_path),
                 self.model_resolver.base_url_context(context.base_url),
                 self.model_resolver.current_root_context(context.root_parts),
             ):
@@ -583,12 +583,11 @@ class AsyncAPIParser(OpenAPIParser):
         resolved_ref = self._ref_path(ref)
         file_part, _, fragment = resolved_ref.partition("#")
         if file_part:
-            remote = is_url(file_part)
             context = AsyncAPIContext(
                 self._get_ref_body(file_part),
-                [file_part] if remote else file_part.split("/"),
-                None if remote else Path(file_part).parent,
-                file_part if remote else None,
+                _ref_path_parts(file_part),
+                directory := _schema_refs.schema_document_directory(self, file_part),
+                file_part if directory is None else None,
             )
         else:
             context = self._current_asyncapi_context()

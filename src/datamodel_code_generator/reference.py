@@ -1747,7 +1747,8 @@ class ModelResolver:  # noqa: PLR0904
         ``path`` is a parse path, whose document part is relative to the base path as ``current_root`` is, so it is
         resolved from the base path, not from the directory of the document parsed now.
         """
-        with self.current_base_path_context(self._base_path.resolve() if self.current_base_path else None):
+        base_path = self._resolved_base_path() if self.current_base_path else None
+        with context_variable(self.set_current_base_path, self.current_base_path, base_path):
             self.ids[self.current_document][self._recorded_id(id_)] = self.resolve_ref(path)
 
     def _recorded_id(self, id_: str) -> str:
