@@ -64,7 +64,7 @@ repos:
     name: Check architecture boundaries
     entry: python scripts/check_architecture_boundaries.py
     language: python
-    files: ^(src/datamodel_code_generator/.*\.py|scripts/check_architecture_boundaries\.py)$
+    files: ^(src/datamodel_code_generator/.*\.py|scripts/check_architecture_boundaries\.py|scripts/host_private_access_baseline\.toml)$
     pass_filenames: false
   - id: compiled-templates
     name: Check generated built-in template renderers
