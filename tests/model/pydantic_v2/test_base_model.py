@@ -535,12 +535,12 @@ def test_parser_simple_field_call_keywords_match_model_fields() -> None:
     constructor_calls = [
         node
         for node in ast.walk(build_field)
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "constructor"
+        if isinstance(node, ast.Call) and ast.unparse(node.func) == "self._field_policy[row]"
     ]
     assert len(constructor_calls) == 1
     assert [ast.unparse(keyword.value) for keyword in constructor_calls[0].keywords if keyword.arg is None] == [
-        "{**options, **aliases, **facts}",
-        "self._data_model_field_common_kwargs()",
+        "{**aliases, **facts}",
+        "self._data_model_field_common_kwargs_cache",
     ]
     keywords = {keyword.arg for keyword in constructor_calls[0].keywords if keyword.arg is not None} | {
         node.slice.value
