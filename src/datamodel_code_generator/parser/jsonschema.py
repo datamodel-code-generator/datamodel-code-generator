@@ -354,6 +354,8 @@ from datamodel_code_generator.parser._schema_dispatch import (
 )
 from datamodel_code_generator.parser._schema_documents import (
     _find_json_schema_anchor_pointer,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    ref_pointer_parts,
+    ref_value_in,
 )
 from datamodel_code_generator.parser._schema_graph import (
     SCHEMA_GRAPH,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -407,13 +409,12 @@ from datamodel_code_generator.parser._schema_reading import (
     _constraint_values,
     _declares_key_keywords,
     _enum_without_positions,
-    _fragment_value,
     _get_json_value_type,  # noqa: F401  # Preserve the established parser.jsonschema export.
     _get_model_by_decoded_path,
     _intersect_parts,
     _merges_ref_siblings,
     _numeric_type_domain,
-    _split_json_pointer,
+    _split_json_pointer,  # noqa: F401  # Preserve the established parser.jsonschema export.
     get_model_by_path,  # noqa: F401  # Preserve the established parser.jsonschema export.
     split_json_pointer,  # noqa: F401  # Preserve the established parser.jsonschema export.
     unescape_json_pointer_segment,
@@ -2988,7 +2989,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return _union_tags.infer_union_variant_names(self, name, obj, combined_schemas, variant_keys)
 
     def _get_ref_raw_schema(self, resolved_ref: str) -> dict[str, YamlValue] | YamlValue:
-        return _schema_refs.read_ref_value(self, resolved_ref)
+        return _schema_refs.read_ref_value(self, resolved_ref, as_schema=True)
 
     def _ref_reading(self, root: Literal["root", "object"]) -> RefReading:
         """Return how ``SchemaGraphBuilder.with_ref_edges`` reads a document (``root``) or a schema (``object``)."""
@@ -4872,7 +4873,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         referenced_schema = (
             self._get_ref_raw_schema(_schema_refs.ref_key(self, single_obj.ref, embedded=False).key)
             if self.config.read_single_allof_refs_in_their_documents
-            else _fragment_value(self.raw_obj, f"/{single_obj.ref[2:]}", reading="legacy-split-pointer-tokens")
+            else ref_value_in(self, self.raw_obj, f"#/{single_obj.ref[2:]}", reading="legacy-split-pointer-tokens")
         )
         ref_data_type = self.get_ref_data_type(single_obj.ref)
         if referenced_schema is True:
@@ -8080,14 +8081,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return reference
 
         if is_url(ref):
-            relative_path, object_path = ref.split("#", 1)
+            relative_path, _ = ref.split("#", 1)
             relative_paths = [relative_path]
             base_path = None
         else:
             if self.model_resolver.is_external_root_ref(ref):
-                relative_path, object_path = ref[:-1], ""
+                relative_path = ref[:-1]
             else:
-                relative_path, object_path = ref.split("#", 1)
+                relative_path, _ = ref.split("#", 1)
             relative_paths = relative_path.split("/")
             base_path = Path(*relative_paths).parent
         reference = self.model_resolver.add_ref(ref, resolved=True)
@@ -8102,12 +8103,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self.model_resolver.base_url_context(relative_path),
         ):
             ref_body = self._get_ref_body(relative_path)
-            object_paths: list[str] | None = None
-            reference_paths: list[str] | None = None
-            if object_path:
-                object_paths, reference_paths = _split_json_pointer(
-                    ref_body, object_path, names=self._pointer_slash_names
-                )
+            object_paths, reference_paths = ref_pointer_parts(self, ref_body, ref)
             self._parse_file(
                 ref_body,
                 self.model_resolver.add_ref(ref, resolved=True).name,
@@ -9001,8 +8997,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             with _schema_documents.referenced_document_context(
                 self, _schema_refs.schema_document_context(self, _ref_path_parts(file_part))
             ):
-                pointer = reference.path.partition("#")[2]
-                object_paths, reference_paths = _split_json_pointer({}, pointer, names=self._pointer_slash_names)
+                object_paths, reference_paths = ref_pointer_parts(self, {}, reference.path)
                 location = SchemaLocation(
                     _schema_documents.schema_resource_document(self, _ref_path_parts(file_part)), tuple(object_paths)
                 )
@@ -9177,7 +9172,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         it; any other is parsed as a raw schema at its location (``_parse_pointer_target``), its root under the
         reference ``ref`` adds.
         """
-        object_paths, reference_paths = _split_json_pointer(raw, ref.split("#", 1)[-1], names=self._pointer_slash_names)
+        object_paths, reference_paths = ref_pointer_parts(self, raw, ref)
         if not object_paths:
             reference = self.model_resolver.references[ref] if definition else self.model_resolver.add_ref(ref)
             self._parse_referenced_root(reference.name, raw, ref)

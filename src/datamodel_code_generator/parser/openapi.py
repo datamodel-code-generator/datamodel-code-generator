@@ -60,7 +60,7 @@ from datamodel_code_generator.parser._rw_split import update_field_refs_for_vari
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import keep_resolved_ref, validate_resolved_ref
 from datamodel_code_generator.parser._schema_object import _has_map_key_keywords, _located_model_schema
-from datamodel_code_generator.parser._schema_refs import raw_ref_value, ref_file_document  # noqa: F401  # Preserve the established parser.openapi export.
+from datamodel_code_generator.parser._schema_refs import read_ref_value, ref_file_document  # noqa: F401  # Preserve the established parser.openapi export.
 from datamodel_code_generator.parser.base import Result, get_special_path
 from datamodel_code_generator.parser.jsonschema import (
     Discriminator,
@@ -644,7 +644,7 @@ class OpenAPIParser(JsonSchemaParser):
         ``role`` is the OpenAPI object the reference's position expects, which a document it names at its root holds.
         The pointer is read by row ``legacy-split-pointer-tokens``.
         """
-        value = raw_ref_value(self, self._ref_path(ref), reading="legacy-split-pointer-tokens", role=role)
+        value = read_ref_value(self, self._ref_path(ref), reading="legacy-split-pointer-tokens", role=role)
         return cast("dict[str, Any]", value)
 
     @contextmanager

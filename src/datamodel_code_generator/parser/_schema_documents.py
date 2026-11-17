@@ -62,9 +62,11 @@ from datamodel_code_generator.parser._schema_reading import (
     _MISSING_JSON_POINTER,
     _document_child_entries,
     _DocumentEntries,
-    _fragment_value,
+    _get_model_by_decoded_path,
     _is_plain_name_fragment,
+    _split_json_pointer,
     get_model_by_path,
+    ref_fragment_tokens,
 )
 from datamodel_code_generator.parser.base import title_to_class_name
 from datamodel_code_generator.parser.schema_version import (
@@ -88,7 +90,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import InputFileType
     from datamodel_code_generator.format import PythonVersion
     from datamodel_code_generator.parser._schema_graph import RefReading, ResourceRegistry, SchemaGraphBuilder
-    from datamodel_code_generator.parser._schema_reading import SlashNames
+    from datamodel_code_generator.parser._schema_reading import PointerReading, SlashNames
     from datamodel_code_generator.parser.base import Source
     from datamodel_code_generator.parser.schema_version import DocumentDialect
     from datamodel_code_generator.reference import ModelResolver
@@ -134,6 +136,8 @@ __all__ = [
     "plain_name_ref",
     "prepare_schema_resources",
     "read_document",
+    "ref_pointer_parts",
+    "ref_value_in",
     "referenced_document_context",
     "reserved_targets",
     "resolve_lenient_resource_ref",
@@ -911,16 +915,32 @@ def resolve_lenient_resource_ref(parser: SchemaResourcesHost, reference: str, ba
     return reference
 
 
+def ref_pointer_parts(parser: SchemaResourcesHost, tree: Any, key: str) -> tuple[list[str], list[str]]:
+    """Return the lookup and reference parts of the pointer of a reference key in ``tree``, by the parser's reading."""
+    return _split_json_pointer(tree, key.partition("#")[2], names=parser._pointer_slash_names)  # noqa: SLF001
+
+
+def ref_value_in(
+    parser: SchemaResourcesHost, tree: Any, key: str, *, reading: PointerReading | None = None, or_missing: bool = False
+) -> Any:
+    """Return the value the fragment of a reference key names in ``tree``, a loaded document; ``""`` names ``tree``.
+
+    The fragment is split by ``reading``, by default the parser's (``ref_fragment_tokens``), and walked by row
+    ``refusing``.
+    """
+    if not (fragment := key.partition("#")[2]):
+        return tree
+    reading = reading or parser._pointer_slash_names  # noqa: SLF001
+    tokens = ref_fragment_tokens(tree, fragment, reading)
+    return _get_model_by_decoded_path(
+        tree, tokens, or_missing=or_missing, refuse_scalar=reading == "legacy-cycle-through-scalar"
+    )
+
+
 def lenient_pointer_exists(parser: SchemaResourcesHost, document: str, reference: str) -> bool:
     """Return whether a local JSON pointer reference names a location in a lenient document."""
-    fragment = reference.partition("#")[2]
-    value = _fragment_value(
-        parser._graph.known(document).lenient,  # noqa: SLF001
-        fragment,
-        or_missing=True,
-        reading=parser._pointer_slash_names,  # noqa: SLF001
-    )
-    return value is not _MISSING_JSON_POINTER
+    lenient = parser._graph.known(document).lenient  # noqa: SLF001
+    return ref_value_in(parser, lenient, reference, or_missing=True) is not _MISSING_JSON_POINTER
 
 
 def loads_document(parser: SchemaResourcesHost, absolute: str) -> bool:
@@ -1288,7 +1308,7 @@ def reserved_targets(
     graph = cast("SchemaGraphBuilder", parser._schema_graph)  # noqa: SLF001
     for key in sorted(parser.reserved_refs.get(tuple(path_parts)) or ()):
         if not loaded(key):
-            value = _fragment_value(tree, key.split("#", 1)[-1], or_missing=True, reading=parser._pointer_slash_names)  # noqa: SLF001
+            value = ref_value_in(parser, tree, key, or_missing=True)
             yield ReservedTarget(document=document, key=key, node=graph.node(value))
 
 
