@@ -266,3 +266,14 @@ affects = { options = ["--type-overrides"] }
 migrate = "Fix or drop the keys the warning names."
 refs = ["#6835"]
 source = "release-note"
+
+[[change]]
+id = "msgspec-inherited-required-collision"
+kind = "default-output"
+action = "review"
+title = "A msgspec struct no longer fails at import when an inherited required property collides with a renamed one"
+summary = "For `msgspec.Struct` output, a model that repeats an inherited property as required (`allOf` with a base and `required`) and also declares a property whose Python name collides with it (`x-y` required beside a new `x_y`) failed at import with `Multiple fields rename to the same name`. The inherited property now keeps its Python name (`a_b`) and the colliding property takes the suffixed one (`a_b_1`), where the class had the names the other way round and `kw_only=True`. Output that imported before is unchanged."
+affects = { output_model_types = ["msgspec.Struct"] }
+keep = { note = "The previous module failed at import; nothing restores it." }
+refs = ["#6959"]
+source = "release-note"

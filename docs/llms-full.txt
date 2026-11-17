@@ -90867,20 +90867,20 @@ Every change is listed for upgrades from 0.95.0 and later. The lists of older re
 
 | Your release | Required | Kept by an option | Not kept | New warnings | Page |
 |---|---|---|---|---|---|
-| 0.96.0 | 2 | 0 | 14 | 6 | [from-0.96.0](from-0.96.0.md) |
-| 0.95.0 | 6 | 0 | 15 | 6 | [from-0.95.0](from-0.95.0.md) |
-| 0.93.0 through 0.94.0 (incomplete list) | 6 | 0 | 15 | 8 | [from-0.93.0](from-0.93.0.md) |
-| 0.84.0 through 0.92.0 (incomplete list) | 7 | 0 | 15 | 8 | [from-0.84.0](from-0.84.0.md) |
-| 0.78.0 through 0.83.0 (incomplete list) | 7 | 0 | 15 | 9 | [from-0.78.0](from-0.78.0.md) |
-| 0.65.0 through 0.77.0 (incomplete list) | 7 | 0 | 15 | 13 | [from-0.65.0](from-0.65.0.md) |
-| 0.56.0 through 0.64.1 (incomplete list) | 7 | 0 | 15 | 14 | [from-0.56.0](from-0.56.0.md) |
-| 0.53.0 through 0.55.0 (incomplete list) | 7 | 0 | 15 | 15 | [from-0.53.0](from-0.53.0.md) |
-| 0.52.1 through 0.52.2 (incomplete list) | 7 | 0 | 15 | 17 | [from-0.52.1](from-0.52.1.md) |
-| 0.52.0 (incomplete list) | 7 | 0 | 15 | 19 | [from-0.52.0](from-0.52.0.md) |
-| 0.48.0 through 0.51.0 (incomplete list) | 7 | 0 | 15 | 20 | [from-0.48.0](from-0.48.0.md) |
-| 0.31.0 through 0.47.0 (incomplete list) | 7 | 0 | 15 | 22 | [from-0.31.0](from-0.31.0.md) |
-| 0.24.0 through 0.30.2 (incomplete list) | 7 | 0 | 15 | 23 | [from-0.24.0](from-0.24.0.md) |
-| 0.20.0 through 0.23.0 (incomplete list) | 7 | 0 | 15 | 24 | [from-0.20.0](from-0.20.0.md) |
+| 0.96.0 | 2 | 0 | 15 | 6 | [from-0.96.0](from-0.96.0.md) |
+| 0.95.0 | 6 | 1 | 16 | 6 | [from-0.95.0](from-0.95.0.md) |
+| 0.93.0 through 0.94.0 (incomplete list) | 6 | 1 | 16 | 8 | [from-0.93.0](from-0.93.0.md) |
+| 0.84.0 through 0.92.0 (incomplete list) | 7 | 1 | 16 | 8 | [from-0.84.0](from-0.84.0.md) |
+| 0.78.0 through 0.83.0 (incomplete list) | 7 | 1 | 16 | 9 | [from-0.78.0](from-0.78.0.md) |
+| 0.65.0 through 0.77.0 (incomplete list) | 7 | 1 | 16 | 13 | [from-0.65.0](from-0.65.0.md) |
+| 0.56.0 through 0.64.1 (incomplete list) | 7 | 1 | 16 | 14 | [from-0.56.0](from-0.56.0.md) |
+| 0.53.0 through 0.55.0 (incomplete list) | 7 | 1 | 16 | 15 | [from-0.53.0](from-0.53.0.md) |
+| 0.52.1 through 0.52.2 (incomplete list) | 7 | 1 | 16 | 17 | [from-0.52.1](from-0.52.1.md) |
+| 0.52.0 (incomplete list) | 7 | 1 | 16 | 19 | [from-0.52.0](from-0.52.0.md) |
+| 0.48.0 through 0.51.0 (incomplete list) | 7 | 1 | 16 | 20 | [from-0.48.0](from-0.48.0.md) |
+| 0.31.0 through 0.47.0 (incomplete list) | 7 | 1 | 16 | 22 | [from-0.31.0](from-0.31.0.md) |
+| 0.24.0 through 0.30.2 (incomplete list) | 7 | 1 | 16 | 23 | [from-0.24.0](from-0.24.0.md) |
+| 0.20.0 through 0.23.0 (incomplete list) | 7 | 1 | 16 | 24 | [from-0.20.0](from-0.20.0.md) |
 
 Releases before 0.20.0: start from the 0.20.0 page and read the older entries of the [changelog](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/main/CHANGELOG.md).
 
@@ -91034,6 +91034,15 @@ Under `--collapse-root-models-name-strategy parent`, a module that named an enum
 -kind: Literal[Foo.cat, 'cat']
 +kind: Literal[b.Foo.cat, 'cat']
 ```
+
+### A msgspec struct no longer fails at import when an inherited required property collides with a renamed one (0.97.0) { #msgspec-inherited-required-collision }
+
+For `msgspec.Struct` output, a model that repeats an inherited property as required (`allOf` with a base and `required`) and also declares a property whose Python name collides with it (`x-y` required beside a new `x_y`) failed at import with `Multiple fields rename to the same name`. The inherited property now keeps its Python name (`a_b`) and the colliding property takes the suffixed one (`a_b_1`), where the class had the names the other way round and `kw_only=True`. Output that imported before is unchanged.
+
+- **Affects:** output model types: `msgspec.Struct`
+- **Keep the old output:** The previous module failed at import; nothing restores it.
+- **Pull requests and issues:** [#6959](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6959)
+- **Source:** the release notes
 
 ### A pattern with a class escape or a Unicode property at the end of a range in a class, such as `^[a-\w]+$`, no longer fails at import (0.97.0) { #regex-class-escape-range-end }
 
@@ -91292,6 +91301,24 @@ Notices of the deprecation registry are attributed to the outermost frame outsid
 - **What to change:** Filter the notices by category and message, or by your calling module, for example `warnings.filterwarnings("ignore", category=FutureWarning, module="mypackage.models")`.
 - **Pull requests and issues:** [#6793](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6793)
 - **Source:** the release notes
+
+### GraphQL object models gain a read-only `__typename` property (0.96.0) { #graphql-typename-property }
+
+Each model generated from a GraphQL object type has a `__typename` property that returns its `typename__` field, so graphql-core's default type resolver resolves unions and interfaces from model instances without a `resolve_type` function. The property is written for `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`, `dataclasses.dataclass` and `msgspec.Struct` output; input and interface types, `typing.TypedDict` output and custom model templates do not get it. Fields, aliases and validation are unchanged.
+
+- **Affects:** input types: `graphql`; output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`, `dataclasses.dataclass`, `msgspec.Struct`
+- **Keep the old output:** `--graphql-no-typename`
+- **Pull requests and issues:** [#6792](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6792)
+- **Source:** the release notes
+
+```diff
+-typename__: Literal['A'] | None = Field('A', alias='__typename')
++typename__: Literal['A'] | None = Field('A', alias='__typename')
++
++    @property
++    def __typename(self) -> Literal['A'] | None:
++        return self.typename__
+```
 
 ### `--read-object-keywords-by-type` also reads `const`, `enum` and `allOf` branches as admitting no object (0.96.0) { #object-keywords-by-type-branch-kinds }
 

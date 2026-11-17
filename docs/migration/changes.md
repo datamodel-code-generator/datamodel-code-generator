@@ -136,6 +136,15 @@ Under `--collapse-root-models-name-strategy parent`, a module that named an enum
 +kind: Literal[b.Foo.cat, 'cat']
 ```
 
+### A msgspec struct no longer fails at import when an inherited required property collides with a renamed one (0.97.0) { #msgspec-inherited-required-collision }
+
+For `msgspec.Struct` output, a model that repeats an inherited property as required (`allOf` with a base and `required`) and also declares a property whose Python name collides with it (`x-y` required beside a new `x_y`) failed at import with `Multiple fields rename to the same name`. The inherited property now keeps its Python name (`a_b`) and the colliding property takes the suffixed one (`a_b_1`), where the class had the names the other way round and `kw_only=True`. Output that imported before is unchanged.
+
+- **Affects:** output model types: `msgspec.Struct`
+- **Keep the old output:** The previous module failed at import; nothing restores it.
+- **Pull requests and issues:** [#6959](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6959)
+- **Source:** the release notes
+
 ### A pattern with a class escape or a Unicode property at the end of a range in a class, such as `^[a-\w]+$`, no longer fails at import (0.97.0) { #regex-class-escape-range-end }
 
 A `pattern` whose character class ends a range with a class escape or a Unicode property (`^[a-\w]+$`, `[a-\pL]`, `[a-\p{L}]`) was written as the schema writes it, and the module failed at import with `invalid range boundary, must be a literal` (a `msgspec.Struct` failed when it first decoded the type with `bad character range`): Pydantic's default regex engine refuses a range that ends with a class, and Python's `re` rejects it too. The pattern is now left out with a warning, as `^[\w- ]*$` (a class as the start of a range) has been since 0.92.0, and the model checks the other keywords only. A hyphen that makes no range keeps its pattern (`^[a-z0-9-\s]+$`, `^[^-\w]+$`). Output that imported and decoded before is unchanged.
@@ -393,6 +402,24 @@ Notices of the deprecation registry are attributed to the outermost frame outsid
 - **What to change:** Filter the notices by category and message, or by your calling module, for example `warnings.filterwarnings("ignore", category=FutureWarning, module="mypackage.models")`.
 - **Pull requests and issues:** [#6793](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6793)
 - **Source:** the release notes
+
+### GraphQL object models gain a read-only `__typename` property (0.96.0) { #graphql-typename-property }
+
+Each model generated from a GraphQL object type has a `__typename` property that returns its `typename__` field, so graphql-core's default type resolver resolves unions and interfaces from model instances without a `resolve_type` function. The property is written for `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`, `dataclasses.dataclass` and `msgspec.Struct` output; input and interface types, `typing.TypedDict` output and custom model templates do not get it. Fields, aliases and validation are unchanged.
+
+- **Affects:** input types: `graphql`; output model types: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`, `dataclasses.dataclass`, `msgspec.Struct`
+- **Keep the old output:** `--graphql-no-typename`
+- **Pull requests and issues:** [#6792](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6792)
+- **Source:** the release notes
+
+```diff
+-typename__: Literal['A'] | None = Field('A', alias='__typename')
++typename__: Literal['A'] | None = Field('A', alias='__typename')
++
++    @property
++    def __typename(self) -> Literal['A'] | None:
++        return self.typename__
+```
 
 ### `--read-object-keywords-by-type` also reads `const`, `enum` and `allOf` branches as admitting no object (0.96.0) { #object-keywords-by-type-branch-kinds }
 

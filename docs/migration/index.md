@@ -149,20 +149,20 @@ Every change is listed for upgrades from 0.95.0 and later. The lists of older re
 
 | Your release | Required | Kept by an option | Not kept | New warnings | Page |
 |---|---|---|---|---|---|
-| 0.96.0 | 2 | 0 | 14 | 6 | [from-0.96.0](from-0.96.0.md) |
-| 0.95.0 | 6 | 0 | 15 | 6 | [from-0.95.0](from-0.95.0.md) |
-| 0.93.0 through 0.94.0 (incomplete list) | 6 | 0 | 15 | 8 | [from-0.93.0](from-0.93.0.md) |
-| 0.84.0 through 0.92.0 (incomplete list) | 7 | 0 | 15 | 8 | [from-0.84.0](from-0.84.0.md) |
-| 0.78.0 through 0.83.0 (incomplete list) | 7 | 0 | 15 | 9 | [from-0.78.0](from-0.78.0.md) |
-| 0.65.0 through 0.77.0 (incomplete list) | 7 | 0 | 15 | 13 | [from-0.65.0](from-0.65.0.md) |
-| 0.56.0 through 0.64.1 (incomplete list) | 7 | 0 | 15 | 14 | [from-0.56.0](from-0.56.0.md) |
-| 0.53.0 through 0.55.0 (incomplete list) | 7 | 0 | 15 | 15 | [from-0.53.0](from-0.53.0.md) |
-| 0.52.1 through 0.52.2 (incomplete list) | 7 | 0 | 15 | 17 | [from-0.52.1](from-0.52.1.md) |
-| 0.52.0 (incomplete list) | 7 | 0 | 15 | 19 | [from-0.52.0](from-0.52.0.md) |
-| 0.48.0 through 0.51.0 (incomplete list) | 7 | 0 | 15 | 20 | [from-0.48.0](from-0.48.0.md) |
-| 0.31.0 through 0.47.0 (incomplete list) | 7 | 0 | 15 | 22 | [from-0.31.0](from-0.31.0.md) |
-| 0.24.0 through 0.30.2 (incomplete list) | 7 | 0 | 15 | 23 | [from-0.24.0](from-0.24.0.md) |
-| 0.20.0 through 0.23.0 (incomplete list) | 7 | 0 | 15 | 24 | [from-0.20.0](from-0.20.0.md) |
+| 0.96.0 | 2 | 0 | 15 | 6 | [from-0.96.0](from-0.96.0.md) |
+| 0.95.0 | 6 | 1 | 16 | 6 | [from-0.95.0](from-0.95.0.md) |
+| 0.93.0 through 0.94.0 (incomplete list) | 6 | 1 | 16 | 8 | [from-0.93.0](from-0.93.0.md) |
+| 0.84.0 through 0.92.0 (incomplete list) | 7 | 1 | 16 | 8 | [from-0.84.0](from-0.84.0.md) |
+| 0.78.0 through 0.83.0 (incomplete list) | 7 | 1 | 16 | 9 | [from-0.78.0](from-0.78.0.md) |
+| 0.65.0 through 0.77.0 (incomplete list) | 7 | 1 | 16 | 13 | [from-0.65.0](from-0.65.0.md) |
+| 0.56.0 through 0.64.1 (incomplete list) | 7 | 1 | 16 | 14 | [from-0.56.0](from-0.56.0.md) |
+| 0.53.0 through 0.55.0 (incomplete list) | 7 | 1 | 16 | 15 | [from-0.53.0](from-0.53.0.md) |
+| 0.52.1 through 0.52.2 (incomplete list) | 7 | 1 | 16 | 17 | [from-0.52.1](from-0.52.1.md) |
+| 0.52.0 (incomplete list) | 7 | 1 | 16 | 19 | [from-0.52.0](from-0.52.0.md) |
+| 0.48.0 through 0.51.0 (incomplete list) | 7 | 1 | 16 | 20 | [from-0.48.0](from-0.48.0.md) |
+| 0.31.0 through 0.47.0 (incomplete list) | 7 | 1 | 16 | 22 | [from-0.31.0](from-0.31.0.md) |
+| 0.24.0 through 0.30.2 (incomplete list) | 7 | 1 | 16 | 23 | [from-0.24.0](from-0.24.0.md) |
+| 0.20.0 through 0.23.0 (incomplete list) | 7 | 1 | 16 | 24 | [from-0.20.0](from-0.20.0.md) |
 
 Releases before 0.20.0: start from the 0.20.0 page and read the older entries of the [changelog](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/main/CHANGELOG.md).
 
