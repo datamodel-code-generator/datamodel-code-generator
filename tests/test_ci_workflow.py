@@ -115,12 +115,14 @@ def test_gate_rejects_every_unsuccessful_group() -> None:
         for name in success
         for state in ("failure", "cancelled", "skipped")
     })
-    skipped = {name: {"result": "skipped"} for name in gate["needs"]}
+    always_on = gate["steps"][0]["env"].get("ALWAYS_ON_JOBS", "").split()
+    skipped = {name: {"result": "success" if name in always_on else "skipped"} for name in gate["needs"]}
     mid_stack_cases = {"mid-stack:skipped": skipped, "mid-stack:empty": {}}
     mid_stack_cases.update({
         f"mid-stack:{name}:{state}": {**skipped, name: {"result": state}}
         for name in skipped
-        for state in ("success", "failure", "cancelled")
+        for state in ("success", "failure", "cancelled", "skipped")
+        if state != skipped[name]["result"]
     })
     main_only_jobs = [name for name in gate["needs"] if jobs[name].get("if") == MAIN_ONLY_IF]
     pull_request_cases = {
@@ -148,6 +150,7 @@ def test_gate_rejects_every_unsuccessful_group() -> None:
                 "NEEDS": json.dumps(needs),
                 "FULL_TEST_RUN": full_runs[name],
                 "MAIN_ONLY_JOBS": " ".join(main_only_jobs) if name in pull_request_cases else "",
+                "ALWAYS_ON_JOBS": " ".join(always_on),
             },
             capture_output=True,
             text=True,
