@@ -132,7 +132,6 @@ from datamodel_code_generator.parser._passes._shared import (
     RootModelTypeHost,
     TargetPythonVersionHost,
     _annotated_reference,
-    _annotated_references,
     _assign_module_name,
     _context_models,
     _derived_models,
@@ -143,6 +142,8 @@ from datamodel_code_generator.parser._passes._shared import (
     _restore_inherited_field_names_for_unique_aliases,
     _rule_data_types,
     _runtime_validation_reference_keys,
+    _written_name,
+    _written_type_names,
     additional_properties_holder,
     aliases_first,
     compared_models,
@@ -905,12 +906,7 @@ def _value_positions(field: DataModelFieldBase) -> list[tuple[DataModelFieldBase
 
 def _named_reference(field: DataModelFieldBase, name: str | None) -> Reference | None:
     """Return the referenced type that the field's annotation names ``name``."""
-    for data_type in field.data_type.all_data_types:
-        if (reference := _annotated_reference(data_type)) is not None and (
-            data_type.alias or reference.short_name
-        ) == name:
-            return reference
-    return None
+    return next((ref for written, ref in _written_type_names((field,)) if written == name), None)
 
 
 def _keeps_field_names(model: DataModel, model_type: type[DataModel]) -> bool:
@@ -920,11 +916,8 @@ def _keeps_field_names(model: DataModel, model_type: type[DataModel]) -> bool:
 
 def _same_named_references(model: DataModel, name: str | None, *, skips_aliases: bool) -> Iterator[Reference]:
     """Yield the types named ``name`` that the model's annotations refer to, by that name with ``skips_aliases``."""
-    return (
-        reference
-        for data_type, reference in _annotated_references(model)
-        if reference.short_name == name and not (skips_aliases and data_type.alias and data_type.alias != name)
-    )
+    names = "written" if skips_aliases else "short-name"
+    return (ref for written, ref in _written_type_names(model.fields, names=names) if written == name)
 
 
 def _model_family(model: DataModel, derived_models: Mapping[ModelKey, list[DataModel]]) -> dict[ModelKey, DataModel]:
@@ -2100,12 +2093,11 @@ def change_field_name(
             reference_type_names: set[str] = set()
             colliding_reference: Reference | None = None
 
-            for data_type in field.data_type.all_data_types:
-                if (reference := data_type.reference) is None:
-                    continue
-                if rename_type and (alias := data_type.alias) and alias != field_name:
-                    continue
-                reference_name = reference.short_name
+            for reference_name, reference in _written_type_names(
+                (field,),
+                names="written" if rename_type else "short-name",
+                references="legacy-reference-only",
+            ):
                 reference_type_names.add(reference_name)
                 if rename_type and colliding_reference is None and reference_name == field_name:
                     colliding_reference = reference
@@ -2478,7 +2470,7 @@ def same_named_fields(parser: ModulesHost, model: DataModel) -> list[DataModelFi
     model_type = parser.data_model_type
     if _keeps_field_names(model, model_type):
         return []
-    type_names = {reference.short_name for _, reference in _annotated_references(model)}
+    type_names = {name for name, _ in _written_type_names(model.fields, names="short-name")}
     return [
         field for field in model.fields if field.name != model_type.TYPED_EXTRA_FIELD_NAME and field.name in type_names
     ]
@@ -3210,7 +3202,7 @@ def _recursive_class_of_alias(model: DataModel) -> DataModel | None:
         (reference := data_type.reference) is None
         or not isinstance(target := reference.source, DataModel)
         or target.IS_ALIAS
-        or model.fields[0].type_hint.strip("\"'") != (data_type.alias or reference.short_name)
+        or model.fields[0].type_hint.strip("\"'") != _written_name(data_type, reference)
     ):
         return None
     named = {id(nested.reference) for field in target.fields for nested in field.data_type.all_data_types}

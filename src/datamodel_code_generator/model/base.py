@@ -1442,6 +1442,11 @@ def _nested_model_has_required_constructor_fields(source: DataModel) -> bool:
     )
 
 
+def _written_name(data_type: DataType, reference: Reference) -> str:
+    """Return the name the annotation of ``data_type`` writes for the type ``reference``: its alias, else short name."""
+    return data_type.alias or reference.short_name
+
+
 def _default_factory_type_name(data_type: DataType) -> str:
     """Return the name a default factory uses for the referenced type.
 

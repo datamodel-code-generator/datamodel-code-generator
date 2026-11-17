@@ -62,6 +62,7 @@ from datamodel_code_generator.model.base import (
     _field_source_name,
     _find_base_classes,
     _ModelKeys,
+    _written_name,
     direct_base_models,
     get_inherited_fields,
     linearize_data_models,
@@ -1893,12 +1894,25 @@ def _annotated_reference(data_type: DataType) -> Reference | None:
     return data_type.reference or data_type._enum_member_literal_reference
 
 
-def _annotated_references(model: DataModel) -> Iterator[tuple[DataType, Reference]]:
-    """Yield each type that an annotation of the model's fields names, with the data type that names it."""
-    for field in model.fields:
+def _written_type_names(
+    fields: Iterable[DataModelFieldBase],
+    *,
+    names: Literal["written", "short-name"] = "written",
+    references: Literal["annotated", "legacy-reference-only"] = "annotated",
+) -> Iterator[tuple[str, Reference]]:
+    """Yield each type the annotations of ``fields`` name, by the name the annotation writes, with its reference.
+
+    The types are those ``_annotated_reference`` gives, the enum of member literals included; row
+    ``legacy-reference-only`` (``change_field_name``) reads only the references. Row ``short-name`` takes the short
+    name of a type written under an alias too. A written alias is never a field name of its module.
+    """
+    for field in fields:
         for data_type in field.data_type.all_data_types:
-            if (reference := _annotated_reference(data_type)) is not None:
-                yield data_type, reference
+            reference = (
+                data_type.reference if references == "legacy-reference-only" else _annotated_reference(data_type)
+            )
+            if reference is not None:
+                yield reference.short_name if names == "short-name" else _written_name(data_type, reference), reference
 
 
 def _annotated_enum(data_type: DataType) -> Enum | None:
@@ -2278,7 +2292,7 @@ def _hidden_type_names(model: DataModel) -> Collection[str | None]:
     """
     if not type(model).RESOLVES_STRING_ANNOTATIONS_FROM_MODULE:
         return ()
-    return {reference.short_name for data_type, reference in _annotated_references(model) if not data_type.alias} & {
+    return {name for name, _ in _written_type_names(model.fields)} & {
         field.name for field in model.fields if model.field_name_hides_types(field)
     }
 

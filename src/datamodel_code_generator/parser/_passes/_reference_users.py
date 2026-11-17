@@ -17,6 +17,7 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._graph_ids import keyed_models
+from datamodel_code_generator.parser._passes._shared import _written_name
 from datamodel_code_generator.python_literal import _make_referencing_type_expression
 
 if TYPE_CHECKING:
@@ -122,8 +123,7 @@ def _named_alias(model: DataModel) -> TypeAliasBase | None:
     if (
         field.annotated
         or field.field
-        or field.type_hint.strip("\"'")
-        != (data_type.alias or cast("Reference", data_type.reference).short_name).strip("\"'")
+        or field.type_hint.strip("\"'") != _written_name(data_type, cast("Reference", data_type.reference)).strip("\"'")
     ):
         return None
     return target
