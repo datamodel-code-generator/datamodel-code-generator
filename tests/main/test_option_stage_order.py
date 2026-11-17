@@ -844,6 +844,7 @@ STRATEGY = ["--all-exports-collision-strategy", "minimal-prefix"]
 DELIMITER = ["--original-field-name-delimiter", "_"]
 COLLAPSE_STRATEGY = ["--collapse-root-models-name-strategy", "child"]
 SPECIALIZED_ON_310 = ["--use-specialized-enum", "--target-python-version", "3.10"]
+DATACLASS = ["--output-model-type", "dataclasses.dataclass"]
 TARGET_KEYS = 'generate-server = "fastapi"\ngenerate-client = "httpx2"\n'
 PYDANTIC_DOCS = re.compile(r"errors\.pydantic\.dev/[^/]+/")
 
@@ -878,6 +879,8 @@ def _refusal(raised: BaseException) -> str:
             id="str-enum-entry",
         ),
         pytest.param(SPECIALIZED_ON_310, None, Exit.ERROR, id="use-specialized-enum"),
+        pytest.param([*DATACLASS, "--use-missing-sentinel"], None, Exit.ERROR, id="use-missing-sentinel"),
+        pytest.param([*DATACLASS, "--union-mode", "smart"], None, Exit.ERROR, id="union-mode"),
         pytest.param(
             ["--custom-file-header-path", "header.txt"], 'custom-file-header = "# inline"\n', Exit.OK, id="split"
         ),

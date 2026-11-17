@@ -57,6 +57,8 @@ str-enum-entry	main/option_stage_order/cli_option_relation_rows[str-enum-entry].
 str-enum-entry-before-specialized-enum	main/option_stage_order/cli_option_relation_rows[str-enum-entry-before-specialized-enum].txt	= main/option_stage_order/cli_option_relation_rows[str-enum-entry].txt
 targets	main/option_stage_order/cli_option_relation_rows[targets].txt
 targets-before-custom-file-header	main/option_stage_order/cli_option_relation_rows[targets-before-custom-file-header].txt	= main/option_stage_order/cli_option_relation_rows[targets].txt
+union-mode	main/option_stage_order/cli_option_relation_rows[union-mode].txt
+use-missing-sentinel	main/option_stage_order/cli_option_relation_rows[use-missing-sentinel].txt
 use-specialized-enum	main/option_stage_order/cli_option_relation_rows[use-specialized-enum].txt
 [test_cli_preset_error_before_delimiter_error]
 	main/option_stage_order/cli_preset_error_before_delimiter_error.txt

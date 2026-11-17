@@ -26,6 +26,8 @@ from datamodel_code_generator._format_types import (
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._option_names import option_flag
 from datamodel_code_generator._option_rules import (
+    TARGET_INPUTS,
+    TARGET_REQUIRED_OPTIONS,
     check_option_relation,
     enable_implied_options,
     implied_option_sources,
@@ -230,14 +232,6 @@ def _schema_validator_base_class_name_error(value: str | None, target: PythonVer
     return f"--schema-validator-base-class-name '{value}' is not a valid Python identifier"
 
 
-_TARGET_REQUIRED: tuple[str, ...] = ("output", "package", "model_package")
-_TARGET_INPUTS: dict[str, tuple[InputFileType, ...]] = {
-    "generate_server": (InputFileType.OpenAPI,),
-    "generate_client": (InputFileType.OpenAPI, InputFileType.AsyncAPI),
-}
-"""The input kinds each target reads operations from, by the field that selects it."""
-
-
 def _selected_target(config: Any) -> tuple[str, str] | None:
     """Return the selector and the settings prefix of the target a config selects, or None for a model-only config."""
     return next((item for item in TARGET_SELECTORS if getattr(config, item[0]) is not None), None)
@@ -252,10 +246,10 @@ def _target_options_error(config: Any, *, output: bool = True) -> str | None:
     if (selected := _selected_target(config)) is None:
         return None
     selector, prefix = selected
-    required = _TARGET_REQUIRED if output else _TARGET_REQUIRED[1:]
+    required = TARGET_REQUIRED_OPTIONS if output else TARGET_REQUIRED_OPTIONS[1:]
     if missing := [option_flag(field) for name in required if getattr(config, field := f"{prefix}{name}") is None]:
         return f"{option_flag(selector)} requires {english_list(missing, 'and')}"
-    readable = _TARGET_INPUTS[selector]
+    readable = TARGET_INPUTS[selector]
     if (input_file_type := InputFileType(config.input_file_type)) not in readable:
         types = english_list([kind.value for kind in readable], "or")
         return f"{option_flag(selector)} requires --input-file-type {types}, not {input_file_type.value}"

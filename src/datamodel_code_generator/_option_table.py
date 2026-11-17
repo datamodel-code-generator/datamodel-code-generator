@@ -1613,13 +1613,6 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "--generate-client require with this option. Supports pydantic_v2.BaseModel and pydantic_v2.dataclass, whose "
         "server and client generation requires it.",
         implies=_relations("--target-pydantic-version", value=TargetPydanticVersion.V2_12.value),
-        requires=_relations(
-            "--output-model-type",
-            message=(
-                "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` "
-                "or `pydantic_v2.dataclass`."
-            ),
-        ),
     ),
     toggle(
         (Section.FIELD, _C.MODEL),
@@ -1654,11 +1647,6 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "--union-mode",
         help="Union mode for only pydantic v2 field",
         choices=_values(UnionMode),
-        requires=_relations(
-            "--output-model-type",
-            value=DataModelType.PydanticV2BaseModel.value,
-            message="`--union-mode` is only supported for `--output-model-type pydantic_v2.BaseModel`.",
-        ),
     ),
     flag(
         Section.FIELD,
@@ -2228,18 +2216,6 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "--generate-server",
         choices=_values(ServerType),
         help="Generate a FastAPI server package for the models; the --server-* options configure it (experimental).",
-        requires=(
-            CLIOptionRelation("--server-output", message="`--generate-server` requires `--server-output`."),
-            CLIOptionRelation("--server-package", message="`--generate-server` requires `--server-package`."),
-            CLIOptionRelation(
-                "--server-model-package", message="`--generate-server` requires `--server-model-package`."
-            ),
-            CLIOptionRelation(
-                "--input-file-type",
-                value=InputFileType.OpenAPI.value,
-                message="`--generate-server` requires `--input-file-type openapi`.",
-            ),
-        ),
     ),
     *_package_options("server"),
     value(
@@ -2311,17 +2287,6 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "--generate-client",
         choices=_values(ClientType),
         help="Generate an HTTPX2 client package for the models; the --client-* options configure it (experimental).",
-        requires=(
-            CLIOptionRelation("--client-output", message="`--generate-client` requires `--client-output`."),
-            CLIOptionRelation("--client-package", message="`--generate-client` requires `--client-package`."),
-            CLIOptionRelation(
-                "--client-model-package", message="`--generate-client` requires `--client-model-package`."
-            ),
-            CLIOptionRelation(
-                "--input-file-type",
-                message="`--generate-client` requires `--input-file-type openapi` or `--input-file-type asyncapi`.",
-            ),
-        ),
     ),
     *_package_options("client"),
     value(

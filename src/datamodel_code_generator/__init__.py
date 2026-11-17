@@ -70,7 +70,6 @@ from datamodel_code_generator._source import input_text as _input_text
 from datamodel_code_generator._url_redaction import redact_path, redact_url
 from datamodel_code_generator._warning_control import held, quiet
 from datamodel_code_generator.enums import (
-    _PYDANTIC_MODEL_TYPES,
     DEFAULT_SHARED_MODULE_NAME,
     MAX_VERSION,
     MIN_VERSION,
@@ -742,13 +741,9 @@ def _missing_sentinel_updates(config: BaseGenerateConfig, _record: RunOptions) -
     if not config.use_missing_sentinel:
         return {}
 
-    if config.output_model_type not in _PYDANTIC_MODEL_TYPES:
-        msg = (
-            "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` "
-            "or `pydantic_v2.dataclass`"
-        )
-        raise Error(msg)
+    from datamodel_code_generator._option_rules import check_option_relations  # noqa: PLC0415
 
+    check_option_relations("sentinel", config)
     from datamodel_code_generator._requirements import REQUIREMENTS, pydantic_target_meets  # noqa: PLC0415
 
     minimum = TargetPydanticVersion(REQUIREMENTS["pydantic.experimental_missing_sentinel"].minimum)
@@ -1559,15 +1554,11 @@ def _prepare_parser_common_options(
     Each parser copies a mapping source and takes its own template data (``_build_generation_parser``); nothing here
     reads what a parse again changes (the run context, ``model_name_map``, the stdout repair).
     """
+    from datamodel_code_generator._option_rules import check_option_relations  # noqa: PLC0415
+
     config, input_, input_file_type = prepared.config, prepared.input_, prepared.input_file_type
-    if config.union_mode is not None:
-        if config.output_model_type == DataModelType.PydanticV2BaseModel:
-            default_field_extras = {"union_mode": config.union_mode}
-        else:  # pragma: no cover
-            msg = "union_mode is only supported for pydantic_v2.BaseModel"
-            raise Error(msg)
-    else:
-        default_field_extras = None
+    check_option_relations("parser-options", config)
+    default_field_extras = None if config.union_mode is None else {"union_mode": config.union_mode}
 
     generate_schema_validators = _uses_pydantic_v2_schema_validator(config)
 
