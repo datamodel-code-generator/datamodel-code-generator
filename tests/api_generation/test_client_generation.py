@@ -123,6 +123,8 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "pointer-references",
         "evolution",
         "validation-ambiguous",
+        "union-value-kinds",
+        "union-value-kinds-literals",
         "discriminator-copies",
         "discriminator-variants",
         "discriminator-reuse",

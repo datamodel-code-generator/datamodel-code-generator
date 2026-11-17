@@ -138,7 +138,7 @@ def _tag(facts: ModelFacts, types: list[TypeView]) -> tuple[str, list[ModelField
     string value, the values all distinct; None when the models declare none, or a type is no object model or admits
     null, which no tag tells apart.
     """
-    if any("null" in (facts.json_types(value) or ()) for value in types):
+    if any("null" in (facts.tables.json_kinds(value, "schema") or ()) for value in types):
         return None
     models = [facts.model(value) for value in types]
     fields = [{field.wire_name: field for field in facts.fields(model.id)} for model in models if model is not None]

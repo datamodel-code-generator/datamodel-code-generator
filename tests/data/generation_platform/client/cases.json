@@ -1310,6 +1310,35 @@
       ]
     ]
   },
+  "union-value-kinds": {
+    "input": "union-value-kinds.yaml",
+    "backends": [
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ]
+  },
+  "union-value-kinds-literals": {
+    "input": "union-value-kinds.yaml",
+    "backends": [
+      "dataclasses.dataclass"
+    ],
+    "model": {
+      "enum_field_as_literal": "all"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ]
+  },
   "fields": {
     "input": "fields.yaml",
     "backends": [

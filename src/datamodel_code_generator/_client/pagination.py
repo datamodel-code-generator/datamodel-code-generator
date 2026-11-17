@@ -271,7 +271,9 @@ class _Pages(HelperPlanner):
         if value is None or isinstance(reached := self._walk(value, pointer), str):
             return "absent" if pointer else None
         return (
-            self.facts.json_types(value) if (facts := _field_facts(reached)) is None else self.facts.field_types(facts)
+            self.facts.tables.json_kinds(value, "schema")
+            if (facts := _field_facts(reached)) is None
+            else self.facts.field_types(facts)
         )
 
     def reached(  # noqa: PLR0913, PLR0917
@@ -455,7 +457,11 @@ class _Pages(HelperPlanner):
                     return _problem("E_CONFIG_VALUE", "config", at, message, spec)
                 types = frozenset({"array" if read["occurrence"] == "all" else "string"})
                 if what in _EVIDENCE:
-                    types = None if (use := uses[key]) is None or use.type is None else self.facts.json_types(use.type)
+                    types = (
+                        None
+                        if (use := uses[key]) is None or use.type is None
+                        else self.facts.tables.json_kinds(use.type, "schema")
+                    )
         return types
 
     def accepted(

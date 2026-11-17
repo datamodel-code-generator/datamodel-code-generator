@@ -2,17 +2,20 @@
 
 The binder writes into each view the None the model renders (``model/_decisions/nullability.py``), as a `NoneType`
 member; these pure functions and the readers of ``TypeTables`` are the one reading of it, so no target decides by its
-own walk whether a type takes None. The lexical kind of a text leaf, the container slot of a generic class and the
-kind of a Pydantic scalar type are read here too, so no target keeps a kind table of its own.
+own walk whether a type takes None. The kind of JSON value or text a type holds (``TypeTables.json_kinds``), the
+container slot of a generic class and the kind of a Pydantic scalar type are read here too, so no target keeps a kind
+table of its own.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast, get_args
 
-from datamodel_code_generator._container_kinds import BUILTIN_CONTAINERS, ITEM_CONTAINERS, MAPPINGS
+from datamodel_code_generator._all_or_none import all_or_none
+from datamodel_code_generator._container_kinds import CONTAINER_CLASSES, ITEM_CONTAINERS, MAPPINGS
+from datamodel_code_generator._runtime.model_codecs.media import JSONKind, LexicalKind
 from datamodel_code_generator._target_contract import (
     WRAPPER_KINDS,
     BoundType,
@@ -22,6 +25,7 @@ from datamodel_code_generator._target_contract import (
     GeneratedSymbolType,
     GenericType,
     ImportedType,
+    LiteralScalar,
     LiteralType,
     NoneType,
     UnionType,
@@ -37,14 +41,12 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Container, Iterable, Iterator, Mapping, Sequence
 
     from datamodel_code_generator._container_kinds import ContainerKind, ContainerSlot
-    from datamodel_code_generator._runtime.model_codecs.media import LexicalKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
     from datamodel_code_generator._target_contract import (
         FieldUseBinding,
         FinalModelSymbol,
         GeneratedTypeContractBatch,
         LeafStep,
-        LiteralScalar,
         ModelFieldFacts,
         SymbolId,
         TypeView,
@@ -52,6 +54,8 @@ if TYPE_CHECKING:
 
 __all__ = [
     "CONSTRAINED_SCALARS",
+    "NULL_KINDS",
+    "JSONKinds",
     "TypeTables",
     "admits_none",
     "container_slot",
@@ -71,15 +75,100 @@ CONSTRAINED_SCALARS: Final[Mapping[tuple[str, str], LexicalKind]] = MappingProxy
 })
 """The kind of each strict or constrained Pydantic scalar type, by its module and name: a bool's, a float's or an
 int's, as its text and its JSON value both read."""
-_LITERAL_KINDS: Final[dict[str, LexicalKind]] = {"bool": "boolean", "float": "number", "int": "integer"}
-_LEXICAL_KINDS: Final[dict[tuple[str | None, str], LexicalKind | None]] = {
-    (None, "bool"): "boolean",
-    (None, "float"): "number",
-    (None, "int"): "integer",
-    **dict.fromkeys(((None, name) for name in BUILTIN_CONTAINERS), None),
-    **CONSTRAINED_SCALARS,
-}
+JSONVocabulary: TypeAlias = Literal["schema", "codec", "lexical"]
+"""The names a reader gives the kinds of a type's values (``TypeTables.json_kinds``): the JSON types of a schema, the
+JSON kinds a stdlib codec tells union members apart by, or the lexical kinds of text."""
+JSONKinds: TypeAlias = "frozenset[str] | None"
+_STRING: Final = frozenset({"string"})
+NULL_KINDS: Final = frozenset({"null"})
 _INTEGER_NUMBER: Final = frozenset({"integer", "number"})
+_SCALAR_KINDS: Final[Mapping[str, str]] = MappingProxyType({
+    "none": "null",
+    "bool": "boolean",
+    "int": "integer",
+    "float": "number",
+    "decimal": "decimal",
+    "str": "string",
+    "bytes": "string",
+})
+"""The kind of a literal or enum value by the kind of its scalar; a Decimal's is its own, each vocabulary names it."""
+
+
+def _container_kind(slot: str | None) -> str:
+    """Return the kind of the values a container holds by its slot: a mapping's are objects, any other's arrays."""
+    return "object" if slot in MAPPINGS.slots else "array"
+
+
+_CONTAINER_CLASSES: Final = {**CONTAINER_CLASSES, (None, "tuple"): "tuple", ("typing", "List"): "list"}
+_LEAF_KINDS: Final[Mapping[tuple[str | None, str], str]] = MappingProxyType({
+    **{(None, name): _SCALAR_KINDS[name] for name in ("bool", "int", "float", "str", "bytes")},
+    ("decimal", "Decimal"): "decimal",
+    ("types", "NoneType"): "null",
+    (None, "object"): "any",
+    ("typing", "Any"): "any",
+    **{key: _container_kind(slot) for key, slot in _CONTAINER_CLASSES.items()},
+    **CONSTRAINED_SCALARS,
+})
+"""The kind of each class by its module and name (``type_identity``): another imported class holds strings."""
+_IMPORTED_CONTAINERS: Final = frozenset(key for key in _CONTAINER_CLASSES if key[0] is not None)
+
+
+@dataclass(frozen=True, slots=True)
+class _Vocabulary:
+    """How one reader names the kinds of a type's values, a row of ``TypeTables.json_kinds``."""
+
+    kinds: frozenset[str]
+    """The kinds it names: a leaf of another kind holds strings, and None and a null value hold null where it names
+    null, else no kind."""
+    renamed: Mapping[str, JSONKinds]
+    """The leaf kinds it reads as others, or as None: any value for a schema or codec, no kind for text."""
+    written: JSONKinds
+    """The kinds of a type that names no class it knows: another builtin, or an annotation the document writes."""
+    values: Literal["all", "one", "native"]
+    """How an enum or literal takes kinds: those of all its values (an enum its ``value_types``), one kind of them
+    (an int beside a float is a number), or the one of the codec (``legacy-codec-enum-kinds``): the kinds of its str
+    and int values alone, of a literal only where all its values are of one kind."""
+    text: frozenset[tuple[str | None, str]]
+    """The classes it reads as strings whatever their kind: the containers imported from a module, an abstract class
+    or a ``typing`` alias, that a schema or text names alone (``legacy-imported-container-text``)."""
+
+    classes: Mapping[tuple[str | None, str], JSONKinds] = field(init=False)
+    """The kinds of each class ``_LEAF_KINDS`` names, as it names them."""
+
+    def __post_init__(self) -> None:
+        """Name the kinds of the classes ``_LEAF_KINDS`` names."""
+        classes = {key: _STRING if key in self.text else self.leaf(kind) for key, kind in _LEAF_KINDS.items()}
+        object.__setattr__(self, "classes", MappingProxyType(classes))
+
+    def leaf(self, kind: str) -> JSONKinds:
+        """Return the kinds a leaf of one kind holds in this vocabulary."""
+        return self.renamed[kind] if kind in self.renamed else frozenset({kind}) if kind in self.kinds else _STRING
+
+
+_VOCABULARIES: Final[Mapping[JSONVocabulary, _Vocabulary]] = MappingProxyType({
+    "schema": _Vocabulary(
+        frozenset({*_SCALAR_KINDS.values(), "array", "object"}) - {"decimal"},
+        {"decimal": frozenset({"number"}), "any": None},
+        None,
+        "all",
+        _IMPORTED_CONTAINERS,
+    ),
+    "codec": _Vocabulary(
+        frozenset(get_args(JSONKind)),
+        {"integer": frozenset({"number"}), "decimal": frozenset({"string", "number"}), "any": None},
+        _STRING,
+        "native",
+        frozenset(),
+    ),
+    "lexical": _Vocabulary(
+        frozenset(get_args(LexicalKind)),
+        {"array": None, "object": None},
+        _STRING,
+        "one",
+        _IMPORTED_CONTAINERS,
+    ),
+})
+_SERIALIZE_AS_ANY: Final = ("pydantic", "SerializeAsAny")
 _ANY: Final = frozenset({("typing", "Any"), ("typing_extensions", "Any")})
 _ARGUMENTS: Final[dict[LeafStep, tuple[int, ContainerKind]]] = {"items": (1, ITEM_CONTAINERS), "values": (2, MAPPINGS)}
 
@@ -317,7 +406,16 @@ class TypeTables:
         with such a leaf. A model, a container, null alone, an enum or literal of several kinds, and a union of several
         kinds none of which reads text as it is, have no kind.
         """
-        return _one_kind(set(self._leaves(value, frozenset())), mixed=True)
+        return cast("LexicalKind | None", _one_kind(self.json_kinds(value, "lexical"), mixed=True))
+
+    def json_kinds(self, value: TypeView | None, vocabulary: JSONVocabulary) -> JSONKinds:
+        """Return the kinds of the JSON values or text a type holds, as a vocabulary names them, or None.
+
+        None is any value in a schema or codec, and no kind for text. A class has the kind ``_LEAF_KINDS`` gives it,
+        a container that of its slot and an object model an object's; an enum and a literal take those of their
+        values, and an alias, a root model, a union and a Pydantic wrapper those of the types they stand for.
+        """
+        return self._kinds(value, _VOCABULARIES[vocabulary], frozenset())
 
     def fixed(self, value: TypeView) -> tuple[object, ...] | None:
         """Return the values a type admits where it admits literal values alone, None aside, else None.
@@ -354,54 +452,77 @@ class TypeTables:
         symbol = self.symbols[item.symbol]
         return next(value for slot, value in zip(symbol.fields, symbol.values, strict=True) if slot.field == item.field)
 
-    def _leaves(self, value: TypeView | None, seen: frozenset[SymbolId]) -> Iterator[LexicalKind | None]:
+    def _kinds(self, value: TypeView | None, row: _Vocabulary, seen: frozenset[SymbolId]) -> JSONKinds:  # ruff: ignore[too-many-branches]
+        kinds: JSONKinds = row.written
         match value:
+            case None:
+                kinds = None
             case NoneType():
-                pass
-            case ConstructorType():
-                yield from self._leaves(value.callable if value.base is None else value.base, seen)
+                kinds = row.kinds & NULL_KINDS
             case UnionType():
-                for member in value.members:
-                    yield from self._leaves(member, seen)
+                kinds = _joined(self._kinds(member, row, seen) for member in value.members)
+            case ConstructorType():
+                kinds = self._kinds(value.callable if value.base is None else value.base, row, seen)
             case LiteralType():
-                yield _one_kind(
-                    {
-                        kind
-                        for item in value.values
-                        for kind in (
-                            self._leaves(GeneratedSymbolType(item.symbol), seen)
-                            if isinstance(item, GeneratedEnumMember)
-                            else _literal_kinds(item)
-                        )
-                    },
-                    mixed=False,
-                )
+                kinds = self._values(value, row, seen)
             case GeneratedSymbolType() if (facts := self.wrapped(value, seen)) is not None:
-                yield from self._leaves(facts.type, seen | {value.symbol})
+                kinds = self._kinds(facts.type, row, seen | {value.symbol})
             case GeneratedSymbolType() if (symbol := self.symbols[value.symbol]).kind == "enum":
-                yield _one_kind({kind for item in symbol.values for kind in _literal_kinds(item)}, mixed=False)
-            case BuiltinType() | ImportedType():
-                yield _LEXICAL_KINDS.get(type_identity(value), "string")
-            case None | GenericType() | GeneratedSymbolType():
-                yield None
+                kinds = self._values(symbol, row, seen)
+            case GeneratedSymbolType():
+                kinds = row.leaf("object") if self.symbols[value.symbol].kind == "model" else None
+            case GenericType() if type_identity(value.base) == _SERIALIZE_AS_ANY and len(value.arguments) == 1:
+                kinds = self._kinds(value.arguments[0], row, seen)
+            case GenericType():
+                kinds = row.leaf(_container_kind(container_slot(value)))
+            case ImportedType():
+                kinds = row.classes.get(type_identity(value), _STRING)
+            case BuiltinType():
+                kinds = row.classes.get(type_identity(value), row.written)
             case _:
-                yield "string"
+                pass
+        return kinds
+
+    def _values(self, value: LiteralType | FinalModelSymbol, row: _Vocabulary, seen: frozenset[SymbolId]) -> JSONKinds:
+        """Return the kinds of a literal's or an enum's values as ``row.values`` says."""
+        literal = isinstance(value, LiteralType)
+        if row.values == "all" and not literal:
+            return frozenset(value.value_types)
+        if row.values == "native":
+            natives = {item.kind if isinstance(item, LiteralScalar) else "other" for item in value.values}
+            if literal and len(natives) > 1:
+                return frozenset()
+            return _joined(row.leaf(_SCALAR_KINDS[kind]) for kind in natives & {"str", "int"})
+        kinds = _joined(
+            self._kinds(GeneratedSymbolType(item.symbol), row, seen)
+            if isinstance(item, GeneratedEnumMember)
+            else None
+            if item is None
+            else row.kinds & NULL_KINDS
+            if item.kind == "none"
+            else row.leaf(_SCALAR_KINDS[item.kind])
+            for item in value.values
+        )
+        if row.values == "all":
+            return kinds
+        return None if (kind := _one_kind(kinds, mixed=False)) is None else frozenset({kind})
 
 
-def _literal_kinds(value: LiteralScalar | None) -> Iterator[LexicalKind | None]:
-    """Yield the kind of one literal or enum member value: none for null, and None for one that is no scalar."""
-    if value is None or value.kind != "none":
-        yield None if value is None else _LITERAL_KINDS.get(value.kind, "string")
+def _joined(kinds: Iterable[JSONKinds]) -> JSONKinds:
+    """Return the kinds of several types together, or None when one of them has None."""
+    return None if (found := all_or_none(kinds)) is None else frozenset().union(*found)
 
 
-def _one_kind(kinds: set[LexicalKind | None], *, mixed: bool) -> LexicalKind | None:
-    """Return the one kind of a leaf's kinds, taking an int beside a float as a number.
+def _one_kind(kinds: JSONKinds, *, mixed: bool) -> str | None:
+    """Return the one lexical kind of a leaf's kinds, taking an int beside a float as a number.
 
     Several other kinds are the string kind when `mixed` admits them and one of them is the string kind, whose leaf
     reads the text as it is; the members of one enum or literal admit none. A leaf of null alone has no kind.
     """
+    if kinds is None:
+        return None
     if kinds == _INTEGER_NUMBER:
         return "number"
     if len(kinds) == 1:
-        return kinds.pop()
-    return "string" if mixed and "string" in kinds and None not in kinds else None
+        return next(iter(kinds))
+    return "string" if mixed and "string" in kinds else None

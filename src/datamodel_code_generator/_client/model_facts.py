@@ -8,30 +8,22 @@ symbols and field bindings alone, never from a codec.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
-from datamodel_code_generator._all_or_none import all_or_none
-from datamodel_code_generator._container_kinds import MAPPINGS
-from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._target_contract import (
     BuiltinType,
-    ConstructorType,
-    GeneratedEnumMember,
     GeneratedSymbolType,
     GenericType,
     ImportedType,
     KnownBackendValue,
     LiteralScalar,
-    LiteralType,
-    NoneType,
     UnionType,
     wrapped_type,
 )
 from datamodel_code_generator._target_types import (
-    CONSTRAINED_SCALARS,
+    NULL_KINDS,
+    JSONKinds,
     TypeTables,
-    container_slot,
     is_alias,
     is_wrapper,
     sole_present,
@@ -50,42 +42,10 @@ if TYPE_CHECKING:
         TypeView,
     )
 
-__all__ = ("ItemStep", "JSONTypes", "ModelFacts", "ModelField", "StepKind")
+__all__ = ("ItemStep", "ModelFacts", "ModelField", "StepKind")
 
 StepKind: TypeAlias = Literal["attr", "key", "get", "root"]
-JSONTypes: TypeAlias = frozenset[str] | None
-_NULL: Final = frozenset({"null"})
-_SCALARS: Final = MappingProxyType({
-    "none": "null",
-    "bool": "boolean",
-    "int": "integer",
-    "float": "number",
-    "decimal": "number",
-    "str": "string",
-    "bytes": "string",
-})
-_NAMED: Final = MappingProxyType({
-    "str": "string",
-    "bytes": "string",
-    "int": "integer",
-    "float": "number",
-    "bool": "boolean",
-    "dict": "object",
-    "list": "array",
-    "tuple": "array",
-    "set": "array",
-    "frozenset": "array",
-    "types.NoneType": "null",
-    "datetime.datetime": "string",
-    "datetime.date": "string",
-    "datetime.time": "string",
-    "datetime.timedelta": "string",
-    "uuid.UUID": "string",
-    "decimal.Decimal": "number",
-    **{dotted_name(*key): kind for key, kind in CONSTRAINED_SCALARS.items()},
-})
 _EXTRAS: Final = "__pydantic_extra__"
-_WRAPPER: Final = "pydantic.SerializeAsAny"
 _FALSE: Final = KnownBackendValue(LiteralScalar(kind="bool", value=False))
 _MODELS: Final = frozenset({"model", "root"})
 
@@ -265,58 +225,17 @@ class ModelFacts:
         value = self.plain(value)
         return value if (member := sole_present(value)) is None else self.plain(member)
 
-    def json_types(self, value: TypeView, seen: frozenset[SymbolId] = frozenset()) -> JSONTypes:
-        """Return the JSON types the values of a type are, or None when they can be any value.
-
-        An enum's values give its types, an alias or root model those of the type it stands for, and an object model
-        is an object.
-        """
-        leaf = (value.callable if value.base is None else value.base) if isinstance(value, ConstructorType) else value
-        name = _name(leaf)
-        named = _NAMED.get(name or "")
-        if named is None and isinstance(value, ImportedType | ConstructorType) and name != "typing.Any":
-            named = "string"
-        types: JSONTypes = None if named is None else frozenset({named})
-        match value:
-            case UnionType():
-                found = all_or_none([self.json_types(member, seen) for member in value.members])
-                types = None if found is None else frozenset().union(*found)
-            case LiteralType():
-                types = frozenset().union(
-                    *(
-                        self.json_types(GeneratedSymbolType(item.symbol), seen) or ()
-                        if isinstance(item, GeneratedEnumMember)
-                        else {_SCALARS[item.kind]}
-                        for item in value.values
-                    )
-                )
-            case GeneratedSymbolType() if (symbol := self.symbols[value.symbol]).kind == "enum":
-                types = frozenset(symbol.value_types)
-            case GeneratedSymbolType() if (facts := self.tables.wrapped(value, seen)) is not None:
-                types = self.json_types(facts.type, seen | {value.symbol})
-            case GeneratedSymbolType() if self.symbols[value.symbol].kind == "model":
-                types = frozenset({"object"})
-            case GenericType() if _name(value.base) == _WRAPPER and len(value.arguments) == 1:
-                types = self.json_types(value.arguments[0], seen)
-            case GenericType():
-                types = frozenset({"object" if container_slot(value) in MAPPINGS.slots else "array"})
-            case NoneType():
-                types = _NULL
-            case _:
-                pass
-        return types
-
-    def field_types(self, field: ModelFieldFacts) -> JSONTypes:
+    def field_types(self, field: ModelFieldFacts) -> JSONKinds:
         """Return the JSON types of a field's wire values: those of its type, null only when its schema admits it.
 
         A schema admits null by its own nullability, or by a type it refers to that does, such as a nullable model; an
         annotation that only makes an omitted field optional does not.
         """
-        kinds = self.json_types(without_none(field.type))
+        kinds = self.tables.json_kinds(without_none(field.type), "schema")
         accepts_null = field.nullable or field.type_has_null
         if field.nullable is None:
             accepts_null = accepts_null or field.schema_null
-        return kinds if kinds is None or not accepts_null else kinds | _NULL
+        return kinds if kinds is None or not accepts_null else kinds | NULL_KINDS
 
 
 def _name(value: TypeView) -> str | None:

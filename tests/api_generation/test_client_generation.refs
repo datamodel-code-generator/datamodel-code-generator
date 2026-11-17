@@ -510,6 +510,10 @@ type-spellings-reuse	main/generation_platform/client/packages/type-spellings-reu
 type-spellings-reuse	main/generation_platform/client/type-spellings-reuse.txt
 typeddict-target-keys	main/generation_platform/client/packages/typeddict-target-keys/typing_TypedDict//*.py
 typeddict-target-keys	main/generation_platform/client/typeddict-target-keys.txt
+union-value-kinds	main/generation_platform/client/packages/union-value-kinds/dataclasses_dataclass//*.py
+union-value-kinds	main/generation_platform/client/union-value-kinds.txt
+union-value-kinds-literals	main/generation_platform/client/packages/union-value-kinds-literals/dataclasses_dataclass//*.py
+union-value-kinds-literals	main/generation_platform/client/union-value-kinds-literals.txt
 uploads	main/generation_platform/client/packages/uploads/pydantic_v2_BaseModel//*.py
 uploads	main/generation_platform/client/uploads.txt
 uploads-compression	main/generation_platform/client/uploads-compression.txt
