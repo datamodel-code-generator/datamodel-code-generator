@@ -191,6 +191,19 @@ _ANNOTATED_CONSTRAINT_BASES: dict[_ImportKey, str] = {
 }
 
 
+def _constraint_base(data_type: DataType, *, annotated_string: bool = False, encoded: bool = False) -> str | None:
+    """Return the name of the scalar a constrained scalar constrains, or None for any other type.
+
+    With ``annotated_string``, an annotated string constrains ``str``; with ``encoded``, a value decoded from base64
+    text with constraints constrains the type its decoding writes.
+    """
+    if annotated_string and getattr(data_type, "annotated_string", False):
+        return "str"
+    if encoded and (base := getattr(data_type, "encoded_base", None)):
+        return base
+    return None if (import_ := data_type.import_) is None else _ANNOTATED_CONSTRAINT_BASES.get(_import_key(import_))
+
+
 class _RawRepr:
     """Wrapper to prevent repr() from adding quotes around a value."""
 
@@ -635,11 +648,7 @@ def _copy_alias_data_type(
         if kwargs and prepared is not None
         else None
     )
-    base = (
-        _ANNOTATED_CONSTRAINT_BASES.get(_import_key(import_))
-        if (import_ := data_type.import_) is not None and data_type.is_func and kwargs
-        else None
-    )
+    base = _constraint_base(data_type) if data_type.is_func and kwargs else None
     if pattern is None and base is None and dict_key is None and not any(nested):
         return None
     runtime_imports = data_type.runtime_expression_imports
