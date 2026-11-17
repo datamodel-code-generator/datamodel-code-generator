@@ -2809,8 +2809,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if model_extras:
             self.extra_template_data[path]["model_extras"] = model_extras
 
-    def _get_python_type_flags(self, obj: JsonSchemaObject) -> dict[str, bool]:
-        """Get container type flags from x-python-type extension.
+    def _get_python_type_flags(self, python_type: PythonTypeExpr | None) -> dict[str, bool]:  # noqa: PLR6301
+        """Get container type flags from the x-python-type of a schema (``_get_x_python_type``).
 
         Returns a dict with flags like is_set, is_frozen_set, is_mapping, is_sequence
         that can be passed to data_type() to override the default container type: those of the slot a class the
@@ -2820,7 +2820,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         Note: This is an instance method (not static) due to the snooper_to_methods
         class decorator which does not preserve staticmethod descriptors.
         """
-        if (python_type := self._get_x_python_type(obj)) is None:
+        if python_type is None:
             return {}
 
         from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
@@ -2850,8 +2850,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         the schema's item, key and value types; row ``legacy-x-python-type-container-takes-slot-class``: without it the
         slot's class is written.
         """
-        flags: dict[str, Any] = self._get_python_type_flags(obj) or {CONTAINER_FLAGS[slot]: True}
-        if not self.use_x_python_type_as_written or (python_type := self._get_x_python_type(obj)) is None:
+        python_type = self._get_x_python_type(obj)
+        flags: dict[str, Any] = self._get_python_type_flags(python_type) or {CONTAINER_FLAGS[slot]: True}
+        if not self.use_x_python_type_as_written or python_type is None:
             return flags
 
         from datamodel_code_generator._python_type_annotation import python_type_expr_base_name  # noqa: PLC0415
@@ -4954,9 +4955,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _parse_all_of_merged_root(self, name: str, merged_root: JsonSchemaObject, path: list[str]) -> DataType:
         """Parse the schema an allOf merges into like the same schema written without allOf."""
-        if self._reads_enum_class(merged_root) and not self.should_parse_enum_as_literal(
-            merged_root, property_name=name
-        ):
+        if self._reads_enum(merged_root) and self._enum_site_form(merged_root, name) == "class":
             return self._parse_enum_class(name, self._definition_enum(merged_root), path)
         return (
             self.parse_array(name, merged_root, path)
@@ -5987,11 +5986,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if const_enum_data is None:
                 return True
             synthetic_obj = _value_keywords.create_synthetic_enum_obj(self, item, *const_enum_data)
-            if self.should_parse_enum_as_literal(synthetic_obj, property_name=name, property_obj=item):
+            if self._enum_site_form(synthetic_obj, name, property_obj=item) == "literal":
                 return True
         if self._is_object_map_schema(item):
             return True
-        if self._reads_enum(item) and self.should_parse_enum_as_literal(item, property_name=name):
+        if (
+            self._reads_enum(item)
+            and self._enum_site_form(item, name, row="legacy-title-alias-literal-unread-as-const") == "literal"
+        ):
             return True
         is_primitive = (
             item.type
@@ -6026,7 +6028,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return None
 
         synthetic_obj = _value_keywords.create_synthetic_enum_obj(self, obj, *const_enum_data)
-        if self.should_parse_enum_as_literal(synthetic_obj, property_name=name, property_obj=obj):
+        if self._enum_site_form(synthetic_obj, name, property_obj=obj) == "literal":
             if literal_as_root:
                 return self.parse_root_type(name, synthetic_obj, enum_path)
             return self.parse_enum_as_literal(synthetic_obj)
@@ -6229,10 +6231,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _parse_enum_item(self, site: _Site) -> DataType:
         item, name = site.obj, site.name
-        if self._reads_enum_as_const(item):
-            return self._enum_as_const_type(item)
-        if self.should_parse_enum_as_literal(item, property_name=name):
-            return self._enum_value_type(item, self.parse_enum_as_literal(item))
+        match self._enum_site_form(item, name):
+            case "const":
+                return self._enum_as_const_type(item)
+            case "literal":
+                return self._enum_value_type(item, self.parse_enum_as_literal(item))
         return self._parse_enum_class(name, item, get_special_path("enum", site.path), singular_name=site.singular_name)
 
     def _parse_typed_nullable_map_item(self, site: _Site) -> DataType:
@@ -6811,7 +6814,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         use_annotated = self.use_annotated if use_annotated is None else use_annotated
 
         required, nullable = _value_keywords.resolve_array_field_required_nullable(self, obj)
-        items, is_tuple, suppress_item_constraints, tuple_item_count = _value_keywords.get_array_item_schemas(self, obj)
+        items, is_tuple, tuple_item_count = _value_keywords.get_array_item_schemas(self, obj)
 
         if obj.prefixItems is not None and not is_tuple:
             _value_keywords.warn_unchecked_prefix_positions(self, obj)
@@ -6875,14 +6878,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if self._reads_enum(obj):
             data_types.append(
                 self._enum_as_const_type(obj)
-                if self._reads_enum_as_const(obj)
+                if self._enum_site_form(obj, name, row="legacy-array-enum-class-only") == "const"
                 else self.parse_enum(name, obj, get_special_path("enum", path))
             )
         constraints = _value_keywords.get_array_constraints(self, obj, array_data_type)
         if non_array_types:
             constraints = _value_keywords.type_list_keywords(obj)
-        if suppress_item_constraints:
-            _value_keywords.suppress_array_length_constraints(self, constraints, obj)
+        if is_tuple and constraints:
+            _value_keywords.suppress_array_length_constraints(constraints)
         return with_type_list_unique_items(
             self._build_field(
                 "array-root",
@@ -7124,17 +7127,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             case "object-map":
                 data_type = self._parse_object_map(name, obj, path, path)
             case "enum":
-                if self._reads_enum_as_const(obj):
-                    data_type = self._enum_as_const_type(obj)
-                elif self.should_parse_enum_as_literal(obj, property_name=name):
-                    narrowed = self._const_narrowed_enum(obj)
-                    data_type = with_enum_literal(
-                        self._enum_literal(
-                            narrowed, _value_keywords.literal_written(self, narrowed, narrowed.enum, writes=writes)
+                match self._enum_site_form(obj, name):
+                    case "const":
+                        data_type = self._enum_as_const_type(obj)
+                    case "literal":
+                        narrowed = self._const_narrowed_enum(obj)
+                        data_type = with_enum_literal(
+                            self._enum_literal(
+                                narrowed, _value_keywords.literal_written(self, narrowed, narrowed.enum, writes=writes)
+                            )
                         )
-                    )
-                else:  # pragma: no cover
-                    data_type = self.parse_enum(name, obj, path)
+                    case _:  # pragma: no cover
+                        data_type = self.parse_enum(name, obj, path)
             case "typed-nullable-map":
                 typed_values = self._typed_nullable_map_value_schema(obj)
                 reference = self.model_resolver.add(
@@ -7285,7 +7289,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             ):
                 constraints = constraints or {}
                 constraints.update(item_counts)
-            _value_keywords.suppress_array_length_constraints(self, constraints, obj)
+            if constraints and self._is_fixed_length_tuple(obj):
+                _value_keywords.suppress_array_length_constraints(constraints)
         records = (field_constraints and not skip) if site.records_by_option else constraints is not None
         dropped_counts = _value_keywords.dropped_property_counts(self, obj, data_type)
         return _AssembledConstraints(
@@ -7563,6 +7568,29 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and resolve_null_facts(_type_null_sources(obj, enum=exact), "enum-as-const").rule
             != "nullable-enum-not-const"
         )
+
+    def _enum_site_form(
+        self,
+        obj: JsonSchemaObject,
+        name: str | None,
+        *,
+        property_obj: JsonSchemaObject | None = None,
+        row: Literal["legacy-array-enum-class-only", "legacy-title-alias-literal-unread-as-const"] | None = None,
+    ) -> Literal["const", "literal", "class"]:
+        """Return the form a site writes an enum it reads in: its const, a Literal or an Enum class.
+
+        The const beside the enum first (``_reads_enum_as_const``), then ``should_parse_enum_as_literal`` with the
+        property ``name``, else the class. Row ``legacy-array-enum-class-only``: the enum beside a ``type`` list holding
+        ``array`` is never a Literal; row ``legacy-title-alias-literal-unread-as-const``: a titled alias asks for the
+        Literal without reading the enum as its const first.
+        """
+        if row != "legacy-title-alias-literal-unread-as-const" and self._reads_enum_as_const(obj):
+            return "const"
+        if row != "legacy-array-enum-class-only" and self.should_parse_enum_as_literal(
+            obj, property_name=name, property_obj=property_obj
+        ):
+            return "literal"
+        return "class"
 
     def _enum_as_const_type(self, obj: JsonSchemaObject) -> DataType:
         """Return the type of an enum read as the const beside it (``_reads_enum_as_const``): that const's type."""
@@ -9006,9 +9034,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self.parse_array(site.name, site.obj, site.path)
 
     def _definition_enum_applies(self, site: _Site) -> bool:
-        return self._reads_enum_class(site.obj) and not self.should_parse_enum_as_literal(
-            site.obj, property_name=site.name
-        )
+        return self._reads_enum(site.obj) and self._enum_site_form(site.obj, site.name) == "class"
 
     def _build_definition_enum(self, site: _Site) -> object:
         return self._parse_enum_class(site.name, self._definition_enum(site.obj), site.path)

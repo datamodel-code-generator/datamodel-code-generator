@@ -181,7 +181,7 @@ def build_lightweight_array_type(  # noqa: PLR0913, PLR0917
     The members beside ``array`` and null are their types and formats without constraints, ordered as the field of
     the schema orders them (``legacy-non-array-first``), and the union admits null where the field does.
     """
-    item_schemas, _, _, tuple_item_count = _value_keywords.get_array_item_schemas(
+    item_schemas, _, tuple_item_count = _value_keywords.get_array_item_schemas(
         parser,
         schema,
         include_true_tail_schema=True,

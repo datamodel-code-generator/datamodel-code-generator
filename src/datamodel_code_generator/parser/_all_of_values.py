@@ -264,14 +264,6 @@ class AllOfValuesHost(LightweightTypesHost, Protocol):
     ) -> DataType:
         """Parse a root-level type into a root model."""
 
-    def should_parse_enum_as_literal(
-        self,
-        obj: JsonSchemaObject,
-        property_name: str | None = None,
-        property_obj: JsonSchemaObject | None = None,
-    ) -> bool:
-        """Determine if an enum should be parsed as a literal type (``enum_as_literal``)."""
-
     def _drop_incompatible_inherited_constraints(
         self,
         child: dict[str, Any],
@@ -283,6 +275,9 @@ class AllOfValuesHost(LightweightTypesHost, Protocol):
         self, schema: JsonSchemaObject
     ) -> tuple[frozenset[str], bool, dict[str, Any], dict[str, Any]]:
         """Return what a value schema enforces: its types, null, the constraints its type takes and other keywords."""
+
+    def _enum_site_form(self, obj: JsonSchemaObject, name: str | None) -> Literal["const", "literal", "class"]:
+        """Return the form a site writes an enum it reads in: its const, a Literal or an Enum class."""
 
     def _features_at(self, at: JsonSchemaObject | SchemaLocation | None) -> JsonSchemaFeatures:
         """Return the schema features that read a schema object (``parser/jsonschema.py``)."""
@@ -341,9 +336,6 @@ class AllOfValuesHost(LightweightTypesHost, Protocol):
 
     def _parse_all_of_root_value(self, name: str, merged_root: JsonSchemaObject, path: list[str]) -> DataType:
         """Keep literal membership alongside the existing scalar or container representation."""
-
-    def _reads_enum_as_const(self, obj: JsonSchemaObject) -> bool:
-        """Return whether --use-single-value-enum-as-const reads an enum admitting the const beside it as that const."""
 
     def _ref_siblings_apply_to(
         self, schema: JsonSchemaObject, *, legacy: Literal["first-read", "parsed-document", "as-written"]
@@ -1770,7 +1762,7 @@ def merged_enum_fails(parser: AllOfValuesHost, enums: Sequence[JsonSchemaObject]
     output that writes the first enum as a ``Literal`` or as its const merges no enum class.
     """
     first = enums[0]
-    if parser.should_parse_enum_as_literal(first) or parser._reads_enum_as_const(first):  # noqa: SLF001
+    if parser._enum_site_form(first, None) != "class":  # noqa: SLF001
         return False
     enum_class = parser._get_enum_model_class(parser._get_enum_type(first), first.enum)[0]  # noqa: SLF001
     value_type = enum_value_base(enum_class, row="legacy-merged-enum-specialized-only")
