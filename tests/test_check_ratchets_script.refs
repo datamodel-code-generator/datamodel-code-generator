@@ -3,24 +3,31 @@
 [test_check_ratchets_against_base]
 added-hatch	check_ratchets_script/check_ratchets_against_base[added-hatch].txt
 ahead-base	check_ratchets_script/check_ratchets_against_base[ahead-base].txt
+allowlist-subscript-writes	check_ratchets_script/check_ratchets_against_base[allowlist-subscript-writes].txt
 allowlist-unreadable	check_ratchets_script/check_ratchets_against_base[allowlist-unreadable].txt
 any-uses	check_ratchets_script/check_ratchets_against_base[any-uses].txt
+any-values	check_ratchets_script/check_ratchets_against_base[any-values].txt
 block-style-args	check_ratchets_script/check_ratchets_against_base[block-style-args].txt
 coverage-omit-widened	check_ratchets_script/check_ratchets_against_base[coverage-omit-widened].txt
 dodges	check_ratchets_script/check_ratchets_against_base[dodges].txt
 exempt-files-listed	check_ratchets_script/check_ratchets_against_base[exempt-files-listed].txt
 explicit-preview-rules	check_ratchets_script/check_ratchets_against_base[explicit-preview-rules].txt
 extend-exclude-swapped	check_ratchets_script/check_ratchets_against_base[extend-exclude-swapped].txt
+extended-per-file-ignores	check_ratchets_script/check_ratchets_against_base[extended-per-file-ignores].txt
+fix-enabled	check_ratchets_script/check_ratchets_against_base[fix-enabled].txt
 form-swap	check_ratchets_script/check_ratchets_against_base[form-swap].txt
 hidden-by-config	check_ratchets_script/check_ratchets_against_base[hidden-by-config].txt
 hook-exclude-widened	check_ratchets_script/check_ratchets_against_base[hook-exclude-widened].txt
 moved-line	check_ratchets_script/check_ratchets_against_base[moved-line].txt	= check_ratchets_script/check_ratchets_against_base[form-swap].txt
 nested-ruff-config	check_ratchets_script/check_ratchets_against_base[nested-ruff-config].txt
 other-kinds	check_ratchets_script/check_ratchets_against_base[other-kinds].txt
+quoted-hook-id	check_ratchets_script/check_ratchets_against_base[quoted-hook-id].txt
+top-level-extended-ignores	check_ratchets_script/check_ratchets_against_base[top-level-extended-ignores].txt	= check_ratchets_script/check_ratchets_against_base[added-hatch].txt
 unchanged	check_ratchets_script/check_ratchets_against_base[unchanged].txt	= check_ratchets_script/check_ratchets_against_base[form-swap].txt
 unreadable-arguments	check_ratchets_script/check_ratchets_against_base[unreadable-arguments].txt
 unreadable-hook	check_ratchets_script/check_ratchets_against_base[unreadable-hook].txt
 weakened-counter	check_ratchets_script/check_ratchets_against_base[weakened-counter].txt
+weakened-counter-unreadable	check_ratchets_script/check_ratchets_against_base[weakened-counter-unreadable].txt
 [test_check_ratchets_counts_one_tree]
 	check_ratchets_script/check_ratchets_counts_one_tree.json.txt
 	check_ratchets_script/check_ratchets_counts_one_tree.table.txt
