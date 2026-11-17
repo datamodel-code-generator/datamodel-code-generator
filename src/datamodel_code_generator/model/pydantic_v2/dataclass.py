@@ -53,10 +53,7 @@ from datamodel_code_generator.model.pydantic_v2.base_model import (
 from datamodel_code_generator.model.pydantic_v2.base_model import (
     DataModelField as DataModelFieldV2,
 )
-from datamodel_code_generator.model.pydantic_v2.imports import (
-    IMPORT_CONFIG_DICT,
-    IMPORT_PYDANTIC_DATACLASS,
-)
+from datamodel_code_generator.model.pydantic_v2.imports import IMPORT_PYDANTIC_DATACLASS
 from datamodel_code_generator.model.pydantic_v2.version import _includes_dict_key_reference_classes, model_target_meets
 from datamodel_code_generator.python_literal import represent_python_value
 
@@ -64,7 +61,6 @@ has_field_assignment = _dataclass_module.has_field_assignment
 _MUTABLE_DEFAULT_FACTORY = Why(RuleId("D4.default.dataclass-mutable-factory"), keyword="default")
 _VISIBLE_METADATA = Why(RuleId("D11.pydantic-dataclass.visible-metadata"), option="--use-annotated")
 """The dataclass must see the call's metadata: the call follows a plain annotation instead of going into it."""
-_SAFE_CONFIG_ITEMS_TEMPLATE_DATA_KEY = "_safe_config_items"
 
 
 def _has_pydantic_dataclass_field_assignment(field: DataModelFieldBase) -> bool:
@@ -141,6 +137,9 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
     _CONFIG_ATTRIBUTES_V2_11: ClassVar[list[ConfigAttribute]] = config_attributes(
         by_name="validate_by_name", frozen=False
     )
+    _CONFIG_ITEMS_KEY: ClassVar[str] = "_safe_config_items"
+    _CONFIG_AS_CONFIG_DICT: ClassVar[bool] = False
+    _OVERWRITES_REGEX_ENGINE: ClassVar[bool] = True
 
     def __init__(  # noqa: PLR0913
         self,
@@ -196,12 +195,8 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
             config_parameters.update(config_items)
 
         if config_parameters:
-            self._additional_imports.append(IMPORT_CONFIG_DICT)
-            self.extra_template_data["config"] = config_parameters
-            self._set_internal_template_data(
-                _SAFE_CONFIG_ITEMS_TEMPLATE_DATA_KEY, config_items := self._rendered_config_items()
-            )
-            _import_rendered_alias_generator(self, config_items)
+            self._store_config(config_parameters)
+            _import_rendered_alias_generator(self, self._rendered_config_items())
 
         self._lookaround_regex_engine_checked = False
 
@@ -313,23 +308,6 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
             ),
             {},
         )
-
-    @override
-    def _select_python_regex_engine(self) -> None:
-        """Set ``regex_engine`` in the dataclass config.
-
-        Row ``legacy-dataclass-overwrites-engine``: it replaces an engine the config names, which a model keeps (#5637).
-        The dataclass gets a config of its own: the one in the template data may be shared with every model of the
-        same name (``--extra-template-data``). It reads the items of that config as a model does, so a config that is
-        no mapping adds none.
-        """
-        # Merge into any config from __init__; a duplicate ConfigDict import is deduped on render.
-        self.extra_template_data["config"] = {
-            **dict(_config_dict_items(self.extra_template_data.get("config"))),
-            "regex_engine": '"python-re"',
-        }
-        self._set_internal_template_data(_SAFE_CONFIG_ITEMS_TEMPLATE_DATA_KEY, self._rendered_config_items())
-        self._additional_imports.append(IMPORT_CONFIG_DICT)
 
     @property
     @override
