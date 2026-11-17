@@ -1858,6 +1858,7 @@ def test_identity_compares_the_output_of_runs_that_fail_alike(tmp_path: Path) ->
     assert_output("\n".join(_gate_lines(argv, tmp_path / "cells.jsonl")).replace(commits[0][:9], "<sha>") + "\n")
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")
 def test_gate_refuses_a_side_that_is_no_revision(tmp_path: Path) -> None:
     """A BASE or CANDIDATE that names no release, directory or revision stops the gate.
 
