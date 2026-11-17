@@ -20,8 +20,8 @@ from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any, Final, cast
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
-from datamodel_code_generator._client.pagination import _label, _problem  # pyright: ignore[reportPrivateUsage]
-from datamodel_code_generator._client.streams import _Streams, discriminator  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._client.pagination import _label, _problem
+from datamodel_code_generator._client.streams import _Streams, discriminator
 from datamodel_code_generator._json_pointer import join_pointer
 from datamodel_code_generator._runtime.model_codecs.media import JSON_MEDIA_TYPE
 from datamodel_code_generator._target_contract import (

@@ -57,7 +57,7 @@ class FastAPITarget:
         except PlanError as error:
             raise APIGenerationError(
                 error.diagnostics,
-                option_prefix=FastAPIConfig._option_prefix,  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+                option_prefix=FastAPIConfig._option_prefix,  # noqa: SLF001
             ) from None
         raise_selected(wire.diagnostics, (operation.contract.id for operation in plan.operations))
         _check_links(plan, request)

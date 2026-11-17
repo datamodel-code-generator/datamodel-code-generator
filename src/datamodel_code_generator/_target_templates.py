@@ -79,7 +79,7 @@ class TemplateOverlay:
         A relative directory resolves against the caller's working directory, as for the models, and overrides receive
         the `#all#` extra template data, as custom model templates do.
         """
-        from datamodel_code_generator import _absolute_generation_path  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
+        from datamodel_code_generator import _absolute_generation_path  # noqa: PLC0415
 
         if (directory := _absolute_generation_path(model_config.custom_template_dir, cwd)) is None:
             return None
@@ -93,7 +93,7 @@ class TemplateOverlay:
         from jinja2 import ChoiceLoader, FileSystemLoader  # noqa: PLC0415
 
         from datamodel_code_generator.model.base import (  # noqa: PLC0415
-            _build_environment,  # pyright: ignore[reportPrivateUsage]
+            _build_environment,
         )
 
         loader = ChoiceLoader([FileSystemLoader(str(self.directory)), FileSystemLoader(str(self.BUILTIN))])

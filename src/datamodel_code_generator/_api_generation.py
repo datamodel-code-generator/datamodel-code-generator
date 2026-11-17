@@ -40,7 +40,7 @@ from datamodel_code_generator._paths import (
 )
 from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._target_config import (
-    _diagnostic,  # pyright: ignore[reportPrivateUsage]
+    _diagnostic,
     config_error,
 )
 from datamodel_code_generator._target_documents import ROOT_URN, DocumentTable, RootInput, document_identity, shown
@@ -51,7 +51,7 @@ if TYPE_CHECKING:
     import re
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 
-    from datamodel_code_generator import _GenerationInput  # pyright: ignore[reportPrivateUsage]
+    from datamodel_code_generator import _GenerationInput
     from datamodel_code_generator._api_types import ArtifactKind, TargetKind
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._openapi_generation import ModelGenerationProduct, SourceLease
@@ -217,9 +217,9 @@ def prepare_target(
     """
     from datamodel_code_generator import (  # noqa: PLC0415
         Error,
-        _check_facade_outputs,  # pyright: ignore[reportPrivateUsage]
-        _resolve_run_options,  # pyright: ignore[reportPrivateUsage]
-        _warn_facade_dependencies,  # pyright: ignore[reportPrivateUsage]
+        _check_facade_outputs,
+        _resolve_run_options,
+        _warn_facade_dependencies,
     )
     from datamodel_code_generator._target_render import PYDANTIC_TARGET_MINIMUM  # noqa: PLC0415
     from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
@@ -319,7 +319,7 @@ def python_problem(config: Any, kind: str) -> str | None:
     message = f"The {kind} target needs a target Python version of {_PYTHON_MINIMUM_TEXT} or later"
     if config.preset is None:
         return message
-    from datamodel_code_generator.preset import _coerce_preset_name  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
+    from datamodel_code_generator.preset import _coerce_preset_name  # noqa: PLC0415
 
     name = _coerce_preset_name(config.preset).value
     return f"{message}, which the preset {name} sets to {version.value}: use a preset for Python 3.11 or later"
@@ -383,8 +383,8 @@ def _remote_lock(
 ) -> tuple[GenerateConfig, RemoteReferenceLock | None]:
     """Resolve the remote lock of the models; an update must not overlap the package, as it must not the models."""
     from datamodel_code_generator import (  # noqa: PLC0415
-        _prepare_atomic_generation_remote_lock,  # pyright: ignore[reportPrivateUsage]
-        _resolve_generation_remote_lock,  # pyright: ignore[reportPrivateUsage]
+        _prepare_atomic_generation_remote_lock,
+        _resolve_generation_remote_lock,
     )
     from datamodel_code_generator._lock_plan import owns_lock_update  # noqa: PLC0415
 
@@ -394,7 +394,7 @@ def _remote_lock(
         if any(overlaps(lockfile, root) for root in (package, package.resolve())):
             from datamodel_code_generator import Error  # noqa: PLC0415
 
-            label = (target._option_prefix or "target").capitalize()  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+            label = (target._option_prefix or "target").capitalize()  # noqa: SLF001
             msg = f"{label} output and Remote lock paths must not overlap: {package}"
             raise Error(msg)
         return config, lock
@@ -430,13 +430,13 @@ def _generate_models(  # noqa: PLR0913
     compares: bool = False,
 ) -> _Models:
     from datamodel_code_generator import (  # noqa: PLC0415
-        _absolute_generation_path,  # pyright: ignore[reportPrivateUsage]
-        _default_input_filename,  # pyright: ignore[reportPrivateUsage]
-        _output_context_path,  # pyright: ignore[reportPrivateUsage]
-        _read_custom_file_header,  # pyright: ignore[reportPrivateUsage]
-        _refuse_output_layout,  # pyright: ignore[reportPrivateUsage]
-        _run_generation,  # pyright: ignore[reportPrivateUsage]
-        _settings_path_from,  # pyright: ignore[reportPrivateUsage]
+        _absolute_generation_path,
+        _default_input_filename,
+        _output_context_path,
+        _read_custom_file_header,
+        _refuse_output_layout,
+        _run_generation,
+        _settings_path_from,
     )
     from datamodel_code_generator._openapi_generation import TargetGenerationSession  # noqa: PLC0415
     from datamodel_code_generator._publication import (  # noqa: PLC0415
@@ -467,15 +467,15 @@ def _generate_models(  # noqa: PLR0913
                 _staging(stack, metadata, cwd), metadata, STAGED_METADATA_NAME, make_directory=False
             )
         staged = prepared.model_copy(update=updates)
-        staged._logical_output = output  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
-        staged._logical_model_metadata = prepared.emit_model_metadata  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+        staged._logical_output = output  # noqa: SLF001
+        staged._logical_model_metadata = prepared.emit_model_metadata  # noqa: SLF001
         if lock is not None or not staged.remote_lock_resolved:
             staged.resolve_remote_lock(lock)
         session = TargetGenerationSession(
             output=output,
             model_package=target.model_package,
             root_selector_document=source.identity,
-            serves_source=target._serves_source,  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+            serves_source=target._serves_source,  # noqa: SLF001
         )
         try:
             _run_generation(input_, staged, cwd, use_output_cwd=use_output_cwd, capture=session)
@@ -850,10 +850,10 @@ class _Planner:
         is checked against the encoding of its file before any is encoded, as model files are before any is written.
         """
         from datamodel_code_generator import (  # noqa: PLC0415
-            _build_file_header_parts,  # pyright: ignore[reportPrivateUsage]
-            _build_module_content,  # pyright: ignore[reportPrivateUsage]
-            _ensure_output_text_encodable,  # pyright: ignore[reportPrivateUsage]
-            _format_file_header,  # pyright: ignore[reportPrivateUsage]
+            _build_file_header_parts,
+            _build_module_content,
+            _ensure_output_text_encodable,
+            _format_file_header,
         )
         from datamodel_code_generator._target_format import TargetCodeFormatter  # noqa: PLC0415
         from datamodel_code_generator.format import _model_formatter_arguments  # noqa: PLC0415
@@ -1009,8 +1009,8 @@ def _stage(target: PlannedTarget, artifacts: Iterable[GeneratedArtifact], stack:
         publication_anchor,
     )
     from datamodel_code_generator.remote_lock import (  # noqa: PLC0415
-        _open_lock_staging,  # pyright: ignore[reportPrivateUsage]
-        _staged_lock,  # pyright: ignore[reportPrivateUsage]
+        _open_lock_staging,
+        _staged_lock,
     )
 
     cwd = target.cwd
@@ -1122,7 +1122,7 @@ def _quietly(cleanup: Callable[[], None]) -> None:
 def _run_models(
     input_: _GenerationInput, effective: GenerateConfig, config: TargetConfig, *, compares: bool = False
 ) -> _Models:
-    from datamodel_code_generator import _uses_legacy_process_state  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
+    from datamodel_code_generator import _uses_legacy_process_state  # noqa: PLC0415
     from datamodel_code_generator._process_state import PROCESS_STATE_LOCK  # noqa: PLC0415
 
     if _uses_legacy_process_state(effective):

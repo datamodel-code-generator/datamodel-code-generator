@@ -31,7 +31,7 @@ from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.parser.schema_version import configured_version
 from datamodel_code_generator.python_literal import _converted_float, stable_repr
 from datamodel_code_generator.util import (
-    _collecting_watch_dependencies,  # pyright: ignore[reportPrivateUsage]
+    _collecting_watch_dependencies,
     record_watch_dependency,
 )
 

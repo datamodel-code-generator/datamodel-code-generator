@@ -132,11 +132,11 @@ def _run(  # noqa: PLR0913, PLR0917
     announce: bool,
 ) -> int:
     from datamodel_code_generator.__main__ import (  # noqa: PLC0415
-        _publish_or_error,  # pyright: ignore[reportPrivateUsage]
-        _single_job_plan,  # pyright: ignore[reportPrivateUsage]
-        _stage_job_plans,  # pyright: ignore[reportPrivateUsage]
-        _target_settings,  # pyright: ignore[reportPrivateUsage, reportUnknownVariableType]
-        _write_comparison_output,  # pyright: ignore[reportPrivateUsage]
+        _publish_or_error,
+        _single_job_plan,
+        _stage_job_plans,
+        _target_settings,
+        _write_comparison_output,
     )
     from datamodel_code_generator._api_generation import (  # noqa: PLC0415
         implied_conflict,
@@ -363,7 +363,7 @@ def _compare_target(
     from datamodel_code_generator.__main__ import (  # noqa: PLC0415
         OutputComparison,
         OutputComparisonOptions,
-        _compare_generated_outputs,  # pyright: ignore[reportPrivateUsage]
+        _compare_generated_outputs,
     )
     from datamodel_code_generator._api_generation import file_encoding  # noqa: PLC0415
 

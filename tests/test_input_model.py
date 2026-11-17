@@ -2133,7 +2133,7 @@ def test_full_type_name_string_annotation() -> None:
     """Test _full_type_name with string annotation."""
     from datamodel_code_generator.input_model import _full_type_name
 
-    result = _full_type_name("SomeType")  # pyright: ignore[reportArgumentType]
+    result = _full_type_name("SomeType")
     assert result == "SomeType"
 
 
@@ -2144,7 +2144,7 @@ def test_full_type_name_forward_ref() -> None:
     from datamodel_code_generator.input_model import _full_type_name
 
     ref = ForwardRef("MyClass")
-    result = _full_type_name(ref)  # pyright: ignore[reportArgumentType]
+    result = _full_type_name(ref)
     assert result == "MyClass"
 
 
@@ -2155,7 +2155,7 @@ def test_full_type_name_generic_no_args() -> None:
     # Create a GenericAlias with origin=list but args=() - hits line 365
     # list.__class_getitem__(()) creates list[()] which has origin but no args
     generic_with_no_args = list.__class_getitem__(())
-    result = _full_type_name(generic_with_no_args)  # pyright: ignore[reportArgumentType]
+    result = _full_type_name(generic_with_no_args)
     assert result == "list"
 
 
@@ -2165,7 +2165,7 @@ def test_full_type_name_typing_special() -> None:
 
     from datamodel_code_generator.input_model import _full_type_name
 
-    result = _full_type_name(Any)  # pyright: ignore[reportArgumentType]
+    result = _full_type_name(Any)
     assert result == "Any"
 
 
@@ -2213,7 +2213,7 @@ def test_full_type_name_collections_abc_type() -> None:
     from datamodel_code_generator.input_model import _full_type_name
 
     # Iterable is from collections.abc
-    result = _full_type_name(Iterable)  # pyright: ignore[reportArgumentType]
+    result = _full_type_name(Iterable)
     assert result == "Iterable"
 
 

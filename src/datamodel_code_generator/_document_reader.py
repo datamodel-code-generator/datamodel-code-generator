@@ -96,7 +96,7 @@ def _array_item(value: list[YamlValue], token: str) -> YamlValue:
 
 def as_mapping(value: object) -> dict[str, YamlValue]:
     """Return a loaded value that is a mapping, or an empty mapping for any other value."""
-    return value if isinstance(value, dict) else {}  # pyright: ignore[reportUnknownVariableType]
+    return value if isinstance(value, dict) else {}
 
 
 def member_key(value: YamlValue, token: str) -> str | int:
