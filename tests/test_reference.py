@@ -298,6 +298,23 @@ def test_resolve_ref_with_relative_root_id_and_base_url() -> None:
     assert result == "http://localhost:8888/schemas/v1/sub.schema.json#"
 
 
+def test_current_base_path_context_without_a_path_resolves_from_the_base_path(tmp_path: Path) -> None:
+    """Resolve from the base path inside a context entered with no path, and restore the outer path on exit."""
+    nested = tmp_path / "nested"
+    nested.mkdir()
+    (tmp_path / "shared.json").touch()
+    (nested / "shared.json").touch()
+
+    resolver = ModelResolver(base_path=tmp_path)
+    with resolver.current_base_path_context(nested):
+        assert resolver.resolve_ref("shared.json#/$defs/A") == "nested/shared.json#/$defs/A"
+        with resolver.current_base_path_context(None):
+            assert resolver.current_base_path is None
+            assert resolver.resolve_ref("shared.json#/$defs/A") == "shared.json#/$defs/A"
+        assert resolver.current_base_path == nested
+        assert resolver.resolve_ref("shared.json#/$defs/A") == "nested/shared.json#/$defs/A"
+
+
 def test_resolve_ref_caches_local_file_parts_by_base_path(tmp_path: Path) -> None:
     """Keep fragment handling separate while caching each local file path per base path."""
     first_base_path = tmp_path / "first"
