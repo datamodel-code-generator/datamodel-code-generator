@@ -2513,13 +2513,7 @@ def hides_named_type(
         model.field_binds_class_attribute(field)
         or (
             (inherited := get_inherited_constructor_info(parser, model)) is not None
-            and get_constructor_field_adjustment(
-                model,
-                field,
-                inherited,
-                supports_inherited_override=model.SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT,
-            )
-            is not None
+            and get_constructor_field_adjustment(field, inherited) is not None
         )
         or (
             parser.use_annotated

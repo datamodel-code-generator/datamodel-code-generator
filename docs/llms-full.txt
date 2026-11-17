@@ -95691,6 +95691,7 @@ is a new named row, never an anonymous `if`.
 | `legacy-replaced-root-shares-path` | a collapsed root and its inner model name each other | GR11 |
 | `legacy-nested-factory-at-read` | the assignment is read with the nested factories it has then, before L6 records the recursive paths | PH2 |
 | `legacy-nested-factory-order-before-nullability` | a Pydantic dataclass under `--strip-default-none` keeps the required-fields answer of the first read | PH2 |
+| `legacy-warning-reads-parsed-bases` | the Pydantic 2.13 signature warning and the keyword-only fix of the msgspec structs that opted out of a tag read a model's bases as listed after `--type-overrides` replaced some, so a replaced base counts no fields, where constructor ordering reads the generated model it stood for (`constructor_base_models`) | G4-6 |
 | `legacy.L-NF` | the import snapshot reads fields as if the nested factory were written | PH2 |
 | `legacy-stdlib-annotated` | a stdlib dataclass `field(...)` under `--use-annotated` counts as unassigned | DC12 |
 | `legacy-collapse-internal-module-import` | a model of an `_internal` module that a type inlined into a module names (collapsed root types, dict keys typed by root types) is named through the `_internal` module, which the module imports (`field_internal.Pet`), where the module's own types import the model from it | keep |
