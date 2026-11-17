@@ -89,7 +89,6 @@ __all__ = [
     "declared_pattern_rejects_value",
     "field_alias_generator_input_name",
     "field_input_names",
-    "first_schema_additional_properties",
     "get_common_executable_unique_items_paths",
     "get_conditional_schema",
     "get_executable_unique_items_paths",
@@ -118,6 +117,7 @@ __all__ = [
     "plain_pattern_object",
     "plain_pattern_value_type",
     "required_group_input_names",
+    "rule_rejects_pattern",
     "schema_item_may_accept_container",
     "schema_literal_values",
     "schema_may_accept_container",
@@ -1270,32 +1270,24 @@ def add_unique_items_validator(  # noqa: PLR0913
     runtime_validation.replace_unique_items = replace_inherited_rules
 
 
-def first_schema_additional_properties(
+def pattern_rule_additional_properties(
     parser: SchemaValidatorsHost, obj: JsonSchemaObject
-) -> tuple[int, JsonSchemaObject, JsonSchemaObject] | None:
-    """Return the index, schema and value of the first schema-valued additionalProperties of ``obj``.
+) -> tuple[int, JsonSchemaObject, JsonSchemaObject] | Literal[False] | None:
+    """Return what the patternProperties rules of ``obj`` do with the keys no pattern matches.
 
-    It is read from ``obj`` and then its allOf sources (``_iter_schema_validation_sources``).
+    They type them by the first schema-valued additionalProperties of ``obj`` and then its allOf sources
+    (``_iter_schema_validation_sources``) as ``(index, source, value)``; ``False`` where that value is false written as
+    an allOf (``_is_false_all_of``): the rules forbid the keys; None where no source has one: the keys stay open.
     """
     for index, source in enumerate(parser._iter_schema_validation_sources(obj)):
         if isinstance(additional_properties := source.additionalProperties, JsonSchemaObject):
-            return index, source, additional_properties
+            return False if _is_false_all_of(additional_properties) else (index, source, additional_properties)
     return None
 
 
-def pattern_rule_additional_properties(
-    parser: SchemaValidatorsHost, obj: JsonSchemaObject
-) -> tuple[int, JsonSchemaObject, JsonSchemaObject] | None:
-    """Return the index, schema and value of the additionalProperties the patternProperties rules of ``obj`` type.
-
-    They are the first schema-valued additionalProperties (``_first_schema_additional_properties``), except one
-    that is ``false`` written as an allOf (``_is_false_all_of``): the rules forbid the keys it covers instead.
-    """
-    if (additional_property := first_schema_additional_properties(parser, obj)) is None or _is_false_all_of(
-        additional_property[2]
-    ):
-        return None
-    return additional_property
+def rule_rejects_pattern(value: object) -> bool:
+    """Return whether the patternProperties rules reject the keys of a pattern instead of typing its value."""
+    return value is False or _is_false_all_of(value)
 
 
 def plain_pattern_value_type(
@@ -1342,7 +1334,7 @@ def declared_pattern_rejects_value(cls: type[SchemaValidatorsHost], declared: ob
     """Prove a skipped pattern rejects some value accepted by a simple declared field."""
     declared_type = plain_pattern_value_type(cls, declared)
     if declared_type is not None:
-        if pattern is False or _is_false_all_of(pattern):
+        if rule_rejects_pattern(pattern):
             return True
         return (
             declared_type == "integer"
@@ -1739,7 +1731,7 @@ def collect_pattern_property_validators(
             match schema:
                 case True:
                     pattern_value_types.append((pattern, parser.data_type_manager.get_data_type(Types.any)))
-                case JsonSchemaObject() if not _is_false_all_of(schema):
+                case JsonSchemaObject() if not rule_rejects_pattern(schema):
                     if schema is parser._root_pattern_string_constraints:
                         value_type = parser.data_type_manager.get_data_type(
                             Types.string,
@@ -1758,12 +1750,11 @@ def collect_pattern_property_validators(
 
     if not pattern_value_types and not rejected_patterns:
         return pattern_value_types, rejected_patterns, None, allow_unmatched
-    if (additional_property := first_schema_additional_properties(parser, obj)) is None:
+    if (rule := pattern_rule_additional_properties(parser, obj)) is None:
         return pattern_value_types, rejected_patterns, None, allow_unmatched
-
-    source_index, source, additional_properties = additional_property
-    if _is_false_all_of(additional_properties):
+    if rule is False:
         return pattern_value_types, rejected_patterns, None, False
+    source_index, source, additional_properties = rule
     additional_property_name = composed_name(name, "additional-property")
     additional_property_type = parser._parse_additional_properties_value(
         additional_property_name,
