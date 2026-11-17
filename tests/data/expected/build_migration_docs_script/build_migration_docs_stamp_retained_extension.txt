@@ -1,0 +1,357 @@
+exits 1, 0
+Invalid migration data:
+- unreleased/more-new-flag-outputs.toml extends new-flag, which the tag contains; its release moves or deletes new-flag
+--- changes/0.2.0.toml ---
+
+[[change]]
+id = "specialized-enum-default"
+kind = "default-output"
+action = "keep"
+title = "String enums become `StrEnum`"
+summary = "Enums of strings subclass `StrEnum` instead of `Enum`."
+affects = { input_file_types = ["openapi", "jsonschema"] }
+before = "class Status(Enum):"
+after = "class Status(StrEnum):"
+keep = { flags = ["--no-use-specialized-enum"] }
+refs = ["#2512"]
+source = "release-note"
+
+[[change]]
+id = "union-item-suffix-removed"
+kind = "default-output"
+action = "review"
+title = "Models of `anyOf` members lose the `Item` suffix"
+summary = "Models of `anyOf` and `oneOf` members no longer end in `Item`."
+keep = { note = "No option restores the old names; `--model-name-map` can pin individual names." }
+refs = ["#1682"]
+source = "release-note"
+
+[[change]]
+id = "python-37-runtime-dropped"
+kind = "runtime"
+action = "required"
+title = "datamodel-code-generator no longer runs on Python 3.7"
+summary = "Install and run the generator on Python 3.8 or newer."
+migrate = "Use Python 3.8 or newer."
+refs = ["#2060"]
+source = "release-note"
+--- changes/0.3.0.toml ---
+
+[[change]]
+id = "aware-datetime"
+kind = "default-output"
+action = "keep"
+title = "`format: date-time` becomes `AwareDatetime`"
+summary = "A timestamp without a UTC offset is rejected."
+affects = { output_model_types = ["pydantic_v2.BaseModel"] }
+keep = { flags = ["--output-datetime-class", "datetime"] }
+refs = ["#1735"]
+source = "release-note"
+
+[[change]]
+id = "annotated-constraints"
+kind = "default-output"
+action = "keep"
+title = "Constraints move into `Annotated`"
+summary = "With `--use-annotated`, constraints are written in `Annotated`."
+affects = { options = ["--use-annotated"] }
+keep = { flags = ["--field-constraints"] }
+refs = ["#3001"]
+source = "release-note"
+
+[[change]]
+id = "dynamic-models-unformatted"
+kind = "python-api"
+action = "keep"
+title = "`generate_dynamic_models()` no longer formats the code it builds"
+summary = "It skips Black and isort unless formatters are selected."
+affects = { python_api = ["generate_dynamic_models"] }
+keep = { note = "Pass `formatters=[Formatter.BLACK, Formatter.ISORT]` in the config." }
+refs = ["#6750"]
+source = "release-note"
+
+[[change]]
+id = "class-docstrings"
+kind = "output-text"
+action = "none"
+title = "Class docstrings are wrapped"
+summary = "Long class docstrings are wrapped at the line length."
+refs = ["#3002"]
+source = "release-note"
+
+[[change]]
+id = "python-38-runtime-dropped"
+kind = "runtime"
+action = "required"
+title = "datamodel-code-generator no longer runs on Python 3.8"
+summary = "Install and run the generator on Python 3.9 or newer."
+migrate = "Use Python 3.9 or newer."
+supersedes = ["python-37-runtime-dropped"]
+refs = ["#3003"]
+source = "release-note"
+--- changes/0.4.0.toml ---
+
+[[change]]
+id = "removal:cli.validation"
+title = "`--validation` is removed"
+
+[[change]]
+id = "docstrings-unwrapped"
+kind = "output-text"
+action = "none"
+title = "Class docstrings are no longer wrapped"
+summary = "The wrapping of 0.3.0 is undone."
+reverts = "class-docstrings"
+refs = ["#4001"]
+source = "release-note"
+
+[[change]]
+id = "refuse-empty-enum"
+kind = "error"
+action = "required"
+title = "An empty `enum` is refused"
+summary = "A schema with `enum: []` fails with an error instead of generating an empty enum."
+migrate = "Drop the empty `enum` keyword."
+refs = ["#4002"]
+source = "release-note"
+--- derived.toml ---
+[presets]
+"20260101" = "0.2.0"
+"20260201" = "0.3.0"
+
+[options]
+"--released-flag" = "0.3.0"
+--- releases.toml ---
+
+[[release]]
+version = "0.1.0"
+date = "2026-01-01"
+
+[[release]]
+version = "0.2.0"
+date = "2026-02-01"
+
+[[release]]
+version = "0.3.0"
+date = "2026-03-01"
+
+[[release]]
+version = "0.4.0"
+date = "2026-04-01"
+--- surface.json ---
+{"options": {"--old-flag": {"aliases": [], "choices": null}, "--output-model-type": {"aliases": [], "choices": ["a", "b"]}, "--preset": {"aliases": [], "choices": ["p1"]}}, "python_api": ["generate"], "generate_config": ["output"], "templates": ["Kept.jinja2", "Old.jinja2"]}--- unreleased/commented-header.toml ---
+
+[[change]] # kept as written
+id = "commented-header"
+category = "decided-change"
+kind = "template"
+action = "required"
+title = "Custom templates receive `fields` instead of `model_fields`"
+summary = "Templates of `--custom-template-dir` read the fields as `fields`."
+affects = { templates = ["pydantic_v2/BaseModel.jinja2", "Old.jinja2"] }
+keep = { note = "No option keeps `model_fields`." }
+migrate = "Rename `model_fields` to `fields` in your templates."
+refs = ["#5001"]
+decision = ["#5000"]
+source = "release-note"
+--- unreleased/custom-template-root.toml ---
+
+[[change]]
+id = "custom-template-root"
+category = "decided-change"
+kind = "template"
+action = "required"
+title = "Custom templates receive `fields` instead of `model_fields`"
+summary = "Templates of `--custom-template-dir` read the fields as `fields`."
+affects = { templates = ["pydantic_v2/BaseModel.jinja2", "Old.jinja2"] }
+keep = { note = "No option keeps `model_fields`." }
+migrate = "Rename `model_fields` to `fields` in your templates."
+refs = ["#5001"]
+decision = ["#5000"]
+source = "release-note"
+--- unreleased/more-new-flag-outputs.toml ---
+
+[[change]]
+id = "more-new-flag-outputs"
+extends = "new-flag"
+refs = ["#5003"]
+--- unreleased/new-flag.toml ---
+
+[[change]]
+id = "new-flag"
+category = "new-surface"
+title = "Add --new-flag and the 20260301 presets"
+surface = ["--new-flag", "--output-model-type c", "preset:20260301"]
+covers = [
+    "main/help/new_flag.txt",
+]
+--- unreleased/old-flag-removed.toml ---
+
+[[change]]
+id = "old-flag-removed"
+category = "api"
+kind = "removal"
+action = "required"
+title = "`--old-flag` is removed"
+summary = "The option did nothing since 0.3.0."
+affects = { options = ["--old-flag"] }
+migrate = "Drop `--old-flag`."
+refs = ["#5002"]
+decision = ["#5000"]
+source = "release-note"
+--- 0.2.0.toml ---
+
+[[change]]
+id = "specialized-enum-default"
+kind = "default-output"
+action = "keep"
+title = "String enums become `StrEnum`"
+summary = "Enums of strings subclass `StrEnum` instead of `Enum`."
+affects = { input_file_types = ["openapi", "jsonschema"] }
+before = "class Status(Enum):"
+after = "class Status(StrEnum):"
+keep = { flags = ["--no-use-specialized-enum"] }
+refs = ["#2512"]
+source = "release-note"
+
+[[change]]
+id = "union-item-suffix-removed"
+kind = "default-output"
+action = "review"
+title = "Models of `anyOf` members lose the `Item` suffix"
+summary = "Models of `anyOf` and `oneOf` members no longer end in `Item`."
+keep = { note = "No option restores the old names; `--model-name-map` can pin individual names." }
+refs = ["#1682"]
+source = "release-note"
+
+[[change]]
+id = "python-37-runtime-dropped"
+kind = "runtime"
+action = "required"
+title = "datamodel-code-generator no longer runs on Python 3.7"
+summary = "Install and run the generator on Python 3.8 or newer."
+migrate = "Use Python 3.8 or newer."
+refs = ["#2060"]
+source = "release-note"
+--- 0.3.0.toml ---
+
+[[change]]
+id = "aware-datetime"
+kind = "default-output"
+action = "keep"
+title = "`format: date-time` becomes `AwareDatetime`"
+summary = "A timestamp without a UTC offset is rejected."
+affects = { output_model_types = ["pydantic_v2.BaseModel"] }
+keep = { flags = ["--output-datetime-class", "datetime"] }
+refs = ["#1735"]
+source = "release-note"
+
+[[change]]
+id = "annotated-constraints"
+kind = "default-output"
+action = "keep"
+title = "Constraints move into `Annotated`"
+summary = "With `--use-annotated`, constraints are written in `Annotated`."
+affects = { options = ["--use-annotated"] }
+keep = { flags = ["--field-constraints"] }
+refs = ["#3001"]
+source = "release-note"
+
+[[change]]
+id = "dynamic-models-unformatted"
+kind = "python-api"
+action = "keep"
+title = "`generate_dynamic_models()` no longer formats the code it builds"
+summary = "It skips Black and isort unless formatters are selected."
+affects = { python_api = ["generate_dynamic_models"] }
+keep = { note = "Pass `formatters=[Formatter.BLACK, Formatter.ISORT]` in the config." }
+refs = ["#6750"]
+source = "release-note"
+
+[[change]]
+id = "class-docstrings"
+kind = "output-text"
+action = "none"
+title = "Class docstrings are wrapped"
+summary = "Long class docstrings are wrapped at the line length."
+refs = ["#3002"]
+source = "release-note"
+
+[[change]]
+id = "python-38-runtime-dropped"
+kind = "runtime"
+action = "required"
+title = "datamodel-code-generator no longer runs on Python 3.8"
+summary = "Install and run the generator on Python 3.9 or newer."
+migrate = "Use Python 3.9 or newer."
+supersedes = ["python-37-runtime-dropped"]
+refs = ["#3003"]
+source = "release-note"
+--- 0.4.0.toml ---
+
+[[change]]
+id = "removal:cli.validation"
+title = "`--validation` is removed"
+
+[[change]]
+id = "docstrings-unwrapped"
+kind = "output-text"
+action = "none"
+title = "Class docstrings are no longer wrapped"
+summary = "The wrapping of 0.3.0 is undone."
+reverts = "class-docstrings"
+refs = ["#4001"]
+source = "release-note"
+
+[[change]]
+id = "refuse-empty-enum"
+kind = "error"
+action = "required"
+title = "An empty `enum` is refused"
+summary = "A schema with `enum: []` fails with an error instead of generating an empty enum."
+migrate = "Drop the empty `enum` keyword."
+refs = ["#4002"]
+source = "release-note"
+--- 0.5.0.toml ---
+# The changes of 0.5.0, moved from docs/data/migration/unreleased/ when the release was stamped.
+
+[[change]] # kept as written
+id = "commented-header"
+category = "decided-change"
+kind = "template"
+action = "required"
+title = "Custom templates receive `fields` instead of `model_fields`"
+summary = "Templates of `--custom-template-dir` read the fields as `fields`."
+affects = { templates = ["pydantic_v2/BaseModel.jinja2", "Old.jinja2"] }
+keep = { note = "No option keeps `model_fields`." }
+migrate = "Rename `model_fields` to `fields` in your templates."
+refs = ["#5001"]
+decision = ["#5000"]
+source = "release-note"
+
+[[change]]
+id = "custom-template-root"
+category = "decided-change"
+kind = "template"
+action = "required"
+title = "Custom templates receive `fields` instead of `model_fields`"
+summary = "Templates of `--custom-template-dir` read the fields as `fields`."
+affects = { templates = ["pydantic_v2/BaseModel.jinja2", "Old.jinja2"] }
+keep = { note = "No option keeps `model_fields`." }
+migrate = "Rename `model_fields` to `fields` in your templates."
+refs = ["#5001"]
+decision = ["#5000"]
+source = "release-note"
+
+[[change]]
+id = "old-flag-removed"
+category = "api"
+kind = "removal"
+action = "required"
+title = "`--old-flag` is removed"
+summary = "The option did nothing since 0.3.0."
+affects = { options = ["--old-flag"] }
+migrate = "Drop `--old-flag`."
+refs = ["#5002"]
+decision = ["#5000"]
+source = "release-note"
