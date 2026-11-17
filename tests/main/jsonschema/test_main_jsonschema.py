@@ -24302,6 +24302,22 @@ def test_main_jsonschema_collapse_root_models_empty_union(output_file: Path) -> 
     )
 
 
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "typing.TypedDict"])
+def test_main_jsonschema_collapse_root_models_rule_categories(output_file: Path, output_model_type: str) -> None:
+    """Inline one root model into every field of the objects that merge the categories naming it (#7015).
+
+    Like ESLint's configuration schema: rule categories name the root model ``rule`` from each property, and two
+    ``rules`` objects merge every category with ``allOf``. Each field of the categories takes the inlined union, which
+    the ``rules`` model inherits.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_rule_categories.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--collapse-root-models", "--output-model-type", output_model_type],
+    )
+
+
 @pytest.mark.parametrize(
     "output_model_type",
     [
