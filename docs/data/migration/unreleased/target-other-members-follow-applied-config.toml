@@ -8,5 +8,5 @@ summary = "Whether a form body, a client's form or query object parameter, or a 
 affects = { experimental = ["cli-option.generate-client", "cli-option.generate-server"] }
 before = "form=MultipartForm(members=True, parts=(PartPlan(\"first-name\", \"string\"),), additional=PartPlan(\"\", \"json\")),"
 after = "form=MultipartForm(members=True),"
-refs = ["#99903"]
+refs = ["#7038"]
 source = "release-note"
