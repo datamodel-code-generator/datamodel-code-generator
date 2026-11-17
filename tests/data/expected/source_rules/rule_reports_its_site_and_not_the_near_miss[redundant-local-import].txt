@@ -1,0 +1,9 @@
+exit: 0
+src/datamodel_code_generator/app.py:29: redundant-local-import: datamodel_code_generator.versioned
+src/datamodel_code_generator/app.py:30: redundant-local-import: datamodel_code_generator.legacy
+src/datamodel_code_generator/app.py:35: redundant-local-import: datamodel_code_generator.helpers
+src/datamodel_code_generator/app.py:36: redundant-local-import: datamodel_code_generator.config
+src/datamodel_code_generator/app.py:37: redundant-local-import: datamodel_code_generator.config, datamodel_code_generator.helpers
+
+rule counts:
+  redundant-local-import: 5 (ratchet); fix: import at module level: the importer already loads these modules there (outside any `if` but a `sys.version_info` test), so the local import defers nothing

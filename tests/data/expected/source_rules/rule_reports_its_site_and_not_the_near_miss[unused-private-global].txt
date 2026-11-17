@@ -1,0 +1,11 @@
+exit: 1
+src/datamodel_code_generator/constants.py:1: unused-private-global: _UNUSED
+src/datamodel_code_generator/constants.py:3: unused-private-global: _ELSEWHERE
+src/datamodel_code_generator/constants.py:4: unused-private-global: _TYPED
+src/datamodel_code_generator/constants.py:7: unused-private-global: _SHARED
+src/datamodel_code_generator/constants.py:9: unused-private-global: _STORED
+src/datamodel_code_generator/constants.py:9: unused-private-global: _FOREIGN
+src/datamodel_code_generator/constants.py:9: unused-private-global: _CALLED
+
+rule counts:
+  unused-private-global: 7 (absolute); fix: delete the unused name (a move left it behind)
