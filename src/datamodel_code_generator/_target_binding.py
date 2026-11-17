@@ -416,7 +416,6 @@ class _TargetRecording(OpenAPIParser):
         self.object_facts: dict[SchemaLocation | None, _ObjectFacts] = {}
         self.nullable_fields: dict[int, DataModelFieldBase] = {}
         self.document_facts: dict[str, tuple[tuple[str, FrozenLiteral], ...]] = {}
-        self.document_versions: dict[str, OpenAPIVersion] = {}
         super().__init__(source, config=config)
 
     def _reads_ref_siblings_at(self, location: SchemaLocation) -> bool:
@@ -577,7 +576,6 @@ class _TargetRecording(OpenAPIParser):
         self.object_facts.clear()
         self.nullable_fields.clear()
         self.document_facts.clear()
-        self.document_versions.clear()
         cast("RecordingGenerationStore", self.generation_store).redirects.clear()
 
 
@@ -712,10 +710,9 @@ class TargetApiOpenAPIParser(_TargetRecording, ApiOpenAPIParser):
         self._callback_origin = previous
 
     def _parse_specification(self, specification: dict[str, YamlValue], path_parts: list[str]) -> None:
-        """Record the OpenAPI version the parser reads each walked document by, and its info, tags and servers."""
+        """Record the info, tags and servers of each walked document."""
         key = "/".join(path_parts)
         self.document_facts[key] = _keywords(self._document_as_written(specification), _DOCUMENT_FACTS)
-        self.document_versions[key] = cast("OpenAPIVersion", self._read_dialect(specification).version)
         super()._parse_specification(specification, path_parts)
 
     @override
@@ -4399,6 +4396,10 @@ def bind_operations(
     builder.encodings()
     security_schemes = security_schemes if asyncapi else builder.security_schemes()
     documents = builder.documents
+    root = next(iter(documents.ids), "")
+    graph = parser._graph  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+    dialect = None if asyncapi else graph.known(graph.names.get(root, root)).dialect
+    version = OpenAPIVersion.V31 if dialect is None else cast("OpenAPIVersion", dialect.version)
     return BoundAttempt(
         GeneratedTypeContractBatch(
             attempt,
@@ -4411,9 +4412,7 @@ def bind_operations(
             fields,
             security_schemes,
             api_scope=True,
-            openapi=(
-                version := parser.document_versions.get(root := next(iter(documents.ids), ""), OpenAPIVersion.V31)
-            ),
+            openapi=version,
             document_versions=() if asyncapi else _own_versions(parser, documents, version),
             document_facts=parser.document_facts.get(root, ()),
             hint_type=builder.binder.hints.hint_type,
@@ -4449,12 +4448,13 @@ def _pristine(
     walks a rebased copy of a document with nested `$id` resources and keeps the loaded one beside it, and keeps a
     document as written beside the one --use-single-value-enum-as-const read.
     """
-    cache = parser._schema_resource_cache  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+    graph = parser._graph  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
     as_written = parser._document_as_written  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
-    located = {id(prepared): (location or _unnamed(parser), raw) for location, (raw, prepared) in cache.items()}
+    prepared = [(name, record) for name, record in graph.documents.items() if record.tree is not None]
+    located = {id(record.tree): (name or _unnamed(parser), record.loaded) for name, record in prepared}
     walked = [located.get(id(document), (uri or _unnamed(parser), document)) for uri, document in documents.items()]
     seen = {id(document) for _, document in walked}
-    loaded = (*walked, *((location, raw) for location, (raw, _) in cache.items() if id(raw) not in seen and location))
+    loaded = (*walked, *((name, record.loaded) for name, record in prepared if id(record.loaded) not in seen and name))
     return tuple((location, as_written(document)) for location, document in loaded)
 
 

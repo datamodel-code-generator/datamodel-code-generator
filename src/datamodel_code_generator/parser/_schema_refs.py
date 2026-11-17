@@ -62,7 +62,6 @@ from datamodel_code_generator.parser._schema_graph import (
     RefKey,
     RefReading,
     ResolvedRef,
-    SchemaGraphBuilder,
     _TargetNode,
     canonical_ref_spelling,
 )
@@ -309,10 +308,6 @@ class SchemaRefsHost(SchemaResourcesHost, Protocol):
         """Return the schema paths for definitions and defs of the document a location is in, None: the parsed one."""
 
     @property
-    def _graph(self) -> SchemaGraphBuilder:
-        """Return the schema graph of the parse."""
-
-    @property
     def _legacy_intersection(self) -> frozenset[str]:
         """The rows of ``parser/_intersection.py:LEGACY_ROWS`` kept: those of each of its options that is off."""
 
@@ -441,7 +436,7 @@ def hold_document_root(parser: SchemaRefsHost, file_part: str, role: str) -> Non
     """
     document = schema_resource_document(parser, [file_part])
     roles = parser._document_roles.setdefault(document, {})  # noqa: SLF001
-    if role not in roles and document in parser._schema_resource_cache:  # noqa: SLF001
+    if role not in roles and parser._graph.known(document).tree is not None:  # noqa: SLF001
         parser._roles_recorded_after_preparation = True  # noqa: SLF001
     roles[role] = None
 
@@ -630,7 +625,7 @@ def compute_ref_key(parser: SchemaRefsHost, ref: str, *, embedded: bool, pointer
     """
     if (mapping := parser._resolve_external_ref_mapping(ref)) is not None:  # noqa: SLF001
         return RefKey(parser.model_resolver.resolve_ref(ref), ref, mapping)
-    if embedded and parser._has_embedded_schema_resources:  # noqa: SLF001
+    if embedded and parser._schema_resource_registry.embeds:  # noqa: SLF001
         document = current_document(parser)
         ref = resolve_schema_resource_ref(
             parser,
@@ -715,11 +710,10 @@ def build_anchor_indexes(parser: SchemaRefsHost, obj: JsonSchemaObject, path: li
 def enclosing_unanchored_resource_ref(parser: SchemaRefsHost) -> str | None:
     """Return the nearest $id resource enclosing the schema being parsed, when it has no $recursiveAnchor."""
     if (
-        not parser._has_embedded_schema_resources  # noqa: SLF001
-        or (cached := parser._schema_resource_cache.get(current_dynamic_document(parser))) is None  # noqa: SLF001
+        not parser._schema_resource_registry.embeds  # noqa: SLF001
+        or (raw := parser._graph.known(current_dynamic_document(parser)).tree) is None  # noqa: SLF001
     ):
         return None
-    raw = cached[1]
     return _unanchored_resource_ref(
         raw,
         split_json_pointer(raw, parser._dynamic_scope_pointer, names=parser._pointer_slash_names),  # noqa: SLF001
@@ -829,7 +823,7 @@ def schema_location(parser: SchemaRefsHost, resolved_ref: str) -> str:
 def location_ref(parser: SchemaRefsHost, location: str) -> str:
     """Return the resolved reference of a registry location in a registered document."""
     document, _, pointer = location.partition("#")
-    path_parts = parser._schema_resource_path_parts[document]  # noqa: SLF001
+    path_parts = cast("list[str]", parser._graph.known(document).path_parts)  # noqa: SLF001
     return f"{document_key(parser, path_parts)}#{pointer}"
 
 
@@ -931,8 +925,8 @@ def dynamic_anchors_used(parser: SchemaRefsHost, resolved_ref: str) -> frozenset
 def prepared_ref_document(parser: SchemaRefsHost, file_part: str) -> tuple[str, dict[str, Any]]:
     """Return the document a resolved reference points into and its prepared schema, loading it once."""
     document = schema_resource_document(parser, _ref_path_parts(file_part))
-    if (cached := parser._schema_resource_cache.get(document)) is not None:  # noqa: SLF001
-        return document, cached[1]
+    if (tree := parser._graph.known(document).tree) is not None:  # noqa: SLF001
+        return document, tree
     with parser._ref_document_context(file_part) as prepared:  # noqa: SLF001
         return prepared
 

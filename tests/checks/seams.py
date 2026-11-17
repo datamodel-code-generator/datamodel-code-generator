@@ -79,6 +79,12 @@ SEAMS: Final = (
     ),
     Seam(f"{_PASSES}.naming", None, "name_models", "naming.name_models"),
     Seam(f"{_PACKAGE}.parser._schema_graph", "SchemaGraphBuilder", "schema", "schema_graph.schema"),
+    Seam(
+        f"{_PACKAGE}.parser._schema_documents",
+        None,
+        "prepare_schema_resources",
+        "schema_graph.prepare_schema_resources",
+    ),
     Seam(f"{_PACKAGE}.parser.openapi_scope", "ApiOpenAPIParser", "_site_facts", "schema_graph.site_facts"),
     Seam(
         f"{_PACKAGE}._site_facts",

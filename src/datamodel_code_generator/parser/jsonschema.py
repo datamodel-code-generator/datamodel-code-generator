@@ -1526,9 +1526,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return None
         location = at.schema_location if isinstance(at, JsonSchemaObject) else at
         parts = [location.document] if location is not None else list(self.model_resolver.current_root)
-        return self._document_dialects.get(
-            _schema_documents.schema_resource_document(self, parts)
-        ) or self._read_dialect(self.raw_obj)
+        document = _schema_documents.schema_resource_document(self, parts)
+        return self._graph.known(document).dialect or self._read_dialect(self.raw_obj)
 
     def _features_at(self, at: JsonSchemaObject | SchemaLocation | None) -> JsonSchemaFeatures:
         """Return the schema features that read a schema object, or the schema value at a location.
@@ -3030,12 +3029,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ``document`` names the document as reference paths do.
         """
         path_parts = _ref_path_parts(document)
-        prepared = self._schema_resource_cache.get(name := _schema_documents.schema_resource_document(self, path_parts))
+        tree = self._graph.known(name := _schema_documents.schema_resource_document(self, path_parts)).tree
         with _schema_refs.schema_document_context(self, path_parts):
-            if prepared is None:
+            if tree is None:
                 yield
                 return
-            with self.root_id_context(prepared[1]), self._document_self_context(name, prepared[1]):
+            with self.root_id_context(tree), self._document_self_context(name, tree):
                 yield
 
     def _document_self_context(  # noqa: PLR6301
@@ -3090,7 +3089,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _ref_document_context(self, file_part: str) -> Generator[tuple[str, dict[str, Any]], None, None]:
         """Enter the resolution context of the document that a resolved reference points into."""
         document = _schema_documents.schema_resource_document(self, _ref_path_parts(file_part))
-        path_parts = self._schema_resource_path_parts.get(document) or _ref_path_parts(file_part)
+        path_parts = self._graph.known(document).path_parts or _ref_path_parts(file_part)
         with _schema_documents.referenced_document_context(
             self, _schema_refs.schema_document_context(self, path_parts)
         ):
@@ -3501,7 +3500,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         bindings = (
             _schema_refs.current_dynamic_scope(self)
-            if self._has_embedded_schema_resources or self._schema_resource_registry.dynamic_anchors
+            if self._schema_resource_registry.embeds or self._schema_resource_registry.dynamic_anchors
             else None
         )
         with (
@@ -8179,20 +8178,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         self._schema_graph = graph = SchemaGraphBuilder()
         self._schema_resource_registry = graph.registry
-        self._schema_resource_document_aliases: dict[str, str] = {}
-        self._schema_resource_cache: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {}
-        self._document_dialects: dict[str, DocumentDialect] = {}
         self._referring_dialect: DocumentDialect | None = None
-        self._has_embedded_schema_resources = False
-        self._lenient_documents: dict[str, dict[str, Any]] = {}
-        self._implicit_documents: set[str] = set()
         self._document_roles: dict[str, dict[str, None]] = {}
         self._roles_recorded_after_preparation = False
         self._resource_ref_warnings: set[str] = set()
         self._unread_mapped_documents: set[str] = set()
         """The documents --external-ref-mapping maps that do not exist, read as classes without known properties."""
         self._dynamic_scope_pointer = ""
-        self._schema_resource_path_parts: dict[str, list[str]] = {}
         self._dynamic_document: str | None = None
         self._dynamic_scope_path: tuple[str, ...] = ()
         self._dynamic_bindings: dict[str, str] = {}
@@ -8649,7 +8641,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         Model roots parsed here are shared definitions, so $dynamicRef resolves without the bindings
         of any referencing schema.
         """
-        if not (self._has_embedded_schema_resources or self._schema_resource_registry.dynamic_anchors):
+        if not (self._schema_resource_registry.embeds or self._schema_resource_registry.dynamic_anchors):
             self._parse_schema_obj(name, obj, path)
             return
         with self._dynamic_scope_context(path, {}):
@@ -9136,7 +9128,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if self.current_source_path is not None:
             self.current_source_path = source.path
         path_parts = list(source.path.parts)
-        prepared = self._schema_resource_cache[_schema_documents.schema_resource_document(self, path_parts)][1]
+        document = _schema_documents.schema_resource_document(self, path_parts)
+        prepared = cast("dict[str, Any]", self._graph.known(document).tree)
         with (
             self.model_resolver.current_base_path_context(source.path.parent),
             self.model_resolver.current_root_context(path_parts),
@@ -9368,9 +9361,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if self.raw_obj is raw:
                     self.raw_obj = prepared
                 raw = prepared
-                self._schema_resource_path_parts[_schema_documents.schema_resource_document(self, path_parts)] = (
-                    path_parts
-                )
+                self._graph.record(_schema_documents.schema_resource_document(self, path_parts)).path_parts = path_parts
                 obj_name = self.model_resolver.add(
                     path,
                     obj_name,

@@ -28,6 +28,7 @@ from datamodel_code_generator._source import input_text as _input_text
 from datamodel_code_generator.parser import _schema_documents
 from datamodel_code_generator.parser._null_facts import null_schema, with_null
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+from datamodel_code_generator.parser.schema_version import configured_version
 from datamodel_code_generator.python_literal import _converted_float, stable_repr
 from datamodel_code_generator.util import (
     _collecting_watch_dependencies,  # pyright: ignore[reportPrivateUsage]
@@ -551,15 +552,15 @@ class _ProtobufDescriptorConverter:
 
     def _effective_version(self, file_descriptor: Any) -> ProtobufVersion:
         declared = self._declared_version(file_descriptor)
-        if self.protobuf_version is None or self.protobuf_version == ProtobufVersion.Auto:
+        if (configured := configured_version(self.protobuf_version, ProtobufVersion.Auto)) is None:
             return declared
-        if self.schema_version_mode == VersionMode.Strict and self.protobuf_version != declared:
+        if self.schema_version_mode == VersionMode.Strict and configured != declared:
             warn(
                 f"Protobuf file {stable_repr(file_descriptor.name)} declares {declared.value}, but --schema-version "
-                f"{self.protobuf_version.value} was requested.",
+                f"{configured.value} was requested.",
                 stacklevel=3,
             )
-        return self.protobuf_version
+        return configured
 
     @staticmethod
     def _declared_version(file_descriptor: Any) -> ProtobufVersion:

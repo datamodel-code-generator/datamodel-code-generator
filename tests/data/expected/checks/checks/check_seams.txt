@@ -18,6 +18,7 @@ datamodel_code_generator.reference:ModelResolver.refresh_reference_names <- test
 datamodel_code_generator.reference:ModelResolver.settle_yielding_names <- tests.checks.naming.recorded
 datamodel_code_generator.parser._passes.naming:name_models <- tests.checks.naming.name_models
 datamodel_code_generator.parser._schema_graph:SchemaGraphBuilder.schema <- tests.checks.schema_graph.schema
+datamodel_code_generator.parser._schema_documents:prepare_schema_resources <- tests.checks.schema_graph.prepare_schema_resources
 datamodel_code_generator.parser.openapi_scope:ApiOpenAPIParser._site_facts <- tests.checks.schema_graph.site_facts
 datamodel_code_generator._site_facts:site_facts_of <- tests.checks.schema_graph.site_facts_of
 datamodel_code_generator.parser._phases:_DecisionWriter.drop_held_null <- tests.checks.parse.drop_held_null

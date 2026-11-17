@@ -817,6 +817,14 @@ _KIND_READINGS: Final[dict[SchemaKind, _KindReading]] = {
 }
 
 
+_VersionT = TypeVar("_VersionT")
+
+
+def configured_version(configured: _VersionT | None, auto: _VersionT) -> _VersionT | None:
+    """Return the version a configuration reads every document by: None when it is unset or ``auto``."""
+    return None if configured == auto else configured
+
+
 def document_dialect(
     raw: dict[str, Any],
     kind: SchemaKind,
@@ -833,7 +841,7 @@ def document_dialect(
     its own `$schema` and the specification's own fields as the loading document does.
     """
     reading = _KIND_READINGS[kind]
-    if configured is not None and configured != reading.auto:
+    if configured_version(configured, reading.auto) is not None:
         version: Any = configured
     elif inherited is None or reading.declares(raw):
         version = reading.detect(raw) if raw else reading.auto

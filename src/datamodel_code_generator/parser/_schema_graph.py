@@ -394,7 +394,11 @@ def _document_position(raw: Any, pointer: str) -> tuple[int, ...]:
 @final
 @mutable_record(slots=True)
 class ResourceRegistry:
-    """The registry dicts L1 resolves references through, keyed by document; filled from the schema graph."""
+    """The registry dicts L1 resolves references through, keyed by document; filled from the schema graph.
+
+    ``embeds`` is whether a registered document embeds a schema resource an identifier declares; a later registration
+    of the document keeps it.
+    """
 
     locations: dict[str, str] = field(default_factory=dict)
     """Absolute URI to the location it names, over every registered document."""
@@ -412,6 +416,7 @@ class ResourceRegistry:
     (``DocumentResources.duplicate_names``)."""
     keys: dict[str, set[str]] = field(default_factory=dict)
     """The URIs each document registered, which a later registration of the document drops while they name it."""
+    embeds: bool = False
 
     def forget(self, document: str) -> None:
         """Drop what an earlier registration of a document left, before it is registered again."""
@@ -444,6 +449,7 @@ class ResourceRegistry:
         for resource, identifiers in resources.embedded.items():
             self.embedded[document, resource] = dict(identifiers)
         self.keys[document] = set(resources.names)
+        self.embeds |= resources.embeds_resources
 
     def resource_entries(self, entries: Mapping[tuple[str, str], _T], document: str, pointer: str, default: _T) -> _T:
         """Return what a map of the registry holds for the schema resource enclosing a location, else ``default``.
@@ -483,6 +489,33 @@ class SchemaGraphView(Protocol):
         """The location of every JSON object of the loaded documents, by identity."""
 
 
+@final
+@mutable_record(slots=True)
+class DocumentRecord:
+    """What the parse knows of a loaded document (L0), which ``SchemaGraphBuilder.documents`` holds by registry name.
+
+    ``path_parts`` are the root parts the document was first prepared at (``JsonSchemaParser._parse_file`` sets them
+    again); ``dialect`` is the ``DocumentDialect`` it is read by (``_schema_documents.record_document_dialect``);
+    ``loaded`` and ``tree`` are the document as the loader read it and its prepared tree, from the end of its last
+    preparation (None: no preparation ended); ``implicit`` is whether it evaluates schemas as resources without an
+    identifier, as OpenAPI component schemas, and ``lenient`` the loaded document when it also embeds resources, as it
+    then resolves references against itself; ``converted`` holds the locations of its schemas converted from another
+    format, each with those below, under the reference-path name they were converted at. The record
+    ``SchemaGraphBuilder.known`` reads for a document the parse never met is ``_NO_RECORD``, which nothing writes.
+    """
+
+    path_parts: list[str] | None = None
+    dialect: Any = None
+    loaded: dict[str, Any] | None = None
+    tree: dict[str, Any] | None = None
+    implicit: bool = False
+    lenient: dict[str, Any] | None = None
+    converted: set[SchemaLocation] = field(default_factory=set)
+
+
+_NO_RECORD: Final = DocumentRecord()
+
+
 SCHEMA_GRAPH: Final[ContextVar[SchemaGraphView | None]] = ContextVar("schema_graph", default=None)
 """The schema graph of the parse that runs, which ``Parser.parse`` sets and resets around the whole run."""
 
@@ -492,20 +525,25 @@ class SchemaGraphBuilder:
     """The schema graph of one parse, built as its documents load (L0); the parser that owns it is its only writer.
 
     The graph keeps the documents alive, so an identity in the location table stays valid for the whole parse.
+    ``documents`` holds the record of each document the parse met, by registry name, in the order it first met them;
+    ``names`` the registry name of each reference-path name (``_schema_documents.schema_resource_document``);
+    ``holds_false_all_of`` whether a document indexed so far holds a JSON object whose ``allOf`` lists ``false``: only
+    such a document gives a schema object an ``allOf`` member that is ``false``, the parser writes none.
     """
 
     __slots__ = (
-        "_converted",
         "_directories",
         "_documents",
         "_edge_keys",
-        "_false_all_of_documents",
         "_mount_containers",
         "_mount_roots",
         "_mounted",
         "_schema_reads",
         "_schemas",
+        "documents",
+        "holds_false_all_of",
         "locations",
+        "names",
         "registry",
     )
 
@@ -513,9 +551,10 @@ class SchemaGraphBuilder:
         """Start an empty graph."""
         self.locations: dict[int, SchemaLocation] = {}
         self.registry = ResourceRegistry()
-        self._converted: dict[str, set[tuple[str, ...]]] = {}
+        self.documents: dict[str, DocumentRecord] = {}
+        self.names: dict[str, str] = {}
+        self.holds_false_all_of = False
         self._documents: list[object] = []
-        self._false_all_of_documents: set[str] = set()
         self._mounted: set[int] = set()
         self._mount_roots: set[int] = set()
         self._mount_containers: dict[int, Any] = {}
@@ -524,21 +563,23 @@ class SchemaGraphBuilder:
         self._schema_reads: dict[int, Any] = {}
         self._schemas: dict[tuple[int, type[Any]], Any] = {}
 
-    @property
-    def holds_false_all_of(self) -> bool:
-        """Return whether a document indexed so far holds a JSON object whose ``allOf`` lists ``false``.
+    def record(self, document: str) -> DocumentRecord:
+        """Return the record of a document by its registry name, which starts empty the first time it is asked for."""
+        return self.documents.setdefault(document, DocumentRecord())
 
-        Only such a document gives a schema object an ``allOf`` member that is ``false``; the parser writes none.
-        """
-        return bool(self._false_all_of_documents)
-
-    def note_converted(self, root: SchemaLocation) -> None:
-        """Record that the schema at ``root``, and every schema below it, was converted from another format."""
-        self._converted.setdefault(root.document, set()).add(root.tokens)
+    def known(self, document: str) -> DocumentRecord:
+        """Return what the parse knows of a document by its registry name: an empty record for one it never met."""
+        return self.documents.get(document, _NO_RECORD)
 
     def is_converted(self, location: SchemaLocation) -> bool:
-        """Return whether the schema at a location is part of a schema converted from another format."""
-        return any(location.tokens[: len(root)] == root for root in self._converted.get(location.document, ()))
+        """Return whether the schema at a location is part of a schema converted from another format.
+
+        A root is read under the reference-path name it was converted at, also where the document has several.
+        """
+        return any(
+            root.document == location.document and location.tokens[: len(root.tokens)] == root.tokens
+            for root in self.known(self.names.get(location.document, "")).converted
+        )
 
     def edge_key(self, edge: RefEdge, compute: Callable[[RefEdge], RefKey]) -> RefKey:
         """Return the key of an edge, which ``compute`` resolves in the edge's document once, at its first call.
@@ -667,7 +708,6 @@ class SchemaGraphBuilder:
         ``ResolvedRef``s of ``document``, as ``with_ref_edges`` reads them, and copies their objects on write.
         """
         locations = self.locations
-        false_all_of = self._false_all_of_documents
         ancestors: dict[int, Any] = {}
         reads_refs = set() if reading is None else {reading.objects, reading.root}
 
@@ -688,7 +728,7 @@ class SchemaGraphBuilder:
                 seen = locations.get(value_id)
                 ancestors[value_id] = copy(value) if seen is not None and seen != location else value
                 if isinstance(all_of := value.get("allOf"), (list, tuple)) and any(item is False for item in all_of):
-                    false_all_of.add(root.document)
+                    self.holds_false_all_of = True
                 children = value.items()
             else:
                 ancestors[value_id] = value
