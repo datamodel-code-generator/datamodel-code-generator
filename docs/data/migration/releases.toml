@@ -540,3 +540,7 @@ date = "2026-11-12"
 [[release]]
 version = "0.96.0"
 date = "2026-11-13"
+
+[[release]]
+version = "0.97.0"
+date = "2026-11-17"

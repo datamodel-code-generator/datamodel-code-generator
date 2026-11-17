@@ -1,9 +1,0 @@
-[[change]]
-id = "asyncapi-client-payload-formats"
-kind = "experimental"
-action = "review"
-title = "Generated AsyncAPI clients read a payload's schema format and wrapper as the models do"
-summary = "A channel is now generated whose message payload names its `schemaFormat` in another case or with spaces (`application/SCHEMA+JSON;version=draft-07`, `application/schema+json ; version=draft-07`), in an OpenAPI format (`application/vnd.oai.openapi;version=3.0.0`), or in such a spelling through an AsyncAPI 2 message trait; such channels were skipped as `message_content_types`. A payload written `{schema: ...}` without a `schemaFormat` now binds the model generated for its `schema`: where it was the channel's only message, generation failed (`The use has no generated native type`), and beside another JSON message the channel was skipped as `several_messages` (`a message's payload declares no type`). Avro, Protocol Buffers and XML Schema payloads, also when a trait gives the format, stay left out."
-affects = { experimental = ["cli-option.generate-client"] }
-refs = ["#6927"]
-source = "release-note"
