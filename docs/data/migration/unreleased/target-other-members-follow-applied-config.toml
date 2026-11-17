@@ -1,5 +1,6 @@
 [[change]]
 id = "target-other-members-follow-applied-config"
+category = "experimental"
 kind = "experimental"
 action = "review"
 title = "Generated clients and servers no longer take other members of a form or multipart body, or a client query object, that the model drops"

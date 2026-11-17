@@ -1,5 +1,6 @@
 [[change]]
 id = "server-query-object-members-follow-applied-config"
+category = "experimental"
 kind = "experimental"
 action = "review"
 title = "Generated servers no longer attribute unclaimed query keys and cookies to an exploded query or cookie object whose model drops other members"

@@ -205,17 +205,19 @@ entry as `docs/data/migration/unreleased/<id>.toml`; the release moves it into
 `docs/data/migration/changes/<version>.toml`.
 
 Write an entry for every behaviour change of the default output and every removal (an option, an option value, a
-template, a public name), and also for runtime floors, Python API behaviour, custom template content, inputs that
-are now refused and changes of experimental features that shipped in a release. A change of the generated text only,
-whose models behave the same, gets an entry with `action = "none"`, so users who compare generated code see it
-coming. Crash fixes need no entry. Deprecations, removals the deprecation registry schedules, experimental features
-and new dated presets get their entries from their registries; write nothing for them, or an entry with the same
-id (`deprecation:<id>`, `removal:<id>`, `experimental:<id>`, `preset:<date>`) to add a better title or a
+template, a public name), and also for runtime floors, Python API behaviour, custom template content, inputs that are
+now refused and changes of experimental features that shipped in a release. A change of the generated text only, whose
+models behave the same, gets an entry with `action = "none"`, so users who compare generated code see it coming. A crash
+fix gets a `crash-fix` entry with `action = "none"`. Deprecations, removals the deprecation registry schedules,
+experimental features and new dated presets get their entries from their registries; write nothing for them, or an entry
+with the same id (`deprecation:<id>`, `removal:<id>`, `experimental:<id>`, `preset:<date>`) to add a better title or a
 `supersedes`.
 
 ```toml
 [[change]]
 id = "specialized-enum-default"
+category = "decided-change"
+decision = ["#2500"]
 kind = "default-output"
 action = "keep"
 title = "String and integer enums become `StrEnum` / `IntEnum`"
@@ -228,6 +230,18 @@ refs = ["#2512"]
 source = "release-note"
 ```
 
+- `category` (every unreleased entry): why the stored output changed, which decides what the entry holds
+  (`scripts/_change_records.py`, `RULES`). `new-surface` (output only an option, option value, dated preset or public
+  name the latest release lacks reaches; `surface` names them), `experimental` (a released experimental feature;
+  `affects.experimental` names it, and `decision` the owner's decision unless it is the generated clients or
+  servers), `crash-fix` (generation, import or decoding failed before; `action = "none"`), `output-text`,
+  `default-fix` (only invalid input changes outcome) and `decided-change` (any other behaviour change of the default
+  or a released option's output, with a `keep` table), both with the owner's `decision`, `notice` (warnings and error
+  messages), `api` (a public CLI or Python API change; `decision` unless the deprecation registry schedules it), and
+  `docs-text`, `internal` and `harness` (listing text, traces of internals, a changed test, input or repository
+  script whose package output is the same), which have no guide entry and hold only `title`, `summary` and `refs`.
+  An entry with `extends = "<id>"` adds more stored outputs to an unreleased record and holds nothing else. Entries
+  of released changes may lack a category. An entry that only adds text to a derived entry (below) has none.
 - `kind`: `default-output`, `output-text` (the text changes, the models behave the same), `removal`, `cli`,
   `python-api`, `template`, `runtime`, `warning`, `error`, `experimental` or `preset`.
 - `action`: `required` (users must change something; give `migrate`), `keep` (the output changes and `keep.flags`
