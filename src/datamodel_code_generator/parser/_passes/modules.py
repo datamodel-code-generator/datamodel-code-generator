@@ -1379,20 +1379,19 @@ def collapse_root_models(  # noqa: PLR0913, PLR0917
     internal_modules: set[ModulePath] | None = None,
 ) -> None:
     """Inline the root models that the models of a module reference, under ``--collapse-root-models``."""
-    with parser.generation_store._collapse_root_reference_scope():
-        collapse_root_models_in_scope(
-            parser,
-            models,
-            unused_models,
-            ModuleImportTarget(
-                imports,
-                scoped_model_resolver,
-                {} if model_path_to_module_name is None else model_path_to_module_name,
-                is_init,
-                internal_modules or set(),
-                parser.imports,
-            ),
-        )
+    collapse_root_models_in_scope(
+        parser,
+        models,
+        unused_models,
+        ModuleImportTarget(
+            imports,
+            scoped_model_resolver,
+            {} if model_path_to_module_name is None else model_path_to_module_name,
+            is_init,
+            internal_modules or set(),
+            parser.imports,
+        ),
+    )
 
 
 def _root_type_models(model: DataModel) -> list[DataModel]:
@@ -1547,14 +1546,6 @@ def annotated_member_type(parser: CollapseHost, root_field: DataModelFieldBase) 
     return member if member.kwargs else None
 
 
-def has_other_root_references(parser: CollapseHost, reference: Reference, data_type: DataType) -> bool:
-    """Return whether data types other than ``data_type`` name the root model of ``reference``."""
-    store = parser.generation_store
-    if (answer := store._root_collapse_has_data_type_references(reference, excluded_data_type=data_type)) is None:
-        answer = store.index.has_data_type_references_other_than(reference, data_type)
-    return answer
-
-
 def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
     parser: CollapseHost,
     models: list[DataModel],
@@ -1653,8 +1644,8 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
 
                         name_inner_after_root(parser, root_type_model, inner_model, model_path_to_module_name)
 
-                    has_remaining_root_references = has_other_root_references(
-                        parser, root_type_model.reference, data_type
+                    has_remaining_root_references = generation_index.has_data_type_references_other_than(
+                        root_type_model.reference, data_type
                     )
                     if first_parent_holder:
                         if (
@@ -1702,7 +1693,9 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                     copied_data_type = graph_builder.inline_shared(root_type_field.data_type, data_type)
                 carry_const_narrowings(parser, root_type_field.data_type, copied_data_type)
                 carry_site_constraints(parser, data_type, copied_data_type)
-                has_remaining_root_references = has_other_root_references(parser, root_type_model.reference, data_type)
+                has_remaining_root_references = generation_index.has_data_type_references_other_than(
+                    root_type_model.reference, data_type
+                )
 
                 replacement_context = None
                 shared_holders: tuple[DataType, ...] = ()

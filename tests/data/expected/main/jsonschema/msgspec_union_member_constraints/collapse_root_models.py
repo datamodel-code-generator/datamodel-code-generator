@@ -79,9 +79,6 @@ Apart1: TypeAlias = Annotated[str, Meta(max_length=3, pattern='^a')]
 Short: TypeAlias = Annotated[str, Meta(max_length=3)]
 
 
-NullableShort: TypeAlias = Annotated[str, Meta(max_length=3)] | None
-
-
 Mixed1: TypeAlias = Annotated[str, Meta(max_length=3)]
 
 

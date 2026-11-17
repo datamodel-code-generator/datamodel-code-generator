@@ -1,0 +1,12 @@
+[[change]]
+id = "collapsed-root-unused-alias-warning"
+category = "notice"
+title = "No dropped-constraints warning for a collapsed root model that is no longer written"
+summary = "With `--collapse-root-models` under msgspec.Struct, the warning that a root-model alias whose references are all collapsed is generated without some member constraints (`... Parted is generated without these constraints.`) is no longer printed, since that unused alias is no longer written (see collapsed-root-unused-alias); the warnings of the fields that use it stay."
+refs = ["#6915"]
+kind = "warning"
+action = "none"
+source = "release-note"
+covers = [
+    "main/jsonschema/msgspec_union_shared_bounds/msgspec_union_shared_bounds[collapse_root_models].warnings.txt",
+]
