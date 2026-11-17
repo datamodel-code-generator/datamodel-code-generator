@@ -6,7 +6,11 @@ fail_both-args3	compare_release/fail_both.txt
 identical-args0	compare_release/identical.txt
 import_fails_both-args4	compare_release/import_fails_both.txt
 path_option-args2	compare_release/path_option.txt	= compare_release/directory.txt
+[test_compare_release_resolves_the_base]
+	compare_release_script/compare_release_resolves_the_base.txt
 [test_compare_release_tracks_referenced_files]
 	compare_release/referenced_files.txt
+[test_handled_exceptions_are_tracked]
+	compare_release_script/handled_exceptions_are_tracked.txt
 [test_ran_out_of_memory]
 	compare_release_script/ran_out_of_memory.txt

@@ -6,13 +6,23 @@ Usage:
       [--show-diff N] [-j N] INPUT [INPUT ...]
 
 Each option set is one quoted string of extra CLI arguments (`default` means none), separated by `;`.
-The candidate is the interpreter running this script unless `--candidate-python` is given. The released version
-is installed once into a cached virtual environment (needs `uv`) with the candidate's formatter, pydantic and
-msgspec versions pinned, so only generator changes show up as differences. Released outputs are cached as well,
-so reruns only generate the candidate side.
+The candidate is this checkout's `src/`, run with the interpreter running this script unless `--candidate-python`
+is given. A base that is a released version (`0.85.0`) is installed once into a cached virtual environment (needs
+`uv`) with the candidate's formatter, pydantic and msgspec versions pinned, so only generator changes show up as
+differences; any other base is a git revision of this repository (`main~1`, a commit): its `src/` is extracted once
+with `git archive` and run with the candidate's interpreter, as the candidate is (`resolve_base`). Base outputs are
+cached as well, so reruns only generate the candidate side.
 
 Generation runs in warm worker processes: each worker imports datamodel-code-generator once and forks a fresh
-child per run, so runs do not pay interpreter start-up and import time and do not share state. POSIX only.
+child per run, so runs do not pay interpreter start-up and import time and do not share state. POSIX only. Both
+sides run in an environment built from scratch (`run_environment`), and each worker refuses to run a package
+imported from outside the tree its side names. A run shows its warnings under Python's default filters with
+`DeprecationWarning` and `PendingDeprecationWarning` shown too, and records each as its category, message and the
+module the filters match it with (`Outcome.warnings`), so a warning whose call moves keeps its record;
+`Outcome.handled` are the classes of the exceptions the code of `datamodel_code_generator.__main__` caught and did
+not raise again (Python 3.12+); `Outcome.messages` is what the run printed, with the frames of tracebacks left out,
+so an error is its class and message. A run that refuses a single output file for a modular one is run again into a
+directory, and `Outcome.first` keeps the refusal (its exit status, messages, warnings and handled exceptions).
 
 Prints one line per differing or failing run and a summary; exits 1 when any run differs or fails on the
 candidate only.
@@ -39,14 +49,18 @@ import threading
 import time
 import traceback
 import warnings
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from types import CodeType
 
+Record = dict[str, Any]
+"""A JSON object a worker job or reply carries."""
 DEFAULT_TYPES = (
     "pydantic_v2.BaseModel",
     "pydantic_v2.dataclass",
@@ -60,7 +74,17 @@ MODULAR_OUTPUT_ERRORS = ("--output <directory>", "require an output directory")
 # The exit code of a run that hit its memory cap, also reported for a run whose own handler printed the MemoryError:
 # like a timeout it is not cached, since another cap may let it finish.
 OUT_OF_MEMORY = 125
-CACHE_FORMAT = 2
+CACHE_FORMAT = 4
+ROOT = Path(__file__).resolve().parents[1]
+RELEASE = re.compile(r"\d+(?:\.\d+)+")
+"""A base that is a released version, installed from the package index; any other base is a git revision."""
+TRACEBACK_FRAMES = re.compile(r"^Traceback \(most recent call last\):\n(?:[ \t].*(?:\n|\Z))*", re.MULTILINE)
+PASSED_VARIABLES = ("PATH", "HOME", "TMPDIR", "COVERAGE_PROCESS_START", "COVERAGE_PROCESS_CONFIG")
+"""The caller's variables a side's processes see: where programs, the home and temporary files are, and coverage's
+measurement of subprocesses. Any other (PYTHONPATH, PYTHONWARNINGS, the test suite's checks) could change what a
+side runs or how."""
+HANDLED_TOOL = 3
+"""The `sys.monitoring` tool id that records the exceptions `datamodel_code_generator.__main__` handles."""
 
 
 def _default_cache_dir() -> Path:
@@ -71,7 +95,7 @@ def _default_cache_dir() -> Path:
 # Worker side: runs inside the base or candidate interpreter.
 
 
-def _exit_code(main: Callable[[list[str]], Any], argv: list[str]) -> int:
+def _exit_code(main: Callable[[list[str]], object], argv: list[str]) -> int:
     try:
         result = main(argv)
     except SystemExit as exc:
@@ -105,7 +129,90 @@ def _import_modules(out: str) -> int:
     return 0
 
 
-def _run_child(job: dict[str, Any], main: Callable[[list[str]], Any]) -> int:
+class _WarningRecorder:
+    """Record each warning a run shows as its category, message and the module the warning filters match it with.
+
+    Installed as the first filter, its `match` is called with the module of every warning that reaches the filters and
+    matches nothing, so the real filters still decide; `show` stands in for `warnings.showwarning`.
+    """
+
+    def __init__(self) -> None:
+        self.local = threading.local()
+        self.records: list[list[str]] = []
+
+    def match(self, module: str) -> bool:
+        self.local.module = module
+        return False
+
+    def show(self, message: Warning | str, category: type[Warning], *_: object) -> None:
+        self.records.append([
+            f"{category.__module__}.{category.__qualname__}",
+            str(message),
+            getattr(self.local, "module", ""),
+        ])
+
+
+def _track(
+    caught: list[BaseException],
+    filename: str,
+    code: CodeType,
+    _: int,
+    exception: BaseException,
+    *,
+    handled: bool = True,
+) -> None:
+    """Add the exception `code` handled to `caught`, or take it out when it is raised again (`handled=False`)."""
+    if code.co_filename != filename:
+        return
+    if handled:
+        caught.append(exception)
+    else:
+        with contextlib.suppress(ValueError):
+            caught.remove(exception)
+
+
+def _handled_exceptions(filename: str) -> list[BaseException]:
+    """Return the list that collects the exceptions the code of `filename` catches and does not raise again.
+
+    A handler that only cleans up (`finally`, `with`, an `except` that does not match or re-raises) raises the
+    exception again, which takes it out. Python 3.12+ (`sys.monitoring`); earlier the list stays empty.
+    """
+    caught: list[BaseException] = []
+    if monitoring := getattr(sys, "monitoring", None):
+        monitoring.use_tool_id(HANDLED_TOOL, "compare_release")
+        monitoring.register_callback(
+            HANDLED_TOOL, monitoring.events.EXCEPTION_HANDLED, functools.partial(_track, caught, filename)
+        )
+        monitoring.register_callback(
+            HANDLED_TOOL, monitoring.events.RERAISE, functools.partial(_track, caught, filename, handled=False)
+        )
+        monitoring.set_events(HANDLED_TOOL, monitoring.events.EXCEPTION_HANDLED | monitoring.events.RERAISE)
+    return caught
+
+
+def _generate_recorded(job: Record, main: Callable[[list[str]], object]) -> int:
+    """Run one generation and write what it showed and handled to `job["record"]` (see `Outcome`).
+
+    Warnings show under Python's default filters with deprecations shown too. The record starts empty, like the log,
+    so a run that dies or runs out of memory leaves no record of an earlier run: its exit status says what happened.
+    """
+    record = Path(job["record"])
+    record.write_text("", encoding="utf-8")
+    caught = _handled_exceptions(sys.modules["datamodel_code_generator.__main__"].__file__ or "")
+    recorder = _WarningRecorder()
+    with warnings.catch_warnings():
+        warnings.simplefilter("default", PendingDeprecationWarning)
+        warnings.simplefilter("default", DeprecationWarning)
+        warnings.filters.insert(0, ("always", None, Warning, recorder, 0))
+        warnings.showwarning = recorder.show
+        code = _exit_code(main, job["args"])
+    handled = [f"{type(exception).__module__}.{type(exception).__qualname__}" for exception in caught]
+    with contextlib.suppress(MemoryError):
+        record.write_text(json.dumps({"warnings": recorder.records, "handled": handled}), encoding="utf-8")
+    return code
+
+
+def _run_child(job: Record, main: Callable[[list[str]], object]) -> int:
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     signal.alarm(job["timeout"])
     log = os.open(job["log"], os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
@@ -123,20 +230,22 @@ def _run_child(job: dict[str, Any], main: Callable[[list[str]], Any]) -> int:
             resource.setrlimit(resource.RLIMIT_DATA, (limit << 20, limit << 20))
     if job["kind"] == "import":
         return _import_modules(job["out"])
-    return _exit_code(main, job["args"])
+    return _generate_recorded(job, main)
 
 
 def _worker() -> None:
     sys.argv[0] = "datamodel-codegen"
-    warnings.simplefilter("ignore")
-    from datamodel_code_generator.__main__ import main  # ruff: ignore[import-outside-top-level] - imported once per worker
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        from datamodel_code_generator.__main__ import main  # ruff: ignore[import-outside-top-level] - imported once per worker
 
+        for name in WARM_IMPORTS:
+            with contextlib.suppress(ImportError):
+                importlib.import_module(name)
     # Importing the CLI installs its own SIGINT handler; the driver stops workers by closing their stdin.
     signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-    for name in WARM_IMPORTS:
-        with contextlib.suppress(ImportError):
-            importlib.import_module(name)
+    sys.stdout.write(json.dumps({"package": sys.modules["datamodel_code_generator"].__file__}) + "\n")
+    sys.stdout.flush()
     for line in sys.stdin:
         job = json.loads(line)
         pid = os.fork()
@@ -156,31 +265,54 @@ def _worker() -> None:
 # Driver side.
 
 
+def run_environment(source: Path | None) -> dict[str, str]:
+    """Return the environment of a side's processes, built from scratch: `source` is the tree it imports, if any.
+
+    Only `PASSED_VARIABLES` come from the caller; the hash seed is the same on each side, so the order of a set
+    cannot differ between them.
+    """
+    env = {name: os.environ[name] for name in PASSED_VARIABLES if name in os.environ}
+    env |= {"PYTHONWARNINGS": "ignore", "PYTHONHASHSEED": "0", "OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
+    return env | ({"PYTHONPATH": str(source)} if source else {})
+
+
 class Worker:
     """A warm worker process for one interpreter."""
 
-    def __init__(self, python: Path, env: dict[str, str]) -> None:
-        """Start the worker."""
+    def __init__(self, python: Path, env: dict[str, str], package: Path | None) -> None:
+        """Start the worker with Python's default warning filters, which its runs show warnings under.
+
+        It refuses a datamodel-code-generator imported from outside `package` (any where None). Both paths are
+        normalized, not resolved: a side's package path and its `package` come from the same unresolved path.
+        """
         self.process = subprocess.Popen(
             [str(python), str(Path(__file__).resolve()), "--worker"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             text=True,
-            env=env,
+            env={name: value for name, value in env.items() if name != "PYTHONWARNINGS"},
         )
+        self.package = Path(os.path.normpath(Path(self._reply()["package"]).absolute())).parent
+        if package is not None and not self.package.is_relative_to(os.path.normpath(package.absolute())):
+            self.close()
+            msg = f"{python} imports datamodel_code_generator from {self.package}, not from below {package}"
+            raise SystemExit(msg)
 
-    def run(self, job: dict[str, Any]) -> int:
-        """Run one job in a fresh child of the worker and return its exit code."""
-        stdin, stdout = self.process.stdin, self.process.stdout
-        assert stdin is not None
+    def _reply(self) -> Record:
+        stdout = self.process.stdout
         assert stdout is not None
-        stdin.write(json.dumps(job) + "\n")
-        stdin.flush()
-        reply = stdout.readline()
-        if not reply:
+        if not (reply := stdout.readline()):
             msg = f"worker exited with {self.process.wait()}"
             raise RuntimeError(msg)
-        return json.loads(reply)["rc"]
+        return json.loads(reply)
+
+    def run(self, job: Record) -> int:
+        """Run one job in a fresh child of the worker and return its exit code."""
+        stdin = self.process.stdin
+        assert stdin is not None
+        stdin.write(json.dumps(job) + "\n")
+        stdin.flush()
+        return self._reply()["rc"]
 
     def close(self) -> None:
         """Stop the worker."""
@@ -191,21 +323,84 @@ class Worker:
 
 @dataclass(frozen=True)
 class Side:
-    """One interpreter to generate with."""
+    """One interpreter to generate with, and the directory its datamodel-code-generator must come from.
+
+    `package` is None for an interpreter whose own installation runs (`--base-python`).
+    """
 
     name: str
     python: Path
+    package: Path | None
+
+
+FACTS = ("code", "tree", "warnings", "handled", "messages")
+"""What `identity_changes` compares, in the order it reports them."""
 
 
 @dataclass
 class Outcome:
-    """Result of generating one run on one side."""
+    """Result of generating one run on one side.
+
+    `code` is the exit status, `messages` what the run printed without the frames of tracebacks, `warnings` the
+    warnings it showed as records (category, message, module) and `handled` the classes of the exceptions
+    `datamodel_code_generator.__main__` caught; paths of the run's directory, output and package read `<tmp>`,
+    `<output>` and `<package>`. `first` holds these facts of a refused single-file attempt before a modular run.
+    """
 
     ok: bool
     error: str
     tree: dict[str, str]
     import_error: str
     cacheable: bool = True
+    code: int = 0
+    messages: str = ""
+    warnings: list[list[str]] = field(default_factory=list)
+    handled: list[str] = field(default_factory=list)
+    first: Record = field(default_factory=dict)
+
+    def stopped(self) -> bool:
+        """Whether the timeout or the memory cap stopped the run: another cap may let it finish."""
+        return self.code in {-signal.SIGALRM, OUT_OF_MEMORY}
+
+
+def _fact_changes(base: Record, candidate: Record) -> list[tuple[str, str]]:
+    """Return what differs between the `FACTS` of two attempts as (kind, detail); a fact one lacks is None."""
+    changes = []
+    for kind in FACTS:
+        old, new = base.get(kind), candidate.get(kind)
+        if old == new:
+            continue
+        match kind:
+            case "code":
+                changes.append(("exit", f"exit status {old} -> {new}"))
+            case "tree":
+                old, new = old or {}, new or {}
+                files = [name for name in sorted(old.keys() | new.keys()) if old.get(name) != new.get(name)]
+                changes.append(("output", f"output differs: {', '.join(files)}"))
+            case "warnings" | "handled":
+                before, after = Counter(map(json.dumps, old or [])), Counter(map(json.dumps, new or []))
+                removed, added = sorted((before - after).elements()), sorted((after - before).elements())
+                moved = f"{kind} differ: {', '.join(removed) or 'none'} -> {', '.join(added) or 'none'}"
+                detail = moved if removed or added else f"{kind} in another order"
+                changes.append((kind, detail))
+            case _:
+                before, after = (old or "").splitlines(), (new or "").splitlines()
+                index = next(
+                    (index for index, (one, other) in enumerate(zip(before, after, strict=False)) if one != other),
+                    min(len(before), len(after)),
+                )
+                changes.append((kind, f"messages differ: {before[index : index + 1]} -> {after[index : index + 1]}"))
+    return changes
+
+
+def identity_changes(base: Outcome, candidate: Outcome) -> list[tuple[str, str]]:
+    """Return what differs between two runs of one cell as (kind, detail).
+
+    The kinds are `exit`, `output`, `warnings`, `handled`, `messages` and `first attempt` (a fact of the refused
+    single-file attempt before a modular run).
+    """
+    first = [("first attempt", f"first attempt {detail}") for _, detail in _fact_changes(base.first, candidate.first)]
+    return _fact_changes(base.__dict__, candidate.__dict__) + first
 
 
 def _probe(python: Path) -> tuple[str, str]:
@@ -216,7 +411,7 @@ def _probe(python: Path) -> tuple[str, str]:
         "print(f'{sys.version_info[0]}.{sys.version_info[1]}', version('datamodel-code-generator'))\n"
     )
     python_version, dcg_version = subprocess.run(
-        [str(python), "-c", code], capture_output=True, text=True, check=True
+        [str(python), "-c", code], capture_output=True, text=True, env=run_environment(None), check=True
     ).stdout.split()
     return python_version, dcg_version
 
@@ -229,31 +424,47 @@ def _is_generator_requirement(line: str) -> bool:
     return line.lower().replace("_", "-").startswith(("datamodel-code-generator==", "datamodel-code-generator @"))
 
 
-def _base_python(version: str, candidate: Path, cache_dir: Path) -> Path:
-    """Install the release next to the candidate's other packages, pinned to the same versions."""
+def _candidate_packages(candidate: Path) -> tuple[str, list[str]]:
+    """Return the candidate's `major.minor` Python version and its packages but the generator, as `pip freeze` pins."""
     python_version, _ = _probe(candidate)
     freeze = subprocess.run(
         ["uv", "pip", "freeze", "--python", str(candidate)], capture_output=True, text=True, check=True
     ).stdout
-    pins = sorted(line for line in freeze.splitlines() if line and not _is_generator_requirement(line))
-    key = hashlib.sha256(json.dumps([version, python_version, pins]).encode()).hexdigest()[:12]
-    root = cache_dir / "venvs" / f"{version}-py{python_version}-{key}"
-    complete = root / ".complete"
+    return python_version, sorted(line for line in freeze.splitlines() if line and not _is_generator_requirement(line))
+
+
+def _environment_name(base: str, python_version: str, pins: list[str]) -> str:
+    key = hashlib.sha256(json.dumps([base, python_version, pins]).encode()).hexdigest()[:12]
+    return f"{base}-py{python_version}-{key}"
+
+
+def _built(root: Path, build: Callable[[], object]) -> Path:
+    """Return `root` once `build` has filled it, built once under a lock: another run may be building the same.
+
+    A root without its `.complete` mark (a build that stopped half way) is removed and built again.
+    """
     root.parent.mkdir(parents=True, exist_ok=True)
     import fcntl  # ruff: ignore[import-outside-top-level] - POSIX only; keeps the module importable elsewhere
 
     with (root.parent / f"{root.name}.lock").open("w") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)  # another run may be installing the same environment
-        if not complete.exists():
-            _install_base(version, python_version, pins, root)
-            complete.touch()
-    return root / "bin" / "python"
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if not (root / ".complete").exists():
+            shutil.rmtree(root, ignore_errors=True)
+            build()
+            (root / ".complete").touch()
+    return root
+
+
+def _base_python(version: str, candidate: Path, cache_dir: Path) -> Path:
+    """Install the release next to the candidate's other packages, pinned to the same versions."""
+    python_version, pins = _candidate_packages(candidate)
+    root = cache_dir / "venvs" / _environment_name(version, python_version, pins)
+    return _built(root, lambda: _install_base(version, python_version, pins, root)) / "bin" / "python"
 
 
 def _install_base(version: str, python_version: str, pins: list[str], root: Path) -> None:
     """Create the release environment with the candidate's package versions pinned."""
     print(f"installing datamodel-code-generator {version} into {root}", file=sys.stderr, flush=True)
-    shutil.rmtree(root, ignore_errors=True)
     subprocess.run(["uv", "venv", "-q", "--python", python_version, str(root)], check=True)
     requirements = root / "pins.txt"
     requirements.write_text("\n".join(pins) + "\n", encoding="utf-8")
@@ -273,12 +484,111 @@ def _install_base(version: str, python_version: str, pins: list[str], root: Path
     )
 
 
+def git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    """Run git in `repo` without the caller's repository settings (a hook's GIT_DIR) or an interactive prompt.
+
+    A command that fails prints nothing on stdout.
+    """
+    env = {name: value for name, value in os.environ.items() if not name.startswith("GIT_")}
+    env["GIT_TERMINAL_PROMPT"] = "0"
+    return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, env=env, check=False)
+
+
+def commit_of(spec: str, repo: Path = ROOT) -> str:
+    """Return the commit a git revision of `repo` names, or an empty string for a spec that names none."""
+    return git(repo, "rev-parse", "--verify", "--quiet", f"{spec}^{{commit}}").stdout.strip()
+
+
+def archive_version(revision: str, repo: Path = ROOT) -> str:
+    """Return the version the build hook writes for a revision (`git archive` leaves the version file out)."""
+    result = git(repo, "describe", "--tags", "--long", "--match", "[0-9]*", "--exclude", "*+*", revision)
+    if (described := result.stdout.strip()).count("-") < 2:  # ruff: ignore[magic-value-comparison]
+        return f"0.0.0+g{revision[:9]}"
+    tag, distance, commit = described.rsplit("-", 2)
+    if distance == "0":
+        return tag
+    major_minor, _, patch = tag.rpartition(".")
+    return f"{major_minor}.{int(patch) + 1}.dev{distance}+{commit}"
+
+
+def _extract(revision: str, repo: Path, paths: tuple[str, ...], root: Path) -> None:
+    root.mkdir(parents=True)
+    archive = root / "archive.tar"
+    git(repo, "archive", "--output", str(archive), revision, *paths).check_returncode()
+    subprocess.run(["tar", "-x", "-f", str(archive), "-C", str(root)], check=True)
+    archive.unlink()
+    version = f"__version__ = {archive_version(revision, repo)!r}\n"
+    (root / "src" / "datamodel_code_generator" / "_version.py").write_text(version, encoding="utf-8")
+
+
+def source_tree(revision: str, cache_dir: Path, repo: Path = ROOT, paths: tuple[str, ...] = ("src",)) -> Path:
+    """Return the root of a commit's `paths` (a base runs `src`), extracted once below `cache_dir/trees`.
+
+    The version file is not in the repository (the build hook writes it), so it is written here.
+    """
+    root = cache_dir / "trees" / "-".join((revision, *paths))
+    return _built(root, lambda: _extract(revision, repo, paths, root))
+
+
+@dataclass(frozen=True)
+class Base:
+    """The side a run is compared with: its interpreter, the source tree it imports, and its outputs' cache name.
+
+    `package` is the directory its datamodel-code-generator must come from: the tree of a revision, the environment
+    of a release, None for an interpreter that has the base installed (`--base-python`).
+    """
+
+    python: Path
+    source: Path | None
+    cache_name: str
+    revision: str | None = None
+    package: Path | None = None
+
+    def env(self) -> dict[str, str]:
+        """Return the environment of the base's processes: a revision's tree on PYTHONPATH, nothing of the caller's."""
+        return run_environment(self.source)
+
+
+def installed_base(python: Path) -> Base:
+    """Return the base of an interpreter that has the base version installed already (`--base-python`)."""
+    identity = json.dumps([str(python), *_probe(python)])
+    return Base(python, None, f"python-{hashlib.sha256(identity.encode()).hexdigest()[:12]}")
+
+
+def resolve_base(spec: str, candidate: Path, cache_dir: Path, repo: Path = ROOT) -> Base:
+    """Resolve the base a run is compared with, a released version or a git revision of `repo`.
+
+    A release is installed beside the candidate's packages (`_base_python`); a revision's `src/` runs with the
+    candidate's interpreter. Either way only generator changes differ.
+    """
+    if RELEASE.fullmatch(spec):
+        python = _base_python(spec, candidate, cache_dir)
+        return Base(python, None, python.parents[1].name, package=python.parents[1])
+    if not (revision := commit_of(spec, repo)):
+        msg = f"{spec} is neither a released version nor a revision of {repo}"
+        raise SystemExit(msg)
+    source = source_tree(revision, cache_dir, repo) / "src"
+    name = _environment_name(revision, *_candidate_packages(candidate))
+    return Base(candidate, source, name, revision, source)
+
+
 def _tree(path: Path) -> dict[str, str]:
     return {
         file.relative_to(path).as_posix(): file.read_text(encoding="utf-8")
         for file in sorted(path.rglob("*.py"))
         if "__pycache__" not in file.parts
     }
+
+
+def _relative(text: str, out: Path, tmp: Path, package: Path) -> str:
+    """Return `text` with the paths of a run's output, directory and package as `<output>`, `<tmp>`, `<package>`.
+
+    So they read the same on each run and side. The resolved form of each goes first (macOS resolves `/var` to
+    `/private/var`, which ends in the other form).
+    """
+    for path, name in ((out, "<output>"), (tmp, "<tmp>"), (package, "<package>")):
+        text = text.replace(os.path.realpath(path), name).replace(str(path), name)
+    return text
 
 
 def _last_line(path: Path) -> str:
@@ -295,6 +605,20 @@ def ran_out_of_memory(last_line: str) -> bool:
     return (
         last_line.partition(":")[0] == "MemoryError" or last_line == "SystemError: error return without exception set"
     )
+
+
+def _attempt(rc: int, log: Path, record: Path, paths: tuple[Path, Path, Path]) -> Record:
+    """Return what one attempt of a run showed (`Outcome`); `paths` are its output, directory and package."""
+    printed = TRACEBACK_FRAMES.sub("", log.read_text(encoding="utf-8", errors="replace"))
+    recorded = json.loads(text) if record.exists() and (text := record.read_text(encoding="utf-8")) else {}
+    return {
+        "code": rc,
+        "messages": _relative(printed, *paths),
+        "warnings": [
+            [category, _relative(message, *paths), module] for category, message, module in recorded.get("warnings", [])
+        ],
+        "handled": recorded.get("handled", []),
+    }
 
 
 class Runner:
@@ -316,7 +640,7 @@ class Runner:
     def _worker(self) -> Worker:
         worker = getattr(self.local, "worker", None)
         if worker is None:
-            worker = Worker(self.side.python, self.env)
+            worker = Worker(self.side.python, self.env, self.side.package)
             self.local.worker = worker
             with self.lock:
                 self.workers.append(worker)
@@ -327,24 +651,34 @@ class Runner:
         out = tmp / self.side.name
         out.mkdir()
         log = tmp / f"{self.side.name}.log"
+        record = tmp / f"{self.side.name}-record.json"
         worker = self._worker()
         job = {
             "kind": "generate",
             "cwd": str(tmp),
             "log": str(log),
+            "record": str(record),
             "timeout": self.timeout,
             "memory_mb": self.memory_mb,
             "args": [*args, "--output", str(out / "model.py")],
         }
         rc = worker.run(job)
+        first: Record = {}
         if rc != 0 and any(text in log.read_text(encoding="utf-8", errors="replace") for text in MODULAR_OUTPUT_ERRORS):
+            first = _attempt(rc, log, record, (out, tmp, worker.package))
             job["args"] = [*args, "--output", str(out / "pkg")]
             rc = worker.run(job)
         if rc > 0 and self.memory_mb and ran_out_of_memory(_last_line(log)):
             rc = OUT_OF_MEMORY
+        facts = _attempt(rc, log, record, (out, tmp, worker.package)) | {"first": first}
         if rc != 0:
             return Outcome(
-                ok=False, error=self._error(rc, log), tree={}, import_error="", cacheable=rc > 0 and rc != OUT_OF_MEMORY
+                ok=False,
+                error=self._error(rc, log),
+                tree={},
+                import_error="",
+                cacheable=rc > 0 and rc != OUT_OF_MEMORY,
+                **facts,
             )
         import_error = ""
         if self.import_check:
@@ -352,7 +686,7 @@ class Runner:
             job = {"kind": "import", "cwd": str(tmp), "log": str(import_log), "timeout": self.timeout, "out": str(out)}
             if (rc := worker.run(job)) != 0:
                 import_error = self._error(rc, import_log)
-        return Outcome(ok=True, error="", tree=_tree(out), import_error=import_error, cacheable=rc >= 0)
+        return Outcome(ok=True, error="", tree=_tree(out), import_error=import_error, cacheable=rc >= 0, **facts)
 
     def _error(self, rc: int, log: Path) -> str:
         if rc == -signal.SIGALRM:
@@ -477,7 +811,7 @@ def _diff(base: dict[str, str], cand: dict[str, str], limit: int) -> str:
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     base = parser.add_mutually_exclusive_group(required=True)
-    base.add_argument("--base", help="released version to compare with, e.g. 0.85.0")
+    base.add_argument("--base", help="released version (0.85.0) or git revision of this repository to compare with")
     base.add_argument("--base-python", type=Path, help="interpreter with the base version already installed")
     parser.add_argument("--candidate-python", type=Path, default=Path(sys.executable))
     parser.add_argument("--types", default=",".join(DEFAULT_TYPES), help="comma-separated --output-model-type values")
@@ -499,17 +833,16 @@ def main(argv: list[str] | None = None) -> int:
     _content_hash.cache_clear()
     _referenced_files.cache_clear()
     candidate_python = ns.candidate_python.absolute()
-    if ns.base_python is not None:
-        base_python = ns.base_python.absolute()
-        identity = json.dumps([str(base_python), *_probe(base_python)])
-        cache_name = f"python-{hashlib.sha256(identity.encode()).hexdigest()[:12]}"
-    else:
-        base_python = _base_python(ns.base, candidate_python, ns.cache_dir)
-        cache_name = base_python.parents[1].name
-    cache_root = None if ns.no_cache else ns.cache_dir / "outputs" / cache_name
-    env = {**os.environ, "PYTHONWARNINGS": "ignore", "OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
-    base = Runner(Side("base", base_python), env, import_check=ns.import_check, timeout=ns.timeout)
-    cand = Runner(Side("cand", candidate_python), env, import_check=ns.import_check, timeout=ns.timeout)
+    resolved = (
+        installed_base(ns.base_python.absolute())
+        if ns.base_python is not None
+        else resolve_base(ns.base, candidate_python, ns.cache_dir.absolute())
+    )
+    cache_root = None if ns.no_cache else ns.cache_dir / "outputs" / resolved.cache_name
+    side = Side("base", resolved.python, resolved.package)
+    base = Runner(side, resolved.env(), import_check=ns.import_check, timeout=ns.timeout)
+    side = Side("cand", candidate_python, ROOT / "src")
+    cand = Runner(side, run_environment(ROOT / "src"), import_check=ns.import_check, timeout=ns.timeout)
     cache = OutputCache(cache_root)
     extra = shlex.split(ns.extra)
     runs = [

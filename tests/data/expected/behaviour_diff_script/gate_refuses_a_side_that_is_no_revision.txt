@@ -1,0 +1,4 @@
+no-such-revision is neither a released version nor a revision of <tmp>/repo
+no-such-revision is neither a directory nor a revision of <root>
+<python> imports datamodel_code_generator from <package>, not from below <tmp>/empty/src
+a candidate that does not import: worker exited with 1

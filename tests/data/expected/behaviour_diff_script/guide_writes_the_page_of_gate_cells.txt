@@ -1,0 +1,32 @@
+exit=0
+{
+ "accepted": [],
+ "classes": [
+  "same"
+ ],
+ "counts": {
+  "pydantic_v2.BaseModel": {
+   "same": 1
+  }
+ },
+ "crash_fixes": [],
+ "kinds": {
+  "default": 1
+ },
+ "numbered_names": [],
+ "opt_in": [],
+ "previous": "0.0.0",
+ "schema_version": 1,
+ "tier": "release",
+ "types": [
+  "pydantic_v2.BaseModel"
+ ],
+ "version": "0.0.1",
+ "violations": []
+}
+## Output changes from 0.0.0
+
+Compared over 1 generations (pydantic_v2.BaseModel); details: [Output changes in 0.0.1](https://datamodel-code-generator.koxudaxi.dev/output-changes/0.0.1/).
+
+- Unchanged: 1; formatting or import order only: 0
+- Fixed crashes (the release failed to generate, import or validate): 0

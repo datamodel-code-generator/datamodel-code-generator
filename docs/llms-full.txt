@@ -96739,6 +96739,17 @@ then a summary. It exits with 1 when any run differs, fails only on your side or
 side, or when every run fails on both sides. Use `--base-python` to compare with another interpreter, such as a build of another branch, and
 `--no-cache` when that build changes without a version change. The script needs a POSIX system.
 
+`--base` also takes a git revision of this repository (`main`, `HEAD~1`, a commit): its `src/` is extracted once with
+`git archive` and runs with your interpreter, so only what your commits changed shows up. Your side is this checkout's
+`src/`. Both sides run in an environment built from scratch (your `PYTHONPATH` and `PYTHONWARNINGS` reach neither),
+and a side whose package is imported from outside its tree or environment stops the run. To check that a refactoring
+changes nothing at all, run `scripts/behaviour_diff.py gate <revision> --identity`: it compares each run's output,
+warnings (category, message and the module warning filters match, not the line that raised them; deprecations
+included), the exception classes the CLI module handled, messages (errors by class and message, without traceback
+frames), exit status, the refusal of a single output file before a modular run, and the options and their values on
+each side, and fails on any difference. A cell that fails alike on both sides is not compared where the timeout or
+the memory cap stopped both or where every cell of its input fails on both sides; the run prints how many.
+
 ## Calibrating the option recommender
 
 `scripts/recommender_calibrate.py` checks the option recommender's rules against the public schemas listed in
