@@ -1,0 +1,12 @@
+exit: 0
+src/datamodel_code_generator/reference.py:4: lost-last-caller: Resolver.context (package uses on the base: 1; pytest <its tests> -p no:xdist --cov=datamodel_code_generator.reference --cov-branch --cov-report=term-missing)
+
+rule counts:
+  lost-last-caller: 1 (report only); fix: test every branch of the callable directly (run the command shown and add cases for the missing lines), or route its tests through the code that replaced the callers
+
+--- without --base
+exit: 0
+
+rule counts:
+  ellipsis-statement: 0 (ratchet); fix: give the body a docstring instead of `...`
+  lost-last-caller: not run (needs --base)

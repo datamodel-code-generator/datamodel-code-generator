@@ -1,0 +1,16 @@
+exit: 0
+{
+  "source-rule:hash-split": {
+    "src/datamodel_code_generator/reader.py": 1
+  },
+  "source-rule:doc-citations": {},
+  "source-rule:ellipsis-statement": {
+    "src/datamodel_code_generator/hosts.py": 1
+  },
+  "source-rule:private-reexport": {},
+  "source-rule:globals-registry": {},
+  "source-rule:unused-private-global": {},
+  "source-rule:redundant-local-import": {},
+  "source-rule:clone-bodies": {},
+  "source-rule:pyright-outside-runtime": {}
+}

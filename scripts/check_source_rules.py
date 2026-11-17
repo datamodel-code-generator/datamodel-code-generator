@@ -1,0 +1,709 @@
+"""Check the source tree for the code shapes that code reviews keep finding, one rule per shape (report only).
+
+usage: python scripts/check_source_rules.py [--root DIR] [--base REF] [--rule NAME]... [--count]
+
+Every rule reads the tree with ``ast`` or ``tokenize`` (standard library only) and reports each site as
+``path:line: rule: detail``; the summary gives the count of every rule and how to fix its sites. The counts are
+ratchet keys ``source-rule:<rule>`` (``--count`` prints them as JSON, ``{key: {file: count}}``): a change may keep or
+lower a count. A rule is marked absolute once its count is 0; the exit status is 1 only when an absolute rule reports
+a site.
+
+``lost-last-caller`` compares the tree with ``--base`` (a git revision of the same repository) and runs only with it.
+It cannot tell from the source whether tests reach every branch of a callable, so it reports each candidate with the
+command that shows its coverage.
+"""
+
+from __future__ import annotations
+
+import argparse
+import ast
+import hashlib
+import io
+import json
+import re
+import subprocess
+import sys
+import tarfile
+import tempfile
+import tokenize
+from collections import Counter, defaultdict
+from dataclasses import dataclass
+from functools import cached_property
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Iterator
+
+PACKAGE = "src/datamodel_code_generator"
+PACKAGE_NAME = "datamodel_code_generator"
+GENERATED = "_compiled_templates"
+RUNTIME = f"{PACKAGE}/_runtime/"
+ARCHITECTURE_DOCS = "docs/architecture.md"
+REFERENCE_HOME = f"{PACKAGE}/_json_pointer.py"
+CLONE_MIN_NODES = 11
+CLONE_SKIPPED = (f"{PACKAGE}/_types/",)
+NAMESPACE_HOOKS = frozenset({"__getattr__", "__dir__"})
+CUT_METHODS = frozenset({"split", "rsplit", "partition", "rpartition", "find", "rfind", "index", "rindex"})
+ENUMERATING_METHODS = frozenset({"values", "items", "keys", "copy"})
+_NOQA = re.compile(r"#\s*noqa(?![\w-])(?::\s*(?P<codes>[A-Z0-9]+(?:[\s,]+[A-Z0-9]+)*))?", re.IGNORECASE)
+_PYRIGHT_IGNORE = re.compile(r"\bpyright:\s*ignore\b")
+_FILE_CITATION = re.compile(r"`([A-Za-z_][\w/]*\.py):([A-Za-z_][\w.]*)")
+_CLASS_CITATION = re.compile(r"`([A-Z][A-Za-z0-9_]*)\.([A-Za-z_]\w*)")
+_WORD = re.compile(r"\w+")
+_DOTTED_PATH = re.compile(r"[A-Za-z_]\w*(?:[.:][A-Za-z_]\w*)*")
+
+
+@dataclass(frozen=True)
+class Finding:
+    """One site a rule reports."""
+
+    path: str
+    line: int
+    rule: str
+    detail: str
+
+
+class Module:
+    """One Python file of the tree, parsed once."""
+
+    def __init__(self, root: Path, rel: str) -> None:
+        """Read and parse ``rel`` below ``root``."""
+        self.rel = rel
+        self.text = (root / rel).read_text(encoding="utf-8")
+        self.tree = ast.parse(self.text)
+
+    @cached_property
+    def name(self) -> str:
+        """Return the dotted module name of a package file."""
+        parts = list(Path(self.rel).relative_to("src").with_suffix("").parts)
+        if parts[-1] == "__init__":
+            parts.pop()
+        return ".".join(parts)
+
+    @cached_property
+    def is_package(self) -> bool:
+        """Return whether the file is the ``__init__.py`` of a package."""
+        return self.rel.endswith("/__init__.py")
+
+    @cached_property
+    def lines(self) -> list[str]:
+        """Return the lines of the file."""
+        return self.text.splitlines()
+
+    @cached_property
+    def nodes(self) -> list[ast.AST]:
+        """Return every node of the file, in ``ast.walk`` order."""
+        return list(ast.walk(self.tree))
+
+    @cached_property
+    def comments(self) -> dict[int, str]:
+        """Return the comments of the file by line."""
+        found: dict[int, str] = {}
+        for token in tokenize.generate_tokens(io.StringIO(self.text).readline):
+            if token.type == tokenize.COMMENT:
+                found[token.start[0]] = token.string
+        return found
+
+
+class Tree:
+    """The files of a checkout that the rules read."""
+
+    def __init__(self, root: Path) -> None:
+        """Index the tree at ``root``."""
+        self.root = root
+
+    def _modules(self, top: str) -> list[Module]:
+        return [
+            Module(self.root, path.relative_to(self.root).as_posix())
+            for path in sorted((self.root / top).rglob("*.py"))
+            if GENERATED not in path.parts
+        ]
+
+    @cached_property
+    def package(self) -> list[Module]:
+        """Return the modules of the package, generated template renderers aside."""
+        return self._modules(PACKAGE)
+
+    @cached_property
+    def scripts(self) -> list[Module]:
+        """Return the repository scripts."""
+        return self._modules("scripts")
+
+    @cached_property
+    def words(self) -> dict[str, frozenset[str]]:
+        """Return the words of every Python file of the package and the tests (test data aside) by path."""
+        found: dict[str, frozenset[str]] = {}
+        for top in ("src", "tests"):
+            for path in sorted((self.root / top).rglob("*.py")):
+                rel = path.relative_to(self.root).as_posix()
+                if not rel.startswith("tests/data/"):
+                    found[rel] = frozenset(_WORD.findall(path.read_text(encoding="utf-8", errors="replace")))
+        return found
+
+
+@dataclass(frozen=True)
+class Rule:
+    """A source rule: the review lesson it encodes, its check and how to fix a site."""
+
+    name: str
+    check: Callable[[Tree, Tree | None], Iterator[Finding]]
+    fix: str
+    absolute: bool = False
+    needs_base: bool = False
+
+
+def _targets(node: ast.AST) -> list[ast.expr]:
+    """Return the targets of an assignment statement (none for any other node)."""
+    if isinstance(node, ast.Assign):
+        return node.targets
+    if isinstance(node, (ast.AnnAssign, ast.AugAssign)):
+        return [node.target]
+    return []
+
+
+def hash_split(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
+    """Report a reference string cut at ``#`` by a string method outside the reference home.
+
+    Review class: a copy of the step's decision left outside the routed sites (a hand-split ``#``).
+    """
+    for module in tree.package:
+        if module.rel == REFERENCE_HOME:
+            continue
+        for node in module.nodes:
+            match node:
+                case ast.Call(func=ast.Attribute(attr=method), args=[ast.Constant(value="#"), *_]) if (
+                    method in CUT_METHODS
+                ):
+                    yield Finding(module.rel, node.lineno, "hash-split", ast.unparse(node))
+
+
+class _CitationIndex:
+    """Top-level names and class members of every module of the package."""
+
+    def __init__(self, modules: Iterable[Module]) -> None:
+        self.top: dict[str, set[str]] = {}
+        self.classes: dict[str, dict[str, set[str]]] = {}
+        for module in modules:
+            rel = module.rel.removeprefix(f"{PACKAGE}/")
+            names: set[str] = set()
+            classes: dict[str, set[str]] = {}
+            for node in module.tree.body:
+                names |= _bound(node)
+                if isinstance(node, ast.ClassDef):
+                    classes[node.name] = _members(node)
+            self.top[rel], self.classes[rel] = names, classes
+
+    def resolves_file(self, rel: str, dotted: str) -> bool | None:
+        if rel.startswith(("scripts/", "tests/", "docs/")):
+            return None
+        if rel not in self.top:  # the page shortens paths (`msgspec.py`, `pydantic_v2/base_model.py`)
+            return any(self.resolves_file(path, dotted) for path in self.top if path.endswith(f"/{rel}"))
+        head, _, rest = dotted.partition(".")
+        if head not in self.top[rel]:
+            return False
+        if not rest or head not in self.classes[rel]:
+            return True
+        return rest.split(".")[0] in self.classes[rel][head]
+
+    def resolves_class(self, cls: str, attr: str) -> bool | None:
+        holders = [members for classes in self.classes.values() if (members := classes.get(cls)) is not None]
+        if not holders:
+            return None  # not a class of the package (an Enum member, a pydantic name, a type)
+        return any(attr in members for members in holders)
+
+
+def _bound(node: ast.stmt) -> set[str]:
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        return {node.name}
+    if isinstance(node, ast.Assign):
+        return {target.id for target in node.targets if isinstance(target, ast.Name)}
+    if isinstance(node, (ast.AnnAssign, ast.AugAssign)) and isinstance(node.target, ast.Name):
+        return {node.target.id}
+    if isinstance(node, (ast.Import, ast.ImportFrom)):
+        return {(alias.asname or alias.name).split(".")[0] for alias in node.names}
+    if isinstance(node, ast.If):  # TYPE_CHECKING blocks, version branches
+        return set().union(*(_bound(child) for child in (*node.body, *node.orelse)))
+    return set()
+
+
+def _members(node: ast.ClassDef) -> set[str]:
+    members: set[str] = set()
+    for item in node.body:
+        members |= _bound(item)
+        if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            for sub in ast.walk(item):
+                members |= {
+                    target.attr
+                    for target in _targets(sub)
+                    if isinstance(target, ast.Attribute)
+                    and isinstance(target.value, ast.Name)
+                    and target.value.id == "self"
+                }
+    return members
+
+
+def doc_citations(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
+    """Report a backticked ``path.py:Name[.attr]`` or ``Class.attr`` of the architecture page that names no code.
+
+    Review class: docs or a script citing removed code.
+    """
+    index = _CitationIndex(tree.package)
+    text = (tree.root / ARCHITECTURE_DOCS).read_text(encoding="utf-8")
+    for number, line in enumerate(text.splitlines(), start=1):
+        cited = {(match[1], match[2].rstrip("."), True) for match in _FILE_CITATION.finditer(line)}
+        cited |= {(match[1], match[2], False) for match in _CLASS_CITATION.finditer(line)}
+        for first, second, is_file in sorted(cited):
+            if second.endswith("_"):  # `has_*`-style prefixes name a family, not a name
+                continue
+            if is_file and index.resolves_file(first, second) is False:
+                yield Finding(ARCHITECTURE_DOCS, number, "doc-citations", f"`{first}:{second}`")
+            elif not is_file and index.resolves_class(first, second) is False:
+                yield Finding(ARCHITECTURE_DOCS, number, "doc-citations", f"`{first}.{second}`")
+
+
+def ellipsis_statement(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
+    """Report a ``...`` statement (a stub body) in the package.
+
+    Review class: a CodeQL alert (ineffectual statement) that costs a CI round.
+    """
+    for module in tree.package:
+        for node in module.nodes:
+            if isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant) and node.value.value is Ellipsis:
+                yield Finding(module.rel, node.lineno, "ellipsis-statement", "...")
+
+
+def _suppresses_unused_import(comment: str | None) -> bool:
+    if comment is None or (match := _NOQA.search(comment)) is None:
+        return False
+    return match["codes"] is None or "F401" in re.split(r"[\s,]+", match["codes"].upper())
+
+
+def private_reexport(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
+    """Report an import of a private name that only a ``noqa: F401`` keeps: a re-export of something private.
+
+    Review class: a copy of the step's decision left outside the routed sites (a second reader through an old path).
+    """
+    for module in tree.package:
+        for node in module.nodes:
+            if not isinstance(node, (ast.Import, ast.ImportFrom)):
+                continue
+            for alias in node.names:
+                bound = (alias.asname or alias.name).split(".")[0]
+                if (
+                    bound.startswith("_")
+                    and not bound.startswith("__")
+                    and _suppresses_unused_import(module.comments.get(alias.lineno))
+                ):
+                    yield Finding(module.rel, alias.lineno, "private-reexport", bound)
+
+
+def _parents(module: ast.Module) -> dict[ast.AST, ast.AST]:
+    return {child: node for node in ast.walk(module) for child in ast.iter_child_nodes(node)}
+
+
+def _enclosing_function(node: ast.AST, parents: dict[ast.AST, ast.AST]) -> str | None:
+    while (node := parents.get(node)) is not None:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            return node.name
+    return None
+
+
+def _enumerates(call: ast.Call, parents: dict[ast.AST, ast.AST]) -> bool:
+    parent = parents.get(call)
+    if isinstance(parent, ast.Attribute):
+        return parent.attr in ENUMERATING_METHODS
+    return isinstance(parent, (ast.For, ast.AsyncFor, ast.comprehension, ast.Starred, ast.Call))
+
+
+def globals_registry(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
+    """Report ``globals()`` enumerated as a registry, outside a module ``__getattr__`` or ``__dir__``.
+
+    Review class: a CodeQL alert group (every entry of such a registry reads as an unused global).
+    """
+    for module in (*tree.package, *tree.scripts):
+        if "globals(" not in module.text:
+            continue
+        parents = _parents(module.tree)
+        for node in module.nodes:
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id == "globals"
+                and _enumerates(node, parents)
+                and _enclosing_function(node, parents) not in NAMESPACE_HOOKS
+            ):
+                yield Finding(module.rel, node.lineno, "globals-registry", module.lines[node.lineno - 1].strip())
+
+
+def unused_private_global(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
+    """Report a module-level private name (``_NAME = ...``) that its module never reads and no other file names.
+
+    Review class: dead code left by a move (a CodeQL unused global).
+    """
+    words = tree.words
+    for module in tree.package:
+        loads = {node.id for node in module.nodes if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)}
+        assigned: dict[str, int] = {}
+        for node in module.tree.body:
+            for target in _targets(node):
+                if isinstance(target, ast.Name) and target.id.startswith("_") and not target.id.startswith("__"):
+                    assigned.setdefault(target.id, node.lineno)
+        for name, line in assigned.items():
+            if name not in loads and not any(name in found for path, found in words.items() if path != module.rel):
+                yield Finding(module.rel, line, "unused-private-global", name)
+
+
+def _import_targets(module: Module, node: ast.Import | ast.ImportFrom, names: set[str]) -> list[str]:
+    if isinstance(node, ast.Import):
+        return [alias.name for alias in node.names]
+    base = node.module or ""
+    if node.level:
+        package = module.name.split(".") if module.is_package else module.name.split(".")[:-1]
+        package = package[: len(package) - (node.level - 1)]
+        base = ".".join([*package, base] if base else package)
+    return [candidate if (candidate := f"{base}.{alias.name}") in names else base for alias in node.names]
+
+
+def _is_type_checking(node: ast.AST) -> bool:
+    return isinstance(node, ast.If) and "TYPE_CHECKING" in ast.unparse(node.test)
+
+
+class _ImportGraph:
+    """The module-level imports of the package (``TYPE_CHECKING`` blocks aside) and the function-level ones."""
+
+    def __init__(self, modules: list[Module]) -> None:
+        self.names = {module.name for module in modules}
+        self.edges: dict[str, set[str]] = defaultdict(set)
+        self.local: list[tuple[Module, ast.Import | ast.ImportFrom, list[str]]] = []
+        for module in modules:
+            self._visit(module, module.tree, in_function=False, guarded=False)
+        self._reach: dict[str, set[str]] = {}
+
+    def _visit(self, module: Module, node: ast.AST, *, in_function: bool, guarded: bool) -> None:
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, (ast.Import, ast.ImportFrom)):
+                targets = [target for target in _import_targets(module, child, self.names) if target in self.names]
+                if in_function:
+                    self.local.append((module, child, targets))
+                elif not guarded:
+                    for target in targets:
+                        self.edges[module.name].add(target)
+                        self.edges[module.name].update(self._parents(target))
+                continue
+            self._visit(
+                module,
+                child,
+                in_function=in_function or isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)),
+                guarded=guarded or _is_type_checking(child),
+            )
+
+    def _parents(self, name: str) -> list[str]:
+        """Return the packages that importing ``name`` initialises first, the root package aside."""
+        parts = name.split(".")
+        return [parent for index in range(2, len(parts)) if (parent := ".".join(parts[:index])) in self.names]
+
+    def reach(self, name: str) -> set[str]:
+        """Return the modules that importing ``name`` loads at module level."""
+        if name not in self._reach:
+            seen = {name, *self._parents(name)}
+            todo = list(seen)
+            while todo:
+                for target in self.edges.get(todo.pop(), ()):
+                    if target not in seen:
+                        seen.add(target)
+                        todo.append(target)
+            self._reach[name] = seen
+        return self._reach[name]
+
+
+def redundant_local_import(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
+    """Report a function-level import of package modules that the importer already loads at module level.
+
+    Review class: a local import kept for no reason (it defers nothing and closes no cycle). Imports of the root
+    package are left out: they wait for its names to move to leaf modules, not for a hoist.
+    """
+    graph = _ImportGraph(tree.package)
+    for module, node, imported in graph.local:
+        targets = [target for target in imported if target != PACKAGE_NAME]
+        if targets and all(
+            target in graph.reach(module.name) and module.name not in graph.reach(target) for target in targets
+        ):
+            yield Finding(module.rel, node.lineno, "redundant-local-import", ", ".join(dict.fromkeys(targets)))
+
+
+def _shape(node: object, names: dict[str, str], bound: set[str]) -> str:
+    """Dump ``node`` like ``ast.dump`` with the names in ``bound`` numbered in the order they appear."""
+    if isinstance(node, list):
+        return "[" + ",".join(_shape(item, names, bound) for item in node) + "]"
+    if not isinstance(node, ast.AST):
+        return repr(node)
+    fields = []
+    for field, value in ast.iter_fields(node):
+        if isinstance(node, ast.arg) and field != "arg":
+            continue  # parameter annotations do not change what a body does
+        if (field == "id" and isinstance(node, ast.Name)) or (field == "arg" and isinstance(node, ast.arg)):
+            fields.append(names.setdefault(value, f"v{len(names)}") if value in bound else value)
+        else:
+            fields.append(_shape(value, names, bound))
+    return f"{type(node).__name__}({','.join(fields)})"
+
+
+def _body_key(node: ast.FunctionDef | ast.AsyncFunctionDef) -> str | None:
+    body = node.body
+    if (
+        isinstance(body[0], ast.Expr)
+        and isinstance(body[0].value, ast.Constant)
+        and isinstance(body[0].value.value, str)
+    ):
+        body = body[1:]
+    inner = [sub for statement in body for sub in ast.walk(statement)]
+    if len(inner) < CLONE_MIN_NODES:
+        return None
+    arguments = node.args
+    bound = {arg.arg for arg in (*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs)}
+    bound |= {arg.arg for arg in (arguments.vararg, arguments.kwarg) if arg is not None}
+    bound |= {sub.id for sub in inner if isinstance(sub, ast.Name) and isinstance(sub.ctx, ast.Store)}
+    bound |= {sub.arg for sub in inner if isinstance(sub, ast.arg)}  # parameters of lambdas and nested functions
+    return hashlib.sha256(_shape(body, {}, bound).encode()).hexdigest()
+
+
+def clone_bodies(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
+    """Report function bodies equal up to the names of parameters and locals in two or more modules.
+
+    Review class: a copy of a decision outside its home (two functions that are one decision).
+    """
+    groups: dict[str, list[tuple[str, int, str]]] = defaultdict(list)
+    for module in tree.package:
+        if module.rel.startswith(CLONE_SKIPPED):
+            continue
+        for node in module.nodes:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and (key := _body_key(node)) is not None:
+                groups[key].append((module.rel, node.lineno, node.name))
+    for members in groups.values():
+        if len({rel for rel, _, _ in members}) > 1:
+            (rel, line, name), *others = members
+            copies = "; ".join(f"{other}:{other_line} {other_name}" for other, other_line, other_name in others)
+            yield Finding(rel, line, "clone-bodies", f"{name} = {copies}")
+
+
+def pyright_outside_runtime(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
+    """Report a ``pyright: ignore`` comment in a package module outside ``_runtime/``.
+
+    Review class: an escape hatch nothing checks (pyright reads generated packages, which copy ``_runtime/`` only).
+    """
+    for module in tree.package:
+        if module.rel.startswith(RUNTIME):
+            continue
+        for line, comment in module.comments.items():
+            if _PYRIGHT_IGNORE.search(comment):
+                yield Finding(module.rel, line, "pyright-outside-runtime", comment)
+
+
+def _is_public_module(rel: str) -> bool:
+    return not any(part.startswith("_") and part != "__init__.py" for part in Path(rel).parts)
+
+
+def _public_callables(modules: Iterable[Module]) -> dict[tuple[str, str], tuple[str, int, int]]:
+    """Return the public functions, classes and methods of public classes: (path, qualname) -> (module, start, end)."""
+    found: dict[tuple[str, str], tuple[str, int, int]] = {}
+    for module in modules:
+        if not _is_public_module(module.rel):
+            continue
+        for node in module.tree.body:
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) or node.name.startswith("_"):
+                continue
+            found[module.rel, node.name] = (module.name, node.lineno, node.end_lineno or node.lineno)
+            if isinstance(node, ast.ClassDef):
+                for item in node.body:
+                    if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)) and not item.name.startswith("_"):
+                        found[module.rel, f"{node.name}.{item.name}"] = (
+                            module.name,
+                            item.lineno,
+                            item.end_lineno or item.lineno,
+                        )
+    return found
+
+
+def _references(modules: Iterable[Module]) -> dict[str, list[tuple[str, int]]]:
+    """Return where the package reads each name: as a name, an attribute or a dotted path in a string.
+
+    The entries of ``__all__`` are not reads.
+    """
+    found: dict[str, list[tuple[str, int]]] = defaultdict(list)
+    for module in modules:
+        exports = {
+            id(element)
+            for node in module.tree.body
+            if any(isinstance(target, ast.Name) and target.id == "__all__" for target in _targets(node))
+            for element in ast.walk(node)
+        }
+        for node in module.nodes:
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+                found[node.id].append((module.rel, node.lineno))
+            elif isinstance(node, ast.Attribute) and not isinstance(node.ctx, ast.Store):
+                found[node.attr].append((module.rel, node.lineno))
+            elif (
+                isinstance(node, ast.Constant)
+                and isinstance(node.value, str)
+                and id(node) not in exports
+                and _DOTTED_PATH.fullmatch(node.value)
+            ):
+                found[re.split(r"[.:]", node.value)[-1]].append((module.rel, node.lineno))
+    return found
+
+
+def _callers(
+    modules: list[Module],
+) -> tuple[dict[tuple[str, str], tuple[str, int, int]], Counter[tuple[str, str]]]:
+    """Return the public callables and how often the package reads each one outside its own body."""
+    callables = _public_callables(modules)
+    references = _references(modules)
+    counts: Counter[tuple[str, str]] = Counter()
+    for (rel, qualname), (_, start, end) in callables.items():
+        counts[rel, qualname] = sum(
+            1
+            for path, line in references.get(qualname.rpartition(".")[2], ())
+            if path != rel or not start <= line <= end
+        )
+    return callables, counts
+
+
+def lost_last_caller(tree: Tree, base: Tree | None) -> Iterator[Finding]:
+    """Report a public callable the package used on the base and no longer uses: only tests reach its branches now.
+
+    Review class: a branch only CI's combined coverage found (a public method whose internal callers were routed away).
+    Report only: whether tests reach every branch needs coverage data, so each site names the command that shows it.
+    """
+    assert base is not None  # Rule.needs_base: run() calls this rule only with a base
+    _, before = _callers(base.package)
+    callables, after = _callers(tree.package)
+    for (rel, qualname), (module, start, _) in sorted(callables.items()):
+        if before.get((rel, qualname)) and not after[rel, qualname]:
+            yield Finding(
+                rel,
+                start,
+                "lost-last-caller",
+                f"{qualname} (package uses on the base: {before[rel, qualname]}; "
+                f"pytest <its tests> -p no:xdist --cov={module} --cov-branch --cov-report=term-missing)",
+            )
+
+
+RULES: tuple[Rule, ...] = (
+    Rule(
+        "hash-split",
+        hash_split,
+        "cut references through the reference home `_json_pointer.py` (`document_part`, `reference_tokens`, ...); "
+        "add a function there when none fits",
+    ),
+    Rule(
+        "doc-citations",
+        doc_citations,
+        "cite the current name of the code in docs/architecture.md, or drop the citation if the code is gone",
+    ),
+    Rule("ellipsis-statement", ellipsis_statement, "give the body a docstring instead of `...`"),
+    Rule(
+        "private-reexport",
+        private_reexport,
+        "import the private name from the module that defines it in every importer, then delete this import",
+    ),
+    Rule(
+        "globals-registry",
+        globals_registry,
+        "list the entries in one explicit tuple (or register each where it is defined) instead of reading globals()",
+    ),
+    Rule(
+        "unused-private-global",
+        unused_private_global,
+        "delete the unused name (a move left it behind)",
+        absolute=True,
+    ),
+    Rule(
+        "redundant-local-import",
+        redundant_local_import,
+        "import at module level: the importer already loads these modules there, so the local import defers nothing",
+    ),
+    Rule(
+        "clone-bodies",
+        clone_bodies,
+        "keep one body in the module that owns the decision and call it from the others",
+    ),
+    Rule(
+        "pyright-outside-runtime",
+        pyright_outside_runtime,
+        "delete the comment: no pyright run reads this module (ty checks it; use `ty: ignore[<rule>]` if needed)",
+    ),
+    Rule(
+        "lost-last-caller",
+        lost_last_caller,
+        "test every branch of the callable directly (run the command shown and add cases for the missing lines), "
+        "or route its tests through the code that replaced the callers",
+        needs_base=True,
+    ),
+)
+
+
+def _extract(root: Path, ref: str, dest: Path) -> Tree:
+    archive = subprocess.run(
+        ["git", "-C", str(root), "archive", "--format=tar", ref, PACKAGE],
+        check=True,
+        capture_output=True,
+    ).stdout
+    with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
+        tar.extractall(dest, filter="data")
+    return Tree(dest)
+
+
+def run(tree: Tree, rules: Iterable[Rule], base: Tree | None) -> dict[str, list[Finding]]:
+    """Run the rules that can run (the base-relative ones only with a base) and return their findings by rule."""
+    return {
+        rule.name: sorted(rule.check(tree, base), key=lambda finding: (finding.path, finding.line))
+        for rule in rules
+        if base is not None or not rule.needs_base
+    }
+
+
+def format_report(rules: Iterable[Rule], findings: dict[str, list[Finding]]) -> str:
+    """Return every site, then the count and fix of each rule (or why it did not run)."""
+    lines = [
+        f"{finding.path}:{finding.line}: {finding.rule}: {finding.detail}"
+        for found in findings.values()
+        for finding in found
+    ]
+    lines += ["", "rule counts:"]
+    for rule in rules:
+        if rule.name in findings:
+            kind = "absolute" if rule.absolute else "report only" if rule.needs_base else "ratchet"
+            lines.append(f"  {rule.name}: {len(findings[rule.name])} ({kind}); fix: {rule.fix}")
+        else:
+            lines.append(f"  {rule.name}: not run (needs --base)")
+    return "\n".join(lines) + "\n"
+
+
+def format_counts(findings: dict[str, list[Finding]]) -> str:
+    """Return the counts as ratchet keys: ``{"source-rule:<rule>": {file: count}}``."""
+    counts = {
+        f"source-rule:{name}": dict(sorted(Counter(finding.path for finding in found).items()))
+        for name, found in findings.items()
+    }
+    return json.dumps(counts, indent=2) + "\n"
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Run the source rules and print their report; exit 1 when an absolute rule reports a site."""
+    parser = argparse.ArgumentParser(description="Report the code shapes that code reviews keep finding.")
+    parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1], help="checkout to read")
+    parser.add_argument("--base", help="git revision that lost-last-caller compares with")
+    parser.add_argument("--rule", action="append", choices=[rule.name for rule in RULES], help="run only this rule")
+    parser.add_argument("--count", action="store_true", help="print the counts as JSON ratchet keys")
+    args = parser.parse_args(argv)
+    rules = [rule for rule in RULES if args.rule is None or rule.name in args.rule]
+    with tempfile.TemporaryDirectory() as temporary:
+        base = _extract(args.root, args.base, Path(temporary)) if args.base else None
+        findings = run(Tree(args.root), rules, base)
+    sys.stdout.write(format_counts(findings) if args.count else format_report(rules, findings))
+    return int(any(findings.get(rule.name) for rule in RULES if rule.absolute))
+
+
+if __name__ == "__main__":
+    sys.exit(main())

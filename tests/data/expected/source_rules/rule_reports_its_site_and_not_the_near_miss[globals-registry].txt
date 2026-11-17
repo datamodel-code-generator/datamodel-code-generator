@@ -1,0 +1,9 @@
+exit: 0
+scripts/decls.py:1: globals-registry: TABLE = tuple(globals().items())
+src/datamodel_code_generator/registry.py:1: globals-registry: ENTRIES = [value for value in globals().values() if isinstance(value, int)]
+src/datamodel_code_generator/registry.py:2: globals-registry: NAMES = [*globals()]
+src/datamodel_code_generator/registry.py:3: globals-registry: KEYS = {name for name in globals()}
+src/datamodel_code_generator/registry.py:4: globals-registry: for name in globals():
+
+rule counts:
+  globals-registry: 5 (ratchet); fix: list the entries in one explicit tuple (or register each where it is defined) instead of reading globals()

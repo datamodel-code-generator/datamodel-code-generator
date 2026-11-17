@@ -1,0 +1,5 @@
+exit: 0
+src/datamodel_code_generator/binding.py:1: pyright-outside-runtime: # pyright: ignore[reportArgumentType]
+
+rule counts:
+  pyright-outside-runtime: 1 (ratchet); fix: delete the comment: no pyright run reads this module (ty checks it; use `ty: ignore[<rule>]` if needed)

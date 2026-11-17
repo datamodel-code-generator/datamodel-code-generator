@@ -1,0 +1,6 @@
+exit: 0
+src/datamodel_code_generator/first.py:1: clone-bodies: total = src/datamodel_code_generator/second.py:1 summed
+src/datamodel_code_generator/second.py:7: clone-bodies: keyed = src/datamodel_code_generator/third.py:1 ordered
+
+rule counts:
+  clone-bodies: 2 (ratchet); fix: keep one body in the module that owns the decision and call it from the others

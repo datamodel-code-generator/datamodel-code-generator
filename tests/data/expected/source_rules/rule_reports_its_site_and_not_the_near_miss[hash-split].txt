@@ -1,0 +1,5 @@
+exit: 0
+src/datamodel_code_generator/reader.py:2: hash-split: ref.rsplit('#', 1)
+
+rule counts:
+  hash-split: 1 (ratchet); fix: cut references through the reference home `_json_pointer.py` (`document_part`, `reference_tokens`, ...); add a function there when none fits

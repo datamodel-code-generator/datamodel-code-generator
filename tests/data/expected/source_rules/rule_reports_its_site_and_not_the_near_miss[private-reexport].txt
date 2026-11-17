@@ -1,0 +1,8 @@
+exit: 0
+src/datamodel_code_generator/reexports.py:1: private-reexport: _x
+src/datamodel_code_generator/reexports.py:3: private-reexport: _alias
+src/datamodel_code_generator/reexports.py:4: private-reexport: _q
+src/datamodel_code_generator/reexports.py:10: private-reexport: _os
+
+rule counts:
+  private-reexport: 4 (ratchet); fix: import the private name from the module that defines it in every importer, then delete this import
