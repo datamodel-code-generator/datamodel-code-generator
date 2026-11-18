@@ -76,6 +76,78 @@ TREES: dict[str, dict[str, str]] = {
             Broken: `parser/base.py:gone`, `parser/base.py:Parser.gone`, `Parser.missing`, `gone.py:build`.
         """,
     },
+    "flaky-test-workarounds": {
+        "tests/test_retries.py": """
+            import flaky
+            import pytest
+            import pytest_rerunfailures
+            from flaky import flaky as retry
+            from pytest_rerunfailures import gather
+
+            pytestmark = pytest.mark.flaky(reruns=3)
+
+            @flaky(max_runs=3)
+            def test_marked():
+                pytest.main(["--reruns", "2", "--reruns-delay=1", "-p", "rerunfailures", "--only-rerun=OSError"])
+                return ["--reruns 5", "-p rerunfailures", "-prerunfailures"]
+        """,
+        "tests/test_near_miss.py": """
+            import asyncio
+            import time as clock
+            from time import monotonic
+
+            NOTE = "--reruns is not passed here"
+            OPTIONS = ["--lf", "--maxfail=1", "reruns", "flaky_data"]
+
+            def test_waits(backend):
+                backend.sleep(1)
+                clock.monotonic()
+                monotonic()
+                asyncio.sleep(0)
+
+            def sleep(seconds):
+                return seconds
+
+            def test_local():
+                sleep(1)
+        """,
+        "tests/test_sleeps.py": """
+            import time
+            import time as clock
+            from time import sleep, sleep as nap
+
+            def test_sleeps():
+                time.sleep(1)
+                clock.sleep(1)
+                sleep(1)
+                nap(1)
+        """,
+        "tests/test_listed.py": """
+            import time
+
+            def test_listed():
+                time.sleep(1)
+                time.sleep(1)
+        """,
+        "tests/test_unlisted.py": "",
+        "tests/data/expected/source_rules/sleeps.py": """
+            import time
+            time.sleep(1)
+        """,
+        "scripts/test_sleep_allowlist.toml": """
+            ["tests/test_sleeps.py"]
+            count = 2
+            reason = "two waits"
+
+            ["tests/test_listed.py"]
+            count = 2
+            reason = "exact"
+
+            ["tests/test_unlisted.py"]
+            count = 1
+            reason = "gone"
+        """,
+    },
     "ellipsis-statement": {
         f"{PACKAGE}/hosts.py": """
             from typing import Protocol

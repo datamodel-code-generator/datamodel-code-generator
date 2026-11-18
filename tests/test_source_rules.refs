@@ -8,6 +8,7 @@
 clone-bodies	source_rules/rule_reports_its_site_and_not_the_near_miss[clone-bodies].txt
 doc-citations	source_rules/rule_reports_its_site_and_not_the_near_miss[doc-citations].txt
 ellipsis-statement	source_rules/rule_reports_its_site_and_not_the_near_miss[ellipsis-statement].txt
+flaky-test-workarounds	source_rules/rule_reports_its_site_and_not_the_near_miss[flaky-test-workarounds].txt
 globals-registry	source_rules/rule_reports_its_site_and_not_the_near_miss[globals-registry].txt
 hash-split	source_rules/rule_reports_its_site_and_not_the_near_miss[hash-split].txt
 private-reexport	source_rules/rule_reports_its_site_and_not_the_near_miss[private-reexport].txt

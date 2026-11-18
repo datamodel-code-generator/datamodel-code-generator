@@ -1,0 +1,31 @@
+# time.sleep calls in tests, per file, as scripts/check_source_rules.py (rule flaky-test-workarounds) counts them.
+# Today's sites are the baseline: a count may only fall (a file that needs fewer sleeps lowers it, a file that needs
+# none loses its entry). A new sleep fails the rule; wait on an event, a condition or an injected clock instead.
+
+["tests/api_generation/scenarios/client_deadline_streams.py"]
+count = 1
+reason = "a server stream delays its body so the client deadline passes"
+
+["tests/api_generation/scenarios/client_pagination_sessions.py"]
+count = 1
+reason = "waits past a one second pagination total timeout in real time"
+
+["tests/api_generation/support/fixture_http2.py"]
+count = 1
+reason = "the HTTP/2 fixture server delays its response body so the client deadline passes"
+
+["tests/data/python/custom_formatters/advance_time_before_second_generation.py"]
+count = 1
+reason = "moves the wall clock to the next second so two generations get different timestamps"
+
+["tests/data/python/custom_formatters/blocking_watch.py"]
+count = 1
+reason = "a formatter that blocks while the watcher runs"
+
+["tests/main/payload_validation/cases.py"]
+count = 1
+reason = "polling pause while another process writes a case chunk"
+
+["tests/main/test_main_watch.py"]
+count = 15
+reason = "polling pauses of the watch CLI tests (ready delay, change retries, poll step)"

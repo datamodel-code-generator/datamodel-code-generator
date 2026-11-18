@@ -33,6 +33,8 @@ from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
+import tomllib
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
 
@@ -47,6 +49,10 @@ NAMESPACE_HOOKS = frozenset({"__getattr__", "__dir__"})
 CUT_METHODS = frozenset({"split", "rsplit", "partition", "rpartition", "find", "rfind", "index", "rindex"})
 ENUMERATING_METHODS = frozenset({"values", "items", "keys", "copy"})
 UNUSED_IMPORT = ("F401", "unused-import")
+TESTS = "tests"
+TESTS_STORED = "tests/data/expected/"
+SLEEP_ALLOWLIST = "scripts/test_sleep_allowlist.toml"
+RERUN_MODULES = frozenset({"flaky", "pytest_rerunfailures", "rerunfailures"})
 _CODES = r"(?::\s*(?P<codes>[A-Z0-9]+(?:[\s,]+[A-Z0-9]+)*))?"
 _NOQA = re.compile(rf"#\s*noqa(?![\w-]){_CODES}", re.IGNORECASE)
 _FILE_NOQA = re.compile(rf"#\s*(?:ruff|flake8):\s*noqa(?![\w-]){_CODES}")
@@ -54,6 +60,9 @@ _RUFF_RULES = re.compile(r"#\s*ruff:\s*(?P<action>ignore|disable|enable)\[(?P<ru
 _FILE_CITATION = re.compile(r"`([A-Za-z_][\w/]*\.py):([A-Za-z_][\w.]*)")
 _CLASS_CITATION = re.compile(r"`([A-Z][A-Za-z0-9_]*)\.([A-Za-z_]\w*)")
 _WORD = re.compile(r"\w+")
+_RERUN_OPTION = re.compile(
+    r"(?:-p\s*)?(?:pytest_)?rerunfailures|--(?:reruns|reruns-delay|only-rerun|rerun-except)(?:[=\s]\S*)?"
+)
 _DOTTED_PATH = re.compile(r"[A-Za-z_]\w*(?:[.:][A-Za-z_]\w*)*")
 _STRING_PATH = re.compile(r"(?P<module>[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)[.:](?P<name>[A-Za-z_]\w*)")
 
@@ -139,6 +148,15 @@ class Tree:
     def scripts(self) -> list[Module]:
         """Return the repository scripts."""
         return self._modules("scripts")
+
+    @cached_property
+    def tests(self) -> list[Module]:
+        """Return the Python files of ``tests`` (stored expected output aside)."""
+        return [
+            Module(self.root, rel)
+            for path in sorted((self.root / TESTS).rglob("*.py"))
+            if not (rel := path.relative_to(self.root).as_posix()).startswith(TESTS_STORED)
+        ]
 
     @cached_property
     def words(self) -> dict[str, frozenset[str]]:
@@ -885,6 +903,73 @@ def lost_last_caller(tree: Tree, base: Tree | None) -> Iterator[Finding]:
             )
 
 
+def _sleep_names(module: Module) -> tuple[set[str], set[str]]:
+    """Return the names the file binds to the ``time`` module and to ``time.sleep``."""
+    clocks: set[str] = set()
+    sleeps: set[str] = set()
+    for node in module.nodes:
+        if isinstance(node, ast.Import):
+            clocks.update(alias.asname or alias.name for alias in node.names if alias.name == "time")
+        elif isinstance(node, ast.ImportFrom) and node.module == "time" and node.level == 0:
+            sleeps.update(alias.asname or alias.name for alias in node.names if alias.name == "sleep")
+    return clocks, sleeps
+
+
+def _retry_form(node: ast.AST) -> str | None:
+    """Return what kind of rerun or flaky marker, plugin or option ``node`` is, if it is one."""
+    match node:
+        case ast.Attribute(attr="flaky") | ast.Name(id="flaky"):
+            return "flaky marker"
+        case ast.Import(names=aliases):
+            hit = any(alias.name.split(".")[0] in RERUN_MODULES for alias in aliases)
+        case ast.ImportFrom(module=str() as name, level=0):
+            hit = name.split(".")[0] in RERUN_MODULES
+        case ast.Constant(value=str() as text):
+            hit = _RERUN_OPTION.fullmatch(text.strip()) is not None
+        case _:
+            hit = False
+    return "rerun plugin or option" if hit else None
+
+
+def _is_sleep(node: ast.AST, clocks: set[str], sleeps: set[str]) -> bool:
+    if not isinstance(node, ast.Call):
+        return False
+    func = node.func
+    if isinstance(func, ast.Attribute):
+        return func.attr == "sleep" and _dotted(func.value) in clocks
+    return isinstance(func, ast.Name) and func.id in sleeps
+
+
+def _allowed_sleeps(tree: Tree) -> dict[str, int]:
+    path = tree.root / SLEEP_ALLOWLIST
+    if not path.exists():
+        return {}
+    return {name: entry["count"] for name, entry in tomllib.loads(path.read_text(encoding="utf-8")).items()}
+
+
+def flaky_test_workarounds(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
+    """Report rerun or flaky markers and plugins in the tests, and ``time.sleep`` calls beyond the allowlist.
+
+    Review class: a test that is retried or slept into passing hides a race that a deterministic wait fixes. The
+    allowlist ``scripts/test_sleep_allowlist.toml`` counts today's sleeps per file with the reason; a count above it
+    or an entry the file no longer needs is reported, so the list only shrinks.
+    """
+    allowed = _allowed_sleeps(tree)
+    found: Counter[str] = Counter()
+    for module in tree.tests:
+        clocks, sleeps = _sleep_names(module)
+        for node in module.nodes:
+            if form := _retry_form(node):
+                yield Finding(module.rel, node.lineno, "flaky-test-workarounds", form)
+            elif _is_sleep(node, clocks, sleeps):
+                found[module.rel] += 1
+                if found[module.rel] > allowed.get(module.rel, 0):
+                    yield Finding(module.rel, node.lineno, "flaky-test-workarounds", "time.sleep beyond the allowlist")
+    for name, count in allowed.items():
+        if found[name] < count:
+            yield Finding(SLEEP_ALLOWLIST, 1, "flaky-test-workarounds", f"{name} allows {count}, holds {found[name]}")
+
+
 RULES: tuple[Rule, ...] = (
     Rule(
         "hash-split",
@@ -932,6 +1017,13 @@ RULES: tuple[Rule, ...] = (
         "or route its tests through the code that replaced the callers",
         needs_base=True,
         coverage=undecided_callers,
+    ),
+    Rule(
+        "flaky-test-workarounds",
+        flaky_test_workarounds,
+        "fix the race the retry or sleep hides (wait on an event, a condition or an injected clock) or delete the test "
+        "with the reason in the commit; never add an entry to scripts/test_sleep_allowlist.toml",
+        absolute=True,
     ),
 )
 
