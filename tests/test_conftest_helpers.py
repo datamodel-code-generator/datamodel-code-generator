@@ -3749,10 +3749,18 @@ def test_home_directory_in(text: str, home: str, found: str | None) -> None:
 
 
 def test_refuse_home_directory(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """Stored output holding the current home directory fails the comparison, for a text and for a tree."""
-    home = tmp_path / "developer"
-    monkeypatch.setenv("HOME", str(home))
-    monkeypatch.setenv("USERPROFILE", str(home))
-    _refuse_home_directory({"a.py": "clean", "b.bin": b"x"})
+    """Stored output holding the session's home directory fails the comparison, nested JSON values included."""
+    home = str(tmp_path / "developer")
+    monkeypatch.setattr(shared_conftest, "_SESSION_HOME", home)
+    _refuse_home_directory({"a.py": "clean", "b.bin": b"x", "c.json": {"k": [1, {"n": "clean"}]}})
     with pytest.raises(pytest.fail.Exception, match="holds the home directory"):
         _refuse_home_directory({"a.py": f"path = {home}/x"})
+    with pytest.raises(pytest.fail.Exception, match="holds the home directory"):
+        _refuse_home_directory({"k": [1, {"n": f"{home}/x"}]})
+
+
+def test_a_placeholder_home_is_not_the_session_home(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A test that sets HOME to a placeholder may store it: the guard compares with the session's own home."""
+    monkeypatch.setenv("HOME", "<HOME>")
+    monkeypatch.setenv("USERPROFILE", "<HOME>")
+    _refuse_home_directory({"a.txt": "<HOME>/x"})

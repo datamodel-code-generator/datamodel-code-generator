@@ -2058,13 +2058,27 @@ def home_directory_in(text: str, home: str) -> str | None:
     return next((form for form in (home, posix, home.replace("\\", "\\\\")) if form in text), None)
 
 
+_SESSION_HOME = str(Path.home())
+
+
+def _strings_in(value: object) -> Generator[str]:
+    """Yield every string held by a value, walking nested dicts, lists and tuples."""
+    match value:
+        case str():
+            yield value
+        case dict():
+            for item in value.values():
+                yield from _strings_in(item)
+        case list() | tuple():
+            for item in value:
+                yield from _strings_in(item)
+
+
 def _refuse_home_directory(value: object) -> None:
-    """Fail the running test when stored output would hold the current user's home directory."""
+    """Fail the running test when stored output would hold the home directory the session started with."""
     __tracebackhide__ = True
-    home = str(Path.home())
-    texts = value.values() if isinstance(value, dict) else (value,)
-    for text in texts:
-        if isinstance(text, str) and (form := home_directory_in(text, home)) is not None:
+    for text in _strings_in(value):
+        if (form := home_directory_in(text, _SESSION_HOME)) is not None:
             pytest.fail(
                 f"Output to compare holds the home directory {form!r}: it would leak a developer's own path into the "
                 "repository. Normalize the path in the test (a placeholder), or set the variable with "
@@ -2082,10 +2096,10 @@ def _compare_expected(
     generated tree, are compared directly. ``hint`` says how to keep two different outputs apart.
     """
     __tracebackhide__ = True
-    _refuse_home_directory(value)
     if pattern is not None and isinstance(value, dict):
         # The stored tree holds only the files the pattern selects; compare the same files of the output.
         value = {name: text for name, text in value.items() if PurePosixPath(name).match(pattern)}
+    _refuse_home_directory(value)
     ledger = _ledger()
     label = ledger.label(expected_path, pattern) if ledger is not None else None
     if ledger is None or label is None:
