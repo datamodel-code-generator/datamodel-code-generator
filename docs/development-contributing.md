@@ -329,8 +329,11 @@ prints one `declare` command per kind of stored output (model output, notices, l
 when the base is not the merge base with `origin/main`, `--extends` for an output a lower layer's record covers, and
 the id of the record the change adds when it has one. `new-surface` covers model output only where the latest release
 has none, and a `harness` record of a change that touches `src/` is listed as needing the replay. The check also lists
-the outputs that moved since the latest tag with no unreleased record and a tag that `releases.toml` does not list
-yet. It reports only, for now; `--report-only` keeps its exit status 0 once it fails CI.
+the outputs that moved since the latest tag with no unreleased record, judged by the same rule for each change since
+the tag as main takes them (an output a test-only change added needs none later either; one it renamed keeps the need
+of the output it renamed, and `declare` takes its new label), and a tag that `releases.toml` does not list yet. A stack
+layer's base counts as one change from its merge base with `origin/main`; the check needs the history since the tag
+and stops on a shallow clone. It reports only, for now; `--report-only` keeps its exit status 0 once it fails CI.
 
 ## Review checklist
 

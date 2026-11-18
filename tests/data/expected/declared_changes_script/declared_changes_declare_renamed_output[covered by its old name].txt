@@ -1,0 +1,38 @@
+$ check --base base
+exit 1
+declared changes: the working tree against base, release since 0.1.0
+1 stored outputs moved since 0.1.0 and lost their record here:
+  models/renamed.py
+1 covered labels no longer differ from 0.1.0:
+  models/new.py
+  python scripts/declared_changes.py prune
+2 references moved: removed and added with equal content
+failed
+
+$ prune --base base
+exit 0
+unreleased/new-output.toml: dropped models/new.py
+
+$ declare new-output --tests *::test_renamed --base base
+exit 0
+docs/data/migration/unreleased/new-output.toml covers 1 more stored outputs
+
+$ check --base base --main
+exit 0
+declared changes: the working tree against base, release since 0.1.0
+2 references moved: removed and added with equal content
+ok
+
+--- new-output.toml ---
+[[change]]
+id = "new-output"
+category = "output-text"
+title = "t"
+summary = "s"
+kind = "output-text"
+action = "none"
+source = "release-note"
+refs = ["#42"]
+covers = [
+    "models/renamed.py",
+]

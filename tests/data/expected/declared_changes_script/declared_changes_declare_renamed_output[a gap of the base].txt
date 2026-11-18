@@ -1,0 +1,29 @@
+$ check --base base
+exit 0
+declared changes: the working tree against base, release since 0.1.0
+1 stored outputs moved since 0.1.0 with no record before this change
+2 references moved: removed and added with equal content
+ok
+
+$ prune --base base
+exit 0
+
+$ declare backfill-new --category harness --title t --summary s --labels */renamed.py --base base
+exit 0
+docs/data/migration/unreleased/backfill-new.toml covers 1 more stored outputs
+
+$ check --base base --main
+exit 0
+declared changes: the working tree against base, release since 0.1.0
+2 references moved: removed and added with equal content
+ok
+
+--- backfill-new.toml ---
+[[change]]
+id = "backfill-new"
+category = "harness"
+title = "t"
+summary = "s"
+covers = [
+    "models/renamed.py",
+]

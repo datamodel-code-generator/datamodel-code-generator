@@ -81,18 +81,25 @@ def _commit(repository: Path, message: str) -> None:
 def _repository(tmp_path: Path, spec: dict[str, Any]) -> Path:
     """Commit the release and tag it, commit the base on branch `base`, then the head on branch `fix-the-thing`.
 
-    With `origin`, origin/main points at the base, so the base is the default one.
+    The `steps` are commits of main between the release and the base. With `origin`, origin/main points at the base,
+    so the base is the default one; the commits of `layer` follow it on branch `base`, as a lower stack layer's do.
     """
     repository = tmp_path / "repository"
     _write(repository, RELEASED | spec.get("release", {}))
     subprocess.run([*GIT, "init", "-q", "-b", "main"], cwd=repository, check=True)
     _commit(repository, "release")
     subprocess.run([*GIT, "tag", "0.1.0"], cwd=repository, check=True)
+    for number, step in enumerate(spec.get("steps", []), 1):
+        _write(repository, step)
+        _commit(repository, f"step {number}")
     _write(repository, spec.get("base", {}))
     _commit(repository, "base")
     subprocess.run([*GIT, "switch", "-q", "-c", "base"], cwd=repository, check=True)
     if spec.get("origin"):
         subprocess.run([*GIT, "update-ref", "refs/remotes/origin/main", "base"], cwd=repository, check=True)
+    for number, commit in enumerate(spec.get("layer", []), 1):
+        _write(repository, commit)
+        _commit(repository, f"layer {number}")
     subprocess.run([*GIT, "switch", "-q", "-c", "fix-the-thing"], cwd=repository, check=True)
     _write(repository, spec.get("head", {}))
     _commit(repository, spec.get("message", "Change the thing (#42)\n\nFixes: #41"))
@@ -109,6 +116,15 @@ OUTPUT_TEXT = {
     "refs": ["#42"],
 }
 RELEASED_SRC = {"src/pkg.py": RELEASED["src/pkg.py"]}
+NEW_OUTPUT = {
+    "tests/test_models.refs": _sidecar(REFS | {"test_new": ["\tmodels/new.py"]}),
+    f"{EXPECTED}/models/new.py": "N = 1\n",
+}
+RENAMED_OUTPUT = {
+    "tests/test_models.refs": _sidecar(REFS | {"test_renamed": ["\tmodels/renamed.py"]}),
+    f"{EXPECTED}/models/new.py": None,
+    f"{EXPECTED}/models/renamed.py": "N = 1\n",
+}
 COVERS_B = 'covers = [\n    "models/b.py",\n]\n'
 CASES: dict[str, dict[str, Any]] = {
     "changed without a record": {"head": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"}, "origin": True},
@@ -350,6 +366,83 @@ CASES: dict[str, dict[str, Any]] = {
         "head": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("same-output", ["models/b.py"]),
     },
     "report only": {"head": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"}, "args": ["--report-only"]},
+    "a test-only change adds an output after a src change": {
+        "base": SRC,
+        "head": {
+            "tests/test_models.refs": _sidecar(REFS | {"test_new": ["\tmodels/new.py"]}),
+            f"{EXPECTED}/models/new.py": "N = 1\n",
+        },
+    },
+    "a test-only change renames a test after a src change": {
+        "base": SRC,
+        "head": {
+            "tests/test_models.refs": _sidecar({
+                "test_model_renamed" if key == "test_model" else key: lines for key, lines in REFS.items()
+            })
+        },
+    },
+    "a test-only change renames a stored file with its test after a src change": {
+        "base": SRC,
+        "head": {
+            "tests/test_models.refs": _sidecar(
+                {key: lines for key, lines in REFS.items() if key != "test_warn"}
+                | {"test_warning": ["\tmodels/warning.warnings.txt", REFS["test_warn"][1]]}
+            ),
+            f"{EXPECTED}/models/w.warnings.txt": None,
+            f"{EXPECTED}/models/warning.warnings.txt": "UserWarning: w\n",
+        },
+    },
+    "a test-only change removes an output after a src change": {
+        "base": SRC,
+        "head": {
+            "tests/test_models.refs": _sidecar(REFS | {"test_warn": REFS["test_warn"][1:]}),
+            f"{EXPECTED}/models/w.warnings.txt": None,
+        },
+    },
+    "main after a test-only change added an output and a src change": {
+        "steps": [
+            {
+                "tests/test_models.refs": _sidecar(REFS | {"test_new": ["\tmodels/new.py"]}),
+                f"{EXPECTED}/models/new.py": "N = 1\n",
+            }
+        ],
+        "base": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("b-two", ["models/b.py"], **OUTPUT_TEXT),
+        "args": ["--main"],
+    },
+    "main after a src change moved a test-added output": {
+        "steps": [
+            {
+                "tests/test_models.refs": _sidecar(REFS | {"test_new": ["\tmodels/new.py"]}),
+                f"{EXPECTED}/models/new.py": "N = 1\n",
+            }
+        ],
+        "base": SRC | {f"{EXPECTED}/models/new.py": "N = 2\n"},
+        "args": ["--main"],
+    },
+    "main after a src change and a test-only rename": {
+        "steps": [SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("b-two", ["models/b.py"], **OUTPUT_TEXT)],
+        "base": {
+            "tests/test_models.refs": _sidecar({
+                "test_model_renamed" if key == "test_model" else key: lines for key, lines in REFS.items()
+            })
+        },
+        "args": ["--main"],
+    },
+    "a test-only rename of a source-added output its record covers": {
+        "base": SRC | NEW_OUTPUT | _record("new-output", ["models/new.py"], **OUTPUT_TEXT),
+        "head": RENAMED_OUTPUT,
+    },
+    "a test-only rename of a source-added output without a record": {"base": SRC | NEW_OUTPUT, "head": RENAMED_OUTPUT},
+    "a test-only rename of a source-added output without a record on main": {
+        "base": SRC | NEW_OUTPUT,
+        "head": RENAMED_OUTPUT,
+        "args": ["--main"],
+    },
+    "a later layer deletes the record its lower layer's test commit added": {
+        "origin": True,
+        "layer": [SRC, NEW_OUTPUT | _record("new-output", ["models/new.py"], **OUTPUT_TEXT)],
+        "head": {f"{FRAGMENTS}/new-output.toml": None},
+    },
     "many outputs": {
         "head": SRC
         | {"tests/test_many.refs": _sidecar({"test_many": [f"{index}\tmany/{index:02}.py" for index in range(25)]})}
@@ -405,6 +498,14 @@ PRINTED: dict[str, dict[str, Any]] = {
     "an output text record does not take a warning": {
         "head": {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("b-text", ["models/b.py"], **OUTPUT_TEXT),
         "worktree": {f"{EXPECTED}/models/w.warnings.txt": "UserWarning: other\n"},
+    },
+    "a test-only change moves and adds outputs after a src change": {
+        "base": SRC,
+        "worktree": {
+            "tests/test_models.refs": _sidecar(REFS | {"test_new": ["\tmodels/new.py"]}),
+            f"{EXPECTED}/models/new.py": "N = 1\n",
+            f"{EXPECTED}/models/b.py": "B = 2\n",
+        },
     },
     "the branch's record among others": {
         "head": SRC
@@ -541,14 +642,64 @@ def test_declared_changes_declare_backfill(tmp_path: Path, capsys: pytest.Captur
     assert_output("\n".join(output))
 
 
+RENAMED: dict[str, tuple[dict[str, str | None], list[str]]] = {
+    "covered by its old name": (
+        SRC | NEW_OUTPUT | _record("new-output", ["models/new.py"], **OUTPUT_TEXT),
+        ["new-output", "--tests", "*::test_renamed"],
+    ),
+    "a gap of the base": (
+        SRC | NEW_OUTPUT,
+        ["backfill-new", "--category", "harness", "--title", "t", "--summary", "s", "--labels", "*/renamed.py"],
+    ),
+}
+"""The base of a change that renames the test of an output a src change added, and the `declare` that takes it."""
+
+
+@pytest.mark.parametrize("case", sorted(RENAMED))
+def test_declared_changes_declare_renamed_output(case: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A test-only rename of an output a src change added keeps its need of a record; `declare` takes its new name.
+
+    Covered by its old name, it is a gap of the change and the old name is stale; a gap of the base stays an older gap.
+    """
+    lower, declare = RENAMED[case]
+    repository = _repository(tmp_path, {"base": lower, "worktree": RENAMED_OUTPUT})
+    base = ["--base", "base"]
+    output = [_run(repository, capsys, [command, *base]) for command in ("check", "prune")]
+    output += [
+        _run(repository, capsys, ["declare", *declare, *base]),
+        _run(repository, capsys, ["check", *base, "--main"]),
+        _fragments(repository),
+    ]
+    assert_output("\n".join(output))
+
+
 def test_declared_changes_errors(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """A revision that does not exist, a repository without a tag or without origin/main stops with exit 2."""
+    """A revision that does not exist, a repository without a tag or without origin/main stops with exit 2.
+
+    So does a release check without the history it walks: a tag on another line of history, a shallow clone; a tag
+    after the base (a release commit's own) has no history to walk.
+    """
     repository = _repository(tmp_path, {})
+    shallow = tmp_path / "shallow"
+    subprocess.run([*GIT, "clone", "-q", "--depth", "1", repository.as_uri(), str(shallow)], check=True)
+    for name, parents in (("side", ["-p", "0.1.0"]), ("unrelated", [])):
+        commit = subprocess.run(
+            [*GIT, "commit-tree", "0.1.0^{tree}", *parents, "-m", name],
+            cwd=repository,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        subprocess.run([*GIT, "update-ref", f"refs/heads/{name}", commit], cwd=repository, check=True)
     output = [
         _run(repository, capsys, ["check", "--base", "nothing"]),
         _run(repository, capsys, ["check", "--base", "base", "--head", "nothing"]),
         _run(repository, capsys, ["check", "--base", "base", "--tag", "0.9.9"]),
         _run(repository, capsys, ["check", "--base", "base", "--tag", "0.1.0"]),
+        _run(repository, capsys, ["check", "--base", "base", "--tag", "side"]),
+        _run(repository, capsys, ["check", "--base", "base", "--tag", "unrelated"]),
+        _run(repository, capsys, ["check", "--base", "0.1.0", "--head", "base", "--tag", "base"]),
+        _run(shallow, capsys, ["check", "--base", "HEAD", "--tag", "HEAD"]),
         _run(repository, capsys, ["status"]),
     ]
     subprocess.run([*GIT, "tag", "-d", "0.1.0"], cwd=repository, check=True, capture_output=True)

@@ -1,0 +1,9 @@
+exit 1
+declared changes: HEAD against base, release since 0.1.0
+1 stored outputs moved since 0.1.0 and lost their record here:
+  models/renamed.py
+1 covered labels no longer differ from 0.1.0:
+  models/new.py
+  python scripts/declared_changes.py prune
+2 references moved: removed and added with equal content
+failed
