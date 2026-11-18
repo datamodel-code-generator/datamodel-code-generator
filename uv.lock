@@ -902,7 +902,7 @@ dev = [
     { name = "httpx2", extras = ["http2", "ws"], specifier = ">=2.13,<3" },
     { name = "hypothesis", specifier = ">=6.136.6,<6.170.10" },
     { name = "hypothesis-jsonschema", specifier = ">=0.23.1" },
-    { name = "inline-snapshot", specifier = ">=0.34.2" },
+    { name = "inline-snapshot", specifier = ">=0.37" },
     { name = "jsonschema", extras = ["format-nongpl"], specifier = ">=4.26,<5" },
     { name = "lxml", specifier = ">=5.3" },
     { name = "msgspec", specifier = ">=0.18" },
@@ -957,7 +957,7 @@ test = [
     { name = "email-validator", specifier = ">=2.2" },
     { name = "hypothesis", specifier = ">=6.136.6,<6.170.10" },
     { name = "hypothesis-jsonschema", specifier = ">=0.23.1" },
-    { name = "inline-snapshot", specifier = ">=0.34.2" },
+    { name = "inline-snapshot", specifier = ">=0.37" },
     { name = "jsonschema", extras = ["format-nongpl"], specifier = ">=4.26,<5" },
     { name = "lxml", specifier = ">=5.3" },
     { name = "msgspec", specifier = ">=0.18" },
@@ -982,7 +982,7 @@ type = [
     { name = "httpx2", extras = ["http2", "ws"], specifier = ">=2.13,<3" },
     { name = "hypothesis", specifier = ">=6.136.6,<6.170.10" },
     { name = "hypothesis-jsonschema", specifier = ">=0.23.1" },
-    { name = "inline-snapshot", specifier = ">=0.34.2" },
+    { name = "inline-snapshot", specifier = ">=0.37" },
     { name = "jsonschema", extras = ["format-nongpl"], specifier = ">=4.26,<5" },
     { name = "lxml", specifier = ">=5.3" },
     { name = "msgspec", specifier = ">=0.18" },
@@ -1442,7 +1442,7 @@ wheels = [
 
 [[package]]
 name = "inline-snapshot"
-version = "0.34.2"
+version = "0.37.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "asttokens" },
@@ -1451,9 +1451,9 @@ dependencies = [
     { name = "rich" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/91/c3/b5c36ab59e355b8d7c59205b8903fa74458c6938c9691f7d7730404f94c9/inline_snapshot-0.34.2.tar.gz", hash = "sha256:d160cb6059e00916c2e846abc014ead6f01fb24479f13696fb8670d7a7937f67", size = 2641142, upload-time = "2026-06-19T21:17:27.338Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5f/57/5ea4630cf5922971d728e66f2855fd041be6e3756e670a094b8e01f4c448/inline_snapshot-0.37.0.tar.gz", hash = "sha256:9de2ef1a246ee0af9b2c7d12bd14ad5a5977b8897c4d5f94e7f6251ab5196f1b", size = 2573002, upload-time = "2026-11-18T05:20:29.444Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bb/2a/84fe7ef052ac666e95e7cabdf0905aa3f2c90b5a117419760b39b577602a/inline_snapshot-0.34.2-py3-none-any.whl", hash = "sha256:743a514a08ffd0d2d62878b0208d4def5041585affa7db6b89f0ca2e23552361", size = 90717, upload-time = "2026-06-19T21:17:25.629Z" },
+    { url = "https://files.pythonhosted.org/packages/6e/fc/7a132be6584b9a9dcd13e48552e4ad90f370d460a6d394da8acf5d8ff7f3/inline_snapshot-0.37.0-py3-none-any.whl", hash = "sha256:c2c7c48d102abb1cd3465469cddcb5e167b0ea89e17ad47ea545d003c3c30eb1", size = 105480, upload-time = "2026-11-18T05:20:27.492Z" },
 ]
 
 [[package]]

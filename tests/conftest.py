@@ -30,7 +30,7 @@ from urllib.parse import urlparse
 
 import pytest
 import time_machine
-from inline_snapshot._global_state import state as inline_snapshot_state
+from inline_snapshot._core._global_state import state as inline_snapshot_state
 from typing_extensions import Required
 
 from datamodel_code_generator import MIN_VERSION
@@ -860,7 +860,7 @@ def _ci_environment() -> CiEnvironment:
     CI runs never create or fix expected output, even with an explicit ``--inline-snapshot=create`` or ``fix``, and
     their failures print the payload that applies CI's output locally. tox passes the variables on (``pass_env``).
     """
-    from inline_snapshot._snapshot_session import is_ci_run
+    from inline_snapshot._core._snapshot_session import is_ci_run
 
     github = bool(os.environ.get("GITHUB_ACTIONS"))
     return CiEnvironment(is_ci_run() or None, github, os.environ.get("GITHUB_RUN_ID") if github else None)
@@ -1111,7 +1111,7 @@ class _Ledger:
     def start(self) -> None:
         state = inline_snapshot_state()
         if self.ci.variable is not None:
-            from inline_snapshot._flags import Flags
+            from inline_snapshot._core._flags import Flags
 
             state.update_flags = Flags()
             state.flags -= _UPDATE_CATEGORIES
