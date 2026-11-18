@@ -470,7 +470,7 @@ class StagingDirectory:
             return
         cleanup_error: OSError | None = None
         try:
-            if self.directory_fd is None:  # pragma: no cover - Windows lexical fallback
+            if self.directory_fd is None:
                 self._validate_path_fallback()
             cleanup_error = self._discard_files()
             directory_error = self._remove_directory()
@@ -501,7 +501,7 @@ class StagingDirectory:
     def _remove_directory(self) -> OSError | None:
         """Remove the owned empty staging directory through its pinned parent when available."""
         try:
-            if self.directory_fd is None:  # pragma: no cover - Windows lexical fallback
+            if self.directory_fd is None:
                 _rmdir(self.path)
             else:
                 _rmdir(self.name, dir_fd=cast("int", self._parent_fd))
@@ -529,7 +529,7 @@ def _chmod_backup_at(backup: str | Path, backup_fd: int, mode: int, directory_fd
     """Apply destination mode bits through the safest handle supported by the platform."""
     if (fchmod := getattr(os, "fchmod", None)) is not None:
         fchmod(backup_fd, mode)
-    elif os.chmod in os.supports_fd:  # pragma: no cover - platform-specific fallback
+    elif os.chmod in os.supports_fd:
         os.chmod(backup_fd, mode)
     elif directory_fd is not None:  # pragma: no cover - POSIX exposes fchmod
         os.chmod(backup, mode, dir_fd=directory_fd, follow_symlinks=False)
@@ -597,7 +597,7 @@ def _backup_existing_target(target: Path) -> Path:
     for backup_name in _backup_names(target.name):
         backup = target.parent / backup_name
         try:
-            if stat.S_ISLNK(target_stat.st_mode):  # pragma: no cover - Windows fallback
+            if stat.S_ISLNK(target_stat.st_mode):
                 backup.symlink_to(target.readlink(), target_is_directory=target.is_dir())
             else:
                 try:

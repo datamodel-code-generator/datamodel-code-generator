@@ -1191,7 +1191,7 @@ def _apply_line_replacements(lines: list[str], replacements: list[_LineReplaceme
     for start, end, replacement_lines in reversed(_disjoint_replacements(replacements)):
         start_index = start - offset - 1
         end_index = end - offset
-        if start_index < 0 or end_index > len(formatted_lines):  # pragma: no cover
+        if start_index < 0 or end_index > len(formatted_lines):
             continue
         formatted_lines[start_index:end_index] = replacement_lines
     return formatted_lines

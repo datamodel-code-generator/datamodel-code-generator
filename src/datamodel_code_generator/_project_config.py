@@ -97,7 +97,7 @@ def _find_datamodel_codegen_project_config_with_path(source: Path) -> tuple[Path
             if isinstance(tool_config, Mapping):
                 return pyproject_path, tool_config
 
-        if (current_path / ".git").exists():  # pragma: no cover
+        if (current_path / ".git").exists():
             break
         current_path = current_path.parent
     return None
@@ -136,7 +136,7 @@ def _normalize_pyproject_config(config: Mapping[str, Any]) -> dict[str, Any]:
     """Convert TOML option spelling to Config field spelling."""
     normalized = {field_name(key): value for key, value in config.items()}
     for alias, field in FIELD_ALIASES.items():
-        if alias in normalized and field not in normalized:  # pragma: no cover
+        if alias in normalized and field not in normalized:
             normalized[field] = normalized.pop(alias)
     return normalized
 

@@ -23,7 +23,7 @@ class AgentSkillError(Exception):
 
 def _bundled_skill() -> Traversable:
     """Return the package resource, or the repository skill during source development."""
-    if (skill := files("datamodel_code_generator.resources").joinpath(SKILL_NAME)).is_dir():  # pragma: no cover
+    if (skill := files("datamodel_code_generator.resources").joinpath(SKILL_NAME)).is_dir():
         # The wheel E2E exercises this branch; editable/source test runs use the repository fallback.
         return skill
     return Path(__file__).parents[2] / "skills" / SKILL_NAME  # pragma: no cover

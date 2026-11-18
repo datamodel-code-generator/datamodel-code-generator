@@ -196,7 +196,7 @@ def _get_config_class() -> type[Config]:
             A path the parser already built only expands ``~``.
             """
             if value is None:
-                return value  # pragma: no cover
+                return value
             field = cast("str", info.field_name)
             path = option_path(field, value)
             if field not in CLI_RESOLVED_PATH_FIELDS:
