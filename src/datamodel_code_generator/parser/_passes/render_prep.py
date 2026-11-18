@@ -839,13 +839,13 @@ def disable_union_operator_for_forward_ref(
 def field_forward_references(  # noqa: PLR0913
     field: DataModelFieldBase,
     model: DataModel,
-    model_index: Mapping[str, int],
+    positions: _ModelPositions,
     index: int,
     hidden_names: Collection[str | None] = (),
     *,
     quotes_type_statements: bool = False,
 ) -> list[tuple[DataType, str]]:
-    """Collect the field's references to same-module models declared at or after the model.
+    """Collect the field's references to same-module models declared at or after the model (``positions``, by name).
 
     A model whose name is in ``hidden_names`` counts as declared later. A ``type`` statement counts only with
     ``quotes_type_statements``, for a type that the module evaluates as it runs: its value is deferred, but its name
@@ -866,13 +866,12 @@ def field_forward_references(  # noqa: PLR0913
             continue
         if isinstance(source, TypeStatement) and not quotes_type_statements:
             continue
-        source_index = model_index.get(name)
-        if source_index is not None and source_index >= index:
+        if positions.names_at_or_after(data_type.reference, index, view="legacy-forward-by-name"):
             forward_references.append((data_type, name))
     return forward_references
 
 
-def quote_forward_rule_types(model: DataModel, model_index: Mapping[str, int], index: int) -> None:
+def quote_forward_rule_types(model: DataModel, positions: _ModelPositions, index: int) -> None:
     """Write each schema validator rule type that names a model declared at or after the model as one string.
 
     The class body evaluates its rules when it runs, before the model and the later models of its module are bound;
@@ -887,7 +886,7 @@ def quote_forward_rule_types(model: DataModel, model_index: Mapping[str, int], i
             (reference := nested.reference) is not None
             and isinstance(source := reference.source, DataModel)
             and source.module_path == model.module_path
-            and model_index.get(reference.short_name, -1) >= index
+            and positions.names_at_or_after(reference, index, view="legacy-forward-by-name")
             for nested in data_type.all_data_types
         ):
             return data_type
@@ -917,7 +916,7 @@ def quote_forward_rule_types(model: DataModel, model_index: Mapping[str, int], i
     )
 
 
-def deferrable_alias_cycles(models: Sequence[DataModel], model_index: Mapping[str, int]) -> dict[int, int]:
+def deferrable_alias_cycles(models: Sequence[DataModel], positions: _ModelPositions) -> dict[int, int]:
     """Find the container cycles among aliases that quoted containers resolve for mypy and pyright alike.
 
     mypy cannot resolve a cycle of aliases that only reference each other as container items, unless
@@ -938,7 +937,7 @@ def deferrable_alias_cycles(models: Sequence[DataModel], model_index: Mapping[st
         if (cycle := cycles.get(id(model))) is None or cycle in unresolvable:
             continue
         for field in model.fields:
-            forward = {id(data_type) for data_type, _ in field_forward_references(field, model, model_index, index)}
+            forward = {id(data_type) for data_type, _ in field_forward_references(field, model, positions, index)}
             for container, _, kinds in _iter_cycle_containers(field.data_type, cycle, cycles, forward):
                 if len(kinds) <= 1:
                     continue
@@ -973,7 +972,7 @@ def defer_recursive_containers(  # noqa: PLR0913
     model: DataModel,
     *,
     alias_cycles: Mapping[int, int],
-    model_index: Mapping[str, int],
+    positions: _ModelPositions,
     index: int,
     graph_builder: GraphBuilder,
 ) -> None:
@@ -984,11 +983,11 @@ def defer_recursive_containers(  # noqa: PLR0913
     """
     if (cycle := alias_cycles.get(id(model))) is None:
         return
-    forward = {id(data_type) for data_type, _ in field_forward_references(field, model, model_index, index)}
+    forward = {id(data_type) for data_type, _ in field_forward_references(field, model, positions, index)}
     if not any(True in kinds for *_, kinds in _iter_cycle_containers(field.data_type, cycle, alias_cycles, forward)):
         return
     graph_builder.replace_field_type(field, _copy_data_type(field.data_type))
-    forward = {id(data_type) for data_type, _ in field_forward_references(field, model, model_index, index)}
+    forward = {id(data_type) for data_type, _ in field_forward_references(field, model, positions, index)}
     deferred = [
         (container, wrappers)
         for container, wrappers, kinds in _iter_cycle_containers(field.data_type, cycle, alias_cycles, forward)
@@ -1055,14 +1054,13 @@ def update_type_aliases(  # noqa: PLR0913
     ``use_typing_generics`` tells that ``typing`` cannot resolve ``list["Name"]``, so a hidden type, and any
     quoted name of a model that asks for it, is written as ``List["Name"]``.
     """
-    model_index: dict[str, int] = {m.class_name: i for i, m in enumerate(models)}
     positions = _ModelPositions(models, "type aliases")
     alias_cycles: Mapping[int, int] | None = None
     quotes_in_typing_generics = use_typing_generics and not use_deferred_annotations
     evaluates_annotations = not (use_deferred_annotations or defers_annotations_natively)
 
     for i, model in enumerate(models):
-        quote_forward_rule_types(model, model_index, i)
+        quote_forward_rule_types(model, positions, i)
         # When annotations are deferred (from __future__ or native PEP-649) only
         # TypeAliasBase / RootModel need quoting; regular DataModels are fine as-is.
         # Typed extra annotations are an exception: class-body __annotations__ dicts
@@ -1103,7 +1101,7 @@ def update_type_aliases(  # noqa: PLR0913
             forward_references = field_forward_references(
                 field,
                 model,
-                model_index,
+                positions,
                 i,
                 hidden_names,
                 quotes_type_statements=quotes_type_statements
@@ -1124,12 +1122,12 @@ def update_type_aliases(  # noqa: PLR0913
                 )
             if defers_recursive_containers and model.DEFERS_RECURSIVE_TYPE_HINT:
                 if alias_cycles is None:
-                    alias_cycles = deferrable_alias_cycles(models, model_index)
+                    alias_cycles = deferrable_alias_cycles(models, positions)
                 defer_recursive_containers(
                     field,
                     model,
                     alias_cycles=alias_cycles,
-                    model_index=model_index,
+                    positions=positions,
                     index=i,
                     graph_builder=graph_builder,
                 )
@@ -1144,7 +1142,7 @@ def assign_module_forward_reference_fields(parser: RenderPrepHost, models: list[
 
     A model that writes fields by assignment may reorder them.
     """
-    positions = {model.path: index for index, model in enumerate(models)}
+    positions = _ModelPositions(models, "forward reference fields").paths
     for index, model in enumerate(models):
         parser._graph_builder.use_assignment_for_forward_references(model, positions, index, refresh="deferred")
 

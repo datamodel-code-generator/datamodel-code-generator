@@ -2222,19 +2222,14 @@ def _module_import_users(
 def _loaded_modules(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> set[str]:
     """Return the dotted names of the modules that the written modules import or import from (``module_import_edges``).
 
-    Under ``--all-exports-scope`` each written module with models counts too: an ``__init__.py`` imports the modules
-    it exports from.
+    Under ``--all-exports-scope`` an ``__init__.py`` imports the modules it re-exports too.
     """
-    treat_dot_as_module = parser.treat_dot_as_module
-    edges = module_import_edges(state.contexts, treat_dot_as_module=treat_dot_as_module)
-    loaded = {target for targets in edges.values() for target in targets}
-    if state.config.all_exports_scope is not None:
-        loaded.update(
-            written_module_name(ctx.module, treat_dot_as_module=treat_dot_as_module)
-            for ctx in state.contexts
-            if ctx.models
-        )
-    return loaded
+    edges = module_import_edges(
+        state.contexts,
+        treat_dot_as_module=parser.treat_dot_as_module,
+        all_exports_scope=state.config.all_exports_scope,
+    )
+    return {target for targets in edges.values() for target in targets}
 
 
 def _alias_imports_hidden_by_loaded_submodules(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:

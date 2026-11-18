@@ -1968,26 +1968,56 @@ def _annotated_enum(data_type: DataType) -> Enum | None:
     )
 
 
+PositionView: TypeAlias = Literal["by-key", "model-key", "legacy-forward-by-name"]
+"""How ``_ModelPositions`` finds the position of the model a reference names.
+
+``by-key`` takes the model of the list that the reference keys (`KeyedModels.key_of`). ``model-key`` takes the model
+whose model key the reference has, with no path fallback (row ``legacy-keyless-reference-by-path`` does not apply), as
+the forward test of RootModel aliases reads it. Row ``legacy-forward-by-name``
+takes the last model of the list whose class name is the reference's short name, as the quoting of forward references
+in render preparation and the update actions of a module read it, so the update actions also count a same-named model of
+another module as one of the module.
+"""
+
+
 @final
 class _ModelPositions:
-    """The position of each model in the model list of a module, found by model key."""
+    """The position of each model in the model list of a module, by model key, by path and by class name."""
 
-    __slots__ = ("_keyed", "_positions", "paths")
+    __slots__ = ("_keyed", "_names", "_positions", "paths")
 
     def __init__(self, models: list[DataModel], site: str) -> None:
         """Index ``models``, which ``site`` names in a violation."""
         self._keyed = keyed_models(models, site)
         self._positions = {model_key_of(model.reference): index for index, model in enumerate(models)}
+        self._names = {model.class_name: index for index, model in enumerate(models)}
         self.paths: Mapping[str, int] = {model.path: index for index, model in enumerate(models)}
         """The position of each model by path, as the ``DataModel`` hooks that take positions read them."""
+
+    @property
+    def keyed(self) -> KeyedModels:
+        """The models of the list by model key (`keyed_models`)."""
+        return self._keyed
 
     def get(self, reference: Reference) -> int | None:
         """Return the position of the model of the list that ``reference`` names (`KeyedModels.key_of`), or None."""
         return self._positions.get(self._keyed.key_of(reference))
 
-    def rank(self, reference: Reference) -> int:
-        """Return the position of the model of the list that ``reference`` names, or -1."""
-        return self._positions.get(self._keyed.key_of(reference), -1)
+    def rank(self, reference: Reference, *, view: PositionView = "by-key") -> int:
+        """Return the position of the model of the list that ``reference`` names by ``view``, or -1."""
+        if view == "by-key":
+            return self._positions.get(self._keyed.key_of(reference), -1)
+        if view == "model-key":
+            return self._positions.get(model_key_of(reference), -1)
+        return self._names.get(reference.short_name, -1)
+
+    def names_at_or_after(self, reference: Reference, index: int, *, view: PositionView = "by-key") -> bool:
+        """Return whether ``reference`` names, by ``view``, the model at ``index`` or a later one of the list.
+
+        The module defines such a model only once the model at ``index`` is defined: a forward reference, or one to
+        the model itself.
+        """
+        return self.rank(reference, view=view) >= index
 
 
 def _derived_models(models: Iterable[DataModel]) -> dict[ModelKey, list[DataModel]]:
@@ -2321,7 +2351,8 @@ def _forward_enum_member_literals(field: DataModelFieldBase, positions: _ModelPo
     return [
         data_type
         for data_type in field.data_type.all_data_types
-        if (reference := data_type._enum_member_literal_reference) is not None and positions.rank(reference) >= index
+        if (reference := data_type._enum_member_literal_reference) is not None
+        and positions.names_at_or_after(reference, index)
     ]
 
 
