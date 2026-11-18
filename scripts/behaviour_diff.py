@@ -121,7 +121,9 @@ PRESET_PYTHON_OLDER = "py312"
 PAYLOAD_VALID = 10
 PAYLOAD_INVALID = 12
 PAYLOAD_DRAW_TIMEOUT = 90
-EXCLUDED_OPTIONS = frozenset({"--watch"})
+EXCLUDED_OPTIONS = frozenset({"--watch", "--debug"})
+"""Options no cell runs: `--watch` never returns, and the trace `--debug` prints holds object addresses and times, so
+its messages differ on every run."""
 OPTION_SETS = (
     ("--strip-default-none",),
     ("--strip-default-none", "--keyword-only"),
@@ -493,7 +495,7 @@ def _without(args: list[str], option: str) -> tuple[list[str], str | None]:
 
 
 def anchor_cells(root: Path, types: list[str]) -> list[Cell]:
-    """Return one cell per cli_doc example and output model type it documents; `--watch` examples never finish."""
+    """Return one cell per cli_doc example and output model type it documents, but none of `EXCLUDED_OPTIONS`."""
     cells: dict[tuple[str, str, tuple[str, ...]], Cell] = {}
     for example in cli_doc_examples(root):
         schema = root / "tests" / "data" / example["input_schema"]
@@ -819,7 +821,7 @@ def _environment_args(parser: argparse.ArgumentParser) -> None:
         "--memory-mb",
         type=_memory_mb,
         default=8192,
-        help="data memory of one generation process before it fails, a safety net far above any real cell (0: no cap)",
+        help="data memory of a worker while it generates a cell, a safety net far above any real cell (0: no cap)",
     )
     parser.add_argument("--cache-dir", type=Path, default=compare_release._default_cache_dir())  # ruff: ignore[private-member-access]
 
