@@ -248,6 +248,7 @@ from datamodel_code_generator.model.runtime_validation import (
     ConditionalBoundsRule,
     ConditionalRequiredRule,
     ConstantTypesRule,
+    ContainsRule,
     IndependentDeclaredPatternPropertiesRule,  # noqa: F401  # Preserve the established parser.jsonschema export.
     IndependentModelPatternPropertiesRule,  # noqa: F401  # Preserve the established parser.jsonschema export.
     PatternPropertiesRule,
@@ -4160,8 +4161,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         visited_refs: frozenset[_TargetNode],
         property_input_names: Mapping[str, tuple[str, ...]] | None,
     ) -> tuple[
-        list[tuple[JsonSchemaObject | bool, tuple[UniqueItemsRule | ConstantTypesRule, ...]]],
-        list[UniqueItemsRule | ConstantTypesRule],
+        list[tuple[JsonSchemaObject | bool, tuple[UniqueItemsRule | ConstantTypesRule | ContainsRule, ...]]],
+        list[UniqueItemsRule | ConstantTypesRule | ContainsRule],
     ]:
         return _schema_validators.get_union_path_branch_rules(self, items, path, visited_refs, property_input_names)
 
@@ -4172,7 +4173,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         visited_refs: frozenset[_TargetNode],
         *,
         property_input_names: Mapping[str, tuple[str, ...]] | None = None,
-    ) -> Iterator[UniqueItemsRule | ConstantTypesRule]:
+    ) -> Iterator[UniqueItemsRule | ConstantTypesRule | ContainsRule]:
         return _schema_validators.iter_union_path_rules(
             self, items, path, visited_refs, property_input_names=property_input_names
         )
@@ -4212,7 +4213,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         property_input_names: Mapping[str, tuple[str, ...]] | None = None,
         *,
         include_properties: bool = False,
-    ) -> Iterator[UniqueItemsRule | ConstantTypesRule]:
+    ) -> Iterator[UniqueItemsRule | ConstantTypesRule | ContainsRule]:
         return _schema_validators.iter_path_rules(
             self, obj, path, visited_refs, property_input_names, include_properties=include_properties
         )

@@ -21,6 +21,7 @@ from datamodel_code_generator._constraint_applicability import constrained_type_
 from datamodel_code_generator._container_kinds import ARRAYS, ITEM_CONTAINERS, MAPPINGS
 from datamodel_code_generator._json_pointer import document_part
 from datamodel_code_generator._json_schema import MODELED_SCHEMA_MAPS, SCHEMA_MAP_KEYS, admitted_types, schema_positions
+from datamodel_code_generator._regex_syntax import python_rejects
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.model.base import _field_source_name
@@ -32,6 +33,7 @@ from datamodel_code_generator.model.runtime_validation import (
     ConditionalBoundsRule,
     ConditionalRequiredRule,
     ConstantTypesRule,
+    ContainsRule,
     IndependentDeclaredPatternPropertiesRule,
     IndependentModelPatternPropertiesRule,
     PatternPropertiesRule,
@@ -42,7 +44,7 @@ from datamodel_code_generator.model.runtime_validation import (
     _is_internal_schema_runtime_validation,
     conditional_value_uses_json_equality,
 )
-from datamodel_code_generator.parser import _inherited_schemas, _schema_refs
+from datamodel_code_generator.parser import _inherited_schemas, _schema_refs, _value_keywords
 from datamodel_code_generator.parser._inherited_schemas import InheritedSchemasHost
 from datamodel_code_generator.parser._intersection import (
     INTERSECTED_KEYWORDS,
@@ -80,6 +82,7 @@ if TYPE_CHECKING:
         BoundKeyword,
         Condition,
         ConditionalBounds,
+        ContainsMatcher,
         UniqueItemsPath,
         UniqueItemsPathStep,
     )
@@ -293,8 +296,17 @@ class SchemaValidatorsHost(
 
 _IMPLIED_SUBSCHEMA_KEYWORDS = frozenset({"items", "propertyNames"})
 _CONSTANT_TYPES = frozenset({"boolean", "integer", "number"})
-_PathRule: TypeAlias = UniqueItemsRule | ConstantTypesRule
+_PathRule: TypeAlias = UniqueItemsRule | ConstantTypesRule | ContainsRule
 _BOUND_KEYWORDS: tuple[BoundKeyword, ...] = ("minimum", "exclusiveMinimum", "maximum", "exclusiveMaximum")
+_CONTAINS_STRING_KEYWORDS = ("pattern", "minLength", "maxLength")
+_CONTAINS_NUMBER_KEYWORDS = (*_BOUND_KEYWORDS, "multipleOf")
+_CONTAINS_MATCHER_KEYWORDS = frozenset({
+    "type",
+    "const",
+    "enum",
+    *_CONTAINS_STRING_KEYWORDS,
+    *_CONTAINS_NUMBER_KEYWORDS,
+})
 
 
 _UNMATCHED_SCHEMA_KEYWORDS = frozenset(schema_positions("unmatched"))
@@ -1123,8 +1135,9 @@ def iter_path_rules(  # noqa: PLR0912, PLR0913
 ) -> Iterator[_PathRule]:
     """Yield the compact path rules required by all applicable union branches.
 
-    A ``uniqueItems`` array yields a ``UniqueItemsRule`` and a const or enum a ``ConstantTypesRule``, also that of a
-    schema it references: an Enum class cannot check it.
+    A ``uniqueItems`` array yields a ``UniqueItemsRule``, a ``contains`` the matcher reads a ``ContainsRule``
+    (``_contains_rule``), and a const or enum a ``ConstantTypesRule``, also that of a schema it references: an Enum
+    class cannot check it.
     """
     if obj.ref:
         if parser.collapse_root_models and (target := _schema_refs.unmapped_ref_target(parser, obj.ref, visited_refs)):
@@ -1144,6 +1157,8 @@ def iter_path_rules(  # noqa: PLR0912, PLR0913
             return
     if obj.uniqueItems is True:
         yield UniqueItemsRule(path=path)
+    if "contains" in obj.extras and (contains_rule := _contains_rule(parser, obj, path)) is not None:
+        yield contains_rule
     if (
         (obj.enum or "const" in obj.extras)
         and (values := _rule_literal_values(parser, obj))
@@ -1238,6 +1253,56 @@ def iter_path_rules(  # noqa: PLR0912, PLR0913
             visited_refs,
             include_properties=include_properties,
         )
+
+
+def _contains_rule(parser: SchemaValidatorsHost, obj: JsonSchemaObject, path: UniqueItemsPath) -> ContainsRule | None:
+    """Return the count check of the ``contains`` of ``obj``, None where no count is set or the matcher reads none.
+
+    A boolean ``contains`` and one that matches every item give item counts instead
+    (``_get_array_items_constraints``); the counts are read as there (``get_contains_count_constraints``:
+    ``minContains`` is 1 when absent).
+    """
+    if _value_keywords.contains_matches_every_item(parser, obj):
+        return None
+    min_contains, max_contains = _value_keywords.get_contains_count_constraints(type(parser), obj)
+    if (min_contains is None and max_contains is None) or not isinstance(
+        contains := get_conditional_schema(parser, obj, "contains"), JsonSchemaObject
+    ):
+        return None
+    if (matcher := _contains_matcher(parser, contains)) is None:
+        return None
+    return ContainsRule(path=path, matcher=matcher, min_contains=min_contains, max_contains=max_contains)
+
+
+def _contains_matcher(parser: SchemaValidatorsHost, schema: JsonSchemaObject) -> ContainsMatcher | None:
+    """Return the keywords of a ``contains`` schema that the generated matcher checks exactly, as (keyword, value).
+
+    The matcher reads ``type``, ``const``, ``enum``, ``pattern``, ``minLength``, ``maxLength``, the numeric bounds and
+    ``multipleOf``, beside metadata only; any other keyword, a pattern Python's ``re`` rejects, an enum that
+    ``--ignore-enum-constraints`` drops and a const the draft does not define give None, so that no count is checked
+    with a matcher that accepts other items than the schema. An integral ``multipleOf`` is the integer it spells.
+    """
+    if not _is_empty_property_schema(schema, allowed_keywords=_CONTAINS_MATCHER_KEYWORDS):
+        return None
+    matcher: list[tuple[str, object]] = []
+    if schema.type is not None:
+        matcher.append(("type", declared_types(schema.type)))
+    if "const" in schema.extras:
+        if not parser._features_at(schema).const_support:
+            return None
+        matcher.append(("const", schema.extras["const"]))
+    if "enum" in schema.model_fields_set:
+        if parser.ignore_enum_constraints:
+            return None
+        matcher.append(("enum", tuple(schema.enum)))
+    if schema.pattern is not None and python_rejects(schema.pattern):
+        return None
+    for keyword, value in _constraint_values(
+        schema, (*_CONTAINS_STRING_KEYWORDS, *_CONTAINS_NUMBER_KEYWORDS), as_numbers=True
+    ).items():
+        integral = keyword == "multipleOf" and isinstance(value, float) and value.is_integer()
+        matcher.append((keyword, int(value) if integral else value))
+    return tuple(matcher)
 
 
 def add_path_rules_validator(  # noqa: PLR0913
@@ -1351,16 +1416,21 @@ def _register_path_rules(
     parser: SchemaValidatorsHost, reference_path: str, rules: list[_PathRule], replaced_kinds: set[type[_PathRule]]
 ) -> None:
     """Add the rules of each kind that has some, or whose inherited rules the model replaces, to its validation."""
+    if not rules and not replaced_kinds:
+        return
+    runtime_validation = parser._schema_runtime_validation(reference_path)
     unique_items = [rule for rule in rules if isinstance(rule, UniqueItemsRule)]
     constant_types = [rule for rule in rules if isinstance(rule, ConstantTypesRule)]
+    contains = [rule for rule in rules if isinstance(rule, ContainsRule)]
     if unique_items or UniqueItemsRule in replaced_kinds:
-        runtime_validation = parser._schema_runtime_validation(reference_path)
         runtime_validation.unique_items.extend(unique_items)
         runtime_validation.replace_unique_items = UniqueItemsRule in replaced_kinds
     if constant_types or ConstantTypesRule in replaced_kinds:
-        runtime_validation = parser._schema_runtime_validation(reference_path)
         runtime_validation.constant_types.extend(constant_types)
         runtime_validation.replace_constant_types = ConstantTypesRule in replaced_kinds
+    if contains or ContainsRule in replaced_kinds:
+        runtime_validation.contains.extend(contains)
+        runtime_validation.replace_contains = ContainsRule in replaced_kinds
 
 
 def pattern_rule_additional_properties(

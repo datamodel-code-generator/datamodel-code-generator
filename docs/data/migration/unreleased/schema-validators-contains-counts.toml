@@ -1,0 +1,27 @@
+[[change]]
+id = "schema-validators-contains-counts"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "Schema validators check the item counts of contains, minContains and maxContains"
+summary = "With `--generate-schema-validators` (or `--schema-validator-type pydantic-v2`), an array with a `contains` schema gets a check on the raw input that counts the items that schema accepts and rejects the array when fewer than `minContains` (1 when absent) or more than `maxContains` match: `[\"other\"]` is now rejected for `contains: {const: \"target\"}`, and `[\"k1\", \"k2\"]` for `contains: {pattern: \"^k\"}, maxContains: 1`, as JSON Schema rejects them. The items are counted with the meaning of the contains schema, not with the generated item type: a boolean is no number, `1.0` is an integer, a string keyword applies to strings and a numeric one to numbers only, so `[1, \"2\"]` stays valid for `contains: {type: integer}, maxContains: 1` with or without `--strict-types`. The count is checked where the contains schema holds only `type`, `const`, `enum`, `pattern`, `minLength`, `maxLength`, `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` and `multipleOf` besides metadata; a contains with any other keyword (a `$ref`, `properties`, `required`, `format`, ...), a pattern Python rejects (`\\p{L}`) or an enum `--ignore-enum-constraints` drops gets no count check. The check holds for root models, properties, array items and tails, mapping values, allOf members and the arrays every branch of a oneOf or anyOf requires it for. Models gain `__json_schema_contains__` and a shared base with `_validate_json_schema_contains`. Without the option nothing changes."
+affects = { experimental = ["cli-option.generate-schema-validators"] }
+refs = ["#7052"]
+decision = ["#7052"]
+source = "release-note"
+covers = [
+    "main/jsonschema/schema_validator_contains/rule_scope[draft4].py",
+    "main/jsonschema/schema_validator_contains/rule_scope[draft4].txt",
+    "main/jsonschema/schema_validator_contains/rule_scope[root].py",
+    "main/jsonschema/schema_validator_contains/rule_scope[root].txt",
+    "main/jsonschema/schema_validator_contains/schema_validator_contains[option0].payloads.txt",
+    "main/jsonschema/schema_validator_contains/schema_validator_contains[option0].py",
+    "main/jsonschema/schema_validator_contains/schema_validator_contains[option1].payloads.txt",
+    "main/jsonschema/schema_validator_contains/schema_validator_contains[option1].py",
+    "main/jsonschema/schema_validator_contains/schema_validator_contains[option2].payloads.txt",
+    "main/jsonschema/schema_validator_contains/schema_validator_contains[option2].py",
+    "main/jsonschema/schema_validator_contains/schema_validator_contains[option3].payloads.txt",
+    "main/jsonschema/schema_validator_contains/schema_validator_contains[option3].py",
+    "main/jsonschema/schema_validator_contains/schema_validator_contains[option4].payloads.txt",
+    "main/jsonschema/schema_validator_contains/schema_validator_contains[option4].py",
+]

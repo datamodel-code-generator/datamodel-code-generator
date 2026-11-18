@@ -1544,7 +1544,7 @@ def _inherits_schema_runtime_validation_base(model: DataModel, local_model_ids: 
     )
 
 
-_HELPER_LAYER_NAMES: tuple[str, ...] = ("Core", "PropertyCount", "ConstantTypes", "ConditionalBounds")
+_HELPER_LAYER_NAMES: tuple[str, ...] = ("Core", "PropertyCount", "ConstantTypes", "ConditionalBounds", "Contains")
 """The helper layers, innermost first: the core helper template, then the Python-rendered layers."""
 _HELPER_PREFIXES: dict[tuple[bool, ...], str] = {
     (True, False): "Core",
@@ -1607,6 +1607,7 @@ def _python_layer_rules(runtime_validation: SchemaRuntimeValidation) -> tuple[bo
         bool(runtime_validation.property_count),
         bool(runtime_validation.constant_types),
         bool(runtime_validation.conditional_bounds),
+        bool(runtime_validation.contains),
     )
 
 
@@ -1637,6 +1638,7 @@ def _helper_template_facts(runtime_validations: list[SchemaRuntimeValidation]) -
         ),
         "has_conditional_json_equality": any(
             runtime_validation.conditional_bounds
+            or any(rule.uses_json_equality for rule in runtime_validation.contains)
             or any(
                 conditional_value_uses_json_equality(value)
                 for rule in runtime_validation.conditional_required
@@ -2037,6 +2039,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
     _PROPERTY_COUNT_VALIDATION_BASE_MARKER: ClassVar[str] = "_property_count_validation_base"
     _CONSTANT_TYPES_VALIDATION_BASE_MARKER: ClassVar[str] = "_constant_types_validation_base"
     _CONDITIONAL_BOUNDS_VALIDATION_BASE_MARKER: ClassVar[str] = "_conditional_bounds_validation_base"
+    _CONTAINS_VALIDATION_BASE_MARKER: ClassVar[str] = "_contains_validation_base"
     BASE_CLASS: ClassVar[str] = "pydantic.BaseModel"
     BASE_CLASS_NAME: ClassVar[str] = "BaseModel"
     _READ_BY_PYDANTIC: ClassVar[bool] = True
@@ -2357,7 +2360,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
 
         ``local_helpers`` says whether the module renders each helper layer (``_HELPER_LAYER_NAMES``).
         """
-        has_local_core_helper, _, has_local_constant_types_helper, _ = local_helpers
+        has_local_core_helper, _, has_local_constant_types_helper, _, has_local_contains_helper = local_helpers
         additional_imports = model._additional_imports  # noqa: SLF001
         helper_imports = (IMPORT_MODEL_VALIDATOR, IMPORT_ANY, IMPORT_CLASSVAR)
         if (
@@ -2371,8 +2374,10 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         if not uses_generated_generic_base_class:
             helper_imports += (IMPORT_BASE_MODEL,)
         facts = _helper_template_facts(runtime_validations)
-        if has_local_constant_types_helper or (
-            has_local_core_helper and (facts["has_pattern_properties"] or facts["has_unique_items_regex_paths"])
+        if (
+            has_local_constant_types_helper
+            or has_local_contains_helper
+            or (has_local_core_helper and (facts["has_pattern_properties"] or facts["has_unique_items_regex_paths"]))
         ):
             helper_imports += (Import(import_="re"),)
         if has_local_core_helper and facts["has_pattern_properties"]:
@@ -2409,7 +2414,8 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         """Return whether a validation needs the existing template-rendered helper.
 
         A conditional bounds rule needs it for the JSON equality of its condition (``_json_schema_conditional_equal``),
-        which the conditional-bounds layer calls on the core helper it is rendered on.
+        which the conditional-bounds layer calls on the core helper it is rendered on, and so does a contains rule
+        whose matcher compares JSON values (``const``, ``enum``).
         """
         return bool(
             runtime_validation.pattern_properties
@@ -2417,6 +2423,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             or runtime_validation.conditional_required
             or runtime_validation.unique_items
             or runtime_validation.conditional_bounds
+            or any(rule.uses_json_equality for rule in runtime_validation.contains)
         )
 
     @classmethod
@@ -2446,6 +2453,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             cls._PROPERTY_COUNT_VALIDATION_BASE_MARKER,
             cls._CONSTANT_TYPES_VALIDATION_BASE_MARKER,
             cls._CONDITIONAL_BOUNDS_VALIDATION_BASE_MARKER,
+            cls._CONTAINS_VALIDATION_BASE_MARKER,
         )
 
     @classmethod
@@ -2544,6 +2552,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         from datamodel_code_generator.model.pydantic_v2._schema_runtime_validation import (  # noqa: PLC0415
             render_conditional_bounds_validation_base,
             render_constant_types_validation_base,
+            render_contains_validation_base,
             render_property_count_validation_base,
         )
 
@@ -2551,6 +2560,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             render_property_count_validation_base,
             render_constant_types_validation_base,
             render_conditional_bounds_validation_base,
+            render_contains_validation_base,
         )
 
         names = dict(helper_base_class_names)
@@ -2755,6 +2765,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         from datamodel_code_generator.model.pydantic_v2._schema_runtime_validation import (  # noqa: PLC0415
             render_conditional_bounds_rules,
             render_constant_types_rules,
+            render_contains_rules,
             render_unique_items_rules,
         )
 
@@ -2767,6 +2778,9 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             else (),
             render_conditional_bounds_rules(runtime_validation.conditional_bounds)
             if runtime_validation.conditional_bounds
+            else (),
+            render_contains_rules(runtime_validation.contains)
+            if runtime_validation.contains or runtime_validation.replace_contains
             else (),
         )
         for rule_lines in rule_lines_by_kind:

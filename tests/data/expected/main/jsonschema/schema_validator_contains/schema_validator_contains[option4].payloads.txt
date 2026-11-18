@@ -1,0 +1,51 @@
+{"keys": ["k1", "a"]} (valid): accepted/accepted
+{"keys": ["k1", "k2"]} (invalid): rejected/rejected
+{"keys": ["a"]} (invalid): rejected/rejected
+{"ints": [1, "2"]} (valid): accepted/accepted
+{"ints": [1, 2]} (invalid): rejected/rejected
+{"ints": [1.0, 2]} (invalid): rejected/rejected
+{"ints": [true, 1]} (valid): accepted/accepted
+{"ints": ["1"]} (invalid): rejected/rejected
+{"ints": [1.5, 2]} (valid): accepted/accepted
+{"nums": [10, 10.5]} (valid): accepted/accepted
+{"nums": [10, 10.25]} (invalid): rejected/rejected
+{"nums": [19.5, 20, 11]} (valid): accepted/accepted
+{"nums": [10, 11, 12, 13]} (invalid): rejected/rejected
+{"counts": [3, 4.5, -3, 33]} (valid): accepted/accepted
+{"counts": [3.0, 6]} (invalid): rejected/rejected
+{"counts": [true, 0, 3]} (invalid): rejected/rejected
+{"flags": [true]} (invalid): rejected/rejected
+{"flags": [1.0]} (valid): accepted/accepted
+{"flags": [true, 1]} (valid): accepted/accepted
+{"shapes": [{"a": [1, false]}, {"a": [true, false]}]} (valid): accepted/accepted
+{"shapes": [{"a": [1.0, false]}, {"a": [1, false]}]} (invalid): rejected/rejected
+{"letters": []} (valid): accepted/accepted
+{"letters": ["bb", "a"]} (valid): accepted/accepted
+{"letters": ["a", "a"]} (invalid): accepted/accepted
+{"nullable": [1, null]} (valid): accepted/accepted
+{"nullable": [true, null]} (invalid): accepted/accepted
+{"nullable": [1, "x"]} (invalid): accepted/accepted
+{"containers": [{}, 1]} (valid): accepted/accepted
+{"containers": [{}, [1]]} (invalid): rejected/rejected
+{"grid": [[5], [1, 6]]} (valid): accepted/accepted
+{"grid": [[5], [1]]} (invalid): rejected/rejected
+{"byName": {"a": [0], "b": [1, 0]}} (valid): accepted/accepted
+{"byName": {"a": [0, 0]}} (invalid): rejected/rejected
+{"mixed": ["a", "b", 1]} (valid): accepted/accepted
+{"mixed": ["a", 1]} (invalid): rejected/rejected
+{"mixed": ["a", "b", 1, 2]} (invalid): rejected/rejected
+{"rows": [["p"], ["t"], ["x", "t"]]} (valid): accepted/accepted
+{"rows": [["x"]]} (invalid): rejected/rejected
+{"rows": [["p"], ["t", "t"]]} (invalid): rejected/rejected
+{"tags": ["#a", "b"]} (valid): accepted/accepted
+{"tags": ["#a", "#b", "#c"]} (invalid): rejected/rejected
+{"tags": ["b"]} (invalid): rejected/rejected
+{"tagLists": [["#a"], ["#b", "#c", "#d"]]} (invalid): rejected/rejected
+{"either": ["x"]} (valid): accepted/accepted
+{"either": ["y"]} (invalid): rejected/rejected
+{"either": "s"} (valid): accepted/accepted
+{"records": [{"kind": 1}, {"kind": 2}]} (invalid): accepted/accepted
+{"emails": ["a@b.c"]} (valid): accepted/accepted
+{"anything": [1, 2]} (invalid): rejected/rejected
+{"nothing": [1, 2]} (valid): accepted/accepted
+{"optional": ["a"]} (valid): accepted/accepted

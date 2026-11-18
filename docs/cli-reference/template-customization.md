@@ -3081,6 +3081,12 @@ exclusiveMinimum and exclusiveMaximum that their then/else branches put on
 properties, uniqueItems array validation, and the JSON type of const and enum
 values: a boolean for a numeric value and a number for a boolean one, which
 Python's `True == 1` lets through, are rejected.
+The minContains (1 when absent) and maxContains of a contains are checked by
+counting the items the contains schema accepts, read as JSON Schema reads it,
+where that schema holds only type, const, enum, pattern, minLength, maxLength,
+minimum, maximum, exclusiveMinimum, exclusiveMaximum and multipleOf besides
+metadata; a contains with any other keyword (such as a `$ref`, `properties` or
+`format`) gets no count check.
 This feature is experimental and may change as JSON Schema coverage is expanded.
 
 With standard models and templates, required names absent from generated fields
