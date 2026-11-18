@@ -171,7 +171,9 @@ quote style and layout produced by the documented command. Keep these markers in
 the builders rather than editing generated Markdown directly.
 
 After changing documentation, regenerate the affected pages and then run
-`python scripts/build_llms_txt.py`. Run `tox run -e fix` and
+`python scripts/build_llms_txt.py`, which updates the committed `docs/llms.txt`
+(`docs/llms-full.txt` is built when the site is deployed and is not committed).
+Run `tox run -e fix` and
 `tox run -e docs-check-all -- --check` to verify formatting and generated content
 agree.
 
