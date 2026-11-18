@@ -70,6 +70,7 @@ CASES: dict[str, dict[str, dict[str, str | None]]] = {
         "head": {f"{SRC}/parser/other.py": "value = 1\n"},
     },
     "row-pattern-absent": {"head": {f"{SRC}/parser/other.py": "value = 2\n"}},
+    "row-by-a-non-ascii-path": {"head": {"tests/data/\u00e9.json": "{}\n"}},
     "nothing-changed": {"head": {}},
 }
 
@@ -108,7 +109,8 @@ def _select(repository: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.Ca
     monkeypatch.chdir(repository)
     rules = [] if repository == ROOT else ["--rules", "related_tests.toml"]
     code = related_tests.main([*rules, *args])
-    return f"exit status {code}\n{capsys.readouterr().out}"
+    captured = capsys.readouterr()
+    return f"exit status {code}\n{captured.out}{captured.err}"
 
 
 @pytest.mark.parametrize("case", CASES)
@@ -121,13 +123,31 @@ def test_related_tests_select_the_diff(
     assert_output(_select(repository, monkeypatch, capsys, "--base", "base", "--head", "HEAD"))
 
 
+WORKING_TREES = {
+    "tracked-and-untracked": {f"{SRC}/parser/jsonschema.py": "value = 3\n", "tests/data/new.json": "{}\n"},
+    "untracked-with-a-pattern": {f"{SRC}/parser/new.py": "value = 1  # the regex\n"},
+    "untracked-without-a-pattern": {f"{SRC}/parser/new.py": "value = 1\n"},
+    "untracked-non-ascii-path": {"tests/data/\u00e9.json": "{}\n"},
+}
+
+
+@pytest.mark.parametrize("case", WORKING_TREES)
 def test_related_tests_read_the_working_tree_without_a_head(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Without --head an uncommitted change and an untracked file count, like a check before the commit."""
+    """Without --head an uncommitted change and an untracked file, with its lines, count like a check before commit."""
     repository = _repository(tmp_path, {}, {})
-    _write(repository, {f"{SRC}/parser/jsonschema.py": "value = 3\n", "tests/data/new.json": "{}\n"})
+    _write(repository, WORKING_TREES[case])
     assert_output(_select(repository, monkeypatch, capsys, "--base", "base"))
+
+
+@pytest.mark.parametrize("args", [("--base", "nobody"), ("--base", "base", "--head", "nobody")], ids=["base", "head"])
+def test_related_tests_fail_when_git_fails(
+    args: tuple[str, ...], tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A revision git cannot read ends the run with an error, never with an empty selection."""
+    repository = _repository(tmp_path, {}, {f"{SRC}/parser/jsonschema.py": "value = 2\n"})
+    assert_output(_select(repository, monkeypatch, capsys, *args))
 
 
 def test_related_tests_need_a_base(

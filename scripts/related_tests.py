@@ -15,9 +15,27 @@ RULES = Path(__file__).with_name("related_tests.toml")
 SRC = "src/datamodel_code_generator/"
 
 
-def _git(root: Path, *args: str) -> str:
+class GitError(Exception):
+    """A git command failed, so the diff could not be read."""
+
+
+def _git(root: Path, *args: str, ok: tuple[int, ...] = (0,)) -> str:
+    """Run git and return its output; a status outside `ok` raises, so a failure never reads as an empty diff."""
     result = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True, check=False)
+    if result.returncode not in ok:
+        message = f"git {' '.join(args)} failed with status {result.returncode}"
+        raise GitError(message)
     return result.stdout
+
+
+def _merge_base(root: Path, base: str, head: str | None) -> str:
+    """Return the merge base of base and head, or the base when the histories share none."""
+    return _git(root, "merge-base", base, head or "HEAD", ok=(0, 1)).strip() or base
+
+
+def _untracked(root: Path) -> list[str]:
+    """Return the untracked files that are not ignored, with their names unquoted."""
+    return [path for path in _git(root, "ls-files", "-z", "-o", "--exclude-standard").split("\0") if path]
 
 
 def _exists(root: Path, head: str | None, path: str) -> bool:
@@ -29,22 +47,23 @@ def _exists(root: Path, head: str | None, path: str) -> bool:
 
 def _changes(root: Path, base: str, head: str | None) -> dict[str, str]:
     """Map each changed path to its diff letter, for base...head or for the merge base and the working tree."""
-    left = _git(root, "merge-base", base, head or "HEAD").strip() or base
-    listing = _git(root, "diff", "--name-status", "--no-renames", left, *([head] if head else []))
-    changed: dict[str, str] = {}
-    for line in listing.splitlines():
-        letter, _, path = line.partition("\t")
-        changed[path] = letter[0]
+    left = _merge_base(root, base, head)
+    fields = _git(root, "diff", "-z", "--name-status", "--no-renames", left, *([head] if head else [])).split("\0")
+    changed = {path: letter[0] for letter, path in zip(fields[0::2], fields[1::2], strict=False)}
     if head is None:
-        for path in _git(root, "ls-files", "-o", "--exclude-standard").splitlines():
-            changed[path] = "A"
+        changed.update(dict.fromkeys(_untracked(root), "A"))
     return changed
 
 
 def _changed_lines(root: Path, base: str, head: str | None, paths: list[str]) -> list[str]:
-    left = _git(root, "merge-base", base, head or "HEAD").strip() or base
+    """Return the added and removed lines of the paths; without a head, untracked files count as added."""
+    left = _merge_base(root, base, head)
     diff = _git(root, "diff", "-U0", "--no-renames", left, *([head] if head else []), "--", *paths)
-    return [line[1:] for line in diff.splitlines() if line[:1] in "+-" and line[:3] not in {"+++", "---"}]
+    lines = [line[1:] for line in diff.splitlines() if line[:1] in "+-" and line[:3] not in {"+++", "---"}]
+    if head is None:
+        for path in sorted(set(paths) & set(_untracked(root))):
+            lines.extend((root / path).read_text(encoding="utf-8", errors="replace").splitlines())
+    return lines
 
 
 def _matches(path: str, globs: list[str]) -> bool:
@@ -128,7 +147,12 @@ def main(argv: list[str] | None = None) -> int:
         return 1 if found else 0
     if not args.base:
         parser.error("--base is required unless --check is given")
-    sys.stdout.write("".join(f"{node}\n" for node in select(root, args.base, args.head, rules)))
+    try:
+        nodes = select(root, args.base, args.head, rules)
+    except GitError as error:
+        sys.stderr.write(f"related_tests: {error}\n")
+        return 2
+    sys.stdout.write("".join(f"{node}\n" for node in nodes))
     return 0
 
 
