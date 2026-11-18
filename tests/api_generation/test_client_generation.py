@@ -133,6 +133,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "discriminator-variants",
         "discriminator-reuse",
         "discriminator-values",
+        "discriminator-values-unmapped",
         "discriminator-shared-tags",
         "discriminator-forms",
         "fields",

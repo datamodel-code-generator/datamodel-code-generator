@@ -10,7 +10,7 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 23 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 62 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 41 | Field naming and docstring behavior |
+| 🏷️ [Field Customization](field-customization.md) | 42 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 73 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
@@ -473,6 +473,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-union-operator`](typing-customization.md#use-union-operator)
 - [`--use-unique-items-as-set`](typing-customization.md#use-unique-items-as-set)
 - [`--use-unique-items-as-set-by-value`](typing-customization.md#use-unique-items-as-set-by-value)
+- [`--use-unmapped-variant-tag-values`](field-customization.md#use-unmapped-variant-tag-values)
 - [`--use-validate-default-for-root-model-type-aliases`](typing-customization.md#use-validate-default-for-root-model-type-aliases)
 - [`--use-x-python-import-for-every-ref`](typing-customization.md#use-x-python-import-for-every-ref)
 - [`--use-x-python-type-as-written`](typing-customization.md#use-x-python-type-as-written)

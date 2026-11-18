@@ -1070,6 +1070,11 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
         ("typing.TypedDict", "dataclasses.dataclass", "pydantic_v2.BaseModel"),
         unions,
     ),
+    "discriminator-values-unmapped": (
+        "discriminator-values-unmapped",
+        ("typing.TypedDict", "dataclasses.dataclass"),
+        unions,
+    ),
     "discriminator-enum-bodies": (
         "discriminator-values",
         ("typing.TypedDict", "dataclasses.dataclass"),

@@ -1,0 +1,2 @@
+Pet {"inner": {"kind": "cat"}}: schema accepts, model accepts
+Pet {"inner": {"kind": "kitty"}}: schema accepts, model accepts

@@ -1,0 +1,14 @@
+[[change]]
+id = "variant-tag-values-of-request-response-variants"
+category = "decided-change"
+kind = "default-output"
+action = "review"
+source = "release-note"
+title = "The request and response variants of a discriminated union take the values their tag property admits"
+summary = "With --read-only-write-only-model-type request-response and --dedupe-request-response-variants, a discriminated variant whose tag property admits several values (ComparisonFilter.type: enum [eq, ne]) is tagged by those values, Literal['eq', 'ne'], instead of its schema name, Literal['ComparisonFilter'], as without those options (variant-tag-values-of-their-field). Decided by the owner on 2026-11-18."
+keep = { note = "No option restores the schema name: the schema rejects it, and the variant refused every document the schema accepts." }
+refs = ["#7089"]
+decision = ["#7089"]
+covers = [
+    "main/malformed/request_response_dedupe_generates_legacy_stops.py",
+]

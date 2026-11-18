@@ -1266,6 +1266,15 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "tag, and msgspec Structs, which take one tag, keep it too.",
     ),
     toggle(
+        (Section.TYPING, _C.FIELD),
+        "--use-unmapped-variant-tag-values",
+        help="Give a variant of a discriminated union that a mapping names, and whose tag property admits several "
+        "values (an enum or a Literal), also the values no mapping key and no other variant claim, beside its mapping "
+        "keys, so the union decodes the documents of the variant that carry them (a value another variant also admits "
+        "stays refused); without it the variant takes only its mapping keys and the union refuses the other values (as "
+        "in 0.97.0). A msgspec Struct keeps its one tag.",
+    ),
+    toggle(
         (Section.TYPING, _G.COLLECTION_TYPES),
         "--use-standard-collections",
         help="Use standard collections for type hinting (list, dict). Default: enabled",

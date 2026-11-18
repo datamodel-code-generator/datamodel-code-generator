@@ -5916,6 +5916,25 @@
     },
     "config": {}
   },
+  "discriminator-values-unmapped": {
+    "input": "discriminator-values.yaml",
+    "backends": [
+      "typing.TypedDict",
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ],
+    "model": {
+      "output_datetime_class": "datetime",
+      "use_unmapped_variant_tag_values": true
+    },
+    "config": {}
+  },
   "discriminator-shared-tags": {
     "input": "discriminator-shared-tags.yaml",
     "backends": [

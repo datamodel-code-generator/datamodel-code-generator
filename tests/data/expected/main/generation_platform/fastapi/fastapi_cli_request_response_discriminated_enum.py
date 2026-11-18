@@ -15,7 +15,7 @@ class Type(StrEnum):
 
 
 class Pet(BaseModel):
-    type: Literal['Pet']
+    type: Literal['cat', 'dog']
 
 
 class Owner(BaseModel):

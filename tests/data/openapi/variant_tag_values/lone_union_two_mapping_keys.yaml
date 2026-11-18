@@ -1,0 +1,23 @@
+openapi: 3.1.0
+info: {title: lone union of a variant two mapping keys name, version: "1"}
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [inner]
+      properties:
+        inner:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+          discriminator:
+            propertyName: kind
+            mapping:
+              cat: "#/components/schemas/Cat"
+              kitty: "#/components/schemas/Cat"
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        name: {type: string}

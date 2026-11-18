@@ -200,6 +200,7 @@ class ParserConfigDict(TypedDict):
     use_one_literal_as_default: NotRequired[bool]
     use_enum_values_in_discriminator: NotRequired[bool]
     merge_shared_variant_tags: NotRequired[bool]
+    use_unmapped_variant_tag_values: NotRequired[bool]
     read_schema_version_per_document: NotRequired[bool]
     read_escaped_ref_pointers: NotRequired[bool]
     read_dynamic_anchors_in_document_order: NotRequired[bool]

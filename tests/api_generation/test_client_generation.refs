@@ -254,6 +254,9 @@ discriminator-shared-tags	main/generation_platform/client/discriminator-shared-t
 discriminator-values	main/generation_platform/client/discriminator-values.txt
 discriminator-values	main/generation_platform/client/packages/discriminator-values/dataclasses_dataclass//*.py
 discriminator-values	main/generation_platform/client/packages/discriminator-values/typing_TypedDict//*.py
+discriminator-values-unmapped	main/generation_platform/client/discriminator-values-unmapped.txt
+discriminator-values-unmapped	main/generation_platform/client/packages/discriminator-values-unmapped/dataclasses_dataclass//*.py
+discriminator-values-unmapped	main/generation_platform/client/packages/discriminator-values-unmapped/typing_TypedDict//*.py
 discriminator-variants	main/generation_platform/client/discriminator-variants.txt
 discriminator-variants	main/generation_platform/client/packages/discriminator-variants/dataclasses_dataclass//*.py
 discriminator-variants	main/generation_platform/client/packages/discriminator-variants/typing_TypedDict//*.py

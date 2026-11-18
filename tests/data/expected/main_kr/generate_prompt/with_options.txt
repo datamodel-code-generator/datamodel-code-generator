@@ -180,6 +180,7 @@ What other options should I use?
 - `--no-use-single-line-docstring`
 - `--no-use-site-models-for-constrained-refs`
 - `--no-use-title-as-name`
+- `--no-use-unmapped-variant-tag-values`
 - `--omit-redundant-constraints`: Do not write a constraint again beside a type that already enforces it.
 - `--original-field-name-delimiter`: Specify delimiter for original field names when using snake-case conversion.
 - `--read-length-keywords-by-type`: Read the string and the array keywords for their own kind only, as JSON Sche...
@@ -203,6 +204,7 @@ What other options should I use?
 - `--use-site-models-for-constrained-refs`: Give an allOf of `$ref` members whose other parts add assertions its...
 - `--use-tag-as-union-variant-name`: Name inline oneOf/anyOf branch models after their tag: what `--infer-union-...
 - `--use-title-as-name`: Use schema title as the generated class name.
+- `--use-unmapped-variant-tag-values`: Give a mapped variant the unmapped values of its tag property.
 
 ### Model Customization
 - `--alias-generator`: Use a Pydantic v2 alias generator in model_config.
@@ -1181,6 +1183,16 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         sets are decided before root models collapse, set item
                         models hash by identity and such models merge, as in
                         0.89.0
+  --use-unmapped-variant-tag-values, --no-use-unmapped-variant-tag-values
+                        Give a variant of a discriminated union that a mapping
+                        names, and whose tag property admits several values
+                        (an enum or a Literal), also the values no mapping key
+                        and no other variant claim, beside its mapping keys,
+                        so the union decodes the documents of the variant that
+                        carry them (a value another variant also admits stays
+                        refused); without it the variant takes only its
+                        mapping keys and the union refuses the other values
+                        (as in 0.97.0). A msgspec Struct keeps its one tag.
   --use-validate-default-for-root-model-type-aliases, --no-use-validate-default-for-root-model-type-aliases
                         Under --use-root-model-type-alias, write the default
                         of a field whose type names a root model written as an

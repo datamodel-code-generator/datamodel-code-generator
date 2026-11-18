@@ -1,0 +1,23 @@
+openapi: '3.1.0'
+info: {title: A variant whose integer tag property admits several values, version: 1.0.0}
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: integer, enum: [1, 3]}
+        name: {type: string}
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: integer, const: 2}
+        bark: {type: boolean}
+    Pet:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: kind
