@@ -1,0 +1,24 @@
+[[change]]
+id = "lazy-public-names-in-dir"
+category = "api"
+title = "dir() lists every public name a module exports lazily, once"
+summary = "Each module with lazy exports answers dir() from the table its __getattr__ reads: the package root, types, util, parser.avro, parser.asyncapi, parser.base, parser.jsonschema and __main__ now list their lazily exported public names, and datamodel_code_generator.reference lists a name read before dir() or __all__ once instead of twice. The plain imports create_module_getattr of types and parser.asyncapi, which only the old hooks used, are gone; import it from datamodel_code_generator.util."
+refs = ["#7154", "#7152"]
+decision = ["#7154"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["dir()", "datamodel_code_generator.types.create_module_getattr", "datamodel_code_generator.parser.asyncapi.create_module_getattr"] }
+before = "'StrictTypes' in dir(datamodel_code_generator.types)  # False"
+after = "'StrictTypes' in dir(datamodel_code_generator.types)  # True"
+source = "release-note"
+covers = [
+    "main/public_api_signature_baseline/lazy_public_names_are_listed_once_by_dir[datamodel_code_generator.__main__].txt",
+    "main/public_api_signature_baseline/lazy_public_names_are_listed_once_by_dir[datamodel_code_generator.parser.asyncapi].txt",
+    "main/public_api_signature_baseline/lazy_public_names_are_listed_once_by_dir[datamodel_code_generator.parser.avro].txt",
+    "main/public_api_signature_baseline/lazy_public_names_are_listed_once_by_dir[datamodel_code_generator.parser.base].txt",
+    "main/public_api_signature_baseline/lazy_public_names_are_listed_once_by_dir[datamodel_code_generator.parser.jsonschema].txt",
+    "main/public_api_signature_baseline/lazy_public_names_are_listed_once_by_dir[datamodel_code_generator.reference].txt",
+    "main/public_api_signature_baseline/lazy_public_names_are_listed_once_by_dir[datamodel_code_generator.types].txt",
+    "main/public_api_signature_baseline/lazy_public_names_are_listed_once_by_dir[datamodel_code_generator.util].txt",
+    "main/public_api_signature_baseline/lazy_public_names_are_listed_once_by_dir[datamodel_code_generator].txt",
+]

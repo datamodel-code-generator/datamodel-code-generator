@@ -1,0 +1,8 @@
+[[change]]
+id = "boundary-report-lazy-export-lines"
+category = "internal"
+title = "The architecture boundary report names the loader functions and moved lines of the lazy exports"
+refs = ["#7154"]
+covers = [
+    "architecture_boundaries/cli.txt",
+]
