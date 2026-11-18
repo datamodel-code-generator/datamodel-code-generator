@@ -363,7 +363,8 @@ class Worker:
         )
         self.jobs = 0
         if (ready := self._reply()) is None:
-            msg = f"worker exited with {self.process.wait()}"
+            self.close()
+            msg = f"worker exited with {self.process.returncode}"
             raise RuntimeError(msg)
         self.package = Path(os.path.normpath(Path(ready["package"]).absolute())).parent
         if package is not None and not self.package.is_relative_to(os.path.normpath(package.absolute())):
@@ -393,6 +394,8 @@ class Worker:
         if self.process.stdin:
             self.process.stdin.close()
         self.process.wait()
+        if self.process.stdout:
+            self.process.stdout.close()
 
 
 @dataclass(frozen=True)

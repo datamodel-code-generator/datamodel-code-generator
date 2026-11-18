@@ -16,8 +16,6 @@ from __future__ import annotations
 
 import re
 import shutil
-import sys
-import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -41,17 +39,6 @@ PERSON_SCHEMA: dict[str, Any] = {
     "title": "Person",
     "properties": {"name": {"type": "string"}},
 }
-
-
-@pytest.fixture
-def warnings_on_stderr(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Show every warning, as ``<category>: <message>`` on stderr, in the order the run shows it."""
-    warnings.simplefilter("always")
-
-    def show(message: Warning | str, category: type[Warning], *_: object, **__: object) -> None:
-        sys.stderr.write(f"{category.__name__}: {message}\n")
-
-    monkeypatch.setattr(warnings, "showwarning", show)
 
 
 def _seen(
