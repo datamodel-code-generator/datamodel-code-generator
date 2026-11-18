@@ -16368,7 +16368,19 @@ beside a `$ref`, so the member does not close the model and the payload validate
     golden_output="main/jsonschema/main_jsonschema/read_ref_siblings_in_closed_allof_members[pydantic_v2.BaseModel].py",
     comparison_output="main/jsonschema/main_jsonschema/allof_unevaluated_closed_member_ref_siblings.py",
 )
-@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "typing.TypedDict"])
+@pytest.mark.parametrize(
+    "output_model_type",
+    [
+        "pydantic_v2.BaseModel",
+        "pydantic_v2.dataclass",
+        pytest.param(
+            "typing.TypedDict",
+            marks=pytest.mark.skipif(
+                sys.version_info < (3, 12), reason="pydantic reads a typing.TypedDict on Python 3.12 or later"
+            ),
+        ),
+    ],
+)
 def test_main_jsonschema_read_ref_siblings_in_closed_allof_members(output_file: Path, output_model_type: str) -> None:
     """Test a dependentSchemas beside a ``$ref`` keeps a closed allOf member from closing the model, opt-in (#7087).
 
