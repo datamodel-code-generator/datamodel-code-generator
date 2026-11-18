@@ -2,9 +2,10 @@
 
 ``init_export_imports`` returns the imports by which an ``__init__.py`` exports the models of the modules below it:
 the names of a module's models it exports (``exported_names``) of each module below the package that its scope reaches
-(``exports_reach``), which ``collect_exports_for_init`` collects, ``resolve_export_collisions`` resolves the names that
-collide by ``--all-exports-collision-strategy`` (``raise_collision_error`` reports them), and ``build_all_exports_code``
-builds the imports; the import cycles that merge modules read the same exports (``parser/_passes/structure.py``). The
+(``exported_modules``), which ``collect_exports_for_init`` collects, ``resolve_export_collisions`` resolves the names
+that collide by ``--all-exports-collision-strategy`` (``raise_collision_error`` reports them), and
+``build_all_exports_code`` builds the imports; the modules the output loads and the import cycles that merge modules
+read the same modules (``parser/_passes/_import_edges.py``). The
 functions take the parser through ``InitExportsHost``, which ``Parser`` satisfies structurally. ``Parser`` keeps
 ``_init_export_imports`` as the hook that calls ``init_export_imports``, and ``_make_prefixed_name``, the staticmethod
 that builds a prefixed name.
@@ -12,13 +13,13 @@ that builds a prefixed name.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, TypeAlias, TypeVar
 
 from typing_extensions import Protocol
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._free_names import first_free
-from datamodel_code_generator._module_paths import is_below, is_package_init, module_parts, written_names
+from datamodel_code_generator._module_paths import is_package_init, module_parts, written_names
 from datamodel_code_generator.enums import AllExportsCollisionStrategy, AllExportsScope
 from datamodel_code_generator.imports import Import, Imports
 
@@ -33,14 +34,15 @@ if TYPE_CHECKING:
     _ModuleContextRow: TypeAlias = tuple[ModulePath, ModulePath, list[DataModel], bool, Imports, ModelResolver]
     _Export: TypeAlias = tuple[str, tuple[str, ...], str]
 
+_T = TypeVar("_T")
 
 __all__ = [
     "InitExportsConfig",
     "InitExportsHost",
     "build_all_exports_code",
     "collect_exports_for_init",
+    "exported_modules",
     "exported_names",
-    "exports_reach",
     "init_export_imports",
     "raise_collision_error",
     "resolve_export_collisions",
@@ -79,13 +81,22 @@ def exported_names(models: Iterable[DataModel]) -> Iterator[str]:
     return (ref.short_name for model in models if (ref := model.reference) and not ref.short_name.startswith("_"))
 
 
-def exports_reach(depth: int, scope: AllExportsScope) -> bool:
-    """Return whether the exports of a package's ``__init__.py`` reach a module ``depth`` levels below the package.
+def exported_modules(
+    modules: Iterable[tuple[tuple[str, ...], _T]], scope: AllExportsScope
+) -> dict[tuple[str, ...], list[tuple[tuple[str, ...], _T]]]:
+    """Return the modules that the ``__init__.py`` of each package re-exports, by the parts of the package's name.
 
-    The scope ``children`` reaches the modules directly below the package (``depth`` 1), ``recursive`` every module
-    below it.
+    A module is given as the parts of its dotted name with what the caller keeps of it, and taken in the order given
+    by each package above it that its scope reaches: ``children`` the modules directly below the package,
+    ``recursive`` every module below it.
     """
-    return depth == 1 or (depth > 1 and scope != AllExportsScope.Children)
+    exported: dict[tuple[str, ...], list[tuple[tuple[str, ...], _T]]] = {}
+    for module in modules:
+        parts = module[0]
+        for size in range(len(parts)):
+            if size == len(parts) - 1 or scope != AllExportsScope.Children:
+                exported.setdefault(parts[:size], []).append(module)
+    return exported
 
 
 def collect_exports_for_init(
@@ -93,22 +104,20 @@ def collect_exports_for_init(
     processed_models: Sequence[_ModuleContextRow],
     scope: AllExportsScope,
 ) -> list[_Export]:
-    """Collect exports for __init__.py based on scope."""
-    exports: list[_Export] = []
+    """Collect the exports of the ``__init__.py`` at ``module``: the names of each module it re-exports, in order."""
     normalized_module = written_names(module)
     base = normalized_module[:-1] if is_package_init(normalized_module[-1]) else normalized_module
-    base_len = len(base)
-
-    for proc_module, _, proc_models, _, _, _ in processed_models:
-        normalized_proc_module = written_names(proc_module)
-        if not proc_models or normalized_proc_module == normalized_module:
-            continue
-        prefix = module_parts(normalized_proc_module)
-        if not (is_below(prefix, base) and exports_reach(len(prefix) - base_len, scope)):
-            continue
-        rel = prefix[base_len:]
-        exports.extend((name, rel, ".".join(rel)) for name in exported_names(proc_models))
-    return exports
+    modules = (
+        (module_parts(written_names(proc_module)), proc_models)
+        for proc_module, _, proc_models, _, _, _ in processed_models
+        if proc_models
+    )
+    return [
+        (name, rel, ".".join(rel))
+        for prefix, models in exported_modules(modules, scope).get(base, ())
+        for rel in (prefix[len(base) :],)
+        for name in exported_names(models)
+    ]
 
 
 def resolve_export_collisions(
