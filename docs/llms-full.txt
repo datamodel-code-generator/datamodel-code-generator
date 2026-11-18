@@ -73075,9 +73075,11 @@ The `--generate-schema-validators` option emits schema-derived model validators
 for object constraints that cannot be represented as type hints alone, including
 minProperties/maxProperties on named object models, patternProperties on
 composed object models, required-only oneOf/anyOf groups, simple
-if/then/else required-property conditions, uniqueItems array validation, and
-the JSON type of const and enum values: a boolean for a numeric value and a
-number for a boolean one, which Python's `True == 1` lets through, are rejected.
+if/then/else required-property conditions and the minimum, maximum,
+exclusiveMinimum and exclusiveMaximum that their then/else branches put on
+properties, uniqueItems array validation, and the JSON type of const and enum
+values: a boolean for a numeric value and a number for a boolean one, which
+Python's `True == 1` lets through, are rejected.
 This feature is experimental and may change as JSON Schema coverage is expanded.
 
 With standard models and templates, required names absent from generated fields
@@ -90931,6 +90933,14 @@ With `--generate-client`, explicit argument names (`parameter_names`, `--aliases
 With `--collapse-root-models` and `--output-model-type msgspec.Struct`, a root model whose references are all collapsed into their users (several fields, some naming it inside a union) was still written as an unused module-level type alias (`NullableShort: TypeAlias = Annotated[str, Meta(max_length=3)] | None`); it is no longer written. Nothing named the alias, so the models that used it are unchanged and validate the same payloads.
 
 - **Pull requests and issues:** [#6915](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6915)
+- **Source:** the release notes
+
+### Schema validators check the numeric bounds an if/then/else puts on properties (unreleased) { #schema-validators-conditional-bounds }
+
+With `--generate-schema-validators` (or `--schema-validator-type pydantic-v2`), the `minimum`, `maximum`, `exclusiveMinimum` and `exclusiveMaximum` that the `then` or `else` of an if/then/else puts on a property are checked on the raw input when the `if` is one the conditional required check reads (required properties with `const` or `enum` values, or presence only): `{"kind": "a", "value": 1}` is now rejected for `then: {properties: {value: {minimum: 10}}}` under `if: kind = "a"`, as JSON Schema rejects it. The bounds are read from the branch, its allOf members and the schema a branch or property references; a bound applies to a JSON number only, and the condition tells a boolean from a number. A model also checks the bounds of its base class. Models gain `__json_schema_conditional_bounds__` and a shared base with `_validate_json_schema_conditional_bounds`. Without the option nothing changes.
+
+- **Affects:** experimental features: `cli-option.generate-schema-validators`
+- **Pull requests and issues:** [#7054](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7054)
 - **Source:** the release notes
 
 ### Schema validators reject a boolean for a numeric const or enum value and a number for a boolean one (unreleased) { #schema-validators-constant-types }

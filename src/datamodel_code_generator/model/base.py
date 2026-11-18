@@ -3655,7 +3655,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         return bool(
             rules
             and any(
-                getattr(rules, name, None) for name in ("pattern_properties", "required_groups", "conditional_required")
+                getattr(rules, name, None)
+                for name in ("pattern_properties", "required_groups", "conditional_required", "conditional_bounds")
             )
         )
 

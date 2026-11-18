@@ -1,0 +1,4 @@
+{"kind": "a", "value": 2} (valid): accepted/accepted
+{"kind": "a", "value": 6} (invalid): rejected/rejected
+{"kind": "b", "value": 6} (invalid): rejected/rejected
+{"kind": "b", "value": 6, "note": "n"} (valid): accepted/accepted

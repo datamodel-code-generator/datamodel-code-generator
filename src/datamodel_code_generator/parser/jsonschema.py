@@ -245,6 +245,7 @@ from datamodel_code_generator.model.runtime_validation import (
     UNIQUE_ITEMS_MAPPING_ADDITIONAL_VALUES_PATH_STEP,  # noqa: F401  # Preserve the established parser.jsonschema export.
     UNIQUE_ITEMS_MAPPING_PATTERN_VALUES_PATH_STEP,  # noqa: F401  # Preserve the established parser.jsonschema export.
     UNIQUE_ITEMS_MAPPING_VALUES_PATH_STEP,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    ConditionalBoundsRule,
     ConditionalRequiredRule,
     ConstantTypesRule,
     IndependentDeclaredPatternPropertiesRule,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -2117,6 +2118,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             property_count=source.property_count,
             unique_items=[],
         )
+        target.conditional_bounds = [
+            bounds_rule
+            for rule in source.conditional_bounds
+            if all(keep_names(input_names) for input_names, _ in rule.condition)
+            and (
+                bounds_rule := ConditionalBoundsRule(
+                    condition=rule.condition,
+                    then_bounds=tuple(bound for bound in rule.then_bounds if keep_names(bound[0])),
+                    else_bounds=tuple(bound for bound in rule.else_bounds if keep_names(bound[0])),
+                )
+            ).then_bounds
+            + bounds_rule.else_bounds
+        ]
         if target:
             self.extra_template_data[target_path]["schema_runtime_validation"] = target
         self._add_path_rules_validator(target_path, obj, fields, [], is_root_model=is_root_model)

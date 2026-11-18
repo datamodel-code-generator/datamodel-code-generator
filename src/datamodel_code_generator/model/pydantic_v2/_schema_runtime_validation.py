@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from datamodel_code_generator.model.runtime_validation import (
+        ConditionalBoundsRule,
         ConstantTypesRule,
         PropertyCountRule,
         SchemaRuntimeValidation,
@@ -111,6 +112,14 @@ def render_unique_items_rules(rules: Iterable[UniqueItemsRule]) -> tuple[str, ..
 def render_constant_types_rules(rules: Iterable[ConstantTypesRule]) -> tuple[str, ...]:
     """Render the raw paths of the constant checks, each with its values, through ``class_body_lines``."""
     return _render_path_rules("__json_schema_constant_types__", ((rule.path, rule.values) for rule in rules))
+
+
+def render_conditional_bounds_rules(rules: Iterable[ConditionalBoundsRule]) -> tuple[str, ...]:
+    """Render the condition and the then and else bounds of each conditional bounds check."""
+    return _render_path_rules(
+        "__json_schema_conditional_bounds__",
+        ((rule.condition, rule.then_bounds, rule.else_bounds) for rule in rules),
+    )
 
 
 def _render_path_rules(name: str, rules: Iterable[tuple[object, ...]]) -> tuple[str, ...]:
@@ -221,3 +230,47 @@ def render_constant_types_validation_base(class_name: str, base_class_name: str)
                     if name in value:
                         cls._validate_json_schema_constant_types_path(value[name], path, position + 1, values)
                         return"""
+
+
+def render_conditional_bounds_validation_base(class_name: str, base_class_name: str) -> str:
+    """Render the shared validator base that checks the numeric bounds of the branch an if/then/else selects.
+
+    The condition is read as the conditional required rule reads it, with the JSON equality of the core helper this
+    layer is rendered on (``_json_schema_conditional_equal``: a boolean is no number); a bound applies to a JSON number
+    only.
+    """
+    return f"""class {class_name}({base_class_name}):
+    __json_schema_conditional_bounds__: ClassVar[tuple[tuple[object, ...], ...]] = ()
+
+    @model_validator(mode='before')
+    @classmethod
+    def _validate_json_schema_conditional_bounds(cls, data: Any) -> Any:
+        if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+            return data
+        for condition, then_bounds, else_bounds in cls.__json_schema_conditional_bounds__:
+            condition_matches = all(
+                any(
+                    name in data
+                    and (
+                        not expected
+                        or any(
+                            cls._json_schema_conditional_equal(data[name], value)
+                            for value in expected
+                        )
+                    )
+                    for name in names
+                )
+                for names, expected in condition
+            )
+            for names, keyword, limit in then_bounds if condition_matches else else_bounds:
+                value = next((data[name] for name in names if name in data), None)
+                if isinstance(value, bool) or not isinstance(value, (int, float)):
+                    continue
+                if (
+                    (keyword == 'minimum' and value < limit)
+                    or (keyword == 'exclusiveMinimum' and value <= limit)
+                    or (keyword == 'maximum' and value > limit)
+                    or (keyword == 'exclusiveMaximum' and value >= limit)
+                ):
+                    raise ValueError(f'Expected {{keyword}} {{limit}}')
+        return data"""

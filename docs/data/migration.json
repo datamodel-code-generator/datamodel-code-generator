@@ -1423,6 +1423,23 @@
      "cli-option.generate-schema-validators"
     ]
    },
+   "id": "schema-validators-conditional-bounds",
+   "kind": "experimental",
+   "refs": [
+    "#7054"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "With `--generate-schema-validators` (or `--schema-validator-type pydantic-v2`), the `minimum`, `maximum`, `exclusiveMinimum` and `exclusiveMaximum` that the `then` or `else` of an if/then/else puts on a property are checked on the raw input when the `if` is one the conditional required check reads (required properties with `const` or `enum` values, or presence only): `{\"kind\": \"a\", \"value\": 1}` is now rejected for `then: {properties: {value: {minimum: 10}}}` under `if: kind = \"a\"`, as JSON Schema rejects it. The bounds are read from the branch, its allOf members and the schema a branch or property references; a bound applies to a JSON number only, and the condition tells a boolean from a number. A model also checks the bounds of its base class. Models gain `__json_schema_conditional_bounds__` and a shared base with `_validate_json_schema_conditional_bounds`. Without the option nothing changes.",
+   "title": "Schema validators check the numeric bounds an if/then/else puts on properties"
+  },
+  {
+   "action": "review",
+   "affects": {
+    "experimental": [
+     "cli-option.generate-schema-validators"
+    ]
+   },
    "id": "schema-validators-constant-types",
    "kind": "experimental",
    "refs": [
