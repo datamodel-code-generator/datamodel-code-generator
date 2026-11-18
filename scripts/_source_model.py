@@ -26,10 +26,12 @@ bind resolve as ``star`` or ``unbound``, never as a guess), run-time facts (both
 their guards), strings that hold dotted paths, and the run-time line mapping of code objects. A question beyond the
 five is a design question, not an extension added in passing.
 
-The compiler check (`SourceModule.verify`, on in the test suite through `VERIFY_ENV`) compares the model with
-`symtable` on the running interpreter, both ways: the scope tree (kinds and lines), the names each scope binds,
-``global`` and ``nonlocal`` declarations, every read the model records against the reads the compiler counts (and
-every read the compiler counts against the model's), and the kind of each read (local, enclosing, global or builtin).
+The compiler check (`SourceModule.verify`, on in ``tests/test_source_model.py`` through `VERIFY_ENV`) compares the
+model with `symtable` on the running interpreter, both ways: the scope tree (kinds and lines), the names each scope
+binds, ``global`` and ``nonlocal`` declarations, the reads the model records against the reads the compiler counts
+and back, per name and symbol table (a second read of a name in the same table stands behind a missing one), and the
+kind of each read (local, enclosing, global or builtin). A module the compiler rejects though `ast` reads it (a late
+``from __future__`` import) is a disagreement too.
 The forms in ``tests/data/source_forms/`` alone stand behind the other answers: guards, origins, uses, class members,
 receivers, type positions, constants, imports, suppressions and extents.
 
@@ -37,7 +39,8 @@ The compiler differs by version, and the check normalizes the differences in one
 3.11 list, set and dict comprehensions have tables of their own, from 3.12 they are inlined into the enclosing table
 (PEP 709) unless the code that evaluates them sees a class namespace, and their reads there are compared by presence;
 from 3.14, annotations without ``from __future__ import annotations`` live in ``__annotate__`` tables, whose reads and
-inner scopes are compared there by presence; with the future import, annotations are never compiled and neither their
+inner scopes are compared there by presence (a comprehension inlined into a ``lambda`` or generator expression inside
+an annotation lives in that scope's own table); with the future import, annotations are never compiled and neither their
 reads nor the scopes inside them are compared; reads in function-local annotations are compared only from the
 compiler's side; type-parameter tables ("type parameter"/"TypeVar bound" on 3.12, "type parameters"/"type variable"
 later) and ``lambda``/``<lambda>`` (3.15) are matched by kind; child tables are paired by line, kind and the names
@@ -54,6 +57,7 @@ repository's gate judges a pull request with the base copy of this module, witho
 from __future__ import annotations
 
 import ast
+import dis
 import os
 import re
 import symtable
@@ -72,7 +76,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Iterator
 
 VERIFY_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_SOURCE_MODEL"
-"""Set to ``1`` to compare every model with the compiler (the test suite sets it)."""
+"""Set to ``1`` to compare every model with the compiler (``tests/test_source_model.py`` sets it)."""
 
 QUESTIONS = ("bindings", "references", "imports", "suppressions", "extents")
 """The five questions, in the order answers are rendered."""
@@ -280,6 +284,8 @@ _INLINED_KINDS = (ast.ListComp, ast.SetComp, ast.DictComp)
 _COMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
 _DEFINITIONS = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
 _ANNOTATION_SCOPES = frozenset({"type-params", "type-alias", "type-bound"})
+_NOT_RUN = frozenset({"deferred", "never"})
+_LOAD_CONST = dis.opmap["LOAD_CONST"]
 _NEVER = ((99, 0), (99, 0))
 _TYPE_CHECKING = frozenset({"typing.TYPE_CHECKING", "typing_extensions.TYPE_CHECKING"})
 _VERSIONS = ("sys.version_info", "sys.hexversion")
@@ -334,6 +340,7 @@ _NOT_CODE = frozenset({
     tokenize.ENDMARKER,
     tokenize.ENCODING,
 })
+_LAYOUT = _NOT_CODE - {tokenize.COMMENT}
 _STRING_STARTS = frozenset(
     getattr(tokenize, name) for name in ("FSTRING_START", "TSTRING_START") if hasattr(tokenize, name)
 )
@@ -372,6 +379,7 @@ _IMPLICIT = frozenset({
     "__type_params__",
 })
 _UNHASHABLE = "an unhashable key or member"
+_MALFORMED = "an entry that is not a key and a value"
 _ASKED: list[set[str]] = []
 
 
@@ -391,7 +399,7 @@ def questions_asked() -> Generator[set[str]]:
     try:
         yield asked
     finally:
-        _ASKED.remove(asked)
+        _ASKED[:] = [item for item in _ASKED if item is not asked]
 
 
 def _ask(question: str) -> None:
@@ -449,7 +457,7 @@ class Scope:
         an annotation that is never evaluated (deferred by the future import, or a function-local one) is never
         compiled.
         """
-        if self.annotation in {"deferred", "never"}:
+        if self.annotation in _NOT_RUN:
             return "no"
         return {((3, 12), (99, 0)): "3.11 only", ((3, 12), (3, 14)): "3.11, 3.14+"}.get(self._inlined_from(), "yes")
 
@@ -1031,22 +1039,37 @@ class _Suppressions(_Extents):
         return min((number for number in self._code_lines if number > line), default=line)
 
     def _range_end(self, line: int, listed: tuple[str, ...]) -> int:
-        """Return the line ending a ``ruff: disable``: an ``enable`` of the identical list at its indentation."""
-        indent = len(self.lines[line - 1]) - len(self.lines[line - 1].lstrip())
+        """Return the line ending a ``ruff: disable``: an ``enable`` of the identical list at its indentation, or code.
+
+        Lines are read by the token that starts them, so a line inside a multi-line string neither ends the range nor
+        holds an ``enable`` comment; code that starts left of the comment ends it.
+        """
+        indent = self._line_starts[line].start[1]
         for number in range(line + 1, len(self.lines) + 1):
-            text = self.lines[number - 1]
-            stripped = text.lstrip()
-            column = len(text) - len(stripped)
-            if stripped and not stripped.startswith("#") and column < indent:
+            token = self._line_starts.get(number)
+            if token is None:
+                continue
+            if token.type != tokenize.COMMENT and token.start[1] < indent:
                 return number
             enables = [
                 tuple(item.strip() for item in match["rules"].split(","))
-                for match in _RUFF_RULES.finditer(stripped)
+                for match in _RUFF_RULES.finditer(token.string)
                 if match["action"] == "enable"
             ]
-            if stripped.startswith("#") and column == indent and listed in enables:
+            if token.type == tokenize.COMMENT and token.start[1] == indent and listed in enables:
                 return number
         return len(self.lines) + 1
+
+    @cached_property
+    def _line_starts(self) -> dict[int, tokenize.TokenInfo]:
+        """The token that starts each line outside strings (a comment or code), by line."""
+        starts: dict[int, tokenize.TokenInfo] = {}
+        depth = 0
+        for token in self._tokens:
+            if depth == 0 and token.type not in _LAYOUT:
+                starts.setdefault(token.start[0], token)
+            depth += (token.type in _STRING_STARTS) - (token.type in _STRING_ENDS)
+        return starts
 
     def _covered(self, line: int) -> frozenset[int]:
         """Return the lines coverage excludes for a pragma on a line: a clause's header and suite, or the statement."""
@@ -1123,7 +1146,7 @@ class SourceModule(_Suppressions):
 
     @property
     def imports(self) -> list[Import]:
-        """Every import, static and literal dynamic, in source order."""
+        """Every import, static and literal dynamic, in source order (none from an annotation that never runs)."""
         _ask("imports")
         return self._imports
 
@@ -1243,28 +1266,31 @@ class SourceModule(_Suppressions):
     def compiled(self) -> dict[Scope, types.CodeType]:
         """Map each scope that compiles to a code object of its own on the running interpreter to that code object.
 
-        Paired by ``(co_name, co_firstlineno)`` in source order; ``__annotate__`` functions (3.14+) have no scope.
-        Raises `SourceModelError` where a scope finds no code object or a code object no scope.
+        Each scope is paired with a code object that the code of its nearest compiled enclosing scope loads, by
+        ``co_name`` and the position of the instruction that loads it (the position of the scope's node; 3.12 loads a
+        type parameter's bound at the parameter), so scopes with one name on one line each get their own; the
+        ``__annotate__`` functions of 3.14 have no scope, and the code objects they load count as loaded by the code
+        that loads them. Raises `SourceModelError` where a scope finds no code object or a code object no scope.
         """
         _ask("bindings")
-        pending: dict[tuple[str, int], list[types.CodeType]] = {}
-        todo = [compile(self.text, self.path, "exec", dont_inherit=True)]
-        while todo:
-            current = todo.pop(0)
-            if current.co_name != "__annotate__":
-                pending.setdefault((current.co_name, current.co_firstlineno), []).append(current)
-            todo.extend(constant for constant in current.co_consts if isinstance(constant, types.CodeType))
-        found: dict[Scope, types.CodeType] = {}
+        module = self._code
+        loads = _loaded_code(module)
+        found: dict[Scope, types.CodeType] = {self._module_scope: module}
         version = (sys.version_info.major, sys.version_info.minor)
-        for scope in self._scopes:
+        for scope in self._scopes[1:]:
             if not scope.compiles_on(version):
                 continue
-            key = (scope.code_name, max(scope.first_line, 1))
-            candidates = pending.get(key) or pending.get((scope.code_name, scope.line)) or []
-            if not candidates:
-                self._refuse(scope.line, f"{scope.qualname} has no code object {key}")
-            found[scope] = candidates.pop(0)
-        if leftover := [key for key, codes in pending.items() if codes]:
+            parent = scope.parent
+            while parent is not None and parent not in found:
+                parent = parent.parent
+            loaded = loads[found[parent]] if parent is not None else {}
+            nodes = [scope.node, self._parents[scope.node]] if scope.kind == "type-bound" else [scope.node]
+            keys = [(scope.code_name, getattr(node, "lineno", 0), getattr(node, "col_offset", 0)) for node in nodes]
+            code = next((code for key in keys if (code := loaded.pop(key, None)) is not None), None)
+            if code is None:
+                self._refuse(scope.line, f"{scope.qualname} has no code object {keys[0]}")
+            found[scope] = code
+        if leftover := sorted(key for keys in loads.values() for key in keys):
             self._refuse(leftover[0][1], f"code objects without a scope: {leftover[:3]}")
         return found
 
@@ -1276,10 +1302,29 @@ class SourceModule(_Suppressions):
     def disagreements(self) -> list[str]:
         """Return where the model and the compiler's symbol table disagree on the running interpreter (the first)."""
         try:
-            self._compare(self._module_scope, symtable.symtable(self.text, self.path, "exec"))
+            self._compare(self._module_scope, self._symbol_table())
         except SourceModelError as error:
             return [str(error)]
         return []
+
+    @cached_property
+    def _code(self) -> types.CodeType:
+        """The module's code object on the running interpreter; a module the compiler rejects is a disagreement."""
+        try:
+            return compile(self.text, self.path, "exec", dont_inherit=True)
+        except SyntaxError as error:
+            self._rejected(error)
+
+    def _symbol_table(self) -> symtable.SymbolTable:
+        """Return the compiler's symbol table of the module, which the compiler must accept first (`_code`)."""
+        try:
+            return symtable.symtable(self.text, self._code.co_filename, "exec")
+        except SyntaxError as error:
+            self._rejected(error)
+
+    def _rejected(self, error: SyntaxError) -> NoReturn:
+        msg = f"{self.path}:{error.lineno or 0}: the compiler rejects the module, which ast reads ({error.msg})"
+        raise SourceModelError(msg) from None
 
     # ---- pass 1: one walk ----------------------------------------------------------------------------------------
     def _new_scope(self, kind: ScopeKind, node: ast.AST, parent: Scope | None, code_name: str, line: int) -> Scope:
@@ -1417,7 +1462,10 @@ class SourceModule(_Suppressions):
 
     def _annotated_assignment(self, node: ast.AnnAssign, scope: Scope, guard: Guard) -> None:
         kind: BindingKind = "annassign" if node.value is not None else "annotation-only"
-        self._target(node.target, scope, kind, guard, node.value)
+        if node.simple or node.value is not None or not isinstance(node.target, ast.Name):
+            self._target(node.target, scope, kind, guard, node.value)
+        else:
+            self._node_scope[node.target] = scope
         local = scope.kind not in {"module", "class"}
         self._annotation(node.annotation, scope, "never" if local else self._annotation_mode(), guard)
         if node.value is not None:
@@ -1559,7 +1607,7 @@ class SourceModule(_Suppressions):
         elif isinstance(node, ast.NamedExpr):
             self._walrus(node, scope, guard, annotation)
         else:
-            if isinstance(node, ast.Call):
+            if isinstance(node, ast.Call) and _NOT_RUN.isdisjoint({annotation, scope.annotation}):
                 self._calls.append((node, scope, guard))
             for child in ast.iter_child_nodes(node):
                 self._expr(child, scope, guard, annotation)
@@ -1613,19 +1661,17 @@ class SourceModule(_Suppressions):
 
     # ---- pass 2: resolution and classification -------------------------------------------------------------------
     def _resolve(self, mangled: str, scope: Scope) -> Resolution:
-        cell = scope.parent
-        while cell is not None and cell.kind not in {"class", "module"}:
-            cell = cell.parent
-        if mangled == "__class__" and scope.kind != "class" and cell is not None and cell.kind == "class":
-            return Resolution("class-cell", cell, ())
         if mangled in scope.declared_global:
             return self._global(mangled)
         if mangled in scope.bindings:
             fallback = self._global(mangled) if scope.kind == "class" else None
             return Resolution("local", scope, tuple(scope.bindings[mangled]), fallback)
+        class_cell = mangled == "__class__" and scope.kind != "class"
         sees_class = scope.sees_class
         probe = scope.parent
         while probe is not None and probe.kind != "module":
+            if probe.kind == "class" and class_cell:
+                return Resolution("class-cell", probe, ())
             if probe.kind == "class" and sees_class and mangled in probe.bindings:
                 return Resolution("enclosing", probe, tuple(probe.bindings[mangled]), self._global(mangled))
             if probe.kind != "class" and (mangled in probe.declared_global or mangled in probe.bindings):
@@ -1739,20 +1785,36 @@ class SourceModule(_Suppressions):
 
     def _literal_import(self, call: ast.Call, origin: str) -> str | None:
         name = _string(argument(call, 0, "name"))
-        level = len(name) - len(name.lstrip(".")) if name is not None else 0
-        if name is None or not level:
-            return name
-        package = argument(call, 1, "package") if origin == "importlib.import_module" else None
-        implicit = isinstance(package, ast.Name) and self._resolved[package] == Resolution(
-            "global", self._module_scope, ()
-        )
-        own = {"__name__": self.module, "__package__": self._package()}
-        base = own.get(package.id) if implicit and isinstance(package, ast.Name) else _string(package)
+        if name is None:
+            return None
+        level, base, rest = self._import_anchor(call, origin, name)
+        if not level:
+            return None if level is None else rest
         parts = base.split(".") if base else []
         if level - 1 >= len(parts):
             return None
-        rest = name[level:]
         return ".".join([*parts[: len(parts) - (level - 1)], *([rest] if rest else [])])
+
+    def _import_anchor(self, call: ast.Call, origin: str, name: str) -> tuple[int | None, str, str]:
+        """Return a literal import call's level (None: unreadable), the package it counts from, and the name's rest.
+
+        ``import_module`` counts the leading dots of the name from ``package``; ``__import__`` takes ``level`` as an
+        argument and counts it from the package of its ``globals`` (``globals()``: this module's).
+        """
+        if origin == "builtins.__import__":
+            level = argument(call, 4, "level")
+            namespace = argument(call, 1, "globals")
+            own = isinstance(namespace, ast.Call) and self._origin(namespace.func) == "builtins.globals"
+            count = 0 if level is None else _count(level)
+            return (None if name.startswith(".") else count), self._package() if own else "", name
+        level = len(name) - len(name.lstrip("."))
+        package = argument(call, 1, "package")
+        implicit = isinstance(package, ast.Name) and self._resolved[package] == Resolution(
+            "global", self._module_scope, ()
+        )
+        own_names = {"__name__": self.module, "__package__": self._package()}
+        base = own_names.get(package.id) if implicit and isinstance(package, ast.Name) else _string(package)
+        return level, base or "", name[level:]
 
     def _package(self) -> str:
         return self.module if self.is_package else self.module.rpartition(".")[0]
@@ -1924,7 +1986,7 @@ class SourceModule(_Suppressions):
             if reference.annotation in {"string", "deferred", "never"}:
                 continue
             direct = reference.scope is scope
-            born = not direct and bool(reference.scope.annotation)
+            born = not direct and bool(reference.scope.annotation) and not scope.annotation
             located = in_annotations and (bool(reference.annotation) or born)
             symbol = (pool if located else symbols).get(reference.mangled)
             if symbol is None:
@@ -2021,6 +2083,42 @@ def _parameters(arguments: ast.arguments) -> list[ast.arg]:
     ]
 
 
+def _loaded_code(module: types.CodeType) -> dict[types.CodeType, dict[tuple[str, int, int], types.CodeType]]:
+    """Return, for each code object, the code objects it loads by name and the position of the loading instruction.
+
+    An ``__annotate__`` function (3.14+) gets no entry: the code objects it loads count as loaded by its own loader.
+    """
+    loads: dict[types.CodeType, dict[tuple[str, int, int], types.CodeType]] = {}
+    todo = [module]
+    while todo:
+        owner = todo.pop()
+        loaded = loads[owner] = {}
+        readers = [owner]
+        while readers:
+            for child, line, column in _code_loads(readers.pop()):
+                if child.co_name == "__annotate__":
+                    readers.append(child)
+                else:
+                    loaded[child.co_name, line, column] = child
+                    todo.append(child)
+    return loads
+
+
+def _code_loads(code: types.CodeType) -> Iterator[tuple[types.CodeType, int, int]]:
+    """Yield the code objects a code object loads (``LOAD_CONST``) with the line and column of the loading instruction.
+
+    Reads ``co_code`` one code unit at a time beside ``co_positions()`` (one position per unit); the same pairs as
+    `dis.get_instructions`, at a tenth of its cost.
+    """
+    raw, constants = code.co_code, code.co_consts
+    extended = 0
+    for index, (line, _, column, _) in enumerate(code.co_positions()):
+        operation, argument = raw[2 * index], raw[2 * index + 1] | extended
+        extended = argument << 8 if operation == dis.EXTENDED_ARG else 0
+        if operation == _LOAD_CONST and isinstance(child := constants[argument], types.CodeType):
+            yield child, line or 0, column or 0
+
+
 def _inlined(scope: Scope) -> list[Scope]:
     """Return the scope and the comprehensions inlined into its symbol table on the running Python (PEP 709)."""
     group = [scope]
@@ -2051,6 +2149,11 @@ def _string(node: ast.expr | None) -> str | None:
     return node.value if isinstance(node, ast.Constant) and isinstance(node.value, str) and node.value else None
 
 
+def _count(node: ast.expr) -> int | None:
+    value = node.value if isinstance(node, ast.Constant) else None
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else None
+
+
 def _codes(text: str | None) -> tuple[str, ...] | None:
     return tuple(re.split(r"[\s,]+", text.upper())) if text else None
 
@@ -2060,6 +2163,8 @@ def _built(build: Callable[..., object], items: object) -> object:
         return build(items)
     except TypeError:
         raise _NotLiteralError(_UNHASHABLE) from None
+    except ValueError:
+        raise _NotLiteralError(_MALFORMED) from None
 
 
 def _implicit(name: str) -> bool:
@@ -2106,7 +2211,11 @@ class SourceTree:
         return self._modules[name]
 
     def definition(self, module: str, name: str) -> list[Definition]:
-        """Follow a module-level name of a module of the tree through imports and simple aliases to its definitions."""
+        """Follow a module-level name of a module of the tree through imports and simple aliases to its definitions.
+
+        ``from pkg import tool`` reads what ``pkg`` binds as ``tool`` and the submodule ``pkg.tool`` only where ``pkg``
+        binds no such name, as the import system does.
+        """
         _ask("imports")
         return self._definition(module, name, (), frozenset())
 
@@ -2141,6 +2250,9 @@ class SourceTree:
     ) -> list[Definition]:
         if target is None:
             return [Definition(path[-1][0], binding.name, binding.line, "unreadable", path)]
+        if binding.kind == "import-from" and self._source_binds(path[-1][0], target):
+            source, _, attribute = target.rpartition(".")
+            return self._definition(source, attribute, path, seen)
         parts = target.split(".")
         prefix = next((count for count in range(len(parts), 0, -1) if ".".join(parts[:count]) in self.paths), 0)
         module, rest = ".".join(parts[:prefix]), parts[prefix:]
@@ -2150,6 +2262,16 @@ class SourceTree:
             kind = "attribute" if rest else "module"
             return [Definition(module, ".".join(rest), binding.line, kind, path)]
         return self._definition(module, rest[0], path, seen)
+
+    def _source_binds(self, importer: str, target: str) -> bool:
+        """Whether ``from <source> import <name>`` (``target``) in ``importer`` reads a name the source module binds.
+
+        Then the name leads to that binding, not to a submodule ``<source>.<name>``; a package importing from itself
+        (``from . import tool`` in its ``__init__``) reads the submodule. `import_edges` keeps the submodule edge: the
+        import may still load it where the binding is guarded or is that submodule.
+        """
+        source, _, name = target.rpartition(".")
+        return source in self.paths and source != importer and name in self.module(source).module_scope.bindings
 
     def import_edges(self) -> list[Edge]:
         """Return the import edges between the tree's modules (parents, submodules, literal dynamic imports)."""

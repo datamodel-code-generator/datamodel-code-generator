@@ -1,0 +1,8 @@
+<module>#0 at 0:0 -> <module> ('pair', 'table', 'default')
+<lambda>#0 at 1:8 -> <lambda> ()
+<lambda>.<locals>.<lambda>#0 at 1:17 -> <lambda>.<locals>.<lambda> ('inner',)
+<lambda>#1 at 1:33 -> <lambda> ('right',)
+<lambda>#2 at 2:30 -> <lambda> ('key',)
+<lambda>#3 at 2:13 -> <lambda> ('first',)
+<lambda>#4 at 3:24 -> <lambda> ('given',)
+<lambda>#5 at 3:10 -> <lambda> ()

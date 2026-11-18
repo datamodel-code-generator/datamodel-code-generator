@@ -18,8 +18,10 @@
 19:0 STARRED store in <module> -> local <module> @19
 19:13 PLAIN load in <module> -> local <module> @8; origin forms.references.literal_constants_and_late_writes.PLAIN
 20:0 UNHASHABLE store in <module> -> local <module> @20
-21:0 TUPLE_CALL store in <module> -> local <module> @21
-21:13 tuple load in <module> -> builtin; origin builtins.tuple
+21:0 MALFORMED store in <module> -> local <module> @21
+21:12 dict load in <module> -> builtin; origin builtins.dict
+22:0 TUPLE_CALL store in <module> -> local <module> @22
+22:13 tuple load in <module> -> builtin; origin builtins.tuple
 uses of <module>:Final@6: read@11
 uses of <module>:PLAIN@8: read@19
 uses of <module>:WRITTEN@12: subscript-store@13
@@ -35,6 +37,7 @@ constant REBOUND: Unreadable(reason='REBOUND is not bound exactly once by an ass
 constant CALLED: Unreadable(reason='CALLED is not a literal: a Call at line 18', lines=(18,))
 constant STARRED: Unreadable(reason='STARRED is not a literal: a ** entry', lines=(19,))
 constant UNHASHABLE: Unreadable(reason='UNHASHABLE is not a literal: an unhashable key or member', lines=(20,))
+constant MALFORMED: Unreadable(reason='MALFORMED is not a literal: an entry that is not a key and a value', lines=(21,))
 constant MISSING: Unreadable(reason='MISSING is not bound exactly once by an assignment', lines=())
 constant TUPLE_CALL: tuple('a')
 == code objects: one per scope that compiles on this Python

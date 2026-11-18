@@ -1,2 +1,2 @@
-pkg/checked.py:4: f has no code object ('other', 4) (form: FunctionDef); the source model has no rule for this form: teach scripts/_source_model.py and add a form under tests/data/source_forms/<question>/ in the same pull request
-pkg/checked.py:6: code objects without a scope: [('<lambda>', 6)] (form: Return); the source model has no rule for this form: teach scripts/_source_model.py and add a form under tests/data/source_forms/<question>/ in the same pull request
+pkg/checked.py:4: f has no code object ('other', 4, 0) (form: FunctionDef); the source model has no rule for this form: teach scripts/_source_model.py and add a form under tests/data/source_forms/<question>/ in the same pull request
+pkg/checked.py:6: code objects without a scope: [('<lambda>', 6, 15)] (form: Return); the source model has no rule for this form: teach scripts/_source_model.py and add a form under tests/data/source_forms/<question>/ in the same pull request

@@ -7,8 +7,8 @@ The model's answers on it are stored once, whatever the Python version: a per-ve
 from __future__ import annotations
 
 import ast
-import builtins
 import re
+import subprocess
 import sys
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -18,6 +18,7 @@ import pytest
 import tomllib
 
 from scripts import _source_model as source_model
+from scripts import check_ratchets
 from tests.conftest import assert_output
 
 if TYPE_CHECKING:
@@ -29,6 +30,17 @@ VERDICTS = FORMS / "verdicts.toml"
 CHUNKS = 16
 PYTHON = (sys.version_info.major, sys.version_info.minor)
 _DIRECTIVE = re.compile(r"^(questions|min-python|module|path|keywords|constants|codes): *(.*)$", re.MULTILINE)
+MODEL_NAMES = frozenset({"scripts._source_model", "_source_model"})
+"""The names a module imports the model by: as part of the ``scripts`` package, or beside it when run as a script."""
+
+
+@pytest.fixture
+def compare_with_the_compiler(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Compare every model a test builds without an explicit ``verify`` with the compiler (`VERIFY_ENV`)."""
+    monkeypatch.setenv(source_model.VERIFY_ENV, "1")
+
+
+pytestmark = pytest.mark.usefixtures("compare_with_the_compiler")
 
 
 def _form_paths() -> list[Path]:
@@ -53,8 +65,10 @@ def _form_text(path: Path) -> str:
 
 
 def _directives(path: Path) -> dict[str, str]:
-    """Read the form's directives: ``questions:``, ``min-python:``, ``module:``, ``path:``, ``keywords:``, ..."""
-    return {match[1]: match[2].strip() for match in _DIRECTIVE.finditer(_form_text(path))}
+    """Read the directives of the form's docstring: ``questions:``, ``min-python:``, ``module:``, ``path:``, ..."""
+    text = _form_text(path)
+    docstring = text.split('"""', 2)[1] if text.startswith('"""') else ""
+    return {match[1]: match[2].strip() for match in _DIRECTIVE.finditer(docstring)}
 
 
 def _questions(path: Path) -> set[str]:
@@ -295,13 +309,17 @@ def _repository_files() -> list[Path]:
     )
 
 
+def _dotted(relative: str) -> str:
+    """Return the dotted module name of a repository file (``src/`` dropped, a package ``__init__`` its package)."""
+    return relative.removeprefix("src/").removesuffix(".py").removesuffix("/__init__").replace("/", ".")
+
+
 @pytest.mark.parametrize("chunk", range(CHUNKS))
 def test_model_agrees_with_the_compiler(chunk: int) -> None:
     """Every Python file of the repository (stored generated outputs aside) is read the compiler's way."""
     for path in _repository_files()[chunk::CHUNKS]:
         relative = path.relative_to(ROOT).as_posix()
-        module = relative.removeprefix("src/").removesuffix(".py").removesuffix("/__init__").replace("/", ".")
-        source_model.SourceModule(path.read_text(encoding="utf-8"), relative, module, verify=True).compiled()
+        source_model.SourceModule(path.read_text(encoding="utf-8"), relative, _dotted(relative), verify=True).compiled()
 
 
 def test_a_read_the_model_misses_stops_the_check() -> None:
@@ -383,6 +401,43 @@ def test_compiled_stops_on_a_scope_without_its_code_object() -> None:
     assert_output("\n".join(messages) + "\n")
 
 
+PAIRED = (
+    "pair = (lambda: (lambda: inner), lambda: right)\n"
+    "table = {1: (lambda: first), (lambda: key): 2}\n"
+    "default = lambda value=(lambda: given): value\n"
+)
+"""Lambdas that share a name and a line: nested in each other, side by side, and one in the other's default."""
+
+
+def test_compiled_pairs_each_scope_with_its_own_code_object() -> None:
+    """Each scope gets the code object compiled from its own node, whatever the order of nesting and evaluation."""
+    model = source_model.SourceModule(PAIRED, "pkg/paired.py", "pkg.paired")
+    paired = [
+        f"{_name(scope)} at {scope.line}:{getattr(scope.node, 'col_offset', 0)} -> {code.co_qualname} {code.co_names}"
+        for scope, code in model.compiled().items()
+    ]
+    assert_output("\n".join(paired) + "\n")
+
+
+def test_a_module_the_compiler_rejects_stops_the_check() -> None:
+    """A module `ast` reads and the compiler rejects (a late future import) stops both checks at its line."""
+    model = source_model.SourceModule("x = 1\nfrom __future__ import annotations\n", "pkg/late.py", verify=False)
+    with pytest.raises(source_model.SourceModelError) as error:
+        model.compiled()
+    assert_output("\n".join([*model.disagreements(), str(error.value)]) + "\n")
+
+
+def test_question_captures_nest() -> None:
+    """Nested captures each keep the questions asked inside them, also when they have recorded the same ones."""
+    model = source_model.SourceModule("x = 1\n", verify=False)
+    with source_model.questions_asked() as outer:
+        model.bindings()
+        with source_model.questions_asked() as inner:
+            model.bindings()
+        model.suppressions()
+    assert_output(f"outer: {sorted(outer)}\ninner: {sorted(inner)}\n")
+
+
 def test_the_model_refuses_what_it_has_no_rule_for() -> None:
     """A refusal names the file, the line, the form and the fix: a model rule and a form in the same pull request."""
     with pytest.raises(source_model.SourceModelError) as error:
@@ -391,8 +446,13 @@ def test_the_model_refuses_what_it_has_no_rule_for() -> None:
 
 
 def test_builtins_are_the_floor_set() -> None:
-    """Reads resolve against the builtins of the oldest supported Python, a subset of every newer one's."""
-    names = set(dir(builtins))
+    """Reads resolve against the builtins of the oldest supported Python, a subset of every newer one's.
+
+    The names come from a fresh interpreter: code that earlier tests ran in this one may have added to `builtins`
+    (``eval`` or ``exec`` with the builtins namespace as globals adds ``__builtins__`` to it).
+    """
+    command = [sys.executable, "-I", "-c", "import builtins; print(*dir(builtins))"]
+    names = set(subprocess.run(command, capture_output=True, text=True, check=True).stdout.split())
     missing = sorted(source_model.BUILTINS - names)
     extra = sorted(names - source_model.BUILTINS) if PYTHON == (3, 11) else []
     assert_output(f"missing here: {missing or 'none'}\nextra on the floor Python: {extra or 'none'}\n")
@@ -407,14 +467,23 @@ class RuleRun:
     run: Callable[[Path], list[str]]
 
 
-def _compiler_check(form: Path) -> list[str]:
+def _form_files(form: Path) -> list[tuple[str, str]]:
+    """Return the name and text of each module of a form."""
     files = sorted(form.rglob("*.py")) if form.is_dir() else [form]
+    return [(path.name.removesuffix(".txt"), path.read_text(encoding="utf-8")) for path in files]
+
+
+def _compiler_check(form: Path) -> list[str]:
     return [
         problem
-        for path in files
-        for problem in source_model.SourceModule(
-            path.read_text(encoding="utf-8"), path.name.removesuffix(".txt"), "forms.form", verify=False
-        ).disagreements()
+        for name, text in _form_files(form)
+        for problem in source_model.SourceModule(text, name, "forms.form", verify=False).disagreements()
+    ]
+
+
+def _private_scope_walk(form: Path) -> list[str]:
+    return [
+        f"{name}:{line}" for name, text in _form_files(form) for line in check_ratchets.scope_walk_sites(text, name)
     ]
 
 
@@ -422,6 +491,7 @@ RULES: dict[str, RuleRun] = {
     "source-model-compiler-check": RuleRun(
         "scripts._source_model", frozenset({"bindings", "references"}), _compiler_check
     ),
+    "private-scope-walk": RuleRun("scripts.check_ratchets", frozenset({"bindings", "references"}), _private_scope_walk),
 }
 """Every rule that reads Python through the model; `verdicts.toml` states its verdict on each form of its questions."""
 
@@ -439,6 +509,7 @@ def verdict_problems(findings: dict[str, list[str]], entries: dict[str, str]) ->
     return [*missing, *stale, *wrong]
 
 
+@pytest.mark.allow_direct_assert("a verdict gate fails on its own, never through a stored output a fix run accepts")
 @pytest.mark.parametrize("rule", sorted(RULES))
 def test_every_rule_states_its_verdicts(rule: str) -> None:
     """Each rule runs over every form of the questions it asks; each form has its verdict, and none is stale."""
@@ -450,6 +521,8 @@ def test_every_rule_states_its_verdicts(rule: str) -> None:
     gated = {_form_id(form) for form in FORM_PATHS if _min_python(form) > PYTHON}
     problems = verdict_problems(findings, {form: verdict for form, verdict in entries.items() if form not in gated})
     undeclared = sorted(asked - run.asks)
+    assert not problems, f"{rule}: {problems}; state the rule's verdict on each form in {VERDICTS.relative_to(ROOT)}"
+    assert not undeclared, f"{rule} asks {undeclared}; add them to its RuleRun.asks"
     found = [f"{form}: {finding}" for form, items in findings.items() for finding in items]
     report = [f"verdict problems: {problems or 'none'}", f"undeclared questions: {undeclared or 'none'}", *found]
     assert_output("\n".join(report) + "\n")
@@ -470,21 +543,25 @@ def test_verdict_problems() -> None:
     )
 
 
+@pytest.mark.allow_direct_assert("a verdict gate fails on its own, never through a stored output a fix run accepts")
 def test_verdicts_name_registered_rules() -> None:
     """Every section of `verdicts.toml` is a registered rule."""
     unregistered = sorted(set(tomllib.loads(VERDICTS.read_text(encoding="utf-8"))) - set(RULES))
+    assert not unregistered, f"sections of {VERDICTS.relative_to(ROOT)} without a rule in RULES: {unregistered}"
     assert_output(f"unregistered sections: {unregistered or 'none'}\n")
 
 
+@pytest.mark.allow_direct_assert("a verdict gate fails on its own, never through a stored output a fix run accepts")
 def test_rules_declare_what_they_ask() -> None:
     """Every module that imports the model (read with the model's own imports) has a rule in `RULES`."""
     importers = {
-        path.relative_to(ROOT).with_suffix("").as_posix().replace("/", ".")
-        for path in [*(ROOT / "scripts").glob("*.py"), *_repository_files()]
+        _dotted(relative)
+        for path in _repository_files()
         if "_source_model" in (text := path.read_text(encoding="utf-8"))
-        for item in source_model.SourceModule(text, path.name, verify=False).imports
-        if (isinstance(item.target, str) and item.target.endswith("_source_model"))
-        or item.source == "scripts._source_model"
+        for relative in [path.relative_to(ROOT).as_posix()]
+        for item in source_model.SourceModule(text, relative, _dotted(relative), verify=False).imports
+        if MODEL_NAMES & {item.source, item.target}
     }
     unregistered = sorted(importers - {__name__} - {run.module for run in RULES.values()})
+    assert not unregistered, f"modules that read Python through the model without a rule in RULES: {unregistered}"
     assert_output(f"importers without a rule: {unregistered or 'none'}\n")

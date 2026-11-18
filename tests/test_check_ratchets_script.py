@@ -173,9 +173,57 @@ def hidden(value: object, name: str) -> object:
 """
 )
 SCRIPT = (ROOT / "scripts/check_ratchets.py").read_text(encoding="utf-8")
+COUNTER = {
+    "scripts/check_ratchets.py": SCRIPT,
+    "scripts/_source_model.py": (ROOT / "scripts/_source_model.py").read_text(encoding="utf-8"),
+}
+"""The counter and the model it reads Python with, as a copy of the script in a tree needs them."""
+SCOPE_WALK = """import ast as syntax
+import symtable
+import tokenize
+from ast import Name
+
+from scripts._source_model import SourceModule
+
+
+def stores(tree: syntax.AST) -> list[str]:
+    found = []
+    for node in syntax.walk(tree):
+        match node:
+            case syntax.Name(ctx=syntax.Store()):
+                found.append(node.id)
+    return found
+
+
+def locals_of(text: str) -> list[str]:
+    return [name for name in symtable.symtable(text, "m", "exec").get_identifiers() if isinstance(name, Name)]
+
+
+def comments(tokens: list[tokenize.TokenInfo]) -> int:
+    return sum(token.type == tokenize.COMMENT for token in tokens)
+
+
+def built() -> syntax.Name:
+    return syntax.Name(id="x", ctx=syntax.Store())
+
+
+class Visitor(syntax.NodeVisitor):
+    def visit_ClassDef(self, node: syntax.ClassDef) -> None:
+        self.generic_visit(node)
+
+
+def bound(text: str) -> list[str]:
+    return [binding.name for binding in SourceModule(text).bindings()]
+"""
+"""A rule module that reads bindings and comments itself, by alias and by name, and one that asks the model."""
 CASES = {
-    "unchanged": {"base": {"scripts/check_ratchets.py": SCRIPT}, "head": {}},
+    "unchanged": {"base": COUNTER, "head": {}},
     "added-hatch": {"head": {"src/pkg/b.py": FUTURE + SIZE}, "args": ["--enforce"]},
+    "scope-walk": {
+        "base": COUNTER,
+        "head": {"scripts/rule.py": SCOPE_WALK, "tests/test_rule.py": SCOPE_WALK, "src/pkg/rule.py": SCOPE_WALK},
+        "args": ["--enforce"],
+    },
     "moved-line": {"head": {"src/pkg/a.py": FUTURE + NAME, "src/pkg/b.py": FUTURE + SIZE}, "args": ["--enforce"]},
     "form-swap": {
         "head": {
@@ -385,7 +433,7 @@ def show(flag: bool) -> None:
         "args": ["--enforce"],
     },
     "weakened-counter": {
-        "base": {"scripts/check_ratchets.py": SCRIPT},
+        "base": COUNTER,
         "head": {
             "scripts/check_ratchets.py": SCRIPT.replace(
                 r'PRAGMA = re.compile(r"\bpragma:', r'PRAGMA = re.compile(r"\bnever:'
@@ -395,7 +443,7 @@ def show(flag: bool) -> None:
         "subprocess": True,
     },
     "weakened-counter-unreadable": {
-        "base": {"scripts/check_ratchets.py": SCRIPT},
+        "base": COUNTER,
         "head": {
             "scripts/check_ratchets.py": SCRIPT.replace(
                 'HOOK_UNREADABLE_FLAGS = frozenset({"--select", "--config"})',

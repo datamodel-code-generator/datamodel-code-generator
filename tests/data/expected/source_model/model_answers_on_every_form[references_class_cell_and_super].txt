@@ -3,5 +3,10 @@
 11:15 super load in Child.name -> builtin; origin builtins.super
 11:32 __class__ load in Child.name -> class-cell Child
 14:23 __class__ load in Child.nested.<locals>.<lambda> -> class-cell Child
+17:15 __class__ load in Child.explicit -> local Child.explicit @16
+20:8 __class__ store in Child.enclosing -> local Child.enclosing @20
+21:23 __class__ load in Child.enclosing.<locals>.<lambda> -> enclosing Child.enclosing @20
 uses of <module>:Base@4: read@9
+uses of Child.explicit:__class__@16: read@17
+uses of Child.enclosing:__class__@20: read@21
 == code objects: one per scope that compiles on this Python
