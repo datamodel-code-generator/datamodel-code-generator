@@ -32686,6 +32686,23 @@ def test_main_allof_inheritance_cycle_with_inherited_required_name(
     )
 
 
+def test_main_allof_inheritance_cycle_with_reused_base(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Reject the cycle while model reuse settles the bases of every model that inherits the reused one."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "cycle_reused_base.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--reuse-model"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "Generated model inheritance cycle: A (cycle_reused_base.json#/$defs/A) -> "
+            "B (cycle_reused_base.json#/$defs/B) -> A (cycle_reused_base.json#/$defs/A)\n"
+        ),
+        output_should_not_exist=True,
+    )
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [

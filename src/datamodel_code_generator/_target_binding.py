@@ -16,6 +16,7 @@ from decimal import Decimal
 from functools import cached_property
 from itertools import starmap
 from math import isfinite
+from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, cast, get_args
 from urllib.parse import ParseResult
@@ -38,7 +39,7 @@ from datamodel_code_generator._document_reader import MISSING, as_mapping, desce
 from datamodel_code_generator._generation_contract import AttemptId
 from datamodel_code_generator._json_pointer import document_part, pointer_tokens, reference_tokens
 from datamodel_code_generator._module_paths import written_path
-from datamodel_code_generator._mro import collect_members, linearize
+from datamodel_code_generator._mro import collect_members
 from datamodel_code_generator._openapi_paths import inherited_security
 from datamodel_code_generator._openapi_wire_plan import EVENT_STREAM, FORMS, message_codec, message_kind
 from datamodel_code_generator._paths import file_uri
@@ -122,6 +123,11 @@ from datamodel_code_generator.model.base import (
     DataModelFieldBase,
     _default_state,
     _has_root_field_constraints,
+    _model_key_of_model,
+    direct_base_models,
+    get_effective_fields,
+    inherited_root_field,
+    linearize_data_models,
 )
 from datamodel_code_generator.model.dataclass import DataModelField as DataclassField
 from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum, get_raw_enum_member_value
@@ -2459,20 +2465,29 @@ class _Models:
     def declaration(self, model: DataModel, wire_name: str) -> SchemaLocation | None:
         """Return where the schema of a model declares a property, as the field its bases build for it is located.
 
-        A model that reuse made declares its properties as the model it replaced does.
+        The property is the one the class takes from its own declarations and its bases, in the order the model gives
+        them (``linearize_data_models``) and by the rule its class takes inherited fields by (``_BASE_FIELDS``). A
+        model that reuse made declares its properties as the model it replaced does.
         """
-        pending = [model]
-        while pending:
-            for field in (replaced := self.binder.reused(current := pending.pop()) or current).fields:
-                origin = field_origin_of(field)
-                if _wire_name(field) == wire_name and origin is not None and origin.kind == "property":
-                    return origin.location
-            pending.extend(
-                source
-                for base in reversed(replaced.base_classes)
-                if base.reference is not None and isinstance(source := base.reference.source, DataModel)
-            )
-        return None
+        reused = self.binder.reused
+        start = reused(model) or model
+
+        def properties(owner: DataModel) -> list[tuple[str, SchemaLocation | None]]:
+            return [
+                (_wire_name(field), origin.location)
+                for field in (reused(owner) or owner).fields
+                if (origin := field_origin_of(field)) is not None and origin.kind == "property"
+            ]
+
+        found = collect_members(
+            linearize_data_models([start]),
+            properties,
+            itemgetter(0),
+            direct_base_models,
+            _model_key_of_model,
+            rule=start._BASE_FIELDS,  # noqa: SLF001
+        ).get(wire_name)
+        return None if found is None else found[1][1]
 
     def preexisting_null(self, data_type: DataType) -> bool | None:
         """Return whether a field's own type accepts None before the field adds optionality.
@@ -2566,26 +2581,16 @@ class _Models:
         self.alias_nulls[symbol] = result
         return result
 
-    def parent_first(self, symbol: SymbolId, bases: dict[SymbolId, tuple[SymbolId, ...]]) -> tuple[SymbolId, ...]:
-        visited: set[str] = set()
-        order: list[SymbolId] = []
-        pending = [(symbol, False)]
-        while pending:
-            current, leaving = pending.pop()
-            if leaving:
-                order.append(current)
-                continue
-            if (path := self.binder.models[current].reference.path) in visited:
-                continue
-            visited.add(path)
-            pending.append((current, True))
-            pending.extend((parent, False) for parent in reversed(bases[current]))
-        return tuple(order)
-
     def field_bindings(self, symbols: tuple[FinalModelSymbol, ...]) -> tuple[FieldUseBinding, ...]:
-        """Bind each model's effective fields, inherited ones included, in the order its class declares them."""
-        models = self.binder.models
-        bases = {symbol.id: symbol.bases for symbol in symbols}
+        """Bind each model's effective fields, inherited ones included, in the order its class declares them.
+
+        They are the fields the model has with its bases (``get_effective_fields``), the value of a root model or an
+        alias (``inherited_root_field``) and the keys the dict literal of a functional TypedDict writes
+        (``fields_evaluated_at_definition``), each bound with the model that declares it. A model that inherits, however
+        distantly, from a base no emitted model stands for binds none.
+        """
+        binder = self.binder
+        models = binder.models
         unknown = {
             symbol.id
             for model, symbol in zip(models, symbols, strict=True)
@@ -2593,26 +2598,20 @@ class _Models:
         }
         bindings: list[FieldUseBinding] = []
         for model, symbol in zip(models, symbols, strict=True):
-            if symbol.kind == "enum":
+            if symbol.kind == "enum" or any(
+                binder.symbols[id(ancestor)] in unknown for ancestor in linearize_data_models([model])
+            ):
                 continue
-            functional = symbol.facts is not None and symbol.facts.functional_typeddict
-            order = (
-                self.parent_first(symbol.id, bases)
-                if functional
-                else linearize([symbol.id], lambda item: item, bases.__getitem__, rule="python")
-            )
-            if order is None or any(owner in unknown for owner in order):
-                continue
-            fields = collect_members(
-                order[::-1] if functional else order,
-                lambda owner: models[owner].fields,
-                _wire_name if functional else lambda field: self.slots[id(field)].name,
-                bases.__getitem__,
-                lambda item: item,
-                rule="nearest" if functional else model._BASE_FIELDS,  # noqa: SLF001
-            )
+            if symbol.facts is not None and symbol.facts.functional_typeddict:
+                fields: Sequence[DataModelFieldBase] = model.fields_evaluated_at_definition()
+            elif model.IS_ALIAS or model.IS_ROOT_MODEL:
+                fields = (inherited_root_field(model),)
+            else:
+                fields = get_effective_fields(model)
             members = self.variant_exclusions(
-                model, symbol, [self.member(symbol, models[owner], field) for owner, field in fields.values()]
+                model,
+                symbol,
+                [self.member(symbol, models[self.slots[id(field)].symbol], field) for field in fields],
             )
             self.members[symbol.id] = members
             bindings.extend(members)
@@ -3073,12 +3072,14 @@ class _UseFacts(_SchemaUses):
     def object_symbols(self, value: TypeView | None) -> list[SymbolId]:
         """Return the models a type names (``TypeTables.wrapper_chain``), then the bases of the class it holds.
 
-        The bases are in method resolution order (``_mro.linearize``).
+        The bases are in the order the model gives them (``linearize_data_models``).
         """
         found = self.tables.wrapper_chain(value)[1]
         if found and self.symbol_table[found[-1]].kind not in WRAPPER_KINDS:
-            order = linearize([found[-1]], lambda item: item, lambda item: self.symbol_table[item].bases, rule="python")
-            found.extend(base for base in (order or [])[1:] if base not in found)
+            bases = (
+                self.binder.symbols[id(base)] for base in linearize_data_models([self.binder.models[found[-1]]])[1:]
+            )
+            found.extend(base for base in bases if base not in found)
         return found
 
     def use_others(self, use: TypeUseBinding) -> _Others | None:
