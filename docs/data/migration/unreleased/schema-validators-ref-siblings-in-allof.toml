@@ -1,0 +1,11 @@
+[[change]]
+id = "schema-validators-ref-siblings-in-allof"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "Schema validators check the keywords beside a $ref inside an allOf member"
+summary = "With `--generate-schema-validators` (or `--schema-validator-type pydantic-v2`), the keywords that stand beside a `$ref` inside an `allOf` member are now checked on the raw input: `uniqueItems` beside a `$ref` rejects `[\"a\", \"a\"]`, which 0.97.0 accepted, as JSON Schema rejects it. Without the option nothing changes."
+affects = { experimental = ["cli-option.generate-schema-validators"] }
+refs = ["#7052"]
+decision = ["#7052"]
+source = "release-note"
