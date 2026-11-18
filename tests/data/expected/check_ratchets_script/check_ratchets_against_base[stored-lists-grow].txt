@@ -1,0 +1,27 @@
+exit status 1
+Escape hatches: base (merge-base <commit>) -> working tree
+
+key                                                                                     base    head  change
+ruff-config:exclude:scripts                                                                1       1       0
+ruff-config:hook-exclude:^src/pkg/generated/                                               1       1       0
+ruff-config:ignore:CPY                                                                     1       1       0
+ruff-config:ignore:D                                                                       1       1       0
+ruff-config:ignore:ERA001                                                                  1       1       0
+ruff-config:ignore:INP                                                                     1       1       0
+ruff-config:per-file:tests/**/*.py:S101                                                    1       1       0
+ruff:PLC0415@src                                                                           1       1       0
+stored-list:test_generated_models_decide_value_neighbours_like_the_schema:blind            1       2      +1
+stored-list:test_generated_models_decide_value_neighbours_like_the_schema:items            4       8      +4
+stored-list:test_generated_models_decide_value_neighbours_like_the_schema:lines            2       4      +2
+stored-list:test_generated_models_decide_value_neighbours_like_the_schema:unreadable       0       2      +2
+
+stored-list:test_generated_models_decide_value_neighbours_like_the_schema:blind has 1 new line (1 -> 2). A stored list of known gaps only shrinks: the new line is a regression of the generated output (or, for a blind line, an item whose checks no longer run). Fix the change or file the defect; never store the line with the fix command the test prints.
+  five	no source-valid seed: 0 -> 1
+
+stored-list:test_generated_models_decide_value_neighbours_like_the_schema:lines has 2 new lines (2 -> 4). A stored list of known gaps only shrinks: the new line is a regression of the generated output (or, for a blind line, an item whose checks no longer run). Fix the change or file the defect; never store the line with the fix command the test prints.
+  one	/k const 3: invalid, model accepts: 0 -> 1
+  two	/k const 4: invalid, model accepts: 0 -> 1
+
+stored-list:test_generated_models_decide_value_neighbours_like_the_schema:unreadable in tests/data/expected/lists/nowhere.txt, tests/data/expected/lists/seven.txt: the counter cannot read it. Store the list as a JSON list of strings at the storage its `.refs` line names (pytest writes both), so that the counter can read it.
+
+Some keys rose: the budget is the base. Exit status 0 unless --enforce is given. Re-run with `python scripts/check_ratchets.py --base base`.

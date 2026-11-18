@@ -21,6 +21,14 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   and the direct-assert exemption list, the generation store allowlist, the host baseline
   (``allowlist:host-private-access``, the sum of its access counts), and the allowlists of the test style and
   architecture checks (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot read).
+- ``stored-list:<test>:items``, ``stored-list:<test>:lines`` and ``stored-list:<test>:blind``: the lists that a test
+  of ``STORED_LISTS`` stores per item (through its ``.refs`` file), which may only shrink. ``items`` counts the
+  items, which is never a rise. ``lines`` counts each line under its item and its text, split by a tab: it rises
+  with a line that an item the base stores did not hold, while a new item, and one whose base list is a blind line
+  (its checks did not run), starts at the lines it stores. ``blind`` counts the lines of ``BLIND_LINES``, which say
+  that the item checked nothing (a seed the model rejects): it rises with a blind line the base does not hold, in a
+  new item too, once the base stores the test. These keys rise by their lines, not their totals, so a fix that drops
+  one line does not pay for a regression that adds another.
 - ``unreadable:<what>`` and ``allowlist:<NAME>:unreadable``: a hook setting (no value or a block scalar, a ``--select``
   or ``--config`` argument) or an allowlist or host baseline this script cannot read. Such a key always fails under
   ``--enforce``, because what it hides cannot be counted.
@@ -57,6 +65,16 @@ import tomllib
 SCRIPT = "scripts/check_ratchets.py"
 STORE_ALLOWLIST = "scripts/generation_store_allowlist.toml"
 HOST_BASELINE = "scripts/host_private_access_baseline.toml"
+EXPECTED_ROOT = "tests/data/expected"
+STORED_LIST = "stored-list"
+STORED_LISTS = (
+    ("tests/main/test_payload_validation.refs", "test_generated_models_decide_value_neighbours_like_the_schema"),
+)
+"""The ``.refs`` files and tests whose stored outputs are lists of known gaps that may only shrink."""
+NO_SEED_LINE = "no source-valid seed"
+REJECTED_SEED_LINE = "/ seed: valid, model rejects"
+BLIND_LINES = frozenset({NO_SEED_LINE, REJECTED_SEED_LINE})
+"""The lines that say a stored item checked nothing, so that no new one passes as a shorter list."""
 AREAS = frozenset({"src", "tests", "scripts"})
 FIX_FLAGS = frozenset({"--fix", "--fix-only", "--unsafe-fixes", "--exit-non-zero-on-fix", "--show-fixes"})
 IGNORE_FLAGS = frozenset({"--ignore", "--extend-ignore"})
@@ -129,6 +147,11 @@ ADVICE = {
         "Route the write through the generation store's mutation APIs (AGENTS.md) instead of listing it."
     ),
     "allowlist": "Allowlist entries only shrink: fix the violation instead of listing it.",
+    STORED_LIST: (
+        "A stored list of known gaps only shrinks: the new line is a regression of the generated output (or, for a "
+        "blind line, an item whose checks no longer run). Fix the change or file the defect; never store the line "
+        "with the fix command the test prints."
+    ),
     "allowlist:host-private-access": (
         "Host baseline entries only shrink: declare the member on the Host Protocol the function takes, "
         "or move the code into the class."
@@ -136,6 +159,10 @@ ADVICE = {
     "unreadable": (
         "Write the ruff hook's `args:` and `exclude:` as inline values or a block list, without --select or --config "
         "(put those in pyproject.toml), so that the counter can read them."
+    ),
+    "unreadable-stored-list": (
+        "Store the list as a JSON list of strings at the storage its `.refs` line names (pytest writes both), so "
+        "that the counter can read it."
     ),
     "unreadable-allowlist": (
         "Write the allowlist or baseline in the plain form its checker reads (literal entries, tables of integer "
@@ -608,6 +635,34 @@ def _config_tally(tally: Tally, root: Path, pyproject: dict) -> None:
                     tally.add(f"allowlist:{listed}:unreadable", path, statement.lineno)
 
 
+def _stored_lines(path: Path) -> list[str] | None:
+    """Return a stored list of strings, or None where the file is missing or holds anything else."""
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return value if isinstance(value, list) and all(isinstance(line, str) for line in value) else None
+
+
+def _stored_list_tally(tally: Tally, root: Path) -> None:
+    """Count the items and lines of the stored lists, reading each record's storage through its ``.refs`` file."""
+    for sidecar, test in STORED_LISTS:
+        path = root / sidecar
+        section = ""
+        for raw in path.read_text(encoding="utf-8").splitlines() if path.is_file() else []:
+            if raw.startswith("["):
+                section = raw[1:-1]
+            if section != test or raw.startswith(("[", "#")):
+                continue
+            item, label, *flags = raw.split("\t")
+            storage = next((flag.removeprefix("= ") for flag in flags if flag.startswith("= ")), label)
+            tally.add(f"{STORED_LIST}:{test}:items", item)
+            if (lines := _stored_lines(root / EXPECTED_ROOT / storage)) is None:
+                tally.add(f"{STORED_LIST}:{test}:unreadable", f"{EXPECTED_ROOT}/{storage}")
+            for line in lines or []:
+                tally.add(f"{STORED_LIST}:{test}:{'blind' if line in BLIND_LINES else 'lines'}", f"{item}\t{line}")
+
+
 def count_tree(root: Path, ruff: list[str]) -> Tally:
     """Count every escape hatch of the tree at ``root``."""
     path = root / "pyproject.toml"
@@ -618,6 +673,7 @@ def count_tree(root: Path, ruff: list[str]) -> Tally:
     _ruff_files(tally, root, files)
     _source_tally(tally, root, files)
     _config_tally(tally, root, pyproject)
+    _stored_list_tally(tally, root)
     return tally
 
 
@@ -630,8 +686,22 @@ def _rises(base: dict[str, dict[str, int]], head: dict[str, dict[str, int]]) -> 
     return [
         key
         for key, total in sorted(head_totals.items())
-        if total > base_totals.get(key, 0) and _kind(key) != "unreadable"
+        if _kind(key) != "unreadable"
+        and (bool(_risen(key, base, head)) if _kind(key) == STORED_LIST else total > base_totals.get(key, 0))
     ]
+
+
+def _risen(key: str, base: dict[str, dict[str, int]], head: dict[str, dict[str, int]]) -> list[tuple[str, int, int]]:
+    """Return the files (for a stored list, the lines) of a key whose count rose, with both counts."""
+    if _kind(key) != STORED_LIST:
+        return _file_rises(base.get(key, {}), head[key])
+    test, _, part = key.rpartition(":")
+    items = base.get(f"{test}:items", {})
+    blind = {path.partition("\t")[0] for path in base.get(f"{test}:blind", {})}
+    new = [(path, 0, count) for path, count in sorted(head[key].items()) if path not in base.get(key, {})]
+    if part == "lines":
+        return [entry for entry in new if (item := entry[0].partition("\t")[0]) in items and item not in blind]
+    return new if part == "blind" and items else []
 
 
 def _file_rises(base: dict[str, int], head: dict[str, int]) -> list[tuple[str, int, int]]:
@@ -662,8 +732,11 @@ def _rise_lines(
 ) -> list[str]:
     """Describe one key that rose: its totals, how to fix it, and each file whose count rose with its sites."""
     before, after = sum(base.get(key, {}).values()), sum(head[key].values())
-    lines = ["", f"{key} rose by {after - before} ({before} -> {after}). {ADVICE.get(key, ADVICE.get(_kind(key), ''))}"]
-    for path, was, now in _file_rises(base.get(key, {}), head[key]):
+    risen = _risen(key, base, head)
+    added = f"{len(risen)} new {'line' if len(risen) == 1 else 'lines'}"
+    change = f"has {added}" if _kind(key) == STORED_LIST else f"rose by {after - before}"
+    lines = ["", f"{key} {change} ({before} -> {after}). {ADVICE.get(key, ADVICE.get(_kind(key), ''))}"]
+    for path, was, now in risen:
         at = ", ".join(map(str, sorted(line for line in sites.get(path, []) if line)))
         lines.append(f"  {path}: {was} -> {now}" + (f" (lines {at})" if at else ""))
     return lines
@@ -718,7 +791,7 @@ def _unreadable_lines(counts: dict[str, dict[str, int]]) -> list[str]:
             "",
             (
                 f"{key} in {', '.join(files)}: the counter cannot read it. "
-                f"{ADVICE['unreadable-allowlist' if key.startswith('allowlist:') else 'unreadable']}"
+                f"{ADVICE.get('unreadable-' + key.partition(':')[0], ADVICE['unreadable'])}"
             ),
         )
     ]

@@ -21,6 +21,7 @@ from pydantic import VERSION as PYDANTIC_VERSION
 from pydantic import ValidationError
 
 from datamodel_code_generator.format import PythonVersion
+from scripts.check_ratchets import NO_SEED_LINE
 from tests.conftest import assert_inputs_not_mutated, assert_output
 from tests.main.conftest import (
     DATA_PATH,
@@ -1196,15 +1197,15 @@ def test_generated_models_decide_value_neighbours_like_the_schema(
     """Value neighbours get the validator's verdict where asserted; the backend's other differing ones are stored.
 
     A model that decides the seed otherwise than the validator stores that line alone. The stored lists only shrink:
-    a neighbour that a change starts to decide otherwise than the validator is a defect for the issue groups, not a
-    line to add.
+    ``scripts/check_ratchets.py`` fails a line that an item of the base did not store, and a blind line (no seed, or a
+    seed the model rejects: the item checked nothing) anywhere, so the fix command cannot store a regression.
     """
     runtime = load_generated_payload_runtime(
         schema_validator_case(case) if schema_validators else case, generated_model_cache, backend
     )
     defaults = load_generated_payload_runtime(case, generated_model_cache, backend) if schema_validators else None
     asserted: list[str] = []
-    unasserted: list[str] = [] if has_value_neighbour_seed(case) else ["no source-valid seed"]
+    unasserted: list[str] = [] if has_value_neighbour_seed(case) else [NO_SEED_LINE]
     for neighbour in value_neighbours(case):
         if (verdict := model_verdict(runtime, neighbour.payload)) == (expected := schema_verdict(neighbour)):
             continue

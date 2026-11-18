@@ -10,12 +10,14 @@ from __future__ import annotations
 
 import json
 import math
-from contextlib import suppress
+import re
 from copy import deepcopy
 from dataclasses import dataclass, replace
 from decimal import Decimal
 from fractions import Fraction
 from typing import TYPE_CHECKING, Final, TypeGuard
+
+from scripts.check_ratchets import REJECTED_SEED_LINE
 
 from .conformance import rejected_mutation_reason
 from .models import PayloadBackend
@@ -183,23 +185,33 @@ def _decimal_step(value: Fraction) -> Fraction:
     return Fraction(1, 10 ** (1 - min(places, 0))) if isinstance(places, int) else Fraction(1, 10)
 
 
+def _text_number(text: str) -> Fraction | None:
+    """Return the number a string spells, or None."""
+    try:
+        return Fraction(text)
+    except (ValueError, ZeroDivisionError):
+        return None
+
+
+def _member_number_and_text(value: object) -> tuple[Fraction, str]:
+    """Return the number and the string that stand for a member in the other JSON kinds."""
+    if isinstance(value, bool):
+        return Fraction(int(value)), json.dumps(value)
+    if _is_number(value):
+        number = Fraction(value)
+        return number, _number_text(number) if number.denominator == 1 else str(_json_value(number))
+    if isinstance(value, str):
+        return Fraction(1) if (number := _text_number(value)) is None else number, value
+    return Fraction(1), json.dumps(_json_value(value), sort_keys=True)
+
+
 def kind_forms(value: object) -> list[object]:
-    """Return a member in every JSON kind: ``1`` gives ``1.0``, ``true``, ``"1"``, ``[1]``, ``{"a": 1}``, ``null``."""
-    match value:
-        case bool():
-            number: Fraction = Fraction(int(value))
-            text = json.dumps(value)
-        case int() | float() | Fraction():
-            number = Fraction(value)
-            text = _number_text(number) if number.denominator == 1 else str(_json_value(number))
-        case str():
-            number = Fraction(1)
-            text = value
-            with suppress(ValueError, ZeroDivisionError):
-                number = Fraction(value)
-        case _:
-            number = Fraction(1)
-            text = json.dumps(_json_value(value), sort_keys=True)
+    """Return a member in every JSON kind: ``1`` gives ``true``, ``"1"``, ``[1]``, ``{"a": 1}`` and ``null``.
+
+    Forms are told apart by JSON kind and value, where ``1.0`` is ``1``; the nearest float stands for an integer only
+    where it is another value.
+    """
+    number, text = _member_number_and_text(value)
     forms = [
         _json_value(number),
         _float(number),
@@ -482,7 +494,11 @@ class _Site:
 def _iter_sites(
     seeds: _Seeds, schema: object, value: object, path: JsonPath, seen: frozenset[str] = frozenset()
 ) -> Iterator[_Site]:
-    """Yield every schema object that applies to a value of the seed, with the path of the value."""
+    """Yield every schema object that applies to a value of the seed, with the path of the value.
+
+    ``seen`` holds the references followed for the value at this path, so a reference cycle stops where it would
+    come back to the same value, while a recursive schema still gets sites at every depth the seed reaches.
+    """
     if not isinstance(schema, dict):
         return
     yield _Site(schema, path, value)
@@ -495,37 +511,59 @@ def _iter_sites(
         case dict():
             yield from _iter_object_sites(seeds, schema, value, path, seen)
         case list():
-            yield from _iter_array_sites(seeds, schema, value, path, seen)
+            yield from _iter_array_sites(seeds, schema, value, path)
+
+
+def _matches(pattern: str, name: str) -> bool:
+    """Return whether a ``patternProperties`` regex matches a name, as the suite's validator searches it."""
+    try:
+        return re.search(pattern, name) is not None
+    except re.error:
+        return False
 
 
 def _iter_object_sites(
     seeds: _Seeds, schema: dict[str, object], value: dict[str, object], path: JsonPath, seen: frozenset[str]
 ) -> Iterator[_Site]:
+    """Yield the sites of each property from every schema that applies to it, and of the ``dependentSchemas``.
+
+    A property takes its ``properties`` schema and every ``patternProperties`` schema whose regex matches its name;
+    ``additionalProperties`` applies only to a property neither of them names.
+    """
     properties = schema.get("properties")
     if not isinstance(properties, dict):
         properties = {}
+    patterns = schema.get("patternProperties")
+    if not isinstance(patterns, dict):
+        patterns = {}
     for name, item in value.items():
-        if name in properties:
-            yield from _iter_sites(seeds, properties[name], item, (*path, name), seen)
-        elif isinstance(additional := schema.get("additionalProperties"), dict):
-            yield from _iter_sites(seeds, additional, item, (*path, name), seen)
+        applying = [properties[name]] if name in properties else []
+        applying.extend(subschema for pattern, subschema in patterns.items() if _matches(pattern, name))
+        if not applying:
+            applying.append(schema.get("additionalProperties"))
+        for subschema in applying:
+            yield from _iter_sites(seeds, subschema, item, (*path, name))
     if isinstance(dependent := schema.get("dependentSchemas"), dict):
         for name, subschema in dependent.items():
             if name in value:
                 yield from _iter_sites(seeds, subschema, value, path, seen)
 
 
-def _iter_array_sites(
-    seeds: _Seeds, schema: dict[str, object], value: list[object], path: JsonPath, seen: frozenset[str]
-) -> Iterator[_Site]:
+def _iter_array_sites(seeds: _Seeds, schema: dict[str, object], value: list[object], path: JsonPath) -> Iterator[_Site]:
+    """Yield the sites of each prefix item and of the first item past the prefix, with the ``contains`` schema.
+
+    Every item past the prefix takes the same ``items`` and ``contains`` schemas, so the first of them reaches each
+    schema position once; later items would repeat its neighbours under another index, at a cost quadratic in the
+    length of the array.
+    """
     prefix = schema.get("prefixItems")
     items = schema.get("items")
     if not isinstance(prefix, list):
         prefix, items = (items, schema.get("additionalItems")) if isinstance(items, list) else ([], items)
-    for index, item in enumerate(value):
+    for index, item in enumerate(value[: len(prefix) + 1]):
         item_schema = prefix[index] if index < len(prefix) else items
-        yield from _iter_sites(seeds, item_schema, item, (*path, index), seen)
-        yield from _iter_sites(seeds, schema.get("contains"), item, (*path, index), seen)
+        yield from _iter_sites(seeds, item_schema, item, (*path, index))
+        yield from _iter_sites(seeds, schema.get("contains"), item, (*path, index))
 
 
 def _replaced(payload: object, path: JsonPath, value: object) -> object:
@@ -745,10 +783,7 @@ def schema_validator_case(case: SchemaCase) -> SchemaCase:
 
 def model_verdict(runtime: PayloadRuntime, payload: object) -> str:
     """Return whether the generated model accepts or rejects a payload; any other exception fails the test."""
-    with suppress(*runtime.rejection_exceptions):
-        runtime.validate_python(payload)
-        return "accepts"
-    return "rejects"
+    return "accepts" if runtime.accepts_python(payload) else "rejects"
 
 
 def schema_verdict(neighbour: ValueNeighbour) -> str:
@@ -769,5 +804,10 @@ def neighbour_is_asserted(
 
 
 def differing_line(neighbour: ValueNeighbour, verdict: str) -> str:
-    """Return the line naming a neighbour the model decides otherwise than the validator."""
+    """Return the line naming a neighbour the model decides otherwise than the validator.
+
+    A seed is valid, so it differs only where the model rejects it: that line is the ratchet's blind line.
+    """
+    if neighbour.keyword == SEED_KEYWORD:
+        return REJECTED_SEED_LINE
     return f"{neighbour.label}: {'valid' if neighbour.valid else 'invalid'}, model {verdict}"

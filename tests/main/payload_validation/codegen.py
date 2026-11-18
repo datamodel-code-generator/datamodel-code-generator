@@ -116,16 +116,20 @@ class PayloadRuntime:
 
         return False
 
-    def assert_rejects_python(self, payload: Any) -> None:
-        """Assert the backend rejects a Python payload."""
+    def accepts_python(self, payload: object) -> bool:
+        """Return whether the backend accepts a Python payload; an exception that is no rejection propagates."""
         try:
             self.validate_python(payload)
         except Exception as exception:
             if self.is_rejection_exception(exception):
-                return
+                return False
             raise
+        return True
 
-        pytest.fail(f"{self.backend.value} runtime accepted an invalid payload")
+    def assert_rejects_python(self, payload: Any) -> None:
+        """Assert the backend rejects a Python payload."""
+        if self.accepts_python(payload):
+            pytest.fail(f"{self.backend.value} runtime accepted an invalid payload")
 
     def validate_python(self, payload: Any) -> Any:
         """Validate or construct the payload using the generated backend."""
