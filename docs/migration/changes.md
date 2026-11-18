@@ -120,6 +120,14 @@ Under --use-root-model-type-alias, write the default of a field whose type names
 
 - **Source:** the command-line options of both releases
 
+### New dated presets `standard-py3XX-20261118` and `practical-py3XX-20261118` (unreleased) { #preset-20261118 }
+
+They keep the options of the 20261113 presets and add:
+
+- Validated defaults of root model type aliases (`--use-validate-default-for-root-model-type-aliases`): Under --use-root-model-type-alias, validate the default of a field whose type names a root model written as an alias into that root model, as for a root model class, instead of keeping the raw value.
+
+- **Source:** the registry of deprecations, experimental features and dated presets
+
 ### Request/response models no longer crash on a $ref to a closed object beside a schema-valued additionalProperties (unreleased) { #read-the-write-walk-from-the-parse-main }
 
 Generation of request and response models with an intersect option no longer fails with "A Parser can not resolve classes" for a $ref to a closed object beside a schema-valued additionalProperties.
