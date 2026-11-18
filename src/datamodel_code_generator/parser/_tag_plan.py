@@ -992,14 +992,22 @@ def declared_variant_tags(
 
     The union's field writes no ``discriminator=`` (``_SITE_MODES``). Read on the finished models, a variant the union
     lists takes the tags of ``variant``, the tag field the union wrote first; a variant a nested choice gives it takes
-    those of ``nested``. The mapping paths keep the location of their variants' schemas (``located_mapping``).
+    those of ``nested``. A tag that is no JSON string, integer or boolean tags no variant. The mapping paths keep the
+    location of their variants' schemas (``located_mapping``).
     """
     view = UnionView(
         site_names(property_name, namer), located_mapping(mapping, members), _SITE_MODES[False][1], reading
     )
     for data_type, listed, _ in _iter_discriminator_data_types(members):
         if data_type.reference and isinstance(variant := data_type.reference.source, DataModel):
-            yield variant, view.tags("variant" if listed else "nested", variant)
+            yield (
+                variant,
+                [
+                    tag
+                    for tag in view.tags("variant" if listed else "nested", variant)
+                    if is_tag_value(tag, bool_literals=True)
+                ],
+            )
 
 
 def _is_any_variant(data_type: DataType) -> bool:

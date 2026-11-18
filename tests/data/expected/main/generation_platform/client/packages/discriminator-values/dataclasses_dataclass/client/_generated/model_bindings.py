@@ -34,24 +34,43 @@ MODELS: Final[dict[type, Model]] = {
     models.Dog: Model(
         (Field('kind', 'kind', models.DogKind), Field('fed', 'fed', datetime))
     ),
+    models.Counted: Model((Field('code', 'code'), Field('since', 'since', date))),
+    models.Flagged: Model((Field('code', 'code'), Field('until', 'until', datetime))),
+    models.Plain: Model((Field('kind', 'kind'), Field('since', 'since', date))),
+    models.Odd: Model((Field('kind', 'kind'), Field('until', 'until', datetime))),
 }
 
-codec_0: Final[DataclassCodec[models.LevelsGetResponse]] = DataclassCodec(
+codec_0: Final[DataclassCodec[models.LevelsPostRequest]] = DataclassCodec(
+    Choice((), 'level', ((1, models.Basic), (2, models.Expert))), MODELS
+)
+"""Codec of /paths/~1levels/post request_body (request application/json)."""
+
+codec_1: Final[DataclassCodec[models.LevelsGetResponse]] = DataclassCodec(
     Choice((), 'level', ((1, models.Basic), (2, models.Expert))), MODELS
 )
 """Codec of /paths/~1levels/get response_body (response 200 application/json)."""
 
-codec_1: Final[DataclassCodec[models.RanksGetResponse]] = DataclassCodec(
+codec_2: Final[DataclassCodec[models.RanksGetResponse]] = DataclassCodec(
     Choice((), 'rank', ((1, models.Junior), (2, models.Senior))), MODELS
 )
 """Codec of /paths/~1ranks/get response_body (response 200 application/json)."""
 
-codec_2: Final[DataclassCodec[models.SwitchesGetResponse]] = DataclassCodec(
+codec_3: Final[DataclassCodec[models.SwitchesGetResponse]] = DataclassCodec(
     Choice((), 'enabled', ((True, models.On), (False, models.Off))), MODELS
 )
 """Codec of /paths/~1switches/get response_body (response 200 application/json)."""
 
-codec_3: Final[DataclassCodec[models.AnimalsGetResponse]] = DataclassCodec(
+codec_4: Final[DataclassCodec[models.AnimalsGetResponse]] = DataclassCodec(
     Choice((), 'kind', (('cat', models.Cat), ('dog', models.Dog))), MODELS
 )
 """Codec of /paths/~1animals/get response_body (response 200 application/json)."""
+
+codec_5: Final[DataclassCodec[models.MixedGetResponse]] = DataclassCodec(
+    Choice((), 'code', ((1, models.Counted), (True, models.Flagged))), MODELS
+)
+"""Codec of /paths/~1mixed/get response_body (response 200 application/json)."""
+
+codec_6: Final[DataclassCodec[models.OddGetResponse]] = DataclassCodec(
+    Choice((), 'kind', (('plain', models.Plain),)), MODELS
+)
+"""Codec of /paths/~1odd/get response_body (response 200 application/json)."""

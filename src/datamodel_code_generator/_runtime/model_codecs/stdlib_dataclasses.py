@@ -94,6 +94,11 @@ def _kind(value: object) -> JSONKind:
     return kind
 
 
+def _tag_key(tag: object) -> tuple[JSONKind, object]:
+    value = tag.value if isinstance(tag, Enum) else tag
+    return _kind(value), value
+
+
 class DataclassCodec(ModelCodec[T]):
     """Use static names and discriminator facts to construct dataclasses without validation."""
 
@@ -152,7 +157,7 @@ class DataclassCodec(ModelCodec[T]):
             selected = dict(shape.kinds).get(kind)
             if kind == "object" and shape.tag is not None:
                 tag = cast("Mapping[str, object]", value)[shape.tag]
-                selected = dict(shape.tags)[cast("str | int | bool", tag)]
+                selected = {_tag_key(key): type_ for key, type_ in shape.tags}[_tag_key(tag)]
             return self._load(value, selected)
         if isinstance(shape, Items):
             return _CONTAINERS[shape.kind](self._load(item, shape.item) for item in cast("list[object]", value))

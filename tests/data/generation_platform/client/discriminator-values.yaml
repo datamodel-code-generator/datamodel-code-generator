@@ -6,6 +6,21 @@ servers:
   - url: https://api.example.com
 paths:
   /levels:
+    post:
+      operationId: createLevel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/Basic"
+                - $ref: "#/components/schemas/Expert"
+              discriminator:
+                propertyName: level
+      responses:
+        "204":
+          description: Created.
     get:
       operationId: getLevel
       responses:
@@ -62,6 +77,34 @@ paths:
                 oneOf:
                   - $ref: "#/components/schemas/Cat"
                   - $ref: "#/components/schemas/Dog"
+                discriminator:
+                  propertyName: kind
+  /mixed:
+    get:
+      operationId: getMixed
+      responses:
+        "200":
+          description: A code told apart by an integer constant and a boolean constant.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Counted"
+                  - $ref: "#/components/schemas/Flagged"
+                discriminator:
+                  propertyName: code
+  /odd:
+    get:
+      operationId: getOdd
+      responses:
+        "200":
+          description: A kind whose one variant holds an object constant, which tags nothing.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Plain"
+                  - $ref: "#/components/schemas/Odd"
                 discriminator:
                   propertyName: kind
 components:
@@ -146,5 +189,45 @@ components:
         kind:
           $ref: "#/components/schemas/DogKind"
         fed:
+          type: string
+          format: date-time
+    Counted:
+      type: object
+      required: [code, since]
+      properties:
+        code:
+          type: integer
+          const: 1
+        since:
+          type: string
+          format: date
+    Flagged:
+      type: object
+      required: [code, until]
+      properties:
+        code:
+          type: boolean
+          const: true
+        until:
+          type: string
+          format: date-time
+    Plain:
+      type: object
+      required: [kind, since]
+      properties:
+        kind:
+          type: string
+          const: plain
+        since:
+          type: string
+          format: date
+    Odd:
+      type: object
+      required: [kind, until]
+      properties:
+        kind:
+          type: object
+          const: {a: 1}
+        until:
           type: string
           format: date-time

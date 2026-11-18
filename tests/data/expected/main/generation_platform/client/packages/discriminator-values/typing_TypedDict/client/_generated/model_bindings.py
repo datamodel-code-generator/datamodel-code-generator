@@ -30,24 +30,43 @@ MODELS: Final[dict[type, Model]] = {
     models.Off: Model((Field('enabled', 'enabled'), Field('until', 'until', datetime))),
     models.Cat: Model((Field('kind', 'kind'), Field('born', 'born', date))),
     models.Dog: Model((Field('kind', 'kind'), Field('fed', 'fed', datetime))),
+    models.Counted: Model((Field('code', 'code'), Field('since', 'since', date))),
+    models.Flagged: Model((Field('code', 'code'), Field('until', 'until', datetime))),
+    models.Plain: Model((Field('kind', 'kind'), Field('since', 'since', date))),
+    models.Odd: Model((Field('kind', 'kind'), Field('until', 'until', datetime))),
 }
 
-codec_0: Final[TypedDictCodec[models.LevelsGetResponse]] = TypedDictCodec(
+codec_0: Final[TypedDictCodec[models.LevelsPostRequest]] = TypedDictCodec(
+    Choice((), 'level', ((1, models.Basic), (2, models.Expert))), MODELS
+)
+"""Codec of /paths/~1levels/post request_body (request application/json)."""
+
+codec_1: Final[TypedDictCodec[models.LevelsGetResponse]] = TypedDictCodec(
     Choice((), 'level', ((1, models.Basic), (2, models.Expert))), MODELS
 )
 """Codec of /paths/~1levels/get response_body (response 200 application/json)."""
 
-codec_1: Final[TypedDictCodec[models.RanksGetResponse]] = TypedDictCodec(
+codec_2: Final[TypedDictCodec[models.RanksGetResponse]] = TypedDictCodec(
     Choice((), 'rank', ((1, models.Junior), (2, models.Senior))), MODELS
 )
 """Codec of /paths/~1ranks/get response_body (response 200 application/json)."""
 
-codec_2: Final[TypedDictCodec[models.SwitchesGetResponse]] = TypedDictCodec(
+codec_3: Final[TypedDictCodec[models.SwitchesGetResponse]] = TypedDictCodec(
     Choice((), 'enabled', ((True, models.On), (False, models.Off))), MODELS
 )
 """Codec of /paths/~1switches/get response_body (response 200 application/json)."""
 
-codec_3: Final[TypedDictCodec[models.AnimalsGetResponse]] = TypedDictCodec(
+codec_4: Final[TypedDictCodec[models.AnimalsGetResponse]] = TypedDictCodec(
     Choice((), 'kind', (('cat', models.Cat), ('dog', models.Dog))), MODELS
 )
 """Codec of /paths/~1animals/get response_body (response 200 application/json)."""
+
+codec_5: Final[TypedDictCodec[models.MixedGetResponse]] = TypedDictCodec(
+    Choice((), 'code', ((1, models.Counted), (True, models.Flagged))), MODELS
+)
+"""Codec of /paths/~1mixed/get response_body (response 200 application/json)."""
+
+codec_6: Final[TypedDictCodec[models.OddGetResponse]] = TypedDictCodec(
+    Choice((), 'kind', (('plain', models.Plain),)), MODELS
+)
+"""Codec of /paths/~1odd/get response_body (response 200 application/json)."""

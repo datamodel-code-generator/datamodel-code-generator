@@ -23,6 +23,7 @@ from datamodel_code_generator._target_contract import (
 )
 from datamodel_code_generator._target_operations import UNSPELLABLE, Refusal, native_type
 from datamodel_code_generator._target_types import container_slot, is_none, is_wrapper, present
+from datamodel_code_generator.model._decisions.tag_value import tag_key
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator
@@ -343,13 +344,14 @@ class _Planner:
             return None, ()
         tag = declared.property_name
         variants = dict(declared.variants)
-        tags: dict[str | int | bool, SymbolId] = {}
+        tags: dict[object, tuple[str | int | bool, SymbolId]] = {}
         for symbol in models:
             for name in variants.get(self.symbols[symbol].source, ()):
-                if name in tags and tags[name] != symbol:
+                key = tag_key(name, "type-and-value")
+                if key in tags and tags[key][1] != symbol:
                     self.report(f"The discriminator {tag} gives {name} to two union models")
-                tags[name] = symbol
-        return tag, tuple(tags.items())
+                tags[key] = name, symbol
+        return tag, tuple(tags.values())
 
 
 def plan_client_codecs(  # ruff: ignore[too-many-arguments]
