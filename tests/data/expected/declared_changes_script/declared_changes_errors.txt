@@ -15,6 +15,23 @@ exit 0
 declared changes: the working tree against base, release since 0.1.0
 ok
 
+$ check --base base --tag side
+exit 2
+scripts/declared_changes.py: side is neither an ancestor nor a descendant of base; pass the latest release with --tag
+
+$ check --base base --tag unrelated
+exit 2
+scripts/declared_changes.py: unrelated is neither an ancestor nor a descendant of base; pass the latest release with --tag
+
+$ check --base 0.1.0 --head base --tag base
+exit 0
+declared changes: base against 0.1.0, release since base
+ok
+
+$ check --base HEAD --tag HEAD
+exit 2
+scripts/declared_changes.py: the repository is shallow: judging the release walks every commit since HEAD; fetch the history
+
 $ status
 exit 2
 scripts/declared_changes.py: no merge base with origin/main; pass --base

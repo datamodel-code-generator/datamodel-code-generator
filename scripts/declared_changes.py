@@ -21,17 +21,19 @@ references the change brings back to the tag's references and contents needs no 
 covers it, and is stale while one does. Fragments the tag contains are released: they cover nothing and are not
 edited.
 
-`check` also judges the release by the same rule, one step per first-parent commit since the latest tag (main takes
-one commit per change) and the change as the last: every label a step needed a record for that still differs from the
-tag is covered by a record the tag does not contain, and every covered label still differs from the tag (`prune` drops
-those that do not, and the labels a change added that it may not cover). So an output a test-only change added or
-moved needs no record later either. A change is told only of the gaps it adds; with `--main` every gap counts, and
-so does a tag that `releases.toml` does not list yet (stamp pending). `--report-only` prints the same and exits 0.
-`status` reports the working tree against the merge base with origin/main, and `declare` writes the `covers` of a
-record from that diff, or from `--base` (a stack layer passes the layer below): never write them by hand. `--labels`
-and `--tests` also take the gaps of the base that the head still moves from the tag; `--rest` only what this change
-moves. The check prints one `declare` command per kind of undeclared output, with `--base` unless the base is that
-merge base.
+`check` also judges the release by the same rule, one step per change since the latest tag as main takes them (each
+first-parent commit up to the merge base with origin/main, the rest of the base, then the change): every label a step
+needed a record for that still differs from the tag is covered by a record the tag does not contain, and every covered
+label still differs from the tag (`prune` drops those that do not, and the labels a change added that it may not
+cover). So an output a test-only change added needs no record later either, and one it moved keeps the need of the
+output it moved, under its new label. The walk needs the history: a shallow clone and a tag that is not an ancestor of
+the base are refused. A change is told only of the gaps it adds; with `--main` every gap counts, and so does a tag
+that `releases.toml` does not list yet (stamp pending). `--report-only` prints the same and exits 0. `status` reports
+the working tree against the merge base with origin/main, and `declare` writes the `covers` of a record from that
+diff, or from `--base` (a stack layer passes the layer below): never write them by hand. `--labels` and `--tests` also
+take the gaps the change may cover: those of the base that the head still moves from the tag, and those of outputs the
+change moves; `--rest` only what this change moves. The check prints one `declare` command per kind of undeclared
+output, with `--base` unless the base is that merge base.
 """
 
 from __future__ import annotations
@@ -98,7 +100,7 @@ GENERATOR = ("src/", "uv.lock")
 DEFAULT_BASE = "origin/main"
 HISTORY = ("--first-parent", "--diff-merges=first-parent", "--reverse", "--name-only", "-z", "--format=%x01%H")
 """The `git log` options that list each first-parent commit with the files it changes against its first parent."""
-CHANGED, REMOVED, ADDED = "changed", "removed", "added"
+CHANGED, REMOVED, ADDED, MOVED = "changed", "removed", "added", "moved"
 SUBJECT_REF = re.compile(
     r"\((#[1-9]\d*)\)\s*$|\b(?:fixes|closes|resolves):?\s+(#[1-9]\d*)", re.IGNORECASE | re.MULTILINE
 )
@@ -132,6 +134,10 @@ class Reference:
         """Return the item's nodeid."""
         item = f"{self.function}[{self.param}]" if self.param else self.function
         return f"{self.sidecar.removesuffix(REFS_SUFFIX)}.py::{item}"
+
+
+Row = tuple[str, Reference]
+"""A reference that needs a record, with its state."""
 
 
 class Side:
@@ -306,7 +312,8 @@ def _content(side: Side, lines: tuple[Line, ...]) -> tuple[tuple[str, bool, str 
 class Diff:
     """The references that differ between two sides; `moved` are removed and added references of equal content.
 
-    `generator` says the step touches `src/` or `uv.lock`.
+    `generator` says the step touches `src/` or `uv.lock`; `pairs` are the (removed, added) references of each move,
+    and `vanished` the labels of moved removed references that the new side no longer has.
     """
 
     generator: bool = False
@@ -314,11 +321,17 @@ class Diff:
     removed: list[Reference] = field(default_factory=list)
     moved: list[Reference] = field(default_factory=list)
     added: list[Reference] = field(default_factory=list)
+    pairs: list[tuple[Reference, Reference]] = field(default_factory=list)
+    vanished: set[str] = field(default_factory=set)
 
-    def rows(self) -> list[tuple[str, Reference]]:
+    def rows(self) -> list[Row]:
         """Return the references that need a record with their state; the added ones only on a generator step."""
         rows = [(CHANGED, ref) for ref in self.changed] + [(REMOVED, ref) for ref in self.removed]
         return sorted(rows + [(ADDED, ref) for ref in self.added if self.generator], key=operator.itemgetter(1))
+
+    def carried(self, needs: dict[str, set[Row]]) -> list[tuple[Reference, Reference]]:
+        """Return the moves whose removed reference's label needs a record: the added reference takes the need."""
+        return [(removed, added) for removed, added in self.pairs if removed.label in needs]
 
     def moving(self) -> set[str]:
         """Return every label with a reference that changed, was removed, moved or was added."""
@@ -364,11 +377,18 @@ def diff(old: Side, new: Side, *, generator: bool | None = None) -> Diff:
     new.preload([b for _, b in pending] + [line[2] for ref in added if pair for line in after[ref]])
     result.changed = sorted(ref for ref in common if not _same(old, before[ref], new, after[ref]))
     kept = {_content(new, after[ref]) for ref in added} if pair else set()
-    gone = {_content(old, before[ref]) for ref in removed} if pair else set()
+    gone: dict[tuple[tuple[str, bool, str | None], ...], list[Reference]] = {}
     for ref in sorted(removed):
-        (result.moved if _content(old, before[ref]) in kept else result.removed).append(ref)
+        if pair and (content := _content(old, before[ref])) in kept:
+            result.moved.append(ref)
+            gone.setdefault(content, []).append(ref)
+        else:
+            result.removed.append(ref)
     for ref in sorted(added):
-        (result.moved if _content(new, after[ref]) in gone else result.added).append(ref)
+        sources = gone.get(_content(new, after[ref]), [])
+        (result.moved if sources else result.added).append(ref)
+        result.pairs += ((source, ref) for source in sources)
+    result.vanished = {removed.label for removed, _ in result.pairs if removed.label not in new.by_label}
     return result
 
 
@@ -500,12 +520,27 @@ def _record_problems(
 
 
 def _history(repo: Path, tag: Side, base: Side) -> list[Diff]:
-    """Return the steps from the tag to the base: one per first-parent commit, as main takes one per change.
+    """Return the steps from the tag to the base, as main takes them: one per change.
 
-    Only a commit that touches stored outputs or sidecars moves references; its parent has the stored outputs and
-    sidecars of the last such commit before it, and it touches the generator when it touches `src/` or `uv.lock`.
+    Up to the merge base with origin/main (the whole base without one) a step is a first-parent commit; the rest of
+    the base (lower stack layers) is one step. Only a commit that touches stored outputs or sidecars moves references;
+    its parent has the stored outputs and sidecars of the last such commit before it, and it touches the generator when
+    it touches `src/` or `uv.lock`. A shallow repository is refused, and so is a tag on another line of history than
+    the base (a tag after the base, as a release commit's own, has no steps).
     """
-    log = git(repo, "log", *HISTORY, f"{tag.rev}..{base.rev}")
+    if git(repo, "rev-parse", "--is-shallow-repository").strip() == b"true":
+        msg = f"the repository is shallow: judging the release walks every commit since {tag.name}; fetch the history"
+        raise CheckError(msg)
+    start, end = _rev(repo, tag.rev or "HEAD"), _rev(repo, base.rev or "HEAD")
+    try:
+        common = git(repo, "merge-base", start, end).decode().strip()
+    except subprocess.CalledProcessError:
+        common = None
+    if common not in {start, end}:
+        msg = f"{tag.name} is neither an ancestor nor a descendant of {base.name}; pass the latest release with --tag"
+        raise CheckError(msg)
+    fork = _merge_base(repo, end) or end
+    log = git(repo, "log", *HISTORY, f"{start}..{fork}")
     steps: list[Diff] = []
     last = tag
     for commit, _, names in (entry.partition("\0") for entry in log.decode().split("\x01") if entry):
@@ -514,21 +549,34 @@ def _history(repo: Path, tag: Side, base: Side) -> list[Diff]:
             side = Side(repo, commit)
             steps.append(diff(last, side, generator=any(path.startswith(GENERATOR) for path in paths)))
             last = side
-    return steps
+    return steps if fork == end else [*steps, diff(last, base)]
 
 
-def _release(
-    tag: Side, side: Side, steps: list[Diff]
-) -> tuple[set[str], dict[str, list[tuple[str, Reference]]], set[str]]:
+def _needs(steps: Iterable[Diff], needs: dict[str, set[Row]] | None = None) -> dict[str, set[Row]]:
+    """Return the references that needed a record by label after the steps, taken in order after `needs`.
+
+    A step needs what `Diff.rows` returns, as `evaluate` judges a change. A move passes the need of its removed
+    reference's label to the added reference; the removed label keeps it only while the step's side has the label.
+    """
+    found = {label: set(rows) for label, rows in (needs or {}).items()}
+    for step in steps:
+        carried = step.carried(found)
+        for label in {removed.label for removed, _ in carried} & step.vanished:
+            del found[label]
+        for row in [*step.rows(), *((MOVED, added) for _, added in carried)]:
+            found.setdefault(row[1].label, set()).add(row)
+    return found
+
+
+def _release(tag: Side, side: Side, needs: dict[str, set[Row]]) -> tuple[set[str], dict[str, list[Row]], set[str]]:
     """Return the labels that moved since the tag, the gaps among them with their references, and the stale ones.
 
-    `steps` lead from the tag to the side. A gap moved and a step needed a record for it (`Diff.rows`, as `evaluate`
-    judges a change), and no unreleased record covers it. A stale label is covered and did not move.
+    `needs` are those of the steps from the tag to the side (`_needs`). A gap moved and needs a record, and no
+    unreleased record covers it. A stale label is covered and did not move.
     """
     moving = diff(tag, side).moving()
     covered = {label for record in _unreleased(side, tag).values() for label in record.covers}
-    open_labels = moving - covered
-    rows = {row for step in steps for row in step.rows() if row[1].label in open_labels}
+    rows = [row for label in (moving - covered) & needs.keys() for row in needs[label]]
     return moving, _by_label(sorted(rows, key=operator.itemgetter(1, 0))), covered - moving
 
 
@@ -558,7 +606,7 @@ def evaluate(repo: Path, base: Side, head: Side, tag: Side, *, main: bool = Fals
     A label the change moves back to the tag's references and contents is free when no unreleased record covers it,
     and stale when one does; a label a record adds to `covers` must move in the change or be a gap of the base.
     """
-    steps = _history(repo, tag, base)
+    base_needs = _needs(_history(repo, tag, base))
     moved = diff(base, head)
     generator = moved.generator
     report = Report(base.name, head.name, tag.name, generator, _branch(repo), moves=len(moved.moved), main=main)
@@ -566,9 +614,10 @@ def evaluate(repo: Path, base: Side, head: Side, tag: Side, *, main: bool = Fals
     added = {stem: set(record.covers) - _covers_of(base_records, stem) for stem, record in head_records.items()}
     coverage = set().union(*added.values())
     covered = {label for record in head_records.values() for label in record.covers}
-    since, head_rows, head_stale = _release(tag, head, [*steps, moved])
-    _, base_rows, base_stale = _release(tag, base, steps)
+    since, head_rows, head_stale = _release(tag, head, _needs([moved], base_needs))
+    _, base_rows, base_stale = _release(tag, base, base_needs)
     head_gaps, base_gaps = set(head_rows), set(base_rows)
+    claimable = _claimable(moved, base_gaps)
     rows = moved.rows()
     at_tag = {ref.label for _, ref in rows} - since
     report.returned = {
@@ -576,9 +625,9 @@ def evaluate(repo: Path, base: Side, head: Side, tag: Side, *, main: bool = Fals
         for label in sorted(at_tag - covered)
     }
     report.undeclared = _by_label((state, ref) for state, ref in rows if ref.label not in coverage | at_tag)
-    report.over_claimed = sorted(coverage - _claimable(moved, base_gaps))
+    report.over_claimed = sorted(coverage - claimable)
     report.backfill = {
-        label: rows for label, rows in base_rows.items() if label in since - covered and label not in report.undeclared
+        label: rows for label, rows in head_rows.items() if label in claimable and label not in report.undeclared
     }
     for stem in sorted(head.records):
         text = head.records[stem][1]
@@ -590,7 +639,8 @@ def evaluate(repo: Path, base: Side, head: Side, tag: Side, *, main: bool = Fals
         elif stem not in base.records or text != base.records[stem][1]:
             checked = added.get(stem, set()) | _revalidated(stem, head_records, base_records)
             report.problems += _record_problems(stem, (base, head, tag), head_records, checked)
-    older = set() if main else base_gaps
+    renamed = {target.label for source, target in moved.carried(base_needs) if source.label in base_gaps}
+    older = set() if main else base_gaps | renamed
     report.gaps = sorted(head_gaps - older - set(report.undeclared))
     report.stale = sorted(head_stale - base_stale - set(report.over_claimed))
     report.older_gaps = len(head_gaps & older)
@@ -765,7 +815,10 @@ def _sides(repo: Path, ns: argparse.Namespace) -> tuple[Side, Side, Side]:
 
 
 def _select(report: Report, ns: argparse.Namespace) -> list[str]:
-    """Return the labels a selector picks: `--rest` the undeclared ones, the others also the gaps of the base."""
+    """Return the labels a selector picks: `--rest` the undeclared ones, the others also the gaps the change may cover.
+
+    Those are the gaps of the base and the gaps of outputs the change moves (a move passes on the need of a record).
+    """
     if ns.rest:
         return list(report.undeclared)
     eligible = report.undeclared | report.backfill
@@ -824,9 +877,9 @@ def declare(repo: Path, ns: argparse.Namespace) -> int:
 def prune(repo: Path, ns: argparse.Namespace) -> int:
     """Drop the covered labels that do not move against the base (added here) or no longer differ from the tag."""
     base, head, tag = _sides(repo, ns)
-    steps, moved = _history(repo, tag, base), diff(base, head)
-    claimable = _claimable(moved, set(_release(tag, base, steps)[1]))
-    since = _release(tag, head, [*steps, moved])[0]
+    base_needs, moved = _needs(_history(repo, tag, base)), diff(base, head)
+    claimable = _claimable(moved, set(_release(tag, base, base_needs)[1]))
+    since = _release(tag, head, _needs([moved], base_needs))[0]
     base_records = _unreleased(base, tag)
     for stem, record in _unreleased(head, tag).items():
         added = set(record.covers) - _covers_of(base_records, stem)
