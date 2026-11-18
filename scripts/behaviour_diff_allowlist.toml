@@ -14,13 +14,12 @@
 # maximum, `["<=0.88.0"]`), reason, issue (public issue references, `#1234`). `--check` fails on a missing key and,
 # in a run of the whole tier, on an entry that covers no cell; an entry that names no release of the gate's base is
 # no error and does nothing. Remove the entry once the input stops mattering for the gate's base.
-base = "0.97.0"
+base = "0.98.0"
 
 [[accepted]]
-input = [ "tests/data/openapi/recursive_ref_discriminator.yaml", "tests/data/openapi/variant_tag_values", "tests/data/openapi/variant_tag_values/*.yaml" ]
-backends = [ "pydantic_v2.BaseModel" ]
-aspects = [ "type" ]
-match = "^\\[type\\] [\\w:]+: Literal\\['\\w+'\\] -> Literal\\[.+\\]$"
-reason = "a variant of a discriminated union whose tag property admits several values, and that no mapping key names, was tagged by its schema name (Literal['Cat']), which refused every document of the variant the schema accepts and accepted the one it rejects; it is tagged by the values no other variant admits (Literal['cat', 'kitty']), so schema-valid documents that were refused now decode (names and structure stay)"
-decision = "#7089"
-migration = "variant-tag-values-of-their-field"
+input = [ "tests/data/jsonschema/additional_properties_value_constraints_annotated.json", "tests/data/jsonschema/annotated_union_members", "tests/data/jsonschema/annotated_union_members/kinds.json", "tests/data/jsonschema/annotated_union_members/scalar_type_list.yaml", "tests/data/jsonschema/inherited_property_overrides", "tests/data/jsonschema/kubernetes_crd_schema.yaml", "tests/data/jsonschema/number_constraints_on_non_numbers.json", "tests/data/jsonschema/root_multiple_primitive_constraints.json", "tests/data/jsonschema/schema_intersection", "tests/data/jsonschema/string_constraints_on_other_types.json", "tests/data/jsonschema/type_union_constraints" ]
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+reason = "under --use-annotated (the practical and standard presets set it) a constrained member of a union was written as a con*() call or as Annotated[<type>, StringConstraints(...)] and is written as Annotated[<type>, Field(...)]; only the spelling of the constraint moves, the models accept and reject the same values and the parsed values stay (the gate's validation and payload aspects report no difference); class names, bases, fields, required-ness and field order stay (record annotated-constrained-union-members)"
+decision = "#7109"
+migration = "annotated-constrained-union-members"
