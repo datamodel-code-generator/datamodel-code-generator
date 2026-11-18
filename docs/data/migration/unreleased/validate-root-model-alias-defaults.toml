@@ -1,0 +1,26 @@
+[[change]]
+id = "validate-root-model-alias-defaults"
+category = "new-surface"
+title = "Validate the defaults of fields naming root models written as aliases"
+summary = "Under --use-root-model-type-alias, --use-validate-default-for-root-model-type-aliases writes validate_default=True for the default of a field whose type names a root model written as an alias, so Pydantic validates it into the root model."
+refs = ["#7065"]
+surface = ["--use-validate-default-for-root-model-type-aliases"]
+covers = [
+    "builtin_formatter/parser_config_contract.txt",
+    "input_model/config_class.txt",
+    "main/help/color.txt",
+    "main/help/no_color.txt",
+    "main/jsonschema/root_model_type_alias_defaults/root_model_type_alias_defaults[released].payloads.txt",
+    "main/jsonschema/root_model_type_alias_defaults/root_model_type_alias_defaults[released].py",
+    "main/jsonschema/root_model_type_alias_defaults/root_model_type_alias_defaults[validated-annotated].payloads.txt",
+    "main/jsonschema/root_model_type_alias_defaults/root_model_type_alias_defaults[validated-annotated].py",
+    "main/jsonschema/root_model_type_alias_defaults/root_model_type_alias_defaults[validated].payloads.txt",
+    "main/jsonschema/root_model_type_alias_defaults/root_model_type_alias_defaults[validated].py",
+    "main_kr/generate_prompt/basic.txt",
+    "main_kr/generate_prompt/json_output.txt",
+    "main_kr/generate_prompt/with_list_options.txt",
+    "main_kr/generate_prompt/with_options.txt",
+    "main_kr/generate_prompt/with_question.txt",
+    "main_kr/help_shows_new_options.txt",
+    "prompt/default_parser_text.txt",
+]

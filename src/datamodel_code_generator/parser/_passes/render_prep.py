@@ -236,8 +236,17 @@ def _apply_constructor_field_adjustments(
         model.enable_model_keyword_only()
 
 
-def _contains_model_reference(data_type: DataType) -> bool:
-    """Check if a data type tree contains any reference to a non-alias model."""
+def _takes_validated_defaults(source: DataModel, *, root_model_aliases: bool) -> bool:
+    """Return whether Pydantic validates a default into a model: no enum, no alias, or a root model alias (option)."""
+    return not isinstance(source, Enum) and (not source.is_alias or (root_model_aliases and source.IS_ROOT_MODEL))
+
+
+def _contains_model_reference(data_type: DataType, *, root_model_aliases: bool = False) -> bool:
+    """Check if a data type tree contains any reference to a non-alias model.
+
+    With ``root_model_aliases`` (``--use-validate-default-for-root-model-type-aliases``) a root model written as an
+    alias (``Tags = RootModel[list[str]]``) is such a model too, as the root model class it is at runtime.
+    """
     stack = [data_type]
     seen: set[int] = set()
     while stack:
@@ -248,18 +257,17 @@ def _contains_model_reference(data_type: DataType) -> bool:
         seen.add(resolved_id)
         if (
             resolved.reference
-            and isinstance(resolved.reference.source, DataModel)
-            and not isinstance(resolved.reference.source, Enum)
-            and not resolved.reference.source.is_alias
+            and isinstance(source := resolved.reference.source, DataModel)
+            and _takes_validated_defaults(source, root_model_aliases=root_model_aliases)
         ):
             return True
         stack.extend(type_children(resolved))
     return False
 
 
-def _needs_validate_default(data_type: DataType) -> bool:
+def _needs_validate_default(data_type: DataType, *, root_model_aliases: bool = False) -> bool:
     """Check if a field needs validate_default=True to coerce defaults into model instances."""
-    return _contains_model_reference(data_type)
+    return _contains_model_reference(data_type, root_model_aliases=root_model_aliases)
 
 
 def _applies_default(field: DataModelFieldBase) -> bool:
@@ -271,6 +279,9 @@ def validates_structured_default(field: DataModelFieldBase) -> bool:
     """Return whether render preparation writes ``validate_default=True`` for the default of a field.
 
     It reads the facts that are final at the end of the module loop: the required state, the default and the type.
+    The tag plan asks it for the root of a type alias, never for a type that names a root model written as an alias:
+    under ``--use-root-model-type-alias`` the only type aliases are the GraphQL scalars and unions, so
+    ``--use-validate-default-for-root-model-type-aliases`` changes no answer it gives.
     """
     return _applies_default(field) and _needs_validate_default(field.data_type)
 
@@ -449,6 +460,7 @@ def set_validate_default_on_fields(
     """
     deserialized_default = False
     incomplete: list[str] = []
+    root_model_aliases = parser.config.use_validate_default_for_root_model_type_aliases
     for model in models:
         if isinstance(model, Enum):
             continue
@@ -467,7 +479,10 @@ def set_validate_default_on_fields(
                 )
                 or deserialized_default
             )
-            if _needs_validate_default(model_field.data_type) and model_field.enable_structured_default_validation():
+            if (
+                _needs_validate_default(model_field.data_type, root_model_aliases=root_model_aliases)
+                and model_field.enable_structured_default_validation()
+            ):
                 parser._graph_builder.set_field_extra(model_field, "validate_default", value=True)
     if deserialized_default:
         normalize_default_value_constraints(

@@ -90,6 +90,7 @@ How do I convert enums to Literal types?
 - `--no-use-union-operator`: Use Union[X, Y] / Optional[X] instead of X | Y union operator.
 - `--no-use-unique-items-as-set`
 - `--no-use-unique-items-as-set-by-value`
+- `--no-use-validate-default-for-root-model-type-aliases`
 - `--no-use-x-python-import-for-every-ref`
 - `--no-use-x-python-type-as-written`
 - `--open-enums`: Accept the values an enum does not list.
@@ -135,6 +136,7 @@ How do I convert enums to Literal types?
 - `--use-union-operator`: Use | operator for Union types (PEP 604).
 - `--use-unique-items-as-set`: Generate set types for arrays with uniqueItems constraint.
 - `--use-unique-items-as-set-by-value`: Write a uniqueItems set only where its final items hash by value.
+- `--use-validate-default-for-root-model-type-aliases`: Validate the default of a field that names a root model ...
 - `--use-x-python-import-for-every-ref`: Type every reference to a schema with `x-python-import` by the class it...
 - `--use-x-python-type-as-written`: Write a field's `x-python-type` as given: unions of every spelling and conta...
 
@@ -1163,6 +1165,14 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         sets are decided before root models collapse, set item
                         models hash by identity and such models merge, as in
                         0.89.0
+  --use-validate-default-for-root-model-type-aliases, --no-use-validate-default-for-root-model-type-aliases
+                        Under --use-root-model-type-alias, write the default
+                        of a field whose type names a root model written as an
+                        alias (`Tags = RootModel[list[str]]`) with
+                        validate_default=True, as for a root model class, so
+                        Pydantic validates it into the root model; without it
+                        the default stays the raw value, such as a list
+                        instead of a `Tags`, as in 0.97.0 (Pydantic v2 only)
   --use-x-python-import-for-every-ref, --no-use-x-python-import-for-every-ref
                         Type every reference to a schema with x-python-import
                         by the class it imports, as a $ref to it at a field

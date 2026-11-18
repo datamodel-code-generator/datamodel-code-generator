@@ -36501,7 +36501,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 22 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 61 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 62 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 41 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 73 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
@@ -36519,7 +36519,7 @@ Use these pages when you know the workflow area but not the exact option name.
 |-------|---------|--------|
 | [Model Customization](topics/model-customization.md) | 35 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 23 | Custom Templates, Generated Output, Imports, Output Formatting |
-| [Typing Customization](topics/typing-customization.md) | 40 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
+| [Typing Customization](topics/typing-customization.md) | 41 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 14 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
@@ -36532,6 +36532,7 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--use-annotated`](typing-customization.md#use-annotated) | Implies | Always | [`--field-constraints`](field-customization.md#field-constraints) enabled | - |
 | [`--use-specialized-enum`](typing-customization.md#use-specialized-enum) | Requires | Always | [`--target-python-version`](model-customization.md#target-python-version) = `3.11+` | `--use-specialized-enum` requires `--target-python-version` 3.11 or higher. |
 | [`--use-type-alias-type`](typing-customization.md#use-type-alias-type) | Implies | Always | [`--use-type-alias`](typing-customization.md#use-type-alias) enabled | - |
+| [`--use-validate-default-for-root-model-type-aliases`](typing-customization.md#use-validate-default-for-root-model-type-aliases) | Requires | Always | [`--use-root-model-type-alias`](typing-customization.md#use-root-model-type-alias) enabled | `--use-validate-default-for-root-model-type-aliases` acts only with `--use-root-model-type-alias`. |
 | [`--original-field-name-delimiter`](field-customization.md#original-field-name-delimiter) | Requires | Always | [`--snake-case-field`](field-customization.md#snake-case-field) enabled | `--original-field-name-delimiter` can not be used without `--snake-case-field`. |
 | [`--allow-extra-fields`](model-customization.md#allow-extra-fields) | Implies | Always | [`--extra-fields`](field-customization.md#extra-fields) = `allow` | - |
 | [`--collapse-root-models-name-strategy`](model-customization.md#collapse-root-models-name-strategy) | Requires | Always | [`--collapse-root-models`](model-customization.md#collapse-root-models) enabled | `--collapse-root-models-name-strategy` requires `--collapse-root-models`. |
@@ -36963,6 +36964,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-union-operator`](typing-customization.md#use-union-operator)
 - [`--use-unique-items-as-set`](typing-customization.md#use-unique-items-as-set)
 - [`--use-unique-items-as-set-by-value`](typing-customization.md#use-unique-items-as-set-by-value)
+- [`--use-validate-default-for-root-model-type-aliases`](typing-customization.md#use-validate-default-for-root-model-type-aliases)
 - [`--use-x-python-import-for-every-ref`](typing-customization.md#use-x-python-import-for-every-ref)
 - [`--use-x-python-type-as-written`](typing-customization.md#use-x-python-type-as-written)
 
@@ -58521,6 +58523,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/typing-custo
 | [`--use-union-operator`](#use-union-operator) | Use | operator for Union types (PEP 604). |
 | [`--use-unique-items-as-set`](#use-unique-items-as-set) | Generate set types for arrays with uniqueItems constraint. |
 | [`--use-unique-items-as-set-by-value`](#use-unique-items-as-set-by-value) | Write a uniqueItems set only where its final items hash by v... |
+| [`--use-validate-default-for-root-model-type-aliases`](#use-validate-default-for-root-model-type-aliases) | Validate the default of a field that names a root model writ... |
 | [`--use-x-python-import-for-every-ref`](#use-x-python-import-for-every-ref) | Type every reference to a schema with `x-python-import` by t... |
 | [`--use-x-python-type-as-written`](#use-x-python-type-as-written) | Write a field's `x-python-type` as given: unions of every sp... |
 
@@ -69730,6 +69733,136 @@ stays a list, and models whose arrays differ in `uniqueItems` are kept apart.
             pairs: set[Pair] | None = None
             limits: set[Limits] | None = None
             points: set[Point] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--use-validate-default-for-root-model-type-aliases` {#use-validate-default-for-root-model-type-aliases}
+
+Validate the default of a field that names a root model written as an alias.
+
+`--use-root-model-type-alias` writes a root model as `Tags = RootModel[list[str]]`. Without this option a field whose
+type names such a root model, also inside a list, a dict or a union, writes its default as the raw value, as in 0.97.0:
+`Settings().tags` is the list `['a', 'b']`, not the `Tags` that `Settings(tags=['a', 'b']).tags` is, the two instances
+compare unequal and `model_dump()` warns. With it the field writes `validate_default=True`, as the field of a root
+model class does, so Pydantic validates the default into the root model (Pydantic v2 only).
+
+**Option relationships:**
+
+- **Requires:** [`--use-root-model-type-alias`](typing-customization.md#use-root-model-type-alias) enabled - `--use-validate-default-for-root-model-type-aliases` acts only with `--use-root-model-type-alias`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input root_model_type_alias_defaults.json --use-root-model-type-alias --use-validate-default-for-root-model-type-aliases # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-validate-default-for-root-model-type-aliases` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Settings",
+      "type": "object",
+      "properties": {
+        "tags": {"$ref": "#/$defs/Tags", "default": ["a", "b"]},
+        "count": {"$ref": "#/$defs/Count", "default": 10},
+        "pets": {"$ref": "#/$defs/Pets", "default": [{"name": "rex"}]},
+        "tagLists": {"type": "array", "items": {"$ref": "#/$defs/Tags"}, "default": [["x"]]},
+        "tagMap": {"type": "object", "additionalProperties": {"$ref": "#/$defs/Tags"}, "default": {"k": ["v"]}},
+        "tagsOrText": {"anyOf": [{"$ref": "#/$defs/Tags"}, {"type": "string"}], "default": ["a"]},
+        "plain": {"type": "array", "items": {"type": "string"}, "default": ["p"]},
+        "pet": {"$ref": "#/$defs/Pet", "default": {"name": "rex"}}
+      },
+      "$defs": {
+        "Tags": {"type": "array", "items": {"type": "string"}},
+        "Count": {"type": "integer"},
+        "Pet": {"type": "object", "properties": {"name": {"type": "string"}}},
+        "Pets": {"type": "array", "items": {"$ref": "#/$defs/Pet"}}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  root_model_type_alias_defaults.json
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, Field, RootModel
+
+        Tags = RootModel[list[str]]
+
+
+        Count = RootModel[int]
+
+
+        class Pet(BaseModel):
+            name: str | None = None
+
+
+        Pets = RootModel[list[Pet]]
+
+
+        class Settings(BaseModel):
+            tags: Tags | None = Field(['a', 'b'], validate_default=True)
+            count: Count | None = Field(10, validate_default=True)
+            pets: Pets | None = Field([{'name': 'rex'}], validate_default=True)
+            tagLists: list[Tags] | None = Field([['x']], validate_default=True)
+            tagMap: dict[str, Tags] | None = Field({'k': ['v']}, validate_default=True)
+            tagsOrText: Tags | str | None = Field(['a'], validate_default=True)
+            plain: list[str] | None = ['p']
+            pet: Pet | None = Field({'name': 'rex'}, validate_default=True)
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  root_model_type_alias_defaults.json
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, Field, RootModel
+
+        Tags = RootModel[list[str]]
+
+
+        Count = RootModel[int]
+
+
+        class Pet(BaseModel):
+            name: str | None = None
+
+
+        Pets = RootModel[list[Pet]]
+
+
+        class Settings(BaseModel):
+            tags: Tags | None = ['a', 'b']
+            count: Count | None = 10
+            pets: Pets | None = [{'name': 'rex'}]
+            tagLists: list[Tags] | None = [['x']]
+            tagMap: dict[str, Tags] | None = {'k': ['v']}
+            tagsOrText: Tags | str | None = ['a']
+            plain: list[str] | None = ['p']
+            pet: Pet | None = Field({'name': 'rex'}, validate_default=True)
         ```
 
         <!-- fmt: on -->
@@ -88635,7 +88768,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 |-------|---------|-------------|
 | [Imports](#imports) | 2 | Generated imports and type-checking import behavior. |
 | [Collection Types](#collection-types) | 8 | Collection and tuple/set generation. |
-| [Type Alias](#type-alias) | 4 | TypeAlias and root-model alias output. |
+| [Type Alias](#type-alias) | 5 | TypeAlias and root-model alias output. |
 | [Type Mapping](#type-mapping) | 23 | Scalar, date/time, and custom type mapping. |
 | [Type Syntax](#type-syntax) | 3 | Modern annotation syntax and Annotated usage. |
 
@@ -88673,6 +88806,7 @@ TypeAlias and root-model alias output.
 | [`--use-root-model-type-alias`](../typing-customization.md#use-root-model-type-alias) | Generate RootModel as type alias format for better mypy support. |
 | [`--use-type-alias`](../typing-customization.md#use-type-alias) | Use TypeAlias instead of root models for type definitions (experimental). |
 | [`--use-type-alias-type`](../typing-customization.md#use-type-alias-type) | Use runtime TypeAliasType objects for aliases before Python 3.12 (experimental). |
+| [`--use-validate-default-for-root-model-type-aliases`](../typing-customization.md#use-validate-default-for-root-model-type-aliases) | Validate the default of a field that names a root model written as an alias. |
 
 ## Type Mapping {#type-mapping}
 
@@ -88883,6 +89017,7 @@ datamodel-codegen [OPTIONS]
 | [`--use-union-operator`](typing-customization.md#use-union-operator) | Use | operator for Union types (PEP 604). |
 | [`--use-unique-items-as-set`](typing-customization.md#use-unique-items-as-set) | Generate set types for arrays with uniqueItems constraint. |
 | [`--use-unique-items-as-set-by-value`](typing-customization.md#use-unique-items-as-set-by-value) | Write a uniqueItems set only where its final items hash by value. |
+| [`--use-validate-default-for-root-model-type-aliases`](typing-customization.md#use-validate-default-for-root-model-type-aliases) | Validate the default of a field that names a root model written as an alias. |
 | [`--use-x-python-import-for-every-ref`](typing-customization.md#use-x-python-import-for-every-ref) | Type every reference to a schema with `x-python-import` by the class it imports. |
 | [`--use-x-python-type-as-written`](typing-customization.md#use-x-python-type-as-written) | Write a field's `x-python-type` as given: unions of every spelling and container... |
 
@@ -89465,6 +89600,7 @@ All options sorted alphabetically:
 - [`--use-union-operator`](typing-customization.md#use-union-operator) - Use | operator for Union types (PEP 604).
 - [`--use-unique-items-as-set`](typing-customization.md#use-unique-items-as-set) - Generate set types for arrays with uniqueItems constraint.
 - [`--use-unique-items-as-set-by-value`](typing-customization.md#use-unique-items-as-set-by-value) - Write a uniqueItems set only where its final items hash by v...
+- [`--use-validate-default-for-root-model-type-aliases`](typing-customization.md#use-validate-default-for-root-model-type-aliases) - Validate the default of a field that names a root model writ...
 - [`--use-x-python-import-for-every-ref`](typing-customization.md#use-x-python-import-for-every-ref) - Type every reference to a schema with `x-python-import` by t...
 - [`--use-x-python-type-as-written`](typing-customization.md#use-x-python-type-as-written) - Write a field's `x-python-type` as given: unions of every sp...
 - [`--validation`](openapi-only-options.md#validation) - Enable validation constraints (deprecated, use --field-const...
@@ -91012,6 +91148,12 @@ With `--collapse-root-models` under msgspec.Struct, the warning that a root-mode
 
 - **Pull requests and issues:** [#6915](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6915)
 - **Source:** the release notes
+
+### New option `--use-validate-default-for-root-model-type-aliases` (`--no-use-validate-default-for-root-model-type-aliases`) (unreleased) { #option-use-validate-default-for-root-model-type-aliases }
+
+Under --use-root-model-type-alias, write the default of a field whose type names a root model written as an alias (`Tags = RootModel[list[str]]`) with validate_default=True, as for a root model class, so Pydantic validates it into the root model; without it the default stays the raw value, such as a list instead of a `Tags`, as in 0.97.0 (Pydantic v2 only)
+
+- **Source:** the command-line options of both releases
 
 ### Request/response models no longer crash on a $ref to a closed object beside a schema-valued additionalProperties (unreleased) { #read-the-write-walk-from-the-parse-main }
 
@@ -94240,16 +94382,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 266 | Shared generation options. |
-| `GenerateConfig` | 281 | Public `generate()` configuration. |
-| `ParserConfig` | 220 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 222 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 233 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 236 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 223 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 223 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 222 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 223 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 267 | Shared generation options. |
+| `GenerateConfig` | 282 | Public `generate()` configuration. |
+| `ParserConfig` | 221 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 223 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 234 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 237 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 224 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 224 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 223 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 224 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
