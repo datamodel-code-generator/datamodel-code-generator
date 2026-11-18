@@ -1173,7 +1173,7 @@
     ]
   },
   "field-ownership-conflict": {
-    "pins": "#4300: the conflicting base order gives an unimportable model and an empty binding",
+    "pins": "#4300: the conflicting base order refuses the Pydantic model and binds the TypedDict keys as the models order the bases",
     "source": "generation_platform/binding/field-ownership-conflict.json",
     "backends": [
       "pydantic_v2.BaseModel",

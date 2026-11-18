@@ -1,0 +1,15 @@
+[[change]]
+id = "typeddict-members-follow-model-base-order"
+category = "experimental"
+refs = ["#4300"]
+kind = "experimental"
+action = "review"
+title = "Generated clients bind the keys of a TypedDict whose bases Python cannot order"
+summary = "With `--generate-client` and the `typing.TypedDict` output, a TypedDict whose bases have conflicting orders (`E: allOf [C, D]` with `C: allOf [A, B]` and `D: allOf [B, A]`), which Python creates because a TypedDict has no method resolution order of its own, was bound without keys: its codec listed no fields (`Model(())`) and a body of it took no field arguments under `--client-body-arguments both`. Its keys are now bound in the order the models give its bases, the order every other class already takes: the codec lists them, decoded objects hold them in that order, and the call that sends such a body takes them as field arguments. The Pydantic and dataclass outputs refuse such a class at generation; msgspec writes no generated bases."
+affects = { experimental = ["cli-option.generate-client"], output_model_types = ["typing.TypedDict"] }
+before = "models.E: Model(()),"
+after = "models.E: Model((Field('b', 'b'), Field('a', 'a'), Field('d', 'd'), Field('c', 'c'), Field('e', 'e'))),"
+source = "release-note"
+covers = [
+    "main/generation_platform/client/bindings/field-ownership-conflict//*.py",
+]
