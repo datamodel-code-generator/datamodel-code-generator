@@ -7,7 +7,7 @@ from __future__ import annotations
 from datetime import date, time
 from typing import Annotated, Any
 
-from pydantic import AwareDatetime, BaseModel, Field, RootModel, confloat
+from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
 
 class ItemsMinimumItem(RootModel[str]):
@@ -31,5 +31,5 @@ class NumberConstraintsOnNonNumbers(BaseModel):
     root_minimum: RootMinimum | None = None
     number_minimum: Annotated[float | None, Field(ge=5.0)] = None
     integer_maximum: Annotated[int | None, Field(le=10)] = None
-    string_or_number_minimum: str | confloat(ge=5.0) | None = None
+    string_or_number_minimum: str | Annotated[float, Field(ge=5.0)] | None = None
     untyped_minimum: Any | None = None

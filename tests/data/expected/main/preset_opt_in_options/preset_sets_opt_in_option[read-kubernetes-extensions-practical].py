@@ -6,7 +6,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue, constr
+from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 
 class Resources(BaseModel):
@@ -17,9 +17,12 @@ class Resources(BaseModel):
         dict[
             str,
             int
-            | constr(
-                pattern=r'^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$'
-            ),
+            | Annotated[
+                str,
+                Field(
+                    pattern=r'^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$'
+                ),
+            ],
         ]
         | None
     ) = None

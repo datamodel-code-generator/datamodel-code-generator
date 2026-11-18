@@ -197,6 +197,13 @@ def _decimal_kwargs(kwargs: Mapping[str, Any]) -> dict[str, Any]:
     return {k: Decimal(str(v.value if isinstance(v, UnionIntFloat) else v)) for k, v in kwargs.items()}
 
 
+def _annotated_types() -> ModuleType:
+    """Return the module of the ``Annotated`` constrained types, which imports this one."""
+    from datamodel_code_generator.model.pydantic_v2 import _annotated_types  # noqa: PLC0415
+
+    return _annotated_types
+
+
 def _get_regex_literal(pattern: str) -> str:
     r"""Render a pattern as a raw string literal that reads back as the same regex.
 
@@ -443,16 +450,12 @@ class DataTypeManager(_DataTypeManagerBase):
             if self.PATTERN_KEY in data_type_kwargs:
                 data_type_kwargs[self.PATTERN_KEY] = _get_regex_literal(data_type_kwargs[self.PATTERN_KEY])
             if use_annotated:
-                from datamodel_code_generator.model.pydantic_v2._annotated_types import (  # noqa: PLC0415
-                    AnnotatedStringDataType,
-                )
-
                 constraint_import = (
                     IMPORT_STRING_CONSTRAINTS
                     if pydantic_target_meets("pydantic.string_constraints", target_pydantic_version)
                     else IMPORT_FIELD
                 )
-                data_type = AnnotatedStringDataType(
+                data_type = _annotated_types().AnnotatedStringDataType(
                     type=constraint_import.import_,
                     import_=constraint_import,
                     is_func=True,
@@ -573,7 +576,7 @@ class DataTypeManager(_DataTypeManagerBase):
         return taken
 
     @override
-    def get_data_type(  # noqa: PLR0911
+    def get_data_type(
         self,
         types: Types,
         *,
@@ -589,8 +592,18 @@ class DataTypeManager(_DataTypeManagerBase):
         ``omit_redundant_constraints``, where a strict number takes none of them); a number with
         ``multipleOf`` is a ``Decimal`` under ``use_decimal_for_multiple_of`` with ``use_decimal_in_field_forms``,
         strict under ``--strict-types float``.
-        A ``multipleOf`` Pydantic refuses (``_non_finite_multiple_of``) is left out as if absent.
+        A ``multipleOf`` Pydantic refuses (``_non_finite_multiple_of``) is left out as if absent. With
+        ``annotated_constraints`` (``--use-annotated``) a ``con*`` call of any kind is written as ``Annotated[<type>,
+        Field(...)]``, which type checkers accept, as a union member that takes its own constraints is (#7109).
         """
+        annotated = kwargs.pop("annotated_constraints", False)
+        data_type = self._constrained_data_type(types, field_constraints=field_constraints, **kwargs)
+        return _annotated_types().annotated_constraints(data_type) if annotated else data_type
+
+    def _constrained_data_type(  # noqa: PLR0911
+        self, types: Types, *, field_constraints: bool, **kwargs: Any
+    ) -> DataType:
+        """Return the type ``get_data_type`` gives for ``types``, a ``con*`` call where it takes constraints."""
         if self._non_finite_multiple_of(types, kwargs) is not None:
             kwargs = {key: value for key, value in kwargs.items() if key != "multipleOf"}
         if (

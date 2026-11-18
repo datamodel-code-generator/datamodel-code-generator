@@ -1,0 +1,7 @@
+title: Example
+type: object
+properties:
+  code:
+    type: [integer, string]
+    pattern: '^[0-9]+$'
+required: [code]

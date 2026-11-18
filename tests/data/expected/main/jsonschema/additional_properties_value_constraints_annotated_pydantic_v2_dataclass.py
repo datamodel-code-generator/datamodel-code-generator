@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from pydantic import ConfigDict, Field, StringConstraints, conint
+from pydantic import ConfigDict, Field, StringConstraints
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -137,5 +137,5 @@ class Payload:
     titledValueMap: dict[str, NamedValue]
     modeledIrrelevantConstraintMap: dict[str, ModeledIrrelevantConstraintMap]
     arrayIrrelevantConstraintMap: dict[str, list[int]]
-    heterogeneousValueMap: dict[str, conint(ge=1) | str]
+    heterogeneousValueMap: dict[str, Annotated[int, Field(ge=1)] | str]
     booleanIrrelevantConstraintMap: dict[str, bool]

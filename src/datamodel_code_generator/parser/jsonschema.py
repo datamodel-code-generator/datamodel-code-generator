@@ -2278,7 +2278,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _get_constrained_data_type(self, obj: JsonSchemaObject, type_: str, *, field_constraints: bool) -> DataType:
         """Map one type of ``obj`` and its format, with the constraints ``obj`` writes beside it.
 
-        Under ``field_constraints`` the field writes the constraints, so the type takes none of them. Under
+        Under ``field_constraints`` the field writes the constraints, so the type takes none of them; elsewhere
+        ``--use-annotated`` writes them inside ``Annotated``, as the field does (#7109). Under
         ``--read-length-keywords-by-type`` it takes no string or array keyword that ``type_`` does not hold
         (``other_kind_keywords``), as the field forms leave them out, also where ``--type-mappings`` maps ``type_`` to
         a string.
@@ -2298,6 +2299,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             **_constraint_values(obj, keyword_order, as_numbers=True),
             **self._get_format_type_kwargs(type_, format_, types),
         }
+        context = self._output_model_context
+        if not field_constraints and context.writes_constrained_types and context.supports_annotated_constraints:
+            kwargs["annotated_constraints"] = True
         data_type = self._with_binary_content(
             self.data_type_manager.get_data_type(types, field_constraints=field_constraints, **kwargs),
             obj,
