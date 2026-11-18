@@ -121,9 +121,10 @@ datamodel-codegen --field-constraints ...
 datamodel-codegen --use-annotated ...
 ```
 
-A member of a union that takes its own constraints, such as the `string` of `type: [integer, string]` with a
-`pattern`, stays a `con*` call with `--field-constraints` alone; `--use-annotated` writes it as
-`Annotated[str, Field(pattern=...)]`, which mypy accepts (#7109).
+In Pydantic v2 output (`pydantic_v2.BaseModel`, `pydantic_v2.dataclass`), a member of a union that takes its own
+constraints, such as the `string` of `type: [integer, string]` with a `pattern`, stays a `con*` call with
+`--field-constraints` alone; `--use-annotated` writes it as `Annotated[str, Field(pattern=...)]`, which mypy accepts
+(#7109).
 
 See [Field Constraints](field-constraints.md) for more information.
 
