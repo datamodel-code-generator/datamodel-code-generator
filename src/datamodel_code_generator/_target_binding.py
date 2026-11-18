@@ -109,7 +109,7 @@ from datamodel_code_generator._target_contract import (
 from datamodel_code_generator._target_module import TypeComposer
 from datamodel_code_generator._target_naming import TargetNames, path_placeholders
 from datamodel_code_generator._target_types import TypeTables, is_none, present
-from datamodel_code_generator.enums import DataclassArguments, OpenAPIVersion
+from datamodel_code_generator.enums import AsyncAPIVersion, DataclassArguments, OpenAPIVersion
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import, _import_path, _stored_import
 from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
@@ -4137,7 +4137,8 @@ class _Contracts(_Octets):
         locate = self.documents.location
         for document in self.documents.walked:
             if document in self.parser._api_roots:  # noqa: SLF001
-                found = read(document, self.documents.borrow, self.loaded_target, self.handshake_members)
+                v2 = _recorded_version(self.parser, document) == AsyncAPIVersion.V2
+                found = read(document, self.documents.borrow, self.loaded_target, self.handshake_members, v2=v2)
                 contracts.extend(
                     self.channel(channel, len(contracts) + index) for index, channel in enumerate(found.channels)
                 )
@@ -4417,9 +4418,8 @@ def bind_operations(
     security_schemes = security_schemes if asyncapi else builder.security_schemes()
     documents = builder.documents
     root = next(iter(documents.ids), "")
-    graph = parser._graph  # ruff: ignore[private-member-access]
-    dialect = None if asyncapi else graph.known(graph.names.get(root, root)).dialect
-    version = OpenAPIVersion.V31 if dialect is None else cast("OpenAPIVersion", dialect.version)
+    recorded = None if asyncapi else _recorded_version(parser, root)
+    version = OpenAPIVersion.V31 if recorded is None else cast("OpenAPIVersion", recorded)
     return BoundAttempt(
         GeneratedTypeContractBatch(
             attempt,
@@ -4442,6 +4442,12 @@ def bind_operations(
         ),
         _pristine(parser, documents.documents),
     )
+
+
+def _recorded_version(parser: TargetParser, document: str) -> SchemaVersion | None:
+    """Return the version the parser reads a loaded document by, as its load recorded it (L0); None: no record."""
+    graph = parser._graph  # ruff: ignore[private-member-access]
+    return None if (dialect := graph.known(graph.names.get(document, document)).dialect) is None else dialect.version
 
 
 def _own_versions(
@@ -4522,4 +4528,5 @@ if TYPE_CHECKING:
         ApiObjectKind,
         ApiParameterDeclaration,
     )
+    from datamodel_code_generator.parser.schema_version import SchemaVersion
     from datamodel_code_generator.reference import ModelResolver, _RwDirection

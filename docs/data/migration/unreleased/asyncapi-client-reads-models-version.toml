@@ -1,0 +1,17 @@
+[[change]]
+id = "asyncapi-client-reads-models-version"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "Generated AsyncAPI clients read channels by the version the models are read by"
+summary = "With `--generate-client` and AsyncAPI input, the channels are read by the AsyncAPI version the models are read by: `--schema-version 2.0` or `3.0` where it is given, else the document's `asyncapi` field, which alone was read before. The `publish` operation of an AsyncAPI 2 channel is read before its `subscribe` operation, as the models read them, so the skip reasons of a channel and the union of the events of a stream that carries both list the `publish` ones first."
+affects = { experimental = ["cli-option.generate-client"] }
+before = "EventPlan[models.StatusSubscribePayload | models.StatusPublishPayload]"
+after = "EventPlan[models.StatusPublishPayload | models.StatusSubscribePayload]"
+source = "release-note"
+covers = [
+    "main/generation_platform/client/asyncapi-events-both-v2.txt",
+    "main/generation_platform/client/asyncapi-handshake-v2.txt",
+    "main/generation_platform/client/asyncapi-schema-version-v2.txt",
+    "main/generation_platform/client/packages/asyncapi-events-both-v2/pydantic_v2_BaseModel//*.py",
+]

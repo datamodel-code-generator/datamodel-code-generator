@@ -134,6 +134,8 @@ asyncapi-events	main/generation_platform/client/packages/asyncapi-events/msgspec
 asyncapi-events	main/generation_platform/client/packages/asyncapi-events/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/asyncapi-events/pydantic_v2_BaseModel~client_render[asyncapi-events]//*.py
 asyncapi-events	main/generation_platform/client/packages/asyncapi-events/pydantic_v2_dataclass//*.py
 asyncapi-events	main/generation_platform/client/packages/asyncapi-events/typing_TypedDict//*.py	= main/generation_platform/client/packages/asyncapi-events/dataclasses_dataclass//*.py
+asyncapi-events-both-v2	main/generation_platform/client/asyncapi-events-both-v2.txt
+asyncapi-events-both-v2	main/generation_platform/client/packages/asyncapi-events-both-v2/pydantic_v2_BaseModel//*.py
 asyncapi-events-client	main/generation_platform/client/asyncapi-events-client.txt
 asyncapi-events-client	main/generation_platform/client/packages/asyncapi-events-client/pydantic_v2_BaseModel//*.py
 asyncapi-events-skips	main/generation_platform/client/asyncapi-events-skips.txt
@@ -187,6 +189,7 @@ asyncapi-relative-v2	main/generation_platform/client/asyncapi-relative-v2.txt
 asyncapi-relative-v2	main/generation_platform/client/packages/asyncapi-relative-v2/pydantic_v2_BaseModel//*.py
 asyncapi-schema-formats	main/generation_platform/client/asyncapi-schema-formats.txt
 asyncapi-schema-formats	main/generation_platform/client/packages/asyncapi-schema-formats/pydantic_v2_BaseModel//*.py
+asyncapi-schema-version-v2	main/generation_platform/client/asyncapi-schema-version-v2.txt
 asyncapi-server-schemes	main/generation_platform/client/asyncapi-server-schemes.txt
 asyncapi-server-schemes	main/generation_platform/client/packages/asyncapi-server-schemes/pydantic_v2_BaseModel//*.py
 asyncapi-server-schemes-v2	main/generation_platform/client/asyncapi-server-schemes-v2.txt

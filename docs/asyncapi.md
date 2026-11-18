@@ -142,7 +142,9 @@ The AsyncAPI input type is for model generation from message payloads, headers, 
     the generated package may change.
 
 `--generate-client httpx2` with `--input-file-type asyncapi` generates the models and an HTTPX2 client package whose
-attributes open the WebSocket and server-sent event channels of the document, sync and asyncio:
+attributes open the WebSocket and server-sent event channels of the document, sync and asyncio. The channels are
+read by the AsyncAPI version the models are read by: `--schema-version 2.0` or `3.0` where it is given, else the
+document's `asyncapi` field.
 
 ```bash
 datamodel-codegen --input market.yaml --input-file-type asyncapi --output models.py \

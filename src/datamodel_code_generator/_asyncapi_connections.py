@@ -26,6 +26,7 @@ from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._document_reader import (
+    CHANNEL_OPERATIONS,
     as_mapping,
     held_schema,
     schema_format_media_type,
@@ -89,7 +90,9 @@ _PROTOCOLS: Final[dict[Kind, str]] = {"websocket": "ws or wss", "sse": "http, ht
 _URL_SCHEMES: Final = {"ws": "http", "wss": "https", "http": "http", "https": "https"}
 """The scheme of the URL a client opens a server's channels at, by the scheme the server's URL is written with: a
 WebSocket's `wss` is TLS, as `https` is, and its `ws` plain, as `http` is."""
-_V2_ACTIONS: Final[tuple[tuple[str, Action], ...]] = (("subscribe", "send"), ("publish", "receive"))
+_V2_ACTIONS: Final[dict[str, Action]] = {"publish": "receive", "subscribe": "send"}
+"""What the application does with the messages of an AsyncAPI 2 channel's operation, by the operation's field; the
+operations are read in the parser's order (`CHANNEL_OPERATIONS`)."""
 _CODED_FORMATS: Final = frozenset(("asyncapi", "jsonschema", "openapi"))
 """The kinds of `schemaFormat`, the parser's, whose payloads a client codes: those it reads in place, not the Avro,
 Protocol Buffers and XML Schema ones it converts; the format a trait gives, which the parser does not read, too."""
@@ -550,18 +553,17 @@ def _offered(fixed: tuple[object, ...] | None) -> tuple[str, ...]:
 
 
 class _Reader:
-    """Read the channels of one document by its AsyncAPI version.
+    """Read the channels of one document by its AsyncAPI version, AsyncAPI 2 where `v2`.
 
     The document is read as `_Document` reads it, and `members` gives the properties the models hold of an object
     schema.
     """
 
-    def __init__(self, document: _Document, members: Members) -> None:
+    def __init__(self, document: _Document, members: Members, *, v2: bool) -> None:
         self.document = document
         self.members = members
+        self.v2 = v2
         raw = as_mapping(document.value(document.root))
-        version = raw.get("asyncapi")
-        self.v2 = isinstance(version, str) and version.startswith("2.")
         default = raw.get("defaultContentType")
         self.default_media = default if isinstance(default, str) else _DEFAULT_MEDIA
         self.schemes = self.read_schemes()
@@ -935,7 +937,8 @@ class _Reader:
         The security of each operation is added to `securities`, and the operation, with where its bindings are, to
         `operations`.
         """
-        for name, action in _V2_ACTIONS:
+        for name in CHANNEL_OPERATIONS:
+            action = _V2_ACTIONS[name]
             if not isinstance(written := channel.get(name), dict):
                 continue
             if (traited := self.operation(written, at := declaration.child(name), operations)) is None:
@@ -1103,14 +1106,16 @@ def read(
     value: Callable[[SchemaLocation], YamlValue],
     target: Callable[[str, str], SchemaLocation | None],
     members: Members,
+    *,
+    v2: bool,
 ) -> ReadDocument:
     """Return every connection of a loaded AsyncAPI document, in document order, and the schemes a handshake can send.
 
     `value` reads a location of a loaded document and `target` returns where a `$ref` of a document leads, as the
     parser resolves it, None where it leads into no loaded document; `members` gives the properties the models hold of
-    an object schema, or why no parameters stand for it.
+    an object schema, or why no parameters stand for it; `v2` reads it by AsyncAPI 2, as the parser reads it.
     """
-    reader = _Reader(_Document(SchemaLocation(document, ()), value, target), members)
+    reader = _Reader(_Document(SchemaLocation(document, ()), value, target), members, v2=v2)
     return ReadDocument(
         tuple(reader.connections()),
         tuple(scheme for scheme in reader.schemes.values() if isinstance(scheme, ReadScheme)),

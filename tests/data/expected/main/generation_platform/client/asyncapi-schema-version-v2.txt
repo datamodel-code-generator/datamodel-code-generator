@@ -1,0 +1,3 @@
+# asyncapi-schema-version-v2
+render pydantic_v2.BaseModel
+  Error: /channels/market: it is served on no ws or wss server; /channels/ticker: it is served on no ws or wss server; /channels/audio: it is served on no ws or wss server; /channels/status: no operation sends or receives a message on it
