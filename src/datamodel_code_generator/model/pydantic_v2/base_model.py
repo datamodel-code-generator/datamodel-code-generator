@@ -1636,6 +1636,12 @@ def _helper_template_facts(runtime_validations: list[SchemaRuntimeValidation]) -
             for rule in runtime_validation.conditional_required
             for _names, expected in rule.condition
         ),
+        "has_json_value": any(
+            runtime_validation.conditional_required
+            or runtime_validation.conditional_bounds
+            or runtime_validation.contains
+            for runtime_validation in runtime_validations
+        ),
         "has_conditional_json_equality": any(
             runtime_validation.conditional_bounds
             or any(rule.uses_json_equality for rule in runtime_validation.contains)
@@ -2382,7 +2388,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             helper_imports += (Import(import_="re"),)
         if has_local_core_helper and facts["has_pattern_properties"]:
             helper_imports += (IMPORT_TYPE_ADAPTER,)
-        if has_local_core_helper and (facts["has_conditional_required"] or facts["has_conditional_json_equality"]):
+        if has_local_core_helper and facts["has_json_value"]:
             helper_imports += (Import(from_="enum", import_="Enum", alias="_Enum", keep_unaliased=True),)
         for import_ in helper_imports:
             if import_ not in additional_imports:
@@ -2415,9 +2421,9 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
     def _has_core_schema_runtime_validation(runtime_validation: SchemaRuntimeValidation) -> bool:
         """Return whether a validation needs the existing template-rendered helper.
 
-        A conditional bounds rule needs it for the JSON equality of its condition (``_json_schema_conditional_equal``),
-        which the conditional-bounds layer calls on the core helper it is rendered on, and so does a contains rule
-        whose matcher compares JSON values (``const``, ``enum``).
+        A conditional bounds rule and a contains rule need it for the JSON value of a Python value
+        (``_json_schema_json_value``) and the JSON equality of a condition or a matcher
+        (``_json_schema_conditional_equal``), which their layers call on the core helper they are rendered on.
         """
         return bool(
             runtime_validation.pattern_properties
@@ -2425,7 +2431,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             or runtime_validation.conditional_required
             or runtime_validation.unique_items
             or runtime_validation.conditional_bounds
-            or any(rule.uses_json_equality for rule in runtime_validation.contains)
+            or runtime_validation.contains
         )
 
     @classmethod

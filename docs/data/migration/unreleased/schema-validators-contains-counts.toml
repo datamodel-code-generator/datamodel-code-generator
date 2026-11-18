@@ -10,6 +10,8 @@ refs = ["#7052"]
 decision = ["#7052"]
 source = "release-note"
 covers = [
+    "main/jsonschema/mapping_schema_validators.py",
+    "main/jsonschema/mapping_schema_validators_builtin.py",
     "main/jsonschema/schema_validator_contains/rule_scope[draft4].py",
     "main/jsonschema/schema_validator_contains/rule_scope[draft4].txt",
     "main/jsonschema/schema_validator_contains/rule_scope[draft7].py",
@@ -28,6 +30,19 @@ covers = [
     "main/jsonschema/schema_validator_contains/schema_validator_contains[option3].py",
     "main/jsonschema/schema_validator_contains/schema_validator_contains[option4].payloads.txt",
     "main/jsonschema/schema_validator_contains/schema_validator_contains[option4].py",
+    "main/jsonschema/schema_validators_presence/schema_validators_conditional_presence.py",
+    "main/jsonschema/schema_validators_presence/schema_validators_conditional_presence_empty_schema.py",
+    "main/jsonschema/schema_validators_presence/schema_validators_not_mixed_rules.py",
+    "main/jsonschema/schema_validators_presence/schema_validators_presence_allof.py",
+    "main/jsonschema/schema_validators_presence/schema_validators_presence_else.py",
+    "main/jsonschema/schema_validators_presence/schema_validators_presence_metadata.py",
+    "main/jsonschema/schema_validators_presence/schema_validators_presence_mixed_const.py",
+    "main/jsonschema/schema_validators_presence/schema_validators_presence_mixed_enum.py",
+    "main/jsonschema/schema_validators_presence/schema_validators_presence_true.py",
+    "main/jsonschema/schema_validators_presence/schema_validators_typed_enum.py",
+    "main/jsonschema/schema_validators_presence/schema_validators_typed_integer.py",
+    "main/jsonschema/schema_validators_presence/schema_validators_typed_number.py",
+    "main/openapi/read_only_write_only_variant_graph_schema_validators.py",
     "payloads/native_numeric_empty_errors.txt",
     "schema_docs/supported_data_types_features.txt",
     "schema_docs/supported_features.txt",

@@ -29,10 +29,7 @@ class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
             condition_matches = all(
                 any(
                     name in data
-                    and any(
-                        cls._json_schema_conditional_equal(data[name], value)
-                        for value in expected
-                    )
+                    and cls._json_schema_conditional_any(data[name], expected)
                     for name in names
                 )
                 for names, expected in rule['condition']
@@ -49,9 +46,24 @@ class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
         return data
 
     @classmethod
-    def _json_schema_conditional_equal(cls, value: Any, expected: Any) -> bool:
+    def _json_schema_json_value(cls, value: Any) -> Any:
         if isinstance(value, _Enum):
-            value = value.value
+            return cls._json_schema_json_value(value.value)
+        if isinstance(value, (list, tuple)):
+            return type(value)(cls._json_schema_json_value(item) for item in value)
+        if isinstance(value, dict) or isinstance(value, _Mapping):
+            return {
+                key: cls._json_schema_json_value(item) for key, item in value.items()
+            }
+        return value
+
+    @classmethod
+    def _json_schema_conditional_any(cls, value: Any, expected: Any) -> bool:
+        value = cls._json_schema_json_value(value)
+        return any(cls._json_schema_conditional_equal(value, item) for item in expected)
+
+    @classmethod
+    def _json_schema_conditional_equal(cls, value: Any, expected: Any) -> bool:
         match expected:
             case bool():
                 return isinstance(value, bool) and value == expected
@@ -79,8 +91,106 @@ class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
         return value == expected
 
 
-class _JsonSchemaRuntimeValidationBaseCoreConditionalBounds(
+class _JsonSchemaRuntimeValidationBaseCoreConstantTypes(
     _JsonSchemaRuntimeValidationBaseCore
+):
+    __json_schema_constant_types__: ClassVar[tuple[tuple[object, ...], ...]] = ()
+
+    @model_validator(mode='before')
+    @classmethod
+    def _validate_json_schema_constant_types(cls, data: Any) -> Any:
+        for path, values in cls.__json_schema_constant_types__:
+            cls._validate_json_schema_constant_types_path(data, path, 0, values)
+        return data
+
+    @classmethod
+    def _validate_json_schema_constant_types_path(
+        cls,
+        value: Any,
+        path: tuple[object, ...],
+        position: int,
+        values: tuple[object, ...],
+    ) -> None:
+        if position == len(path):
+            if (
+                isinstance(value, (int, float))
+                and value in values
+                and not any(
+                    isinstance(value, bool) is isinstance(expected, bool)
+                    and value == expected
+                    for expected in values
+                )
+            ):
+                raise ValueError('Expected the JSON type of the schema constant')
+            return
+
+        match path[position]:
+            case None:
+                if not isinstance(value, (list, tuple)):
+                    return
+                for item in value:
+                    cls._validate_json_schema_constant_types_path(
+                        item, path, position + 1, values
+                    )
+            case ('__json_schema_array_tail__', int() as start):
+                if not isinstance(value, (list, tuple)):
+                    return
+                for item in value[start:]:
+                    cls._validate_json_schema_constant_types_path(
+                        item, path, position + 1, values
+                    )
+            case int() as index:
+                if isinstance(value, (list, tuple)) and index < len(value):
+                    cls._validate_json_schema_constant_types_path(
+                        value[index], path, position + 1, values
+                    )
+            case '__json_schema_mapping_values__':
+                if not (isinstance(value, dict) or isinstance(value, _Mapping)):
+                    return
+                for item in value.values():
+                    cls._validate_json_schema_constant_types_path(
+                        item, path, position + 1, values
+                    )
+            case ('__json_schema_mapping_pattern_values__', str() as pattern, None):
+                if not (isinstance(value, dict) or isinstance(value, _Mapping)):
+                    return
+                for name, item in value.items():
+                    if re.search(pattern, name):
+                        cls._validate_json_schema_constant_types_path(
+                            item, path, position + 1, values
+                        )
+            case (
+                '__json_schema_mapping_additional_values__',
+                tuple() as declared_name_groups,
+                tuple() as patterns,
+            ):
+                if not (isinstance(value, dict) or isinstance(value, _Mapping)):
+                    return
+                declared_names = {
+                    next((name for name in names if name in value), None)
+                    for names in declared_name_groups
+                }
+                for name, item in value.items():
+                    if name in declared_names or any(
+                        re.search(pattern, name) for pattern in patterns
+                    ):
+                        continue
+                    cls._validate_json_schema_constant_types_path(
+                        item, path, position + 1, values
+                    )
+            case tuple() as input_names:
+                if not (isinstance(value, dict) or isinstance(value, _Mapping)):
+                    return
+                for name in input_names:
+                    if name in value:
+                        cls._validate_json_schema_constant_types_path(
+                            value[name], path, position + 1, values
+                        )
+                        return
+
+
+class _JsonSchemaRuntimeValidationBaseCoreConstantTypesConditionalBounds(
+    _JsonSchemaRuntimeValidationBaseCoreConstantTypes
 ):
     __json_schema_conditional_bounds__: ClassVar[tuple[tuple[object, ...], ...]] = ()
 
@@ -98,10 +208,7 @@ class _JsonSchemaRuntimeValidationBaseCoreConditionalBounds(
                 next(
                     (
                         not expected
-                        or any(
-                            cls._json_schema_conditional_equal(data[name], value)
-                            for value in expected
-                        )
+                        or cls._json_schema_conditional_any(data[name], expected)
                         for name in names
                         if name in data
                     ),
@@ -112,7 +219,9 @@ class _JsonSchemaRuntimeValidationBaseCoreConditionalBounds(
             for names, keyword, limit in (
                 then_bounds if condition_matches else else_bounds
             ):
-                value = next((data[name] for name in names if name in data), None)
+                value = cls._json_schema_json_value(
+                    next((data[name] for name in names if name in data), None)
+                )
                 if isinstance(value, bool) or not isinstance(value, (int, float)):
                     continue
                 if (
@@ -126,7 +235,7 @@ class _JsonSchemaRuntimeValidationBaseCoreConditionalBounds(
 
 
 class _JsonSchemaRuntimeValidationBase(
-    _JsonSchemaRuntimeValidationBaseCoreConditionalBounds
+    _JsonSchemaRuntimeValidationBaseCoreConstantTypesConditionalBounds
 ):
     __json_schema_contains__: ClassVar[tuple[tuple[object, ...], ...]] = ()
 
@@ -230,6 +339,7 @@ class _JsonSchemaRuntimeValidationBase(
     def _json_schema_contains_matches(
         cls, item: Any, matcher: tuple[tuple[str, Any], ...]
     ) -> bool:
+        item = cls._json_schema_json_value(item)
         number = isinstance(item, (int, float)) and not isinstance(item, bool)
         string = isinstance(item, str)
         for keyword, expected in matcher:
@@ -299,21 +409,46 @@ class Kind(Enum):
     b = 'b'
 
 
+class Level(Enum):
+    int_1 = 1
+    int_2 = 2
+    int_10 = 10
+
+
+class Int(Enum):
+    int_3 = 3
+    int_4 = 4
+
+
+class Word(Enum):
+    ab = 'ab'
+    cd = 'cd'
+
+
 class Mark(Enum):
     p = 'p'
     q = 'q'
 
 
 class Probe(_JsonSchemaRuntimeValidationBase):
+    __json_schema_constant_types__: ClassVar[tuple[tuple[object, ...], ...]] = (
+        ((('level',),), (1,)),
+    )
+
     __json_schema_conditional_bounds__: ClassVar[tuple[tuple[object, ...], ...]] = (
         (
             ((('kind',), ('a',)),),
-            ((('value',), 'minimum', 5),),
-            ((('value',), 'maximum', 3),),
+            ((('value',), 'minimum', 5), (('level',), 'minimum', 5)),
+            ((('value',), 'maximum', 3), (('level',), 'maximum', 3)),
         ),
     )
 
     __json_schema_contains__: ClassVar[tuple[tuple[object, ...], ...]] = (
+        ((('ints',),), ((('type', ('integer',)), ('minimum', 4)), 1, None)),
+        (
+            (('words',),),
+            ((('type', ('string',)), ('pattern', '^c'), ('minLength', 2)), 1, None),
+        ),
         ((('marks',),), ((('const', 'p'),), 1, 1)),
     )
 
@@ -328,4 +463,7 @@ class Probe(_JsonSchemaRuntimeValidationBase):
     kind: Kind | None = None
     value: float | None = None
     name: str | None = None
+    level: Level | None = None
+    ints: list[Int] | None = None
+    words: list[Word] | None = None
     marks: list[Mark] | None = None

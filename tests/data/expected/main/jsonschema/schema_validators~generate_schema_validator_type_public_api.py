@@ -117,13 +117,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
         for rule in cls.__json_schema_conditional_required__:
             condition_matches = all(
                 any(
-                    name in data
-                    and (
-                        data[name].value
-                        if isinstance(data[name], _Enum)
-                        else data[name]
-                    )
-                    in expected
+                    name in data and cls._json_schema_json_value(data[name]) in expected
                     for name in names
                 )
                 for names, expected in rule['condition']
@@ -138,6 +132,18 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
                     continue
                 raise ValueError('Conditional required properties are missing')
         return data
+
+    @classmethod
+    def _json_schema_json_value(cls, value: Any) -> Any:
+        if isinstance(value, _Enum):
+            return cls._json_schema_json_value(value.value)
+        if isinstance(value, (list, tuple)):
+            return type(value)(cls._json_schema_json_value(item) for item in value)
+        if isinstance(value, dict) or isinstance(value, _Mapping):
+            return {
+                key: cls._json_schema_json_value(item) for key, item in value.items()
+            }
+        return value
 
 
 class First(BaseModel):

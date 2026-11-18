@@ -209,6 +209,7 @@ def render_contains_validation_base(class_name: str, base_class_name: str) -> st
 
     @classmethod
     def _json_schema_contains_matches(cls, item: Any, matcher: tuple[tuple[str, Any], ...]) -> bool:
+        item = cls._json_schema_json_value(item)
         number = isinstance(item, (int, float)) and not isinstance(item, bool)
         string = isinstance(item, str)
         for keyword, expected in matcher:
@@ -358,10 +359,7 @@ def render_conditional_bounds_validation_base(class_name: str, base_class_name: 
                 next(
                     (
                         not expected
-                        or any(
-                            cls._json_schema_conditional_equal(data[name], value)
-                            for value in expected
-                        )
+                        or cls._json_schema_conditional_any(data[name], expected)
                         for name in names
                         if name in data
                     ),
@@ -370,7 +368,7 @@ def render_conditional_bounds_validation_base(class_name: str, base_class_name: 
                 for names, expected in condition
             )
             for names, keyword, limit in then_bounds if condition_matches else else_bounds:
-                value = next((data[name] for name in names if name in data), None)
+                value = cls._json_schema_json_value(next((data[name] for name in names if name in data), None))
                 if isinstance(value, bool) or not isinstance(value, (int, float)):
                     continue
                 if (

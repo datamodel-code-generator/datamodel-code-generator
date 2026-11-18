@@ -6,3 +6,11 @@
 {"kind": "b", "value": 1, "marks": ["p", "q"]} (valid): accepted/accepted
 {"kind": "b", "value": 1, "marks": ["p", "p"]} (invalid): rejected/rejected
 {"kind": "b", "value": 1, "marks": ["q"]} (invalid): rejected/rejected
+{"kind": "a", "value": 10, "name": "n", "level": 10} (valid): accepted/accepted
+{"kind": "a", "value": 10, "name": "n", "level": 2} (invalid): rejected/rejected
+{"kind": "b", "value": 1, "level": 2} (valid): accepted/accepted
+{"kind": "b", "value": 1, "level": 10} (invalid): rejected/rejected
+{"kind": "b", "value": 1, "ints": [3, 4]} (valid): accepted/accepted
+{"kind": "b", "value": 1, "ints": [3, 3]} (invalid): rejected/rejected
+{"kind": "b", "value": 1, "words": ["ab", "cd"]} (valid): accepted/accepted
+{"kind": "b", "value": 1, "words": ["ab", "ab"]} (invalid): rejected/rejected

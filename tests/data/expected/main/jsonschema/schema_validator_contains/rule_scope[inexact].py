@@ -5,12 +5,33 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping as _Mapping
+from enum import Enum as _Enum
 from typing import Any, ClassVar
 
 from pydantic import BaseModel, model_validator
 
 
-class _JsonSchemaRuntimeValidationBase(BaseModel):
+class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
+
+    @model_validator(mode='before')
+    @classmethod
+    def _validate_json_schema_runtime_rules(cls, data: Any) -> Any:
+        return data
+
+    @classmethod
+    def _json_schema_json_value(cls, value: Any) -> Any:
+        if isinstance(value, _Enum):
+            return cls._json_schema_json_value(value.value)
+        if isinstance(value, (list, tuple)):
+            return type(value)(cls._json_schema_json_value(item) for item in value)
+        if isinstance(value, dict) or isinstance(value, _Mapping):
+            return {
+                key: cls._json_schema_json_value(item) for key, item in value.items()
+            }
+        return value
+
+
+class _JsonSchemaRuntimeValidationBase(_JsonSchemaRuntimeValidationBaseCore):
     __json_schema_contains__: ClassVar[tuple[tuple[object, ...], ...]] = ()
 
     @model_validator(mode='before')
@@ -113,6 +134,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
     def _json_schema_contains_matches(
         cls, item: Any, matcher: tuple[tuple[str, Any], ...]
     ) -> bool:
+        item = cls._json_schema_json_value(item)
         number = isinstance(item, (int, float)) and not isinstance(item, bool)
         string = isinstance(item, str)
         for keyword, expected in matcher:

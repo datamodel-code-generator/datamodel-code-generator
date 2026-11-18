@@ -220,11 +220,19 @@ ENUM_MEMBER_DOCUMENTS = (
     {"kind": "b", "value": 1, "marks": ["p", "q"]},
     {"kind": "b", "value": 1, "marks": ["p", "p"]},
     {"kind": "b", "value": 1, "marks": ["q"]},
+    {"kind": "a", "value": 10, "name": "n", "level": 10},
+    {"kind": "a", "value": 10, "name": "n", "level": 2},
+    {"kind": "b", "value": 1, "level": 2},
+    {"kind": "b", "value": 1, "level": 10},
+    {"kind": "b", "value": 1, "ints": [3, 4]},
+    {"kind": "b", "value": 1, "ints": [3, 3]},
+    {"kind": "b", "value": 1, "words": ["ab", "cd"]},
+    {"kind": "b", "value": 1, "words": ["ab", "ab"]},
 )
 
 
 def test_schema_validator_enum_members(output_file: Path) -> None:
-    """Judge a model built with enum members as the same document in JSON: conditions, required and contains (#7054)."""
+    """Judge a model built with enum members as the same JSON document: conditions, bounds, required, contains."""
     run_main_and_assert(
         input_path=ENUM_MEMBERS_PATH,
         output_path=output_file,
@@ -250,19 +258,18 @@ def test_schema_validator_enum_members(output_file: Path) -> None:
         )
 
 
+def _enum_class(annotation: object) -> type[enum.Enum] | None:
+    """Return the enum class an annotation names, also inside its arguments."""
+    if isinstance(annotation, type) and issubclass(annotation, enum.Enum):
+        return annotation
+    return next((found for argument in typing.get_args(annotation) if (found := _enum_class(argument))), None)
+
+
 def _with_members(model: type[pydantic.BaseModel], document: dict[str, object]) -> dict[str, object]:
     """Return the document with each value of an enum field, and each item of a list of them, as the enum's member."""
     members: dict[str, object] = {}
     for name, value in document.items():
-        annotation = model.model_fields[name].annotation
-        enum_class = next(
-            (
-                candidate
-                for candidate in (annotation, *typing.get_args(annotation))
-                if isinstance(candidate, type) and issubclass(candidate, enum.Enum)
-            ),
-            None,
-        )
+        enum_class = _enum_class(model.model_fields[name].annotation)
         members[name] = (
             [enum_class(item) for item in value]
             if isinstance(value, list) and enum_class

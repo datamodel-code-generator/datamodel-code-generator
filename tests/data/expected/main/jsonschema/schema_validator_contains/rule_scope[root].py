@@ -19,9 +19,24 @@ class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
         return data
 
     @classmethod
-    def _json_schema_conditional_equal(cls, value: Any, expected: Any) -> bool:
+    def _json_schema_json_value(cls, value: Any) -> Any:
         if isinstance(value, _Enum):
-            value = value.value
+            return cls._json_schema_json_value(value.value)
+        if isinstance(value, (list, tuple)):
+            return type(value)(cls._json_schema_json_value(item) for item in value)
+        if isinstance(value, dict) or isinstance(value, _Mapping):
+            return {
+                key: cls._json_schema_json_value(item) for key, item in value.items()
+            }
+        return value
+
+    @classmethod
+    def _json_schema_conditional_any(cls, value: Any, expected: Any) -> bool:
+        value = cls._json_schema_json_value(value)
+        return any(cls._json_schema_conditional_equal(value, item) for item in expected)
+
+    @classmethod
+    def _json_schema_conditional_equal(cls, value: Any, expected: Any) -> bool:
         match expected:
             case bool():
                 return isinstance(value, bool) and value == expected
@@ -152,6 +167,7 @@ class _JsonSchemaRuntimeValidationBase(_JsonSchemaRuntimeValidationBaseCore):
     def _json_schema_contains_matches(
         cls, item: Any, matcher: tuple[tuple[str, Any], ...]
     ) -> bool:
+        item = cls._json_schema_json_value(item)
         number = isinstance(item, (int, float)) and not isinstance(item, bool)
         string = isinstance(item, str)
         for keyword, expected in matcher:

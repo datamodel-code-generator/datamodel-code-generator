@@ -27,10 +27,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
             condition_matches = all(
                 any(
                     name in data
-                    and any(
-                        cls._json_schema_conditional_equal(data[name], value)
-                        for value in expected
-                    )
+                    and cls._json_schema_conditional_any(data[name], expected)
                     for name in names
                 )
                 for names, expected in rule['condition']
@@ -47,9 +44,24 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
         return data
 
     @classmethod
-    def _json_schema_conditional_equal(cls, value: Any, expected: Any) -> bool:
+    def _json_schema_json_value(cls, value: Any) -> Any:
         if isinstance(value, _Enum):
-            value = value.value
+            return cls._json_schema_json_value(value.value)
+        if isinstance(value, (list, tuple)):
+            return type(value)(cls._json_schema_json_value(item) for item in value)
+        if isinstance(value, dict) or isinstance(value, _Mapping):
+            return {
+                key: cls._json_schema_json_value(item) for key, item in value.items()
+            }
+        return value
+
+    @classmethod
+    def _json_schema_conditional_any(cls, value: Any, expected: Any) -> bool:
+        value = cls._json_schema_json_value(value)
+        return any(cls._json_schema_conditional_equal(value, item) for item in expected)
+
+    @classmethod
+    def _json_schema_conditional_equal(cls, value: Any, expected: Any) -> bool:
         match expected:
             case bool():
                 return isinstance(value, bool) and value == expected
