@@ -2989,9 +2989,9 @@ def _watch_in_steps(
     def observed_watch(*paths: Path, **options: object) -> Iterator[set[tuple[watchfiles.Change, str]]]:
         for changes in prompt_watch(*paths, **options):
             if late_events and changes:
-                falls_back = dependencies._polling_dependencies_changed()
                 with handled:
                     ended_generations = len(generations)
+                falls_back = dependencies._polling_dependencies_changed()
                 yield set()
                 yield set()
                 if falls_back:
