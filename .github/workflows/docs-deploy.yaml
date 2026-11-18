@@ -40,6 +40,8 @@ jobs:
           python-version: 3.14.6
       - name: Install dependencies
         run: uv sync
+      - name: Build llms.txt files
+        run: uv run python scripts/build_llms_txt.py
       - name: Copy CHANGELOG to docs
         run: |
           if [ -f CHANGELOG.md ]; then

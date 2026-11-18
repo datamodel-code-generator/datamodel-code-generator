@@ -297,6 +297,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--use-union-operator": "Use | operator for Union types (PEP 604).",
     "--use-unique-items-as-set": "Generate set types for arrays with uniqueItems constraint.",
     "--use-unique-items-as-set-by-value": "Write a uniqueItems set only where its final items hash by value.",
+    "--use-validate-default-for-root-model-type-aliases": "Validate the default of a field that names a root model ...",
     "--use-x-python-import-for-every-ref": "Type every reference to a schema with `x-python-import` by the class it...",
     "--use-x-python-type-as-written": "Write a field's `x-python-type` as given: unions of every spelling and conta...",
     "--validation": "Enable validation constraints (deprecated, use --field-constraints).",

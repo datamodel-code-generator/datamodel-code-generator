@@ -264,6 +264,54 @@ def test_removed_token_partial_match_fails(claim: str, deleted_text: str, tmp_pa
         validator._validate_removal_claims(f"* Removed `{claim}`.", deleted_lines)
 
 
+ELIDED_DELETED_LINE = (
+    "msgspec checks all str members of a union against the constraints of each of them, so min_length, pattern of "
+    "one member would reject values another member accepts, and it keeps max_length=3, which every member implies; "
+    "Parted is generated without these constraints.\n"
+)
+
+
+@pytest.mark.parametrize(
+    "quote",
+    [
+        "... Parted is generated without these constraints.",
+        "\u2026 Parted is generated without these constraints.",
+        "msgspec checks all str members of a union...",
+        "msgspec checks all str members of a union\u2026",
+        "... it keeps max_length=3, which every member implies ...",
+        "... which every member",
+    ],
+)
+def test_elided_quote_of_deleted_line_passes(quote: str, tmp_path: Path) -> None:
+    """An ellipsis at the start or end of a quote elides text, so the rest is searched in the deleted lines."""
+    deleted_lines = tmp_path / "deleted-lines.txt"
+    deleted_lines.write_text(ELIDED_DELETED_LINE, encoding="utf-8")
+
+    validator._validate_removal_claims(f"* Removed the warning `{quote}`.", deleted_lines)
+
+
+@pytest.mark.parametrize(
+    "quote",
+    [
+        "... Parted is generated with these constraints.",
+        "msgspec checks no str members...",
+        "... it keeps max_length=4, which every member ...",
+        "...",
+        "\u2026",
+        "... short ...",
+        "... Parted is gen",
+        "Parted is generated ... without these constraints.",
+    ],
+)
+def test_elided_quote_not_in_deleted_line_fails(quote: str, tmp_path: Path) -> None:
+    """Elided quotes fail when the rest is absent or too short, or is a bare ellipsis; inner ellipses stay literal."""
+    deleted_lines = tmp_path / "deleted-lines.txt"
+    deleted_lines.write_text(ELIDED_DELETED_LINE, encoding="utf-8")
+
+    with pytest.raises(SystemExit):
+        validator._validate_removal_claims(f"* Removed the warning `{quote}`.", deleted_lines)
+
+
 def test_explicit_removed_token_missing_fails(tmp_path: Path) -> None:
     """Explicit removal claims fail when the token is absent from deleted lines."""
     deleted_lines = tmp_path / "deleted-lines.txt"

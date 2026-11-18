@@ -35,6 +35,7 @@ weakened-counter	check_ratchets_script/check_ratchets_against_base[weakened-coun
 weakened-counter-unreadable	check_ratchets_script/check_ratchets_against_base[weakened-counter-unreadable].txt
 [test_check_ratchets_counts_one_tree]
 	check_ratchets_script/check_ratchets_counts_one_tree.json.txt
+	check_ratchets_script/check_ratchets_counts_one_tree.ruff-pin.txt
 	check_ratchets_script/check_ratchets_counts_one_tree.table.txt
 [test_check_ratchets_reports_a_failing_base_copy]
 	check_ratchets_script/check_ratchets_reports_a_failing_base_copy.txt

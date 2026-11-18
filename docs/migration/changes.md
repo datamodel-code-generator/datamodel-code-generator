@@ -130,6 +130,20 @@ With `--collapse-root-models` under msgspec.Struct, the warning that a root-mode
 - **Pull requests and issues:** [#6915](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6915)
 - **Source:** the release notes
 
+### New option `--use-validate-default-for-root-model-type-aliases` (`--no-use-validate-default-for-root-model-type-aliases`) (unreleased) { #option-use-validate-default-for-root-model-type-aliases }
+
+Under --use-root-model-type-alias, write the default of a field whose type names a root model written as an alias (`Tags = RootModel[list[str]]`) with validate_default=True, as for a root model class, so Pydantic validates it into the root model; without it the default stays the raw value, such as a list instead of a `Tags`, as in 0.97.0 (Pydantic v2 only)
+
+- **Source:** the command-line options of both releases
+
+### New dated presets `standard-py3XX-20261118` and `practical-py3XX-20261118` (unreleased) { #preset-20261118 }
+
+They keep the options of the 20261113 presets and add:
+
+- Validated defaults of root model type aliases (`--use-validate-default-for-root-model-type-aliases`): Under --use-root-model-type-alias, validate the default of a field whose type names a root model written as an alias into that root model, as for a root model class, instead of keeping the raw value.
+
+- **Source:** the registry of deprecations, experimental features and dated presets
+
 ### Request/response models no longer crash on a $ref to a closed object beside a schema-valued additionalProperties (unreleased) { #read-the-write-walk-from-the-parse-main }
 
 Generation of request and response models with an intersect option no longer fails with "A Parser can not resolve classes" for a $ref to a closed object beside a schema-valued additionalProperties.

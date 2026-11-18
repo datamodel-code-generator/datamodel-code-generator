@@ -23,11 +23,13 @@ from tests import conftest as shared_conftest
 from tests import units
 from tests.conftest import (
     _infer_expected_file,
+    _refuse_home_directory,
     assert_exact_directory_content,
     assert_inputs_not_mutated,
     assert_output,
     assert_parser_modules,
     assert_parser_results,
+    home_directory_in,
     slow_test_durations,
     worksteal_chunk_sizes,
 )
@@ -3722,3 +3724,43 @@ def test_ledger_reports_a_refused_sidecar_rewrite(ledger: LedgerProject) -> None
     assert "expected: refused to write expected output; nothing was written:\n" in output
     assert "suite/test_m.refs: it resolves to" in output
     assert outside.read_text(encoding="utf-8") == "[test_a]\n\tm/a.txt\n"
+
+
+@pytest.mark.parametrize(
+    ("text", "home", "found"),
+    [
+        ("/home/alice/work/x", "/home/alice", "/home/alice"),
+        ("PATH=/usr/bin:/home/alice/bin", "/home/alice", "/home/alice"),
+        ("PATH=/usr/bin", "/home/alice", None),
+        ("/h/x", "/h", None),
+        ("anything", "/", None),
+        ("C:/Users/alice/x", "C:\\Users\\alice", "C:/Users/alice"),
+        ("C:\\Users\\alice\\x", "C:\\Users\\alice", "C:\\Users\\alice"),
+        ('"C:\\\\Users\\\\alice"', "C:\\Users\\alice", "C:\\\\Users\\\\alice"),
+    ],
+)
+def test_home_directory_in(text: str, home: str, found: str | None) -> None:
+    """The detector finds the home directory in every spelling and ignores a short one."""
+    result = home_directory_in(text, home)
+    if found is None:
+        assert result is None
+    else:
+        assert result == found
+
+
+def test_refuse_home_directory(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Stored output holding the session's home directory fails the comparison, nested JSON values included."""
+    home = str(tmp_path / "developer")
+    monkeypatch.setattr(shared_conftest, "_SESSION_HOME", home)
+    _refuse_home_directory({"a.py": "clean", "b.bin": b"x", "c.json": {"k": [1, {"n": "clean"}]}})
+    with pytest.raises(pytest.fail.Exception, match="holds the home directory"):
+        _refuse_home_directory({"a.py": f"path = {home}/x"})
+    with pytest.raises(pytest.fail.Exception, match="holds the home directory"):
+        _refuse_home_directory({"k": [1, {"n": f"{home}/x"}]})
+
+
+def test_a_placeholder_home_is_not_the_session_home(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A test that sets HOME to a placeholder may store it: the guard compares with the session's own home."""
+    monkeypatch.setenv("HOME", "<HOME>")
+    monkeypatch.setenv("USERPROFILE", "<HOME>")
+    _refuse_home_directory({"a.txt": "<HOME>/x"})

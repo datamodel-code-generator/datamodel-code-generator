@@ -5,17 +5,35 @@ from __future__ import annotations
 import subprocess
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from scripts import build_llms_txt
 from tests.conftest import assert_output
+
+if TYPE_CHECKING:
+    import pytest
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "build_llms_txt.py"
 EXPECTED_LLMS_TXT_PATH = Path(__file__).resolve().parent / "data" / "expected" / "llms_txt"
 
 
 def test_build_llms_txt_check_is_up_to_date() -> None:
-    """Generated llms.txt files are committed."""
+    """The committed llms.txt is up to date; llms-full.txt is built at deploy."""
     subprocess.run([sys.executable, str(SCRIPT), "--check"], check=True)
+
+
+def test_build_llms_txt_writes_both_files_and_checks_only_the_index(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The build writes llms.txt and llms-full.txt; --check compares llms.txt alone, so no llms-full.txt is needed."""
+    monkeypatch.setattr(sys, "argv", ["build_llms_txt.py", "--output-dir", str(tmp_path)])
+    codes = [build_llms_txt.main()]
+    written = sorted(path.name for path in tmp_path.iterdir())
+    (tmp_path / "llms-full.txt").unlink()
+    monkeypatch.setattr(sys, "argv", ["build_llms_txt.py", "--check", "--output-dir", str(tmp_path)])
+    codes.append(build_llms_txt.main())
+    printed = capsys.readouterr().out.replace(str(tmp_path), "<output dir>").replace("\\", "/")
+    assert_output(f"exit codes {codes}\nwritten {written}\n{printed}")
 
 
 def test_clean_summary_text_removes_markdown_links_and_heading_attrs() -> None:

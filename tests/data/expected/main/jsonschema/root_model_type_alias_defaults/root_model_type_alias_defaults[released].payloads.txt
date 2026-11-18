@@ -1,0 +1,4 @@
+{"tags":["a","b"],"count":10,"pets":[{"name":"rex"}],"tagLists":[["x"]],"tagMap":{"k":["v"]},"tagsOrText":["a"],"plain":["p"],"pet":{"name":"rex"}}
+['list', 'int', 'list', 'list', 'dict', 'list', 'list', 'Pet']
+equal to the validated defaults: False
+warnings: ['UserWarning']
