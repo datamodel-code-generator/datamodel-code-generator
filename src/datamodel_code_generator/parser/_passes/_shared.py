@@ -1294,7 +1294,8 @@ class _FieldTagFacts:
 
         They are its ``const``, else, through the unions of its type and the root models and type aliases it names
         (``_iter_discriminator_data_types``), the values of each ``Literal``, of the Enum members written as one and of
-        each Enum, each once (``type-and-value``), as ``_written_tag_keys`` reads a written tag field.
+        each Enum, each once (``type-and-value``), as ``_written_tag_keys`` reads a written tag field. An object or an
+        array among them is no tag, so the field gives None.
         """
         if self.has_const():
             return (self.const(),)
@@ -1306,6 +1307,8 @@ class _FieldTagFacts:
             elif (members := enum_member_literal_values(leaf)) is not None or leaf.literals:
                 values = [*leaf.literals, *(() if members is None else members[1])]
             else:
+                return None
+            if any(isinstance(value, dict | list) for value in values):
                 return None
             found |= {tag_key(value, "type-and-value"): value for value in values}
         return tuple(found.values())

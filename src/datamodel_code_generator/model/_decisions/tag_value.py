@@ -85,6 +85,9 @@ if TYPE_CHECKING:
         def takes_one_tag(self) -> bool:
             """Return whether the variant's class takes exactly one tag (a msgspec Struct)."""
 
+        def enum_member_tag_field(self) -> bool:
+            """Return whether the variant's tag field holds the members of an Enum written as tags (``nested``)."""
+
         def path_segment(self) -> str:
             """Return the last segment of the variant's schema path."""
 
@@ -196,7 +199,8 @@ VariantTagSource: TypeAlias = Literal["variant", "union", "nested"]
 * ``variant``: the tags a union it lists gives the variant.
 * ``union``: the tags the union's mapping or the variant's schema gives it before its own tag field, which an earlier
   union may have written.
-* ``nested``: the tag of a variant a nested choice gives the union, which keeps the tag it declares or inherits.
+* ``nested``: the tag of a variant a nested choice gives the union, which keeps the tag it declares or inherits, or
+  the values its tag field admits (``own-field-values``).
 """
 
 VariantTagRule: TypeAlias = Literal[
@@ -229,13 +233,16 @@ VariantTagRule: TypeAlias = Literal[
 * ``mapping``: the mapping keys that name the variant or, failing that, its bases (``mapped_tags``). Row
   ``legacy-mapped-tags-only``: without ``--use-unmapped-variant-tag-values`` they are its tags even where its tag field
   admits other values that nothing else claims, so the union refuses those.
-* ``own-field-values`` (``variant`` only): every value the variant's tag field, or else the nearest one it inherits
-  from a schema, admits where it admits two or more (``Cat.kind: enum [cat, kitty]``), as a payload may carry any of
-  them: first those the mapping keys naming the variant name, in mapping order, then those that no mapping key and no
-  other variant of the union claim, in schema order. Without a mapping key naming the variant it applies where it
-  leaves a value and none of the tags of the rows below is one of those values, as a variant tagged by its schema
-  name ``Cat`` otherwise refuses every payload its schema accepts; with one, under
-  ``--use-unmapped-variant-tag-values``, where a mapping key names one of them.
+* ``own-field-values`` (``variant`` and ``nested``): every value the variant's tag field, or else the nearest one it
+  inherits from a schema, admits where it admits two or more (``Cat.kind: enum [cat, kitty]``), as a payload may
+  carry any of them, but those that a mapping key or another variant of the union claims. Without a mapping key
+  naming the variant it applies where it leaves a value and none of the tags of the rows below is one of those
+  values, as a variant tagged by its schema name ``Cat`` otherwise refuses every payload its schema accepts; with
+  one, under ``--use-unmapped-variant-tag-values``, where one of its mapping keys names one of them, and the variant
+  takes its mapping keys (``mapping``) and then those values, so the option only adds tags. A nested variant takes
+  them where it has no tag of its own: the union nesting its union reads the tags that union wrote into its tag
+  field. Row ``legacy-nested-enum-members-untagged``: under ``--use-enum-values-in-discriminator`` a nested variant
+  whose tag field holds the members of an Enum takes no tag, as in 0.97.0, so its union stays a plain union.
   A class that takes one tag, a msgspec Struct, takes them only where they are one.
 * ``inline-inherited-field``: the tag field an inline variant inherits, for a variant that has no name to be tagged by
   (#4829): the last segment of its schema path is an internal marker, and no union it belongs to lists another variant
@@ -436,17 +443,25 @@ def variant_tags(source: VariantTagSource, facts: VariantTagFacts, /) -> Variant
         if (reused := facts.reused_tag()) is not None:
             return VariantTags((reused,), "reused-schema-field")
         if source == "nested":
-            inherited = facts.inherited_tag()
-            return VariantTags((), "none") if inherited is None else VariantTags((inherited,), "inherited-field")
+            if (inherited := facts.inherited_tag()) is not None:
+                return VariantTags((inherited,), "inherited-field")
+            if (
+                (values := facts.own_values())
+                and not facts.enum_member_tag_field()
+                and (selected := _own_field_values(values, facts))
+            ):
+                return VariantTags(selected, "own-field-values")
+            return VariantTags((), "none")
     if (inherited := facts.inherited_schema_tag()) is not None:
         return VariantTags((inherited,), "inherited-schema-field")
     own = facts.own_values() if source == "variant" else ()
     if mapped := facts.mapped_tags():
+        named = facts.mapping_keys()[0]
         if (
             own
             and facts.every_value()
-            and any(_is_one_of(tag, own) for tag in mapped)
-            and (selected := _own_field_values(own, facts))
+            and not {_json_text(value) for value in own}.isdisjoint(named)
+            and len(selected := _own_field_values(own, facts, mapped)) > len(mapped)
         ):
             return VariantTags(selected, "own-field-values")
         return VariantTags(tuple(mapped), "mapping")
@@ -470,23 +485,20 @@ def _is_one_of(tag: object, values: Iterable[TagValue], /) -> bool:
     return any(same_tag(tag, value, "type-and-value") for value in values)
 
 
-def _own_field_values(own: Sequence[TagValue], facts: VariantTagFacts, /) -> tuple[TagValue, ...]:
-    """Return the values of ``own-field-values``: the mapped ones in mapping order, then the unclaimed ones.
+def _own_field_values(
+    own: Sequence[TagValue], facts: VariantTagFacts, mapped: Sequence[TagValue] = (), /
+) -> tuple[TagValue, ...]:
+    """Return the values of ``own-field-values``: the mapped tags, then the values of the field nothing claims.
 
-    A mapping key names the value whose JSON text it is (``mapping_key_tag``); a value is claimed by a key of the
-    mapping or by another variant of the union whose tag field admits it (``type-and-value``). A class that takes one
-    tag takes them only where they are one (a msgspec Struct named by several tags stays untagged).
+    A value is claimed by a mapping key whose JSON text it is (``mapping_key_tag``) or by another variant of the union
+    whose tag field admits it (``type-and-value``). A class that takes one tag takes them only where they are one (a
+    msgspec Struct named by several tags stays untagged).
     """
-    named, keys = facts.mapping_keys()
-    by_text = {_json_text(value): value for value in own}
+    keys = facts.mapping_keys()[1]
     held = {tag_key(value, "type-and-value") for value in facts.other_values()}
     values = (
-        *(by_text[key] for key in dict.fromkeys(named) if key in by_text),
-        *(
-            value
-            for text, value in by_text.items()
-            if text not in keys and tag_key(value, "type-and-value") not in held
-        ),
+        *mapped,
+        *(value for value in own if _json_text(value) not in keys and tag_key(value, "type-and-value") not in held),
     )
     return values[:0] if len(values) > 1 and facts.takes_one_tag() else values
 

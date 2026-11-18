@@ -1421,7 +1421,8 @@ _STANDARD_20261118_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         description=(
             "Give a variant of a discriminated union that a mapping names also the values of its tag property that no "
             "mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the "
-            "union decodes every document of the variant the schema accepts. msgspec Structs keep one tag."
+            "union decodes the documents of the variant that carry them; a value another variant also admits stays "
+            "refused, as a tag selects one variant. msgspec Structs keep one tag."
         ),
     ),
 )

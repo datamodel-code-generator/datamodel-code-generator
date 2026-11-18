@@ -1187,11 +1187,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Give a variant of a discriminated union that a mapping
                         names, and whose tag property admits several values
                         (an enum or a Literal), also the values no mapping key
-                        and no other variant claim, so the union decodes every
-                        document of the variant its schema accepts; without it
-                        the variant takes only its mapping keys and the union
-                        refuses the other values (as in 0.97.0). A msgspec
-                        Struct keeps its one tag.
+                        and no other variant claim, beside its mapping keys,
+                        so the union decodes the documents of the variant that
+                        carry them (a value another variant also admits stays
+                        refused); without it the variant takes only its
+                        mapping keys and the union refuses the other values
+                        (as in 0.97.0). A msgspec Struct keeps its one tag.
   --use-validate-default-for-root-model-type-aliases, --no-use-validate-default-for-root-model-type-aliases
                         Under --use-root-model-type-alias, write the default
                         of a field whose type names a root model written as an

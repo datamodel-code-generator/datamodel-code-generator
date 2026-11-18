@@ -126,9 +126,10 @@ def test_nullable_variant_of_several_values(output_model_type: str, output_file:
 A discriminated variant whose tag property admits several values, `Cat.kind: enum [cat, kitty]`, is selected by every
 one of them in the schema's `oneOf`. Without this option a variant that a mapping key names takes only its mapping
 keys, `Literal['cat']`, as in 0.97.0, so `{"kind": "kitty"}`, which the schema accepts, is rejected. With it the
-variant also takes the values of its tag property that no mapping key and no other variant claim,
-`Literal['cat', 'kitty']`, so the union accepts every document of the variant. A variant that no mapping key names
-takes those values without the option. A msgspec Struct keeps its one tag.""",
+variant keeps its mapping keys and also takes the values of its tag property that no mapping key and no other variant
+claim, `Literal['cat', 'kitty']`, so the union accepts the documents of the variant that carry them. A value that
+another variant also admits stays rejected, as a tag selects one variant. A variant that no mapping key names takes
+those values without the option. A msgspec Struct keeps its one tag.""",
     input_schema="openapi/variant_tag_values/several_values_mapped.yaml",
     cli_args=["--use-unmapped-variant-tag-values"],
     golden_output="main/openapi/variant_tag_values/mapped_variant_of_several_values[pydantic_v2.BaseModel-option].py",
@@ -146,6 +147,64 @@ def test_mapped_variant_of_several_values(option: list[str], output_model_type: 
     no other variant claim. A msgspec Struct keeps one tag either way.
     """
     _generate_and_decode("several_values_mapped", output_model_type, output_file, NAMED, *option)
+
+
+@pytest.mark.parametrize(
+    ("input_name", "documents", "args"),
+    [
+        pytest.param("several_values_mapped_twice", (*NAMED, {"kind": "feline"}), [], id="key-outside-the-enum"),
+        pytest.param("integer_values_mapped", NUMBERED, ["--use-enum-values-in-discriminator"], id="integer-enum"),
+    ],
+)
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass"])
+def test_mapped_variant_keeps_its_mapping_keys(
+    output_model_type: str,
+    input_name: str,
+    documents: tuple[dict[str, object], ...],
+    args: list[str],
+    output_file: Path,
+) -> None:
+    """Give a variant a mapping names its mapping keys and then its unclaimed values under the option.
+
+    The mapping names ``Cat`` by ``cat`` and by ``feline``, which its enum lacks: the option dropped ``feline``,
+    which the variant took without it. Under ``--use-enum-values-in-discriminator`` the key ``"1"`` of the integer
+    enum ``[1, 3]`` stays text, which matched none of its values, so the option did not add ``3``.
+    """
+    _generate_and_decode(
+        input_name, output_model_type, output_file, documents, "--use-unmapped-variant-tag-values", *args
+    )
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--use-enum-values-in-discriminator"], id="enum-values"),
+        pytest.param(["--enum-field-as-literal", "all"], id="literals"),
+    ],
+)
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass"])
+def test_nested_variant_of_several_values(output_model_type: str, args: list[str], output_file: Path) -> None:
+    """Keep the discriminator of a union that lists the variant through a nested discriminated union.
+
+    ``Pet`` lists ``Feline``, a root model of ``Cat | Lion``, beside ``Dog``. ``Feline`` writes ``Cat.kind`` as
+    ``Literal['cat', 'kitty']``, which ``Pet`` read as no tag, so it dropped its discriminator and left ``Dog.kind``
+    its Enum. Under ``--use-enum-values-in-discriminator`` it stays a plain union, as in 0.97.0.
+    """
+    _generate_and_decode(
+        "nested_union_of_several_values",
+        output_model_type,
+        output_file,
+        (*NAMED, {"kind": "lion"}),
+        *args,
+    )
+
+
+def test_object_values_of_a_tag_property(output_file: Path) -> None:
+    """Generate a union whose variant's tag property admits only objects, which tag no variant, as in 0.97.0."""
+    _generate_and_decode(
+        "object_values", "pydantic_v2.BaseModel", output_file, ({"kind": {"code": 1}}, {"kind": "dog"})
+    )
 
 
 def test_msgspec_lone_union_of_two_mapping_keys(output_file: Path) -> None:

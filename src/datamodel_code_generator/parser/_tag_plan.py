@@ -1048,6 +1048,17 @@ class _VariantTagFacts:
         """Return whether the variant's class takes exactly one tag (a msgspec Struct)."""
         return self.model.REQUIRES_TAGGED_UNION_DISCRIMINATOR
 
+    def enum_member_tag_field(self) -> bool:
+        """Return whether Enum members are written as tags and the declared tag field is typed by or holds them."""
+        return (
+            self.reading.enum_member_tags
+            and (tag_field := self._declared_tag_field()) is not None
+            and any(
+                leaf.enum_member_literals or isinstance(leaf.reference and leaf.reference.source, Enum)
+                for leaf, _, _ in _iter_discriminator_data_types((tag_field.data_type,))
+            )
+        )
+
     def _declared_tag_field(self) -> DataModelFieldBase | None:
         """Return the tag field the variant declares, else the nearest it inherits from a schema."""
         return _declared_tag_field(

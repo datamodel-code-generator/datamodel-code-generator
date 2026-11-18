@@ -1,0 +1,35 @@
+openapi: '3.1.0'
+info: {title: A variant whose tag property admits several values in a union another union nests, version: 1.0.0}
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, enum: [cat, kitty]}
+        name: {type: string}
+    Lion:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, enum: [lion]}
+        mane: {type: boolean}
+    Feline:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Lion'
+      discriminator:
+        propertyName: kind
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, enum: [dog]}
+        bark: {type: boolean}
+    Pet:
+      oneOf:
+        - $ref: '#/components/schemas/Feline'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: kind

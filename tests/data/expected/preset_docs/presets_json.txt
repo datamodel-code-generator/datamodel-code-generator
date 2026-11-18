@@ -41973,7 +41973,7 @@
         "title": "$ref siblings read in closed allOf members"
       },
       {
-        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes every document of the variant the schema accepts. msgspec Structs keep one tag.",
+        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes the documents of the variant that carry them; a value another variant also admits stays refused, as a tag selects one variant. msgspec Structs keep one tag.",
         "options": [
           "--use-unmapped-variant-tag-values"
         ],
@@ -42619,7 +42619,7 @@
         "title": "$ref siblings read in closed allOf members"
       },
       {
-        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes every document of the variant the schema accepts. msgspec Structs keep one tag.",
+        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes the documents of the variant that carry them; a value another variant also admits stays refused, as a tag selects one variant. msgspec Structs keep one tag.",
         "options": [
           "--use-unmapped-variant-tag-values"
         ],
@@ -43265,7 +43265,7 @@
         "title": "$ref siblings read in closed allOf members"
       },
       {
-        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes every document of the variant the schema accepts. msgspec Structs keep one tag.",
+        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes the documents of the variant that carry them; a value another variant also admits stays refused, as a tag selects one variant. msgspec Structs keep one tag.",
         "options": [
           "--use-unmapped-variant-tag-values"
         ],
@@ -43911,7 +43911,7 @@
         "title": "$ref siblings read in closed allOf members"
       },
       {
-        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes every document of the variant the schema accepts. msgspec Structs keep one tag.",
+        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes the documents of the variant that carry them; a value another variant also admits stays refused, as a tag selects one variant. msgspec Structs keep one tag.",
         "options": [
           "--use-unmapped-variant-tag-values"
         ],
@@ -44557,7 +44557,7 @@
         "title": "$ref siblings read in closed allOf members"
       },
       {
-        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes every document of the variant the schema accepts. msgspec Structs keep one tag.",
+        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes the documents of the variant that carry them; a value another variant also admits stays refused, as a tag selects one variant. msgspec Structs keep one tag.",
         "options": [
           "--use-unmapped-variant-tag-values"
         ],
@@ -45203,7 +45203,7 @@
         "title": "$ref siblings read in closed allOf members"
       },
       {
-        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes every document of the variant the schema accepts. msgspec Structs keep one tag.",
+        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes the documents of the variant that carry them; a value another variant also admits stays refused, as a tag selects one variant. msgspec Structs keep one tag.",
         "options": [
           "--use-unmapped-variant-tag-values"
         ],
@@ -45842,7 +45842,7 @@
         "title": "$ref siblings read in closed allOf members"
       },
       {
-        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes every document of the variant the schema accepts. msgspec Structs keep one tag.",
+        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes the documents of the variant that carry them; a value another variant also admits stays refused, as a tag selects one variant. msgspec Structs keep one tag.",
         "options": [
           "--use-unmapped-variant-tag-values"
         ],
@@ -46524,7 +46524,7 @@
         "title": "$ref siblings read in closed allOf members"
       },
       {
-        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes every document of the variant the schema accepts. msgspec Structs keep one tag.",
+        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes the documents of the variant that carry them; a value another variant also admits stays refused, as a tag selects one variant. msgspec Structs keep one tag.",
         "options": [
           "--use-unmapped-variant-tag-values"
         ],
@@ -47206,7 +47206,7 @@
         "title": "$ref siblings read in closed allOf members"
       },
       {
-        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes every document of the variant the schema accepts. msgspec Structs keep one tag.",
+        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes the documents of the variant that carry them; a value another variant also admits stays refused, as a tag selects one variant. msgspec Structs keep one tag.",
         "options": [
           "--use-unmapped-variant-tag-values"
         ],
@@ -47888,7 +47888,7 @@
         "title": "$ref siblings read in closed allOf members"
       },
       {
-        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes every document of the variant the schema accepts. msgspec Structs keep one tag.",
+        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes the documents of the variant that carry them; a value another variant also admits stays refused, as a tag selects one variant. msgspec Structs keep one tag.",
         "options": [
           "--use-unmapped-variant-tag-values"
         ],
@@ -48570,7 +48570,7 @@
         "title": "$ref siblings read in closed allOf members"
       },
       {
-        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes every document of the variant the schema accepts. msgspec Structs keep one tag.",
+        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes the documents of the variant that carry them; a value another variant also admits stays refused, as a tag selects one variant. msgspec Structs keep one tag.",
         "options": [
           "--use-unmapped-variant-tag-values"
         ],
@@ -49252,7 +49252,7 @@
         "title": "$ref siblings read in closed allOf members"
       },
       {
-        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes every document of the variant the schema accepts. msgspec Structs keep one tag.",
+        "description": "Give a variant of a discriminated union that a mapping names also the values of its tag property that no mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the union decodes the documents of the variant that carry them; a value another variant also admits stays refused, as a tag selects one variant. msgspec Structs keep one tag.",
         "options": [
           "--use-unmapped-variant-tag-values"
         ],

@@ -1,0 +1,27 @@
+openapi: '3.1.0'
+info: {title: A variant two mapping keys name, one of them outside its tag property's enum, version: 1.0.0}
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, enum: [cat, kitty]}
+        name: {type: string}
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, enum: [dog]}
+        bark: {type: boolean}
+    Pet:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: kind
+        mapping:
+          cat: '#/components/schemas/Cat'
+          feline: '#/components/schemas/Cat'
+          dog: '#/components/schemas/Dog'

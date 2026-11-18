@@ -7202,9 +7202,10 @@ Give a mapped variant the unmapped values of its tag property.
 A discriminated variant whose tag property admits several values, `Cat.kind: enum [cat, kitty]`, is selected by every
 one of them in the schema's `oneOf`. Without this option a variant that a mapping key names takes only its mapping
 keys, `Literal['cat']`, as in 0.97.0, so `{"kind": "kitty"}`, which the schema accepts, is rejected. With it the
-variant also takes the values of its tag property that no mapping key and no other variant claim,
-`Literal['cat', 'kitty']`, so the union accepts every document of the variant. A variant that no mapping key names
-takes those values without the option. A msgspec Struct keeps its one tag.
+variant keeps its mapping keys and also takes the values of its tag property that no mapping key and no other variant
+claim, `Literal['cat', 'kitty']`, so the union accepts the documents of the variant that carry them. A value that
+another variant also admits stays rejected, as a tag selects one variant. A variant that no mapping key names takes
+those values without the option. A msgspec Struct keeps its one tag.
 
 !!! tip "Usage"
 

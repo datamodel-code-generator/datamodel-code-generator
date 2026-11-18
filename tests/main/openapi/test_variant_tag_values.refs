@@ -7,6 +7,15 @@ msgspec.Struct	main/openapi/variant_tag_values/integer_mapping_keys_of_literal_e
 msgspec.Struct	main/openapi/variant_tag_values/integer_mapping_keys_of_literal_enum[msgspec.Struct].py
 pydantic_v2.BaseModel	main/openapi/variant_tag_values/integer_mapping_keys_of_literal_enum[pydantic_v2.BaseModel].payloads.txt	= main/openapi/variant_tag_values/integer_mapping_keys_of_literal_enum[dataclasses.dataclass].payloads.txt
 pydantic_v2.BaseModel	main/openapi/variant_tag_values/integer_mapping_keys_of_literal_enum[pydantic_v2.BaseModel].py
+[test_mapped_variant_keeps_its_mapping_keys]
+dataclasses.dataclass-integer-enum	main/openapi/variant_tag_values/mapped_variant_keeps_its_mapping_keys[dataclasses.dataclass-integer-enum].payloads.txt	= main/openapi/variant_tag_values/variant_of_several_values[dataclasses.dataclass-integers].payloads.txt
+dataclasses.dataclass-integer-enum	main/openapi/variant_tag_values/mapped_variant_keeps_its_mapping_keys[dataclasses.dataclass-integer-enum].py
+dataclasses.dataclass-key-outside-the-enum	main/openapi/variant_tag_values/mapped_variant_keeps_its_mapping_keys[dataclasses.dataclass-key-outside-the-enum].payloads.txt
+dataclasses.dataclass-key-outside-the-enum	main/openapi/variant_tag_values/mapped_variant_keeps_its_mapping_keys[dataclasses.dataclass-key-outside-the-enum].py
+pydantic_v2.BaseModel-integer-enum	main/openapi/variant_tag_values/mapped_variant_keeps_its_mapping_keys[pydantic_v2.BaseModel-integer-enum].payloads.txt	= main/openapi/variant_tag_values/variant_of_several_values[dataclasses.dataclass-integers].payloads.txt
+pydantic_v2.BaseModel-integer-enum	main/openapi/variant_tag_values/mapped_variant_keeps_its_mapping_keys[pydantic_v2.BaseModel-integer-enum].py
+pydantic_v2.BaseModel-key-outside-the-enum	main/openapi/variant_tag_values/mapped_variant_keeps_its_mapping_keys[pydantic_v2.BaseModel-key-outside-the-enum].payloads.txt	= main/openapi/variant_tag_values/mapped_variant_keeps_its_mapping_keys[dataclasses.dataclass-key-outside-the-enum].payloads.txt
+pydantic_v2.BaseModel-key-outside-the-enum	main/openapi/variant_tag_values/mapped_variant_keeps_its_mapping_keys[pydantic_v2.BaseModel-key-outside-the-enum].py
 [test_mapped_variant_of_several_values]
 dataclasses.dataclass-option	main/openapi/variant_tag_values/mapped_variant_of_several_values[dataclasses.dataclass-option].payloads.txt
 dataclasses.dataclass-option	main/openapi/variant_tag_values/mapped_variant_of_several_values[dataclasses.dataclass-option].py
@@ -27,11 +36,27 @@ pydantic_v2.dataclass-released	main/openapi/variant_tag_values/mapped_variant_of
 [test_msgspec_lone_union_of_two_mapping_keys]
 	main/openapi/variant_tag_values/msgspec_lone_union_of_two_mapping_keys.payloads.txt
 	main/openapi/variant_tag_values/msgspec_lone_union_of_two_mapping_keys.py
+[test_nested_variant_of_several_values]
+dataclasses.dataclass-default	main/openapi/variant_tag_values/nested_variant_of_several_values[dataclasses.dataclass-default].payloads.txt
+dataclasses.dataclass-default	main/openapi/variant_tag_values/nested_variant_of_several_values[dataclasses.dataclass-default].py
+dataclasses.dataclass-enum-values	main/openapi/variant_tag_values/nested_variant_of_several_values[dataclasses.dataclass-enum-values].payloads.txt	= main/openapi/variant_tag_values/nested_variant_of_several_values[dataclasses.dataclass-default].payloads.txt
+dataclasses.dataclass-enum-values	main/openapi/variant_tag_values/nested_variant_of_several_values[dataclasses.dataclass-enum-values].py
+dataclasses.dataclass-literals	main/openapi/variant_tag_values/nested_variant_of_several_values[dataclasses.dataclass-literals].payloads.txt	= main/openapi/variant_tag_values/nested_variant_of_several_values[dataclasses.dataclass-default].payloads.txt
+dataclasses.dataclass-literals	main/openapi/variant_tag_values/nested_variant_of_several_values[dataclasses.dataclass-literals].py
+pydantic_v2.BaseModel-default	main/openapi/variant_tag_values/nested_variant_of_several_values[pydantic_v2.BaseModel-default].payloads.txt	= main/openapi/variant_tag_values/nested_variant_of_several_values[dataclasses.dataclass-default].payloads.txt
+pydantic_v2.BaseModel-default	main/openapi/variant_tag_values/nested_variant_of_several_values[pydantic_v2.BaseModel-default].py
+pydantic_v2.BaseModel-enum-values	main/openapi/variant_tag_values/nested_variant_of_several_values[pydantic_v2.BaseModel-enum-values].payloads.txt	= main/openapi/variant_tag_values/nested_variant_of_several_values[dataclasses.dataclass-default].payloads.txt
+pydantic_v2.BaseModel-enum-values	main/openapi/variant_tag_values/nested_variant_of_several_values[pydantic_v2.BaseModel-enum-values].py
+pydantic_v2.BaseModel-literals	main/openapi/variant_tag_values/nested_variant_of_several_values[pydantic_v2.BaseModel-literals].payloads.txt	= main/openapi/variant_tag_values/nested_variant_of_several_values[dataclasses.dataclass-default].payloads.txt
+pydantic_v2.BaseModel-literals	main/openapi/variant_tag_values/nested_variant_of_several_values[pydantic_v2.BaseModel-literals].py
 [test_nullable_variant_of_several_values]
 dataclasses.dataclass	main/openapi/variant_tag_values/nullable_variant_of_several_values[dataclasses.dataclass].payloads.txt	= main/openapi/variant_tag_values/mapped_variant_of_several_values[dataclasses.dataclass-option].payloads.txt
 dataclasses.dataclass	main/openapi/variant_tag_values/nullable_variant_of_several_values[dataclasses.dataclass].py
 msgspec.Struct	main/openapi/variant_tag_values/nullable_variant_of_several_values[msgspec.Struct].payloads.txt
 msgspec.Struct	main/openapi/variant_tag_values/nullable_variant_of_several_values[msgspec.Struct].py
+[test_object_values_of_a_tag_property]
+	main/openapi/variant_tag_values/object_values_of_a_tag_property.payloads.txt
+	main/openapi/variant_tag_values/object_values_of_a_tag_property.py
 [test_variant_of_several_values]
 dataclasses.dataclass-integers	main/openapi/variant_tag_values/variant_of_several_values[dataclasses.dataclass-integers].payloads.txt
 dataclasses.dataclass-integers	main/openapi/variant_tag_values/variant_of_several_values[dataclasses.dataclass-integers].py

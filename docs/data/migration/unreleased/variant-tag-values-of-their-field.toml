@@ -5,7 +5,7 @@ kind = "default-output"
 action = "review"
 source = "release-note"
 title = "A discriminated variant whose tag property admits several values is tagged by those values"
-summary = "A variant of a discriminated union whose tag property admits several values (Cat.kind: enum [cat, kitty], or [1, 3] beside Dog.kind: const 2), and that no mapping key names, was tagged by its schema name, kind: Literal['Cat'], which refused every document of the variant the schema accepts and accepted {\"kind\": \"Cat\"}, which it rejects. It now takes the values no other variant of the union admits, Literal['cat', 'kitty'], in every output but msgspec Structs, which take one tag and keep the one they have (tag='Cat'; a rule for them is an opt-in to come, #7101), under --use-enum-values-in-discriminator and --enum-field-as-literal all too; a value two variants admit stays refused, and a variant whose values all belong to other variants, or whose schema name is one of its values, keeps its tag. Mapping keys that name the values of an integer enum written as a Literal (--enum-field-as-literal all) are integers, Literal[1] instead of Literal['1']. Names and structure stay; schema-valid documents that were refused now decode. A variant a mapping key names keeps its mapping keys unless --use-unmapped-variant-tag-values is given. Decided by the owner on 2026-11-18: the variants that refused every schema-valid document are fixed in the default output, and msgspec Structs stay as they are until an opt-in."
+summary = "A variant of a discriminated union whose tag property admits several values (Cat.kind: enum [cat, kitty], or [1, 3] beside Dog.kind: const 2), and that no mapping key names, was tagged by its schema name, kind: Literal['Cat'], which refused every document of the variant the schema accepts and accepted {\"kind\": \"Cat\"}, which it rejects. It now takes the values no other variant of the union admits, Literal['cat', 'kitty'], in every output but msgspec Structs, which take one tag and keep the one they have (tag='Cat'; a rule for them is an opt-in to come, #7101), under --use-enum-values-in-discriminator and --enum-field-as-literal all too; a value two variants admit stays refused, and a variant whose values all belong to other variants, or whose schema name is one of its values, keeps its tag. A union that lists the variant through a nested discriminated union (a root model of one) reads those values too and keeps its discriminator, but under --use-enum-values-in-discriminator, where it stays a plain union, as in 0.97.0. Mapping keys that name the values of an integer enum written as a Literal (--enum-field-as-literal all) are integers, Literal[1] instead of Literal['1']. Names and structure stay; schema-valid documents that were refused now decode. A variant a mapping key names keeps its mapping keys unless --use-unmapped-variant-tag-values is given. Decided by the owner on 2026-11-18: the variants that refused every schema-valid document are fixed in the default output, and msgspec Structs stay as they are until an opt-in."
 refs = ["#7089", "#7084", "#7100"]
 decision = ["#7089"]
 covers = [
@@ -29,6 +29,14 @@ covers = [
     "main/openapi/variant_tag_values/mapped_variant_of_several_values[pydantic_v2.BaseModel-released].py",
     "main/openapi/variant_tag_values/mapped_variant_of_several_values[pydantic_v2.dataclass-released].payloads.txt",
     "main/openapi/variant_tag_values/mapped_variant_of_several_values[pydantic_v2.dataclass-released].py",
+    "main/openapi/variant_tag_values/nested_variant_of_several_values[dataclasses.dataclass-default].payloads.txt",
+    "main/openapi/variant_tag_values/nested_variant_of_several_values[dataclasses.dataclass-default].py",
+    "main/openapi/variant_tag_values/nested_variant_of_several_values[dataclasses.dataclass-literals].payloads.txt",
+    "main/openapi/variant_tag_values/nested_variant_of_several_values[dataclasses.dataclass-literals].py",
+    "main/openapi/variant_tag_values/nested_variant_of_several_values[pydantic_v2.BaseModel-default].payloads.txt",
+    "main/openapi/variant_tag_values/nested_variant_of_several_values[pydantic_v2.BaseModel-default].py",
+    "main/openapi/variant_tag_values/nested_variant_of_several_values[pydantic_v2.BaseModel-literals].payloads.txt",
+    "main/openapi/variant_tag_values/nested_variant_of_several_values[pydantic_v2.BaseModel-literals].py",
     "main/openapi/variant_tag_values/nullable_variant_of_several_values[dataclasses.dataclass].payloads.txt",
     "main/openapi/variant_tag_values/nullable_variant_of_several_values[dataclasses.dataclass].py",
     "main/openapi/variant_tag_values/nullable_variant_of_several_values[msgspec.Struct].payloads.txt",
