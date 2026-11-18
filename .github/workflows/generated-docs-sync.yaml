@@ -105,7 +105,6 @@ jobs:
             docs/cli-reference/
             skills/datamodel-code-generator/references/cli-options.md
             docs/llms.txt
-            docs/llms-full.txt
             docs/supported-data-types.md
             docs/supported_formats.md
             src/datamodel_code_generator/prompt_data.py

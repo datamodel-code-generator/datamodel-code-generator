@@ -1,11 +1,12 @@
 """llms.txt generator for datamodel-code-generator documentation.
 
 Generates llms.txt and llms-full.txt from zensical.toml nav structure.
-See https://llmstxt.org/ for the llms.txt specification.
+See https://llmstxt.org/ for the llms.txt specification. llms.txt is committed; llms-full.txt is built when the site
+is deployed, so ``--check`` compares llms.txt only.
 
 Usage:
     python scripts/build_llms_txt.py
-    python scripts/build_llms_txt.py --check  # CI: check if files are up to date
+    python scripts/build_llms_txt.py --check  # CI: check if llms.txt is up to date
 """
 
 from __future__ import annotations
@@ -233,7 +234,7 @@ def check_files(files: dict[Path, str]) -> int:
             print(f"Error: {e}", file=sys.stderr)
         print("\nRun 'python scripts/build_llms_txt.py' to regenerate.", file=sys.stderr)
         return 1
-    print("llms.txt files are up to date")
+    print("llms.txt is up to date")
     return 0
 
 
@@ -247,13 +248,12 @@ def main() -> int:
     config = parse_zensical_toml(ZENSICAL_TOML)
     sections = flatten_nav(config["nav"])
     pages = collect_pages(sections, config["site_url"])
-    files = {
-        args.output_dir / "llms.txt": generate_llms_txt(config, sections, pages),
-        args.output_dir / "llms-full.txt": generate_llms_full_txt(pages),
-    }
+    index = {args.output_dir / "llms.txt": generate_llms_txt(config, sections, pages)}
 
     if args.check:
-        return check_files(files)
+        return check_files(index)
+
+    files = {**index, args.output_dir / "llms-full.txt": generate_llms_full_txt(pages)}
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for path, content in files.items():

@@ -1,0 +1,5 @@
+exit codes [0, 0]
+written ['llms-full.txt', 'llms.txt']
+Generated <output dir>/llms.txt
+Generated <output dir>/llms-full.txt
+llms.txt is up to date
