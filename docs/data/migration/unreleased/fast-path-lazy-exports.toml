@@ -1,0 +1,19 @@
+[[change]]
+id = "fast-path-lazy-exports"
+category = "harness"
+title = "The CLI fast paths load the lazy export helper"
+summary = "Stored module lists of every CLI fast path gain the standard-library-only datamodel_code_generator._lazy_exports, which serves __getattr__ and __dir__ of the modules with lazy exports; generated output is the same."
+refs = ["#7154"]
+covers = [
+    "main/cli_fast_paths/fast_paths_load_these_modules[generate-prompt].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[help].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[import].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[install-skill].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[json-schema-config-equals].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[json-schema-config].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[json-schema-generate-prompt].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[json-schema-generation].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[json-schema-model-metadata].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[json-schema-structured-output].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[version].txt",
+]

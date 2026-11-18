@@ -1,0 +1,5 @@
+TypedDictModel datamodel_code_generator.model.typed_dict TypedDict
+dir lists each name once: True
+__all__ lists each name once: True
+in this process: dir lists each name once: True, __all__ lists each name once: True
+missing name: no_such_name

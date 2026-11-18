@@ -1,0 +1,8 @@
+[[change]]
+id = "boundary-report-lazy-export-lines"
+category = "internal"
+title = "A reference.py line the architecture boundary report names moves down by one"
+refs = ["#7154"]
+covers = [
+    "architecture_boundaries/cli.txt",
+]

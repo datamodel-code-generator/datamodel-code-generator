@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeVar
 from typing_extensions import Sentinel, override
 
 from datamodel_code_generator._context_scope import context_values
+from datamodel_code_generator._lazy_exports import module_hooks as _module_hooks
 from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator.deprecations import warn_deprecated
 
@@ -697,27 +698,11 @@ def create_module_getattr(
             "MyClass": ("mypackage.mymodule", "MyClass"),
         })
     """
-    from importlib import import_module  # noqa: PLC0415
-
-    def _getattr(name: str) -> Any:
-        if name in lazy_imports:
-            module_path, attr_name = lazy_imports[name]
-            module = import_module(module_path)
-            return getattr(module, attr_name)
-        msg = f"module {module_name!r} has no attribute {name!r}"
-        raise AttributeError(msg)
-
-    return _getattr
+    return _module_hooks(module_name, lazy_imports)[0]
 
 
-def __getattr__(name: str) -> Any:
-    """Provide lazy access to BaseModel and SafeLoader."""
-    if name == "BaseModel":
-        return _get_base_model_class()
-    if name == "SafeLoader":
-        return get_safe_loader()
-    msg = f"module {__name__!r} has no attribute {name!r}"
-    raise AttributeError(msg)
+_LAZY_EXPORTS = {"BaseModel": _get_base_model_class, "SafeLoader": get_safe_loader}
+__getattr__, __dir__ = _module_hooks(__name__, _LAZY_EXPORTS)
 
 
 _UNDER_SCORE_1: re.Pattern[str] = re.compile(r"([^_])([A-Z][a-z]+)")

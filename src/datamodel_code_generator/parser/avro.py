@@ -20,6 +20,7 @@ from datamodel_code_generator._avro_detection import (
 )
 from datamodel_code_generator._json_pointer import document_part
 from datamodel_code_generator._json_schema import definition_ref
+from datamodel_code_generator._lazy_exports import module_hooks as _module_hooks
 from datamodel_code_generator._name_words import first_upper
 from datamodel_code_generator._source import YamlValue, load_yaml
 from datamodel_code_generator._user_keys import class_field_key, class_key, model_type_override
@@ -69,14 +70,11 @@ def is_avro_schema_data(data: YamlValue) -> bool:
     return _is_avro_schema_data(data)
 
 
-def __getattr__(name: str) -> Any:
-    """Return compatibility constants moved to the lightweight detector."""
-    match name:
-        case "COMPLEX_TYPES":
-            return _COMPLEX_TYPES
-        case "JSON_SCHEMA_MARKER_KEYS":
-            return _JSON_SCHEMA_MARKER_KEYS
-    raise AttributeError(name)
+_LAZY_EXPORTS = {
+    "COMPLEX_TYPES": lambda: _COMPLEX_TYPES,
+    "JSON_SCHEMA_MARKER_KEYS": lambda: _JSON_SCHEMA_MARKER_KEYS,
+}
+__getattr__, __dir__ = _module_hooks(__name__, _LAZY_EXPORTS, missing_message="name")
 
 
 class _Name(NamedTuple):

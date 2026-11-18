@@ -1,0 +1,7 @@
+DEFAULT_FIELD_NAME_RESOLVERS None None
+MsgspecFieldNameResolver datamodel_code_generator.reference MsgspecFieldNameResolver
+PydanticFieldNameResolver datamodel_code_generator.reference PydanticFieldNameResolver
+dir lists each name once: True
+__all__ lists each name once: True
+in this process: dir lists each name once: True, __all__ lists each name once: True
+missing name: module 'datamodel_code_generator.reference' has no attribute 'no_such_name'

@@ -1,0 +1,6 @@
+BaseModel datamodel_code_generator.util _get_base_model_class.<locals>._BaseModelV2
+SafeLoader datamodel_code_generator.util _custom_safe_loader.<locals>.CustomSafeLoader
+dir lists each name once: True
+__all__ lists each name once: True
+in this process: dir lists each name once: True, __all__ lists each name once: True
+missing name: module 'datamodel_code_generator.util' has no attribute 'no_such_name'
