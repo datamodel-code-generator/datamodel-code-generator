@@ -12,7 +12,6 @@ coverage-config:omit:src/pkg/d.py                  0       1      +1
 dynamic-import@src                                 0       1      +1
 filterwarnings-ignore@src                          0       2      +2
 getattr-private@src                                0       1      +1
-legacy-rows                                        0       1      +1
 pragma:conditional-cover@src                       0       1      +1
 pragma:no-branch@src                               0       1      +1
 pragma:no-cover@src                                0       1      +1
@@ -62,9 +61,6 @@ filterwarnings-ignore@src rose by 2 (0 -> 2). Fix the warning's cause, or assert
 
 getattr-private@src rose by 1 (0 -> 1). A private name read through getattr() hides it from SLF001: give its owner a method instead.
   src/pkg/d.py: 0 -> 1 (lines 13)
-
-legacy-rows rose by 1 (0 -> 1). A new legacy row keeps a difference: route the case through the home's main rule instead.
-  docs/architecture.md: 0 -> 1 (lines 3)
 
 pragma:conditional-cover@src rose by 1 (0 -> 1). Reach the line with a test, or delete the code if no input reaches it; if the pragma must stay, remove another one in the same area.
   src/pkg/d.py: 0 -> 1 (lines 14)
