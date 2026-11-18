@@ -1,0 +1,62 @@
+[[change]]
+id = "leave-out-rejected-patterns-in-render"
+category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+title = "Pydantic models that compile patterns with Python's re leave out the patterns it rejects in every form they write"
+summary = "A pattern that Python's re rejects (a Unicode property such as \\p{L}, or a named group (?<name>...)) is left out with a warning wherever the model writes it, not only in Field(): in constr, StringConstraints, a type alias body, a root model, a base class or a type alias of such a model, also where it lives in another module (as Field() does since 0.92.0; owner decision 2026-11-18), an item, value, key or union member, and a pydantic dataclass, where the model selects Python's re for another pattern, instead of failing at import."
+refs = ["#6941", "#7088"]
+covers = [
+    "main/generation_platform/codecs/plan/dialects.txt",
+    "main/jsonschema/pydantic_accepted_forms/a_pattern_python_accepts_keeps_its_engine_beside_a_union[field_constraints].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/a_pattern_python_accepts_keeps_its_engine_beside_a_union[field_constraints].py",
+    "main/jsonschema/pydantic_accepted_forms/a_pattern_python_accepts_keeps_its_engine_beside_a_union[preset].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/a_pattern_python_accepts_keeps_its_engine_beside_a_union[preset].py",
+    "main/jsonschema/pydantic_accepted_forms/named_group_beside_a_lookaround_is_left_out[base_model].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/named_group_beside_a_lookaround_is_left_out[base_model].py",
+    "main/jsonschema/pydantic_accepted_forms/named_group_beside_a_lookaround_is_left_out[dataclass].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/named_group_beside_a_lookaround_is_left_out[dataclass].py",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_a_base_and_an_alias_of_another_module[constr].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_a_base_and_an_alias_of_another_module[constr]/",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_a_base_and_an_alias_of_another_module[type_alias].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_a_base_and_an_alias_of_another_module[type_alias]/",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_a_root_union_and_in_a_base[base-base_model].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_a_root_union_and_in_a_base[base-base_model].py",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_a_root_union_and_in_a_base[base-dataclass].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_a_root_union_and_in_a_base[base-dataclass].py",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_a_root_union_and_in_a_base[root_union-base_model].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_a_root_union_and_in_a_base[root_union-base_model].py",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_a_root_union_and_in_a_base[root_union-dataclass].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_a_root_union_and_in_a_base[root_union-dataclass].py",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_every_form_of_a_type[annotated].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_every_form_of_a_type[annotated].py",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_every_form_of_a_type[constr].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_every_form_of_a_type[constr].py",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_every_form_of_a_type[dataclass].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_every_form_of_a_type[dataclass].py",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_every_form_of_a_type[encoded_str].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_every_form_of_a_type[encoded_str].py",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_every_form_of_a_type[preset].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_every_form_of_a_type[preset].py",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_every_form_of_a_type[strict_str].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_every_form_of_a_type[strict_str].py",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_every_form_of_a_type[type_alias].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_every_form_of_a_type[type_alias].py",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_every_form_of_a_type[type_alias_string_target].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_in_every_form_of_a_type[type_alias_string_target].py",
+    "main/jsonschema/pydantic_accepted_forms/unicode_property_beside_a_lookahead_is_left_out_of_constr[base_model].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/unicode_property_beside_a_lookahead_is_left_out_of_constr[base_model].py",
+    "main/jsonschema/pydantic_accepted_forms/unicode_property_beside_a_lookahead_is_left_out_of_constr[dataclass].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/unicode_property_beside_a_lookahead_is_left_out_of_constr[dataclass].py",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[pattern_conjunction_edges-pydantic_v2.BaseModel-collapse-root-models].py",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[pattern_conjunction_edges-pydantic_v2.BaseModel-collapse-root-models].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[pattern_conjunction_edges-pydantic_v2.BaseModel~bcaf4227.py",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[pattern_conjunction_edges-pydantic_v2.BaseModel~bcaf4227.warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[pattern_conjunction_edges-pydantic_v2.dataclass-default].py",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[pattern_conjunction_edges-pydantic_v2.dataclass-default].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[pattern_conjunction_edges-pydantic_v2.dataclass~f1415eff.py",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[pattern_conjunction_edges-pydantic_v2.dataclass~f1415eff.warnings.txt",
+    "payloads/native_numeric_empty_errors.txt",
+    "yaml_fast_constructor/parity.txt",
+]

@@ -1,0 +1,7 @@
+Python's regex engine, which the config building it selects, does not compile pattern='^\\p{L}+$'; LabelsAdditionalProperty is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Account.scores is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern='^\\p{L}*$'; Account.avatar is generated without this constraint.
+valid: valid
+password without a capital: string_pattern_mismatch
+handle longer than 8: int_parsing, string_too_long
+names are not checked: string_pattern_mismatch

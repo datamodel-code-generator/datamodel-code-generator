@@ -1,0 +1,22 @@
+openapi: 3.0.0
+info: {title: t, version: "1"}
+paths: {}
+components:
+  schemas:
+    a.Base:
+      type: object
+      properties:
+        handle: {type: string, pattern: '^\p{L}+$', maxLength: 8}
+        label: {$ref: '#/components/schemas/a.Name'}
+    a.Name: {type: string, pattern: '^\p{L}+$'}
+    b.Child:
+      allOf:
+        - $ref: '#/components/schemas/a.Base'
+        - type: object
+          properties:
+            password: {type: string, pattern: '^(?=.*[A-Z]).{8,}$'}
+    b.User:
+      type: object
+      properties:
+        password: {type: string, pattern: '^(?=.*[A-Z]).{8,}$'}
+        label: {$ref: '#/components/schemas/a.Name'}

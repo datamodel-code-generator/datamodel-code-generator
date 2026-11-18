@@ -65,13 +65,14 @@ from datamodel_code_generator.python_literal import represent_python_value
 from datamodel_code_generator.types import (
     DataType,
     DataTypeManager,
+    _copy_data_type,
     _non_finite_as_written,
 )
 from datamodel_code_generator.types import UnionIntFloat as _UnionIntFloat
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Mapping
+    from collections.abc import Callable, Mapping
 
     from datamodel_code_generator.model._views import ModelView, ReferenceView
     from datamodel_code_generator.reference import Reference
@@ -249,6 +250,8 @@ class DataModelField(DataModelFieldBase):
     leaves out."""
     _TYPE_MANAGER: ClassVar[type[DataTypeManager]] = DataTypeManager
     """The type manager of the output model, whose tables give the keywords the value of an enum's base takes."""
+    _TYPE_WITHOUT_PATTERN: ClassVar[Callable[[DataType], DataType] | None] = None
+    """The type a type of the output writes without its pattern (``_written_type``), or None to keep every pattern."""
     constraints: Optional[Constraints] = None  # noqa: UP045
 
     @property
@@ -295,7 +298,10 @@ class DataModelField(DataModelFieldBase):
             if overridden.reason == "override-type-does-not-take":
                 reasons.append(f"--type-overrides writes {self.data_type.type_hint} in place of {overridden.detail}")
                 count += cast("int", overridden.value)
-        if rejected := [o.value for o in omitted if o.why.rule == _PYTHON_ENGINE_REJECTS]:
+        if rejected := [
+            *(o.value for o in omitted if o.why.rule == _PYTHON_ENGINE_REJECTS),
+            *(pattern for _, pattern in self._rejected_type_patterns()),
+        ]:
             reasons.append(
                 "Python's regex engine, which the config building it selects, does not compile "
                 + ", ".join(f"pattern={represent_python_value(value)}" for value in rejected)
@@ -375,10 +381,61 @@ class DataModelField(DataModelFieldBase):
         pattern, such as a lookaround (``PYTHON_ENGINE_BUILDS_KEY``), so one only the default engine reads, such as a
         Unicode property, would fail at import.
         """
-        return (
-            isinstance(pattern, str)
-            and bool(getattr(self.parent, "_internal_template_data", {}).get(PYTHON_ENGINE_BUILDS_KEY))
-            and python_rejects(pattern)
+        return isinstance(pattern, str) and self._python_engine_builds() and python_rejects(pattern)
+
+    def _python_engine_builds(self) -> bool:
+        """Return whether the config building the field's patterns selects ``python-re``."""
+        return bool(getattr(self.parent, "_internal_template_data", {}).get(PYTHON_ENGINE_BUILDS_KEY))
+
+    def _rejected_type_patterns(self) -> list[tuple[DataType, str]]:
+        """Return each type of the field whose pattern ``python-re`` builds and Python's ``re`` rejects, with it.
+
+        The rule that leaves such a pattern out of ``Field()`` (``_python_engine_rejects``) decides for the pattern of
+        every type the field writes: a ``constr``, an annotated string, a type alias body, an ``EncodedStr``, nested in
+        items, values, keys and union members.
+        """
+        if not self._python_engine_builds():
+            return []
+        return [
+            (data_type, pattern)
+            for data_type in self.data_type.all_data_types
+            if data_type.kwargs
+            and isinstance(pattern := data_type.kwargs.get("pattern"), str)
+            and self._python_engine_rejects(pattern)
+        ]
+
+    def _written_type(self) -> DataType | None:
+        """Return the copy of the field's type its hint writes without the patterns of ``_rejected_type_patterns``.
+
+        None when it writes its own type. The copy holds each such type written without its pattern
+        (``_TYPE_WITHOUT_PATTERN``) and shares the field's references, as msgspec's copies do.
+        """
+        if (without := self._TYPE_WITHOUT_PATTERN) is None or not (rejected := self._rejected_type_patterns()):
+            return None
+        return _copy_data_type(
+            self.data_type,
+            register_references=False,
+            link_parents=False,
+            replacements={id(data_type): without(data_type) for data_type, _ in rejected},
+        )
+
+    @override
+    def _hint_data_type(self) -> DataType:
+        """Return the type the field's hint and its imports write: the copy its frozen plan holds, else its own type.
+
+        Before B2 the copy is built at each read (``_written_type``), so no read builds a plan.
+        """
+        if not self._python_engine_builds():
+            return self.data_type
+        if (plan := frozen_render_plan(self)) is not None:
+            return plan.written_type if isinstance(plan.written_type, DataType) else self.data_type
+        return self._written_type() or self.data_type
+
+    @override
+    def _collect_field_imports(self, *, needs_annotated: bool, data_type: DataType | None = None) -> tuple[Import, ...]:
+        """Collect the imports of the type the hint writes (``_hint_data_type``)."""
+        return super()._collect_field_imports(
+            needs_annotated=needs_annotated, data_type=data_type or self._hint_data_type()
         )
 
     def _normalized_constraint_arguments(
@@ -765,6 +822,7 @@ class DataModelField(DataModelFieldBase):
                 *(((_IMPORT_CAST, default.why),) if default.casts else ()),
             ),
             ANNOTATED_ANNOTATION if annotated else PLAIN_ANNOTATION,
+            written_type=self._written_type(),
         )
 
     def _field_default(self, *, missing: bool) -> FieldDefault:
@@ -847,6 +905,8 @@ class DataModelField(DataModelFieldBase):
             is_class_var = self.is_class_var
         if is_class_var:
             return subscript_text("ClassVar", (super().type_hint,))
+        if (written := self._hint_data_type()) is not self.data_type:
+            return self._type_hint_from_data_type(written)
         return super().type_hint
 
     @property

@@ -949,6 +949,15 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Return the data type ``imports`` collects from, or None when it collects without a type hint."""
         return _field_imports.import_state_data_type(self)
 
+    def _hint_data_type(self) -> DataType:
+        """Return the type the field's hint writes: its own, unless its backend writes a copy of it."""
+        return self.data_type
+
+    def _write_own_pre_render_nullability(self) -> None:
+        """Write the pre-render nullability of the field's own type when its hint renders that type."""
+        if self._hint_renders_own_type():
+            self._write_pre_render_nullability(self.data_type)
+
     def _hint_renders_own_type(self) -> bool:  # noqa: PLR6301
         """Return whether the type hint renders the field's own data type rather than a copy of it."""
         return True
@@ -3015,8 +3024,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         if self.IS_ROOT_MODEL:
             self.finalize_sequence_interface()
         for field in self.fields:
-            if field._hint_renders_own_type():  # noqa: SLF001
-                field._write_pre_render_nullability(field.data_type)  # noqa: SLF001
+            field._write_own_pre_render_nullability()  # noqa: SLF001
 
     def _write_pre_render_nullability(self) -> None:
         """Write the nullability that collecting the model's imports wrote at L3 (``legacy-l3-import-nullability``).

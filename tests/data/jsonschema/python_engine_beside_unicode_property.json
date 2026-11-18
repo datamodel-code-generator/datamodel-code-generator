@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "password": {"type": "string", "pattern": "^(?=.*[A-Z]).{8,}$"},
+    "name": {"type": "string", "pattern": "^\\p{L}+$"}
+  }
+}

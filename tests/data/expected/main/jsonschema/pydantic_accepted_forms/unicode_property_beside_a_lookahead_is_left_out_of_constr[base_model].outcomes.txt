@@ -1,0 +1,5 @@
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Model.name is generated without this constraint.
+valid: valid
+password without a capital: string_pattern_mismatch
+any name: valid
+value: 'Déjà'

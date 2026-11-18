@@ -11,7 +11,7 @@ from pydantic import ConfigDict, Field, constr
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
-RustEscape = TypeAliasType("RustEscape", Annotated[str, Field(pattern=r'\p{L}')])
+RustEscape = TypeAliasType("RustEscape", str)
 
 
 BracedEscape = TypeAliasType("BracedEscape", Annotated[str, Field(pattern=r'a')])

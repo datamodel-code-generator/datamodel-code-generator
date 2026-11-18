@@ -1,0 +1,3 @@
+{"$schema": "http://json-schema.org/draft-07/schema#", "title": "Child",
+ "allOf": [{"$ref": "#/definitions/Base"}, {"type": "object", "properties": {"pw": {"type": "string", "pattern": "^(?=.*[A-Z]).{8,}$"}}}],
+ "definitions": {"Base": {"type": "object", "properties": {"name": {"type": "string", "pattern": "^\\p{L}+$"}, "tags": {"type": "array", "items": {"type": "string", "pattern": "^\\p{L}+$"}}}}}}
