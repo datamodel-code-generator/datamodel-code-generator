@@ -136,6 +136,7 @@ class SchemaValidatorsHost(
     CONDITIONAL_SCHEMA_ALLOWED_FIELDS: ClassVar[frozenset[str]]
     REQUIRED_ONLY_SCHEMA_ALLOWED_FIELDS: ClassVar[frozenset[str]]
     _pattern_validation_document_root: JsonSchemaObject | None
+    ignore_enum_constraints: bool
     _ref_constant_values_cache: dict[int, tuple[JsonSchemaObject, tuple[object, ...] | None]]
     _root_pattern_string_constraints: JsonSchemaObject | None
 
@@ -907,6 +908,15 @@ def iter_union_path_rules(
         yield rule
 
 
+def _rule_literal_values(parser: SchemaValidatorsHost, obj: JsonSchemaObject) -> tuple[object, ...] | None:
+    """Return the const or enum values a constant rule checks; ``--ignore-enum-constraints`` leaves out the enum."""
+    if not parser.ignore_enum_constraints:
+        return parser._schema_literal_values(obj)
+    if "const" in obj.extras and parser._features_at(obj).const_support:
+        return (obj.extras["const"],)
+    return None
+
+
 def _ref_constant_values(
     parser: SchemaValidatorsHost, obj: JsonSchemaObject, visited_refs: frozenset[_TargetNode]
 ) -> tuple[object, ...] | None:
@@ -920,7 +930,7 @@ def _ref_constant_values(
         return cached[1]
     values = None
     if (target := _schema_refs.unmapped_ref_target(parser, obj.ref, visited_refs)) is not None:
-        values = parser._schema_literal_values(target[0])
+        values = _rule_literal_values(parser, target[0])
         if values is None:
             values = _ref_constant_values(parser, target[0], target[1])
     parser._ref_constant_values_cache[id(obj)] = obj, values
@@ -940,7 +950,7 @@ def _union_constant_values(
             continue
         if item is True:
             return ()
-        if (item_values := parser._schema_literal_values(item)) is not None or (
+        if (item_values := _rule_literal_values(parser, item)) is not None or (
             item_values := _ref_constant_values(parser, item, visited_refs)
         ) is not None:
             values.extend(item_values)
@@ -1126,7 +1136,7 @@ def iter_path_rules(  # noqa: PLR0912, PLR0913
         yield UniqueItemsRule(path=path)
     if (
         (obj.enum or "const" in obj.extras)
-        and (values := schema_literal_values(parser, obj))
+        and (values := _rule_literal_values(parser, obj))
         and (rule := _constant_types_rule(path, values))
     ):
         yield rule

@@ -10,6 +10,10 @@ refs = ["#7053"]
 decision = ["#7053"]
 source = "release-note"
 covers = [
+    "main/jsonschema/schema_validator_constant_types/rule_scope[ignored_enum].py",
+    "main/jsonschema/schema_validator_constant_types/rule_scope[ignored_enum].txt",
+    "main/jsonschema/schema_validator_constant_types/rule_scope[union].py",
+    "main/jsonschema/schema_validator_constant_types/rule_scope[union].txt",
     "main/jsonschema/schema_validator_constant_types/schema_validator_constant_types[option0].payloads.txt",
     "main/jsonschema/schema_validator_constant_types/schema_validator_constant_types[option0].py",
     "main/jsonschema/schema_validator_constant_types/schema_validator_constant_types[option1].payloads.txt",
@@ -18,4 +22,5 @@ covers = [
     "main/jsonschema/schema_validator_constant_types/schema_validator_constant_types[option2].py",
     "main/jsonschema/unique_items_union_enum_root.py",
     "main/jsonschema/unique_items_union_mapping_shapes.py",
+    "payloads/native_numeric_empty_errors.txt",
 ]

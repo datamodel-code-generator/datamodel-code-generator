@@ -204,11 +204,17 @@ class UniqueItemsRule:
 class ConstantTypesRule:
     """Runtime rule that rejects a JSON boolean for a numeric const or enum value equal to it, and the reverse.
 
-    ``values`` are the bool and number values of the const or enum that Python's ``True == 1`` conflates.
+    ``values`` are the bool and number values of the const or enum that Python's ``True == 1`` conflates. ``booleans``
+    marks the booleans among them, so that a rule over ``(1,)`` never equals or hashes as one over ``(True,)``.
     """
 
     path: UniqueItemsPath
     values: tuple[bool | int | float, ...]
+    booleans: tuple[bool, ...] = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Derive ``booleans`` from ``values``."""
+        object.__setattr__(self, "booleans", tuple(isinstance(value, bool) for value in self.values))
 
 
 def unique_items_path_uses_regex(path: UniqueItemsPath) -> bool:

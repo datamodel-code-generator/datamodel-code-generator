@@ -7,3 +7,8 @@ option1	main/jsonschema/schema_validator_constant_types/schema_validator_constan
 option1	main/jsonschema/schema_validator_constant_types/schema_validator_constant_types[option1].py	= main/jsonschema/schema_validator_constant_types/schema_validator_constant_types[option0].py
 option2	main/jsonschema/schema_validator_constant_types/schema_validator_constant_types[option2].payloads.txt	= main/jsonschema/schema_validator_constant_types/schema_validator_constant_types[option0].payloads.txt
 option2	main/jsonschema/schema_validator_constant_types/schema_validator_constant_types[option2].py
+[test_schema_validator_constant_types_rule_scope]
+ignored_enum	main/jsonschema/schema_validator_constant_types/rule_scope[ignored_enum].py
+ignored_enum	main/jsonschema/schema_validator_constant_types/rule_scope[ignored_enum].txt
+union	main/jsonschema/schema_validator_constant_types/rule_scope[union].py
+union	main/jsonschema/schema_validator_constant_types/rule_scope[union].txt
