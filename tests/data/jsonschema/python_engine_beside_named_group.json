@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "title": "Release",
+  "properties": {
+    "tag": {
+      "type": "string",
+      "pattern": "^(?!draft-)"
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^(?<year>\\d{4})-(?<month>\\d{2})$"
+    }
+  }
+}

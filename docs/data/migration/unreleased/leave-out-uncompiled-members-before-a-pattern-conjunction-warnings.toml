@@ -1,0 +1,20 @@
+[[change]]
+id = "leave-out-uncompiled-members-before-a-pattern-conjunction-warnings"
+category = "notice"
+title = "The warning for an allOf member pattern no engine compiles names the member"
+summary = "Where an allOf member's pattern holds syntax that Python's re rejects on every Python and that the count of #7088 newly reads (a named group (?<name>...) and the others), msgspec.Struct warns that the member's pattern is left out (`The pattern '(?<n>b)' of the schema at ... is left out`) instead of that no single regular expression checks it with the other members, as for `\\x{62}` and `\\p{L}`; pydantic --field-constraints and --use-annotated outputs without --intersect-allof-keywords, whose models are the same, warn that the joined pattern is left out. The models are unchanged."
+refs = ["#7094"]
+kind = "warning"
+action = "none"
+source = "release-note"
+covers = [
+    "main/schema_intersection_shapes/schema_intersection_shape_output[pattern_conjunction_edges-msgspec.Struct-collapse-root-models].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[pattern_conjunction_edges-msgspec.Struct-default].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[pattern_conjunction_edges-msgspec.Struct-use-site-models-for-constrained-refs~721a4964].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[pattern_conjunction_edges-msgspec.Struct-collapse-root-models~24801f34].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[pattern_conjunction_edges-msgspec.Struct-default].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[pattern_conjunction_edges-msgspe~96d830af.warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[pattern_conjunction_edges-pydantic_v2.BaseModel-use-annotated~b2d1ccb5].warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[pattern_conjunction_edges-pydant~5823874d.warnings.txt",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[pattern_conjunction_edges-pydant~c4469b51.warnings.txt",
+]

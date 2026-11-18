@@ -1,0 +1,158 @@
+{
+  "type": "object",
+  "title": "Syntax",
+  "properties": {
+    "named_group": {
+      "type": "string",
+      "pattern": "^(?<year>\\d{4})$"
+    },
+    "named_reference": {
+      "type": "string",
+      "pattern": "^(?<quote>['\"]).*\\k<quote>$"
+    },
+    "repeated_name": {
+      "type": "string",
+      "pattern": "^(?:(?<n>a)|(?<n>b))$"
+    },
+    "empty_class": {
+      "type": "string",
+      "pattern": "^[]$"
+    },
+    "any_character_class": {
+      "type": "string",
+      "pattern": "^[^]*$"
+    },
+    "forward_reference": {
+      "type": "string",
+      "pattern": "^\\1(a)$"
+    },
+    "reference_inside_its_group": {
+      "type": "string",
+      "pattern": "^(a\\1)$"
+    },
+    "repeated_lookbehind": {
+      "type": "string",
+      "pattern": "(?<=\\d+)x"
+    },
+    "alternation_lookbehind": {
+      "type": "string",
+      "pattern": "(?<=a|bc)x"
+    },
+    "optional_lookbehind": {
+      "type": "string",
+      "pattern": "(?<!a?)x"
+    },
+    "counted_range_lookbehind": {
+      "type": "string",
+      "pattern": "(?<=a{1,2})x"
+    },
+    "lookbehind_of_a_repeated_group": {
+      "type": "string",
+      "pattern": "(a+)(?<=\\1)x"
+    },
+    "reference_in_its_lookbehind": {
+      "type": "string",
+      "pattern": "(?<=(a)\\1)b"
+    },
+    "unbalanced_parenthesis": {
+      "type": "string",
+      "pattern": "^a)$"
+    },
+    "fixed_lookbehind": {
+      "type": "string",
+      "pattern": "(?<=ab)c"
+    },
+    "fixed_alternation_lookbehind": {
+      "type": "string",
+      "pattern": "(?<=ab|cd)e"
+    },
+    "counted_lookbehind": {
+      "type": "string",
+      "pattern": "(?<=\\d{3}-\\d{4})x"
+    },
+    "assertion_in_lookbehind": {
+      "type": "string",
+      "pattern": "(?<=^a|b)c"
+    },
+    "lookbehind_of_a_fixed_group": {
+      "type": "string",
+      "pattern": "(a)(?<=\\1)b"
+    },
+    "backward_reference": {
+      "type": "string",
+      "pattern": "^(['\"]).*\\1$"
+    },
+    "python_named_group": {
+      "type": "string",
+      "pattern": "^(?P<y>\\d)(?P=y)$"
+    },
+    "bracket_first_in_class": {
+      "type": "string",
+      "pattern": "^[]a]+$"
+    },
+    "bracket_first_in_negated_class": {
+      "type": "string",
+      "pattern": "^[^]a]+$"
+    },
+    "escaped_parenthesis": {
+      "type": "string",
+      "pattern": "^\\(?<a>$"
+    },
+    "group_text_in_class": {
+      "type": "string",
+      "pattern": "^[(?<a>)]+$"
+    },
+    "lookahead": {
+      "type": "string",
+      "pattern": "^(?=a)\\w$"
+    },
+    "comment_and_flags": {
+      "type": "string",
+      "pattern": "(?i)^a(?#note)b$"
+    },
+    "conditional_group": {
+      "type": "string",
+      "pattern": "^(a)?(?(1)b|c)$"
+    },
+    "comment_with_escaped_parenthesis": {
+      "type": "string",
+      "pattern": "^a(?#note\\)b)c$"
+    },
+    "comment_with_escaped_parenthesis_beside_a_group": {
+      "type": "string",
+      "pattern": "(?<=a)(?#\\))x"
+    }
+  },
+  "required": [
+    "named_group",
+    "named_reference",
+    "repeated_name",
+    "empty_class",
+    "any_character_class",
+    "forward_reference",
+    "reference_inside_its_group",
+    "repeated_lookbehind",
+    "alternation_lookbehind",
+    "optional_lookbehind",
+    "counted_range_lookbehind",
+    "lookbehind_of_a_repeated_group",
+    "reference_in_its_lookbehind",
+    "unbalanced_parenthesis",
+    "fixed_lookbehind",
+    "fixed_alternation_lookbehind",
+    "counted_lookbehind",
+    "assertion_in_lookbehind",
+    "lookbehind_of_a_fixed_group",
+    "backward_reference",
+    "python_named_group",
+    "bracket_first_in_class",
+    "bracket_first_in_negated_class",
+    "escaped_parenthesis",
+    "group_text_in_class",
+    "lookahead",
+    "comment_and_flags",
+    "conditional_group",
+    "comment_with_escaped_parenthesis",
+    "comment_with_escaped_parenthesis_beside_a_group"
+  ]
+}

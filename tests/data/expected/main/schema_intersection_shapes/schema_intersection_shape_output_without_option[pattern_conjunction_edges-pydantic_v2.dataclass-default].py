@@ -97,9 +97,7 @@ class NonAlikeEnum(Enum):
     field_1 = '1'
 
 
-PythonGroupName = TypeAliasType(
-    "PythonGroupName", Annotated[str, Field(pattern=compile('(?=a)(?=(?<n>b))'))]
-)
+PythonGroupName = TypeAliasType("PythonGroupName", str)
 
 
 class NonPortableEnum(Enum):

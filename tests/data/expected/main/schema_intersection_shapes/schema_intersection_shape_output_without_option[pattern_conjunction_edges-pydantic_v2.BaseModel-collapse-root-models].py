@@ -82,7 +82,7 @@ class Model(BaseModel):
     trailing_newline_enum: TrailingNewlineEnum | None = None
     python_rejected_enum: PythonRejectedEnum | None = None
     non_alike_enum: NonAlikeEnum | None = None
-    python_group_name: constr(pattern=r'(?=a)(?=(?<n>b))') | None = None
+    python_group_name: str | None = None
     non_portable_enum: NonPortableEnum | None = None
     bad_range_enum: BadRangeEnum | None = None
     non_identifier_group_name: constr(pattern=r'(?=a)(?=(?P<ids[]>b))') | None = None
