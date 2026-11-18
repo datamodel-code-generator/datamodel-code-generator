@@ -692,9 +692,10 @@ def iter_schema_validation_sources(
     visited_refs: frozenset[_TargetNode] = frozenset(),
     *,
     include_references: bool = True,
+    sibling_yield: Literal["ref-less-copy", "applicator-copy"] = "ref-less-copy",
 ) -> Iterator[JsonSchemaObject]:
     for source, _ in iter_scoped_schema_validation_sources(
-        parser, obj, visited_refs, include_references=include_references
+        parser, obj, visited_refs, include_references=include_references, sibling_yield=sibling_yield
     ):
         yield source
 
@@ -744,7 +745,7 @@ def iter_scoped_schema_validation_sources(  # noqa: PLR0913
     *,
     include_references: bool = True,
     ref_siblings: Literal["as-written", "first-read"] = "first-read",
-    sibling_yield: Literal["member", "ref-less-copy"] = "ref-less-copy",
+    sibling_yield: Literal["member", "ref-less-copy", "applicator-copy"] = "ref-less-copy",
     track_scope: bool = True,
 ) -> Iterator[tuple[JsonSchemaObject, str | None]]:
     """Yield the schema and its allOf sources with the document each was read from.
@@ -755,8 +756,10 @@ def iter_scoped_schema_validation_sources(  # noqa: PLR0913
 
     The keywords beside an allOf ``$ref`` are read where ``ref_siblings`` applies them (``_iter_all_of_reads``), as
     ``sibling_yield`` says: ``ref-less-copy`` walks a copy of the member without its ``$ref`` and without following
-    references, only when the member has an applicator, ``if`` or a map keyword; ``member`` yields the member as
-    written (the property counts). Without ``track_scope`` every source keeps ``scope``.
+    references where it has a keyword beside its ``$ref``; ``member`` yields the member as written (the property
+    counts); row ``legacy-closing-ref-siblings-with-applicators`` (``applicator-copy``, what closes an allOf in
+    ``parser/_all_of_values.py``) walks the copy only where the member has an applicator, ``if`` or a map keyword.
+    Without ``track_scope`` every source keeps ``scope``.
     """
     yield obj, scope
     if not obj.allOf:
@@ -775,12 +778,16 @@ def iter_scoped_schema_validation_sources(  # noqa: PLR0913
             if sibling_yield == "member":
                 yield node, node_scope
                 continue
+            if node.model_fields_set == {"ref"}:
+                continue
             has_sibling_constraints = (
                 node.patternProperties
                 or node.additionalProperties is not None
                 or node.unevaluatedProperties is not None
             )
-            if not (node.allOf or node.oneOf or node.anyOf or "if" in node.extras or has_sibling_constraints):
+            if sibling_yield == "applicator-copy" and not (
+                node.allOf or node.oneOf or node.anyOf or "if" in node.extras or has_sibling_constraints
+            ):
                 continue
             source, follows_references = node.model_copy(update={"ref": None}), False
         yield from iter_scoped_schema_validation_sources(

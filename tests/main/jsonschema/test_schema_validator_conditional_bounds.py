@@ -49,6 +49,8 @@ DOCUMENTS = (
 )
 REF_SIBLINGS_PATH = JSON_SCHEMA_DATA_PATH / "schema_validator_conditional_bounds_ref_siblings.json"
 READ_ONLY_PATH = JSON_SCHEMA_DATA_PATH / "schema_validator_conditional_bounds_read_only.json"
+ALL_OF_REF_SIBLINGS_PATH = JSON_SCHEMA_DATA_PATH / "schema_validator_conditional_bounds_all_of_ref_siblings.json"
+INPUT_NAMES_PATH = JSON_SCHEMA_DATA_PATH / "schema_validator_conditional_bounds_input_names.json"
 
 
 @pytest.mark.parametrize(
@@ -112,8 +114,34 @@ def test_schema_validator_conditional_bounds(output_file: Path, option: tuple[st
             ("--read-only-write-only-model-type", "request-response"),
             {},
         ),
+        (
+            ALL_OF_REF_SIBLINGS_PATH,
+            "Siblings",
+            (
+                {"kind": "a", "value": 10},
+                {"kind": "a", "value": 1},
+                {"kind": "b", "size": 10},
+                {"kind": "b", "size": 1},
+                {"kind": "b", "value": 1},
+                {"kind": "a", "size": 1},
+            ),
+            (),
+            {},
+        ),
+        (
+            INPUT_NAMES_PATH,
+            "Wire",
+            (
+                {"wire-kind": "b", "wire_kind": "a", "value": 1},
+                {"wire-kind": "a", "wire_kind": "b", "value": 1},
+                {"wire-kind": "a", "value": 1},
+                {"wire-kind": "b", "value": 1},
+            ),
+            ("--allow-population-by-field-name",),
+            {},
+        ),
     ],
-    ids=["ref_siblings", "read_only"],
+    ids=["ref_siblings", "read_only", "all_of_ref_siblings", "input_names"],
 )
 def test_schema_validator_conditional_bounds_rule_scope(
     output_file: Path,
@@ -124,6 +152,9 @@ def test_schema_validator_conditional_bounds_rule_scope(
     mapped: dict[str, dict[str, object]],
 ) -> None:
     """Read the bounds a draft-07 ``$ref`` names but not those beside it, nor a mapped one; keep them on variants.
+
+    In draft 2020-12 the bounds beside an allOf ``$ref`` apply, in a branch and in a property; a property with several
+    input names is read, in the condition too, by the first one the input holds, which its field reads.
 
     ``mapped`` holds the documents that the mapped references name, which only the schema validator reads.
     """

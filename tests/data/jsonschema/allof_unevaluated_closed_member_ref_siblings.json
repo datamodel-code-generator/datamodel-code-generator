@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Filters",
+  "type": "object",
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "properties": {
+    "status": {
+      "type": "string"
+    }
+  },
+  "allOf": [
+    {
+      "unevaluatedProperties": false,
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base",
+          "dependentSchemas": {
+            "status": {
+              "properties": {
+                "owner": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

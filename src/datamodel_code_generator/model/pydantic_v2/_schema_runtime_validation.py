@@ -341,9 +341,9 @@ def _render_path_validation_base(
 def render_conditional_bounds_validation_base(class_name: str, base_class_name: str) -> str:
     """Render the shared validator base that checks the numeric bounds of the branch an if/then/else selects.
 
-    The condition is read as the conditional required rule reads it, with the JSON equality of the core helper this
-    layer is rendered on (``_json_schema_conditional_equal``: a boolean is no number); a bound applies to a JSON number
-    only.
+    The condition is read with the JSON equality of the core helper this layer is rendered on
+    (``_json_schema_conditional_equal``: a boolean is no number); it and a bound read a property by the first of its
+    input names the input holds, the one the field's value comes from. A bound applies to a JSON number only.
     """
     return f"""class {class_name}({base_class_name}):
     __json_schema_conditional_bounds__: ClassVar[tuple[tuple[object, ...], ...]] = ()
@@ -355,16 +355,17 @@ def render_conditional_bounds_validation_base(class_name: str, base_class_name: 
             return data
         for condition, then_bounds, else_bounds in cls.__json_schema_conditional_bounds__:
             condition_matches = all(
-                any(
-                    name in data
-                    and (
+                next(
+                    (
                         not expected
                         or any(
                             cls._json_schema_conditional_equal(data[name], value)
                             for value in expected
                         )
-                    )
-                    for name in names
+                        for name in names
+                        if name in data
+                    ),
+                    False,
                 )
                 for names, expected in condition
             )

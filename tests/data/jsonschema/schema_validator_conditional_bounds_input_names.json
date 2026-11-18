@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Wire",
+  "type": "object",
+  "properties": {
+    "wire-kind": {
+      "type": "string"
+    },
+    "value": {
+      "type": "integer"
+    }
+  },
+  "if": {
+    "properties": {
+      "wire-kind": {
+        "const": "a"
+      }
+    },
+    "required": [
+      "wire-kind"
+    ]
+  },
+  "then": {
+    "properties": {
+      "value": {
+        "minimum": 10
+      }
+    }
+  }
+}

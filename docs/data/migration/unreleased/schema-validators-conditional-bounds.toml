@@ -10,6 +10,11 @@ refs = ["#7054"]
 decision = ["#7054"]
 source = "release-note"
 covers = [
+    "main/jsonschema/main_jsonschema/allof_unevaluated_closed_member_ref_siblings.py",
+    "main/jsonschema/schema_validator_conditional_bounds/rule_scope[all_of_ref_siblings].py",
+    "main/jsonschema/schema_validator_conditional_bounds/rule_scope[all_of_ref_siblings].txt",
+    "main/jsonschema/schema_validator_conditional_bounds/rule_scope[input_names].py",
+    "main/jsonschema/schema_validator_conditional_bounds/rule_scope[input_names].txt",
     "main/jsonschema/schema_validator_conditional_bounds/rule_scope[read_only].py",
     "main/jsonschema/schema_validator_conditional_bounds/rule_scope[read_only].txt",
     "main/jsonschema/schema_validator_conditional_bounds/rule_scope[ref_siblings].py",

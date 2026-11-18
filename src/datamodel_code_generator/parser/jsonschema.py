@@ -4132,9 +4132,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         visited_refs: frozenset[_TargetNode] = frozenset(),
         *,
         include_references: bool = True,
+        sibling_yield: Literal["ref-less-copy", "applicator-copy"] = "ref-less-copy",
     ) -> Iterator[JsonSchemaObject]:
         return _schema_validators.iter_schema_validation_sources(
-            self, obj, visited_refs, include_references=include_references
+            self, obj, visited_refs, include_references=include_references, sibling_yield=sibling_yield
         )
 
     def _schema_item_may_accept_container(

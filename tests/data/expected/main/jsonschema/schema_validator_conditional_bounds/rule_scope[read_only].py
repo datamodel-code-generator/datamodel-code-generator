@@ -59,16 +59,17 @@ class _JsonSchemaRuntimeValidationBase(_JsonSchemaRuntimeValidationBaseCore):
             else_bounds,
         ) in cls.__json_schema_conditional_bounds__:
             condition_matches = all(
-                any(
-                    name in data
-                    and (
+                next(
+                    (
                         not expected
                         or any(
                             cls._json_schema_conditional_equal(data[name], value)
                             for value in expected
                         )
-                    )
-                    for name in names
+                        for name in names
+                        if name in data
+                    ),
+                    False,
                 )
                 for names, expected in condition
             )

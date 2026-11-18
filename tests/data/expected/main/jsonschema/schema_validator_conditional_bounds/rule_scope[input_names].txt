@@ -1,0 +1,4 @@
+{"wire-kind": "b", "wire_kind": "a", "value": 1} (valid): accepted/accepted
+{"wire-kind": "a", "wire_kind": "b", "value": 1} (invalid): rejected/rejected
+{"wire-kind": "a", "value": 1} (invalid): rejected/rejected
+{"wire-kind": "b", "value": 1} (valid): accepted/accepted

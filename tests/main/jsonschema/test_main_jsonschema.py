@@ -16337,6 +16337,20 @@ def test_main_jsonschema_allof_unevaluated_closed_member(
         )
 
 
+def test_main_jsonschema_allof_unevaluated_closed_member_ref_siblings(output_file: Path) -> None:
+    """Test a closed allOf member ignores a dependentSchemas beside a ``$ref`` it evaluates, as it always has.
+
+    The keywords beside that ``$ref`` are read only where the member holds an applicator or a map keyword (row
+    ``legacy-closing-ref-siblings-with-applicators``), so the member still closes the model.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_unevaluated_closed_member_ref_siblings.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", "--disable-timestamp"],
+    )
+
+
 def test_main_jsonschema_allof_closed_member_pattern(output_file: Path) -> None:
     """Test a closed allOf member with patternProperties keeps the combined model open.
 
