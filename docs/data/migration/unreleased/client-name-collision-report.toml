@@ -8,3 +8,6 @@ summary = "With `--generate-client`, explicit argument names (`parameter_names`,
 affects = { experimental = ["cli-option.generate-client"] }
 refs = ["#6979"]
 source = "release-note"
+covers = [
+    "main/generation_platform/client/name-repeats.txt",
+]

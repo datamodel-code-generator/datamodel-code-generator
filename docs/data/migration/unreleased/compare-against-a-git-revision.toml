@@ -10,6 +10,9 @@ covers = [
     "behaviour_diff_script/gate_identity_of_a_candidate_revision.txt",
     "behaviour_diff_script/gate_refuses_a_side_that_is_no_revision.txt",
     "behaviour_diff_script/guide_writes_the_page_of_gate_cells.txt",
+    "behaviour_diff_script/identity_compares_the_output_of_runs_that_fail_alike.txt",
     "compare_release_script/compare_release_resolves_the_base.txt",
     "compare_release_script/handled_exceptions_are_tracked.txt",
+    "compare_release_script/the_environment_keeps_what_windows_needs.txt",
+    "compare_release_script/the_record_is_published_by_a_replace.txt",
 ]

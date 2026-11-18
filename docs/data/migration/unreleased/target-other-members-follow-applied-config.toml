@@ -10,3 +10,33 @@ before = "form=MultipartForm(members=True, parts=(PartPlan(\"first-name\", \"str
 after = "form=MultipartForm(members=True),"
 refs = ["#7038"]
 source = "release-note"
+covers = [
+    "main/generation_platform/client/cli/options/deep-object-brackets/_operations.py",
+    "main/generation_platform/client/packages/allowreserved-path-30/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/allowreserved-path-31/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/auth/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/deep-object-brackets/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/discriminator-forms/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/fields-optional-models/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/fields/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/forms-allof-cycle/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/forms-member-locations/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/media-errors/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/media/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/multipart-read-only-exploded/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/multipart-text-files/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/pagination-querystring/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/text-bound-types-reuse/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/text-bound-types/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/codecs/plan/oas30//*.py",
+    "main/generation_platform/codecs/plan/oas32.txt",
+    "main/generation_platform/codecs/plan/oas32//*.py",
+    "main/generation_platform/codecs/plan/parameters//*.py",
+    "main/generation_platform/fastapi/packages/binary-allowed/",
+    "main/generation_platform/fastapi/packages/querystring-nameless/",
+    "main/generation_platform/fastapi/servers/packages/nullable/",
+    "main/generation_platform/fastapi/servers/packages/spellings-exact/",
+    "main/generation_platform/fastapi/servers/packages/spellings/",
+    "main/generation_platform/fastapi/servers/packages/strict/",
+]

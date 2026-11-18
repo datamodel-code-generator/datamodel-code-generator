@@ -1,0 +1,21 @@
+[[change]]
+id = "count-the-host-baseline-as-an-allowlist"
+category = "harness"
+title = "Count the host baseline as an allowlist in the ratchet"
+summary = "Stored test output of count the host baseline as an allowlist in the ratchet (#7029); the package writes the same output for the same call."
+refs = ["#7029"]
+covers = [
+    "check_ratchets_script/check_ratchets_against_base[allowlist-subscript-writes].txt",
+    "check_ratchets_script/check_ratchets_against_base[allowlist-unreadable].txt",
+    "check_ratchets_script/check_ratchets_against_base[host-baseline-grows].txt",
+    "check_ratchets_script/check_ratchets_against_base[host-baseline-shrinks].txt",
+    "check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable].txt",
+    "source_rules/counts_are_printed_as_ratchet_keys.txt",
+    "source_rules/rule_reports_its_site_and_not_the_near_miss[clone-bodies].txt",
+    "source_rules/rule_reports_its_site_and_not_the_near_miss[doc-citations].txt",
+    "source_rules/rule_reports_its_site_and_not_the_near_miss[globals-registry].txt",
+    "source_rules/rule_reports_its_site_and_not_the_near_miss[hash-split].txt",
+    "source_rules/rule_reports_its_site_and_not_the_near_miss[private-reexport].txt",
+    "source_rules/rule_reports_its_site_and_not_the_near_miss[redundant-local-import].txt",
+    "source_rules/rule_reports_its_site_and_not_the_near_miss[unused-private-global].txt",
+]
