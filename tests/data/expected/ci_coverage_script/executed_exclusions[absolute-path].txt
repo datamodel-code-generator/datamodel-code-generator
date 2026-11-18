@@ -1,0 +1,2 @@
+Executed coverage exclusions: 1
+src/datamodel_code_generator/parser/sign.py:5 [parser] 1 line(s) ran: if value < 0:  # pragma: no cover

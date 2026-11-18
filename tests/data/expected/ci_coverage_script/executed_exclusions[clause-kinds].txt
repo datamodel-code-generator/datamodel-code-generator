@@ -1,0 +1,9 @@
+Executed coverage exclusions: 8
+sign.py:5 [(top level)] 3 line(s) ran: match value:  # pragma: no cover
+sign.py:8 [(top level)] 1 line(s) ran: case int():  # pragma: no cover
+sign.py:10 [(top level)] 1 line(s) ran: try:  # pragma: no cover
+sign.py:14 [(top level)] 1 line(s) ran: else:  # pragma: no cover
+sign.py:16 [(top level)] 1 line(s) ran: finally:  # pragma: no cover
+sign.py:18 [(top level)] 1 line(s) ran: with open(__file__, encoding="utf-8"):  # pragma: no cover
+sign.py:22 [(top level)] 1 line(s) ran: else:  # pragma: no cover
+sign.py:28 [(top level)] 1 line(s) ran: else:  # pragma: no cover
