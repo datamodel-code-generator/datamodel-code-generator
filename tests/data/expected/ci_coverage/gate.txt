@@ -99,6 +99,21 @@
     "results_match": true,
     "stderr": ""
   },
+  "mid-stack:ratchets:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:ratchets:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:ratchets:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
   "mid-stack:skipped": {
     "exit": 0,
     "results_match": true,
@@ -299,6 +314,26 @@
     "results_match": true,
     "stderr": ""
   },
+  "pull-request:ratchets:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:ratchets:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:ratchets:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "pull-request:ratchets:success": {
+    "exit": 0,
+    "results_match": true,
+    "stderr": ""
+  },
   "pull-request:test-coverage:cancelled": {
     "exit": 1,
     "results_match": true,
@@ -476,6 +511,21 @@
   },
   "pull-request:test-shard:success": {
     "exit": 0,
+    "results_match": true,
+    "stderr": ""
+  },
+  "ratchets:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "ratchets:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "ratchets:skipped": {
+    "exit": 1,
     "results_match": true,
     "stderr": ""
   },

@@ -10,7 +10,6 @@ coverage-config:omit:src/pkg/d.py                  1
 dynamic-import@src                                 1
 filterwarnings-ignore@src                          2
 getattr-private@src                                1
-legacy-rows                                        1
 pragma:conditional-cover@src                       1
 pragma:no-branch@src                               1
 pragma:no-cover@src                                1

@@ -1,0 +1,9 @@
+[[change]]
+id = "preset-20261118-gate-output"
+category = "harness"
+title = "The behaviour gate lists the 20261118 presets"
+summary = "Stored test output of the behaviour gate, which lists the 20261118 presets (#7065); the package writes the same output for the same call."
+refs = ["#7065"]
+covers = [
+    "behaviour_diff_script/gate_shards_judge_the_stale_entries_of_an_unsharded_run.txt",
+]

@@ -1431,6 +1431,14 @@ OPTIONS: Final[tuple[Option, ...]] = (
     ),
     toggle(
         (Section.TYPING, _G.TYPE_ALIAS),
+        "--use-validate-default-for-root-model-type-aliases",
+        help="Under --use-root-model-type-alias, write the default of a field whose type names a root model written as "
+        "an alias (`Tags = RootModel[list[str]]`) with validate_default=True, as for a root model class, so Pydantic "
+        "validates it into the root model; without it the default stays the raw value, such as a list instead of a "
+        "`Tags`, as in 0.97.0 (Pydantic v2 only)",
+    ),
+    toggle(
+        (Section.TYPING, _G.TYPE_ALIAS),
         "--use-plain-alias-for-recursive-models",
         help="Pydantic output only: write a type alias whose whole value is a model that names itself as `Alias: "
         "TypeAlias = Node`, which Pydantic builds for every model that uses it; without it the alias is "

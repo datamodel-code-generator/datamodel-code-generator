@@ -19,9 +19,8 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   ``abnormal-path`` (the test marker), read with ``ast``.
 - Entries: ty rules below error, coverage ``omit`` and ``exclude`` lists (by text), pytest ``ignore`` warning filters
   and the direct-assert exemption list, the generation store allowlist, the host baseline
-  (``allowlist:host-private-access``, the sum of its access counts), the allowlists of the test style and
-  architecture checks (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot read), and the
-  Legacy rows table of ``docs/architecture.md``.
+  (``allowlist:host-private-access``, the sum of its access counts), and the allowlists of the test style and
+  architecture checks (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot read).
 - ``unreadable:<what>`` and ``allowlist:<NAME>:unreadable``: a hook setting (no value or a block scalar, a ``--select``
   or ``--config`` argument) or an allowlist or host baseline this script cannot read. Such a key always fails under
   ``--enforce``, because what it hides cannot be counted.
@@ -85,7 +84,6 @@ CALL_HINT = re.compile(
 PRIVATE_READERS = {"getattr": 1, "setattr": 1, "hasattr": 1, "delattr": 1, "attrgetter": 0, "__getattribute__": 1}
 WARNING_FILTERS = frozenset({"filterwarnings", "simplefilter", "catch_warnings"})
 MARKERS = {"abnormal_path": "abnormal-path", "no_type_check": "no-type-check"}
-LEGACY_ROW = re.compile(r"^\| `legacy[-.][^`]+` \|", re.MULTILINE)
 ALLOWLISTS = (
     (
         "tests/assert_helper_allowlists.py",
@@ -143,7 +141,6 @@ ADVICE = {
         "Write the allowlist or baseline in the plain form its checker reads (literal entries, tables of integer "
         "counts), so that the counter can read it."
     ),
-    "legacy-rows": "A new legacy row keeps a difference: route the case through the home's main rule instead.",
 }
 
 
@@ -609,10 +606,6 @@ def _config_tally(tally: Tally, root: Path, pyproject: dict) -> None:
                     tally.add(f"allowlist:{listed}", path, entry.lineno)
                 if entries is None:
                     tally.add(f"allowlist:{listed}:unreadable", path, statement.lineno)
-    architecture = root / "docs/architecture.md"
-    text = architecture.read_text(encoding="utf-8") if architecture.is_file() else ""
-    for match in LEGACY_ROW.finditer(text):
-        tally.add("legacy-rows", "docs/architecture.md", text.count("\n", 0, match.start()) + 1)
 
 
 def count_tree(root: Path, ruff: list[str]) -> Tally:
@@ -775,6 +768,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--enforce", action="store_true", help="exit 1 when a key rose")
     parser.add_argument("--count", type=Path, help="print the counts of this tree as JSON")
     parser.add_argument("--ruff", help="ruff executable (default: this interpreter's ruff module)")
+    parser.add_argument("--ruff-pin", action="store_true", help="print the ruff version the pre-commit hook pins")
     args = parser.parse_args(argv)
     ruff = [args.ruff] if args.ruff else [sys.executable, "-m", "ruff"]
     if args.count:
@@ -782,6 +776,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     top = _git(Path.cwd(), "rev-parse", "--show-toplevel")
     head_root = Path(top.stdout.decode().strip()) if top.returncode == 0 else Path.cwd()
+    if args.ruff_pin:
+        print(_ruff_hook(head_root).rev.removeprefix("v"))
+        return 0
     sys.stderr.write(_pin_note(head_root, ruff))
     if not args.base:
         counts = _totals(count_tree(head_root, ruff).counts())

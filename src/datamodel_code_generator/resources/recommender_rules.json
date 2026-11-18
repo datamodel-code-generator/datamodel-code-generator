@@ -1562,6 +1562,10 @@
       "not_recommended": "preset",
       "reason": "Under --use-unique-items-as-set only: set by the 20261104 presets; the recommendation starts from a preset."
     },
+    "use_validate_default_for_root_model_type_aliases": {
+      "not_recommended": "preset",
+      "reason": "Under --use-root-model-type-alias only: set by the 20261118 presets; the recommendation starts from a preset."
+    },
     "validation": {
       "not_recommended": "compat",
       "reason": "Deprecated; use --field-constraints."

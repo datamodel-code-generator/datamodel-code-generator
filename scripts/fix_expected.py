@@ -393,7 +393,7 @@ def deduplicate_expected(paths: Sequence[str], root: Path = ROOT) -> int:
 
 def ci_variable() -> str | None:
     """Return the variable that marks this run as CI, as the test suite decides it, or None."""
-    from inline_snapshot._snapshot_session import is_ci_run  # noqa: PLC0415, PLC2701
+    from inline_snapshot._core._snapshot_session import is_ci_run  # noqa: PLC0415, PLC2701
 
     return is_ci_run() or None
 

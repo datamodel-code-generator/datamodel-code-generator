@@ -189,6 +189,7 @@ class ParserConfigDict(TypedDict):
     skip_root_model: NotRequired[bool]
     use_root_model_sequence_interface: NotRequired[bool]
     use_type_alias: NotRequired[bool]
+    use_validate_default_for_root_model_type_aliases: NotRequired[bool]
     use_plain_alias_for_recursive_models: NotRequired[bool]
     special_field_name_prefix: NotRequired[str | None]
     remove_special_field_name_prefix: NotRequired[bool]

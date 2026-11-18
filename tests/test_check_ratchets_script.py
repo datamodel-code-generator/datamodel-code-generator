@@ -104,7 +104,6 @@ def test_d() -> None:
 '_cache[...]' = 2
 witness = "--input schema.json"
 """,
-    "docs/architecture.md": "| Row | Fix |\n|---|---|\n| `legacy-example-row` | keep |\n",
     "tests/assert_helper_allowlists.py": FUTURE
     + """
 from pathlib import Path
@@ -474,10 +473,12 @@ def test_check_ratchets_reports_a_failing_base_copy(
 def test_check_ratchets_counts_one_tree(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Without a base the script prints each key's count; --count prints the counts per file as JSON."""
+    """Without a base the script prints each key's count; --count prints them per file; --ruff-pin the hook's pin."""
     repository = _repository(tmp_path, {}, OTHER_KINDS)
     monkeypatch.chdir(repository / "src")
     code = check_ratchets.main([])
     assert_output(f"exit status {code}\n{capsys.readouterr().out}", name="table")
     code = check_ratchets.main(["--count", ".."])
     assert_output(f"exit status {code}\n{capsys.readouterr().out}", name="json")
+    code = check_ratchets.main(["--ruff-pin"])
+    assert_output(f"exit status {code}\n{capsys.readouterr().out}", name="ruff-pin")
