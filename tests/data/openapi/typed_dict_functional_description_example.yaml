@@ -1,0 +1,11 @@
+openapi: 3.0.3
+info: {title: t, version: "1"}
+paths: {}
+components:
+  schemas:
+    Headers:
+      type: object
+      required: [content-type]
+      properties:
+        content-type: {type: string, example: application/json}
+        rate-limit: {type: integer, example: 10}
