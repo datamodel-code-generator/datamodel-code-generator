@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts import ci_coverage
+from scripts import ci_coverage, coverage_exclusions
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,20 +29,114 @@ def sign(value):
 
 print(sign(int(sys.argv[1])), sign(int(sys.argv[2])))
 """
+EXCLUDED_MODULE = MODULE.replace("if value < 0:", "if value < 0:  # pragma: no cover").replace(
+    "print(", "def never():  # pragma: no cover\n    return 0\n\n\nprint("
+)
+NESTED_MODULE = """import sys
+
+
+def never():  # pragma: no cover
+    return 0  # pragma: no cover
+
+
+def clamp(value):  # pragma: no cover
+    if value > 5:  # pragma: no cover
+        value = 5
+    return value
+
+
+print(clamp(int(sys.argv[1])), clamp(int(sys.argv[2])))
+"""
+DECORATED_MODULE = """import functools
+import sys
+
+
+@functools.cache  # pragma: no cover
+def never(value):
+    return value
+
+
+@functools.cache  # pragma: no cover
+def called(value):
+    return value
+
+
+class Shape:
+    @property  # pragma: no cover
+    def area(self):
+        return 0
+
+
+print(called(int(sys.argv[1])), Shape)
+"""
+MULTI_LINE_MODULE = MODULE.replace(
+    "    if value < 0:", "    (  # pragma: no cover\n        abs(value)\n    )\n    if value < 0:"
+)
+CLAUSES_MODULE = """import sys
+
+
+def describe(value):
+    match value:  # pragma: no cover
+        case 0:
+            result = 0
+        case int():  # pragma: no cover
+            result = value
+    try:  # pragma: no cover
+        result = 1 // value
+    except ZeroDivisionError:  # pragma: no cover
+        result = 0
+    else:  # pragma: no cover
+        result += 1
+    finally:  # pragma: no cover
+        result *= 2
+    with open(__file__, encoding="utf-8"):  # pragma: no cover
+        pass
+    for _ in ():  # pragma: no cover
+        result = 0
+    else:  # pragma: no cover
+        result += 0
+    if value > 5:  # pragma: no cover
+        result = 5
+    elif value > 3:  # pragma: no cover
+        result = 3
+    else:  # pragma: no cover
+        result -= 0
+    while result > 100:  # pragma: no cover
+        result = 0
+    return result
+
+
+print(describe(int(sys.argv[1])), describe(int(sys.argv[2])))
+"""
+MODULES = {
+    "report-executed-exclusion": EXCLUDED_MODULE,
+    "report-stale-data": EXCLUDED_MODULE,
+    "absolute-path": EXCLUDED_MODULE,
+    "nested-regions": NESTED_MODULE,
+    "decorated-uncalled": DECORATED_MODULE,
+    "multi-line-statement": MULTI_LINE_MODULE,
+    "clause-kinds": CLAUSES_MODULE,
+}
+"""The module each case records, `MODULE` for the others."""
 
 
 def _report_payload(case: str, tmp_path: Path) -> bytes:
     """Record real coverage data of a module staged in a git project whose `base` branch lacks it."""
     git = ["git", "-c", "user.name=CI", "-c", "user.email=ci@example.com", "-c", "commit.gpgsign=false"]
-    (tmp_path / ".coveragerc").write_text("[run]\nbranch = true\nrelative_files = true\nsource = .\n", encoding="utf-8")
+    relative = "false" if case == "absolute-path" else "true"
+    (tmp_path / ".coveragerc").write_text(
+        f"[run]\nbranch = true\nrelative_files = {relative}\nsource = .\n", encoding="utf-8"
+    )
     for command in (["init", "-q", "-b", "base"], ["add", ".coveragerc"], ["commit", "-q", "-m", "base"]):
         subprocess.run([*git, *command], cwd=tmp_path, check=True)
-    (tmp_path / "sign.py").write_text(MODULE, encoding="utf-8")
-    subprocess.run([*git, "add", "sign.py"], cwd=tmp_path, check=True)
+    module = "src/datamodel_code_generator/parser/sign.py" if case == "absolute-path" else "sign.py"
+    (tmp_path / module).parent.mkdir(parents=True, exist_ok=True)
+    (tmp_path / module).write_text(MODULES.get(case, MODULE), encoding="utf-8")
+    subprocess.run([*git, "add", module], cwd=tmp_path, check=True)
     data = tmp_path / "seed.coverage"
     values = ("1", "1") if case == "report-missing-lines" else ("1", "-1")
     subprocess.run(
-        [sys.executable, "-m", "coverage", "run", f"--data-file={data}", "sign.py", *values],
+        [sys.executable, "-m", "coverage", "run", f"--data-file={data}", module, *values],
         cwd=tmp_path,
         capture_output=True,
         check=True,
@@ -119,6 +213,9 @@ def _prepare_case(case: str, tmp_path: Path) -> list[str]:  # ruff: ignore[too-m
                 (tmp_path / "sign.py").unlink()
             case "report-missing-input":
                 (tmp_path / name).unlink()
+            case "report-stale-data":
+                (tmp_path / name).unlink()
+                (tmp_path / ".coverage").write_bytes(payload)
         return ["report", ".", "--compare-branch", "base", *event]
     return [action, str(target), "--run-id", "123", "--sha", "abc", *event]
 
@@ -165,3 +262,32 @@ def test_coverage_artifact_cli(
         + "\n"
     )
     assert_output(output, EXPECTED / f"{case}.txt")
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "report-executed-exclusion",
+        "report-no-source",
+        "nested-regions",
+        "decorated-uncalled",
+        "multi-line-statement",
+        "absolute-path",
+        "clause-kinds",
+    ],
+)
+def test_executed_exclusions(
+    case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """List each excluded region whose body the recorded run entered, skipping a source file that is gone.
+
+    A region keeps the nested ones inside its suite, a header that runs without entering the suite (an imported
+    decorated definition, a clause line) does not count, a statement counts from any of its lines, and the file and
+    area are named relative to the project whether the data stores the path absolute or relative.
+    """
+    (tmp_path / ".coverage").write_bytes(_report_payload(case, tmp_path))
+    if case == "report-no-source":
+        (tmp_path / "sign.py").unlink()
+    monkeypatch.chdir(tmp_path)
+    coverage_exclusions.main([".coverage"])
+    assert_output(capsys.readouterr().out)

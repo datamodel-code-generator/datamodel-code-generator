@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from itertools import islice
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -71,26 +71,30 @@ class _WatchContext:
 
 @dataclass(slots=True)
 class _WatcherState:
-    """Small bounded hand-off from the watch thread to the regeneration loop."""
+    """Small hand-off from the watch thread to the regeneration loop, bounded by the dependency graph."""
 
     pending_change_sample: set[tuple[Any, str]]
     has_pending_changes: bool = False
+    pending_paths: set[str] = field(default_factory=set)
     error: BaseException | None = None
     exhausted: bool = False
 
     def add_changes(self, changes: set[tuple[Any, str]]) -> None:
-        """Keep a diagnostic sample without retaining an unbounded event stream."""
+        """Keep a diagnostic sample and the distinct changed paths without retaining an unbounded event stream."""
         self.has_pending_changes = True
+        self.pending_paths.update(path for _change, path in changes)
         remaining = _PENDING_CHANGE_SAMPLE_LIMIT - len(self.pending_change_sample)
         if remaining > 0:
             self.pending_change_sample.update(islice(changes, remaining))
 
-    def take_changes(self) -> set[tuple[Any, str]]:
-        """Drain the diagnostic sample while retaining the change notification."""
+    def take_changes(self) -> tuple[set[tuple[Any, str]], set[str]]:
+        """Drain the diagnostic sample and the changed paths."""
         changes = self.pending_change_sample.copy()
+        paths = self.pending_paths.copy()
         self.pending_change_sample.clear()
+        self.pending_paths.clear()
         self.has_pending_changes = False
-        return changes
+        return changes, paths
 
     @property
     def is_ready(self) -> bool:
@@ -135,7 +139,9 @@ def _watch_changes(
     The stream yields every batch unfiltered: a batch with no event in the dependency graph counts as a poll without
     changes, as a timeout does. A polling watcher reports a vanished root again on every poll and so never times out
     while one outside the graph is missing; filtered out inside the stream, its batches would starve the fingerprint
-    check that notices a missing dependency appearing.
+    check that notices a missing dependency appearing. A batch whose changes the last generation already saw, such as
+    the late events of a change a fingerprint fallback regenerated, starts no generation; the regeneration loop judges
+    the changes again once a generation that started meanwhile has published what it saw.
     """
     force_polling = _force_polling()
     includes_dependency = _watch_filter(context.dependencies, accept_directory_events=True)
@@ -164,16 +170,10 @@ def _watch_changes(
                 if not pending_polling_fallback:
                     pending_polling_fallback = True
                     continue
+            elif context.dependencies._saw_changes({path for _change, path in changes}):  # noqa: SLF001
                 pending_polling_fallback = False
-            else:
-                pending_polling_fallback = False
-            if (
-                changes
-                and force_polling
-                and all(Path(path).is_dir() or Path(path) in watch_roots for _change, path in changes)
-                and not context.dependencies._polling_dependencies_changed()  # noqa: SLF001
-            ):
                 continue
+            pending_polling_fallback = False
             with condition:
                 state.add_changes(changes)
                 condition.notify()
@@ -187,8 +187,10 @@ def _watch_changes(
             condition.notify()
 
 
-def _wait_for_changes(condition: threading.Condition, state: _WatcherState) -> set[tuple[Any, str]] | None:
-    """Block for a watched change, raising a background watcher failure when present."""
+def _wait_for_changes(
+    condition: threading.Condition, state: _WatcherState
+) -> tuple[set[tuple[Any, str]], set[str]] | None:
+    """Block for watched changes and their paths, raising a background watcher failure when present."""
     with condition:
         while not state.is_ready:
             condition.wait()
@@ -238,8 +240,9 @@ def _watch_once(
             if _misses_a_root(context.dependencies, watch_roots):
                 return True
 
-        while (changes := _wait_for_changes(condition, state)) is not None:
-            if not changes and not context.dependencies._polling_dependencies_changed():  # noqa: SLF001
+        while (pending := _wait_for_changes(condition, state)) is not None:
+            changes, paths = pending
+            if context.dependencies._saw_changes(paths):  # noqa: SLF001
                 continue
             _regenerate_after_change(changes, context.regenerate)
             if _misses_a_root(context.dependencies, watch_roots):

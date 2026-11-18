@@ -135,13 +135,11 @@ def strongly_connected_components(graph: Mapping[NodeT, AbstractSet[NodeT]]) -> 
     return state.result
 
 
+def is_circular(component: AbstractSet[NodeT], graph: Mapping[NodeT, AbstractSet[NodeT]]) -> bool:
+    """Return whether a strongly connected component is on a cycle: of several nodes, or of one with a self-edge."""
+    return len(component) > 1 or (node := next(iter(component))) in graph.get(node, ())
+
+
 def find_circular_sccs(graph: Mapping[NodeT, AbstractSet[NodeT]]) -> list[set[NodeT]]:
-    """Return the components on a cycle, of more than one node or of one node with an edge to itself, by minimum."""
-    return sorted(
-        (
-            scc
-            for scc in strongly_connected_components(graph)
-            if len(scc) > 1 or (node := next(iter(scc))) in graph.get(node, ())
-        ),
-        key=min,
-    )
+    """Return the components on a cycle (`is_circular`), sorted by their smallest node."""
+    return sorted((scc for scc in strongly_connected_components(graph) if is_circular(scc, graph)), key=min)

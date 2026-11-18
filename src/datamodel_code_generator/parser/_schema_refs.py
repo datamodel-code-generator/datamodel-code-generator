@@ -283,7 +283,6 @@ class SchemaRefsHost(SchemaResourcesHost, Protocol):
     _dynamic_bindings: dict[str, str]
     _dynamic_document: str | None
     _dynamic_ref_graph: dict[_TargetNode, _DynamicEdges]
-    _dynamic_ref_nodes: dict[str, _TargetNode]
     _dynamic_scope_path: tuple[str, ...]
     _dynamic_scope_pointer: str
     _dynamic_specialization_paths: set[tuple[str, ...]]
@@ -851,15 +850,14 @@ def dynamic_target_bindings(parser: SchemaRefsHost, resolved_ref: str) -> dict[s
 def dynamic_ref_edges(parser: SchemaRefsHost, resolved_ref: str) -> _DynamicEdges:
     """Return the node at a reference key, the anchors its $dynamicRef initially resolve to and what it references.
 
-    The schema is read from the prepared tree of its document; a key whose value the graph does not locate is its
-    own node, and the first key that reaches a node gives the node its analysis.
+    The schema is read from the prepared tree of its document, whose record keeps it; a key whose value the graph does
+    not locate is its own node, and the first key that reaches a node gives the node its analysis.
     """
-    if (node := parser._dynamic_ref_nodes.get(resolved_ref)) is not None:
-        return parser._dynamic_ref_graph[node]
     file_part, _, fragment = resolved_ref.partition("#")
     document, raw = prepared_ref_document(parser, file_part)
     schema = ref_value_in(parser, raw, resolved_ref, or_missing=True)
-    node = parser._dynamic_ref_nodes[resolved_ref] = parser._graph.node(schema) or resolved_ref
+    if (edges := parser._dynamic_ref_graph.get(node := parser._graph.node(schema) or resolved_ref)) is not None:
+        return edges
     anchors: set[str] = set()
     targets: list[str] = []
     for pointer, subschema in iter_referencing_schemas(parser, schema, fragment):
@@ -911,7 +909,7 @@ def dynamic_anchors_used(parser: SchemaRefsHost, resolved_ref: str) -> frozenset
                 *(
                     parser._dynamic_anchor_usage[successor]
                     for target in edges.targets
-                    if (successor := parser._dynamic_ref_nodes[target]) not in members
+                    if (successor := dynamic_ref_edges(parser, target).node) not in members
                 )
             )
         parser._dynamic_anchor_usage.update(dict.fromkeys(members, frozenset(anchors)))

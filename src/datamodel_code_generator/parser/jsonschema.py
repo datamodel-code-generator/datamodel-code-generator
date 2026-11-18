@@ -8205,7 +8205,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._parses_unowned_fields = False
         self._dynamic_anchor_usage: dict[_TargetNode, frozenset[str]] = {}
         self._dynamic_ref_graph: dict[_TargetNode, _DynamicEdges] = {}
-        self._dynamic_ref_nodes: dict[str, _TargetNode] = {}
 
     @property
     @override

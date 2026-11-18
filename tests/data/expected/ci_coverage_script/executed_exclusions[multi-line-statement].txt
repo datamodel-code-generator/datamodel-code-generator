@@ -1,0 +1,2 @@
+Executed coverage exclusions: 1
+sign.py:5 [(top level)] 1 line(s) ran: (  # pragma: no cover

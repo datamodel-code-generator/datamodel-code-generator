@@ -1,8 +1,0 @@
-[[change]]
-id = "use-unmapped-variant-tag-values-config"
-extends = "validate-root-model-alias-defaults"
-covers = [
-    "builtin_formatter/parser_config_contract.txt",
-    "input_model/config_class.txt",
-    "prompt/default_parser_text.txt",
-]

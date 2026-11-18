@@ -31,7 +31,7 @@ from datamodel_code_generator._paths import (
 from datamodel_code_generator.util import _find_pyproject_toml as _nearest_pyproject_toml
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterable, Mapping
+    from collections.abc import Collection, Generator, Iterable, Mapping
 
 
 class _Weakrefable:
@@ -128,6 +128,13 @@ def _path_fingerprint(path: Path) -> tuple[int, int, int]:
     except OSError:
         return _MISSING_PATH_FINGERPRINT
     return status.st_ino, status.st_mtime_ns, status.st_size
+
+
+def _is_directory(path: Path) -> bool:
+    try:
+        return path.is_dir()
+    except OSError:
+        return False
 
 
 def _configured_path(config_values: Mapping[str, Any], field_name: str, fallback: str | Path | None) -> Path | None:
@@ -545,6 +552,26 @@ class WatchDependencies(_Weakrefable):
         """Return whether a polling watcher missed an exact dependency event."""
         return self._snapshot_polling_dependencies_changed(self._snapshot)
 
+    def _saw_changes(self, paths: Collection[str]) -> bool:
+        """Return whether every changed path is as the last generation found it when it started.
+
+        The dependency fingerprints record that state. They decide a path that is a dependency, an existing directory,
+        whose entries report their own changes, and one below a dependency that was missing then: when no fingerprint
+        changed since, such a path is unchanged. Any other path, and any path without fingerprints, may have changed.
+        """
+        snapshot = self._snapshot
+        if (fingerprints := snapshot.polling_fingerprints) is None:
+            return not paths
+        return not self._snapshot_polling_dependencies_changed(snapshot) and all(
+            _is_directory(Path(path))
+            or any(
+                path_variant in fingerprints
+                or any(fingerprints.get(parent) == _MISSING_PATH_FINGERPRINT for parent in path_variant.parents)
+                for path_variant in _path_variants(Path(path))
+            )
+            for path in paths
+        )
+
     def includes(self, path: Path) -> bool:
         """Return whether an event belongs to the immutable current dependency graph."""
         return self._includes_snapshot(self._snapshot, _path_variants(path))
@@ -568,11 +595,7 @@ class WatchDependencies(_Weakrefable):
         includes_dependency = self._includes_snapshot(snapshot, path_variants)
         if includes_dependency or not accept_directory_events:
             return includes_dependency
-        try:
-            is_directory = path.is_dir()
-        except OSError:
-            is_directory = False
-        if not is_directory:
+        if not _is_directory(path):
             return False
         has_dependency_below = any(
             dependency.is_relative_to(path_variant)

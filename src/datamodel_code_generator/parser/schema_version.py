@@ -206,6 +206,7 @@ class JsonSchemaFeatures:
     )
     contains_counts: bool = field(
         default=False,
+        kw_only=True,
         metadata=FeatureMetadata(
             introduced="2019-09",
             doc_name="minContains/maxContains",

@@ -141,6 +141,7 @@ from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_fil
 if TYPE_CHECKING:
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser.base import Result
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaObject
     from datamodel_code_generator.reference import Reference
     from tests.main.conftest import InputFileTypeLiteral
 
@@ -40043,6 +40044,29 @@ def test_schema_graph_check_of_a_reader_that_writes_a_loaded_document(monkeypatc
     )
     with pytest.raises(
         Error, match=f"^{CHECK_SCHEMA_GRAPH_ENV}: loaded documents changed after their load: redirect.json$"
+    ):
+        parser.parse()
+
+
+class _PointerTargetWriterParser(JsonSchemaParser):
+    """Replaces the schema a reference loads in the document being parsed: a reader that writes a prepared tree."""
+
+    def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
+        loaded = super()._load_ref_schema_object(ref)
+        self.raw_obj["properties"]["kept"] = {"type": "string"}
+        return loaded
+
+
+def test_schema_graph_check_of_a_reader_that_writes_a_pointer_target(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A value the record of a document keeps for a pointer is read anew at every ask: a written tree is reported."""
+    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, "1")
+    parser = _PointerTargetWriterParser(
+        JSON_SCHEMA_DATA_PATH / "ref_edges" / "redirect.json", formatters=[Formatter.BUILTIN]
+    )
+    with pytest.raises(
+        Error,
+        match=f"^{CHECK_SCHEMA_GRAPH_ENV}: the value kept for redirect.json#/properties/kept differs from its "
+        "document$",
     ):
         parser.parse()
 

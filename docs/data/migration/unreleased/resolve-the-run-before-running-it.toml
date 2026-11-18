@@ -1,9 +1,0 @@
-[[change]]
-id = "resolve-the-run-before-running-it"
-category = "harness"
-title = "Resolve the run before running it"
-summary = "Stored test output of resolve the run before running it (#7049); the package writes the same output for the same call."
-refs = ["#7049"]
-covers = [
-    "main/run_paths/batch_preflight_checks_the_planned_output_roots.txt",
-]

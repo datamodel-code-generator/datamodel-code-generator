@@ -10,7 +10,8 @@ with an `$id` or draft-04 `id`, the implicit resources of OpenAPI, `$anchor` and
 ``ResourceRegistry.register`` fills the registry dicts L1 resolves references through from that record.
 ``SchemaGraphBuilder.edge_key`` keeps the ``RefKey`` each edge resolves to in its own document, and
 ``SchemaGraphBuilder.schema`` the object each JSON object of a loaded document validates to, which every reader of that
-object shares. ``SchemaGraphBuilder.node`` names a JSON object of a loaded document as the node walks visit once
+object shares, and ``SchemaGraphBuilder.pointer_value`` the value each pointer names in a prepared tree, in the record
+of its document. ``SchemaGraphBuilder.node`` names a JSON object of a loaded document as the node walks visit once
 (``SchemaNodeId``), and a ``ReservedTarget`` the node a reference a document reserves names in it.
 ``SchemaGraphBuilder.mount_root`` gives a document a root of the graph's own, under which
 ``SchemaGraphBuilder.mount_in`` mounts the schemas the parser converts from values of the document, so the document
@@ -500,8 +501,10 @@ class DocumentRecord:
     preparation (None: no preparation ended); ``implicit`` is whether it evaluates schemas as resources without an
     identifier, as OpenAPI component schemas, and ``lenient`` the loaded document when it also embeds resources, as it
     then resolves references against itself; ``converted`` holds the locations of its schemas converted from another
-    format, each with those below, under the reference-path name they were converted at. The record
-    ``SchemaGraphBuilder.known`` reads for a document the parse never met is ``_NO_RECORD``, which nothing writes.
+    format, each with those below, under the reference-path name they were converted at; ``values`` the value each
+    fragment names in ``tree``, by fragment and reading (``SchemaGraphBuilder.pointer_value``), which a new tree starts
+    anew. The record ``SchemaGraphBuilder.known`` reads for a document the parse never met is ``_NO_RECORD``, which
+    nothing writes.
     """
 
     path_parts: list[str] | None = None
@@ -511,9 +514,12 @@ class DocumentRecord:
     implicit: bool = False
     lenient: dict[str, Any] | None = None
     converted: set[SchemaLocation] = field(default_factory=set)
+    values: dict[tuple[str, str], object] = field(default_factory=dict)
 
 
 _NO_RECORD: Final = DocumentRecord()
+_UNREAD: Final = object()
+"""The value ``SchemaGraphBuilder.pointer_value`` has not read for a fragment yet."""
 
 
 SCHEMA_GRAPH: Final[ContextVar[SchemaGraphView | None]] = ContextVar("schema_graph", default=None)
@@ -618,6 +624,25 @@ class SchemaGraphBuilder:
         if (schema := self._schemas.get(key := (id(raw), kind))) is None:
             schema = self._schemas[key] = validate()
         return schema
+
+    def pointer_value(self, tree: object, fragment: str, reading: str, read: Callable[[], object]) -> object:
+        """Return the value a fragment names in a prepared tree by a reading, which ``read`` walks at the first ask.
+
+        The record of the document whose tree it is keeps it (``DocumentRecord.values``), a missing target too. Any
+        other tree, and a root ``mount_in`` may mount into (``mount_root``), which a mount writes, keeps nothing. A
+        ``read`` that raises keeps nothing, so the next ask raises again.
+        """
+        if (
+            (location := self.locations.get(id(tree))) is None
+            or (document := self.names.get(location.document)) is None
+            or (owner := self.documents.get(document)) is None
+            or owner.tree is not tree
+            or self._mounts_into(tree)
+        ):
+            return read()
+        if (value := (values := owner.values).get(entry := (fragment, reading), _UNREAD)) is _UNREAD:
+            value = values[entry] = read()
+        return value
 
     def node(self, raw: object) -> SchemaNodeId | None:
         """Return the node a JSON object of a loaded document is, or None for a value the graph does not locate."""
@@ -789,13 +814,17 @@ class SchemaGraphBuilder:
         It is a copy of the document's root, located as that root, which the graph owns; a converted schema and a root
         the graph already owns are their own.
         """
-        if id(document) in self._mounted or id(document) in self._mount_roots:
+        if self._mounts_into(document):
             return document
         root = copy(document)
         self.locations[id(root)] = self.locations[id(document)]
         self._documents.append(root)
         self._mount_roots.add(id(root))
         return root
+
+    def _mounts_into(self, root: object) -> bool:
+        """Return whether a root is one the graph owns, which ``mount_root`` gives itself and ``mount_in`` writes."""
+        return id(root) in self._mounted or id(root) in self._mount_roots
 
     def mount_in(self, root: dict[str, Any], container: str, key: str, converted: dict[str, Any]) -> None:
         """Mount a converted schema at ``key`` of ``container`` under a root from ``mount_root``.

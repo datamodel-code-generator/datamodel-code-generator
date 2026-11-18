@@ -1,9 +1,0 @@
-[[change]]
-id = "check-the-config-fields-against-the-option-table"
-category = "harness"
-title = "Check the config fields against the option table"
-summary = "Stored test output of check the config fields against the option table (#7048); the package writes the same output for the same call."
-refs = ["#7048"]
-covers = [
-    "cli_doc/cli_options_sync/option_table_matches_the_config_models.txt",
-]

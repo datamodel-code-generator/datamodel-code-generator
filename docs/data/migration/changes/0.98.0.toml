@@ -1,0 +1,296 @@
+# The changes of 0.98.0, moved from docs/data/migration/unreleased/ when the release was stamped.
+
+[[change]]
+id = "annotated-model-default-cast"
+category = "output-text"
+kind = "output-text"
+action = "none"
+title = "`--use-annotated` casts a model field's default to the field's type"
+summary = "Under `--use-annotated`, a field whose type holds a model or a root model, which Pydantic validates its default into (`validate_default=True`), was assigned the schema default as it is in the class body: an object or an array for a model, a list or dict of objects for a list or dict of models, an object for a union of models, a number or string for a root model such as a constrained `integer`, or a string for a union of a model with a format such as a URL or a date. mypy (with the Pydantic plugin) and pyright expect the field's type there, so both reported the assignment. Such a value is now written as `cast('<the field type>', <value>)`, and the module imports `cast` from `typing`. Pydantic still validates the value at instantiation (`validate_default=True` is unchanged), so the models behave as before: the same values, the same JSON Schema defaults, the same error for a default the model rejects. A default the type already takes, such as an empty list for a list of models, a string for a union with `str` or enum members for a list of enums (`--set-default-enum-member`), is written as before."
+affects = { output_model_types = ["pydantic_v2.BaseModel"], options = ["--use-annotated"] }
+before = "flags: Annotated[Flags | None, Field(validate_default=True)] = {'enabled': False}"
+after = "flags: Annotated[Flags | None, Field(validate_default=True)] = cast('Flags | None', {'enabled': False})"
+refs = ["#7016"]
+source = "release-note"
+
+[[change]]
+id = "client-fields-follow-the-constructor"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "Generated clients take a body field as required exactly where the model's constructor requires it"
+summary = "With `--generate-client` and `--strip-default-none`, a property the schema leaves optional whose Pydantic model field has no default (`tag: str | None`) is a required field argument of the call that sends the body (`tag: str`, README `tag (required)`, `FieldArguments` flag true): `create_pet(id=1)` raises `TypeError: create_pet() missing required field arguments for application/json: 'tag'` before any request, where it raised `DecodeError(reason='unencodable')` from the model. A property whose schema type includes null (OpenAPI 3.1 `type: [string, \"null\"]`) keeps its `= None` default and stays optional; an OpenAPI 3.0 `nullable: true` property, which the model writes without a default, becomes required like the others. The same holds for the `pydantic_v2.dataclass` output: an OpenAPI 3.0 optional `nullable: true` property with `default: null` under `--strip-default-none` becomes required (the class writes `dn: str | None` without a default). A required property marked `x-is-classvar` (`--field-include-all-keys`) becomes optional in the `pydantic_v2.BaseModel` and `pydantic_v2.dataclass` outputs, because a `ClassVar` is not a constructor argument. An AsyncAPI channel whose messages are told apart by such a property (`kind: {const: join}`, optional) routes received messages by it (`MessageRoute(..., tag='join')`) instead of decoding them as the union of the messages' models: a message without it is refused as `missing` instead of `value`, and a message whose `kind` is null, which the union decoder accepted as the first member, is refused with reason `null`. Server-sent event streams under `--strip-default-none --force-optional` route events by the body tag (`BodySelector(pointer=\"/type\")`) instead of one union codec. The other backends already followed their classes."
+affects = { experimental = ["cli-option.generate-client"] }
+before = "tag: str | UNSET = UNSET,"
+after = "tag: str,"
+refs = ["#7069"]
+source = "release-note"
+
+[[change]]
+id = "client-name-collision-report"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "Generated clients report a name that explicit names take twice once, sorted, as servers do"
+summary = "With `--generate-client`, explicit argument names (`parameter_names`, `--aliases`), method names (`name` of `--client-operations`, sorted within each resource) or the `resource` of channel settings that take one name three or more times report it once instead of once per repeat, and several such names are reported in sorted order after the reserved-name and `--aliases` diagnostics of the operation's parameters (`The arguments of GET /items take 'b' twice; ... take 'a' twice` becomes `... take 'a' twice; ... take 'b' twice`); the \"names no parameter\" error still follows them. An explicit method name that is a reserved member name (`close`) taken twice is reported as reserved only, without the collision line. Servers already reported collisions this way."
+affects = { experimental = ["cli-option.generate-client"] }
+refs = ["#6979"]
+source = "release-note"
+
+[[change]]
+id = "client-tags-follow-the-model"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "Generated clients select a union's variant by the tags its model holds"
+summary = "With `--generate-client` and the `dataclasses.dataclass` or `typing.TypedDict` output, a union with a `discriminator`, in an OpenAPI body or an AsyncAPI message payload, selects each variant by the tags the model reads for it: its own tag field (a `const`, a one-value `Literal` or a one-member enum, whose value is a string, an integer or a boolean: a variant whose tag field holds any other value, such as an object, an array, `null` or a fraction, gets no tag from it), else the mapping keys read as the tag property's type, else its schema name. A union told apart by integers or booleans (`kind: {type: integer, const: 1}`, mapping keys `\"1\"` over an `integer` property, `const: true`) or by one-member enums (under `--use-enum-values-in-discriminator`, or with the TypedDict output) was matched by schema names, or by the mapping keys as text: every schema-valid payload raised `DecodeError(reason='invalid_value')` and, except with mapping keys, `{\"kind\": \"Cat\"}` decoded as `Cat`. Each payload now decodes to its variant and `{\"kind\": \"Cat\"}` is refused. Tags are matched by JSON kind and value, in decoding and in encoding a body of the TypedDict output: `1` and `true` never select each other's variant, and an `Enum` member selects the variant its value tags. The `Choice` of the copied runtime (`client/_runtime/model_codecs/stdlib_dataclasses.py`, `stdlib_typeddicts.py`) takes such tags: `tags: tuple[tuple[str | int | bool, type], ...]`. With `--collapse-root-models`, a TypedDict union whose variants share one enum for the tag property and are named by a mapping is generated instead of refused with \"The discriminator version gives v1 to two union models\". A TypedDict variant whose own tag field admits several values (`kind: {type: string, enum: [cat, kitty]}`) is told apart, as in the dataclass and Pydantic outputs, by the mapping keys that name it, else by the values of its field that no other variant claims (`variant-tag-values-of-their-field`): without a mapping `{\"kind\": \"cat\"}` and `{\"kind\": \"kitty\"}` decode and `{\"kind\": \"Cat\"}` is refused, and with the mapping `cat: Cat` `{\"kind\": \"kitty\"}` is refused unless `--use-unmapped-variant-tag-values` is given. The Pydantic and msgspec outputs decode through their models. Integer mapping keys over an integer enum select their variants with the dataclass output under `--use-enum-values-in-discriminator` (#7083) and with the TypedDict output for an enum the variants share (#7084)."
+affects = { experimental = ["cli-option.generate-client"] }
+refs = ["#7082", "#7083", "#7084"]
+before = "Choice((), 'kind', (('Cat', models.Cat), ('Dog', models.Dog)))"
+after = "Choice((), 'kind', ((1, models.Cat), (2, models.Dog)))"
+source = "release-note"
+
+[[change]]
+id = "collapsed-root-unused-alias-warning"
+category = "notice"
+title = "No dropped-constraints warning for a collapsed root model that is no longer written"
+summary = "With `--collapse-root-models` under msgspec.Struct, the warning that a root-model alias whose references are all collapsed is generated without some member constraints (`... Parted is generated without these constraints.`) is no longer printed, since that unused alias is no longer written (see collapsed-root-unused-alias); the warnings of the fields that use it stay."
+refs = ["#6915"]
+kind = "warning"
+action = "none"
+source = "release-note"
+
+[[change]]
+id = "collapsed-root-unused-alias"
+category = "default-fix"
+title = "Root models every use of which is collapsed are no longer written as unused aliases under msgspec"
+summary = "With `--collapse-root-models` and `--output-model-type msgspec.Struct`, a root model whose references are all collapsed into their users (several fields, some naming it inside a union) was still written as an unused module-level type alias (`NullableShort: TypeAlias = Annotated[str, Meta(max_length=3)] | None`); it is no longer written. Nothing named the alias, so the models that used it are unchanged and validate the same payloads."
+refs = ["#6915"]
+decision = ["#6915"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+
+[[change]]
+id = "count-escapes-the-rust-engine-rejects"
+category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+title = "Patterns with an escape pydantic-core's regex engine rejects are left out or read with Python's re"
+summary = "A pattern with a letter after a backslash that the Rust regex engine of pydantic-core reads nowhere (\\k in a named reference, \\c, \\e and the others), in a class or outside, or with a non-ASCII character after a backslash, is left out with a warning where no engine of the output compiles it, and is read with Python's re where only that engine reads it (\\é), instead of failing at import."
+refs = ["#7094"]
+
+[[change]]
+id = "count-named-groups-python-rejects"
+category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+title = "Models that compile patterns with Python's re leave out ECMA-262 syntax it rejects"
+summary = "A pattern with ECMA-262 syntax that Python's re rejects on every Python (a named group (?<name>...), an empty class [] or [^], a reference to a group not closed before it, a lookbehind whose width varies) is left out with a warning where the models compile it with Python's re, as other such patterns are, instead of failing at import or at the first decode; so are the lookaheads an allOf joins its member patterns into without --intersect-allof-keywords where a member holds such syntax. The default constr case, a named group beside a lookahead written as constr, is fixed with #6941."
+refs = ["#7088"]
+
+[[change]]
+id = "enum-base-name-field-type"
+category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+title = "A field named like its type is renamed when the base class name contains \"Enum\""
+summary = "A model whose base class name contains \"Enum\" (a generated base such as EnumerationBase, or a custom --base-class such as EnumAwareModel) now renames a field named like its type, as other models do, so Pydantic output no longer fails at import; only enum classes keep their member names."
+refs = ["#6840"]
+
+[[change]]
+id = "functional-typeddict-description-example"
+category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+title = "A functional TypedDict writes no field examples into its dict literal"
+summary = "A TypedDict written in the functional form (a key that is not a Python name) under --use-field-description-example, also set by the practical presets, now leaves the field examples out as it leaves out the field descriptions, so the module parses instead of failing with a syntax error."
+refs = ["#7000"]
+
+[[change]]
+id = "leave-out-rejected-patterns-in-render"
+category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+title = "Pydantic models that compile patterns with Python's re leave out the patterns it rejects in every form they write"
+summary = "A pattern that Python's re rejects (a Unicode property such as \\p{L}, or a named group (?<name>...)) is left out with a warning wherever the model writes it, not only in Field(): in constr, StringConstraints, a type alias body, a root model, a base class or a type alias of such a model, also where it lives in another module (as Field() does since 0.92.0; owner decision 2026-11-18), an item, value, key or union member, and a pydantic dataclass, where the model selects Python's re for another pattern, instead of failing at import."
+refs = ["#6941", "#7088"]
+
+[[change]]
+id = "leave-out-uncompiled-members-before-a-pattern-conjunction-warnings"
+category = "notice"
+title = "The warning for an allOf member pattern no engine compiles names the member"
+summary = "Where an allOf member's pattern holds syntax that Python's re rejects on every Python and that the count of #7088 newly reads (a named group (?<name>...) and the others), msgspec.Struct warns that the member's pattern is left out (`The pattern '(?<n>b)' of the schema at ... is left out`) instead of that no single regular expression checks it with the other members, as for `\\x{62}` and `\\p{L}`; pydantic --field-constraints and --use-annotated outputs without --intersect-allof-keywords, whose models are the same, warn that the joined pattern is left out. The models are unchanged."
+refs = ["#7094"]
+kind = "warning"
+action = "none"
+source = "release-note"
+
+[[change]]
+id = "leave-out-uncompiled-members-before-a-pattern-conjunction"
+category = "default-fix"
+title = "An allOf member pattern no engine of the output compiles is left out before the conjunction everywhere"
+summary = "Without --intersect-allof-keywords, under msgspec.Struct, an allOf whose members' patterns include one that Python's re rejects on every Python and that the count of #7088 newly reads (a named group (?<name>...), an empty class [] or [^], a reference to a group not closed before it, a lookbehind whose width varies) wrote no pattern (`str`); that member is now left out with a warning before the patterns are conjoined, as `\\x{62}` and `\\p{L}` already were, so the other members are checked (`Annotated[str, Meta(pattern='a')]`). Only strings the schema rejects decode differently; schema-valid payloads decode the same."
+refs = ["#7094"]
+decision = ["#7094"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+
+[[change]]
+id = "read-the-write-walk-from-the-parse-main"
+category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+title = "Request/response models no longer crash on a $ref to a closed object beside a schema-valued additionalProperties"
+summary = "Generation of request and response models with an intersect option no longer fails with \"A Parser can not resolve classes\" for a $ref to a closed object beside a schema-valued additionalProperties."
+refs = ["#7051"]
+
+[[change]]
+id = "schema-validators-conditional-bounds"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "Schema validators check the numeric bounds an if/then/else puts on properties"
+summary = "With `--generate-schema-validators` (or `--schema-validator-type pydantic-v2`), the `minimum`, `maximum`, `exclusiveMinimum` and `exclusiveMaximum` that the `then` or `else` of an if/then/else puts on a property are checked on the raw input when the `if` is one the conditional required check reads (required properties with `const` or `enum` values, or presence only): `{\"kind\": \"a\", \"value\": 1}` is now rejected for `then: {properties: {value: {minimum: 10}}}` under `if: kind = \"a\"`, as JSON Schema rejects it. The bounds are read from the branch, its allOf members and the schema a branch or property references; a bound applies to a JSON number only, and the condition tells a boolean from a number. A model also checks the bounds of its base class. Models gain `__json_schema_conditional_bounds__` and a shared base with `_validate_json_schema_conditional_bounds`. Without the option nothing changes. The conditions of these checks, the released conditional `required` included, compare an enum member by its value, as the JSON input does: a model built with `Color.RED` takes the branch that `\"red\"` takes."
+affects = { experimental = ["cli-option.generate-schema-validators"] }
+refs = ["#7054"]
+decision = ["#7054"]
+source = "release-note"
+
+[[change]]
+id = "schema-validators-constant-types"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "Schema validators reject a boolean for a numeric const or enum value and a number for a boolean one"
+summary = "With `--generate-schema-validators` (or `--schema-validator-type pydantic-v2`), a const or enum that holds a number equal to a boolean (`0`, `1`) or a boolean gets a check on the raw input: `true` for `const: 1`, for `enum: [1, 2]` or for `enum: [1, \"x\"]`, and `1` for `const: true`, which Python's `True == 1` let the Literal or Enum take, are now rejected, as JSON Schema rejects them; `1.0` for `const: 1` is still accepted, and an enum that holds both (`[1, true]`) takes both. The check holds for properties, array items and mapping values, for an Enum class a property references, for the consts of a oneOf or anyOf (with branches that take no boolean or number, such as `null`), and for root models; models gain `__json_schema_constant_types__` and a shared base with `_validate_json_schema_constant_types`. Without the option nothing changes."
+affects = { experimental = ["cli-option.generate-schema-validators"] }
+refs = ["#7053"]
+decision = ["#7053"]
+source = "release-note"
+
+[[change]]
+id = "schema-validators-contains-counts"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "Schema validators check the item counts of contains, minContains and maxContains"
+summary = "With `--generate-schema-validators` (or `--schema-validator-type pydantic-v2`), an array with a `contains` schema gets a check on the raw input that counts the items that schema accepts and rejects the array when fewer than `minContains` (1 when absent) or more than `maxContains` match: `[\"other\"]` is now rejected for `contains: {const: \"target\"}`, and `[\"k1\", \"k2\"]` for `contains: {pattern: \"^k\"}, maxContains: 1`, as JSON Schema rejects them. The items are counted with the meaning of the contains schema, not with the generated item type: a boolean is no number, `1.0` is an integer, a string keyword applies to strings and a numeric one to numbers only, so `[1, \"2\"]` stays valid for `contains: {type: integer}, maxContains: 1` with or without `--strict-types`. The count is checked where the contains schema holds only `type`, `const`, `enum`, `pattern`, `minLength`, `maxLength`, `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` and `multipleOf` besides metadata; a contains with any other keyword (a `$ref`, `properties`, `required`, `format`, ...), a pattern Python rejects (`\\p{L}`), a `multipleOf` that is not an integer or an enum `--ignore-enum-constraints` drops gets no count check. `minContains` and `maxContains` count from draft 2019-09 on; in a draft-06 or draft-07 schema `contains` needs one match and the two keywords are ignored, as those drafts ignore them. The check holds for root models, properties, array items and tails, mapping values, allOf members and the arrays every branch of a oneOf or anyOf requires it for. Models gain `__json_schema_contains__` and a shared base with `_validate_json_schema_contains`. Without the option nothing changes."
+affects = { experimental = ["cli-option.generate-schema-validators"] }
+refs = ["#7052"]
+decision = ["#7052"]
+source = "release-note"
+
+[[change]]
+id = "schema-validators-ref-siblings-in-allof"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "Schema validators check the keywords beside a $ref inside an allOf member"
+summary = "With `--generate-schema-validators` (or `--schema-validator-type pydantic-v2`), the keywords that stand beside a `$ref` inside an `allOf` member are now checked on the raw input: `uniqueItems` beside a `$ref` rejects `[\"a\", \"a\"]`, which 0.97.0 accepted, as JSON Schema rejects it. Without the option nothing changes."
+affects = { experimental = ["cli-option.generate-schema-validators"] }
+refs = ["#7052"]
+decision = ["#7052"]
+source = "release-note"
+
+[[change]]
+id = "server-form-by-name-follows-applied-config"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "Generated servers read a form member by its field name exactly where the model's applied configuration validates by name, a decorated model included"
+summary = "With `--generate-server`, a form body the server reads through its own adapter (multipart, or URL-encoded with `pydantic_v2.dataclass`) also reads each member by its field name only where the configuration the model applies sets `populate_by_name` or `validate_by_name`, with the bases as Pydantic applies them (a model merges its bases' in order, then its own; a dataclass takes its own, else its first base's). A model whose base sets it while the model turns it off (`--extra-template-data` with `populate_by_name: false`), or a dataclass with a configuration of its own under such a base, no longer lists the field names (`FieldPlan('last_name', ...)` beside `FieldPlan('last-name', ...)`); the model dropped the values read under those names, so requests are handled as before. A class written with `--class-decorators` now counts too: a multipart body `Person` with the property `first-name` under `--allow-population-by-field-name --class-decorators @typing.final --additional-imports typing` lists `FieldPlan('first_name', 'string')`, and a part named `first_name` still reaches `Person(first_name='b')`."
+affects = { experimental = ["cli-option.generate-server"] }
+before = "fields=(FieldPlan(\"first-name\", \"string\"),),"
+after = "fields=(FieldPlan(\"first-name\", \"string\"), FieldPlan(\"first_name\", \"string\")),"
+refs = ["#7061"]
+source = "release-note"
+
+[[change]]
+id = "server-query-object-members-follow-applied-config"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "Generated servers no longer attribute unclaimed query keys and cookies to an exploded query or cookie object whose model drops other members"
+summary = "With `--generate-server`, an exploded `form` query parameter or a cookie parameter typed by a Pydantic model or dataclass, and an exploded styled member of a form body, took every key no other parameter or member declares, by its schema's `additionalProperties`. Where the configuration the model applies says `extra='forbid'` or `'ignore'` (a class that sets no `extra` ignores them), it now takes none; declared parameters (`reserved_names`) are never taken, as before. For `GET /plain?count=1&foo=bar` with `count` declared and `obj` typed by `Plain` (properties `size`, no `additionalProperties`), the handler now gets `obj=None` where it got `Plain(size=None)`, and a cookie object `prefs` of the same type is `None` for a request that carries only other cookies (`_ga=x`), where it was `Plain(size=None)`; with `--extra-fields forbid` such requests are served (`obj=None`, `prefs=None`) where the model refused them with 422 although the object was not sent; with `--extra-fields ignore` an object whose schema says `additionalProperties: true` no longer takes `foo` either. A required object that receives only undeclared keys (`GET /required?foo=bar`) is now missing (422) where it was `Plain(size=None)`, as `--extra-fields forbid` already answered. Two such parameters without `additionalProperties` in one operation, or one beside a `deepObject` parameter, which stopped the server with \"Expanded query parameter names collide\", now generate and serve `?size=1&page=2`. With `--extra-fields allow` nothing changes: an object takes the keys and cookies its schema allows (with no `additionalProperties`, every unclaimed one), and two such parameters still stop the server."
+affects = { experimental = ["cli-option.generate-server"] }
+before = "fields=(FieldPlan(\"size\", \"integer\"),), additional=FieldPlan(\"\", \"string\"), reserved_names=(\"count\",),"
+after = "fields=(FieldPlan(\"size\", \"integer\"),),"
+refs = ["#6991"]
+source = "release-note"
+
+[[change]]
+id = "target-extras-follow-applied-config"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "Generated clients and servers write the extra members of a Pydantic dataclass exactly where the configuration it applies keeps them, a decorated one included"
+summary = "With `--output-model-type pydantic_v2.dataclass`, a dataclass keeps extra members only where the configuration Pydantic applies to it says `extra='allow'`: its own configuration, or, where it has none, its first base's. The client codec (`extras_serializer`), the server response (`dump=extras_json`, with the `primary` status it adds) and the copies of `_runtime/model_codecs/pydantic_extras.py` (a server's `shared.py` too) now follow that. A class written with `--class-decorators` now counts as well: for `Thing` with `additionalProperties: true` used as a JSON body and response, under `--class-decorators @typing.final --additional-imports typing` the client sends `{\"v\":\"a\",\"foo\":\"b\"}` for `Thing(v='a', foo='b')` where it sent `{\"v\":\"a\"}`, and the server returns the extra members too. A dataclass with a configuration of its own that sets no `extra` (for example `validate_by_name` from `--allow-population-by-field-name`) under a base with `additionalProperties: true`, and a dataclass whose first base forbids extra members, no longer take `extras_serializer` or `dump=extras_json`; Pydantic kept no extra members in them, so their JSON does not change."
+affects = { experimental = ["cli-option.generate-client", "cli-option.generate-server"] }
+before = "responses={\"200\": Declared(media_type=\"application/json\", model=models.Thing)},"
+after = "responses={\"200\": Declared(media_type=\"application/json\", model=models.Thing, dump=extras_json)}, primary=200,"
+refs = ["#7060"]
+source = "release-note"
+
+[[change]]
+id = "target-other-members-follow-applied-config"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "Generated clients and servers no longer take other members of a form or multipart body, or a client query object, that the model drops"
+summary = "Whether a form body, a client's form or query object parameter, or a multipart body typed by a Pydantic model or dataclass takes members besides its properties now also follows the configuration the model applies, with its bases as Pydantic applies them: where it says `extra='forbid'` or `'ignore'` (a class that sets no `extra` ignores them) the body takes none; otherwise, `--extra-fields allow` included, it takes what the first `additionalProperties` among its schema and its bases' gives, as before, and nothing changes under `--extra-fields allow`. An object without `additionalProperties`, or any object under `--extra-fields forbid` or `ignore`, no longer has `additional=FieldPlan('', 'string')` in a client's form or query plan, `additional=PartPlan('', 'json')` (and its `parts=`) in a client's multipart body sent whole, nor `additional=JsonPart('', TypeAdapter(object), untyped=True)` in a server's; the model held no other members to write, and unknown parts still reach it on a server (`forbid` answers 422, `ignore` drops them), so the requests sent and the values handled do not change, and a client call option no longer counts the undeclared names of such an object as written by its pagination. With `--extra-fields ignore` or `forbid`, a server no longer checks other members against the type their `additionalProperties` gives them: under `ignore` the model drops them and the request is served, under `forbid` it is still answered with 422 (`extra_forbidden` or `unexpected_keyword_argument`). With both backends, a multipart body whose other members are typed as an object gets `x=abc` served under `ignore` (before 422 `json_invalid`, and `model_type` or `dict_type` for `x=5`); with `pydantic_v2.dataclass`, a URL-encoded or multipart body typed `{type: integer}` gets `x=abc` served too (before 422 `int_parsing`). Three refusals go. A URL-encoded body whose `additionalProperties` is an object, refused under `ignore` and `forbid` (\"A parameter value needs one unambiguous scalar kind\"), now generates. Under the default options, `ignore` and `forbid`, a URL-encoded or multipart body with an exploded object member without `additionalProperties` beside another such member or beside a member that allows other properties (such as a map), and one beside a `deepObject` member, which were refused (\"The exploded form member ... allows other properties ...\"), now generate: `size=1&k=v&j=w` reaches the handler as `page=Page(size=1)`, `filter={'k': 'v', 'j': 'w'}`. Under `--extra-fields ignore` and `forbid` this also holds for exploded members typed by a model whose schema says `additionalProperties: true` or gives a schema. A multipart body the client sends as parts (`MultipartBody`) and a multipart response it reads into `MultipartData` keep the other parts the schema allows, as before. With `pydantic_v2.dataclass`, a dataclass with a configuration of its own that sets no `extra` no longer takes the typed other members of a base's schema."
+affects = { experimental = ["cli-option.generate-client", "cli-option.generate-server"] }
+before = "form=MultipartForm(members=True, parts=(PartPlan(\"first-name\", \"string\"),), additional=PartPlan(\"\", \"json\")),"
+after = "form=MultipartForm(members=True),"
+refs = ["#7038"]
+source = "release-note"
+
+[[change]]
+id = "union-mode-constrained-union"
+category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+title = "--union-mode no longer writes union_mode beside a length or bound constraint of the field"
+summary = "With --union-mode, a field whose union type carries a length or bound constraint of its own in Field() (a property that refers to a union an allOf member constrains, such as an array-or-string union with contains under --collapse-root-models) was given Field(min_length=..., union_mode=...), and the module failed at import with \"Unable to apply constraint 'union_mode' to schema of type 'function-after'\": Pydantic applies such a constraint as a validator around the union before union_mode. union_mode is now left out on such a field; a field whose choices carry the constraint, and one with a pattern, keep it."
+refs = ["#7107"]
+
+[[change]]
+id = "union-mode-single-choice"
+category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+title = "--union-mode no longer writes union_mode on a field of one choice beside None"
+summary = "With --union-mode, a field whose type is one choice beside None (a nullable $ref to a union model, whose RootModel Pydantic validates as one model, or a nullable scalar, constrained type, Literal, enum, model or list) was given Field(union_mode=...), and the module failed at import with \"Unable to apply constraint 'union_mode'\". union_mode is now written only where Pydantic validates a union of two or more choices; a type alias whose value is a union, and a union inside Annotated, keep it, and Literal types of the same values count as one choice."
+refs = ["#6815"]
+
+[[change]]
+id = "variant-tag-values-of-request-response-variants"
+category = "decided-change"
+kind = "default-output"
+action = "review"
+source = "release-note"
+title = "The request and response variants of a discriminated union take the values their tag property admits"
+summary = "With --read-only-write-only-model-type request-response and --dedupe-request-response-variants, a discriminated variant whose tag property admits several values (ComparisonFilter.type: enum [eq, ne]) is tagged by those values, Literal['eq', 'ne'], instead of its schema name, Literal['ComparisonFilter'], as without those options (variant-tag-values-of-their-field). Decided by the owner on 2026-11-18."
+keep = { note = "No option restores the schema name: the schema rejects it, and the variant refused every document the schema accepts." }
+refs = ["#7089"]
+decision = ["#7089"]
+
+[[change]]
+id = "variant-tag-values-of-their-field"
+category = "default-fix"
+kind = "default-output"
+action = "review"
+source = "release-note"
+title = "A discriminated variant whose tag property admits several values is tagged by those values"
+summary = "A variant of a discriminated union whose tag property admits several values (Cat.kind: enum [cat, kitty], or [1, 3] beside Dog.kind: const 2), and that no mapping key names, was tagged by its schema name, kind: Literal['Cat'], which refused every document of the variant the schema accepts and accepted {\"kind\": \"Cat\"}, which it rejects. It now takes the values no other variant of the union admits, Literal['cat', 'kitty'], in every output but msgspec Structs, which take one tag and keep the one they have (tag='Cat'; a rule for them is an opt-in to come, #7101), under --use-enum-values-in-discriminator and --enum-field-as-literal all too; a value two variants admit stays refused, and a variant whose values all belong to other variants, or whose schema name is one of its values, keeps its tag. A union that lists the variant through a nested discriminated union (a root model of one) reads those values too and keeps its discriminator, but under --use-enum-values-in-discriminator, where it stays a plain union, as in 0.97.0. Mapping keys that name the values of an integer enum written as a Literal (--enum-field-as-literal all) are integers, Literal[1] instead of Literal['1']. Names and structure stay; schema-valid documents that were refused now decode. A variant a mapping key names keeps its mapping keys unless --use-unmapped-variant-tag-values is given. Decided by the owner on 2026-11-18: the variants that refused every schema-valid document are fixed in the default output, and msgspec Structs stay as they are until an opt-in."
+refs = ["#7089", "#7084", "#7100"]
+decision = ["#7089"]

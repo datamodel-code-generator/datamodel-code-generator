@@ -1,9 +1,0 @@
-[[change]]
-id = "keep-what-a-loaded-document-knows-in-one-record"
-category = "harness"
-title = "Keep what a loaded document knows in one record"
-summary = "Stored test output of keep what a loaded document knows in one record (#6986); the package writes the same output for the same call."
-refs = ["#6986"]
-covers = [
-    "checks/checks/check_seams.txt",
-]
