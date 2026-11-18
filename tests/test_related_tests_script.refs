@@ -9,6 +9,7 @@ head	related_tests_script/related_tests_fail_when_git_fails[head].txt
 	related_tests_script/related_tests_need_a_base.txt
 [test_related_tests_read_the_working_tree_without_a_head]
 tracked-and-untracked	related_tests_script/related_tests_read_the_working_tree_without_a_head[tracked-and-untracked].txt
+untracked-listed-module	related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-listed-module].txt
 untracked-non-ascii-path	related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-non-ascii-path].txt	= related_tests_script/related_tests_select_the_diff[row-by-added-path].txt
 untracked-with-a-pattern	related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-with-a-pattern].txt	= related_tests_script/related_tests_select_the_diff[row-pattern-added-line].txt
 untracked-without-a-pattern	related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-without-a-pattern].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
@@ -18,6 +19,12 @@ untracked-without-a-pattern	related_tests_script/related_tests_read_the_working_
 	related_tests_script/related_tests_rows_select_with_the_repository_rules.txt
 [test_related_tests_select_the_diff]
 deleted-module	related_tests_script/related_tests_select_the_diff[deleted-module].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
+fast-path-deleted-module	related_tests_script/related_tests_select_the_diff[fast-path-deleted-module].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
+fast-path-list-edited	related_tests_script/related_tests_select_the_diff[fast-path-list-edited].txt	= related_tests_script/related_tests_rows_of_the_repository_name_existing_targets.txt
+fast-path-listed-module	related_tests_script/related_tests_select_the_diff[fast-path-listed-module].txt	= related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-listed-module].txt
+fast-path-listed-package	related_tests_script/related_tests_select_the_diff[fast-path-listed-package].txt	= related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-listed-module].txt
+fast-path-listed-top-package	related_tests_script/related_tests_select_the_diff[fast-path-listed-top-package].txt	= related_tests_script/related_tests_read_the_working_tree_without_a_head[untracked-listed-module].txt
+fast-path-unlisted-module	related_tests_script/related_tests_select_the_diff[fast-path-unlisted-module].txt	= related_tests_script/related_tests_select_the_diff[mirror-of-a-private-module].txt
 mirror-of-a-module	related_tests_script/related_tests_select_the_diff[mirror-of-a-module].txt
 mirror-of-a-private-module	related_tests_script/related_tests_select_the_diff[mirror-of-a-private-module].txt
 mirror-of-a-script	related_tests_script/related_tests_select_the_diff[mirror-of-a-script].txt

@@ -1,4 +1,4 @@
-"""Print the test node ids a diff selects: the mirrors of changed modules and the rows of related_tests.toml."""
+"""Print the test node ids a diff selects: mirrors of changed modules, fast-path tests and related_tests.toml rows."""
 
 from __future__ import annotations
 
@@ -13,6 +13,9 @@ import tomllib
 
 RULES = Path(__file__).with_name("related_tests.toml")
 SRC = "src/datamodel_code_generator/"
+FAST_PATH_TEST = "tests/main/test_cli_fast_paths.py"
+FAST_PATH_LISTS = "tests/data/expected/main/cli_fast_paths/"
+MODULE_NAME = re.compile(r'"(datamodel_code_generator[\w.]*)"')
 
 
 class GitError(Exception):
@@ -82,6 +85,27 @@ def _mirrors(path: str) -> list[str]:
     return []
 
 
+def _module_name(path: str) -> str | None:
+    """Return the dotted name of a package module file (`a/b.py` or `a/b/__init__.py`), or None for other paths."""
+    if not (path.startswith(SRC) and path.endswith(".py")):
+        return None
+    parts = ["datamodel_code_generator", *path.removeprefix(SRC).removesuffix(".py").split("/")]
+    return ".".join(parts[:-1] if parts[-1] == "__init__" else parts)
+
+
+def _fast_path_modules(root: Path, base: str, head: str | None) -> set[str]:
+    """Return the modules the stored fast-path lists name: from the merge base, or the working tree without a head."""
+    if head is None:
+        files = [path.read_text(encoding="utf-8") for path in sorted((root / FAST_PATH_LISTS).glob("fast_paths_*.txt"))]
+    else:
+        left = _merge_base(root, base, head)
+        names = _git(root, "ls-tree", "-z", "--name-only", left, FAST_PATH_LISTS).split("\0")
+        files = [
+            _git(root, "show", f"{left}:{name}") for name in names if name.rpartition("/")[2].startswith("fast_paths_")
+        ]
+    return {name for text in files for name in MODULE_NAME.findall(text)}
+
+
 def select(root: Path, base: str, head: str | None, rules: list[dict]) -> list[str]:
     """Return the sorted node ids the diff selects: the mirrors of changed modules and every row that fires."""
     changed = _changes(root, base, head)
@@ -90,6 +114,11 @@ def select(root: Path, base: str, head: str | None, rules: list[dict]) -> list[s
         if letter == "D":
             continue
         nodes.update(next(([test] for test in _mirrors(path) if _exists(root, head, test)), []))
+    listed = _fast_path_modules(root, base, head)
+    if any(_module_name(path) in listed for path, letter in changed.items() if letter != "D") and _exists(
+        root, head, FAST_PATH_TEST
+    ):
+        nodes.add(FAST_PATH_TEST)
     for rule in rules:
         status = rule.get("status")
         hit = [
