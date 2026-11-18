@@ -111,6 +111,63 @@ TREES: dict[str, dict[str, str]] = {
             def test_local():
                 sleep(1)
         """,
+        "tests/test_names.py": """
+            import pytest
+            from pytest import mark as marks
+
+            def test_not_markers(flaky, other):
+                flaky(max_runs=3)
+                other.flaky
+                other.mark.flaky
+                pytest.mark.slow
+                marks.slow
+
+            def test_local_name():
+                flaky = 1
+                return flaky
+
+            def test_bound_later():
+                from flaky import flaky as retry
+                from pytest import mark as pm
+                retry()
+                pm.flaky
+                marks.flaky
+        """,
+        "tests/test_shadowed.py": """
+            import time
+            from time import sleep
+
+            def test_parameter(sleep, time):
+                sleep(1)
+                time.sleep(1)
+
+            def test_assigned():
+                sleep = print
+                sleep(1)
+
+            def test_defined():
+                def sleep(seconds):
+                    return seconds
+                sleep(1)
+
+            def test_nested(sleep):
+                def inner():
+                    sleep(1)
+                return lambda: sleep(1)
+
+            def test_call_root(build):
+                build().sleep(1)
+
+            def test_not_shadowed(other):
+                sleep(1)
+                time.sleep(1)
+
+            def test_local_import():
+                from time import sleep as nap
+                import time as clock
+                nap(1)
+                clock.sleep(1)
+        """,
         "tests/test_sleeps.py": """
             import time
             import time as clock

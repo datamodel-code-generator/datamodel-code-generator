@@ -455,6 +455,8 @@ class _Bindings:
         self.tree = tree
         self.reads: set[tuple[ast.AST, str]] = set()
         self.scope_of: dict[ast.AST, ast.AST] = {}
+        self.read_scope: dict[ast.Name, ast.AST] = {}
+        self.origins: dict[tuple[ast.AST, str], str] = {}
         self._visit(tree, (_Scope(tree, frozenset(), is_class=False),))
 
     def global_reads(self) -> set[str]:
@@ -464,6 +466,21 @@ class _Bindings:
     def import_is_read(self, node: ast.Import | ast.ImportFrom, name: str) -> bool:
         """Return whether the scope that holds the import ``node`` reads the ``name`` it binds."""
         return (self.scope_of[node], name) in self.reads
+
+    def origin(self, node: ast.expr) -> str | None:
+        """Return the dotted path of the module member that ``node`` reads through an import, else None.
+
+        ``sleep`` after ``from time import sleep`` and ``clock.sleep`` after ``import time as clock`` are both
+        ``time.sleep``; a name that an enclosing function binds in another way (a parameter, an assignment) has none.
+        """
+        attrs: list[str] = []
+        while isinstance(node, ast.Attribute):
+            attrs.append(node.attr)
+            node = node.value
+        if not isinstance(node, ast.Name) or node not in self.read_scope:
+            return None
+        root = self.origins.get((self.read_scope[node], node.id))
+        return None if root is None else ".".join([root, *reversed(attrs)])
 
     def _enter(
         self,
@@ -509,11 +526,25 @@ class _Bindings:
             self._enter(node, chain)
             return
         if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
-            self.reads.add((self._scope(node.id, chain), node.id))
+            self.read_scope[node] = self._scope(node.id, chain)
+            self.reads.add((self.read_scope[node], node.id))
         elif isinstance(node, (ast.Import, ast.ImportFrom)):
             self.scope_of[node] = chain[-1].node
+            self._bind_origins(node, chain[-1].node)
         for child in ast.iter_child_nodes(node):
             self._visit(child, chain)
+
+    def _bind_origins(self, node: ast.Import | ast.ImportFrom, scope: ast.AST) -> None:
+        if isinstance(node, ast.ImportFrom) and (node.module is None or node.level):
+            return
+        for alias in node.names:
+            if isinstance(node, ast.ImportFrom):
+                self.origins[scope, alias.asname or alias.name] = f"{node.module}.{alias.name}"
+            elif alias.asname:
+                self.origins[scope, alias.asname] = alias.name
+            else:
+                root = alias.name.split(".")[0]
+                self.origins[scope, root] = root
 
     @staticmethod
     def _scope(name: str, chain: tuple[_Scope, ...]) -> ast.AST:
@@ -903,23 +934,17 @@ def lost_last_caller(tree: Tree, base: Tree | None) -> Iterator[Finding]:
             )
 
 
-def _sleep_names(module: Module) -> tuple[set[str], set[str]]:
-    """Return the names the file binds to the ``time`` module and to ``time.sleep``."""
-    clocks: set[str] = set()
-    sleeps: set[str] = set()
-    for node in module.nodes:
-        if isinstance(node, ast.Import):
-            clocks.update(alias.asname or alias.name for alias in node.names if alias.name == "time")
-        elif isinstance(node, ast.ImportFrom) and node.module == "time" and node.level == 0:
-            sleeps.update(alias.asname or alias.name for alias in node.names if alias.name == "sleep")
-    return clocks, sleeps
+def _retry_form(node: ast.AST, bindings: _Bindings) -> str | None:
+    """Return what kind of rerun or flaky marker, plugin or option ``node`` is, if it is one.
 
-
-def _retry_form(node: ast.AST) -> str | None:
-    """Return what kind of rerun or flaky marker, plugin or option ``node`` is, if it is one."""
+    A marker is ``pytest.mark.flaky`` or a name that an import from the ``flaky`` package binds, read where that
+    import binds it.
+    """
     match node:
-        case ast.Attribute(attr="flaky") | ast.Name(id="flaky"):
-            return "flaky marker"
+        case ast.Attribute(attr="flaky"):
+            return "flaky marker" if bindings.origin(node) == "pytest.mark.flaky" else None
+        case ast.Name(ctx=ast.Load()):
+            return "flaky marker" if (bindings.origin(node) or "").split(".")[0] == "flaky" else None
         case ast.Import(names=aliases):
             hit = any(alias.name.split(".")[0] in RERUN_MODULES for alias in aliases)
         case ast.ImportFrom(module=str() as name, level=0):
@@ -929,15 +954,6 @@ def _retry_form(node: ast.AST) -> str | None:
         case _:
             hit = False
     return "rerun plugin or option" if hit else None
-
-
-def _is_sleep(node: ast.AST, clocks: set[str], sleeps: set[str]) -> bool:
-    if not isinstance(node, ast.Call):
-        return False
-    func = node.func
-    if isinstance(func, ast.Attribute):
-        return func.attr == "sleep" and _dotted(func.value) in clocks
-    return isinstance(func, ast.Name) and func.id in sleeps
 
 
 def _allowed_sleeps(tree: Tree) -> dict[str, int]:
@@ -957,11 +973,11 @@ def flaky_test_workarounds(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
     allowed = _allowed_sleeps(tree)
     found: Counter[str] = Counter()
     for module in tree.tests:
-        clocks, sleeps = _sleep_names(module)
+        bindings = module.bindings
         for node in module.nodes:
-            if form := _retry_form(node):
+            if form := _retry_form(node, bindings):
                 yield Finding(module.rel, node.lineno, "flaky-test-workarounds", form)
-            elif _is_sleep(node, clocks, sleeps):
+            elif isinstance(node, ast.Call) and bindings.origin(node.func) == "time.sleep":
                 found[module.rel] += 1
                 if found[module.rel] > allowed.get(module.rel, 0):
                     yield Finding(module.rel, node.lineno, "flaky-test-workarounds", "time.sleep beyond the allowlist")
