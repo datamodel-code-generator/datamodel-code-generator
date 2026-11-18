@@ -3071,6 +3071,16 @@ def test_watch_polling_keeps_its_roots_when_the_input_is_renamed_away_and_back(
     assert "restarting the watcher" not in capsys.readouterr().out
 
 
+POSIX_DIRECTORY_RENAME_ONLY = pytest.mark.skipif(
+    os.name == "nt",
+    reason=(
+        "the darwin polling simulation renames a directory the watchfiles poller thread holds open, "
+        "which Windows refuses, and a test cannot pause or synchronize that thread"
+    ),
+)
+
+
+@POSIX_DIRECTORY_RENAME_ONLY
 @pytest.mark.parametrize("late_events", [False, True], ids=["prompt", "late"])
 @pytest.mark.allow_direct_assert("a watch run is checked by the generations it made, which no output file records")
 def test_watch_polling_keeps_scanning_a_configured_directory_that_is_removed_and_recreated(
