@@ -117,12 +117,10 @@ ACCEPTED_ENTRY = {
     "decision": "#5088",
     "migration": "external-anchor-target",
 }
-MIGRATION_TITLES = {
-    "changes": [
-        {"id": "external-anchor-target", "title": "An external $anchor resolves to the anchored schema"},
-        {"id": "other-change", "title": "Another change"},
-    ]
-}
+MIGRATION_CHANGES = [
+    {"id": "external-anchor-target", "title": "An external $anchor resolves to the anchored schema"},
+    {"id": "other-change", "title": "Another change"},
+]
 ACCEPTED_EXAMPLE = {
     "input": "tests/data/jsonschema/external_anchor",
     "type": "dataclasses.dataclass",
@@ -207,16 +205,14 @@ RELEASE_CASES = {
 
 
 @pytest.mark.parametrize("case", sorted(RELEASE_CASES))
-def test_render_release(case: str, tmp_path: Path) -> None:
+def test_render_release(case: str) -> None:
     """A release page sums the gate cells per class and output model type and lists each group's examples.
 
     Each accepted change is named by the title of its upgrade guide entry.
     """
     data = summarize_gate([ROWS[name] for name in RELEASE_CASES[case]], [ACCEPTED_ENTRY])
     data = {"version": "0.87.0", "previous": "0.86.0", "tier": "pr" if case == "pr_tier" else "release", **data}
-    migration_json = tmp_path / "migration.json"
-    migration_json.write_text(json.dumps(MIGRATION_TITLES), encoding="utf-8")
-    name_accepted_changes(data, migration_json)
+    name_accepted_changes(data, MIGRATION_CHANGES)
     for group in data["accepted"]:
         group["restored_by"] = []
         group["example"] = ACCEPTED_EXAMPLE

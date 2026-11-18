@@ -344,8 +344,34 @@ def _files(directory: Path) -> str:
 
 
 def test_build_migration_docs_check() -> None:
-    """The committed hub, all-changes page and JSON match the change list and the registries of the source tree."""
+    """The change list is valid and the committed hub matches it and the registries of the source tree."""
     subprocess.run([sys.executable, str(SCRIPT), "--check"], check=True)
+
+
+def test_build_migration_docs_checks_only_the_committed_hub(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """The build writes the hub and the files the docs deploy builds; `--check` compares the hub alone.
+
+    The all-changes page and the JSON are not committed, so a check passes without them and names only a stale hub.
+    """
+    _write_data(tmp_path, CHANGES, UNRELEASED)
+    docs = tmp_path / "docs"
+    codes = {"build": main(_args(tmp_path), REGISTRIES)}
+    written = sorted(path.relative_to(docs).as_posix() for path in docs.rglob("*") if path.is_file())
+    (docs / "migration" / "changes.md").unlink()
+    (docs / "data" / "migration.json").unlink()
+    codes["check without the deploy files"] = main([*_args(tmp_path), "--check"], REGISTRIES)
+    (docs / "migration" / "index.md").write_text("stale\n", encoding="utf-8")
+    codes["check of a stale hub"] = main([*_args(tmp_path), "--check"], REGISTRIES)
+    assert_output(f"{json.dumps(codes, indent=1)}\nwritten {written}\n{capsys.readouterr().err}")
+
+
+def test_build_migration_docs_writes_only_the_data(tmp_path: Path) -> None:
+    """`--write-data` writes the guide's JSON to the given file and no page."""
+    _write_data(tmp_path, CHANGES, UNRELEASED)
+    data = tmp_path / "out" / "migration.json"
+    code = main([*_args(tmp_path), "--write-data", str(data)], REGISTRIES)
+    written = sorted(path.relative_to(tmp_path).as_posix() for path in (tmp_path / "docs").rglob("*") if path.is_file())
+    assert_output(f"exit {code}\nrepository files {written}\n{data.read_text(encoding='utf-8')}")
 
 
 COMPLETE_RELEASES = 'complete_from = "0.2.0"\n' + "".join(

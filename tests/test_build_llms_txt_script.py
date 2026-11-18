@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -13,13 +14,32 @@ from tests.conftest import assert_output
 if TYPE_CHECKING:
     import pytest
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "build_llms_txt.py"
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = ROOT / "scripts" / "build_llms_txt.py"
+MIGRATION_SCRIPT = ROOT / "scripts" / "build_migration_docs.py"
 EXPECTED_LLMS_TXT_PATH = Path(__file__).resolve().parent / "data" / "expected" / "llms_txt"
 
 
-def test_build_llms_txt_check_is_up_to_date() -> None:
-    """The committed llms.txt is up to date; llms-full.txt is built at deploy."""
-    subprocess.run([sys.executable, str(SCRIPT), "--check"], check=True)
+def _not_pages(directory: str, names: list[str]) -> list[str]:
+    kept = {name for name in names if name.endswith(".md") or name == "llms.txt" or Path(directory, name).is_dir()}
+    return [name for name in names if name not in kept]
+
+
+def test_build_llms_txt_check_is_up_to_date(tmp_path: Path) -> None:
+    """The committed llms.txt is up to date with the pages the docs deploy has; llms-full.txt is built at deploy.
+
+    The deploy builds the upgrade guide's all-changes page, which llms.txt lists, before this script, so the check runs
+    on a copy of the pages with that page built.
+    """
+    checkout = tmp_path / "checkout"
+    docs = checkout / "docs"
+    shutil.copytree(ROOT / "docs", docs, ignore=_not_pages)
+    shutil.copy2(ROOT / "zensical.toml", checkout)
+    (checkout / "scripts").mkdir()
+    shutil.copy2(SCRIPT, checkout / "scripts")
+    migration = ["--docs-dir", str(docs / "migration"), "--json", str(docs / "data" / "migration.json")]
+    subprocess.run([sys.executable, str(MIGRATION_SCRIPT), *migration], check=True)
+    subprocess.run([sys.executable, str(checkout / "scripts" / SCRIPT.name), "--check"], check=True)
 
 
 def test_build_llms_txt_writes_both_files_and_checks_only_the_index(

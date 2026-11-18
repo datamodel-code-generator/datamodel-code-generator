@@ -76,7 +76,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable, Iterable, Mapping
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -97,7 +97,6 @@ from scripts._behaviour_report import compare_records, redact, summarize_gate, v
 
 SIGNATURE_SCRIPT = Path(__file__).with_name("_behaviour_signature.py")
 DEFAULT_ALLOWLIST = Path(__file__).with_name("behaviour_diff_allowlist.toml")
-MIGRATION_JSON = ROOT / "docs" / "data" / "migration.json"
 FIXTURE_DIRS = (
     ("jsonschema", (".json", ".yaml", ".yml"), True),
     ("openapi", (".json", ".yaml", ".yml"), True),
@@ -1460,13 +1459,23 @@ def render_notes(data: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def name_accepted_changes(data: dict[str, Any], migration_json: Path) -> None:
+def name_accepted_changes(data: dict[str, Any], changes: Iterable[Mapping[str, object]]) -> None:
     """Give each accepted change of a release page the title of its upgrade guide entry, or its reason without one."""
-    titles = {
-        entry["id"]: entry["title"] for entry in json.loads(migration_json.read_text(encoding="utf-8"))["changes"]
-    }
+    titles = {entry["id"]: entry["title"] for entry in changes}
     for group in data["accepted"]:
         group["release_note"] = titles.get(group["migration"], group["reason"])
+
+
+def guide_changes() -> list[dict[str, object]]:
+    """Return the upgrade guide's entries from a fresh build of its data file by the builder script."""
+    with tempfile.TemporaryDirectory() as directory:
+        data = Path(directory) / "migration.json"
+        subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "build_migration_docs.py"), "--write-data", str(data)],
+            check=True,
+            cwd=ROOT,
+        )
+        return json.loads(data.read_text(encoding="utf-8"))["changes"]
 
 
 def guide_main(ns: argparse.Namespace) -> int:
@@ -1480,7 +1489,7 @@ def guide_main(ns: argparse.Namespace) -> int:
         rows = [json.loads(line) for path in ns.cells for line in path.read_text(encoding="utf-8").splitlines()]
         data = summarize_gate(rows, gate.loaded_allowlist.entries)
         data = {"version": ns.version, "previous": ns.base, "tier": ns.tier, **data}
-        name_accepted_changes(data, MIGRATION_JSON)
+        name_accepted_changes(data, guide_changes())
         enrich_accepted(gate, rows, data, ns)
         enrich_opt_in(gate, rows, data)
     finally:

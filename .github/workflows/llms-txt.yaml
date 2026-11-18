@@ -20,6 +20,7 @@ on:
       - 'scripts/build_experimental_docs.py'
       - 'scripts/build_release_benchmark_docs.py'
       - 'scripts/build_llms_txt.py'
+      - 'scripts/build_migration_docs.py'
       - 'scripts/build_playground_assets.py'
       - 'scripts/build_preset_docs.py'
       - 'scripts/build_prompt_data.py'
