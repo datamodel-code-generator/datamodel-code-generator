@@ -1417,7 +1417,7 @@ def name_accepted_changes(data: dict[str, Any], changes: Iterable[Mapping[str, o
         group["release_note"] = titles.get(group["migration"], group["reason"])
 
 
-def guide_changes() -> list[dict[str, Any]]:
+def guide_changes() -> list[dict[str, object]]:
     """Return the upgrade guide's entries from a fresh build of its data file by the builder script."""
     with tempfile.TemporaryDirectory() as directory:
         data = Path(directory) / "migration.json"
