@@ -321,6 +321,15 @@ def test_build_migration_docs_checks_only_the_committed_hub(tmp_path: Path, caps
     assert_output(f"{json.dumps(codes, indent=1)}\nwritten {written}\n{capsys.readouterr().err}")
 
 
+def test_build_migration_docs_writes_only_the_data(tmp_path: Path) -> None:
+    """`--write-data` writes the guide's JSON to the given file and no page."""
+    _write_data(tmp_path, CHANGES, UNRELEASED)
+    data = tmp_path / "out" / "migration.json"
+    code = main([*_args(tmp_path), "--write-data", str(data)], REGISTRIES)
+    written = sorted(path.relative_to(tmp_path).as_posix() for path in (tmp_path / "docs").rglob("*") if path.is_file())
+    assert_output(f"exit {code}\nrepository files {written}\n{data.read_text(encoding='utf-8')}")
+
+
 COMPLETE_RELEASES = 'complete_from = "0.2.0"\n' + "".join(
     f'\n[[release]]\nversion = "{version}"\ndate = "{date}"\n' for version, date in RELEASES
 )

@@ -1610,6 +1610,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     action.add_argument("--stamp", metavar="VERSION", help="record a published release (needs --tag-tree)")
     action.add_argument("--range-pages", type=Path, metavar="DIR", help="write the page of each range into DIR")
     action.add_argument("--raw-site", type=Path, metavar="SITE", help="write SITE/migration/from/<release>.md")
+    action.add_argument("--write-data", type=Path, metavar="FILE", help="write only the guide's JSON data to FILE")
     action.add_argument("--record", nargs="+", metavar="ID", help="record the previous release's output of entries")
     action.add_argument("--verify", nargs="*", metavar="ID", help="check the claims of entries with a fixture")
     parser.add_argument("--text", action="store_true", help="with --verify, also check the before/after lines")
@@ -1665,6 +1666,8 @@ def run(ns: argparse.Namespace, registries: Registries | None = None) -> int:
     elif ns.raw_site:
         pages = ns.raw_site / "migration" / "from"
         _write({pages / f"{release['version']}.md": raw_page(guide, release["version"]) for release in guide.releases})
+    elif ns.write_data:
+        _write({ns.write_data: to_json(guide)})
     else:
         _write(committed_files(guide, layout) | deploy_files(guide, layout))
     return 0

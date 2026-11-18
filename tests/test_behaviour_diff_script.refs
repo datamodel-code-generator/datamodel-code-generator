@@ -26,6 +26,8 @@ missing_reason	behaviour_diff_script/base_skip_problems[missing_reason].txt
 private_issue	behaviour_diff_script/base_skip_problems[private_issue].txt
 valid	behaviour_diff_script/base_skip_problems[valid].txt	= main/generation_platform/codecs/pydantic/pets-paths-scope.txt
 versions	behaviour_diff_script/base_skip_problems[versions].txt	= main/generation_platform/codecs/pydantic/pets-paths-scope.txt
+[test_candidate_payload_path_does_not_import_the_guide_builder]
+	behaviour_diff_script/candidate_payload_path_does_not_import_the_guide_builder.txt
 [test_classify_base_skipped]
 generated	behaviour_diff_script/classify_base_skipped[generated].txt
 generation_fails	behaviour_diff_script/classify_base_skipped[generation_fails].txt
@@ -108,6 +110,8 @@ untyped_object	behaviour_diff_script/example_value[untyped_object].txt	= main/em
 	behaviour_diff_script/gate_shards_judge_the_stale_entries_of_an_unsharded_run.txt
 [test_gate_skips_the_release_on_a_listed_input]
 	behaviour_diff_script/gate_skips_the_release_on_a_listed_input.txt
+[test_guide_changes_are_built_not_read_from_the_repository]
+	behaviour_diff_script/guide_changes_are_built_not_read_from_the_repository.txt
 [test_opt_in_reason]
 flag_before_option	behaviour_diff_script/opt_in_reason[flag_before_option].txt
 known	behaviour_diff_script/opt_in_reason[known].txt	= behaviour_diff_script/opt_in_reason[flag_before_option].txt

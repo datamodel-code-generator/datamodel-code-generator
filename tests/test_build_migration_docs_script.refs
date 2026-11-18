@@ -17,5 +17,7 @@ surface and allowlist	build_migration_docs_script/build_migration_docs_invalid_d
 	build_migration_docs_script/build_migration_docs_stamp.txt
 [test_build_migration_docs_verify]
 	build_migration_docs_script/build_migration_docs_verify.txt
+[test_build_migration_docs_writes_only_the_data]
+	build_migration_docs_script/build_migration_docs_writes_only_the_data.txt
 [test_migration_selector_script]
 	build_migration_docs_script/migration_selector_script.txt

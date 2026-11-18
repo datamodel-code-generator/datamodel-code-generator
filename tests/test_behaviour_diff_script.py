@@ -1051,6 +1051,24 @@ def test_signature(case: str, tmp_path: Path) -> None:
     assert_output(json.dumps(json.loads(result.stdout), indent=2, sort_keys=True) + "\n")
 
 
+def test_guide_changes_are_built_not_read_from_the_repository() -> None:
+    """The gate names accepted changes from a fresh build of the guide data; no committed or local file is needed."""
+    changes = behaviour_diff.guide_changes()
+    assert_output(json.dumps({"titled": bool(changes) and all(entry["id"] and entry["title"] for entry in changes)}))
+
+
+def test_candidate_payload_path_does_not_import_the_guide_builder() -> None:
+    """Importing the gate script, as every candidate payload subprocess does, does not load the guide builder."""
+    code = (
+        "import sys; sys.path.insert(0, sys.argv[1]); import scripts.behaviour_diff; "
+        "print('scripts.build_migration_docs' in sys.modules)"
+    )
+    result = subprocess.run(
+        [sys.executable, "-I", "-c", code, str(ROOT)], capture_output=True, text=True, check=True, cwd=ROOT
+    )
+    assert_output(f"builder imported: {result.stdout.strip()}\n")
+
+
 @pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py forks its workers")
 def test_gate(tmp_path: Path) -> None:
     """The gate generates the selected fixtures on both sides; the PR tier judges no stale entry."""

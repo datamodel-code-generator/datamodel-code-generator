@@ -72,7 +72,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts import build_migration_docs, compare_release  # ruff: ignore[module-import-not-at-top-of-file]
+from scripts import compare_release  # ruff: ignore[module-import-not-at-top-of-file]
 from scripts._behaviour_classify import (  # ruff: ignore[module-import-not-at-top-of-file]
     CLASSES,
     SIGNATURE_FAILED,
@@ -1417,6 +1417,18 @@ def name_accepted_changes(data: dict[str, Any], changes: Iterable[Mapping[str, o
         group["release_note"] = titles.get(group["migration"], group["reason"])
 
 
+def guide_changes() -> list[dict[str, Any]]:
+    """Return the upgrade guide's entries from a fresh build of its data file by the builder script."""
+    with tempfile.TemporaryDirectory() as directory:
+        data = Path(directory) / "migration.json"
+        subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "build_migration_docs.py"), "--write-data", str(data)],
+            check=True,
+            cwd=ROOT,
+        )
+        return json.loads(data.read_text(encoding="utf-8"))["changes"]
+
+
 def guide_main(ns: argparse.Namespace) -> int:
     """Write a release page's data (and release notes) from a gate run of the release against the previous one."""
     gate, _ = build_gate(ns)
@@ -1428,7 +1440,7 @@ def guide_main(ns: argparse.Namespace) -> int:
         rows = [json.loads(line) for path in ns.cells for line in path.read_text(encoding="utf-8").splitlines()]
         data = summarize_gate(rows, gate.loaded_allowlist.entries)
         data = {"version": ns.version, "previous": ns.base, "tier": ns.tier, **data}
-        name_accepted_changes(data, build_migration_docs.load().changes)
+        name_accepted_changes(data, guide_changes())
         enrich_accepted(gate, rows, data, ns)
         enrich_opt_in(gate, rows, data)
     finally:
