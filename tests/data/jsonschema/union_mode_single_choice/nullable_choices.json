@@ -11,7 +11,10 @@
     "kind": {"anyOf": [{"type": "string", "enum": ["x", "y"]}, {"type": "null"}]},
     "items": {"anyOf": [{"type": "array", "items": {"type": "integer"}}, {"type": "null"}]},
     "written": {"anyOf": [{"type": "integer", "x-python-type": "int | str | None"}, {"type": "null"}]},
-    "writtenSingle": {"anyOf": [{"x-python-type": "int | None"}, {"type": "null"}]}
+    "writtenSingle": {"anyOf": [{"x-python-type": "int | None"}, {"type": "null"}]},
+    "tagged": {"anyOf": [{"x-python-type": "Annotated[int | str, 1] | None"}, {"type": "null"}]},
+    "sameLiterals": {"anyOf": [{"enum": ["a", "b"]}, {"enum": ["b", "a"]}, {"type": "null"}]},
+    "writtenLiterals": {"anyOf": [{"x-python-type": "Literal['a', 'b'] | Literal['b', 'a'] | None"}, {"type": "null"}]}
   },
   "$defs": {
     "Value": {"anyOf": [{"type": "integer"}, {"type": "string"}]},

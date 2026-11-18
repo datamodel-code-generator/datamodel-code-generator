@@ -753,18 +753,28 @@ def _remove_compiled_pattern_metadata(args: _FieldArguments) -> None:
         args.pop(_COMPILED_PATTERN_KEY, "compiled-pattern-metadata", _COMPILED_PATTERN)
 
 
+def _choice_key(member: DataType) -> object:
+    """Return what makes two members of a union one choice: a ``Literal``'s set of values, else the written type."""
+    if member.literals and not member.enum_member_literals and not member.alias:
+        return frozenset((type(value), value) for value in member.literals)
+    return member.type_hint
+
+
 def _validates_as_union(data_type: DataType) -> bool:
     """Return whether Pydantic validates a type as a union of two or more choices, the one schema ``union_mode`` takes.
 
     Pydantic validates a union beside None as the union, and a type alias as its value: a type is one when its members,
-    None aside, write two or more types or one that is such a union, when it names a type alias whose value is one, or
-    when the annotation it is given (``x-python-type``) joins two or more types. Any other type is a single choice.
+    None aside, write two or more types (equal ``Literal`` types are one) or one that is such a union, when it names
+    a type alias whose value is one, or when the annotation it is given (``x-python-type``) joins two or more types.
+    Any other type is a single choice.
     """
     if data_type in CONTAINERS:
         return False
     if not (data_type.alias or data_type.type):
         if data_type.data_types:
-            choices = [*{member.type_hint: member for member in data_type.data_types if member.type != NONE}.values()]
+            choices = [
+                *{_choice_key(member): member for member in data_type.data_types if member.type != NONE}.values()
+            ]
             return len(choices) > 1 or (len(choices) == 1 and _validates_as_union(choices[0]))
         if (reference := data_type.reference) is not None and (source := reference.source) is not None:
             return source.is_alias and any(_validates_as_union(field.data_type) for field in source.fields[:1])

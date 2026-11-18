@@ -27,3 +27,6 @@ class Doc(BaseModel):
     items: list[int] | None = None
     written: int | str | None = Field(None, union_mode='left_to_right')
     writtenSingle: int | None = None
+    tagged: Annotated[int | str, 1] | None = Field(None, union_mode='left_to_right')
+    sameLiterals: Literal['a', 'b'] | Literal['b', 'a'] | None = None
+    writtenLiterals: Literal['a', 'b'] | Literal['b', 'a'] | None = None
