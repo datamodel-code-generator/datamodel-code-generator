@@ -814,7 +814,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
         The parse's memo keeps the result until a GenerationStore-managed semantic mutation.
         """
-        if self.parent is None or not self.parent.reference:  # pragma: no cover
+        if self.parent is None or not self.parent.reference:
             return False
         parent = self.parent
         return memoized(
