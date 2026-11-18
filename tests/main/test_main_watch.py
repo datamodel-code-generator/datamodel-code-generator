@@ -2933,7 +2933,10 @@ def test_watch_with_no_collected_dependencies_stops_cleanly(tmp_path: Path) -> N
 WATCH_STEPS_TIMEOUT_SECONDS = 60.0
 
 
-@pytest.mark.abnormal_path("the macOS polling backend is selected by the platform, so other hosts patch it")
+@pytest.mark.abnormal_path(
+    "the macOS polling backend is selected by the platform, so other hosts patch it, and the late event batches of a "
+    "slow runner are replayed by delaying the batches of real watchfiles"
+)
 @pytest.mark.allow_direct_assert("a watch run that never finishes its steps fails instead of hanging the suite")
 def _watch_in_steps(
     monkeypatch: pytest.MonkeyPatch,
@@ -2942,15 +2945,31 @@ def _watch_in_steps(
     observed_path: Path,
     steps: list[Callable[[], None]],
     watch_delay: float = 0.05,
+    *,
+    late_events: bool = False,
 ) -> list[bool]:
     """Watch with real watchfiles as on ``platform`` and return, per generation, whether ``observed_path`` existed.
 
-    Each generation runs the next step after it ends, and the generation after the last step stops watch mode.
+    Each generation runs the next step after it ends, and the generation after the last step stops watch mode. With
+    ``late_events``, each batch of events arrives after two polls without events, as on a slow runner.
     """
     from datamodel_code_generator import watch as watch_module
     from datamodel_code_generator.__main__ import Config
 
     monkeypatch.setattr(watch_module.sys, "platform", platform)
+    if late_events:
+        import watchfiles
+
+        prompt_watch = watchfiles.watch
+
+        def late_watch(*paths: Path, **options: object) -> Iterator[set[tuple[watchfiles.Change, str]]]:
+            for changes in prompt_watch(*paths, **options):
+                if changes:
+                    yield set()
+                    yield set()
+                yield changes
+
+        monkeypatch.setattr(watchfiles, "watch", late_watch)
     generations: list[bool] = []
     pending_steps = iter(steps)
 
@@ -3009,11 +3028,15 @@ def test_watch_polling_keeps_its_roots_when_the_input_is_renamed_away_and_back(
     assert "restarting the watcher" not in capsys.readouterr().out
 
 
+@pytest.mark.parametrize("late_events", [False, True], ids=["prompt", "late"])
 @pytest.mark.allow_direct_assert("a watch run is checked by the generations it made, which no output file records")
 def test_watch_polling_keeps_scanning_a_configured_directory_that_is_removed_and_recreated(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str], late_events: bool
 ) -> None:
-    """While a configured directory is missing, polls do not regenerate again; once recreated, its tree is watched."""
+    """While a configured directory is missing, polls do not regenerate again; once recreated, its tree is watched.
+
+    Events that arrive after a fingerprint fallback regenerated their change start no second generation.
+    """
     from datamodel_code_generator.watch_dependencies import WatchDependencies
 
     input_file = tmp_path / "schema.json"
@@ -3043,11 +3066,52 @@ def test_watch_polling_keeps_scanning_a_configured_directory_that_is_removed_and
             recreation.start,
             lambda: _write_atomically(template_file, "changed"),
         ],
+        late_events=late_events,
     )
     recreation.join()
 
     assert generations == [True, False, True, True]
     assert "restarting the watcher" not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("late_events", [False, True], ids=["prompt", "late"])
+@pytest.mark.allow_direct_assert("a watch run is checked by the generations it made, which no output file records")
+def test_watch_polling_regenerates_for_a_template_added_after_a_fingerprint_fallback(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, late_events: bool
+) -> None:
+    """The events of a removal a fingerprint fallback regenerated are skipped; a template added later regenerates.
+
+    No fingerprint covers a new file inside a configured directory, so only its events, late or not, announce it.
+    """
+    from datamodel_code_generator.watch_dependencies import WatchDependencies
+
+    input_file = tmp_path / "schema.json"
+    template_directory = tmp_path / "templates"
+    header_file = template_directory / "header.txt"
+    added_template = template_directory / "pydantic_v2" / "RootModel.jinja2"
+    input_file.write_text(WATCH_SCHEMA_INITIAL, encoding="utf-8")
+    added_template.parent.mkdir(parents=True)
+    header_file.write_text("# header", encoding="utf-8")
+    dependencies = WatchDependencies()
+    dependencies.add_file(input_file)
+    dependencies.add_file(header_file)
+    dependencies.add_directory(template_directory)
+    dependencies.enable_polling_fingerprints()
+    _write_atomically(input_file, WATCH_SCHEMA_CHANGED)
+
+    addition = threading.Timer(WATCH_CLI_READY_DELAY_SECONDS * 2, _write_atomically, [added_template, "root"])
+
+    generations = _watch_in_steps(
+        monkeypatch,
+        "darwin",
+        dependencies,
+        added_template,
+        [header_file.unlink, addition.start],
+        late_events=late_events,
+    )
+    addition.join()
+
+    assert generations == [False, False, True]
 
 
 @pytest.mark.allow_direct_assert("a watch run is checked by the generations it made, which no output file records")
