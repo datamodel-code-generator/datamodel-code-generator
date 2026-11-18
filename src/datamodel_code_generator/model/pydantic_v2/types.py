@@ -57,6 +57,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_FIELD,
     IMPORT_FUTURE_DATE,
     IMPORT_FUTURE_DATETIME,
+    IMPORT_MULTIPLE_OF,
     IMPORT_NAIVE_DATETIME,
     IMPORT_NEGATIVE_FLOAT,
     IMPORT_NEGATIVE_INT,
@@ -105,7 +106,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import TargetPydanticVersion
-    from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.imports import Import, _ImportKey
     from datamodel_code_generator.reference import Reference
 
 
@@ -569,7 +570,7 @@ class DataTypeManager(_DataTypeManagerBase):
         return taken
 
     @override
-    def get_data_type(  # noqa: PLR0911
+    def get_data_type(
         self,
         types: Types,
         *,
@@ -585,8 +586,18 @@ class DataTypeManager(_DataTypeManagerBase):
         ``omit_redundant_constraints``, where a strict number takes none of them); a number with
         ``multipleOf`` is a ``Decimal`` under ``use_decimal_for_multiple_of`` with ``use_decimal_in_field_forms``,
         strict under ``--strict-types float``.
-        A ``multipleOf`` Pydantic refuses (``_non_finite_multiple_of``) is left out as if absent.
+        A ``multipleOf`` Pydantic refuses (``_non_finite_multiple_of``) is left out as if absent. With
+        ``annotated_constraints`` (``--use-annotated``) a ``con*`` call of any kind is written as ``Annotated[<type>,
+        Field(...)]``, which type checkers accept, as a union member that takes its own constraints is (#7109).
         """
+        annotated = kwargs.pop("annotated_constraints", False)
+        data_type = self._constrained_data_type(types, field_constraints=field_constraints, **kwargs)
+        return annotated_constraints(data_type) if annotated else data_type
+
+    def _constrained_data_type(  # noqa: PLR0911
+        self, types: Types, *, field_constraints: bool, **kwargs: Any
+    ) -> DataType:
+        """Return the type ``get_data_type`` gives for ``types``, a ``con*`` call where it takes constraints."""
         if self._non_finite_multiple_of(types, kwargs) is not None:
             kwargs = {key: value for key, value in kwargs.items() if key != "multipleOf"}
         if (
@@ -768,10 +779,40 @@ class AnnotatedConstraintDataType(_RuntimeAnnotatedDataType):
 
     constrained_base: str = "str"
 
+    @classmethod
+    def of_call(cls, data_type: DataType, base: str) -> AnnotatedConstraintDataType:
+        """Return the ``con*`` call ``data_type``, which constrains ``base``, written as ``Annotated`` constraints."""
+        values: dict[str, Any] = {
+            **dict(data_type),
+            "type": None,
+            "parent": None,
+            "children": [],
+            "constrained_base": base,
+        }
+        return cls.model_construct(**values)
+
+    @property
+    @override
+    def runtime_expression_imports(self) -> tuple[Import, ...]:
+        """The imports set on the type, else those of its ``Annotated`` constraints, which aliasing reaches."""
+        if imports := super().runtime_expression_imports:
+            return imports
+        field_keywords, multiple_of = annotated_constraint_metadata(self.constrained_base, self.kwargs or {})
+        annotation_imports: tuple[Import, ...] = (IMPORT_FIELD,) if field_keywords else ()
+        if multiple_of is not None:
+            annotation_imports = (*annotation_imports, IMPORT_MULTIPLE_OF)
+        return (IMPORT_ANNOTATED, *annotation_imports) if annotation_imports else ()
+
     @property
     def annotated_base_type(self) -> str:
         """Return the constrained scalar through its current binding, as ``Decimal`` may be aliased."""
         return self._binding(self.constrained_base, self.constrained_base)
+
+    @property
+    @override
+    def base_type_hint(self) -> str:
+        """The constrained scalar alone, so a ``RootModel`` base never builds a pattern before the config's engine."""
+        return self.annotated_base_type
 
     @property
     @override
@@ -787,6 +828,30 @@ class AnnotatedConstraintDataType(_RuntimeAnnotatedDataType):
         if not metadata:
             return self.annotated_base_type
         return subscript_text(self._binding("Annotated"), (self.annotated_base_type, *metadata))
+
+
+_ANNOTATED_CONSTRAINT_BASES: dict[_ImportKey, str] = {
+    _import_key(IMPORT_CONSTR): "str",
+    _import_key(IMPORT_CONINT): "int",
+    _import_key(IMPORT_CONFLOAT): "float",
+    _import_key(IMPORT_CONDECIMAL): "Decimal",
+    _import_key(IMPORT_CONBYTES): "bytes",
+}
+"""The scalar each ``con*`` call constrains, by its import."""
+
+
+def constrained_base(data_type: DataType) -> str | None:
+    """Return the scalar the ``con*`` call ``data_type`` constrains, or None for any other type."""
+    return None if (import_ := data_type.import_) is None else _ANNOTATED_CONSTRAINT_BASES.get(_import_key(import_))
+
+
+def annotated_constraints(data_type: DataType) -> DataType:
+    """Return a ``con*`` call written as ``Annotated`` constraints, which type checkers accept, else ``data_type``."""
+    return (
+        data_type
+        if (base := constrained_base(data_type)) is None
+        else AnnotatedConstraintDataType.of_call(data_type, base)
+    )
 
 
 class EncodedTextDataType(_RuntimeAnnotatedDataType):

@@ -1,0 +1,37 @@
+[[change]]
+id = "annotated-constrained-union-members"
+category = "output-text"
+kind = "output-text"
+action = "none"
+title = "`--use-annotated` writes the constrained members of unions as `Annotated`"
+summary = "Under `--use-annotated`, a union member that takes its own constraints, such as the `string` of `type: [integer, string]` with a `pattern` or the `integer` of a type list with a `minimum`, in a field, a list item, a dict value or a root model, was written as a `con*()` call, which mypy and pyright refuse in an annotation. It is now written as `Annotated[<type>, Field(...)]` (a `Decimal` `multipleOf` as `MultipleOf(...)`), as a type alias body already wrote it. The models accept and reject the same values; without `--use-annotated` nothing changes."
+affects = { output_model_types = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"], options = ["--use-annotated"] }
+before = "code: int | constr(pattern=r'^[0-9]+$')"
+after = "code: int | Annotated[str, Field(pattern=r'^[0-9]+$')]"
+refs = ["#7109"]
+source = "release-note"
+covers = [
+    "main/jsonschema/additional_properties_value_constraints_annotated_pydantic_v2.py",
+    "main/jsonschema/additional_properties_value_constraints_annotated_pydantic_v2_dataclass.py",
+    "main/jsonschema/additional_properties_value_constraints_annotated_pydantic_v2_py312.py",
+    "main/jsonschema/additional_properties_value_constraints_annotated_schema_validators.py",
+    "main/jsonschema/annotated_union_members/annotated_scalar_type_list_member.py",
+    "main/jsonschema/annotated_union_members/annotated_union_member_bytes.py",
+    "main/jsonschema/annotated_union_members/annotated_union_member_kinds[base-model].py",
+    "main/jsonschema/annotated_union_members/annotated_union_member_kinds[base-model].txt",
+    "main/jsonschema/annotated_union_members/annotated_union_member_kinds[dataclass].py",
+    "main/jsonschema/annotated_union_members/annotated_union_member_kinds[dataclass].txt",
+    "main/jsonschema/annotated_union_members/annotated_union_member_kinds[field-constraints].py",
+    "main/jsonschema/annotated_union_members/annotated_union_member_kinds[field-constraints].txt",
+    "main/jsonschema/annotated_union_members/annotated_union_member_kinds[type-alias].py",
+    "main/jsonschema/annotated_union_members/annotated_union_member_kinds[type-alias].txt",
+    "main/jsonschema/number_constraints_on_non_numbers/use_annotated.py",
+    "main/jsonschema/string_constraints_on_other_types/use_annotated.py",
+    "main/jsonschema/type_union_constraints/both_root_annotated.py",
+    "main/jsonschema/type_union_constraints/string_length_field_0.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[read-kubernetes-extensions-practical].py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[read-kubernetes-extensions-standard].py",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[combined_branch_keywords-pydantic_v2.BaseModel-use-annotated].py",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[combined_branch_keywords-pydantic_v2.BaseModel-use-annotated].py",
+    "payloads/native_numeric_empty_errors.txt",
+]

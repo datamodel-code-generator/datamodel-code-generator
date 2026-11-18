@@ -14,7 +14,6 @@ from pydantic import (
     RootModel,
     StringConstraints,
     TypeAdapter,
-    conint,
     model_validator,
 )
 from typing_extensions import TypeAliasType
@@ -243,5 +242,5 @@ class Payload(_JsonSchemaRuntimeValidationBase):
     titledValueMap: dict[str, NamedValue]
     modeledIrrelevantConstraintMap: dict[str, ModeledIrrelevantConstraintMap]
     arrayIrrelevantConstraintMap: dict[str, list[int]]
-    heterogeneousValueMap: dict[str, conint(ge=1) | str]
+    heterogeneousValueMap: dict[str, Annotated[int, Field(ge=1)] | str]
     booleanIrrelevantConstraintMap: dict[str, bool]

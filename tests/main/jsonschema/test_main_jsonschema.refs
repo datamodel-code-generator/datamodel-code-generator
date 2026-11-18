@@ -14317,7 +14317,7 @@ api-annotated-numeric_min_field	main/jsonschema/type_union_constraints/numeric_m
 api-annotated-plain_field	main/jsonschema/type_union_constraints/plain_field_0.py
 api-annotated-plain_field	main/jsonschema/type_union_constraints/plain_root_native.txt
 api-annotated-string_length_field	main/jsonschema/type_union_constraints/nullable_only_root_native.txt
-api-annotated-string_length_field	main/jsonschema/type_union_constraints/string_length_field_0.py
+api-annotated-string_length_field	main/jsonschema/type_union_constraints/string_length_field_0.py	= main/jsonschema/type_union_constraints/string_length_field_0~type_union_constraint_options[api-annotated-string_length_field].py
 api-legacy_union-array_minimum_field	main/jsonschema/type_union_constraints/array_minimum_field_legacy_union.py
 api-legacy_union-array_minimum_field	main/jsonschema/type_union_constraints/modeled_root_native.txt
 api-legacy_union-both_root	main/jsonschema/type_union_constraints/both_root_legacy_union.py
@@ -14389,7 +14389,7 @@ cli-annotated-numeric_min_field	main/jsonschema/type_union_constraints/numeric_m
 cli-annotated-plain_field	main/jsonschema/type_union_constraints/plain_field_0.py
 cli-annotated-plain_field	main/jsonschema/type_union_constraints/plain_root_native.txt
 cli-annotated-string_length_field	main/jsonschema/type_union_constraints/nullable_only_root_native.txt
-cli-annotated-string_length_field	main/jsonschema/type_union_constraints/string_length_field_0.py
+cli-annotated-string_length_field	main/jsonschema/type_union_constraints/string_length_field_0.py	= main/jsonschema/type_union_constraints/string_length_field_0~type_union_constraint_options[api-annotated-string_length_field].py
 cli-legacy_union-array_minimum_field	main/jsonschema/type_union_constraints/array_minimum_field_legacy_union.py
 cli-legacy_union-array_minimum_field	main/jsonschema/type_union_constraints/modeled_root_native.txt
 cli-legacy_union-both_root	main/jsonschema/type_union_constraints/both_root_legacy_union.py
