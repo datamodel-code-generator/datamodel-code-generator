@@ -36,7 +36,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator import Error, InvalidClassNameError, InvalidFileFormatError, JsonSchemaVersion
 from datamodel_code_generator._document_reader import member_key, refuse_oversized_document
-from datamodel_code_generator._json_pointer import document_part, is_pointer_fragment, join_pointer
+from datamodel_code_generator._json_pointer import document_part, is_pointer_fragment, pointer_tokens
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, subschema_entries
 from datamodel_code_generator._openapi_objects import held_schemas
 from datamodel_code_generator._paths import file_uri, file_uri_path, files_under
@@ -50,6 +50,7 @@ from datamodel_code_generator.parser._schema_graph import (
     ResolvedRef,
     keep_resolved_ref,
     pointer_ref_spelling,
+    stack_position,
     walk_schema_resources,
 )
 from datamodel_code_generator.parser._schema_object import (
@@ -80,7 +81,7 @@ from datamodel_code_generator.util import get_yaml_parse_errors
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Callable, Generator, Iterator, Sequence
+    from collections.abc import Callable, Generator, Iterator, Mapping, Sequence
     from contextlib import AbstractContextManager
 
     from datamodel_code_generator._parser_context import ParserSourceContext
@@ -89,7 +90,12 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import JSONSchemaParserConfig
     from datamodel_code_generator.enums import InputFileType
     from datamodel_code_generator.format import PythonVersion
-    from datamodel_code_generator.parser._schema_graph import RefReading, ResourceRegistry, SchemaGraphBuilder
+    from datamodel_code_generator.parser._schema_graph import (
+        DocumentRecord,
+        RefReading,
+        ResourceRegistry,
+        SchemaGraphBuilder,
+    )
     from datamodel_code_generator.parser._schema_reading import PointerReading, SlashNames
     from datamodel_code_generator.parser.base import Source
     from datamodel_code_generator.parser.schema_version import DocumentDialect
@@ -328,25 +334,44 @@ def _read_kubernetes_extensions(
     return read
 
 
-def _find_json_schema_anchor_pointer(schema: YamlValue, anchor: str) -> str | None:
-    """Return the JSON pointer for an anchor within one schema document."""
-    pending: list[tuple[YamlValue, tuple[str, ...]]] = [(schema, ())]
-    while pending:
-        value, path = pending.pop()
-        if not isinstance(value, dict):
-            continue
-        # An embedded $id starts a distinct schema resource. This search is scoped
-        # to the resource supplied as ``schema``, so its anchors must not leak into
-        # the parent resource's anchor namespace.
-        if path and "$id" in value:
-            continue
-        if value.get("$anchor") == anchor:
-            return join_pointer(path) or "/"
-        for keyword, child in value.items():
-            pending.extend(
-                (subschema, (*path, *map(str, entry))) for entry, subschema in subschema_entries(keyword, child)
-            )
-    return None
+def legacy_external_anchor_search(record: DocumentRecord, tree: Mapping[str, object], name: str) -> str | None:
+    """Return where the `$anchor` an external plain name names lies in the prepared tree of a document, or None.
+
+    This is row ``legacy-external-anchor-search`` (#7158), the released search of the tree. It read the declarations of
+    `$anchor` alone, whose value is the name as written, among the schemas it reached (``_searched``), and took the
+    first one on its stack (``stack_position``). It never read a `$dynamicAnchor`, an identifier that is a fragment, a
+    namespace of definitions or an implicit resource, which the registry reads. A document no preparation recorded
+    (``DocumentRecord.resources``) declares nothing.
+    """
+    declarations = () if (resources := record.resources) is None else resources.declarations
+    pointers = [
+        declaration.pointer
+        for declaration in declarations
+        if declaration.keyword == "$anchor" and declaration.written == name and _searched(tree, declaration.pointer)
+    ]
+    return min(pointers, key=partial(stack_position, tree)) if pointers else None
+
+
+def _searched(tree: Mapping[str, object], pointer: str) -> bool:
+    """Return whether the released external anchor search reached the schema at a pointer of a prepared tree.
+
+    It went from the root through the subschemas each keyword holds (``subschema_entries``), not into the namespaces of
+    definitions, and stopped at each schema below the root that has a `$id` member.
+    """
+    tokens, node = pointer_tokens(pointer), tree
+    while tokens:
+        step = next(
+            (
+                (len(path), child)
+                for path, child in subschema_entries(tokens[0], node.get(tokens[0]))
+                if tuple(map(str, path)) == tokens[: len(path)]
+            ),
+            None,
+        )
+        if step is None or "$id" in step[1]:
+            return False
+        tokens, node = tokens[step[0] :], step[1]
+    return True
 
 
 def _document_location(location: str, document: str) -> str:
@@ -588,8 +613,10 @@ def normalize_external_ref(parser: SchemaDocumentsHost, ref: str) -> str:
         parser._schema_resource_registry.plain_name_uri(document, "", f"#{object_path}"),
     ):
         return keep_resolved_ref(ref, f"{file_part}#{location.partition('#')[2]}")
-    if (anchor_pointer := _find_json_schema_anchor_pointer(ref_body, object_path)) is not None:
-        return keep_resolved_ref(ref, f"{file_part}#{'' if anchor_pointer == '/' else anchor_pointer}")
+    if (
+        anchor_pointer := legacy_external_anchor_search(parser._graph.known(document), ref_body, object_path)
+    ) is not None:
+        return keep_resolved_ref(ref, f"{file_part}#{anchor_pointer}")
     return keep_resolved_ref(ref, f"{file_part}#/{object_path}")
 
 
@@ -1023,10 +1050,10 @@ def record_document_dialect(parser: SchemaDocumentsHost, raw: dict[str, Any], do
     load gave it, else takes that of the document whose reference loads it (``loading_document_dialect``). A document
     it loads that declares no version takes it from there.
     """
-    inherited = None
+    inherited, graph = None, parser._graph
     if raw is not parser.raw_obj and document not in parser.model_resolver.after_load_files:
-        inherited = parser._graph.known(document).dialect or loading_document_dialect(parser)
-    parser._graph.record(document).dialect = parser._read_dialect(raw, inherited=inherited)
+        inherited = graph.known(document).dialect or loading_document_dialect(parser)
+    graph.record(document).dialect = parser._read_dialect(raw, inherited=inherited)
 
 
 def loading_document_dialect(parser: SchemaDocumentsHost) -> DocumentDialect | None:
@@ -1095,7 +1122,7 @@ def prepare_schema_resources(parser: SchemaDocumentsHost, raw: dict[str, Any], p
             parser, raw, document, base, resources.root_base, id_field, is_root=True
         )
     prepared = parser._index_document(prepared, path_parts)
-    record.loaded, record.tree, record.values = raw, prepared, {}
+    record.loaded, record.tree, record.values, record.resources = raw, prepared, {}, resources
     return prepared
 
 
