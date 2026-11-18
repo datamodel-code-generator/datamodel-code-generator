@@ -17,9 +17,6 @@ covers = [
     "main/generation_platform/client/discriminator-values.txt",
     "main/generation_platform/client/packages/discriminator-values/dataclasses_dataclass//*.py",
     "main/generation_platform/client/packages/discriminator-values/typing_TypedDict//*.py",
-    "main/generation_platform/client/runtime/discriminator-copies.txt",
     "main/generation_platform/client/runtime/discriminator-enum-bodies.txt",
-    "main/generation_platform/client/runtime/discriminator-reuse.txt",
     "main/generation_platform/client/runtime/discriminator-values.txt",
-    "main/generation_platform/client/runtime/discriminator-variants.txt",
 ]

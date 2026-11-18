@@ -7,10 +7,10 @@
   level 2 = {'level': 2, 'certified': datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)}
   > GET https://api.example.com/levels
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  level named as its schema ! DecodeError: DecodeError(status_code=200, operation_id='getLevel', reason='invalid_value') [operation_id='getLevel', body_bytes=b'{"level":"Basic","since":"2024-01-02"}', truncated=False, cause=KeyError(('string', 'Basic'))] invalid_value
+  level named as its schema ! DecodeError: DecodeError(status_code=200, operation_id='getLevel', reason='invalid_value') [operation_id='getLevel', body_bytes=b'{"level":"Basic","since":"2024-01-02"}', truncated=False, cause=KeyError('Basic')] invalid_value
   > GET https://api.example.com/levels
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  level true is no integer ! DecodeError: DecodeError(status_code=200, operation_id='getLevel', reason='invalid_value') [operation_id='getLevel', body_bytes=b'{"level":true,"since":"2024-01-02"}', truncated=False, cause=KeyError(('boolean', True))] invalid_value
+  level true is no integer ! DecodeError: DecodeError(status_code=200, operation_id='getLevel', reason='invalid_value') [operation_id='getLevel', body_bytes=b'{"level":true,"since":"2024-01-02"}', truncated=False, cause=KeyError(True)] invalid_value
   > GET https://api.example.com/ranks
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   rank 1 = {'rank': 1, 'since': datetime.date(2024, 1, 2)}
@@ -25,10 +25,10 @@
   switch off = {'enabled': False, 'until': datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)}
   > GET https://api.example.com/switches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  switch 1 is no true ! DecodeError: DecodeError(status_code=200, operation_id='getSwitch', reason='invalid_value') [operation_id='getSwitch', body_bytes=b'{"enabled":1,"since":"2024-01-02"}', truncated=False, cause=KeyError(('number', 1))] invalid_value
+  switch 1 is no true ! DecodeError: DecodeError(status_code=200, operation_id='getSwitch', reason='invalid_value') [operation_id='getSwitch', body_bytes=b'{"enabled":1,"since":"2024-01-02"}', truncated=False, cause=KeyError(1)] invalid_value
   > GET https://api.example.com/switches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  switch 0 is no false ! DecodeError: DecodeError(status_code=200, operation_id='getSwitch', reason='invalid_value') [operation_id='getSwitch', body_bytes=b'{"enabled":0,"until":"2024-01-02T03:04:05Z"}', truncated=False, cause=KeyError(('number', 0))] invalid_value
+  switch 0 is no false ! DecodeError: DecodeError(status_code=200, operation_id='getSwitch', reason='invalid_value') [operation_id='getSwitch', body_bytes=b'{"enabled":0,"until":"2024-01-02T03:04:05Z"}', truncated=False, cause=KeyError(0)] invalid_value
   > GET https://api.example.com/mixed
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   mixed integer = {'code': 1, 'since': datetime.date(2024, 1, 2)}
@@ -40,7 +40,7 @@
   odd plain = {'kind': 'plain', 'since': datetime.date(2024, 1, 2)}
   > GET https://api.example.com/odd
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  odd object ! DecodeError: DecodeError(status_code=200, operation_id='getOdd', reason='invalid_value') [operation_id='getOdd', body_bytes=b'{"kind":{"a":1},"until":"2024-01-02T03:04:05Z"}', truncated=False, cause=TypeError("cannot use 'tuple' as a dict key (unhashable type: 'dict')")] invalid_value
+  odd object ! DecodeError: DecodeError(status_code=200, operation_id='getOdd', reason='invalid_value') [operation_id='getOdd', body_bytes=b'{"kind":{"a":1},"until":"2024-01-02T03:04:05Z"}', truncated=False, cause=KeyError({'a': 1})] invalid_value
   > GET https://api.example.com/animals
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   animal cat = {'kind': 'cat', 'born': datetime.date(2024, 1, 2)}
@@ -56,10 +56,10 @@
   level 2 = Expert(level=2, certified=datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc))
   > GET https://api.example.com/levels
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  level named as its schema ! DecodeError: DecodeError(status_code=200, operation_id='getLevel', reason='invalid_value') [operation_id='getLevel', body_bytes=b'{"level":"Basic","since":"2024-01-02"}', truncated=False, cause=KeyError(('string', 'Basic'))] invalid_value
+  level named as its schema ! DecodeError: DecodeError(status_code=200, operation_id='getLevel', reason='invalid_value') [operation_id='getLevel', body_bytes=b'{"level":"Basic","since":"2024-01-02"}', truncated=False, cause=KeyError('Basic')] invalid_value
   > GET https://api.example.com/levels
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  level true is no integer ! DecodeError: DecodeError(status_code=200, operation_id='getLevel', reason='invalid_value') [operation_id='getLevel', body_bytes=b'{"level":true,"since":"2024-01-02"}', truncated=False, cause=KeyError(('boolean', True))] invalid_value
+  level true is no integer ! DecodeError: DecodeError(status_code=200, operation_id='getLevel', reason='invalid_value') [operation_id='getLevel', body_bytes=b'{"level":true,"since":"2024-01-02"}', truncated=False, cause=KeyError(True)] invalid_value
   > GET https://api.example.com/ranks
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   rank 1 = Junior(rank=1, since=datetime.date(2024, 1, 2))
@@ -74,10 +74,10 @@
   switch off = Off(enabled=False, until=datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc))
   > GET https://api.example.com/switches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  switch 1 is no true ! DecodeError: DecodeError(status_code=200, operation_id='getSwitch', reason='invalid_value') [operation_id='getSwitch', body_bytes=b'{"enabled":1,"since":"2024-01-02"}', truncated=False, cause=KeyError(('number', 1))] invalid_value
+  switch 1 is no true ! DecodeError: DecodeError(status_code=200, operation_id='getSwitch', reason='invalid_value') [operation_id='getSwitch', body_bytes=b'{"enabled":1,"since":"2024-01-02"}', truncated=False, cause=KeyError(1)] invalid_value
   > GET https://api.example.com/switches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  switch 0 is no false ! DecodeError: DecodeError(status_code=200, operation_id='getSwitch', reason='invalid_value') [operation_id='getSwitch', body_bytes=b'{"enabled":0,"until":"2024-01-02T03:04:05Z"}', truncated=False, cause=KeyError(('number', 0))] invalid_value
+  switch 0 is no false ! DecodeError: DecodeError(status_code=200, operation_id='getSwitch', reason='invalid_value') [operation_id='getSwitch', body_bytes=b'{"enabled":0,"until":"2024-01-02T03:04:05Z"}', truncated=False, cause=KeyError(0)] invalid_value
   > GET https://api.example.com/mixed
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   mixed integer = Counted(code=1, since=datetime.date(2024, 1, 2))
@@ -89,7 +89,7 @@
   odd plain = Plain(kind='plain', since=datetime.date(2024, 1, 2))
   > GET https://api.example.com/odd
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  odd object ! DecodeError: DecodeError(status_code=200, operation_id='getOdd', reason='invalid_value') [operation_id='getOdd', body_bytes=b'{"kind":{"a":1},"until":"2024-01-02T03:04:05Z"}', truncated=False, cause=TypeError("cannot use 'tuple' as a dict key (unhashable type: 'dict')")] invalid_value
+  odd object ! DecodeError: DecodeError(status_code=200, operation_id='getOdd', reason='invalid_value') [operation_id='getOdd', body_bytes=b'{"kind":{"a":1},"until":"2024-01-02T03:04:05Z"}', truncated=False, cause=KeyError({'a': 1})] invalid_value
   > GET https://api.example.com/animals
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   animal cat = Cat(kind=<CatKind.cat: 'cat'>, born=datetime.date(2024, 1, 2))

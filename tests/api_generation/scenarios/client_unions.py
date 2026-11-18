@@ -81,9 +81,7 @@ def _with_member(body: object, member: _Level) -> object:
     """Return the body with its tag field holding the Enum member."""
     if isinstance(body, dict):
         return {**body, "level": member}
-    if is_dataclass(body) and not isinstance(body, type):
-        return replace(body, level=member)
-    return body
+    return replace(body, level=member) if is_dataclass(body) and not isinstance(body, type) else body
 
 
 def enum_tag_bodies(package: ModuleType, lines: list[str]) -> None:

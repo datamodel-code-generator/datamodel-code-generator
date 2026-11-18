@@ -157,7 +157,10 @@ class DataclassCodec(ModelCodec[T]):
             selected = dict(shape.kinds).get(kind)
             if kind == "object" and shape.tag is not None:
                 tag = cast("Mapping[str, object]", value)[shape.tag]
-                selected = {_tag_key(key): type_ for key, type_ in shape.tags}[_tag_key(tag)]
+                key = _tag_key(tag)
+                selected = next((type_ for name, type_ in shape.tags if _tag_key(name) == key), None)
+                if selected is None:
+                    raise KeyError(tag)
             return self._load(value, selected)
         if isinstance(shape, Items):
             return _CONTAINERS[shape.kind](self._load(item, shape.item) for item in cast("list[object]", value))
