@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from typing import TYPE_CHECKING
 
 import msgspec
@@ -546,7 +547,7 @@ def test_patterns_python_re_rejects_in_a_root_union_and_in_a_base(
 ) -> None:
     r"""Leave out ``\p{L}`` of a root union and of a base whose child selects ``python-re`` (#6941).
 
-    The module once failed at import; it imports and the lookahead still rejects what it rejects.
+    The module once failed at import and now imports; the stored outcomes record each payload's verdict per output.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / f"{document}.json",
@@ -565,7 +566,11 @@ def test_patterns_python_re_rejects_in_a_root_union_and_in_a_base(
     "extra_args",
     [
         pytest.param([], id="constr"),
-        pytest.param(["--use-type-alias", "--target-python-version", "3.12"], id="type_alias"),
+        pytest.param(
+            ["--use-type-alias", "--target-python-version", "3.12"],
+            id="type_alias",
+            marks=pytest.mark.skipif(sys.version_info < (3, 12), reason="PEP 695 syntax needs Python 3.12 or later"),
+        ),
     ],
 )
 def test_patterns_python_re_rejects_in_a_base_and_an_alias_of_another_module(

@@ -21,9 +21,11 @@ def test_wire_plan_bundles_validate(name: str, tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("name", ["dialects", "dialects32", "querystring-version"])
-def test_wire_plan_rules(name: str, tmp_path: Path) -> None:
-    """Report target-generation diagnostics for the fixed schema and parameter rule cases."""
-    assert_output(wire_plan_report(name, tmp_path)[0], EXPECTED / f"{name}.txt")
+def test_wire_plan_rules(name: str, tmp_path: Path, recwarn: pytest.WarningsRecorder) -> None:
+    """Report target-generation diagnostics and the regex warnings of the fixed schema and parameter rule cases."""
+    report = wire_plan_report(name, tmp_path)[0]
+    warnings = "".join(f"warning {warning.message}\n" for warning in recwarn if "regex engine" in str(warning.message))
+    assert_output(report + warnings, EXPECTED / f"{name}.txt")
 
 
 def test_wire_plan_legacy_scope_declarations(tmp_path: Path) -> None:
