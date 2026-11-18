@@ -177,3 +177,57 @@ def test_review_checklist_reports_an_unknown_base(tmp_path: Path, monkeypatch: p
     with pytest.raises(SystemExit) as raised:
         review_checklist.main(["--base", "no-such-revision"])
     assert_output(str(raised.value).partition(":")[0])
+
+
+ITEM = """[[item]]
+id = "shaped"
+title = "Shaped"
+rule = "AGENTS.md"
+words = "Instructions for coding agents"
+question = "?"
+pulls = [1, 2]
+"""
+TRIGGER = """
+[[item.trigger]]
+paths = ["notes/*"]
+"""
+BAD_TABLES = {
+    "unclosed-header": "[[item]\nid = 'x'\n",
+    "not-an-array": "item = 5\n",
+    "id-not-a-string": ITEM.replace('id = "shaped"', "id = 3") + TRIGGER,
+    "pulls-not-numbers": ITEM.replace("[1, 2]", '["1", "2"]') + TRIGGER,
+    "trigger-not-tables": ITEM + "trigger = [1]\n",
+    "paths-missing": ITEM + "\n[[item.trigger]]\nadded = ['x']\n",
+    "paths-not-a-list": ITEM + '\n[[item.trigger]]\npaths = "notes/*"\n',
+    "added-not-strings": ITEM + "\n[[item.trigger]]\npaths = ['a']\nadded = [1]\n",
+    "removed-not-a-list": ITEM + "\n[[item.trigger]]\npaths = ['a']\nremoved = true\n",
+}
+
+
+@pytest.mark.parametrize("case", BAD_TABLES)
+def test_review_checklist_refuses_a_malformed_table(
+    case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A table that is not TOML or has a field of the wrong type ends with status 2 and names the item."""
+    repository = _repository(tmp_path, {"head": {}})
+    _write(tmp_path, {"table.toml": BAD_TABLES[case]})
+    monkeypatch.chdir(repository)
+    code = review_checklist.main(["--base", "base", "--table", str(tmp_path / "table.toml")])
+    assert_output(f"exit status {code}\n{capsys.readouterr().out.replace(str(tmp_path), 'TMP')}")
+
+
+@pytest.mark.parametrize("kind", ["file", "dangling", "directory"])
+def test_review_checklist_reads_an_untracked_symlink_as_its_link_text(
+    kind: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """An untracked symlink is judged by its own path and link text, never through its target."""
+    repository = _repository(tmp_path, {"head": {}})
+    target = {"file": tmp_path / "outside.txt", "dangling": tmp_path / "missing.txt", "directory": tmp_path}[kind]
+    if kind == "file":
+        target.write_text("target text that must stay unread\n", encoding="utf-8")
+    (repository / "notes").mkdir()
+    (repository / "notes" / "link").symlink_to(target)
+    _write(tmp_path, {"table.toml": ITEM + TRIGGER})
+    monkeypatch.chdir(repository)
+    code = review_checklist.main(["--base", "base", "--table", str(tmp_path / "table.toml")])
+    assert_output(f"exit status {code}\n{capsys.readouterr().out.replace(str(tmp_path), 'TMP')}")

@@ -8,7 +8,8 @@ pull requests behind it, and triggers (paths, and patterns of added lines or of 
 replaces). The diff runs from the merge base of ``--base`` (default ``origin/main``) and HEAD to the working tree,
 untracked files included, or to ``--head`` when one is given. The script prints the items the diff triggers, at most
 ten in the order of the table, each with the first lines that triggered it, and exits with 0. It exits with 2 when the
-table is invalid: every item states its rule in words its file holds, names two pull requests and has a trigger.
+table is not TOML or invalid: every item states its rule in words its file holds, names two pull requests and has a
+trigger.
 """
 
 from __future__ import annotations
@@ -99,14 +100,47 @@ def _patterns(item: str, values: list[str], problems: list[str]) -> tuple[re.Pat
     return tuple(pattern for value in values if (pattern := _pattern(item, value, problems)) is not None)
 
 
+def _is_list_of(value: object, kind: type) -> bool:
+    return isinstance(value, list) and all(
+        isinstance(element, kind) and not isinstance(element, bool) for element in value
+    )
+
+
+def _shape_problem(entry: dict) -> str | None:
+    """Return what is wrong with the types of an item's fields, or ``None`` when every field has its type."""
+    for field in ("id", "title", "rule", "words", "question"):
+        if not isinstance(entry[field], str):
+            return f"{field} must be a string"
+    if not _is_list_of(entry["pulls"], int):
+        return "pulls must be a list of integers"
+    if not _is_list_of(entry["trigger"], dict):
+        return "trigger must be a list of tables"
+    for trigger in entry["trigger"]:
+        if not _is_list_of(trigger.get("paths"), str):
+            return "a trigger's paths must be a list of strings"
+        for field in ("added", "removed"):
+            if not _is_list_of(trigger.get(field, []), str):
+                return f"a trigger's {field} must be a list of strings"
+    return None
+
+
 def load_items(table: Path, root: Path) -> tuple[list[Item], list[str]]:
     """Read the items of ``table`` and the problems that make it invalid, reading each rule's file below ``root``."""
     items: list[Item] = []
     problems: list[str] = []
-    for entry in tomllib.loads(table.read_text(encoding="utf-8")).get("item", []):
-        name = entry.get("id", "an item without an id")
+    try:
+        entries = tomllib.loads(table.read_text(encoding="utf-8")).get("item", [])
+    except ValueError as error:
+        return items, [f"{table.name} is not valid TOML: {error}"]
+    if not _is_list_of(entries, dict):
+        return items, [f"{table.name}: item must be an array of tables"]
+    for entry in entries:
+        name = entry["id"] if isinstance(entry.get("id"), str) else "an item without an id"
         if missing := sorted(FIELDS - entry.keys()):
             problems.append(f"{name}: missing {', '.join(missing)}")
+            continue
+        if shape := _shape_problem(entry):
+            problems.append(f"{name}: {shape}")
             continue
         source = root / entry["rule"]
         if _words(entry["words"]) not in _words(source.read_text(encoding="utf-8") if source.is_file() else ""):
@@ -174,7 +208,9 @@ def diff_lines(root: Path, base: str, head: str | None) -> list[Line]:
     lines = list(parse_diff(_git(root, *patch, fork, *([head] if head else []))))
     if head is None:
         for name in filter(None, _git(root, "ls-files", "-z", "--others", "--exclude-standard").split("\0")):
-            text = (root / name).read_bytes().decode("utf-8", errors="replace")
+            path = root / name
+            raw = str(path.readlink()).encode() if path.is_symlink() else path.read_bytes()
+            text = raw.decode("utf-8", errors="replace")
             lines += [Line(name, number, line, added=True) for number, line in enumerate(text.splitlines(), 1)]
     return lines
 
