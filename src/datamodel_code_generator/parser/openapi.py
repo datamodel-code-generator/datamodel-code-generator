@@ -860,13 +860,11 @@ class OpenAPIParser(JsonSchemaParser):
         """Return a copy of the discriminator dict with its mapping values as the references they name.
 
         Each is the reference the union is read from (``_get_discriminator_union_type``), with the location the parser
-        resolves it to from the document that declares the mapping (``located_mapping_paths``).
+        resolves it to from the document that declares the mapping (``_located_mapping``).
         """
         result = discriminator.copy()
-        mapping = discriminator.get("mapping")
-        if mapping:
-            refs = _union_tags.discriminator_mapping_refs(self, mapping)
-            result["mapping"] = _union_tags.located_mapping_paths(self, refs, refs)
+        if mapping := discriminator.get("mapping"):
+            result["mapping"] = self._located_mapping(mapping, text="reference")
         return result
 
     @override
