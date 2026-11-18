@@ -906,7 +906,7 @@ def _named_reference(field: DataModelFieldBase, name: str | None) -> Reference |
 
 def _keeps_field_names(model: DataModel, model_type: type[DataModel]) -> bool:
     """Return whether the passes leave the field names of a model be: an enum, or a model of no output class."""
-    return "Enum" in model.base_class or (not model.BASE_CLASS and not isinstance(model, model_type))
+    return isinstance(model, Enum) or (not model.BASE_CLASS and not isinstance(model, model_type))
 
 
 def _same_named_references(model: DataModel, name: str | None, *, skips_aliases: bool) -> Iterator[Reference]:
