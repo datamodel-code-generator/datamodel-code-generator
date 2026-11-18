@@ -181,18 +181,20 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
   channel it names, else the operation's own. A reply on a channel at another address or on other servers, or sent to
   an address that a runtime expression gives (`reply.address`), leaves the connection out.
 - The models are the only codec, as for an OpenAPI body of the message's media type: a JSON message is encoded and
-  decoded by its payload's model, a payload that is only a `$ref` by the model of the schema it names; a payload the
-  models type as raw bytes (a binary string), and any payload of another binary media type such as
+  decoded by its payload's model, a payload that is a `$ref` beside annotations only (such as a `description`) by the
+  model of the schema it names, as an OpenAPI body is; a payload the models type as raw bytes (a binary string), and
+  any payload of another binary media type such as
   `application/octet-stream`, `image/png` or `application/x-msgpack`, as `bytes`; a text message (`text/plain`,
   `text/csv`, ...) whose models type a string, an enum of strings among them, as `str`, as is an
   `application/octet-stream` message whose models type an enum of strings. A text message of another type, and a
   form or multipart message whose payload is not a binary string, leave the channel out. A direction that carries no
   message is typed `Never`.
-- A direction of several messages is typed as the union of their types. A received binary frame is the bytes message
-  and a text frame the text or JSON message; several JSON messages are told apart by a tag, a property that every
-  payload model declares as required with one string value of its own (a `const` or a one-value `enum`), when no
-  payload admits null, and a message with an unknown or missing tag raises `DecodeError` and closes the connection
-  with 1002. `send(value)` takes the
+- The messages of a channel are those the models are generated for: a message value stands for each message its
+  `$ref` and `oneOf` lead to, at any depth. A direction of several messages is typed as the union of their types. A
+  received binary frame is the bytes message and a text frame the text or JSON message; several JSON messages are
+  told apart by a tag, a property that every payload model declares as required with one string value of its own (a
+  `const` or a one-value `enum`), when no payload admits null, and a message with an unknown or missing tag raises
+  `DecodeError` and closes the connection with 1002. `send(value)` takes the
   message of the value's class, else of its nearest base class, a `str` the text message and `bytes` the binary one;
   TypedDict values take the message whose tag they hold. Pydantic models decode received JSON messages without a tag, and encode sent ones that are not
   all classes, as the union of their types; for the other model types such a channel is left out with a warning, as is
@@ -256,7 +258,8 @@ with Client() as client, client.market.connect(pair="XBT-USD") as session:
 A channel that uses a feature the client does not support is left out with a warning that names the feature, and the
 other channels are generated; when every channel is left out, the generation fails with their findings. A channel is
 also left out, with a warning that names what does not resolve, when an operation, a message or a trait it needs is
-in another document, or its payload schema is in no loaded document (such as one `--external-ref-mapping` maps); an
-operation in another document may be on any channel, so it leaves every channel out. Operation and message traits are
-merged first, as the document's AsyncAPI version merges them. [AsyncAPI Client Features](supported_formats.md#asyncapi-client-features) lists each
+in another document, or its payload schema is in no loaded document (such as one `--external-ref-mapping` maps), or
+with one that names the messages the models did not read (those of a channel in another document that no channel of
+the document lists); an operation in another document may be on any channel, so it leaves every channel out.
+Operation and message traits are merged first, as the document's AsyncAPI version merges them. [AsyncAPI Client Features](supported_formats.md#asyncapi-client-features) lists each
 feature and the client's support.

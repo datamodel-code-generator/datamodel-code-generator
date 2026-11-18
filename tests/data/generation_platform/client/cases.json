@@ -6723,5 +6723,15 @@
   "asyncapi-schema-version-v2": {
     "input": "asyncapi-market-v3.yaml",
     "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"], "schema_version": "2.0"}
+  },
+  "asyncapi-payload-siblings": {
+    "input": "asyncapi-payload-siblings.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"], ["models.py"]]
+  },
+  "asyncapi-nested-messages-v2": {
+    "input": "asyncapi-nested-messages-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"], ["models.py"]]
   }
 }

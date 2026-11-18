@@ -25,6 +25,7 @@ from pydantic import ValidationError
 from typing_extensions import override
 
 from datamodel_code_generator import Error, SchemaParseError
+from datamodel_code_generator._asyncapi_connections import ReadMember, Walk, WalkedMessage, read
 from datamodel_code_generator._container_kinds import (
     CONTAINER_FLAGS,
     CONTAINERS,
@@ -820,7 +821,8 @@ class TargetApiOpenAPIParser(_TargetRecording, ApiOpenAPIParser):
 class TargetAsyncAPIParser(_TargetRecording, AsyncAPIParser):
     """Record the schema acquisitions and loaded documents of an AsyncAPI document for one client generation attempt.
 
-    The channels themselves are read from the loaded documents when the attempt is bound (``_asyncapi_connections``).
+    The channels themselves are read from the loaded documents when the attempt is bound (``_asyncapi_connections``),
+    with the messages the walk reached from each message value (``walked_messages``).
     """
 
     def __init__(
@@ -834,7 +836,48 @@ class TargetAsyncAPIParser(_TargetRecording, AsyncAPIParser):
         self._api_roots: set[str] = set()
         self._declaration_types: dict[SchemaLocation, DataType] = {}
         self.ignored_declarations: list[ApiIgnoredDeclaration] = []
+        self.walked_messages: dict[SchemaLocation, tuple[WalkedMessage, ...]] = {}
+        """The messages the walk reached from each message value, after every `$ref` and `oneOf`, by its location."""
+        self._message_frames: list[list[WalkedMessage]] = []
         super().__init__(source, config=config)  # ty: ignore[invalid-argument-type]
+
+    def _framed(
+        self, walker: Callable[..., list[AsyncAPISchema]], value: object, *rest: object
+    ) -> list[AsyncAPISchema]:
+        """Walk a message value, recording the messages it reaches under where it is written.
+
+        A value in no located container, such as a list of messages, records none itself; each of its items does.
+        """
+        if (use := self._raw_location(value)) is None:
+            return walker(value, *rest)
+        self._message_frames.append(found := [])
+        try:
+            schemas = walker(value, *rest)
+        finally:
+            self._message_frames.pop()
+        self.walked_messages.setdefault(use, tuple(found))
+        return schemas
+
+    @override
+    def _iter_message_payload_schemas(
+        self, message: object, name: str, path: list[str], seen_paths: set[tuple[str, ...]] | None = None
+    ) -> list[AsyncAPISchema]:
+        return self._framed(super()._iter_message_payload_schemas, message, name, path, seen_paths)
+
+    @override
+    def _iter_operation_message_schemas(self, message: object, name: str, path: list[str]) -> list[AsyncAPISchema]:
+        return self._framed(super()._iter_operation_message_schemas, message, name, path)
+
+    @override
+    def _walked_message(self, message: object, payload: AsyncAPISchema | None) -> None:
+        """Record a message the walk reached, and the reference its payload is used as (``_reference_use``)."""
+        ref = location = None
+        if payload is not None and (location := payload.location) is not None:
+            with self._asyncapi_context(payload.context):
+                ref = self._reference_use(payload.raw_schema, payload.path)[0]
+        walked = WalkedMessage(self._declared(message), location, ref)
+        for frame in self._message_frames:
+            frame.append(walked)
 
     @override
     def _note_scanned_document(self, document: str, raw: dict[str, YamlValue]) -> None:
@@ -865,10 +908,11 @@ class TargetAsyncAPIParser(_TargetRecording, AsyncAPIParser):
 
     @override
     def release_records(self) -> None:
-        """Drop the recorded graph anchors and the loaded documents."""
+        """Drop the recorded graph anchors, the loaded documents and the messages their walk reached."""
         super().release_records()
         self._api_documents.clear()
         self._api_roots.clear()
+        self.walked_messages.clear()
 
 
 TargetParser: TypeAlias = TargetApiOpenAPIParser | TargetAsyncAPIParser
@@ -4130,15 +4174,14 @@ class _Contracts(_Octets):
 
         The security schemes are those of each input document that a handshake can send, as OpenAPI declares them.
         """
-        from datamodel_code_generator._asyncapi_connections import read  # noqa: PLC0415
-
         contracts: list[ChannelContract] = []
         schemes: list[WireDeclaration] = []
         locate = self.documents.location
         for document in self.documents.walked:
             if document in self.parser._api_roots:  # noqa: SLF001
                 v2 = _recorded_version(self.parser, document) == AsyncAPIVersion.V2
-                found = read(document, self.documents.borrow, self.loaded_target, self.handshake_members, v2=v2)
+                walk = Walk(v2, self.parser.walked_messages.get)
+                found = read(document, self.documents.borrow, self.loaded_target, self.handshake_members, walk)
                 contracts.extend(
                     self.channel(channel, len(contracts) + index) for index, channel in enumerate(found.channels)
                 )
@@ -4297,8 +4340,6 @@ class _Contracts(_Octets):
         like the other properties of a model, its keys stand for no parameter. A schema no model types, or one the
         models type otherwise, such as a string, gives no parameters.
         """
-        from datamodel_code_generator._asyncapi_connections import ReadMember  # noqa: PLC0415
-
         if self.bound_node(location, "value") is None:
             return "has no model"
         value = self.projection(location, "value", "request").value
@@ -4498,7 +4539,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._asyncapi_connections import (
         ReadChannel,
         ReadHandshakeParameter,
-        ReadMember,
         ReadParameter,
         ReadServer,
     )

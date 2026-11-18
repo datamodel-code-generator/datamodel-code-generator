@@ -1,0 +1,37 @@
+asyncapi: 3.0.0
+info:
+  title: Siblings
+  version: 1.0.0
+servers:
+  production:
+    host: gateway.example.com
+    protocol: wss
+channels:
+  feed:
+    address: /v1/feed
+    messages:
+      trade:
+        payload:
+          $ref: '#/components/schemas/Trade'
+          description: A trade as the feed sends it.
+      quote:
+        payload:
+          $ref: '#/components/schemas/Quote'
+operations:
+  onFeed:
+    action: receive
+    channel:
+      $ref: '#/channels/feed'
+components:
+  schemas:
+    Trade:
+      type: object
+      properties:
+        price:
+          type: number
+      required: [price]
+    Quote:
+      type: object
+      properties:
+        bid:
+          type: number

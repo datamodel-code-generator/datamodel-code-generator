@@ -1,7 +1,7 @@
 # asyncapi-reference-cycles
 render pydantic_v2.BaseModel
   warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'looped', which the client cannot generate: /channels/looped: it references another document
-  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'noted', which the client cannot generate: /channels/noted: a message of it references another document
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'noted', which uses messages without a payload (AsyncAPI 2.0) that the client does not support: /channels/noted: message /components/messages/looped declares no payload
   warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'packed', which the client cannot generate: /channels/packed: a trait of message /channels/packed/messages/blob references another document
   warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'bound', which the client cannot generate: /channels/bound: its bindings reference another document
   warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping channel 'socketed', which the client cannot generate: /channels/socketed: its WebSocket binding references another document

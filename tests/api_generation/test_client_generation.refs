@@ -177,9 +177,13 @@ asyncapi-messages	main/generation_platform/client/packages/asyncapi-messages/pyd
 asyncapi-messages	main/generation_platform/client/packages/asyncapi-messages/typing_TypedDict//*.py
 asyncapi-messages-aliases	main/generation_platform/client/asyncapi-messages-aliases.txt
 asyncapi-messages-aliases	main/generation_platform/client/packages/asyncapi-messages-aliases/pydantic_v2_BaseModel//*.py
+asyncapi-nested-messages-v2	main/generation_platform/client/asyncapi-nested-messages-v2.txt
+asyncapi-nested-messages-v2	main/generation_platform/client/packages/asyncapi-nested-messages-v2/pydantic_v2_BaseModel//*.py
 asyncapi-optional-tags	main/generation_platform/client/asyncapi-optional-tags.txt
 asyncapi-optional-tags	main/generation_platform/client/packages/asyncapi-optional-tags/dataclasses_dataclass//*.py
 asyncapi-optional-tags	main/generation_platform/client/packages/asyncapi-optional-tags/pydantic_v2_BaseModel//*.py
+asyncapi-payload-siblings	main/generation_platform/client/asyncapi-payload-siblings.txt
+asyncapi-payload-siblings	main/generation_platform/client/packages/asyncapi-payload-siblings/pydantic_v2_BaseModel//*.py
 asyncapi-perspective	main/generation_platform/client/asyncapi-perspective.txt
 asyncapi-perspective	main/generation_platform/client/packages/asyncapi-perspective/pydantic_v2_BaseModel//*.py
 asyncapi-reference-cycles	main/generation_platform/client/asyncapi-reference-cycles.txt

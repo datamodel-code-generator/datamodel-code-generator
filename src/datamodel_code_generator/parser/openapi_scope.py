@@ -210,10 +210,6 @@ class ApiOpenAPIParser(OpenAPIParser):
         stripped = replace_non_word(path_name, self.target_python_version).lstrip("_") or "root"
         return super()._get_model_name(stripped, method, suffix)
 
-    def _declared(self, value: object) -> SchemaLocation:
-        """Return the location L0 recorded for a JSON object of a loaded document; a value below it is ``.child()``."""
-        return cast("SchemaLocation", self._raw_location(value))
-
     @contextmanager
     def _schema_frame(  # noqa: PLR0913
         self,
@@ -561,16 +557,6 @@ class ApiOpenAPIParser(OpenAPIParser):
             else:
                 self._parse_raw_or_validated_obj(name, raw, path, validated)
             self._processed_declarations.add(declaration)
-
-    def _reference_use(self, raw: YamlValue, path: list[str]) -> tuple[str | None, JsonSchemaObject | None]:
-        """Return the reference ``raw`` is used as, if any, and ``raw`` validated when a reference has siblings.
-
-        A reference is used as the model it names unless a sibling keyword constrains it.
-        """
-        if not isinstance(raw, dict) or not isinstance(ref := raw.get("$ref"), str):
-            return None, None
-        validated = self._validate_schema_object(raw, path) if len(raw) > 1 else None
-        return (None if validated and validated.has_ref_with_schema_keywords else ref), validated
 
     def _acquire_item_schema(  # ruff: ignore[too-many-arguments]
         self,
