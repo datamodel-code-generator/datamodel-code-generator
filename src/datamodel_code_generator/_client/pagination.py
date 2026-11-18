@@ -253,7 +253,8 @@ class _Pages(HelperPlanner):
                     kind,
                     field.name,
                     none=admits_none(facts.plain(field.type))
-                    or (not field.required and not struct and not field.missing),
+                    or (not field.required and not struct and not field.missing)
+                    or field.annotation_null,
                     unset=struct and not field.required,
                     missing=field.missing,
                 )

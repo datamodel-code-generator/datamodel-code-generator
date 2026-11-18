@@ -2278,12 +2278,13 @@ class BaseLayoutView(NamedTuple):
     is_opaque: Callable[[DataModel], bool]
 
 
-def _model_written(field: DataModelFieldBase) -> ModelWritten:
+def _model_written(field: DataModelFieldBase, *, keeps_none: bool = False) -> ModelWritten:
     """Return the written assignment of a field as the neutral rule reads it: its call, declared factory and default."""
     return ModelWritten(
         text=bool(field.field),
         declared_factory=field.has_default_factory,
         default=_default_state(field.default),
+        keeps_none=keeps_none,
     )
 
 

@@ -6,6 +6,19 @@ Every change a user meets when upgrading, newest first. To upgrade from a releas
 
 ## Unreleased
 
+### Generated clients take a body field as required exactly where the model's constructor requires it (unreleased) { #client-fields-follow-the-constructor }
+
+With `--generate-client` and `--strip-default-none`, a property the schema leaves optional whose Pydantic model field has no default (`tag: str | None`) is a required field argument of the call that sends the body (`tag: str`, README `tag (required)`, `FieldArguments` flag true): `create_pet(id=1)` raises `TypeError: create_pet() missing required field arguments for application/json: 'tag'` before any request, where it raised `DecodeError(reason='unencodable')` from the model. A property whose schema type includes null (OpenAPI 3.1 `type: [string, "null"]`) keeps its `= None` default and stays optional; an OpenAPI 3.0 `nullable: true` property, which the model writes without a default, becomes required like the others. The same holds for the `pydantic_v2.dataclass` output: an OpenAPI 3.0 optional `nullable: true` property with `default: null` under `--strip-default-none` becomes required (the class writes `dn: str | None` without a default). A required property marked `x-is-classvar` (`--field-include-all-keys`) becomes optional in the `pydantic_v2.BaseModel` and `pydantic_v2.dataclass` outputs, because a `ClassVar` is not a constructor argument. An AsyncAPI channel whose messages are told apart by such a property (`kind: {const: join}`, optional) routes received messages by it (`MessageRoute(..., tag='join')`) instead of decoding them as the union of the messages' models: a message without it is refused as `missing` instead of `value`, and a message whose `kind` is null, which the union decoder accepted as the first member, is refused with reason `null`. Server-sent event streams under `--strip-default-none --force-optional` route events by the body tag (`BodySelector(pointer="/type")`) instead of one union codec. The other backends already followed their classes.
+
+- **Affects:** experimental features: `cli-option.generate-client`
+- **Pull requests and issues:** [#7069](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7069)
+- **Source:** the release notes
+
+```diff
+-tag: str | UNSET = UNSET,
++tag: str,
+```
+
 ### Generated clients report a name that explicit names take twice once, sorted, as servers do (unreleased) { #client-name-collision-report }
 
 With `--generate-client`, explicit argument names (`parameter_names`, `--aliases`), method names (`name` of `--client-operations`, sorted within each resource) or the `resource` of channel settings that take one name three or more times report it once instead of once per repeat, and several such names are reported in sorted order after the reserved-name and `--aliases` diagnostics of the operation's parameters (`The arguments of GET /items take 'b' twice; ... take 'a' twice` becomes `... take 'a' twice; ... take 'b' twice`); the "names no parameter" error still follows them. An explicit method name that is a reserved member name (`close`) taken twice is reported as reserved only, without the collision line. Servers already reported collisions this way.

@@ -84,6 +84,7 @@ from datamodel_code_generator.model.base import (
     _find_base_classes,
     _get_template_with_custom_dir,
     _has_opaque_custom_base,
+    _model_written,
     _ModelKeys,
     _uses_original_template_loader,
     _written_name,
@@ -174,6 +175,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.imports import Imports, _ImportKey
+    from datamodel_code_generator.model._decisions.assignment import WrittenAssignment
     from datamodel_code_generator.model.pydantic_v2._schema_runtime_validation import (
         SchemaRuntimeValidationModulePlan,
     )
@@ -907,6 +909,18 @@ class DataModelField(_PydanticBaseDataModelField):
         if self.use_missing_sentinel_default:
             return False
         return super().should_strip_default_none(keep_optional=keep_optional)
+
+    @override
+    def _written_assignment(self) -> WrittenAssignment:
+        """Return the field's written assignment: the model's class body keeps a stripped ``None`` for a type with None.
+
+        The model template writes ``= None`` for a type rendered with None whatever ``--strip-default-none`` says; the
+        root model template strips it.
+        """
+        return _model_written(
+            self,
+            keeps_none=((parent := self.parent) is None or not parent.IS_ROOT_MODEL) and self.data_type.admits_none,
+        )
 
     @property
     @override

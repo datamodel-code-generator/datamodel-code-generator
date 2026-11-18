@@ -27,6 +27,7 @@ asyncapi-handshake	main/generation_platform/client/runtime/asyncapi-handshake.tx
 asyncapi-handshake-models	main/generation_platform/client/runtime/asyncapi-handshake-models.txt
 asyncapi-message-codecs	main/generation_platform/client/runtime/asyncapi-message-codecs.txt
 asyncapi-messages	main/generation_platform/client/runtime/asyncapi-messages.txt
+asyncapi-optional-tags	main/generation_platform/client/runtime/asyncapi-optional-tags.txt
 asyncapi-perspective	main/generation_platform/client/runtime/asyncapi-perspective.txt
 asyncapi-schema-formats	main/generation_platform/client/runtime/asyncapi-schema-formats.txt
 asyncapi-serverless	main/generation_platform/client/runtime/asyncapi-serverless.txt
@@ -61,6 +62,8 @@ evolution-allow	main/generation_platform/client/runtime/evolution-allow.txt
 evolution-forbid	main/generation_platform/client/runtime/evolution-forbid.txt
 fields	main/generation_platform/client/runtime/fields.txt
 fields-optional-models	main/generation_platform/client/runtime/fields-optional-models.txt
+fields-strip	main/generation_platform/client/runtime/fields-strip.txt
+fields-strip-nullable	main/generation_platform/client/runtime/fields-strip-nullable.txt
 fields-structural	main/generation_platform/client/runtime/fields-structural.txt
 fields-unpack	main/generation_platform/client/runtime/fields-unpack.txt
 headers	main/generation_platform/client/runtime/headers.txt
