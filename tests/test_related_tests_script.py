@@ -49,6 +49,14 @@ BASE = {
     "tests/test_build_it_script.py": TEST,
     "tests/test_guide.py": TEST,
     "tests/test_ci_workflow.py": TEST,
+    "tests/main/test_cli_fast_paths.py": TEST,
+    "tests/data/expected/main/cli_fast_paths/fast_paths_load_these_modules[version].txt": (
+        '{\n  "package": [\n    "datamodel_code_generator",\n    "datamodel_code_generator.parser.listed",\n'
+        '    "datamodel_code_generator.sub"\n  ]\n}\n'
+    ),
+    "tests/data/expected/main/cli_fast_paths/version_fast_path.txt": '"datamodel_code_generator.parser.jsonschema"\n',
+    f"{SRC}/sub/__init__.py": "",
+    f"{SRC}/parser/listed.py": "value = 1\n",
     "docs/data/a.json": "{}\n",
     "tests/data/old.json": "{}\n",
     "related_tests.toml": RULES,
@@ -71,6 +79,14 @@ CASES: dict[str, dict[str, dict[str, str | None]]] = {
     },
     "row-pattern-absent": {"head": {f"{SRC}/parser/other.py": "value = 2\n"}},
     "row-by-a-non-ascii-path": {"head": {"tests/data/\u00e9.json": "{}\n"}},
+    "fast-path-listed-module": {"head": {f"{SRC}/parser/listed.py": "value = 2\n"}},
+    "fast-path-listed-package": {"head": {f"{SRC}/sub/__init__.py": "value = 2\n"}},
+    "fast-path-listed-top-package": {"head": {f"{SRC}/__init__.py": "value = 2\n"}},
+    "fast-path-unlisted-module": {"head": {f"{SRC}/parser/_names.py": "value = 2\n"}},
+    "fast-path-deleted-module": {"head": {f"{SRC}/parser/listed.py": None}},
+    "fast-path-list-edited": {
+        "head": {"tests/data/expected/main/cli_fast_paths/fast_paths_load_these_modules[version].txt": "{}\n"}
+    },
     "nothing-changed": {"head": {}},
 }
 
@@ -127,6 +143,7 @@ WORKING_TREES = {
     "tracked-and-untracked": {f"{SRC}/parser/jsonschema.py": "value = 3\n", "tests/data/new.json": "{}\n"},
     "untracked-with-a-pattern": {f"{SRC}/parser/new.py": "value = 1  # the regex\n"},
     "untracked-without-a-pattern": {f"{SRC}/parser/new.py": "value = 1\n"},
+    "untracked-listed-module": {f"{SRC}/parser/listed.py": "value = 3\n"},
     "untracked-non-ascii-path": {"tests/data/\u00e9.json": "{}\n"},
 }
 
