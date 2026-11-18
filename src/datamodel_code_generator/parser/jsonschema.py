@@ -246,6 +246,7 @@ from datamodel_code_generator.model.runtime_validation import (
     UNIQUE_ITEMS_MAPPING_PATTERN_VALUES_PATH_STEP,  # noqa: F401  # Preserve the established parser.jsonschema export.
     UNIQUE_ITEMS_MAPPING_VALUES_PATH_STEP,  # noqa: F401  # Preserve the established parser.jsonschema export.
     ConditionalRequiredRule,
+    ConstantTypesRule,
     IndependentDeclaredPatternPropertiesRule,  # noqa: F401  # Preserve the established parser.jsonschema export.
     IndependentModelPatternPropertiesRule,  # noqa: F401  # Preserve the established parser.jsonschema export.
     PatternPropertiesRule,
@@ -1198,6 +1199,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._tag_key_variants: dict[SchemaLocation | None, tuple[str, str]] = {}
         if self.generate_schema_validators:
             self._property_count_rule_cache: dict[int, tuple[JsonSchemaObject, PropertyCountRule | None]] = {}
+        self._ref_constant_values_cache: dict[int, tuple[JsonSchemaObject, tuple[object, ...] | None]] = {}
+        """The const or enum values of the schema each referring schema object names (``_ref_constant_values``)."""
         self.field_keys: set[str] = {
             *DEFAULT_FIELD_KEYS,
             *self.field_extra_keys,
@@ -2116,7 +2119,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         if target:
             self.extra_template_data[target_path]["schema_runtime_validation"] = target
-        self._add_unique_items_validator(target_path, obj, fields, [], is_root_model=is_root_model)
+        self._add_path_rules_validator(target_path, obj, fields, [], is_root_model=is_root_model)
 
     def _generate_forced_base_models(self) -> None:
         """Retain the late parser extension hook used by schema subclasses."""
@@ -4142,10 +4145,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         path: UniqueItemsPath,
         visited_refs: frozenset[_TargetNode],
         property_input_names: Mapping[str, tuple[str, ...]] | None,
-    ) -> tuple[list[tuple[JsonSchemaObject | bool, tuple[UniqueItemsRule, ...]]], list[UniqueItemsRule]]:
-        return _schema_validators.get_union_unique_items_branch_rules(
-            self, items, path, visited_refs, property_input_names
-        )
+    ) -> tuple[
+        list[tuple[JsonSchemaObject | bool, tuple[UniqueItemsRule | ConstantTypesRule, ...]]],
+        list[UniqueItemsRule | ConstantTypesRule],
+    ]:
+        return _schema_validators.get_union_path_branch_rules(self, items, path, visited_refs, property_input_names)
 
     def _iter_union_unique_items_rules(
         self,
@@ -4154,8 +4158,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         visited_refs: frozenset[_TargetNode],
         *,
         property_input_names: Mapping[str, tuple[str, ...]] | None = None,
-    ) -> Iterator[UniqueItemsRule]:
-        return _schema_validators.iter_union_unique_items_rules(
+    ) -> Iterator[UniqueItemsRule | ConstantTypesRule]:
+        return _schema_validators.iter_union_path_rules(
             self, items, path, visited_refs, property_input_names=property_input_names
         )
 
@@ -4194,12 +4198,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         property_input_names: Mapping[str, tuple[str, ...]] | None = None,
         *,
         include_properties: bool = False,
-    ) -> Iterator[UniqueItemsRule]:
-        return _schema_validators.iter_unique_items_rules(
+    ) -> Iterator[UniqueItemsRule | ConstantTypesRule]:
+        return _schema_validators.iter_path_rules(
             self, obj, path, visited_refs, property_input_names, include_properties=include_properties
         )
 
-    def _add_unique_items_validator(
+    def _add_path_rules_validator(
         self,
         reference_path: str,
         obj: JsonSchemaObject,
@@ -4208,7 +4212,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         *,
         is_root_model: bool,
     ) -> None:
-        _schema_validators.add_unique_items_validator(
+        _schema_validators.add_path_rules_validator(
             self, reference_path, obj, fields, base_classes, is_root_model=is_root_model
         )
 
@@ -4722,13 +4726,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             with_type_origin(with_field_origin(field, "root", location).data_type, location)
         requested_root_model_type = data_model_root_type
         if self.generate_schema_validators:
-            self._add_unique_items_validator(
-                reference.path,
-                obj,
-                fields,
-                [],
-                is_root_model=True,
-            )
+            self._add_path_rules_validator(reference.path, obj, fields, [], is_root_model=True)
         data_model_root_type = self._get_runtime_validation_root_model_type(data_model_root_type, reference.path)
         if _rw_split.splits_root_model(self, reference, fields):
             self._request_response_fields[reference.path] = tuple(_rw_split.copy_unregistered_fields(self, fields))

@@ -1,0 +1,21 @@
+[[change]]
+id = "schema-validators-constant-types"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "Schema validators reject a boolean for a numeric const or enum value and a number for a boolean one"
+summary = "With `--generate-schema-validators` (or `--schema-validator-type pydantic-v2`), a const or enum that holds a number equal to a boolean (`0`, `1`) or a boolean gets a check on the raw input: `true` for `const: 1`, for `enum: [1, 2]` or for `enum: [1, \"x\"]`, and `1` for `const: true`, which Python's `True == 1` let the Literal or Enum take, are now rejected, as JSON Schema rejects them; `1.0` for `const: 1` is still accepted, and an enum that holds both (`[1, true]`) takes both. The check holds for properties, array items and mapping values, for an Enum class a property references, for the consts of a oneOf or anyOf (with branches that take no boolean or number, such as `null`), and for root models; models gain `__json_schema_constant_types__` and a shared base with `_validate_json_schema_constant_types`. Without the option nothing changes."
+affects = { experimental = ["cli-option.generate-schema-validators"] }
+refs = ["#7053"]
+decision = ["#7053"]
+source = "release-note"
+covers = [
+    "main/jsonschema/schema_validator_constant_types/schema_validator_constant_types[option0].payloads.txt",
+    "main/jsonschema/schema_validator_constant_types/schema_validator_constant_types[option0].py",
+    "main/jsonschema/schema_validator_constant_types/schema_validator_constant_types[option1].payloads.txt",
+    "main/jsonschema/schema_validator_constant_types/schema_validator_constant_types[option1].py",
+    "main/jsonschema/schema_validator_constant_types/schema_validator_constant_types[option2].payloads.txt",
+    "main/jsonschema/schema_validator_constant_types/schema_validator_constant_types[option2].py",
+    "main/jsonschema/unique_items_union_enum_root.py",
+    "main/jsonschema/unique_items_union_mapping_shapes.py",
+]

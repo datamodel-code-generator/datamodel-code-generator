@@ -14,6 +14,14 @@ With `--generate-client`, explicit argument names (`parameter_names`, `--aliases
 - **Pull requests and issues:** [#6979](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6979)
 - **Source:** the release notes
 
+### Schema validators reject a boolean for a numeric const or enum value and a number for a boolean one (unreleased) { #schema-validators-constant-types }
+
+With `--generate-schema-validators` (or `--schema-validator-type pydantic-v2`), a const or enum that holds a number equal to a boolean (`0`, `1`) or a boolean gets a check on the raw input: `true` for `const: 1`, for `enum: [1, 2]` or for `enum: [1, "x"]`, and `1` for `const: true`, which Python's `True == 1` let the Literal or Enum take, are now rejected, as JSON Schema rejects them; `1.0` for `const: 1` is still accepted, and an enum that holds both (`[1, true]`) takes both. The check holds for properties, array items and mapping values, for an Enum class a property references, for the consts of a oneOf or anyOf (with branches that take no boolean or number, such as `null`), and for root models; models gain `__json_schema_constant_types__` and a shared base with `_validate_json_schema_constant_types`. Without the option nothing changes.
+
+- **Affects:** experimental features: `cli-option.generate-schema-validators`
+- **Pull requests and issues:** [#7053](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7053)
+- **Source:** the release notes
+
 ### Generated servers read a form member by its field name exactly where the model's applied configuration validates by name, a decorated model included (unreleased) { #server-form-by-name-follows-applied-config }
 
 With `--generate-server`, a form body the server reads through its own adapter (multipart, or URL-encoded with `pydantic_v2.dataclass`) also reads each member by its field name only where the configuration the model applies sets `populate_by_name` or `validate_by_name`, with the bases as Pydantic applies them (a model merges its bases' in order, then its own; a dataclass takes its own, else its first base's). A model whose base sets it while the model turns it off (`--extra-template-data` with `populate_by_name: false`), or a dataclass with a configuration of its own under such a base, no longer lists the field names (`FieldPlan('last_name', ...)` beside `FieldPlan('last-name', ...)`); the model dropped the values read under those names, so requests are handled as before. A class written with `--class-decorators` now counts too: a multipart body `Person` with the property `first-name` under `--allow-population-by-field-name --class-decorators @typing.final --additional-imports typing` lists `FieldPlan('first_name', 'string')`, and a part named `first_name` still reaches `Person(first_name='b')`.

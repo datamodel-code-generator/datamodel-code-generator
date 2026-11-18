@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Constants",
+  "type": "object",
+  "properties": {
+    "one": {"const": 1},
+    "yes": {"const": true},
+    "number": {"type": "number", "enum": [1, 2]},
+    "mixed": {"enum": [1, "x"]},
+    "both": {"enum": [1, true]},
+    "items": {"type": "array", "items": {"enum": [1, 2]}},
+    "values": {"type": "object", "additionalProperties": {"const": 1}},
+    "color": {"$ref": "#/$defs/Color"},
+    "switch": {"oneOf": [{"const": 0, "title": "Off"}, {"const": 1, "title": "On"}]},
+    "closed": {"anyOf": [{"const": 1}, {"type": "null"}, false]},
+    "open": {"anyOf": [{"const": 1}, true]}
+  },
+  "$defs": {"Color": {"enum": [0, 2]}}
+}
